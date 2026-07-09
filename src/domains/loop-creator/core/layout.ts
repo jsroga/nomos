@@ -1,4 +1,6 @@
 import { Node, Edge } from '@xyflow/react'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { groupTimescale } from './loop-node-wire'
 
 const TIMESCALE_ORDER = ['moment', 'minute', 'hour', 'day']
 const GROUP_GAP = 350
@@ -61,8 +63,8 @@ export const autoLayoutNodes = (nodes: Node[], edges: Edge[]): Node[] => {
 
   // Sort groups by timescale order
   const sortedGroups = [...groups].sort((a, b) => {
-    const orderA = TIMESCALE_ORDER.indexOf(a.data?.timescale as string)
-    const orderB = TIMESCALE_ORDER.indexOf(b.data?.timescale as string)
+    const orderA = TIMESCALE_ORDER.indexOf(groupTimescale(a))
+    const orderB = TIMESCALE_ORDER.indexOf(groupTimescale(b))
     return (orderA === -1 ? 99 : orderA) - (orderB === -1 ? 99 : orderB)
   })
 
@@ -71,12 +73,14 @@ export const autoLayoutNodes = (nodes: Node[], edges: Edge[]): Node[] => {
 
   sortedGroups.forEach(group => {
     // Find children that belong to this group
-    const groupChildren = children.filter(
-      c =>
+    const groupChildren = children.filter(c => {
+      const legacyParent = readString(recordFromJson(c).parentNode)
+      return (
         c.parentId === group.id ||
-        (c as any).parentNode === group.id ||
-        c.data?.timescale === group.data?.timescale
-    )
+        legacyParent === group.id ||
+        groupTimescale(c) === groupTimescale(group)
+      )
+    })
 
     const childIds = groupChildren.map(c => c.id)
 

@@ -14,7 +14,8 @@ export const POST = withRateLimit(
       { session }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorTextureResponse | { error: string }>> => {
       const body = await request.json()
-      const { prompt, apiKey } = body as { prompt?: string; apiKey?: string }
+      const parsedBody = interiorTextureRequestSchema.parse(body)
+      const { prompt, apiKey, style, useSemanticSearch, width, height } = parsedBody
 
       if (!prompt) {
         return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
@@ -24,8 +25,6 @@ export const POST = withRateLimit(
         return NextResponse.json({ error: 'API Key is required' }, { status: 401 })
       }
 
-      const parsedBody = interiorTextureRequestSchema.parse(body)
-      const { style, useSemanticSearch, width, height } = parsedBody
       const dims = { width: width || 1024, height: height || 1024 }
       const imageUrl = await textureService.generateTexture(
         prompt,

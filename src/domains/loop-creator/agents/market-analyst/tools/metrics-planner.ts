@@ -583,7 +583,7 @@ Use this to understand what "good" looks like and set realistic targets.`,
       // Get full metric definitions
       const priorityMetrics = priorityMetricNames
         .map(name => METRIC_DATABASE.find(m => m.name === name))
-        .filter(Boolean) as MetricDefinition[]
+        .filter((metric): metric is MetricDefinition => metric !== undefined)
 
       // Filter by focus areas if specified
       let filteredMetrics = priorityMetrics

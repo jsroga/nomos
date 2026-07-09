@@ -1,4 +1,29 @@
 import { EntityReference } from '@/domains/storyteller/core/entities/EntityReferences'
+import { parseEntityType, entityMetadata } from '@/domains/storyteller/core/entities/entity-type-guards'
+import { readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+
+function entityReferenceFromJson(value: unknown): EntityReference | null {
+  const row = recordFromJson(value)
+  const id = readString(row.id)
+  const name = readString(row.name)
+  const type = parseEntityType(row.type)
+  const projectId = readString(row.projectId)
+  if (!id || !name || !type || !projectId) return null
+
+  return {
+    id,
+    type,
+    name,
+    description: readString(row.description) ?? '',
+    metadata: entityMetadata(row.metadata),
+    projectId,
+    sourceEntityId: readString(row.sourceEntityId),
+    createdAt: new Date(readString(row.createdAt) ?? Date.now()),
+    lastReferencedAt: new Date(readString(row.lastReferencedAt) ?? Date.now()),
+    relationshipSummary: readString(row.relationshipSummary),
+    contextualSummary: readString(row.contextualSummary),
+  }
+}
 
 /**
  * EntityLoader
@@ -87,8 +112,10 @@ export class EntityLoader {
 
           if (!res.ok) throw new Error('Failed to fetch')
 
-          const data = await res.json()
-          const entities = data.entities as EntityReference[]
+          const data = recordFromJson(await res.json())
+          const entities = recordArrayFromJson(data.entities)
+            .map(entityReferenceFromJson)
+            .filter((entity): entity is EntityReference => entity !== null)
           const entityMap = new Map(entities.map(e => [e.id, e]))
 
           // Resolve promises

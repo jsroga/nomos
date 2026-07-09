@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { customEventDetailRecord, readString } from '@/shared/data/json-guards'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Plus, Edit2, Film, Trash2 } from 'lucide-react'
 import { Button } from '@/components/Button'
@@ -64,10 +65,11 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
   // Listen for external title updates (e.g. from AI)
   useEffect(() => {
     const handleRemoteUpdate = (e: Event) => {
-      const detail = (e as CustomEvent).detail
-      if (detail && detail.title && currentEpisodeId) {
+      const detail = customEventDetailRecord(e)
+      const title = readString(detail.title)
+      if (title && currentEpisodeId) {
         setEpisodes(prev =>
-          prev.map(ep => (ep.id === currentEpisodeId ? { ...ep, title: detail.title } : ep))
+          prev.map(ep => (ep.id === currentEpisodeId ? { ...ep, title } : ep))
         )
       }
     }
@@ -142,7 +144,10 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
         const res = await fetch(`/api/storyteller/episodes?projectId=${projectId}`)
         return res.json()
       },
-      { ttlMs: 60_000 } // Cache for 1 minute
+      {
+        ttlMs: 60_000,
+        validate: (value): value is unknown[] => Array.isArray(value),
+      }
     )
       .then(data => {
         if (!isMounted) return

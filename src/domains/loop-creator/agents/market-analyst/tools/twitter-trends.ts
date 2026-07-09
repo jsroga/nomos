@@ -10,7 +10,7 @@
  * - Emerging game comparisons (e.g., "the new CS2", "better than Vampire Survivors")
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
+import { recordArrayFromJson } from '@/shared/data/json-guards'
 import { z } from 'zod'
 
 /**
@@ -369,10 +369,16 @@ Use this to understand current market buzz and player sentiment.`,
           if (response.ok) {
             const data = await response.json()
             if (data.data && data.data.length > 0) {
-              const tweets = data.data as Array<{
-                text: string
-                public_metrics?: { like_count: number }
-              }>
+              const tweetRows = recordArrayFromJson(data.data)
+              const tweets = tweetRows
+                .map(row => ({
+                  text: typeof row.text === 'string' ? row.text : '',
+                  public_metrics:
+                    typeof row.public_metrics === 'object' && row.public_metrics !== null
+                      ? row.public_metrics
+                      : undefined,
+                }))
+                .filter(tweet => tweet.text.length > 0)
               const allText = tweets.map(t => t.text).join(' ')
               const { sentiment, score } = analyzeSentiment(allText)
 

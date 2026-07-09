@@ -85,10 +85,39 @@ src/domains/<module>/
 5. **Typed boundaries.** Zod at every edge (API body, tool input, task payload, and
    every workflow step `inputSchema`/`outputSchema`). Ban `any` at boundaries.
 6. **One barrel.** Reaching into a module's internals from outside is a lint error.
-7. **Use the framework once.** If Mastra ships a primitive (Workflows, Memory, AI
+   **Domains must not import each other** — only `@/shared` bridges modules (ESLint
+   `no-restricted-imports` per domain in `eslint.config.js`).
+7. **No type assertions.** `as any` / `as Type` are lint errors (`as const` only). Use guards,
+   Zod, or `recordFromJson()` at jsonb boundaries (`@/shared/data/deep-merge`).
+8. **Magic string sets → enums.** Action types, statuses, phases: `enum`, not bare literals or
+   `as const` object maps.
+9. **Use the framework once.** If Mastra ships a primitive (Workflows, Memory, AI
    Tracing, Workspace skills, Scorers, Processors, RequestContext), use it — no
    hand-rolled parallel. Wrapping is allowed; re-implementing is not.
-8. **Size limits.** Components < ~400 LOC, routes < ~300 LOC; split god components.
+10. **Size limits.** Components < ~400 LOC, routes < ~300 LOC; split god components.
 
 When deciding *where* a change goes, map it to the layer above and place it there.
 If unsure, consult `docs/unified/ARCHITECTURE.md` §3–§5 and §12 rather than guessing.
+
+### App routes — thin shell only (common agent failure)
+
+`src/app/(workspace)/[projectId]/<module>/page.tsx` imports **one** layout/workspace
+from `@/domains/<module>` and renders it. Match `interior-design/page.tsx` and
+`loop-creator/page.tsx`.
+
+**Never** add under `app/<module>/`:
+
+- `hooks/`, `*Workspace.tsx`, `*PageClient.tsx`, `storyteller-dynamic-imports`, panel
+  components, or orchestration hooks.
+
+Those belong in `src/domains/<module>/state/hooks/` and `ui/<Layout>/`.
+
+**Pre-flight before creating a file:**
+
+1. Path starts with `src/domains/<module>/` (not `src/app/...`)?
+2. App route only imports the domain barrel?
+3. Domain layout does **not** re-export from `@/app/...`?
+
+Cross-domain ESLint in `domains/` is **not** fixed by moving code to `app/` — keep
+logic in the domain; use `@/shared` seams or a single documented import site (e.g.
+`writers-room-chat.ts`) until shared types move.

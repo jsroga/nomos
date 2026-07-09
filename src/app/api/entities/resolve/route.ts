@@ -25,6 +25,12 @@ import {
 } from '@/domains/storyteller/server'
 import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
+import {
+  namedRecordsFromJson,
+  readString,
+  recordFromJson,
+} from '@/shared/data/json-guards'
+import { storyPlanRecordFromJson } from '@/domains/storyteller/core/entities/story-plan-wire'
 
 /**
  * Try to find entity from project data and auto-register it
@@ -54,8 +60,11 @@ async function tryAutoRegisterEntity(
       return false
     }
 
-    const storyPlan = (project.storyPlanTable?.content as any) || (project.storyPlan as any) || {}
-    const seriesBible = (project.seriesBible as any) || {}
+    let storyPlan = storyPlanRecordFromJson(project.storyPlanTable?.content)
+    if (Object.keys(storyPlan).length === 0) {
+      storyPlan = storyPlanRecordFromJson(project.storyPlan)
+    }
+    const seriesBible = recordFromJson(project.seriesBible)
 
     // Try to match entity by name from refId
     // Extract potential name from refId (e.g., "faction-the-bottlers-guild" -> "The Bottlers Guild")
@@ -70,45 +79,50 @@ async function tryAutoRegisterEntity(
     console.log(`[AutoRegister] namePart: "${namePart}", normalizedName: "${normalizedName}"`)
 
     if (type === 'faction') {
-      const factions = storyPlan.factions || []
+      const factions = namedRecordsFromJson(storyPlan.factions)
       console.log(`[AutoRegister] Found ${factions.length} factions in storyPlan`)
       console.log(
         '[AutoRegister] Faction names:',
-        factions.map((f: any) => f?.name)
+        factions.map(f => f.name)
       )
 
       const faction = factions.find(
-        (f: any) =>
-          f?.name?.toLowerCase().replace(/\s+/g, '-') === namePart ||
-          f?.name?.toLowerCase() === normalizedName.toLowerCase()
+        f =>
+          f.name.toLowerCase().replace(/\s+/g, '-') === namePart ||
+          f.name.toLowerCase() === normalizedName.toLowerCase()
       )
 
       if (faction) {
         console.log(`[AutoRegister] Matched faction: ${faction.name}`)
 
-        // Build comprehensive description from faction data
+        const description = readString(faction.description)
+        const ideology = readString(faction.ideology)
+        const powerStructure = readString(faction.powerStructure)
+        const politicalForces = readString(faction.politicalForces)
+        const goals = Array.isArray(faction.goals)
+          ? faction.goals.filter((g): g is string => typeof g === 'string')
+          : []
+
         const descriptionParts: string[] = []
-        if (faction.description) descriptionParts.push(faction.description)
-        if (faction.ideology && faction.ideology !== faction.description)
-          descriptionParts.push(faction.ideology)
-        if (faction.powerStructure) descriptionParts.push(faction.powerStructure)
-        if (faction.politicalForces) descriptionParts.push(faction.politicalForces)
-        if (faction.goals && Array.isArray(faction.goals) && faction.goals.length > 0) {
-          descriptionParts.push(`Goals: ${faction.goals.slice(0, 2).join('; ')}`)
+        if (description) descriptionParts.push(description)
+        if (ideology && ideology !== description) descriptionParts.push(ideology)
+        if (powerStructure) descriptionParts.push(powerStructure)
+        if (politicalForces) descriptionParts.push(politicalForces)
+        if (goals.length > 0) {
+          descriptionParts.push(`Goals: ${goals.slice(0, 2).join('; ')}`)
         }
 
-        const description =
+        const factionDescription =
           descriptionParts.length > 0 ? descriptionParts.slice(0, 3).join(' ') : faction.name
 
-        // Use registerWithId to use the exact ID from the reference
         await entityRegistry.registerWithId(refId, {
           name: faction.name,
-          description,
+          description: factionDescription,
           metadata: faction,
           projectId,
         })
         console.log(`✅ [AutoRegister] Registered faction with ID ${refId}: ${faction.name}`)
-        console.log(`   Description: ${description.slice(0, 100)}`)
+        console.log(`   Description: ${factionDescription.slice(0, 100)}`)
         return true
       } else {
         console.log(
@@ -136,27 +150,30 @@ async function tryAutoRegisterEntity(
       console.log(`[AutoRegister] Looking for character: ${normalizedName}`)
 
       // Check cast in project
-      const cast = (project as any).cast || []
+      const cast = namedRecordsFromJson(recordFromJson(project).cast)
       console.log(`[AutoRegister] Found ${cast.length} characters in project.cast`)
       console.log(
         '[AutoRegister] Character names:',
-        cast.map((c: any) => c?.name)
+        cast.map(c => c.name)
       )
 
       const character = cast.find(
-        (c: any) =>
-          c?.name?.toLowerCase().replace(/\s+/g, '-') === namePart ||
-          c?.name?.toLowerCase() === normalizedName.toLowerCase()
+        c =>
+          c.name.toLowerCase().replace(/\s+/g, '-') === namePart ||
+          c.name.toLowerCase() === normalizedName.toLowerCase()
       )
 
       if (character) {
-        // Build comprehensive description
+        const shortDescription = readString(character.shortDescription)
+        const fullDescription = readString(character.description)
+        const role = readString(character.role)
+
         const descParts: string[] = []
-        if (character.shortDescription) descParts.push(character.shortDescription)
-        if (character.description && character.description !== character.shortDescription) {
-          descParts.push(character.description)
+        if (shortDescription) descParts.push(shortDescription)
+        if (fullDescription && fullDescription !== shortDescription) {
+          descParts.push(fullDescription)
         }
-        if (character.role) descParts.push(`Role: ${character.role}`)
+        if (role) descParts.push(`Role: ${role}`)
 
         const description = descParts.length > 0 ? descParts.join('. ') : character.name
 
@@ -193,7 +210,7 @@ async function tryAutoRegisterEntity(
       )
 
       if (matchedChar) {
-        const psychology = (matchedChar.psychology as any) || {}
+        const psychology = recordFromJson(matchedChar.psychology)
         const description =
           matchedChar.description ||
           matchedChar.role ||
@@ -204,9 +221,9 @@ async function tryAutoRegisterEntity(
           description,
           metadata: {
             role: matchedChar.role,
-            archetype: psychology.archetype,
-            motivation: psychology.motivation,
-            fatalFlaw: psychology.fatalFlaw,
+            archetype: readString(psychology.archetype),
+            motivation: readString(psychology.motivation),
+            fatalFlaw: readString(psychology.fatalFlaw),
             traits: psychology.traits,
           },
           projectId,
@@ -221,17 +238,18 @@ async function tryAutoRegisterEntity(
     }
 
     if (type === 'rule') {
-      const rules = storyPlan.worldRules || []
+      const rules = namedRecordsFromJson(storyPlan.worldRules)
       const rule = rules.find(
-        (r: any, idx: number) =>
+        (r, idx) =>
           `rule-${idx}` === refId ||
-          r?.rule?.toLowerCase().includes(normalizedName.toLowerCase().split(' ')[0])
+          readString(r.rule)?.toLowerCase().includes(normalizedName.toLowerCase().split(' ')[0] ?? '')
       )
 
       if (rule) {
+        const ruleText = readString(rule.rule)
         await entityRegistry.registerWithId(refId, {
-          name: rule.rule?.slice(0, 50) || 'Rule',
-          description: rule.consequence || rule.rule || '',
+          name: ruleText?.slice(0, 50) || 'Rule',
+          description: readString(rule.consequence) || ruleText || '',
           metadata: rule,
           projectId,
         })
@@ -244,7 +262,8 @@ async function tryAutoRegisterEntity(
       console.log(`[AutoRegister] Registering place: ${normalizedName}`)
 
       // Try to find place description from world description or other fields
-      const worldDesc = storyPlan.worldDescription || seriesBible.worldDescription || ''
+      const worldDesc =
+        readString(storyPlan.worldDescription) ?? readString(seriesBible.worldDescription) ?? ''
 
       // Extract a sentence containing the place name as description
       let placeDescription = ''

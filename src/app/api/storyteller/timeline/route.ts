@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { requireAuth } from '@/shared/auth/auth'
+import { getUserSession, requireAuth } from '@/shared/auth/auth'
 import { verifyEpisodeAccess } from '@/domains/storyteller/server'
+import { readNumber, readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,8 +21,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
+    const { supabase } = await getUserSession()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     // Get beats for the episode
     const { data: beats, error: beatsError } = await supabase
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     }
 
     // If a specific beat is selected, get character snapshots
-    let snapshots: any[] = []
+    let snapshots: Array<Record<string, unknown>> = []
     if (beatId) {
       const { data: snapshotData, error: snapshotError } = await supabase
         .from('character_state_snapshots')
@@ -48,15 +49,19 @@ export async function GET(req: NextRequest) {
       if (snapshotError) {
         console.error('Error fetching snapshots:', snapshotError)
       } else if (snapshotData) {
-        snapshots = snapshotData.map((s: any) => ({
-          characterId: s.character_id,
-          characterName: s.characters?.name || 'Unknown',
-          stressLevel: s.stress_level || 0,
-          emotionalState: s.emotional_state || 'neutral',
-          transformationProgress: s.transformation_progress || 0,
-          goals: s.goals || [],
-          fears: s.fears || [],
-        }))
+        snapshots = snapshotData.map(snapshot => {
+          const row = recordFromJson(snapshot)
+          const character = recordFromJson(row.characters)
+          return {
+            characterId: row.character_id,
+            characterName: readString(character.name) ?? 'Unknown',
+            stressLevel: readNumber(row.stress_level) ?? 0,
+            emotionalState: readString(row.emotional_state) ?? 'neutral',
+            transformationProgress: readNumber(row.transformation_progress) ?? 0,
+            goals: recordArrayFromJson(row.goals),
+            fears: recordArrayFromJson(row.fears),
+          }
+        })
       }
     }
 

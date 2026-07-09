@@ -15,7 +15,7 @@
  */
 
 import React, { useMemo } from 'react'
-import { ReferenceText } from '../ReferenceText'
+import { ReferenceText, type EntityReference } from '../ReferenceText'
 import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
 import { cn } from '@/shared/data/utils'
 import { useBible } from '../WorldBible/BibleContext'
@@ -31,7 +31,7 @@ interface RichTextProps {
   /** Render as inline or block element */
   inline?: boolean
   /** Callback when an entity is clicked */
-  onEntityClick?: (refId: string, entity: any) => void
+  onEntityClick?: (refId: string, entity: EntityReference | null) => void
   /** Fallback when text is empty */
   fallback?: React.ReactNode
   /** Whether to show as italic placeholder when empty */
@@ -79,7 +79,7 @@ export const RichText: React.FC<RichTextProps> = ({
   }
 
   // Default entity click: navigate to Relationships tab with entity focused
-  const defaultEntityClick = (refId: string, entity: any) => {
+  const defaultEntityClick = (refId: string, entity: EntityReference | null) => {
     if (onEntityClick) {
       onEntityClick(refId, entity)
       return

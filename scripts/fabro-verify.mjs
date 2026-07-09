@@ -6,7 +6,7 @@
  * uses an ephemeral tsconfig and ignores errors outside the verify scope.
  */
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=6144';
 
@@ -179,72 +179,31 @@ function modulePrefixes(module) {
 }
 
 function runModuleTypecheck(module, focusFiles) {
-  const tsconfigPath = 'tsconfig.fabro-verify.json';
-  
-  // For src-root, only typecheck focusFiles (changed files); skip if no changes
-  if (module === 'src-root') {
-    if (!focusFiles.length) {
-      console.log('typecheck: no changed files — skip');
-      return;
-    }
+  if (module === 'src-root' && !focusFiles.length) {
+    console.log('typecheck: no changed files — skip')
+    return
   }
-  
-  const include = focusFiles.length
-    ? focusFiles
-    : module === 'src-root'
-      ? SRC_ROOT_DIRS.map((d) => `${d}/**/*.{ts,tsx}`)
-      : [
-          `src/domains/${module}/**/*.ts`,
-          `src/domains/${module}/**/*.tsx`,
-          `src/app/api/${module}/**/*.ts`,
-        ];
-  const config = { extends: './tsconfig.json', include };
-  writeFileSync(tsconfigPath, `${JSON.stringify(config, null, 2)}\n`);
 
-  const errorPaths = focusFiles.length
-    ? focusFiles
-    : modulePrefixes(module);
-
-  try {
-    console.log(
-      `typecheck: ${focusFiles.length ? `${focusFiles.length} changed file(s)` : `module scope (${module})`}`,
-    );
-    const result = spawnSync('npx', ['tsc', '--noEmit', '-p', tsconfigPath], {
-      encoding: 'utf8',
-      env: { ...process.env, NODE_OPTIONS: NODE_OPTS },
-      maxBuffer: 64 * 1024 * 1024,
-    });
-
-    const combined = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-    if (result.signal === 'SIGABRT' || /heap out of memory|JavaScript heap out of memory/i.test(combined)) {
-      console.error(
-        'typecheck: OOM in sandbox — infrastructure limit, not fixable by Developer loop. See Retro.',
-      );
-      process.exit(1);
-    }
-
-    const { inScope, outside } = filterErrors(combined, errorPaths);
-    if (outside.length) {
-      console.warn(
-        `typecheck: ignoring ${outside.length} error(s) outside the verify scope`,
-      );
-    }
-    if (inScope.length) {
-      console.error('typecheck: errors in scope:\n' + inScope.join('\n'));
-      process.exit(result.status === 0 ? 1 : (result.status ?? 1));
-    }
-    if (result.status !== 0 && inScope.length === 0) {
-      console.log('typecheck: scoped paths clean');
-      return;
-    }
-    if (result.status !== 0) {
-      console.error(combined);
-      process.exit(result.status ?? 1);
-    }
-    console.log('typecheck: OK');
-  } finally {
-    if (existsSync(tsconfigPath)) unlinkSync(tsconfigPath);
+  const args = ['scripts/typecheck-scoped.mjs']
+  if (focusFiles.length) {
+    args.push('--files', ...focusFiles)
+    console.log(`typecheck: ${focusFiles.length} changed file(s)`)
+  } else {
+    args.push('--module', module)
+    console.log(`typecheck: module scope (${module})`)
   }
+
+  const result = spawnSync('node', args, {
+    stdio: 'inherit',
+    env: { ...process.env, NODE_OPTIONS: NODE_OPTS },
+    maxBuffer: 64 * 1024 * 1024,
+  })
+
+  if (result.status !== 0) {
+    console.error('typecheck: FAILED')
+    process.exit(result.status ?? 1)
+  }
+  console.log('typecheck: OK')
 }
 
 function runPreCommitParityGates() {

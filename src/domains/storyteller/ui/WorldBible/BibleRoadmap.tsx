@@ -25,7 +25,7 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
   // Use localPlan for display when not editing to show latest saved data
   // Note: prefer non-empty arrays — an empty [] from a stale episode plan fetch must not block
   // episodeRoadmap.episodes from showing after a roadmap approval.
-  const resolveSequences = (seqs: any[] | undefined | null) =>
+  const resolveSequences = <T,>(seqs: T[] | undefined | null) =>
     seqs && seqs.length > 0 ? seqs : undefined
   const displaySequences = isEditing
     ? (localPlan.sequences || [])
@@ -39,13 +39,17 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
   if (typeof window !== 'undefined') {
     console.log('[BibleRoadmap] sequences:', displaySequences.length, {
       localPlanSequences: localPlan.sequences?.length,
-      storyPlanSequences: (storyPlan as any).sequences?.length,
-      storyPlanEpisodeRoadmapEpisodes: (storyPlan as any).episodeRoadmap?.episodes?.length,
+      storyPlanSequences: storyPlan.sequences?.length,
+      storyPlanEpisodeRoadmapEpisodes: storyPlan.episodeRoadmap?.episodes?.length,
     })
   }
+  // episodeRoadmap.seasonStructure is a loose record field in the schema
+  const roadmapSeasonStructure = storyPlan.episodeRoadmap?.seasonStructure
   const displaySeasonStructure = isEditing
     ? localPlan.seasonStructure
-    : (localPlan.seasonStructure || storyPlan.seasonStructure || storyPlan.episodeRoadmap?.seasonStructure)
+    : localPlan.seasonStructure ||
+      storyPlan.seasonStructure ||
+      (typeof roadmapSeasonStructure === 'string' ? roadmapSeasonStructure : undefined)
 
   // Check for loading state - roadmap uses 'episodeRoadmap' section key
   const isLoading = loadingSections?.episodeRoadmap?.loading ?? false

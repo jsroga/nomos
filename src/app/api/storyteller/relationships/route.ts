@@ -19,6 +19,18 @@ import { db } from '@/db/client'
 import { characters, entityReferences, projects, relationshipEdges } from '@/db'
 import { eq, sql, and, gt } from 'drizzle-orm'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import {
+  firstNonEmptyRecord,
+  namedRecordsFromJson,
+  readRowNumber,
+  readRowString,
+  readString,
+  recordArrayFromJson,
+  recordFromJson,
+  sqlResultRows,
+  stringArrayFromJson,
+} from '@/shared/data/json-guards'
+import { entityMetadata } from '@/domains/storyteller/core/entities/entity-type-guards'
 
 // =============================================================================
 // TYPES
@@ -57,6 +69,20 @@ function slugify(name: string): string {
   return name.toLowerCase().replace(/\s+/g, '-')
 }
 
+function parseGraphNodeType(value: unknown): GraphNode['type'] | undefined {
+  if (typeof value !== 'string') return undefined
+  switch (value) {
+    case 'character':
+    case 'faction':
+    case 'place':
+    case 'event':
+    case 'rule':
+      return value
+    default:
+      return undefined
+  }
+}
+
 function addNode(
   nodes: GraphNode[],
   nodeIds: Set<string>,
@@ -89,7 +115,7 @@ function addEdge(
 // MAIN
 // =============================================================================
 
-export const GET = withAuth<any>(async (request: NextRequest, _auth: AuthenticatedRequest) => {
+export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
@@ -122,15 +148,16 @@ export const GET = withAuth<any>(async (request: NextRequest, _auth: Authenticat
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const storyPlan = (project.storyPlanTable?.content as any) || (project.storyPlan as any) || {}
-    const seriesBible = (project.seriesBible as any) || {}
-    const factions = (storyPlan.factions || []) as any[]
-    const keyCharacters = (storyPlan.keyCharacters ||
-      storyPlan.cast ||
-      seriesBible.keyCharacters ||
-      []) as any[]
-    const projectCast = ((project as any).cast || []) as any[]
-    const projectTitle = (project as any).name || storyPlan.title || 'Untitled'
+    const storyPlan = firstNonEmptyRecord(project.storyPlanTable?.content, project.storyPlan)
+    const seriesBible = recordFromJson(project.seriesBible)
+    const factions = recordArrayFromJson(storyPlan.factions)
+    const keyCharacters = namedRecordsFromJson(
+      storyPlan.keyCharacters ?? storyPlan.cast ?? seriesBible.keyCharacters
+    )
+    const projectRecord = recordFromJson(project)
+    const projectCast = namedRecordsFromJson(projectRecord.cast)
+    const projectTitle =
+      readString(projectRecord.name) ?? readString(storyPlan.title) ?? 'Untitled'
 
     // ─── 2. Build nodes from every source (deduplicated) ────────────────
     const nodes: GraphNode[] = []
@@ -141,21 +168,22 @@ export const GET = withAuth<any>(async (request: NextRequest, _auth: Authenticat
     const seenEntityNames = new Map<string, string>() // "type:name" -> id
     for (const entity of dbEntities) {
       const key = `${entity.type}:${entity.name.toLowerCase()}`
-      if (seenEntityNames.has(key)) {
+      const duplicateId = seenEntityNames.get(key)
+      if (duplicateId !== undefined) {
         // Skip duplicate - prefer one with embedding
-        if (entity.hasEmbedding && !nodeIds.has(seenEntityNames.get(key)!)) {
+        if (entity.hasEmbedding && !nodeIds.has(duplicateId)) {
           // This one has embedding, swap
-          const oldId = seenEntityNames.get(key)!
-          nodeIds.delete(oldId)
-          const idx = nodes.findIndex(n => n.id === oldId)
+          nodeIds.delete(duplicateId)
+          const idx = nodes.findIndex(n => n.id === duplicateId)
           if (idx >= 0) nodes.splice(idx, 1)
         } else {
           continue // Skip duplicate
         }
       }
       seenEntityNames.set(key, entity.id)
-      addNode(nodes, nodeIds, entity.id, entity.name, entity.type as GraphNode['type'], {
-        ...((entity.metadata as any) || {}),
+      const nodeType = parseGraphNodeType(entity.type) ?? 'character'
+      addNode(nodes, nodeIds, entity.id, entity.name, nodeType, {
+        ...entityMetadata(entity.metadata),
         description: entity.description,
         hasEmbedding: entity.hasEmbedding,
         source: 'entity_registry',
@@ -164,36 +192,36 @@ export const GET = withAuth<any>(async (request: NextRequest, _auth: Authenticat
 
     // Source B: characters table
     for (const char of dbCharacters) {
-      const charAny = char as any
       const id = `character-${slugify(char.name)}`
+      const charRecord = recordFromJson(char)
       addNode(nodes, nodeIds, id, char.name, 'character', {
         role: char.role,
-        archetype: charAny.archetype,
-        motivation: charAny.motivation,
+        archetype: readString(charRecord.archetype),
+        motivation: readString(charRecord.motivation),
         source: 'characters_table',
       })
     }
 
     // Source C: storyPlan.keyCharacters / cast
     for (const char of [...projectCast, ...keyCharacters]) {
-      if (!char?.name) continue
       const id = `character-${slugify(char.name)}`
       addNode(nodes, nodeIds, id, char.name, 'character', {
-        role: char.role || char.archetype,
-        archetype: char.archetype,
-        motivation: char.motivation || char.description,
+        role: readString(char.role) ?? readString(char.archetype),
+        archetype: readString(char.archetype),
+        motivation: readString(char.motivation) ?? readString(char.description),
         source: 'story_plan',
       })
     }
 
     // Source D: factions
     for (const faction of factions) {
-      if (!faction?.name) continue
-      const id = `faction-${slugify(faction.name)}`
-      addNode(nodes, nodeIds, id, faction.name, 'faction', {
-        ideology: faction.ideology,
-        description: faction.description,
-        powerStructure: faction.powerStructure,
+      const name = readString(faction.name)
+      if (!name) continue
+      const id = `faction-${slugify(name)}`
+      addNode(nodes, nodeIds, id, name, 'faction', {
+        ideology: readString(faction.ideology),
+        description: readString(faction.description),
+        powerStructure: readString(faction.powerStructure),
         source: 'story_plan',
       })
     }
@@ -320,13 +348,16 @@ export const GET = withAuth<any>(async (request: NextRequest, _auth: Authenticat
           LIMIT 50
         `)
 
-        for (const row of (pairwiseResult.rows || pairwiseResult) as any[]) {
-          const sourceType = row.source_type as string
-          const targetType = row.target_type as string
-          const similarity = parseFloat(row.similarity)
+        for (const row of sqlResultRows(pairwiseResult)) {
+          const sourceType = readRowString(row, 'source_type') ?? ''
+          const targetType = readRowString(row, 'target_type') ?? ''
+          const similarity = readRowNumber(row, 'similarity') ?? 0
+          const sourceId = readRowString(row, 'source_id')
+          const targetId = readRowString(row, 'target_id')
+          if (!sourceId || !targetId) continue
 
           // Only add if not already covered by an LLM-grounded edge
-          const key = [row.source_id, row.target_id].sort().join('|')
+          const key = [sourceId, targetId].sort().join('|')
           if (edgeIds.has(key)) continue
 
           // Structural cross-type relationships are safe to infer directly.
@@ -346,7 +377,7 @@ export const GET = withAuth<any>(async (request: NextRequest, _auth: Authenticat
             label = 'Located in'
           }
 
-          addEdge(edges, edgeIds, row.source_id, row.target_id, similarity, relType, label)
+          addEdge(edges, edgeIds, sourceId, targetId, similarity, relType, label)
         }
 
         console.log(`[Relationships] Embedding similarity: added supplemental edges, total now ${edges.length}`)
@@ -357,11 +388,14 @@ export const GET = withAuth<any>(async (request: NextRequest, _auth: Authenticat
 
     // Strategy 2: Explicit faction membership and rivalries
     for (const faction of factions) {
-      if (!faction?.name) continue
-      const factionId = `faction-${slugify(faction.name)}`
+      const factionName = readString(faction.name)
+      if (!factionName) continue
+      const factionId = `faction-${slugify(factionName)}`
 
-      // Members
-      const members = [...(faction.members || []), ...(faction.keyMembers || [])]
+      const members = [
+        ...stringArrayFromJson(faction.members),
+        ...stringArrayFromJson(faction.keyMembers),
+      ]
       for (const member of members) {
         const charId = `character-${slugify(member)}`
         if (nodeIds.has(charId)) {
@@ -369,8 +403,7 @@ export const GET = withAuth<any>(async (request: NextRequest, _auth: Authenticat
         }
       }
 
-      // Rivals
-      for (const rival of faction.rivals || []) {
+      for (const rival of stringArrayFromJson(faction.rivals)) {
         const rivalId = `faction-${slugify(rival)}`
         if (nodeIds.has(rivalId)) {
           addEdge(edges, edgeIds, factionId, rivalId, 0.8, 'rival', 'Rivals')
@@ -378,17 +411,33 @@ export const GET = withAuth<any>(async (request: NextRequest, _auth: Authenticat
       }
     }
 
+    const plotTwistText = recordArrayFromJson(storyPlan.plotTwists).map(pt => {
+      return [
+        readString(pt.title),
+        readString(pt.description),
+        readString(pt.impact),
+        readString(pt.foreshadowing),
+      ]
+        .filter(Boolean)
+        .join(' ')
+    })
+
+    const factionText = factions.map(f => {
+      return [
+        readString(f.name),
+        readString(f.description),
+        readString(f.powerStructure),
+        readString(f.politicalForces),
+      ]
+        .filter(Boolean)
+        .join(' ')
+    })
+
     // Strategy 3: Text co-occurrence (world description, plot twists, faction descriptions)
     const allText = [
-      storyPlan.worldDescription || '',
-      ...(storyPlan.plotTwists || []).map(
-        (pt: any) =>
-          `${pt.title || ''} ${pt.description || ''} ${pt.impact || ''} ${pt.foreshadowing || ''}`
-      ),
-      ...factions.map(
-        (f: any) =>
-          `${f.name || ''} ${f.description || ''} ${f.powerStructure || ''} ${f.politicalForces || ''}`
-      ),
+      readString(storyPlan.worldDescription) ?? '',
+      ...plotTwistText,
+      ...factionText,
     ]
       .join('\n')
       .toLowerCase()

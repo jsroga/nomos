@@ -1,5 +1,6 @@
 import type { Agent } from '@mastra/core/agent'
 import type { MCPServerBase } from '@mastra/core/mcp'
+import type { AnyWorkflow } from '@mastra/core/workflows'
 import { Mastra } from '@mastra/core/mastra'
 import { Observability, MastraStorageExporter } from '@mastra/observability'
 import { PostgresStore } from '@mastra/pg'
@@ -34,9 +35,11 @@ function resolveProjectRoot(): string {
 
     if (isAppRoot) {
       try {
-        const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { name?: string }
+        const pkg: unknown = JSON.parse(readFileSync(pkgPath, 'utf8'))
         // Mastra build emits a nested "server" package under .mastra/output
-        if (pkg.name !== 'server') return dir
+        const pkgName =
+          typeof pkg === 'object' && pkg !== null && 'name' in pkg ? pkg.name : undefined
+        if (pkgName !== 'server') return dir
       } catch {
         return dir
       }
@@ -78,6 +81,7 @@ export function createMastra(
   options?: {
     storage?: PostgresStore | null
     mcpServers?: Record<string, MCPServerBase>
+    workflows?: Record<string, AnyWorkflow>
   },
 ): Mastra {
   configureSerializationLimits()
@@ -101,6 +105,7 @@ export function createMastra(
     scorers: STORYTELLER_SCORERS,
     ...(storage ? { storage } : {}),
     workspace,
+    ...(options?.workflows ? { workflows: options.workflows } : {}),
     ...(options?.mcpServers ? { mcpServers: options.mcpServers } : {}),
     logger: new PinoLogger({
       name: 'Mastra',

@@ -3,7 +3,11 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
-import { ActionHistoryEntry, AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
+import type { ActionHistoryEntry } from '@/domains/storyteller/core/types/ActionTypes'
+import type { WireAgentAction } from '@/shared/agent-kernel/action-wire'
+import { ActionType } from '@/domains/storyteller/core/types/Enums'
+import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
+import { recordFromJson } from '@/shared/data/json-guards'
 import { formatActionForDisplay } from '@/domains/storyteller/core/formatting/ActionFormatters'
 import { X, Undo2, Check, Loader2, Eye } from 'lucide-react'
 
@@ -188,7 +192,7 @@ export const ActionCommitted: React.FC<ActionCommittedProps> = ({
 }) => {
   const [showPreview, setShowPreview] = useState(false)
   // Use 'committed' status for proper wording
-  const display = formatActionForDisplay(entry.action, 'committed')
+  const display = formatActionForDisplay(entry.action, ApprovalActionStatus.COMMITTED)
 
   // Format the action payload as readable JSON
   const formatPayload = () => {
@@ -282,13 +286,17 @@ export const ActionCommitted: React.FC<ActionCommittedProps> = ({
 // ============================================
 
 const VisualJsonDiff: React.FC<{
-  action: AgentAction
+  action: WireAgentAction
   onClose: () => void
 }> = ({ action, onClose }) => {
   // Extract relevant data based on tool type
   const getDiffData = () => {
     // 1. World Bible Updates
-    if (action.type === 'UPDATE_SERIES_BIBLE' || action.type === 'UPDATE_WORLD_BIBLE' || action.type === 'UPDATE_BIBLE') {
+    if (
+      action.type === ActionType.UPDATE_SERIES_BIBLE ||
+      action.type === ActionType.UPDATE_WORLD_BIBLE ||
+      action.type === ActionType.UPDATE_BIBLE
+    ) {
       return {
         type: 'Update World Bible',
         changes: action.payload,
@@ -316,7 +324,7 @@ const VisualJsonDiff: React.FC<{
   const { type, changes, isPartial } = getDiffData()
 
   // Recursive renderer for diff highlighting
-  const renderValue = (key: string, value: any, depth = 0): React.ReactNode => {
+  const renderValue = (key: string, value: unknown, depth = 0): React.ReactNode => {
     if (value === null) return <span className="text-muted-foreground">null</span>
     if (typeof value === 'boolean') return <span className="text-orange-400">{String(value)}</span>
     if (typeof value === 'number') return <span className="text-cyan-400">{value}</span>
@@ -341,7 +349,8 @@ const VisualJsonDiff: React.FC<{
     }
 
     if (typeof value === 'object') {
-      const keys = Object.keys(value)
+      const record = recordFromJson(value)
+      const keys = Object.keys(record)
       if (keys.length === 0) return <span className="text-muted-foreground">{'{}'}</span>
       return (
         <span>
@@ -350,7 +359,7 @@ const VisualJsonDiff: React.FC<{
             {keys.map((k, i) => (
               <div key={k} className="flex font-mono text-[10px] leading-relaxed">
                 <span className="text-purple-400 mr-1">"{k}":</span>
-                {renderValue(k, value[k], depth + 1)}
+                {renderValue(k, record[k], depth + 1)}
                 {i < keys.length - 1 && <span className="text-muted-foreground">,</span>}
               </div>
             ))}
@@ -395,7 +404,7 @@ const VisualJsonDiff: React.FC<{
 }
 
 interface ActionSuggestionProps {
-  action: AgentAction
+  action: WireAgentAction
   agentName: string
   onAccept: () => void // Immediate execution
   onReview: () => void // Open detailed diff modal
@@ -415,7 +424,7 @@ export const ActionSuggestion: React.FC<ActionSuggestionProps> = ({
   const [showDiff, setShowDiff] = useState(false)
 
   // Use 'pending' status for proper wording
-  const display = formatActionForDisplay(action, 'pending')
+  const display = formatActionForDisplay(action, ApprovalActionStatus.PENDING)
 
   // Intercept the onReview prop to toggle local diff view
   const handleReviewToggle = () => {

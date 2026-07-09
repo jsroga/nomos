@@ -43,6 +43,8 @@ import {
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import toast from 'react-hot-toast'
+import { customEventDetailRecord, fileReaderText, readNumber, readString, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
+import { parseUpscaleProvider, UpscaleProvider } from '../../core/upscale-provider-wire'
 
 export const Sidebar: React.FC = () => {
   const defaultMasterPrompt = ''
@@ -64,11 +66,11 @@ export const Sidebar: React.FC = () => {
       ? localStorage.getItem(LocalStorageKeys.DEBUG_MODE) === '2137'
       : false
   )
-  const [upscaleProvider, setUpscaleProvider] = useState<'stability' | 'replicate' | 'midjourney'>(() => {
+  const [upscaleProvider, setUpscaleProvider] = useState<UpscaleProvider>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER) as 'stability' | 'replicate' | 'midjourney') || 'stability'
+      return parseUpscaleProvider(localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER))
     }
-    return 'stability'
+    return UpscaleProvider.Stability
   })
 
   // Load master prompt from localStorage when project changes
@@ -91,30 +93,12 @@ export const Sidebar: React.FC = () => {
 
   const selectedTiles = useWorldStore(state => state.selectedTiles)
   const selectedTile = useWorldStore(state => state.selectedTile)
-  const addTile = useWorldStore(state => state.addTile)
   const tiles = useWorldStore(state => state.tiles)
-  const addGeneratingTile = useWorldStore(state => state.addGeneratingTile)
-  const removeGeneratingTile = useWorldStore(state => state.removeGeneratingTile)
   const generatingTiles = useWorldStore(state => state.generatingTiles)
-  const isRepaintMode = useWorldStore(state => state.isRepaintMode)
-  const setRepaintMode = useWorldStore(state => state.setRepaintMode)
-  const isSelectMode = useWorldStore(state => state.isSelectMode)
-  const setSelectMode = useWorldStore(state => state.setSelectMode)
-  const brushSize = useWorldStore(state => state.brushSize)
-  const setBrushSize = useWorldStore(state => state.setBrushSize)
-  const repaintStrokes = useWorldStore(state => state.repaintStrokes)
-  const clearRepaintStrokes = useWorldStore(state => state.clearRepaintStrokes)
-  const repaintResult = useWorldStore(state => state.repaintResult)
-  const setRepaintResult = useWorldStore(state => state.setRepaintResult)
-  const repaintPrompt = useWorldStore(state => state.repaintPrompt)
-  const setRepaintPrompt = useWorldStore(state => state.setRepaintPrompt)
-  const debugInfo = useWorldStore(state => state.debugInfo)
-  const setDebugInfo = useWorldStore(state => state.setDebugInfo)
   const generationDebugInfo = useWorldStore(state => state.generationDebugInfo)
   const setGenerationDebugInfo = useWorldStore(state => state.setGenerationDebugInfo)
   const upscalingTiles = useWorldStore(state => state.upscalingTiles)
   const enhancingTiles = useWorldStore(state => state.enhancingTiles)
-  const selectDebugInfo = useWorldStore(state => state.selectDebugInfo)
 
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -159,7 +143,7 @@ export const Sidebar: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Fidelity enhancement state
-  const [fidelityPrompt, setFidelityPrompt] = useState(() => {
+  const [fidelityPrompt] = useState(() => {
     if (typeof window !== 'undefined') {
       return (
         localStorage.getItem(LocalStorageKeys.FIDELITY_PROMPT) ||
@@ -171,25 +155,50 @@ export const Sidebar: React.FC = () => {
   const [fidelityCreativity, setFidelityCreativity] = useState(0.3)
 
   // MJ Variant Picker state
-  const [mjGridData, setMjGridData] = useState<{
+  type MjGridData = {
     tileId: string
     tileX: number
     tileY: number
     gridImageUrl: string
-    buttons: any[]
+    buttons: unknown[]
     taskId: string
-  } | null>(null)
+  }
+
+  function mjGridDataFromEvent(event: Event): MjGridData | null {
+    const detail = customEventDetailRecord(event)
+    const tileId = readString(detail.tileId)
+    const gridImageUrl = readString(detail.gridImageUrl)
+    const taskId = readString(detail.taskId)
+    const tileX = readNumber(detail.tileX)
+    const tileY = readNumber(detail.tileY)
+    if (!tileId || !gridImageUrl || !taskId || tileX === undefined || tileY === undefined) {
+      return null
+    }
+    return {
+      tileId,
+      tileX,
+      tileY,
+      gridImageUrl,
+      buttons: Array.isArray(detail.buttons) ? detail.buttons : [],
+      taskId,
+    }
+  }
+
+  const [mjGridData, setMjGridData] = useState<MjGridData | null>(null)
 
   // Listen for MJ grid ready event
   useEffect(() => {
-    const handleMjGridReady = (event: CustomEvent) => {
-      console.log('MJ grid ready:', event.detail)
-      setMjGridData(event.detail)
+    const handleMjGridReady = (event: Event) => {
+      const data = mjGridDataFromEvent(event)
+      if (data) {
+        console.log('MJ grid ready:', data)
+        setMjGridData(data)
+      }
     }
 
-    window.addEventListener('mj-grid-ready', handleMjGridReady as EventListener)
+    window.addEventListener('mj-grid-ready', handleMjGridReady)
     return () => {
-      window.removeEventListener('mj-grid-ready', handleMjGridReady as EventListener)
+      window.removeEventListener('mj-grid-ready', handleMjGridReady)
     }
   }, [])
 
@@ -218,7 +227,7 @@ export const Sidebar: React.FC = () => {
     new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onloadend = () => {
-        const dataUrl = reader.result as string
+        const dataUrl = fileReaderText(reader.result)
         if (!dataUrl || !dataUrl.includes(',')) reject(new Error('Invalid data URL'))
         else resolve(dataUrl.split(',')[1])
       }
@@ -238,13 +247,14 @@ export const Sidebar: React.FC = () => {
 
       const reader = new FileReader()
       reader.onloadend = () => {
-        const dataUrl = reader.result as string
+        const dataUrl = fileReaderText(reader.result)
         console.log('[Sidebar] Data URL created:', {
           length: dataUrl?.length,
           prefix: dataUrl?.substring(0, 50),
           isValid: dataUrl?.startsWith('data:image/'),
         })
-        resolve(dataUrl)
+        if (dataUrl) resolve(dataUrl)
+        else reject(new Error('FileReader error'))
       }
       reader.onerror = e => {
         console.error('[Sidebar] FileReader error:', e)
@@ -257,7 +267,7 @@ export const Sidebar: React.FC = () => {
   const loadImageAsDataUrl = async (
     tile: Tile | undefined
   ): Promise<(Tile & { imageUrl?: string }) | undefined> => {
-    if (!tile || !currentProject) return tile
+    if (!tile || !currentProject || !tile.image_filename) return tile
 
     const imageUrl = tile.image_filename.startsWith('http')
       ? tile.image_filename
@@ -270,10 +280,15 @@ export const Sidebar: React.FC = () => {
       return new Promise(resolve => {
         const reader = new FileReader()
         reader.onloadend = () => {
-          resolve({
-            ...tile,
-            imageUrl: reader.result as string,
-          })
+          const imageUrl = fileReaderText(reader.result)
+          if (imageUrl) {
+            resolve({
+              ...tile,
+              imageUrl,
+            })
+          } else {
+            resolve(undefined)
+          }
         }
         reader.onerror = () => resolve(undefined)
         reader.readAsDataURL(blob)
@@ -444,7 +459,11 @@ export const Sidebar: React.FC = () => {
     try {
       const reader = new FileReader()
       const imageBase64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string)
+        reader.onload = () => {
+          const dataUrl = fileReaderText(reader.result)
+          if (dataUrl) resolve(dataUrl)
+          else reject(new Error('FileReader error'))
+        }
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
@@ -466,9 +485,9 @@ export const Sidebar: React.FC = () => {
         throw new Error(data.error || 'Upload failed')
       }
 
-      useWorldStore.setState(state => ({
+      useWorldStore.setState({
         tiles: {
-          ...state.tiles,
+          ...useWorldStore.getState().tiles,
           [`${tile.x},${tile.y}`]: {
             id: data.tile?.id || `tile-${tile.x}-${tile.y}`,
             project_id: currentProject.id,
@@ -479,7 +498,7 @@ export const Sidebar: React.FC = () => {
             created_at: new Date().toISOString(),
           },
         },
-      }))
+      })
 
       toast.success(`Tile (${tile.x},${tile.y}) uploaded!`)
     } catch (err: unknown) {
@@ -665,34 +684,41 @@ export const Sidebar: React.FC = () => {
               </div>
             )}
 
-            {isDebugMode && generationDebugInfo && showDebug && (
+            {isDebugMode && generationDebugInfo && showDebug && (() => {
+              const debug = generationDebugInfo
+              const neighbors = recordFromJson(debug.neighbors)
+              const neighborSrc = (key: string) => readString(neighbors[key])
+              const weighted = stringArrayFromJson(debug.weightedNeighbors).join(', ') || 'none'
+              const assembledContext = readString(debug.assembledContext)
+              const canonicalContext = readString(debug.canonicalContext)
+              const prompt = readString(debug.prompt)
+              return (
               <div className="mt-3 bg-zinc-900/30 p-3 rounded-lg border border-zinc-800/50">
                 <h4 className="text-xs font-semibold mb-2">Debug Context</h4>
                 <div className="text-[10px] text-zinc-500 bg-zinc-950 p-2 rounded border border-zinc-800 mb-2">
-                  Provider: {generationDebugInfo.provider || 'unknown'} | Variant:{' '}
-                  {generationDebugInfo.contextVariant || 'canonicalFullContext'}
+                  Provider: {readString(debug.provider) ?? 'unknown'} | Variant:{' '}
+                  {readString(debug.contextVariant) ?? 'canonicalFullContext'}
                 </div>
-                {generationDebugInfo.contextStrategy && (
+                {readString(debug.contextStrategy) && (
                   <div className="text-[10px] text-zinc-500 bg-zinc-950 p-2 rounded border border-zinc-800 mb-2">
-                    Strategy: {generationDebugInfo.contextStrategy} | Weighted:{' '}
-                    {generationDebugInfo.weightedNeighbors?.join(', ') || 'none'}
+                    Strategy: {readString(debug.contextStrategy)} | Weighted: {weighted}
                   </div>
                 )}
-                {generationDebugInfo.assembledContext && (
+                {assembledContext && (
                   <div className="mb-2">
                     <p className="text-[10px] text-muted-foreground mb-1">Provider Input Context</p>
                     <img
-                      src={generationDebugInfo.assembledContext}
+                      src={assembledContext}
                       className="w-full h-auto border border-border rounded"
                       alt="Assembled Context"
                     />
                   </div>
                 )}
-                {generationDebugInfo.canonicalContext && (
+                {canonicalContext && (
                   <div className="mb-2">
                     <p className="text-[10px] text-muted-foreground mb-1">Canonical Full Context</p>
                     <img
-                      src={generationDebugInfo.canonicalContext}
+                      src={canonicalContext}
                       className="w-full h-auto border border-border rounded"
                       alt="Canonical Context"
                     />
@@ -706,20 +732,23 @@ export const Sidebar: React.FC = () => {
                   </div>
                   <div className="col-start-3 row-start-2 text-center text-[10px]">Right</div>
                   <div className="col-start-2 row-start-3 text-center text-[10px]">Down</div>
-                  {generationDebugInfo.neighbors.topLeft && <img src={generationDebugInfo.neighbors.topLeft} className="col-start-1 row-start-1 w-full h-full object-cover border border-border" />}
-                  {generationDebugInfo.neighbors.up && <img src={generationDebugInfo.neighbors.up} className="col-start-2 row-start-1 w-full h-full object-cover border border-border" />}
-                  {generationDebugInfo.neighbors.topRight && <img src={generationDebugInfo.neighbors.topRight} className="col-start-3 row-start-1 w-full h-full object-cover border border-border" />}
-                  {generationDebugInfo.neighbors.left && <img src={generationDebugInfo.neighbors.left} className="col-start-1 row-start-2 w-full h-full object-cover border border-border" />}
-                  {generationDebugInfo.neighbors.right && <img src={generationDebugInfo.neighbors.right} className="col-start-3 row-start-2 w-full h-full object-cover border border-border" />}
-                  {generationDebugInfo.neighbors.bottomLeft && <img src={generationDebugInfo.neighbors.bottomLeft} className="col-start-1 row-start-3 w-full h-full object-cover border border-border" />}
-                  {generationDebugInfo.neighbors.down && <img src={generationDebugInfo.neighbors.down} className="col-start-2 row-start-3 w-full h-full object-cover border border-border" />}
-                  {generationDebugInfo.neighbors.bottomRight && <img src={generationDebugInfo.neighbors.bottomRight} className="col-start-3 row-start-3 w-full h-full object-cover border border-border" />}
+                  {neighborSrc('topLeft') && <img src={neighborSrc('topLeft')} className="col-start-1 row-start-1 w-full h-full object-cover border border-border" alt="" />}
+                  {neighborSrc('up') && <img src={neighborSrc('up')} className="col-start-2 row-start-1 w-full h-full object-cover border border-border" alt="" />}
+                  {neighborSrc('topRight') && <img src={neighborSrc('topRight')} className="col-start-3 row-start-1 w-full h-full object-cover border border-border" alt="" />}
+                  {neighborSrc('left') && <img src={neighborSrc('left')} className="col-start-1 row-start-2 w-full h-full object-cover border border-border" alt="" />}
+                  {neighborSrc('right') && <img src={neighborSrc('right')} className="col-start-3 row-start-2 w-full h-full object-cover border border-border" alt="" />}
+                  {neighborSrc('bottomLeft') && <img src={neighborSrc('bottomLeft')} className="col-start-1 row-start-3 w-full h-full object-cover border border-border" alt="" />}
+                  {neighborSrc('down') && <img src={neighborSrc('down')} className="col-start-2 row-start-3 w-full h-full object-cover border border-border" alt="" />}
+                  {neighborSrc('bottomRight') && <img src={neighborSrc('bottomRight')} className="col-start-3 row-start-3 w-full h-full object-cover border border-border" alt="" />}
                 </div>
+                {prompt && (
                 <div className="text-[10px] text-zinc-500 bg-zinc-950 p-2 rounded border border-zinc-800">
-                  Prompt: {generationDebugInfo.prompt}
+                  Prompt: {prompt}
                 </div>
+                )}
               </div>
-            )}
+              )
+            })()}
           </SidebarSection>
 
           <SidebarSection separator title="Upscale" icon={<ZoomIn size={12} />}>
@@ -730,7 +759,7 @@ export const Sidebar: React.FC = () => {
                   <select
                     value={upscaleProvider}
                     onChange={e => {
-                      const v = e.target.value as typeof upscaleProvider
+                      const v = parseUpscaleProvider(e.target.value)
                       setUpscaleProvider(v)
                       localStorage.setItem(LocalStorageKeys.AI_ACTIVE_UPSCALER, v)
                     }}

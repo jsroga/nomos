@@ -8,6 +8,7 @@
 import { db } from '@/db/client'
 import { documentEmbeddings } from '@/db'
 import { sql, and, desc } from 'drizzle-orm'
+import { recordFromJson } from '@/shared/data/json-guards'
 import { getVoyageEmbeddings } from '../embeddings/voyage-embeddings'
 
 export interface SearchResult {
@@ -207,7 +208,7 @@ export class HybridSearchEngine {
       return results.map(r => ({
         id: r.id,
         content: r.content,
-        metadata: r.metadata as Record<string, unknown>,
+        metadata: recordFromJson(r.metadata),
         score: r.score,
       }))
     } catch (error) {
@@ -275,7 +276,7 @@ export class HybridSearchEngine {
           return {
             id: r.id,
             content: r.content,
-            metadata: r.metadata as Record<string, unknown>,
+            metadata: recordFromJson(r.metadata),
             score,
           }
         })

@@ -1,0 +1,97 @@
+---
+description: ESLint-enforced TypeScript and import boundaries — no as-casts, cross-domain isolation, shared deep-merge, enums for magic strings
+globs: "**/*.ts,**/*.tsx"
+alwaysApply: true
+---
+
+# ESLint boundaries (lint errors — do not bypass)
+
+Configured in `eslint.config.js`. Violations fail `npm run lint` and fabro-verify.
+
+## No type assertions (`as`)
+
+`@typescript-eslint/consistent-type-assertions: ['error', { assertionStyle: 'never' }]`
+
+**Forbidden:** `as any`, `as string`, `as SomeType`, angle-bracket `<Type>expr`.
+
+**Allowed:** `as const` only (literal narrowing).
+
+**Use instead:**
+
+| Instead of | Prefer |
+|------------|--------|
+| `value as Record<string, unknown>` (jsonb) | `recordFromJson(value)` from `@/shared/data/deep-merge` |
+| `x as MyType` | Type guard (`value is MyType`), `satisfies`, or narrow with `typeof` / `in` |
+| `response as Foo` | Typed function return, Zod `parse`, or overload at the boundary |
+
+Also: `@typescript-eslint/no-explicit-any` is **`error`** — no `: any` in new code.
+
+## Cross-domain imports (`src/domains/**`)
+
+Each domain file may import **its own** `@/domains/<self>/…` paths. Importing **any other** domain (barrel or deep) is **`error`**:
+
+```
+Cross-domain import forbidden: use @/shared instead of @/domains/<other>.
+```
+
+**Rule:** code shared by 2+ domains lives in `src/shared/` (e.g. `@/shared/data`, `@/shared/chat`, `@/shared/agent-kernel`). Domains do not import each other.
+
+**Also enforced:**
+
+- Outside `src/domains/**` → domain **barrels** only (deep imports blocked except allowed `*/io/*` seams).
+- `src/shared/**` → must **not** import `@/domains/*` or `@/app/*`.
+- Legacy root folders (`@/lib`, `@/agent-core`, …) → use `@/shared/*` paths.
+
+## Deep merge (single implementation)
+
+Use `@/shared/data/deep-merge` — do not add local `deepMerge` helpers:
+
+| Export | When |
+|--------|------|
+| `deepMerge` | Nested objects + **smart** array merge (by id/name/rule/title) |
+| `deepMergeRecords` | Nested objects; arrays/scalars from source **replace** |
+| `smartMergeArray` | Identity-based array merge only |
+| `recordFromJson` | Untyped JSON/jsonb → `Record<string, unknown>` without `as` |
+
+## Magic strings → prefer **enums**, not string const objects
+
+When a string literal encodes a fixed set of domain values (action types, phases, tool ids, status codes), **do not** leave it inline and **do not** default to `as const` object maps for lint fixes.
+
+**Prefer:**
+
+```ts
+export enum ActionType {
+  UpdateBeat = 'UPDATE_BEAT',
+  UpdateSeriesBible = 'UPDATE_SERIES_BIBLE',
+}
+```
+
+Use `enum` (or `const enum` when tree-shaking matters) over:
+
+```ts
+// Avoid for magic-string sets — use enum instead
+export const ACTION_TYPES = { UPDATE_BEAT: 'UPDATE_BEAT' } as const
+```
+
+`as const` object literals are fine for **config tables** (labels, icons), not for **protocol / dispatch / switch** vocabulary.
+
+For suspicious string literals in comparisons, switch cases, and dispatch sinks, extract an enum in `core/types/` or `core/enums.ts` and reference `ActionType.UpdateBeat` etc.
+
+## File and function size
+
+See **`.cursor/rules/code-metrics.mdc`** for agent workflow, limits, and split discipline.
+
+Shared config: `scripts/code-metrics-limits.cjs`. Enforced in ESLint **and** typecheck (`check-code-metrics.mjs` after `tsc --noEmit`).
+
+| Gate | Warn | Error |
+|------|------|-------|
+| File lines | 400 | 800 |
+| Cyclomatic complexity | 15 | 25 |
+
+Do not `eslint-disable` to bypass. **File-level or broad disables are forbidden without explicit user approval in chat** — fix by splitting files, enums, and types. Ask before any exception.
+
+## When fixing lint in existing files
+
+1. Run `npm run qualitygate:file -- <path>` or `npm run lint:file -- <path>` (not full-repo lint mid-task).
+2. Fix violations — **never** add file-level `eslint-disable` for quality rules without user approval.
+3. Cross-domain fix path: **move shared code to `@/shared`**, update both sides to import from shared — never add a new cross-domain import to "unblock" lint.

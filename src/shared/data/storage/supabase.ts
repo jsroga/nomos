@@ -11,9 +11,14 @@ function getClient(): SupabaseClient {
   return _client
 }
 
+function bindClientProperty(client: SupabaseClient, prop: string | symbol): unknown {
+  const value = Reflect.get(client, prop, client)
+  return typeof value === 'function' ? value.bind(client) : value
+}
+
 /** Lazy-initialized so Trigger.dev indexer can import task files without Supabase env at build time. */
-export const supabase = new Proxy({} as SupabaseClient, {
-  get(_, prop) {
-    return (getClient() as Record<string | symbol, unknown>)[prop]
+export const supabase: SupabaseClient = new Proxy(Object.create(null), {
+  get(_target, prop) {
+    return bindClientProperty(getClient(), prop)
   },
 })

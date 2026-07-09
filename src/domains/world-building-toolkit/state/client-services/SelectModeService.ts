@@ -1,6 +1,12 @@
 import type { Tile } from '../../core/world-types'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 
+declare global {
+  interface Window {
+    __DEBUG_CONTEXT_IMAGE__?: string
+  }
+}
+
 export interface SelectBox {
   x1: number
   y1: number
@@ -130,7 +136,7 @@ export class SelectModeService {
     for (let tx = startTileX; tx <= endTileX && tileResolution === this.TILE_SIZE; tx++) {
       for (let ty = startTileY; ty <= endTileY && tileResolution === this.TILE_SIZE; ty++) {
         const tile = tiles[`${tx},${ty}`]
-        if (tile) {
+        if (tile?.image_filename) {
           try {
             const pid = projectId || tile.project_id
             const imgUrl = tile.image_filename.startsWith('http') ? tile.image_filename : `/projects/${pid}/${tile.image_filename}`
@@ -229,7 +235,7 @@ export class SelectModeService {
         const tileKey = `${tx},${ty}`
         const tile = tiles[tileKey]
 
-        if (tile) {
+        if (tile?.image_filename) {
           const pid = projectId || tile.project_id
           const imagePath = tile.image_filename.startsWith('http') ? tile.image_filename : `/projects/${pid}/${tile.image_filename}`
 
@@ -304,7 +310,7 @@ export class SelectModeService {
 
     // DEBUG: Store image in window for easy console access
     // To view: type window.__DEBUG_CONTEXT_IMAGE__ in console, right-click result, open in new tab
-    ;(window as any).__DEBUG_CONTEXT_IMAGE__ = base64Image
+    window.__DEBUG_CONTEXT_IMAGE__ = base64Image
     console.log('[DEBUG] Context image stored at window.__DEBUG_CONTEXT_IMAGE__')
     console.log(
       '[DEBUG] To view: paste window.__DEBUG_CONTEXT_IMAGE__ in console, right-click the URL'
@@ -537,7 +543,7 @@ export class SelectModeService {
     maskUrl: string,
     targetWidth: number,
     targetHeight: number
-  ): Promise<string> {
+  ): Promise<string | null> {
     try {
       console.log('[SelectModeService] Fetching mask from URL:', maskUrl)
 
@@ -569,8 +575,8 @@ export class SelectModeService {
    */
   private async resizeMask(
     maskDataUrl: string,
-    sourceWidth: number,
-    sourceHeight: number,
+    _sourceWidth: number,
+    _sourceHeight: number,
     targetWidth: number,
     targetHeight: number
   ): Promise<string> {

@@ -186,13 +186,15 @@ export const VoxelTerrainMesh: React.FC<VoxelTerrainMeshProps> = React.memo(
       const mesh = meshRef.current
 
       // OPTIMIZATION: Direct buffer update instead of per-instance setMatrixAt
-      const matrixArray = mesh.instanceMatrix.array as Float32Array
+      if (!(mesh.instanceMatrix.array instanceof Float32Array)) return
+      const matrixArray = mesh.instanceMatrix.array
       matrixArray.set(instanceData.matrices)
       mesh.instanceMatrix.needsUpdate = true
 
       // Set instance colors
       if (mesh.instanceColor) {
-        const colorArray = mesh.instanceColor.array as Float32Array
+        if (!(mesh.instanceColor.array instanceof Float32Array)) return
+        const colorArray = mesh.instanceColor.array
         colorArray.set(instanceData.colors)
         mesh.instanceColor.needsUpdate = true
       }

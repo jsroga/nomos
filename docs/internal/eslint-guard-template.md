@@ -1,44 +1,56 @@
-# ESLint Deep-Import Guard Template
+# ESLint import & TypeScript guard reference
 
-Pattern for per-module barrel enforcement (clone from `eslint.config.js:172-186`).
+Agent-facing summary: `.cursor/rules/eslint-boundaries.mdc` (always applied in Cursor).
 
-## Template
+## 1. Barrel guard (outsiders → domain)
 
-```javascript
-{
-  files: ['src/**/*.{ts,tsx}'],
-  ignores: ['src/domains/<MODULE>/**'],  // Allow internal imports
-  rules: {
-    'no-restricted-imports': [
-      'warn',  // Start at 'warn'; flip to 'error' after referrers are clean
-      {
-        patterns: [
-          {
-            group: ['@/domains/<MODULE>/*'],
-            message: 'Import from "@/domains/<MODULE>" instead of <MODULE> internals.',
-          },
-        ],
-      },
-    ],
-  },
-},
+External code (`src/**` excluding `src/domains/<MODULE>/**`) may import `@/domains/<MODULE>` barrel only — not deep paths (except allowed `*/io/*` seams).
+
+Defined in `eslint.config.js` → `DOMAIN_BARREL_GUARD_PATTERNS`.
+
+## 2. Cross-domain isolation (domain → domain) ✅
+
+Each `src/domains/<name>/**` file gets a generated ESLint block (`domainBoundaryConfigs`) that **errors** on:
+
+```ts
+import { x } from '@/domains/<other>'        // forbidden
+import { y } from '@/domains/<other>/ui/…'  // forbidden
 ```
 
-## Usage
+**Fix:** move shared types/UI/utils to `src/shared/` and import `@/shared/...`.
 
-1. Replace `<MODULE>` with the domain name (e.g., `world-building-toolkit`)
-2. Add block to `eslint.config.js` after the storyteller guard
-3. Start at severity `'warn'` during the referrer cleanup wave
-4. Flip to `'error'` once `grep -rn "@/domains/<MODULE>/" src/ | grep -v "^src/domains/<MODULE>"` returns only barrel imports
-5. Verify with `npm run lint`
+Own-domain imports (`@/domains/<self>/...`) remain allowed.
 
-## Current status (Wave 0)
+## 3. Shared layer inversion
 
-- storyteller: ✅ guard exists (currently `'warn'`, will flip to `'error'` at todo #24)
-- Other 8 modules: ⏳ will add during Wave 2 (todo #38)
+`src/shared/**` must not import `@/domains/*` or `@/app/*`.
 
-## Notes
+## 4. Legacy root folders
 
-- The `ignores` key allows the module itself to use deep imports internally
-- External files (outside `src/domains/<MODULE>/`) can only import from the barrel
-- This enforces the §2 principle #10 (one public barrel per module)
+Domains and app code must not import dissolved roots (`@/lib`, `@/agent-core`, …) — use `@/shared/*` paths. See `DOMAIN_LEGACY_RESTRICTED_PATTERNS` and `GLOBAL_LEGACY_RESTRICTED_PATTERNS` in `eslint.config.js`.
+
+## 5. Type assertions
+
+`@typescript-eslint/consistent-type-assertions: ['error', { assertionStyle: 'never' }]` — no `as Type` / `as any` (`as const` only).
+
+## 6. Magic strings (style preference)
+
+When extracting repeated protocol strings (action types, tool ids, statuses), prefer **TypeScript `enum`** over `as const` object maps. Not a separate ESLint rule yet — enforced via agent rules and code review.
+
+## 7. Deep merge
+
+Single implementation: `@/shared/data/deep-merge`. Do not add per-route or per-tool copies.
+
+## Adding a new domain module
+
+1. Add folder name to `DOMAIN_MODULES` in `eslint.config.js`.
+2. Add barrel pattern to `DOMAIN_BARREL_GUARD_PATTERNS` if outsiders will import it.
+3. Cross-domain block is generated automatically.
+
+## Verify
+
+```bash
+npm run lint
+# Cross-domain violations example:
+npx eslint src/domains/storyteller/ui/MentionsProvider/MentionsProvider.tsx
+```

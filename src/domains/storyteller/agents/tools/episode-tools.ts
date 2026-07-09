@@ -8,9 +8,20 @@ import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { episodes } from '@/db/schema'
 import { db } from '@/db/client'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, type SQL } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { recordFromJson } from '@/shared/data/deep-merge'
+
+/** jsonb storyPlan column → record, preserving `undefined` when unset. */
+function storyPlanRecord(value: unknown): Record<string, unknown> | undefined {
+  return value == null ? undefined : recordFromJson(value)
+}
+import {
+  STORYTELLER_PROJECT_ID,
+  STORYTELLER_EPISODE_ID,
+  requestContextString,
+} from '@/domains/storyteller/agents/request-context'
 
 // ==========================================
 // SCHEMAS
@@ -21,7 +32,7 @@ const EpisodePremiseSchema = z
     logline: z.string().optional().describe('One-sentence episode summary'),
     protagonistHook: z.string().optional().describe('What pulls the protagonist into this episode'),
     antagonistMove: z.string().optional().describe('What the antagonist does to create conflict'),
-    fatalFlaw: z.string().optional().describe("How protagonist's flaw creates problems"),
+    fatalFlaw: z.string().optional().describe('How protagonist\'s flaw creates problems'),
     thematicQuestion: z.string().optional().describe('The central question this episode explores'),
   })
   .optional()
@@ -91,7 +102,12 @@ export const manageEpisodeTool = createTool({
   inputSchema: ManageEpisodeInputSchema,
   outputSchema: ManageEpisodeOutputSchema,
   execute: async (inputData, context) => {
-    const { operation, episodeId, projectId, data } = inputData
+    const { operation, data } = inputData
+    // Server-trusted request-context IDs beat model-supplied input.
+    const projectId =
+      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
+    const episodeId =
+      requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
 
     try {
       switch (operation) {
@@ -122,7 +138,7 @@ export const manageEpisodeTool = createTool({
           const newEpisodeId = uuidv4()
 
           // Prepare storyPlan with premise if provided
-          const storyPlanData: any = data.storyPlan ?? {}
+          const storyPlanData: Record<string, unknown> = { ...(data.storyPlan ?? {}) }
           if (data.premise) {
             storyPlanData.premise = data.premise
           }
@@ -150,7 +166,7 @@ export const manageEpisodeTool = createTool({
               sequence: created.sequence,
               thematicFocus: created.thematicFocus ?? undefined,
               premise: created.premise ?? undefined,
-              storyPlan: (created.storyPlan as any) ?? undefined,
+              storyPlan: storyPlanRecord(created.storyPlan),
               thumbnailUrl: created.posterUrl ?? undefined,
             },
           }
@@ -179,18 +195,18 @@ export const manageEpisodeTool = createTool({
             }
           }
 
-          const updateFields: any = { updatedAt: new Date() }
+          const updateFields: Partial<typeof episodes.$inferInsert> = { updatedAt: new Date() }
           if (data.title !== undefined) updateFields.title = data.title
           if (data.sequence !== undefined) updateFields.sequence = data.sequence
           if (data.thematicFocus !== undefined) updateFields.thematicFocus = data.thematicFocus
           if (data.premise !== undefined) {
             updateFields.premise = JSON.stringify(data.premise)
             // Also update storyPlan.premise
-            const currentStoryPlan = (existing.storyPlan as any) ?? {}
+            const currentStoryPlan = recordFromJson(existing.storyPlan)
             updateFields.storyPlan = { ...currentStoryPlan, premise: data.premise }
           }
           if (data.storyPlan !== undefined) {
-            const currentStoryPlan = (existing.storyPlan as any) ?? {}
+            const currentStoryPlan = recordFromJson(existing.storyPlan)
             updateFields.storyPlan = { ...currentStoryPlan, ...data.storyPlan }
           }
           if (data.thumbnailUrl !== undefined) updateFields.posterUrl = data.thumbnailUrl
@@ -209,7 +225,7 @@ export const manageEpisodeTool = createTool({
               sequence: updated.sequence,
               thematicFocus: updated.thematicFocus ?? undefined,
               premise: updated.premise ?? undefined,
-              storyPlan: (updated.storyPlan as any) ?? undefined,
+              storyPlan: storyPlanRecord(updated.storyPlan),
               thumbnailUrl: updated.posterUrl ?? undefined,
             },
           }
@@ -266,7 +282,7 @@ export const manageEpisodeTool = createTool({
               sequence: episode.sequence,
               thematicFocus: episode.thematicFocus ?? undefined,
               premise: episode.premise ?? undefined,
-              storyPlan: (episode.storyPlan as any) ?? undefined,
+              storyPlan: storyPlanRecord(episode.storyPlan),
               thumbnailUrl: episode.posterUrl ?? undefined,
             },
           }
@@ -296,10 +312,13 @@ export const listEpisodesTool = createTool({
   inputSchema: ListEpisodesInputSchema,
   outputSchema: ListEpisodesOutputSchema,
   execute: async (inputData, context) => {
-    const { projectId, sequence } = inputData
+    const { sequence } = inputData
+    // Server-trusted request-context IDs beat model-supplied input.
+    const projectId =
+      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
 
     try {
-      const conditions: any[] = [eq(episodes.projectId, projectId)]
+      const conditions: SQL[] = [eq(episodes.projectId, projectId)]
       if (sequence !== undefined) conditions.push(eq(episodes.sequence, sequence))
 
       const results = await db
@@ -315,7 +334,7 @@ export const listEpisodesTool = createTool({
         sequence: ep.sequence,
         thematicFocus: ep.thematicFocus ?? undefined,
         premise: ep.premise ?? undefined,
-        storyPlan: (ep.storyPlan as any) ?? undefined,
+        storyPlan: storyPlanRecord(ep.storyPlan),
         thumbnailUrl: ep.posterUrl ?? undefined,
       }))
 

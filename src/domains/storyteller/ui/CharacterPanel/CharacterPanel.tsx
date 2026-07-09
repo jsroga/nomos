@@ -22,47 +22,13 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
-
-// Character metrics based on Affective Circumplex + Self-Determination Theory
-// Aligned with src/domains/storytell../types.ts
-interface CharacterMetrics {
-  valence: number // -100 to +100: Emotional tone (negative to positive)
-  arousal: number // 0-100: Energy/activation level
-  autonomy: number // 0-100: Perceived freedom (SDT)
-  competence: number // 0-100: Belief in capability (SDT)
-  relatedness: number // 0-100: Sense of connection (SDT)
-  cognitiveClarity: number // 0-100: Mental sharpness
-  perceivedStakes: number // 0-100: How much is on the line
-  socialSafety: number // 0-100: Perceived safety in social context
-  moralAlignment: number // 0-100: Alignment between actions and values
-  transformation: number // 0-100: Arc progress
-}
-
-interface Character {
-  id: string
-  name: string
-  role: string
-  gender?: string
-  description?: string
-  archetype?: string
-  characterPrompt?: string
-  psychology?: Record<string, any>
-  // Core metrics from database
-  valence?: number
-  arousal?: number
-  autonomy?: number
-  competence?: number
-  relatedness?: number
-  cognitiveClarity?: number
-  perceivedStakes?: number
-  socialSafety?: number
-  moralAlignment?: number
-  transformation?: number
-  // Meta
-  mbti?: string
-  voiceSignature?: string
-  portraitUrl?: string
-}
+import {
+  characterPortraitUrl,
+  characterToDialogInitial,
+  readCharacterMetric,
+  type StorytellerCharacter,
+} from '@/domains/storyteller/core/entities/character-wire'
+import type { CharacterMetrics } from '@/domains/storyteller/core/types/StoryTypes'
 
 // Metric configuration for UI - aligned with backend psychological model
 const METRIC_CONFIG: {
@@ -158,9 +124,9 @@ const METRIC_CONFIG: {
   ]
 
 interface CharacterPanelProps {
-  characters: Character[]
-  onUpdate?: (characterId: string, updates: Partial<Character>) => void
-  onCreate?: (character: Partial<Character>) => void
+  characters: StorytellerCharacter[]
+  onUpdate?: (characterId: string, updates: Partial<StorytellerCharacter>) => void
+  onCreate?: (character: Partial<StorytellerCharacter>) => void
   onDelete?: (characterId: string) => void
   projectId?: string
   // NEW: For beat-linked metrics
@@ -180,7 +146,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
   isLoading = false,
 }) => {
   const [isCreationOpen, setIsCreationOpen] = useState(false)
-  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null)
+  const [editingCharacter, setEditingCharacter] = useState<StorytellerCharacter | null>(null)
   const [beatSnapshots, setBeatSnapshots] = useState<Record<string, Partial<CharacterMetrics>>>({})
 
   // Fetch character metric snapshots when selected beat changes
@@ -223,7 +189,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
   }, [selectedBeatId, episodeId])
 
   // Merge base character with beat-specific snapshot
-  const getCharacterWithSnapshot = (char: Character): Character => {
+  const getCharacterWithSnapshot = (char: StorytellerCharacter): StorytellerCharacter => {
     const snapshot = beatSnapshots[char.id]
     if (!snapshot) return char
     return { ...char, ...snapshot }
@@ -319,31 +285,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
           }}
           projectId={projectId}
           mode="edit"
-          initialData={
-            editingCharacter
-              ? {
-                id: editingCharacter.id,
-                name: editingCharacter.name,
-                role: editingCharacter.role,
-                gender: editingCharacter.gender || (editingCharacter as any).gender,
-                mbti: editingCharacter.mbti || (editingCharacter as any).mbti,
-                description: editingCharacter.description || editingCharacter.characterPrompt || (editingCharacter as any).character_prompt,
-                portraitUrl: editingCharacter.portraitUrl || (editingCharacter as any).portrait_url,
-                voiceSignature: editingCharacter.voiceSignature || (editingCharacter as any).voice_signature,
-                psychology: (editingCharacter as any).psychology,
-                // Map metrics from character state (with snake_case fallbacks)
-                valence: editingCharacter.valence,
-                arousal: editingCharacter.arousal,
-                autonomy: editingCharacter.autonomy,
-                competence: editingCharacter.competence,
-                relatedness: editingCharacter.relatedness,
-                cognitiveClarity: editingCharacter.cognitiveClarity ?? (editingCharacter as any).cognitive_clarity,
-                perceivedStakes: editingCharacter.perceivedStakes ?? (editingCharacter as any).perceived_stakes,
-                socialSafety: editingCharacter.socialSafety ?? (editingCharacter as any).social_safety,
-                moralAlignment: editingCharacter.moralAlignment ?? (editingCharacter as any).moral_alignment,
-              }
-              : undefined
-          }
+          initialData={editingCharacter ? characterToDialogInitial(editingCharacter) : undefined}
         />
       </div>
     </TooltipProvider>
@@ -353,10 +295,10 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
 CharacterPanel.displayName = 'CharacterPanel'
 
 interface CharacterCardProps {
-  character: Character
-  onUpdate?: (characterId: string, updates: Partial<Character>) => void
+  character: StorytellerCharacter
+  onUpdate?: (characterId: string, updates: Partial<StorytellerCharacter>) => void
   onDelete?: (characterId: string) => void
-  onEdit?: (character: Character) => void
+  onEdit?: (character: StorytellerCharacter) => void
   isDeleting?: boolean
 }
 
@@ -390,9 +332,9 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
-          {character.portraitUrl || (character as any).portrait_url ? (
+          {characterPortraitUrl(character) ? (
             <img
-              src={character.portraitUrl || (character as any).portrait_url}
+              src={characterPortraitUrl(character)}
               alt={character.name}
               className="w-8 h-8 rounded-full object-cover border border-primary/30 shrink-0"
             />
@@ -487,10 +429,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
               Character Metrics
             </div>
             {METRIC_CONFIG.map(metric => {
-              // Robust lookup for both camelCase and snake_case (db vs local)
-              const camelKey = metric.key as string
-              const snakeKey = camelKey.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)
-              const rawValue = (character as any)[camelKey] ?? (character as any)[snakeKey]
+              const rawValue = readCharacterMetric(character, metric.key)
 
               // Handle valence (-100 to +100) vs standard (0-100)
               const isValenceMetric = metric.isValence

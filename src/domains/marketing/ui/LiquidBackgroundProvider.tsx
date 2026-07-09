@@ -42,10 +42,10 @@ export function LiquidBackgroundProvider({
   useEffect(() => {
     let rafId: number
     const updateTexture = () => {
-      const bgCanvas = document.getElementById('turbulent-bg-canvas') as HTMLCanvasElement
-      const renderer = (window as any).__liquidGLRenderer__
+      const bgCanvas = document.getElementById('turbulent-bg-canvas')
+      const renderer = window.__liquidGLRenderer__
 
-      if (bgCanvas && renderer && renderer._uploadTexture) {
+      if (bgCanvas instanceof HTMLCanvasElement && renderer?._uploadTexture) {
         renderer._uploadTexture(bgCanvas)
       }
       rafId = requestAnimationFrame(updateTexture)

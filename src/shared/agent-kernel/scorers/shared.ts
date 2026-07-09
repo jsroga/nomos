@@ -1,4 +1,5 @@
 import { MODELS } from '@/shared/agent-kernel/models'
+import { isPlainObject } from '@/shared/data/json-guards'
 
 export function toMastraJudgingModel(): string {
   // Read at call time so evals/run.ts can load .env.local before scorer modules import.
@@ -13,12 +14,25 @@ export function normalizeScore(score: number): number {
 export function outputToString(output: unknown): string {
   if (typeof output === 'string') return output
   if (output && typeof output === 'object' && 'response' in output) {
-    return String((output as { response: unknown }).response)
+    return String(output.response)
   }
   return JSON.stringify(output)
 }
 
+/**
+ * Prose text from a workflow-step or eval output: accepts a raw string or the
+ * beat-draft step records ({ draft } / { finalDraft }); falls back to JSON.
+ */
+export function extractProse(output: unknown): string {
+  if (typeof output === 'string') return output
+  if (output && typeof output === 'object') {
+    if ('draft' in output && typeof output.draft === 'string') return output.draft
+    if ('finalDraft' in output && typeof output.finalDraft === 'string') return output.finalDraft
+  }
+  return JSON.stringify(output ?? '')
+}
+
 export function inputRecord(input: unknown): Record<string, unknown> {
-  if (input && typeof input === 'object') return input as Record<string, unknown>
+  if (isPlainObject(input)) return input
   return { value: input }
 }

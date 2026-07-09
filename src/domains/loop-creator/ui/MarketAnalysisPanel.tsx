@@ -27,6 +27,13 @@ import { Badge } from '@/components/Badge'
 import { ScrollArea } from '@/components/ScrollArea'
 import { MarketAnalysisReport } from '../agents/market-analyst/types'
 import { Node, Edge } from '@xyflow/react'
+import {
+  edgeLabel,
+  groupTimescale,
+  nodeDescription,
+  nodeLabel,
+  nodeTypeField,
+} from '@/domains/loop-creator/core/loop-node-wire'
 
 interface MarketAnalysisPanelProps {
   isOpen: boolean
@@ -115,25 +122,25 @@ export function MarketAnalysisPanel({
       .filter(n => n.type !== 'group')
       .map(n => ({
         id: n.id,
-        name: (n.data as any)?.label || 'Unnamed',
-        type: (n.data as any)?.nodeType || 'action',
-        description: (n.data as any)?.description || '',
+        name: nodeLabel(n, 'Unnamed'),
+        type: nodeTypeField(n, 'action'),
+        description: nodeDescription(n),
       }))
 
     const connections = edges.map(e => ({
       id: e.id,
       source: e.source,
       target: e.target,
-      label: e.label as string | undefined,
+      label: edgeLabel(e),
     }))
 
     const loops = nodes
       .filter(n => n.type === 'group')
       .map(n => ({
         id: n.id,
-        name: (n.data as any)?.label || 'Unnamed Loop',
-        type: (n.data as any)?.timescale || 'custom',
-        description: (n.data as any)?.description || '',
+        name: nodeLabel(n, 'Unnamed Loop'),
+        type: groupTimescale(n),
+        description: nodeDescription(n),
       }))
 
     try {

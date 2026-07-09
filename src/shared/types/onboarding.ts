@@ -30,6 +30,25 @@ export const DEFAULT_ONBOARDING_STATE: OnboardingState = {
   routes: {}, // Per-route onboarding state
 }
 
+const MODULE_ID_VALUES: ModuleId[] = [
+  'storyteller',
+  'interior-designer',
+  'loop-creator',
+  'world-gen',
+  'asset-exporter',
+]
+
+const MODULE_IDS = new Set<string>(MODULE_ID_VALUES)
+
+export function parseModuleId(value: unknown): ModuleId | null {
+  const raw = typeof value === 'string' ? value : null
+  if (!raw || !MODULE_IDS.has(raw)) return null
+  for (const id of MODULE_ID_VALUES) {
+    if (id === raw) return id
+  }
+  return null
+}
+
 export interface ModuleTourConfig {
   id: ModuleId
   name: string

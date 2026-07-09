@@ -1,4 +1,5 @@
 import type { WorldAsset, WorldProject, WorldTile } from '../io/world.dto'
+import { readNumber, recordFromJson } from '@/shared/data/json-guards'
 
 /** Legacy snake_case tile shape used by existing UI code */
 export type Tile = {
@@ -18,6 +19,7 @@ export type Project = {
   master_prompt: string
   series_bible: Record<string, unknown>
   story_plan: Record<string, unknown>
+  stylePreset?: string | null
   description?: string | null
   created_at?: string
 }
@@ -54,19 +56,56 @@ export function toLegacyProject(project: WorldProject): Project {
     master_prompt: project.masterPrompt,
     series_bible: project.seriesBible,
     story_plan: project.storyPlan,
+    stylePreset: project.stylePreset ?? null,
     description: project.description,
     created_at: project.createdAt,
   }
 }
 
 export function toLegacyAsset(asset: WorldAsset): Asset {
+  const metadata = recordFromJson(asset.metadata)
+  const boundsRecord = recordFromJson(metadata.bounds)
+  const boxRecord = recordFromJson(metadata.box)
+  const legacyMetadata: Asset['metadata'] = {}
+
+  const boundsX = readNumber(boundsRecord.x)
+  const boundsY = readNumber(boundsRecord.y)
+  const boundsWidth = readNumber(boundsRecord.width)
+  const boundsHeight = readNumber(boundsRecord.height)
+  if (
+    boundsX !== undefined &&
+    boundsY !== undefined &&
+    boundsWidth !== undefined &&
+    boundsHeight !== undefined
+  ) {
+    legacyMetadata.bounds = {
+      x: boundsX,
+      y: boundsY,
+      width: boundsWidth,
+      height: boundsHeight,
+    }
+  }
+
+  const boxX1 = readNumber(boxRecord.x1)
+  const boxY1 = readNumber(boxRecord.y1)
+  const boxX2 = readNumber(boxRecord.x2)
+  const boxY2 = readNumber(boxRecord.y2)
+  if (
+    boxX1 !== undefined &&
+    boxY1 !== undefined &&
+    boxX2 !== undefined &&
+    boxY2 !== undefined
+  ) {
+    legacyMetadata.box = { x1: boxX1, y1: boxY1, x2: boxX2, y2: boxY2 }
+  }
+
   return {
     id: asset.id,
     project_id: asset.projectId,
     image_filename: asset.imageFilename,
     model_filename: asset.modelFilename,
     created_at: asset.createdAt ?? new Date().toISOString(),
-    metadata: asset.metadata as Asset['metadata'],
+    metadata: legacyMetadata,
   }
 }
 

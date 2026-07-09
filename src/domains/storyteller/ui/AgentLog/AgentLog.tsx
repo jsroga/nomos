@@ -4,7 +4,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { cn } from '@/shared/data/utils'
 import { AgentAction, AgentQuestion } from '@/domains/storyteller/core/types/ActionTypes'
 import { ActionCommitted, ActionSuggestion } from '../ActionToast'
-import { ActionStatus } from '@/domains/storyteller/core/types/Enums'
+import { ActionHistoryStatus } from '@/domains/storyteller/core/types/Enums'
+import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { QuestionCard } from '../QuestionCard'
 import { ReferenceText } from '../ReferenceText'
 import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
@@ -365,13 +366,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
             {/* Thinking (if enabled and Activity is ON) - Enhanced multi-agent thinking display */}
             {(() => {
               // Get thinking entries from additional_kwargs for multi-agent attribution
-              const thinkingEntries = msg.additional_kwargs?.thinkingEntries as
-                | Array<{
-                  agent: string
-                  content: string
-                  timestamp: number
-                }>
-                | undefined
+              const thinkingEntries = msg.additional_kwargs?.thinkingEntries
               const thinkingContent = msg.thinking || msg.additional_kwargs?.thinking
               const hasExtendedThinking =
                 msg.additional_kwargs?.hasThinking || msg.additional_kwargs?.extendedThinkingEnabled
@@ -467,7 +462,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                   const originalMsgIndex = messages.findIndex(m => m === msg)
 
                   // Show ActionSuggestion for pending actions, ActionCommitted for committed
-                  if (action.status === 'pending' && (onActionAccept || onActionReject)) {
+                  if (action.status === ApprovalActionStatus.PENDING && (onActionAccept || onActionReject)) {
                     return (
                       <ActionSuggestion
                         key={actionIdx}
@@ -488,7 +483,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                         timestamp: new Date(),
                         agentName: displayName,
                         action,
-                        status: ActionStatus.COMMITTED,
+                        status: ActionHistoryStatus.COMMITTED,
                       }}
                       compact={true}
                     />

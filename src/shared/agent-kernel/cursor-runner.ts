@@ -41,13 +41,22 @@ export interface RunExecuteOptions {
 const DEFAULT_MODEL = 'composer-2.5'
 const DEFAULT_ENVIRONMENT = 'execute-docker'
 
+function execErrorStderr(err: unknown): string {
+  if (err instanceof Error) {
+    if ('stderr' in err && typeof err.stderr === 'string') {
+      return err.stderr
+    }
+    return err.message
+  }
+  return String(err)
+}
+
 function sh(cmd: string, cwd: string): { ok: true; stdout: string } | { ok: false; stderr: string } {
   try {
     const stdout = execSync(cmd, { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 1024 * 1024 * 32 })
     return { ok: true, stdout }
   } catch (err) {
-    const stderr = err instanceof Error ? (err as { stderr?: string }).stderr ?? err.message : String(err)
-    return { ok: false, stderr }
+    return { ok: false, stderr: execErrorStderr(err) }
   }
 }
 

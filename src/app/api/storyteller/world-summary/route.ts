@@ -13,6 +13,13 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateText } from 'ai'
 import { requireAuth } from '@/shared/auth/auth'
+import {
+  firstNonEmptyRecord,
+  namedRecordsFromJson,
+  readString,
+  recordArrayFromJson,
+  recordFromJson,
+} from '@/shared/data/json-guards'
 
 export async function GET(req: NextRequest) {
   try {
@@ -45,34 +52,24 @@ export async function GET(req: NextRequest) {
 
     // Priority 1: Use dedicated series_bibles / story_plans table content
     // Priority 2: Use project.series_bible / project.story_plan column (legacy/fallback)
-    const rawBible = (project.seriesBibleTable?.content ||
-      project.seriesBible ||
-      {}) as SeriesBible
+    const rawBible = firstNonEmptyRecord(project.seriesBibleTable?.content, project.seriesBible)
+    const rawStoryPlan = firstNonEmptyRecord(project.storyPlanTable?.content, project.storyPlan)
+    const bible: SeriesBible = { ...rawBible }
 
-    // StoryPlan often contains the latest world rules, factions, etc.
-    const rawStoryPlan = (project.storyPlanTable?.content ||
-      project.storyPlan ||
-      {}) as any
-
-    // Merge logic matching the client-side hydration for consistency
-    const bible = { ...rawBible } as SeriesBible
-
-    // If storyPlan has updated fields, apply them
-    if (rawStoryPlan) {
-      // Arrays that should be merged or overridden from storyPlan if present
-      if (rawStoryPlan.worldRules?.length > 0) bible.worldRules = rawStoryPlan.worldRules
-      if (rawStoryPlan.factions?.length > 0) bible.factions = rawStoryPlan.factions
-      // If bible doesn't have setting but storyPlan does (unlikely but possible)
-      if (!bible.setting && rawStoryPlan.setting) bible.setting = rawStoryPlan.setting
-      // If bible lacks description but storyPlan has it
-      if (!bible.worldDescription && rawStoryPlan.worldDescription) bible.worldDescription = rawStoryPlan.worldDescription
-
-      // Also check updatedFields pattern
-      if (rawBible.updatedFields) {
-        if (rawBible.updatedFields.worldRules?.length > 0) bible.worldRules = rawBible.updatedFields.worldRules
-        if (rawBible.updatedFields.factions?.length > 0) bible.factions = rawBible.updatedFields.factions
-      }
+    const storyPlanWorldRules = recordArrayFromJson(rawStoryPlan.worldRules)
+    const storyPlanFactions = namedRecordsFromJson(rawStoryPlan.factions)
+    if (storyPlanWorldRules.length > 0) bible.worldRules = storyPlanWorldRules
+    if (storyPlanFactions.length > 0) bible.factions = storyPlanFactions
+    if (!bible.setting && rawStoryPlan.setting) bible.setting = rawStoryPlan.setting
+    if (!bible.worldDescription && rawStoryPlan.worldDescription) {
+      bible.worldDescription = readString(rawStoryPlan.worldDescription)
     }
+
+    const updatedFields = recordFromJson(rawBible.updatedFields)
+    const updatedWorldRules = recordArrayFromJson(updatedFields.worldRules)
+    const updatedFactions = namedRecordsFromJson(updatedFields.factions)
+    if (updatedWorldRules.length > 0) bible.worldRules = updatedWorldRules
+    if (updatedFactions.length > 0) bible.factions = updatedFactions
 
     console.log('[WorldSummary] Project fetched:', {
       id: project.id,

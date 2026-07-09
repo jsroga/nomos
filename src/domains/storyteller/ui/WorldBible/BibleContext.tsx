@@ -12,6 +12,7 @@ import {
 } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { canEditBible } from '@/shared/auth/bible-permissions'
 import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
+import { recordFromJson } from '@/shared/data/json-guards'
 
 // Pending action for a section
 export interface PendingAction {
@@ -189,7 +190,13 @@ export const BibleProvider: React.FC<{
           }
           return { isLocked: false, lockedBy: null, lockedAt: null }
         },
-        { ttlMs: 60_000 } // Cache for 1 minute
+        {
+          ttlMs: 60_000,
+          validate: (value): value is { isLocked: boolean; lockedBy: string | null; lockedAt: string | null } => {
+            const record = recordFromJson(value)
+            return typeof record.isLocked === 'boolean'
+          },
+        }
       )
         .then(data => {
           if (!isMounted) return
@@ -220,7 +227,7 @@ export const BibleProvider: React.FC<{
 
     const savePlan = useCallback(async () => {
       if (!onUpdate) return
-      const toSave = localPlan as StoryPlan
+      const toSave = localPlan
       lastSavedPlan.current = JSON.stringify(toSave)
       await onUpdate(toSave)
       setIsEditing(false)

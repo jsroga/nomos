@@ -40,7 +40,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   const [isGeneratingBeats, setIsGeneratingBeats] = useState(false)
   const [expandedBeatId, setExpandedBeatId] = useState<string | null>(null)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
-  const params = useParams() as { projectId: string }
+  const params = useParams<{ projectId: string }>()
   const projectId = propProjectId || params.projectId || 'unknown'
 
   // ... (previous useEffects and handlers remain same until render) ...
@@ -93,7 +93,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
     setBeats([...beats, created])
   }
 
-  const handleUpdate = async (id: string, updates: Partial<BeatCard>) => {
+  const handleUpdate = async (id: string, updates: Partial<BeatData>) => {
     setBeats(beats.map(b => (b.id === id ? { ...b, ...updates } : b)))
     await fetch(`/api/storyteller/beats/${id}`, {
       method: 'PATCH',

@@ -6,7 +6,7 @@ import { imageService, StyleInfo } from '@/shared/data/server/image-service'
 import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
 import { storageService } from '@/shared/data/storage/StorageService'
-import { getErrorMessage } from '@/shared/errors/error-utils'
+import { aiProviderConfigFromRecord } from '@/shared/ai/ai-provider-config'
 import {
   logLLMRequestStart,
   logLLMRequestComplete,
@@ -86,13 +86,15 @@ export const generateTileTask = task({
 
     let generatedImageBase64: string
 
+    const providerConfig = aiProviderConfigFromRecord(aiConfig)
+
     // Call AI provider directly (server-side compatible)
     switch (aiProvider) {
       case 'gemini':
       case 'nano-banana': {
         generatedImageBase64 = await generateWithGemini(
           prompt,
-          aiConfig as any,
+          providerConfig,
           isFirstTile,
           styleReferenceUrls,
           contextImageBase64,
@@ -104,7 +106,7 @@ export const generateTileTask = task({
       case 'openai': {
         generatedImageBase64 = await generateWithOpenAI(
           prompt,
-          aiConfig as any,
+          providerConfig,
           isFirstTile,
           styleReferenceUrls,
           contextImageBase64
@@ -114,7 +116,7 @@ export const generateTileTask = task({
       case 'stability': {
         generatedImageBase64 = await generateWithStability(
           prompt,
-          aiConfig as any,
+          providerConfig,
           isFirstTile,
           styleReferenceUrls,
           contextImageBase64
@@ -125,7 +127,7 @@ export const generateTileTask = task({
       case 'legnext-upload-paint': {
         generatedImageBase64 = await generateWithLegNext(
           prompt,
-          aiConfig as any,
+          providerConfig,
           isFirstTile,
           styleReferenceUrls,
           contextImageBase64,

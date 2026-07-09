@@ -2,7 +2,7 @@
   "version": 1,
   "hooks": {
     "afterFileEdit": [
-      { "command": "./.cursor/hooks/verify-on-edit.sh" },
+      { "command": "./.cursor/hooks/record-src-edits.sh" },
       { "command": "./.cursor/hooks/format-on-edit.sh" }
     ],
     "beforeShellExecution": [
@@ -12,7 +12,7 @@
       { "command": "./.cursor/hooks/session-init.sh" }
     ],
     "stop": [
-      { "command": "./.cursor/hooks/verify-on-edit.sh", "loop_limit": 3 }
+      { "command": "./.cursor/hooks/fast-verify-on-stop.sh", "loop_limit": 1 }
     ]
   }
 }

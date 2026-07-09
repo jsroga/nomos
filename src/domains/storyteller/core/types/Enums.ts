@@ -47,9 +47,27 @@ export enum Phase {
 
 export type PhaseId = `${Phase}`
 
+export function parsePhaseId(value: string | undefined): PhaseId {
+  switch (value) {
+    case Phase.BREAKING:
+    case Phase.WRITING:
+    case Phase.COMPLETE:
+      return value
+    default:
+      return Phase.PREMISE
+  }
+}
+
 // ============================================
-// Question Types - Interactive question types
+// Question machine state - UI flow for questions
 // ============================================
+
+export enum QuestionMachineState {
+  IDLE = 'idle',
+  AWAITING_ANSWER = 'awaiting_answer',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+}
 
 export enum QuestionType {
   SINGLE_CHOICE = 'single_choice',
@@ -83,11 +101,14 @@ export enum QuestionStatus {
 // Action Status - Undo/redo history tracking
 // ============================================
 
-export enum ActionStatus {
+export enum ActionHistoryStatus {
   COMMITTED = 'committed',
   UNDONE = 'undone',
   REDONE = 'redone',
 }
+
+/** @deprecated Use {@link ActionHistoryStatus} for undo/history; {@link ApprovalActionStatus} for stream approval. */
+export const ActionStatus = ActionHistoryStatus
 
 // ============================================
 // Bible Section - Sections of the World Bible
@@ -117,14 +138,17 @@ export enum ActionType {
   // Beat Operations
   CREATE_BEAT = 'CREATE_BEAT',
   UPDATE_BEAT = 'UPDATE_BEAT',
+  UPDATE_BEAT_CONTENT = 'UPDATE_BEAT_CONTENT', // legacy wire alias
   DELETE_BEAT = 'DELETE_BEAT',
   REORDER_BEATS = 'REORDER_BEATS',
+  REORDER_BEAT = 'REORDER_BEAT', // legacy wire alias
   LOCK_BEAT_BOARD = 'LOCK_BEAT_BOARD',
   ADD_BEAT = 'ADD_BEAT',
 
   // Character Operations
   CREATE_CHARACTER = 'CREATE_CHARACTER',
   UPDATE_CHARACTER = 'UPDATE_CHARACTER',
+  UPDATE_CHARACTER_PROFILE = 'UPDATE_CHARACTER_PROFILE', // legacy wire alias
   UPDATE_CHARACTER_METRICS = 'UPDATE_CHARACTER_METRICS',
   UPDATE_STRESS_LEVEL = 'UPDATE_STRESS_LEVEL',
   ADD_KNOWLEDGE = 'ADD_KNOWLEDGE',
@@ -133,6 +157,7 @@ export enum ActionType {
 
   // Script Operations
   UPDATE_SCRIPT = 'UPDATE_SCRIPT',
+  UPDATE_SCRIPT_CONTENT = 'UPDATE_SCRIPT_CONTENT', // legacy wire alias
   INSERT_SCRIPT_SECTION = 'INSERT_SCRIPT_SECTION',
   REVISE_SCRIPT_SECTION = 'REVISE_SCRIPT_SECTION',
 
@@ -154,6 +179,7 @@ export enum ActionType {
   UPDATE_MOODBOARD = 'UPDATE_MOODBOARD',
   UPDATE_PLOT_TWISTS = 'UPDATE_PLOT_TWISTS',
   UPDATE_CAST = 'UPDATE_CAST', // Project-level cast (replaces UPDATE_KEY_CHARACTERS)
+  UPDATE_KEY_CHARACTERS = 'UPDATE_KEY_CHARACTERS', // legacy wire alias
   UPDATE_EPISODE_ROADMAP = 'UPDATE_EPISODE_ROADMAP',
   UPDATE_ROADMAP_SUMMARY = 'UPDATE_ROADMAP_SUMMARY',
   UPDATE_EPISODE_PREMISE = 'UPDATE_EPISODE_PREMISE',

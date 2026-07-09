@@ -21,17 +21,20 @@ export const CameraController: React.FC = () => {
       camera.lookAt(...DISCO_ELYSIUM_TARGET)
 
       // Set zoom for orthographic camera
-      if ('zoom' in camera) {
-        ;(camera as any).zoom = DISCO_ELYSIUM_ZOOM
+      if ('zoom' in camera && typeof camera.zoom === 'number') {
+        camera.zoom = DISCO_ELYSIUM_ZOOM
       }
       camera.updateProjectionMatrix()
 
       // Reset OrbitControls target if available
       if (controls && 'target' in controls && 'update' in controls) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const orbitControls = controls as any
-        orbitControls.target.set(...DISCO_ELYSIUM_TARGET)
-        orbitControls.update()
+        const target = controls.target
+        if (target && typeof target.set === 'function') {
+          target.set(...DISCO_ELYSIUM_TARGET)
+        }
+        if (typeof controls.update === 'function') {
+          controls.update()
+        }
       }
 
       // Clear the reset request

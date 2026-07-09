@@ -17,6 +17,7 @@ import {
   QuestionSession,
   ActionStatus,
   ActivityLogEntry,
+  type ActionMessageLocation,
 } from '../core/types'
 import { AgentStatusInfo, AgentStatus } from '../ui/AgentLog'
 import { Citation } from '../ui/CitationDisplay'
@@ -32,6 +33,24 @@ import { generateSessionId } from '@/shared/data/trace-session'
 import { getErrorMessage, toError } from '@/shared/errors/error-utils'
 
 const CHAT_DEBUG = process.env.NEXT_PUBLIC_CHAT_DEBUG === '1'
+
+// --- SSE payload narrowing helpers (parsed JSON is unknown — narrow, don't cast) ---
+
+function asString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined
+}
+
+function asNumber(value: unknown): number | undefined {
+  return typeof value === 'number' ? value : undefined
+}
+
+function isRecordValue(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return isRecordValue(value) ? value : undefined
+}
 
 interface UseChatStreamProps {
   initialMessages?: Message[]
@@ -434,6 +453,18 @@ export function useChatStream({
     []
   )
 
+  /** Sync approval status by stable action id, or by message index when id is absent. */
+  const syncActionStatus = useCallback(
+    (action: AgentAction, newStatus: ActionStatus, location?: ActionMessageLocation) => {
+      if (action.id) {
+        updateActionStatusById(action.id, newStatus)
+      } else if (location) {
+        updateActionStatus(location.messageIndex, location.actionIndex, newStatus)
+      }
+    },
+    [updateActionStatus, updateActionStatusById]
+  )
+
   /**
    * Process section progress events
    */
@@ -452,8 +483,8 @@ export function useChatStream({
         return [
           ...prev,
           {
-            id: data.section,
-            label: data.label || data.section,
+            id: String(data.section),
+            label: String(data.label || data.section),
             status: 'in_progress' as const,
             startTime: Date.now(),
           },
@@ -467,7 +498,7 @@ export function useChatStream({
               ...s,
               status: 'completed' as const,
               endTime: Date.now(),
-              details: data.preview || data.details,
+              details: asString(data.preview) || asString(data.details),
             }
             : s
         )
@@ -480,7 +511,7 @@ export function useChatStream({
               ...s,
               status: 'error' as const,
               endTime: Date.now(),
-              details: data.error,
+              details: asString(data.error),
             }
             : s
         )
@@ -508,9 +539,11 @@ export function useChatStream({
           onCitationsUpdate(newCitations)
         }
       } else if (data.type === 'grounding') {
-        setGroundingScore(data.score)
+        const score = asNumber(data.score)
+        if (score === undefined) return
+        setGroundingScore(score)
         if (onGroundingUpdate) {
-          onGroundingUpdate(data.score, data.details)
+          onGroundingUpdate(score, asRecord(data.details) ?? {})
         }
       }
     },
@@ -1144,6 +1177,7 @@ export function useChatStream({
     // Action approval
     updateActionStatus,
     updateActionStatusById,
+    syncActionStatus,
 
     // Citations
     citations,

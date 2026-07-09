@@ -1,4 +1,12 @@
-export type EntityType = 'character' | 'place' | 'event' | 'faction' | 'rule' | 'beat' | 'episode'
+export type EntityType =
+  | 'character'
+  | 'place'
+  | 'event'
+  | 'faction'
+  | 'rule'
+  | 'beat'
+  | 'episode'
+  | 'item'
 
 export interface EntityRelationship {
   targetId: string

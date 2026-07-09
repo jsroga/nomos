@@ -40,10 +40,9 @@ export function normalizeCastInUpdates(
   const cast = extractCastFromUpdates(updates)
   if (cast === undefined) return updates
 
-  const result = { ...updates }
-  for (const key of CAST_FIELD_ALIASES) {
-    delete result[key]
-  }
+  const result = Object.fromEntries(
+    Object.entries(updates).filter(([key]) => !CAST_FIELD_ALIASES.some(alias => alias === key))
+  )
   result.cast = cast
   return result
 }
@@ -51,8 +50,8 @@ export function normalizeCastInUpdates(
 export function dedupeCastByName(cast: unknown[]): unknown[] {
   const unique = new Map<string, unknown>()
   for (const entry of cast) {
-    if (entry && typeof entry === 'object' && 'name' in entry) {
-      const name = String((entry as { name: unknown }).name)
+    if (typeof entry === 'object' && entry !== null && 'name' in entry) {
+      const name = String(Reflect.get(entry, 'name'))
       if (name) unique.set(name, entry)
     }
   }
@@ -67,9 +66,7 @@ export function mergeCastFromSource(
   const incoming = extractCastFromUpdates(source)
   if (!incoming?.length) return
 
-  const merged = dedupeCastByName(
-    smartMergeArray(readCastFromPlan(target), incoming) as unknown[]
-  )
+  const merged = dedupeCastByName(smartMergeArray(readCastFromPlan(target), incoming))
   target.cast = merged
   target.keyCharacters = merged
 }

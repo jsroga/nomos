@@ -10,7 +10,9 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
-import { LoopCreatorState, NextAgent, LoopCreatorPhase, LoopAgentActionType } from '../core/graph/state'
+import { LoopCreatorState, NextAgent, LoopCreatorPhase } from '../core/graph/state'
+import { parseLoopAgentActionType } from '../core/loop-agent-action-wire'
+import { parseNextAgent } from '../core/graph/agent-nodes'
 import { v4 as uuidv4 } from 'uuid'
 import { buildCrossDomainContext } from '@/shared/agent-kernel/context/cross-domain-context'
 
@@ -355,7 +357,7 @@ DO NOT route to another specialist unless the user explicitly asks for more.`
 
   // Build result
   const result: Partial<LoopCreatorState> = {
-    nextAgent: nextAgent as NextAgent,
+    nextAgent: parseNextAgent(nextAgent),
     currentPhase: parsed.nextPhase,
     referenceGames:
       referenceGames.length > (state.referenceGames?.length || 0) ? referenceGames : undefined,
@@ -388,12 +390,18 @@ DO NOT route to another specialist unless the user explicitly asks for more.`
       `[Supervisor] Emitting ${parsed.actions.length} actions:`,
       parsed.actions.map(a => a.type)
     )
-    result.pendingActions = parsed.actions.map(action => ({
-      type: action.type as LoopAgentActionType,
-      payload: action.payload,
-      confidence: 1.0,
-      reasoning: parsed.thinking,
-    }))
+    result.pendingActions = parsed.actions.flatMap(action => {
+      const type = parseLoopAgentActionType(action.type)
+      if (!type) return []
+      return [
+        {
+          type,
+          payload: action.payload,
+          confidence: 1.0,
+          reasoning: parsed.thinking,
+        },
+      ]
+    })
   }
 
   return result

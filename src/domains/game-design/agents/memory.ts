@@ -1,6 +1,8 @@
 import { PgVector } from '@mastra/pg'
 import { OpenAIEmbeddings } from '@langchain/openai'
 
+import { gameDesignPatternFromVectorRow } from './pattern-wire'
+
 export interface GameDesignPattern {
   id: string
   title: string
@@ -137,15 +139,7 @@ export class GameDesignMemory {
     })
 
     // Transform results back to GameDesignPattern
-    return results.map(r => ({
-      id: (r.metadata?.id as string) || r.id,
-      title: (r.metadata?.title as string) || '',
-      description: (r.metadata?.description as string) || '',
-      category: (r.metadata?.category as GameDesignPattern['category']) || 'mechanic',
-      tags: ((r.metadata?.tags as string) || '').split(',').filter(Boolean),
-      examples: ((r.metadata?.examples as string) || '').split('|||').filter(Boolean),
-      score: r.score,
-    }))
+    return results.map(r => gameDesignPatternFromVectorRow(r))
   }
 
   /**
@@ -170,15 +164,7 @@ export class GameDesignMemory {
       },
     })
 
-    return results.slice(0, topK).map(r => ({
-      id: (r.metadata?.id as string) || r.id,
-      title: (r.metadata?.title as string) || '',
-      description: (r.metadata?.description as string) || '',
-      category: (r.metadata?.category as GameDesignPattern['category']) || 'mechanic',
-      tags: ((r.metadata?.tags as string) || '').split(',').filter(Boolean),
-      examples: ((r.metadata?.examples as string) || '').split('|||').filter(Boolean),
-      score: r.score,
-    }))
+    return results.slice(0, topK).map(r => gameDesignPatternFromVectorRow(r))
   }
 
   /**

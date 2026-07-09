@@ -33,8 +33,8 @@ export interface MentionItem {
 export interface MentionProvider {
   /** Category this provider handles */
   category: MentionCategory
-  /** Get items matching the filter string */
-  getItems: (filter: string, projectContext: ProjectContext) => MentionItem[]
+  /** Get items matching the filter string (sync or async — consumers await via Promise.all) */
+  getItems: (filter: string, projectContext: ProjectContext) => MentionItem[] | Promise<MentionItem[]>
 }
 
 /**
@@ -42,6 +42,13 @@ export interface MentionProvider {
  */
 export interface ProjectContext {
   projectId: string
+  registryEntities?: Array<{
+    id: string
+    name: string
+    type: string
+    description?: string
+    metadata?: Record<string, unknown>
+  }>
   // Storyteller-specific
   characters?: Array<{
     id: string

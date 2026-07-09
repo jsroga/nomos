@@ -1,23 +1,34 @@
-import { AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
+import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
+import type { WireAgentAction } from '@/shared/agent-kernel/action-wire'
+import { recordFromJson, readNumber, readString } from '@/shared/data/json-guards'
 
-// Helper to format action for display
-// status: 'pending' = awaiting approval, 'committed' = already approved
+/** Display wording for approval UI vs committed history — subset of wire approval status. */
+export type ActionDisplayStatus =
+  | ApprovalActionStatus.PENDING
+  | ApprovalActionStatus.COMMITTED
+
+/**
+ * Human-readable title/description/icon for an action toast or history entry.
+ * Accepts the open wire shape (history/stream actions carry untyped payloads);
+ * payload fields are narrowed defensively per action type.
+ */
 export function formatActionForDisplay(
-  action: AgentAction,
-  status: 'pending' | 'committed' = 'pending'
+  action: Pick<WireAgentAction, 'type' | 'payload'>,
+  status: ActionDisplayStatus = ApprovalActionStatus.PENDING
 ): {
   title: string
   description: string
   icon: string
 } {
-  const isPending = status === 'pending'
+  const isPending = status === ApprovalActionStatus.PENDING
+  const payload = recordFromJson(action.payload)
 
   switch (action.type) {
     // Beat Operations
     case 'CREATE_BEAT':
       return {
         title: isPending ? 'Create Beat' : 'Beat Created',
-        description: `"${action.payload.logline}"`,
+        description: `"${readString(payload.logline) ?? ''}"`,
         icon: isPending ? '📝' : '✅',
       }
     case 'UPDATE_BEAT':
@@ -49,25 +60,25 @@ export function formatActionForDisplay(
     case 'CREATE_CHARACTER':
       return {
         title: isPending ? 'Create Character' : 'Character Created',
-        description: `"${action.payload.name}" - ${action.payload.role}`,
+        description: `"${readString(payload.name) ?? ''}" - ${readString(payload.role) ?? ''}`,
         icon: isPending ? '👤' : '✅',
       }
     case 'UPDATE_CHARACTER':
       return {
         title: isPending ? 'Update Character' : 'Character Updated',
-        description: `Modified ${Object.keys(action.payload.updates).length} fields`,
+        description: `Modified ${Object.keys(recordFromJson(payload.updates)).length} fields`,
         icon: isPending ? '✏️' : '✅',
       }
     case 'UPDATE_STRESS_LEVEL':
       return {
         title: isPending ? 'Update Stress' : 'Stress Updated',
-        description: `Stress level ${action.payload.delta > 0 ? 'increased' : 'decreased'}`,
+        description: `Stress level ${(readNumber(payload.delta) ?? 0) > 0 ? 'increased' : 'decreased'}`,
         icon: isPending ? '📉' : '✅',
       }
     case 'ADD_KNOWLEDGE':
       return {
         title: isPending ? 'Add Knowledge' : 'Knowledge Added',
-        description: `Character learned: "${action.payload.knowledge}"`,
+        description: `Character learned: "${readString(payload.knowledge) ?? ''}"`,
         icon: isPending ? '🧠' : '✅',
       }
 
@@ -95,39 +106,15 @@ export function formatActionForDisplay(
     case 'UPDATE_SERIES_BIBLE':
     case 'UPDATE_WORLD_BIBLE':
     case 'UPDATE_BIBLE': {
-      const payload = (action.payload || {}) as any
-
-      // Try to find the actual updates object (sometimes it's nested)
-      let updates = payload
-      if (
-        payload.updates &&
-        typeof payload.updates === 'object' &&
-        !Array.isArray(payload.updates)
-      ) {
-        updates = payload.updates
-      } else if (
-        payload.premise &&
-        typeof payload.premise === 'object' &&
-        !Array.isArray(payload.premise)
-      ) {
-        updates = payload.premise
-      } else if (
-        payload.bible &&
-        typeof payload.bible === 'object' &&
-        !Array.isArray(payload.bible)
-      ) {
-        updates = payload.bible
-      } else if (
-        payload.updatedFields &&
-        typeof payload.updatedFields === 'object' &&
-        !Array.isArray(payload.updatedFields)
-      ) {
-        updates = payload.updatedFields
-      }
-
-      // Filter out technical keys from count
-      const technicalKeys = ['projectId', 'episodeId', 'id', 'traceId', 'mergeMode', 'currentPhase']
-      const keys = Object.keys(updates).filter(k => !technicalKeys.includes(k))
+      const technicalKeys = new Set([
+        'projectId',
+        'episodeId',
+        'id',
+        'traceId',
+        'mergeMode',
+        'currentPhase',
+      ])
+      const keys = Object.keys(payload).filter(k => !technicalKeys.has(k))
 
       return {
         title: isPending ? 'Update Bible' : 'Bible Updated',
@@ -136,11 +123,9 @@ export function formatActionForDisplay(
       }
     }
     case 'UPDATE_EPISODE_PREMISE': {
-      const payload = (action.payload || {}) as any
-      const updates = payload.premise || payload.updates || payload
-      const technicalKeys = ['projectId', 'episodeId', 'id', 'traceId']
-      const keys = Object.keys(updates).filter(
-        k => typeof updates[k] !== 'undefined' && !technicalKeys.includes(k)
+      const technicalKeys = new Set(['projectId', 'episodeId', 'id', 'traceId'])
+      const keys = Object.keys(recordFromJson(payload.premise)).filter(
+        k => !technicalKeys.has(k)
       )
 
       return {
@@ -152,7 +137,7 @@ export function formatActionForDisplay(
     case 'ADD_WORLD_RULE':
       return {
         title: isPending ? 'Add World Rule' : 'Rule Added',
-        description: `"${action.payload.rule}"`,
+        description: `"${readString(payload.rule) ?? ''}"`,
         icon: isPending ? '⚖️' : '✅',
       }
 
@@ -160,7 +145,7 @@ export function formatActionForDisplay(
     case 'ADD_SETUP':
       return {
         title: isPending ? 'Add Setup' : 'Setup Added',
-        description: `"${action.payload.description}"`,
+        description: `"${readString(payload.description) ?? ''}"`,
         icon: isPending ? '🎯' : '✅',
       }
     case 'RESOLVE_SETUP':

@@ -10,6 +10,7 @@
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
 import { LoopCreatorState, GameLoop, LoopAgentAction, NextAgent } from '../core/graph/state'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { v4 as uuidv4 } from 'uuid'
 
 const LOOP_PLANNER_SYSTEM_PROMPT = `You are a Game Loop Planner - an expert in designing engaging gameplay loop structures.
@@ -368,7 +369,7 @@ export async function loopPlannerAgent(
   for (const loop of sortedLoops) {
     const loopNodes = loop.nodes || []
     const timeframe = loop.timeframe || loop.type
-    const durationUnit = (loop.duration as { unit?: string })?.unit || 'seconds'
+    const durationUnit = readString(recordFromJson(loop.duration).unit) ?? 'seconds'
 
     // Sort nodes by psychological order
     const phaseOrder = ['challenge', 'action', 'feedback']
@@ -508,7 +509,7 @@ export async function loopPlannerAgent(
   return {
     loops: parsed.loops,
     pendingActions: nodeActions,
-    nextAgent: 'supervisor' as NextAgent,
+    nextAgent: 'supervisor',
     messages: [
       new AIMessage({
         content:

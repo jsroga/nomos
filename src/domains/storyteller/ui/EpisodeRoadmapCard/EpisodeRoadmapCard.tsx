@@ -18,32 +18,34 @@ import { cn } from '@/shared/data/utils'
 import { ReferenceText } from '../ReferenceText'
 
 interface EpisodeRoadmapCardProps {
+  // Fields accept `null` too — RoadmapEpisodeSchema (zod) uses .nullable(),
+  // and the render path is already null-safe (`episode.title || episode.name`).
   episode: {
-    id?: number
+    id?: number | null
     // StoryArcSchema fields
-    name?: string
-    description?: string
-    mainPlotBeat?: string
-    bPlotBeat?: string
-    hook?: string
-    cliffhanger?: string
-    reasoning?: string
-    keyFactionsInvolved?: string[]
-    consequences?: string[]
-    worldConsequence?: string
+    name?: string | null
+    description?: string | null
+    mainPlotBeat?: string | null
+    bPlotBeat?: string | null
+    hook?: string | null
+    cliffhanger?: string | null
+    reasoning?: string | null
+    keyFactionsInvolved?: string[] | null
+    consequences?: string[] | null
+    worldConsequence?: string | null
     // RoadmapEpisodeSchema fields
-    title?: string
-    logline?: string
-    incitingIncident?: string
-    midpoint?: string
-    finale?: string
+    title?: string | null
+    logline?: string | null
+    incitingIncident?: string | null
+    midpoint?: string | null
+    finale?: string | null
     // Shared fields
-    protagonistHook?: string
-    antagonistMove?: string
-    fatalFlaw?: string
-    thematicQuestion?: string
-    thematicFocus?: string
-    actStructure?: string
+    protagonistHook?: string | null
+    antagonistMove?: string | null
+    fatalFlaw?: string | null
+    thematicQuestion?: string | null
+    thematicFocus?: string | null
+    actStructure?: string | null
   }
   index: number
   isLast?: boolean
@@ -77,8 +79,8 @@ export const EpisodeRoadmapCard: React.FC<EpisodeRoadmapCardProps> = ({
 
   // Clean the description by stripping metadata lines
   const parseDescription = (text: string) => {
-    if (!text) return { cleanText: '', extracted: {} as any }
-    const extracted: any = {}
+    const extracted: { factions?: string; focus?: string; worldConsequence?: string } = {}
+    if (!text) return { cleanText: '', extracted }
     let cleanText = text
 
     const factionMatch = text.match(/Key factions?:?\s*([^.]+(?:\([^)]+\)[^.]*)*)\./i)
@@ -115,14 +117,14 @@ export const EpisodeRoadmapCard: React.FC<EpisodeRoadmapCardProps> = ({
     episode.antagonistMove && { label: 'Antagonist Move', value: episode.antagonistMove, icon: Swords, color: 'text-rose-400' },
     episode.fatalFlaw && { label: 'Fatal Flaw', value: episode.fatalFlaw, icon: Skull, color: 'text-red-400' },
     episode.thematicQuestion && { label: 'Thematic Question', value: episode.thematicQuestion, icon: HelpCircle, color: 'text-blue-400' },
-  ].filter(Boolean) as { label: string; value: string; icon: React.ElementType; color: string }[]
+  ].flatMap(beat => (beat ? [beat] : []))
 
   // Act structure timeline (from RoadmapEpisodeSchema)
   const actBeats = [
     episode.incitingIncident && { label: 'Inciting Incident', value: episode.incitingIncident },
     episode.midpoint && { label: 'Midpoint', value: episode.midpoint },
     episode.finale && { label: 'Finale', value: episode.finale },
-  ].filter(Boolean) as { label: string; value: string }[]
+  ].flatMap(beat => (beat ? [beat] : []))
 
   // A/B story threads (from StoryArcSchema)
   const hasStoryThreads = episode.mainPlotBeat || episode.bPlotBeat

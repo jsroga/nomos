@@ -11,6 +11,7 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
+import { scriptArtifactFromJson } from './script-artifact-wire'
 
 // Workspace configuration
 export interface WorkspaceConfig {
@@ -145,7 +146,7 @@ export class StorytellerWorkspace {
           if (file.includes(id.slice(0, 8))) {
             const filePath = path.join(dirPath, file)
             const content = await fs.readFile(filePath, 'utf-8')
-            return JSON.parse(content) as ScriptArtifact
+            return scriptArtifactFromJson(content)
           }
         }
       } catch {
@@ -172,8 +173,8 @@ export class StorytellerWorkspace {
           if (file.endsWith('.json')) {
             const filePath = path.join(dirPath, file)
             const content = await fs.readFile(filePath, 'utf-8')
-            const artifact = JSON.parse(content) as ScriptArtifact
-            if (artifact.metadata.projectId === projectId) {
+            const artifact = scriptArtifactFromJson(content)
+            if (artifact && artifact.metadata.projectId === projectId) {
               results.push(artifact)
             }
           }
@@ -277,7 +278,8 @@ export class StorytellerWorkspace {
           if (file.endsWith('.json')) {
             const filePath = path.join(dirPath, file)
             const content = await fs.readFile(filePath, 'utf-8')
-            results.push(JSON.parse(content) as ScriptArtifact)
+            const artifact = scriptArtifactFromJson(content)
+            if (artifact) results.push(artifact)
           }
         }
       } catch {
@@ -303,7 +305,8 @@ export class StorytellerWorkspace {
             const filePath = path.join(dirPath, file)
             const stats = await fs.stat(filePath)
             const content = await fs.readFile(filePath, 'utf-8')
-            const parsed = JSON.parse(content) as ScriptArtifact
+            const parsed = scriptArtifactFromJson(content)
+            if (!parsed) continue
 
             this.fileIndex.set(filePath, {
               path: filePath,

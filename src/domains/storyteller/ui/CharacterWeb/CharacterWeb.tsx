@@ -35,9 +35,11 @@ import {
   CharacterWebNode,
   CharacterWebEdge,
   CharacterNodeData,
+  parseRelationshipType,
+  readRelationshipEdgeEvidence,
+  readRelationshipEdgeLlmGrounded,
   RELATIONSHIP_STYLES,
   RelationshipMatrixResponse,
-  RelationshipType,
 } from './types'
 
 // Register custom node types
@@ -264,7 +266,7 @@ function convertToFlowData(data: RelationshipMatrixResponse): {
   }))
 
   const edges: CharacterWebEdge[] = data.edges.map((e, _index) => {
-    const relType = (e.type as RelationshipType) || 'related'
+    const relType = parseRelationshipType(e.type)
     const style = RELATIONSHIP_STYLES[relType] || RELATIONSHIP_STYLES.related
 
     // Scale stroke width by weight for visual weight
@@ -278,7 +280,7 @@ function convertToFlowData(data: RelationshipMatrixResponse): {
       label: e.label || relType.replace(/_/g, ' '),
       labelStyle: { fill: '#94a3b8', fontSize: 9, fontWeight: 500 },
       labelBgStyle: { fill: '#18181b', fillOpacity: 0.8 },
-      labelBgPadding: [4, 2] as [number, number],
+      labelBgPadding: [4, 2] satisfies [number, number],
       style: {
         stroke: style.color,
         strokeWidth: scaledWidth,
@@ -470,7 +472,7 @@ export function CharacterWeb({
           opacity: Math.max(0.3, edge.data?.strength || 0.5),
           transition: 'opacity 0.3s ease',
         },
-        labelStyle: { ...((edge.labelStyle as any) || {}), opacity: 1 },
+        labelStyle: { ...(edge.labelStyle ?? {}), opacity: 1 },
       }))
     }
 
@@ -484,7 +486,7 @@ export function CharacterWeb({
           transition: 'opacity 0.3s ease',
         },
         labelStyle: {
-          ...((edge.labelStyle as any) || {}),
+          ...(edge.labelStyle ?? {}),
           opacity: isConnected ? 1 : 0,
         },
       }
@@ -604,17 +606,16 @@ export function CharacterWeb({
 
         {showMinimap && (
           <MiniMap
-            nodeColor={node => {
-              const data = node.data as CharacterNodeData
-              const colors: Record<string, string> = {
+            nodeColor={(node: CharacterWebNode) => {
+              const nodeType = node.data.type
+              const colors: Record<CharacterNodeData['type'], string> = {
                 character: '#9333ea',
                 faction: '#3b82f6',
                 place: '#10b981',
                 event: '#f59e0b',
                 rule: '#f43f5e',
-                item: '#8b5cf6',
               }
-              return colors[data.type] || '#6b7280'
+              return colors[nodeType] ?? '#6b7280'
             }}
             style={{ backgroundColor: '#18181b' }}
             maskColor="rgba(0,0,0,0.8)"
@@ -846,8 +847,8 @@ function EdgeDetailsPanel({
   const data = edge.data
   const relType = data?.relationshipType || 'related'
   const strength = data?.strength ?? 0
-  const evidence = data?.evidence as string | undefined
-  const llmGrounded = data?.llmGrounded as boolean | undefined
+  const evidence = readRelationshipEdgeEvidence(data)
+  const llmGrounded = readRelationshipEdgeLlmGrounded(data)
 
   const getLabel = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')
 

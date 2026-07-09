@@ -242,7 +242,7 @@ interface SidebarSettingsBoxProps {
   icon?: React.ReactNode
 }
 
-const SidebarSettingsBox: React.FC<SidebarSettingsBoxProps> = ({
+export const SidebarSettingsBox: React.FC<SidebarSettingsBoxProps> = ({
   title,
   children,
   className,
@@ -419,7 +419,7 @@ interface SidebarToggleRowProps {
   className?: string
 }
 
-const SidebarToggleRow: React.FC<SidebarToggleRowProps> = ({
+export const SidebarToggleRow: React.FC<SidebarToggleRowProps> = ({
   label,
   checked,
   onChange,

@@ -4,8 +4,4 @@ export const config = {
   // Using the project from recent user testing
   TEST_PROJECT_ID: process.env.TEST_PROJECT_ID || '0696e553-d361-4a36-a839-fb9c5e570e75',
   TEST_EPISODE_ID: process.env.TEST_EPISODE_ID || '',
-
-  // LangSmith
-  LANGCHAIN_TRACING_V2: process.env.LANGCHAIN_TRACING_V2 || 'true',
-  LANGCHAIN_API_KEY: process.env.LANGCHAIN_API_KEY,
 }

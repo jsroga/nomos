@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { FalClient, SamParams } from '@/shared/ai/fal'
+import { recordFromJson } from '@/shared/data/json-guards'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 // Set max duration for longer processing (App Router)
 export const maxDuration = 60
+
+function parseSamParams(value: unknown): SamParams | undefined {
+  const record = recordFromJson(value)
+  if (Object.keys(record).length === 0) return undefined
+  return {
+    returnMultipleMasks: record.returnMultipleMasks === true ? true : undefined,
+    includeScores: record.includeScores === true ? true : undefined,
+    includeBoxes: record.includeBoxes === true ? true : undefined,
+  }
+}
 
 /**
  * POST /api/ai/fal-segment
@@ -55,7 +66,7 @@ export const POST = withRateLimit(
     }
 
     const client = new FalClient(apiKey)
-    const output = await client.segmentObject(image, box, textPrompt, samParams as SamParams)
+    const output = await client.segmentObject(image, box, textPrompt, parseSamParams(samParams))
 
     return NextResponse.json({ output })
   }),

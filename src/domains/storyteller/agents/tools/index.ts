@@ -5,6 +5,11 @@
  * All tools follow Mastra v1 patterns: createTool with (inputData, context) execute signature.
  */
 
+// Side effect: registers the storyteller agents + beat-draft-workflow on the
+// kernel runtime registry BEFORE any agent constructor can call
+// getMastraInstance() (every agent imports this barrel). See io/mastra-runtime.
+import '@/domains/storyteller/io/mastra-runtime'
+
 import { manageBeatTool, listBeatsTool } from './beat-tools'
 import { manageCharacterTool, listCharactersTool } from './character-tools'
 import { manageEpisodeTool, listEpisodesTool } from './episode-tools'
@@ -25,19 +30,9 @@ export { manageEpisodeTool, listEpisodesTool } from './episode-tools'
 // World Bible + Continuity (3 tools)
 export { updateWorldBibleTool, readWorldBibleTool, checkContinuityTool } from './bible-tools'
 
-// Legacy council tools (writers' room — until workflow migration)
-export {
-  selfCritiqueTool,
-  improveDialogueTool,
-  addVisualHookTool,
-  condenseSceneTool,
-  regenerateTextTool,
-  shiftToneTool,
-  analyzePsychologyTool,
-  simulateReactionTool,
-  assessRelationshipTool,
-  quickConsistencyCheckTool,
-} from './legacy-council-tools'
+// Workflow entry (tool #10) — for the CHAT adapter only, never the author
+// (the author runs inside the workflow; recursion guard).
+export { runBeatDraftWorkflowTool } from './workflow-tool'
 
 /**
  * All tools for the GRRM Agent

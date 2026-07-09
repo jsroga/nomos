@@ -41,9 +41,15 @@ Structure is enforced by `src/__tests__/structure.test.ts` and `src/__tests__/sr
 ### TypeScript & ESLint (strict)
 
 - **`tsconfig.json`**: `strict: true` (includes `noImplicitAny` — implicit `any` is a compile error).
-- **`eslint.config.js`**: `@typescript-eslint/strict` rules; `@typescript-eslint/no-explicit-any` is **`error`** (blocks `: any`, `as any`, etc.).
+- **`eslint.config.js`** (see also `.cursor/rules/eslint-boundaries.mdc`):
+  - `@typescript-eslint/strict` + `@typescript-eslint/no-explicit-any`: **`error`**
+  - `@typescript-eslint/consistent-type-assertions`: **`error`**, `assertionStyle: 'never'` (`as const` only)
+  - **Cross-domain isolation**: `src/domains/<A>` must not import `@/domains/<B>` — use `@/shared`
+  - Barrel guards for non-domain code importing domain internals
+  - Shared deep merge: `@/shared/data/deep-merge` (`deepMerge`, `deepMergeRecords`, `recordFromJson`)
+- **Style preference:** magic string protocol values → TypeScript **`enum`**, not `as const` object maps
 - **Pre-commit**: staged-file ESLint via `scripts/pre-commit-lint.mjs`; full repo: `npm run lint` / `npm run check:lint`.
-- Legacy files may still use `@ts-nocheck` during migration; new code must not add `any` or disable typing without a tracked exception.
+- Legacy files may still use `@ts-nocheck` during migration; new code must not add `any`, `as` casts, or cross-domain imports.
 
 ---
 

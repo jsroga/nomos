@@ -226,7 +226,7 @@ const getSeriesBible = createTool({
 const storytellerChat = createTool({
   id: 'storyteller_chat',
   description:
-    'Send a message to the storyteller writers room and get a response. This invokes the LangGraph multi-agent workflow with supervisor, planner, and specialist agents. All calls are traced in LangSmith.',
+    'Send a message to the storyteller chat agent and get a response. Handles world-bible questions and updates; creative beat drafting is delegated to the beat-draft workflow.',
   inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID for context'),
     message: z.string().describe('The message to send to the writers room'),

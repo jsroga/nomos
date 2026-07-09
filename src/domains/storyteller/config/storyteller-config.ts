@@ -10,7 +10,7 @@
  * 3. Runtime configuration
  */
 
-import { deepMerge } from '@/domains/storyteller/core/editing/DeepMerge'
+import { deepMerge } from '@/shared/data/deep-merge'
 
 // ============================================
 // TYPES
@@ -155,7 +155,10 @@ const DEFAULT_CONFIG: StorytellerConfig = {
   prompts: {
     useHub: process.env.STORYTELLER_USE_PROMPT_HUB !== 'false', // Default to TRUE
     hubOwner: process.env.LANGSMITH_HUB_OWNER || 'tilemap',
-    environment: (process.env.STORYTELLER_PROMPT_ENV as 'production' | 'staging' | 'dev') || 'dev', // Default to dev, safer than production
+    environment:
+      (['production', 'staging', 'dev'] as const).find(
+        env => env === process.env.STORYTELLER_PROMPT_ENV
+      ) ?? 'dev', // Default to dev, safer than production
     fallbackToLocal: false, // Strict mode by default
   },
 
@@ -183,7 +186,7 @@ let runtimeConfig: Partial<StorytellerConfig> = {}
  * Merges default config with runtime overrides
  */
 export function getStorytellerConfig(): StorytellerConfig {
-  return deepMerge(DEFAULT_CONFIG, runtimeConfig) as StorytellerConfig
+  return deepMerge<StorytellerConfig>(DEFAULT_CONFIG, runtimeConfig)
 }
 
 /**

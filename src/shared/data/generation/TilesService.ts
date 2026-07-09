@@ -7,6 +7,7 @@
 
 import { tasks, runs } from '@trigger.dev/sdk/v3'
 import { z } from 'zod'
+import { recordFromJson } from '@/shared/data/json-guards'
 
 // ============================================
 // SCHEMAS
@@ -139,7 +140,7 @@ export class TilesService {
         status: run.status,
         output: run.output,
         error: run.error?.message,
-        metadata: run.metadata as Record<string, unknown> | undefined,
+        metadata: recordFromJson(run.metadata),
         createdAt: run.createdAt?.toISOString(),
         updatedAt: run.updatedAt?.toISOString(),
       }

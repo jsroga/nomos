@@ -36,6 +36,21 @@ export interface VoyageEmbeddingConfig {
   outputDimension?: number
 }
 
+const VOYAGE_MODEL_VALUES: NonNullable<VoyageEmbeddingConfig['model']>[] = [
+  'voyage-3',
+  'voyage-3-lite',
+  'voyage-code-3',
+]
+
+function parseVoyageModel(value: unknown): NonNullable<VoyageEmbeddingConfig['model']> {
+  const raw = typeof value === 'string' ? value : null
+  if (!raw) return VOYAGE_MODEL
+  for (const model of VOYAGE_MODEL_VALUES) {
+    if (model === raw) return model
+  }
+  return VOYAGE_MODEL
+}
+
 interface VoyageAPIResponse {
   object: string
   data: Array<{
@@ -208,11 +223,11 @@ async function callVoyageAPI(
  * Pure implementation without LangChain dependency
  */
 export class VoyageEmbeddings implements IEmbeddings {
-  private model: string
+  private model: NonNullable<VoyageEmbeddingConfig['model']>
   private truncation: boolean
 
   constructor(config?: Partial<VoyageEmbeddingConfig>) {
-    this.model = config?.model || VOYAGE_MODEL
+    this.model = parseVoyageModel(config?.model)
     this.truncation = config?.truncation ?? true
   }
 
@@ -248,7 +263,7 @@ export class VoyageEmbeddings implements IEmbeddings {
       let embeddingIndex = 0
       for (const batch of batches) {
         const embeddings = await callVoyageAPI(batch, {
-          model: this.model as VoyageEmbeddingConfig['model'],
+          model: this.model,
           inputType: 'document',
           truncation: this.truncation,
         })
@@ -278,7 +293,7 @@ export class VoyageEmbeddings implements IEmbeddings {
     if (cached) return cached
 
     const embeddings = await callVoyageAPI([text], {
-      model: this.model as VoyageEmbeddingConfig['model'],
+          model: this.model,
       inputType: 'query',
       truncation: this.truncation,
     })
@@ -322,7 +337,7 @@ export class VoyageEmbeddings implements IEmbeddings {
       let embeddingIndex = 0
       for (const batch of batches) {
         const embeddings = await callVoyageAPI(batch, {
-          model: this.model as VoyageEmbeddingConfig['model'],
+          model: this.model,
           inputType: 'query',
           truncation: this.truncation,
         })

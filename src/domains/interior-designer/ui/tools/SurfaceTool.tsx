@@ -7,7 +7,11 @@ import { useThree, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Line } from '@react-three/drei'
 
-// Constants for different surface types
+type SurfacePreviewGeometry =
+  | { type: 'shape'; shape: THREE.Shape; color: string }
+  | { type: 'line'; points: THREE.Vector3[]; width: number; color: string }
+  | { type: 'curve'; path: THREE.CatmullRomCurve3; width: number; color: string }
+
 // Constants for different surface types
 const SURFACE_CONFIG: Record<
   SurfaceType,
@@ -184,7 +188,7 @@ export const SurfaceTool: React.FC = () => {
 
   // --- Preview Generation ---
 
-  const previewGeometry = useMemo(() => {
+  const previewGeometry = useMemo((): SurfacePreviewGeometry | null => {
     if (mode !== 'SURFACE' || points.length === 0 || !currentPoint) return null
 
     const allPoints = [...points.map(p => new THREE.Vector3(...p)), currentPoint]
@@ -254,7 +258,7 @@ export const SurfaceTool: React.FC = () => {
         <>
           {previewGeometry.type === 'shape' && (
             <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
-              <shapeGeometry args={[previewGeometry.shape as THREE.Shape]} />
+              <shapeGeometry args={[previewGeometry.shape]} />
               <meshBasicMaterial
                 color={previewGeometry.color}
                 opacity={0.4}
@@ -266,7 +270,7 @@ export const SurfaceTool: React.FC = () => {
 
           {previewGeometry.type === 'line' && (
             <Line
-              points={previewGeometry.points as THREE.Vector3[]}
+              points={previewGeometry.points}
               color={previewGeometry.color}
               lineWidth={2}
               dashed
@@ -278,7 +282,7 @@ export const SurfaceTool: React.FC = () => {
             <mesh position={[0, 0.05, 0]}>
               <tubeGeometry
                 args={[
-                  previewGeometry.path as THREE.Curve<THREE.Vector3>,
+                  previewGeometry.path,
                   64,
                   (previewGeometry.width || 1) / 2,
                   8,

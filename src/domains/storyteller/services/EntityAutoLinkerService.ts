@@ -9,6 +9,8 @@
  * Output: "[The Mood Wardens][faction-the-mood-wardens] control the city"
  */
 
+import { namedRecordsFromJson, readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+
 interface EntityMatch {
   name: string
   id: string
@@ -41,19 +43,19 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
     if (!project) return text
 
     // Fetch story plan content separately if needed (avoids heavy join)
-    let storyPlan = (project.storyPlan as any) || {}
+    let storyPlan = recordFromJson(project.storyPlan)
 
     // If no legacy storyPlan, check the table
-    if (!project.storyPlan) {
+    if (Object.keys(storyPlan).length === 0) {
       const sp = await db.query.storyPlans.findFirst({
         where: eq(storyPlans.projectId, projectId),
       })
       if (sp?.content) {
-        storyPlan = sp.content
+        storyPlan = recordFromJson(sp.content)
       }
     }
 
-    const seriesBible = (project.seriesBible as any) || {}
+    const seriesBible = recordFromJson(project.seriesBible)
 
     // Fetch characters from the characters table
     const projectCharacters = await db.query.characters.findMany({
@@ -66,43 +68,35 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
     const entityMap = new Map<string, { id: string; type: string }>()
 
     // Add factions
-    const factions = storyPlan.factions || []
+    const factions = namedRecordsFromJson(storyPlan.factions)
     for (const faction of factions) {
-      if (faction?.name) {
-        const factionId = `faction-${faction.id?.slice(0, 8) || faction.name.toLowerCase().replace(/\s+/g, '-')}`
-        entityMap.set(faction.name.toLowerCase(), { id: factionId, type: 'faction' })
+      const name = faction.name
+      const factionId = `faction-${readString(faction.id)?.slice(0, 8) || name.toLowerCase().replace(/\s+/g, '-')}`
+      entityMap.set(name.toLowerCase(), { id: factionId, type: 'faction' })
 
-        // Also add "The" variants if applicable
-        if (faction.name.startsWith('The ')) {
-          const withoutThe = faction.name.slice(4)
-          entityMap.set(withoutThe.toLowerCase(), { id: factionId, type: 'faction' })
-        }
+      if (name.startsWith('The ')) {
+        const withoutThe = name.slice(4)
+        entityMap.set(withoutThe.toLowerCase(), { id: factionId, type: 'faction' })
       }
     }
 
-    // Add characters from storyPlan.keyCharacters as well
-    const keyCharacters = storyPlan.keyCharacters || []
+    const keyCharacters = recordArrayFromJson(storyPlan.keyCharacters)
     const allCharacters = [...cast, ...keyCharacters]
 
-    // DEBUG: console.log(`[AutoLinker] Found ${allCharacters.length} total characters`)
+    for (const rawChar of allCharacters) {
+      const char = recordFromJson(rawChar)
+      const charName = readString(char.name)
+      if (charName) {
+        const charId = `char-${readString(char.id)?.slice(0, 8) || charName.toLowerCase().replace(/\s+/g, '-')}`
+        entityMap.set(charName.toLowerCase(), { id: charId, type: 'character' })
 
-    for (const char of allCharacters) {
-      if (char?.name) {
-        const charId = `char-${char.id?.slice(0, 8) || char.name.toLowerCase().replace(/\s+/g, '-')}`
-        entityMap.set(char.name.toLowerCase(), { id: charId, type: 'character' })
-
-        // console.log(`[AutoLinker] Added character: "${char.name}" -> ${charId}`)
-
-        // Also add first name only if it's unique
-        const firstName = char.name.split(' ')[0]
+        const firstName = charName.split(' ')[0]
         if (firstName && firstName.length > 2 && !entityMap.has(firstName.toLowerCase())) {
           entityMap.set(firstName.toLowerCase(), { id: charId, type: 'character' })
-          // console.log(`[AutoLinker] Added first name: "${firstName}" -> ${charId}`)
         }
 
-        // Also add "The" variant for titles (e.g. "The Commander")
-        if (char.name.startsWith('The ')) {
-          const withoutThe = char.name.slice(4)
+        if (charName.startsWith('The ')) {
+          const withoutThe = charName.slice(4)
           if (withoutThe.length > 2 && !entityMap.has(withoutThe.toLowerCase())) {
             entityMap.set(withoutThe.toLowerCase(), { id: charId, type: 'character' })
           }
@@ -110,47 +104,49 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
       }
     }
 
-    // Add world rules (referenced by rule text)
-    const worldRules = storyPlan.worldRules || []
-    for (const rule of worldRules) {
-      if (rule?.rule) {
-        const ruleId = `rule-${rule.id?.slice(0, 8) || rule.rule.toLowerCase().replace(/\s+/g, '-').slice(0, 30)}`
-        // Use first 5 words of rule as potential match
-        const ruleKey = rule.rule.split(' ').slice(0, 5).join(' ').toLowerCase()
+    const worldRules = recordArrayFromJson(storyPlan.worldRules)
+    for (const rawRule of worldRules) {
+      const rule = recordFromJson(rawRule)
+      const ruleText = readString(rule.rule)
+      if (ruleText) {
+        const ruleId = `rule-${readString(rule.id)?.slice(0, 8) || ruleText.toLowerCase().replace(/\s+/g, '-').slice(0, 30)}`
+        const ruleKey = ruleText.split(' ').slice(0, 5).join(' ').toLowerCase()
         entityMap.set(ruleKey, { id: ruleId, type: 'rule' })
       }
     }
 
-    // Add items
-    const items = storyPlan.items || []
-    for (const item of items) {
-      if (item?.name) {
-        const itemId = `item-${item.id?.slice(0, 8) || item.name.toLowerCase().replace(/\s+/g, '-')}`
-        entityMap.set(item.name.toLowerCase(), { id: itemId, type: 'item' })
+    const items = recordArrayFromJson(storyPlan.items)
+    for (const rawItem of items) {
+      const item = recordFromJson(rawItem)
+      const itemName = readString(item.name)
+      if (itemName) {
+        const itemId = `item-${readString(item.id)?.slice(0, 8) || itemName.toLowerCase().replace(/\s+/g, '-')}`
+        entityMap.set(itemName.toLowerCase(), { id: itemId, type: 'item' })
 
-        if (item.name.startsWith('The ')) {
-          const withoutThe = item.name.slice(4)
+        if (itemName.startsWith('The ')) {
+          const withoutThe = itemName.slice(4)
           entityMap.set(withoutThe.toLowerCase(), { id: itemId, type: 'item' })
         }
       }
     }
 
-    // Add events
-    const events = storyPlan.events || []
-    for (const event of events) {
-      if (event?.name) {
-        const eventId = `event-${event.id?.slice(0, 8) || event.name.toLowerCase().replace(/\s+/g, '-')}`
-        entityMap.set(event.name.toLowerCase(), { id: eventId, type: 'event' })
+    const events = recordArrayFromJson(storyPlan.events)
+    for (const rawEvent of events) {
+      const event = recordFromJson(rawEvent)
+      const eventName = readString(event.name)
+      if (eventName) {
+        const eventId = `event-${readString(event.id)?.slice(0, 8) || eventName.toLowerCase().replace(/\s+/g, '-')}`
+        entityMap.set(eventName.toLowerCase(), { id: eventId, type: 'event' })
 
-        if (event.name.startsWith('The ')) {
-          const withoutThe = event.name.slice(4)
+        if (eventName.startsWith('The ')) {
+          const withoutThe = eventName.slice(4)
           entityMap.set(withoutThe.toLowerCase(), { id: eventId, type: 'event' })
         }
       }
     }
 
-    // Extract potential places from world description (proper nouns with "The")
-    const worldDesc = storyPlan.worldDescription || seriesBible.worldDescription || ''
+    const worldDesc =
+      readString(storyPlan.worldDescription) ?? readString(seriesBible.worldDescription) ?? ''
     if (worldDesc) {
       // Match capitalized phrases that might be place names
       // Pattern: "The [Capitalized Word(s)]" or standalone "Capitalized Word(s)"

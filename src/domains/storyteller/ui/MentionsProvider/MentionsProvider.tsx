@@ -7,6 +7,7 @@ import {
   buildStorytellerProjectContext,
   getStorytellerMentionProviders,
 } from './providers'
+import { recordArrayFromJson, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 
 interface MentionsContextValue {
   mentionProviders: MentionProvider[]
@@ -15,10 +16,14 @@ interface MentionsContextValue {
 
 const MentionsContext = createContext<MentionsContextValue | null>(null)
 
+import type { StorytellerCharacter } from '@/domains/storyteller/core/entities/character-wire'
+
+import type { BeatCard } from '@/domains/storyteller/core/types/StoryTypes'
+
 interface MentionsProviderProps {
   projectId: string
-  characters?: Array<{ id: string; name: string; [key: string]: unknown }>
-  beats?: Array<{ id: string; [key: string]: unknown }>
+  characters?: StorytellerCharacter[]
+  beats?: BeatCard[]
   storyPlan?: Record<string, unknown> | null
   children: React.ReactNode
 }
@@ -30,8 +35,9 @@ export function MentionsProvider({
   storyPlan,
   children,
 }: MentionsProviderProps) {
-  const value = useMemo<MentionsContextValue>(
-    () => ({
+  const value = useMemo<MentionsContextValue>(() => {
+    const plan = recordFromJson(storyPlan)
+    return {
       mentionProviders: [...getStorytellerMentionProviders(), getGameEntityProvider()],
       projectContext: buildStorytellerProjectContext({
         projectId,
@@ -39,17 +45,16 @@ export function MentionsProvider({
         episodes: [],
         beats,
         seriesBible: {
-          ...storyPlan,
-          worldRules: (storyPlan?.worldRules as unknown[]) || [],
-          inspirations: storyPlan?.inspirations,
-          soundtracks: (storyPlan?.soundtracks as unknown[]) || [],
-          plotTwists: (storyPlan?.plotTwists as string[]) || [],
-          factions: (storyPlan?.factions as unknown[]) || [],
+          ...plan,
+          worldRules: recordArrayFromJson(plan.worldRules),
+          inspirations: plan.inspirations,
+          soundtracks: recordArrayFromJson(plan.soundtracks),
+          plotTwists: stringArrayFromJson(plan.plotTwists),
+          factions: recordArrayFromJson(plan.factions),
         },
       }),
-    }),
-    [projectId, characters, beats, storyPlan]
-  )
+    }
+  }, [projectId, characters, beats, storyPlan])
 
   return <MentionsContext.Provider value={value}>{children}</MentionsContext.Provider>
 }

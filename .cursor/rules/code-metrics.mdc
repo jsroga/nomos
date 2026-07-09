@@ -1,0 +1,62 @@
+---
+description: File line count and cyclomatic complexity limits — enforced in ESLint and typecheck; agents must gate touched files
+globs: "**/*.ts,**/*.tsx"
+alwaysApply: true
+---
+
+# Code metrics (file size + complexity)
+
+Shared limits: `scripts/code-metrics-limits.cjs`. Enforced in **two places** with the same thresholds:
+
+| Metric | Warn | Error (hard) |
+|--------|------|--------------|
+| File lines (blank lines + `//`/`/*` comments skipped) | 400 | 800 |
+| Cyclomatic complexity per function | 15 | 25 |
+
+## ESLint (IDE + `npm run lint`)
+
+| Rule | Severity |
+|------|----------|
+| `max-lines` | warn @ 400 |
+| `local/max-lines-strict` | error @ 800 |
+| `complexity` | warn @ 15 |
+| `local/complexity-strict` | error @ 25 |
+
+## Typecheck (`tsc` + metrics script)
+
+`npm run typecheck` = `tsc --noEmit` **then** `scripts/check-code-metrics.mjs` (TypeScript AST, same limits).
+
+Standalone: `npm run qualitygate:metrics`
+
+Pre-commit runs metrics on **staged** files only (`scripts/pre-commit-typecheck.mjs`).
+
+## Agent workflow
+
+**After editing any `src/**/*.ts(x)` file:**
+
+```bash
+npm run qualitygate:file -- src/path/to/File.tsx   # TSC + ESLint + code metrics (~5–15s)
+```
+
+**Many failures?** `npm run qualitygate:capture` once → fix one item at a time from `.local/quality-backlog.md` → rescan every **5** fixes. See `quality-backlog.mdc`.
+
+**Every 3 completed todos:** `npm run qualitygate:changed`
+
+**Do not** `eslint-disable` these rules. **Do not** use bulk `node -e` / heredoc scripts to rewrite `src/` — extract incrementally (see `refactor-discipline.mdc`).
+
+## Splitting oversized files
+
+1. Plan targets first (layout → hooks → panels → utils).
+2. **One extract per step** — move one unit, fix imports, delete from source.
+3. Gate with `qualitygate:file` before the next extract.
+4. New files should land **≤400 lines**; **800 is a hard error**.
+
+Route pages (`src/app/**/page.tsx`) stay thin shells — orchestration belongs in `src/domains/<module>/`.
+
+## Legacy debt
+
+Full-repo `npm run typecheck` / `qualitygate:metrics` may fail on pre-existing violations. **Touched files must be clean** before handoff. Tracker: `SRC-QUALITY-TRACKER.md` · refresh: `npm run qualitygate:tracker -- --skip-tsc`.
+
+## Exempt from metrics rules
+
+`eslint.config.js`, `eslint-rules/**`, `scripts/**` (tooling only — not `src/`).

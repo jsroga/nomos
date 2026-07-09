@@ -1,21 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { workflowStore } from '@/domains/storyteller/server'
+import { getMastraInstance } from '@/shared/agent-kernel'
+import {
+  BEAT_DRAFT_WORKFLOW_ID,
+  VERDICT_STEP_ID,
+} from '@/domains/storyteller/io/mastra-runtime'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export const runtime = 'nodejs'
 
+/**
+ * Request contract is UNCHANGED (published — `useChatStream.resumeWorkflow()`
+ * sends exactly this shape). `selectedOption` maps to the workflow verdict
+ * server-side: approve / revise / kill. `additionalFeedback` becomes the
+ * editor's note (outranks the critics in the revision prompt).
+ */
 const ResumeSchema = z.object({
   runId: z.string(),
   selectedOption: z.string(),
   additionalFeedback: z.string().optional(),
 })
 
+const VERDICT_ACTIONS = ['approve', 'revise', 'kill'] as const
+type VerdictAction = (typeof VERDICT_ACTIONS)[number]
+
+function toVerdictAction(selectedOption: string): VerdictAction | null {
+  const normalized = selectedOption.trim().toLowerCase()
+  return VERDICT_ACTIONS.find(action => action === normalized) ?? null
+}
+
 /**
  * POST /api/storyteller/workflow/resume
  *
- * Resumes a suspended workflow with user's choice.
- * Used by the UI when user answers a question from the Writers Room.
+ * Resumes a suspended beat-draft-workflow run with the editor's verdict.
+ * Runs are resolved from Mastra storage — a suspended verdict survives
+ * server restarts and can be resumed from any instance.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -31,20 +50,48 @@ export async function POST(req: NextRequest) {
 
     const { runId, selectedOption, additionalFeedback } = payload.data
 
-    // Check if workflow exists
-    const suspended = workflowStore.get(runId)
-    if (!suspended) {
+    const action = toVerdictAction(selectedOption)
+    if (!action) {
+      return NextResponse.json(
+        {
+          error: `Unknown option: ${selectedOption}. Expected approve, revise, or kill.`,
+          runId,
+        },
+        { status: 400 }
+      )
+    }
+
+    const workflow = getMastraInstance().getWorkflow(BEAT_DRAFT_WORKFLOW_ID)
+    if (!workflow) {
+      return NextResponse.json(
+        { error: 'Workflow not registered' },
+        { status: 500 }
+      )
+    }
+
+    // Recover the persisted run state from storage (survives restarts).
+    const state = await workflow.getWorkflowRunById(runId)
+    if (!state || state.status !== 'suspended') {
       return NextResponse.json(
         { error: 'Workflow not found or already completed', runId },
         { status: 404 }
       )
     }
 
-    // Resume the workflow
-    const resumed = workflowStore.resume(runId, { selectedOption, additionalFeedback })
+    const run = await workflow.createRun({ runId })
+    const result = await run.resume({
+      step: VERDICT_STEP_ID,
+      resumeData: {
+        action,
+        ...(additionalFeedback ? { note: additionalFeedback } : {}),
+      },
+    })
 
-    if (!resumed) {
-      return NextResponse.json({ error: 'Failed to resume workflow' }, { status: 500 })
+    if (result.status === 'failed') {
+      return NextResponse.json(
+        { error: 'Failed to resume workflow', runId, details: getErrorMessage(result.error) },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({
@@ -65,35 +112,32 @@ export async function POST(req: NextRequest) {
 /**
  * GET /api/storyteller/workflow/resume?runId=xxx
  *
- * Check status of a suspended workflow
+ * Check status of a suspended workflow run (from durable storage).
  */
 export async function GET(req: NextRequest) {
   const runId = req.nextUrl.searchParams.get('runId')
 
   if (!runId) {
-    // Return all suspended workflows (for debugging)
-    const workflows = workflowStore.list()
-    return NextResponse.json({
-      count: workflows.length,
-      workflows: workflows.map(w => ({
-        runId: w.runId,
-        stepId: w.stepId,
-        projectId: w.projectId,
-        suspendedAt: new Date(w.suspendedAt).toISOString(),
-      })),
-    })
+    return NextResponse.json(
+      { error: 'runId query parameter is required' },
+      { status: 400 }
+    )
   }
 
-  const suspended = workflowStore.get(runId)
-  if (!suspended) {
+  const workflow = getMastraInstance().getWorkflow(BEAT_DRAFT_WORKFLOW_ID)
+  if (!workflow) {
+    return NextResponse.json({ error: 'Workflow not registered' }, { status: 500 })
+  }
+
+  const state = await workflow.getWorkflowRunById(runId)
+  if (!state) {
     return NextResponse.json({ found: false, runId }, { status: 404 })
   }
 
   return NextResponse.json({
     found: true,
-    runId: suspended.runId,
-    stepId: suspended.stepId,
-    projectId: suspended.projectId,
-    suspendedAt: new Date(suspended.suspendedAt).toISOString(),
+    runId,
+    status: state.status,
+    stepId: state.status === 'suspended' ? VERDICT_STEP_ID : undefined,
   })
 }

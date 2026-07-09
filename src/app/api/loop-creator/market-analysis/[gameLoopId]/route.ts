@@ -25,6 +25,13 @@ interface RouteParams {
   params: Promise<{ gameLoopId: string }>
 }
 
+function parseTrendDirection(value: unknown): 'rising' | 'stable' | 'declining' {
+  if (value === 'rising' || value === 'stable' || value === 'declining') {
+    return value
+  }
+  return 'stable'
+}
+
 /**
  * GET - Retrieve saved market analysis for a game loop
  * Uses eager loading to fetch all related data in a single query
@@ -107,7 +114,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
       trends: (analysis.trends || []).map(t => ({
         trend: t.trendName,
-        direction: t.direction as 'rising' | 'stable' | 'declining',
+        direction: parseTrendDirection(t.direction),
         relevance: t.relevance,
         description: t.description,
         timeframe: t.timeframe || '',

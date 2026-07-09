@@ -162,7 +162,7 @@ export async function balanceAnalystAgent(
   // Check if there's anything to analyze
   if (state.mechanics.length === 0) {
     return {
-      nextAgent: 'supervisor' as NextAgent,
+      nextAgent: 'supervisor',
       messages: [
         new AIMessage({
           content: 'No mechanics to analyze yet. Please design some mechanics first.',
@@ -240,7 +240,7 @@ export async function balanceAnalystAgent(
   return {
     balanceAnalysis,
     pendingActions: actions,
-    nextAgent: 'supervisor' as NextAgent,
+    nextAgent: 'supervisor',
     messages: [
       new AIMessage({
         content: userMessage,

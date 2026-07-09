@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { OnboardingState, DEFAULT_ONBOARDING_STATE, ModuleId } from '@/shared/types/onboarding'
+import { OnboardingState, DEFAULT_ONBOARDING_STATE, parseModuleId } from '@/shared/types/onboarding'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 
@@ -43,16 +43,20 @@ export async function POST(req: NextRequest) {
         currentState.routes[route].skipped = true
       }
     } else if (moduleId && (action === 'complete' || action === 'skip')) {
+      const parsedModuleId = parseModuleId(moduleId)
+      if (!parsedModuleId) {
+        return NextResponse.json({ error: 'Invalid moduleId' }, { status: 400 })
+      }
       // Legacy: per-module tracking (for backward compatibility)
       if (!currentState.modules) currentState.modules = { ...DEFAULT_ONBOARDING_STATE.modules }
-      if (!currentState.modules[moduleId as ModuleId]) {
-        currentState.modules[moduleId as ModuleId] = { completed: false, skipped: false }
+      if (!currentState.modules[parsedModuleId]) {
+        currentState.modules[parsedModuleId] = { completed: false, skipped: false }
       }
 
       if (action === 'complete') {
-        currentState.modules[moduleId as ModuleId].completed = true
+        currentState.modules[parsedModuleId].completed = true
       } else {
-        currentState.modules[moduleId as ModuleId].skipped = true
+        currentState.modules[parsedModuleId].skipped = true
       }
     }
 

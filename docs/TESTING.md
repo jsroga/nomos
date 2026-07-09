@@ -50,10 +50,38 @@ npm run eval -- --scorers=consistency
 
 Uses Mastra `createScorer` definitions in `src/shared/agent-kernel/scorers/` (also registered on the Mastra instance). Golden set: 12 examples in `evals/datasets/storyteller-golden.ts` (3 per scorer), each with `referenceOutput` and per-example `metadata.scorers`. Results land in `evals/results/latest.json`; view via `npm run eval:dashboard`.
 
+### Scorer gating matrix
+
+Which scorers must not regress, by what you changed. Run at least the listed
+scorers (`npm run eval -- --scorers=<ids>`) and compare to
+`evals/results/latest.json` before merging:
+
+| Change touches… | Gate on scorers |
+| --- | --- |
+| Author prompt (`GrrmSystemPrompt`), author model, draft/revise steps | `magic`, `prose-craft`, `stakes-cost` |
+| Beat planner prompt/model, beat-plan schema, concreteness gate | `magic`, `stakes-cost` |
+| Tools, context assembly, canon formatting | `consistency`, `hallucination` |
+| Critic briefs / critic model | `prose-craft`, `stakes-cost` (critics feed the revise step) |
+| Persona/skill content (`prompts/skills/`) | `persona-fidelity` |
+| Anything in the workflow wiring only (no prompt/model change) | mechanics unit tests suffice; evals optional |
+
+**Ratchet policy:** a change ships only if **no gated scorer drops below the
+baseline in `evals/results/latest.json`**. An improvement in one scorer never
+buys back a regression in another. When a change legitimately moves a
+baseline (e.g. a new scorer lands), snapshot the old results first
+(`cp evals/results/latest.json evals/results/<date>-baseline.json`) and say so
+in the PR.
+
+`prose-craft` and `stakes-cost` also run attached to the `draft-script` and
+`revise` workflow steps (rate 1) — scores land in Mastra storage and are
+inspectable in Studio under Observability, so prompt tweaks are comparable
+across runs without a full eval sweep.
+
 ## Mastra / agent verification
 
 - **Studio:** `npm run mastra:dev` — manual agent + tool smoke (stub executes in Studio; full side effects need the app).
-- **Domain e2e:** `src/domains/storyteller/agents/__tests__/*.e2e.test.ts` — excluded from default `test:unit`; run explicitly when DB/keys are available.
+- **Domain e2e:** `src/domains/storyteller/**/__tests__/*.e2e.test.ts` — excluded from default `test:unit`; run explicitly when DB/keys are available.
+- **workflow-full tier:** `src/domains/storyteller/agents/workflows/__tests__/beat-draft-workflow.e2e.test.ts` — the beat-draft pipeline with real agents + DB (cheap role models). Needs `DATABASE_URL`, an LLM key, and `WORKFLOW_E2E_PROJECT_ID`/`WORKFLOW_E2E_EPISODE_ID` pointing at a scratch project. Asserts a persisted beat and that live critics quote a planted cliché without rewriting.
 
 ## What to add tests for
 

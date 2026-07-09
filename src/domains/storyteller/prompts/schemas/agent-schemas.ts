@@ -180,7 +180,7 @@ export const RoadmapEpisodeSchema = z.object({
 export const EpisodeRoadmapSchema = z.object({
   episodes: z.array(RoadmapEpisodeSchema).optional().describe('List of episodes in the season'),
   sequences: z.array(RoadmapEpisodeSchema).optional().describe('Legacy alias for episodes'),
-  seasonStructure: z.any().optional(), // Flexible for now
+  seasonStructure: z.record(z.unknown()).optional(), // Flexible for now (SeasonStructureSchema is declared below)
   executiveSummary: z.string().optional(),
 })
 
@@ -227,7 +227,7 @@ export const KeyCharacterSchema = z.object({
 
 export type KeyCharacter = z.infer<typeof KeyCharacterSchema>
 
-export const StoryPlanSchema = z.object({
+const StoryPlanBaseSchema = z.object({
   title: z.string(),
   genre: z.string(),
   tone: z.string(),
@@ -311,11 +311,16 @@ export const StoryPlanSchema = z.object({
 
   // Legacy / Reducer compatibility fields
   styleReference: z.string().nullable().optional(),
-  locations: z.array(z.any()).nullable().optional(),
-  storyPlan: z
-    .lazy(() => StoryPlanSchema.partial())
-    .nullable()
-    .optional(),
+  locations: z.array(z.record(z.unknown())).nullable().optional(),
+})
+
+/**
+ * StoryPlan with the legacy self-nested `storyPlan` compatibility field.
+ * Split from the base schema so the recursion is exactly one level deep and
+ * TypeScript can infer the type (a self-referential literal is TS7022).
+ */
+export const StoryPlanSchema = StoryPlanBaseSchema.extend({
+  storyPlan: StoryPlanBaseSchema.partial().nullable().optional(),
 })
 
 // ============================================

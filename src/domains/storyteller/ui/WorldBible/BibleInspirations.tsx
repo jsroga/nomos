@@ -1,4 +1,4 @@
-import React from 'react'
+import { recordArrayFromJson, recordFromJson, readString } from '@/shared/data/json-guards'
 import { Lightbulb, RefreshCw, Book, Film, Gamepad2, Loader2 } from 'lucide-react'
 import { InspirationItem } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
@@ -30,10 +30,11 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
 
     // If already in correct format (object with books/movies/games keys)
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-      return raw as {
-        books?: InspirationItem[]
-        movies?: InspirationItem[]
-        games?: InspirationItem[]
+      const categorized = recordFromJson(raw)
+      return {
+        books: recordArrayFromJson(categorized.books),
+        movies: recordArrayFromJson(categorized.movies),
+        games: recordArrayFromJson(categorized.games),
       }
     }
 

@@ -305,15 +305,14 @@ const SCORING_CRITERIA = {
 }
 
 function formatScoringCriteriaForPrompt(): string {
-  return Object.entries(SCORING_CRITERIA)
-    .map(([_key, game]) => {
-      const g = game as (typeof SCORING_CRITERIA)[keyof typeof SCORING_CRITERIA]
-      const aspects = g.aspects.join('; ')
-      const sauce = g.secretSauce.whatMadeItWork.join('; ')
-      const benchmarks = Object.entries(g.secretSauce.benchmarks)
+  return Object.values(SCORING_CRITERIA)
+    .map(game => {
+      const aspects = game.aspects.join('; ')
+      const sauce = game.secretSauce.whatMadeItWork.join('; ')
+      const benchmarks = Object.entries(game.secretSauce.benchmarks)
         .map(([k, v]) => `${k}: ${v}`)
         .join('; ')
-      return `- **${g.name}**: ${g.description}. Aspects: ${aspects}. What made it work: ${sauce}. Benchmarks: ${benchmarks}`
+      return `- **${game.name}**: ${game.description}. Aspects: ${aspects}. What made it work: ${sauce}. Benchmarks: ${benchmarks}`
     })
     .join('\n')
 }

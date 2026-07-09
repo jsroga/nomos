@@ -1,13 +1,41 @@
-import { StoryPlan } from '@/domains/storyteller/core/types/StoryPlanTypes'
 import { EntityReference } from '@/domains/storyteller/core/entities/EntityReferences'
 import { createRefId } from '@/domains/storyteller/core/entities/ReferenceParser'
+
+/**
+ * Minimal structural view of a story plan for entity extraction.
+ *
+ * Deliberately structural (not the core `StoryPlan` interface) so BOTH plan
+ * shapes in the codebase satisfy it without casts: the hand-written
+ * `core/types/StoryPlanTypes` interface (optional fields) and the
+ * zod-inferred `agent-schemas` plan (nullable fields).
+ */
+export interface EntityExtractablePlan {
+  factions?:
+    | Array<{
+        name: string
+        description?: string | null
+        ideology?: string | null
+        goals?: string[] | null
+        resources?: string | null
+        weaknesses?: string | null
+      }>
+    | null
+  keyCharacters?:
+    | Array<{
+        name: string
+        role?: string | null
+        archetype?: string | null
+        motivation?: string | null
+      }>
+    | null
+}
 
 /**
  * Extracts entities from a StoryPlan into a map of EntityReferences
  * used for local resolution in ReferenceText
  */
 export function extractEntitiesFromPlan(
-  plan: StoryPlan,
+  plan: EntityExtractablePlan,
   projectId: string,
   now: () => Date = () => new Date()
 ): Map<string, EntityReference> {

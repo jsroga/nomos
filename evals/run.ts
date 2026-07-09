@@ -13,8 +13,7 @@
 import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 import * as path from 'path'
-import { STORYTELLER_GOLDEN_DATASET, type ScorerId, type StorytellerGoldenExample } from './datasets/storyteller-golden'
-import type { EvalScorer } from '@/shared/agent-kernel/scorers'
+import { STORYTELLER_GOLDEN_DATASET, type StorytellerGoldenExample } from './datasets/storyteller-golden'
 import type {
   ExampleLog,
   MultiVariantReport,
@@ -55,10 +54,10 @@ function generateRunId(): string {
   return `eval_${timestamp}_${random}`
 }
 
-function scorersForExample(example: StorytellerGoldenExample, selected: readonly EvalScorer[]) {
+function scorersForExample(example: StorytellerGoldenExample, selected: readonly RunnableScorer[]) {
   const allowed = example.metadata.scorers
   if (!allowed?.length) return [...selected]
-  return selected.filter(s => allowed.includes(s.id as ScorerId))
+  return selected.filter(s => allowed.some(id => id === s.id))
 }
 
 function average(values: number[]): number {
@@ -79,8 +78,14 @@ function buildScenarioMetrics(results: ScorerRunResult[]): ScenarioMetrics {
 
 async function loadScorers() {
   const { ALL_SCORERS } = await import('@/shared/agent-kernel/scorers')
-  return ALL_SCORERS
+  // Deterministic domain scorers (beat-plan gate, critic discipline) live in
+  // the storyteller domain — shared/ cannot import domains, so the union
+  // happens here in the runner.
+  const { STORYTELLER_EVAL_SCORERS } = await import('@/domains/storyteller/agents')
+  return [...ALL_SCORERS, ...STORYTELLER_EVAL_SCORERS]
 }
+
+type RunnableScorer = Awaited<ReturnType<typeof loadScorers>>[number]
 
 async function runEval(): Promise<MultiVariantReport> {
   loadEnv()
@@ -99,7 +104,9 @@ async function runEval(): Promise<MultiVariantReport> {
     : [...ALL_SCORERS]
 
   if (globalScorers.length === 0) {
-    throw new Error('No scorers selected. Available: magic, consistency, hallucination, persona-fidelity')
+    throw new Error(
+      'No scorers selected. Available: magic, consistency, hallucination, persona-fidelity, prose-craft, stakes-cost, beat-plan-concreteness, critic-discipline'
+    )
   }
 
   const examples = sampleArray(allExamples, samples)
@@ -135,7 +142,7 @@ async function runEval(): Promise<MultiVariantReport> {
       exampleId: example.id,
       scores,
       reasoning,
-      input: example.input as Record<string, unknown>,
+      input: { ...example.input },
       output,
       metadata: {
         latencyMs: Date.now() - start,

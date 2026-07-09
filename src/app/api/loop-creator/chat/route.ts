@@ -54,6 +54,8 @@ interface ChatRequest {
   }
 }
 
+import type { StreamEvent as LoopOrchestratorStreamEvent } from '@/domains/loop-creator/core/graph/loop-orchestrator'
+
 // StreamEvent interface for UI compatibility
 interface StreamEvent {
   type:
@@ -93,7 +95,9 @@ interface StreamEvent {
   phase?: string
 }
 
-function formatSSE(data: StreamEvent): string {
+type ChatStreamEvent = StreamEvent | LoopOrchestratorStreamEvent
+
+function formatSSE(data: ChatStreamEvent): string {
   const jsonStr = JSON.stringify(data)
   return `data: ${jsonStr}\n\n`
 }
@@ -137,7 +141,7 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         let isClosed = false
 
-        const safeEnqueue = (data: StreamEvent) => {
+        const safeEnqueue = (data: ChatStreamEvent) => {
           if (isClosed) return
           try {
             controller.enqueue(new TextEncoder().encode(formatSSE(data)))
@@ -189,7 +193,7 @@ export async function POST(req: NextRequest) {
             initialState,
             { configurable: { thread_id: currentThreadId } },
             (event) => {
-              safeEnqueue(event as StreamEvent)
+              safeEnqueue(event)
             }
           )
 

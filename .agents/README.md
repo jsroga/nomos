@@ -57,11 +57,15 @@ Read .agents/goals/storyteller-grrm-plan-prompt.md and follow it.
 
 Orientation: [CONFIGURATION.md](CONFIGURATION.md).
 
-## Local scratch (optional, gitignored)
+## Local scratch & quality backlog (optional, gitignored)
 
-Agents may use **`.local/tmp/{session-id}/`** for throwaway session artifacts (helper scripts,
-saved command output, extra notes). Optional — not a required deliverable path. See
-`execute/partials/session-scratch.md` (included in Scope, Plan, Implement prompts).
+| Path | Use |
+|------|-----|
+| `.local/tmp/{session-id}/` | Throwaway scripts, inventories — `execute/partials/session-scratch.md` |
+| `.local/quality-backlog.md` | Cached gate failures; fix one-by-one — `execute/partials/quality-backlog.md` |
+| `.local/quality-tracker-state.json` | `npm run qualitygate:tracker -- --file` / `qualitygate:tracker -- --skip-tsc` |
+
+Commands: `npm run qualitygate:capture` · `npm run qualitygate:backlog` · rescan every **5** fixes, not every edit.
 
 ## Editing rules
 

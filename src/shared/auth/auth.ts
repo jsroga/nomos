@@ -2,6 +2,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies, headers } from 'next/headers'
 
 import { Session } from '@supabase/supabase-js'
+import { createSupabaseRouteClient } from '@/shared/auth/supabase-route-client'
 
 // Mock session for E2E tests in development
 const DEV_MOCK_SESSION: Session = {
@@ -32,7 +33,7 @@ export async function getUserSession() {
     const headersList = await headers()
     const e2eHeader = headersList.get('x-bypass-auth')
     if (e2eHeader === 'true') {
-      return { session: DEV_MOCK_SESSION, supabase: null as any, error: null }
+      return { session: DEV_MOCK_SESSION, supabase: null, error: null }
     }
   }
 
@@ -42,7 +43,7 @@ export async function getUserSession() {
    * Since we've already awaited `cookies()` above, we should pass it directly.
    */
   const cookieStore = await cookies()
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
+  const supabase = createSupabaseRouteClient(cookieStore)
   const {
     data: { session },
     error,

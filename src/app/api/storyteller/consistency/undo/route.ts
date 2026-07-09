@@ -7,8 +7,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUndoManager } from '@/domains/storyteller/server'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
 
 export const runtime = 'nodejs'
@@ -19,12 +19,10 @@ export async function POST(request: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await request.json()
-    const { projectId, episodeId, undoId } = body as {
-      projectId: string
-      episodeId?: string
-      undoId?: string
-    }
+    const body = recordFromJson(await request.json())
+    const projectId = readString(body.projectId)
+    const episodeId = readString(body.episodeId)
+    const undoId = readString(body.undoId)
 
     if (!projectId) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })

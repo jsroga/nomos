@@ -1,6 +1,6 @@
 import React from 'react'
 import { Crown, Plus, RefreshCw, Trash2, Loader2 } from 'lucide-react'
-import { Faction } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { Faction, FactionSchema } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { FactionCard } from '../FactionCard'
 
 import { useBible } from './BibleContext'
@@ -167,8 +167,9 @@ export const BibleFactions: React.FC<BibleFactionsProps> = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {displayFactions.map((faction, idx) => {
-            if (!faction) return null
-            return <FactionCard key={idx} faction={faction as Faction} projectId={projectId} />
+            const parsed = FactionSchema.safeParse(faction)
+            if (!parsed.success) return null
+            return <FactionCard key={idx} faction={parsed.data} projectId={projectId} />
           })}
         </div>
       )}

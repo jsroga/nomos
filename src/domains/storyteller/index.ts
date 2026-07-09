@@ -17,6 +17,7 @@ export * from './ui/MasterPromptEditor'
 export * from './ui/PhaseNavigator'
 export * from './ui/QuestionCard'
 export * from './ui/ReferenceText'
+export { StorytellerLayout } from './ui/StorytellerLayout'
 export * from './ui/StorytellerEmptyState'
 export { default as ScriptEditor } from './ui/ScriptEditor'
 export type { ScriptEditorProps } from './ui/ScriptEditor'
@@ -34,6 +35,8 @@ export * from './config/tool-result-mapper'
 
 // Core (re-exported from unified barrel)
 export * from './core'
+// Both ./core and ./ui/ReferenceText export an EntityType — core's is canonical.
+export type { EntityType } from './core'
 
 // Note: agent-schemas is NOT re-exported here to avoid duplicating WorldRule/StorySequence types
 // that are already exported via './core'. Import agent-schemas directly when needed.

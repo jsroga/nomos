@@ -9,10 +9,16 @@ import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { beats } from '@/db/schema'
 import { db } from '@/db/client'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, type SQL } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { BeatType, BeatStatus } from '@/domains/storyteller/core/types/Enums'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { recordFromJson, stringArrayFromJson } from '@/shared/data/deep-merge'
+import {
+  STORYTELLER_PROJECT_ID,
+  STORYTELLER_EPISODE_ID,
+  requestContextString,
+} from '@/domains/storyteller/agents/request-context'
 
 type ActionFields = {
   actionTaken: string
@@ -28,7 +34,7 @@ function packSetupsPayoffs(
 }
 
 function unpackActionFields(setupsPayoffs: unknown): Partial<ActionFields> {
-  const value = (setupsPayoffs ?? {}) as Record<string, unknown>
+  const value = recordFromJson(setupsPayoffs)
   return {
     actionTaken: typeof value.actionTaken === 'string' ? value.actionTaken : undefined,
     consequence: typeof value.consequence === 'string' ? value.consequence : undefined,
@@ -51,10 +57,10 @@ function beatResponse(beat: typeof beats.$inferSelect) {
     consequence: action.consequence,
     storyStateChange: action.storyStateChange,
     visualHook: beat.visualHook ?? undefined,
-    charactersInvolved: (beat.charactersInvolved as string[]) ?? undefined,
-    emotionalShifts: (beat.emotionalShifts as Record<string, unknown>) ?? undefined,
-    causalDependencies: (beat.causalDependencies as string[]) ?? undefined,
-    setupsPayoffs: (beat.setupsPayoffs as Record<string, unknown>) ?? undefined,
+    charactersInvolved: stringArrayFromJson(beat.charactersInvolved),
+    emotionalShifts: recordFromJson(beat.emotionalShifts),
+    causalDependencies: stringArrayFromJson(beat.causalDependencies),
+    setupsPayoffs: recordFromJson(beat.setupsPayoffs),
   }
 }
 
@@ -156,7 +162,12 @@ export const manageBeatTool = createTool({
   inputSchema: ManageBeatInputSchema,
   outputSchema: ManageBeatOutputSchema,
   execute: async (inputData, context) => {
-    const { operation, beatId, episodeId, projectId, sequence, data } = inputData
+    const { operation, beatId, sequence, data } = inputData
+    // Server-trusted request-context IDs beat model-supplied input.
+    const projectId =
+      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
+    const episodeId =
+      requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
 
     try {
       switch (operation) {
@@ -192,7 +203,7 @@ export const manageBeatTool = createTool({
             sequence: beatSequence,
             logline: data.logline,
             content: data.content ?? null,
-            beatType: (data.beatType as BeatType) ?? BeatType.SETUP,
+            beatType: data.beatType ?? BeatType.SETUP,
             status: BeatStatus.PROPOSED,
             visualHook: data.visualHook ?? null,
             charactersInvolved: data.charactersInvolved ?? [],
@@ -242,7 +253,7 @@ export const manageBeatTool = createTool({
             }
           }
 
-          const updateFields: any = { updatedAt: new Date() }
+          const updateFields: Partial<typeof beats.$inferInsert> = { updatedAt: new Date() }
           if (data.logline !== undefined) updateFields.logline = data.logline
           if (data.content !== undefined) updateFields.content = data.content
           if (data.visualHook !== undefined) updateFields.visualHook = data.visualHook
@@ -370,20 +381,23 @@ export const listBeatsTool = createTool({
   inputSchema: ListBeatsInputSchema,
   outputSchema: ListBeatsOutputSchema,
   execute: async (inputData, context) => {
-    const { episodeId, projectId, status, includeContent } = inputData
+    const { status, includeContent } = inputData
+    // Server-trusted request-context IDs beat model-supplied input.
+    const projectId =
+      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
+    const episodeId =
+      requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
 
     try {
-      let query = db.select().from(beats)
-
-      const conditions: any[] = []
+      const conditions: SQL[] = []
       if (episodeId) conditions.push(eq(beats.episodeId, episodeId))
-      if (status) conditions.push(eq(beats.status, status as BeatStatus))
+      if (status) conditions.push(eq(beats.status, status))
 
-      if (conditions.length > 0) {
-        query = query.where(and(...conditions)) as any
-      }
-
-      const results = await query
+      // drizzle accepts .where(undefined) — no builder reassignment needed
+      const results = await db
+        .select()
+        .from(beats)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
 
       const formattedBeats = results.map(beat => {
         const response = beatResponse(beat)

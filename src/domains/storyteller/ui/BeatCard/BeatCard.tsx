@@ -13,7 +13,8 @@ interface Beat {
   sequence: number
   content?: string
   beatType?: string
-  status?: string
+  // Union matches core StoryTypes.BeatCard so CorkBoard's handler is assignable
+  status?: 'proposed' | 'approved' | 'rejected'
   imageUrl?: string
   imagePrompt?: string
 }

@@ -81,7 +81,8 @@ export const RetextureExporter: React.FC = () => {
             const reader = new FileReader()
             reader.readAsDataURL(blob)
             reader.onloadend = () => {
-              const base64data = reader.result as string
+              if (typeof reader.result !== 'string') return
+              const base64data = reader.result
               console.log('✅ Base64 Data Ready (prefix):', base64data.substring(0, 50))
               setRetextureModelBase64(base64data)
               setRequestRetextureExport(false)

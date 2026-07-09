@@ -37,7 +37,7 @@ import {
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 const isActiveTaskStatus = (status: string) =>
-  ACTIVE_TASK_STATUSES.includes(status as (typeof ACTIVE_TASK_STATUSES)[number])
+  ACTIVE_TASK_STATUSES.some(activeStatus => activeStatus === status)
 
 export const PropertiesPanel: React.FC = () => {
   const selectedId = useInteriorStore(state => state.selectedId)

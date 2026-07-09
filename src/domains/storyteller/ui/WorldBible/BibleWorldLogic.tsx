@@ -1,11 +1,27 @@
 import React from 'react'
 import { Scale, Plus, RefreshCw, Trash2, Shuffle, Loader2 } from 'lucide-react'
 import { WorldRule } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import {
+  isWorldRule,
+  parseWorldRuleCategory,
+  plotTwistObjectFromJson,
+  WorldRuleCategory,
+} from '@/domains/storyteller/core/entities/world-rule-wire'
 import { WorldRuleCard } from '../WorldRuleCard'
 import { RichText } from '../RichText'
 
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
+
+function planItems<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value : []
+}
+
+/** Editing: local draft only. Viewing: prefer saved local draft, fall back to server plan. */
+function bibleSectionItems<T>(local: unknown, saved: unknown, editing: boolean): T[] {
+  const draft = planItems<T>(local)
+  return editing || draft.length > 0 ? draft : planItems<T>(saved)
+}
 
 interface BibleWorldLogicProps { }
 
@@ -26,15 +42,11 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
     pendingActions,
     projectId,
   } = useBible()
-  // Use localPlan for display when not editing to show latest saved data
-  const displayRules = isEditing
-    ? (Array.isArray(localPlan.worldRules) ? localPlan.worldRules : [])
-    : (Array.isArray(localPlan.worldRules) ? localPlan.worldRules : (Array.isArray(storyPlan.worldRules) ? storyPlan.worldRules : []))
-  const localRules = Array.isArray(localPlan.worldRules) ? localPlan.worldRules : []
-  const displayPlotTwists = isEditing
-    ? (Array.isArray(localPlan.plotTwists) ? localPlan.plotTwists : [])
-    : (Array.isArray(localPlan.plotTwists) ? localPlan.plotTwists : (Array.isArray(storyPlan.plotTwists) ? storyPlan.plotTwists : []))
-  const localPlotTwists = Array.isArray(localPlan.plotTwists) ? localPlan.plotTwists : []
+
+  const localRules = planItems<WorldRule>(localPlan.worldRules)
+  const displayRules = bibleSectionItems(localPlan.worldRules, storyPlan.worldRules, isEditing)
+  const localPlotTwists = planItems<string>(localPlan.plotTwists)
+  const displayPlotTwists = bibleSectionItems(localPlan.plotTwists, storyPlan.plotTwists, isEditing)
 
   // Check loading states for each section
   const isWorldRulesLoading = loadingSections?.worldRules?.loading ?? false
@@ -114,17 +126,16 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
                     <select
                       className="p-2 bg-background border border-border rounded text-sm"
                       value={rule.category}
-                      onChange={e =>
-                        onWorldRuleChange(idx, 'category', e.target.value as WorldRule['category'])
-                      }
+                      onChange={e => {
+                        const category = parseWorldRuleCategory(e.target.value)
+                        if (category) onWorldRuleChange(idx, 'category', category)
+                      }}
                     >
-                      {['Physics', 'Magic', 'Technology', 'Society', 'Politics', 'Economics'].map(
-                        cat => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        )
-                      )}
+                      {Object.values(WorldRuleCategory).map(cat => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
                     </select>
                     <button
                       onClick={() => onRemoveWorldRule(idx)}
@@ -167,7 +178,8 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {displayRules.map((rule, idx) => {
               if (!rule) return null
-              return <WorldRuleCard key={idx} rule={rule as WorldRule} projectId={projectId} />
+              if (!isWorldRule(rule)) return null
+              return <WorldRuleCard key={idx} rule={rule} projectId={projectId} />
             })}
           </div>
         )}
@@ -263,12 +275,7 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
                 )
               }
               // Object format: {title, description, impact, foreshadowing}
-              const t = twist as {
-                title?: string
-                description?: string
-                impact?: string
-                foreshadowing?: string
-              }
+              const t = plotTwistObjectFromJson(twist)
               return (
                 <div
                   key={i}

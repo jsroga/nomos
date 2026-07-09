@@ -176,6 +176,10 @@ export {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuRadioGroup,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 }

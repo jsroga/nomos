@@ -61,7 +61,14 @@ Subagents → `agents` config (`agent-<key>` tools). Mastra workflows ≠ Fabro 
 - `RuntimeContext`, root `@mastra/core` imports, old single-arg `execute`.
 - Hardcoded secrets or model strings.
 - Remove tracing or shrink memory windows without reason.
+- **Type assertions** (`as any`, `as Type`) — use guards, Zod, or `recordFromJson`; `as const` only.
+- **Cross-domain imports** (`src/domains/foo` importing `@/domains/bar`) — lift to `@/shared`.
+- **Local `deepMerge`** — use `@/shared/data/deep-merge`.
+- **Magic string protocol values** as bare literals — use **`enum`**, not `as const` object maps.
+- **File-level `eslint-disable`** for quality rules (`local/no-magic-string`, `local/complexity-strict`, `local/max-lines-strict`, etc.) — forbidden without explicit user approval.
 
 ## Verify
 
-`npm run typecheck` · `npm run lint` · `npm run test:unit`
+**During work:** `npm run qualitygate:file -- <path>` · `npm run qualitygate:changed` · `npm run qualitygate:tsc -- --files <path>` — not full-repo `tsc` mid-task. **Many failures:** `npm run qualitygate:capture` → `.local/quality-backlog.md` (fix one, `qualitygate:backlog -- done <id>`, rescan every 5).
+
+**Before handoff:** `npm run typecheck` · `npm run lint` · `npm run test:unit`

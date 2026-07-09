@@ -4,6 +4,7 @@ import { assets, projects } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { recordFromJson } from '@/shared/data/json-guards'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,7 +63,7 @@ export async function PATCH(request: Request, props: { params: Promise<{ assetId
       const [existing] = await db.select().from(assets).where(eq(assets.id, assetId))
 
       body.metadata = {
-        ...((existing?.metadata as any) || {}),
+        ...recordFromJson(existing?.metadata),
         ...body.metadata,
       }
     }

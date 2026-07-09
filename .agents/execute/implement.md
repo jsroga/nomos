@@ -15,11 +15,22 @@ chose **[A] Approve & build** at Verification.
 
 - **No semicolons** — `semi: ['error', 'never']` in `eslint.config.js`.
 - **No `z.any()`** at tool/workflow/API boundaries — use real Zod DTOs from `core/`.
+- **No `as` type assertions** — `assertionStyle: 'never'` (`as const` only). Use type guards,
+  `satisfies`, Zod, or `recordFromJson()` from `@/shared/data/deep-merge` at jsonb edges.
+- **No `: any` / `as any`** — `@typescript-eslint/no-explicit-any` is `error`.
+- **No cross-domain imports** — `src/domains/<A>` must not import `@/domains/<B>`; lift shared
+  code to `@/shared`. `src/shared` must not import domains.
 - **No `@/agent-core/*`** — import from `@/shared/agent-kernel` (ESLint `no-restricted-imports`).
 - **No browser → Supabase writes** — use API routes + TanStack Query mutations.
 - **No server state in Zustand** — UI ephemeral state only.
-- **Domain imports:** external code imports `@/domains/<module>` barrel only — not deep paths
-  (except allowed `storyteller/io`, `interior-designer/io` seams).
+- **No local `deepMerge`** — use `@/shared/data/deep-merge` (`deepMerge`, `deepMergeRecords`,
+  `smartMergeArray`, `recordFromJson`).
+- **Magic string protocol values** (action types, statuses, phases) → **`enum`**, not inline
+  literals or `as const` object maps.
+- **Domain imports (from outside):** external code imports `@/domains/<module>` barrel only — not
+  deep paths (except allowed `storyteller/io`, `interior-designer/io` seams).
+
+Full reference: `.cursor/rules/eslint-boundaries.mdc`.
 
 ### Mastra v1 patterns (when touching agents/tools)
 
@@ -105,7 +116,13 @@ If `UX.md` is absent (backend-only increment), skip `component-audit` and
 
 {% include "partials/session-scratch.md" %}
 
+{% include "partials/quality-backlog.md" %}
+
 ## Folder reshape runs (structure + referrers)
+
+**Before any extract:** read `.cursor/rules/refactor-discipline.mdc` § Route vs domain.
+If lint fails in `domains/`, fix via enums, splits, or `@/shared` — **never** relocate
+feature code into `src/app/`.
 
 When `STRUCTURE.md` exists or the plan is a catalog/folder cleanup (`domains-catalog`
 or `src-root`):

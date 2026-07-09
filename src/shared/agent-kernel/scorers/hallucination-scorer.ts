@@ -2,6 +2,7 @@ import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { inputRecord, normalizeScore, outputToString, toMastraJudgingModel } from './shared'
+import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 const hallucinationAnalyzeSchema = z.object({
   score: z.number(),
@@ -31,10 +32,10 @@ export const hallucinationScorer = createScorer({
     },
   })
   .generateScore(({ results }) => {
-    const analyzed = results.analyzeStepResult as { score?: number } | undefined
-    return normalizeScore(analyzed?.score ?? 0)
+    const analyzed = recordFromJson(results.analyzeStepResult)
+    return normalizeScore(readNumber(analyzed.score) ?? 0)
   })
   .generateReason(({ results, score }) => {
-    const analyzed = results.analyzeStepResult as { reasoning?: string } | undefined
-    return analyzed?.reasoning ?? `Hallucination-free score: ${(score * 100).toFixed(0)}%`
+    const analyzed = recordFromJson(results.analyzeStepResult)
+    return readString(analyzed.reasoning) ?? `Hallucination-free score: ${(score * 100).toFixed(0)}%`
   })

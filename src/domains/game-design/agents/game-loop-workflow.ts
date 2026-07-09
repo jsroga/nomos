@@ -354,7 +354,7 @@ export class GameLoopWorkflow extends Workflow {
     const result = await this.execute({
       triggerData: { input },
     })
-    return result as WorkflowOutput
+    return WorkflowOutputSchema.parse(result)
   }
 
   /**

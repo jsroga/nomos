@@ -2,6 +2,7 @@ import { Save, Edit2, X, Lock, Unlock, Shield, Loader2, Network, BookOpen } from
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
+import { customEventDetailRecord, readString } from '@/shared/data/json-guards'
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 
 // Lazy load CharacterWeb since it's a heavy component
@@ -67,8 +68,22 @@ const getProviderConfig = () => {
 
 import { PendingAction } from '../WorldBible/BibleContext'
 
+/** BibleProvider requires a full StoryPlan; fill required keys when given a partial. */
+const EMPTY_STORY_PLAN: StoryPlan = {
+  title: '',
+  genre: '',
+  tone: '',
+  centralQuestion: '',
+  worldRules: [],
+  factions: [],
+  keyCharacters: [],
+  executiveSummary: null,
+  moodImages: [],
+  themes: [],
+}
+
 export interface WorldBiblePanelProps {
-  storyPlan: StoryPlan
+  storyPlan: StoryPlan | Partial<StoryPlan>
   onUpdate?: (updates: Partial<StoryPlan>) => void | Promise<void>
   isReadOnly?: boolean
   onSendMessage?: (msg: string, section?: string) => void
@@ -92,6 +107,7 @@ const WorldBiblePanel: React.FC<WorldBiblePanelProps> = props => {
   return (
     <BibleProvider
       {...props}
+      storyPlan={{ ...EMPTY_STORY_PLAN, ...props.storyPlan }}
       projectId={projectId}
       getProviderConfig={getProviderConfig}
       loadingSections={props.loadingSections}
@@ -168,13 +184,13 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
   // Listen for tab switch events (from entity click navigation)
   useEffect(() => {
     const handleSwitchTab = (e: Event) => {
-      const { tab } = (e as CustomEvent).detail || {}
+      const { tab } = customEventDetailRecord(e)
       if (tab === 'relationships') {
         switchTab('relationships')
       }
     }
     const handleNavigateToEntity = (e: Event) => {
-      const { refId } = (e as CustomEvent).detail || {}
+      const refId = readString(customEventDetailRecord(e).refId)
       if (refId) {
         setFocusEntityId(refId)
         switchTab('relationships')
@@ -226,10 +242,10 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
   }, [projectId, onUpdate])
 
   useEffect(() => {
-    const handler = (event: CustomEvent) => {
-      if (event.detail?.projectId === projectId) refetchMoodboardData()
+    const handler = (event: Event) => {
+      if (customEventDetailRecord(event).projectId === projectId) refetchMoodboardData()
     }
-    window.addEventListener('moodboard-generation-complete', handler as EventListener)
+    window.addEventListener('moodboard-generation-complete', handler)
 
     // Resume any pending generations for this project
     if (projectId) {
@@ -239,7 +255,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     }
 
     return () =>
-      window.removeEventListener('moodboard-generation-complete', handler as EventListener)
+      window.removeEventListener('moodboard-generation-complete', handler)
   }, [projectId, refetchMoodboardData])
 
   // Shimmer State - check after all hooks
@@ -494,7 +510,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
               projectId={projectId || ''}
               className="h-full"
               focusEntityId={focusEntityId}
-              onNodeClick={(nodeId: string, nodeData: any) => {
+              onNodeClick={(nodeId, nodeData) => {
                 console.log('Character web node clicked:', nodeId, nodeData?.name)
                 setFocusEntityId(null) // Clear focus after manual click
               }}

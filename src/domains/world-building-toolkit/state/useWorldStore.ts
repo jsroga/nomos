@@ -356,9 +356,9 @@ useWorldStore.setState = (partial: Partial<WorldState>) => {
 
   for (const [key, value] of Object.entries(partial)) {
     if (dataKeys.has(key)) {
-      ;(dataPartial as Record<string, unknown>)[key] = value
+      Object.assign(dataPartial, { [key]: value })
     } else {
-      ;(uiPartial as Record<string, unknown>)[key] = value
+      Object.assign(uiPartial, { [key]: value })
     }
   }
 

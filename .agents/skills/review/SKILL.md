@@ -53,6 +53,9 @@ Evaluate the changes across these dimensions, in priority order:
 
 - Naming, structure, and consistency with the surrounding codebase.
 - Dead code, duplicated logic, needless complexity.
+- **File size / complexity** (`.cursor/rules/code-metrics.mdc`): flag files **>400**
+  lines or functions with cyclomatic complexity **>15**; block handoff on **>800**
+  lines or complexity **>25** in touched files.
 - Comments: are non-obvious decisions explained? Are there noise comments that
   just restate the code (flag them)?
 

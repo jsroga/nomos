@@ -1,5 +1,6 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
+import { recordFromJson } from '@/shared/data/json-guards'
 
 export const remesh3DModelTask = task({
   id: 'remesh-3d-model',
@@ -122,7 +123,7 @@ export const remesh3DModelTask = task({
             .eq('id', assetId)
             .single()
 
-          const currentMetadata = (asset?.metadata as any) || {}
+          const currentMetadata = recordFromJson(asset?.metadata)
 
           // Update with remesh result
           await supabase

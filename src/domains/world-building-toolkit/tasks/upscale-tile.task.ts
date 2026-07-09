@@ -3,6 +3,10 @@ import { put } from '@vercel/blob'
 import { storageService } from '@/shared/data/storage/StorageService'
 import { UPSCALE_PROMPTS, MASK_CONFIG, getCreativityPrompt } from '@/shared/data/server/prompts'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import {
+  isReplicateModelId,
+  parseReplicateImageOutput,
+} from '@/shared/ai/replicate-output'
 
 // Provider types
 type UpscaleProvider = 'midjourney' | 'replicate' | 'stability'
@@ -273,90 +277,26 @@ async function upscaleWithReplicate(
   logger.info('Input image uploaded for Replicate', { inputImageUrl })
 
   // Use the URL instead of base64 - more reliable
-  const output = (await replicate.run(model as `${string}/${string}`, {
+  if (!isReplicateModelId(model)) {
+    throw new Error(`Invalid Replicate model id: ${model}`)
+  }
+  const output: unknown = await replicate.run(model, {
     input: {
       image: inputImageUrl,
       prompt,
     },
-  })) as any
+  })
 
   logger.info('Replicate raw output:', {
     type: typeof output,
     isArray: Array.isArray(output),
-    constructor: output?.constructor?.name,
     keys: typeof output === 'object' && output ? Object.keys(output) : [],
     stringified: JSON.stringify(output).substring(0, 500),
   })
 
   await metadata.set('progress', 100)
 
-  // Replicate returns different formats depending on the model
-  // Could be: URL string, array of URLs, FileOutput object, or ReadableStream
-
-  // Handle string output (URL or base64)
-  if (typeof output === 'string') {
-    if (output.startsWith('http')) {
-      return { type: 'url', data: output }
-    } else if (output.startsWith('data:')) {
-      return { type: 'base64', data: output.replace(/^data:image\/\w+;base64,/, '') }
-    } else {
-      // Assume it's raw base64
-      return { type: 'base64', data: output }
-    }
-  }
-
-  // Handle array output (common for image models)
-  if (Array.isArray(output) && output.length > 0) {
-    const firstOutput = output[0]
-    if (typeof firstOutput === 'string' && firstOutput.startsWith('http')) {
-      return { type: 'url', data: firstOutput }
-    }
-    // Some models return FileOutput objects in array
-    if (firstOutput && typeof firstOutput === 'object') {
-      const url = (firstOutput as any).url || (firstOutput as any).href
-      if (url && typeof url === 'string') {
-        return { type: 'url', data: url }
-      }
-    }
-  }
-
-  // Handle object output (FileOutput or similar)
-  if (output && typeof output === 'object' && !Array.isArray(output)) {
-    // Check for common URL properties
-    const possibleUrl =
-      (output as any).url || (output as any).href || (output as any).uri || (output as any).output
-    if (possibleUrl && typeof possibleUrl === 'string' && possibleUrl.startsWith('http')) {
-      return { type: 'url', data: possibleUrl }
-    }
-
-    // Some models return { output: "url" } or { image: "url" }
-    const possibleImage = (output as any).image
-    if (possibleImage && typeof possibleImage === 'string' && possibleImage.startsWith('http')) {
-      return { type: 'url', data: possibleImage }
-    }
-
-    // Handle ReadableStream (some newer models)
-    if (typeof (output as any).getReader === 'function') {
-      logger.info('Output is a ReadableStream, reading...')
-      const reader = (output as ReadableStream).getReader()
-      const chunks: Uint8Array[] = []
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        chunks.push(value)
-      }
-      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
-      const combined = new Uint8Array(totalLength)
-      let offset = 0
-      for (const chunk of chunks) {
-        combined.set(chunk, offset)
-        offset += chunk.length
-      }
-      return { type: 'base64', data: Buffer.from(combined).toString('base64') }
-    }
-  }
-
-  throw new Error(`Unexpected Replicate output format: ${JSON.stringify(output).substring(0, 500)}`)
+  return parseReplicateImageOutput(output)
 }
 
 // Stability AI upscale

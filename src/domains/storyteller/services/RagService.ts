@@ -24,6 +24,7 @@ import {
 import { getSemanticChunker, SemanticChunker } from '@/shared/ai/rag/semantic-chunker'
 import { getQueryExpander, QueryExpander } from '@/shared/ai/rag/query-expander'
 import { getReranker, Reranker } from '@/shared/ai/rag/reranker'
+import { entityMetadata, readString } from '@/domains/storyteller/core/entities/entity-type-guards'
 import { STORYTELLER_CONFIG } from '../config/storyteller-config'
 
 // Document types for categorized retrieval
@@ -401,19 +402,22 @@ Context: ${context}`
         .orderBy(desc(similarity))
         .limit(limit)
 
-      return results.map((r, index) => ({
-        id: r.id,
-        content: r.content,
-        metadata: r.metadata as Record<string, unknown>,
-        similarity: r.similarity,
-        citation: {
+      return results.map((r, index) => {
+        const metadata = entityMetadata(r.metadata)
+        return {
           id: r.id,
-          marker: `[${index + 1}]`,
-          source: (r.metadata as any)?.documentType || 'unknown',
-          chunkId: r.id,
-          confidence: r.similarity,
-        },
-      }))
+          content: r.content,
+          metadata,
+          similarity: r.similarity,
+          citation: {
+            id: r.id,
+            marker: `[${index + 1}]`,
+            source: readString(metadata.documentType) ?? 'unknown',
+            chunkId: r.id,
+            confidence: r.similarity,
+          },
+        }
+      })
     } catch (error) {
       console.error('[RAG] Fallback search failed:', error)
       return []

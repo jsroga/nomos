@@ -378,7 +378,7 @@ export async function mechanicsDesignerAgent(
     mechanics: parsed.mechanics,
     connections: parsed.connections,
     pendingActions: actions,
-    nextAgent: 'supervisor' as NextAgent,
+    nextAgent: 'supervisor',
     messages: [
       new AIMessage({
         content:

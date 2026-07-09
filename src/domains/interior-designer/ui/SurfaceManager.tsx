@@ -175,7 +175,7 @@ const SurfaceRenderer: React.FC<{
 
   // Geometry Generation
   // Only for Shapes now (Ground, Mars, etc)
-  const geometry = useMemo(() => {
+  const geometry = useMemo((): { type: 'shape'; shape: THREE.Shape } | null => {
     if (!surface.points || surface.points.length < 2) return null
     if (surface.isPath) return null // RoadMesh handles paths independently now
 
@@ -232,7 +232,7 @@ const SurfaceRenderer: React.FC<{
     >
       {geometry.type === 'shape' && (
         <Extrude
-          args={[geometry.shape as THREE.Shape, { depth: config.depth, bevelEnabled: false }]}
+          args={[geometry.shape, { depth: config.depth, bevelEnabled: false }]}
           rotation={[Math.PI / 2, 0, 0]}
           onClick={onClick}
           castShadow
@@ -252,7 +252,7 @@ const SurfaceRenderer: React.FC<{
             <lineSegments>
               <edgesGeometry
                 args={[
-                  new THREE.ExtrudeGeometry(geometry.shape as THREE.Shape, {
+                  new THREE.ExtrudeGeometry(geometry.shape, {
                     depth: config.depth,
                     bevelEnabled: false,
                   }),

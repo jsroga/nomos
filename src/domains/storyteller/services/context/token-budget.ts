@@ -73,6 +73,17 @@ function truncateToTokenBudget(text: string, maxTokens: number): string {
  * Apply token budgets to raw context parts.
  * Truncates each section that exceeds its budget.
  */
+const BUDGET_SECTION_KEYS: Array<keyof RawContextParts & keyof TokenBudgets> = [
+  'systemPrompt',
+  'projectContext',
+  'characters',
+  'beats',
+  'memory',
+  'rag',
+  'userMessage',
+  'relationships',
+]
+
 export function budgetContext(
   rawContext: RawContextParts,
   budgets: TokenBudgets = DEFAULT_TOKEN_BUDGETS
@@ -80,8 +91,8 @@ export function budgetContext(
   const trimmed: BudgetedContext['trimmed'] = []
   const sections: string[] = []
 
-  for (const [key, maxTokens] of Object.entries(budgets)) {
-    const sectionKey = key as keyof RawContextParts
+  for (const sectionKey of BUDGET_SECTION_KEYS) {
+    const maxTokens = budgets[sectionKey]
     const text = rawContext[sectionKey]
     if (!text) continue
 
@@ -90,7 +101,7 @@ export function budgetContext(
     const budgetedTokens = estimateTokens(budgeted)
 
     if (budgetedTokens < originalTokens) {
-      trimmed.push({ section: key, originalTokens, budgetedTokens })
+      trimmed.push({ section: sectionKey, originalTokens, budgetedTokens })
     }
 
     sections.push(budgeted)

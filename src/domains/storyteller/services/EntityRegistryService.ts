@@ -20,6 +20,10 @@ import { entityReferences } from '@/db'
 import { db } from '@/db/client'
 import { eq, and, inArray } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
+import {
+  parseEntityType,
+  entityMetadata,
+} from '@/domains/storyteller/core/entities/entity-type-guards'
 
 // Re-export types from reference-parser for convenience
 export { ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/ReferenceParser'
@@ -255,8 +259,10 @@ class EntityRegistryService {
 
       if (dbEntity) {
         const entity = this.dbToEntity(dbEntity)
-        this.cache.set(entity.id, entity)
-        return entity
+        if (entity) {
+          this.cache.set(entity.id, entity)
+          return entity
+        }
       }
     } catch (err) {
       console.warn('[EntityRegistry] DB lookup failed:', err)
@@ -285,8 +291,10 @@ class EntityRegistryService {
 
       if (dbEntity) {
         const entity = this.dbToEntity(dbEntity)
-        this.cache.set(refId, entity)
-        return entity
+        if (entity) {
+          this.cache.set(refId, entity)
+          return entity
+        }
       }
     } catch (err) {
       console.warn('[EntityRegistry] Failed to resolve entity:', err)
@@ -322,6 +330,7 @@ class EntityRegistryService {
 
         for (const dbEntity of dbEntities) {
           const entity = this.dbToEntity(dbEntity)
+          if (!entity) continue
           this.cache.set(entity.id, entity)
           result.set(entity.id, entity)
         }
@@ -374,7 +383,9 @@ class EntityRegistryService {
         .from(entityReferences)
         .where(eq(entityReferences.projectId, projectId))
 
-      const entities = dbEntities.map(e => this.dbToEntity(e))
+      const entities = dbEntities
+        .map(e => this.dbToEntity(e))
+        .filter((entity): entity is EntityReference => entity !== null)
 
       // Update cache
       for (const entity of entities) {
@@ -402,7 +413,9 @@ class EntityRegistryService {
         .from(entityReferences)
         .where(and(eq(entityReferences.projectId, projectId), eq(entityReferences.type, type)))
 
-      return dbEntities.map(e => this.dbToEntity(e))
+      return dbEntities
+        .map(e => this.dbToEntity(e))
+        .filter((entity): entity is EntityReference => entity !== null)
     } catch (err) {
       console.warn('[EntityRegistry] Failed to get entities by type:', err)
       return []
@@ -559,7 +572,13 @@ class EntityRegistryService {
     }
   }
 
-  private dbToEntity(dbEntity: any): EntityReference {
+  private dbToEntity(dbEntity: typeof entityReferences.$inferSelect): EntityReference | null {
+    const type = parseEntityType(dbEntity.type)
+    if (!type) {
+      console.warn(`[EntityRegistry] Skipping row with invalid type: ${dbEntity.type}`)
+      return null
+    }
+
     let description = dbEntity.description || ''
     if (description.startsWith('Auto-registered')) {
       description = ''
@@ -567,12 +586,12 @@ class EntityRegistryService {
 
     return {
       id: dbEntity.id,
-      type: dbEntity.type as EntityType,
+      type,
       name: dbEntity.name,
       description,
-      metadata: (dbEntity.metadata as Record<string, unknown>) || {},
+      metadata: entityMetadata(dbEntity.metadata),
       projectId: dbEntity.projectId,
-      sourceEntityId: dbEntity.sourceEntityId,
+      sourceEntityId: dbEntity.sourceEntityId ?? undefined,
       createdAt: new Date(dbEntity.createdAt),
       lastReferencedAt: new Date(dbEntity.lastReferencedAt || dbEntity.createdAt),
     }

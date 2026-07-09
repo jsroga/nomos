@@ -47,7 +47,7 @@ export const POST = withRateLimit(
     fs.writeFileSync(filePath, buffer)
 
     // Update database using authenticated client (RLS enforced)
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('tiles')
       .upsert(
         {

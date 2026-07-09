@@ -6,6 +6,12 @@ import { useInteriorStore } from '@/domains/interior-designer'
 import * as THREE from 'three'
 import { useThree } from '@react-three/fiber'
 
+function setOrbitControlsEnabled(controls: unknown, enabled: boolean): void {
+  if (typeof controls === 'object' && controls !== null && 'enabled' in controls) {
+    Object.assign(controls, { enabled })
+  }
+}
+
 export const TransformManager: React.FC = () => {
   const selectedId = useInteriorStore(state => state.selectedId)
   const objects = useInteriorStore(state => state.objects)
@@ -90,16 +96,10 @@ export const TransformManager: React.FC = () => {
           : true
       }
       onMouseDown={() => {
-        const orbitControls = controls as unknown as { enabled: boolean }
-        if (orbitControls) {
-          orbitControls.enabled = false
-        }
+        setOrbitControlsEnabled(controls, false)
       }}
       onMouseUp={() => {
-        const orbitControls = controls as unknown as { enabled: boolean }
-        if (orbitControls) {
-          orbitControls.enabled = true
-        }
+        setOrbitControlsEnabled(controls, true)
 
         // Update store on drag end
         if (target) {

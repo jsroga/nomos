@@ -26,7 +26,7 @@ export interface AuthenticatedRequest {
   supabase: ReturnType<typeof createRouteHandlerClient>
 }
 
-export type ApiHandler<T = any> = (
+export type ApiHandler<T = unknown> = (
   request: NextRequest,
   auth: AuthenticatedRequest,
   context?: { params: Record<string, string> }
@@ -57,7 +57,10 @@ export async function requireAuth() {
  *   return NextResponse.json({ userId: session.user.id })
  * })
  */
-export function withAuth<T = any>(handler: ApiHandler<T>) {
+// NoInfer: T comes from an explicit type argument (or defaults to unknown) —
+// inferring it from the handler picks the first member of union returns like
+// NextResponse<A> | NextResponse<B> and then rejects the rest.
+export function withAuth<T = unknown>(handler: ApiHandler<NoInfer<T>>) {
   return async (request: NextRequest, context?: { params: Record<string, string> }) => {
     const { session, supabase, error } = await getUserSession()
 
@@ -135,13 +138,17 @@ export function checkRateLimit(
 /**
  * Rate limiting wrapper for API routes
  */
-export function withRateLimit<T = any>(
-  handler: ApiHandler<T> | ((request: NextRequest, context?: any) => Promise<NextResponse<T>>),
+export function withRateLimit<T = unknown>(
+  handler: (
+    request: NextRequest,
+    context?: { params: Record<string, string> }
+  ) => Promise<NextResponse<NoInfer<T>>>,
   config: RateLimitConfig & { getKey?: (request: NextRequest) => string } = {}
 ) {
-  return async (request: NextRequest, context?: any) => {
+  return async (request: NextRequest, context?: { params: Record<string, string> }) => {
     const {
-      getKey = req => req.ip || req.headers.get('x-forwarded-for') || 'anonymous',
+      // NextRequest has no `ip` in Next 15 — the proxy header is the source.
+      getKey = req => req.headers.get('x-forwarded-for') || 'anonymous',
       ...rateLimitConfig
     } = config
     const key = getKey(request)
@@ -180,7 +187,7 @@ const ALLOWED_ORIGINS = [
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   'http://localhost:4000',
   'http://localhost:3001',
-].filter(Boolean) as string[]
+].filter((origin): origin is string => Boolean(origin))
 // ============================================
 // PROJECT ACCESS VERIFICATION
 // ============================================

@@ -38,8 +38,8 @@ export const CHAT_MODELS: ChatModelOption[] = [
     description: 'Fast and cheap — default chat model.',
   },
   {
-    id: 'anthropic:claude-4-5-sonnet-20250101',
-    label: 'Claude 4.5 Sonnet',
+    id: 'anthropic:claude-sonnet-5',
+    label: 'Claude Sonnet 5',
     provider: 'Anthropic',
     providerKey: 'anthropic',
     envVar: 'ANTHROPIC_API_KEY',

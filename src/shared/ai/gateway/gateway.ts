@@ -156,7 +156,7 @@ export class AIGateway {
             providerId,
             true,
             Date.now() - startTime,
-            (result as AIGatewayResponse<T>).cost
+            result.cost
           )
 
           // Record A/B test result if applicable

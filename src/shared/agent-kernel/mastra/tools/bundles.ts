@@ -82,19 +82,8 @@ export const storytellerStudioTools = asToolsMap(
   storytellerIds.map(([id, description]) => studioTool(id, description)),
 )
 
-export const gardenerStudioTools = asToolsMap(
-  ['self_critique', 'improve_dialogue', 'add_visual_hook', 'condense_scene', 'regenerate_text'].map(
-    id => storytellerStudioTools[id],
-  ),
-)
 
-export const psychologistStudioTools = asToolsMap(
-  ['analyze_psychology', 'simulate_reaction', 'assess_relationship', 'self_critique'].map(
-    id => storytellerStudioTools[id],
-  ),
-)
 
-export const councilStudioTools = asToolsMap([storytellerStudioTools.self_critique])
 
 const gameDesignIds: Array<[string, string]> = [
   ['get_loops', 'Fetch game loops for the current project.'],

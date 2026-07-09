@@ -13,7 +13,7 @@ import { openai } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import { entityGraphService } from './EntityGraphService'
 import { relationshipEnricher } from './RelationshipEnricherService'
-import { EntityType } from './EntityRegistryService'
+import { parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
 
 interface ContextualSummaryRequest {
   entityId: string
@@ -92,9 +92,14 @@ async function buildGraphRAGContext(
     }
 
     // Get enriched relationship data
+    const parsedEntityType = parseEntityType(entityType)
+    if (!parsedEntityType) {
+      return { relationshipContext: '', relatedEntities: [] }
+    }
+
     const enriched = await relationshipEnricher.enrichEntity(
       entityId,
-      entityType as EntityType,
+      parsedEntityType,
       entityName,
       projectId,
       ''

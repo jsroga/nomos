@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@/shared/data/utils'
+import { recordFromJson } from '@/shared/data/json-guards'
 import {
   Message,
   AgentConfigMap,
@@ -260,7 +261,7 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
     if (typeof entry.toolResult === 'string') {
       try { resultObj = JSON.parse(entry.toolResult) } catch { /* keep null */ }
     } else if (entry.toolResult && typeof entry.toolResult === 'object') {
-      resultObj = entry.toolResult as Record<string, unknown>
+      resultObj = recordFromJson(entry.toolResult)
     }
 
     const isRejected = resultObj?.success === false

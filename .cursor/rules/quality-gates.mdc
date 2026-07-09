@@ -1,51 +1,84 @@
 ---
-description: Quality gates to run before declaring work done — typecheck, lint, unit tests, knip, fabro-verify
+description: Quality gates to run before declaring work done — fast scoped checks during work; no E2E during agent tasks
 globs: "**/*.ts,**/*.tsx,**/*.js,**/*.mjs"
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Quality gates
 
 Run these before claiming a task is done. Failures must be fixed, not bypassed.
 
-## Full repo
+## Never bypass gates (binding)
+
+**Strictly prohibited without explicit user approval:**
+
+- File-level or block-level `eslint-disable` / `eslint-disable-next-line` for quality rules (`local/no-magic-string`, `local/max-lines-strict`, `local/complexity-strict`, `@typescript-eslint/no-explicit-any`, `@typescript-eslint/consistent-type-assertions`, `no-restricted-imports`, etc.)
+- `@ts-nocheck`, `@ts-ignore`, or `@ts-expect-error` to silence gate failures
+- Skipping `qualitygate:file` / `qualitygate:changed` because a file is “legacy” or “too big”
+- Comments like “wave-0 extraction” to excuse disabled lint
+
+**When a gate fails:** split the file, extract enums/helpers, fix types — do not disable the rule. If a disable is genuinely unavoidable (extremely rare), stop and ask the user first.
+
+**Never run full-repo `tsc --noEmit` during agent work** — it is slow and OOM-prone. Use `qualitygate:file`, `qualitygate:changed`, `qualitygate:tsc` only. Full `npm run typecheck` + `npm run lint` are end-of-task only unless the user asks.
+
+**Do not run E2E during agent work** — skip `npm run test:e2e` entirely at this stage (no smoke, no full-loop). E2E is operator/CI-only unless the user explicitly asks.
+
+## Fast gates (during work — few seconds)
+
+Use these while implementing. See also `todo-batch-verify.mdc` (every **5** completed todos) and `quality-backlog.mdc` (cache failures in `.local/`).
+
+| Command | When |
+|---------|------|
+| `npm run qualitygate:changed` | After every **5 completed todos** or git-changed `src/**` (~5–15s) |
+| `npm run qualitygate:file -- <path>` | After each single-file extract or focused edit (TSC + ESLint + **code metrics**) |
+| `npm run lint:file -- <path>` | ESLint only on one file |
+| `npm run qualitygate:tsc -- --changed` | Scoped TSC on git-changed files only |
+| `npm run qualitygate:tsc -- --files <path>` | Scoped TSC on named file(s) |
+| `npm run qualitygate:metrics` | Line count + complexity on full `src/` (also at end of `npm run typecheck`) |
+| `npm run qualitygate:capture` | Scan once → cache in `.local/quality-backlog.md` (fix loop; see `quality-backlog.mdc`) |
+| `npm run qualitygate:backlog` | Show cached backlog / mark items done without rescanning |
+
+**Code metrics (warn / error):** **400 / 800** lines · complexity **15 / 25** — `.cursor/rules/code-metrics.mdc`.
+
+**Many gate failures?** Do not re-run verify every step — `.cursor/rules/quality-backlog.mdc`.
+
+Do **not** substitute `npm run lint`, full `npm run typecheck`, or `fabro-verify` for batch gates mid-task — too slow.
+
+## End of task (before “done”)
 
 ```bash
-npm run typecheck      # tsc --noEmit (strict, no implicit any)
-npm run lint           # ESLint strict + no-explicit-any error
-npm run check:lint     # alias for full-repo ESLint
-npm run test:unit      # Vitest
-npx knip               # dead code / unused exports
+npm run typecheck          # tsc --noEmit + qualitygate:metrics
+npm run lint               # ESLint strict (see eslint-boundaries rule)
+npm run test:unit          # Vitest
 ```
 
-## Module-scoped (fast, dark-factory verify)
+Optional: `npx knip` (dead code). **No E2E.**
+
+## Module-scoped (dark-factory / commit-ready)
+
+When `PLAN.md` names a module and you need pre-commit parity:
 
 ```bash
 node scripts/fabro-verify.mjs
 ```
 
-Module-scoped `tsc` + ESLint (ignores errors outside the target module), module unit
-tests, **then husky pre-commit parity**: `check-architecture.mjs`, `check-docs-updated.mjs
---working-tree`, full `npm run test:unit`, `npm run build`. Passing fabro-verify means
-**git commit pre-commit hooks would pass** after staging. Reads module from `PLAN.md`.
-Uses `NODE_OPTIONS=--max-old-space-size=6144`.
+Module-scoped `tsc` + ESLint, module unit tests, then husky parity (`check-architecture`, docs, full unit, `build`). Uses `NODE_OPTIONS=--max-old-space-size=6144`. Still **no E2E**.
 
-## E2E
+## Full-repo reference (slow — not for batch cadence)
 
 ```bash
-npm run test:e2e                # Playwright default
-npm run test:e2e smoke          # storyteller smoke script
-npm run test:e2e full-loop      # full storyteller loop
+npm run qualitygate:tsc -- --all-slices   # all TSC slices — use sparingly
+npm run check:lint         # alias for full-repo ESLint
+npm run qualitygate:metrics # line/complexity only (without tsc)
 ```
 
 ## Baseline / ratchets
 
 Typecheck and ESLint warnings are ratcheted — never increase the baseline count. See `docs/quality-improvement-spec.md`. `.local/` is for ad-hoc tooling (gitignored); don't add throwaway plumbing under `src/lib`.
 
-## Order of operations (mirror Fabro build path)
+## Order of operations (agent tasks)
 
 1. Implement (use skills: `/refactor`, `/write-tests`, `/review`).
-2. `node scripts/fabro-verify.mjs` → fix → repeat (max 3 fix loops; includes pre-commit parity).
-3. Retro (evidence-based — `git diff` verified).
-
-Optional locally after fabro-verify pass: `npx knip`, `npm run test:e2e full-loop` (storyteller UI).
+2. Every 5 todos: `npm run qualitygate:changed` or `npm run qualitygate:capture` → fix via backlog → continue.
+3. Last todo: `npm run typecheck`, `npm run lint`, `npm run test:unit`.
+4. If `PLAN.md` exists and handoff is commit-ready: `node scripts/fabro-verify.mjs`.

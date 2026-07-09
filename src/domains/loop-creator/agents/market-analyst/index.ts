@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent'
 import { createTool } from '@mastra/core/tools'
 import type { DynamicStructuredTool } from '@langchain/core/tools'
 import { LoopAnalysisInput, MarketAnalysisReport } from './types'
+import { marketAnalysisReportFromJson } from './market-analysis-wire'
 import { MARKET_ANALYST_SYSTEM_PROMPT, buildLoopContext, SCORING_CRITERIA_PLACEHOLDER } from './prompts'
 import { marketAnalystTools } from './tools-registry'
 
@@ -97,7 +98,7 @@ export async function runMarketAnalysis(
       const reportMatch = content.match(/```json\s*([\s\S]*?)\s*```/)
       if (reportMatch) {
         try {
-          report = JSON.parse(reportMatch[1]) as MarketAnalysisReport
+          report = marketAnalysisReportFromJson(reportMatch[1])
         } catch {
           /* try next message */
         }
@@ -108,7 +109,7 @@ export async function runMarketAnalysis(
       const reportMatch = result.text.match(/```json\s*([\s\S]*?)\s*```/)
       if (reportMatch) {
         try {
-          report = JSON.parse(reportMatch[1]) as MarketAnalysisReport
+          report = marketAnalysisReportFromJson(reportMatch[1])
         } catch {
           /* no structured report */
         }

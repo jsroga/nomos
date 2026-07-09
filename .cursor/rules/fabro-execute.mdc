@@ -33,6 +33,8 @@ No separate assess, tester, e2e, screenshot, or preview stages.
 
 `node scripts/fabro-verify.mjs` — module-scoped typecheck + ESLint + module unit tests, then **husky pre-commit parity** (architecture, docs, full unit tests, production build). Commit-ready handoff when exit 0.
 
+**Many failures in verify loops:** developer uses `.local/quality-backlog.md` (`npm run qualitygate:capture`) — one fix per step, rescan every 5; see `.agents/execute/partials/quality-backlog.md`.
+
 **Fix loops:** verify fails → developer (codex) retries up to **3 times** (`max_visits=4`). After that → retro anyway (**ship anyway** — does not block PR).
 
 ## Artifacts

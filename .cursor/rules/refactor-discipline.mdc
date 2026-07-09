@@ -1,0 +1,49 @@
+---
+description: Mandatory refactor discipline — incremental extract, ESLint-driven, no src transform scripts
+globs: "**/*"
+alwaysApply: true
+---
+
+# Refactor discipline (mandatory)
+
+`.cursor/rules` and hooks are **binding**, not suggestions.
+
+## Never use codegen scripts on `src/`
+
+- **Forbidden:** `node <<'SCRIPT'`, `node -e`, or ad-hoc `.mjs` that **reads and rewrites** files under `src/`.
+- **Allowed:** `npm run lint:file`, `npm run qualitygate:file`, `npm run qualitygate:changed`, `npm run qualitygate:capture`, `npm run qualitygate:backlog`, `npm run qualitygate:metrics`, `node scripts/fabro-verify.mjs`, repo scripts in `scripts/` invoked as documented.
+- Scratch + **quality backlog**: `.local/tmp/` (inventory, `rg` output) · `.local/quality-backlog.md` (cached gate failures) — never commit, never write into `src/`.
+
+## Incremental extract loop
+
+When splitting oversized files (see `.cursor/rules/code-metrics.mdc` — warn **400**, error **800** lines; complexity warn **15**, error **25**):
+
+1. **Plan target files** before editing (thin route → domain layout → hooks → panels).
+2. **One extract per step** — move one component/hook/util, fix imports, delete from source.
+3. **Gate each touched file:** `npm run qualitygate:file -- <path>` — or dequeue from `.local/quality-backlog.md` when many failures (rescan every **5** fixes).
+4. Do not start the next extract until the gate passes.
+5. Target **≤400 lines** per new file; **800 is a hard error**.
+
+## Route vs domain (non-negotiable)
+
+- `src/app/(workspace)/[projectId]/<module>/page.tsx` — **thin shell only**: import one layout/workspace from `@/domains/<module>` and render it. Match `interior-design/page.tsx` and `loop-creator/page.tsx`.
+- **All** orchestration, hooks, workspace JSX, and dynamic imports live under `src/domains/<module>/` (`state/hooks/`, `ui/<Layout>/`).
+- **Never** create `src/app/.../<module>/hooks/`, `StorytellerWorkspace.tsx`, `*PageClient.tsx`, or other feature logic under `app/` to “fix” cross-domain lint or speed up extraction — that inverts the architecture.
+
+### Common agent mistakes (avoid)
+
+| Mistake | Why it happens | Correct fix |
+|--------|----------------|-------------|
+| Moving hooks/workspace into `app/` | Cross-domain lint errors in `domains/`; shell scripts that dump code into wrong layer | Keep code in domain; fix imports via `@/shared` or existing seams (see interior-designer + `useWorldStore`) |
+| `page.tsx` imports `./StorytellerPageClient` | Treating app route as feature root | `import { StorytellerLayout } from '@/domains/storyteller'` |
+| Domain `StorytellerLayout` re-exports from `@/app/...` | Backwards dependency domain → app | Domain layout owns `useStorytellerPage()` + workspace |
+| File-level `eslint-disable` | Gate failures on legacy extract | Split files + enums; ask user before any disable |
+
+
+## When a hook fails
+
+Fix the violation; do not disable ESLint, skip verify, or bypass with bulk scripts.
+
+## Never disable quality gates
+
+File-wide or broad `eslint-disable` for lint/metrics rules is **forbidden** unless the user explicitly approves in chat. Same for `@ts-nocheck` and gate-skipping comments. See `.cursor/rules/quality-gates.mdc` § “Never bypass gates”.

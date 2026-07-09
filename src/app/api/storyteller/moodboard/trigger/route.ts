@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { db } from '@/db/client'
 import { projects } from '@/db'
-import { type StoryPlan } from '@/domains/storyteller/core/types/StoryPlanTypes'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
 import OpenAI from 'openai'
 import { requireAuth } from '@/shared/auth/auth'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY
@@ -52,11 +52,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Get bible data
-    const bible = (project.seriesBible || {}) as Partial<StoryPlan>
-    const projectTitle = bible.title || project.name || 'Untitled Project'
-    const genre = bible.genre || 'Unknown genre'
-    const tone = bible.tone || 'atmospheric'
-    const worldDesc = bible.worldDescription || project.description || projectTitle
+    const bible = recordFromJson(project.seriesBible)
+    const projectTitle = readString(bible.title) ?? project.name ?? 'Untitled Project'
+    const genre = readString(bible.genre) ?? 'Unknown genre'
+    const tone = readString(bible.tone) ?? 'atmospheric'
+    const worldDesc =
+      readString(bible.worldDescription) ?? project.description ?? projectTitle
 
     // Define Prompt Types
     const promptTypes = [

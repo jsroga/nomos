@@ -245,7 +245,16 @@ export class StorageService {
         blob = new Blob([byteArray], { type: 'image/png' })
       } else {
         // Fix: buffer might be Node Buffer, convert to Uint8Array for Blob
-        const bufferData = Buffer.isBuffer(data) ? new Uint8Array(data) : (data as any)
+        let bufferData: Uint8Array
+        if (Buffer.isBuffer(data)) {
+          bufferData = new Uint8Array(data)
+        } else if (data instanceof Uint8Array) {
+          bufferData = data
+        } else if (data instanceof ArrayBuffer) {
+          bufferData = new Uint8Array(data)
+        } else {
+          throw new Error('Unsupported upload buffer type')
+        }
         blob = new Blob([bufferData], { type: 'image/png' })
       }
 
@@ -260,10 +269,17 @@ export class StorageService {
       if (!response.ok) throw new Error(`Upload failed: ${response.statusText}`)
 
       const result = await response.json()
-      if (result.status === 'success' && result.data.url) {
+      const resultRecord =
+        typeof result === 'object' && result !== null ? result : {}
+      const dataField =
+        typeof resultRecord.data === 'object' && resultRecord.data !== null
+          ? resultRecord.data
+          : null
+      const viewUrl =
+        dataField && typeof dataField.url === 'string' ? dataField.url : null
+      if (resultRecord.status === 'success' && viewUrl) {
         // Convert view URL to direct download URL
         // Example: https://tmpfiles.org/123/img.png -> https://tmpfiles.org/dl/123/img.png
-        const viewUrl = result.data.url as string
         const dlUrl = viewUrl.replace('tmpfiles.org/', 'tmpfiles.org/dl/')
         return dlUrl
       }

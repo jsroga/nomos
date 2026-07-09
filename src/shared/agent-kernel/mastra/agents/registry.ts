@@ -1,23 +1,25 @@
 import { Agent } from '@mastra/core/agent'
-import {
-  storytellerStudioTools,
-  gardenerStudioTools,
-  psychologistStudioTools,
-  gameDesignStudioTools,
-  councilStudioTools,
-} from '../tools/bundles'
+import { storytellerStudioTools, gameDesignStudioTools } from '../tools/bundles'
 
-const DEFAULT_MODEL = 'anthropic/claude-sonnet-4-20250514'
+const DEFAULT_MODEL = 'anthropic/claude-sonnet-5'
+
+const CRITIC_STUDIO_RULES = `Rules:
+- Report ONLY findings within your brief. Ignore everything else, even obvious problems.
+- Every finding must QUOTE the offending passage and say precisely why it fails.
+- Never rewrite or suggest replacement prose. Diagnosis only — the author does the fixing.
+- No praise, no summary, no hedging. Numbered list, most severe first, max 10 findings.`
 
 /**
- * Studio-facing agent registry with production tool wiring.
+ * Studio-facing agent registry — mirrors the production GRRM topology
+ * (chat adapter + author + planner + three narrow critics). Bundler-safe:
+ * tool stubs only, no domain imports.
  */
 export const studioAgents: Record<string, Agent> = {
   storyteller: new Agent({
     id: 'storyteller',
     name: 'Storyteller',
     instructions:
-      'You are the Showrunner — final creative authority for interactive narrative. Synthesize council input into cohesive story beats, dialogue, and world-building. Show, do not tell.',
+      'You are the storyteller chat adapter: converse, keep the world bible current via tools, and delegate creative beat drafting to the beat-draft workflow. Concise, concrete, grounded in established canon.',
     model: DEFAULT_MODEL,
     tools: storytellerStudioTools,
   }),
@@ -31,91 +33,6 @@ export const studioAgents: Record<string, Agent> = {
     tools: gameDesignStudioTools,
   }),
 
-  gardener: new Agent({
-    id: 'gardener',
-    name: 'The Gardener',
-    instructions:
-      'You polish prose: tighten dialogue, add visual hooks, condense scenes, and cut generic AI phrasing while preserving author intent.',
-    model: DEFAULT_MODEL,
-    tools: gardenerStudioTools,
-  }),
-
-  psychologist: new Agent({
-    id: 'psychologist',
-    name: 'Psychologist',
-    instructions:
-      'You analyze character psychology, motivations, and relationship dynamics. Flag inconsistencies in emotional logic and suggest deeper character beats.',
-    model: DEFAULT_MODEL,
-    tools: psychologistStudioTools,
-  }),
-
-  consequence: new Agent({
-    id: 'consequence',
-    name: 'Consequence Tracker',
-    instructions:
-      'You track cause-and-effect across the story. Every action must have consequences; flag orphaned beats and missing ripple effects.',
-    model: DEFAULT_MODEL,
-    tools: councilStudioTools,
-  }),
-
-  devilsAdvocate: new Agent({
-    id: 'devils-advocate',
-    name: "Devil's Advocate",
-    instructions:
-      'You stress-test story decisions. Challenge assumptions, find plot holes, and argue alternative directions without being contrarian for its own sake.',
-    model: DEFAULT_MODEL,
-    tools: councilStudioTools,
-  }),
-
-  premiseArchitect: new Agent({
-    id: 'premise-architect',
-    name: 'Premise Architect',
-    instructions:
-      'You craft and refine episode premises: loglines, hooks, fatal flaws, and stakes. Iterate until the premise is sharp and producible.',
-    model: DEFAULT_MODEL,
-    tools: councilStudioTools,
-  }),
-
-  selfCritique: new Agent({
-    id: 'self-critique',
-    name: 'Self Critique',
-    instructions:
-      'You are a ruthless story editor. Catch AI slop and generic writing. If a draft is good, say so — do not invent problems.',
-    model: DEFAULT_MODEL,
-    tools: councilStudioTools,
-  }),
-
-  creativeDirectorGrrm: new Agent({
-    id: 'creative-director-grrm',
-    name: 'Creative Director: GRRM',
-    instructions:
-      'You review like George R.R. Martin: moral complexity, consequence, character depth, and political intrigue. No one is safe.',
-    model: DEFAULT_MODEL,
-    tools: councilStudioTools,
-  }),
-
-  creativeDirectorGilligan: new Agent({
-    id: 'creative-director-gilligan',
-    name: 'Creative Director: Gilligan',
-    instructions:
-      'You review like Vince Gilligan: transformation arcs, visual storytelling, rigorous cause-and-effect, and earned payoffs.',
-    model: DEFAULT_MODEL,
-    tools: councilStudioTools,
-  }),
-
-  consistency: new Agent({
-    id: 'consistency-agent',
-    name: 'Consistency Agent',
-    instructions:
-      'You detect story inconsistencies (character, timeline, world rules, tone) and propose precise fixes with affected element paths.',
-    model: DEFAULT_MODEL,
-    tools: {
-      check_continuity: storytellerStudioTools.check_continuity,
-      quick_consistency_check: storytellerStudioTools.quick_consistency_check,
-      validate_consistency: storytellerStudioTools.validate_consistency,
-    },
-  }),
-
   worldBuilding: new Agent({
     id: 'world-building-agent',
     name: 'World Building Agent',
@@ -127,12 +44,11 @@ export const studioAgents: Record<string, Agent> = {
     },
   }),
 
-  // NEW: GRRM solo model agents (P1-4)
   grrmAuthor: new Agent({
     id: 'grrm-author',
     name: 'GRRM Author',
     instructions:
-      'You are George R.R. Martin\'s creative mind. Work SOLO: plan → draft → self-critique → iterate. Output script-format beats (slugline + action + dialogue with subtext). Every beat must move action forward (Law of Motion: actionTaken, consequence, storyStateChange).',
+      "You are the solo creative mind: plan → draft → revise with craft mechanics, never committee averaging. Output script-format beats (slugline + action + dialogue with subtext). Every beat must move action forward (Law of Motion: actionTaken, consequence, storyStateChange).",
     model: DEFAULT_MODEL,
     tools: storytellerStudioTools,
   }),
@@ -147,5 +63,32 @@ export const studioAgents: Record<string, Agent> = {
       list_beats: storytellerStudioTools.list_beats,
       manage_beat: storytellerStudioTools.manage_beat,
     },
+  }),
+
+  continuityCritic: new Agent({
+    id: 'continuity-critic',
+    name: 'Continuity Critic',
+    instructions: `You are a continuity checker. Your ONLY brief: characters acting on knowledge they do not possess; contradictions with timeline, character sheets, world rules, or paid-off setups; internal contradictions within the draft.
+
+${CRITIC_STUDIO_RULES}`,
+    model: DEFAULT_MODEL,
+  }),
+
+  proseCritic: new Agent({
+    id: 'prose-critic',
+    name: 'Prose Critic',
+    instructions: `You are a line-level prose critic. Your ONLY brief: stated emotion instead of evidence; clichés and stock phrasing; POV breaks; dialogue with no subtext; abstract detail where specific sensory texture is needed.
+
+${CRITIC_STUDIO_RULES}`,
+    model: DEFAULT_MODEL,
+  }),
+
+  stakesCritic: new Agent({
+    id: 'stakes-critic',
+    name: 'Stakes Critic',
+    instructions: `You are a structural critic for stakes and cost. Your ONLY brief: costless beats; unearned victories; threats announced but never priced; scenes without friction; antagonists evil for evil's sake.
+
+${CRITIC_STUDIO_RULES}`,
+    model: DEFAULT_MODEL,
   }),
 }

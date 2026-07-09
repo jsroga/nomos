@@ -7,6 +7,7 @@
 
 import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
+import { countOccurrences } from '@/shared/data/count-occurrences'
 import { CompetitorData } from '../types'
 
 /**
@@ -590,13 +591,7 @@ Use this to understand what works in the market and find differentiation opportu
 
       // Aggregate design lessons
       const allLessons = topCompetitors.flatMap(c => c.designLessons)
-      const lessonCounts = allLessons.reduce(
-        (acc, l) => {
-          acc[l] = (acc[l] || 0) + 1
-          return acc
-        },
-        {} as Record<string, number>
-      )
+      const lessonCounts = countOccurrences(allLessons)
 
       const consensusLessons = Object.entries(lessonCounts)
         .filter(([_, count]) => count >= 2)
@@ -606,13 +601,7 @@ Use this to understand what works in the market and find differentiation opportu
 
       // Aggregate mistakes to avoid
       const allMistakes = topCompetitors.flatMap(c => c.avoidMistakes)
-      const mistakeCounts = allMistakes.reduce(
-        (acc, m) => {
-          acc[m] = (acc[m] || 0) + 1
-          return acc
-        },
-        {} as Record<string, number>
-      )
+      const mistakeCounts = countOccurrences(allMistakes)
 
       const commonMistakes = Object.entries(mistakeCounts)
         .sort((a, b) => b[1] - a[1])
@@ -621,13 +610,7 @@ Use this to understand what works in the market and find differentiation opportu
 
       // Identify market gaps (common weaknesses)
       const allWeaknesses = topCompetitors.flatMap(c => c.weaknesses)
-      const weaknessCounts = allWeaknesses.reduce(
-        (acc, w) => {
-          acc[w] = (acc[w] || 0) + 1
-          return acc
-        },
-        {} as Record<string, number>
-      )
+      const weaknessCounts = countOccurrences(allWeaknesses)
 
       const marketGaps = Object.entries(weaknessCounts)
         .filter(([_, count]) => count >= 2)
@@ -690,15 +673,7 @@ Use this to understand what works in the market and find differentiation opportu
         }
 
         // Success pattern
-        const commonSuccessFactors = topCompetitors
-          .flatMap(c => c.successFactors)
-          .reduce(
-            (acc, f) => {
-              acc[f] = (acc[f] || 0) + 1
-              return acc
-            },
-            {} as Record<string, number>
-          )
+        const commonSuccessFactors = countOccurrences(topCompetitors.flatMap(c => c.successFactors))
 
         const topSuccessFactor = Object.entries(commonSuccessFactors).sort((a, b) => b[1] - a[1])[0]
 

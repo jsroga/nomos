@@ -3,6 +3,7 @@ import { Crown, Target, Zap, ShieldAlert } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { Faction } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { RichText } from '../RichText'
 
@@ -13,19 +14,16 @@ interface FactionCardProps {
 }
 
 export const FactionCard: React.FC<FactionCardProps> = ({ faction, projectId, className }) => {
-  const factionAny = faction as any
-
-  // Normalize goals to always be an array - handle both "goals" and "powerStructure"
   const goals = Array.isArray(faction.goals)
     ? faction.goals
     : typeof faction.goals === 'string' && faction.goals
       ? [faction.goals]
-      : factionAny.powerStructure
-        ? [factionAny.powerStructure]
-        : []
+      : []
 
-  // Resources can be "resources" or "politicalForces"
-  const resources = faction.resources || factionAny.politicalForces || ''
+  // Resources can be "resources" or legacy "politicalForces"
+  const factionRecord = recordFromJson(faction)
+  const politicalForces = readString(factionRecord.politicalForces)
+  const resources = faction.resources || politicalForces || ''
 
   // Normalize rivals to always be an array
   const rivals = Array.isArray(faction.rivals)
@@ -120,7 +118,7 @@ export const FactionCard: React.FC<FactionCardProps> = ({ faction, projectId, cl
             <div>
               <div className="flex items-center gap-2 mb-1 text-muted-foreground/50 font-bold text-[10px] uppercase tracking-widest">
                 <Zap className="w-3 h-3" />{' '}
-                {factionAny.politicalForces ? 'Political Forces' : 'Resources'}
+                {politicalForces ? 'Political Forces' : 'Resources'}
               </div>
               <p className="text-xs text-foreground/70 ml-1 leading-relaxed">
                 <RichText text={resources} projectId={projectId} inline />

@@ -5,6 +5,7 @@
  * Improves retrieval precision by better scoring query-document relevance.
  */
 
+import { z } from 'zod'
 import { SearchResult } from './hybrid-search'
 
 // ============================================
@@ -63,7 +64,10 @@ function rerankHeuristic(
 
   const scoredResults = results.map(result => {
     const content = result.content.toLowerCase()
-    let score = result.score // Start with original score
+    // SearchResult carries combinedScore (vector+keyword); `result.score`
+    // never existed — it read undefined, poisoning every heuristic score
+    // to NaN so the minScore filter dropped all results.
+    let score = result.combinedScore // Start with original score
 
     // 1. Term overlap bonus
     const matchedTerms = queryTerms.filter(term => content.includes(term))
@@ -112,12 +116,14 @@ function rerankHeuristic(
 // COHERE RERANKER
 // ============================================
 
-interface CohereRerankResponse {
-  results: Array<{
-    index: number
-    relevance_score: number
-  }>
-}
+const cohereRerankResponseSchema = z.object({
+  results: z.array(
+    z.object({
+      index: z.number(),
+      relevance_score: z.number(),
+    })
+  ),
+})
 
 /**
  * Cohere API-based reranking
@@ -155,7 +161,7 @@ async function rerankCohere(
       throw new Error(`Cohere API error: ${response.status}`)
     }
 
-    const data = (await response.json()) as CohereRerankResponse
+    const data = cohereRerankResponseSchema.parse(await response.json())
 
     // Map back to original results with new scores
     const rerankedResults = data.results

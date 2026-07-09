@@ -10,15 +10,11 @@ import 'server-only'
 import { db } from '@/db/client'
 import { characters, projects, episodes, beats } from '@/domains/storyteller/db/schema'
 import { eq, desc } from 'drizzle-orm'
-import { z } from 'zod'
-import type { WritersRoomState } from '@/domains/storyteller/core/types/StoryTypes'
 
-type LangsmithTraceConfig = {
-  runName?: string
-  tags?: string[]
-  metadata?: Record<string, unknown>
-  configurable?: Record<string, unknown>
-}
+type CharacterRow = typeof characters.$inferSelect
+type EpisodeRow = typeof episodes.$inferSelect
+type BeatRow = typeof beats.$inferSelect
+import { z } from 'zod'
 
 // ============================================
 // SCHEMAS
@@ -131,7 +127,7 @@ export class StorytellerService {
   async listCharacters(
     input: ListCharactersInput,
     context: ServiceContext
-  ): Promise<{ characters: any[] }> {
+  ): Promise<{ characters: CharacterRow[] }> {
     const validated = listCharactersSchema.parse(input)
 
     const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
@@ -151,7 +147,10 @@ export class StorytellerService {
   /**
    * Get a single character by ID
    */
-  async getCharacter(characterId: string, context: ServiceContext): Promise<{ character: any }> {
+  async getCharacter(
+    characterId: string,
+    context: ServiceContext
+  ): Promise<{ character: CharacterRow }> {
     const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
 
     if (!character) {
@@ -172,7 +171,7 @@ export class StorytellerService {
   async createCharacter(
     input: CreateCharacterInput,
     context: ServiceContext
-  ): Promise<{ character: any }> {
+  ): Promise<{ character: CharacterRow }> {
     const validated = createCharacterSchema.parse(input)
 
     const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
@@ -212,7 +211,7 @@ export class StorytellerService {
     characterId: string,
     input: UpdateCharacterInput,
     context: ServiceContext
-  ): Promise<{ character: any }> {
+  ): Promise<{ character: CharacterRow }> {
     const validated = updateCharacterSchema.parse(input)
 
     const hasAccess = await this.verifyCharacterAccess(characterId, context.userId)
@@ -273,7 +272,7 @@ export class StorytellerService {
   async listEpisodes(
     input: ListEpisodesInput,
     context: ServiceContext
-  ): Promise<{ episodes: any[] }> {
+  ): Promise<{ episodes: EpisodeRow[] }> {
     const validated = listEpisodesSchema.parse(input)
 
     const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
@@ -293,7 +292,7 @@ export class StorytellerService {
   /**
    * List beats for an episode
    */
-  async listBeats(input: ListBeatsInput, context: ServiceContext): Promise<{ beats: any[] }> {
+  async listBeats(input: ListBeatsInput, context: ServiceContext): Promise<{ beats: BeatRow[] }> {
     const validated = listBeatsSchema.parse(input)
 
     // Get episode to verify access
@@ -319,7 +318,10 @@ export class StorytellerService {
   /**
    * Get the series bible for a project
    */
-  async getSeriesBible(projectId: string, context: ServiceContext): Promise<{ seriesBible: any }> {
+  async getSeriesBible(
+    projectId: string,
+    context: ServiceContext
+  ): Promise<{ seriesBible: unknown }> {
     const hasAccess = await this.verifyProjectAccess(projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
@@ -331,14 +333,18 @@ export class StorytellerService {
   }
 
   /**
-   * Send a message to the writers room and get a response
-   * This invokes the LangGraph workflow
+   * Send a message to the storyteller chat adapter and get a response.
+   * (Response shape kept from the legacy writers'-room graph for MCP callers:
+   * `{ response: { messages: [{ role: 'assistant', content }] }, threadId }`.)
    */
   async chat(
     input: ChatMessageInput,
     context: ServiceContext,
-    langsmithContext?: LangSmithContext
-  ): Promise<{ response: any; threadId: string }> {
+    _langsmithContext?: LangSmithContext
+  ): Promise<{
+    response: { messages: Array<{ role: 'assistant'; content: string }> }
+    threadId: string
+  }> {
     const validated = chatMessageSchema.parse(input)
 
     const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
@@ -346,12 +352,11 @@ export class StorytellerService {
       throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
     }
 
-    // TODO P1-10: Replace WritersRoomGraph with beat-draft-workflow
-    // Import the graph dynamically to avoid circular dependencies
-    const { getWritersRoomGraph } = await import(
-      '@/domains/storyteller/agents/orchestration/WritersRoomGraph'
+    // Dynamic import to avoid a static service ↔ agents cycle.
+    const { createStorytellerAgent } = await import(
+      '@/domains/storyteller/agents/StorytellerAgent/StorytellerAgent'
     )
-    const graph = await getWritersRoomGraph()
+    const agent = await createStorytellerAgent()
 
     // Generate thread ID if not provided
     const threadId =
@@ -364,32 +369,21 @@ export class StorytellerService {
       context
     )
 
-    // Invoke the graph (legacy pattern - P1-10 will rewire)
-    const result = await graph.invoke({
-      messages: [{ role: 'user', content: validated.message }],
-      projectId: validated.projectId,
-      episodeId: validated.episodeId,
-      seriesBible,
-      characters: projectCharacters,
-      beatBoard: [],
-      rejectedBeats: [],
-      unresolvedSetups: [],
-      currentPhase: 'premise',
-      // LangSmith config embedded for legacy compatibility
-      runName: langsmithContext?.runName || 'storyteller_chat',
-      tags: langsmithContext?.tags || ['storyteller', 'chat'],
-      metadata: {
-        ...langsmithContext?.metadata,
-        projectId: validated.projectId,
-        threadId,
-        userId: context.userId,
-      },
-      configurable: {
-        thread_id: threadId,
-      },
-    } as WritersRoomState)
+    const chatContext = [
+      `Project: ${validated.projectId}`,
+      validated.episodeId ? `Episode: ${validated.episodeId}` : '',
+      `Bible: ${JSON.stringify(seriesBible)}`,
+      `Characters: ${projectCharacters.map(c => c.name).join(', ')}`,
+    ]
+      .filter(Boolean)
+      .join('\n')
 
-    return { response: result, threadId }
+    const content = await agent.run(
+      'Respond to user',
+      `${chatContext}\n\nUser: ${validated.message}`
+    )
+
+    return { response: { messages: [{ role: 'assistant', content }] }, threadId }
   }
 }
 
@@ -408,7 +402,7 @@ export class ServiceError extends Error {
   constructor(
     message: string,
     public code: ServiceErrorCode,
-    public details?: any
+    public details?: unknown
   ) {
     super(message)
     this.name = 'ServiceError'

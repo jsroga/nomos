@@ -21,6 +21,10 @@ const NEUTRAL_FILL_TOLERANCE = 2
 
 type DirectNeighborKey = 'up' | 'down' | 'left' | 'right'
 
+const DIRECT_NEIGHBOR_KEYS: readonly DirectNeighborKey[] = ['up', 'down', 'left', 'right']
+const HORIZONTAL_NEIGHBOR_KEYS: readonly DirectNeighborKey[] = ['left', 'right']
+const VERTICAL_NEIGHBOR_KEYS: readonly DirectNeighborKey[] = ['up', 'down']
+
 export type ContextImageVariant = 'canonicalFullContext' | 'smartSeamContext'
 
 export interface ContextFramingStrategy {
@@ -110,9 +114,7 @@ function getContextFramingStrategy(
   if (variant === 'canonicalFullContext') {
     return {
       mode: 'balanced',
-      weightedNeighbors: (['up', 'down', 'left', 'right'] as DirectNeighborKey[]).filter(
-        key => directNeighbors[key]
-      ),
+      weightedNeighbors: DIRECT_NEIGHBOR_KEYS.filter(key => directNeighbors[key]),
     }
   }
 
@@ -122,26 +124,20 @@ function getContextFramingStrategy(
   if (hasHorizontal && !hasVertical) {
     return {
       mode: 'horizontal_priority',
-      weightedNeighbors: (['left', 'right'] as DirectNeighborKey[]).filter(
-        key => directNeighbors[key]
-      ),
+      weightedNeighbors: HORIZONTAL_NEIGHBOR_KEYS.filter(key => directNeighbors[key]),
     }
   }
 
   if (hasVertical && !hasHorizontal) {
     return {
       mode: 'vertical_priority',
-      weightedNeighbors: (['up', 'down'] as DirectNeighborKey[]).filter(
-        key => directNeighbors[key]
-      ),
+      weightedNeighbors: VERTICAL_NEIGHBOR_KEYS.filter(key => directNeighbors[key]),
     }
   }
 
   return {
     mode: 'balanced',
-    weightedNeighbors: (['up', 'down', 'left', 'right'] as DirectNeighborKey[]).filter(
-      key => directNeighbors[key]
-    ),
+    weightedNeighbors: DIRECT_NEIGHBOR_KEYS.filter(key => directNeighbors[key]),
   }
 }
 

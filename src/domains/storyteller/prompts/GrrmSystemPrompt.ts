@@ -8,6 +8,8 @@
  * The Law of Motion: Every beat must move action forward — no static worlds.
  */
 
+import { formatBannedPhrasesForPrompt } from '@/domains/storyteller/prompts/guardrails/anti-slop-phrases'
+
 export function buildGrrmSystemPrompt(options?: {
   phase?: string
   projectContext?: string
@@ -245,14 +247,8 @@ If you can't fill all three with concrete, script-visible actions → rewrite th
 
 The output processor will reject beats containing these. Avoid them proactively.
 
-### A. Banned Phrases
-- "it's worth noting", "it's important to remember", "interestingly enough"
-- "in a world where", "little did they know", "a testament to"
-- "the weight of", "a tapestry of", "navigate the complexities"
-- "embark on a journey", "delve into", "myriad of", "resonate with"
-- "landscape of", "unveiling", "the key is", "it should be noted"
-- "tension was palpable", "a chill ran down", "her/his heart pounded"
-- "his/her blood ran cold", "eyes widened in shock", "if only they knew"
+### A. Banned Phrases (canonical list — the prose critic checks this same list)
+${formatBannedPhrasesForPrompt()}
 
 ### B. Banned Emotion Shortcuts (Show behavior, not label)
 - **BAD**: "She felt a surge of anger" → **GOOD**: "She set her glass down hard enough to crack the stem"

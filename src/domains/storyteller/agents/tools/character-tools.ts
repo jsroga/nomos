@@ -8,9 +8,19 @@ import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { characters } from '@/db/schema'
 import { db } from '@/db/client'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, type SQL } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { recordFromJson } from '@/shared/data/deep-merge'
+
+/** jsonb psychology column → record, preserving `undefined` when unset. */
+function psychologyRecord(value: unknown): Record<string, unknown> | undefined {
+  return value == null ? undefined : recordFromJson(value)
+}
+import {
+  STORYTELLER_PROJECT_ID,
+  requestContextString,
+} from '@/domains/storyteller/agents/request-context'
 
 // ==========================================
 // SCHEMAS
@@ -123,7 +133,10 @@ export const manageCharacterTool = createTool({
   inputSchema: ManageCharacterInputSchema,
   outputSchema: ManageCharacterOutputSchema,
   execute: async (inputData, context) => {
-    const { operation, characterId, projectId, data } = inputData
+    const { operation, characterId, data } = inputData
+    // Server-trusted request-context IDs beat model-supplied input.
+    const projectId =
+      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
 
     try {
       switch (operation) {
@@ -197,7 +210,7 @@ export const manageCharacterTool = createTool({
               mbti: created.mbti ?? undefined,
               voiceSignature: created.voiceSignature ?? undefined,
               portraitUrl: created.portraitUrl ?? undefined,
-              psychology: (created.psychology as any) ?? undefined,
+              psychology: psychologyRecord(created.psychology),
               valence: created.valence,
               arousal: created.arousal,
               autonomy: created.autonomy,
@@ -230,7 +243,7 @@ export const manageCharacterTool = createTool({
             }
           }
 
-          const updateFields: any = { updatedAt: new Date() }
+          const updateFields: Partial<typeof characters.$inferInsert> = { updatedAt: new Date() }
           if (data.name !== undefined) updateFields.name = data.name
           if (data.role !== undefined) updateFields.role = data.role
           if (data.description !== undefined) updateFields.description = data.description
@@ -243,7 +256,7 @@ export const manageCharacterTool = createTool({
           if (data.characterPrompt !== undefined) updateFields.characterPrompt = data.characterPrompt
           if (data.psychology !== undefined) {
             // Merge psychology deeply
-            const currentPsych = (existing.psychology as any) ?? {}
+            const currentPsych = recordFromJson(existing.psychology)
             updateFields.psychology = { ...currentPsych, ...data.psychology }
           }
           if (data.valence !== undefined) updateFields.valence = data.valence
@@ -276,7 +289,7 @@ export const manageCharacterTool = createTool({
               mbti: updated.mbti ?? undefined,
               voiceSignature: updated.voiceSignature ?? undefined,
               portraitUrl: updated.portraitUrl ?? undefined,
-              psychology: (updated.psychology as any) ?? undefined,
+              psychology: psychologyRecord(updated.psychology),
               valence: updated.valence,
               arousal: updated.arousal,
               autonomy: updated.autonomy,
@@ -341,7 +354,7 @@ export const manageCharacterTool = createTool({
               mbti: character.mbti ?? undefined,
               voiceSignature: character.voiceSignature ?? undefined,
               portraitUrl: character.portraitUrl ?? undefined,
-              psychology: (character.psychology as any) ?? undefined,
+              psychology: psychologyRecord(character.psychology),
               valence: character.valence,
               arousal: character.arousal,
               autonomy: character.autonomy,
@@ -375,10 +388,13 @@ export const listCharactersTool = createTool({
   inputSchema: ListCharactersInputSchema,
   outputSchema: ListCharactersOutputSchema,
   execute: async (inputData, context) => {
-    const { projectId, role } = inputData
+    const { role } = inputData
+    // Server-trusted request-context IDs beat model-supplied input.
+    const projectId =
+      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
 
     try {
-      const conditions: any[] = [eq(characters.projectId, projectId)]
+      const conditions: SQL[] = [eq(characters.projectId, projectId)]
       if (role) conditions.push(eq(characters.role, role))
 
       const results = await db
@@ -397,7 +413,7 @@ export const listCharactersTool = createTool({
         mbti: char.mbti ?? undefined,
         voiceSignature: char.voiceSignature ?? undefined,
         portraitUrl: char.portraitUrl ?? undefined,
-        psychology: (char.psychology as any) ?? undefined,
+        psychology: psychologyRecord(char.psychology),
         valence: char.valence,
         arousal: char.arousal,
         autonomy: char.autonomy,

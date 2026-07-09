@@ -4,6 +4,11 @@ import { db } from '@/db/client'
 import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
+import {
+  episodeStoryPlanResponse,
+  storyPlanRecordFromJson,
+} from '@/domains/storyteller/core/entities/story-plan-wire'
+import { readNumber, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
 
 // GET: Fetch story plan for an episode or project
 export async function GET(req: NextRequest) {
@@ -38,26 +43,18 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Episode not found' }, { status: 404 })
       }
 
-      return NextResponse.json({
-        storyPlan: {
-          ...((episode.storyPlan as any) || {}),
+      return NextResponse.json(
+        episodeStoryPlanResponse({
+          storyPlan: episode.storyPlan,
+          planApproved: episode.planApproved,
+          currentPhase: episode.currentPhase,
+          scriptContent: episode.scriptContent,
           title: episode.title,
-          posterUrl:
-            episode.posterUrl ||
-            (episode.storyPlan as any)?.posterUrl ||
-            (episode.storyPlan as any)?.poster_url,
-          posterPrompt:
-            episode.posterPrompt ||
-            (episode.storyPlan as any)?.posterPrompt ||
-            (episode.storyPlan as any)?.poster_prompt,
-          storyboardUrl:
-            (episode.storyPlan as any)?.storyboardUrl || (episode.storyPlan as any)?.storyboard_url,
-          projectId: projectId,
-        },
-        planApproved: episode.planApproved,
-        currentPhase: episode.currentPhase || 'premise',
-        script: episode.scriptContent || '',
-      })
+          posterUrl: episode.posterUrl,
+          posterPrompt: episode.posterPrompt,
+          projectId,
+        })
+      )
     } else if (projectId) {
       if (!(await verifyProjectAccess(projectId, session.user.id))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
@@ -155,7 +152,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Sequence ID and updates are required' }, { status: 400 })
     }
 
-    let existingPlan: any = null
+    let existingPlan = storyPlanRecordFromJson(null)
 
     if (episodeId) {
       if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
@@ -167,7 +164,7 @@ export async function PATCH(req: NextRequest) {
         .from(episodes)
         .where(eq(episodes.id, episodeId))
         .limit(1)
-      existingPlan = episode?.storyPlan
+      existingPlan = storyPlanRecordFromJson(episode?.storyPlan)
     } else if (projectId) {
       if (!(await verifyProjectAccess(projectId, session.user.id))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
@@ -179,25 +176,30 @@ export async function PATCH(req: NextRequest) {
         .where(eq(storyPlans.projectId, projectId))
         .limit(1)
 
-      existingPlan = plan?.content
+      existingPlan = storyPlanRecordFromJson(plan?.content)
 
-      if (!existingPlan) {
+      if (Object.keys(existingPlan).length === 0) {
         const [project] = await db
           .select({ storyPlan: projects.storyPlan })
           .from(projects)
           .where(eq(projects.id, projectId))
           .limit(1)
-        existingPlan = project?.storyPlan
+        existingPlan = storyPlanRecordFromJson(project?.storyPlan)
       }
     }
 
-    if (!existingPlan || !existingPlan.sequences) {
+    const sequences = recordArrayFromJson(existingPlan.sequences)
+    if (sequences.length === 0) {
       return NextResponse.json({ error: 'No existing plan found' }, { status: 404 })
     }
 
-    const updatedSequences = existingPlan.sequences.map((seq: any) =>
-      seq.id === sequenceId ? { ...seq, ...updates } : seq
-    )
+    const updatedSequences = sequences.map(seq => {
+      const seqId = seq.id
+      if (seqId === sequenceId || String(seqId) === String(sequenceId)) {
+        return { ...seq, ...recordFromJson(updates) }
+      }
+      return seq
+    })
 
     const updatedPlan = { ...existingPlan, sequences: updatedSequences }
 

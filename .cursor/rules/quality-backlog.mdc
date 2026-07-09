@@ -1,0 +1,43 @@
+---
+description: When quality gates fail with many issues — cache results in .local/, fix one-by-one, rescan every 5 steps (not every edit)
+globs: "**/*"
+alwaysApply: true
+---
+
+# Quality backlog (local memory)
+
+When gates return **many issues**, do **not** re-run `verify`, `lint`, or `typecheck` after every fix.
+
+## Cadence (binding)
+
+| When | Action |
+|------|--------|
+| Start of fix loop | **One** `npm run qualitygate:capture` |
+| Steps 1–4 | Fix **one** item → `npm run qualitygate:backlog -- done <id>` → **no rescan** |
+| Step 5, 10, 15… | `npm run qualitygate:capture` again |
+| Handoff | `npm run qualitygate:file -- <touched>` |
+
+Also: `npm run qualitygate:changed` every **5 completed todos** (not every todo). See `todo-batch-verify.mdc`.
+
+## Local files (`.local/` — gitignored)
+
+| Path | Role |
+|------|------|
+| `.local/quality-backlog.md` | Checklist — what to fix next |
+| `.local/quality-last-run.json` | Cached scan output |
+| `.local/quality-tracker-state.json` | Per-file tracker (`npm run qualitygate:tracker -- --file`) |
+
+```bash
+npm run qualitygate:capture              # scan git-changed src (once per loop)
+npm run qualitygate:capture -- src/foo.ts   # scan named files
+npm run qualitygate:backlog              # show next items
+npm run qualitygate:backlog -- done 3    # mark item fixed (id from backlog md)
+```
+
+Canonical detail: `.agents/execute/partials/quality-backlog.md` (included in Implement prompt).
+
+## Anti-patterns
+
+- `qualitygate:file` after every single-line edit.
+- Re-running full `npm run lint` / `typecheck` in a tight loop.
+- Fixing without recording failures in `.local/quality-backlog.md`.

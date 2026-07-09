@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { TourAlertDialog, useTour } from '@/components/shell/Tour'
 import { getModuleConfigByUrl } from '@/shared/tours/module-tours'
-import { OnboardingState, ModuleId } from '@/shared/types/onboarding'
+import { OnboardingState } from '@/shared/types/onboarding'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 
 export function ModuleOnboardingController() {
@@ -53,8 +53,8 @@ export function ModuleOnboardingController() {
     const isRouteSkipped = routeState?.skipped
     
     // Fallback to per-module state for backward compatibility
-    const isModuleCompleted = onboarding?.modules?.[config.id as ModuleId]?.completed
-    const isModuleSkipped = onboarding?.modules?.[config.id as ModuleId]?.skipped
+    const isModuleCompleted = onboarding?.modules?.[config.id]?.completed
+    const isModuleSkipped = onboarding?.modules?.[config.id]?.skipped
 
     // In debug mode: ignore skip/finish state, always show on refresh (but still respect skip/finish actions during session)
     // In normal mode: respect skip/finish state

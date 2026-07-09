@@ -11,6 +11,12 @@ import { projects } from '@/db/schema'
 import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { deepMergeRecords, recordFromJson } from '@/shared/data/deep-merge'
+import {
+  STORYTELLER_PROJECT_ID,
+  STORYTELLER_EPISODE_ID,
+  requestContextString,
+} from '@/domains/storyteller/agents/request-context'
 
 // ==========================================
 // SCHEMAS
@@ -135,19 +141,17 @@ const CheckContinuityOutputSchema = z.object({
 // HELPER FUNCTIONS
 // ==========================================
 
-function deepMerge(target: any, source: any): any {
-  if (!target || typeof target !== 'object') return source
-  if (!source || typeof source !== 'object') return target
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
 
-  const result: any = { ...target }
-  for (const key of Object.keys(source)) {
-    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      result[key] = deepMerge(target[key], source[key])
-    } else {
-      result[key] = source[key]
-    }
-  }
-  return result
+function isObjectLike(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+/** Coerce a JSON value to an array of records (malformed entries dropped). */
+function recordArray(value: unknown): Array<Record<string, unknown>> {
+  return Array.isArray(value) ? value.filter(isObjectLike) : []
 }
 
 // ==========================================
@@ -164,7 +168,10 @@ export const updateWorldBibleTool = createTool({
   inputSchema: UpdateWorldBibleInputSchema,
   outputSchema: UpdateWorldBibleOutputSchema,
   execute: async (inputData, context) => {
-    const { projectId, worldDescription, items, events, factions, worldRules, plotTwists } = inputData
+    const { worldDescription, items, events, factions, worldRules, plotTwists } = inputData
+    // Server-trusted request-context IDs beat model-supplied input.
+    const projectId =
+      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
 
     try {
       // Fetch existing project
@@ -177,8 +184,8 @@ export const updateWorldBibleTool = createTool({
         }
       }
 
-      const currentStoryPlan = (project.storyPlan as Record<string, any>) || {}
-      const updates: Record<string, any> = {}
+      const currentStoryPlan = recordFromJson(project.storyPlan)
+      const updates: Record<string, unknown> = {}
       const updatedFields: string[] = []
 
       // Update each section if provided
@@ -208,7 +215,7 @@ export const updateWorldBibleTool = createTool({
       }
 
       // Merge updates into storyPlan
-      const updatedStoryPlan = deepMerge(currentStoryPlan, updates)
+      const updatedStoryPlan = deepMergeRecords(currentStoryPlan, updates)
 
       await db
         .update(projects)
@@ -241,7 +248,10 @@ export const readWorldBibleTool = createTool({
   inputSchema: ReadWorldBibleInputSchema,
   outputSchema: ReadWorldBibleOutputSchema,
   execute: async (inputData, context) => {
-    const { projectId, sections } = inputData
+    const { sections } = inputData
+    // Server-trusted request-context IDs beat model-supplied input.
+    const projectId =
+      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
 
     try {
       const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
@@ -252,17 +262,20 @@ export const readWorldBibleTool = createTool({
         }
       }
 
-      const storyPlan = (project.storyPlan as Record<string, any>) || {}
-      const result: any = { success: true }
+      const storyPlan = recordFromJson(project.storyPlan)
 
-      const shouldInclude = (section: string) => sections.includes('all') || sections.includes(section as any)
+      const requested = new Set<string>(sections)
+      const shouldInclude = (section: string) => requested.has('all') || requested.has(section)
 
-      if (shouldInclude('worldDescription')) result.worldDescription = storyPlan.worldDescription
-      if (shouldInclude('items')) result.items = storyPlan.items || []
-      if (shouldInclude('events')) result.events = storyPlan.events || []
-      if (shouldInclude('factions')) result.factions = storyPlan.factions || []
-      if (shouldInclude('worldRules')) result.worldRules = storyPlan.worldRules || []
-      if (shouldInclude('plotTwists')) result.plotTwists = storyPlan.plotTwists || []
+      const result: z.infer<typeof ReadWorldBibleOutputSchema> = { success: true }
+      if (shouldInclude('worldDescription') && typeof storyPlan.worldDescription === 'string') {
+        result.worldDescription = storyPlan.worldDescription
+      }
+      if (shouldInclude('items')) result.items = recordArray(storyPlan.items)
+      if (shouldInclude('events')) result.events = recordArray(storyPlan.events)
+      if (shouldInclude('factions')) result.factions = recordArray(storyPlan.factions)
+      if (shouldInclude('worldRules')) result.worldRules = recordArray(storyPlan.worldRules)
+      if (shouldInclude('plotTwists')) result.plotTwists = recordArray(storyPlan.plotTwists)
 
       return result
     } catch (error) {
@@ -285,7 +298,12 @@ export const checkContinuityTool = createTool({
   inputSchema: CheckContinuityInputSchema,
   outputSchema: CheckContinuityOutputSchema,
   execute: async (inputData, context) => {
-    const { projectId, episodeId, beatIds, checkTypes } = inputData
+    const { beatIds, checkTypes } = inputData
+    // Server-trusted request-context IDs beat model-supplied input.
+    const projectId =
+      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
+    const episodeId =
+      requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
 
     try {
       // Import ConsistencyService dynamically to avoid circular deps

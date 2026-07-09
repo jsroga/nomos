@@ -54,14 +54,26 @@ Constraints:
 - Keep the diff focused. Do not reformat untouched lines or drag in unrelated
   cleanups; that hides the real change.
 - No new dependencies unless the task requires it.
+- **Lint boundaries** (see `.cursor/rules/eslint-boundaries.mdc`): no `as` casts
+  (`as const` only), no cross-domain imports, no local `deepMerge`, no new `: any`.
+- **Code metrics** (see `.cursor/rules/code-metrics.mdc`): warn **400** / error **800**
+  lines; complexity warn **15** / error **25**. Gate each touched file with
+  `npm run qualitygate:file -- <path>` after extracts.
+- **Magic string sets** (action types, statuses, dispatch keys) → extract a
+  **TypeScript `enum`**, not an `as const` object map.
+- **App vs domain:** feature logic stays in `src/domains/<module>/` — never
+  `src/app/.../<module>/hooks/` or `*PageClient.tsx`. Routes import
+  `@/domains/<module>` only (see `.cursor/rules/domain-structure.mdc`).
 
 ## Step 4 — Verify behavior is unchanged
 
 After each meaningful step, and again at the end:
 
-1. `npm run typecheck` — zero errors.
-2. `npm run lint` — zero new errors/warnings.
-3. `npm run test:unit` — the same tests that were green stay green.
+1. **Few issues:** `npm run qualitygate:file -- <touched-paths>`
+2. **Many issues:** `npm run qualitygate:capture` → fix from `.local/quality-backlog.md` one-by-one → rescan every **5** fixes
+3. `npm run test:unit` — tests that were green stay green
+
+Before final handoff: `npm run typecheck`, `npm run lint`, `npm run test:unit`.
 
 If a test goes red, your change altered behavior. Fix the change, not the test.
 
@@ -78,6 +90,7 @@ If a test goes red, your change altered behavior. Fix the change, not the test.
 - Do not "improve" code outside the requested scope.
 - Do not weaken types or tests to make the refactor easier.
 - Do not remove features or behavior that callers rely on.
+- **Never** add file-level `eslint-disable` / `@ts-nocheck` to bypass quality gates without explicit user approval — split files and fix violations instead.
 
 ## Catalog of safe moves
 
@@ -88,6 +101,8 @@ If a test goes red, your change altered behavior. Fix the change, not the test.
 | Unclear name | Rename (project-wide) |
 | Pointless wrapper | Inline it |
 | Repeated inline object shape | Introduce a named type/interface |
+| Repeated string protocol values | Extract **`enum`** (preferred over `as const` maps) |
+| Deep merge duplicated | Use `@/shared/data/deep-merge` |
 | Deep nesting | Early returns / guard clauses |
 | Long param list | Group into an options object |
 | Big switch on type | Lookup table or polymorphism |

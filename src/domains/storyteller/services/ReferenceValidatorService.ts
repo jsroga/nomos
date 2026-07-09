@@ -63,26 +63,23 @@ export class ReferenceValidator {
      * Deep validates all string fields in an object that might contain references.
      * Recursively traverses objects and arrays.
      */
-    static async validateObject<T>(obj: T, projectId: string): Promise<T> {
+    static async validateObject(obj: unknown, projectId: string): Promise<unknown> {
         if (!obj) return obj
 
         if (typeof obj === 'string') {
-            return (await this.validate(obj, projectId)) as unknown as T
+            return await this.validate(obj, projectId)
         }
 
         if (Array.isArray(obj)) {
-            const validatedArray = await Promise.all(
-                obj.map(item => this.validateObject(item, projectId))
-            )
-            return validatedArray as unknown as T
+            return Promise.all(obj.map(item => this.validateObject(item, projectId)))
         }
 
         if (typeof obj === 'object') {
-            const validatedObj: any = {}
+            const validatedObj: Record<string, unknown> = {}
             for (const [key, value] of Object.entries(obj)) {
                 validatedObj[key] = await this.validateObject(value, projectId)
             }
-            return validatedObj as T
+            return validatedObj
         }
 
         return obj

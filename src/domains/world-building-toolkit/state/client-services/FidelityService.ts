@@ -63,7 +63,10 @@ export class FidelityService {
 
       const base64 = await new Promise<string>(resolve => {
         const reader = new FileReader()
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1])
+        reader.onloadend = () => {
+          if (typeof reader.result !== 'string') return
+          resolve(reader.result.split(',')[1])
+        }
         reader.readAsDataURL(blob)
       })
 

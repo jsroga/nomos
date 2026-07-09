@@ -2,10 +2,12 @@
  * GrrmAuthorAgent - The Solo Creative Mind
  *
  * Single author agent replacing the 6-agent writers' room council.
- * Uses GrrmSystemPrompt for craft mechanics, Law of Motion, and script-beat output.
+ * Uses GrrmSystemPrompt for craft mechanics, Law of Motion, and script-beat
+ * output. The same author drafts AND revises (unified vision) — critics only
+ * diagnose (see agents/critics/).
  *
- * Minimal tool surface: 9 GRRM CRUD tools (beat, character, episode, bible).
- * No workflow orchestration — that's handled by the beat-draft-workflow (P1-7).
+ * Minimal tool surface: the 9 GRRM CRUD tools (beat, character, episode,
+ * bible). Orchestration lives in agents/workflows/beat-draft-workflow.ts.
  */
 
 import { Agent } from '@mastra/core/agent'
@@ -14,8 +16,16 @@ import { v4 as uuidv4 } from 'uuid'
 import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
 import { grrmTools } from '@/domains/storyteller/agents/tools'
 import { buildGrrmSystemPrompt } from '@/domains/storyteller/prompts/GrrmSystemPrompt'
-import { getAgentModelConfig } from '@/domains/storyteller/config/ModelConfig'
+import type { RequestContext } from '@mastra/core/di'
+import { resolveRoleModel, resolveStorytellerModel } from '@/domains/storyteller/config/ModelConfig'
+import {
+  STORYTELLER_AUTHOR_MODEL,
+  requestContextString,
+} from '@/domains/storyteller/agents/request-context'
 import { withSpan } from '@/shared/observability/observability'
+import type { BeatPlan } from '@/domains/storyteller/agents/BeatPlanner/beat-plan-schema'
+
+type GrrmTool = (typeof grrmTools)[number]
 
 interface GrrmAuthorConfig {
   modelName?: string
@@ -24,31 +34,43 @@ interface GrrmAuthorConfig {
   episodeContext?: string
 }
 
+interface GrrmAuthorRunOptions {
+  toolChoice?: 'auto' | 'none' | 'required'
+  maxSteps?: number
+}
+
+interface GrrmAuthorStreamOptions extends GrrmAuthorRunOptions {
+  traceId?: string
+  parentSpanId?: string
+}
+
 export class GrrmAuthorAgent {
   private agent: Agent
-  private toolsMap: Record<string, any>
+  private toolsMap: Record<string, GrrmTool>
 
   private constructor(config: GrrmAuthorConfig) {
     const m = getMastraInstance()
     const storage = getStorageInstance()
     const workspace = m?.getWorkspace()
 
-    // Get model from config matrix
-    const modelConfig = getAgentModelConfig('storyteller')
-    const modelString = config.modelName || modelConfig.model.replace(':', '/')
+    // Explicit modelName (CLI/testing) beats everything; otherwise the picker
+    // choice from RequestContext overrides the author default per request.
+    const model = config.modelName
+      ? resolveStorytellerModel(config.modelName)
+      : ({ requestContext }: { requestContext: RequestContext }) =>
+          resolveRoleModel('author', requestContextString(requestContext, STORYTELLER_AUTHOR_MODEL))
 
-    // Build GRRM system prompt with context
     const instructions = buildGrrmSystemPrompt({
       phase: config.phase,
       projectContext: config.projectContext,
       episodeContext: config.episodeContext,
     })
 
-    // Use consolidated GRRM tools (9 total)
-    const tools = grrmTools
-    this.toolsMap = tools.reduce((acc, tool) => ({ ...acc, [tool.id]: tool }), {})
+    this.toolsMap = grrmTools.reduce<Record<string, GrrmTool>>((acc, tool) => {
+      acc[tool.id] = tool
+      return acc
+    }, {})
 
-    // Configure memory for multi-turn conversation
     const memory = new Memory({
       storage,
       options: {
@@ -60,39 +82,37 @@ export class GrrmAuthorAgent {
       id: 'grrm-author',
       name: 'GRRM Author',
       instructions,
-      model: modelString,
+      model,
       tools: this.toolsMap,
       mastra: m,
       workspace,
       memory,
     })
 
-    // Manually link observability
-    ;(this.agent as Agent & { mastra: typeof m }).mastra = m
+    // Manually link observability (extends the agent with a mastra ref)
+    Object.assign(this.agent, { mastra: m })
   }
 
-  /**
-   * Create a new GRRM Author agent instance
-   */
   static async create(config: GrrmAuthorConfig = {}): Promise<GrrmAuthorAgent> {
     return new GrrmAuthorAgent(config)
   }
 
-  /**
-   * Generate a hex ID for OTEL compatibility
-   */
+  /** Underlying Mastra Agent — for registration on the central instance. */
+  get mastraAgent(): Agent {
+    return this.agent
+  }
+
+  /** Generate a hex ID for OTEL compatibility */
   private generateHexId(length: number): string {
     return uuidv4().replace(/-/g, '').padEnd(length, '0').slice(0, length)
   }
 
-  /**
-   * Run the agent with a goal and context
-   */
+  /** Run the agent with a goal and context. */
   async run(
     goal: string,
     context: string,
     traceId?: string,
-    options?: { temperature?: number; topP?: number; toolChoice?: 'auto' | 'none' | 'required' }
+    options?: GrrmAuthorRunOptions
   ): Promise<string> {
     const id = traceId || this.generateHexId(32)
     const spanId = this.generateHexId(16)
@@ -104,7 +124,7 @@ export class GrrmAuthorAgent {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
         const response = await this.agent.generate(prompt, {
           toolChoice: options?.toolChoice || 'auto',
-          maxSteps: 10,
+          maxSteps: options?.maxSteps ?? 10,
           tracingOptions: {
             traceId: id,
             parentSpanId: spanId,
@@ -116,17 +136,16 @@ export class GrrmAuthorAgent {
     )
   }
 
-  /**
-   * Generate a story beat based on context
-   */
+  /** Draft a script-format story beat from a beat plan. */
   async generateBeat(
     context: {
       episodeId: string
-      beatPlan?: Record<string, any>
+      beatPlan?: BeatPlan
       previousBeat?: string
       characters: string[]
     },
-    traceId?: string
+    traceId?: string,
+    options?: GrrmAuthorRunOptions
   ): Promise<string> {
     const id = traceId || this.generateHexId(32)
     const spanId = this.generateHexId(16)
@@ -146,90 +165,28 @@ Follow the Script Beat Format (§ GrrmSystemPrompt):
 - Dialogue blocks with subtext notes
 - Ensure Law of Motion fields: actionTaken, consequence, storyStateChange`
 
-        return this.run('Generate script beat', prompt, id)
+        return this.run('Generate script beat', prompt, id, options)
       },
-      { ...context, id: spanId }
+      { episodeId: context.episodeId, characters: context.characters, id: spanId }
     )
   }
 
-  /**
-   * Self-critique a beat or scene
-   */
-  async critique(
-    content: string,
-    checkTypes: Array<'subtext' | 'state-change' | 'slop' | 'consequence'> = ['subtext', 'state-change', 'slop', 'consequence'],
-    traceId?: string
-  ): Promise<string> {
-    const id = traceId || this.generateHexId(32)
-    const spanId = this.generateHexId(16)
-
-    return withSpan(
-      id,
-      'GrrmAuthorAgent.critique',
-      async _span => {
-        const checkList = checkTypes.map(t => `- ${t}`).join('\n')
-        const prompt = `Run self-critique checklist on the following content:
-
-${checkList}
-
-Content:
-${content}
-
-Use the Self-Critique Checklist (§ GrrmSystemPrompt IV). Be ruthless. List issues, don't rewrite.`
-
-        return this.run('Self-critique', prompt, id)
-      },
-      { contentLength: content.length, checkTypes, id: spanId }
-    )
-  }
-
-  /**
-   * Stream response from the agent
-   */
-  stream(prompt: string, options?: any) {
+  /** Stream a response from the agent. */
+  stream(prompt: string, options?: GrrmAuthorStreamOptions) {
     const traceId = options?.traceId || this.generateHexId(32)
 
     return this.agent.stream(prompt, {
       toolChoice: options?.toolChoice || 'auto',
-      maxSteps: 10,
+      maxSteps: options?.maxSteps ?? 10,
       tracingOptions: {
         traceId,
         ...(options?.parentSpanId ? { parentSpanId: options.parentSpanId } : {}),
       },
     })
   }
-
-  /**
-   * Execute a specific tool directly
-   */
-  async executeTool(
-    toolId: string,
-    args: Record<string, unknown>,
-    traceId?: string
-  ): Promise<string> {
-    const id = traceId || this.generateHexId(32)
-    const spanId = this.generateHexId(16)
-    const tool = this.toolsMap[toolId]
-
-    if (!tool) {
-      throw new Error(`Tool ${toolId} not found`)
-    }
-
-    return withSpan(
-      id,
-      `GrrmAuthorAgent.tool.${toolId}`,
-      async _span => {
-        const result = await tool.execute(args, {})
-        return typeof result === 'string' ? result : JSON.stringify(result)
-      },
-      { toolId, args, id: spanId }
-    )
-  }
 }
 
-/**
- * Factory function for easy instantiation
- */
+/** Factory function for easy instantiation */
 export async function createGrrmAuthorAgent(
   config: GrrmAuthorConfig = {}
 ): Promise<GrrmAuthorAgent> {

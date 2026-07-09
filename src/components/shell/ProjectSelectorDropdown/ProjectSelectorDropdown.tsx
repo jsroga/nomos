@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/DropdownMenu'
+import { readString } from '@/shared/data/json-guards'
 import {
   Dialog,
   DialogContent,
@@ -40,7 +41,7 @@ export function ProjectSelectorDropdown() {
   const user = useWorldStore(state => state.user)
 
   const params = useParams()
-  const currentProjectId = params?.projectId as string
+  const currentProjectId = readString(params?.projectId)
 
   // Safe access to liquid context in case it's not wrapped (though we wrapped it in layout)
   let liquidOptions = {}

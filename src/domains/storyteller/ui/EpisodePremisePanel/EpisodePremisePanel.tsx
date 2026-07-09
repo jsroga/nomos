@@ -27,7 +27,7 @@ interface EpisodePremisePanelProps {
   globalBible: Partial<StoryPlan> // Read-only context
   posterUrl?: string | null
   posterPrompt?: string | null
-  onUpdate: (updates: EpisodePremise) => void
+  onUpdate: (updates: Partial<EpisodePremise> & { poster?: string }) => void
   onGenerate: () => void
   onGeneratePoster?: () => void
   onGenerateStoryboard?: () => void
@@ -103,7 +103,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
   const handleSave = () => {
     if (localPremise) {
       // Validation could go here
-      const toSave = localPremise as EpisodePremise
+      const toSave = localPremise
       lastSavedPremise.current = JSON.stringify(toSave)
       onUpdate(toSave)
       setIsEditing(false)
@@ -219,7 +219,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
           if (data.posterUrl) {
             setLocalPremise(prev => ({ ...prev, poster: data.posterUrl }))
             // Update parent with the permanent URL
-            onUpdate({ ...localPremise, poster: data.posterUrl } as any)
+            onUpdate({ ...localPremise, poster: data.posterUrl })
             console.log('[EpisodePremise] Saved successfully, new posterUrl:', data.posterUrl)
           }
         } else {
@@ -232,7 +232,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
     } else {
       console.warn('[EpisodePremise] No episodeId, skipping DB save')
       // If no episodeId yet (unlikely if generating poster), pass optimistic
-      onUpdate({ ...localPremise, poster: croppedDataUrl } as any)
+      onUpdate({ ...localPremise, poster: croppedDataUrl })
     }
   }
 
@@ -604,7 +604,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
                   size="sm"
                   variant="ghost"
                   className="gap-2 rounded-md text-muted-foreground hover:text-primary text-xs"
-                  onClick={() => onGenerateSection('tenPointsPlan' as any)}
+                  onClick={() => onGenerateSection('tenPointsPlan')}
                   disabled={isGenerating}
                 >
                   <RefreshCw
@@ -707,7 +707,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
               <button
                 type="button"
                 className="w-full p-8 bg-card border border-dashed border-border rounded-md flex flex-col items-center justify-center min-h-[180px] hover:border-primary/50 hover:bg-muted/20 transition-colors"
-                onClick={() => onGenerateSection && onGenerateSection('tenPointsPlan' as any)}
+                onClick={() => onGenerateSection?.('tenPointsPlan')}
               >
                 <ListOrdered className="w-10 h-10 text-muted-foreground mb-3" />
                 <h3 className="font-mono text-sm font-semibold tracking-tight mb-1">No 10-Point Plan</h3>

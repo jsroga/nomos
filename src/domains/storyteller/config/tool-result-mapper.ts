@@ -4,9 +4,16 @@
  * Pure functions extracted from the chat stream route so the mapping logic is
  * unit-testable in isolation. The route handles the surrounding I/O
  * (entity auto-linking, dedup, SSE emission).
+ *
+ * Only tools that exist in `agents/tools` are mapped — the legacy phantom
+ * branches (update_story_phase, create_character, create_episode,
+ * consult_premise_architect, ask_*) were removed with the writers'-room
+ * architecture; their behavior is pinned by
+ * `__tests__/tool-result-mapper.test.ts`.
  */
 
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
+import { RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID } from '@/domains/storyteller/agents/workflows/beat-draft-contract'
 import { processToolResultToAction, getActionTypeForSection } from './action-config'
 
 export type DetectedSection = BibleSection | 'beats'
@@ -23,6 +30,15 @@ export type ToolResultOutcome =
       detectedSection: DetectedSection
     }
   | { kind: 'none' }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function stringField(source: Record<string, unknown> | undefined, key: string): string | undefined {
+  const value = source?.[key]
+  return typeof value === 'string' ? value : undefined
+}
 
 /** Section keys recognised in update tool args (for the section_loading shimmer). */
 const SECTION_KEYS = [
@@ -66,19 +82,23 @@ const PREMISE_SECTIONS = [
   'title',
 ]
 
+const UPDATE_WORLD_BIBLE_TOOL_ID = 'update_world_bible'
+const MANAGE_BEAT_TOOL_ID = 'manage_beat'
+
 /**
  * Determine which bible section a tool call is loading, for the UI shimmer.
  * Returns the normalized section name, or null if not applicable.
  */
 export function detectLoadingSection(
   toolName: string,
-  toolArgs: Record<string, any>
+  toolArgs: Record<string, unknown>
 ): string | null {
-  if (toolName !== 'update_world_bible' && toolName !== 'consult_premise_architect') {
+  if (toolName !== UPDATE_WORLD_BIBLE_TOOL_ID) {
     return null
   }
 
-  let argSection = toolArgs.section || Object.keys(toolArgs).find(k => SECTION_KEYS.includes(k))
+  let argSection =
+    stringField(toolArgs, 'section') || Object.keys(toolArgs).find(k => SECTION_KEYS.includes(k))
 
   if (argSection && PREMISE_SECTIONS.includes(argSection)) {
     // Regenerating an individual premise field → show shimmer on the premise panel
@@ -99,13 +119,14 @@ export function getActionDedupeKey(
   section: string,
   payload: Record<string, unknown>
 ): string {
-  if (toolName === 'manage_beat') {
-    const beatId = (payload as any)?.id || (payload as any)?.beatId || (payload as any)?.beat?.id
-    const beatTitle = (payload as any)?.title || (payload as any)?.beat?.title || 'untitled'
+  if (toolName === MANAGE_BEAT_TOOL_ID) {
+    const beat = isRecord(payload.beat) ? payload.beat : undefined
+    const beatId = stringField(payload, 'id') || stringField(payload, 'beatId') || stringField(beat, 'id')
+    const beatTitle = stringField(payload, 'title') || stringField(beat, 'title') || 'untitled'
     return `manage_beat:${beatId || beatTitle}`
   }
 
-  if (toolName === 'update_world_bible') {
+  if (toolName === UPDATE_WORLD_BIBLE_TOOL_ID) {
     const contentPreview = JSON.stringify(payload || {}).slice(0, 100)
     return `${toolName}:${section}:${contentPreview}`
   }
@@ -117,90 +138,78 @@ export function getActionDedupeKey(
 }
 
 /**
- * Map a parsed tool result to a UI outcome (action, question, info, navigation,
- * or none). Pure: all I/O is left to the caller.
+ * Map a parsed tool result to a UI outcome (action, info, or none).
+ * Pure: all I/O is left to the caller.
  */
 export function mapToolResultToAction(args: {
   toolName: string
-  parsed: any
+  parsed: unknown
   episodeId?: string | null
   isSectionUpdate: boolean
   currentSection: DetectedSection
 }): ToolResultOutcome {
-  const { toolName, parsed, episodeId, isSectionUpdate, currentSection } = args
-
-  // Interactive question tools — emitted as question events, not actions
-  if (toolName === 'ask_character_questions' && parsed?.type === 'questions') {
-    return {
-      kind: 'questions',
-      questions: parsed.questions.map((q: any) => ({
-        id: q.id,
-        question: q.question,
-        options: q.options,
-        urgency: 'normal',
-        context: `Character: ${parsed.characterName}`,
-      })),
-    }
-  }
-
-  if (toolName === 'ask_continue_to_beats' && parsed?.type === 'questions') {
-    return {
-      kind: 'questions',
-      questions: parsed.questions.map((q: any) => ({
-        id: q.id,
-        question: q.question,
-        options: q.options || [],
-        urgency: 'normal',
-        context: parsed.context,
-      })),
-    }
-  }
+  const { toolName, parsed, isSectionUpdate, currentSection } = args
+  const parsedRecord = isRecord(parsed) ? parsed : undefined
 
   let actionType: string | null = null
   let actionPayload: Record<string, unknown> = {}
   let requiresApproval = false
   let detectedSection: DetectedSection = currentSection
 
-  // consult_premise_architect returns episodePremise (not success)
-  if (toolName === 'consult_premise_architect' && parsed?.episodePremise) {
-    actionType = 'UPDATE_EPISODE_PREMISE'
-    actionPayload = { episodeId: episodeId || null, premise: parsed.episodePremise }
-    requiresApproval = true
-  } else if (parsed?.success) {
-    if (toolName === 'update_world_bible') {
-      const fields = parsed.updatedFields || {}
-      const processedAction = processToolResultToAction(toolName, fields, episodeId)
+  // Completed beat-draft runs surface as info (the SUSPENDED case is handled
+  // by the route directly — it emits the questions/awaiting_input frames).
+  if (
+    toolName === RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID &&
+    parsedRecord &&
+    parsedRecord.status === 'completed'
+  ) {
+    return {
+      kind: 'info',
+      message: stringField(parsedRecord, 'message') ?? 'Beat pipeline completed.',
+      data: parsedRecord.output ?? null,
+    }
+  }
+
+  if (parsedRecord?.success) {
+    if (toolName === UPDATE_WORLD_BIBLE_TOOL_ID) {
+      const fields = isRecord(parsedRecord.updatedFields)
+        ? parsedRecord.updatedFields
+        : Array.isArray(parsedRecord.updatedFields)
+          ? { ...parsedRecord.updatedFields }
+          : {}
+      const processedAction = processToolResultToAction(toolName, fields, args.episodeId)
       if (processedAction) {
         actionType = processedAction.actionType
         actionPayload = processedAction.payload
         requiresApproval = processedAction.requiresApproval
         detectedSection = processedAction.section
       }
-    } else if (toolName === 'manage_beat' && parsed.beat) {
-      const operation = parsed.message?.toLowerCase() || ''
+    } else if (toolName === MANAGE_BEAT_TOOL_ID && isRecord(parsedRecord.beat)) {
+      const beat = parsedRecord.beat
+      const operation = stringField(parsedRecord, 'message')?.toLowerCase() ?? ''
       const beatActions: Record<
         string,
         { type: ActionType; payload: Record<string, unknown>; approval: boolean }
       > = {
-        created: { type: ActionType.CREATE_BEAT, payload: parsed.beat, approval: true },
+        created: { type: ActionType.CREATE_BEAT, payload: beat, approval: true },
         updated: {
           type: ActionType.UPDATE_BEAT,
-          payload: { beatId: parsed.beat.id, updates: parsed.beat },
+          payload: { beatId: beat.id, updates: beat },
           approval: true,
         },
         deleted: {
           type: ActionType.DELETE_BEAT,
-          payload: { beatId: parsed.deletedId || parsed.beat?.id },
+          payload: { beatId: parsedRecord.deletedId ?? beat.id },
           approval: false,
         },
         approved: {
           type: ActionType.UPDATE_BEAT,
-          payload: { beatId: parsed.beat?.id, updates: { status: parsed.status } },
+          payload: { beatId: beat.id, updates: { status: parsedRecord.status } },
           approval: false,
         },
         locked: {
           type: ActionType.UPDATE_BEAT,
-          payload: { beatId: parsed.beat?.id, updates: { status: parsed.status } },
+          payload: { beatId: beat.id, updates: { status: parsedRecord.status } },
           approval: false,
         },
       }
@@ -213,28 +222,21 @@ export function mapToolResultToAction(args: {
         requiresApproval = config.approval
         detectedSection = 'beats'
       }
-    } else if (toolName === 'update_story_phase') {
-      actionType = ActionType.UPDATE_STORY_PHASE
-      actionPayload = { phase: parsed.phase }
-    } else if (toolName === 'create_character' && parsed.character) {
-      actionType = ActionType.CREATE_CHARACTER
-      actionPayload = parsed.character
-      requiresApproval = false
-    } else if (toolName === 'create_episode' && parsed.episode) {
-      return {
-        kind: 'info',
-        message: parsed.message || `Episode created: ${parsed.episode.title}`,
-        data: parsed.episode,
-      }
-    } else if (toolName === 'start_beat_planning' && parsed.type === 'navigation') {
-      return { kind: 'navigation', action: parsed.action, episodeId: parsed.episodeId }
     }
   }
 
   // FALLBACK: detected section update but no action mapped → generic section action
-  if (!actionType && isSectionUpdate && toolName === 'update_world_bible') {
-    actionType = getActionTypeForSection(detectedSection as BibleSection)
-    actionPayload = parsed?.updatedFields || parsed || {}
+  // ('beats' is excluded by narrowing — the fallback only applies to bible sections)
+  if (
+    !actionType &&
+    isSectionUpdate &&
+    toolName === UPDATE_WORLD_BIBLE_TOOL_ID &&
+    detectedSection !== 'beats'
+  ) {
+    actionType = getActionTypeForSection(detectedSection)
+    actionPayload = isRecord(parsedRecord?.updatedFields)
+      ? parsedRecord.updatedFields
+      : (parsedRecord ?? {})
     requiresApproval = true
   }
 

@@ -1,22 +1,17 @@
 /**
  * Module-level fetch cache to prevent duplicate API calls
  * even when React components remount.
- *
- * This is specifically designed to solve infinite fetch loops
- * caused by components unmounting/remounting.
  */
 
+const DEFAULT_TTL_MS = 30_000
+
 interface CacheEntry {
-  promise: Promise<any>
+  promise?: Promise<unknown>
+  data?: unknown
   timestamp: number
-  data?: any
 }
 
-// Module-level cache that persists across component mounts
 const fetchCache = new Map<string, CacheEntry>()
-
-// Default TTL: 30 seconds (prevents re-fetching too quickly)
-const DEFAULT_TTL_MS = 30_000
 
 /**
  * Fetches data with automatic deduplication.
@@ -26,40 +21,43 @@ const DEFAULT_TTL_MS = 30_000
 export async function cachedFetch<T>(
   key: string,
   fetcher: () => Promise<T>,
-  options?: { ttlMs?: number }
+  options: {
+    ttlMs?: number
+    validate: (value: unknown) => value is T
+  }
 ): Promise<T> {
-  const ttl = options?.ttlMs ?? DEFAULT_TTL_MS
+  const ttl = options.ttlMs ?? DEFAULT_TTL_MS
   const now = Date.now()
+  const cached = fetchCache.get(key) ?? { timestamp: 0 }
+  fetchCache.set(key, cached)
 
-  const cached = fetchCache.get(key)
-
-  // If we have cached data that's still fresh, return it
-  if (cached && cached.data !== undefined && now - cached.timestamp < ttl) {
-    return cached.data as T
+  if (cached.data !== undefined && now - cached.timestamp < ttl && options.validate(cached.data)) {
+    return cached.data
   }
 
-  // If there's an in-flight request, wait for it
-  if (cached && cached.data === undefined) {
-    return cached.promise as Promise<T>
+  if (cached.promise) {
+    const result = await cached.promise
+    if (options.validate(result)) {
+      return result
+    }
   }
 
-  // Create new fetch
   const promise = fetcher()
     .then(data => {
       const entry = fetchCache.get(key)
       if (entry) {
         entry.data = data
+        entry.timestamp = Date.now()
+        entry.promise = undefined
       }
       return data
     })
     .catch(err => {
-      // On error, clear the cache so next request can retry
       fetchCache.delete(key)
       throw err
     })
 
-  fetchCache.set(key, { promise, timestamp: now })
-
+  cached.promise = promise
   return promise
 }
 

@@ -146,7 +146,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     // Convert legacy mentions to new format
     const convertedLegacy: MentionItem[] = legacyMentions.map(m => ({
       ...m,
-      category: 'entity' as MentionCategory,
+      category: 'entity' satisfies MentionCategory,
     }))
 
     return [...providerItems, ...convertedLegacy]

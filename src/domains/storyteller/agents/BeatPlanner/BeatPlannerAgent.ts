@@ -1,100 +1,60 @@
 /**
  * BeatPlannerAgent - Beat Structure Planner
  *
- * Outputs beat plan JSON (goal, conflict, turn, dialogue hook) — NO prose generation.
- * This is the 5th agent in the StoryForge topology.
+ * Outputs beat plan JSON (goal, conflict, turn, dialogue hook) — NO prose
+ * generation. Part of the StoryForge topology: the planner hands structure
+ * to the GRRM Author, who writes the actual scene.
  *
- * Tools: Only listBeatsTool and manageBeatTool.
- * Model: Fast creative model (medium effort).
+ * Tools: only listBeatsTool and manageBeatTool.
  */
 
 import { Agent } from '@mastra/core/agent'
 import { Memory } from '@mastra/memory'
-import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
 import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/agents/tools'
-import { getAgentModelConfig } from '@/domains/storyteller/config/ModelConfig'
+import { resolveRoleModel, resolveStorytellerModel } from '@/domains/storyteller/config/ModelConfig'
+import { buildBeatPlannerPrompt } from '@/domains/storyteller/prompts/beat-planner-prompt'
 import { withSpan } from '@/shared/observability/observability'
+import { BeatPlanSchema, type BeatPlan } from './beat-plan-schema'
 
-/**
- * Beat plan structured output schema
- * Used for structured output generation (no z.any())
- */
-export const BeatPlanSchema = z.object({
-  goal: z.string().min(1).describe('What the protagonist wants to achieve in this beat'),
-  conflict: z.string().min(1).describe('What obstacle/antagonist opposes the goal'),
-  turn: z.string().min(1).describe('The unexpected twist or decision point'),
-  dialogueHook: z.string().min(1).describe('The opening line or key exchange that kicks off the beat'),
-  charactersInvolved: z.array(z.string()).min(1).describe('List of character names present in this beat'),
-  emotionalTarget: z.string().optional().describe('Target emotional state for the audience'),
-  setupPayoff: z
-    .object({
-      setupFor: z.string().optional().describe('What future beat this sets up'),
-      payoffFrom: z.string().optional().describe('What earlier beat this pays off'),
-    })
-    .optional(),
-})
+export { BeatPlanSchema, type BeatPlan } from './beat-plan-schema'
 
-export type BeatPlan = z.infer<typeof BeatPlanSchema>
+type PlannerTool = typeof listBeatsTool | typeof manageBeatTool
 
 interface BeatPlannerConfig {
   modelName?: string
   episodeContext?: string
 }
 
+interface BeatPlannerStreamOptions {
+  traceId?: string
+  parentSpanId?: string
+  toolChoice?: 'auto' | 'none' | 'required'
+}
+
 export class BeatPlannerAgent {
   private agent: Agent
-  private toolsMap: Record<string, any>
+  private toolsMap: Record<string, PlannerTool>
 
   private constructor(config: BeatPlannerConfig) {
     const m = getMastraInstance()
     const storage = getStorageInstance()
     const workspace = m?.getWorkspace()
 
-    // Use fast creative model (medium effort or specific planner config)
-    const modelConfig = getAgentModelConfig('planner') || getAgentModelConfig('medium')
-    const modelString = config.modelName || modelConfig?.model?.replace(':', '/') || 'openai/gpt-4o-mini'
+    const model = config.modelName
+      ? resolveStorytellerModel(config.modelName)
+      : () => resolveRoleModel('planner')
 
-    // System prompt: planning only, no prose
-    const instructions = `# You are a Beat Planner
+    // System prompt: planning only, no prose (shared with the stateless planner)
+    const instructions = buildBeatPlannerPrompt(config.episodeContext)
 
-Your job: Plan story beats with structure — NOT write prose.
+    const tools: PlannerTool[] = [listBeatsTool, manageBeatTool]
+    this.toolsMap = tools.reduce<Record<string, PlannerTool>>((acc, tool) => {
+      acc[tool.id] = tool
+      return acc
+    }, {})
 
-## Output Format
-
-For each beat, provide:
-1. **goal**: What the protagonist wants in this beat (specific, observable)
-2. **conflict**: What opposes them (antagonist action, environment, internal struggle)
-3. **turn**: The unexpected element that changes the trajectory
-4. **dialogueHook**: The opening line or key exchange (no full dialogue yet — just the hook)
-5. **charactersInvolved**: Who is present in this beat
-6. **emotionalTarget** (optional): What the audience should feel
-
-## Rules
-
-- **NO PROSE GENERATION**: You plan structure, not write scenes
-- **CONCRETE GOALS**: "She must convince Marcus to leave" not "She must find hope"
-- **SPECIFIC CONFLICTS**: "Marcus refuses and reveals the prophecy" not "Things get tense"
-- **SURPRISING TURNS**: Each beat must have a twist or complication
-- **SETUP/PAYOFF**: Track what you're setting up for future beats
-
-## Process
-
-1. Read existing beats with \`list_beats\`
-2. Identify the next structural need (setup? confrontation? reversal?)
-3. Output beat plan JSON (use structuredOutput)
-4. Optionally create the beat skeleton with \`manage_beat\` (operation: 'create')
-
-${config.episodeContext ? `\n## Episode Context\n${config.episodeContext}\n` : ''}
-
-Do NOT write full scenes. Do NOT write dialogue blocks. Plan the structure, hand it to the Author.`
-
-    // Only 2 tools: list beats + manage beat
-    const tools = [listBeatsTool, manageBeatTool]
-    this.toolsMap = tools.reduce((acc, tool) => ({ ...acc, [tool.id]: tool }), {})
-
-    // Configure memory
     const memory = new Memory({
       storage,
       options: {
@@ -106,38 +66,37 @@ Do NOT write full scenes. Do NOT write dialogue blocks. Plan the structure, hand
       id: 'beat-planner',
       name: 'Beat Planner',
       instructions,
-      model: modelString,
+      model,
       tools: this.toolsMap,
       mastra: m,
       workspace,
       memory,
     })
 
-    // Manually link observability
-    ;(this.agent as Agent & { mastra: typeof m }).mastra = m
+    // Manually link observability (extends the agent with a mastra ref)
+    Object.assign(this.agent, { mastra: m })
   }
 
-  /**
-   * Create a new Beat Planner agent instance
-   */
   static async create(config: BeatPlannerConfig = {}): Promise<BeatPlannerAgent> {
     return new BeatPlannerAgent(config)
   }
 
-  /**
-   * Generate a hex ID for OTEL compatibility
-   */
+  /** Underlying Mastra Agent — for registration on the central instance. */
+  get mastraAgent(): Agent {
+    return this.agent
+  }
+
+  /** Generate a hex ID for OTEL compatibility */
   private generateHexId(length: number): string {
     return uuidv4().replace(/-/g, '').padEnd(length, '0').slice(0, length)
   }
 
-  /**
-   * Plan the next beat (returns structured BeatPlan JSON)
-   */
+  /** Plan the next beat (returns structured BeatPlan JSON). */
   async planNextBeat(
     context: {
       episodeId: string
       previousBeats?: string[]
+      brief?: string
       targetEmotion?: string
       characters: string[]
     },
@@ -152,6 +111,7 @@ Do NOT write full scenes. Do NOT write dialogue blocks. Plan the structure, hand
       async _span => {
         const prompt = `Plan the next beat for episode ${context.episodeId}.
 
+${context.brief ? `Brief (what this beat must accomplish):\n${context.brief}\n` : ''}
 ${context.previousBeats && context.previousBeats.length > 0 ? `Previous beats:\n${context.previousBeats.join('\n\n')}` : 'This is the opening beat.'}
 
 Characters available: ${context.characters.join(', ')}
@@ -169,22 +129,18 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
           },
         })
 
-        // Extract structured output
-        return response.object as BeatPlan
+        const plan = BeatPlanSchema.safeParse(response.object)
+        if (!plan.success) {
+          throw new Error(`Beat planner returned an invalid plan: ${plan.error.message}`)
+        }
+        return plan.data
       },
-      { ...context, id: spanId }
+      { episodeId: context.episodeId, characters: context.characters, id: spanId }
     )
   }
 
-  /**
-   * Run the agent with a free-form planning request
-   */
-  async run(
-    goal: string,
-    context: string,
-    traceId?: string,
-    options?: { temperature?: number; topP?: number }
-  ): Promise<string> {
+  /** Run the agent with a free-form planning request. */
+  async run(goal: string, context: string, traceId?: string): Promise<string> {
     const id = traceId || this.generateHexId(32)
     const spanId = this.generateHexId(16)
 
@@ -207,10 +163,8 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
     )
   }
 
-  /**
-   * Stream response from the agent
-   */
-  stream(prompt: string, options?: any) {
+  /** Stream a response from the agent. */
+  stream(prompt: string, options?: BeatPlannerStreamOptions) {
     const traceId = options?.traceId || this.generateHexId(32)
 
     return this.agent.stream(prompt, {
@@ -224,9 +178,7 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
   }
 }
 
-/**
- * Factory function for easy instantiation
- */
+/** Factory function for easy instantiation */
 export async function createBeatPlannerAgent(
   config: BeatPlannerConfig = {}
 ): Promise<BeatPlannerAgent> {

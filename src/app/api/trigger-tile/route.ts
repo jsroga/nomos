@@ -8,6 +8,7 @@ import {
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
 import { resolveStyleReferenceUrls, resolveStyleContext } from '@/shared/data/constants/style-presets'
+import { readString, stringArrayFromJson } from '@/shared/data/json-guards'
 import {
   resolveFollowUpImageProviderFromEnv,
   type TileAIProvider,
@@ -83,16 +84,16 @@ export const POST = withRateLimit(
       .from('projects')
       .select('style_reference_urls, style_preset')
       .eq('id', payload.projectId)
-      .single() as { data: { style_reference_urls: string[]; style_preset: string | null } | null }
+      .single()
 
-    const styleContext = resolveStyleContext({ stylePreset: projectData?.style_preset })
+    const styleContext = resolveStyleContext({ stylePreset: readString(projectData?.style_preset) ?? null })
 
     const styleReferenceUrls: string[] | undefined =
       payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
         ? payload.styleReferenceUrls
         : resolveStyleReferenceUrls({
-            stylePreset: projectData?.style_preset,
-            styleReferenceUrls: projectData?.style_reference_urls,
+            stylePreset: readString(projectData?.style_preset) ?? null,
+            styleReferenceUrls: stringArrayFromJson(projectData?.style_reference_urls),
           })
 
     // Trigger the tile generation task

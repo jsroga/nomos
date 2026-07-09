@@ -18,6 +18,8 @@ export const worldProjectSchema = z
     series_bible: z.record(z.unknown()).nullable().optional(),
     storyPlan: z.record(z.unknown()).nullable().optional(),
     story_plan: z.record(z.unknown()).nullable().optional(),
+    stylePreset: z.string().nullable().optional(),
+    style_preset: z.string().nullable().optional(),
     createdAt: dateLikeSchema.optional(),
     created_at: dateLikeSchema.optional(),
   })
@@ -30,6 +32,7 @@ export const worldProjectSchema = z
     description: row.description ?? null,
     seriesBible: row.seriesBible ?? row.series_bible ?? {},
     storyPlan: row.storyPlan ?? row.story_plan ?? {},
+    stylePreset: row.stylePreset ?? row.style_preset ?? null,
     createdAt: row.createdAt ?? row.created_at,
   }))
 

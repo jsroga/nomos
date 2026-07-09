@@ -8,9 +8,20 @@
 
 import { eq } from 'drizzle-orm'
 import { projects, storyPlans } from '@/db'
+import type { beats, characters } from '@/db'
 import { db } from '@/db/client'
 import { budgetContext, type RawContextParts } from '@/domains/storyteller/services/context/token-budget'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
+import { Phase, parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/Enums'
+import {
+  namedRecordsFromJson,
+  recordArrayFromJson,
+  recordFromJson,
+  readString,
+} from '@/shared/data/json-guards'
+
+type CharacterRow = typeof characters.$inferSelect
+type BeatRow = typeof beats.$inferSelect
 
 export interface Character {
   id: string
@@ -18,6 +29,20 @@ export interface Character {
   role?: string
   description?: string
   psychology?: Record<string, unknown>
+}
+
+interface WorldRuleRow {
+  id?: string
+  name?: string
+  category?: string
+  rule: string
+  consequence?: string
+}
+
+interface NamedEntityRow {
+  id?: string
+  name: string
+  description?: string
 }
 
 export interface StoryPlan {
@@ -29,8 +54,10 @@ export interface StoryPlan {
   genre?: string | string[]
   tone?: string | string[]
   centralTheme?: string
-  worldRules?: Array<{ category?: string; rule: string; consequence?: string }>
+  worldRules?: WorldRuleRow[]
   factions?: Array<{ id?: string; name: string; ideology?: string; description?: string }>
+  items?: NamedEntityRow[]
+  events?: NamedEntityRow[]
   inspirations?: {
     movies?: Array<string | { title: string }>
     books?: Array<string | { title: string }>
@@ -44,7 +71,7 @@ export interface AssembleContextParams {
   projectId?: string
   episodeId?: string
   message: string
-  currentPhase?: string
+  currentPhase?: PhaseId
   userId: string
   /** Optional hook so callers can record context-load failures (e.g. Langfuse). */
   onError?: (err: unknown) => void
@@ -55,6 +82,146 @@ export interface AssembledContext {
   contextPrompt: string
   /** Existing seriesBible snapshot, used for diff "before" state. */
   existingBibleData: Record<string, unknown>
+}
+
+const BIBLE_CATEGORIES = [
+  'General',
+  'Setting',
+  'History',
+  'Magic',
+  'Factions',
+  'Technology',
+  'Culture',
+]
+
+const BIBLE_CATEGORY_SET = new Set<string>(BIBLE_CATEGORIES)
+
+const ROLE_PRIORITY: Record<string, number> = {
+  protagonist: 1,
+  hero: 1,
+  main: 1,
+  antagonist: 2,
+  villain: 2,
+  mentor: 3,
+  guide: 3,
+  supporting: 4,
+  side: 5,
+}
+
+function characterFromDbRow(row: CharacterRow): Character {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    description: row.description ?? undefined,
+  }
+}
+
+function characterFromPlanRow(row: Record<string, unknown>): Character | null {
+  const name = readString(row.name)
+  if (!name) return null
+  return {
+    id: readString(row.id) ?? '',
+    name,
+    role: readString(row.role),
+    description: readString(row.description),
+    psychology: recordFromJson(row.psychology),
+  }
+}
+
+function charactersFromJson(value: unknown): Character[] {
+  return recordArrayFromJson(value).flatMap(row => {
+    const character = characterFromPlanRow(row)
+    return character ? [character] : []
+  })
+}
+
+function worldRulesFromJson(value: unknown): WorldRuleRow[] {
+  return recordArrayFromJson(value).flatMap(row => {
+    const rule = readString(row.rule)
+    if (!rule) return []
+    return [{
+      id: readString(row.id),
+      name: readString(row.name),
+      category: readString(row.category),
+      rule,
+      consequence: readString(row.consequence),
+    }]
+  })
+}
+
+function factionsFromJson(value: unknown): StoryPlan['factions'] {
+  return namedRecordsFromJson(value).map(row => ({
+    id: readString(row.id),
+    name: row.name,
+    ideology: readString(row.ideology),
+    description: readString(row.description),
+  }))
+}
+
+function namedEntitiesFromJson(value: unknown): NamedEntityRow[] {
+  return namedRecordsFromJson(value).map(row => ({
+    id: readString(row.id),
+    name: row.name,
+    description: readString(row.description),
+  }))
+}
+
+function inspirationTitle(item: unknown): string {
+  if (typeof item === 'string') return item
+  return readString(recordFromJson(item).title) ?? 'Unknown'
+}
+
+function storyPlanFromJson(content: unknown): StoryPlan {
+  const r = recordFromJson(content)
+  const cast = charactersFromJson(r.cast)
+  const keyCharacters = charactersFromJson(r.keyCharacters)
+
+  return {
+    cast: cast.length > 0 ? cast : undefined,
+    keyCharacters: keyCharacters.length > 0 ? keyCharacters : undefined,
+    premise: recordFromJson(r.premise),
+    episodePremise: recordFromJson(r.episodePremise),
+    worldDescription: readString(r.worldDescription),
+    genre: Array.isArray(r.genre)
+      ? r.genre.filter((g): g is string => typeof g === 'string')
+      : readString(r.genre),
+    tone: Array.isArray(r.tone)
+      ? r.tone.filter((t): t is string => typeof t === 'string')
+      : readString(r.tone),
+    centralTheme: readString(r.centralTheme),
+    worldRules: worldRulesFromJson(r.worldRules),
+    factions: factionsFromJson(r.factions),
+    items: namedEntitiesFromJson(r.items),
+    events: namedEntitiesFromJson(r.events),
+    inspirations: {
+      movies: recordArrayFromJson(recordFromJson(r.inspirations).movies).map(inspirationTitle),
+      books: recordArrayFromJson(recordFromJson(r.inspirations).books).map(inspirationTitle),
+      games: recordArrayFromJson(recordFromJson(r.inspirations).games).map(inspirationTitle),
+    },
+    sequences: namedRecordsFromJson(r.sequences).map(row => ({
+      name: row.name,
+      description: readString(row.description),
+    })),
+    masterPrompt: readString(r.masterPrompt),
+  }
+}
+
+function flattenSeriesBible(rawBible: Record<string, unknown>): Record<string, unknown> {
+  const bible: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(rawBible)) {
+    if (BIBLE_CATEGORY_SET.has(key) && typeof value === 'object' && value !== null) {
+      Object.assign(bible, recordFromJson(value))
+    } else {
+      bible[key] = value
+    }
+  }
+  return bible
+}
+
+function slugId(prefix: string, id: string | undefined, name: string): string {
+  const suffix = id?.slice(0, 8) ?? name.toLowerCase().replace(/\s+/g, '-')
+  return `${prefix}-${suffix}`
 }
 
 /** Safe RAG service wrapper — never throws; returns '' on failure. */
@@ -92,8 +259,9 @@ export async function assembleStorytellerContext(
     return { contextPrompt, existingBibleData }
   }
 
+  const phase = parsePhaseId(currentPhase)
+
   try {
-    // Parallel fetch ALL data for rich context
     const [projectData, storyPlanData, serviceData, ragContext] = await Promise.all([
       db
         .select()
@@ -109,55 +277,34 @@ export async function assembleStorytellerContext(
         const [charsReq, beatsReq] = await Promise.all([
           m.storytellerService
             .listCharacters({ projectId }, { userId })
-            .catch(() => ({ characters: [] })),
+            .catch((): { characters: CharacterRow[] } => ({ characters: [] })),
           episodeId
             ? m.storytellerService
-              .listBeats({ episodeId }, { userId })
-              .catch(() => ({ beats: [] }))
-            : Promise.resolve({ beats: [] }),
+                .listBeats({ episodeId }, { userId })
+                .catch((): { beats: BeatRow[] } => ({ beats: [] }))
+            : Promise.resolve({ beats: [] satisfies BeatRow[] }),
         ])
-        return { characters: charsReq.characters || [], beats: beatsReq.beats || [] }
+        return { characters: charsReq.characters, beats: beatsReq.beats }
       }),
       getRAGContext(projectId, message),
     ])
 
-    const rawBible = (projectData?.seriesBible as Record<string, unknown>) || {}
-    const storyPlan = ((storyPlanData?.content as unknown) as StoryPlan) || ({} as StoryPlan)
+    const rawBible = recordFromJson(projectData?.seriesBible)
+    const storyPlan = storyPlanFromJson(storyPlanData?.content)
+    const bible = flattenSeriesBible(rawBible)
 
-    // Flatten nested category objects from seriesBible (e.g., 'Setting', 'History', etc.)
-    const knownCategories = [
-      'General',
-      'Setting',
-      'History',
-      'Magic',
-      'Factions',
-      'Technology',
-      'Culture',
-    ]
-    const bible: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(rawBible)) {
-      if (knownCategories.includes(key) && typeof value === 'object' && value !== null) {
-        Object.assign(bible, value)
-      } else {
-        bible[key] = value
-      }
-    }
-
-    // masterPrompt is a TOP-LEVEL column on projects table, not nested in seriesBible
     const masterPrompt =
-      projectData?.masterPrompt || bible.masterPrompt || storyPlan.masterPrompt || ''
-    // Merge characters from DB table AND storyPlan.keyCharacters/cast
-    const dbCharacters = (serviceData.characters as Character[]) || []
-    const planCast = storyPlan.cast || storyPlan.keyCharacters || []
-    const dbNames = new Set(dbCharacters.map(c => c.name?.toLowerCase()))
-    const mergedCharacters = [
-      ...dbCharacters,
-      ...planCast.filter(c => c?.name && !dbNames.has(c.name.toLowerCase())),
-    ]
-    const characters = mergedCharacters
-    const beats = serviceData.beats || []
+      projectData?.masterPrompt || readString(bible.masterPrompt) || storyPlan.masterPrompt || ''
 
-    // Build context with token budget enforcement
+    const dbCharacters = serviceData.characters.map(characterFromDbRow)
+    const planCast = storyPlan.cast ?? storyPlan.keyCharacters ?? []
+    const dbNames = new Set(dbCharacters.map(c => c.name.toLowerCase()))
+    const characters: Character[] = [
+      ...dbCharacters,
+      ...planCast.filter(c => c.name && !dbNames.has(c.name.toLowerCase())),
+    ]
+    const beats: BeatRow[] = serviceData.beats
+
     const linkReqs = getEntityLinkRequirements()
     const systemCtx = `=== IQ 200 CONTEXT ENGINEERING & ENTITY LINKS ===
 You are in a high-fidelity creative workspace. To maintain continuity and enable user interaction, you MUST use the following rules for entity references:
@@ -171,113 +318,112 @@ You are in a high-fidelity creative workspace. To maintain continuity and enable
 === SYSTEM CONTEXT ===
 projectId: ${projectId}
 ${episodeId ? `episodeId: ${episodeId}` : ''}
-currentPhase: ${currentPhase || 'premise'}
+currentPhase: ${phase}
 IMPORTANT: When calling tools that require projectId, you MUST use: "${projectId}"
 ${episodeId ? `When calling tools that require episodeId, you MUST use: "${episodeId}"` : ''}
-CURRENT STORY PHASE: ${currentPhase || 'premise'}
-- premise: Concept planning, world building, episode premise.
-- breaking: Plot structure, beat board organization.
-- writing: Scripting and dialogue execution.
+CURRENT STORY PHASE: ${phase}
+- ${Phase.PREMISE}: Concept planning, world building, episode premise.
+- ${Phase.BREAKING}: Plot structure, beat board organization.
+- ${Phase.WRITING}: Scripting and dialogue execution.
 ⚠️ REFERENCE ONLY: Content below is for world/history consistency. When asked to GENERATE, create NEW content.
 ${masterPrompt ? `\n=== MASTER PROMPT ===\n${masterPrompt}` : ''}
 `
 
+    const genre =
+      Array.isArray(storyPlan.genre)
+        ? storyPlan.genre.join(', ')
+        : storyPlan.genre || readString(bible.genre) || 'Not set'
+    const tone =
+      Array.isArray(storyPlan.tone)
+        ? storyPlan.tone.join(', ')
+        : storyPlan.tone || readString(bible.tone) || 'Not set'
+    const theme = storyPlan.centralTheme || readString(bible.centralTheme) || 'Not set'
+    const premise =
+      storyPlan.premise ?? storyPlan.episodePremise ?? recordFromJson(bible.episodePremise)
+
     const projectCtx = `=== PROJECT ===
-Title: ${projectData?.name || 'Untitled'} | Genre: ${Array.isArray(storyPlan.genre) ? storyPlan.genre.join(', ') : storyPlan.genre || bible.genre || 'Not set'} | Tone: ${Array.isArray(storyPlan.tone) ? storyPlan.tone.join(', ') : storyPlan.tone || bible.tone || 'Not set'} | Theme: ${storyPlan.centralTheme || bible.centralTheme || 'Not set'}
+Title: ${projectData?.name || 'Untitled'} | Genre: ${genre} | Tone: ${tone} | Theme: ${theme}
 
 === EPISODE PREMISE ===
-${storyPlan.premise || storyPlan.episodePremise || bible.episodePremise
-        ? JSON.stringify(storyPlan.premise || storyPlan.episodePremise || bible.episodePremise)
-        : 'No episode premise yet'
-      }
+${Object.keys(premise).length > 0 ? JSON.stringify(premise) : 'No episode premise yet'}
 
 === WORLD ===
-${storyPlan.worldDescription || bible.worldDescription || 'No world description yet'}
+${storyPlan.worldDescription || readString(bible.worldDescription) || 'No world description yet'}
 
 === WORLD RULES ===
-${Array.isArray(storyPlan.worldRules) && storyPlan.worldRules.length > 0
+${storyPlan.worldRules && storyPlan.worldRules.length > 0
         ? storyPlan.worldRules
-          .map(
-            (r: any) =>
-              `- [${r.category || 'General'}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
-          )
-          .join('\n')
+            .map(
+              r =>
+                `- [${r.category || 'General'}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
+            )
+            .join('\n')
         : '(none)'
       }
 
 === FACTIONS ===
-${Array.isArray(storyPlan.factions) && storyPlan.factions.length > 0
+${storyPlan.factions && storyPlan.factions.length > 0
         ? storyPlan.factions
-          .map((f: any) => {
-            const factionId = `faction-${f.id?.slice(0, 8) || f.name.toLowerCase().replace(/\s+/g, '-')}`
-            return `- [${f.name}][${factionId}]: ${f.ideology || f.description || 'No description'}`
-          })
-          .join('\n')
+            .map(f => {
+              const factionId = slugId('faction', f.id, f.name)
+              return `- [${f.name}][${factionId}]: ${f.ideology || f.description || 'No description'}`
+            })
+            .join('\n')
         : '(none)'
       }
 
 === ITEMS ===
-${Array.isArray((storyPlan as any).items) && (storyPlan as any).items.length > 0
-        ? (storyPlan as any).items
-          .map((i: any) => {
-            const itemId = 'item-' + (i.id?.slice(0, 8) || i.name.toLowerCase().replace(/\s+/g, '-'))
-            return '- [' + i.name + '][' + itemId + ']: ' + (i.description || 'No description')
-          })
-          .join('\n')
+${storyPlan.items && storyPlan.items.length > 0
+        ? storyPlan.items
+            .map(i => {
+              const itemId = slugId('item', i.id, i.name)
+              return `- [${i.name}][${itemId}]: ${i.description || 'No description'}`
+            })
+            .join('\n')
         : '(none)'
       }
 
 === EVENTS ===
-${Array.isArray((storyPlan as any).events) && (storyPlan as any).events.length > 0
-        ? (storyPlan as any).events
-          .map((e: any) => {
-            const eventId = 'event-' + (e.id?.slice(0, 8) || e.name.toLowerCase().replace(/\s+/g, '-'))
-            return '- [' + e.name + '][' + eventId + ']: ' + (e.description || 'No description')
-          })
-          .join('\n')
+${storyPlan.events && storyPlan.events.length > 0
+        ? storyPlan.events
+            .map(e => {
+              const eventId = slugId('event', e.id, e.name)
+              return `- [${e.name}][${eventId}]: ${e.description || 'No description'}`
+            })
+            .join('\n')
         : '(none)'
       }
 
-=== WORLD RULES ===
-${Array.isArray((storyPlan as any).worldRules) && (storyPlan as any).worldRules.length > 0
-        ? (storyPlan as any).worldRules
-          .map((r: any) => {
-            const ruleId = 'rule-' + (r.id?.slice(0, 8) || r.name?.toLowerCase().replace(/\s+/g, '-') || 'unknown')
-            return `- [${r.name || r.category || 'Rule'}][${ruleId}]: ${r.rule || 'No description'}`
-          })
-          .join('\n')
+=== WORLD RULES (linked) ===
+${storyPlan.worldRules && storyPlan.worldRules.length > 0
+        ? storyPlan.worldRules
+            .map(r => {
+              const ruleId = slugId('rule', r.id, r.name ?? r.category ?? 'rule')
+              return `- [${r.name || r.category || 'Rule'}][${ruleId}]: ${r.rule || 'No description'}`
+            })
+            .join('\n')
         : '(none)'
       }
 
 === INSPIRATIONS ===
-${storyPlan.inspirations ? `Movies: ${Array.isArray(storyPlan.inspirations.movies) ? storyPlan.inspirations.movies.map((m: any) => (typeof m === 'string' ? m : m.title)).join(', ') : 'None'} | Books: ${Array.isArray(storyPlan.inspirations.books) ? storyPlan.inspirations.books.map((b: any) => (typeof b === 'string' ? b : b.title)).join(', ') : 'None'} | Games: ${Array.isArray(storyPlan.inspirations.games) ? storyPlan.inspirations.games.map((g: any) => (typeof g === 'string' ? g : g.title)).join(', ') : 'None'}` : '(none)'}
+${storyPlan.inspirations
+        ? `Movies: ${storyPlan.inspirations.movies?.join(', ') || 'None'} | Books: ${storyPlan.inspirations.books?.join(', ') || 'None'} | Games: ${storyPlan.inspirations.games?.join(', ') || 'None'}`
+        : '(none)'
+      }
 
 === SEQUENCES ===
-${Array.isArray(storyPlan.sequences) && storyPlan.sequences.length > 0
+${storyPlan.sequences && storyPlan.sequences.length > 0
         ? storyPlan.sequences
-          .map((s: any, i: number) => `${i + 1}. ${s.name}: ${s.description || ''}`)
-          .join('\n')
+            .map((s, i) => `${i + 1}. ${s.name}: ${s.description || ''}`)
+            .join('\n')
         : '(none)'
       }`
-
-    // Characters: sorted by role priority, capped
-    const rolePriority: Record<string, number> = {
-      'protagonist': 1,
-      'hero': 1,
-      'main': 1,
-      'antagonist': 2,
-      'villain': 2,
-      'mentor': 3,
-      'guide': 3,
-      'supporting': 4,
-      'side': 5,
-    }
 
     const sortedChars = [...characters].sort((a, b) => {
       const roleA = (a.role || '').toLowerCase()
       const roleB = (b.role || '').toLowerCase()
-      const priorityA = rolePriority[roleA] || 99
-      const priorityB = rolePriority[roleB] || 99
+      const priorityA = ROLE_PRIORITY[roleA] ?? 99
+      const priorityB = ROLE_PRIORITY[roleB] ?? 99
       if (priorityA !== priorityB) return priorityA - priorityB
       return 0
     })
@@ -285,28 +431,27 @@ ${Array.isArray(storyPlan.sequences) && storyPlan.sequences.length > 0
     const charsCtx =
       sortedChars.length > 0
         ? `=== CHARACTERS (${sortedChars.length}) ===\n` +
-        sortedChars
-          .slice(0, 20)
-          .map((c: any) => {
-            const charId = `char-${c.id?.slice(0, 8) || c.name.toLowerCase().replace(/\s+/g, '-')}`
-            return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || 'No description'}`
-          })
-          .join('\n')
+          sortedChars
+            .slice(0, 20)
+            .map(c => {
+              const charId = slugId('char', c.id, c.name)
+              return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || 'No description'}`
+            })
+            .join('\n')
         : ''
 
     const beatsCtx =
       beats.length > 0
         ? `=== RECENT BEATS (${beats.length}) ===\n` +
-        beats
-          .slice(-3)
-          .map((b: any) => {
-            const beatId = `beat-${b.id?.slice(0, 8)}`
-            return `- [${b.logline || `Beat ${b.sequence}`}][${beatId}]`
-          })
-          .join('\n')
+          beats
+            .slice(-3)
+            .map(b => {
+              const beatId = slugId('beat', b.id, String(b.sequence ?? '0'))
+              return `- [${b.logline || `Beat ${b.sequence}`}][${beatId}]`
+            })
+            .join('\n')
         : ''
 
-    // Apply token budget enforcement — truncates any section that exceeds its limit
     const rawParts: RawContextParts = {
       systemPrompt: systemCtx,
       projectContext: projectCtx,

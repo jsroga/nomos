@@ -2,6 +2,7 @@ import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { normalizeScore, outputToString, toMastraJudgingModel } from './shared'
+import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 const magicAnalyzeSchema = z.object({
   overallMagic: z.number(),
@@ -27,11 +28,11 @@ export const magicScorer = createScorer({
     },
   })
   .generateScore(({ results }) => {
-    const analyzed = results.analyzeStepResult as { overallMagic?: number } | undefined
-    const overallMagic = analyzed?.overallMagic ?? 0
+    const analyzed = recordFromJson(results.analyzeStepResult)
+    const overallMagic = readNumber(analyzed.overallMagic) ?? 0
     return normalizeScore(overallMagic / 100)
   })
   .generateReason(({ results, score }) => {
-    const analyzed = results.analyzeStepResult as { critique?: string } | undefined
-    return analyzed?.critique ?? `Magic score: ${(score * 100).toFixed(0)}`
+    const analyzed = recordFromJson(results.analyzeStepResult)
+    return readString(analyzed.critique) ?? `Magic score: ${(score * 100).toFixed(0)}`
   })

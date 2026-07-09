@@ -3,6 +3,37 @@ import { db } from '@/db/client'
 import { projects, storyPlans } from '@/db'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
+import { recordFromJson } from '@/shared/data/deep-merge'
+
+/** Copy only the listed keys whose values are truthy — used to let storyPlans overrides win over seriesBible fields without a wall of conditional spreads. */
+function pickPresent<K extends string>(
+  source: Record<string, unknown>,
+  keys: readonly K[]
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const key of keys) {
+    const value = source[key]
+    if (value) out[key] = value
+  }
+  return out
+}
+
+/** storyPlans-table fields that override the flattened seriesBible when present. */
+const STORY_PLAN_OVERRIDE_KEYS = [
+  'genre',
+  'tone',
+  'centralTheme',
+  'worldDescription',
+  'worldRules',
+  'factions',
+  'inspirations',
+  'keyCharacters',
+  'sequences',
+  'executiveSummary',
+  'soundtracks',
+  'plotTwists',
+  'styleReference',
+] as const
 
 /**
  * GET /api/storyteller/bible?projectId=xxx
@@ -47,8 +78,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const seriesBible = (projectData.seriesBible as Record<string, unknown>) || {}
-    const storyPlan = (storyPlanData?.content as Record<string, unknown>) || {}
+    const seriesBible = recordFromJson(projectData.seriesBible)
+    const storyPlan = recordFromJson(storyPlanData?.content)
 
     // The update_world_bible tool may save fields under category keys like 'Setting', 'History', etc.
     // We need to flatten these nested category objects to top-level fields
@@ -75,25 +106,14 @@ export async function GET(req: Request) {
 
     // Merge bible and story plan into unified response
     // The frontend expects fields at top level
+    const storyPlanOverrides = pickPresent(storyPlan, STORY_PLAN_OVERRIDE_KEYS)
     const bible = {
       // From seriesBible (projects table) - now flattened
       ...flattenedBible,
       // masterPrompt is a top-level column, not inside seriesBible
-      ...(projectData.masterPrompt && { masterPrompt: projectData.masterPrompt }),
+      ...(projectData.masterPrompt ? { masterPrompt: projectData.masterPrompt } : {}),
       // Story plan fields (storyPlans table) - override if present
-      ...(storyPlan.genre && { genre: storyPlan.genre }),
-      ...(storyPlan.tone && { tone: storyPlan.tone }),
-      ...(storyPlan.centralTheme && { centralTheme: storyPlan.centralTheme }),
-      ...(storyPlan.worldDescription && { worldDescription: storyPlan.worldDescription }),
-      ...(storyPlan.worldRules && { worldRules: storyPlan.worldRules }),
-      ...(storyPlan.factions && { factions: storyPlan.factions }),
-      ...(storyPlan.inspirations && { inspirations: storyPlan.inspirations }),
-      ...(storyPlan.keyCharacters && { keyCharacters: storyPlan.keyCharacters }),
-      ...(storyPlan.sequences && { sequences: storyPlan.sequences }),
-      ...(storyPlan.executiveSummary && { executiveSummary: storyPlan.executiveSummary }),
-      ...(storyPlan.soundtracks && { soundtracks: storyPlan.soundtracks }),
-      ...(storyPlan.plotTwists && { plotTwists: storyPlan.plotTwists }),
-      ...(storyPlan.styleReference && { styleReference: storyPlan.styleReference }),
+      ...storyPlanOverrides,
       // Include nested storyPlan for components expecting it
       storyPlan,
       // User decisions if stored
@@ -101,7 +121,10 @@ export async function GET(req: Request) {
     }
 
     console.log('[Bible API] Returning bible with keys:', Object.keys(bible))
-    console.log('[Bible API] worldDescription present?', !!bible.worldDescription)
+    console.log(
+      '[Bible API] worldDescription present?',
+      !!(storyPlanOverrides.worldDescription || flattenedBible.worldDescription)
+    )
     return NextResponse.json({ bible, seriesBible, storyPlan })
   } catch (error) {
     console.error('Error fetching bible:', error)

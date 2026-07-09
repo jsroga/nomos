@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { requireAuth } from '@/shared/auth/auth'
+import { getUserSession, requireAuth } from '@/shared/auth/auth'
 import { verifyBeatAccess, verifyCharacterAccess } from '@/domains/storyteller/server'
 
 export async function POST(req: NextRequest) {
@@ -30,8 +28,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
+    const { supabase } = await getUserSession()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const { data, error } = await supabase
       .from('character_state_snapshots')
@@ -84,8 +84,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
+    const { supabase } = await getUserSession()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     let query = supabase.from('character_state_snapshots').select(`
       *,

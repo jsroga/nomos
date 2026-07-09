@@ -18,10 +18,18 @@
  */
 
 import React, { useMemo, useState, useEffect } from 'react'
+import { z } from 'zod'
 import { useEntities } from '@/domains/storyteller/state/queries/useEntity'
 import { cn } from '@/shared/data/utils'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import { splitIntoSegments, ParsedReference, TextSegment, stripReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
+import {
+  splitIntoSegments,
+  ParsedReference,
+  TextSegment,
+  stripReferences,
+  PREFIX_TO_TYPE,
+  type EntityType as ParsedEntityType,
+} from '@/domains/storyteller/core/entities/ReferenceParser'
 import {
   EntityReference,
   EntityRelationship,
@@ -42,10 +50,10 @@ if (typeof window !== 'undefined') {
   })
 }
 
-// Entity type to icon mapping
-const ENTITY_ICONS: Record<
-  EntityType,
-  React.ComponentType<{ className?: string; size?: number }>
+// Entity type to icon mapping. Keyed by the parser's EntityType (a superset
+// including 'item') and Partial so lookups fall through to the || defaults.
+const ENTITY_ICONS: Partial<
+  Record<ParsedEntityType, React.ComponentType<{ className?: string; size?: number }>>
 > = {
   character: User,
   place: MapPin,
@@ -57,7 +65,7 @@ const ENTITY_ICONS: Record<
 }
 
 // Entity type to color mapping
-const ENTITY_COLORS: Record<EntityType, string> = {
+const ENTITY_COLORS: Partial<Record<ParsedEntityType, string>> = {
   character: 'text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20',
   place: 'text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20',
   event: 'text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20',
@@ -69,6 +77,44 @@ const ENTITY_COLORS: Record<EntityType, string> = {
 
 // Default color for unknown types
 const DEFAULT_COLOR = 'text-gray-400 hover:text-gray-300 bg-gray-500/10 hover:bg-gray-500/20'
+
+/**
+ * Loose typed view over `entity.metadata` (Record<string, unknown>) for the
+ * tooltip synthesis below — the fields various generators may have written.
+ */
+const optionalString = z.string().optional().catch(undefined)
+const optionalStringArray = z.array(z.string()).optional().catch(undefined)
+
+const tooltipMetaSchema = z.object({
+  role: optionalString,
+  shortDescription: optionalString,
+  archetype: optionalString,
+  motivation: optionalString,
+  fatalFlaw: optionalString,
+  traits: optionalStringArray,
+  description: optionalString,
+  ideology: optionalString,
+  powerStructure: optionalString,
+  politicalForces: optionalString,
+  goals: optionalStringArray,
+  resources: optionalString,
+  weaknesses: optionalString,
+  atmosphere: optionalString,
+  significance: optionalString,
+  impact: optionalString,
+  date: optionalString,
+  rule: optionalString,
+  consequence: optionalString,
+  logline: optionalString,
+  action: optionalString,
+})
+
+type TooltipMeta = z.infer<typeof tooltipMetaSchema>
+
+function tooltipMetaFrom(metadata: unknown): TooltipMeta {
+  const parsed = tooltipMetaSchema.safeParse(metadata ?? {})
+  return parsed.success ? parsed.data : {}
+}
 
 interface ReferenceTextProps {
   /** Text containing entity references */
@@ -260,7 +306,7 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
         return entity.description
       }
 
-      const meta = entity.metadata || {}
+      const meta = tooltipMetaFrom(entity.metadata)
       const parts: string[] = []
 
       // For characters
@@ -327,7 +373,7 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
 
     // Get additional metadata to display
     const displayMeta: Array<{ label: string; value: string }> = []
-    const meta = entity.metadata || {}
+    const meta = tooltipMetaFrom(entity.metadata)
 
     if (entity.type === 'character') {
       if (meta.role && !description?.includes(meta.role)) {
@@ -370,10 +416,12 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
       const grouped = new Map<string, EntityRelationship[]>()
       for (const rel of entity.relationships) {
         const relType = rel.relationshipType || 'related'
-        if (!grouped.has(relType)) {
-          grouped.set(relType, [])
+        const bucket = grouped.get(relType)
+        if (bucket) {
+          bucket.push(rel)
+        } else {
+          grouped.set(relType, [rel])
         }
-        grouped.get(relType)!.push(rel)
       }
 
       const typeLabels: Record<string, string> = {
@@ -411,10 +459,11 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
                     {rels.slice(0, 3).map((rel, idx) => {
                       // Use targetType if available, otherwise infer from targetId
                       const relEntityType =
-                        rel.targetType || (rel.targetId.split('-')[0] as EntityType)
-                      const RelIcon = ENTITY_ICONS[relEntityType] || User
+                        rel.targetType || PREFIX_TO_TYPE[rel.targetId.split('-')[0]]
+                      const RelIcon = (relEntityType && ENTITY_ICONS[relEntityType]) || User
                       const relColor =
-                        ENTITY_COLORS[relEntityType]?.split(' ')[0] || 'text-gray-400'
+                        (relEntityType && ENTITY_COLORS[relEntityType])?.split(' ')[0] ||
+                        'text-gray-400'
 
                       return (
                         <span
@@ -479,7 +528,7 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
           <div className="text-xs mt-2 opacity-90 leading-relaxed">
             <ReferenceText
               text={description}
-              projectId={ref.projectId}
+              projectId={entity.projectId}
               className="inline"
               inline={true}
             />

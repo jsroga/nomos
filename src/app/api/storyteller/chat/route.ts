@@ -1,38 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { beats } from '@/db'
-import { normalizeMastraTraceId, runStorytellerWorkflow } from '@/domains/storyteller/server'
+import { normalizeMastraTraceId } from '@/domains/storyteller/agents/tracing'
+// Value import from io/mastra-runtime also registers the storyteller agents +
+// workflow on the kernel runtime registry before getMastraInstance() runs.
+import { BEAT_DRAFT_WORKFLOW_ID } from '@/domains/storyteller/io/mastra-runtime'
+import { beatDraftOutputSchema } from '@/domains/storyteller/agents/workflows/beat-draft-contract'
 import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/ChatModelCatalog'
-import { db } from '@/db/client'
+import { getMastraInstance } from '@/shared/agent-kernel'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
-// Persist approved beats to database
-async function persistApprovedBeats(beatBoard: any[], episodeId: string) {
-  const approvedBeats = beatBoard.filter((b: any) => b.status === 'approved')
-
-  for (const beat of approvedBeats) {
-    try {
-      await db
-        .insert(beats)
-        .values({
-          episodeId,
-          logline: beat.logline,
-          beatType: beat.beatType,
-          sequence: beat.sequence,
-          content: beat.content || '',
-          visualHook: beat.visualHook,
-          charactersInvolved: beat.charactersInvolved,
-          emotionalShifts: beat.emotionalShifts,
-          causalDependencies: beat.causalDependencies,
-          setupsPayoffs: beat.setupsPayoffs,
-          status: 'approved',
-        })
-        .onConflictDoNothing()
-    } catch (e) {
-      console.error('Failed to persist beat:', e)
-    }
-  }
-}
-
+/**
+ * Non-streaming chat endpoint.
+ *
+ * Response contract preserved from the legacy StorytellerWorkflow:
+ * `{ messages, beatBoard, status, continuityIssues, traceId }`.
+ * Internally it now runs the beat-draft pipeline with `autoApprove: true`
+ * (no verdict UI on this endpoint — the revised beat persists directly).
+ */
 export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest): Promise<NextResponse> => {
   try {
     const body = await req.json()
@@ -40,10 +23,7 @@ export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedReques
       message,
       projectId,
       episodeId,
-      seriesBible,
       characters,
-      existingBeats,
-      targetEmotion,
       traceId: bodyTraceId,
       modelName,
     } = body
@@ -57,52 +37,72 @@ export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedReques
       )
     }
 
+    if (!projectId || !episodeId || !message) {
+      return NextResponse.json(
+        { error: 'projectId, episodeId and message are required' },
+        { status: 400 }
+      )
+    }
+
     // Extract traceId from headers or body, or generate new
     const traceId = normalizeMastraTraceId(req.headers.get('x-trace-id') || bodyTraceId)
 
-    // Map inputs to StorytellerWorkflowInput
-    const input = {
-      episodeId,
-      seriesBible: seriesBible || {},
-      characters: characters || [],
-      existingBeats: existingBeats || [],
-      storyContext: message, // Use user message as context/instruction
-      targetEmotion,
+    const workflow = getMastraInstance().getWorkflow(BEAT_DRAFT_WORKFLOW_ID)
+    if (!workflow) {
+      return NextResponse.json({ error: 'Beat pipeline not registered' }, { status: 500 })
     }
 
-    // Run workflow
-    const result = await runStorytellerWorkflow(input, {
-      modelName: resolvedModelName,
-      traceId,
+    const run = await workflow.createRun()
+    const result = await run.start({
+      inputData: {
+        projectId,
+        episodeId,
+        brief: message,
+        characters: Array.isArray(characters) ? characters : [],
+        autoApprove: true,
+      },
     })
 
-    // Persist if successful
-    if (result.status === 'completed' && episodeId) {
-      await persistApprovedBeats(result.beats, episodeId)
+    if (result.status !== 'success') {
+      return NextResponse.json(
+        {
+          messages: [
+            {
+              type: 'ai',
+              content: `Storyteller pipeline ended with status: ${result.status}`,
+              name: 'System',
+              sender: 'System',
+            },
+          ],
+          beatBoard: [],
+          status: 'failed',
+          continuityIssues: [],
+          traceId,
+        },
+        { status: 500 }
+      )
     }
 
-    // Map output to legacy format expected by UI
-    // UI expects: messages, beatBoard, etc.
-    // Workflow returns: beats, steps, status, message
+    const output = beatDraftOutputSchema.parse(result.result)
 
     const aiMessage = {
       type: 'ai',
-      content: result.message,
+      content: output.killed
+        ? output.message
+        : `${output.message}\n\nGenerated Content:\n${output.finalDraft}`,
       name: 'Storyteller',
       sender: 'Storyteller',
     }
 
-    // If beats were generated, add them to content display
-    if (result.beats.length > 0) {
-      const beatText = result.beats.map((b: any) => `**${b.logline}**\n${b.content}`).join('\n\n')
-      aiMessage.content += `\n\nGenerated Content:\n${beatText}`
-    }
-
     return NextResponse.json({
       messages: [aiMessage],
-      beatBoard: result.beats,
-      status: result.status,
-      continuityIssues: result.continuityIssues,
+      beatBoard: output.beatId
+        ? [{ id: output.beatId, logline: output.beatPlan?.goal ?? '', content: output.finalDraft }]
+        : [],
+      status: output.saved ? 'completed' : 'needs_review',
+      // The critics' formatted findings ride along where the legacy
+      // continuity issues appeared.
+      continuityIssues: output.critiques ? [{ severity: 'info', message: output.critiques }] : [],
       traceId,
     })
   } catch (error) {

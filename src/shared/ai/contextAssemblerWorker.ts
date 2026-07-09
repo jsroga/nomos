@@ -22,6 +22,17 @@ interface NeighborUrls {
   bottomRight?: string
 }
 
+const NEIGHBOR_DIRS: (keyof NeighborUrls)[] = [
+  'up',
+  'down',
+  'left',
+  'right',
+  'topLeft',
+  'topRight',
+  'bottomLeft',
+  'bottomRight',
+]
+
 interface WorkerInput {
   id: number
   size: number
@@ -82,11 +93,11 @@ async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
   const TARGET_Y = (size - TILE_SIZE) / 2 // 256
 
   // Load all neighbor images concurrently
-  const entries = Object.entries(neighborUrls) as [keyof NeighborUrls, string][]
   const bitmaps: Partial<Record<keyof NeighborUrls, ImageBitmap>> = {}
 
   await Promise.all(
-    entries.map(async ([dir, url]) => {
+    NEIGHBOR_DIRS.map(async dir => {
+      const url = neighborUrls[dir]
       if (!url) return
       try {
         bitmaps[dir] = await fetchImageBitmap(url)

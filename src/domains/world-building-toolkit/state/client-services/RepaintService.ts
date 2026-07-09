@@ -304,7 +304,7 @@ export class RepaintService {
     strokes.forEach(p => {
       const drawX = p.x - bounds.x
       const drawY = p.y - bounds.y
-      const radius = (p as { radius?: number }).radius || brushSize / 2
+      const radius = typeof p.radius === 'number' ? p.radius : brushSize / 2
       maskCtx.beginPath()
       maskCtx.arc(drawX, drawY, radius, 0, Math.PI * 2)
       maskCtx.fill()

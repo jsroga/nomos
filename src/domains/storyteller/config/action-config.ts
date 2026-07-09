@@ -8,8 +8,9 @@
  * - Payload extraction logic
  */
 
+import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
-import { deepMerge, smartMergeArray } from '@/domains/storyteller/core/editing/DeepMerge'
+import { deepMerge, recordFromJson, smartMergeArray } from '@/shared/data/deep-merge'
 import {
   extractCastFromUpdates,
   normalizeCastInUpdates,
@@ -17,7 +18,7 @@ import {
 } from '@/domains/storyteller/core/formatting/StoryPlanFields'
 
 // Re-export merge helpers for callers and tests
-export { deepMerge, smartMergeArray } from '@/domains/storyteller/core/editing/DeepMerge'
+export { deepMerge, smartMergeArray } from '@/shared/data/deep-merge'
 
 // ============================================
 // Section Configuration
@@ -280,48 +281,53 @@ export const STORY_PLAN_FIELDS = [
 /**
  * Apply updates to a story plan state, handling merging correctly
  */
-export function applyUpdatesToStoryPlan<T extends Record<string, any>>(
+export function applyUpdatesToStoryPlan<T extends object>(
   currentPlan: T | null,
   updates: Record<string, unknown>
-): T {
+): T & Record<string, unknown> {
   const normalizedUpdates = normalizeCastInUpdates(updates)
-  const result = { ...(currentPlan || {}) } as T
+  // Merge on an untyped view; the typed shape is restored via Object.assign at the end.
+  const current = recordFromJson(currentPlan)
+  const result: Record<string, unknown> = { ...current }
 
   // Apply standard plan fields
   for (const field of STORY_PLAN_FIELDS) {
-    if (normalizedUpdates[field] !== undefined) {
-      if (typeof normalizedUpdates[field] === 'object' && normalizedUpdates[field] !== null && !Array.isArray(normalizedUpdates[field])) {
-        ; (result as any)[field] = deepMerge((currentPlan as any)?.[field] || {}, normalizedUpdates[field] as any)
-      } else if (Array.isArray(normalizedUpdates[field])) {
-        const currentArr = Array.isArray((currentPlan as any)?.[field]) ? (currentPlan as any)[field] : []
-          ; (result as any)[field] = smartMergeArray(currentArr, normalizedUpdates[field] as any[])
-      } else {
-        ; (result as any)[field] = normalizedUpdates[field]
-      }
+    const update = normalizedUpdates[field]
+    if (update === undefined) continue
+    if (Array.isArray(update)) {
+      const currentArr = current[field]
+      result[field] = smartMergeArray(Array.isArray(currentArr) ? currentArr : [], update)
+    } else if (typeof update === 'object' && update !== null) {
+      result[field] = deepMerge(recordFromJson(current[field]), recordFromJson(update))
+    } else {
+      result[field] = update
     }
   }
 
   const cast = extractCastFromUpdates(normalizedUpdates)
   if (cast) {
-    const currentCast = readCastFromPlan(currentPlan as Record<string, unknown>)
+    const currentCast = readCastFromPlan(current)
     const mergedCast = Array.isArray(cast) ? smartMergeArray(currentCast, cast) : cast
-    ; (result as any).cast = mergedCast
-    ; (result as any).keyCharacters = mergedCast
+    result.cast = mergedCast
+    result.keyCharacters = mergedCast
   }
 
   // Handle moodboard/moodImages aliases
   const moodImages = normalizedUpdates.moodImages || normalizedUpdates.moodboard
   if (moodImages) {
-    ; (result as any).moodImages = moodImages
+    result.moodImages = moodImages
   }
 
   // Handle episode premise - MERGE, don't replace
   const premiseUpdate = normalizedUpdates.episodePremise || normalizedUpdates.premise
   if (premiseUpdate) {
-    ; (result as any).premise = deepMerge((currentPlan as any)?.premise || {}, premiseUpdate as Record<string, unknown>)
+    result.premise =
+      typeof premiseUpdate === 'object' && !Array.isArray(premiseUpdate)
+        ? deepMerge(recordFromJson(current.premise), recordFromJson(premiseUpdate))
+        : premiseUpdate
   }
 
-  return result
+  return Object.assign({}, currentPlan, result)
 }
 
 // ============================================
@@ -350,5 +356,5 @@ export const APPROVAL_REQUIRED_ACTIONS: ActionType[] = [
  * Check if an action type requires approval
  */
 export function actionRequiresApproval(actionType: string, status?: string): boolean {
-  return APPROVAL_REQUIRED_ACTIONS.includes(actionType as ActionType) || status === 'pending'
+  return APPROVAL_REQUIRED_ACTIONS.some(action => action === actionType) || status === ApprovalActionStatus.PENDING
 }

@@ -62,6 +62,14 @@ export function sanitizeTraceValue(value: unknown, fallback: string = '(empty)')
   return value
 }
 
+function sanitizedObjectRecord(value: unknown, fallback: string): Record<string, unknown> {
+  const result = sanitizeTraceValue(value, fallback)
+  if (typeof result === 'object' && result !== null && !Array.isArray(result)) {
+    return result
+  }
+  return { value: result }
+}
+
 export function sanitizeInput(input: unknown): string | Record<string, unknown> {
   if (input === undefined || input === null) {
     return '(no input provided)'
@@ -69,7 +77,7 @@ export function sanitizeInput(input: unknown): string | Record<string, unknown> 
   if (typeof input === 'string') {
     return input || '(empty input)'
   }
-  return sanitizeTraceValue(input, '(empty)') as Record<string, unknown>
+  return sanitizedObjectRecord(input, '(empty)')
 }
 
 export function sanitizeOutput(output: unknown): string | Record<string, unknown> {
@@ -79,7 +87,7 @@ export function sanitizeOutput(output: unknown): string | Record<string, unknown
   if (typeof output === 'string') {
     return output || '(empty output)'
   }
-  return sanitizeTraceValue(output, '(empty)') as Record<string, unknown>
+  return sanitizedObjectRecord(output, '(empty)')
 }
 
 /** @deprecated Use sanitizeTraceValue */

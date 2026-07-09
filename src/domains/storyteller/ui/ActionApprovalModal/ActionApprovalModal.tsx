@@ -23,9 +23,10 @@ import {
   ChevronUp,
   Loader2,
 } from 'lucide-react'
-import { AgentAction } from '@/domains/storyteller/core/types/ActionTypes'
+import type { WireAgentAction } from '@/shared/agent-kernel/action-wire'
 import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued'
 import { cn } from '@/shared/data/utils'
+import { recordFromJson } from '@/shared/data/deep-merge'
 
 interface ActionChange {
   path: string
@@ -39,7 +40,7 @@ interface ActionChange {
 }
 
 interface ActionApprovalModalProps {
-  action: AgentAction
+  action: WireAgentAction
   agentName: string
   onApprove: () => void
   onReject: () => void
@@ -96,7 +97,7 @@ const GenericItemTable: React.FC<{ changes: ActionChange[] }> = ({ changes }) =>
         </thead>
         <tbody className="divide-y divide-border/20">
           {changes.map((change, idx) => {
-            const data = (change.after || change.before || {}) as any
+            const data = recordFromJson(change.after ?? change.before)
             return (
               <tr key={idx} className="bg-card/50 hover:bg-muted/20 transition-colors">
                 <td className="px-3 py-2 align-top">
@@ -454,21 +455,17 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
                                     </div>
                                   ) : Array.isArray(change.after) ? (
                                     <div className="mt-2 space-y-1">
-                                      {(change.after as any[]).slice(0, 5).map((item, i) => (
+                                      {change.after.slice(0, 5).map((item, i) => (
                                         <div key={i} className="flex items-center gap-2 text-sm">
                                           <Plus className="w-3 h-3 text-green-400" />
                                           <span className="text-foreground/80">
-                                            {typeof item === 'object'
-                                              ? item.name ||
-                                              item.title ||
-                                              JSON.stringify(item).slice(0, 50)
-                                              : item}
+                                            {arrayItemLabel(item)}
                                           </span>
                                         </div>
                                       ))}
-                                      {(change.after as any[]).length > 5 && (
+                                      {change.after.length > 5 && (
                                         <span className="text-xs text-muted-foreground">
-                                          +{(change.after as any[]).length - 5} more items
+                                          +{change.after.length - 5} more items
                                         </span>
                                       )}
                                     </div>
@@ -687,9 +684,28 @@ function formatSimpleValue(value: unknown): string {
 /**
  * Extract changes from an action with rich metadata
  */
-function extractChanges(action: AgentAction): ActionChange[] {
+/** Short display label for an item inside an array diff. */
+function arrayItemLabel(item: unknown): string {
+  if (typeof item === 'object' && item !== null) {
+    const record = recordFromJson(item)
+    const name = record.name ?? record.title
+    return typeof name === 'string' ? name : JSON.stringify(item).slice(0, 50)
+  }
+  return String(item)
+}
+
+/** First string among the given keys of a loose record, else undefined. */
+function firstStringField(record: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = record[key]
+    if (typeof value === 'string' && value) return value
+  }
+  return undefined
+}
+
+function extractChanges(action: WireAgentAction): ActionChange[] {
   const changes: ActionChange[] = []
-  const payload = action.payload || {}
+  const payload = recordFromJson(action.payload)
 
   // Field name to friendly name mapping
   const friendlyNames: Record<string, string> = {
@@ -808,19 +824,15 @@ function extractChanges(action: AgentAction): ActionChange[] {
 
   // For UPDATE actions, extract the fields being updated
   if (action.type.startsWith('UPDATE_')) {
-    const srcPayload = payload as any
-
     // Extract "before" data if provided by stream (for diff viewer)
-    const beforeData = srcPayload._before || null
+    const beforeData = payload._before || null
 
     // Handle updatedFields wrapper (common in bible updates)
-    const source =
-      srcPayload.updatedFields ||
-      (srcPayload.updates &&
-        typeof srcPayload.updates === 'object' &&
-        !Array.isArray(srcPayload.updates)
-        ? srcPayload.updates
-        : srcPayload)
+    const source = payload.updatedFields
+      ? recordFromJson(payload.updatedFields)
+      : payload.updates && typeof payload.updates === 'object' && !Array.isArray(payload.updates)
+        ? recordFromJson(payload.updates)
+        : payload
 
     Object.entries(source).forEach(([key, value]) => {
       // Filter out technical keys
@@ -834,27 +846,28 @@ function extractChanges(action: AgentAction): ActionChange[] {
       ) {
         // Special handling for episodeRoadmap (object with episodes array)
         if (key === 'episodeRoadmap' && value && typeof value === 'object') {
-          const episodes = (value as any).episodes
-          if (Array.isArray(episodes)) {
-            episodes.forEach((episode: any) => {
+          const roadmap = recordFromJson(value)
+          if (Array.isArray(roadmap.episodes)) {
+            roadmap.episodes.forEach(episode => {
+              const episodeTitle = firstStringField(recordFromJson(episode), ['title'])
               changes.push({
-                path: `episodeRoadmap.episodes[${episode.title || 'new'}]`,
+                path: `episodeRoadmap.episodes[${episodeTitle || 'new'}]`,
                 before: null,
                 after: episode,
                 reason: action.reasoning,
                 changeType: 'add',
                 category: 'Roadmap',
-                friendlyName: episode.title || 'New Episode',
+                friendlyName: episodeTitle || 'New Episode',
                 summary: undefined,
               })
             })
           }
           // Also handle seasonStructure if present
-          if ((value as any).seasonStructure) {
+          if (roadmap.seasonStructure) {
             changes.push({
               path: 'episodeRoadmap.seasonStructure',
               before: null,
-              after: (value as any).seasonStructure,
+              after: roadmap.seasonStructure,
               reason: action.reasoning,
               changeType: 'add',
               category: 'Roadmap',
@@ -865,15 +878,17 @@ function extractChanges(action: AgentAction): ActionChange[] {
         }
         // Special handling for array items (Plot Twists, Rules, etc.) to expand them into individual changes
         else if (Array.isArray(value) && ['plotTwists', 'worldRules', 'factions', 'soundtracks', 'sequences'].includes(key)) {
-          value.forEach((item: any) => {
+          value.forEach(item => {
+            const itemRecord = recordFromJson(item)
+            const itemLabel = firstStringField(itemRecord, ['id', 'title', 'name'])
             changes.push({
-              path: `${key}[${(item.id || item.title || item.name || 'new')}]`,
+              path: `${key}[${itemLabel || 'new'}]`,
               before: null, // We generally don't have per-item diffs for these lists yet
               after: item,
               reason: action.reasoning,
               changeType: 'add', // Treat as new/modified item
               category: fieldCategories[key] || 'General',
-              friendlyName: item.title || item.name || item.rule || 'New Item',
+              friendlyName: firstStringField(itemRecord, ['title', 'name', 'rule']) || 'New Item',
               summary: undefined // Force detail view
             })
           })

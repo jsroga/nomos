@@ -16,6 +16,8 @@
 
 Agents may optionally use **`.local/tmp/{session-id}/`** for throwaway recon artifacts (gitignored) — see `.agents/execute/partials/session-scratch.md`.
 
+**Quality backlog (many gate failures):** `.local/quality-backlog.md` via `npm run qualitygate:capture` — fix one-by-one, rescan every **5** steps — see `.agents/execute/partials/quality-backlog.md` (included in Implement).
+
 | Stage | Prompt (`.agents/execute/`) | Cursor adapter | Claude adapter | Artifact |
 | --- | --- | --- | --- | --- |
 | Scope | `scope.md` | `scope-runner.md` | `scope-runner.md` | `.local/findings/scope.md` |

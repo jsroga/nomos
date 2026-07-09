@@ -17,6 +17,17 @@ export type CoPilotInteraction =
   }
   | { type: 'FINISH'; payload: { result: string }; thought?: string }
 
+function isCoPilotInteraction(value: unknown): value is CoPilotInteraction {
+  if (typeof value !== 'object' || value === null || !('type' in value)) return false
+  const type = value.type
+  return (
+    type === 'ASK_USER' ||
+    type === 'PROPOSE_PLAN' ||
+    type === 'EXECUTE_STEP' ||
+    type === 'FINISH'
+  )
+}
+
 export interface ExecutiveConfig {
   modelName: string
   planner: any // Mastra Tool instance
@@ -79,7 +90,10 @@ export class ExecutiveAgent {
 
           const result = JSON.parse(jsonStr)
           result.thought = thought
-          return result as CoPilotInteraction
+          if (!isCoPilotInteraction(result)) {
+            throw new Error('Invalid co-pilot interaction payload')
+          }
+          return result
         } catch (e: unknown) {
           console.error('Failed to run agent loop', e)
           return { type: 'FINISH', payload: { result: 'Error: ' + getErrorMessage(e) } }

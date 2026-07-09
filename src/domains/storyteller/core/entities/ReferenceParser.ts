@@ -23,10 +23,21 @@ export const ENTITY_PREFIXES: Record<EntityType, string> = {
 }
 
 // Reverse lookup: prefix -> type
-export const PREFIX_TO_TYPE: Record<string, EntityType> = Object.entries(ENTITY_PREFIXES).reduce(
-  (acc, [type, prefix]) => ({ ...acc, [prefix]: type as EntityType }),
-  {} as Record<string, EntityType>
-)
+const ENTITY_TYPES: EntityType[] = [
+  'character',
+  'place',
+  'event',
+  'faction',
+  'rule',
+  'beat',
+  'episode',
+  'item',
+]
+
+export const PREFIX_TO_TYPE: Record<string, EntityType> = Object.create(null)
+for (const type of ENTITY_TYPES) {
+  PREFIX_TO_TYPE[ENTITY_PREFIXES[type]] = type
+}
 
 /**
  * Parsed reference from text

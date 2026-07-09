@@ -10,4 +10,6 @@ You execute the Fabro **developer** stage.
 
 **Output:** code changes + honest handoff (no fiction); `fabro-verify.mjs` (incl. pre-commit parity) must pass before stopping.
 
+**Many gate failures:** use `npm run qualitygate:capture` + `.local/quality-backlog.md` — fix one item per step, rescan every 5 fixes (see `.agents/execute/partials/quality-backlog.md`).
+
 Then stop.

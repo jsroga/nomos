@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
 import { interiorSceneDataSchema, type InteriorSceneData } from '@/domains/interior-designer/io'
+import { surfaceFromJson, wallFromJson } from '@/domains/interior-designer/core/scene-element-guards'
+import { vec3, vec3XZ } from '@/domains/interior-designer/core/vec3'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import * as THREE from 'three'
 
@@ -839,7 +841,8 @@ export const useInteriorStore = create<InteriorState>()(
 
               // Case 1: Was a Wall
               if (metadata.originalType === 'wall' && metadata.originalData) {
-                const wallData = metadata.originalData as Wall
+                const wallData = wallFromJson(metadata.originalData)
+                if (!wallData) return {}
                 // Remove the preview object
                 const newObjects = state.objects.filter(o => o.id !== elementId)
                 // Restore the wall
@@ -852,7 +855,8 @@ export const useInteriorStore = create<InteriorState>()(
 
               // Case 2: Was a Surface (combined walls, roads, etc.)
               if (metadata.originalType === 'surface' && metadata.originalData) {
-                const surfaceData = metadata.originalData as Surface
+                const surfaceData = surfaceFromJson(metadata.originalData)
+                if (!surfaceData) return {}
                 // Remove the preview object
                 const newObjects = state.objects.filter(o => o.id !== elementId)
                 // Restore the surface
@@ -1401,7 +1405,7 @@ export const useInteriorStore = create<InteriorState>()(
               return {}
             }
 
-            let floorPoints = surface.points.map(p => [p[0], 0, p[2]] as [number, number, number])
+            let floorPoints = surface.points.map(p => vec3XZ(p[0], p[2]))
 
             // If combined/curved, we need to generate the curve points
             // This logic mirrors RoadMesh.tsx
@@ -1430,7 +1434,7 @@ export const useInteriorStore = create<InteriorState>()(
                 const steps = Math.max(20, Math.ceil(length * 5)) // 5 points per meter
                 const spacedPoints = curve.getSpacedPoints(steps)
 
-                floorPoints = spacedPoints.map(p => [p.x, 0, p.z])
+                floorPoints = spacedPoints.map(p => vec3(p.x, 0, p.z))
               } catch (e) {
                 console.error('Failed to generate curved floor geometry', e)
                 // Fallback to original points
@@ -1533,8 +1537,8 @@ export const useInteriorStore = create<InteriorState>()(
               const normalizedObjects: SceneObject[] = (design.sceneData.objects || []).map(obj => ({
                 ...obj,
                 position: obj.position
-                  ? ([obj.position[0], 0, obj.position[2]] as [number, number, number])
-                  : [0, 0, 0],
+                  ? vec3(obj.position[0] ?? 0, 0, obj.position[2] ?? 0)
+                  : vec3(0, 0, 0),
               }))
               set({
                 currentDesignId: design.id,

@@ -16,6 +16,7 @@ import {
   Surface,
   TERRAIN_QUALITY_RESOLUTION,
 } from '@/domains/interior-designer'
+import { vec2 } from '@/domains/interior-designer/core/vec3'
 import { VoxelTerrainMesh } from './VoxelTerrainMesh'
 
 interface SculptableSurfaceProps {
@@ -229,7 +230,9 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
         const { heightmap, heightmapSize, baseGroundHeight: baseHeight } = state.terrainSettings
 
         if (heightmap && heightmapTextureRef.current) {
-          const data = heightmapTextureRef.current.image.data as unknown as Float32Array
+          const imageData = heightmapTextureRef.current.image.data
+          if (!(imageData instanceof Float32Array)) return
+          const data = imageData
           const maxDisplacement = 10
 
           for (let i = 0; i < heightmap.length && i < data.length; i++) {
@@ -337,7 +340,7 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
   const topMaterial = useMemo(() => {
     if (!bounds || !surface.points) return null
 
-    const polygon2D = surface.points.map(p => [p[0], p[2]] as [number, number])
+    const polygon2D = surface.points.map(p => vec2(p[0], p[2]))
     const width = bounds.maxX - bounds.minX
     const depth = bounds.maxZ - bounds.minZ
 

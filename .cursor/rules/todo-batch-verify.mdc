@@ -1,0 +1,56 @@
+---
+description: Mandatory fast verify every 5 completed todos on multi-step tasks (binding for Cursor Agent)
+globs: "**/*"
+alwaysApply: true
+---
+
+# Todo batch verify (mandatory)
+
+When a task uses **6 or more** todos (or the user asks for batch checks), you **must** run a fast gate **after every 5 completed todos** before starting the next one.
+
+## Cadence
+
+| Completed todos | Action before todo 6, 11, 16, … |
+|-----------------|-----------------------------------|
+| 5, 10, 15, 20, … | Run `npm run qualitygate:changed` **or** refresh backlog (see below) |
+
+- Count only todos marked **completed** in the current task list.
+- Do **not** skip because the step "felt small".
+- If verify fails with **many issues**: `npm run qualitygate:capture` → fix via `.local/quality-backlog.md` (one item at a time) — see `quality-backlog.mdc`.
+
+## Commands
+
+```bash
+npm run qualitygate:changed          # quick gate on git-changed src (~5–15s)
+npm run qualitygate:capture       # same scope + cached backlog in .local/
+npm run qualitygate:backlog       # read next fix without rescanning
+```
+
+Per-file after a single extract:
+
+```bash
+npm run qualitygate:file -- src/path/to/File.tsx
+```
+
+**Do not** run verify after every todo — only every **5** completed todos (unless you just fixed the only failing file).
+
+## Evidence in chat
+
+After each batch gate: `qualitygate:changed — OK · 4.2s` or paste first errors / backlog progress.
+
+## End of task
+
+```bash
+npm run typecheck    # tsc + qualitygate:metrics
+npm run lint
+npm run test:unit
+```
+
+Optional when `PLAN.md` exists: `node scripts/fabro-verify.mjs`. **No E2E** unless requested.
+
+## Anti-patterns
+
+- Running verify after every todo.
+- Re-scanning without updating `.local/quality-backlog.md`.
+- Bulk `node -e` transforms instead of incremental extract + backlog.
+- **File-level `eslint-disable`** or `@ts-nocheck` to silence gate failures (forbidden without user approval).

@@ -26,6 +26,54 @@ export type RelationshipType =
   | 'acquaintance'
   | 'complex'
 
+const RELATIONSHIP_TYPES: RelationshipType[] = [
+  'ally',
+  'enemy',
+  'rival',
+  'mentor',
+  'student',
+  'lover',
+  'family',
+  'member_of',
+  'leader_of',
+  'associated',
+  'related',
+  'owns',
+  'uses',
+  'caused_by',
+  'happened_at',
+  'located_in',
+  'temporal',
+  'stranger',
+  'acquaintance',
+  'complex',
+]
+
+const RELATIONSHIP_TYPE_SET = new Set<string>(RELATIONSHIP_TYPES)
+
+export function parseRelationshipType(value: string | undefined): RelationshipType {
+  if (value && RELATIONSHIP_TYPE_SET.has(value)) {
+    for (const type of RELATIONSHIP_TYPES) {
+      if (type === value) return type
+    }
+  }
+  return 'related'
+}
+
+export function readRelationshipEdgeEvidence(
+  data: RelationshipEdgeData | undefined
+): string | undefined {
+  const evidence = data?.evidence
+  return typeof evidence === 'string' ? evidence : undefined
+}
+
+export function readRelationshipEdgeLlmGrounded(
+  data: RelationshipEdgeData | undefined
+): boolean | undefined {
+  const grounded = data?.llmGrounded
+  return typeof grounded === 'boolean' ? grounded : undefined
+}
+
 export interface CharacterNodeData {
   [k: string]: unknown
   name: string

@@ -119,9 +119,15 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
 ]
 
-export const STYLE_PRESETS_MAP = Object.fromEntries(
-  STYLE_PRESETS.map(p => [p.id, p])
-) as Record<string, StylePreset>
+export const STYLE_PRESETS_MAP: Record<string, StylePreset> = STYLE_PRESETS.reduce<
+  Record<string, StylePreset>
+>(
+  (acc, preset) => {
+    acc[preset.id] = preset
+    return acc
+  },
+  {}
+)
 
 /** Default style phrase when no preset is selected (custom URLs or legacy). */
 export const DEFAULT_STYLE_CONTEXT =
@@ -157,7 +163,7 @@ export function resolveStyleReferenceUrls(project: {
     }
   }
   if (Array.isArray(project.styleReferenceUrls)) {
-    return project.styleReferenceUrls as string[]
+    return project.styleReferenceUrls.filter((url): url is string => typeof url === 'string')
   }
   return []
 }

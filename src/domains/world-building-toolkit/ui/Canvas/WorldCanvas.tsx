@@ -303,8 +303,11 @@ export const WorldCanvas: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       // Ignore shortcuts if typing in an input or textarea
-      const target = e.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      const target = e.target
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
         return
       }
 

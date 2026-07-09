@@ -56,12 +56,20 @@ import {
 } from 'lucide-react'
 import { nodeTypes } from './CustomNodes'
 import { autoLayoutNodes } from '../core/layout'
+import {
+  fileReaderText,
+  nodeDescription,
+  nodeLabel,
+  readChangeNodeType,
+} from '@/domains/loop-creator/core/loop-node-wire'
 import { useAutoSave } from '../state/useAutoSave'
 import { SuggestionPanel, Suggestion } from './SuggestionPanel'
 import { PropertiesPanel } from './PropertiesPanel'
 import { MarketAnalysisPanel } from './MarketAnalysisPanel'
 import { LoopSelector } from './LoopSelector'
 import { LoopEmptyState } from './LoopEmptyState'
+
+const EDGE_LABEL_BG_PADDING: [number, number] = [6, 4]
 import { Button } from '@/components/Button'
 import { EntitySelectorButton } from '@/components/EntityPicker'
 import {
@@ -215,17 +223,17 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
           .filter(n => n.type !== 'loop')
           .map(n => ({
             id: n.id,
-            name: (n.data as any)?.label || n.id,
+            name: nodeLabel(n),
             type: n.type,
-            description: (n.data as any)?.description,
+            description: nodeDescription(n),
           })),
         loops: nodes
           .filter(n => n.type === 'loop')
           .map(n => ({
             id: n.id,
-            name: (n.data as any)?.label || n.id,
+            name: nodeLabel(n),
             type: 'loop',
-            description: (n.data as any)?.description,
+            description: nodeDescription(n),
           })),
         connections: edges.map(e => ({
           id: e.id,
@@ -678,7 +686,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   const handleNodeUpdate = useCallback(
     (nodeId: string, updates: Record<string, unknown>) => {
       // Check if we need to change the node type
-      const changeNodeType = updates._changeNodeType as string | undefined
+      const changeNodeType = readChangeNodeType(updates)
       delete updates._changeNodeType
 
       setNodes(nds =>
@@ -795,7 +803,8 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
       const reader = new FileReader()
       reader.onload = e => {
         try {
-          const content = e.target?.result as string
+          const content = fileReaderText(e.target?.result ?? null)
+          if (!content) return
           const data = JSON.parse(content)
 
           let transformedNodes: Node[] = []
@@ -998,7 +1007,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
         case 'REMOVE_ALL_NODES': {
           const suggestion: Suggestion = {
             id: createSuggestionId(),
-            type: 'REMOVE_ALL_NODES' as any, // Will add to type
+            type: 'REMOVE_ALL_NODES',
             description: `Clear all nodes and edges from canvas (${nodes.length} nodes, ${edges.length} edges)`,
             payload: {},
           }
@@ -1055,7 +1064,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
       const recentMessages = messages
         .slice(-10)
         .map(m => ({
-          role: (m.type === 'human' ? 'user' : 'assistant') as 'user' | 'assistant',
+          role: m.type === 'human' ? 'user' : 'assistant',
           content: typeof m.content === 'string' ? m.content : '',
         }))
         .filter(m => m.content.length > 0)
@@ -1393,7 +1402,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
                         fill: '#0f172a',
                         fillOpacity: 0.9,
                       },
-                      labelBgPadding: [6, 4] as [number, number],
+                      labelBgPadding: EDGE_LABEL_BG_PADDING,
                       labelBgBorderRadius: 4,
                     }}
                   >

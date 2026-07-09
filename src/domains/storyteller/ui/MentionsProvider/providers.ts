@@ -24,6 +24,13 @@ const ENTITY_TYPE_ICONS: Record<EntityType, string> = {
   episode: 'Tv',
 }
 
+function entityIconForType(type: string): string {
+  for (const [entityType, icon] of Object.entries(ENTITY_TYPE_ICONS)) {
+    if (entityType === type) return icon
+  }
+  return 'Hash'
+}
+
 /**
  * Entity Provider - Characters, Episodes, Beats, Factions
  */
@@ -263,15 +270,7 @@ export const entityRegistryProvider: MentionProvider = {
 
     // Registry entities should be passed via context from server
     // This avoids importing server-only database code in client components
-    const registryEntities = (context as any).registryEntities as
-      | Array<{
-          id: string
-          name: string
-          type: EntityType
-          description?: string
-          metadata?: Record<string, unknown>
-        }>
-      | undefined
+    const registryEntities = context.registryEntities
 
     if (!registryEntities || registryEntities.length === 0) {
       return items
@@ -294,7 +293,7 @@ export const entityRegistryProvider: MentionProvider = {
         name: entity.name,
         category: 'entity',
         type: entity.type,
-        icon: ENTITY_TYPE_ICONS[entity.type] || 'Hash',
+        icon: entityIconForType(entity.type),
         preview: entity.description?.slice(0, 50) || `${entity.type}`,
         context: {
           ...entity.metadata,

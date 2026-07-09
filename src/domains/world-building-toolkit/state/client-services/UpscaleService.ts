@@ -3,8 +3,11 @@ import type { Tile } from '../../core/world-types'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { LocalStorageKeys, DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
-
-type UpscaleProvider = 'midjourney' | 'replicate' | 'stability'
+import { fileReaderText } from '@/shared/data/json-guards'
+import {
+  parseUpscaleProvider,
+  UpscaleProvider,
+} from '../../core/upscale-provider-wire'
 
 interface UpscaleRunState {
   runId: string
@@ -42,10 +45,11 @@ export class UpscaleService {
       styleReferenceUrls,
     })
 
-    const activeUpscaler: UpscaleProvider = provider ||
+    const activeUpscaler: UpscaleProvider =
+      provider ??
       (typeof window !== 'undefined'
-        ? (localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER) as UpscaleProvider) || 'stability'
-        : 'stability')
+        ? parseUpscaleProvider(localStorage.getItem(LocalStorageKeys.AI_ACTIVE_UPSCALER))
+        : UpscaleProvider.Stability)
 
     const skipGeminiPreUpscale = typeof window !== 'undefined'
       ? localStorage.getItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE) === 'true'
@@ -68,9 +72,16 @@ export class UpscaleService {
       if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`)
       const blob = await response.blob()
 
-      const base64 = await new Promise<string>(resolve => {
+      const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1])
+        reader.onloadend = () => {
+          const dataUrl = fileReaderText(reader.result)
+          if (!dataUrl || !dataUrl.includes(',')) {
+            reject(new Error('Invalid data URL'))
+            return
+          }
+          resolve(dataUrl.split(',')[1])
+        }
         reader.readAsDataURL(blob)
       })
 

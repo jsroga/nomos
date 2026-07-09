@@ -2,6 +2,7 @@
 
 import React, { useRef, useMemo, useState, useEffect } from 'react'
 import * as THREE from 'three'
+import { vec3, type Vec3Tuple } from '@/domains/interior-designer/core/vec3'
 
 // Lazy-loaded Three.js components
 let Canvas: any = null
@@ -397,7 +398,7 @@ const kurvitzaFragmentShader = `
 `
 
 function KurvitzaSphere({
-  position = [0, 0, 0] as [number, number, number],
+  position = [0, 0, 0] satisfies [number, number, number],
   radius = 0.12,
   color = '#a855f7',
   distortion = 0.4,
@@ -437,7 +438,8 @@ function KurvitzaSphere({
 
   useFrame(state => {
     if (meshRef.current) {
-      const material = meshRef.current.material as THREE.ShaderMaterial
+      const material = meshRef.current.material
+      if (!(material instanceof THREE.ShaderMaterial)) return
       material.uniforms.u_time.value = state.clock.elapsedTime
       material.uniforms.u_distortion.value = distortion
       material.uniforms.u_speed.value = speed
@@ -858,7 +860,7 @@ function SculptSimSculpture() {
       [0.25, -0.6, 0.35],
     ]
     dirs.forEach((d, i) => {
-      const dir = new THREE.Vector3(...(d as [number, number, number])).normalize()
+      const dir = new THREE.Vector3(d[0] ?? 0, d[1] ?? 0, d[2] ?? 0).normalize()
       const curve = createFlowingCurve(
         dir.clone().multiplyScalar(0.22),
         dir.clone().multiplyScalar(0.5),

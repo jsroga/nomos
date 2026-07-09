@@ -2,9 +2,14 @@
 // `@/domains/storyteller` barrel — that barrel also re-exports client UI
 // components (e.g. CorkBoard), which pulls client-only hooks into this
 // server Route Handler's build graph and breaks compilation.
-import { createStorytellerAgent, normalizeMastraTraceId } from '@/domains/storyteller/agents'
+import { createStorytellerAgent } from '@/domains/storyteller/agents'
+import { normalizeMastraTraceId } from '@/domains/storyteller/agents/tracing'
+import {
+  RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
+  VERDICT_STEP_ID,
+  buildStorytellerRequestContext,
+} from '@/domains/storyteller/io/mastra-runtime'
 import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/ChatModelCatalog'
-import { EventEmitter } from 'node:events'
 import { BibleSection } from '@/domains/storyteller/core'
 import { assembleStorytellerContext } from '@/domains/storyteller/services/ContextAssemblyService'
 import {
@@ -13,17 +18,27 @@ import {
   getActionDedupeKey,
   type DetectedSection,
 } from '@/domains/storyteller/config/tool-result-mapper'
+import { recordError } from '@/shared/observability/observability'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Node.js Runtime required for Mastra core dependencies
 export const runtime = 'nodejs'
 
-interface StreamChunk {
-  type: string
-  payload?: unknown
+/** Narrow an unknown JSON value to an indexable record (no casts downstream). */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 
-import { recordError } from '@/shared/observability/observability'
-import { getErrorMessage } from '@/shared/errors/error-utils'
+/** Extract a human-readable message/code pair from an unknown stream error. */
+function toErrorInfo(raw: unknown): { message: string; code: string } {
+  if (isRecord(raw)) {
+    const message = typeof raw.message === 'string' ? raw.message : 'Unknown stream error'
+    const code = typeof raw.code === 'string' ? raw.code : 'STREAM_ERROR'
+    return { message, code }
+  }
+  if (typeof raw === 'string' && raw) return { message: raw, code: 'STREAM_ERROR' }
+  return { message: 'Unknown stream error', code: 'STREAM_ERROR' }
+}
 
 export async function POST(req: Request) {
   try {
@@ -42,6 +57,8 @@ export async function POST(req: Request) {
     }
 
     // Parse body parameters
+    // Request contract unchanged: `sessionId` and `userId` remain accepted
+    // body params (the legacy workflow-context consumer is gone).
     const {
       message,
       projectId,
@@ -49,8 +66,6 @@ export async function POST(req: Request) {
       traceId: bodyTraceId,
       agenticMode,
       currentPhase,
-      sessionId: bodySessionId,
-      userId,
       modelName,
     } = await req.json()
 
@@ -100,10 +115,6 @@ export async function POST(req: Request) {
 
     const traceId = normalizeMastraTraceId(req.headers.get('x-trace-id') || bodyTraceId)
 
-    // Session ID groups multi-turn chat for Mastra tracingOptions
-    const sessionId =
-      bodySessionId || `session-${projectId || 'unknown'}-${episodeId || Date.now()}`
-
     // 1. Fetch + format FULL context
     const { contextPrompt, existingBibleData } = await assembleStorytellerContext({
       projectId,
@@ -128,14 +139,11 @@ export async function POST(req: Request) {
     let agenticInstruction = ''
 
     if (agenticMode) {
+      // The writers'-room council is gone; agentic mode now means "prefer the
+      // full GRRM pipeline over ad-hoc chat drafting".
       agenticInstruction = `
-### GENIUS MODE ENABLED (IQ 200)
-You are a Genius Orchestrator. You combine the ruthless realism of George R. R. Martin with the "out of the box" narrative complexity of Vince Gilligan.
-
-1. DO NOT provide a direct response. ALWAYS delegate to the Council of Agents.
-2. Demand "out of the box" solutions and IQ 200 creative depth from your Council.
-3. If the request is for lore or world-building, the Council is still required for multi-layered thinking.
-4. Passage user's request as the 'goal' to the tool.
+### AGENTIC MODE
+For any request to write, draft, or generate a story beat or scene, call 'run_beat_draft_workflow' rather than drafting in chat.
 `
     }
 
@@ -143,40 +151,23 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
       ? `${contextPrompt}\n${sectionPrompt}\n${agenticInstruction}\nUSER REQUEST:\n${message}\n\nRemember: Use projectId="${projectId}" for all tool calls that require it.`
       : `${sectionPrompt}\n${agenticInstruction}\n${message}`
 
-    // Create EventBus for Workflow Visibility
-    const { workflowContext, WORKFLOW_EVENTS } =
-      await import('@/domains/storyteller/agents/orchestration/WorkflowContext')
-    const eventBus = new EventEmitter()
-
-    // Prepare context wrapper with memory for multi-turn conversations
-    // See: https://mastra.ai/docs/agents/agent-memory
-    const streamOptions: Record<string, unknown> = {
-      // Use 'auto' for tool choice - 'required' causes infinite loops
-      // The agent prompt already instructs to use tools for generation
-      toolChoice: 'auto',
-      // Allow up to 10 steps for complex multi-tool workflows
-      maxSteps: 10,
-      telemetry: {
-        isEnabled: true,
-        traceId,
-        metadata: {
-          projectId,
-          episodeId,
-        },
-      },
-      // Memory context for conversation persistence
-      // resource: stable user/project identifier
-      // thread: specific conversation session (per episode or project)
-      memory: {
-        resource: projectId || 'anonymous',
-        thread: episodeId || `project-${projectId}` || 'general',
-      },
-    }
-
     // existingBibleData (for diff "before" state) comes from assembleStorytellerContext above.
 
-    const result = await workflowContext.run({ traceId, sessionId, userId, eventBus }, async () => {
-      return agent.stream(promptWithContext, streamOptions)
+    // Server-trusted per-request values: tools prefer these over model-supplied
+    // args (IDs), and the author's model resolver reads the picker choice.
+    const requestContext = buildStorytellerRequestContext({
+      projectId,
+      episodeId,
+      authorModel: resolvedModelName,
+    })
+
+    // toolChoice 'auto' — 'required' causes infinite loops; the prompt already
+    // instructs when to use tools. (The previous untyped options bag also
+    // carried telemetry/memory fields the agent wrapper never forwarded.)
+    const result = await agent.stream(promptWithContext, {
+      toolChoice: 'auto',
+      traceId,
+      requestContext,
     })
 
     // Create SSE stream that useChatStream can parse
@@ -232,108 +223,9 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           console.log(`[Stream] Emitted section_loading: ${detectedSection} = true`)
         }
 
-        // Bridge Workflow Events to SSE Stream
-        const onStepStart = ({ step, agent }: { step: string; agent?: string }) => {
-          safeEnqueue(
-            `data: ${JSON.stringify({
-              type: 'agent_status',
-              agent: agent || 'Storyteller',
-              status: 'working',
-              message: `${step}...`,
-              startTime: Date.now(),
-            })}\n\n`
-          )
-        }
-
-        const onStepComplete = ({ step, output }: { step: string; output?: unknown }) => {
-          // Optional: Emit intermediate "thinking" or "result" blocks if desired
-          if (output && typeof output === 'string') {
-            safeEnqueue(
-              `data: ${JSON.stringify({
-                type: 'thinking',
-                thinking: `[${step} Output]:\n${output.substring(0, 150)}...`,
-                agent: 'Storyteller',
-              })}\n\n`
-            )
-          }
-        }
-
-        // Handle agent thinking events from specialized agents (Psychologist, Gardener, etc.)
-        const onAgentThought = ({ agent, thinking }: { agent: string; thinking: string }) => {
-          if (thinking) {
-            safeEnqueue(
-              `data: ${JSON.stringify({
-                type: 'thinking',
-                thinking,
-                agent,
-                timestamp: Date.now(),
-              })}\n\n`
-            )
-          }
-        }
-
-        // Handle human-in-the-loop questions from workflow
-        const onQuestionAsked = (data: {
-          stepId: string
-          questionType: string
-          question: string
-          options: Array<{
-            id: string
-            label: string
-            description?: string
-            consequence?: string
-            recommended?: boolean
-          }>
-          traceId?: string
-          runId?: string
-        }) => {
-          // Convert to AgentQuestion format expected by the UI
-          const agentQuestion = {
-            id: `q-${data.stepId}-${Date.now()}`,
-            agentName: 'Writers Room',
-            question: data.question,
-            questionType: 'single_choice' as const,
-            options: data.options,
-            context: 'The workflow needs your creative input to proceed.',
-            urgency: 'blocking' as const,
-            defaultOption: data.options.find(o => o.recommended)?.id,
-            timeout: 120, // 2 minutes to decide
-          }
-
-          safeEnqueue(
-            `data: ${JSON.stringify({
-              type: 'questions',
-              questions: [agentQuestion],
-              workflowStepId: data.stepId,
-              workflowRunId: data.runId, // Include runId for resume API
-              traceId: data.traceId,
-            })}\n\n`
-          )
-
-          // Also send awaiting_input to pause the thinking indicator
-          safeEnqueue(
-            `data: ${JSON.stringify({
-              type: 'awaiting_input',
-              reason: 'creative_decision',
-              workflowRunId: data.runId,
-            })}\n\n`
-          )
-        }
-
-        // Handle workflow suspended event (includes runId)
-        const onWorkflowSuspended = (data: {
-          runId: string
-          stepId: string
-          projectId: string
-        }) => {
-          console.log(`[Stream] Workflow suspended: ${data.runId} at step ${data.stepId}`)
-        }
-
-        eventBus.on(WORKFLOW_EVENTS.STEP_START, onStepStart)
-        eventBus.on(WORKFLOW_EVENTS.STEP_COMPLETE, onStepComplete)
-        eventBus.on(WORKFLOW_EVENTS.AGENT_THOUGHT, onAgentThought)
-        eventBus.on(WORKFLOW_EVENTS.QUESTION_ASKED, onQuestionAsked)
-        eventBus.on(WORKFLOW_EVENTS.WORKFLOW_SUSPENDED, onWorkflowSuspended)
+        // (The legacy writers'-room event-bus bridge lived here. Its only
+        // emitter was the deleted StoryWorkflow, so those frames never fired;
+        // the beat-draft verdict now flows through the tool-result branch below.)
 
         try {
           // Send start event
@@ -353,16 +245,12 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
 
           try {
             for await (const chunk of result.fullStream) {
-              const part = chunk as StreamChunk
               try {
-                const { type, payload } = part || {}
-                if (!type) continue
-
                 // Handle stream errors (e.g. OpenAI quota exceeded)
-                if (type === 'error') {
-                  const errorDetails = payload?.error || payload
-                  const errorMessage = errorDetails?.message || 'Unknown stream error'
-                  const errorCode = errorDetails?.code || 'STREAM_ERROR'
+                if (chunk.type === 'error') {
+                  const { message: errorMessage, code: errorCode } = toErrorInfo(
+                    chunk.payload.error
+                  )
 
                   console.error('[Stream] Error chunk received:', errorMessage)
 
@@ -392,16 +280,16 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                   return
                 }
 
-                // Mastra VNext (v0.24+) chunk types
-                if (type === 'text-delta') {
-                  const text = payload?.text || payload?.textDelta || ''
+                // Mastra chunk types (official union from @mastra/core/stream)
+                if (chunk.type === 'text-delta') {
+                  const text = chunk.payload.text
                   if (text) {
                     fullText += text
                     safeEnqueue(`data: ${JSON.stringify({ type: 'token', token: text })}\n\n`)
                   }
-                } else if (type === 'reasoning' || type === 'thinking') {
+                } else if (chunk.type === 'reasoning-delta') {
                   // Extended thinking / chain-of-thought from the model
-                  const thinking = payload?.text || payload?.thinking || payload?.reasoning || ''
+                  const thinking = chunk.payload.text
                   if (thinking) {
                     safeEnqueue(
                       `data: ${JSON.stringify({
@@ -411,9 +299,9 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                       })}\n\n`
                     )
                   }
-                } else if (type === 'tool-call') {
-                  const toolName = payload?.toolName || 'tool'
-                  const toolArgs = payload?.args || {}
+                } else if (chunk.type === 'tool-call') {
+                  const toolName = chunk.payload.toolName || 'tool'
+                  const toolArgs = isRecord(chunk.payload.args) ? chunk.payload.args : {}
 
                   console.log(`[Stream] Tool call: ${toolName}, args keys:`, Object.keys(toolArgs))
 
@@ -440,22 +328,24 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
 
                   // Track tool call start time for duration calculation
                   toolCallStartTimes.set(toolName, Date.now())
-                } else if (type === 'tool-result') {
-                  const toolName = payload?.toolName || ''
-                  const toolResult = payload?.result
+                } else if (chunk.type === 'tool-result') {
+                  const toolName = chunk.payload.toolName || ''
+                  const toolResult: unknown = chunk.payload.result
                   console.log(
                     `[Stream] Tool result received: ${toolName}`,
                     typeof toolResult === 'string' ? toolResult.substring(0, 200) : toolResult
                   )
 
-                  // Parse tool result early — needed for SSE events
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamically parsed JSON from tool results
-                  let parsed: any
+                  // Parse tool result early — needed for SSE events.
+                  // `parsed` stays unknown; every access below goes through
+                  // the isRecord/typeof narrowing helpers (no casts).
+                  let parsed: unknown
                   try {
                     parsed = typeof toolResult === 'string' ? JSON.parse(toolResult) : toolResult
                   } catch {
                     parsed = toolResult
                   }
+                  const parsedRecord = isRecord(parsed) ? parsed : undefined
 
                   // Calculate duration from tool call start
                   const startTime = toolCallStartTimes.get(toolName)
@@ -472,13 +362,74 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                     })}\n\n`
                   )
 
+                  // Beat-draft verdict gate: when the workflow entry tool
+                  // suspends at the editorial verdict, surface it through the
+                  // EXISTING questions/awaiting_input frames (published wire
+                  // contract — no new frame types). The UI answers via the
+                  // existing POST /api/storyteller/workflow/resume.
+                  if (
+                    toolName === RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID &&
+                    parsedRecord &&
+                    parsedRecord.status === 'suspended' &&
+                    typeof parsedRecord.runId === 'string' &&
+                    parsedRecord.runId.length > 0
+                  ) {
+                    const workflowRunId = parsedRecord.runId
+                    const verdictQuestion = {
+                      id: `q-editorial-verdict-${Date.now()}`,
+                      agentName: 'Storyteller',
+                      question:
+                        'The draft and critiques are ready. What is your editorial verdict?',
+                      questionType: 'single_choice' as const,
+                      options: [
+                        {
+                          id: 'approve',
+                          label: 'Approve',
+                          description: 'Revise against the critiques as-is',
+                          recommended: true,
+                        },
+                        {
+                          id: 'revise',
+                          label: 'Revise with note',
+                          description: 'Add editorial direction (it outranks the critics)',
+                        },
+                        {
+                          id: 'kill',
+                          label: 'Kill',
+                          description: 'Discard the draft entirely — nothing is saved',
+                        },
+                      ],
+                      context: 'Beat-draft pipeline paused at the editorial verdict.',
+                      urgency: 'blocking' as const,
+                      defaultOption: 'approve',
+                      timeout: 120,
+                    }
+
+                    safeEnqueue(
+                      `data: ${JSON.stringify({
+                        type: 'questions',
+                        questions: [verdictQuestion],
+                        workflowStepId: VERDICT_STEP_ID,
+                        workflowRunId,
+                        traceId,
+                      })}\n\n`
+                    )
+                    safeEnqueue(
+                      `data: ${JSON.stringify({
+                        type: 'awaiting_input',
+                        reason: 'creative_decision',
+                        workflowRunId,
+                      })}\n\n`
+                    )
+                  }
+
                   // Continue with action event mapping
                   try {
                     // Safe logging of tool result status
-                    if (typeof parsed === 'object' && parsed !== null) {
+                    if (parsedRecord) {
                       console.log(
-                        `[Stream] Parsed tool result success=${parsed.success}, keys:`,
-                        Object.keys(parsed)
+                        `[Stream] Parsed tool result success=${parsedRecord.success}, keys:`,
+                        Object.keys(parsedRecord)
                       )
                     } else {
                       console.log(
@@ -560,9 +511,9 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                                   value.map(async (item: unknown) => {
                                     if (typeof item === 'string') {
                                       return await entityAutoLinker.autoLink(item, projectId)
-                                    } else if (item && typeof item === 'object') {
+                                    } else if (isRecord(item)) {
                                       // Handle objects with text fields
-                                      const linkedItem = { ...item }
+                                      const linkedItem: Record<string, unknown> = { ...item }
                                       for (const [field, fieldValue] of Object.entries(
                                         linkedItem
                                       )) {
@@ -597,8 +548,14 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                             _before: existingBibleData[detectedSection] || null, // For diff viewer
                           },
                           status: requiresApproval ? 'pending' : 'committed',
-                          confidence: parsed?.confidence || 1.0,
-                          reasoning: parsed?.message || `Tool ${toolName} completed successfully`,
+                          confidence:
+                            typeof parsedRecord?.confidence === 'number'
+                              ? parsedRecord.confidence
+                              : 1.0,
+                          reasoning:
+                            typeof parsedRecord?.message === 'string'
+                              ? parsedRecord.message
+                              : `Tool ${toolName} completed successfully`,
                         }
 
                         pendingActions.push(actionWithBefore)
@@ -621,15 +578,16 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
                   } catch {
                     // Tool result wasn't JSON or parsing failed - that's ok
                   }
-                } else if (type === 'step-start') {
-                  // High fidelity activity tracking
+                } else if (chunk.type === 'step-start') {
+                  // High fidelity activity tracking. StepStartPayload carries
+                  // no step name — the emitted frame has always rendered as
+                  // 'Step: Processing' at runtime; kept byte-identical.
                   safeEnqueue(
                     `data: ${JSON.stringify({
                       type: 'agent_status',
                       agent: 'Storyteller',
                       status: 'thinking',
-                      message: `Step: ${payload?.stepName || 'Processing'}`,
-                      details: Array.isArray(payload?.tools) ? payload.tools.join(', ') : undefined,
+                      message: 'Step: Processing',
                     })}\n\n`
                   )
                 }
@@ -641,25 +599,20 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
           } catch (streamIterationError: unknown) {
             // The fullStream iterator threw - extract error details and send to client
             console.error('Stream iteration error:', streamIterationError)
-            const err =
-              streamIterationError && typeof streamIterationError === 'object'
-                ? (streamIterationError as {
-                    error?: { code?: string; message?: string }
-                    message?: string
-                  })
-                : null
+            const errRecord = isRecord(streamIterationError) ? streamIterationError : undefined
+            const nestedError = isRecord(errRecord?.error) ? errRecord.error : undefined
 
             let errorMessage = 'An error occurred while processing your request.'
             let errorCode = 'STREAM_ERROR'
 
-            if (err?.error?.code === 'insufficient_quota') {
+            if (nestedError?.code === 'insufficient_quota') {
               errorMessage =
                 '⚠️ OpenAI API quota exceeded. Please check your billing details or try again later.'
               errorCode = 'QUOTA_EXCEEDED'
-            } else if (err?.error?.message) {
-              errorMessage = err.error.message
-              errorCode = err.error.code || 'API_ERROR'
-            } else if (err?.message) {
+            } else if (typeof nestedError?.message === 'string') {
+              errorMessage = nestedError.message
+              errorCode = typeof nestedError.code === 'string' ? nestedError.code : 'API_ERROR'
+            } else if (errRecord?.message) {
               errorMessage = getErrorMessage(streamIterationError)
             }
 
@@ -745,13 +698,6 @@ You are a Genius Orchestrator. You combine the ruthless realism of George R. R. 
             })}\n\n`
           )
           safeClose()
-        } finally {
-          // Cleanup listeners
-          eventBus.off(WORKFLOW_EVENTS.STEP_START, onStepStart)
-          eventBus.off(WORKFLOW_EVENTS.STEP_COMPLETE, onStepComplete)
-          eventBus.off(WORKFLOW_EVENTS.AGENT_THOUGHT, onAgentThought)
-          eventBus.off(WORKFLOW_EVENTS.QUESTION_ASKED, onQuestionAsked)
-          eventBus.off(WORKFLOW_EVENTS.WORKFLOW_SUSPENDED, onWorkflowSuspended)
         }
       },
     })

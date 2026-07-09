@@ -115,7 +115,13 @@ export function useGlobalErrorListener() {
 
       // Get stack trace from Error object if present, or create one
       let stack: string | undefined
-      const errorArg = args.find(arg => arg instanceof Error) as Error | undefined
+      let errorArg: Error | undefined
+      for (const arg of args) {
+        if (arg instanceof Error) {
+          errorArg = arg
+          break
+        }
+      }
       if (errorArg?.stack) {
         stack = errorArg.stack
       } else {

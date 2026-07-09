@@ -12,6 +12,7 @@
  */
 
 import { DynamicStructuredTool } from '@langchain/core/tools'
+import { countOccurrences } from '@/shared/data/count-occurrences'
 import { z } from 'zod'
 
 /**
@@ -765,15 +766,9 @@ Audience types include: Achievement Hunter, Discovery Seeker, Social Player, Com
       }
 
       // Monetization insights
-      const bestMonetization = topAudiences
-        .flatMap(a => a.profile.spendingBehavior.preferredModels)
-        .reduce(
-          (acc, model) => {
-            acc[model] = (acc[model] || 0) + 1
-            return acc
-          },
-          {} as Record<string, number>
-        )
+      const bestMonetization = countOccurrences(
+        topAudiences.flatMap(a => a.profile.spendingBehavior.preferredModels)
+      )
 
       const recommendedModel = Object.entries(bestMonetization)
         .sort((a, b) => b[1] - a[1])

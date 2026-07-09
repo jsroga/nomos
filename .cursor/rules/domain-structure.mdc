@@ -1,7 +1,7 @@
 ---
 description: src/domains/<module> vertical-slice topology invariants and dependency rule from docs/unified/ARCHITECTURE.md
 globs: "**/src/domains/**"
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Domain module topology (target state)
@@ -31,10 +31,11 @@ src/domains/<module>/
 2. Server data lives in Tanstack Query, **not** Zustand.
 3. Browser → Supabase writes go through the sanctioned write path; no manual snake_case remapping scattered in components.
 4. One framework — don't hand-roll parallels to Mastra primitives (agents, memory, tools, workflows).
-5. Typed boundaries — no `any` at module edges; no `z.any()` in workflow/agent schemas.
-6. File size limits — no god files (split beyond ~300-400 lines).
-7. ESLint barrel guards (`no-restricted-imports`) per module — storyteller has one; add for new modules.
+5. Typed boundaries — no `any` at module edges; no `z.any()` in workflow/agent schemas; **no `as` type assertions** (`as const` only).
+6. File size / complexity — warn **400** / error **800** lines; complexity **15** / **25** — see `.cursor/rules/code-metrics.mdc` and `quality-backlog.mdc` when splitting god files.
+7. ESLint import guards — barrel guards for outsiders; **cross-domain imports forbidden** (`@/domains/A` must not import `@/domains/B`; shared code goes in `@/shared`). See `.cursor/rules/eslint-boundaries.mdc`.
 8. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/` not `agents/`.
+9. Magic string sets (action types, statuses, phases) → **TypeScript `enum`**, not inline literals or `as const` object maps.
 
 ## When changing a module
 
@@ -44,3 +45,17 @@ src/domains/<module>/
 - Run `node scripts/fabro-verify.mjs` — it scopes to the module and ignores out-of-scope errors.
 
 Governing doc: `docs/unified/ARCHITECTURE.md`.
+
+## App routes (thin shell only)
+
+Workspace routes under `src/app/(workspace)/[projectId]/<module>/` contain **only** `page.tsx` (and optional `layout.tsx`). Example:
+
+```tsx
+import { StorytellerLayout } from '@/domains/storyteller'
+export default function StorytellerPage() {
+  return <StorytellerLayout />
+}
+```
+
+Do **not** add `hooks/`, `*Workspace.tsx`, `*PageClient.tsx`, or wire modules under `app/<module>/`. Those belong in `src/domains/<module>/state/hooks/` and `ui/<Layout>/`. Domain barrels export the layout/workspace; app never owns feature logic.
+

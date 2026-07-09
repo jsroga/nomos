@@ -6,8 +6,150 @@ const reactHooks = require('eslint-plugin-react-hooks')
 const reactCompiler = require('eslint-plugin-react-compiler')
 const prettier = require('eslint-config-prettier')
 const unusedImports = require('eslint-plugin-unused-imports')
+const localRules = require('./eslint-rules')
+const codeMetricsLimits = require('./scripts/code-metrics-limits.cjs')
 
 const strictTypeScriptRules = typescript.configs.strict.rules
+
+const DOMAIN_MODULES = [
+  'storyteller',
+  'chat',
+  'interior-designer',
+  'loop-creator',
+  'marketing',
+  'deduction-puzzle-designer',
+  '3d-asset-exporter',
+  'game-design',
+  'world-building-toolkit',
+]
+
+const DOMAIN_BARREL_GUARD_PATTERNS = [
+  {
+    group: ['@/domains/storyteller/*', '!@/domains/storyteller/io/*'],
+    message:
+      'Import from "@/domains/storyteller" instead of storyteller internals. Only io/ is allowed for deep imports.',
+  },
+  {
+    group: ['@/domains/interior-designer/*', '!@/domains/interior-designer/io/*'],
+    message:
+      'Import from "@/domains/interior-designer" instead of interior-designer internals. Only io/ is allowed for deep imports.',
+  },
+  {
+    group: ['@/domains/world-building-toolkit/*'],
+    message:
+      'Import from "@/domains/world-building-toolkit" instead of world-building-toolkit internals.',
+  },
+  {
+    group: ['@/domains/chat/*'],
+    message: 'Import from "@/domains/chat" instead of chat internals.',
+  },
+  {
+    group: ['@/domains/loop-creator/*'],
+    message: 'Import from "@/domains/loop-creator" instead of loop-creator internals.',
+  },
+  {
+    group: ['@/domains/marketing/*'],
+    message: 'Import from "@/domains/marketing" instead of marketing internals.',
+  },
+  {
+    group: ['@/domains/deduction-puzzle-designer/*'],
+    message:
+      'Import from "@/domains/deduction-puzzle-designer" instead of deduction-puzzle-designer internals.',
+  },
+  {
+    group: ['@/domains/3d-asset-exporter/*'],
+    message: 'Import from "@/domains/3d-asset-exporter" instead of 3d-asset-exporter internals.',
+  },
+  {
+    group: ['@/domains/game-design/*'],
+    message: 'Import from "@/domains/game-design" instead of game-design internals.',
+  },
+]
+
+const DOMAIN_LEGACY_RESTRICTED_PATTERNS = [
+  {
+    group: ['@/lib/*', '@/lib'],
+    message: 'Import from "@/shared/data" or "@/shared/auth" instead of @/lib.',
+  },
+  {
+    group: ['@/hooks/*', '@/hooks'],
+    message: 'Import from "@/shared/data/queries" or "@/shared/data" instead of root @/hooks.',
+  },
+  {
+    group: ['@/store/*', '@/store'],
+    message: 'Import from "@/shared/auth" or "@/shared/errors" instead of root @/store.',
+  },
+  {
+    group: ['@/services/*', '@/services'],
+    message: 'Import from "@/shared/data" or domain index instead of root @/services.',
+  },
+]
+
+const GLOBAL_LEGACY_RESTRICTED_PATTERNS = [
+  {
+    group: ['@/agent-core/*', '@/agent-core'],
+    message: 'Import from "@/shared/agent-kernel" instead of @/agent-core.',
+  },
+  {
+    group: ['@/infrastructure/*', '@/infrastructure'],
+    message: 'Import from "@/shared/data" or "@/shared/ai" instead of @/infrastructure.',
+  },
+  {
+    group: ['@/prompts/*', '@/prompts'],
+    message: 'Import from "@/shared/agent-kernel/prompts" instead of root @/prompts.',
+  },
+  {
+    group: ['@/lib/*', '@/lib'],
+    message: 'Import from "@/shared/data", "@/shared/auth", or "@/shared/tours" instead of @/lib.',
+  },
+  {
+    group: ['@/types/*', '@/types'],
+    message: 'Import from "@/shared/types" instead of @/types.',
+  },
+  {
+    group: ['@/config/*', '@/config'],
+    message: 'Import from "@/shared/data/constants" instead of @/config.',
+  },
+  {
+    group: ['@/constants/*', '@/constants'],
+    message: 'Import from "@/shared/data/constants" instead of @/constants.',
+  },
+  {
+    group: ['@/workflows/*', '@/workflows'],
+    message: 'Import from domain agents or "@/shared/agent-kernel/workflows" instead of @/workflows.',
+  },
+  {
+    group: ['@/mastra/*', '@/mastra'],
+    message: 'Import from "@/shared/agent-kernel/mastra" instead of @/mastra.',
+  },
+  {
+    group: ['@/evaluation/*', '@/evaluation'],
+    message: 'Import from "@/evals" (top-level evals/) instead of @/evaluation.',
+  },
+]
+
+function crossDomainImportPatterns(currentDomain) {
+  return DOMAIN_MODULES.filter(domain => domain !== currentDomain).map(other => ({
+    group: [`@/domains/${other}`, `@/domains/${other}/*`],
+    message: `Cross-domain import forbidden: use @/shared instead of @/domains/${other}.`,
+  }))
+}
+
+const domainBoundaryConfigs = DOMAIN_MODULES.map(domain => ({
+  files: [`src/domains/${domain}/**/*.{ts,tsx}`],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          ...DOMAIN_LEGACY_RESTRICTED_PATTERNS,
+          ...GLOBAL_LEGACY_RESTRICTED_PATTERNS,
+          ...crossDomainImportPatterns(domain),
+        ],
+      },
+    ],
+  },
+}))
 
 module.exports = [
   {
@@ -91,6 +233,7 @@ module.exports = [
       'react-hooks': reactHooks,
       'react-compiler': reactCompiler,
       'unused-imports': unusedImports,
+      'local': localRules,
     },
     rules: {
       ...typescript.configs.recommended.rules,
@@ -99,13 +242,34 @@ module.exports = [
       ...reactHooks.configs.recommended.rules,
       ...prettier.rules,
       '@typescript-eslint/no-explicit-any': 'error',
+      // Ban `as Type` / `as any` / angle-bracket assertions (`as const` is still allowed).
+      '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
       '@typescript-eslint/no-unused-vars': 'off',
       'unused-imports/no-unused-imports': 'error',
-      // Dead code: use 'error' to fail CI on unused vars (after fixing existing warnings).
       'unused-imports/no-unused-vars': [
-        'warn',
+        'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
       ],
+      // Inline wire/domain strings must use enums or named constants (JSX carve-out for Tailwind/labels).
+      'local/no-magic-string': ['error', { allowJsx: true }],
+      'max-lines': [
+        'warn',
+        {
+          max: codeMetricsLimits.fileLines.warn,
+          skipBlankLines: codeMetricsLimits.fileLines.skipBlankLines,
+          skipComments: codeMetricsLimits.fileLines.skipComments,
+        },
+      ],
+      'local/max-lines-strict': [
+        'error',
+        {
+          max: codeMetricsLimits.fileLines.error,
+          skipBlankLines: codeMetricsLimits.fileLines.skipBlankLines,
+          skipComments: codeMetricsLimits.fileLines.skipComments,
+        },
+      ],
+      complexity: ['warn', { max: codeMetricsLimits.complexity.warn }],
+      'local/complexity-strict': ['error', { max: codeMetricsLimits.complexity.error }],
       '@typescript-eslint/no-require-imports': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
@@ -171,6 +335,22 @@ module.exports = [
     },
   },
   {
+    files: ['eslint.config.js', 'scripts/**/*.{mjs,cjs,js}'],
+    rules: {
+      'local/no-magic-string': 'off',
+      'max-lines': 'off',
+      'local/max-lines-strict': 'off',
+      complexity: 'off',
+      'local/complexity-strict': 'off',
+    },
+  },
+  {
+    files: ['eslint-rules/**/*.js'],
+    rules: {
+      'local/no-magic-string': 'off',
+    },
+  },
+  {
     files: ['src/**/*.{ts,tsx}'],
     ignores: [
       'src/domains/**',
@@ -179,138 +359,22 @@ module.exports = [
       'no-restricted-imports': [
         'error',
         {
-          patterns: [
-            {
-              group: [
-                '@/domains/storyteller/*',
-                '!@/domains/storyteller/io/*',
-              ],
-              message:
-                'Import from "@/domains/storyteller" instead of storyteller internals. Only io/ is allowed for deep imports.',
-            },
-            {
-              group: [
-                '@/domains/interior-designer/*',
-                '!@/domains/interior-designer/io/*',
-              ],
-              message:
-                'Import from "@/domains/interior-designer" instead of interior-designer internals. Only io/ is allowed for deep imports.',
-            },
-            {
-              group: ['@/domains/world-building-toolkit/*'],
-              message:
-                'Import from "@/domains/world-building-toolkit" instead of world-building-toolkit internals.',
-            },
-            {
-              group: ['@/domains/chat/*'],
-              message: 'Import from "@/domains/chat" instead of chat internals.',
-            },
-            {
-              group: ['@/domains/loop-creator/*'],
-              message: 'Import from "@/domains/loop-creator" instead of loop-creator internals.',
-            },
-            {
-              group: ['@/domains/marketing/*'],
-              message: 'Import from "@/domains/marketing" instead of marketing internals.',
-            },
-            {
-              group: ['@/domains/deduction-puzzle-designer/*'],
-              message:
-                'Import from "@/domains/deduction-puzzle-designer" instead of deduction-puzzle-designer internals.',
-            },
-            {
-              group: ['@/domains/3d-asset-exporter/*'],
-              message:
-                'Import from "@/domains/3d-asset-exporter" instead of 3d-asset-exporter internals.',
-            },
-            {
-              group: ['@/domains/game-design/*'],
-              message: 'Import from "@/domains/game-design" instead of game-design internals.',
-            },
-          ],
+          patterns: DOMAIN_BARREL_GUARD_PATTERNS,
         },
       ],
     },
   },
-  // Boundary rule: domains MAY NOT import legacy root folders (Item 1)
-  {
-    files: ['src/domains/**/*.{ts,tsx}'],
-    rules: {
-      // Wave 1 completed - now at ERROR
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['@/lib/*', '@/lib'],
-              message: 'Import from "@/shared/data" or "@/shared/auth" instead of @/lib.',
-            },
-            {
-              group: ['@/hooks/*', '@/hooks'],
-              message: 'Import from "@/shared/data/queries" or "@/shared/data" instead of root @/hooks.',
-            },
-            {
-              group: ['@/store/*', '@/store'],
-              message: 'Import from "@/shared/auth" or "@/shared/errors" instead of root @/store.',
-            },
-            {
-              group: ['@/services/*', '@/services'],
-              message: 'Import from "@/shared/data" or domain index instead of root @/services.',
-            },
-          ],
-        },
-      ],
-    },
-  },
-  // Wave 2+ boundary rules — dissolved legacy folders
+  // Per-domain boundaries: legacy roots + cross-domain isolation (domains only talk via @/shared)
+  ...domainBoundaryConfigs,
+  // Wave 2+ boundary rules — dissolved legacy folders (non-domain src only)
   {
     files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/domains/**'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
-          patterns: [
-            {
-              group: ['@/agent-core/*', '@/agent-core'],
-              message: 'Import from "@/shared/agent-kernel" instead of @/agent-core.',
-            },
-            {
-              group: ['@/infrastructure/*', '@/infrastructure'],
-              message: 'Import from "@/shared/data" or "@/shared/ai" instead of @/infrastructure.',
-            },
-            {
-              group: ['@/prompts/*', '@/prompts'],
-              message: 'Import from "@/shared/agent-kernel/prompts" instead of root @/prompts.',
-            },
-            {
-              group: ['@/lib/*', '@/lib'],
-              message: 'Import from "@/shared/data", "@/shared/auth", or "@/shared/tours" instead of @/lib.',
-            },
-            {
-              group: ['@/types/*', '@/types'],
-              message: 'Import from "@/shared/types" instead of @/types.',
-            },
-            {
-              group: ['@/config/*', '@/config'],
-              message: 'Import from "@/shared/data/constants" instead of @/config.',
-            },
-            {
-              group: ['@/constants/*', '@/constants'],
-              message: 'Import from "@/shared/data/constants" instead of @/constants.',
-            },
-            {
-              group: ['@/workflows/*', '@/workflows'],
-              message: 'Import from domain agents or "@/shared/agent-kernel/workflows" instead of @/workflows.',
-            },
-            {
-              group: ['@/mastra/*', '@/mastra'],
-              message: 'Import from "@/shared/agent-kernel/mastra" instead of @/mastra.',
-            },
-            {
-              group: ['@/evaluation/*', '@/evaluation'],
-              message: 'Import from "@/evals" (top-level evals/) instead of @/evaluation.',
-            },
-          ],
+          patterns: GLOBAL_LEGACY_RESTRICTED_PATTERNS,
         },
       ],
     },

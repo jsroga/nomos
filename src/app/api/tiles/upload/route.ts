@@ -7,18 +7,19 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
+import { formFile, formInt, formString } from '@/shared/data/form-data-guards'
 
 const TILE_SIZE = 1024
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const formData = await request.formData()
-    const file = formData.get('file') as File
-    const projectId = formData.get('projectId') as string
-    const x = parseInt(formData.get('x') as string)
-    const y = parseInt(formData.get('y') as string)
+    const file = formFile(formData, 'file')
+    const projectId = formString(formData, 'projectId')
+    const x = formInt(formData, 'x')
+    const y = formInt(formData, 'y')
 
-    if (!file || !projectId || isNaN(x) || isNaN(y)) {
+    if (!file || !projectId || x === null || y === null) {
       return NextResponse.json(
         { error: 'Missing required fields: file, projectId, x, y' },
         { status: 400 }

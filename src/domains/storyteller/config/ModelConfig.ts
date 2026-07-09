@@ -1,7 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
-import { getChatModelOption } from '@/domains/storyteller/config/ChatModelCatalog'
+import { getChatModelOption, isKnownChatModel } from '@/domains/storyteller/config/ChatModelCatalog'
 
 /**
  * Effort levels for dynamic model selection
@@ -18,7 +18,7 @@ export type ModelEffort = 'low' | 'medium' | 'high'
 export const MODEL_BY_EFFORT: Record<ModelEffort, string> = {
   low: 'openai:gpt-4o-mini',
   medium: 'openai:gpt-4o-mini',
-  high: 'anthropic:claude-sonnet-4-20250514', // Claude 4.5 Sonnet
+  high: 'anthropic:claude-sonnet-5',
 }
 
 /**
@@ -41,7 +41,7 @@ export function getModelByEffort(effort: ModelEffort = 'medium'): string {
 export function getAgentModel(modelName: string = 'openai:gpt-4o') {
   // Support effort-based selection
   if (modelName === 'low' || modelName === 'medium' || modelName === 'high') {
-    modelName = getModelByEffort(modelName as ModelEffort)
+    modelName = getModelByEffort(modelName)
   }
   // AI SDK v4 requires specificationVersion 'v1'
   const specVersion = 'v1'
@@ -53,7 +53,7 @@ export function getAgentModel(modelName: string = 'openai:gpt-4o') {
       apiKey: process.env.OPENAI_API_KEY,
     })
     const model = openai(modelId)
-      ; (model as any).specificationVersion = specVersion
+      Object.assign(model, { specificationVersion: specVersion })
     return model
   }
 
@@ -64,7 +64,7 @@ export function getAgentModel(modelName: string = 'openai:gpt-4o') {
       apiKey: process.env.ANTHROPIC_API_KEY,
     })
     const model = anthropic(modelId)
-      ; (model as any).specificationVersion = specVersion
+      Object.assign(model, { specificationVersion: specVersion })
     return model
   }
 
@@ -72,7 +72,7 @@ export function getAgentModel(modelName: string = 'openai:gpt-4o') {
   if (modelName.startsWith('google:')) {
     const modelId = modelName.replace('google:', '')
     const model = google(modelId)
-      ; (model as any).specificationVersion = specVersion
+      Object.assign(model, { specificationVersion: specVersion })
     return model
   }
 
@@ -96,7 +96,7 @@ export const GLOBAL_AGENT_MODEL =
  */
 export const MODEL_FALLBACKS = [
   { model: 'openai/gpt-4o', maxRetries: 3 },
-  { model: 'anthropic/claude-sonnet-4-20250514', maxRetries: 2 },
+  { model: 'anthropic/claude-sonnet-5', maxRetries: 2 },
   { model: 'google/gemini-2.5-flash', maxRetries: 2 },
 ]
 
@@ -106,6 +106,33 @@ export const MODEL_FALLBACKS = [
  */
 export function toMastraModelString(modelName: string): string {
   return modelName.replace(':', '/')
+}
+
+export type MastraGatewayModelId = `${string}/${string}`
+
+export interface MastraEndpointModelConfig {
+  url: string
+  id: MastraGatewayModelId
+  apiKey: string
+}
+
+export type StorytellerMastraModel = MastraGatewayModelId | MastraEndpointModelConfig
+
+function isMastraGatewayModelId(value: string): value is MastraGatewayModelId {
+  const slash = value.indexOf('/')
+  return slash > 0 && slash < value.length - 1
+}
+
+function mastraGatewayModelIdFromCatalog(catalogId: string): MastraGatewayModelId {
+  const colon = catalogId.indexOf(':')
+  if (colon <= 0 || colon >= catalogId.length - 1) {
+    throw new Error(`Invalid catalog model id: ${catalogId}`)
+  }
+  const candidate = `${catalogId.slice(0, colon)}/${catalogId.slice(colon + 1)}`
+  if (!isMastraGatewayModelId(candidate)) {
+    throw new Error(`Cannot build Mastra model id from: ${catalogId}`)
+  }
+  return candidate
 }
 
 /**
@@ -118,9 +145,7 @@ export function toMastraModelString(modelName: string): string {
  * Z.AI Coding Plan's `glm-5.2`, which is not yet in Mastra's bundled
  * provider-registry.json). The apiKey is read from the catalog entry's env var.
  */
-export function resolveStorytellerModel(
-  modelName: string
-): string | { url: string; id: string; apiKey: string } {
+export function resolveStorytellerModel(modelName: string): StorytellerMastraModel {
   const option = getChatModelOption(modelName)
   if (option?.endpointUrl) {
     const apiKey = process.env[option.envVar]
@@ -131,13 +156,11 @@ export function resolveStorytellerModel(
     }
     return {
       url: option.endpointUrl,
-      id: modelName.replace(':', '/'),
+      id: mastraGatewayModelIdFromCatalog(modelName),
       apiKey,
     }
   }
-  // Plain providers (openai, anthropic, google, moonshotai, ...) resolve via
-  // Mastra's models.dev gateway using the standard `provider/model` string.
-  return modelName.replace(':', '/')
+  return mastraGatewayModelIdFromCatalog(modelName)
 }
 
 /**
@@ -194,7 +217,7 @@ export const AGENT_RUNTIME_DEFAULTS = {
 export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
   // === TIER 1: CHEAP + FAST (analysis, scoring, structured output) ===
   psychologist: {
-    model: 'anthropic:claude-4-5-sonnet-20250101',
+    model: 'anthropic:claude-sonnet-5',
     temperature: 0.55,
     topP: 0.9,
     maxOutputTokens: 4000,
@@ -240,7 +263,7 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
       'Critique requires finding logic gaps. GPT-5.2 is best for red-teaming and logic checks.',
   },
   'gardener-standard': {
-    model: 'anthropic:claude-4-5-sonnet-20250101',
+    model: 'anthropic:claude-sonnet-5',
     temperature: 0.72,
     topP: 0.92,
     maxOutputTokens: 6000,
@@ -257,7 +280,7 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
 
   // === TIER 3: FULL CREATIVE POWER (important scenes, orchestration) ===
   storyteller: {
-    model: 'anthropic:claude-4-5-sonnet-20250101',
+    model: 'anthropic:claude-sonnet-5',
     temperature: 0.75,
     topP: 0.92,
     maxOutputTokens: 8000,
@@ -274,7 +297,7 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
 
   // === TIER 4: PRESTIGE (climactic scenes, refinement passes) ===
   'gardener-climax': {
-    model: 'anthropic:claude-4-5-sonnet-20250101',
+    model: 'anthropic:claude-sonnet-5',
     temperature: 0.78,
     topP: 0.93,
     maxOutputTokens: 8000,
@@ -282,7 +305,7 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
       'Climactic scenes get slightly higher temp for peak creativity, but still controlled.',
   },
   'gardener-refinement': {
-    model: 'anthropic:claude-4-5-sonnet-20250101',
+    model: 'anthropic:claude-sonnet-5',
     temperature: 0.65,
     topP: 0.9,
     maxOutputTokens: 6000,
@@ -298,6 +321,84 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
     rationale:
       'Multi-step planning, complex tool chains. GPT-5.2 has best reasoning capabilities.',
   },
+
+  // === GRRM PIPELINE ROLES (beat-draft-workflow: author / planner / critics) ===
+  // NOTE: Claude Opus 4.7+ and Sonnet 5 reject temperature/topP at the API —
+  // the sampling fields below are advisory for older models only; workflow
+  // steps must not pass modelSettings when the resolved model is Claude 4.7+.
+  author: {
+    model: 'anthropic:claude-opus-4-8',
+    temperature: 0.75,
+    topP: 0.92,
+    maxOutputTokens: 8000,
+    rationale:
+      'Single GRRM author drafts AND revises — the one place prose quality is decided. Expensive model is the point (StoryForge: cheap critics, expensive author).',
+  },
+  planner: {
+    model: 'anthropic:claude-sonnet-5',
+    temperature: 0.6,
+    topP: 0.9,
+    maxOutputTokens: 4000,
+    rationale:
+      'Beat plans are structured JSON (goal/conflict/turn/hook) — needs strong structured output and story logic, not top-shelf prose.',
+  },
+  critic: {
+    model: 'anthropic:claude-haiku-4-5',
+    temperature: 0.3,
+    topP: 0.9,
+    maxOutputTokens: 2000,
+    rationale:
+      'Narrow diagnose-only critics with quoted evidence. Cheap model is fine — critics are not the quality bottleneck (StoryForge finding).',
+  },
+  muse: {
+    model: 'openai:gpt-4o-mini',
+    temperature: 1.0,
+    topP: 0.98,
+    maxOutputTokens: 1500,
+    rationale:
+      'Blank-context wildcard ideas. The randomness comes from code-side entropy injection (D4), not model sampling — cheap and fast is the point.',
+  },
+  premise: {
+    model: 'anthropic:claude-opus-4-8',
+    temperature: 0.8,
+    topP: 0.95,
+    maxOutputTokens: 8000,
+    rationale:
+      'Premise / roadmap architecture — the highest-leverage structural decisions. Fable-class opt-in via STORYTELLER_PREMISE_MODEL=anthropic:claude-fable-5.',
+  },
+  chat: {
+    model: 'anthropic:claude-sonnet-5',
+    temperature: 0.7,
+    topP: 0.9,
+    maxOutputTokens: 4000,
+    rationale:
+      'Thin chat adapter — tool routing and conversation glue, not prose. The picker does NOT drive this slot (the picker drives the author, per D2).',
+  },
+}
+
+/** Pipeline + product roles with env overrides (STORYTELLER_<ROLE>_MODEL). */
+export type StorytellerModelRole = 'author' | 'planner' | 'critic' | 'muse' | 'premise' | 'chat'
+
+const ROLE_ENV_VARS: Record<StorytellerModelRole, string> = {
+  author: 'STORYTELLER_AUTHOR_MODEL',
+  planner: 'STORYTELLER_PLANNER_MODEL',
+  critic: 'STORYTELLER_CRITIC_MODEL',
+  muse: 'STORYTELLER_MUSE_MODEL',
+  premise: 'STORYTELLER_PREMISE_MODEL',
+  chat: 'STORYTELLER_CHAT_MODEL',
+}
+
+const STORYTELLER_ROLES = new Set<string>(Object.keys(ROLE_ENV_VARS))
+
+function isStorytellerRole(agentId: string): agentId is StorytellerModelRole {
+  return STORYTELLER_ROLES.has(agentId)
+}
+
+// Read at call time (not module load) so dotenv-loaded scripts and per-env
+// rollbacks work without import-order sensitivity.
+function roleEnvOverride(agentId: string): string | undefined {
+  if (!isStorytellerRole(agentId)) return undefined
+  return process.env[ROLE_ENV_VARS[agentId]]
 }
 
 /**
@@ -305,14 +406,35 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
  * Falls back to the global default if no specific config exists.
  */
 export function getAgentModelConfig(agentId: string): AgentModelConfig {
-  return (
-    AGENT_MODEL_MATRIX[agentId] || {
-      model: GLOBAL_AGENT_MODEL,
-      temperature: 0.7,
-      topP: 0.9,
-      maxOutputTokens: 4000,
-      rationale: 'Default fallback',
-    }
-  )
+  const base = AGENT_MODEL_MATRIX[agentId] || {
+    model: GLOBAL_AGENT_MODEL,
+    temperature: 0.7,
+    topP: 0.9,
+    maxOutputTokens: 4000,
+    rationale: 'Default fallback',
+  }
+  const override = roleEnvOverride(agentId)
+  return override ? { ...base, model: override } : base
+}
+
+/**
+ * Resolve a role to the model config Mastra's `Agent({ model })` accepts —
+ * a `provider/model` gateway string, or a `{ url, id, apiKey }` object for
+ * endpoint models (GLM via Z.AI Coding Plan). THE single role-resolution
+ * path (item 57): user override → env override → matrix default.
+ *
+ * `overrideId` is user-influenced (the picker choice via RequestContext) and
+ * is only honored when it names a known catalog entry — a user pref can never
+ * point us at an arbitrary provider. Env overrides are operator-controlled
+ * and pass through unvalidated (they are the rollback lever).
+ */
+export function resolveRoleModel(
+  role: StorytellerModelRole,
+  overrideId?: string
+): StorytellerMastraModel {
+  const validatedOverride = overrideId && isKnownChatModel(overrideId) ? overrideId : undefined
+  const id =
+    validatedOverride ?? roleEnvOverride(role) ?? AGENT_MODEL_MATRIX[role]?.model ?? GLOBAL_AGENT_MODEL
+  return resolveStorytellerModel(id)
 }
 

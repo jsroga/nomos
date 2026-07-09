@@ -6,26 +6,36 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { getUserSession, requireAuth } from '@/shared/auth/auth'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 import {
   storytellerBibleLockQuerySchema,
   storytellerBibleLockResponseSchema,
 } from '@/domains/storyteller/io/storyteller.dto'
 import { isCentralUser } from '@/shared/auth/bible-permissions'
-import { requireAuth } from '@/shared/auth/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
+
+enum BibleLockAction {
+  LOCK = 'lock',
+  UNLOCK = 'unlock',
+}
+
+function parseBibleLockAction(value: unknown): BibleLockAction | undefined {
+  const action = readString(value)
+  if (action === BibleLockAction.LOCK || action === BibleLockAction.UNLOCK) {
+    return action
+  }
+  return undefined
+}
 
 export async function POST(request: NextRequest) {
   try {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await request.json()
-    const { projectId, action } = body as {
-      projectId: string
-      action: 'lock' | 'unlock'
-    }
+    const body = recordFromJson(await request.json())
+    const projectId = readString(body.projectId)
+    const action = parseBibleLockAction(body.action)
 
     if (!projectId) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
@@ -44,7 +54,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (action !== 'lock' && action !== 'unlock') {
+    if (!action) {
       return NextResponse.json({ error: 'Action must be "lock" or "unlock"' }, { status: 400 })
     }
 
@@ -52,13 +62,15 @@ export async function POST(request: NextRequest) {
       `[Bible Lock API] ${action} Bible for project ${projectId} by ${session.user.email}`
     )
 
-    const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
+    const { supabase } = await getUserSession()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const updates: any = {
-      is_locked: action === 'lock',
-      locked_by: action === 'lock' ? session.user.email : null,
-      locked_at: action === 'lock' ? new Date().toISOString() : null,
+    const updates = {
+      is_locked: action === BibleLockAction.LOCK,
+      locked_by: action === BibleLockAction.LOCK ? session.user.email : null,
+      locked_at: action === BibleLockAction.LOCK ? new Date().toISOString() : null,
     }
 
     const { error: updateError } = await supabase
@@ -74,8 +86,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       action,
-      lockedBy: action === 'lock' ? session.user.email : null,
-      lockedAt: action === 'lock' ? new Date().toISOString() : null,
+      lockedBy: action === BibleLockAction.LOCK ? session.user.email : null,
+      lockedAt: action === BibleLockAction.LOCK ? new Date().toISOString() : null,
     })
   } catch (error) {
     console.error('[Bible Lock API] Error:', error)
@@ -110,8 +122,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
     }
 
-    const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any })
+    const { supabase } = await getUserSession()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const { data, error } = await supabase
       .from('series_bibles')

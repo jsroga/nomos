@@ -44,7 +44,7 @@ const TYPE_STYLES: Record<string, { bg: string; border: string; iconBg: string; 
 const DEFAULT_STYLE = TYPE_STYLES.character
 
 const CharacterNode: React.FC<NodeProps<CharacterWebNode>> = props => {
-  const data = props.data || ({} as CharacterNodeData)
+  const data: CharacterNodeData = props.data ?? { name: 'Unknown', type: 'character' }
   const selected = props.selected
 
   const name = data.name || 'Unknown'

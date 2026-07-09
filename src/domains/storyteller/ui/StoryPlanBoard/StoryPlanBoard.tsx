@@ -1,4 +1,53 @@
-import { StoryPlan, StorySequence } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import {
+  EpisodePremise,
+  StoryPlan,
+  StorySequence,
+} from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { recordFromJson, stringArrayFromJson } from '@/shared/data/deep-merge'
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.values(value).every(entry => typeof entry === 'string')
+  )
+}
+
+/**
+ * Bridge a loose episode-plan record into the panel's EpisodePremise shape.
+ * Unknown extra keys are preserved via spread so round-tripped saves keep them.
+ */
+function bridgeEpisodePremise(
+  source: Record<string, unknown>,
+  fallbackTitle: string | undefined
+): EpisodePremise {
+  const str = (key: string): string => {
+    const value = source[key]
+    return typeof value === 'string' ? value : ''
+  }
+  return {
+    ...source,
+    title: str('title') || fallbackTitle || '',
+    logline: str('logline'),
+    theHook: str('theHook'),
+    theTurn: str('theTurn'),
+    theAftermath: str('theAftermath'),
+    protagonistHook: str('protagonistHook') || null,
+    fatalFlaw: str('fatalFlaw'),
+    stakes: str('stakes'),
+    transformation: str('transformation'),
+    inevitableConsequence: str('inevitableConsequence'),
+    thematicFocus: str('thematicFocus'),
+    charactersInvolved: stringArrayFromJson(source.charactersInvolved),
+    tenPointsPlan: Array.isArray(source.tenPointsPlan)
+      ? source.tenPointsPlan.filter(
+          (item): item is string | Record<string, string> =>
+            typeof item === 'string' || isStringRecord(item)
+        )
+      : [],
+  }
+}
 import { EpisodePremisePanel } from '../EpisodePremisePanel'
 import { Button } from '@/components/Button'
 import { TooltipProvider } from '@/components/Tooltip'
@@ -6,7 +55,7 @@ import { CheckCircle } from 'lucide-react'
 
 export interface StoryPlanBoardProps {
   storyPlan: StoryPlan | null
-  globalBible: Partial<StoryPlan>
+  globalBible: Partial<StoryPlan> | Record<string, unknown>
   onApprove: () => void
   isGenerating?: boolean
   onUpdateSequence?: (id: number, updates: Partial<StorySequence>) => void
@@ -50,15 +99,16 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
 
   // If no storyPlan (Episode Plan), we show the "Create Premise" view via EpisodePremisePanel (which handles empty state)
 
-  // Bridge: Cast storyPlan to EpisodePremise if it fits, or pass null
-  // Ensure title is passed down even if it's on the root object
-  const rawPremise = (storyPlan as any)?.premise || storyPlan
-  const episodePremise = rawPremise
-    ? {
-        ...rawPremise,
-        title: (rawPremise as any).title || storyPlan?.title,
-      }
-    : null
+  // Bridge: read the loose episode-plan record into EpisodePremise, or pass null.
+  // Ensure title is passed down even if it's on the root object.
+  const storyPlanRecord = recordFromJson(storyPlan)
+  const premiseRecord = recordFromJson(storyPlanRecord.premise)
+  const rawPremise = Object.keys(premiseRecord).length ? premiseRecord : storyPlanRecord
+  const episodePremise = storyPlan ? bridgeEpisodePremise(rawPremise, storyPlan.title) : null
+  const storyPlanId =
+    typeof storyPlanRecord.id === 'string' ? storyPlanRecord.id : undefined
+  const stringOrNull = (value: unknown): string | null =>
+    typeof value === 'string' ? value : null
 
   // Check if plan is complete (has all required sections)
   const isPlanComplete =
@@ -73,11 +123,11 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
     <div className="h-full flex flex-col">
       <EpisodePremisePanel
         premise={episodePremise}
-        episodeId={episodeId || (storyPlan as any)?.id}
+        episodeId={episodeId || storyPlanId}
         globalBible={globalBible}
-        posterUrl={(storyPlan as any)?.posterUrl}
-        storyboardUrl={(storyPlan as any)?.storyboardUrl}
-        posterPrompt={(storyPlan as any)?.posterPrompt}
+        posterUrl={stringOrNull(storyPlanRecord.posterUrl)}
+        storyboardUrl={stringOrNull(storyPlanRecord.storyboardUrl)}
+        posterPrompt={stringOrNull(storyPlanRecord.posterPrompt)}
         projectId={projectId}
         onUpdate={updated => {
           // Handle updates - likely need a prop for this or dispatch event
@@ -98,14 +148,14 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
         onGeneratePoster={() =>
           window.dispatchEvent(
             new CustomEvent('generate-episode-poster', {
-              detail: { episodeId: (storyPlan as any)?.id },
+              detail: { episodeId: storyPlanId },
             })
           )
         }
         onGenerateStoryboard={() =>
           window.dispatchEvent(
             new CustomEvent('trigger-storyboard-generation', {
-              detail: { episodeId: (storyPlan as any)?.id },
+              detail: { episodeId: storyPlanId },
             })
           )
         }

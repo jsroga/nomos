@@ -5,9 +5,11 @@
  * Provides enriched descriptions with entity references for tooltips.
  */
 
+import { z } from 'zod'
 import { db } from '@/db/client'
 import { projects } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import { recordFromJson } from '@/shared/data/deep-merge'
 import { EntityType } from './EntityRegistryService'
 import { entityGraphService } from './EntityGraphService'
 
@@ -62,22 +64,44 @@ export interface EnrichedEntity {
   relationshipSummary: string
 }
 
-interface CharacterData {
-  id: string
-  name: string
-  role?: string
-  motivation?: string
-  fatalFlaw?: string
-  shortDescription?: string
-}
+const characterDataSchema = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  role: z.string().optional(),
+  motivation: z.string().optional(),
+  fatalFlaw: z.string().optional(),
+  shortDescription: z.string().optional(),
+  /** Legacy cast entries may carry explicit relationship hints. */
+  relationships: z
+    .array(
+      z.object({
+        target: z.string().optional(),
+        type: z.string().optional(),
+        strength: z.number().optional(),
+        description: z.string().optional(),
+      })
+    )
+    .optional(),
+})
 
-interface FactionData {
-  name: string
-  ideology?: string
-  goals?: string[]
-  rivals?: string[]
-  members?: string[]
-  keyMembers?: string[]
+type CharacterData = z.infer<typeof characterDataSchema>
+
+const factionDataSchema = z.object({
+  name: z.string(),
+  ideology: z.string().optional(),
+  goals: z.array(z.string()).optional(),
+  rivals: z.array(z.string()).optional(),
+  members: z.array(z.string()).optional(),
+  keyMembers: z.array(z.string()).optional(),
+})
+
+/** Lenient jsonb → typed array: entries that don't match the schema are dropped. */
+function parseJsonArray<T>(value: unknown, schema: z.ZodType<T>): T[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap(item => {
+    const parsed = schema.safeParse(item)
+    return parsed.success ? [parsed.data] : []
+  })
 }
 
 // Cache for enriched entities
@@ -114,8 +138,10 @@ class RelationshipEnricherService {
         return this.createBasicEnriched(entityId, entityType, entityName, baseDescription)
       }
 
-      const storyPlan = (project.storyPlan as Record<string, unknown>) || {}
-      const cast = (project.cast as CharacterData[]) || []
+      const storyPlan = recordFromJson(project.storyPlan)
+      // `cast` is not a projects column — legacy rows may still carry it under
+      // an untyped key, so read it through a record view and validate.
+      const cast = parseJsonArray(recordFromJson(project).cast, characterDataSchema)
 
       // Build relationships based on entity type
       let relationships: Relationship[] = []
@@ -176,7 +202,7 @@ class RelationshipEnricherService {
     storyPlan: Record<string, unknown>
   ): Promise<Relationship[]> {
     const relationships: Relationship[] = []
-    const factions = (storyPlan.factions as FactionData[]) || []
+    const factions = parseJsonArray(storyPlan.factions, factionDataSchema)
     const normalizedName = characterName.toLowerCase()
 
     // 1. Find faction memberships
@@ -236,21 +262,17 @@ class RelationshipEnricherService {
     const characterInCast = cast.find(
       c => c.name.toLowerCase() === normalizedName || c.id === characterId
     )
-    if (characterInCast) {
-      // Check for relationships defined in character data
-      const charMeta = characterInCast as Record<string, unknown>
-      if (charMeta.relationships && Array.isArray(charMeta.relationships)) {
-        for (const rel of charMeta.relationships) {
-          if (rel.target && rel.type) {
-            relationships.push({
-              targetId: `character-${rel.target.toLowerCase().replace(/\s+/g, '-')}`,
-              targetName: rel.target,
-              targetType: 'character',
-              relationshipType: rel.type,
-              strength: rel.strength || 0.7,
-              description: rel.description,
-            })
-          }
+    if (characterInCast?.relationships) {
+      for (const rel of characterInCast.relationships) {
+        if (rel.target && rel.type) {
+          relationships.push({
+            targetId: `character-${rel.target.toLowerCase().replace(/\s+/g, '-')}`,
+            targetName: rel.target,
+            targetType: 'character',
+            relationshipType: this.mapRelationshipType(rel.type),
+            strength: rel.strength || 0.7,
+            description: rel.description,
+          })
         }
       }
     }
@@ -266,7 +288,7 @@ class RelationshipEnricherService {
     storyPlan: Record<string, unknown>
   ): Relationship[] {
     const relationships: Relationship[] = []
-    const factions = (storyPlan.factions as FactionData[]) || []
+    const factions = parseJsonArray(storyPlan.factions, factionDataSchema)
     const normalizedName = factionName.toLowerCase()
 
     // Find this faction
@@ -341,10 +363,12 @@ class RelationshipEnricherService {
     // Group by relationship type
     const grouped = new Map<RelationshipType, Relationship[]>()
     for (const rel of relationships) {
-      if (!grouped.has(rel.relationshipType)) {
-        grouped.set(rel.relationshipType, [])
+      const bucket = grouped.get(rel.relationshipType)
+      if (bucket) {
+        bucket.push(rel)
+      } else {
+        grouped.set(rel.relationshipType, [rel])
       }
-      grouped.get(rel.relationshipType)!.push(rel)
     }
 
     const parts: string[] = []
@@ -365,6 +389,12 @@ class RelationshipEnricherService {
       leader_of: 'Leader of',
       associated: 'Associated with',
       related: 'Related to',
+      owns: 'Owns',
+      uses: 'Uses',
+      caused_by: 'Caused by',
+      happened_at: 'Happened at',
+      located_in: 'Located in',
+      temporal: 'Temporally linked to',
     }
 
     for (const [type, rels] of grouped) {

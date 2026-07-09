@@ -10,11 +10,14 @@
 /** Max characters of context/output to include in trace payloads. */
 export const TRACE_PREVIEW_CHARS = 500
 
-/** Minimal shape we read from an agent generate() response. */
 interface AgentResponseLike {
   reasoning?: unknown
   thinking?: unknown
   steps?: Array<{ thinking?: unknown }>
+}
+
+function isAgentResponseLike(response: unknown): response is AgentResponseLike {
+  return typeof response === 'object' && response !== null
 }
 
 /**
@@ -22,8 +25,8 @@ interface AgentResponseLike {
  * the different shapes returned across AI SDK / Mastra versions.
  */
 export function extractThinking(response: unknown): string | undefined {
-  const r = response as AgentResponseLike | null | undefined
-  const candidate = r?.reasoning ?? r?.thinking ?? r?.steps?.[0]?.thinking
+  if (!isAgentResponseLike(response)) return undefined
+  const candidate = response.reasoning ?? response.thinking ?? response.steps?.[0]?.thinking
   return typeof candidate === 'string' && candidate.length > 0 ? candidate : undefined
 }
 

@@ -231,7 +231,7 @@ export async function progressionArchitectAgent(
   return {
     progressionSystems: [...state.progressionSystems, ...parsed.progressionSystems],
     pendingActions: actions,
-    nextAgent: 'supervisor' as NextAgent,
+    nextAgent: 'supervisor',
     messages: [
       new AIMessage({
         content: userMessage,

@@ -15,6 +15,8 @@ import { entityReferences } from '@/db'
 import { db } from '@/db/client'
 import { eq, and, sql, inArray, desc } from 'drizzle-orm'
 import { EntityReference, EntityType } from './EntityRegistryService'
+import { entityMetadata, parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
+import { readRowNumber, readRowString, sqlResultRows } from '@/shared/data/json-guards'
 
 // Embedding model configuration (must match what's stored)
 // Using Voyage voyage-3 model which produces 1024-dimensional vectors
@@ -27,8 +29,8 @@ const EMBEDDING_DIMENSION = 1024
  * Security: Only allows numeric values - prevents SQL injection
  * Performance: Validates dimension to catch mismatches early
  */
-function toVectorString(embedding: any): string {
-  if (!embedding) {
+function toVectorString(embedding: unknown): string {
+  if (embedding === null || embedding === undefined) {
     throw new Error('toVectorString: embedding is null/undefined')
   }
 
@@ -72,7 +74,7 @@ function toVectorString(embedding: any): string {
  *
  * Security: toVectorString validates all values are finite numbers before embedding
  */
-function vectorSql(embedding: any) {
+function vectorSql(embedding: unknown) {
   const vecStr = toVectorString(embedding)
   return sql.raw(`${vecStr}::vector`)
 }
@@ -136,10 +138,49 @@ const DEFAULT_OPTIONS: Required<GraphRAGOptions> = {
   threshold: 0.7,
   maxDepth: 2,
   maxResults: 20,
-  types: [] as EntityType[],
+  types: [],
   randomWalkSteps: 100,
   restartProbability: 0.15,
   includeRelationships: false,
+}
+
+type DbEntityRow = {
+  id: string
+  name: string
+  type: string
+  description: string | null
+  metadata: unknown
+  projectId: string
+  sourceEntityId?: string | null
+  createdAt: Date | string
+  lastReferencedAt?: Date | string | null
+  embedding?: unknown
+}
+
+function scoredEntityFromRow(
+  row: DbEntityRow,
+  extras: Pick<ScoredEntity, 'relevance' | 'hopDistance'> & Partial<ScoredEntity>
+): ScoredEntity | null {
+  const type = parseEntityType(row.type)
+  if (!type) return null
+
+  return {
+    id: row.id,
+    name: row.name,
+    type,
+    description: row.description?.startsWith('Auto-registered') ? '' : (row.description || ''),
+    metadata: entityMetadata(row.metadata),
+    projectId: row.projectId,
+    sourceEntityId: row.sourceEntityId || undefined,
+    createdAt: new Date(row.createdAt),
+    lastReferencedAt: new Date(row.lastReferencedAt || row.createdAt),
+    ...extras,
+  }
+}
+
+function similarityFromSqlResult(result: unknown): number {
+  const row = sqlResultRows(result)[0]
+  return readRowNumber(row ?? {}, 'similarity') ?? 0
 }
 
 /**
@@ -180,19 +221,8 @@ class EntityGraphService {
 
       // Add seeds with max relevance
       for (const seed of seedEntities) {
-        discovered.set(seed.id, {
-          id: seed.id,
-          name: seed.name,
-          type: seed.type as EntityType,
-          description: seed.description?.startsWith('Auto-registered') ? '' : (seed.description || ''),
-          metadata: (seed.metadata as Record<string, unknown>) || {},
-          projectId: seed.projectId,
-          sourceEntityId: seed.sourceEntityId || undefined,
-          createdAt: new Date(seed.createdAt),
-          lastReferencedAt: new Date(seed.lastReferencedAt || seed.createdAt),
-          relevance: 1.0,
-          hopDistance: 0,
-        })
+        const scored = scoredEntityFromRow(seed, { relevance: 1.0, hopDistance: 0 })
+        if (scored) discovered.set(seed.id, scored)
       }
 
       // 2. Multi-hop traversal with decay
@@ -247,25 +277,27 @@ class EntityGraphService {
 
             // Only add if not discovered or if this path has higher relevance
             if (!existing || relevance > existing.relevance) {
-              const scored: ScoredEntity = {
-                id: entity.id,
-                name: entity.name,
-                type: entity.type as EntityType,
-                description: entity.description?.startsWith('Auto-registered') ? '' : (entity.description || ''),
-                metadata: (entity.metadata as Record<string, unknown>) || {},
-                projectId: entity.projectId,
-                sourceEntityId: entity.sourceEntityId || undefined,
-                createdAt: new Date(entity.createdAt),
-                lastReferencedAt: new Date(entity.lastReferencedAt || entity.createdAt),
+              const scored = scoredEntityFromRow(entity, {
                 relevance,
                 hopDistance: hop,
                 discoveredVia: source.id,
-              }
+              })
+              if (!scored) continue
               discovered.set(entity.id, scored)
 
-              // Add to next hop candidates (but not seeds)
-              if (!seedSet.has(entity.id)) {
-                nextHopEntities.push(entity as any)
+              if (!seedSet.has(entity.id) && entity.embedding) {
+                nextHopEntities.push({
+                  id: entity.id,
+                  name: entity.name,
+                  type: entity.type,
+                  description: entity.description,
+                  metadata: entity.metadata,
+                  projectId: entity.projectId,
+                  sourceEntityId: entity.sourceEntityId,
+                  createdAt: entity.createdAt,
+                  lastReferencedAt: entity.lastReferencedAt,
+                  embedding: entity.embedding,
+                })
               }
             }
           }
@@ -482,17 +514,13 @@ class EntityGraphService {
 
       return results
         .filter(r => r.similarity >= opts.threshold)
-        .map(r => ({
-          id: r.id,
-          name: r.name,
-          type: r.type as EntityType,
-          description: r.description?.startsWith('Auto-registered') ? '' : (r.description || ''),
-          metadata: (r.metadata as Record<string, unknown>) || {},
-          projectId: r.projectId,
-          sourceEntityId: r.sourceEntityId || undefined,
-          createdAt: new Date(r.createdAt),
-          lastReferencedAt: new Date(r.lastReferencedAt || r.createdAt),
-        }))
+        .map(r => {
+          const entity = scoredEntityFromRow(r, { relevance: r.similarity, hopDistance: 0 })
+          if (!entity) return null
+          const { relevance: _relevance, hopDistance: _hopDistance, ...reference } = entity
+          return reference
+        })
+        .filter((entity): entity is EntityReference => entity !== null)
     } catch (err) {
       console.warn('[EntityGraphService] Semantic search failed:', err)
       return []
@@ -523,7 +551,7 @@ class EntityGraphService {
         sql`SELECT 1 - (${vectorSql(a[0].embedding)} <=> ${vectorSql(b[0].embedding)}) as similarity`
       )
 
-      return (result.rows[0] as any)?.similarity || 0
+      return similarityFromSqlResult(result)
     } catch {
       return 0
     }
@@ -583,26 +611,27 @@ class EntityGraphService {
       // Map to relationships with inferred type
       return similar
         .filter(e => e.similarity >= opts.threshold)
-        .map(entity => ({
-          id: entity.id,
-          name: entity.name,
-          type: entity.type as EntityType,
-          description: entity.description?.startsWith('Auto-registered') ? '' : (entity.description || ''),
-          metadata: (entity.metadata as Record<string, unknown>) || {},
-          projectId: entity.projectId,
-          sourceEntityId: entity.sourceEntityId || undefined,
-          createdAt: new Date(entity.createdAt),
-          lastReferencedAt: new Date(entity.lastReferencedAt || entity.createdAt),
-          relevance: entity.similarity,
-          hopDistance: 1,
-          discoveredVia: entityId,
-          // Infer relationship type from entity types
-          relationshipType: this.inferRelationshipType(
-            sourceEntity.type as EntityType,
-            entity.type as EntityType,
-            entity.similarity
-          ),
-        }))
+        .flatMap(entity => {
+          const sourceType = parseEntityType(sourceEntity.type)
+          const targetType = parseEntityType(entity.type)
+          if (!sourceType || !targetType) return []
+
+          const scored = scoredEntityFromRow(entity, {
+            relevance: entity.similarity,
+            hopDistance: 1,
+            discoveredVia: entityId,
+          })
+          if (!scored) return []
+
+          return [{
+            ...scored,
+            relationshipType: this.inferRelationshipType(
+              sourceType,
+              targetType,
+              entity.similarity
+            ),
+          }]
+        })
     } catch (err) {
       console.warn('[EntityGraphService] Failed to get direct relationships:', err)
       return []
@@ -676,12 +705,16 @@ class EntityGraphService {
         )
         .limit(50) // Performance: cap to prevent O(n^2) explosion
 
-      const nodes = entities.map(e => ({
-        id: e.id,
-        name: e.name,
-        type: e.type as EntityType,
-        metadata: (e.metadata as Record<string, unknown>) || {},
-      }))
+      const nodes = entities.flatMap(e => {
+        const type = parseEntityType(e.type)
+        if (!type) return []
+        return [{
+          id: e.id,
+          name: e.name,
+          type,
+          metadata: entityMetadata(e.metadata),
+        }]
+      })
 
       // Performance: Compute all pairwise similarities in a single SQL query
       // Uses a self-join with cosine distance, much faster than N^2 individual queries
@@ -710,16 +743,19 @@ class EntityGraphService {
             LIMIT 200
           `)
 
-          for (const row of (result.rows || result) as any[]) {
+          for (const row of sqlResultRows(result)) {
+            const sourceId = readRowString(row, 'source_id')
+            const targetId = readRowString(row, 'target_id')
+            const sourceType = parseEntityType(readRowString(row, 'source_type'))
+            const targetType = parseEntityType(readRowString(row, 'target_type'))
+            const weight = readRowNumber(row, 'similarity') ?? 0
+            if (!sourceId || !targetId || !sourceType || !targetType) continue
+
             edges.push({
-              source: row.source_id,
-              target: row.target_id,
-              weight: parseFloat(row.similarity) || 0,
-              type: this.inferRelationshipType(
-                row.source_type as EntityType,
-                row.target_type as EntityType,
-                parseFloat(row.similarity) || 0
-              ),
+              source: sourceId,
+              target: targetId,
+              weight,
+              type: this.inferRelationshipType(sourceType, targetType, weight),
             })
           }
         } catch (queryErr) {
@@ -739,17 +775,15 @@ class EntityGraphService {
                 const result = await db.execute(
                   sql`SELECT 1 - (${vectorSql(a.embedding)} <=> ${vectorSql(b.embedding)}) as similarity`
                 )
-                const similarity = parseFloat((result.rows?.[0] as any)?.similarity) || 0
-                if (similarity >= minStrength) {
+                const similarity = similarityFromSqlResult(result)
+                const sourceType = parseEntityType(a.type)
+                const targetType = parseEntityType(b.type)
+                if (similarity >= minStrength && sourceType && targetType) {
                   edges.push({
                     source: a.id,
                     target: b.id,
                     weight: similarity,
-                    type: this.inferRelationshipType(
-                      a.type as EntityType,
-                      b.type as EntityType,
-                      similarity
-                    ),
+                    type: this.inferRelationshipType(sourceType, targetType, similarity),
                   })
                 }
               } catch {

@@ -1,4 +1,4 @@
-import { Plan, PlanItem, PlanItemStatus } from './schemas'
+import { Plan, PlanItem, PlanItemStatusSchema } from './schemas'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { withSpan } from '../observability'
@@ -74,7 +74,11 @@ export const createPlannerTool = (persistence: PlanPersistence) => {
             const task = plan.items.find(t => t.id === input.taskId)
             if (!task) return { message: `Error: Task ${input.taskId} not found.` }
 
-            task.status = input.status as PlanItemStatus
+            const parsedStatus = PlanItemStatusSchema.safeParse(input.status)
+            if (!parsedStatus.success) {
+              return { message: `Error: invalid status '${input.status}'.` }
+            }
+            task.status = parsedStatus.data
             plan.updatedAt = new Date().toISOString()
             await persistence.savePlan(plan)
             return { message: `Updated task ${input.taskId} to ${input.status}.` }

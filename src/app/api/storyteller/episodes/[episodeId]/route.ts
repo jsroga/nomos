@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { episodes } from '@/db'
 import { eq } from 'drizzle-orm'
+import { recordFromJson } from '@/shared/data/json-guards'
+import { storyPlanRecordFromJson } from '@/domains/storyteller/core/entities/story-plan-wire'
 
 export async function GET(req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
@@ -54,12 +56,13 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
       })
 
       if (currentEpisode) {
-        const currentPlan = (currentEpisode.storyPlan as any) || {}
+        const currentPlan = storyPlanRecordFromJson(currentEpisode.storyPlan)
+        const existingPremise = recordFromJson(currentPlan.premise)
         updateData.storyPlan = {
           ...currentPlan,
           premise: {
-            ...((currentPlan.premise as any) || {}),
-            ...body.premise,
+            ...existingPremise,
+            ...recordFromJson(body.premise),
           },
         }
       }
@@ -74,7 +77,9 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
       })
 
       if (currentEpisode) {
-        const currentPlan = (updateData.storyPlan || currentEpisode.storyPlan || {}) as any
+        const currentPlan = storyPlanRecordFromJson(
+          updateData.storyPlan ?? currentEpisode.storyPlan
+        )
         updateData.storyPlan = {
           ...currentPlan,
           storyboardUrl,

@@ -277,7 +277,7 @@ If you use any tools, describe what you learned from them.`
       toolChoice: options?.toolChoice ?? 'auto',
       maxSteps: options?.maxSteps ?? 10,
       ...options,
-    } as Parameters<Agent['stream']>[1])
+    })
   }
 
   /**

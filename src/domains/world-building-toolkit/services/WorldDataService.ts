@@ -19,8 +19,8 @@ function mapProject(row: typeof projects.$inferSelect): WorldProject {
     name: row.name,
     masterPrompt: row.masterPrompt ?? '',
     description: row.description ?? null,
-    seriesBible: (row.seriesBible as Record<string, unknown>) ?? {},
-    storyPlan: (row.storyPlan as Record<string, unknown>) ?? {},
+    seriesBible: recordFromJson(row.seriesBible),
+    storyPlan: recordFromJson(row.storyPlan),
     createdAt: row.createdAt?.toISOString(),
   }
 }
@@ -44,7 +44,7 @@ function mapAsset(row: typeof assets.$inferSelect): WorldAsset {
     userId: row.userId,
     imageFilename: row.imageFilename,
     modelFilename: row.modelFilename ?? null,
-    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    metadata: recordFromJson(row.metadata),
     createdAt: row.createdAt?.toISOString(),
   }
 }

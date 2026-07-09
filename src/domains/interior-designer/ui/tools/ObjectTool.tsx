@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react'
 import { useInteriorStore } from '@/domains/interior-designer'
+import { vec3 } from '@/domains/interior-designer/core/vec3'
 import { useThree, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 
@@ -58,7 +59,7 @@ export const ObjectTool: React.FC = () => {
 
         return {
           point: new THREE.Vector3(wallHit.point.x, y, wallHit.point.z),
-          rotation: [0, rotationY, 0] as [number, number, number],
+          rotation: vec3(0, rotationY, 0),
           placable: true
         }
       } else {
@@ -70,7 +71,7 @@ export const ObjectTool: React.FC = () => {
         if (target) {
           return {
             point: target,
-            rotation: [0, 0, 0] as [number, number, number],
+            rotation: vec3(0, 0, 0),
             placable: false
           }
         }
@@ -88,7 +89,7 @@ export const ObjectTool: React.FC = () => {
       const x = Math.round(groundHit.point.x * 2) / 2
       const z = Math.round(groundHit.point.z * 2) / 2
       const y = 0
-      return { point: new THREE.Vector3(x, y, z), rotation: [0, 0, 0] as [number, number, number], placable: true }
+      return { point: new THREE.Vector3(x, y, z), rotation: vec3(0, 0, 0), placable: true }
     }
 
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
@@ -99,7 +100,7 @@ export const ObjectTool: React.FC = () => {
       target.x = Math.round(target.x * 2) / 2
       target.z = Math.round(target.z * 2) / 2
       target.y = 0
-      return { point: target, rotation: [0, 0, 0] as [number, number, number], placable: true }
+      return { point: target, rotation: vec3(0, 0, 0), placable: true }
     }
     return null
   }

@@ -138,7 +138,8 @@ export const RoadMesh: React.FC<RoadMeshProps> = ({
   // Store original positions once geometry is created
   useEffect(() => {
     if (!geometry) return
-    const positions = geometry.attributes.position.array as Float32Array
+    if (!(geometry.attributes.position.array instanceof Float32Array)) return
+    const positions = geometry.attributes.position.array
     originalPositionsRef.current = new Float32Array(positions)
   }, [geometry])
 

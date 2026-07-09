@@ -18,6 +18,9 @@ Configuration map (goals vs execute, agents, skills): `.agents/CONFIGURATION.md`
 Optional session scratch: `.local/tmp/{session-id}/` for throwaway scripts or inventories
 (gitignored) — see `execute/partials/session-scratch.md`.
 
+**Quality backlog:** when verify surfaces many issues, `npm run qualitygate:capture` →
+`.local/quality-backlog.md` — see `execute/partials/quality-backlog.md`.
+
 ## Stage flow (mirror `workflow.fabro`)
 
 ```mermaid

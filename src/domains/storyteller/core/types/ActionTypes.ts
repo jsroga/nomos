@@ -8,10 +8,14 @@ import {
   KeyCharacter,
   EpisodePremise,
 } from '@/domains/storyteller/core/types/StoryPlanTypes'
-import { QuestionType, QuestionUrgency, QuestionStatus, ActionStatus, ActionType } from '@/domains/storyteller/core/types/Enums'
+import { QuestionType, QuestionUrgency, QuestionStatus, ActionHistoryStatus, ActionType, QuestionMachineState } from '@/domains/storyteller/core/types/Enums'
+import type { WireAgentAction, ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 
 // Re-export ActionType for convenience
 export { ActionType }
+
+/** Chat-stream / approval UI action (shared wire shape). */
+export type StreamAgentAction = WireAgentAction
 
 // ============================================
 // AGENT ACTIONS - Operations agents can commit
@@ -245,14 +249,14 @@ export type AgentAction = // Beat Operations
           targetAudience?: string
         }
       }
-    | { type: 'ADD_BEAT'; payload: { beatId?: string; id?: string; [key: string]: any } }
-    | { type: 'ADD_CHARACTER'; payload: { characterId?: string; [key: string]: any } }
-    | { type: 'UPDATE_CHARACTER_PSYCHOLOGY'; payload: { characterId: string; [key: string]: any } }
-    | { type: 'UPDATE_FACTION'; payload: { factionId: string; [key: string]: any } }
-    | { type: 'ADD_FACTION'; payload: { factionId?: string; [key: string]: any } }
-    | { type: 'UPDATE_STORY_PLAN'; payload: { [key: string]: any } }
+    | { type: 'ADD_BEAT'; payload: { beatId?: string; id?: string; [key: string]: unknown } }
+    | { type: 'ADD_CHARACTER'; payload: { characterId?: string; [key: string]: unknown } }
+    | { type: 'UPDATE_CHARACTER_PSYCHOLOGY'; payload: { characterId: string; [key: string]: unknown } }
+    | { type: 'UPDATE_FACTION'; payload: { factionId: string; [key: string]: unknown } }
+    | { type: 'ADD_FACTION'; payload: { factionId?: string; [key: string]: unknown } }
+    | { type: 'UPDATE_STORY_PLAN'; payload: { [key: string]: unknown } }
   ) & {
-    status?: 'pending' | 'executing' | 'committed' | 'rejected'
+    status?: ApprovalActionStatus
     confidence?: number
     reasoning?: string
   }
@@ -263,7 +267,7 @@ export type AgentAction = // Beat Operations
 
 // QuestionType is now imported from enums.ts
 // QuestionUrgency is now imported from enums.ts
-export { QuestionType, QuestionUrgency }
+export { QuestionType, QuestionUrgency, QuestionMachineState }
 
 export interface QuestionOption {
   id: string
@@ -293,9 +297,9 @@ export interface ActionHistoryEntry {
   id: string
   timestamp: Date
   agentName: string
-  action: AgentAction
-  previousState?: any // State before action (for undo)
-  status: ActionStatus
+  action: StreamAgentAction
+  previousState?: unknown // State before action (for undo)
+  status: ActionHistoryStatus
 }
 
 // ============================================
@@ -304,8 +308,6 @@ export interface ActionHistoryEntry {
 
 // QuestionStatus is now imported from enums.ts
 export { QuestionStatus }
-
-export type QuestionMachineState = 'idle' | 'awaiting_answer' | 'processing' | 'completed'
 
 export interface QuestionSession {
   id: string

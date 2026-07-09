@@ -1,5 +1,15 @@
 import { ReactNode } from 'react'
 import { ConsistencyCheckResult } from '@/domains/storyteller'
+import {
+  ApprovalActionStatus,
+  WireAgentAction,
+  type ActionMessageLocation,
+} from '@/shared/agent-kernel/action-wire'
+
+export type { ActionMessageLocation }
+export type ActionStatus = ApprovalActionStatus
+export { ApprovalActionStatus }
+export type AgentAction = WireAgentAction
 
 // Thinking entry with agent attribution
 export interface ThinkingEntry {
@@ -56,17 +66,7 @@ export interface AgentConfig {
 
 export type AgentConfigMap = Record<string, AgentConfig>
 
-// Action status for approval flow
-export type ActionStatus = 'pending' | 'executing' | 'committed' | 'rejected'
-
-// Action & Question types (mirrored from storyteller for now, but made generic)
-export interface AgentAction {
-  type: string
-  payload: any
-  reasoning?: string
-  status?: ActionStatus // Track approval state
-  id?: string // Stable identifier
-}
+// Action status for approval flow — re-exported from shared wire types (see top of file)
 
 export interface AgentQuestion {
   id: string

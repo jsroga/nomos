@@ -20,22 +20,21 @@ export * from './services/context/SeriesBible'
 export * from './services/StorytellerCrudService'
 
 export { createStorytellerAgent } from './agents/StorytellerAgent/StorytellerAgent'
-export {
-  runStorytellerWorkflow,
-} from './agents/orchestration/StorytellerWorkflow'
-export { normalizeMastraTraceId } from './agents/orchestration/WorkflowContext'
-export { workflowStore } from './agents/orchestration/WorkflowContext'
+export { normalizeMastraTraceId, createMastraTraceId } from './agents/tracing'
 
+// Script review — critic-backed (replaces the deleted persona judge)
 export {
   reviewScript,
   quickReview,
   type ScriptReviewRequest,
   type ScriptReviewResult,
-} from './agents/judges/ScriptReviewAgent'
+  type PersonaReview,
+} from './services/ScriptReviewService'
 
 export { storytellerService } from './services/StorytellerCrudService'
 
-// Consistency check (legacy ConsistencyAgent — wave 2 will use ConsistencyService)
-export { runConsistencyCheck } from './agents/judges/ConsistencyAgent'
+// Consistency check — pure service behind the legacy API shape
+// (replaces the deleted ConsistencyAgent judge)
+export { runConsistencyCheck } from './services/ConsistencyCheckAdapter'
 
 export { getUndoManager } from './core/editing/UndoManager'

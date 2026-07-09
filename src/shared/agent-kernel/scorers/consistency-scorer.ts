@@ -1,4 +1,5 @@
 import { createScorer } from '@mastra/core/evals'
+import { stringArrayFromJson } from '@/shared/data/json-guards'
 import { inputRecord, outputToString } from './shared'
 
 export const consistencyScorer = createScorer({
@@ -7,7 +8,7 @@ export const consistencyScorer = createScorer({
   description: 'Detect contradictions against established facts',
 })
   .generateScore(({ run }) => {
-    const facts = (inputRecord(run.input).facts as string[] | undefined) ?? []
+    const facts = stringArrayFromJson(inputRecord(run.input).facts)
     const text = outputToString(run.output).toLowerCase()
 
     if (text.includes('alive') && facts.some(f => f.toLowerCase().includes('dead'))) {

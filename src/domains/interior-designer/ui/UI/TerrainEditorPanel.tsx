@@ -48,6 +48,8 @@ const qualityLabels: Record<TerrainQuality, string> = {
   high: 'High (40/m)',
 }
 
+const terrainQualities: TerrainQuality[] = ['low', 'medium', 'high']
+
 export const TerrainEditorPanel: React.FC = () => {
   // Terrain Settings
   const terrainSettings = useInteriorStore(state => state.terrainSettings)
@@ -370,7 +372,7 @@ export const TerrainEditorPanel: React.FC = () => {
                 Simulation Quality
               </SidebarLabel>
               <div className="flex gap-2 p-1 bg-black/20 rounded-lg">
-                {(['low', 'medium', 'high'] as TerrainQuality[]).map(q => (
+                {terrainQualities.map(q => (
                   <button
                     key={q}
                     onClick={() => setTerrainQuality(q)}

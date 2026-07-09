@@ -10,7 +10,7 @@ import { loopPlannerAgent } from '../../agents/loop-planner'
 import { mechanicsDesignerAgent } from '../../agents/mechanics-designer'
 import { balanceAnalystAgent } from '../../agents/balance-analyst'
 import { progressionArchitectAgent } from '../../agents/progression-architect'
-import { marketAnalystAgent } from '../../agents/market-analyst-wrapper'
+import { nextAgentFromAgentNode } from './agent-nodes'
 
 export interface StreamEvent {
   type: 'node' | 'message' | 'action' | 'questions' | 'token' | 'error'
@@ -37,16 +37,7 @@ export interface StreamEvent {
 
 const MAX_ROUNDS = 15
 
-const AGENT_NODES = {
-  supervisor: 'supervisor',
-  loop_planner: 'loop_planner',
-  mechanics_designer: 'mechanics_designer',
-  balance_analyst: 'balance_analyst',
-  progression_architect: 'progression_architect',
-  market_analyst: 'market_analyst',
-} as const
-
-type AgentNode = keyof typeof AGENT_NODES
+import { AGENT_NODES, type AgentNode, isRegisteredAgent } from './agent-nodes'
 
 const AGENT_FNS: Record<
   AgentNode,
@@ -86,7 +77,8 @@ async function invokeAgent(
     const result = await AGENT_FNS[agentName](state)
     console.log(`[LoopOrchestrator] ${agentName} completed in ${Date.now() - startTime}ms`)
 
-    const baseResult = { ...result, lastAgent: agentName as LoopCreatorState['lastAgent'] }
+    const lastAgent = nextAgentFromAgentNode(agentName)
+    const baseResult = { ...result, lastAgent }
 
     if (agentName === 'supervisor') {
       return { ...baseResult, roundCount: state.roundCount + 1 }
@@ -97,10 +89,11 @@ async function invokeAgent(
     const errorMsg = error instanceof Error ? error.message : 'Unknown error'
     console.error(`[LoopOrchestrator] Agent ${agentName} failed:`, errorMsg)
 
+    const lastAgent = nextAgentFromAgentNode(agentName)
     return {
       errors: [errorMsg],
-      nextAgent: 'END' as NextAgent,
-      lastAgent: agentName as LoopCreatorState['lastAgent'],
+      nextAgent: 'END',
+      lastAgent,
       messages: [
         new AIMessage({
           content: `Error in ${agentName}: ${errorMsg}. Please try again.`,
@@ -113,7 +106,7 @@ async function invokeAgent(
 
 function resolveNode(next: NextAgent | 'END'): AgentNode | null {
   if (next === 'END' || !next) return null
-  if (next in AGENT_FNS) return next as AgentNode
+  if (isRegisteredAgent(next)) return next
   console.warn(`[LoopOrchestrator] Unknown nextAgent: ${next}`)
   return null
 }
@@ -125,6 +118,15 @@ const FRIENDLY_NAMES: Record<string, string> = {
   balance_analyst: 'Balance Analyst',
   progression_architect: 'Progression Architect',
   market_analyst: 'Market Analyst',
+}
+
+function isLangChainAIMessage(msg: unknown): boolean {
+  if (msg instanceof AIMessage) return true
+  if (typeof msg === 'object' && msg !== null && '_getType' in msg) {
+    const getType = Reflect.get(msg, '_getType')
+    return typeof getType === 'function' && getType() === 'ai'
+  }
+  return false
 }
 
 function emitNodeOutput(
@@ -147,8 +149,7 @@ function emitNodeOutput(
 
   if (output.messages) {
     for (const msg of output.messages) {
-      const isAI = msg instanceof AIMessage || (msg as { _getType?: () => string })?._getType?.() === 'ai'
-      if (!isAI) continue
+      if (!isLangChainAIMessage(msg)) continue
 
       const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
       const msgEvent = {

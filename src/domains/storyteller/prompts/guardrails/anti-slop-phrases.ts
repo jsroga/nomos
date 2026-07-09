@@ -56,6 +56,36 @@ export const AI_SLOP_BANNED_PHRASES = [
   'alabaster',
 ] as const
 
+/**
+ * Vagueness phrases banned from beat-plan goal/conflict/turn fields — a plan
+ * built on these gives the author nothing concrete to dramatize. Checked by
+ * the beat-plan concreteness gate (case-insensitive substring match).
+ */
+export const BEAT_PLAN_VAGUE_PHRASES = [
+  'something happens',
+  'things get worse',
+  'things escalate',
+  'tension rises',
+  'tensions rise',
+  'the stakes are raised',
+  'stakes get higher',
+  'a confrontation occurs',
+  'they have a confrontation',
+  'learns a secret',
+  'discovers the truth',
+  'discovers a secret',
+  'reveals a secret',
+  'everything changes',
+  'nothing will be the same',
+  'must make a choice',
+  'faces a difficult decision',
+  'comes to a realization',
+  'realizes something',
+  'deals with the fallout',
+  'confronts their past',
+  'the truth comes out',
+] as const
+
 /** Markdown bullet list for injection into agent prompts. */
 export function formatBannedPhrasesForPrompt(
   phrases: readonly string[] = AI_SLOP_BANNED_PHRASES

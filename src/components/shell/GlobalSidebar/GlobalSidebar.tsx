@@ -10,11 +10,12 @@ import { useWorldStore } from '@/domains/world-building-toolkit'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/Avatar'
 import { GlowEffect } from '@/components/GlowEffect'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { readString } from '@/shared/data/json-guards'
 
 export const GlobalSidebar = () => {
   const pathname = usePathname()
   const params = useParams()
-  const projectId = params?.projectId as string
+  const projectId = readString(params?.projectId)
   const supabase = createClientComponentClient()
   const user = useWorldStore(state => state.user)
   const setUser = useWorldStore(state => state.setUser)

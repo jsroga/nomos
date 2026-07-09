@@ -1,6 +1,7 @@
 import { retextureModelTask } from '@/trigger/retexture-model'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
+import { recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import {
   interiorRetextureRequestSchema,
   interiorRetextureResponseSchema,
@@ -41,10 +42,8 @@ export const POST = withRateLimit(
           .eq('id', projectId)
           .single()
 
-        const projectData = data as { style_reference_urls?: string[] } | null
-        const styleReferenceUrls = Array.isArray(projectData?.style_reference_urls)
-          ? projectData.style_reference_urls
-          : []
+        const projectRecord = recordFromJson(data)
+        const styleReferenceUrls = stringArrayFromJson(projectRecord.style_reference_urls)
 
         if (styleReferenceUrls.length > 0) {
           try {

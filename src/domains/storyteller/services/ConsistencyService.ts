@@ -10,8 +10,17 @@ import 'server-only'
 import { db } from '@/db/client'
 import { beats, projects, episodes } from '@/db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
+import {
+  BeatRow,
+  ConsistencyCheckKind,
+  setupsPayoffsFromJson,
+  shouldRunCheck,
+  worldRulesFromStoryPlan,
+} from './consistency-types'
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string }
+
+export { ConsistencyCheckKind } from './consistency-types'
 
 // ==========================================
 // TYPES
@@ -36,7 +45,7 @@ export interface ConsistencyCheckInput {
   projectId: string
   episodeId?: string
   beatIds?: string[]
-  checkTypes?: Array<'world_rules' | 'character_knowledge' | 'setup_payoff' | 'timeline' | 'all'>
+  checkTypes?: ConsistencyCheckKind[]
 }
 
 export interface ConsistencyCheckResult {
@@ -63,7 +72,7 @@ export class ConsistencyService {
     input: ConsistencyCheckInput
   ): Promise<Result<ConsistencyCheckResult>> {
     try {
-      const { projectId, episodeId, beatIds, checkTypes = ['all'] } = input
+      const { projectId, episodeId, beatIds, checkTypes = [ConsistencyCheckKind.ALL] } = input
 
       // Fetch project with storyPlan (contains worldRules, etc.)
       const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
@@ -73,7 +82,7 @@ export class ConsistencyService {
       }
 
       // Determine which beats to check
-      let beatsToCheck: any[] = []
+      let beatsToCheck: BeatRow[] = []
 
       if (beatIds && beatIds.length > 0) {
         // Specific beats
@@ -114,16 +123,12 @@ export class ConsistencyService {
 
       // Run checks
       const allIssues: ContinuityIssue[] = []
-      const storyPlan = (project.storyPlan as any) || {}
 
-      const shouldCheck = (type: string) =>
-        checkTypes.includes('all') || checkTypes.includes(type as any)
-
-      if (shouldCheck('world_rules')) {
-        allIssues.push(...checkWorldRuleViolations(beatsToCheck, storyPlan))
+      if (shouldRunCheck(checkTypes, ConsistencyCheckKind.WORLD_RULES)) {
+        allIssues.push(...checkWorldRuleViolations(beatsToCheck, project.storyPlan))
       }
 
-      if (shouldCheck('setup_payoff')) {
+      if (shouldRunCheck(checkTypes, ConsistencyCheckKind.SETUP_PAYOFF)) {
         allIssues.push(...checkSetupPayoffs(beatsToCheck))
       }
 
@@ -181,16 +186,15 @@ function extractViolationKeywords(ruleText: string): { term: string; violation: 
   return keywords
 }
 
-function checkWorldRuleViolations(beats: any[], storyPlan: any): ContinuityIssue[] {
+function checkWorldRuleViolations(beatsToCheck: BeatRow[], storyPlan: unknown): ContinuityIssue[] {
   const issues: ContinuityIssue[] = []
-  const worldRules = storyPlan.worldRules || []
-  if (!Array.isArray(worldRules)) return issues
+  const worldRules = worldRulesFromStoryPlan(storyPlan)
+  if (worldRules.length === 0) return issues
 
-  beats.forEach(beat => {
+  beatsToCheck.forEach(beat => {
     const content = ((beat.logline || '') + ' ' + (beat.content || '')).toLowerCase()
-    worldRules.forEach((rule: any) => {
-      const ruleText = typeof rule === 'string' ? rule : rule.rule || ''
-      const consequence = typeof rule === 'string' ? null : rule.consequence
+    worldRules.forEach(rule => {
+      const ruleText = rule.rule
       const violationKeywords = extractViolationKeywords(ruleText)
       violationKeywords.forEach(keyword => {
         if (content.includes(keyword.term) && keyword.violation) {
@@ -200,7 +204,7 @@ function checkWorldRuleViolations(beats: any[], storyPlan: any): ContinuityIssue
             description: `Beat [${beat.sequence}] may violate: "${ruleText}"`,
             location: beat.id,
             affectedElements: [ruleText],
-            suggestion: consequence || 'Revise beat to comply with world rules',
+            suggestion: rule.consequence || 'Revise beat to comply with world rules',
           })
         }
       })
@@ -209,14 +213,22 @@ function checkWorldRuleViolations(beats: any[], storyPlan: any): ContinuityIssue
   return issues
 }
 
-function checkSetupPayoffs(beats: any[]): ContinuityIssue[] {
+function checkSetupPayoffs(beatsToCheck: BeatRow[]): ContinuityIssue[] {
   const issues: ContinuityIssue[] = []
-  const beatsWithSetups = beats.filter(b => b.setupsPayoffs?.setupId)
-  const beatsWithPayoffs = beats.filter(b => b.setupsPayoffs?.payoffFor)
+  const beatsWithSetups = beatsToCheck.filter(b => {
+    const sp = setupsPayoffsFromJson(b.setupsPayoffs)
+    return Boolean(sp.setupId)
+  })
+  const beatsWithPayoffs = beatsToCheck.filter(b => {
+    const sp = setupsPayoffsFromJson(b.setupsPayoffs)
+    return Boolean(sp.payoffFor)
+  })
 
   beatsWithPayoffs.forEach(beat => {
-    const payoffFor = beat.setupsPayoffs.payoffFor
-    const setupExists = beatsWithSetups.some(b => b.setupsPayoffs?.setupId === payoffFor)
+    const payoffFor = setupsPayoffsFromJson(beat.setupsPayoffs).payoffFor
+    const setupExists = beatsWithSetups.some(
+      b => setupsPayoffsFromJson(b.setupsPayoffs).setupId === payoffFor
+    )
     if (!setupExists) {
       issues.push({
         type: 'orphaned_setup',
@@ -229,18 +241,18 @@ function checkSetupPayoffs(beats: any[]): ContinuityIssue[] {
     }
   })
 
-  // Check for unresolved setups (no payoff yet)
   beatsWithSetups.forEach(beat => {
-    const setupId = beat.setupsPayoffs.setupId
-    const hasPayoff = beatsWithPayoffs.some(b => b.setupsPayoffs?.payoffFor === setupId)
+    const setupId = setupsPayoffsFromJson(beat.setupsPayoffs).setupId
+    const hasPayoff = beatsWithPayoffs.some(
+      b => setupsPayoffsFromJson(b.setupsPayoffs).payoffFor === setupId
+    )
     if (!hasPayoff) {
-      // This is a minor issue since the setup might be paid off in a future beat
       issues.push({
         type: 'missing_payoff',
         severity: 'minor',
         description: `Setup "${setupId}" in beat [${beat.sequence}] has no payoff yet`,
         location: beat.id,
-        affectedElements: [setupId],
+        affectedElements: [setupId ?? 'unknown'],
         suggestion: 'Add a beat that pays off this setup',
       })
     }

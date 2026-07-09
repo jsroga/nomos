@@ -1,6 +1,7 @@
 import type { Mastra } from '@mastra/core/mastra'
 import type { PostgresStore } from '@mastra/pg'
 import { createMastra, createPostgresStore } from '@/shared/agent-kernel/mastra/create-mastra'
+import { consumeMastraRegistrations } from '@/shared/agent-kernel/mastra/runtime-registry'
 
 let mastraInstance: Mastra | null = null
 let storageInstance: PostgresStore | null = null
@@ -17,10 +18,24 @@ export function getStorageInstance(): PostgresStore {
   return storageInstance
 }
 
+/**
+ * The single production Mastra instance (never create a second one).
+ *
+ * Agents and workflows come from the runtime registry — domains push their
+ * runtime modules there at import time (dependency inversion; shared/ may
+ * not import domains). See `mastra/runtime-registry.ts` for the ordering
+ * contract.
+ */
 export function getMastraInstance(): Mastra {
   if (!mastraInstance) {
-    mastraInstance = createMastra({}, { storage: getStorageInstance() })
-    console.log('🚀 [Mastra] Centralized instance initialized with memory storage')
+    const { agents, workflows } = consumeMastraRegistrations()
+    mastraInstance = createMastra(agents, {
+      storage: getStorageInstance(),
+      workflows,
+    })
+    console.log(
+      `🚀 [Mastra] Centralized instance initialized — agents: [${Object.keys(agents).join(', ')}], workflows: [${Object.keys(workflows).join(', ')}]`
+    )
   }
   return mastraInstance
 }

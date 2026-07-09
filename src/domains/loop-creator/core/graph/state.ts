@@ -6,6 +6,7 @@
  */
 
 import { BaseMessage } from '@langchain/core/messages'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 
 /**
  * A game mechanic node
@@ -36,6 +37,69 @@ export interface MechanicEdge {
   type: 'triggers' | 'enables' | 'requires' | 'conflicts' | 'enhances'
   label?: string
   weight?: number // Strength of connection (1-10)
+}
+
+enum MechanicNodeType {
+  CORE = 'core',
+  SECONDARY = 'secondary',
+  META = 'meta',
+  PROGRESSION = 'progression',
+  REWARD = 'reward',
+}
+
+const MECHANIC_NODE_TYPE_VALUES = new Set<string>(Object.values(MechanicNodeType))
+
+function parseMechanicNodeType(value: unknown): MechanicNode['type'] {
+  const raw = readString(value)
+  if (raw && MECHANIC_NODE_TYPE_VALUES.has(raw)) {
+    for (const entry of Object.values(MechanicNodeType)) {
+      if (entry === raw) return entry
+    }
+  }
+  return MechanicNodeType.CORE
+}
+
+enum MechanicEdgeType {
+  TRIGGERS = 'triggers',
+  ENABLES = 'enables',
+  REQUIRES = 'requires',
+  CONFLICTS = 'conflicts',
+  ENHANCES = 'enhances',
+}
+
+const MECHANIC_EDGE_TYPE_VALUES = new Set<string>(Object.values(MechanicEdgeType))
+
+function parseMechanicEdgeType(value: unknown): MechanicEdge['type'] {
+  const raw = readString(value)
+  if (raw && MECHANIC_EDGE_TYPE_VALUES.has(raw)) {
+    for (const entry of Object.values(MechanicEdgeType)) {
+      if (entry === raw) return entry
+    }
+  }
+  return MechanicEdgeType.TRIGGERS
+}
+
+function mechanicNodeFromCanvasNode(node: Record<string, unknown>): MechanicNode {
+  const data = recordFromJson(node.data)
+  return {
+    id: readString(node.id) ?? '',
+    name: readString(node.label) ?? readString(data.label) ?? readString(node.id) ?? '',
+    type: parseMechanicNodeType(data.nodeType ?? node.type),
+    description: readString(data.description) ?? readString(node.description) ?? '',
+    inputs: [],
+    outputs: [],
+    balanceFactors: { effort: 5, reward: 5, frequency: 5 },
+  }
+}
+
+function mechanicEdgeFromCanvasEdge(edge: Record<string, unknown>): MechanicEdge {
+  return {
+    id: readString(edge.id) ?? '',
+    source: readString(edge.source) ?? '',
+    target: readString(edge.target) ?? '',
+    type: parseMechanicEdgeType(edge.type),
+    label: readString(edge.label) ?? '',
+  }
 }
 
 /**
@@ -272,29 +336,12 @@ export function createInitialLoopState(
 
   // Convert canvas nodes to mechanics format
   const mechanics: MechanicNode[] = (context?.existingNodes || [])
-    .filter(n => n.type !== 'group') // Exclude group nodes
-    .map(n => ({
-      id: n.id,
-      name: n.label || n.data?.label || n.id,
-      type: (n.data?.nodeType || n.type || 'core') as MechanicNode['type'],
-      description: n.data?.description || n.description || '',
-      inputs: [],
-      outputs: [],
-      balanceFactors: {
-        effort: 5,
-        reward: 5,
-        frequency: 5,
-      },
-    }))
+    .filter((n: Record<string, unknown>) => n.type !== 'group')
+    .map((n: Record<string, unknown>) => mechanicNodeFromCanvasNode(n))
 
-  // Convert canvas edges to connections format
-  const connections: MechanicEdge[] = (context?.existingEdges || []).map(e => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
-    type: 'triggers' as MechanicEdge['type'],
-    label: e.label || '',
-  }))
+  const connections: MechanicEdge[] = (context?.existingEdges || []).map(
+    (e: Record<string, unknown>) => mechanicEdgeFromCanvasEdge(e)
+  )
 
   return {
     projectId,
@@ -384,16 +431,16 @@ export const loopCreatorChannels = {
   projectId: { reducer: (_, incoming: string) => incoming, default: () => '' },
   sessionId: { reducer: (_, incoming: string) => incoming, default: () => '' },
   currentPhase: {
-    reducer: (_, incoming: LoopCreatorPhase) => incoming,
-    default: () => 'initial' as LoopCreatorPhase,
+    reducer: (_: LoopCreatorPhase, incoming: LoopCreatorPhase) => incoming,
+    default: (): LoopCreatorPhase => 'initial',
   },
   nextAgent: {
-    reducer: (_, incoming: NextAgent) => incoming,
-    default: () => 'supervisor' as NextAgent,
+    reducer: (_: NextAgent, incoming: NextAgent) => incoming,
+    default: (): NextAgent => 'supervisor',
   },
   lastAgent: {
-    reducer: (_, incoming: NextAgent | null) => incoming,
-    default: () => null as NextAgent | null,
+    reducer: (_: NextAgent | null, incoming: NextAgent | null) => incoming,
+    default: (): NextAgent | null => null,
   },
   roundCount: { reducer: (_, incoming: number) => incoming, default: () => 0 },
   gameGenre: { reducer: (_, incoming: string) => incoming, default: () => '' },

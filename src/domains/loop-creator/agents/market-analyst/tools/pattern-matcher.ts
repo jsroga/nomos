@@ -13,6 +13,7 @@
 
 import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
+import { countOccurrences } from '@/shared/data/count-occurrences'
 import { PatternMatch } from '../types'
 
 /**
@@ -596,9 +597,7 @@ Patterns include: Loop structures, Progression systems, Engagement hooks, Feedba
             implementationGuide: pattern.implementationGuide,
             risks: pattern.risks,
             compatibleWith: pattern.compatibility,
-            _matchedIndicators: matchedIndicators,
-            _matchedAntiPatterns: matchedAntiPatterns,
-          } as any)
+          })
         }
       }
 
@@ -678,13 +677,7 @@ Patterns include: Loop structures, Progression systems, Engagement hooks, Feedba
 
       // Risk warnings
       const allRisks = matches.flatMap(m => m.risks)
-      const riskCounts = allRisks.reduce(
-        (acc, r) => {
-          acc[r] = (acc[r] || 0) + 1
-          return acc
-        },
-        {} as Record<string, number>
-      )
+      const riskCounts = countOccurrences(allRisks)
 
       const topRisks = Object.entries(riskCounts)
         .filter(([_, count]) => count >= 2)

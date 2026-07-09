@@ -4,6 +4,7 @@ import { projects, seriesBibles, storyPlans } from '@/db'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
+import { firstNonEmptyRecord, recordFromJson } from '@/shared/data/json-guards'
 
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
@@ -28,13 +29,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const seriesBible = (project.seriesBibleTable?.content ||
-      project.seriesBible ||
-      {}) as Record<string, unknown>
-    const storyPlan = (project.storyPlanTable?.content || project.storyPlan || {}) as Record<
-      string,
-      unknown
-    >
+    const seriesBible = firstNonEmptyRecord(
+      project.seriesBibleTable?.content,
+      project.seriesBible
+    )
+    const storyPlan = firstNonEmptyRecord(project.storyPlanTable?.content, project.storyPlan)
 
     // CLEANUP: Remove legacy fields from seriesBible if they exist in storyPlan
     // This prevents the frontend from merging stale data and ensures single source of truth
@@ -58,13 +57,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       }
 
       // 2. Clean from 'Setting' category (common legacy location)
-      const setting = seriesBible['Setting'] as Record<string, unknown> | undefined
-      if (setting) {
+      const setting = recordFromJson(seriesBible.Setting)
+      if (Object.keys(setting).length > 0) {
         for (const field of legacyFields) {
           if (storyPlan[field] && setting[field]) {
             delete setting[field]
           }
         }
+        seriesBible.Setting = setting
       }
     }
 
@@ -127,11 +127,11 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
 
     // 2. Update Series Bible (Upsert with Merge)
     if (bibleUpdate !== undefined && projectForMerge) {
-      const fromTable = (projectForMerge.seriesBibleTable?.content || {}) as Record<string, unknown>
-      const fromProject = (projectForMerge.seriesBible || {}) as Record<string, unknown>
-      const existingContent =
-        Object.keys(fromProject).length > Object.keys(fromTable).length ? fromProject : fromTable
-      const mergedContent = { ...existingContent, ...bibleUpdate }
+      const existingContent = firstNonEmptyRecord(
+        projectForMerge.seriesBible,
+        projectForMerge.seriesBibleTable?.content
+      )
+      const mergedContent = { ...existingContent, ...recordFromJson(bibleUpdate) }
 
       await db
         .insert(seriesBibles)
@@ -144,14 +144,11 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
 
     // 3. Update Story Plan (Upsert with Merge)
     if (planUpdate !== undefined && projectForMerge) {
-      const planFromTable = (projectForMerge.storyPlanTable?.content ||
-        {}) as Record<string, unknown>
-      const planFromProject = (projectForMerge.storyPlan || {}) as Record<string, unknown>
-      const existingContent =
-        Object.keys(planFromProject).length > Object.keys(planFromTable).length
-          ? planFromProject
-          : planFromTable
-      const mergedContent = { ...existingContent, ...(planUpdate as Record<string, unknown>) }
+      const existingContent = firstNonEmptyRecord(
+        projectForMerge.storyPlan,
+        projectForMerge.storyPlanTable?.content
+      )
+      const mergedContent = { ...existingContent, ...recordFromJson(planUpdate) }
 
       await db
         .insert(storyPlans)

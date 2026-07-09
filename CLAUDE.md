@@ -49,7 +49,7 @@ Each `src/domains/<module>/` follows the blueprint in [docs/unified/ARCHITECTURE
 
 Two Mastra entries: `src/mastra.ts` is the Studio CLI entry (bundler-safe tool stubs in `src/shared/agent-kernel/mastra/tools/`); `src/shared/agent-kernel/MastraInstance.ts` is the production instance (Postgres memory, tracing). Production agents live in `src/domains/*/agents/`. Never create a second Mastra instance or Postgres store.
 
-**TypeScript is strict**: implicit `any` is a compile error and `@typescript-eslint/no-explicit-any` is an `error` (no `: any` / `as any`). Legacy `@ts-nocheck` files exist; don't add new ones.
+**TypeScript is strict**: implicit `any` is a compile error; `@typescript-eslint/no-explicit-any` is `error`; **`as` type assertions are banned** (`assertionStyle: 'never'`, `as const` only). Legacy `@ts-nocheck` files exist; don't add new ones. **Domains must not import each other** — shared code in `@/shared`. Magic-string protocol values → **`enum`**, not const object maps. See `.cursor/rules/eslint-boundaries.mdc`.
 
 ## Mastra
 
@@ -108,20 +108,40 @@ Shared prompts: **`.agents/execute/`** · skills: **`.agents/skills/`** (Cursor/
 
 ## Quality gates
 
-Run before declaring work done; fix failures, don't bypass:
+**During agent work** — fast, scoped only (never full-repo `tsc --noEmit` mid-task; it OOMs):
 
 ```bash
-npm run typecheck
-npm run lint
-npm run test:unit
-npx knip                 # dead code / unused exports
+npm run qualitygate:file -- src/path/to/file.ts   # TSC + ESLint + metrics (~5s)
+npm run qualitygate:changed                          # every 5 completed todos
+npm run qualitygate:capture                       # scan once → .local/quality-backlog.md
+npm run qualitygate:backlog                       # next fix without rescanning
+npm run qualitygate:tsc -- --files src/path/to/file.ts
+npm run qualitygate:tsc -- --changed
 ```
 
-Module-scoped fast verify (dark-factory; reads module from `PLAN.md`, matches husky pre-commit): `node scripts/fabro-verify.mjs`.
+**Many gate failures:** fix one item at a time from `.local/quality-backlog.md`; rescan every **5** fixes — `.agents/execute/partials/quality-backlog.md`.
+
+**End of task** (before “done”):
+
+```bash
+npm run typecheck          # full tsc + qualitygate:metrics
+npm run lint
+npm run test:unit
+```
+
+**Never bypass gates:** no file-level `eslint-disable` for lint/metrics rules, no `@ts-nocheck`, no “legacy extraction” excuses — **user approval required** for any exception. See `.cursor/rules/quality-gates.mdc`.
+
+**Code metrics (ESLint + typecheck, same thresholds):** file lines warn **400** / error **800**; cyclomatic complexity warn **15** / error **25** (`scripts/code-metrics-limits.cjs`). Touched files must be clean before handoff; split oversized files one extract per step, gating each with `qualitygate:file`. See `.cursor/rules/code-metrics.mdc`.
+
+**Refactor discipline (binding):** never rewrite `src/**` with bulk codegen (`node -e`, `python`/`node` heredocs, ad-hoc transform scripts) — edit incrementally, one extract/file at a time. Route pages stay thin shells; feature logic lives in `src/domains/<module>/`, never under `app/`. See `.cursor/rules/refactor-discipline.mdc`.
+
+**Boundaries:** cross-domain imports are lint errors — code shared by 2+ domains moves to `@/shared` (chat is being platformized to `@/shared/chat`); `shared/` never imports `@/domains/*` or `@/app/*`. See `.cursor/rules/eslint-boundaries.mdc`.
+
+Module-scoped verify: `node scripts/fabro-verify.mjs`. Details: `.cursor/skills/typecheck-scoped/SKILL.md`.
 
 ## Local-only tooling
 
-Ad-hoc audits and one-off scripts: **`.local/`** (gitignored). Do not add repo plumbing under `src/lib` for throwaway tooling.
+Ad-hoc audits and one-off scripts: **`.local/`** (gitignored). Quality backlog: `.local/quality-backlog.md` via `npm run qualitygate:capture`. Do not add repo plumbing under `src/lib` for throwaway tooling.
 
 ## Env
 

@@ -11,10 +11,24 @@ vi.mock('@/mcp/core/auth', () => ({
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { validateApiKey, getServiceContext, type ApiKeyValidationResult } from '@/mcp/core/auth'
 
+function mockSupabaseClient(): SupabaseClient {
+  const proxy = new Proxy(Object.create(null), {
+    get: () => vi.fn(),
+  })
+  if (isSupabaseClient(proxy)) {
+    return proxy
+  }
+  throw new Error('Failed to create mock Supabase client')
+}
+
+function isSupabaseClient(value: unknown): value is SupabaseClient {
+  return typeof value === 'object' && value !== null
+}
+
 describe('Request Context (AsyncLocalStorage)', () => {
   const mockContext: MCPServiceContext = {
     userId: 'test-user-id',
-    supabase: {} as unknown as SupabaseClient,
+    supabase: mockSupabaseClient(),
     apiKeyId: 'key-id',
     apiKeyName: 'Test Key',
     scopes: ['*'],
@@ -80,13 +94,13 @@ describe('Request Context (AsyncLocalStorage)', () => {
     it('should fallback to env var when outside of ALS', async () => {
       process.env.MCP_API_KEY = 'test-env-key'
 
-      const mockAuthResult = { valid: true, userId: 'env-user' }
+      const mockAuthResult: ApiKeyValidationResult = { valid: true, userId: 'env-user' }
       const mockEnvContext: MCPServiceContext = {
         ...mockContext,
         userId: 'env-user',
       }
 
-      vi.mocked(validateApiKey).mockResolvedValue(mockAuthResult as ApiKeyValidationResult)
+      vi.mocked(validateApiKey).mockResolvedValue(mockAuthResult)
       vi.mocked(getServiceContext).mockResolvedValue(mockEnvContext)
 
       const result = await getCurrentContext()
