@@ -2,6 +2,11 @@
 
 import React, { Suspense, useState, useEffect } from 'react'
 import { Loader2, AlertCircle, ExternalLink } from 'lucide-react'
+import {
+  THREE_D_VIEWER_ERROR_LOG,
+  THREE_D_VIEWER_LOAD_ERROR,
+  THREE_JS_LOAD_ERROR_LOG,
+} from '@/domains/3d-asset-exporter/constants/three-d-viewer-messages'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Lazy load Three.js components to avoid SSR issues
@@ -100,7 +105,7 @@ const SelectToZoom: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
   const [isLibsLoaded, setIsLibsLoaded] = useState(false)
-  const [isModelLoaded, setIsModelLoaded] = useState(false)
+  const [, setIsModelLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -123,9 +128,9 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
 
         setIsLibsLoaded(true)
       } catch (err: unknown) {
-        console.error('Failed to load Three.js:', err)
+        console.error(THREE_JS_LOAD_ERROR_LOG, err)
         setHasError(true)
-        setErrorMessage(getErrorMessage(err) || 'Failed to load 3D viewer')
+        setErrorMessage(getErrorMessage(err) || THREE_D_VIEWER_LOAD_ERROR)
       }
     }
 
@@ -207,9 +212,9 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
             powerPreference: 'high-performance',
             preserveDrawingBuffer: false,
           }}
-          onCreated={({ gl }) => {
+          onCreated={({ gl }: { gl: { domElement: HTMLCanvasElement } }) => {
             // Handle context loss
-            gl.domElement.addEventListener('webglcontextlost', e => {
+            gl.domElement.addEventListener('webglcontextlost', (e: Event) => {
               e.preventDefault()
               console.warn('WebGL context lost')
             })
@@ -265,7 +270,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
-    console.error('ThreeDViewer error:', error, errorInfo)
+    console.error(THREE_D_VIEWER_ERROR_LOG, error, errorInfo)
   }
 
   render() {

@@ -8,6 +8,11 @@ import { Slider } from '@/components/Slider'
 import { Switch } from '@/components/Switch'
 
 import { ChevronRight } from 'lucide-react'
+import {
+  DomMouseEvent,
+  SidebarLabelVariant,
+  SidebarPosition,
+} from '@/components/DomainSidebar/constants/domain-sidebar'
 
 const DEFAULT_WIDTH = 320
 const MIN_WIDTH = 280
@@ -25,7 +30,7 @@ interface DomainSidebarProps {
   /** Default width in pixels */
   defaultWidth?: number
   /** Position of sidebar - left sidebars have right resize handle, right sidebars have left resize handle */
-  position?: 'left' | 'right'
+  position?: `${SidebarPosition}`
   /** If true, children handle their own scroll/layout (no ScrollArea wrapper) */
   rawContent?: boolean
 }
@@ -36,7 +41,7 @@ export const DomainSidebar: React.FC<DomainSidebarProps> = ({
   className,
   storageKey,
   defaultWidth = DEFAULT_WIDTH,
-  position = 'left',
+  position = SidebarPosition.Left,
   rawContent = false,
 }) => {
   const [width, setWidth] = React.useState(defaultWidth)
@@ -84,7 +89,7 @@ export const DomainSidebar: React.FC<DomainSidebarProps> = ({
       const rect = sidebarRef.current.getBoundingClientRect()
       let newWidth: number
 
-      if (position === 'left') {
+      if (position === SidebarPosition.Left) {
         // For left sidebar, resize from right edge
         newWidth = e.clientX - rect.left
       } else {
@@ -101,12 +106,12 @@ export const DomainSidebar: React.FC<DomainSidebarProps> = ({
       saveWidth(width)
     }
 
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener(DomMouseEvent.MouseMove, handleMouseMove)
+    document.addEventListener(DomMouseEvent.MouseUp, handleMouseUp)
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+      document.removeEventListener(DomMouseEvent.MouseMove, handleMouseMove)
+      document.removeEventListener(DomMouseEvent.MouseUp, handleMouseUp)
     }
   }, [isResizing, width, saveWidth, position])
 
@@ -115,7 +120,7 @@ export const DomainSidebar: React.FC<DomainSidebarProps> = ({
       ref={sidebarRef}
       className={cn(
         'h-full bg-background/60 backdrop-blur-xl flex flex-col relative shrink-0',
-        position === 'left' ? 'border-r border-border/50' : 'border-l border-border/50',
+        position === SidebarPosition.Left ? 'border-r border-border/50' : 'border-l border-border/50',
         isResizing && 'select-none',
         className
       )}
@@ -143,7 +148,7 @@ export const DomainSidebar: React.FC<DomainSidebarProps> = ({
           'absolute top-0 w-1 h-full cursor-ew-resize transition-colors z-10',
           'hover:bg-primary/30',
           isResizing && 'bg-primary/50',
-          position === 'left' ? 'right-0' : 'left-0'
+          position === SidebarPosition.Left ? 'right-0' : 'left-0'
         )}
         onMouseDown={handleMouseDown}
       />
@@ -285,7 +290,7 @@ interface SidebarLabelProps {
   hint?: string
   className?: string
   // Use small/mono style?
-  variant?: 'default' | 'small'
+  variant?: SidebarLabelVariant
 }
 
 export const SidebarLabel: React.FC<SidebarLabelProps> = ({
@@ -293,7 +298,7 @@ export const SidebarLabel: React.FC<SidebarLabelProps> = ({
   htmlFor,
   hint,
   className,
-  variant = 'small', // Defaulting to small now for consistency
+  variant = SidebarLabelVariant.Small, // Defaulting to small now for consistency
 }) => {
   return (
     <div className={cn('space-y-1', className)}>
@@ -302,7 +307,7 @@ export const SidebarLabel: React.FC<SidebarLabelProps> = ({
         // UPGRADED STYLE: Using inline-flex so icons appear next to text
         className={cn(
           'inline-flex items-center gap-1 font-mono font-medium text-muted-foreground',
-          variant === 'small' ? 'text-[10px] uppercase tracking-wide' : 'text-sm'
+          variant === SidebarLabelVariant.Small ? 'text-[10px] uppercase tracking-wide' : 'text-sm'
         )}
       >
         {children}

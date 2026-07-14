@@ -5,6 +5,7 @@
  * Consolidates the 4 consistency variants into checkContinuityTool.
  */
 
+import '@/shared/data/server-guard'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { projects } from '@/db/schema'
@@ -278,7 +279,7 @@ export const readWorldBibleTool = createTool({
       if (shouldInclude('plotTwists')) result.plotTwists = recordArray(storyPlan.plotTwists)
 
       return result
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
       }

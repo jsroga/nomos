@@ -48,7 +48,28 @@ npm run eval -- --samples=5
 npm run eval -- --scorers=consistency
 ```
 
-Uses Mastra `createScorer` definitions in `src/shared/agent-kernel/scorers/` (also registered on the Mastra instance). Golden set: 12 examples in `evals/datasets/storyteller-golden.ts` (3 per scorer), each with `referenceOutput` and per-example `metadata.scorers`. Results land in `evals/results/latest.json`; view via `npm run eval:dashboard`.
+Uses Mastra `createScorer` definitions in `src/shared/agent-kernel/scorers/` (also registered on the Mastra instance) plus deterministic domain scorers unioned by `evals/run.ts`. Golden set: `evals/datasets/storyteller-golden.ts` (21 rows), each with `referenceOutput` and per-example `metadata.scorers`. Results land in `evals/results/latest.json`; view via `npm run eval:dashboard`.
+
+### What qualifies as a golden row (quality bar)
+
+Golden rows steer every prompt and model decision — a mediocre exemplar
+ratchets the whole system toward mediocrity. Before adding or keeping a row:
+
+- **Every "good" reference must pass the Law-of-Motion check**: something
+  irreversible happens — a character acts and the story state visibly changes
+  (knowledge, relationship, power, or stakes). Mood without motion is not
+  golden. *"Neither of them moved to fix it"*-style endings — atmospheric
+  stasis dressed as drama — are the canonical **anti-example** (they may only
+  appear as planted-failure rows expected to score LOW on `story-motion`).
+- **Every "bad" row must name the failure it plants** in
+  `metadata.description` (stated emotion, stasis ending, vague plan, rewrite
+  by a critic, …) so a regression points at the exact craft rule.
+- **Literary filler is bad-tier, not mid-tier.** Prose that sounds writerly
+  but where nothing happens belongs in the negative rows.
+- **Never edit a row to make a failing model pass** — add a new id; delete the
+  old row explicitly in the same PR.
+- Good-reference prose should come from the Muse brainstorm→rank pipeline with
+  human curation (PLAN-V2 Phase 5), not ad-hoc authoring in review flow.
 
 ### Scorer gating matrix
 
@@ -58,7 +79,9 @@ scorers (`npm run eval -- --scorers=<ids>`) and compare to
 
 | Change touches… | Gate on scorers |
 | --- | --- |
-| Author prompt (`GrrmSystemPrompt`), author model, draft/revise steps | `magic`, `prose-craft`, `stakes-cost` |
+| Author prompt (`GrrmSystemPrompt`), author model, draft/revise steps | `magic`, `prose-craft`, `stakes-cost`, `story-motion` |
+| Golden dataset changes (any reference-output edit) | `story-motion` (good rows must pass the Law-of-Motion bar; see the quality-bar section above) |
+| Muse pipeline (entropy decks, brainstorm filter, rank weights) | `story-motion`, `magic` |
 | Beat planner prompt/model, beat-plan schema, concreteness gate | `magic`, `stakes-cost` |
 | Tools, context assembly, canon formatting | `consistency`, `hallucination` |
 | Critic briefs / critic model | `prose-craft`, `stakes-cost` (critics feed the revise step) |

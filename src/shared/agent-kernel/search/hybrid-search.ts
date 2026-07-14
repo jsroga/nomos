@@ -8,6 +8,7 @@
  */
 
 import { getStorytellerWorkspace, ScriptArtifact } from '../workspace'
+import { HybridSearchMode } from '@/shared/ai/constants/hybrid-search'
 
 export interface SearchResult {
   id: string
@@ -15,12 +16,12 @@ export interface SearchResult {
   name: string
   content: string
   score: number
-  source: 'bm25' | 'vector' | 'hybrid'
+  source: HybridSearchMode
   highlights?: string[]
 }
 
 export interface SearchOptions {
-  mode: 'bm25' | 'vector' | 'hybrid'
+  mode: HybridSearchMode
   limit?: number
   threshold?: number
   projectId?: string
@@ -182,12 +183,12 @@ export class HybridSearchEngine {
    */
   async search(
     query: string,
-    options: SearchOptions = { mode: 'hybrid' }
+    options: SearchOptions = { mode: HybridSearchMode.Hybrid }
   ): Promise<SearchResult[]> {
     const limit = options.limit || 10
     const results: SearchResult[] = []
 
-    if (options.mode === 'bm25' || options.mode === 'hybrid') {
+    if (options.mode === HybridSearchMode.Bm25 || options.mode === HybridSearchMode.Hybrid) {
       const bm25Results = this.bm25Index.search(query, limit)
 
       for (const { id, score } of bm25Results) {
@@ -203,7 +204,7 @@ export class HybridSearchEngine {
             name: doc.name,
             content: doc.content.slice(0, 500),
             score,
-            source: 'bm25',
+            source: HybridSearchMode.Bm25,
             highlights: this.extractHighlights(doc.content, query),
           })
         }
@@ -211,13 +212,13 @@ export class HybridSearchEngine {
     }
 
     // Vector search would go here - requires embedding model
-    if (options.mode === 'vector' || options.mode === 'hybrid') {
+    if (options.mode === HybridSearchMode.Vector || options.mode === HybridSearchMode.Hybrid) {
       // Placeholder for vector search implementation
       // This would use the voyage embeddings from the existing infrastructure
     }
 
     // If hybrid, apply RRF
-    if (options.mode === 'hybrid' && results.length > 0) {
+    if (options.mode === HybridSearchMode.Hybrid && results.length > 0) {
       return this.applyRRF(results, limit)
     }
 
@@ -256,7 +257,7 @@ export class HybridSearchEngine {
       .map(([id, score]) => ({
         ...resultMap.get(id)!,
         score,
-        source: 'hybrid' as const,
+        source: HybridSearchMode.Hybrid,
       }))
   }
 
@@ -312,7 +313,7 @@ export function getSearchEngine(): HybridSearchEngine {
   return searchEngineInstance
 }
 
-async function initializeSearch(): Promise<HybridSearchEngine> {
+export async function initializeSearch(): Promise<HybridSearchEngine> {
   const engine = getSearchEngine()
   await engine.initialize()
   return engine

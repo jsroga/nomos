@@ -2,6 +2,11 @@ import { useState } from 'react'
 import { useGameEntities, GameEntity, EntityType } from '@/shared/data/queries/useGameEntities'
 import { Search, Users, MapPin, Gamepad2, Shield, Package, Target } from 'lucide-react'
 
+import {
+  ENTITY_PICKER_DEFAULT_PLACEHOLDER,
+  ENTITY_SELECTOR_DEFAULT_LABEL,
+} from './constants/entity-picker-copy'
+
 interface EntityPickerProps {
   projectId: string
   onSelectEntity: (entity: GameEntity) => void
@@ -10,7 +15,7 @@ interface EntityPickerProps {
   className?: string
 }
 
-const ENTITY_ICONS: Record<EntityType, React.ElementType> = {
+const ENTITY_ICONS: Record<EntityType, React.ComponentType<{ className?: string }>> = {
   character: Users,
   location: MapPin,
   mechanic: Gamepad2,
@@ -32,7 +37,7 @@ export function EntityPicker({
   projectId,
   onSelectEntity,
   filterType,
-  placeholder = 'Search entities across all domains...',
+  placeholder = ENTITY_PICKER_DEFAULT_PLACEHOLDER,
   className = '',
 }: EntityPickerProps) {
   const [search, setSearch] = useState('')
@@ -166,7 +171,7 @@ export function EntitySelectorButton({
   projectId,
   onSelectEntity,
   filterType,
-  label = 'Add Entity',
+  label = ENTITY_SELECTOR_DEFAULT_LABEL,
 }: EntitySelectorButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
 

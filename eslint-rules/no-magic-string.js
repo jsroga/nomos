@@ -22,8 +22,38 @@ const ALLOWED_FILE_PATTERNS = [
   /-wire\.ts$/,
   /[/\\]constants[/\\]/,
   /[/\\]agent-schemas\.ts$/,
-  /[/\\]beat-plan-schema\.ts$/,
-  /[/\\]critic-schema\.ts$/,
+  // Zod schema modules are definitionally string-heavy (`.describe()` prompt
+  // text) — generalized from the earlier per-file entries (beat-plan-schema,
+  // critic-schema) which established the intent.
+  /-schema\.ts$/,
+  // Plural schema bundles (same artifact class as -schema.ts).
+  /[/\\]schemas\.ts$/,
+  // Scorer modules are judge-prompt definitions: instructions, rubric text,
+  // and `.describe()` fields ARE the artifact (same class as schemas/wire).
+  /-scorer\.ts$/,
+  // Domain prompt folders: prompt-builder text is the artifact.
+  /[/\\]domains[/\\][^/\\]+[/\\]prompts[/\\]/,
+  // Domain agent modules: system prompts, LangChain instructions, workflows.
+  // (tools/ is a subset — kept as a separate comment for discoverability.)
+  /[/\\]domains[/\\][^/\\]+[/\\]agents[/\\]/,
+  // Agent tool modules at any depth (zod `.describe()`, tool ids, LangChain schemas).
+  // Replaces the earlier filename-only `*-tools.ts` carve-out — market-analyst and
+  // nested scorer tools use descriptive filenames, same artifact class.
+  /[/\\]agents[/\\](?:[^/\\]+[/\\])*tools[/\\]/,
+  /[/\\]mcp[/\\]domains[/\\][^/\\]+[/\\]tools\.ts$/,
+  // Trigger.dev task modules: provider ids, status labels, and log copy.
+  /[/\\]domains[/\\][^/\\]+[/\\]tasks[/\\].+\.task\.ts$/,
+  // Drizzle schema: table/column names are the definition artifact.
+  /[/\\]db[/\\]schema\.ts$/,
+  // Mastra Studio CLI tool stub bundles.
+  /[/\\]shared[/\\]agent-kernel[/\\]mastra[/\\]tools[/\\]/,
+  // Shared prompt registry modules.
+  /[/\\]shared[/\\]agent-kernel[/\\]prompts[/\\]/,
+  // Central model registry: provider/model id strings are the definition artifact.
+  /[/\\]shared[/\\]agent-kernel[/\\]models\.ts$/,
+  // RAG / context-assembly prompt modules.
+  /[/\\]shared[/\\]ai[/\\]rag[/\\]/,
+  /[/\\]shared[/\\]ai[/\\]contextAssembler/,
 ]
 
 /** @param {import('eslint').Rule.RuleContext} context */
@@ -171,6 +201,22 @@ function isPathLikeString(value) {
 }
 
 /** @param {import('estree').Literal} node */
+function isDisplayNameAssignment(node) {
+  const parent = node.parent
+  if (!parent || parent.type !== 'AssignmentExpression' || parent.right !== node) return false
+  const left = parent.left
+  if (
+    left?.type === 'MemberExpression' &&
+    !left.computed &&
+    left.property?.type === 'Identifier' &&
+    left.property.name === 'displayName'
+  ) {
+    return true
+  }
+  return false
+}
+
+/** @param {import('estree').Literal} node */
 function isTypeofGuardLiteral(node) {
   const parent = node.parent
   if (!parent || parent.type !== 'BinaryExpression') return false
@@ -188,6 +234,7 @@ function shouldIgnoreLiteral(node) {
   if (typeof value !== 'string') return true
   if (value.length <= 1) return true
   if (isTypeofGuardLiteral(node)) return true
+  if (isDisplayNameAssignment(node)) return true
   if (DIRECTIVE_LITERALS.has(value)) return true
   if (isPathLikeString(value)) return true
   if (value.startsWith('http://') || value.startsWith('https://')) return true

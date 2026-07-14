@@ -123,7 +123,7 @@ export interface ConsistencyCheckRequest {
 /**
  * Consistency message for chat UI
  */
-interface ConsistencyMessage {
+export interface ConsistencyChatMessage {
   type: 'consistency_check'
   checkId: string
   result: ConsistencyCheckResult

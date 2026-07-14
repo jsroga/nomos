@@ -10,11 +10,24 @@ import { NextRequest } from 'next/server'
 import { requireAuth } from '@/shared/auth/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { streamLoopCreator } from '@/domains/loop-creator/server'
-import { type LoopCreatorState } from '@/domains/loop-creator'
+import { type LoopCreatorState, createInitialLoopState } from '@/domains/loop-creator'
 import { HumanMessage, AIMessage } from '@langchain/core/messages'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  ContentType,
+  LoopCreatorChatPhase,
+  LoopCreatorChatRole,
+  LoopCreatorHealthStatus,
+  LoopCreatorServiceId,
+  LoopCreatorStreamEventType,
+  NextRuntime,
+  SseAccelBuffering,
+  SseCacheControl,
+  SseHeader,
+} from '@/shared/data/constants/protocol'
 
 export const maxDuration = 120
-export const runtime = 'nodejs'
+export const runtime = NextRuntime.NodeJs
 
 interface CanvasNode {
   id: string
@@ -36,9 +49,8 @@ interface ChatRequest {
   message: string
   projectId: string
   threadId?: string
-  sessionId?: string // Mastra session ID for grouped traces
-  userId?: string // User ID for tracking
-  /** Recent conversation so the agent has context (avoids stateless replies) */
+  sessionId?: string
+  userId?: string
   recentMessages?: { role: 'user' | 'assistant'; content: string }[]
   context?: {
     gameGenre?: string
@@ -56,18 +68,17 @@ interface ChatRequest {
 
 import type { StreamEvent as LoopOrchestratorStreamEvent } from '@/domains/loop-creator/core/graph/loop-orchestrator'
 
-// StreamEvent interface for UI compatibility
 interface StreamEvent {
   type:
-  | 'node'
-  | 'message'
-  | 'action'
-  | 'questions'
-  | 'token'
-  | 'error'
-  | 'start'
-  | 'state'
-  | 'complete'
+  | LoopCreatorStreamEventType.Node
+  | LoopCreatorStreamEventType.Message
+  | LoopCreatorStreamEventType.Action
+  | LoopCreatorStreamEventType.Questions
+  | LoopCreatorStreamEventType.Token
+  | LoopCreatorStreamEventType.Error
+  | LoopCreatorStreamEventType.Start
+  | LoopCreatorStreamEventType.State
+  | LoopCreatorStreamEventType.Complete
   node?: string
   agent?: string
   content?: string
@@ -102,38 +113,30 @@ function formatSSE(data: ChatStreamEvent): string {
   return `data: ${jsonStr}\n\n`
 }
 
-
 export async function POST(req: NextRequest) {
   try {
     const { session } = await requireAuth()
     if (!session) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      return new Response(JSON.stringify({ error: API_ERROR.UNAUTHORIZED }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': ContentType.Json },
       })
     }
 
     const body: ChatRequest = await req.json()
-    const {
-      message,
-      projectId,
-      threadId,
-      context,
-      recentMessages,
-    } = body
+    const { message, projectId, threadId, context, recentMessages } = body
 
     if (!message || !projectId) {
-      return new Response(JSON.stringify({ error: 'message and projectId are required' }), {
+      return new Response(JSON.stringify({ error: API_ERROR.LOOP_CHAT_MESSAGE_PROJECT_REQUIRED }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': ContentType.Json },
       })
     }
 
-    // Verify project access
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return new Response(JSON.stringify({ error: 'Project not found or access denied' }), {
+      return new Response(JSON.stringify({ error: API_ERROR.PROJECT_ACCESS_DENIED }), {
         status: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': ContentType.Json },
       })
     }
 
@@ -146,7 +149,7 @@ export async function POST(req: NextRequest) {
           try {
             controller.enqueue(new TextEncoder().encode(formatSSE(data)))
           } catch (error) {
-            console.error('[LoopAPI] Enqueue error:', error)
+            console.error(API_LOG_PREFIX.LOOP_API_ENQUEUE_ERROR, error)
             isClosed = true
           }
         }
@@ -165,59 +168,54 @@ export async function POST(req: NextRequest) {
           const currentThreadId = threadId || crypto.randomUUID()
 
           safeEnqueue({
-            type: 'start',
+            type: LoopCreatorStreamEventType.Start,
             threadId: currentThreadId,
             timestamp: Date.now(),
           })
 
           const initialState: LoopCreatorState = {
+            ...createInitialLoopState(projectId, message, context),
+            // Seed the graph with the recent conversation history, not just the
+            // latest turn that the factory defaults to.
             messages: [
               ...(recentMessages?.map(m =>
-                m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)
+                m.role === LoopCreatorChatRole.User
+                  ? new HumanMessage(m.content)
+                  : new AIMessage(m.content)
               ) || []),
               new HumanMessage(message),
             ],
-            roundCount: 0,
-            gameContext: {
-              gameGenre: context?.gameGenre,
-              gamePlatform: context?.gamePlatform,
-              targetAudience: context?.targetAudience,
-              gameDescription: context?.gameDescription,
-            },
-            currentPhase: 'ideation',
-            nextAgent: 'supervisor',
           }
 
-          // Let the LoopGraph run and stream events
           const finalState = await streamLoopCreator(
             initialState,
             { configurable: { thread_id: currentThreadId } },
-            (event) => {
+            event => {
               safeEnqueue(event)
             }
           )
 
           safeEnqueue({
-            type: 'state',
+            type: LoopCreatorStreamEventType.State,
             mechanics: finalState.mechanics?.length ?? 0,
             connections: finalState.connections?.length ?? 0,
             loops: finalState.loops?.length ?? 0,
             progressionSystems: finalState.progressionSystems?.length ?? 0,
             balanceScore: finalState.balanceAnalysis?.overallScore,
-            phase: finalState.currentPhase || 'ideation',
+            phase: finalState.currentPhase || LoopCreatorChatPhase.Ideation,
             timestamp: Date.now(),
           })
 
           safeEnqueue({
-            type: 'complete',
+            type: LoopCreatorStreamEventType.Complete,
             threadId: currentThreadId,
             timestamp: Date.now(),
           })
         } catch (error) {
-          console.error('[LoopAPI] Stream error:', error)
+          console.error(API_LOG_PREFIX.LOOP_API_STREAM_ERROR, error)
           safeEnqueue({
-            type: 'error',
-            error: error instanceof Error ? error.message : 'Unknown error',
+            type: LoopCreatorStreamEventType.Error,
+            error: error instanceof Error ? error.message : API_ERROR.UNKNOWN_ERROR,
             timestamp: Date.now(),
           })
         } finally {
@@ -228,17 +226,19 @@ export async function POST(req: NextRequest) {
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache, no-transform',
-        Connection: 'keep-alive',
-        'X-Accel-Buffering': 'no',
+        'Content-Type': SseHeader.ContentType,
+        'Cache-Control': SseCacheControl.NoCacheNoTransform,
+        Connection: SseHeader.Connection,
+        'X-Accel-Buffering': SseAccelBuffering.No,
       },
     })
   } catch (error) {
-    console.error('[LoopAPI] Error:', error)
+    console.error(API_LOG_PREFIX.LOOP_API_ERROR, error)
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        error: error instanceof Error ? error.message : API_ERROR.UNKNOWN_ERROR,
+      }),
+      { status: 500, headers: { 'Content-Type': ContentType.Json } }
     )
   }
 }
@@ -246,11 +246,11 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   return new Response(
     JSON.stringify({
-      status: 'ok',
-      service: 'loop-creator',
-      stack: 'mastra',
+      status: LoopCreatorHealthStatus.Ok,
+      service: LoopCreatorServiceId.LoopCreator,
+      stack: LoopCreatorServiceId.Mastra,
       timestamp: Date.now(),
     }),
-    { headers: { 'Content-Type': 'application/json' } }
+    { headers: { 'Content-Type': ContentType.Json } }
   )
 }

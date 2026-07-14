@@ -1,5 +1,22 @@
 import type { Tile } from '../../core/world-types'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import {
+  ContentType,
+  DATA_URL_PNG_PREFIX,
+  HtmlElementTag,
+  CanvasContextType,
+  HttpHeaderName,
+  HttpMethod,
+  ImageCrossOrigin,
+  SegmentationProvider,
+  SelectModeApiRoute,
+  SelectModeCanvasFill,
+  SelectModeErrorMessage,
+  SelectModeLogLabel,
+  SelectModeLogMessage,
+  SelectModePixelSample,
+  UrlScheme,
+} from '../../constants/select-mode-service'
 
 declare global {
   interface Window {
@@ -37,15 +54,13 @@ export interface SelectResult {
 export class SelectModeService {
   private TILE_SIZE = 512
   private abortController: AbortController | null = null
-  private currentScale = 1 // Pixels per world unit
-  private currentWorldBounds: { x: number; y: number; width: number; height: number } | null = null
 
-  private getSegmentationProvider(): 'fal' | 'replicate' {
+  private getSegmentationProvider(): SegmentationProvider {
     if (typeof window !== 'undefined') {
       const provider = localStorage.getItem(LocalStorageKeys.AI_SEGMENTATION_PROVIDER)
-      if (provider === 'replicate') return 'replicate'
+      if (provider === SegmentationProvider.Replicate) return SegmentationProvider.Replicate
     }
-    return 'fal'
+    return SegmentationProvider.Fal
   }
 
   private getFalApiKey(): string {
@@ -61,7 +76,7 @@ export class SelectModeService {
 
   private getReplicateApiKey(): string {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('ai-config-replicate')
+      const saved = localStorage.getItem(LocalStorageKeys.AI_CONFIG_REPLICATE)
       if (saved) {
         const config = JSON.parse(saved)
         return config.apiKey
@@ -139,12 +154,12 @@ export class SelectModeService {
         if (tile?.image_filename) {
           try {
             const pid = projectId || tile.project_id
-            const imgUrl = tile.image_filename.startsWith('http') ? tile.image_filename : `/projects/${pid}/${tile.image_filename}`
+            const imgUrl = tile.image_filename.startsWith(UrlScheme.Http) ? tile.image_filename : `/projects/${pid}/${tile.image_filename}`
             const img = await this.loadImage(imgUrl)
             tileResolution = img.naturalWidth // Actual pixel size of tile
             console.log(`[SelectModeService] Detected tile resolution: ${tileResolution}px`)
           } catch (e) {
-            console.warn('[SelectModeService] Could not detect tile resolution')
+            console.warn(SelectModeLogMessage.CouldNotDetectTileResolution)
           }
         }
       }
@@ -179,7 +194,7 @@ export class SelectModeService {
     const alignedHeight = rawHeight + ((32 - (rawHeight % 32)) % 32)
 
     // Log canvas dimensions for debugging
-    console.log('[SelectModeService] Canvas dimensions:', {
+    console.log(SelectModeLogMessage.CanvasDimensions, {
       rawWidth,
       rawHeight,
       alignedWidth,
@@ -205,24 +220,24 @@ export class SelectModeService {
     console.log(
       `[SelectModeService] Scale: ${finalScale} (original: ${scale}), World bounds:`,
       worldBounds,
-      'Pixel bounds:',
+      SelectModeLogLabel.PixelBounds,
       pixelBounds,
-      'Effective tile size:',
+      SelectModeLogLabel.EffectiveTileSize,
       effectiveTileSize
     )
 
     // 3. Create Context Image at native resolution
-    const canvas = document.createElement('canvas')
+    const canvas = document.createElement(HtmlElementTag.Canvas)
     canvas.width = pixelBounds.width
     canvas.height = pixelBounds.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Failed to create canvas')
+    const ctx = canvas.getContext(CanvasContextType.TwoD)
+    if (!ctx) throw new Error(SelectModeErrorMessage.FailedToCreateCanvas)
 
     // Fill with gray (debug background)
-    ctx.fillStyle = '#808080'
+    ctx.fillStyle = SelectModeCanvasFill.DebugGray
     ctx.fillRect(0, 0, pixelBounds.width, pixelBounds.height)
 
-    console.log('[SelectModeService] Canvas created:', {
+    console.log(SelectModeLogMessage.CanvasCreated, {
       width: canvas.width,
       height: canvas.height,
       pixelBounds,
@@ -237,7 +252,7 @@ export class SelectModeService {
 
         if (tile?.image_filename) {
           const pid = projectId || tile.project_id
-          const imagePath = tile.image_filename.startsWith('http') ? tile.image_filename : `/projects/${pid}/${tile.image_filename}`
+          const imagePath = tile.image_filename.startsWith(UrlScheme.Http) ? tile.image_filename : `/projects/${pid}/${tile.image_filename}`
 
           const promise = this.loadImage(imagePath)
             .then(img => {
@@ -284,7 +299,7 @@ export class SelectModeService {
     await Promise.all(imagePromises)
 
     // Verify canvas state before converting to base64
-    console.log('[SelectModeService] Canvas state before toDataURL:', {
+    console.log(SelectModeLogMessage.CanvasStateBeforeToDataUrl, {
       width: canvas.width,
       height: canvas.height,
       contextLost: ctx.isContextLost?.() ?? 'N/A',
@@ -293,36 +308,34 @@ export class SelectModeService {
     // DEBUG: Sample pixels at multiple points to verify canvas content
     // Gray [128,128,128,255] = no tile loaded, Black [0,0,0,0] = transparency issue
     const samples = [
-      { name: 'topLeft', x: 10, y: 10 },
-      { name: 'topRight', x: canvas.width - 10, y: 10 },
-      { name: 'center', x: Math.floor(canvas.width / 2), y: Math.floor(canvas.height / 2) },
-      { name: 'bottomLeft', x: 10, y: canvas.height - 10 },
-      { name: 'bottomRight', x: canvas.width - 10, y: canvas.height - 10 },
+      { name: SelectModePixelSample.TopLeft, x: 10, y: 10 },
+      { name: SelectModePixelSample.TopRight, x: canvas.width - 10, y: 10 },
+      { name: SelectModePixelSample.Center, x: Math.floor(canvas.width / 2), y: Math.floor(canvas.height / 2) },
+      { name: SelectModePixelSample.BottomLeft, x: 10, y: canvas.height - 10 },
+      { name: SelectModePixelSample.BottomRight, x: canvas.width - 10, y: canvas.height - 10 },
     ]
     const pixelSamples: Record<string, number[]> = {}
     samples.forEach(s => {
       const pixel = ctx.getImageData(s.x, s.y, 1, 1).data
       pixelSamples[s.name] = Array.from(pixel)
     })
-    console.log('[DEBUG] Canvas pixel samples:', pixelSamples)
+    console.log(SelectModeLogMessage.DebugCanvasPixelSamples, pixelSamples)
 
-    const base64Image = canvas.toDataURL('image/png')
+    const base64Image = canvas.toDataURL(ContentType.Png)
 
     // DEBUG: Store image in window for easy console access
     // To view: type window.__DEBUG_CONTEXT_IMAGE__ in console, right-click result, open in new tab
     window.__DEBUG_CONTEXT_IMAGE__ = base64Image
-    console.log('[DEBUG] Context image stored at window.__DEBUG_CONTEXT_IMAGE__')
-    console.log(
-      '[DEBUG] To view: paste window.__DEBUG_CONTEXT_IMAGE__ in console, right-click the URL'
-    )
+    console.log(SelectModeLogMessage.DebugContextImageStored)
+    console.log(SelectModeLogMessage.DebugContextImageViewHint)
 
     // Verify the base64 output is properly formed
-    const expectedPrefix = 'data:image/png;base64,'
+    const expectedPrefix = DATA_URL_PNG_PREFIX
     const isValidPrefix = base64Image.startsWith(expectedPrefix)
     const base64Data = base64Image.slice(expectedPrefix.length)
     const isValidBase64Length = base64Data.length > 0 && base64Data.length % 4 === 0
 
-    console.log('[SelectModeService] Base64 validation:', {
+    console.log(SelectModeLogMessage.Base64Validation, {
       totalLength: base64Image.length,
       base64DataLength: base64Data.length,
       isValidPrefix,
@@ -333,23 +346,18 @@ export class SelectModeService {
     })
 
     if (!isValidPrefix || !isValidBase64Length) {
-      console.error('[SelectModeService] WARNING: Base64 may be malformed!')
+      console.error(SelectModeLogMessage.Base64MalformedWarning)
     }
 
-    // Store effective scale for later use in extraction
-    this.currentScale = finalScale
-
-    // Store world bounds for later use
-    this.currentWorldBounds = worldBounds
-
-    console.log('[SelectModeService] Image details:', {
+    // Store effective scale and world bounds for debugging context in logs below
+    console.log(SelectModeLogMessage.ImageDetails, {
       width: canvas.width,
       height: canvas.height,
       worldBounds,
       pixelBounds,
       scale: finalScale,
       dataUrlLength: base64Image.length,
-      hasDataPrefix: base64Image.startsWith('data:'),
+      hasDataPrefix: base64Image.startsWith(UrlScheme.Data),
     })
 
     // 3. Adjust box to be relative to the context image (in PIXEL coordinates)
@@ -361,7 +369,7 @@ export class SelectModeService {
       y2: (box.y2 - worldBounds.y) * finalScale,
     }
 
-    console.log('[SelectModeService] Box transformation:', {
+    console.log(SelectModeLogMessage.BoxTransformation, {
       originalBox: box,
       worldBoundsOrigin: { x: worldBounds.x, y: worldBounds.y },
       finalScale,
@@ -373,7 +381,7 @@ export class SelectModeService {
       canvasSize: { width: pixelBounds.width, height: pixelBounds.height },
     })
 
-    console.log('[SelectModeService] Calling API with:', {
+    console.log(SelectModeLogMessage.CallingApiWith, {
       imageSize: { width: pixelBounds.width, height: pixelBounds.height },
       box: relativeBox,
       worldBounds,
@@ -384,15 +392,15 @@ export class SelectModeService {
     let apiResponse: unknown = null
 
     const provider = this.getSegmentationProvider()
-    console.log('[SelectModeService] Using segmentation provider:', provider)
+    console.log(SelectModeLogMessage.UsingSegmentationProvider, provider)
 
     // 4. Call appropriate segmentation API
     try {
-      if (provider === 'replicate') {
+      if (provider === SegmentationProvider.Replicate) {
         // Call Replicate SAM-2 API
-        const data = await fetch('/api/ai/segment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const data = await fetch(SelectModeApiRoute.Segment, {
+          method: HttpMethod.Post,
+          headers: { [HttpHeaderName.ContentType]: ContentType.Json },
           body: JSON.stringify({
             image: base64Image,
             points: [], // SAM-2 auto-generates masks, points are ignored
@@ -407,33 +415,35 @@ export class SelectModeService {
 
         // Replicate returns mask URLs - find the best mask for the selection box
         if (data.output?.combined_mask) {
-          console.log('[SelectModeService] Got combined_mask URL:', data.output.combined_mask)
+          console.log(SelectModeLogMessage.GotCombinedMaskUrl, data.output.combined_mask)
           // Fetch the mask image and convert to data URL (at pixel dimensions)
-          maskUrl = await this.fetchMaskAsDataUrl(
+          const fetchedMask = await this.fetchMaskAsDataUrl(
             data.output.combined_mask,
             pixelBounds.width,
             pixelBounds.height
           )
+          if (fetchedMask) maskUrl = fetchedMask
         } else if (data.output?.individual_masks?.length > 0) {
           // Find the mask that best covers the selection box
           console.log(
-            '[SelectModeService] Got individual_masks:',
+            SelectModeLogMessage.GotIndividualMasks,
             data.output.individual_masks.length
           )
           // For now, use the first mask - could improve by finding best overlap
-          maskUrl = await this.fetchMaskAsDataUrl(
+          const fetchedMask = await this.fetchMaskAsDataUrl(
             data.output.individual_masks[0],
             pixelBounds.width,
             pixelBounds.height
           )
+          if (fetchedMask) maskUrl = fetchedMask
         } else {
-          console.warn('[SelectModeService] No masks in Replicate response')
+          console.warn(SelectModeLogMessage.NoMasksInReplicateResponse)
         }
       } else {
         // Call fal.ai SAM-3 API with bounding box
-        const data = await fetch('/api/ai/fal-segment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const data = await fetch(SelectModeApiRoute.FalSegment, {
+          method: HttpMethod.Post,
+          headers: { [HttpHeaderName.ContentType]: ContentType.Json },
           body: JSON.stringify({
             image: base64Image,
             box: relativeBox,
@@ -455,7 +465,7 @@ export class SelectModeService {
           const maskWidth = data.output.width || Math.round(pixelBounds.width)
           const maskHeight = data.output.height || Math.round(pixelBounds.height)
 
-          console.log('[SelectModeService] RLE dimensions:', {
+          console.log(SelectModeLogMessage.RleDimensions, {
             fromAPI: { width: data.output.width, height: data.output.height },
             expected: { width: pixelBounds.width, height: pixelBounds.height },
             using: { width: maskWidth, height: maskHeight },
@@ -466,7 +476,7 @@ export class SelectModeService {
 
           // If the mask dimensions don't match our expected pixel bounds, we need to resize
           if (maskWidth !== pixelBounds.width || maskHeight !== pixelBounds.height) {
-            console.log('[SelectModeService] Resizing mask to match pixel bounds')
+            console.log(SelectModeLogMessage.ResizingMaskToPixelBounds)
             const resizedMask = await this.resizeMask(
               maskDataUrl,
               maskWidth,
@@ -479,7 +489,7 @@ export class SelectModeService {
             maskUrl = maskDataUrl
           }
         } else {
-          console.warn('[SelectModeService] No RLE mask in response')
+          console.warn(SelectModeLogMessage.NoRleMaskInResponse)
         }
       }
 
@@ -503,7 +513,7 @@ export class SelectModeService {
         },
       }
     } catch (error: unknown) {
-      console.error('[SelectModeService] Error during segmentation:', error)
+      console.error(SelectModeLogMessage.ErrorDuringSegmentation, error)
       return {
         imageUrl: maskUrl,
         bounds: {
@@ -526,8 +536,8 @@ export class SelectModeService {
   private loadImage(url: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const img = new Image()
-      if (url.startsWith('http')) {
-        img.crossOrigin = 'Anonymous'
+      if (url.startsWith(UrlScheme.Http)) {
+        img.crossOrigin = ImageCrossOrigin.Anonymous
       }
       img.onload = () => resolve(img)
       img.onerror = e => reject(new Error(`Failed to load image at ${url}: ${e}`))
@@ -545,27 +555,27 @@ export class SelectModeService {
     targetHeight: number
   ): Promise<string | null> {
     try {
-      console.log('[SelectModeService] Fetching mask from URL:', maskUrl)
+      console.log(SelectModeLogMessage.FetchingMaskFromUrl, maskUrl)
 
       // Load the mask image
       const maskImg = await this.loadImage(maskUrl)
 
       // Create canvas with target dimensions
-      const canvas = document.createElement('canvas')
+      const canvas = document.createElement(HtmlElementTag.Canvas)
       canvas.width = targetWidth
       canvas.height = targetHeight
-      const ctx = canvas.getContext('2d')
-      if (!ctx) throw new Error('Failed to create canvas for mask')
+      const ctx = canvas.getContext(CanvasContextType.TwoD)
+      if (!ctx) throw new Error(SelectModeErrorMessage.FailedToCreateCanvasForMask)
 
       // Draw mask scaled to target dimensions
       ctx.drawImage(maskImg, 0, 0, targetWidth, targetHeight)
 
-      const dataUrl = canvas.toDataURL('image/png')
-      console.log('[SelectModeService] Converted mask to data URL, length:', dataUrl.length)
+      const dataUrl = canvas.toDataURL(ContentType.Png)
+      console.log(SelectModeLogMessage.ConvertedMaskToDataUrl, dataUrl.length)
 
       return dataUrl
     } catch (error) {
-      console.error('Error finding best mask:', error)
+      console.error(SelectModeLogMessage.ErrorFindingBestMask, error)
       return null
     }
   }
@@ -583,18 +593,18 @@ export class SelectModeService {
     try {
       const maskImg = await this.loadImage(maskDataUrl)
 
-      const canvas = document.createElement('canvas')
+      const canvas = document.createElement(HtmlElementTag.Canvas)
       canvas.width = targetWidth
       canvas.height = targetHeight
-      const ctx = canvas.getContext('2d')
-      if (!ctx) throw new Error('Failed to create canvas for resizing')
+      const ctx = canvas.getContext(CanvasContextType.TwoD)
+      if (!ctx) throw new Error(SelectModeErrorMessage.FailedToCreateCanvasForResizing)
 
       // Draw mask scaled to target dimensions
       ctx.drawImage(maskImg, 0, 0, targetWidth, targetHeight)
 
-      return canvas.toDataURL('image/png')
+      return canvas.toDataURL(ContentType.Png)
     } catch (error) {
-      console.error('Error resizing mask:', error)
+      console.error(SelectModeLogMessage.ErrorResizingMask, error)
       throw error
     }
   }
@@ -624,36 +634,36 @@ export class SelectModeService {
     // The context image is at pixel dimensions, originalBounds is in world coordinates
     const scale = width / originalBounds.width
 
-    console.log('[SelectModeService] extractAsset:', {
+    console.log(SelectModeLogMessage.ExtractAsset, {
       imageSize: { width, height },
       originalBounds,
       scale,
     })
 
     // Create canvas for the context image
-    const contextCanvas = document.createElement('canvas')
+    const contextCanvas = document.createElement(HtmlElementTag.Canvas)
     contextCanvas.width = width
     contextCanvas.height = height
-    const contextCtx = contextCanvas.getContext('2d')
-    if (!contextCtx) throw new Error('Failed to create context canvas')
+    const contextCtx = contextCanvas.getContext(CanvasContextType.TwoD)
+    if (!contextCtx) throw new Error(SelectModeErrorMessage.FailedToCreateContextCanvas)
     contextCtx.drawImage(contextImg, 0, 0)
     const contextData = contextCtx.getImageData(0, 0, width, height)
 
     // Create canvas for the mask
-    const maskCanvas = document.createElement('canvas')
+    const maskCanvas = document.createElement(HtmlElementTag.Canvas)
     maskCanvas.width = width
     maskCanvas.height = height
-    const maskCtx = maskCanvas.getContext('2d')
-    if (!maskCtx) throw new Error('Failed to create mask canvas')
+    const maskCtx = maskCanvas.getContext(CanvasContextType.TwoD)
+    if (!maskCtx) throw new Error(SelectModeErrorMessage.FailedToCreateMaskCanvas)
     maskCtx.drawImage(maskImg, 0, 0, width, height)
     const maskData = maskCtx.getImageData(0, 0, width, height)
 
     // Create output canvas
-    const outputCanvas = document.createElement('canvas')
+    const outputCanvas = document.createElement(HtmlElementTag.Canvas)
     outputCanvas.width = width
     outputCanvas.height = height
-    const outputCtx = outputCanvas.getContext('2d')
-    if (!outputCtx) throw new Error('Failed to create output canvas')
+    const outputCtx = outputCanvas.getContext(CanvasContextType.TwoD)
+    if (!outputCtx) throw new Error(SelectModeErrorMessage.FailedToCreateOutputCanvas)
     const outputData = outputCtx.createImageData(width, height)
 
     // Apply mask: copy context pixels where mask has alpha, transparent elsewhere
@@ -689,7 +699,7 @@ export class SelectModeService {
     const worldWidth = cropResult.width / scale
     const worldHeight = cropResult.height / scale
 
-    console.log('[SelectModeService] cropResult:', {
+    console.log(SelectModeLogMessage.CropResult, {
       pixelOffset: { x: cropResult.offsetX, y: cropResult.offsetY },
       pixelSize: { w: cropResult.width, h: cropResult.height },
       worldOffset: { x: worldOffsetX, y: worldOffsetY },
@@ -719,10 +729,10 @@ export class SelectModeService {
     width: number
     height: number
   } {
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext(CanvasContextType.TwoD)
     if (!ctx)
       return {
-        dataUrl: canvas.toDataURL('image/png'),
+        dataUrl: canvas.toDataURL(ContentType.Png),
         offsetX: 0,
         offsetY: 0,
         width: canvas.width,
@@ -753,7 +763,7 @@ export class SelectModeService {
     // If no content found, return original
     if (minX > maxX || minY > maxY) {
       return {
-        dataUrl: canvas.toDataURL('image/png'),
+        dataUrl: canvas.toDataURL(ContentType.Png),
         offsetX: 0,
         offsetY: 0,
         width: canvas.width,
@@ -772,13 +782,13 @@ export class SelectModeService {
     const cropHeight = maxY - minY + 1
 
     // Create cropped canvas
-    const croppedCanvas = document.createElement('canvas')
+    const croppedCanvas = document.createElement(HtmlElementTag.Canvas)
     croppedCanvas.width = cropWidth
     croppedCanvas.height = cropHeight
-    const croppedCtx = croppedCanvas.getContext('2d')
+    const croppedCtx = croppedCanvas.getContext(CanvasContextType.TwoD)
     if (!croppedCtx)
       return {
-        dataUrl: canvas.toDataURL('image/png'),
+        dataUrl: canvas.toDataURL(ContentType.Png),
         offsetX: 0,
         offsetY: 0,
         width: canvas.width,
@@ -788,7 +798,7 @@ export class SelectModeService {
     croppedCtx.drawImage(canvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
 
     return {
-      dataUrl: croppedCanvas.toDataURL('image/png'),
+      dataUrl: croppedCanvas.toDataURL(ContentType.Png),
       offsetX: minX,
       offsetY: minY,
       width: cropWidth,

@@ -12,7 +12,7 @@
  * - Genre-specific subs (r/roguelikes, r/FPS, etc.)
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
+import { createLoopStructuredTool } from './structured-tool'
 import { z } from 'zod'
 
 /**
@@ -64,7 +64,7 @@ const SUBREDDIT_DATA: Record<string, SubredditPulse> = {
     subscribers: 1500000,
     activeUsers: 8500,
     hotTopics: ['Marketing strategies', 'Steam algorithm', 'Burnout', 'Publisher vs solo'],
-    dominantSentiment: 'discussion',
+    dominantSentiment: 'mixed',
     trendingGames: ['Success stories', 'Post-mortems', 'Wishlists data'],
     commonComplaints: ['visibility challenges', 'review bombing', 'clone fatigue'],
     praisedFeatures: ['unique mechanics', 'strong hooks', 'community building'],
@@ -108,7 +108,7 @@ const SUBREDDIT_DATA: Record<string, SubredditPulse> = {
     subscribers: 3800000,
     activeUsers: 12000,
     hotTopics: ['Industry news', 'Review discussions', 'Studio acquisitions'],
-    dominantSentiment: 'discussion',
+    dominantSentiment: 'mixed',
     trendingGames: ['Major releases', 'Award winners', 'Controversial titles'],
     commonComplaints: ['hype cycles', 'crunch culture', 'monetization'],
     praisedFeatures: ['quality journalism', 'consumer advocacy'],
@@ -303,10 +303,29 @@ const HOT_POSTS_BY_TOPIC: Record<string, RedditPost[]> = {
   ],
 }
 
+const redditPulseSchema = z.object({
+  topic: z
+    .string()
+    .describe('Gaming topic to search (e.g., "roguelike", "extraction", "narrative rpg")'),
+  subreddits: z
+    .array(z.string())
+    .optional()
+    .describe('Specific subreddits to search (e.g., ["r/gamedev", "r/roguelikes"])'),
+  sentimentFilter: z
+    .enum(['all', 'positive', 'negative', 'mixed', 'discussion'])
+    .optional()
+    .describe('Filter posts by sentiment'),
+  timeframe: z
+    .enum(['day', 'week', 'month'])
+    .optional()
+    .default('week')
+    .describe('Time range for posts'),
+})
+
 /**
  * Reddit Pulse Tool
  */
-export const redditPulseTool = new DynamicStructuredTool({
+export const redditPulseTool = createLoopStructuredTool({
   name: 'reddit_gaming_pulse',
   description: `Fetch gaming discussions and community sentiment from Reddit.
 
@@ -324,25 +343,9 @@ Returns:
 - Trending games in discussions
 
 Use this to understand community sentiment and what players are discussing.`,
-  schema: z.object({
-    topic: z
-      .string()
-      .describe('Gaming topic to search (e.g., "roguelike", "extraction", "narrative rpg")'),
-    subreddits: z
-      .array(z.string())
-      .optional()
-      .describe('Specific subreddits to search (e.g., ["r/gamedev", "r/roguelikes"])'),
-    sentimentFilter: z
-      .enum(['all', 'positive', 'negative', 'mixed', 'discussion'])
-      .optional()
-      .describe('Filter posts by sentiment'),
-    timeframe: z
-      .enum(['day', 'week', 'month'])
-      .optional()
-      .default('week')
-      .describe('Time range for posts'),
-  }),
-  func: async ({ topic, subreddits, sentimentFilter, timeframe }): Promise<string> => {
+  schema: redditPulseSchema,
+  func: async input => {
+    const { topic, subreddits, sentimentFilter, timeframe } = redditPulseSchema.parse(input)
     try {
       const topicLower = topic.toLowerCase()
       const results: RedditPost[] = []

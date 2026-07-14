@@ -18,6 +18,13 @@
 // ============================================================================
 
 import { DEFAULT_STYLE_CONTEXT } from '@/shared/data/constants/style-presets'
+import {
+  CREATIVITY_PROMPT_PREFIX,
+  CreativityPromptLevel,
+  GenerationPromptCopy,
+  GenerationPromptStyle,
+} from '@/shared/data/server/constants/generation-prompts'
+import { StringSeparator } from '@/shared/data/constants/protocol'
 
 /** Full style phrase for first tile: "Isometric painted world, " + (project style or default). */
 function getFirstTileStylePhrase(styleContext?: string | null): string {
@@ -44,22 +51,21 @@ export const GENERATION_PROMPTS = {
   FOLLOW_UP: {
     /** Master template for inpainting follow-up tiles */
     MASTER: (prompt: string, styleInfo: string) =>
-      `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Maintain ${styleInfo}, consistent art style. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not generate borders or frames.`,
+      `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Maintain ${styleInfo}, ${GenerationPromptStyle.ConsistentArtStyle}. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not generate borders or frames.`,
 
-    GEMINI: (prompt: string, styleInfo: string = 'consistent art style') =>
+    GEMINI: (prompt: string, _styleInfo: string = GenerationPromptStyle.ConsistentArtStyle) =>
       `Inpaint the bright magenta/pink square in the center of this image. The magenta marks exactly where new content must go — replace ONLY the magenta pixels with: ${prompt}. The gray areas outside the magenta are unconstrained empty borders with no adjacent tiles — do not fill or alter them. The non-gray, non-magenta areas are neighboring tiles — seamlessly continue their colors, lines, and lighting at every edge where they touch the magenta area. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not alter any non-magenta pixels. Do not add borders or frames.`,
 
-    GEMINI_MASKED: (_prompt?: string, _styleInfo: string = 'consistent art style') =>
-      'Edit only the masked center tile so it becomes a seamless continuation of the surrounding neighbor context.',
+    GEMINI_MASKED: (_prompt?: string, _styleInfo: string = GenerationPromptStyle.ConsistentArtStyle) =>
+      GenerationPromptCopy.MaskedCenterTile,
 
     GEMINI_EDGE_GUIDED: (prompt: string, edgeLabels: string[], styleContext?: string) => {
       const styleHint = styleContext ? ` ${styleContext}.` : ''
-      const edgeList = edgeLabels.join(', ')
+      const edgeList = edgeLabels.join(StringSeparator.CommaSpace)
       return `Generate a 512x512 isometric game tile: ${prompt}.${styleHint} The tile MUST seamlessly blend with its neighboring tiles. I am providing the edge strips of adjacent tiles (${edgeList}). Your generated tile's edges must visually continue from these neighbor edges with matching colors, lines, shapes, and lighting. Do not add borders or frames.`
     },
 
-    MIDJOURNEY: (prompt: string, styleInfo: string) =>
-      'Fill grey space seamlessly to match surrounding edges --q 2',
+    MIDJOURNEY: (_prompt: string, _styleInfo: string) => GenerationPromptCopy.MidjourneyGreyFill,
 
     OPENAI: (prompt: string) =>
       `Fill seamlessly to match surrounding edges: ${prompt}. Maintain isometric perspective and consistent style.`,
@@ -79,10 +85,9 @@ export const UPSCALE_PROMPTS = {
     `Upscale this image to be higher resolution with updated fidelity and significantly more details. ${creativityPrompt}. Maintain the exact same style, colors, and composition. ${prompt}${styleRefHint}`,
 
   /** Midjourney/LegNext Step 2 - structure-preserving upscale */
-  MIDJOURNEY:
-    'Preserve exact structure, composition, and layout. Do not change any shapes, objects, or positioning. Only enhance resolution, sharpness, and fine details. Isometric view with seamless tileable edges matching on all sides. --stylize 0 --q 2',
+  MIDJOURNEY: GenerationPromptCopy.MidjourneyUpscale,
 
-  STABILITY: 'upscale maintaining the same style, high quality, detailed, sharp',
+  STABILITY: GenerationPromptCopy.StabilityUpscale,
 } as const
 
 // ============================================================================
@@ -107,23 +112,18 @@ export function getCreativityPrompt(creativity: number): string {
   let hint: string
 
   if (creativity <= 0.2) {
-    hint =
-      'VERY CONSERVATIVE - preserve exact colors, textures, and details. Only increase resolution with minimal interpretation. Do not add or change any visual elements.'
+    hint = CreativityPromptLevel.VeryConservative
   } else if (creativity <= 0.4) {
-    hint =
-      'CONSERVATIVE - maintain original style and colors closely. Subtle enhancement of existing details only. Preserve all visual elements as they are.'
+    hint = CreativityPromptLevel.Conservative
   } else if (creativity <= 0.6) {
-    hint =
-      'BALANCED - enhance existing details and textures while keeping the original style. May add subtle refinements to existing elements.'
+    hint = CreativityPromptLevel.Balanced
   } else if (creativity <= 0.8) {
-    hint =
-      'CREATIVE - freely enhance details, textures, and lighting. Add richness to existing elements while maintaining overall structure and composition.'
+    hint = CreativityPromptLevel.Creative
   } else {
-    hint =
-      'MAXIMUM FREEDOM - full creative liberty on details, textures, lighting, and fidelity. Add rich details and enhancements freely. Only preserve the core structure and composition.'
+    hint = CreativityPromptLevel.MaximumFreedom
   }
 
-  return `CREATIVITY LEVEL: ${level}/100. ${hint}`
+  return `${CREATIVITY_PROMPT_PREFIX} ${level}/100. ${hint}`
 }
 
 // ============================================================================

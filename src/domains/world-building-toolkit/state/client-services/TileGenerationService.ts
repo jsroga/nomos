@@ -4,6 +4,28 @@ import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
 import type { ContextImageVariant } from '@/shared/ai/contextAssembler'
+import {
+  AsyncOperationStatus,
+  ContentType,
+  ContextAssemblyVariant,
+  DynamicLocalStoragePrefix,
+  HttpMethod,
+  HttpRequestHeader,
+  OperationTypeId,
+  TileGenerationApiRoute,
+  TileGenerationOperationDetailSuffix,
+  TileGenerationOperationIdPrefix,
+  TileGenerationOperationLabel,
+  TileGenerationServiceError,
+  TileGenerationServiceLog,
+  TileIdPrefix,
+  TileProgressStage,
+  TriggerTerminalStatus,
+  UrlScheme,
+  VariantSelectionAction,
+  WorldGenReviewType,
+} from '../../constants/tile-generation-service'
+import { getWorldUiStore } from '../useWorldUiStore'
 
 interface TileGenRunState {
   runId: string
@@ -27,29 +49,10 @@ export class TileGenerationService {
    * Cleanup all polling intervals - call on unmount to prevent memory leaks
    */
   cleanup() {
-    for (const [runId, timeout] of this.pollingIntervals) {
+    for (const [, timeout] of this.pollingIntervals) {
       clearTimeout(timeout)
     }
     this.pollingIntervals.clear()
-  }
-
-  /**
-   * Helper to get a tile with its image URL resolved
-   */
-  private getTileImageUrl(
-    tile: Tile | undefined,
-    projectId: string
-  ): (Tile & { imageUrl?: string }) | undefined {
-    if (!tile?.image_filename) return undefined
-
-    const imageUrl = tile.image_filename.startsWith('http')
-      ? tile.image_filename
-      : `${window.location.origin}/projects/${projectId}/${tile.image_filename}`
-
-    return {
-      ...tile,
-      imageUrl,
-    }
   }
 
   /**
@@ -68,12 +71,12 @@ export class TileGenerationService {
     const normalizedContext =
       typeof contextFromCaller === 'string'
         ? {
-            images: { canonicalFullContext: contextFromCaller },
-            preferredVariant: 'canonicalFullContext' as const,
+            images: { [ContextAssemblyVariant.CanonicalFullContext]: contextFromCaller },
+            preferredVariant: ContextAssemblyVariant.CanonicalFullContext satisfies ContextImageVariant,
           }
         : contextFromCaller
 
-    console.log(`Starting tile generation via Trigger.dev for (${x}, ${y})`, {
+    console.log(`${TileGenerationServiceLog.StartingViaTrigger} (${x}, ${y})`, {
       styleReferenceUrls,
       hasContextFromCaller: !!normalizedContext,
       contextVariants: normalizedContext ? Object.keys(normalizedContext.images) : [],
@@ -81,13 +84,13 @@ export class TileGenerationService {
 
     // Track generating status
     useWorldStore.getState().addGeneratingTile(x, y)
-    const opId = `gen-${x}-${y}`
+    const opId = `${TileGenerationOperationIdPrefix.Gen}${x}-${y}`
     useGlobalStatusStore.getState().addOperation({
       id: opId,
-      type: 'world-gen',
-      label: 'Generating Tile',
+      type: OperationTypeId.WorldGen,
+      label: TileGenerationOperationLabel.GeneratingTile,
       details: `(${x}, ${y})`,
-      status: 'in-progress',
+      status: AsyncOperationStatus.InProgress,
     })
 
     try {
@@ -96,7 +99,7 @@ export class TileGenerationService {
         typeof window !== 'undefined' ? window.location.origin : ''
       const toAbsoluteUrl = (tile: Tile | undefined) => {
         if (!tile?.image_filename) return undefined
-        return tile.image_filename.startsWith('http')
+        return tile.image_filename.startsWith(UrlScheme.Http)
           ? tile.image_filename
           : `${origin}/projects/${projectId}/${tile.image_filename}`
       }
@@ -119,25 +122,25 @@ export class TileGenerationService {
 
       if (normalizedContext) {
         // Use pre-assembled context (worker-assembled in Sidebar; CORS-safe).
-        console.log('Using pre-assembled context images', {
+        console.log(TileGenerationServiceLog.UsingPreAssembledContext, {
           variants: Object.keys(normalizedContext.images),
           preferredVariant: normalizedContext.preferredVariant,
           hasMask: !!normalizedContext.maskBase64,
         })
       } else if (hasNeighbors) {
-        throw new Error('Follow-up tile generation requires a client-assembled context image')
+        throw new Error(TileGenerationServiceError.FollowUpRequiresContext)
       }
 
       // Use presence of neighbors (from grid), not context image, so we never treat a follow-up as first tile when client assembly failed
       const isFirstTile = !hasNeighbors
 
       console.log(
-        `Triggering generate-tile task: isFirstTile=${isFirstTile}, hasContext=${!!normalizedContext}`
+        `${TileGenerationServiceLog.TriggeringTask}${isFirstTile}${TileGenerationServiceLog.HasContext}${!!normalizedContext}`
       )
 
-      const triggerResponse = await fetch('/api/trigger-tile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const triggerResponse = await fetch(TileGenerationApiRoute.Trigger, {
+        method: HttpMethod.Post,
+        headers: { [HttpRequestHeader.ContentType]: ContentType.Json },
         body: JSON.stringify({
           projectId,
           x,
@@ -152,10 +155,10 @@ export class TileGenerationService {
       const triggerData = await triggerResponse.json()
 
       if (!triggerResponse.ok || !triggerData.runId) {
-        throw new Error(triggerData.error || 'Failed to trigger tile generation task')
+        throw new Error(triggerData.error || TileGenerationServiceError.FailedToTriggerTask)
       }
 
-      console.log('Tile generation task triggered:', triggerData.runId)
+      console.log(TileGenerationServiceLog.TaskTriggered, triggerData.runId)
 
       // Save run state to localStorage for recovery
       const runState: TileGenRunState = {
@@ -176,9 +179,13 @@ export class TileGenerationService {
 
       return triggerData.runId
     } catch (error) {
-      console.error('Tile generation error:', error)
+      console.error(TileGenerationServiceLog.GenerationError, error)
       // Clean up status on error
-      useWorldStore.getState().setTileError(x, y, error instanceof Error ? error.message : 'Generation failed')
+      useWorldStore.getState().setTileError(
+        x,
+        y,
+        error instanceof Error ? error.message : TileGenerationServiceError.GenerationFailed
+      )
       useWorldStore.getState().removeGeneratingTile(x, y)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
@@ -198,15 +205,15 @@ export class TileGenerationService {
 
     const poll = async () => {
       try {
-        const statusResponse = await fetch(`/api/trigger-tile/status?runId=${runState.runId}`)
+        const statusResponse = await fetch(`${TileGenerationApiRoute.Status}?runId=${runState.runId}`)
         const statusData = await statusResponse.json()
 
         if (statusResponse.status === 404) {
           // Run not found - might be still initializing, retry a few times
           consecutiveErrors++
           if (consecutiveErrors > 5) {
-            console.warn('Tile generation run not found after retries, clearing state')
-            useWorldStore.getState().setTileError(runState.x, runState.y, 'Generation task not found')
+            console.warn(TileGenerationServiceLog.RunNotFoundAfterRetries)
+            useWorldStore.getState().setTileError(runState.x, runState.y, TileGenerationServiceError.TaskNotFound)
             this.clearRunState(runState, opId)
             return
           }
@@ -216,7 +223,7 @@ export class TileGenerationService {
 
         consecutiveErrors = 0
         const progress = statusData.metadata?.progress || 0
-        const stage = statusData.metadata?.stage || 'unknown'
+        const stage = statusData.metadata?.stage || TileProgressStage.Unknown
 
         // Track if progress is changing
         if (progress === lastProgress) {
@@ -237,36 +244,34 @@ export class TileGenerationService {
         // Detect variant selection waiting state
         if (
           !variantSelectionDispatched &&
-          stage === 'waiting_variant_selection' &&
+          stage === TileProgressStage.WaitingVariantSelection &&
           statusData.metadata?.variantUrls?.length &&
           statusData.metadata?.waitTokenId
         ) {
           variantSelectionDispatched = true
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(
-              new CustomEvent('generation-variant-selection-ready', {
-                detail: {
-                  tileX: runState.x,
-                  tileY: runState.y,
-                  variantUrls: statusData.metadata.variantUrls,
-                  tokenId: statusData.metadata.waitTokenId,
-                },
-              })
-            )
+            getWorldUiStore().enqueueReviewRequest({
+              type: WorldGenReviewType.Generation,
+              tileX: runState.x,
+              tileY: runState.y,
+              newUrl: statusData.metadata.variantUrls[0] ?? '',
+              variantUrls: statusData.metadata.variantUrls,
+              tokenId: statusData.metadata.waitTokenId,
+            })
           }
         }
 
         // Check if completed
-        if (statusData.status === 'COMPLETED') {
-          console.log('Tile generation completed:', statusData.output)
+        if (statusData.status === TriggerTerminalStatus.Completed) {
+          console.log(TileGenerationServiceLog.GenerationCompleted, statusData.output)
           await this.handleCompletion(runState, statusData.output, opId)
           return
         }
 
         // Check if failed
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          const errorMsg = statusData.error || `Generation failed (${statusData.status})`
-          console.error('Tile generation failed:', errorMsg)
+          const errorMsg = statusData.error || `${TileGenerationServiceError.GenerationFailed} (${statusData.status})`
+          console.error(TileGenerationServiceLog.GenerationFailed, errorMsg)
           useWorldStore.getState().setTileError(runState.x, runState.y, errorMsg)
           this.clearRunState(runState, opId)
           return
@@ -287,7 +292,7 @@ export class TileGenerationService {
 
         this.scheduleNextPoll(runState.runId, poll, nextInterval)
       } catch (error) {
-        console.error('Status polling error:', error)
+        console.error(TileGenerationServiceLog.StatusPollingError, error)
         consecutiveErrors++
         // Back off on errors
         const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
@@ -334,7 +339,7 @@ export class TileGenerationService {
     try {
       // Check if generation requires user review (new flow)
       if (output?.pendingReview && output?.newUrl) {
-        console.log('[TileGenerationService] Generation completed with Supabase URL:', {
+        console.log(TileGenerationServiceLog.CompletedWithSupabaseUrl, {
           newUrl: output.newUrl,
           originalUrl: output.originalUrl,
           isFirstTile: output.isFirstTile,
@@ -349,7 +354,7 @@ export class TileGenerationService {
         let originalUrl = output.originalUrl
         if (existingTile?.image_filename) {
           // Handle both local paths and full URLs
-          originalUrl = existingTile.image_filename.startsWith('http')
+          originalUrl = existingTile.image_filename.startsWith(UrlScheme.Http)
             ? existingTile.image_filename
             : `/projects/${runState.projectId}/${existingTile.image_filename}`
         }
@@ -365,24 +370,20 @@ export class TileGenerationService {
 
         // Update global status to show review is needed
         useGlobalStatusStore.getState().updateOperation(opId, {
-          status: 'completed',
-          details: `(${runState.x}, ${runState.y}) - Review generation`,
+          status: AsyncOperationStatus.Completed,
+          details: `(${runState.x}, ${runState.y})${TileGenerationOperationDetailSuffix.ReviewGeneration}`,
         })
 
-        // Emit event for UI to show review dialog
+        // Notify UI to show review dialog
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('generation-review-ready', {
-              detail: {
-                tileX: runState.x,
-                tileY: runState.y,
-                newUrl,
-                variantUrls: output.variantUrls,
-                originalUrl,
-                isFirstTile: !existingTile,
-              },
-            })
-          )
+          getWorldUiStore().enqueueReviewRequest({
+            type: WorldGenReviewType.Generation,
+            tileX: runState.x,
+            tileY: runState.y,
+            newUrl,
+            variantUrls: output.variantUrls,
+            originalUrl,
+          })
         }
 
         this.clearRunState(runState, opId)
@@ -394,11 +395,11 @@ export class TileGenerationService {
         const { tiles } = useWorldStore.getState()
         const tileKey = `${runState.x},${runState.y}`
 
-        useWorldStore.setState(state => ({
+        useWorldStore.setState({
           tiles: {
-            ...state.tiles,
+            ...tiles,
             [tileKey]: {
-              id: tiles[tileKey]?.id || `tile-${runState.x}-${runState.y}`,
+              id: tiles[tileKey]?.id || `${TileIdPrefix.Tile}${runState.x}-${runState.y}`,
               project_id: runState.projectId,
               x: runState.x,
               y: runState.y,
@@ -407,12 +408,12 @@ export class TileGenerationService {
               created_at: tiles[tileKey]?.created_at || new Date().toISOString(),
             },
           },
-        }))
+        })
 
-        console.log('Tile generated:', output.filename)
+        console.log(TileGenerationServiceLog.TileGenerated, output.filename)
       }
     } catch (error) {
-      console.error('Error updating tile after completion:', error)
+      console.error(TileGenerationServiceLog.ErrorUpdatingTileAfterCompletion, error)
     } finally {
       this.clearRunState(runState, opId)
     }
@@ -449,28 +450,28 @@ export class TileGenerationService {
     // Find all tile-gen run keys in localStorage
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      if (key?.startsWith('tile-gen-')) {
+      if (key?.startsWith(DynamicLocalStoragePrefix.TileGen)) {
         try {
           const runState: TileGenRunState = JSON.parse(localStorage.getItem(key) || '')
           if (runState.runId) {
-            console.log('Resuming tile generation polling for:', runState.runId)
+            console.log(TileGenerationServiceLog.ResumingPolling, runState.runId)
 
             // Re-add status indicators
             useWorldStore.getState().addGeneratingTile(runState.x, runState.y)
-            const opId = `gen-${runState.x}-${runState.y}`
+            const opId = `${TileGenerationOperationIdPrefix.Gen}${runState.x}-${runState.y}`
             useGlobalStatusStore.getState().addOperation({
               id: opId,
-              type: 'world-gen',
-              label: 'Generating Tile (resumed)',
+              type: OperationTypeId.WorldGen,
+              label: TileGenerationOperationLabel.GeneratingTileResumed,
               details: `(${runState.x}, ${runState.y})`,
-              status: 'in-progress',
+              status: AsyncOperationStatus.InProgress,
             })
 
             // Start polling
             this.startPolling(runState, opId)
           }
         } catch (e) {
-          console.warn('Failed to parse tile generation run state:', key)
+          console.warn(TileGenerationServiceLog.FailedToParseRunState, key)
           localStorage.removeItem(key)
         }
       }
@@ -483,14 +484,14 @@ export class TileGenerationService {
   stopGeneration(x: number, y: number) {
     if (typeof window === 'undefined') return
 
-    const key = `tile-gen-${x}-${y}`
+    const key = DynamicLocalStorageKeys.tileGen(x, y)
     const data = localStorage.getItem(key)
     if (data) {
       try {
         const runState: TileGenRunState = JSON.parse(data)
-        const opId = `gen-${runState.x}-${runState.y}`
+        const opId = `${TileGenerationOperationIdPrefix.Gen}${runState.x}-${runState.y}`
         this.clearRunState(runState, opId)
-        console.log('Stopped tile generation for:', x, y)
+        console.log(TileGenerationServiceLog.StoppedFor, x, y)
       } catch (e) {
         localStorage.removeItem(key)
       }
@@ -505,15 +506,19 @@ export class TileGenerationService {
     return !!localStorage.getItem(DynamicLocalStorageKeys.tileGen(x, y))
   }
 
-  async completeVariantSelection(tokenId: string, action: 'accept' | 'upscale', variantIndex: number): Promise<void> {
-    const response = await fetch('/api/complete-token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+  async completeVariantSelection(
+    tokenId: string,
+    action: VariantSelectionAction,
+    variantIndex: number
+  ): Promise<void> {
+    const response = await fetch(TileGenerationApiRoute.CompleteToken, {
+      method: HttpMethod.Post,
+      headers: { [HttpRequestHeader.ContentType]: ContentType.Json },
       body: JSON.stringify({ tokenId, action, variantIndex }),
     })
     if (!response.ok) {
       const data = await response.json()
-      throw new Error(data.error || 'Failed to complete variant selection')
+      throw new Error(data.error || TileGenerationServiceError.FailedToCompleteVariantSelection)
     }
   }
 }

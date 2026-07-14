@@ -5,21 +5,28 @@ import {
   interiorTextTo3DResponseSchema,
   type InteriorTextTo3DResponse,
 } from '@/domains/interior-designer/io/interior-designer.dto'
-import type { textTo3DTask } from '@/trigger/text-to-3d'
+import type { textTo3DTask } from '@/trigger'
 import {
   withAuth,
   withRateLimit,
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
+import {
+  API_ERROR,
+  TRIGGER_TASK_ID,
+  TRIGGER_TOKEN_EXPIRY,
+} from '@/shared/data/constants/api-errors'
+import { EnvVarName, MeshyArtStyle, MeshyTopology } from '@/shared/data/constants/protocol'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const dynamic = 'force-dynamic'
 
 export const POST = withRateLimit(
   withAuth(
     async (
       request: NextRequest,
-      { session, supabase }: AuthenticatedRequest
+      { supabase }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorTextTo3DResponse | { error: string }>> => {
       const parsedBody = interiorTextTo3DRequestSchema.safeParse(await request.json())
       if (!parsedBody.success) {
@@ -31,27 +38,27 @@ export const POST = withRateLimit(
 
       const hasAccess = await verifyProjectAccess(supabase, projectId)
       if (!hasAccess) {
-        return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+        return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
 
-      const meshyApiKey = apiKey || process.env.MESHY_API_KEY
+      const meshyApiKey = apiKey || process.env[EnvVarName.MeshyApiKey]
       if (!meshyApiKey) {
-        return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
+        return NextResponse.json({ error: API_ERROR.MESHY_API_KEY_NOT_CONFIGURED }, { status: 400 })
       }
 
       const handle = await tasks.trigger<typeof textTo3DTask>(
-        'text-to-3d',
+        TRIGGER_TASK_ID.TEXT_TO_3D,
         {
           projectId,
           prompt,
           seed: seed || Math.floor(Math.random() * 2147483647),
           apiKey: meshyApiKey,
-          artStyle: artStyle || 'realistic',
+          artStyle: artStyle || MeshyArtStyle.Realistic,
           enablePbr: enablePbr !== false,
           targetPolycount: targetPolycount || 30000,
-          topology: topology || 'triangle',
+          topology: topology || MeshyTopology.Triangle,
         },
-        { ttl: '1h' }
+        { ttl: TRIGGER_TOKEN_EXPIRY }
       )
 
       return NextResponse.json(

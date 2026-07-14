@@ -9,12 +9,16 @@
  *   node scripts/typecheck-scoped.mjs --all-slices --json
  */
 import { execSync, spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 
-const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=4096'
+const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=6144'
 const TSCONFIG = 'tsconfig.scoped.json'
+/** Stale file from incremental scoped runs — must not be reused across slices (causes OOM/hangs). */
+const TSC_BUILDINFO = 'tsconfig.scoped.tsbuildinfo'
 const LOG_PATH = '.local/typecheck-latest.log'
+const FILES_CHUNK_SIZE = 8
+const MODULE_SUBDIR_CHUNK = 5
 
 const DOMAIN_MODULES = [
   'storyteller',
@@ -61,12 +65,9 @@ const SLICES = [
   { id: 'app-api-rest', include: ['src/app/api/**/*.ts', 'src/app/api/**/*.tsx'] },
   ...DOMAIN_MODULES.map((name) => ({
     id: `domain-${name}`,
-    include: [
-      `src/domains/${name}/**/*.ts`,
-      `src/domains/${name}/**/*.tsx`,
-      `src/app/api/${name}/**/*.ts`,
-      `src/app/api/${name}/**/*.tsx`,
-    ],
+    // Domain only — API routes live in app-api-* slices; bundling them here duplicates
+    // work and can OOM (e.g. loop-creator chat route + full agent graph).
+    include: [`src/domains/${name}/**/*.ts`, `src/domains/${name}/**/*.tsx`],
   })),
 ]
 
@@ -158,20 +159,136 @@ function changedTsFiles() {
   ]
 }
 
-function moduleSlice(module) {
-  if (module === 'src-root') {
-    return { id: 'src-root', include: changedTsFiles() }
+function isAggregateEntry(file) {
+  return (
+    file.endsWith('/server.ts') ||
+    file.endsWith('/index.ts') ||
+    file.endsWith('/index.tsx')
+  )
+}
+
+function listModuleTsFiles(module) {
+  try {
+    const out = sh(
+      `find src/domains/${module} \\( -name '*.ts' -o -name '*.tsx' \\) | sort`,
+    ).trim()
+    const files = out ? out.split('\n').filter(Boolean) : []
+    // Barrel/server entrypoints re-export the whole module — checking them as roots
+    // duplicates the graph and can OOM; leaf files are covered by subdir chunks.
+    return files.filter((f) => !isAggregateEntry(f))
+  } catch {
+    return []
   }
-  const found = SLICES.find((s) => s.id === `domain-${module}`)
-  if (found) return found
-  throw new Error(`Unknown module: ${module}`)
+}
+
+/** --module runs: chunk by subdir + file count (single globs OOM on agent-heavy modules). */
+function moduleSlices(module) {
+  if (module === 'src-root') {
+    const files = changedTsFiles()
+    return [{ id: 'src-root', include: files }]
+  }
+
+  const base = `src/domains/${module}`
+  if (!existsSync(base)) {
+    throw new Error(`Unknown module: ${module}`)
+  }
+
+  const allFiles = listModuleTsFiles(module)
+  if (!allFiles.length) {
+    throw new Error(`No TS files in module: ${module}`)
+  }
+
+  const slices = []
+  const rootFiles = allFiles.filter((f) => !f.slice(base.length + 1).includes('/'))
+  if (rootFiles.length) {
+    const chunks = chunkArray(rootFiles, MODULE_SUBDIR_CHUNK)
+    chunks.forEach((chunk, i) => {
+      slices.push({
+        id: chunks.length === 1 ? `domain-${module}-root` : `domain-${module}-root-${i + 1}`,
+        include: chunk,
+      })
+    })
+  }
+
+  for (const subdir of readdirSync(base).sort()) {
+    const subPath = join(base, subdir)
+    try {
+      if (!statSync(subPath).isDirectory()) continue
+    } catch {
+      continue
+    }
+    const prefix = `${subPath}/`
+    const subFiles = allFiles.filter((f) => f.startsWith(prefix))
+    if (!subFiles.length) continue
+    const chunks = chunkArray(subFiles, MODULE_SUBDIR_CHUNK)
+    chunks.forEach((chunk, i) => {
+      slices.push({
+        id:
+          chunks.length === 1
+            ? `domain-${module}-${subdir}`
+            : `domain-${module}-${subdir}-${i + 1}`,
+        include: chunk,
+      })
+    })
+  }
+
+  return slices
 }
 
 function isOom(combined, signal) {
   return (
     signal === 'SIGABRT' ||
+    signal === 'SIGKILL' ||
     /heap out of memory|JavaScript heap out of memory|FATAL ERROR/i.test(combined)
   )
+}
+
+function cleanupScopedArtifacts() {
+  if (existsSync(TSCONFIG)) unlinkSync(TSCONFIG)
+  if (existsSync(TSC_BUILDINFO)) unlinkSync(TSC_BUILDINFO)
+}
+
+function scopedTsConfig(include) {
+  return {
+    extends: './tsconfig.json',
+    compilerOptions: {
+      // Each slice uses a different `include`; sharing incremental state causes cache
+      // corruption, multi-minute hangs, and intermittent OOM (tsconfig.scoped.tsbuildinfo).
+      incremental: false,
+    },
+    include,
+  }
+}
+
+function emitJsonAndExit(results, allErrors, oomSlice) {
+  const byFile = {}
+  for (const e of allErrors) {
+    byFile[e.file] = (byFile[e.file] ?? 0) + 1
+  }
+  console.log(
+    JSON.stringify({
+      ok: allErrors.length === 0 && !oomSlice,
+      slices: results.map((r) => ({
+        id: r.id,
+        ms: r.ms,
+        errors: r.errors.length,
+        oom: r.oom,
+        skipped: r.skipped ?? false,
+      })),
+      errors: allErrors,
+      byFile,
+      ...(oomSlice ? { oom: true, oomSlice: oomSlice.id } : {}),
+    }),
+  )
+}
+
+function chunkArray(items, size) {
+  if (items.length <= size) return [items]
+  const chunks = []
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size))
+  }
+  return chunks
 }
 
 function parseTscErrors(output) {
@@ -204,11 +321,12 @@ function runSlice(slice, { json, scopePaths, failOnOutside }) {
     return { id: slice.id, ms: 0, errors: [], oom: false, skipped: true }
   }
 
-  const config = { extends: './tsconfig.json', include }
+  const config = scopedTsConfig(include)
+  cleanupScopedArtifacts()
   writeFileSync(TSCONFIG, `${JSON.stringify(config, null, 2)}\n`)
 
   const t0 = Date.now()
-  const result = spawnSync('npx', ['tsc', '--noEmit', '-p', TSCONFIG], {
+  const result = spawnSync('npx', ['tsc', '--noEmit', '--incremental', 'false', '-p', TSCONFIG], {
     encoding: 'utf8',
     env: { ...process.env, NODE_OPTIONS: NODE_OPTS },
     maxBuffer: 64 * 1024 * 1024,
@@ -277,11 +395,15 @@ function main() {
     slices = [{ id: 'edited-files', include: scopePaths }]
   } else if (opts.files.length) {
     scopePaths = opts.files
-    slices = [{ id: 'files', include: opts.files }]
+    const chunks = chunkArray(opts.files, FILES_CHUNK_SIZE)
+    slices = chunks.map((files, index) => ({
+      id: chunks.length === 1 ? 'files' : `files-${index + 1}`,
+      include: files,
+    }))
   } else if (opts.module) {
-    slices = [moduleSlice(opts.module)]
-    if (opts.module === 'src-root') {
-      scopePaths = slices[0].include
+    slices = moduleSlices(opts.module)
+    if (!opts.json && slices.length > 1) {
+      console.log(`typecheck-scoped: [${opts.module}] ${slices.length} chunk(s)…`)
     }
   } else if (opts.changed) {
     scopePaths = changedTsFiles()
@@ -306,42 +428,50 @@ function main() {
 
   for (let i = 0; i < slices.length; i++) {
     const slice = slices[i]
-    if (!opts.json && opts.allSlices) {
+    if (!opts.json && (opts.allSlices || opts.module)) {
       console.log(`typecheck-scoped: [${i + 1}/${total}] ${slice.id}…`)
     }
-    const result = runSlice(slice, {
+    const sliceOpts = {
       json: opts.json,
       scopePaths: scopePaths.length ? scopePaths : undefined,
       failOnOutside: opts.failOnOutside,
-    })
-    results.push(result)
-    if (result.oom) {
-      console.error(`typecheck-scoped: [${slice.id}] OOM — try a smaller slice or increase NODE_OPTIONS`)
-      process.exit(1)
+    }
+    const result = runSlice(slice, sliceOpts)
+    if (result.oom && slice.include.length > 1) {
+      if (!opts.json) {
+        console.warn(
+          `typecheck-scoped: [${slice.id}] OOM — retrying ${slice.include.length} file(s) individually`,
+        )
+      }
+      for (const file of slice.include) {
+        const subSlice = { id: `${slice.id}::${file}`, include: [file] }
+        results.push(
+          runSlice(subSlice, {
+            ...sliceOpts,
+            scopePaths: [file],
+          }),
+        )
+      }
+    } else {
+      results.push(result)
+      if (result.oom && !opts.json) {
+        console.error(`typecheck-scoped: [${slice.id}] OOM — try a smaller slice or increase NODE_OPTIONS`)
+      }
+      if (result.oom) break
     }
   }
 
   const allErrors = results.flatMap((r) => r.errors)
+  const oomSlice = results.find((r) => r.oom)
   writeLog(results)
 
   if (opts.json) {
-    const byFile = {}
-    for (const e of allErrors) {
-      byFile[e.file] = (byFile[e.file] ?? 0) + 1
-    }
+    emitJsonAndExit(results, allErrors, oomSlice)
+  } else if (oomSlice) {
+    console.error(`typecheck-scoped: [${oomSlice.id}] OOM — try a smaller slice or increase NODE_OPTIONS`)
+  } else if (opts.module && !opts.json && allErrors.length) {
     console.log(
-      JSON.stringify({
-        ok: allErrors.length === 0,
-        slices: results.map((r) => ({
-          id: r.id,
-          ms: r.ms,
-          errors: r.errors.length,
-          oom: r.oom,
-          skipped: r.skipped ?? false,
-        })),
-        errors: allErrors,
-        byFile,
-      }),
+      `typecheck-scoped: [${opts.module}] done — ${allErrors.length} error(s) across ${results.length} run(s)`,
     )
   } else if (opts.allSlices) {
     const totalMs = results.reduce((s, r) => s + r.ms, 0)
@@ -350,9 +480,9 @@ function main() {
     )
   }
 
-  if (existsSync(TSCONFIG)) unlinkSync(TSCONFIG)
+  cleanupScopedArtifacts()
 
-  if (allErrors.length) {
+  if (allErrors.length || oomSlice) {
     process.exit(1)
   }
 }

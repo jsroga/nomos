@@ -3,8 +3,6 @@ import React, { useState, useRef, useEffect, DragEvent } from 'react'
 import {
   Image as ImageIcon,
   Eraser,
-  Paintbrush,
-  ArrowUpCircle,
   Save,
   RotateCcw,
   Loader2,
@@ -14,7 +12,6 @@ import { Button } from '@/components/Button'
 import { Slider } from '@/components/Slider'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import toast from 'react-hot-toast'
-import { repaintService } from '@/domains/world-building-toolkit/state/client-services/RepaintService'
 import { EditorTool } from '@/shared/types/enums'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 

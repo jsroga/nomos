@@ -5,16 +5,41 @@ import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 import { firstNonEmptyRecord, recordFromJson } from '@/shared/data/json-guards'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { StorytellerLegacyPlanField } from '@/domains/storyteller/core/storyteller-page-wire'
 
-export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+const LEGACY_STORY_PLAN_FIELDS = [
+  StorytellerLegacyPlanField.WorldDescription,
+  StorytellerLegacyPlanField.Genre,
+  StorytellerLegacyPlanField.Tone,
+  StorytellerLegacyPlanField.WorldRules,
+  StorytellerLegacyPlanField.Factions,
+  StorytellerLegacyPlanField.KeyCharacters,
+  StorytellerLegacyPlanField.PlotTwists,
+  StorytellerLegacyPlanField.Inspirations,
+] as const
+
+function withoutOverlappingLegacyFields(
+  target: Record<string, unknown>,
+  storyPlan: Record<string, unknown>
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(target).filter(([key]) => {
+      const isLegacyField = LEGACY_STORY_PLAN_FIELDS.some(field => field === key)
+      return !(isLegacyField && storyPlan[key] && target[key])
+    })
+  )
+}
+
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     // Verify project access
     if (!(await verifyProjectAccess(params.id, session.user.id))) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     const project = await db.query.projects.findFirst({
@@ -26,7 +51,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     })
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_NOT_FOUND }, { status: 404 })
     }
 
     const seriesBible = firstNonEmptyRecord(
@@ -38,34 +63,24 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     // CLEANUP: Remove legacy fields from seriesBible if they exist in storyPlan
     // This prevents the frontend from merging stale data and ensures single source of truth
     if (Object.keys(storyPlan).length > 0) {
-      const legacyFields = [
-        'worldDescription',
-        'genre',
-        'tone',
-        'worldRules',
-        'factions',
-        'keyCharacters',
-        'plotTwists',
-        'inspirations',
-      ]
+      const cleanedSeriesBible = withoutOverlappingLegacyFields(seriesBible, storyPlan)
+      const setting = recordFromJson(cleanedSeriesBible.Setting)
 
-      // 1. Clean from Top Level
-      for (const field of legacyFields) {
-        if (storyPlan[field] && seriesBible[field]) {
-          delete seriesBible[field]
-        }
-      }
+      const seriesBibleClean =
+        Object.keys(setting).length > 0
+          ? {
+              ...cleanedSeriesBible,
+              Setting: withoutOverlappingLegacyFields(setting, storyPlan),
+            }
+          : cleanedSeriesBible
 
-      // 2. Clean from 'Setting' category (common legacy location)
-      const setting = recordFromJson(seriesBible.Setting)
-      if (Object.keys(setting).length > 0) {
-        for (const field of legacyFields) {
-          if (storyPlan[field] && setting[field]) {
-            delete setting[field]
-          }
-        }
-        seriesBible.Setting = setting
-      }
+      return NextResponse.json({
+        ...project,
+        seriesBible: seriesBibleClean,
+        storyPlan,
+        seriesBibleTable: undefined,
+        storyPlanTable: undefined,
+      })
     }
 
     return NextResponse.json({
@@ -76,8 +91,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       storyPlanTable: undefined,
     })
   } catch (error) {
-    console.error('Error fetching project:', error)
-    return NextResponse.json({ error: 'Failed to fetch project' }, { status: 500 })
+    console.error(API_LOG_PREFIX.PROJECT_FETCH_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_FETCH_PROJECT }, { status: 500 })
   }
 }
 
@@ -85,15 +100,15 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const params = await props.params
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     // Verify project access
     if (!(await verifyProjectAccess(params.id, session.user.id))) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     const body = await req.json()
-    const { id, series_bible, seriesBible, story_plan, storyPlan, ...updates } = body
+    const { series_bible, seriesBible, story_plan, storyPlan, ...updates } = body
 
     // 1. Update Project Table
     const dbUpdates: Partial<typeof projects.$inferInsert> = { updatedAt: new Date() }
@@ -161,7 +176,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error updating project:', error)
-    return NextResponse.json({ error: 'Failed to update project' }, { status: 500 })
+    console.error(API_LOG_PREFIX.PROJECT_UPDATE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_UPDATE_PROJECT }, { status: 500 })
   }
 }

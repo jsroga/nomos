@@ -1,18 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createStorytellerAgent } from '@/domains/storyteller/server'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  StorytellerAnswerSeparator,
+  StorytellerBeatTypeFallback,
+  StorytellerPromptAgentInstruction,
+  StorytellerPromptTemplateToken,
+  StorytellerSettingFallback,
+} from '@/domains/storyteller/core/storyteller-page-wire'
 
 const PROMPT_GENERATOR_SYSTEM = `You are a Visual Director for a film. 
 Your task is to take a story beat and convert it into a vivid, specific visual image prompt for an AI image generator.
 
 THE BEAT:
-{beatContent}
+${StorytellerPromptTemplateToken.BeatContent}
 
 CONTEXT:
-Beat Type: {beatType}
-Characters: {characters}
-Visual Hook: {visualHook}
-Setting: {setting}
+Beat Type: ${StorytellerPromptTemplateToken.BeatType}
+Characters: ${StorytellerPromptTemplateToken.Characters}
+Visual Hook: ${StorytellerPromptTemplateToken.VisualHook}
+Setting: ${StorytellerPromptTemplateToken.Setting}
 
 INSTRUCTIONS:
 - Create a SINGLE, detailed image prompt.
@@ -28,30 +36,41 @@ export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedReques
     const { beat } = await req.json()
 
     if (!beat) {
-      return NextResponse.json({ error: 'Missing beat data' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.MISSING_BEAT_DATA }, { status: 400 })
     }
 
     const agent = await createStorytellerAgent()
 
     const promptInput = PROMPT_GENERATOR_SYSTEM.replace(
-      '{beatContent}',
+      StorytellerPromptTemplateToken.BeatContent,
       beat.logline + (beat.mazurElements ? `\nDetails: ${JSON.stringify(beat.mazurElements)}` : '')
     )
-      .replace('{beatType}', beat.beatType || 'scene')
-      .replace('{characters}', (beat.charactersInvolved || []).join(', '))
-      .replace('{visualHook}', beat.visualHook || '')
-      .replace('{setting}', beat.mazurElements?.setting || 'Unknown setting')
+      .replace(
+        StorytellerPromptTemplateToken.BeatType,
+        beat.beatType || StorytellerBeatTypeFallback.Scene
+      )
+      .replace(
+        StorytellerPromptTemplateToken.Characters,
+        (beat.charactersInvolved || []).join(StorytellerAnswerSeparator.CommaSpace)
+      )
+      .replace(StorytellerPromptTemplateToken.VisualHook, beat.visualHook || '')
+      .replace(
+        StorytellerPromptTemplateToken.Setting,
+        beat.mazurElements?.setting || StorytellerSettingFallback.Unknown
+      )
 
     const imagePrompt = await agent.run(
-      'Generate image prompt',
-      promptInput + '\n\nInstructions: Generate the image prompt.'
+      StorytellerPromptAgentInstruction.GenerateImagePrompt,
+      promptInput + StorytellerPromptAgentInstruction.GenerateImagePromptSuffix
     )
 
     return NextResponse.json({ prompt: imagePrompt })
   } catch (error) {
-    console.error('Prompt generation failed:', error)
+    console.error(API_LOG_PREFIX.PROMPT_GENERATION_FAILED, error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate prompt' },
+      {
+        error: error instanceof Error ? error.message : API_ERROR.FAILED_GENERATE_PROMPT,
+      },
       { status: 500 }
     )
   }

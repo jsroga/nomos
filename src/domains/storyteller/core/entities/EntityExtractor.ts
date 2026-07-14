@@ -1,5 +1,10 @@
 import { EntityReference } from '@/domains/storyteller/core/entities/EntityReferences'
 import { createRefId } from '@/domains/storyteller/core/entities/ReferenceParser'
+import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
+import {
+  ENTITY_GOALS_SEPARATOR,
+  EntityExtractorFallback,
+} from '@/domains/storyteller/core/entities/constants/entity-extractor-defaults'
 
 /**
  * Minimal structural view of a story plan for entity extraction.
@@ -80,11 +85,14 @@ export function extractEntitiesFromPlan(
   if (plan.factions) {
     plan.factions.forEach(f => {
       // Use explicit description if available (new schema), otherwise synthesize
-      const ideology = f.ideology || 'Unknown ideology'
-      const goals = f.goals && Array.isArray(f.goals) ? f.goals.join(', ') : 'Unknown goals'
+      const ideology = f.ideology || EntityExtractorFallback.UnknownIdeology
+      const goals =
+        f.goals && Array.isArray(f.goals)
+          ? f.goals.join(ENTITY_GOALS_SEPARATOR)
+          : EntityExtractorFallback.UnknownGoals
       const description = f.description || `${ideology}. Goal: ${goals}`
 
-      addEntity('faction', f.name, description, {
+      addEntity(StoryEntityType.Faction, f.name, description, {
         ideology: f.ideology,
         goals: f.goals || [],
         resources: f.resources,
@@ -98,12 +106,12 @@ export function extractEntitiesFromPlan(
   if (plan.keyCharacters) {
     plan.keyCharacters.forEach(c => {
       // Synthesize description from role, archetype which are required
-      const role = c.role || 'Unknown Role'
-      const archetype = c.archetype || 'Unknown Archetype'
-      const motivation = c.motivation || 'Unknown Motivation'
+      const role = c.role || EntityExtractorFallback.UnknownRole
+      const archetype = c.archetype || EntityExtractorFallback.UnknownArchetype
+      const motivation = c.motivation || EntityExtractorFallback.UnknownMotivation
       const description = `${role} (${archetype}). Driven by: ${motivation}`
 
-      addEntity('character', c.name, description, {
+      addEntity(StoryEntityType.Character, c.name, description, {
         role: c.role,
         archetype: c.archetype,
         motivation: c.motivation,

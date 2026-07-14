@@ -1,6 +1,7 @@
 import React from 'react'
 import { TourStep } from '@/shared/tours/tour-types'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { TourStepPosition } from '@/shared/tours/constants/tour-positions'
 import { ClipboardList, Scissors, Cuboid, Palette, Sparkles, Upload } from 'lucide-react'
 
 export const assetExporterTourSteps: TourStep[] = [
@@ -17,7 +18,7 @@ export const assetExporterTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.ASSET_MASTER_PROMPT,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -32,7 +33,7 @@ export const assetExporterTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.ASSET_UPLOAD_ZONE,
-    position: 'bottom',
+    position: TourStepPosition.Bottom,
   },
   {
     content: (
@@ -47,7 +48,7 @@ export const assetExporterTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.EXPORTED_ASSETS_LIST,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -62,7 +63,7 @@ export const assetExporterTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.ASSET_EDITOR_PANEL,
-    position: 'bottom',
+    position: TourStepPosition.Bottom,
   },
   {
     content: (
@@ -77,7 +78,7 @@ export const assetExporterTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.GENERATE_3D_BUTTON,
-    position: 'top',
+    position: TourStepPosition.Top,
   },
   {
     content: (
@@ -92,6 +93,6 @@ export const assetExporterTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.ASSET_3D_PREVIEW,
-    position: 'left',
+    position: TourStepPosition.Left,
   },
 ]

@@ -1,21 +1,58 @@
 'use client'
 
-import { useEffect, useCallback, useMemo, type ComponentType } from 'react'
-import type { AgentQuestion as ChatAgentQuestion } from '@/domains/chat/core/types'
+import { useCallback, useMemo, type ComponentType } from 'react'
+import type { AgentQuestion as ChatAgentQuestion } from '@/shared/chat/core/types'
 import type { AgentQuestion as StorytellerAgentQuestion } from '@/domains/storyteller/core/types/ActionTypes'
 import { QuestionType, QuestionUrgency } from '@/domains/storyteller/core/types/Enums'
 import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
-import { customEventDetailRecord, readString } from '@/shared/data/json-guards'
 import { toError } from '@/shared/errors/error-utils'
 import { recordFromJson, readNumber } from '@/shared/data/json-guards'
 import { useWorldStore } from '@/domains/world-building-toolkit'
-import { type Message } from '@/domains/chat'
+import { type Message } from '@/shared/chat'
 import { QuestionCard } from '@/domains/storyteller/ui/StorytellerLayout/storyteller-dynamic-imports'
+import {
+  StorytellerLogMessage,
+  StorytellerHttpMethod,
+  StorytellerMessageRole,
+  StorytellerMessageType,
+  StorytellerPremiseSection,
+  StorytellerPremiseSectionLabel,
+  StorytellerStreamMode,
+  StorytellerThreadId,
+  StorytellerQuestionFallback,
+  StorytellerAnswerSeparator,
+  StorytellerWorldBuildingPhase,
+  StorytellerDefaultTitle,
+  StorytellerQueryParam,
+  StorytellerBibleQuery,
+} from '@/domains/storyteller/core/storyteller-page-wire'
+import { Phase } from '@/domains/storyteller/core/types/Enums'
+import { MoodboardFieldAlias } from '@/domains/storyteller/config/constants/bible-wire-fields'
+import {
+  StorytellerAgentTriggerPrompt,
+  StorytellerToastId,
+} from '@/domains/storyteller/state/constants/agent-trigger-prompts'
+import { DomExceptionName } from '@/shared/chat/core/constants/chat-stream'
+import { QuestionUrgency as ChatQuestionUrgency } from '@/shared/chat/core/constants/chat-messages'
+import { ContentType } from '@/shared/data/constants/protocol'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 import type { useStorytellerChat } from './useStorytellerChat'
 
 type ChatSlice = ReturnType<typeof useStorytellerChat>
+
+function premiseSectionLabel(section: string | null | undefined): string {
+  if (section === StorytellerPremiseSection.ProtagonistHook) {
+    return StorytellerPremiseSectionLabel.ProtagonistHook
+  }
+  if (section === StorytellerPremiseSection.FatalFlaw) {
+    return StorytellerPremiseSectionLabel.FatalFlaw
+  }
+  if (section === StorytellerPremiseSection.InevitableConsequence) {
+    return StorytellerPremiseSectionLabel.InevitableConsequence
+  }
+  return section ?? ''
+}
 
 export function useStorytellerAgents(core: StorytellerWorkspaceCore, chat: ChatSlice) {
   const {
@@ -27,7 +64,6 @@ export function useStorytellerAgents(core: StorytellerWorkspaceCore, chat: ChatS
     storyDecisions,
     setStoryDecisions,
     setStoryPlan,
-    setCurrentEpisodeTitle,
     currentPhase,
     storyPlan,
     useEnhancedStreaming,
@@ -57,14 +93,14 @@ export function useStorytellerAgents(core: StorytellerWorkspaceCore, chat: ChatS
     async (questionId: string, answer: string | string[]) => {
       // Find the question being answered
       const questionSession = pendingQuestions.find(q => q.id === questionId)
-      const questionText = questionSession?.question.question || 'Unknown question'
+      const questionText = questionSession?.question.question || StorytellerQuestionFallback.UnknownQuestion
 
       // Remove the question from pending
       setPendingQuestions(prev => prev.filter(q => q.id !== questionId))
       setIsAwaitingInput(false)
 
       // Track the answer
-      const answerText = Array.isArray(answer) ? answer.join(', ') : answer
+      const answerText = Array.isArray(answer) ? answer.join(StorytellerAnswerSeparator.CommaSpace) : answer
       setAnsweredQuestions(prev => [...prev, { question: questionText, answer: answerText }])
 
       // Store as a story decision (key = simplified question)
@@ -76,9 +112,9 @@ export function useStorytellerAgents(core: StorytellerWorkspaceCore, chat: ChatS
 
       // Add user answer as message with context
       const userMsg: Message = {
-        sender: 'User',
+        sender: StorytellerMessageRole.User,
         content: `**Answer to "${questionText}":** ${answerText}\n\nPlease proceed with the story based on this decision.`,
-        type: 'human',
+        type: StorytellerMessageType.Human,
       }
       setMessages(prev => [...prev, userMsg])
 
@@ -100,7 +136,7 @@ ${decisionsContext}
 
 Please acknowledge this answer and MOVE FORWARD with the story. Propose the next beat or ask a NEW question about something else.`,
         projectId: currentProject?.id,
-        threadId: currentEpisodeId || 'general',
+        threadId: currentEpisodeId || StorytellerThreadId.General,
         episodeId: currentEpisodeId,
         currentPhase, // Include current phase!
         seriesBible: {
@@ -121,7 +157,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           stressLevel: readNumber(recordFromJson(c).stress) ?? 30,
         })),
         // Enhanced streaming options
-        streamMode: useEnhancedStreaming ? 'events' : 'nodes',
+        streamMode: useEnhancedStreaming ? StorytellerStreamMode.Events : StorytellerStreamMode.Nodes,
       }
 
       // Create abort controller
@@ -129,16 +165,16 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
       try {
         const res = await fetch('/api/storyteller/chat/stream', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: StorytellerHttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(payload),
           signal: abortControllerRef.current.signal,
         })
         // Continue with current round count since we're resuming
         await processStream(res, abortControllerRef.current.signal, roundCount)
       } catch (error: unknown) {
-        if (toError(error).name !== 'AbortError') {
-          console.error('Failed to continue after answer:', error)
+        if (toError(error).name !== DomExceptionName.AbortError) {
+          console.error(StorytellerLogMessage.FailedContinueAfterAnswer, error)
         }
       }
       // Note: thinkingAgent is managed by useChatStream and will reset when stream completes
@@ -156,168 +192,87 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     ]
   )
 
-  // Listener for manual agent triggers from UI components
-  useEffect(() => {
-    const handleTrigger = (e: Event) => {
-      const detail = customEventDetailRecord(e)
-      if (detail?.type === 'generate_episode_premise') {
-        const userMsg: Message = {
-          sender: 'User',
-          content: 'Please generate an episode premise using the Ozymandias framework.',
-          type: 'human',
-        }
-        setMessages(prev => [...prev, userMsg])
-        setIsSending(true)
-
-        const payload = {
-          message:
-            'Please generate an episode premise using the Ozymandias framework. Delegate to the Episode Premise Architect.',
-          projectId: currentProject?.id,
-          threadId: currentEpisodeId || 'general',
-          episodeId: currentEpisodeId,
-          currentPhase: 'premise',
-          seriesBible: {
-            ...(currentProject?.series_bible ?? {}),
-            masterPrompt: currentProject?.master_prompt || '',
-          },
-          characters: characters,
-          streamMode: 'events', // Always use enhanced streaming for premise generation
-          progressiveGeneration: true,
-        }
-
-        abortControllerRef.current = new AbortController()
-
-        fetch('/api/storyteller/chat/stream', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: abortControllerRef.current.signal,
-        })
-          .then(res => processStream(res, abortControllerRef.current!.signal))
-          .catch(err => console.error('Trigger error:', err))
-      } else if (detail?.type === 'generate_episode_premise_section') {
-        const sectionName = readString(detail.section)
-        setGeneratingSection(sectionName ?? null)
-        const readableSection =
-          sectionName === 'protagonistHook'
-            ? 'Protagonist Hook'
-            : sectionName === 'fatalFlaw'
-              ? 'Fatal Flaw'
-              : sectionName === 'inevitableConsequence'
-                ? 'Inevitable Consequence'
-                : sectionName
-
-        const userMsg: Message = {
-          sender: 'User',
-          content: `Please regenerate only the ${readableSection} of the episode premise.`,
-          type: 'human',
-        }
-        setMessages(prev => [...prev, userMsg])
-        setIsSending(true)
-
-        const payload = {
-          message: `Please regenerate ONLY the ${readableSection} (${sectionName}) for the episode premise. Return a JSON object containing ONLY this field. Do not include unchanged fields. Take a completely new, bold, and distinct creative direction. Do not just rephrase the previous version - give me a brand new idea. Delegate to the Episode Premise Architect.`,
-          projectId: currentProject?.id,
-          threadId: currentEpisodeId || 'general',
-          episodeId: currentEpisodeId,
-          currentPhase: 'premise',
-          seriesBible: {
-            ...(currentProject?.series_bible ?? {}),
-            masterPrompt: currentProject?.master_prompt || '',
-          },
-          characters: characters,
-          streamMode: 'events', // Always use enhanced streaming for premise generation
-          progressiveGeneration: true,
-        }
-
-        abortControllerRef.current = new AbortController()
-
-        fetch('/api/storyteller/chat/stream', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: abortControllerRef.current.signal,
-        })
-          .then(res => processStream(res, abortControllerRef.current!.signal))
-          .catch(err => console.error('Trigger error:', err))
-      } else if (detail?.type === 'generate_roadmap') {
-        const userMsg: Message = {
-          sender: 'User',
-          content: 'Please generate a detailed episode roadmap for the season.',
-          type: 'human',
-        }
-        setMessages(prev => [...prev, userMsg])
-        setIsSending(true)
-
-        const payload = {
-          message:
-            'Generate a detailed episode roadmap for the season. Create distinct episodes with titles, summaries, key factions involved, and consequences. Delegate to the Story Architect.',
-          projectId: currentProject?.id,
-          threadId: 'general',
-          episodeId: null,
-          currentPhase: 'world_building',
-          seriesBible: {
-            ...(currentProject?.series_bible ?? {}),
-            masterPrompt: currentProject?.master_prompt || '',
-          },
-          characters: characters,
-          streamMode: 'events',
-          progressiveGeneration: true,
-        }
-
-        abortControllerRef.current = new AbortController()
-
-        fetch('/api/storyteller/chat/stream', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: abortControllerRef.current.signal,
-        })
-          .then(res => processStream(res, abortControllerRef.current!.signal))
-          .catch(err => console.error('Trigger error:', err))
+  // Agent triggers from UI (premise generation, section regen, roadmap)
+  const runAgentStream = useCallback(
+    async (
+      userContent: string,
+      agentMessage: string,
+      phase: string,
+      scope: { threadId?: string; episodeId?: string | null } = {}
+    ) => {
+      const userMsg: Message = {
+        sender: StorytellerMessageRole.User,
+        content: userContent,
+        type: StorytellerMessageType.Human,
       }
-    }
-    const handleUpdateEpisodePremise = async (e: Event) => {
-      const detail = customEventDetailRecord(e)
-      if (Object.keys(detail).length === 0) return
+      setMessages(prev => [...prev, userMsg])
+      setIsSending(true)
 
-      setStoryPlan(prev =>
-        applyUpdatesToStoryPlan(prev, {
-          premise: detail,
-          title: readString(detail.title),
+      const threadId = scope.threadId ?? currentEpisodeId ?? StorytellerThreadId.General
+      const episodeId = scope.episodeId !== undefined ? scope.episodeId : currentEpisodeId
+
+      const payload = {
+        message: agentMessage,
+        projectId: currentProject?.id,
+        threadId,
+        episodeId,
+        currentPhase: phase,
+        seriesBible: {
+          ...(currentProject?.series_bible ?? {}),
+          masterPrompt: currentProject?.master_prompt || '',
+        },
+        characters,
+        streamMode: StorytellerStreamMode.Events,
+        progressiveGeneration: true,
+      }
+
+      abortControllerRef.current = new AbortController()
+
+      try {
+        const res = await fetch('/api/storyteller/chat/stream', {
+          method: StorytellerHttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
+          body: JSON.stringify(payload),
+          signal: abortControllerRef.current.signal,
         })
+        await processStream(res, abortControllerRef.current.signal)
+      } catch (err) {
+        console.error(StorytellerLogMessage.TriggerError, err)
+      }
+    },
+    [characters, currentEpisodeId, currentProject, processStream, setIsSending, setMessages]
+  )
+
+  const generateEpisodePremise = useCallback(() => {
+    void runAgentStream(
+      StorytellerAgentTriggerPrompt.GenerateEpisodePremiseUser,
+      StorytellerAgentTriggerPrompt.GenerateEpisodePremiseAgent,
+      Phase.PREMISE
+    )
+  }, [runAgentStream])
+
+  const generateEpisodePremiseSection = useCallback(
+    (section: string) => {
+      setGeneratingSection(section)
+      const readableSection = premiseSectionLabel(section)
+
+      void runAgentStream(
+        `${StorytellerAgentTriggerPrompt.RegeneratePremiseSectionUserPrefix}${readableSection}${StorytellerAgentTriggerPrompt.RegeneratePremiseSectionUserSuffix}`,
+        `${StorytellerAgentTriggerPrompt.RegeneratePremiseSectionAgentPrefix}${readableSection}${StorytellerAgentTriggerPrompt.RegeneratePremiseSectionAgentMid}${section}${StorytellerAgentTriggerPrompt.RegeneratePremiseSectionAgentSuffix}`,
+        Phase.PREMISE
       )
+    },
+    [runAgentStream, setGeneratingSection]
+  )
 
-      const title = readString(detail.title)
-      if (title) {
-        setCurrentEpisodeTitle(title)
-      }
-
-      // 3. Persist
-      if (currentEpisodeId) {
-        try {
-          await fetch(`/api/storyteller/episodes/${currentEpisodeId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              premise: detail,
-              title: detail.title,
-            }),
-          })
-        } catch (err) {
-          console.error('Failed to persist premise update:', err)
-        }
-      }
-    }
-
-    window.addEventListener('trigger-agent-action', handleTrigger)
-    window.addEventListener('update_episode_premise', handleUpdateEpisodePremise)
-
-    return () => {
-      window.removeEventListener('trigger-agent-action', handleTrigger)
-      window.removeEventListener('update_episode_premise', handleUpdateEpisodePremise)
-    }
-  }, [currentProject?.id, currentEpisodeId, characters])
+  const generateRoadmap = useCallback(() => {
+    void runAgentStream(
+      StorytellerAgentTriggerPrompt.GenerateRoadmapUser,
+      StorytellerAgentTriggerPrompt.GenerateRoadmapAgent,
+      StorytellerWorldBuildingPhase.WorldBuilding,
+      { threadId: StorytellerThreadId.General, episodeId: null }
+    )
+  }, [runAgentStream])
 
   // handleDismissToast provided by useStorytellerActions hook
 
@@ -325,8 +280,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     async (prompt: string) => {
       try {
         const res = await fetch(`/api/storyteller/projects/${currentProject?.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          method: StorytellerHttpMethod.Patch,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify({ masterPrompt: prompt }),
         })
         if (res.ok && currentProject) {
@@ -336,7 +291,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           })
         }
       } catch (err) {
-        console.error('Failed to save master prompt:', err)
+        console.error(StorytellerLogMessage.FailedSaveMasterPrompt, err)
       }
     },
     [currentProject]
@@ -348,17 +303,17 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
       try {
         await fetch(`/api/storyteller/episodes/${currentEpisodeId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          method: StorytellerHttpMethod.Patch,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify({
             episode_prompt: prompt,
           }),
         })
 
         // Dismiss toast if this was from a suggestion
-        handleDismissToast('episode-prompt-suggestion')
+        handleDismissToast(StorytellerToastId.EpisodePromptSuggestion)
       } catch (err) {
-        console.error('Failed to save episode prompt:', err)
+        console.error(StorytellerLogMessage.FailedSaveEpisodePrompt, err)
       }
     },
     [currentEpisodeId, handleDismissToast]
@@ -386,7 +341,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
         const updateKeys = Object.keys(updates)
         const isMoodImagesOnly =
-          updateKeys.length === 1 && updateKeys[0] === 'moodImages'
+          updateKeys.length === 1 && updateKeys[0] === MoodboardFieldAlias.MoodImages
 
         if (isMoodImagesOnly) {
           // Refetch-after-delete path: only merge moodImages into state/store and persist a merge-only PATCH so we never overwrite the rest of the bible/plan
@@ -402,8 +357,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
             },
           })
           await fetch(`/api/storyteller/projects/${latestProject.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            method: StorytellerHttpMethod.Patch,
+            headers: { 'Content-Type': ContentType.Json },
             body: JSON.stringify({
               seriesBible: { moodImages: newMoodImages },
               storyPlan: { moodImages: newMoodImages },
@@ -421,13 +376,13 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
             setStoryPlan(prev => applyUpdatesToStoryPlan(prev, updates))
           }
           await fetch(`/api/storyteller/projects/${latestProject.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            method: StorytellerHttpMethod.Patch,
+            headers: { 'Content-Type': ContentType.Json },
             body: JSON.stringify({ series_bible: newBible, story_plan: newBible }),
           })
         }
       } catch (e) {
-        console.error('Failed to save global bible:', e)
+        console.error(StorytellerLogMessage.FailedSaveGlobalBible, e)
       } finally {
         setIsSending(false)
       }
@@ -453,12 +408,12 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       })
 
       await fetch(`/api/storyteller/projects/${currentProject.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: StorytellerHttpMethod.Patch,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify({ series_bible: mergedBible, story_plan: mergedBible }),
       })
     } catch (e) {
-      console.error('Failed to save bible:', e)
+      console.error(StorytellerLogMessage.FailedSaveBible, e)
       // Optionally revert? For now we trust optimistic update.
     } finally {
       setIsSending(false)
@@ -473,13 +428,15 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
   const chatQuestionToStoryteller = useCallback(
     (question: ChatAgentQuestion): StorytellerAgentQuestion => ({
       id: question.id,
-      agentName: 'Showrunner',
+      agentName: StorytellerMessageRole.Showrunner,
       question: question.question,
       questionType: question.options?.length
         ? QuestionType.SINGLE_CHOICE
         : QuestionType.FREE_TEXT,
       urgency:
-        question.urgency === 'blocking' ? QuestionUrgency.BLOCKING : QuestionUrgency.OPTIONAL,
+        question.urgency === ChatQuestionUrgency.Blocking
+          ? QuestionUrgency.BLOCKING
+          : QuestionUrgency.OPTIONAL,
       options: question.options?.map((label, index) => ({
         id: String(index),
         label,
@@ -511,7 +468,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     () =>
       storyPlan ??
       applyUpdatesToStoryPlan(null, {
-        title: currentProject?.name || 'Untitled',
+        title: currentProject?.name || StorytellerDefaultTitle.Untitled,
         genre: '',
         tone: '',
         centralQuestion: '',
@@ -525,7 +482,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
   const closeWorldBiblePanel = useCallback(() => {
     const params = new URLSearchParams(searchParams?.toString() || '')
-    params.set('bible', 'off')
+    params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Off)
     router.push(`?${params.toString()}`)
   }, [router, searchParams])
 
@@ -561,7 +518,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
   )
 
   const handleCharacterWebNodeClick = useCallback((nodeId: string, type: unknown) => {
-    console.log('Character web node clicked:', nodeId, type)
+    console.log(StorytellerLogMessage.CharacterWebNodeClicked, nodeId, type)
     setFocusEntityId(null)
   }, [])
 
@@ -582,5 +539,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
     handleChatQuestionAnswer,
     handleChatQuestionSkip,
     handleCharacterWebNodeClick,
+    generateEpisodePremise,
+    generateEpisodePremiseSection,
+    generateRoadmap,
   }
 }

@@ -43,8 +43,28 @@ import {
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import toast from 'react-hot-toast'
-import { customEventDetailRecord, fileReaderText, readNumber, readString, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
+import { fileReaderText, readString, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import { parseUpscaleProvider, UpscaleProvider } from '../../core/upscale-provider-wire'
+import { useWorldUiStore } from '@/domains/world-building-toolkit/state/useWorldUiStore'
+import type { MjGridPayload } from '@/domains/world-building-toolkit/state/constants/world-ui-store'
+import {
+  CHAT_DEBUG_ADMIN_PIN,
+  ContentType,
+  ContextAssemblyVariant,
+  HttpMethod,
+  UrlScheme,
+  WorldGenDataUrlCheck,
+  WorldGenDefaultFidelityPrompt,
+  WorldGenSidebarApiRoute,
+  WorldGenSidebarError,
+  WorldGenSidebarHeader,
+  WorldGenSidebarLog,
+  WorldGenSidebarStorageKey,
+  WorldGenSidebarToast,
+  WorldGenStylePresetFallback,
+  WorldGenStyleUrlStoragePrefix,
+  WorldGenTileProvider,
+} from '../constants/sidebar'
 
 export const Sidebar: React.FC = () => {
   const defaultMasterPrompt = ''
@@ -63,7 +83,7 @@ export const Sidebar: React.FC = () => {
 
   const [isDebugMode] = useState(() =>
     typeof window !== 'undefined'
-      ? localStorage.getItem(LocalStorageKeys.DEBUG_MODE) === '2137'
+      ? localStorage.getItem(LocalStorageKeys.DEBUG_MODE) === CHAT_DEBUG_ADMIN_PIN
       : false
   )
   const [upscaleProvider, setUpscaleProvider] = useState<UpscaleProvider>(() => {
@@ -106,7 +126,7 @@ export const Sidebar: React.FC = () => {
 
   // Which single style-reference image to send to MJ (persisted per project+preset)
   const styleUrlLocalStorageKey = currentProject?.id
-    ? `worldgen-style-url-idx-${currentProject.id}-${currentProject.stylePreset || 'custom'}`
+    ? `${WorldGenStyleUrlStoragePrefix.Index}${currentProject.id}-${currentProject.stylePreset || WorldGenStylePresetFallback.Custom}`
     : null
 
   const [selectedStyleUrlIndex, setSelectedStyleUrlIndex] = useState<number>(0)
@@ -147,60 +167,23 @@ export const Sidebar: React.FC = () => {
     if (typeof window !== 'undefined') {
       return (
         localStorage.getItem(LocalStorageKeys.FIDELITY_PROMPT) ||
-        'Enhance with fine artistic details, crisp textures, and vibrant colors while maintaining the original composition.'
+        WorldGenDefaultFidelityPrompt.Default
       )
     }
-    return 'Enhance with fine artistic details, crisp textures, and vibrant colors while maintaining the original composition.'
+    return WorldGenDefaultFidelityPrompt.Default
   })
   const [fidelityCreativity, setFidelityCreativity] = useState(0.3)
 
   // MJ Variant Picker state
-  type MjGridData = {
-    tileId: string
-    tileX: number
-    tileY: number
-    gridImageUrl: string
-    buttons: unknown[]
-    taskId: string
-  }
+  const [mjGridData, setMjGridData] = useState<MjGridPayload | null>(null)
+  const mjGridVersion = useWorldUiStore(state => state.mjGridVersion)
+  const pendingMjGrid = useWorldUiStore(state => state.pendingMjGrid)
 
-  function mjGridDataFromEvent(event: Event): MjGridData | null {
-    const detail = customEventDetailRecord(event)
-    const tileId = readString(detail.tileId)
-    const gridImageUrl = readString(detail.gridImageUrl)
-    const taskId = readString(detail.taskId)
-    const tileX = readNumber(detail.tileX)
-    const tileY = readNumber(detail.tileY)
-    if (!tileId || !gridImageUrl || !taskId || tileX === undefined || tileY === undefined) {
-      return null
-    }
-    return {
-      tileId,
-      tileX,
-      tileY,
-      gridImageUrl,
-      buttons: Array.isArray(detail.buttons) ? detail.buttons : [],
-      taskId,
-    }
-  }
-
-  const [mjGridData, setMjGridData] = useState<MjGridData | null>(null)
-
-  // Listen for MJ grid ready event
   useEffect(() => {
-    const handleMjGridReady = (event: Event) => {
-      const data = mjGridDataFromEvent(event)
-      if (data) {
-        console.log('MJ grid ready:', data)
-        setMjGridData(data)
-      }
-    }
-
-    window.addEventListener('mj-grid-ready', handleMjGridReady)
-    return () => {
-      window.removeEventListener('mj-grid-ready', handleMjGridReady)
-    }
-  }, [])
+    if (!pendingMjGrid || mjGridVersion === 0) return
+    console.log(WorldGenSidebarLog.MjGridReady, pendingMjGrid)
+    setMjGridData(pendingMjGrid)
+  }, [pendingMjGrid, mjGridVersion])
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -211,7 +194,7 @@ export const Sidebar: React.FC = () => {
             setStyleReferenceUrls(data.styleReferenceUrls)
           }
         })
-        .catch(err => console.error('Failed to load project style refs:', err))
+        .catch(err => console.error(WorldGenSidebarLog.FailedToLoadProjectStyleRefs, err))
     }
   }, [currentProject?.id])
 
@@ -228,37 +211,38 @@ export const Sidebar: React.FC = () => {
       const reader = new FileReader()
       reader.onloadend = () => {
         const dataUrl = fileReaderText(reader.result)
-        if (!dataUrl || !dataUrl.includes(',')) reject(new Error('Invalid data URL'))
-        else resolve(dataUrl.split(',')[1])
+        if (!dataUrl || !dataUrl.includes(WorldGenDataUrlCheck.Comma))
+          reject(new Error(WorldGenSidebarError.InvalidDataUrl))
+        else resolve(dataUrl.split(WorldGenDataUrlCheck.Comma)[1])
       }
-      reader.onerror = () => reject(new Error('FileReader error'))
+      reader.onerror = () => reject(new Error(WorldGenSidebarError.FileReaderError))
       reader.readAsDataURL(blob)
     })
 
   const blobToDataUrl = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       if (!blob || blob.size === 0) {
-        console.error('[Sidebar] blobToDataUrl received invalid blob:', { blob, size: blob?.size })
-        reject(new Error('Invalid blob'))
+        console.error(WorldGenSidebarLog.BlobToDataUrlInvalidBlob, { blob, size: blob?.size })
+        reject(new Error(WorldGenSidebarError.InvalidBlob))
         return
       }
 
-      console.log('[Sidebar] Converting blob to data URL:', { size: blob.size, type: blob.type })
+      console.log(WorldGenSidebarLog.ConvertingBlobToDataUrl, { size: blob.size, type: blob.type })
 
       const reader = new FileReader()
       reader.onloadend = () => {
         const dataUrl = fileReaderText(reader.result)
-        console.log('[Sidebar] Data URL created:', {
+        console.log(WorldGenSidebarLog.DataUrlCreated, {
           length: dataUrl?.length,
           prefix: dataUrl?.substring(0, 50),
-          isValid: dataUrl?.startsWith('data:image/'),
+          isValid: dataUrl?.startsWith(WorldGenDataUrlCheck.ImagePrefix),
         })
         if (dataUrl) resolve(dataUrl)
-        else reject(new Error('FileReader error'))
+        else reject(new Error(WorldGenSidebarError.FileReaderError))
       }
       reader.onerror = e => {
-        console.error('[Sidebar] FileReader error:', e)
-        reject(new Error('FileReader error'))
+        console.error(WorldGenSidebarLog.FileReaderError, e)
+        reject(new Error(WorldGenSidebarError.FileReaderError))
       }
       reader.readAsDataURL(blob)
     })
@@ -269,7 +253,7 @@ export const Sidebar: React.FC = () => {
   ): Promise<(Tile & { imageUrl?: string }) | undefined> => {
     if (!tile || !currentProject || !tile.image_filename) return tile
 
-    const imageUrl = tile.image_filename.startsWith('http')
+    const imageUrl = tile.image_filename.startsWith(UrlScheme.Http)
       ? tile.image_filename
       : `${window.location.origin}/projects/${currentProject.id}/${tile.image_filename}`
 
@@ -294,7 +278,7 @@ export const Sidebar: React.FC = () => {
         reader.readAsDataURL(blob)
       })
     } catch (e) {
-      console.error('Failed to load neighbor image:', e)
+      console.error(WorldGenSidebarLog.FailedToLoadNeighborImage, e)
       return undefined
     }
   }
@@ -304,22 +288,22 @@ export const Sidebar: React.FC = () => {
     setIsFetchingSummary(true)
     try {
       const res = await fetch(`/api/storyteller/world-summary?projectId=${currentProject.id}`)
-      if (!res.ok) throw new Error('Failed to fetch summary')
+      if (!res.ok) throw new Error(WorldGenSidebarError.FailedToFetchSummary)
 
       const data = await res.json()
 
       if (data.worldGenPrompt) {
         handleMasterPromptChange(data.worldGenPrompt)
-        toast.success('Master Prompt updated from Storyteller Bible')
+        toast.success(WorldGenSidebarToast.MasterPromptUpdated)
       }
 
       if (data.summarize) {
-        console.log('World Summary:', data.summarize)
+        console.log(WorldGenSidebarLog.WorldSummary, data.summarize)
         // Optionally store summary for display if needed
       }
     } catch (e) {
-      console.error('Failed to fetch world summary:', e)
-      toast.error('Failed to fetch world info')
+      console.error(WorldGenSidebarLog.FailedToFetchWorldSummary, e)
+      toast.error(WorldGenSidebarToast.FailedToFetchWorldInfo)
     } finally {
       setIsFetchingSummary(false)
     }
@@ -372,15 +356,15 @@ export const Sidebar: React.FC = () => {
         }
 
         const contextInput = { targetX: x, targetY: y, neighbors, allTiles: tiles }
-        const preferredVariant: ContextImageVariant = 'canonicalFullContext'
+        const preferredVariant: ContextImageVariant = ContextAssemblyVariant.CanonicalFullContext
         const canonicalContext = await assembleContextImage(
           contextInput,
           1024,
-          'canonicalFullContext'
+          ContextAssemblyVariant.CanonicalFullContext
         )
 
         if (canonicalContext.directNeighborCount === 0) {
-          throw new Error('Failed to load direct neighbor context for follow-up tile generation')
+          throw new Error(WorldGenSidebarError.FailedToLoadNeighborContext)
         }
 
         const [canonicalBase64, maskBase64] = await Promise.all([
@@ -413,7 +397,7 @@ export const Sidebar: React.FC = () => {
             contextVariant: preferredVariant,
             contextStrategy: canonicalContext.strategy.mode,
             weightedNeighbors: canonicalContext.strategy.weightedNeighbors,
-            provider: 'nano-banana',
+            provider: WorldGenTileProvider.NanoBanana,
           })
         ).catch(() => { })
       }
@@ -462,15 +446,15 @@ export const Sidebar: React.FC = () => {
         reader.onload = () => {
           const dataUrl = fileReaderText(reader.result)
           if (dataUrl) resolve(dataUrl)
-          else reject(new Error('FileReader error'))
+          else reject(new Error(WorldGenSidebarError.FileReaderError))
         }
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
 
-      const response = await fetch('/api/upload-tile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(WorldGenSidebarApiRoute.UploadTile, {
+        method: HttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify({
           projectId: currentProject.id,
           x: tile.x,
@@ -482,7 +466,7 @@ export const Sidebar: React.FC = () => {
 
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.error || 'Upload failed')
+        throw new Error(data.error || WorldGenSidebarError.UploadFailed)
       }
 
       useWorldStore.setState({
@@ -998,10 +982,10 @@ export const Sidebar: React.FC = () => {
     <DomainSidebar
       header={
         <div className="flex items-center justify-between w-full pl-2">
-          <SidebarHeader>World Gen</SidebarHeader>
+          <SidebarHeader>{WorldGenSidebarHeader.WorldGen}</SidebarHeader>
         </div>
       }
-      storageKey="world-gen"
+      storageKey={WorldGenSidebarStorageKey.WorldGen}
     >
       {sidebarContent}
     </DomainSidebar>

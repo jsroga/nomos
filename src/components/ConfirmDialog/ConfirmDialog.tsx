@@ -11,6 +11,12 @@ import {
 } from '@/components/Dialog'
 import { Button } from '@/components/Button'
 
+import {
+  CONFIRM_DIALOG_CANCEL_LABEL,
+  CONFIRM_DIALOG_CONFIRM_LABEL,
+  CONFIRM_DIALOG_DEFAULT_VARIANT,
+} from './constants/confirm-dialog-copy'
+
 interface ConfirmDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -27,9 +33,9 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
-  variant = 'default',
+  confirmLabel = CONFIRM_DIALOG_CONFIRM_LABEL,
+  cancelLabel = CONFIRM_DIALOG_CANCEL_LABEL,
+  variant = CONFIRM_DIALOG_DEFAULT_VARIANT,
   onConfirm,
 }: ConfirmDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false)

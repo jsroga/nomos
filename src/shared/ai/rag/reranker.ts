@@ -7,12 +7,18 @@
 
 import { z } from 'zod'
 import { SearchResult } from './hybrid-search'
+import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
+import {
+  CohereRerankModel,
+  RerankerLog,
+  RerankerProviderId,
+} from '@/shared/ai/constants/reranker'
 
 // ============================================
 // TYPES
 // ============================================
 
-export type RerankerProvider = 'cohere' | 'cross-encoder' | 'heuristic'
+export type RerankerProvider = `${RerankerProviderId}`
 
 export interface RerankerConfig {
   provider: RerankerProvider
@@ -31,11 +37,11 @@ export interface RerankResult {
 }
 
 const DEFAULT_CONFIG: RerankerConfig = {
-  provider: 'heuristic', // Default to fast heuristic
+  provider: RerankerProviderId.Heuristic,
   topK: 10,
   rerankedTopK: 5,
   minScore: 0.3,
-  cohereModel: 'rerank-english-v3.0',
+  cohereModel: CohereRerankModel.EnglishV3,
 }
 
 // ============================================
@@ -137,16 +143,16 @@ async function rerankCohere(
   const apiKey = process.env.COHERE_API_KEY
 
   if (!apiKey) {
-    console.warn('COHERE_API_KEY not set, falling back to heuristic reranking')
+    console.warn(RerankerLog.CohereKeyMissing)
     return rerankHeuristic(query, results, config)
   }
 
   try {
     const response = await fetch('https://api.cohere.ai/v1/rerank', {
-      method: 'POST',
+      method: HttpMethod.Post,
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        'Content-Type': ContentType.Json,
       },
       body: JSON.stringify({
         query,
@@ -173,7 +179,7 @@ async function rerankCohere(
 
     return rerankedResults
   } catch (error) {
-    console.warn('Cohere reranking failed, falling back to heuristic:', error)
+    console.warn(RerankerLog.CohereFailed, error)
     return rerankHeuristic(query, results, config)
   }
 }
@@ -198,7 +204,7 @@ async function rerankCrossEncoder(
 ): Promise<SearchResult[]> {
   // For now, use heuristic as placeholder
   // TODO: Integrate with actual cross-encoder model
-  console.log('Cross-encoder reranking not yet implemented, using heuristic')
+  console.log(RerankerLog.CrossEncoderNotImplemented)
   return rerankHeuristic(query, results, config)
 }
 
@@ -223,13 +229,13 @@ export class Reranker {
     let rerankedResults: SearchResult[]
 
     switch (this.config.provider) {
-      case 'cohere':
+      case RerankerProviderId.Cohere:
         rerankedResults = await rerankCohere(query, results, this.config)
         break
-      case 'cross-encoder':
+      case RerankerProviderId.CrossEncoder:
         rerankedResults = await rerankCrossEncoder(query, results, this.config)
         break
-      case 'heuristic':
+      case RerankerProviderId.Heuristic:
       default:
         rerankedResults = rerankHeuristic(query, results, this.config)
     }

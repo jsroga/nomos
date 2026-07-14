@@ -207,3 +207,9 @@ export enum ActionType {
   REMOVE_THEME = 'REMOVE_THEME',
 }
 
+const ACTION_TYPE_VALUES = new Set<string>(Object.values(ActionType))
+
+export function isActionType(value: string): value is ActionType {
+  return ACTION_TYPE_VALUES.has(value)
+}
+

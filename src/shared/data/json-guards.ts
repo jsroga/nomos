@@ -2,6 +2,11 @@
  * Type guards and readers for untyped JSON / API payloads (no `as` casts).
  */
 
+import {
+  CUSTOM_EVENT_DETAIL_KEY,
+  SQL_RESULT_ROWS_KEY,
+} from '@/shared/data/constants/json-guards'
+
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -35,7 +40,7 @@ export function firstNonEmptyRecord(...candidates: unknown[]): Record<string, un
 }
 
 export function isCustomEvent(event: Event): event is CustomEvent {
-  return 'detail' in event
+  return CUSTOM_EVENT_DETAIL_KEY in event
 }
 
 export function customEventDetail(event: Event): unknown {
@@ -82,7 +87,7 @@ export function readRowNumber(row: Record<string, unknown>, key: string): number
 
 export function sqlResultRows(result: unknown): Record<string, unknown>[] {
   if (typeof result !== 'object' || result === null) return []
-  if ('rows' in result && Array.isArray(result.rows)) {
+  if (SQL_RESULT_ROWS_KEY in result && Array.isArray(result.rows)) {
     return result.rows.filter(
       (row): row is Record<string, unknown> =>
         typeof row === 'object' && row !== null && !Array.isArray(row)

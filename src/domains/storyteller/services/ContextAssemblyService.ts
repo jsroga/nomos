@@ -12,7 +12,20 @@ import type { beats, characters } from '@/db'
 import { db } from '@/db/client'
 import { budgetContext, type RawContextParts } from '@/domains/storyteller/services/context/token-budget'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
+import { EntityRefPrefix } from '@/domains/storyteller/core/entities/constants/reference-parser'
+import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
+import {
+  StorytellerAnswerSeparator,
+  StorytellerDefaultTitle,
+} from '@/domains/storyteller/core/storyteller-page-wire'
 import { Phase, parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/Enums'
+import {
+  BIBLE_CATEGORY_KEYS,
+  ContextAssemblyFallback,
+  ContextAssemblyLog,
+} from '@/domains/storyteller/services/constants/context-assembly'
+import { BibleCategoryKey } from '@/shared/data/constants/protocol'
+import { ChatSenderAlias } from '@/shared/chat/core/constants/chat-messages'
 import {
   namedRecordsFromJson,
   recordArrayFromJson,
@@ -84,17 +97,7 @@ export interface AssembledContext {
   existingBibleData: Record<string, unknown>
 }
 
-const BIBLE_CATEGORIES = [
-  'General',
-  'Setting',
-  'History',
-  'Magic',
-  'Factions',
-  'Technology',
-  'Culture',
-]
-
-const BIBLE_CATEGORY_SET = new Set<string>(BIBLE_CATEGORIES)
+const BIBLE_CATEGORY_SET = new Set<string>(BIBLE_CATEGORY_KEYS)
 
 const ROLE_PRIORITY: Record<string, number> = {
   protagonist: 1,
@@ -169,7 +172,7 @@ function namedEntitiesFromJson(value: unknown): NamedEntityRow[] {
 
 function inspirationTitle(item: unknown): string {
   if (typeof item === 'string') return item
-  return readString(recordFromJson(item).title) ?? 'Unknown'
+  return readString(recordFromJson(item).title) ?? ContextAssemblyFallback.NoneLabel
 }
 
 function storyPlanFromJson(content: unknown): StoryPlan {
@@ -228,7 +231,7 @@ function slugId(prefix: string, id: string | undefined, name: string): string {
 async function getRAGContext(projectId: string, query: string): Promise<string> {
   try {
     const { ragService } = await import('@/domains/storyteller/services/RagService')
-    const ragResults = await ragService.assembleAgentContext(projectId, 'showrunner', query)
+    const ragResults = await ragService.assembleAgentContext(projectId, ChatSenderAlias.Showrunner, query)
 
     let ragContext = ''
     if (ragResults.relevantHistory) {
@@ -242,7 +245,7 @@ async function getRAGContext(projectId: string, query: string): Promise<string> 
     }
     return ragContext
   } catch (e) {
-    console.warn('RAG context retrieval failed:', e)
+    console.warn(ContextAssemblyLog.RagRetrievalFailed, e)
     return ''
   }
 }
@@ -331,84 +334,89 @@ ${masterPrompt ? `\n=== MASTER PROMPT ===\n${masterPrompt}` : ''}
 
     const genre =
       Array.isArray(storyPlan.genre)
-        ? storyPlan.genre.join(', ')
-        : storyPlan.genre || readString(bible.genre) || 'Not set'
+        ? storyPlan.genre.join(StorytellerAnswerSeparator.CommaSpace)
+        : storyPlan.genre || readString(bible.genre) || ContextAssemblyFallback.NotSet
     const tone =
       Array.isArray(storyPlan.tone)
-        ? storyPlan.tone.join(', ')
-        : storyPlan.tone || readString(bible.tone) || 'Not set'
-    const theme = storyPlan.centralTheme || readString(bible.centralTheme) || 'Not set'
+        ? storyPlan.tone.join(StorytellerAnswerSeparator.CommaSpace)
+        : storyPlan.tone || readString(bible.tone) || ContextAssemblyFallback.NotSet
+    const theme =
+      storyPlan.centralTheme || readString(bible.centralTheme) || ContextAssemblyFallback.NotSet
     const premise =
       storyPlan.premise ?? storyPlan.episodePremise ?? recordFromJson(bible.episodePremise)
 
     const projectCtx = `=== PROJECT ===
-Title: ${projectData?.name || 'Untitled'} | Genre: ${genre} | Tone: ${tone} | Theme: ${theme}
+Title: ${projectData?.name || StorytellerDefaultTitle.Untitled} | Genre: ${genre} | Tone: ${tone} | Theme: ${theme}
 
 === EPISODE PREMISE ===
-${Object.keys(premise).length > 0 ? JSON.stringify(premise) : 'No episode premise yet'}
+${Object.keys(premise).length > 0 ? JSON.stringify(premise) : ContextAssemblyFallback.NoEpisodePremise}
 
 === WORLD ===
-${storyPlan.worldDescription || readString(bible.worldDescription) || 'No world description yet'}
+${storyPlan.worldDescription || readString(bible.worldDescription) || ContextAssemblyFallback.NoWorldDescription}
 
 === WORLD RULES ===
 ${storyPlan.worldRules && storyPlan.worldRules.length > 0
         ? storyPlan.worldRules
             .map(
               r =>
-                `- [${r.category || 'General'}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
+                `- [${r.category || BibleCategoryKey.General}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
             )
             .join('\n')
-        : '(none)'
+        : ContextAssemblyFallback.None
       }
 
 === FACTIONS ===
 ${storyPlan.factions && storyPlan.factions.length > 0
         ? storyPlan.factions
             .map(f => {
-              const factionId = slugId('faction', f.id, f.name)
-              return `- [${f.name}][${factionId}]: ${f.ideology || f.description || 'No description'}`
+              const factionId = slugId(EntityRefPrefix.Faction, f.id, f.name)
+              return `- [${f.name}][${factionId}]: ${f.ideology || f.description || ContextAssemblyFallback.NoDescription}`
             })
             .join('\n')
-        : '(none)'
+        : ContextAssemblyFallback.None
       }
 
 === ITEMS ===
 ${storyPlan.items && storyPlan.items.length > 0
         ? storyPlan.items
             .map(i => {
-              const itemId = slugId('item', i.id, i.name)
-              return `- [${i.name}][${itemId}]: ${i.description || 'No description'}`
+              const itemId = slugId(EntityRefPrefix.Item, i.id, i.name)
+              return `- [${i.name}][${itemId}]: ${i.description || ContextAssemblyFallback.NoDescription}`
             })
             .join('\n')
-        : '(none)'
+        : ContextAssemblyFallback.None
       }
 
 === EVENTS ===
 ${storyPlan.events && storyPlan.events.length > 0
         ? storyPlan.events
             .map(e => {
-              const eventId = slugId('event', e.id, e.name)
-              return `- [${e.name}][${eventId}]: ${e.description || 'No description'}`
+              const eventId = slugId(EntityRefPrefix.Event, e.id, e.name)
+              return `- [${e.name}][${eventId}]: ${e.description || ContextAssemblyFallback.NoDescription}`
             })
             .join('\n')
-        : '(none)'
+        : ContextAssemblyFallback.None
       }
 
 === WORLD RULES (linked) ===
 ${storyPlan.worldRules && storyPlan.worldRules.length > 0
         ? storyPlan.worldRules
             .map(r => {
-              const ruleId = slugId('rule', r.id, r.name ?? r.category ?? 'rule')
-              return `- [${r.name || r.category || 'Rule'}][${ruleId}]: ${r.rule || 'No description'}`
+              const ruleId = slugId(
+                EntityRefPrefix.Rule,
+                r.id,
+                r.name ?? r.category ?? StoryEntityType.Rule
+              )
+              return `- [${r.name || r.category || ContextAssemblyFallback.RuleLabel}][${ruleId}]: ${r.rule || ContextAssemblyFallback.NoDescription}`
             })
             .join('\n')
-        : '(none)'
+        : ContextAssemblyFallback.None
       }
 
 === INSPIRATIONS ===
 ${storyPlan.inspirations
-        ? `Movies: ${storyPlan.inspirations.movies?.join(', ') || 'None'} | Books: ${storyPlan.inspirations.books?.join(', ') || 'None'} | Games: ${storyPlan.inspirations.games?.join(', ') || 'None'}`
-        : '(none)'
+        ? `Movies: ${storyPlan.inspirations.movies?.join(StorytellerAnswerSeparator.CommaSpace) || ContextAssemblyFallback.NoneLabel} | Books: ${storyPlan.inspirations.books?.join(StorytellerAnswerSeparator.CommaSpace) || ContextAssemblyFallback.NoneLabel} | Games: ${storyPlan.inspirations.games?.join(StorytellerAnswerSeparator.CommaSpace) || ContextAssemblyFallback.NoneLabel}`
+        : ContextAssemblyFallback.None
       }
 
 === SEQUENCES ===
@@ -416,7 +424,7 @@ ${storyPlan.sequences && storyPlan.sequences.length > 0
         ? storyPlan.sequences
             .map((s, i) => `${i + 1}. ${s.name}: ${s.description || ''}`)
             .join('\n')
-        : '(none)'
+        : ContextAssemblyFallback.None
       }`
 
     const sortedChars = [...characters].sort((a, b) => {
@@ -434,8 +442,8 @@ ${storyPlan.sequences && storyPlan.sequences.length > 0
           sortedChars
             .slice(0, 20)
             .map(c => {
-              const charId = slugId('char', c.id, c.name)
-              return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || 'No description'}`
+              const charId = slugId(EntityRefPrefix.Character, c.id, c.name)
+              return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || ContextAssemblyFallback.NoDescription}`
             })
             .join('\n')
         : ''
@@ -446,7 +454,7 @@ ${storyPlan.sequences && storyPlan.sequences.length > 0
           beats
             .slice(-3)
             .map(b => {
-              const beatId = slugId('beat', b.id, String(b.sequence ?? '0'))
+              const beatId = slugId(EntityRefPrefix.Beat, b.id, String(b.sequence ?? '0'))
               return `- [${b.logline || `Beat ${b.sequence}`}][${beatId}]`
             })
             .join('\n')
@@ -463,14 +471,14 @@ ${storyPlan.sequences && storyPlan.sequences.length > 0
     const budgeted = budgetContext(rawParts)
 
     if (budgeted.trimmed.length > 0) {
-      console.log('[Stream] Token budget trimmed sections:', budgeted.trimmed)
+      console.log(ContextAssemblyLog.TokenBudgetTrimmed, budgeted.trimmed)
     }
     console.log(`[Stream] Context tokens: ~${budgeted.totalTokens}`)
 
     contextPrompt = budgeted.context
     existingBibleData = rawBible
   } catch (err) {
-    console.warn('Failed to load context for stream:', err)
+    console.warn(ContextAssemblyLog.FailedToLoadContext, err)
     onError?.(err)
   }
 

@@ -1,6 +1,10 @@
 /* eslint-disable react/no-unknown-property */
 'use client'
 
+import {
+  DEFAULT_FRAME_COLOR,
+  DOOR_HANDLE_COLOR,
+} from '@/domains/interior-designer/constants/mesh-colors'
 import React, { useMemo } from 'react'
 import * as THREE from 'three'
 
@@ -15,12 +19,12 @@ interface DoorMeshProps {
  * Default dimensions: 0.9m × 2.1m × 0.05m
  */
 export const DoorMesh: React.FC<DoorMeshProps> = ({
-  color = '#7a6f5e', // Warm brownish-gray, close to wall color
+  color = DEFAULT_FRAME_COLOR, // Warm brownish-gray, close to wall color
   isSelected = false,
   opacity = 1,
 }) => {
   const doorColor = useMemo(() => new THREE.Color(color), [color])
-  const handleColor = useMemo(() => new THREE.Color('#C0C0C0'), [])
+  const handleColor = useMemo(() => new THREE.Color(DOOR_HANDLE_COLOR), [])
 
   // Door dimensions
   const width = 0.9

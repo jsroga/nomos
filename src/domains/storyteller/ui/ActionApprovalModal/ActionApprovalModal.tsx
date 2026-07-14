@@ -8,36 +8,31 @@ import {
   ChevronRight,
   Check,
   XCircle,
-  AlertCircle,
   Plus,
   Minus,
   Edit3,
   Eye,
   Code,
-  FileText,
-  Users,
-  Globe,
   Sparkles,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
   Loader2,
 } from 'lucide-react'
 import type { WireAgentAction } from '@/shared/agent-kernel/action-wire'
-import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued'
 import { cn } from '@/shared/data/utils'
-import { recordFromJson } from '@/shared/data/deep-merge'
-
-interface ActionChange {
-  path: string
-  before: unknown
-  after: unknown
-  reason?: string
-  changeType: 'add' | 'modify' | 'remove'
-  category: string
-  friendlyName: string
-  summary?: string
-}
+import type { ActionChange } from '@/domains/storyteller/ui/ActionApprovalModal/action-approval-types'
+import {
+  ActionChangeType,
+  ApprovalViewMode,
+  CATEGORY_TABLE_VIEW_SET,
+  MODAL_DISPLAY_NAME,
+} from '@/domains/storyteller/ui/ActionApprovalModal/constants/action-approval-display'
+import { extractChanges } from '@/domains/storyteller/ui/ActionApprovalModal/extract-action-changes'
+import { formatActionType } from '@/domains/storyteller/ui/ActionApprovalModal/action-approval-helpers'
+import { useApprovalModalKeyboard } from '@/domains/storyteller/ui/ActionApprovalModal/useApprovalModalKeyboard'
+import {
+  ApprovalModalSummaryPanel,
+  openDiffForChange,
+} from '@/domains/storyteller/ui/ActionApprovalModal/ApprovalModalSummaryPanel'
+import { ApprovalModalDiffPanel } from '@/domains/storyteller/ui/ActionApprovalModal/ApprovalModalDiffPanel'
 
 interface ActionApprovalModalProps {
   action: WireAgentAction
@@ -49,123 +44,17 @@ interface ActionApprovalModalProps {
   isProcessing?: boolean
 }
 
-const GenericItemTable: React.FC<{ changes: ActionChange[] }> = ({ changes }) => {
-  if (changes.length === 0) return null
-
-  // Collect all fields present across all changes
-  const allFields = new Set<string>()
-  changes.forEach(c => {
-    const data = c.after || c.before
-    if (typeof data === 'object' && data !== null) {
-      Object.keys(data).forEach(k => {
-        if (
-          k !== 'id' &&
-          k !== 'projectId' &&
-          k !== 'episodeId' &&
-          k !== 'beatId' &&
-          k !== 'psychology' // Keep hiding complex nested objects for now
-        ) {
-          allFields.add(k)
-        }
-      })
-    }
-  })
-
-  // Heuristic for column ordering
-  const priorities = ['title', 'name', 'role', 'type', 'category', 'description', 'content']
-  const sortedColumns = Array.from(allFields).sort((a, b) => {
-    const idxA = priorities.indexOf(a)
-    const idxB = priorities.indexOf(b)
-    if (idxA !== -1 && idxB !== -1) return idxA - idxB
-    if (idxA !== -1) return -1
-    if (idxB !== -1) return 1
-    return a.localeCompare(b)
-  })
-
-  return (
-    <div className="overflow-x-auto rounded-md border border-border/40">
-      <table className="w-full text-sm text-left">
-        <thead className="text-xs uppercase bg-muted/40 text-muted-foreground">
-          <tr>
-            <th className="px-3 py-2 font-medium w-10">Type</th>
-            {sortedColumns.map(col => (
-              <th key={col} className="px-3 py-2 font-medium whitespace-nowrap">
-                {formatFieldName(col)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/20">
-          {changes.map((change, idx) => {
-            const data = recordFromJson(change.after ?? change.before)
-            return (
-              <tr key={idx} className="bg-card/50 hover:bg-muted/20 transition-colors">
-                <td className="px-3 py-2 align-top">
-                  <ChangeTypeBadge type={change.changeType} />
-                </td>
-                {sortedColumns.map(col => (
-                  <td
-                    key={col}
-                    className="px-3 py-2 max-w-[300px] truncate align-top"
-                    title={String(data[col] || '')}
-                  >
-                    {data[col] ? String(data[col]) : <span className="text-muted-foreground/30">-</span>}
-                  </td>
-                ))}
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+function shouldUseTableView(category: string, categoryChanges: ActionChange[]): boolean {
+  if (!CATEGORY_TABLE_VIEW_SET.has(category)) {
+    return false
+  }
+  return categoryChanges.some(
+    change =>
+      typeof (change.after || change.before) === 'object' &&
+      (change.after || change.before) !== null &&
+      !Array.isArray(change.after || change.before)
   )
 }
-
-const DIFF_STYLES = {
-  variables: {
-    dark: {
-      diffViewerBackground: 'transparent',
-      diffViewerColor: 'hsl(var(--foreground))',
-      addedBackground: 'rgba(34, 197, 94, 0.08)',
-      addedColor: 'rgb(134, 239, 172)',
-      removedBackground: 'rgba(239, 68, 68, 0.08)',
-      removedColor: 'rgb(252, 165, 165)',
-      wordAddedBackground: 'rgba(34, 197, 94, 0.25)',
-      wordRemovedBackground: 'rgba(239, 68, 68, 0.25)',
-      addedGutterBackground: 'rgba(34, 197, 94, 0.15)',
-      removedGutterBackground: 'rgba(239, 68, 68, 0.15)',
-      gutterBackground: 'hsl(var(--muted)/0.3)',
-      gutterColor: 'hsl(var(--muted-foreground))',
-      codeFoldGutterBackground: 'hsl(var(--muted)/0.5)',
-      codeFoldBackground: 'hsl(var(--muted)/0.3)',
-      emptyLineBackground: 'transparent',
-      highlightBackground: 'rgba(59, 130, 246, 0.1)',
-      highlightGutterBackground: 'rgba(59, 130, 246, 0.2)',
-    },
-  },
-  diffContainer: {
-    borderRadius: '0',
-    border: 'none',
-  },
-  line: {
-    padding: '4px 12px',
-    fontSize: '13px',
-    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-    lineHeight: '1.6',
-  },
-  gutter: {
-    padding: '4px 12px',
-    minWidth: '40px',
-    fontSize: '11px',
-  },
-  wordDiff: {
-    padding: '2px 4px',
-    borderRadius: '3px',
-  },
-  contentText: {
-    lineHeight: '1.6',
-  },
-} as const
 
 export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.memo(({
   action,
@@ -177,11 +66,10 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
   isProcessing = false,
 }) => {
   const [currentChangeIndex, setCurrentChangeIndex] = useState(0)
-  const [viewMode, setViewMode] = useState<'summary' | 'diff'>('summary')
+  const [viewMode, setViewMode] = useState<ApprovalViewMode>(ApprovalViewMode.SUMMARY)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
   const [isApproving, setIsApproving] = useState(false)
 
-  // Reset approving state when isOpen changes
   useEffect(() => {
     if (isOpen) setIsApproving(false)
   }, [isOpen])
@@ -191,7 +79,6 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
     try {
       await onApprove()
     } finally {
-      // Only reset if component is still mounted, though usually component unmounts on success
       setIsApproving(false)
     }
   }
@@ -199,7 +86,6 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
   const changes = useMemo(() => extractChanges(action), [action])
   const currentChange = changes[currentChangeIndex]
 
-  // Group changes by category for summary view
   const changesByCategory = useMemo(() => {
     const grouped: Record<string, ActionChange[]> = {}
     changes.forEach(change => {
@@ -211,13 +97,24 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
     return grouped
   }, [changes])
 
-  // Stats for the header
   const stats = useMemo(() => {
-    const adds = changes.filter(c => c.changeType === 'add').length
-    const mods = changes.filter(c => c.changeType === 'modify').length
-    const removes = changes.filter(c => c.changeType === 'remove').length
+    const adds = changes.filter(change => change.changeType === ActionChangeType.ADD).length
+    const mods = changes.filter(change => change.changeType === ActionChangeType.MODIFY).length
+    const removes = changes.filter(change => change.changeType === ActionChangeType.REMOVE).length
     return { adds, mods, removes, total: changes.length }
   }, [changes])
+
+  useApprovalModalKeyboard({
+    isOpen,
+    viewMode,
+    currentChangeIndex,
+    changeCount: changes.length,
+    onClose,
+    onApprove,
+    onReject,
+    setCurrentChangeIndex,
+    setViewMode,
+  })
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => {
@@ -231,41 +128,11 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
     })
   }
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      } else if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault()
-        onApprove()
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault()
-        onReject()
-      } else if (e.key === 'ArrowLeft' && viewMode === 'diff') {
-        e.preventDefault()
-        setCurrentChangeIndex(Math.max(0, currentChangeIndex - 1))
-      } else if (e.key === 'ArrowRight' && viewMode === 'diff') {
-        e.preventDefault()
-        setCurrentChangeIndex(Math.min(changes.length - 1, currentChangeIndex + 1))
-      } else if (e.key === 'Tab') {
-        e.preventDefault()
-        setViewMode(v => (v === 'summary' ? 'diff' : 'summary'))
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, currentChangeIndex, changes.length, onApprove, onReject, onClose, viewMode])
-
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-full h-full max-w-[95vw] max-h-[95vh] bg-background border border-border shadow-2xl rounded-lg flex flex-col animate-in zoom-in-95 duration-200">
-        {/* Header with Stats */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-muted/30">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={onClose} className="gap-2">
@@ -302,7 +169,6 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
             </div>
           </div>
 
-          {/* Stats Pills */}
           <div className="flex items-center gap-3">
             <div className="flex gap-2 text-xs">
               {stats.adds > 0 && (
@@ -328,29 +194,28 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
           </div>
         </div>
 
-        {/* View Mode Toggle */}
         <div className="flex items-center justify-between px-6 py-2 border-b border-border/30 bg-background/50">
           <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg">
             <Button
-              variant={viewMode === 'summary' ? 'secondary' : 'ghost'}
+              variant={viewMode === ApprovalViewMode.SUMMARY ? 'secondary' : 'ghost'}
               size="sm"
-              onClick={() => setViewMode('summary')}
+              onClick={() => setViewMode(ApprovalViewMode.SUMMARY)}
               className="h-7 gap-2 text-xs"
             >
               <Eye className="w-3.5 h-3.5" />
               Summary View
             </Button>
             <Button
-              variant={viewMode === 'diff' ? 'secondary' : 'ghost'}
+              variant={viewMode === ApprovalViewMode.DIFF ? 'secondary' : 'ghost'}
               size="sm"
-              onClick={() => setViewMode('diff')}
+              onClick={() => setViewMode(ApprovalViewMode.DIFF)}
               className="h-7 gap-2 text-xs"
             >
               <Code className="w-3.5 h-3.5" />
               Code Diff
             </Button>
           </div>
-          {viewMode === 'diff' && changes.length > 1 && (
+          {viewMode === ApprovalViewMode.DIFF && changes.length > 1 && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
                 {currentChangeIndex + 1} of {changes.length}
@@ -381,199 +246,24 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
           )}
         </div>
 
-        {/* Content Area */}
         <div className="flex-1 overflow-hidden">
-          {viewMode === 'summary' ? (
-            /* Summary View - User Friendly */
-            <div className="h-full overflow-auto p-6">
-              {/* AI Reasoning Card */}
-              {/* AI Reasoning Card */}
-              {/* AI Reasoning Card - REMOVED per user request */}
-
-              {/* Changes by Category */}
-              <div className="space-y-4">
-                {Object.entries(changesByCategory).map(([category, categoryChanges]) => (
-                  <div
-                    key={category}
-                    className="border border-border/50 rounded-lg overflow-hidden"
-                  >
-                    {/* Category Header */}
-                    <button
-                      className="w-full flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors"
-                      onClick={() => toggleSection(category)}
-                    >
-                      <div className="flex items-center gap-3">
-                        {getCategoryIcon(category)}
-                        <span className="font-medium">{category}</span>
-                        <span className="text-xs text-muted-foreground">
-                          ({categoryChanges.length} change{categoryChanges.length > 1 ? 's' : ''})
-                        </span>
-                      </div>
-                      {expandedSections.has(category) ? (
-                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                      )}
-                    </button>
-
-                    {/* Category Changes */}
-                    {expandedSections.has(category) && (
-                      <div className="divide-y divide-border/30">
-                        {/* Table View for Lists (Characters, Story Items, Rules, etc.) */}
-                        {['Characters', 'Key Characters', 'Story', 'World Rules', 'Atmosphere', 'Roadmap'].includes(category) &&
-                          categoryChanges.some(c => typeof (c.after || c.before) === 'object' && (c.after || c.before) !== null && !Array.isArray(c.after || c.before)) ? (
-                          <div className="p-0">
-                            <GenericItemTable changes={categoryChanges} />
-                          </div>
-                        ) :
-                          categoryChanges.map((change, idx) => (
-                            <div key={idx} className="p-4">
-                              <div className="flex items-start gap-3">
-                                <ChangeTypeIcon type={change.changeType} />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="font-medium text-sm">{change.friendlyName}</span>
-                                    <ChangeTypeBadge type={change.changeType} />
-                                  </div>
-
-                                  {/* Visual Before/After for simple values */}
-                                  {change.summary ? (
-                                    <p className="text-sm text-muted-foreground">{change.summary}</p>
-                                  ) : isSimpleValue(change.after) ? (
-                                    <div className="flex items-center gap-2 text-sm">
-                                      {change.before !== null && (
-                                        <>
-                                          <span className="px-2 py-1 bg-red-500/10 text-red-400 rounded line-through">
-                                            {formatSimpleValue(change.before)}
-                                          </span>
-                                          <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                                        </>
-                                      )}
-                                      <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded">
-                                        {formatSimpleValue(change.after)}
-                                      </span>
-                                    </div>
-                                  ) : Array.isArray(change.after) ? (
-                                    <div className="mt-2 space-y-1">
-                                      {change.after.slice(0, 5).map((item, i) => (
-                                        <div key={i} className="flex items-center gap-2 text-sm">
-                                          <Plus className="w-3 h-3 text-green-400" />
-                                          <span className="text-foreground/80">
-                                            {arrayItemLabel(item)}
-                                          </span>
-                                        </div>
-                                      ))}
-                                      {change.after.length > 5 && (
-                                        <span className="text-xs text-muted-foreground">
-                                          +{change.after.length - 5} more items
-                                        </span>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="mt-2 h-7 text-xs"
-                                      onClick={() => {
-                                        const idx = changes.findIndex(c => c === change)
-                                        if (idx >= 0) {
-                                          setCurrentChangeIndex(idx)
-                                          setViewMode('diff')
-                                        }
-                                      }}
-                                    >
-                                      <Code className="w-3 h-3 mr-1" />
-                                      View Details
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Expand All Button */}
-              {Object.keys(changesByCategory).length > 0 && (
-                <div className="mt-4 text-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => {
-                      if (expandedSections.size === Object.keys(changesByCategory).length) {
-                        setExpandedSections(new Set())
-                      } else {
-                        setExpandedSections(new Set(Object.keys(changesByCategory)))
-                      }
-                    }}
-                  >
-                    {expandedSections.size === Object.keys(changesByCategory).length
-                      ? 'Collapse All'
-                      : 'Expand All'}
-                  </Button>
-                </div>
-              )}
-            </div>
+          {viewMode === ApprovalViewMode.SUMMARY ? (
+            <ApprovalModalSummaryPanel
+              changesByCategory={changesByCategory}
+              changes={changes}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+              setExpandedSections={setExpandedSections}
+              onOpenDiff={changeIndex =>
+                openDiffForChange(changeIndex, setCurrentChangeIndex, setViewMode)
+              }
+              shouldUseTableView={shouldUseTableView}
+            />
           ) : (
-            /* Diff View - Technical */
-            <div className="h-full overflow-hidden flex flex-col">
-              {/* Field Path */}
-              {currentChange && (
-                <div className="px-6 py-2 bg-muted/20 border-b border-border/30 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-primary">{currentChange.path}</span>
-                    <ChangeTypeBadge type={currentChange.changeType} />
-                  </div>
-                  {currentChange.reason && (
-                    <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1.5">
-                      <AlertCircle className="w-3 h-3" />
-                      {currentChange.reason}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Diff Content - Shadcn-styled */}
-              <div className="flex-1 overflow-auto">
-                {currentChange ? (
-                  <div className="h-full">
-                    {/* Split View Header */}
-                    <div className="grid grid-cols-2 border-b border-border/50 sticky top-0 bg-background z-10">
-                      <div className="px-4 py-2 text-xs font-medium text-red-400 bg-red-500/5 border-r border-border/50 flex items-center gap-2">
-                        <Minus className="w-3 h-3" />
-                        BEFORE
-                      </div>
-                      <div className="px-4 py-2 text-xs font-medium text-green-400 bg-green-500/5 flex items-center gap-2">
-                        <Plus className="w-3 h-3" />
-                        AFTER
-                      </div>
-                    </div>
-                    <ReactDiffViewer
-                      oldValue={formatJSON(currentChange.before)}
-                      newValue={formatJSON(currentChange.after)}
-                      splitView={true}
-                      compareMethod={DiffMethod.WORDS}
-                      hideLineNumbers={false}
-                      showDiffOnly={false}
-                      styles={DIFF_STYLES}
-                      useDarkTheme={true}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    No changes to display
-                  </div>
-                )}
-              </div>
-            </div>
+            <ApprovalModalDiffPanel currentChange={currentChange} />
           )}
         </div>
 
-        {/* Footer Actions */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-border/50 bg-muted/30">
           <div className="flex gap-3 text-[10px] text-muted-foreground font-mono">
             <span>
@@ -583,7 +273,7 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
               <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">Tab</kbd> Switch
               View
             </span>
-            {viewMode === 'diff' && changes.length > 1 && (
+            {viewMode === ApprovalViewMode.DIFF && changes.length > 1 && (
               <span>
                 <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">←→</kbd>{' '}
                 Navigate
@@ -621,373 +311,4 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
   )
 })
 
-ActionApprovalModal.displayName = 'ActionApprovalModal'
-
-// Helper Components
-const ChangeTypeIcon: React.FC<{ type: ActionChange['changeType'] }> = ({ type }) => {
-  switch (type) {
-    case 'add':
-      return (
-        <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
-          <Plus className="w-3.5 h-3.5 text-green-400" />
-        </div>
-      )
-    case 'modify':
-      return (
-        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
-          <Edit3 className="w-3.5 h-3.5 text-blue-400" />
-        </div>
-      )
-    case 'remove':
-      return (
-        <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
-          <Minus className="w-3.5 h-3.5 text-red-400" />
-        </div>
-      )
-  }
-}
-
-const ChangeTypeBadge: React.FC<{ type: ActionChange['changeType'] }> = ({ type }) => {
-  const config = {
-    add: { label: 'New', className: 'bg-green-500/10 text-green-400' },
-    modify: { label: 'Updated', className: 'bg-blue-500/10 text-blue-400' },
-    remove: { label: 'Removed', className: 'bg-red-500/10 text-red-400' },
-  }[type]
-
-  return (
-    <span className={cn('text-[10px] px-1.5 py-0.5 rounded', config.className)}>
-      {config.label}
-    </span>
-  )
-}
-
-function getCategoryIcon(category: string) {
-  const icons: Record<string, React.ReactNode> = {
-    Characters: <Users className="w-4 h-4 text-purple-400" />,
-    'World Rules': <Globe className="w-4 h-4 text-blue-400" />,
-    Story: <FileText className="w-4 h-4 text-orange-400" />,
-    Premise: <Sparkles className="w-4 h-4 text-primary" />,
-  }
-  return icons[category] || <FileText className="w-4 h-4 text-muted-foreground" />
-}
-
-function isSimpleValue(value: unknown): boolean {
-  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-}
-
-function formatSimpleValue(value: unknown): string {
-  if (value === null || value === undefined) return '(empty)'
-  if (typeof value === 'string') return value.length > 50 ? value.slice(0, 50) + '...' : value
-  return String(value)
-}
-
-/**
- * Extract changes from an action with rich metadata
- */
-/** Short display label for an item inside an array diff. */
-function arrayItemLabel(item: unknown): string {
-  if (typeof item === 'object' && item !== null) {
-    const record = recordFromJson(item)
-    const name = record.name ?? record.title
-    return typeof name === 'string' ? name : JSON.stringify(item).slice(0, 50)
-  }
-  return String(item)
-}
-
-/** First string among the given keys of a loose record, else undefined. */
-function firstStringField(record: Record<string, unknown>, keys: string[]): string | undefined {
-  for (const key of keys) {
-    const value = record[key]
-    if (typeof value === 'string' && value) return value
-  }
-  return undefined
-}
-
-function extractChanges(action: WireAgentAction): ActionChange[] {
-  const changes: ActionChange[] = []
-  const payload = recordFromJson(action.payload)
-
-  // Field name to friendly name mapping
-  const friendlyNames: Record<string, string> = {
-    characters: 'Characters',
-    worldRules: 'World Rules',
-    factions: 'Factions',
-    themes: 'Story Themes',
-    tone: 'Narrative Tone',
-    genre: 'Genre',
-    protagonistHook: 'Protagonist Hook',
-    fatalFlaw: 'Fatal Flaw',
-    stakes: 'Stakes',
-    inevitableConsequence: 'Inevitable Consequence',
-    title: 'Title',
-    logline: 'Logline',
-    theHook: 'The Hook',
-    theTurn: 'The Turn',
-    theAftermath: 'The Aftermath',
-    transformation: 'Character Transformation',
-    thematicFocus: 'Thematic Focus',
-    name: 'Name',
-    role: 'Role',
-    traits: 'Character Traits',
-    goal: 'Character Goal',
-    psychology: 'Psychology Profile',
-    content: 'Script Content',
-    script: 'Script',
-    beatBoard: 'Story Beats',
-    premise: 'Episode Premise',
-    antagonistMove: 'Antagonist Move',
-    thematicQuestion: 'Thematic Question',
-    updatedFields: 'Updated Fields',
-    // New section fields
-    soundtracks: 'Soundtracks',
-    inspirations: 'Inspirations',
-    keyCharacters: 'Key Characters',
-    worldDescription: 'World Description',
-    plotTwists: 'Plot Twists',
-    sequences: 'Episode Roadmap',
-    episodeRoadmap: 'Episode Roadmap',
-    tenPointsPlan: '10-Point Plan',
-  }
-
-  // Field to category mapping
-  const fieldCategories: Record<string, string> = {
-    characters: 'Characters',
-    psychology: 'Characters',
-    traits: 'Characters',
-    goal: 'Characters',
-    role: 'Characters',
-    keyCharacters: 'Characters',
-    worldRules: 'World Rules',
-    factions: 'World Rules',
-    worldDescription: 'World Rules',
-    themes: 'Story',
-    tone: 'Story',
-    genre: 'Story',
-    protagonistHook: 'Premise',
-    fatalFlaw: 'Premise',
-    stakes: 'Premise',
-    inevitableConsequence: 'Premise',
-    title: 'Premise',
-    logline: 'Premise',
-    theHook: 'Premise',
-    theTurn: 'Premise',
-    theAftermath: 'Premise',
-    transformation: 'Premise',
-    thematicFocus: 'Premise',
-    script: 'Script',
-    content: 'Script',
-    beatBoard: 'Story',
-    premise: 'Premise',
-    // New section fields
-    soundtracks: 'Atmosphere',
-    inspirations: 'Atmosphere',
-    plotTwists: 'Story',
-    sequences: 'Roadmap',
-    episodeRoadmap: 'Roadmap',
-    tenPointsPlan: 'Premise',
-  }
-
-  // Generate summary for common types
-  const generateSummary = (key: string, value: unknown): string | undefined => {
-    if (Array.isArray(value)) {
-      const count = value.length
-      const itemType =
-        key === 'characters' || key === 'keyCharacters'
-          ? 'character'
-          : key === 'worldRules'
-            ? 'rule'
-            : key === 'factions'
-              ? 'faction'
-              : key === 'themes'
-                ? 'theme'
-                : key === 'traits'
-                  ? 'trait'
-                  : key === 'soundtracks'
-                    ? 'track'
-                    : key === 'plotTwists'
-                      ? 'twist'
-                      : key === 'sequences' || key === 'episodeRoadmap'
-                        ? 'episode'
-                        : 'item'
-
-      // SKIP SUMMARY for complex table items, so they appear as individual rows
-      const tableKeys = ['characters', 'keyCharacters', 'worldRules', 'factions', 'plotTwists', 'soundtracks']
-      if (tableKeys.includes(key)) return undefined
-
-      return `${count} ${itemType}${count !== 1 ? 's' : ''} ${action.type.startsWith('CREATE_') ? 'added' : 'updated'}`
-    }
-    if (typeof value === 'string' && value.length > 100) {
-      return value.slice(0, 100) + '...'
-    }
-    return undefined
-  }
-
-  // For UPDATE actions, extract the fields being updated
-  if (action.type.startsWith('UPDATE_')) {
-    // Extract "before" data if provided by stream (for diff viewer)
-    const beforeData = payload._before || null
-
-    // Handle updatedFields wrapper (common in bible updates)
-    const source = payload.updatedFields
-      ? recordFromJson(payload.updatedFields)
-      : payload.updates && typeof payload.updates === 'object' && !Array.isArray(payload.updates)
-        ? recordFromJson(payload.updates)
-        : payload
-
-    Object.entries(source).forEach(([key, value]) => {
-      // Filter out technical keys
-      if (
-        key !== 'id' &&
-        key !== 'beatId' &&
-        key !== 'characterId' &&
-        key !== 'projectId' &&
-        key !== 'episodeId' &&
-        key !== '_before'
-      ) {
-        // Special handling for episodeRoadmap (object with episodes array)
-        if (key === 'episodeRoadmap' && value && typeof value === 'object') {
-          const roadmap = recordFromJson(value)
-          if (Array.isArray(roadmap.episodes)) {
-            roadmap.episodes.forEach(episode => {
-              const episodeTitle = firstStringField(recordFromJson(episode), ['title'])
-              changes.push({
-                path: `episodeRoadmap.episodes[${episodeTitle || 'new'}]`,
-                before: null,
-                after: episode,
-                reason: action.reasoning,
-                changeType: 'add',
-                category: 'Roadmap',
-                friendlyName: episodeTitle || 'New Episode',
-                summary: undefined,
-              })
-            })
-          }
-          // Also handle seasonStructure if present
-          if (roadmap.seasonStructure) {
-            changes.push({
-              path: 'episodeRoadmap.seasonStructure',
-              before: null,
-              after: roadmap.seasonStructure,
-              reason: action.reasoning,
-              changeType: 'add',
-              category: 'Roadmap',
-              friendlyName: 'Season Structure',
-              summary: undefined // Force detail view or generic table
-            })
-          }
-        }
-        // Special handling for array items (Plot Twists, Rules, etc.) to expand them into individual changes
-        else if (Array.isArray(value) && ['plotTwists', 'worldRules', 'factions', 'soundtracks', 'sequences'].includes(key)) {
-          value.forEach(item => {
-            const itemRecord = recordFromJson(item)
-            const itemLabel = firstStringField(itemRecord, ['id', 'title', 'name'])
-            changes.push({
-              path: `${key}[${itemLabel || 'new'}]`,
-              before: null, // We generally don't have per-item diffs for these lists yet
-              after: item,
-              reason: action.reasoning,
-              changeType: 'add', // Treat as new/modified item
-              category: fieldCategories[key] || 'General',
-              friendlyName: firstStringField(itemRecord, ['title', 'name', 'rule']) || 'New Item',
-              summary: undefined // Force detail view
-            })
-          })
-        } else {
-          changes.push({
-            path: key,
-            before: beforeData, // Use the "before" data from stream
-            after: value,
-            reason: action.reasoning,
-            changeType: beforeData ? 'modify' : 'add',
-            category: fieldCategories[key] || 'General',
-            friendlyName: friendlyNames[key] || formatFieldName(key),
-            summary: generateSummary(key, value),
-          })
-        }
-      }
-    })
-  }
-
-  // For CREATE actions, show the full object
-  else if (action.type.startsWith('CREATE_')) {
-    const entityType = action.type.replace('CREATE_', '').toLowerCase()
-    changes.push({
-      path: entityType,
-      before: null,
-      after: payload,
-      reason: action.reasoning,
-      changeType: 'add',
-      category:
-        entityType === 'beat' ? 'Story' : entityType === 'character' ? 'Characters' : 'General',
-      friendlyName: 'New ' + formatFieldName(entityType),
-      summary: generateSummary(entityType, payload),
-    })
-  }
-
-  // For DELETE actions
-  else if (action.type.startsWith('DELETE_')) {
-    const entityType = action.type.replace('DELETE_', '').toLowerCase()
-    changes.push({
-      path: entityType,
-      before: payload,
-      after: null,
-      reason: action.reasoning,
-      changeType: 'remove',
-      category:
-        entityType === 'beat' ? 'Story' : entityType === 'character' ? 'Characters' : 'General',
-      friendlyName: formatFieldName(entityType),
-    })
-  }
-
-  // Fallback: If we have a payload but no changes extracted yet
-  else if (changes.length === 0 && Object.keys(payload).length > 0) {
-    changes.push({
-      path: 'payload',
-      before: null,
-      after: payload,
-      reason: action.reasoning,
-      changeType: 'modify',
-      category: 'General',
-      friendlyName: 'Action Data',
-    })
-  }
-
-  return changes
-}
-
-function formatFieldName(name: string): string {
-  return name
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/_/g, ' ')
-    .trim()
-    .replace(/\b\w/g, c => c.toUpperCase())
-}
-
-/**
- * Format value as pretty JSON
- */
-function formatJSON(value: unknown): string {
-  if (value === null || value === undefined) {
-    return '(empty)'
-  }
-
-  if (typeof value === 'string') {
-    return value
-  }
-
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return String(value)
-  }
-}
-
-/**
- * Format action type for display
- */
-function formatActionType(type: string): string {
-  return type
-    .replace(/_/g, ' ')
-    .toLowerCase()
-    .replace(/\b\w/g, c => c.toUpperCase())
-}
+ActionApprovalModal.displayName = MODAL_DISPLAY_NAME

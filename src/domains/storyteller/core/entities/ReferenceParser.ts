@@ -7,37 +7,16 @@
  * NOTE: This module is client-safe and does not import server-only code.
  */
 
-// Entity types supported by the reference system (duplicated to keep this client-safe)
-export type EntityType = 'character' | 'place' | 'event' | 'faction' | 'rule' | 'beat' | 'episode' | 'item'
+import {
+  ENTITY_PREFIXES,
+  PREFIX_TO_TYPE,
+  REFERENCE_DISPLAY_CAPTURE,
+  ReferenceSegmentType,
+  type EntityType,
+} from '@/domains/storyteller/core/entities/constants/reference-parser'
 
-// Entity type prefixes for reference IDs
-export const ENTITY_PREFIXES: Record<EntityType, string> = {
-  character: 'char',
-  place: 'place',
-  event: 'event',
-  faction: 'faction',
-  rule: 'rule',
-  beat: 'beat',
-  episode: 'ep',
-  item: 'item',
-}
-
-// Reverse lookup: prefix -> type
-const ENTITY_TYPES: EntityType[] = [
-  'character',
-  'place',
-  'event',
-  'faction',
-  'rule',
-  'beat',
-  'episode',
-  'item',
-]
-
-export const PREFIX_TO_TYPE: Record<string, EntityType> = Object.create(null)
-for (const type of ENTITY_TYPES) {
-  PREFIX_TO_TYPE[ENTITY_PREFIXES[type]] = type
-}
+export type { EntityType }
+export { ENTITY_PREFIXES, PREFIX_TO_TYPE }
 
 /**
  * Parsed reference from text
@@ -61,8 +40,8 @@ export interface ParsedReference {
  * Text segment - either plain text or a reference
  */
 export type TextSegment =
-  | { type: 'text'; content: string }
-  | { type: 'reference'; ref: ParsedReference }
+  | { type: ReferenceSegmentType.Text; content: string }
+  | { type: ReferenceSegmentType.Reference; ref: ParsedReference }
 
 /**
  * Reference pattern for parsing entity references from text
@@ -109,7 +88,7 @@ export function splitIntoSegments(text: string): TextSegment[] {
   const refs = parseReferences(text)
 
   if (refs.length === 0) {
-    return [{ type: 'text', content: text }]
+    return [{ type: ReferenceSegmentType.Text, content: text }]
   }
 
   let lastIndex = 0
@@ -118,14 +97,14 @@ export function splitIntoSegments(text: string): TextSegment[] {
     // Add text before this reference
     if (ref.startIndex > lastIndex) {
       segments.push({
-        type: 'text',
+        type: ReferenceSegmentType.Text,
         content: text.slice(lastIndex, ref.startIndex),
       })
     }
 
     // Add the reference
     segments.push({
-      type: 'reference',
+      type: ReferenceSegmentType.Reference,
       ref,
     })
 
@@ -135,7 +114,7 @@ export function splitIntoSegments(text: string): TextSegment[] {
   // Add remaining text after last reference
   if (lastIndex < text.length) {
     segments.push({
-      type: 'text',
+      type: ReferenceSegmentType.Text,
       content: text.slice(lastIndex),
     })
   }
@@ -147,7 +126,7 @@ export function splitIntoSegments(text: string): TextSegment[] {
  * Replace references with just display names (for plain text output)
  */
 export function stripReferences(text: string): string {
-  return text.replace(REFERENCE_REGEX, '$1')
+  return text.replace(REFERENCE_REGEX, REFERENCE_DISPLAY_CAPTURE)
 }
 
 /**
@@ -164,4 +143,3 @@ export function createRefId(type: EntityType, shortId: string): string {
   const prefix = ENTITY_PREFIXES[type]
   return `${prefix}-${shortId}`
 }
-

@@ -16,6 +16,13 @@ import type {
   ConsistencyType,
   Inconsistency,
 } from '@/domains/storyteller/core/types/ConsistencyTypes'
+import {
+  AffectedElementKind,
+  ConsistencyCheckAdapterCopy,
+  LegacyConsistencyType,
+  legacyConsistencyTypeForIssue,
+  parseContinuityIssueWireType,
+} from '@/domains/storyteller/services/constants/consistency-check-adapter'
 
 /** Legacy StoryContext-ish input the API route passes through. */
 export interface ConsistencyCheckContext {
@@ -24,25 +31,21 @@ export interface ConsistencyCheckContext {
   beatIds?: string[]
 }
 
-const ISSUE_TYPE_TO_CONSISTENCY_TYPE: Record<ContinuityIssue['type'], ConsistencyType> = {
-  contradiction: 'plot_logic',
-  timeline: 'timeline',
-  character: 'character',
-  missing_payoff: 'plot_logic',
-  orphaned_setup: 'plot_logic',
-  knowledge_violation: 'character',
-}
-
 function toInconsistency(issue: ContinuityIssue): Inconsistency {
+  const issueType = parseContinuityIssueWireType(issue.type)
+  const consistencyType: ConsistencyType = issueType
+    ? legacyConsistencyTypeForIssue(issueType)
+    : LegacyConsistencyType.PlotLogic
+
   return {
     id: randomUUID(),
-    type: ISSUE_TYPE_TO_CONSISTENCY_TYPE[issue.type],
+    type: consistencyType,
     severity: issue.severity,
     description: issue.suggestion
       ? `${issue.description} (suggestion: ${issue.suggestion})`
       : issue.description,
     affectedElements: issue.affectedElements.map(elementId => ({
-      type: 'beat',
+      type: AffectedElementKind.Beat,
       id: elementId,
       fieldPath: issue.location,
     })),
@@ -84,7 +87,7 @@ export async function runConsistencyCheck(
     fixes: [],
     summary:
       inconsistencies.length === 0
-        ? 'No continuity issues found.'
+        ? ConsistencyCheckAdapterCopy.NoIssuesFound
         : `Found ${inconsistencies.length} issue(s).`,
     totalAffected: inconsistencies.length,
   }

@@ -9,6 +9,19 @@ import { MCPServerResources } from '@mastra/mcp'
 import { entitiesService } from '@/shared/data/EntitiesService'
 import { storytellerService } from '@/domains/storyteller/server'
 import { validateApiKey, getServiceContext } from '../core/auth'
+import {
+  ContentType,
+  McpResourceAuthError,
+  McpResourceDescription,
+  McpResourceName,
+  McpResourceQueryError,
+  McpResourceType,
+  McpResourceUri,
+  MCP_RESOURCE_URI_PATTERN,
+  McpSupabaseColumn,
+  McpSupabaseProjectSelect,
+  McpSupabaseTable,
+} from '../constants/resources'
 
 // ============================================
 // HELPERS
@@ -18,42 +31,36 @@ import { validateApiKey, getServiceContext } from '../core/auth'
  * Parse a resource URI and extract parameters
  */
 function parseResourceUri(uri: string): { type: string; params: Record<string, string> } {
-  // wbk://projects
-  if (uri === 'wbk://projects') {
-    return { type: 'projects', params: {} }
+  if (uri === McpResourceUri.Projects) {
+    return { type: McpResourceType.Projects, params: {} }
   }
 
-  // wbk://project/{projectId}/entities
-  const entitiesMatch = uri.match(/^wbk:\/\/project\/([^/]+)\/entities$/)
+  const entitiesMatch = uri.match(MCP_RESOURCE_URI_PATTERN.ProjectEntities)
   if (entitiesMatch) {
-    return { type: 'project-entities', params: { projectId: entitiesMatch[1] } }
+    return { type: McpResourceType.ProjectEntities, params: { projectId: entitiesMatch[1] } }
   }
 
-  // wbk://project/{projectId}/characters
-  const charactersMatch = uri.match(/^wbk:\/\/project\/([^/]+)\/characters$/)
+  const charactersMatch = uri.match(MCP_RESOURCE_URI_PATTERN.ProjectCharacters)
   if (charactersMatch) {
-    return { type: 'project-characters', params: { projectId: charactersMatch[1] } }
+    return { type: McpResourceType.ProjectCharacters, params: { projectId: charactersMatch[1] } }
   }
 
-  // wbk://project/{projectId}/episodes
-  const episodesMatch = uri.match(/^wbk:\/\/project\/([^/]+)\/episodes$/)
+  const episodesMatch = uri.match(MCP_RESOURCE_URI_PATTERN.ProjectEpisodes)
   if (episodesMatch) {
-    return { type: 'project-episodes', params: { projectId: episodesMatch[1] } }
+    return { type: McpResourceType.ProjectEpisodes, params: { projectId: episodesMatch[1] } }
   }
 
-  // wbk://project/{projectId}/series-bible
-  const bibleMatch = uri.match(/^wbk:\/\/project\/([^/]+)\/series-bible$/)
+  const bibleMatch = uri.match(MCP_RESOURCE_URI_PATTERN.ProjectSeriesBible)
   if (bibleMatch) {
-    return { type: 'series-bible', params: { projectId: bibleMatch[1] } }
+    return { type: McpResourceType.SeriesBible, params: { projectId: bibleMatch[1] } }
   }
 
-  // wbk://episode/{episodeId}/beats
-  const beatsMatch = uri.match(/^wbk:\/\/episode\/([^/]+)\/beats$/)
+  const beatsMatch = uri.match(MCP_RESOURCE_URI_PATTERN.EpisodeBeats)
   if (beatsMatch) {
-    return { type: 'episode-beats', params: { episodeId: beatsMatch[1] } }
+    return { type: McpResourceType.EpisodeBeats, params: { episodeId: beatsMatch[1] } }
   }
 
-  throw new Error(`Unknown resource URI: ${uri}`)
+  throw new Error(`${McpResourceQueryError.UnknownResourceUri} ${uri}`)
 }
 
 // ============================================
@@ -62,58 +69,52 @@ function parseResourceUri(uri: string): { type: string; params: Record<string, s
 
 export const mcpResources: MCPServerResources = {
   listResources: async () => {
-    // Auth check optional for listing? Let's check env var presence at least
-    // But listResources usually doesn't take args, so passing API key is hard unless global or env.
-    // In stdio, env var is the way.
-
     return [
       {
-        uri: 'wbk://projects',
-        name: 'Projects List',
-        description: 'List of all projects accessible to the current user',
-        mimeType: 'application/json',
+        uri: McpResourceUri.Projects,
+        name: McpResourceName.ProjectsList,
+        description: McpResourceDescription.ProjectsList,
+        mimeType: ContentType.Json,
       },
       {
-        uri: 'wbk://project/{projectId}/entities',
-        name: 'Project Entities',
-        description: 'All game entities in a project',
-        mimeType: 'application/json',
+        uri: McpResourceUri.ProjectEntities,
+        name: McpResourceName.ProjectEntities,
+        description: McpResourceDescription.ProjectEntities,
+        mimeType: ContentType.Json,
       },
       {
-        uri: 'wbk://project/{projectId}/characters',
-        name: 'Project Characters',
-        description: 'All characters in a project',
-        mimeType: 'application/json',
+        uri: McpResourceUri.ProjectCharacters,
+        name: McpResourceName.ProjectCharacters,
+        description: McpResourceDescription.ProjectCharacters,
+        mimeType: ContentType.Json,
       },
       {
-        uri: 'wbk://project/{projectId}/episodes',
-        name: 'Project Episodes',
-        description: 'All episodes in a project',
-        mimeType: 'application/json',
+        uri: McpResourceUri.ProjectEpisodes,
+        name: McpResourceName.ProjectEpisodes,
+        description: McpResourceDescription.ProjectEpisodes,
+        mimeType: ContentType.Json,
       },
       {
-        uri: 'wbk://project/{projectId}/series-bible',
-        name: 'Series Bible',
-        description:
-          'The series bible for a project containing world description, characters, factions, and story plan',
-        mimeType: 'application/json',
+        uri: McpResourceUri.ProjectSeriesBible,
+        name: McpResourceName.SeriesBible,
+        description: McpResourceDescription.SeriesBible,
+        mimeType: ContentType.Json,
       },
       {
-        uri: 'wbk://episode/{episodeId}/beats',
-        name: 'Episode Beats',
-        description: 'All beats in an episode',
-        mimeType: 'application/json',
+        uri: McpResourceUri.EpisodeBeats,
+        name: McpResourceName.EpisodeBeats,
+        description: McpResourceDescription.EpisodeBeats,
+        mimeType: ContentType.Json,
       },
     ]
   },
 
   getResourceContent: async ({ uri }) => {
-    // Validate API Key
     const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
+    if (!apiKey) throw new Error(McpResourceAuthError.ApiKeyNotSet)
 
     const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
+    if (!authResult.valid) throw new Error(McpResourceAuthError.InvalidApiKey)
 
     const context = await getServiceContext(authResult)
     const { type, params } = parseResourceUri(uri)
@@ -121,19 +122,19 @@ export const mcpResources: MCPServerResources = {
     let result: unknown
 
     switch (type) {
-      case 'projects': {
+      case McpResourceType.Projects: {
         const { data, error } = await context.supabase
-          .from('projects')
-          .select('id, name, description, created_at, updated_at')
-          .eq('user_id', context.userId)
-          .order('updated_at', { ascending: false })
+          .from(McpSupabaseTable.Projects)
+          .select(McpSupabaseProjectSelect.ListFields)
+          .eq(McpSupabaseColumn.UserId, context.userId)
+          .order(McpSupabaseColumn.UpdatedAt, { ascending: false })
 
-        if (error) throw new Error(`Failed to fetch projects: ${error.message}`)
+        if (error) throw new Error(`${McpResourceQueryError.FailedToFetchProjects} ${error.message}`)
         result = { projects: data }
         break
       }
 
-      case 'project-entities': {
+      case McpResourceType.ProjectEntities: {
         result = await entitiesService.list(
           { projectId: params.projectId },
           { userId: context.userId, supabase: context.supabase }
@@ -141,7 +142,7 @@ export const mcpResources: MCPServerResources = {
         break
       }
 
-      case 'project-characters': {
+      case McpResourceType.ProjectCharacters: {
         result = await storytellerService.listCharacters(
           { projectId: params.projectId },
           { userId: context.userId }
@@ -149,7 +150,7 @@ export const mcpResources: MCPServerResources = {
         break
       }
 
-      case 'project-episodes': {
+      case McpResourceType.ProjectEpisodes: {
         result = await storytellerService.listEpisodes(
           { projectId: params.projectId },
           { userId: context.userId }
@@ -157,14 +158,14 @@ export const mcpResources: MCPServerResources = {
         break
       }
 
-      case 'series-bible': {
+      case McpResourceType.SeriesBible: {
         result = await storytellerService.getSeriesBible(params.projectId, {
           userId: context.userId,
         })
         break
       }
 
-      case 'episode-beats': {
+      case McpResourceType.EpisodeBeats: {
         result = await storytellerService.listBeats(
           { episodeId: params.episodeId },
           { userId: context.userId }
@@ -173,7 +174,7 @@ export const mcpResources: MCPServerResources = {
       }
 
       default:
-        throw new Error(`Unknown resource type: ${type}`)
+        throw new Error(`${McpResourceQueryError.UnknownResourceType} ${type}`)
     }
 
     return {

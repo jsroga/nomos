@@ -379,10 +379,13 @@ export class GameLoopWorkflow extends Workflow {
 /**
  * Create a GameLoopWorkflow instance
  */
+// Boxed in an object because GameLoopWorkflow extends Mastra's Workflow, which
+// exposes a graph-building `.then()` — returning it bare from a Promise makes
+// TS treat it as a thenable and try to recursively unwrap it (TS1058/1320).
 export async function createGameLoopWorkflow(agentConfig: {
   modelName: string
   connectionString?: string
-}): Promise<GameLoopWorkflow> {
+}): Promise<{ workflow: GameLoopWorkflow }> {
   const { GameDesignAgent, createGameDesignMemory } = await import('@/domains/game-design')
 
   // Create memory if connection string provided
@@ -406,5 +409,5 @@ export async function createGameLoopWorkflow(agentConfig: {
     memory,
   })
 
-  return new GameLoopWorkflow(agent)
+  return { workflow: new GameLoopWorkflow(agent) }
 }

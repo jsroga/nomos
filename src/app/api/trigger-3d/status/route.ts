@@ -2,15 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { runs } from '@trigger.dev/sdk/v3'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { ErrorFragment, QueryParam, TriggerRunStatus } from '@/shared/data/constants/protocol'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const dynamic = 'force-dynamic'
 
-export const GET = withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
   const { searchParams } = new URL(request.url)
-  const runId = searchParams.get('runId')
+  const runId = searchParams.get(QueryParam.RunId)
 
   if (!runId) {
-    return NextResponse.json({ error: 'Missing runId' }, { status: 400 })
+    return NextResponse.json({ error: API_ERROR.MISSING_RUN_ID }, { status: 400 })
   }
 
   try {
@@ -28,10 +31,13 @@ export const GET = withAuth(async (request: NextRequest, { session }: Authentica
       finishedAt: run.finishedAt,
     })
   } catch (error: unknown) {
-    console.error('[Proxy] Error retrieving run:', error)
+    console.error(API_LOG_PREFIX.PROXY_RUN_RETRIEVE_ERROR, error)
 
-    if (getErrorMessage(error)?.includes('not found') || error.status === 404) {
-      return NextResponse.json({ error: 'Run not found', status: 'NOT_FOUND' }, { status: 404 })
+    if (getErrorMessage(error)?.includes(ErrorFragment.NotFound)) {
+      return NextResponse.json(
+        { error: API_ERROR.RUN_NOT_FOUND, status: TriggerRunStatus.NotFound },
+        { status: 404 }
+      )
     }
 
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })

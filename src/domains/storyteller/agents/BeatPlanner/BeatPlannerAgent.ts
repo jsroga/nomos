@@ -8,17 +8,27 @@
  * Tools: only listBeatsTool and manageBeatTool.
  */
 
+import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { Memory } from '@mastra/memory'
 import { v4 as uuidv4 } from 'uuid'
 import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
 import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/agents/tools'
-import { resolveRoleModel, resolveStorytellerModel } from '@/domains/storyteller/config/ModelConfig'
+import { resolveRoleModel, resolveStorytellerModel } from '@/domains/storyteller/config/constants/ModelConfig'
 import { buildBeatPlannerPrompt } from '@/domains/storyteller/prompts/beat-planner-prompt'
 import { withSpan } from '@/shared/observability/observability'
-import { BeatPlanSchema, type BeatPlan } from './beat-plan-schema'
+import {
+  AgentModelRole,
+  BeatPlannerAgentId,
+  BeatPlannerAgentLabel,
+  BeatPlannerAgentSpan,
+  BeatPlannerCopy,
+  ListSeparator,
+} from '@/domains/storyteller/agents/constants/agent-identity'
+import { StringSeparator } from '@/shared/data/constants/protocol'
 
-export { BeatPlanSchema, type BeatPlan } from './beat-plan-schema'
+import { BeatPlanSchema, type BeatPlan } from './beat-plan-schema'
+export { BeatPlanSchema, type BeatPlan }
 
 type PlannerTool = typeof listBeatsTool | typeof manageBeatTool
 
@@ -44,7 +54,7 @@ export class BeatPlannerAgent {
 
     const model = config.modelName
       ? resolveStorytellerModel(config.modelName)
-      : () => resolveRoleModel('planner')
+      : () => resolveRoleModel(AgentModelRole.Planner)
 
     // System prompt: planning only, no prose (shared with the stateless planner)
     const instructions = buildBeatPlannerPrompt(config.episodeContext)
@@ -63,8 +73,8 @@ export class BeatPlannerAgent {
     })
 
     this.agent = new Agent({
-      id: 'beat-planner',
-      name: 'Beat Planner',
+      id: BeatPlannerAgentId.BeatPlanner,
+      name: BeatPlannerAgentLabel.BeatPlanner,
       instructions,
       model,
       tools: this.toolsMap,
@@ -107,20 +117,20 @@ export class BeatPlannerAgent {
 
     return withSpan(
       id,
-      'BeatPlannerAgent.planNextBeat',
+      BeatPlannerAgentSpan.PlanNextBeat,
       async _span => {
         const prompt = `Plan the next beat for episode ${context.episodeId}.
 
 ${context.brief ? `Brief (what this beat must accomplish):\n${context.brief}\n` : ''}
-${context.previousBeats && context.previousBeats.length > 0 ? `Previous beats:\n${context.previousBeats.join('\n\n')}` : 'This is the opening beat.'}
+${context.previousBeats && context.previousBeats.length > 0 ? `Previous beats:\n${context.previousBeats.join(StringSeparator.DoubleNewline)}` : BeatPlannerCopy.OpeningBeat}
 
-Characters available: ${context.characters.join(', ')}
+Characters available: ${context.characters.join(ListSeparator.CommaSpace)}
 ${context.targetEmotion ? `Target emotion: ${context.targetEmotion}` : ''}
 
 Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.`
 
         const response = await this.agent.generate(prompt, {
-          toolChoice: 'auto',
+          toolChoice: AgentModelRole.Auto,
           maxSteps: 5,
           structuredOutput: { schema: BeatPlanSchema },
           tracingOptions: {
@@ -146,11 +156,11 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
 
     return withSpan(
       id,
-      'BeatPlannerAgent.run',
+      BeatPlannerAgentSpan.Run,
       async _span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
         const response = await this.agent.generate(prompt, {
-          toolChoice: 'auto',
+          toolChoice: AgentModelRole.Auto,
           maxSteps: 5,
           tracingOptions: {
             traceId: id,
@@ -168,7 +178,7 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
     const traceId = options?.traceId || this.generateHexId(32)
 
     return this.agent.stream(prompt, {
-      toolChoice: options?.toolChoice || 'auto',
+      toolChoice: options?.toolChoice || AgentModelRole.Auto,
       maxSteps: 5,
       tracingOptions: {
         traceId,

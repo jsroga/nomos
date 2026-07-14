@@ -5,6 +5,7 @@ import { EpisodeRoadmapCard } from '../EpisodeRoadmapCard'
 
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
+import { BIBLE_ROADMAP_SEQUENCES_LOG_PREFIX } from '@/domains/storyteller/ui/WorldBible/constants/bible-roadmap'
 
 interface BibleRoadmapProps { }
 
@@ -13,9 +14,9 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
     storyPlan,
     isEditing,
     localPlan,
-    updateSequence: onSequenceChange,
+    updateSequence: _onSequenceChange,
     addSequence: onAddSequence,
-    removeSequence: onRemoveSequence,
+    removeSequence: _onRemoveSequence,
     isReadOnly,
     onSendMessage,
     loadingSections,
@@ -37,7 +38,7 @@ export const BibleRoadmap: React.FC<BibleRoadmapProps> = () => {
 
   // Debug: log roadmap data to help diagnose display issues
   if (typeof window !== 'undefined') {
-    console.log('[BibleRoadmap] sequences:', displaySequences.length, {
+    console.log(BIBLE_ROADMAP_SEQUENCES_LOG_PREFIX, displaySequences.length, {
       localPlanSequences: localPlan.sequences?.length,
       storyPlanSequences: storyPlan.sequences?.length,
       storyPlanEpisodeRoadmapEpisodes: storyPlan.episodeRoadmap?.episodes?.length,

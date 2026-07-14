@@ -5,8 +5,17 @@ import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller/
 import { eq, and } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { requireAuth } from '@/shared/auth/auth'
-import { ApiErrorMessage, HttpHeader, ActionApiResultType } from '@/shared/data/constants/protocol'
-import { ActionType } from '@/domains/storyteller/core/types/Enums'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  ActionApiResultType,
+  ApiErrorMessage,
+  CharacterRole,
+  HttpHeader,
+  HttpStatus,
+  StringSeparator,
+} from '@/shared/data/constants/protocol'
+import { REFERENCE_DISPLAY_CAPTURE } from '@/domains/storyteller/core/entities/constants/reference-parser'
+import { ActionType, BeatStatus, BeatType } from '@/domains/storyteller/core/types/Enums'
 import { STORY_PLAN_FIELDS } from '@/domains/storyteller/config/action-config'
 
 const storyPlanFieldKeys = new Set<string>(STORY_PLAN_FIELDS)
@@ -88,16 +97,16 @@ export async function POST(req: NextRequest) {
         .limit(1)
 
       const currentContent = recordFromJson(existing?.content)
-      console.log('📖 [updateStoryPlan] BEFORE - currentContent keys:', Object.keys(currentContent))
+      console.log(API_LOG_PREFIX.UPDATE_STORY_PLAN_BEFORE_KEYS, Object.keys(currentContent))
       const worldDescription = currentContent.worldDescription
       console.log(
-        '📖 [updateStoryPlan] BEFORE - worldDescription:',
+        API_LOG_PREFIX.UPDATE_STORY_PLAN_BEFORE_WORLD,
         typeof worldDescription === 'string' ? worldDescription.slice(0, 80) : worldDescription
       )
-      console.log('📖 [updateStoryPlan] INCOMING - updates keys:', Object.keys(updates))
+      console.log(API_LOG_PREFIX.UPDATE_STORY_PLAN_INCOMING_KEYS, Object.keys(updates))
       const incomingWorldDescription = updates.worldDescription
       console.log(
-        '📖 [updateStoryPlan] INCOMING - worldDescription:',
+        API_LOG_PREFIX.UPDATE_STORY_PLAN_INCOMING_WORLD,
         typeof incomingWorldDescription === 'string'
           ? incomingWorldDescription.slice(0, 80)
           : incomingWorldDescription
@@ -106,12 +115,12 @@ export async function POST(req: NextRequest) {
       const updatedContent = deepMergeRecords(currentContent, updates)
 
       console.log(
-        '📖 [updateStoryPlan] AFTER MERGE - updatedContent keys:',
+        API_LOG_PREFIX.UPDATE_STORY_PLAN_AFTER_KEYS,
         Object.keys(updatedContent)
       )
       const mergedWorldDescription = updatedContent.worldDescription
       console.log(
-        '📖 [updateStoryPlan] AFTER MERGE - worldDescription:',
+        API_LOG_PREFIX.UPDATE_STORY_PLAN_AFTER_WORLD,
         typeof mergedWorldDescription === 'string'
           ? mergedWorldDescription.slice(0, 80)
           : mergedWorldDescription
@@ -125,7 +134,7 @@ export async function POST(req: NextRequest) {
           set: { content: updatedContent, updatedAt: new Date() },
         })
 
-      console.log('✅ [updateStoryPlan] WRITE COMPLETE - saved to database')
+      console.log(API_LOG_PREFIX.UPDATE_STORY_PLAN_WRITE_COMPLETE)
 
       return updatedContent
     }
@@ -173,7 +182,7 @@ export async function POST(req: NextRequest) {
             ...updatedPlan,
           },
         }
-        console.log('✅ [API] Success. Returning:', Object.keys(finalResult))
+        console.log(API_LOG_PREFIX.ACTIONS_API_SUCCESS, Object.keys(finalResult))
 
         return NextResponse.json({
           success: true,
@@ -185,11 +194,11 @@ export async function POST(req: NextRequest) {
       }
 
       case ActionType.UPDATE_CAST: {
-        console.log('[API] UPDATE_CAST Payload keys:', Object.keys(action.payload || {}))
+        console.log(API_LOG_PREFIX.ACTIONS_UPDATE_CAST_KEYS, Object.keys(action.payload || {}))
         if (action.payload.cast && Array.isArray(action.payload.cast))
-          console.log('[API] UPDATE_CAST cast length:', action.payload.cast.length)
+          console.log(API_LOG_PREFIX.ACTIONS_UPDATE_CAST_LENGTH, action.payload.cast.length)
         if (action.payload.keyCharacters && Array.isArray(action.payload.keyCharacters))
-          console.log('[API] UPDATE_CAST keyCharacters length:', action.payload.keyCharacters.length)
+          console.log(API_LOG_PREFIX.ACTIONS_UPDATE_CAST_KEY_CHARS, action.payload.keyCharacters.length)
 
         // cast is the project-level list of characters (Story Plan)
         const castData = action.payload.cast || action.payload.keyCharacters || action.payload.characters
@@ -203,7 +212,9 @@ export async function POST(req: NextRequest) {
 
           // Strip entity link markers [Text][entity-id] → Text
           const stripLinks = (value: unknown): string | undefined =>
-            typeof value === 'string' ? value.replace(/\[([^\]]+)\]\[[^\]]+\]/g, '$1') : undefined
+            typeof value === 'string'
+              ? value.replace(/\[([^\]]+)\]\[[^\]]+\]/g, REFERENCE_DISPLAY_CAPTURE)
+              : undefined
 
           for (const rawCastEntry of castData) {
             const rawChar = recordFromJson(rawCastEntry)
@@ -265,7 +276,7 @@ export async function POST(req: NextRequest) {
                 await db.insert(characters).values({
                   projectId,
                   name: char.name,
-                  role: char.role || 'Supporting',
+                  role: char.role || CharacterRole.Supporting,
                   description: char.description || '',
                   gender: char.gender,
                   mbti: char.mbti,
@@ -392,7 +403,7 @@ export async function POST(req: NextRequest) {
 
       case ActionType.UPDATE_EPISODE_PREMISE: {
         const { premise } = action.payload
-        if (!episodeId) return NextResponse.json({ error: 'Episode ID required' }, { status: 400 })
+        if (!episodeId) return NextResponse.json({ error: ApiErrorMessage.EPISODE_ID_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
 
         const [existing] = await db.select().from(episodes).where(eq(episodes.id, episodeId))
         const existingPlan = recordFromJson(existing?.storyPlan)
@@ -410,12 +421,12 @@ export async function POST(req: NextRequest) {
           .where(eq(episodes.id, episodeId))
         return NextResponse.json({
           success: true,
-          result: { type: 'episode_updated', storyPlan: newPlan },
+          result: { type: ActionApiResultType.EPISODE_UPDATED, storyPlan: newPlan },
         })
       }
 
       case ActionType.CREATE_BEAT: {
-        if (!episodeId) return NextResponse.json({ error: 'Episode ID required' }, { status: 400 })
+        if (!episodeId) return NextResponse.json({ error: ApiErrorMessage.EPISODE_ID_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
         const existingBeats = await db.select().from(beats).where(eq(beats.episodeId, episodeId))
 
         const newBeat = {
@@ -424,8 +435,8 @@ export async function POST(req: NextRequest) {
           sequence: existingBeats.length + 1,
           logline: action.payload.logline || '',
           content: action.payload.content || action.payload.description || '',
-          beatType: action.payload.beatType || 'complication',
-          status: 'proposed' as const,
+          beatType: action.payload.beatType || BeatType.COMPLICATION,
+          status: BeatStatus.PROPOSED,
           charactersInvolved: action.payload.charactersInvolved || [],
           emotionalShifts: action.payload.emotionalShifts || {},
           visualHook: action.payload.visualHook || '',
@@ -435,26 +446,26 @@ export async function POST(req: NextRequest) {
         }
 
         await db.insert(beats).values(newBeat)
-        return NextResponse.json({ success: true, result: { type: 'beat_created', beat: newBeat } })
+        return NextResponse.json({ success: true, result: { type: ActionApiResultType.BEAT_CREATED, beat: newBeat } })
       }
 
       case ActionType.UPDATE_BEAT:
       case ActionType.UPDATE_BEAT_CONTENT: {
         const beatId = action.payload.beatId
-        if (!beatId) return NextResponse.json({ error: 'Beat ID required' }, { status: 400 })
+        if (!beatId) return NextResponse.json({ error: API_ERROR.BEAT_ID_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
         const { beatId: _, ...updateData } = action.payload.updates || action.payload
         await db
           .update(beats)
           .set({ ...updateData, updatedAt: new Date() })
           .where(eq(beats.id, beatId))
-        return NextResponse.json({ success: true, result: { type: 'beat_updated', beatId } })
+        return NextResponse.json({ success: true, result: { type: ActionApiResultType.BEAT_UPDATED, beatId } })
       }
 
       case ActionType.DELETE_BEAT: {
         const { beatId } = action.payload
-        if (!beatId) return NextResponse.json({ error: 'Beat ID required' }, { status: 400 })
+        if (!beatId) return NextResponse.json({ error: API_ERROR.BEAT_ID_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
         await db.delete(beats).where(eq(beats.id, beatId))
-        return NextResponse.json({ success: true, result: { type: 'beat_deleted', beatId } })
+        return NextResponse.json({ success: true, result: { type: ActionApiResultType.BEAT_DELETED, beatId } })
       }
 
       case ActionType.REORDER_BEAT: {
@@ -465,18 +476,18 @@ export async function POST(req: NextRequest) {
           .where(eq(beats.id, beatId))
         return NextResponse.json({
           success: true,
-          result: { type: 'beat_reordered', beatId, newIndex },
+          result: { type: ActionApiResultType.BEAT_REORDERED, beatId, newIndex },
         })
       }
 
       case ActionType.CREATE_CHARACTER: {
-        if (!projectId) return NextResponse.json({ error: 'Project ID required' }, { status: 400 })
+        if (!projectId) return NextResponse.json({ error: ApiErrorMessage.PROJECT_ID_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
 
         const newCharacter = {
           id: uuidv4(),
           projectId,
           name: action.payload.name,
-          role: action.payload.role || 'supporting',
+          role: action.payload.role || CharacterRole.SupportingLower,
           description: action.payload.description || '',
           archetype: action.payload.archetype || '',
           psychology: {},
@@ -504,12 +515,12 @@ export async function POST(req: NextRequest) {
           })
           console.log(`✅ [Actions] Registered entity for character: char-${slugName}`)
         } catch (entityErr) {
-          console.warn('[Actions] Entity registration failed (non-blocking):', entityErr)
+          console.warn(API_LOG_PREFIX.ACTIONS_ENTITY_REGISTER_FAILED, entityErr)
         }
 
         return NextResponse.json({
           success: true,
-          result: { type: 'character_created', character: newCharacter },
+          result: { type: ActionApiResultType.CHARACTER_CREATED, character: newCharacter },
         })
       }
 
@@ -521,7 +532,7 @@ export async function POST(req: NextRequest) {
           .where(eq(characters.id, characterId))
         return NextResponse.json({
           success: true,
-          result: { type: 'character_updated', characterId },
+          result: { type: ActionApiResultType.CHARACTER_UPDATED, characterId },
         })
       }
 
@@ -537,14 +548,14 @@ export async function POST(req: NextRequest) {
             .where(eq(episodes.id, episodeId))
             .limit(1)
           const currentScript = episode?.scriptContent || ''
-          const newScript = append ? currentScript + '\n\n' + content : content
+          const newScript = append ? currentScript + StringSeparator.DoubleNewline + content : content
           await db
             .update(episodes)
             .set({ scriptContent: newScript, updatedAt: new Date() })
             .where(eq(episodes.id, episodeId))
           return NextResponse.json({
             success: true,
-            result: { type: 'script_updated', script: newScript },
+            result: { type: ActionApiResultType.SCRIPT_UPDATED, script: newScript },
           })
         }
 
@@ -555,11 +566,11 @@ export async function POST(req: NextRequest) {
           .limit(1)
         const currentBible = recordFromJson(project?.seriesBible)
         const currentScript = typeof currentBible.script === 'string' ? currentBible.script : ''
-        const newScript = append ? currentScript + '\n\n' + content : content
+        const newScript = append ? currentScript + StringSeparator.DoubleNewline + content : content
         const updatedBible = await updateSeriesBible({ script: newScript })
         return NextResponse.json({
           success: true,
-          result: { type: 'script_updated', seriesBible: updatedBible },
+          result: { type: ActionApiResultType.SCRIPT_UPDATED, seriesBible: updatedBible },
         })
       }
 
@@ -569,16 +580,16 @@ export async function POST(req: NextRequest) {
         await flushObservability().catch(() => { })
         return NextResponse.json({
           success: true,
-          result: { type: 'acknowledged', message: `Action ${action.type} acknowledged` },
+          result: { type: ActionApiResultType.ACKNOWLEDGED, message: `Action ${action.type} acknowledged` },
         })
     }
   } catch (error) {
-    console.error('Actions API error:', error)
+    console.error(API_LOG_PREFIX.ACTIONS_API_ERROR, error)
     // Flush any recorded data before error response
     await flushObservability().catch(() => { })
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Action execution failed' },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : API_ERROR.ACTION_EXECUTION_FAILED },
+      { status: HttpStatus.INTERNAL }
     )
   }
 }

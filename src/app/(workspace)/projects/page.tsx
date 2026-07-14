@@ -10,36 +10,23 @@ import { Button } from '@/components/Button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/Avatar'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
-import dynamic from 'next/dynamic'
-
-// New Imports for Liquid UI
+import {
+  PROJECT_SELECTION_DELETE_CANCEL,
+  PROJECT_SELECTION_DELETE_CONFIRM,
+  PROJECT_SELECTION_DELETE_DESCRIPTION,
+  PROJECT_SELECTION_DELETE_TITLE,
+  PROJECT_SELECTION_SUBTITLES,
+  PROJECT_SELECTION_TURBULENT_BG_CANVAS_ID,
+  PROJECT_SELECTOR_BIBLE_QUERY,
+} from './constants/project-selection-page'
+import { DialogConfirmVariant } from '@/shared/data/constants/protocol'
 import { TurbulentBackground } from '@/domains/marketing'
 import { TURBULENT_BG_PROPS } from '@/shared/data/constants/visuals'
 import { BleedingText } from '@/components/BleedingText'
 import { motion } from 'framer-motion'
 
-const SUBTITLES = [
-  'Play god. It\'s cheaper than therapy.',
-  'Your reality is boring. Make a new one.',
-  'Build a world before this one ends.',
-  'No one will miss the old timeline.',
-  'Architect your own escape.',
-  'Simulation theory is real. You are the admin.',
-  'Reality is a suggestion. Ignore it.',
-  'The void is waiting for your input.',
-  'Create something that outlives you.',
-  'Sanity is optional here.'
-]
+const SUBTITLES = PROJECT_SELECTION_SUBTITLES
 
-// Lazy load 3D icon for performance
-const ThreeDIcon = dynamic(
-  () => import('@/domains/marketing').then((mod) => mod.ThreeDIcon),
-  { ssr: false, loading: () => <div className="w-[200px] h-[200px] bg-white/5 animate-pulse rounded-full" /> }
-)
-
-// Available 3D icon types for random selection
-const ICON_TYPES = ['WORLD_GEN', 'AI_NARRATIVE', 'SCULPT_SIM', 'EXPORTER', 'STR_TST'] as const
-type IconType = typeof ICON_TYPES[number]
 
 export default function ProjectSelectionPage() {
   const router = useRouter()
@@ -57,8 +44,6 @@ export default function ProjectSelectionPage() {
   const [newProjectName, setNewProjectName] = useState('')
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
 
-  // Random 3D icon type - set once on mount
-  const [iconType] = useState<IconType>(() => ICON_TYPES[Math.floor(Math.random() * ICON_TYPES.length)])
 
   // Subtitle State
   const [subtitle, setSubtitle] = useState('')
@@ -71,7 +56,7 @@ export default function ProjectSelectionPage() {
   useEffect(() => {
     let rafId: number
     const updateTexture = () => {
-      const bgCanvas = document.getElementById('turbulent-bg-canvas')
+      const bgCanvas = document.getElementById(PROJECT_SELECTION_TURBULENT_BG_CANVAS_ID)
       const renderer = window.__liquidGLRenderer__
 
       if (bgCanvas instanceof HTMLCanvasElement && renderer?._uploadTexture) {
@@ -104,17 +89,17 @@ export default function ProjectSelectionPage() {
 
   const handleSelectProject = (projectId: string) => {
     setLoadingProjectId(projectId)
-    router.push(`/${projectId}/storyteller?bible=open`)
+    router.push(`/${projectId}/storyteller?${PROJECT_SELECTOR_BIBLE_QUERY}`)
   }
 
   const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation()
     const confirmed = await confirm({
-      title: 'Delete Project',
-      description: 'Are you sure you want to delete this project? This action cannot be undone.',
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      variant: 'destructive',
+      title: PROJECT_SELECTION_DELETE_TITLE,
+      description: PROJECT_SELECTION_DELETE_DESCRIPTION,
+      confirmLabel: PROJECT_SELECTION_DELETE_CONFIRM,
+      cancelLabel: PROJECT_SELECTION_DELETE_CANCEL,
+      variant: DialogConfirmVariant.Destructive,
     })
     if (confirmed) {
       await deleteProject(projectId)
@@ -128,7 +113,7 @@ export default function ProjectSelectionPage() {
     setIsCreating(true)
     const id = await createProject(newProjectName, '')
     if (id) {
-      router.push(`/${id}/storyteller?bible=open`)
+      router.push(`/${id}/storyteller?${PROJECT_SELECTOR_BIBLE_QUERY}`)
     } else {
       setIsCreating(false)
     }
@@ -208,7 +193,7 @@ export default function ProjectSelectionPage() {
                         {project.name}
                       </h3>
                       <p className="text-xs text-white/50 truncate">
-                        {new Date(project.created_at).toLocaleDateString()}
+                        {new Date(project.created_at ?? '').toLocaleDateString()}
                       </p>
                     </div>
                   </div>

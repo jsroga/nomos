@@ -1,12 +1,15 @@
 'use client'
 
 import React, { createContext, useContext, useMemo, type ComponentProps } from 'react'
-import { ChatInterface, getGameEntityProvider } from '@/domains/chat'
-import type { MentionProvider, ProjectContext } from '@/domains/chat'
+import { ChatInterface, ChatRenderersProvider, getGameEntityProvider } from '@/shared/chat'
+import type { MentionProvider, ProjectContext } from '@/shared/chat'
 import {
   buildStorytellerProjectContext,
   getStorytellerMentionProviders,
 } from './providers'
+import { storytellerChatRenderers } from './storyteller-chat-renderers'
+
+const ERR_OUTSIDE_PROVIDER = 'MentionsChatInterface must be used within MentionsProvider'
 import { recordArrayFromJson, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 
 interface MentionsContextValue {
@@ -47,7 +50,7 @@ export function MentionsProvider({
         seriesBible: {
           ...plan,
           worldRules: recordArrayFromJson(plan.worldRules),
-          inspirations: plan.inspirations,
+          inspirations: recordFromJson(plan.inspirations),
           soundtracks: recordArrayFromJson(plan.soundtracks),
           plotTwists: stringArrayFromJson(plan.plotTwists),
           factions: recordArrayFromJson(plan.factions),
@@ -67,14 +70,16 @@ type MentionsChatInterfaceProps = Omit<
 export function MentionsChatInterface(props: MentionsChatInterfaceProps) {
   const ctx = useContext(MentionsContext)
   if (!ctx) {
-    throw new Error('MentionsChatInterface must be used within MentionsProvider')
+    throw new Error(ERR_OUTSIDE_PROVIDER)
   }
 
   return (
-    <ChatInterface
-      {...props}
-      mentionProviders={ctx.mentionProviders}
-      projectContext={ctx.projectContext}
-    />
+    <ChatRenderersProvider renderers={storytellerChatRenderers}>
+      <ChatInterface
+        {...props}
+        mentionProviders={ctx.mentionProviders}
+        projectContext={ctx.projectContext}
+      />
+    </ChatRenderersProvider>
   )
 }

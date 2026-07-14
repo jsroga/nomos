@@ -8,6 +8,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { generateApiKey, hashApiKey } from '@/mcp/core/auth'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
+import { QueryParam } from '@/shared/data/constants/protocol'
 
 // Schema for creating API keys
 const createApiKeySchema = z.object({
@@ -21,16 +24,16 @@ const createApiKeySchema = z.object({
  * List user's API keys (without revealing the actual keys)
  */
 export const GET = withAuth(
-  async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+  async (_request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const { data, error } = await supabase
-      .from('api_keys')
-      .select('id, name, scopes, created_at, last_used_at, revoked_at, expires_at')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false })
+      .from(DB_TABLE.API_KEYS)
+      .select(DB_SELECT.API_KEY_LIST)
+      .eq(DB_COLUMN.USER_ID, session.user.id)
+      .order(DB_COLUMN.CREATED_AT, { ascending: false })
 
     if (error) {
-      console.error('[API Keys] Error fetching keys:', error)
-      return NextResponse.json({ error: 'Failed to fetch API keys' }, { status: 500 })
+      console.error(API_LOG_PREFIX.API_KEYS_FETCH_ERROR, error)
+      return NextResponse.json({ error: API_ERROR.FAILED_FETCH_API_KEYS }, { status: 500 })
     }
 
     return NextResponse.json({ apiKeys: data })
@@ -55,20 +58,20 @@ export const POST = withRateLimit(
 
       // Store hashed key in database
       const { data, error } = await supabase
-        .from('api_keys')
+        .from(DB_TABLE.API_KEYS)
         .insert({
-          user_id: session.user.id,
-          key_hash: keyHash,
-          name: validated.name,
-          scopes: validated.scopes,
-          expires_at: validated.expiresAt,
+          [DB_COLUMN.USER_ID]: session.user.id,
+          [DB_COLUMN.KEY_HASH]: keyHash,
+          [DB_COLUMN.NAME]: validated.name,
+          [DB_COLUMN.SCOPES]: validated.scopes,
+          [DB_COLUMN.EXPIRES_AT]: validated.expiresAt,
         })
-        .select('id, name, scopes, created_at, expires_at')
+        .select(DB_SELECT.API_KEY_CREATE)
         .single()
 
       if (error) {
-        console.error('[API Keys] Error creating key:', error)
-        return NextResponse.json({ error: 'Failed to create API key' }, { status: 500 })
+        console.error(API_LOG_PREFIX.API_KEYS_CREATE_ERROR, error)
+        return NextResponse.json({ error: API_ERROR.FAILED_CREATE_API_KEY }, { status: 500 })
       }
 
       // Return the plain text key - this is the ONLY time it will be shown
@@ -78,14 +81,14 @@ export const POST = withRateLimit(
             ...data,
             key: plainKey, // Plain text key - save it now!
           },
-          message: 'Save this key now. It cannot be retrieved again.',
+          message: API_ERROR.API_KEY_SAVE_NOW,
         },
         { status: 201 }
       )
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Invalid request data', details: error.errors },
+          { error: API_ERROR.INVALID_REQUEST, details: error.errors },
           { status: 400 }
         )
       }
@@ -102,24 +105,24 @@ export const POST = withRateLimit(
 export const DELETE = withAuth(
   async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const { searchParams } = new URL(request.url)
-    const keyId = searchParams.get('id')
+    const keyId = searchParams.get(QueryParam.Id)
 
     if (!keyId) {
-      return NextResponse.json({ error: 'API key ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.API_KEY_ID_REQUIRED }, { status: 400 })
     }
 
     // Revoke by setting revoked_at timestamp (soft delete)
     const { error } = await supabase
-      .from('api_keys')
-      .update({ revoked_at: new Date().toISOString() })
-      .eq('id', keyId)
-      .eq('user_id', session.user.id) // Ensure user owns the key
+      .from(DB_TABLE.API_KEYS)
+      .update({ [DB_COLUMN.REVOKED_AT]: new Date().toISOString() })
+      .eq(DB_COLUMN.ID, keyId)
+      .eq(DB_COLUMN.USER_ID, session.user.id) // Ensure user owns the key
 
     if (error) {
-      console.error('[API Keys] Error revoking key:', error)
-      return NextResponse.json({ error: 'Failed to revoke API key' }, { status: 500 })
+      console.error(API_LOG_PREFIX.API_KEYS_REVOKE_ERROR, error)
+      return NextResponse.json({ error: API_ERROR.FAILED_REVOKE_API_KEY }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, message: 'API key revoked' })
+    return NextResponse.json({ success: true, message: API_ERROR.API_KEY_REVOKED })
   }
 )

@@ -3,6 +3,9 @@ import { useWorldStore } from '@/domains/world-building-toolkit'
 import { Button } from '@/components/Button'
 import { Loader2, Save, Square, Check } from 'lucide-react'
 import { getSupabaseClient } from '@/shared/data/storage/supabaseClient'
+import { DB_TABLE } from '@/shared/data/constants/db-tables'
+import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
+import { SELECT_MODE_TOOLBAR_COPY } from '@/domains/world-building-toolkit/ui/constants/select-mode-toolbar'
 import { selectModeService } from '@/domains/world-building-toolkit/state/client-services/SelectModeService'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
@@ -38,8 +41,8 @@ export const SelectModeToolbar: React.FC = () => {
 
       // 2. Save Image Locally
       const response = await fetch('/api/save-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: HttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify({
           projectId: currentProject.id,
           filename: `assets/${filename}`,
@@ -47,12 +50,12 @@ export const SelectModeToolbar: React.FC = () => {
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to save asset image')
+      if (!response.ok) throw new Error(SELECT_MODE_TOOLBAR_COPY.FAILED_SAVE_ASSET_IMAGE)
 
       // 3. Save Metadata to Supabase with the actual cropped bounds
       const supabase = getSupabaseClient()
       const { data: newAsset, error } = await supabase
-        .from('assets')
+        .from(DB_TABLE.ASSETS)
         .insert({
           project_id: currentProject.id,
           image_filename: filename,
@@ -71,12 +74,12 @@ export const SelectModeToolbar: React.FC = () => {
         addAsset(newAsset)
       }
 
-      toast.success('Asset saved!')
+      toast.success(SELECT_MODE_TOOLBAR_COPY.ASSET_SAVED_TOAST)
       setSelectedMask(null)
       clearSelectBox()
     } catch (error: unknown) {
-      console.error('Error saving asset:', error)
-      toast.error('Failed to save asset: ' + getErrorMessage(error))
+      console.error(SELECT_MODE_TOOLBAR_COPY.ERROR_SAVING_ASSET_LOG, error)
+      toast.error(SELECT_MODE_TOOLBAR_COPY.FAILED_SAVE_ASSET_PREFIX + getErrorMessage(error))
     } finally {
       setIsSaving(false)
     }

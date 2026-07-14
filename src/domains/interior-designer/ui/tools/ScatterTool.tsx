@@ -2,6 +2,7 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
+import { INTERACTION_MODE_SCATTER } from '@/domains/interior-designer/constants/interaction-modes'
 import { useInteriorStore } from '@/domains/interior-designer'
 import { useThree, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -17,7 +18,7 @@ export const ScatterTool: React.FC = () => {
   const [cursorPos, setCursorPos] = useState<THREE.Vector3 | null>(null)
 
   // Only active in SCATTER mode
-  if (mode !== 'SCATTER') return null
+  if (mode !== INTERACTION_MODE_SCATTER) return null
 
   const getIntersection = () => {
     raycaster.setFromCamera(pointer, camera)

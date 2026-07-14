@@ -9,9 +9,18 @@ import {
 } from '@/domains/storyteller/config/action-config'
 import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import type { StorytellerCharacter } from '@/domains/storyteller/core/entities/character-wire'
-import type { BeatCard } from '@/domains/storyteller/core/types/StoryTypes'
-import { readString, readNumber, recordArrayFromJson } from '@/shared/data/json-guards'
+import { beatCardFromWireRow } from '@/domains/storyteller/state/utils/beat-card-wire'
+import { recordArrayFromJson } from '@/shared/data/json-guards'
 import { recordFromJson, stringRecordFromJson } from '@/shared/data/deep-merge'
+import {
+  StorytellerActionExtraResultType,
+  StorytellerActionResultType,
+  StorytellerActionType,
+  StorytellerActionsHttpMethod,
+  StorytellerActionsLog,
+  StorytellerActionsStorageKeyPrefix,
+  StorytellerActionsUpdatePrefix,
+} from '@/domains/storyteller/state/constants/storyteller-actions'
 
 /** Minimal shape the hook needs from the page's project state. */
 export interface ProjectLike {
@@ -40,8 +49,6 @@ export function useStorytellerActions({
   setStoryDecisions,
   setCharacters,
   setScript,
-  setCurrentEpisodeTitle,
-  setCurrentPhase,
   setCurrentProject,
 }: ActionsDeps) {
   const [actionHistory, setActionHistory] = useState<ActionHistoryEntry[]>([])
@@ -78,13 +85,13 @@ export function useStorytellerActions({
   useEffect(() => {
     if (currentProject?.id) {
       try {
-        const key = `actionHistory_${currentProject.id}`
+        const key = `${StorytellerActionsStorageKeyPrefix.ActionHistory}${currentProject.id}`
         const saved = localStorage.getItem(key)
         if (saved) {
           setActionHistory(JSON.parse(saved))
         }
       } catch (e) {
-        console.error('Failed to load action history:', e)
+        console.error(StorytellerActionsLog.FailedLoadHistory, e)
       }
     }
   }, [currentProject?.id])
@@ -93,48 +100,28 @@ export function useStorytellerActions({
   useEffect(() => {
     if (currentProject?.id) {
       try {
-        const key = `actionHistory_${currentProject.id}`
+        const key = `${StorytellerActionsStorageKeyPrefix.ActionHistory}${currentProject.id}`
         localStorage.setItem(key, JSON.stringify(actionHistory))
       } catch (e) {
-        console.error('Failed to save action history:', e)
+        console.error(StorytellerActionsLog.FailedSaveHistory, e)
       }
     }
   }, [actionHistory, currentProject?.id])
 
   const refreshBeats = useCallback(async (episodeId: string) => {
-    console.log('🔄 refreshBeats called for episode:', episodeId)
+    console.log(StorytellerActionsLog.RefreshBeatsCalled, episodeId)
     try {
       const beatsRes = await fetch(`/api/storyteller/timeline?episodeId=${episodeId}`)
       const beatsData = await beatsRes.json()
       const rawBeats = recordArrayFromJson(beatsData.beats)
       if (rawBeats.length > 0) {
-        const mappedBeats: BeatCard[] = rawBeats.map(b => {
-          const row = recordFromJson(b)
-          const id = readString(row.id) ?? ''
-          const sequence = readNumber(row.sequence) ?? 0
-          const logline =
-            readString(row.logline) ?? readString(row.log_line) ?? 'Untitled beat'
-          const beatType =
-            readString(row.beat_type) ?? readString(row.beatType) ?? 'default'
-          const status = readString(row.status) ?? 'proposed'
-          const content = readString(row.content)
-          const imagePrompt =
-            readString(row.image_prompt) ?? readString(row.imagePrompt)
-          return {
-            id,
-            sequence,
-            logline,
-            beatType,
-            status,
-            content: content ?? undefined,
-            imagePrompt: imagePrompt ?? undefined,
-          }
-        })
-        // Return beats rather than setting them directly - caller should set
+        const mappedBeats = rawBeats
+          .map(b => beatCardFromWireRow(b))
+          .filter((beat): beat is NonNullable<typeof beat> => beat !== null)
         return mappedBeats
       }
     } catch (err) {
-      console.error('❌ Failed to refresh beats:', err)
+      console.error(StorytellerActionsLog.FailedRefreshBeats, err)
     }
     return null
   }, [])
@@ -146,7 +133,7 @@ export function useStorytellerActions({
       const episodeId = episodeIdRef.current
       try {
         const res = await fetch('/api/storyteller/actions', {
-          method: 'POST',
+          method: StorytellerActionsHttpMethod.Post,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action,
@@ -158,20 +145,20 @@ export function useStorytellerActions({
         const data = await res.json()
         if (data.success) {
           if (
-            data.result?.type === 'beat_created' ||
-            data.result?.type === 'beat_updated' ||
-            data.result?.type === 'beat_deleted' ||
-            action.type === 'CREATE_BEAT'
+            data.result?.type === StorytellerActionResultType.BEAT_CREATED ||
+            data.result?.type === StorytellerActionResultType.BEAT_UPDATED ||
+            data.result?.type === StorytellerActionResultType.BEAT_DELETED ||
+            action.type === StorytellerActionType.CREATE_BEAT
           ) {
             // Beat refresh handled by caller via refreshBeats
           } else if (
-            data.result?.type === 'bible_updated' ||
-            data.result?.type === 'world_rule_added'
+            data.result?.type === StorytellerActionResultType.BIBLE_UPDATED ||
+            data.result?.type === StorytellerActionExtraResultType.WorldRuleAdded
           ) {
             if (data.result.seriesBible) {
               const bible = data.result.seriesBible
               console.log(
-                '📚 [executeAction] Bible updated, applying to state:',
+                StorytellerActionsLog.BibleUpdatedApplying,
                 Object.keys(bible)
               )
 
@@ -187,13 +174,13 @@ export function useStorytellerActions({
                 const allUpdates = { ...storyPlanUpdates, ...directUpdates }
                 const updated = applyUpdatesToStoryPlan(prev, allUpdates)
                 console.log(
-                  '📚 [executeAction] bible_updated - Applied fields:',
+                  StorytellerActionsLog.BibleUpdatedAppliedFields,
                   Object.keys(updated).filter(k => updated[k])
                 )
                 return updated
               })
 
-              if (action.type === 'UPDATE_EPISODE_ROADMAP' && bible.storyPlan) {
+              if (action.type === StorytellerActionType.UPDATE_EPISODE_ROADMAP && bible.storyPlan) {
                 const plan = recordFromJson(bible.storyPlan)
                 setStoryPlan(prev => {
                   const prevRecord = recordFromJson(prev)
@@ -207,7 +194,7 @@ export function useStorytellerActions({
               }
 
               if (data.result.characters_synced && currentProject?.id) {
-                console.log('🔄 [executeAction] Characters synced - refetching from characters table')
+                console.log(StorytellerActionsLog.CharactersSyncedRefetch)
                 fetch(`/api/storyteller/characters?projectId=${currentProject.id}`)
                   .then(res => res.json())
                   .then(charData => {
@@ -231,17 +218,20 @@ export function useStorytellerActions({
                       setCharacters(mapped)
                     }
                   })
-                  .catch(e => console.error('Failed to refetch characters after sync', e))
+                  .catch(e => console.error(StorytellerActionsLog.FailedRefetchCharacters, e))
               }
             }
-          } else if (action.type === 'UPDATE_SERIES_BIBLE' || action.type.startsWith('UPDATE_')) {
+          } else if (
+            action.type === StorytellerActionType.UPDATE_SERIES_BIBLE ||
+            action.type.startsWith(StorytellerActionsUpdatePrefix.Update)
+          ) {
             const payload = recordFromJson(action.payload)
             const payloadFields = payload.updatedFields
               ? recordFromJson(payload.updatedFields)
               : payload
 
             console.log(
-              `📚 [executeAction] Applying ${action.type} update to state:`,
+              `${StorytellerActionsLog.ApplyingUpdate} ${action.type} update to state:`,
               Object.keys(payloadFields)
             )
 
@@ -253,7 +243,7 @@ export function useStorytellerActions({
             setStoryPlan(prev => {
               const updated = applyUpdatesToStoryPlan(prev, payloadFields)
               console.log(
-                '📚 [executeAction] Updated storyPlan fields:',
+                StorytellerActionsLog.UpdatedStoryPlanFields,
                 Object.keys(updated).filter(k => updated[k])
               )
               return updated
@@ -269,14 +259,14 @@ export function useStorytellerActions({
                 series_bible: mergedBible,
               })
             }
-          } else if (data.result?.type === 'script_updated') {
+          } else if (data.result?.type === StorytellerActionResultType.SCRIPT_UPDATED) {
             if (data.result.script) {
               setScript(data.result.script)
             } else if (data.result.seriesBible?.script) {
               setScript(data.result.seriesBible.script)
             }
-          } else if (data.result?.type === 'episode_updated') {
-            console.log('📺 [executeAction] Episode updated, applying premise to state')
+          } else if (data.result?.type === StorytellerActionResultType.EPISODE_UPDATED) {
+            console.log(StorytellerActionsLog.EpisodeUpdatedApplying)
             if (data.result.storyPlan) {
               const planUpdate = recordFromJson(data.result.storyPlan)
               setStoryPlan(prev =>
@@ -288,7 +278,7 @@ export function useStorytellerActions({
           }
         }
       } catch (error) {
-        console.error('❌ executeAction threw:', error)
+        console.error(StorytellerActionsLog.ExecuteActionThrew, error)
       }
     },
     [currentProject, setStoryPlan, setStoryDecisions, setCharacters, setScript, setCurrentProject]

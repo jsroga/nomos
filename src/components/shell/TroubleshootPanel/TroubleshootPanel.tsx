@@ -8,15 +8,17 @@ import { cn } from '@/shared/data/utils'
 import { Button } from '@/components/Button'
 import { ScrollArea } from '@/components/ScrollArea'
 
+import {
+  TROUBLESHOOT_PANEL_COPY_FAILED_LOG,
+  TROUBLESHOOT_PANEL_LOCALE,
+  TROUBLESHOOT_PANEL_TIME_FORMAT,
+} from './constants/troubleshoot-panel'
+
 function ErrorCard({ error }: { error: CapturedError }) {
   const [isExpanded, setIsExpanded] = React.useState(false)
 
   const formatTime = (date: Date) => {
-    return new Date(date).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })
+    return new Date(date).toLocaleTimeString(TROUBLESHOOT_PANEL_LOCALE, TROUBLESHOOT_PANEL_TIME_FORMAT)
   }
 
   const handleCopyToClipboard = async (e: React.MouseEvent) => {
@@ -34,7 +36,7 @@ function ErrorCard({ error }: { error: CapturedError }) {
     try {
       await navigator.clipboard.writeText(errorText)
     } catch (err) {
-      console.error('Failed to copy:', err)
+      console.error(TROUBLESHOOT_PANEL_COPY_FAILED_LOG, err)
     }
   }
 

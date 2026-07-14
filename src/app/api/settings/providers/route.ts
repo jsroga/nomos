@@ -1,10 +1,11 @@
 import { requireAuth } from '@/shared/data/api-utils'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   const { error } = await requireAuth()
   if (error) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
   }
 
   return NextResponse.json({

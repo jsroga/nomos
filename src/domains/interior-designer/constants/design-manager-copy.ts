@@ -1,0 +1,17 @@
+export enum DesignManagerCopy {
+  NewSceneDefault = 'New Scene',
+  ScenesLabel = 'Scenes',
+  DeleteSceneTitle = 'Delete Scene',
+  DeleteSceneDescription = 'Are you sure you want to delete this scene? This action cannot be undone.',
+  DeleteLabel = 'Delete',
+  FetchDesignsFailed = 'Failed to fetch designs:',
+  NoScenesYet = 'No scenes yet. Create your first scene!',
+  RenameSceneTitle = 'Rename Scene',
+  NewSceneTitle = 'New Scene',
+  RenameSceneDescription = 'Enter a new name for the scene.',
+  NewSceneDescription = 'Enter a name for your new scene.',
+  SceneNamePlaceholder = 'Scene name',
+  SaveLabel = 'Save',
+  CreateLabel = 'Create',
+  RenameTitle = 'Rename',
+}

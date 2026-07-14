@@ -4,6 +4,13 @@ import { Paintbrush, Eraser, Check, X, Loader2 } from 'lucide-react'
 import { Slider } from '@/components/Slider'
 import { repaintService } from '@/domains/world-building-toolkit/state/client-services/RepaintService'
 import toast from 'react-hot-toast'
+import {
+  REPAINT_CHANGES_APPLIED_TOAST,
+  REPAINT_CHANGES_DISCARDED_TOAST,
+  REPAINT_GENERATED_TOAST,
+  REPAINT_GENERATION_FAILED_TOAST,
+  REPAINT_STYLE_REFS_FAILED_LOG,
+} from '@/domains/world-building-toolkit/ui/constants/repaint-toolbar'
 
 export const RepaintToolbar: React.FC = () => {
   const isRepaintMode = useWorldStore(state => state.isRepaintMode)
@@ -32,7 +39,7 @@ export const RepaintToolbar: React.FC = () => {
             setStyleReferenceUrls(data.styleReferenceUrls)
           }
         })
-        .catch(err => console.error('Failed to load project style refs:', err))
+        .catch(err => console.error(REPAINT_STYLE_REFS_FAILED_LOG, err))
     }
   }, [currentProject?.id])
 
@@ -50,10 +57,10 @@ export const RepaintToolbar: React.FC = () => {
         styleReferenceUrls
       )
       setRepaintResult(result)
-      toast.success('Repaint generated! Review the result.')
+      toast.success(REPAINT_GENERATED_TOAST)
     } catch (error) {
       console.error(error)
-      toast.error('Repaint generation failed')
+      toast.error(REPAINT_GENERATION_FAILED_TOAST)
     } finally {
       setIsGenerating(false)
     }
@@ -62,7 +69,7 @@ export const RepaintToolbar: React.FC = () => {
   const handleApprove = async () => {
     if (!repaintResult) return
     await repaintService.applyRepaint(repaintResult)
-    toast.success('Changes applied!')
+    toast.success(REPAINT_CHANGES_APPLIED_TOAST)
     setRepaintResult(null)
     clearRepaintStrokes()
     setRepaintMode(false)
@@ -70,7 +77,7 @@ export const RepaintToolbar: React.FC = () => {
 
   const handleReject = () => {
     setRepaintResult(null)
-    toast('Changes discarded')
+    toast(REPAINT_CHANGES_DISCARDED_TOAST)
   }
 
   return (

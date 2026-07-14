@@ -1,6 +1,7 @@
 import React from 'react'
 import { TourStep } from '@/shared/tours/tour-types'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { TourStepPosition } from '@/shared/tours/constants/tour-positions'
 import { MessageSquare, GitMerge, Layers, Zap } from 'lucide-react'
 
 export const loopCreatorTourSteps: TourStep[] = [
@@ -17,7 +18,7 @@ export const loopCreatorTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.LOOP_SELECTOR,
-    position: 'bottom',
+    position: TourStepPosition.Bottom,
   },
   {
     content: (
@@ -33,7 +34,7 @@ export const loopCreatorTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.LOOP_CHAT,
-    position: 'top',
+    position: TourStepPosition.Top,
   },
   {
     content: (
@@ -49,7 +50,7 @@ export const loopCreatorTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.LOOP_CANVAS,
-    position: 'bottom',
+    position: TourStepPosition.Bottom,
   },
   {
     content: (
@@ -64,6 +65,6 @@ export const loopCreatorTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.LOOP_QUICK_ACTIONS,
-    position: 'left',
+    position: TourStepPosition.Left,
   },
 ]

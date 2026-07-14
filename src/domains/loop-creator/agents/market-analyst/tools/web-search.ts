@@ -4,27 +4,30 @@
  * Searches the web for game industry information, trends, and reviews.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
 import { WebSearchResult } from '../types'
+import { createLoopStructuredTool } from './structured-tool'
+
+const webSearchSchema = z.object({
+  query: z
+    .string()
+    .describe('The search query - be specific about what game industry info you need'),
+  focus: z
+    .enum(['trends', 'reviews', 'market', 'competitors', 'general'])
+    .optional()
+    .describe('Focus area for the search'),
+})
 
 /**
  * Web search tool for market research
  */
-export const webSearchTool = new DynamicStructuredTool({
+export const webSearchTool = createLoopStructuredTool({
   name: 'web_search',
   description:
     'Search the web for game industry trends, reviews, market data, and competitor information. Use specific queries for best results.',
-  schema: z.object({
-    query: z
-      .string()
-      .describe('The search query - be specific about what game industry info you need'),
-    focus: z
-      .enum(['trends', 'reviews', 'market', 'competitors', 'general'])
-      .optional()
-      .describe('Focus area for the search'),
-  }),
-  func: async ({ query, focus }): Promise<string> => {
+  schema: webSearchSchema,
+  func: async input => {
+    const { query, focus } = webSearchSchema.parse(input)
     try {
       // Enhance query based on focus
       let enhancedQuery = query

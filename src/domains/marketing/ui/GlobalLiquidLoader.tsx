@@ -1,5 +1,6 @@
 'use client'
 
+import { LIQUID_GL_SCRIPTS_LOADED_LOG } from '@/domains/marketing/constants/liquid'
 import { useEffect, useState } from 'react'
 import Script from 'next/script'
 
@@ -25,7 +26,7 @@ export function GlobalLiquidLoader() {
       scriptsLoaded.ripples &&
       scriptsLoaded.liquidGL
     ) {
-      console.log('LiquidGL scripts loaded globally.')
+      console.log(LIQUID_GL_SCRIPTS_LOADED_LOG)
     }
   }, [scriptsLoaded])
 

@@ -1,5 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import {
+  GLOBAL_STATUS_ADD_OPERATION_LOG,
+  GLOBAL_STATUS_INITIAL_STATE_LOG,
+  GLOBAL_STATUS_REMOVE_OPERATION_LOG,
+  GLOBAL_STATUS_STORAGE_KEY,
+  GLOBAL_STATUS_UPDATE_OPERATION_LOG,
+} from '@/shared/jobs/constants/global-status-store'
 
 export type OperationType =
   | 'world-gen'
@@ -45,14 +52,14 @@ export const useGlobalStatusStore = create<GlobalStatusState>()(
             return state
           }
           const newOperations = [...state.operations, op]
-          console.log('🔄 [GlobalStatusStore] addOperation:', newOperations)
+          console.log(GLOBAL_STATUS_ADD_OPERATION_LOG, newOperations)
           return { operations: newOperations }
         }),
 
       removeOperation: id =>
         set(state => {
           const newOperations = state.operations.filter(op => op.id !== id)
-          console.log('🔄 [GlobalStatusStore] removeOperation:', newOperations)
+          console.log(GLOBAL_STATUS_REMOVE_OPERATION_LOG, newOperations)
           return { operations: newOperations }
         }),
 
@@ -61,7 +68,7 @@ export const useGlobalStatusStore = create<GlobalStatusState>()(
           const newOperations = state.operations.map(op =>
             op.id === id ? { ...op, ...updates } : op
           )
-          console.log('🔄 [GlobalStatusStore] updateOperation:', newOperations)
+          console.log(GLOBAL_STATUS_UPDATE_OPERATION_LOG, newOperations)
           return { operations: newOperations }
         }),
 
@@ -69,7 +76,7 @@ export const useGlobalStatusStore = create<GlobalStatusState>()(
       setExpanded: expanded => set({ isExpanded: expanded }),
     }),
     {
-      name: 'global-status-storage',
+      name: GLOBAL_STATUS_STORAGE_KEY,
       partialize: state => ({
         isExpanded: state.isExpanded,
         operations: state.operations, // Persist operations for page refresh
@@ -82,6 +89,6 @@ export const useGlobalStatusStore = create<GlobalStatusState>()(
 if (typeof window !== 'undefined') {
   setTimeout(() => {
     const initialState = useGlobalStatusStore.getState()
-    console.log('🔄 [GlobalStatusStore] Initial state:', initialState.operations)
+    console.log(GLOBAL_STATUS_INITIAL_STATE_LOG, initialState.operations)
   }, 0)
 }

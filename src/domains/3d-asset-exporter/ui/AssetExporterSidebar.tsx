@@ -95,7 +95,7 @@ export const AssetExporterSidebar: React.FC = () => {
               <div className="mb-4" id={TOUR_STEP_IDS.ASSET_UPLOAD_ZONE}>
                 <AssetUploadZone
                   projectId={currentProject.id}
-                  onUploadComplete={assetIds => {
+                  onUploadComplete={_assetIds => {
                     // Refresh assets list after upload
                     const fetchAssets = useWorldStore.getState().fetchAssets
                     if (fetchAssets) {

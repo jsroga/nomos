@@ -8,6 +8,27 @@ import { beatImageService } from '../../services/BeatImageService'
 import { Message } from '../AgentLog'
 import { ImageLightbox } from '@/components/ImageLightbox'
 import { Button } from '@/components/Button'
+import {
+  CORK_BOARD_DELETE_CANCEL,
+  CORK_BOARD_DELETE_CONFIRM,
+  CORK_BOARD_DELETE_DESCRIPTION,
+  CORK_BOARD_DELETE_TITLE,
+  CORK_BOARD_DRAG_EFFECT_MOVE,
+  CORK_BOARD_GENERATE_BEATS_PROMPT,
+  CORK_BOARD_NEW_BEAT_LOGLINE,
+  CORK_BOARD_NEW_BEAT_TYPE,
+  CORK_BOARD_STORYBOARD_FAILED_LOG,
+  CORK_BOARD_COUNT_PLACEHOLDER,
+  CORK_BOARD_STORYBOARD_STARTED_CONTENT,
+  CORK_BOARD_UNKNOWN_PROJECT,
+  CORK_BOARD_VISUAL_DIRECTOR_SENDER,
+  CorkBoardUrlScheme,
+} from './constants/cork-board'
+import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
+import {
+  StorytellerConfirmVariant,
+  StorytellerMessageType,
+} from '@/domains/storyteller/core/storyteller-page-wire'
 
 interface CorkBoardProps {
   beats: BeatData[]
@@ -41,7 +62,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   const [expandedBeatId, setExpandedBeatId] = useState<string | null>(null)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
   const params = useParams<{ projectId: string }>()
-  const projectId = propProjectId || params.projectId || 'unknown'
+  const projectId = propProjectId || params.projectId || CORK_BOARD_UNKNOWN_PROJECT
 
   // ... (previous useEffects and handlers remain same until render) ...
 
@@ -79,14 +100,14 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   const handleCreate = async () => {
     if (!episodeId) return
     const newBeat = {
-      logline: 'New Beat',
-      beatType: 'setup',
+      logline: CORK_BOARD_NEW_BEAT_LOGLINE,
+      beatType: CORK_BOARD_NEW_BEAT_TYPE,
       sequence: beats.length + 1,
       content: '',
     }
     const res = await fetch(`/api/storyteller/episodes/${episodeId}/beats`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: HttpMethod.Post,
+      headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify(newBeat),
     })
     const created = await res.json()
@@ -96,28 +117,28 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   const handleUpdate = async (id: string, updates: Partial<BeatData>) => {
     setBeats(beats.map(b => (b.id === id ? { ...b, ...updates } : b)))
     await fetch(`/api/storyteller/beats/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: HttpMethod.Patch,
+      headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify(updates),
     })
   }
 
   const handleDelete = async (id: string) => {
     const confirmed = await confirm({
-      title: 'Delete Beat',
-      description: 'Are you sure you want to delete this beat?',
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      variant: 'destructive',
+      title: CORK_BOARD_DELETE_TITLE,
+      description: CORK_BOARD_DELETE_DESCRIPTION,
+      confirmLabel: CORK_BOARD_DELETE_CONFIRM,
+      cancelLabel: CORK_BOARD_DELETE_CANCEL,
+      variant: StorytellerConfirmVariant.Destructive,
     })
     if (!confirmed) return
     setBeats(beats.filter(b => b.id !== id))
-    await fetch(`/api/storyteller/beats/${id}`, { method: 'DELETE' })
+    await fetch(`/api/storyteller/beats/${id}`, { method: HttpMethod.Delete })
   }
 
   const onDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id)
-    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.effectAllowed = CORK_BOARD_DRAG_EFFECT_MOVE
   }
 
   const onDragOver = (e: React.DragEvent, id: string) => {
@@ -145,9 +166,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
     // When no beats exist, ask the agent to generate 8-12 beats
     if (beats.length === 0) {
       if (onSendMessage) {
-        onSendMessage(
-          'Generate 8-12 story beats for this episode. Each beat should have a logline, beat type, visual hook, and characters involved. Cover the full arc from setup through climax to resolution.'
-        )
+        onSendMessage(CORK_BOARD_GENERATE_BEATS_PROMPT)
       }
       return
     }
@@ -156,9 +175,12 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
     setIsGeneratingBeats(true)
     if (onAddMessage) {
       onAddMessage({
-        sender: 'VisualDirector',
-        content: `**Storyboard Generation Started**\n\nI'm creating visual storyboards for ${beats.length} beats...\n\n*Generating...*`,
-        type: 'ai',
+        sender: CORK_BOARD_VISUAL_DIRECTOR_SENDER,
+        content: CORK_BOARD_STORYBOARD_STARTED_CONTENT.replace(
+          CORK_BOARD_COUNT_PLACEHOLDER,
+          String(beats.length)
+        ),
+        type: StorytellerMessageType.Ai,
       })
     }
     try {
@@ -168,7 +190,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
         })
       }
     } catch (e) {
-      console.error('Storyboard generation failed', e)
+      console.error(CORK_BOARD_STORYBOARD_FAILED_LOG, e)
     } finally {
       setIsGeneratingBeats(false)
     }
@@ -176,7 +198,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
 
   const getUrl = (url: string | null) => {
     if (!url) return ''
-    if (url.startsWith('http') || url.startsWith('/')) return url
+    if (url.startsWith(CorkBoardUrlScheme.Http) || url.startsWith('/')) return url
     if (url.startsWith('projects/')) return `/${url}`
     return `/projects/${projectId}/${url}`
   }

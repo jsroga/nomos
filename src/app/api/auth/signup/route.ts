@@ -1,4 +1,6 @@
 import { createSupabaseRouteClient } from '@/shared/auth/supabase-route-client'
+import { AUTH_MESSAGE } from '@/shared/auth/constants/auth-messages'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { signUpSchema } from '@/shared/auth/validation'
@@ -15,7 +17,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       if (error instanceof ValidationError) {
         return NextResponse.json(
-          { error: 'Validation failed', errors: error.errors },
+          { error: API_ERROR.VALIDATION_FAILED, errors: error.errors },
           { status: 400 }
         )
       }
@@ -40,10 +42,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: 'Check your email to confirm your account',
+      message: AUTH_MESSAGE.CHECK_EMAIL,
       user: data.user,
     })
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
   }
 }

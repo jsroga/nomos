@@ -8,21 +8,22 @@ import {
   episodeStoryPlanResponse,
   storyPlanRecordFromJson,
 } from '@/domains/storyteller/core/entities/story-plan-wire'
-import { readNumber, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+import { recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { QueryParam } from '@/shared/data/constants/protocol'
 
-// GET: Fetch story plan for an episode or project
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const episodeId = searchParams.get('episodeId')
-  const projectId = searchParams.get('projectId')
+  const episodeId = searchParams.get(QueryParam.EpisodeId)
+  const projectId = searchParams.get(QueryParam.ProjectId)
 
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     if (episodeId) {
       if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
       const [episode] = await db
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
         .limit(1)
 
       if (!episode) {
-        return NextResponse.json({ error: 'Episode not found' }, { status: 404 })
+        return NextResponse.json({ error: API_ERROR.EPISODE_NOT_FOUND }, { status: 404 })
       }
 
       return NextResponse.json(
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
       )
     } else if (projectId) {
       if (!(await verifyProjectAccess(projectId, session.user.id))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
       const [plan] = await db
@@ -82,29 +83,28 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.json({ storyPlan: plan.content })
     } else {
-      return NextResponse.json({ error: 'Episode ID or Project ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.EPISODE_OR_PROJECT_ID_REQUIRED }, { status: 400 })
     }
   } catch (error) {
-    console.error('Error fetching story plan:', error)
-    return NextResponse.json({ error: 'Failed to fetch story plan' }, { status: 500 })
+    console.error(API_LOG_PREFIX.ERROR_FETCHING_STORY_PLAN, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_FETCH_STORY_PLAN }, { status: 500 })
   }
 }
 
-// POST: Save/update story plan
 export async function POST(req: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const body = await req.json()
     const { episodeId, projectId, storyPlan, approved, currentPhase } = body
 
     if (episodeId) {
       if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
-      const updateData: any = { updatedAt: new Date() }
+      const updateData: Record<string, unknown> = { updatedAt: new Date() }
       if (storyPlan !== undefined) updateData.storyPlan = storyPlan
       if (approved !== undefined) updateData.planApproved = approved
       if (currentPhase !== undefined) updateData.currentPhase = currentPhase
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, episode: updated })
     } else if (projectId) {
       if (!(await verifyProjectAccess(projectId, session.user.id))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
       await db
@@ -131,32 +131,31 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ success: true })
     } else {
-      return NextResponse.json({ error: 'Episode ID or Project ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.EPISODE_OR_PROJECT_ID_REQUIRED }, { status: 400 })
     }
   } catch (error) {
-    console.error('Error saving story plan:', error)
-    return NextResponse.json({ error: 'Failed to save story plan' }, { status: 500 })
+    console.error(API_LOG_PREFIX.ERROR_SAVING_STORY_PLAN, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_SAVE_STORY_PLAN }, { status: 500 })
   }
 }
 
-// PATCH: Update individual sequence in story plan
 export async function PATCH(req: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const body = await req.json()
     const { episodeId, projectId, sequenceId, updates } = body
 
     if (!sequenceId || !updates) {
-      return NextResponse.json({ error: 'Sequence ID and updates are required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.SEQUENCE_ID_AND_UPDATES_REQUIRED }, { status: 400 })
     }
 
     let existingPlan = storyPlanRecordFromJson(null)
 
     if (episodeId) {
       if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
       const [episode] = await db
@@ -167,7 +166,7 @@ export async function PATCH(req: NextRequest) {
       existingPlan = storyPlanRecordFromJson(episode?.storyPlan)
     } else if (projectId) {
       if (!(await verifyProjectAccess(projectId, session.user.id))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
       const [plan] = await db
@@ -190,7 +189,7 @@ export async function PATCH(req: NextRequest) {
 
     const sequences = recordArrayFromJson(existingPlan.sequences)
     if (sequences.length === 0) {
-      return NextResponse.json({ error: 'No existing plan found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.NO_EXISTING_PLAN }, { status: 404 })
     }
 
     const updatedSequences = sequences.map(seq => {
@@ -220,7 +219,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true, storyPlan: updatedPlan })
   } catch (error) {
-    console.error('Error updating sequence:', error)
-    return NextResponse.json({ error: 'Failed to update sequence' }, { status: 500 })
+    console.error(API_LOG_PREFIX.ERROR_UPDATING_SEQUENCE, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_UPDATE_SEQUENCE }, { status: 500 })
   }
 }

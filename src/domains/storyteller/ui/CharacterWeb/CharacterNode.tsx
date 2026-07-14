@@ -10,56 +10,40 @@
 import React, { memo } from 'react'
 import { Handle, Position, NodeProps } from '@xyflow/react'
 import { cn } from '@/shared/data/utils'
-import { User, Users, Crown, MapPin, Calendar, Scroll } from 'lucide-react'
+import { Crown } from 'lucide-react'
 import { CharacterNodeData, CharacterWebNode } from './types'
-
-const TYPE_STYLES: Record<string, { bg: string; border: string; iconBg: string; Icon: any }> = {
-  character: {
-    bg: 'bg-purple-950/80',
-    border: 'border-purple-700/50',
-    iconBg: 'bg-purple-800',
-    Icon: User,
-  },
-  faction: {
-    bg: 'bg-blue-950/80',
-    border: 'border-blue-700/50',
-    iconBg: 'bg-blue-800',
-    Icon: Users,
-  },
-  place: {
-    bg: 'bg-emerald-950/80',
-    border: 'border-emerald-700/50',
-    iconBg: 'bg-emerald-800',
-    Icon: MapPin,
-  },
-  event: {
-    bg: 'bg-amber-950/80',
-    border: 'border-amber-700/50',
-    iconBg: 'bg-amber-800',
-    Icon: Calendar,
-  },
-  rule: { bg: 'bg-rose-950/80', border: 'border-rose-700/50', iconBg: 'bg-rose-800', Icon: Scroll },
-}
-
-const DEFAULT_STYLE = TYPE_STYLES.character
+import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
+import { parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
+import {
+  CHARACTER_NODE_DEFAULT_NAME,
+  CHARACTER_NODE_DEFAULT_STYLE,
+  CHARACTER_NODE_DEFAULT_TYPE,
+  CHARACTER_NODE_TYPE_STYLES,
+} from './constants/character-node'
+import { CharacterNodeMetrics } from './CharacterNodeMetrics'
 
 const CharacterNode: React.FC<NodeProps<CharacterWebNode>> = props => {
-  const data: CharacterNodeData = props.data ?? { name: 'Unknown', type: 'character' }
+  const data: CharacterNodeData = props.data ?? {
+    name: CHARACTER_NODE_DEFAULT_NAME,
+    type: CHARACTER_NODE_DEFAULT_TYPE,
+  }
   const selected = props.selected
 
-  const name = data.name || 'Unknown'
+  const name = data.name || CHARACTER_NODE_DEFAULT_NAME
   const role = data.role
   const avatarUrl = data.avatarUrl
-  const type = data.type || 'character'
+  const type = data.type || CHARACTER_NODE_DEFAULT_TYPE
   const stressLevel = data.stressLevel || 0
   const transformationProgress = data.transformationProgress || 0
   const isHighlighted = data.isHighlighted
   const isCentral = data.isCentral
   const isSelected = data.isSelected
 
-  const style = TYPE_STYLES[type] || DEFAULT_STYLE
+  const parsedType = parseEntityType(type)
+  const style =
+    parsedType !== undefined ? CHARACTER_NODE_TYPE_STYLES[parsedType] : CHARACTER_NODE_DEFAULT_STYLE
   const Icon = style.Icon
-  const isCharacter = type === 'character'
+  const isCharacter = parsedType === StoryEntityType.Character
 
   return (
     <>
@@ -116,42 +100,10 @@ const CharacterNode: React.FC<NodeProps<CharacterWebNode>> = props => {
 
         {/* Metrics (only for characters) */}
         {isCharacter && (stressLevel > 0 || transformationProgress > 0) && (
-          <div className="mt-2 pt-2 border-t border-zinc-700/50 space-y-1">
-            {stressLevel > 0 && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[9px] text-zinc-500 w-12">Stress</span>
-                <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all',
-                      stressLevel > 70
-                        ? 'bg-red-500'
-                        : stressLevel > 40
-                          ? 'bg-amber-500'
-                          : 'bg-emerald-500'
-                    )}
-                    style={{ width: `${stressLevel}%` }}
-                  />
-                </div>
-                <span className="text-[9px] text-zinc-500 w-6 text-right">{stressLevel}%</span>
-              </div>
-            )}
-
-            {transformationProgress > 0 && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[9px] text-zinc-500 w-12">Arc</span>
-                <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-purple-500 rounded-full transition-all"
-                    style={{ width: `${transformationProgress}%` }}
-                  />
-                </div>
-                <span className="text-[9px] text-zinc-500 w-6 text-right">
-                  {transformationProgress}%
-                </span>
-              </div>
-            )}
-          </div>
+          <CharacterNodeMetrics
+            stressLevel={stressLevel}
+            transformationProgress={transformationProgress}
+          />
         )}
 
         {/* Connected indicator (shown when a neighbor is selected) */}

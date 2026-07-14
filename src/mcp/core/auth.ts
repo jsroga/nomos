@@ -5,11 +5,34 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import {
+  MCP_API_KEY_LOOKUP_SELECT,
+  MCP_API_KEYS_TABLE,
+  McpApiKeyColumn,
+  McpApiKeyPrefix,
+  McpAuthDevBypass,
+  McpAuthError,
+  McpAuthLog,
+  McpAuthScope,
+  McpHashAlgorithm,
+  NodeEnv,
+} from '@/mcp/constants/auth'
 import { MCPServiceContext } from './types'
 
 // ============================================
 // TYPES
 // ============================================
+
+// Column inference fails when .select() gets a runtime-built string, so we
+// declare the row shape and apply it via .returns<T>() (no cast).
+interface McpApiKeyRow {
+  id: string
+  name: string
+  user_id: string
+  scopes: string[] | null
+  is_active: boolean
+  expires_at: string | null
+}
 
 export interface ApiKeyValidationResult {
   valid: boolean
@@ -29,7 +52,7 @@ function getSupabaseServiceClient(): SupabaseClient {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase configuration')
+    throw new Error(McpAuthError.MissingSupabaseConfig)
   }
 
   return createClient(supabaseUrl, supabaseServiceKey, {
@@ -49,17 +72,17 @@ function getSupabaseServiceClient(): SupabaseClient {
  */
 export async function validateApiKey(apiKey: string): Promise<ApiKeyValidationResult> {
   if (!apiKey) {
-    return { valid: false, error: 'No API key provided' }
+    return { valid: false, error: McpAuthError.NoApiKeyProvided }
   }
 
   // For development, allow a bypass key
-  if (process.env.NODE_ENV === 'development' && apiKey === 'dev-test-key') {
+  if (process.env.NODE_ENV === NodeEnv.Development && apiKey === McpAuthDevBypass.ApiKey) {
     return {
       valid: true,
-      keyId: 'dev-key',
-      keyName: 'Development Key',
-      userId: process.env.DEV_USER_ID || 'dev-user',
-      scopes: ['*'],
+      keyId: McpAuthDevBypass.KeyId,
+      keyName: McpAuthDevBypass.KeyName,
+      userId: process.env.DEV_USER_ID || McpAuthDevBypass.UserId,
+      scopes: [McpAuthScope.Wildcard],
     }
   }
 
@@ -70,41 +93,42 @@ export async function validateApiKey(apiKey: string): Promise<ApiKeyValidationRe
     const keyHash = await hashApiKey(apiKey)
 
     const { data, error } = await supabase
-      .from('mcp_api_keys')
-      .select('id, name, user_id, scopes, is_active, expires_at')
-      .eq('key_hash', keyHash)
+      .from(MCP_API_KEYS_TABLE)
+      .select(MCP_API_KEY_LOOKUP_SELECT)
+      .eq(McpApiKeyColumn.KeyHash, keyHash)
       .single()
+      .returns<McpApiKeyRow>()
 
     if (error || !data) {
-      return { valid: false, error: 'Invalid API key' }
+      return { valid: false, error: McpAuthError.InvalidApiKey }
     }
 
     // Check if key is active
     if (!data.is_active) {
-      return { valid: false, error: 'API key is disabled' }
+      return { valid: false, error: McpAuthError.ApiKeyDisabled }
     }
 
     // Check if key has expired
     if (data.expires_at && new Date(data.expires_at) < new Date()) {
-      return { valid: false, error: 'API key has expired' }
+      return { valid: false, error: McpAuthError.ApiKeyExpired }
     }
 
     // Update last used timestamp
     await supabase
-      .from('mcp_api_keys')
-      .update({ last_used_at: new Date().toISOString() })
-      .eq('id', data.id)
+      .from(MCP_API_KEYS_TABLE)
+      .update({ [McpApiKeyColumn.LastUsedAt]: new Date().toISOString() })
+      .eq(McpApiKeyColumn.Id, data.id)
 
     return {
       valid: true,
       keyId: data.id,
       keyName: data.name,
       userId: data.user_id,
-      scopes: data.scopes || ['*'],
+      scopes: data.scopes || [McpAuthScope.Wildcard],
     }
   } catch (error) {
-    console.error('[MCP Auth] Error validating API key:', error)
-    return { valid: false, error: 'Authentication error' }
+    console.error(McpAuthLog.ValidateError, error)
+    return { valid: false, error: McpAuthError.AuthenticationError }
   }
 }
 
@@ -115,7 +139,7 @@ export async function getServiceContext(
   authResult: ApiKeyValidationResult
 ): Promise<MCPServiceContext> {
   if (!authResult.valid || !authResult.userId) {
-    throw new Error('Invalid authentication result')
+    throw new Error(McpAuthError.InvalidAuthResult)
   }
 
   const supabase = getSupabaseServiceClient()
@@ -129,25 +153,6 @@ export async function getServiceContext(
   }
 }
 
-/**
- * Check if a scope is allowed for the API key
- */
-function hasScope(context: MCPServiceContext, requiredScope: string): boolean {
-  // Wildcard allows all scopes
-  if (context.scopes.includes('*')) {
-    return true
-  }
-
-  // Check for exact match or prefix match (e.g., 'entities:*' matches 'entities:read')
-  return context.scopes.some(scope => {
-    if (scope === requiredScope) return true
-    if (scope.endsWith(':*')) {
-      const prefix = scope.slice(0, -1) // Remove '*'
-      return requiredScope.startsWith(prefix)
-    }
-    return false
-  })
-}
 
 // ============================================
 // UTILITIES
@@ -160,7 +165,7 @@ function hasScope(context: MCPServiceContext, requiredScope: string): boolean {
 export async function hashApiKey(apiKey: string): Promise<string> {
   const encoder = new TextEncoder()
   const data = encoder.encode(apiKey)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashBuffer = await crypto.subtle.digest(McpHashAlgorithm.Sha256, data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
@@ -174,39 +179,5 @@ export function generateApiKey(): string {
   const key = Array.from(bytes)
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
-  return `wbk_${key}` // Prefix for identification
-}
-
-/**
- * Create a new API key in the database
- */
-async function createApiKey(
-  userId: string,
-  name: string,
-  scopes: string[] = ['*'],
-  expiresAt?: Date
-): Promise<{ apiKey: string; keyId: string }> {
-  const supabase = getSupabaseServiceClient()
-  const apiKey = generateApiKey()
-  const keyHash = await hashApiKey(apiKey)
-
-  const { data, error } = await supabase
-    .from('mcp_api_keys')
-    .insert({
-      user_id: userId,
-      name,
-      key_hash: keyHash,
-      scopes,
-      expires_at: expiresAt?.toISOString(),
-      is_active: true,
-    })
-    .select('id')
-    .single()
-
-  if (error) {
-    throw new Error(`Failed to create API key: ${error.message}`)
-  }
-
-  // Return the plain text key - this is the only time it's visible
-  return { apiKey, keyId: data.id }
+  return `${McpApiKeyPrefix.Wbk}${key}` // Prefix for identification
 }

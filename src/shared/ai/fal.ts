@@ -1,3 +1,11 @@
+import {
+  FAL_API_ERROR_LOG_PREFIX,
+  FAL_HTTP_METHOD_POST,
+  FAL_NONE_PLACEHOLDER,
+  FAL_RAW_OUTPUT_LOG_PREFIX,
+  FAL_SAM_CALL_LOG_PREFIX,
+} from '@/shared/ai/constants/fal'
+
 export interface BoxPrompt {
   x_min: number
   y_min: number
@@ -45,15 +53,15 @@ export class FalClient {
       input.text_prompt = textPrompt.trim()
     }
 
-    console.log('[FalClient] Calling SAM-3 with:', {
+    console.log(FAL_SAM_CALL_LOG_PREFIX, {
       imageLength: imageDataUri.length,
       box: boxPrompt,
-      textPrompt: textPrompt || '(none)',
+      textPrompt: textPrompt || FAL_NONE_PLACEHOLDER,
       params,
     })
 
     const response = await fetch('https://fal.run/fal-ai/sam-3/image-rle', {
-      method: 'POST',
+      method: FAL_HTTP_METHOD_POST,
       headers: {
         Authorization: `Key ${this.apiKey}`,
         'Content-Type': 'application/json',
@@ -63,12 +71,12 @@ export class FalClient {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('[FalClient] API Error:', errorText)
+      console.error(FAL_API_ERROR_LOG_PREFIX, errorText)
       throw new Error(`Fal.ai SAM-3 API failed: ${response.status} ${response.statusText}`)
     }
 
     const data = await response.json()
-    console.log('[FalClient] Raw output:', JSON.stringify(data, null, 2))
+    console.log(FAL_RAW_OUTPUT_LOG_PREFIX, JSON.stringify(data, null, 2))
     return data
   }
 }

@@ -4,9 +4,10 @@ import { Save, Scroll, FileText, Sparkles } from 'lucide-react'
 import { SidebarTextarea } from '@/components/DomainSidebar'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { getRandomWorldPromptIdea } from '@/shared/data/constants/worldPromptIdeas'
+import { MasterPromptScope } from '@/domains/storyteller/ui/MasterPromptEditor/constants/master-prompt-editor'
 
 interface MasterPromptEditorProps {
-  scope: 'Project' | 'Episode'
+  scope: `${MasterPromptScope}`
   initialPrompt: string
   onSave: (prompt: string) => void
 }
@@ -48,7 +49,7 @@ export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
     setSuggestedIdea(null)
   }
 
-  const ScopeIcon = scope === 'Project' ? Scroll : FileText
+  const ScopeIcon = scope === MasterPromptScope.Project ? Scroll : FileText
 
   return (
     <div className="space-y-2">

@@ -1,6 +1,7 @@
 import React from 'react'
 import { TourStep } from '@/shared/tours/tour-types'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { TourStepPosition } from '@/shared/tours/constants/tour-positions'
 import { Map, MousePointer2, Palette, Sparkles } from 'lucide-react'
 
 export const worldGenTourSteps: TourStep[] = [
@@ -17,7 +18,7 @@ export const worldGenTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.WORLDGEN_STYLE_PROMPT,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -32,7 +33,7 @@ export const worldGenTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.WORLDGEN_CANVAS,
-    position: 'center',
+    position: TourStepPosition.Center,
   },
   {
     content: (
@@ -47,7 +48,7 @@ export const worldGenTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.WORLDGEN_PROMPT,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -62,7 +63,7 @@ export const worldGenTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.WORLDGEN_GENERATE,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -77,6 +78,6 @@ export const worldGenTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.WORLDGEN_TOOLBAR,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
 ]

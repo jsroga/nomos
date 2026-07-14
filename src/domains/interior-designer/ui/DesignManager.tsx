@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
 import type { InteriorDesign } from '@/domains/interior-designer/io/interior-designer.dto'
+import { DesignManagerCopy } from '@/domains/interior-designer/constants/design-manager-copy'
 import { useInteriorStore } from '@/domains/interior-designer'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import { Button } from '@/components/Button'
+import { ButtonVariantKey } from '@/components/Button/constants/button-styles'
+import { CONFIRM_DIALOG_CANCEL_LABEL } from '@/components/ConfirmDialog/constants/confirm-dialog-copy'
 import { Trash2, FileText, Plus, Edit2 } from 'lucide-react'
 import { ScrollArea } from '@/components/ScrollArea'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
@@ -31,7 +34,7 @@ export const DesignManager: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false)
-  const [newSceneName, setNewSceneName] = useState('New Scene')
+  const [newSceneName, setNewSceneName] = useState<string>(DesignManagerCopy.NewSceneDefault)
   const [editingDesignId, setEditingDesignId] = useState<string | null>(null)
 
   // Define fetchDesigns BEFORE using it in useEffect
@@ -42,7 +45,7 @@ export const DesignManager: React.FC = () => {
       const data = await interiorDesignerApi.designs.list({ projectId: currentProject.id })
       setDesigns(data)
     } catch (error) {
-      console.error('Failed to fetch designs:', error)
+      console.error(DesignManagerCopy.FetchDesignsFailed, error)
     }
   }, [currentProject?.id])
 
@@ -62,11 +65,11 @@ export const DesignManager: React.FC = () => {
 
   const handleDelete = async (designId: string) => {
     const confirmed = await confirm({
-      title: 'Delete Scene',
-      description: 'Are you sure you want to delete this scene? This action cannot be undone.',
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      variant: 'destructive',
+      title: DesignManagerCopy.DeleteSceneTitle,
+      description: DesignManagerCopy.DeleteSceneDescription,
+      confirmLabel: DesignManagerCopy.DeleteLabel,
+      cancelLabel: CONFIRM_DIALOG_CANCEL_LABEL,
+      variant: ButtonVariantKey.Destructive,
     })
     if (confirmed) {
       await deleteDesign(designId)
@@ -79,7 +82,7 @@ export const DesignManager: React.FC = () => {
       await useInteriorStore.getState().saveDesign(currentProject.id)
     }
     setEditingDesignId(null)
-    setNewSceneName('New Scene')
+    setNewSceneName(DesignManagerCopy.NewSceneDefault)
     setIsNameDialogOpen(true)
   }
 

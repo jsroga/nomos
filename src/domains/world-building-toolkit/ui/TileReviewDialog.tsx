@@ -8,8 +8,20 @@ import { useWorldStore } from '@/domains/world-building-toolkit'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { tileGenerationService } from '@/domains/world-building-toolkit/state/client-services/TileGenerationService'
+import {
+  DomEventType,
+  KeyboardKey,
+  TILE_REVIEW_INFO_TOAST_ICON,
+  TileReviewAcceptLabel,
+  TileReviewDomEvent,
+  TileReviewLog,
+  TileReviewToast,
+  TileReviewTypeLabel,
+  VariantSelectionAction,
+  WorldGenReviewType,
+} from './constants/tile-review-dialog'
 
-export type TileReviewType = 'generation' | 'fidelity' | 'upscale'
+export type TileReviewType = WorldGenReviewType
 
 interface TileReviewDialogProps {
   open: boolean
@@ -33,14 +45,12 @@ const ComparisonSlider: React.FC<{
   const containerRef = useRef<HTMLDivElement>(null)
   const [sliderPosition, setSliderPosition] = useState(50) // percentage
   const [isDragging, setIsDragging] = useState(false)
-  const [originalLoaded, setOriginalLoaded] = useState(false)
-  const [newLoaded, setNewLoaded] = useState(false)
   const [originalError, setOriginalError] = useState(false)
   const [newError, setNewError] = useState(false)
 
   // Debug logging
   useEffect(() => {
-    console.log('[ComparisonSlider] URLs:', { originalUrl, newUrl })
+    console.log(TileReviewLog.ComparisonSliderUrls, { originalUrl, newUrl })
   }, [originalUrl, newUrl])
 
   const updateSliderPosition = useCallback((clientX: number) => {
@@ -84,16 +94,16 @@ const ComparisonSlider: React.FC<{
 
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove)
-      window.addEventListener('mouseup', handleMouseUp)
-      window.addEventListener('touchmove', handleTouchMove)
-      window.addEventListener('touchend', handleMouseUp)
+      window.addEventListener(TileReviewDomEvent.MouseMove, handleMouseMove)
+      window.addEventListener(TileReviewDomEvent.MouseUp, handleMouseUp)
+      window.addEventListener(TileReviewDomEvent.TouchMove, handleTouchMove)
+      window.addEventListener(TileReviewDomEvent.TouchEnd, handleMouseUp)
     }
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-      window.removeEventListener('touchmove', handleTouchMove)
-      window.removeEventListener('touchend', handleMouseUp)
+      window.removeEventListener(TileReviewDomEvent.MouseMove, handleMouseMove)
+      window.removeEventListener(TileReviewDomEvent.MouseUp, handleMouseUp)
+      window.removeEventListener(TileReviewDomEvent.TouchMove, handleTouchMove)
+      window.removeEventListener(TileReviewDomEvent.TouchEnd, handleMouseUp)
     }
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove])
 
@@ -117,11 +127,10 @@ const ComparisonSlider: React.FC<{
           className="w-full h-full object-contain pointer-events-none"
           draggable={false}
           onLoad={() => {
-            console.log('[ComparisonSlider] Original loaded successfully')
-            setOriginalLoaded(true)
+            console.log(TileReviewLog.OriginalLoaded)
           }}
-          onError={e => {
-            console.error('[ComparisonSlider] Original image failed to load:', originalUrl)
+          onError={() => {
+            console.error(TileReviewLog.OriginalFailed, originalUrl)
             setOriginalError(true)
           }}
         />
@@ -143,11 +152,10 @@ const ComparisonSlider: React.FC<{
           className="w-full h-full object-contain pointer-events-none"
           draggable={false}
           onLoad={() => {
-            console.log('[ComparisonSlider] New image loaded successfully')
-            setNewLoaded(true)
+            console.log(TileReviewLog.NewLoaded)
           }}
-          onError={e => {
-            console.error('[ComparisonSlider] New image failed to load:', newUrl)
+          onError={() => {
+            console.error(TileReviewLog.NewFailed, newUrl)
             setNewError(true)
           }}
         />
@@ -265,14 +273,26 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
   const rejectUpscale = useWorldStore(state => state.rejectUpscale)
 
   const typeLabels = {
-    generation: { title: 'Generated', accept: 'Accept Generation', new: 'Generated' },
-    fidelity: { title: 'Enhanced', accept: 'Accept Enhancement', new: 'Enhanced' },
-    upscale: { title: 'Upscaled', accept: 'Accept Upscale', new: 'Upscaled' },
+    [WorldGenReviewType.Generation]: {
+      title: TileReviewTypeLabel.Generated,
+      accept: TileReviewAcceptLabel.Generation,
+      new: TileReviewTypeLabel.Generated,
+    },
+    [WorldGenReviewType.Fidelity]: {
+      title: TileReviewTypeLabel.Enhanced,
+      accept: TileReviewAcceptLabel.Enhancement,
+      new: TileReviewTypeLabel.Enhanced,
+    },
+    [WorldGenReviewType.Upscale]: {
+      title: TileReviewTypeLabel.Upscaled,
+      accept: TileReviewAcceptLabel.Upscale,
+      new: TileReviewTypeLabel.Upscaled,
+    },
   }
 
   const labels = typeLabels[type]
   const title = `Review ${labels.title} Tile (${tileX}, ${tileY})`
-  const requiresVariantSelection = type === 'generation' && !!variantUrls?.length
+  const requiresVariantSelection = type === WorldGenReviewType.Generation && !!variantUrls?.length
 
   useEffect(() => {
     if (!open) return
@@ -281,7 +301,7 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
 
   const handleAccept = async () => {
     if (requiresVariantSelection && !selectedVariantUrl) {
-      toast.error('Select a variant before accepting.')
+      toast.error(TileReviewToast.SelectVariantFirst)
       return
     }
 
@@ -290,20 +310,24 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
       if (tokenId && requiresVariantSelection) {
         // MJ variant selection: complete token with chosen action
         const variantIndex = variantUrls!.findIndex(url => url === selectedVariantUrl || url.split('?')[0] === selectedVariantUrl!.split('?')[0])
-        await tileGenerationService.completeVariantSelection(tokenId, 'accept', variantIndex === -1 ? 0 : variantIndex)
-        toast.success('Using selected variant...')
+        await tileGenerationService.completeVariantSelection(
+          tokenId,
+          VariantSelectionAction.Accept,
+          variantIndex === -1 ? 0 : variantIndex
+        )
+        toast.success(TileReviewToast.UsingSelectedVariant)
         onClose()
-      } else if (type === 'generation') {
+      } else if (type === WorldGenReviewType.Generation) {
         await acceptGeneration(tileX, tileY, selectedVariantUrl || undefined)
-        toast.success('Generation accepted!')
+        toast.success(TileReviewToast.GenerationAccepted)
         onClose()
-      } else if (type === 'fidelity') {
+      } else if (type === WorldGenReviewType.Fidelity) {
         await acceptFidelity(tileX, tileY)
-        toast.success('Enhancement accepted!')
+        toast.success(TileReviewToast.EnhancementAccepted)
         onClose()
       } else {
         await acceptUpscale(tileX, tileY)
-        toast.success('Upscale accepted!')
+        toast.success(TileReviewToast.UpscaleAccepted)
         onClose()
       }
     } catch (error: unknown) {
@@ -317,13 +341,17 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
     if (!tokenId || !selectedVariantUrl || !variantUrls) return
     const variantIndex = variantUrls.findIndex(url => url === selectedVariantUrl || url.split('?')[0] === selectedVariantUrl.split('?')[0])
     if (variantIndex === -1) {
-      toast.error('Could not determine variant index')
+      toast.error(TileReviewToast.CouldNotDetermineVariantIndex)
       return
     }
     setIsUpscaling(true)
     try {
-      await tileGenerationService.completeVariantSelection(tokenId, 'upscale', variantIndex)
-      toast.success('Upscaling variant...')
+      await tileGenerationService.completeVariantSelection(
+        tokenId,
+        VariantSelectionAction.Upscale,
+        variantIndex
+      )
+      toast.success(TileReviewToast.UpscalingVariant)
       onClose()
     } catch (error: unknown) {
       toast.error(`Failed to upscale: ${getErrorMessage(error)}`)
@@ -335,15 +363,15 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
   const handleReject = () => {
     setIsRejecting(true)
     try {
-      if (type === 'generation') {
+      if (type === WorldGenReviewType.Generation) {
         rejectGeneration(tileX, tileY)
-        toast('Generation rejected', { icon: 'ℹ️' })
-      } else if (type === 'fidelity') {
+        toast(TileReviewToast.GenerationRejected, { icon: TILE_REVIEW_INFO_TOAST_ICON })
+      } else if (type === WorldGenReviewType.Fidelity) {
         rejectFidelity(tileX, tileY)
-        toast('Enhancement rejected', { icon: 'ℹ️' })
+        toast(TileReviewToast.EnhancementRejected, { icon: TILE_REVIEW_INFO_TOAST_ICON })
       } else {
         rejectUpscale(tileX, tileY)
-        toast('Upscale rejected', { icon: 'ℹ️' })
+        toast(TileReviewToast.UpscaleRejected, { icon: TILE_REVIEW_INFO_TOAST_ICON })
       }
       onClose()
     } finally {
@@ -356,18 +384,18 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
     if (!open) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
+      if (e.key === KeyboardKey.Enter) {
         e.preventDefault()
         if (requiresVariantSelection && !selectedVariantUrl) return
         handleAccept()
-      } else if (e.key === 'Escape') {
+      } else if (e.key === KeyboardKey.Escape) {
         e.preventDefault()
         handleReject()
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener(DomEventType.KeyDown, handleKeyDown)
+    return () => window.removeEventListener(DomEventType.KeyDown, handleKeyDown)
   }, [open, requiresVariantSelection, selectedVariantUrl])
 
   const hasOriginal = !!originalUrl && !requiresVariantSelection
@@ -408,8 +436,8 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
           {/* Action buttons */}
           <div className="flex items-center justify-between pt-4">
             <div className="text-xs text-muted-foreground">
-              <kbd className="px-2 py-1 bg-muted rounded border border-border">Enter</kbd> to accept
-              • <kbd className="px-2 py-1 bg-muted rounded border border-border">Esc</kbd> to reject
+              <kbd className="px-2 py-1 bg-muted rounded border border-border">{KeyboardKey.Enter}</kbd> to accept
+              • <kbd className="px-2 py-1 bg-muted rounded border border-border">{KeyboardKey.Escape}</kbd> to reject
               {requiresVariantSelection && !selectedVariantUrl && (
                 <span className="ml-2 text-amber-500">Select a variant first</span>
               )}

@@ -1,6 +1,7 @@
 import React from 'react'
 import { TourStep } from '@/shared/tours/tour-types'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { TourStepPosition } from '@/shared/tours/constants/tour-positions'
 import { Sparkles, BookOpen, Layout, Users, Scroll } from 'lucide-react'
 
 export const storytellerTourSteps: TourStep[] = [
@@ -17,7 +18,7 @@ export const storytellerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.STORYTELLER_MASTER_PROMPT,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -32,7 +33,7 @@ export const storytellerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.STORYTELLER_BIBLE,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -47,7 +48,7 @@ export const storytellerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.STORYTELLER_CHARACTERS,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -62,7 +63,7 @@ export const storytellerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.STORYTELLER_EPISODES,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -77,6 +78,6 @@ export const storytellerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.STORYTELLER_CHAT,
-    position: 'left',
+    position: TourStepPosition.Left,
   },
 ]

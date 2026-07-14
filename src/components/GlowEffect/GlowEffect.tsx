@@ -2,13 +2,21 @@
 
 import { cn } from '@/shared/data/utils'
 import { motion } from 'framer-motion'
+import {
+  GLOW_DEFAULT_COLORS,
+  GLOW_GRADIENT_JOINER,
+  GlowBlurClass,
+  GlowBlurLevel,
+  GlowEase,
+  GlowEffectMode,
+} from '@/components/GlowEffect/constants/glow-effect'
 
 export type GlowEffectProps = {
   className?: string
   style?: React.CSSProperties
   colors?: string[]
-  mode?: 'static' | 'colorShift' | 'shine' | 'spotlight'
-  blur?: 'soft' | 'medium' | 'strong'
+  mode?: `${GlowEffectMode}`
+  blur?: `${GlowBlurLevel}`
   duration?: number
   scale?: number
 }
@@ -16,20 +24,20 @@ export type GlowEffectProps = {
 export function GlowEffect({
   className,
   style,
-  colors = ['#FF5733', '#33FF57', '#3357FF', '#F1C40F'],
-  mode = 'static',
-  blur = 'medium',
+  colors = [...GLOW_DEFAULT_COLORS],
+  mode = GlowEffectMode.Static,
+  blur = GlowBlurLevel.Medium,
   duration = 3,
   scale = 1,
 }: GlowEffectProps) {
   const blurClasses = {
-    soft: 'blur-xl',
-    medium: 'blur-2xl',
-    strong: 'blur-3xl',
+    [GlowBlurLevel.Soft]: GlowBlurClass.Soft,
+    [GlowBlurLevel.Medium]: GlowBlurClass.Medium,
+    [GlowBlurLevel.Strong]: GlowBlurClass.Strong,
   }
 
   const backgroundStyle = {
-    background: `conic-gradient(from 0deg at 50% 50%, ${colors.join(', ')})`,
+    background: `conic-gradient(from 0deg at 50% 50%, ${colors.join(GLOW_GRADIENT_JOINER)})`,
   }
 
   return (
@@ -43,9 +51,11 @@ export function GlowEffect({
       <motion.div
         className={cn('h-full w-full rounded-[inherit] opacity-100', blurClasses[blur])}
         style={backgroundStyle}
-        animate={mode === 'colorShift' ? { rotate: 360 } : {}}
+        animate={mode === GlowEffectMode.ColorShift ? { rotate: 360 } : {}}
         transition={
-          mode === 'colorShift' ? { duration: duration, repeat: Infinity, ease: 'linear' } : {}
+          mode === GlowEffectMode.ColorShift
+            ? { duration: duration, repeat: Infinity, ease: GlowEase.Linear }
+            : {}
         }
       />
     </div>

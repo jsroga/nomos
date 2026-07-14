@@ -5,6 +5,18 @@
  * for consistent storytelling across episodes.
  */
 
+import {
+  SeriesBibleArcField,
+  SeriesBibleLinkStripReplacement,
+  SeriesBiblePromptCopy,
+  SeriesBiblePromptSection,
+  SERIES_BIBLE_DEFAULT_TITLE,
+  SERIES_BIBLE_LIST_SEPARATOR,
+  SERIES_BIBLE_MOTIF_SEPARATOR,
+  SERIES_BIBLE_RULE_LABEL,
+  SERIES_BIBLE_SETTING_SEPARATOR,
+} from '@/domains/storyteller/services/constants/series-bible-prompt'
+
 export interface CharacterArc {
   characterId: string
   name: string
@@ -104,50 +116,31 @@ export function bibleToPrompt(bible: SeriesBible, cast?: Array<{ name: string; r
     (bible.genre && bible.genre.length > 0)
 
   if (!hasContent) {
-    return 'No series bible has been established yet. Describe your world concept to begin generating.'
+    return SeriesBiblePromptCopy.NoBibleYet
   }
 
-  let prompt = `
-=== STORY BIBLE: ${bible.title || 'Untitled'} ===
-
-LOGLINE: ${bible.logline || 'Not defined'}
-
-PREMISE: ${bible.premise || 'Not defined'}
-
-GENRE: ${Array.isArray(bible.genre) && bible.genre.length > 0 ? bible.genre.join(', ') : 'Not defined'}
-TONE: ${Array.isArray(bible.tone) && bible.tone.length > 0 ? bible.tone.join(', ') : 'Not defined'}
-
---- THEMATIC CORE ---
-Central Theme: ${bible.centralTheme || 'Not defined'}
-Central Question: ${bible.thematicQuestion || 'Not defined'}
-`
+  let prompt = `${SeriesBiblePromptSection.Header}${bible.title || SERIES_BIBLE_DEFAULT_TITLE}${SeriesBiblePromptSection.HeaderClose}${bible.logline || SeriesBiblePromptCopy.NotDefined}${SeriesBiblePromptSection.Logline}${bible.premise || SeriesBiblePromptCopy.NotDefined}${SeriesBiblePromptSection.Genre}${Array.isArray(bible.genre) && bible.genre.length > 0 ? bible.genre.join(SERIES_BIBLE_LIST_SEPARATOR) : SeriesBiblePromptCopy.NotDefined}${SeriesBiblePromptSection.Tone}${Array.isArray(bible.tone) && bible.tone.length > 0 ? bible.tone.join(SERIES_BIBLE_LIST_SEPARATOR) : SeriesBiblePromptCopy.NotDefined}${SeriesBiblePromptSection.ThematicCore}${bible.centralTheme || SeriesBiblePromptCopy.NotDefined}${SeriesBiblePromptSection.CentralQuestion}${bible.thematicQuestion || SeriesBiblePromptCopy.NotDefined}`
 
   if (bible.thematicElements?.length > 0) {
-    prompt += '\nThematic Elements:\n'
+    prompt += SeriesBiblePromptSection.ThematicElements
     bible.thematicElements.forEach(t => {
       if (typeof t === 'string') {
         prompt += `- ${t}\n`
       } else if (t && (t.theme || t.question)) {
-        prompt += `- ${t.theme || 'Theme'}${t.question ? `: "${t.question}"` : ''}\n`
+        prompt += `- ${t.theme || SeriesBiblePromptCopy.Theme}${t.question ? `: "${t.question}"` : ''}\n`
       }
     })
   }
 
-  prompt += `
---- SETTING ---
-Time: ${bible.setting?.time || 'Not defined'}
-Place: ${bible.setting?.place || 'Not defined'}
-Social Context: ${bible.setting?.socialContext || 'Not defined'}
-`
+  prompt += `${SeriesBiblePromptSection.Setting}${bible.setting?.time || SeriesBiblePromptCopy.NotDefined}${SeriesBiblePromptSection.Place}${bible.setting?.place || SeriesBiblePromptCopy.NotDefined}${SeriesBiblePromptSection.SocialContext}${bible.setting?.socialContext || SeriesBiblePromptCopy.NotDefined}`
 
   if (bible.worldRules?.length > 0) {
-    prompt += '\n--- WORLD RULES ---\n'
+    prompt += SeriesBiblePromptSection.WorldRules
     bible.worldRules.forEach(r => {
-      // Handle different possible structures for world rules
       if (typeof r === 'string') {
         prompt += `- ${r}\n`
       } else if (r && (r.name || r.rule || r.description)) {
-        const ruleName = r.name || r.rule || 'Rule'
+        const ruleName = r.name || r.rule || SERIES_BIBLE_RULE_LABEL
         const ruleDesc = r.description || r.consequence || ''
         prompt += `${ruleName}${ruleDesc ? `: ${ruleDesc}` : ''}\n`
       }
@@ -155,7 +148,7 @@ Social Context: ${bible.setting?.socialContext || 'Not defined'}
   }
 
   if (bible.worldDescription) {
-    prompt += `\n--- WORLD DESCRIPTION ---\n${bible.worldDescription}\n`
+    prompt += `${SeriesBiblePromptSection.WorldDescription}${bible.worldDescription}\n`
   }
 
   if (
@@ -164,61 +157,57 @@ Social Context: ${bible.setting?.socialContext || 'Not defined'}
       bible.inspirations.movies?.length > 0 ||
       bible.inspirations.games?.length > 0)
   ) {
-    prompt += '\n--- INSPIRATIONS ---\n'
+    prompt += SeriesBiblePromptSection.Inspirations
     if (bible.inspirations.books?.length > 0)
-      prompt += `Books: ${bible.inspirations.books.join(', ')}\n`
+      prompt += `${SeriesBiblePromptSection.Books}${bible.inspirations.books.join(SERIES_BIBLE_LIST_SEPARATOR)}\n`
     if (bible.inspirations.movies?.length > 0)
-      prompt += `Movies: ${bible.inspirations.movies.join(', ')}\n`
+      prompt += `${SeriesBiblePromptSection.Movies}${bible.inspirations.movies.join(SERIES_BIBLE_LIST_SEPARATOR)}\n`
     if (bible.inspirations.games?.length > 0)
-      prompt += `Games: ${bible.inspirations.games.join(', ')}\n`
+      prompt += `${SeriesBiblePromptSection.Games}${bible.inspirations.games.join(SERIES_BIBLE_LIST_SEPARATOR)}\n`
   }
 
   if (bible.moodSoundtrack) {
-    prompt += `\nSoundtrack / Mood: ${bible.moodSoundtrack}\n`
+    prompt += `${SeriesBiblePromptSection.Soundtrack}${bible.moodSoundtrack}\n`
   }
 
   if (bible.characterArcs?.length > 0) {
-    prompt += '\n--- CHARACTER ARCS ---\n'
+    prompt += SeriesBiblePromptSection.CharacterArcs
     bible.characterArcs.forEach(arc => {
       if (!arc || !arc.name) return
       const start = arc.startState || {}
       const end = arc.endState || {}
       prompt += `
 ${arc.name}:
-  START: Believes "${start.belief || 'unknown'}", wants "${start.want || 'unknown'}", needs "${start.need || 'unknown'}"
-  FLAW: ${start.flaw || 'Not defined'}
-  LIE: "${start.lie || 'unknown'}"
-  END: Must realize "${end.truth || 'unknown'}" and ${end.transformation || 'transform'}
+${SeriesBibleArcField.StartBelief}${start.belief || SeriesBiblePromptCopy.Unknown}${SeriesBibleArcField.StartWant}${start.want || SeriesBiblePromptCopy.Unknown}${SeriesBibleArcField.StartNeed}${start.need || SeriesBiblePromptCopy.Unknown}"
+${SeriesBibleArcField.Flaw}${start.flaw || SeriesBiblePromptCopy.NotDefined}
+${SeriesBibleArcField.Lie}${start.lie || SeriesBiblePromptCopy.Unknown}"
+${SeriesBibleArcField.EndTruth}${end.truth || SeriesBiblePromptCopy.Unknown}${SeriesBibleArcField.EndTransform}${end.transformation || SeriesBiblePromptCopy.Transform}
 `
     })
   }
 
   if (bible.toneGuidelines) {
-    prompt += `
---- TONE GUIDELINES ---
-Violence: ${bible.toneGuidelines.violence || 'Not specified'}
-Humor: ${bible.toneGuidelines.humor || 'Not specified'}
-Dialogue: ${bible.toneGuidelines.dialogue || 'Not specified'}
+    prompt += `${SeriesBiblePromptSection.ToneGuidelines}${bible.toneGuidelines.violence || SeriesBiblePromptCopy.NotSpecified}${SeriesBiblePromptSection.Humor}${bible.toneGuidelines.humor || SeriesBiblePromptCopy.NotSpecified}${SeriesBiblePromptSection.Dialogue}${bible.toneGuidelines.dialogue || SeriesBiblePromptCopy.NotSpecified}
 `
   }
 
   if (bible.visualMotifs?.length > 0) {
-    prompt += `\nVisual Motifs: ${bible.visualMotifs.join(', ')}\n`
+    prompt += `${SeriesBiblePromptSection.VisualMotifs}${bible.visualMotifs.join(SERIES_BIBLE_LIST_SEPARATOR)}\n`
   }
 
   if (bible.cinematicInfluences?.length > 0) {
-    prompt += `Cinematic Influences: ${bible.cinematicInfluences.join(', ')}\n`
+    prompt += `${SeriesBiblePromptSection.CinematicInfluences}${bible.cinematicInfluences.join(SERIES_BIBLE_LIST_SEPARATOR)}\n`
   }
 
   // Project-level cast (characters)
   if (cast && cast.length > 0) {
-    prompt += '\n--- CAST ---\n'
+    prompt += SeriesBiblePromptSection.Cast
     cast.forEach(c => {
-      prompt += `- ${c.name} (${c.role || 'Unknown role'}): ${c.description || 'No description'}\n`
+      prompt += `- ${c.name} (${c.role || SeriesBiblePromptCopy.UnknownRole}): ${c.description || SeriesBiblePromptCopy.NoDescription}\n`
     })
   }
 
-  prompt += '\n=== END SERIES BIBLE ==='
+  prompt += SeriesBiblePromptCopy.EndMarker
 
   return prompt
 }
@@ -227,12 +216,12 @@ Dialogue: ${bible.toneGuidelines.dialogue || 'Not specified'}
 export function bibleToVisualPrompt(bible: SeriesBible, _cast?: Array<{ name: string; role?: string; description?: string }>): string {
   const stripLinks = (text: string) => {
     return text
-      .replace(/\[([^\]]+)\]\[[^\]]+\]/g, '$1')
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/\[([^\]]+)\]\[[^\]]+\]/g, SeriesBibleLinkStripReplacement.BracketRef)
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, SeriesBibleLinkStripReplacement.MarkdownLink)
   }
 
   const gameTileFrame = (theme: string) =>
-    `Isometric game tile: ${theme}. Tileable 2D game environment.`
+    `${SeriesBiblePromptCopy.GameTilePrefix}${theme}${SeriesBiblePromptCopy.GameTileSuffix}`
 
   // Priority 1: Use worldDescription (first sentence), reframed for game tiles
   if (bible.worldDescription) {
@@ -242,7 +231,7 @@ export function bibleToVisualPrompt(bible: SeriesBible, _cast?: Array<{ name: st
     if (first) {
       const motifHint =
         bible.visualMotifs?.length > 0
-          ? ', ' + bible.visualMotifs.slice(0, 2).join(', ')
+          ? SERIES_BIBLE_MOTIF_SEPARATOR + bible.visualMotifs.slice(0, 2).join(SERIES_BIBLE_MOTIF_SEPARATOR)
           : ''
       return gameTileFrame(first + motifHint)
     }
@@ -253,11 +242,10 @@ export function bibleToVisualPrompt(bible: SeriesBible, _cast?: Array<{ name: st
   if (bible.setting?.place) parts.push(stripLinks(bible.setting.place))
   if (bible.setting?.time) parts.push(stripLinks(bible.setting.time))
   if (bible.setting?.socialContext) parts.push(stripLinks(bible.setting.socialContext))
-  const settingPrompt = parts.join('. ').trim()
+  const settingPrompt = parts.join(SERIES_BIBLE_SETTING_SEPARATOR).trim()
   if (settingPrompt) return gameTileFrame(settingPrompt)
 
-  // Title fallback
   if (bible.title) return gameTileFrame(stripLinks(bible.title))
 
-  return gameTileFrame('detailed fantasy world landscape with unique terrain')
+  return gameTileFrame(SeriesBiblePromptCopy.FantasyLandscapeFallback)
 }

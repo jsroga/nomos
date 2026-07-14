@@ -22,8 +22,18 @@ import {
 } from '@/domains/storyteller/agents/critics'
 import { generateCriticReport } from '@/domains/storyteller/agents/critics/run-critic'
 import type { CriticReport } from '@/domains/storyteller/agents/critics'
+import { ConsistencySeverity } from '@/domains/storyteller/services/constants/consistency-issues'
+import {
+  ReviewPersonaKey,
+  ScriptReviewCopy,
+  ScriptReviewContextLabel,
+  ScriptReviewContextSeparator,
+} from '@/domains/storyteller/services/constants/script-review'
 
-export type ReviewPersona = 'george-rr-martin' | 'vince-gilligan' | 'david-lynch'
+export type ReviewPersona =
+  | ReviewPersonaKey.GeorgeRrMartin
+  | ReviewPersonaKey.VinceGilligan
+  | ReviewPersonaKey.DavidLynch
 
 export interface ScriptReviewRequest {
   script: string
@@ -63,9 +73,9 @@ export interface ScriptReviewResult {
 }
 
 const PERSONA_TO_CRITIC: Record<ReviewPersona, Agent> = {
-  'george-rr-martin': proseCritic,
-  'vince-gilligan': continuityCritic,
-  'david-lynch': stakesCritic,
+  [ReviewPersonaKey.GeorgeRrMartin]: proseCritic,
+  [ReviewPersonaKey.VinceGilligan]: continuityCritic,
+  [ReviewPersonaKey.DavidLynch]: stakesCritic,
 }
 
 const SEVERITY_PENALTY: Record<CriticReport['findings'][number]['severity'], number> = {
@@ -90,37 +100,42 @@ function toPersonaReview(persona: ReviewPersona, report: CriticReport): PersonaR
     strengths: [],
     weaknesses: report.findings.map(f => `"${f.quote}" — ${f.why}`),
     suggestions: report.findings
-      .filter(f => f.severity !== 'critical')
+      .filter(f => f.severity !== ConsistencySeverity.Critical)
       .map(f => `[${f.severity}] ${f.why}`),
     score: scoreFromReport(report),
-    quote: report.findings[0]?.quote ?? 'NO FINDINGS.',
+    quote: report.findings[0]?.quote ?? ScriptReviewCopy.NoFindings,
   }
 }
 
 function buildContextBlock(request: ScriptReviewRequest): string {
   const premise = request.episodePremise
-    ? `EPISODE PREMISE:\n${JSON.stringify(request.episodePremise, null, 2)}`
+    ? `${ScriptReviewContextLabel.EpisodePremise}${ScriptReviewContextSeparator.Line}${JSON.stringify(request.episodePremise, null, 2)}`
     : ''
   const characters = request.characters?.length
-    ? `CHARACTERS:\n${request.characters
+    ? `${ScriptReviewContextLabel.Characters}${ScriptReviewContextSeparator.Line}${request.characters
         .map(c => `- ${c.name}${c.role ? ` (${c.role})` : ''}`)
-        .join('\n')}`
+        .join(ScriptReviewContextSeparator.Line)}`
     : ''
-  return [premise, characters].filter(Boolean).join('\n\n')
+  return [premise, characters].filter(Boolean).join(ScriptReviewContextSeparator.Block)
 }
 
 /** Single-critic review — replaces the judge's `quickReview`. */
 export async function quickReview(script: string, persona: ReviewPersona): Promise<PersonaReview> {
   const critic = PERSONA_TO_CRITIC[persona]
-  const report = await generateCriticReport(critic, `DRAFT SCRIPT:\n${script}`)
+  const report = await generateCriticReport(
+    critic,
+    `${ScriptReviewContextLabel.DraftScript}${ScriptReviewContextSeparator.Line}${script}`
+  )
   return toPersonaReview(persona, report)
 }
 
 /** Full three-critic review — replaces the judge's `reviewScript`. */
 export async function reviewScript(request: ScriptReviewRequest): Promise<ScriptReviewResult> {
   const context = buildContextBlock(request)
-  const draftBlock = `DRAFT SCRIPT:\n${request.script}`
-  const withContext = context ? `${context}\n\n${draftBlock}` : draftBlock
+  const draftBlock = `${ScriptReviewContextLabel.DraftScript}${ScriptReviewContextSeparator.Line}${request.script}`
+  const withContext = context
+    ? `${context}${ScriptReviewContextSeparator.Block}${draftBlock}`
+    : draftBlock
 
   const [prose, continuity, stakes] = await Promise.all([
     generateCriticReport(proseCritic, draftBlock),
@@ -129,9 +144,9 @@ export async function reviewScript(request: ScriptReviewRequest): Promise<Script
   ])
 
   const reviews: PersonaReview[] = [
-    toPersonaReview('george-rr-martin', prose),
-    toPersonaReview('vince-gilligan', continuity),
-    toPersonaReview('david-lynch', stakes),
+    toPersonaReview(ReviewPersonaKey.GeorgeRrMartin, prose),
+    toPersonaReview(ReviewPersonaKey.VinceGilligan, continuity),
+    toPersonaReview(ReviewPersonaKey.DavidLynch, stakes),
   ]
 
   const allFindings = [...prose.findings, ...continuity.findings, ...stakes.findings]
@@ -143,15 +158,15 @@ export async function reviewScript(request: ScriptReviewRequest): Promise<Script
     overallScore,
     overallFeedback:
       allFindings.length === 0
-        ? 'All three critics returned no findings.'
+        ? ScriptReviewCopy.AllCriticsClear
         : `${allFindings.length} finding(s) across three critics — most severe first in each review.`,
     reviews,
     synthesis: {
       mustFix: allFindings
-        .filter(f => f.severity === 'critical')
+        .filter(f => f.severity === ConsistencySeverity.Critical)
         .map(f => `"${f.quote}" — ${f.why}`),
       suggestions: allFindings
-        .filter(f => f.severity !== 'critical')
+        .filter(f => f.severity !== ConsistencySeverity.Critical)
         .map(f => `[${f.severity}] ${f.why}`),
       // Critics don't praise; standout detection was judge-era behavior.
       standoutMoments: [],

@@ -20,7 +20,7 @@ export const generateCombinedStoryboard = task({
   maxDuration: 600, // Long duration for high res generation
   run: async (payload: GenerateCombinedStoryboardPayload) => {
     const { episodeId, projectId, beats, providerConfig } = payload
-    const { apiKey, modelId } = providerConfig
+    const { apiKey, modelId: _modelId } = providerConfig
 
     logger.info(
       `Starting combined storyboard generation for episode ${episodeId} with ${beats.length} beats.`

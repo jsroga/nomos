@@ -6,4 +6,4 @@ export {
   StreamingTerminal,
   StreamingSectionsInline,
   ModelSelector,
-} from '@/domains/chat'
+} from '@/shared/chat'

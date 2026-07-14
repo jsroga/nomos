@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { FalClient, SamParams } from '@/shared/ai/fal'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
@@ -35,11 +36,11 @@ export const POST = withRateLimit(
     const { image, box, apiKey, textPrompt, samParams } = JSON.parse(body)
 
     if (!apiKey) {
-      return NextResponse.json({ error: 'API key required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.API_KEY_REQUIRED }, { status: 400 })
     }
 
     if (!box) {
-      return NextResponse.json({ error: 'Bounding box required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.BOUNDING_BOX_REQUIRED }, { status: 400 })
     }
 
     // Validate and log image data

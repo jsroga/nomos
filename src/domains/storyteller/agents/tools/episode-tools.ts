@@ -4,6 +4,7 @@
  * Consolidated episode CRUD (merge create+update into manageEpisodeTool).
  */
 
+import '@/shared/data/server-guard'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { episodes } from '@/db/schema'

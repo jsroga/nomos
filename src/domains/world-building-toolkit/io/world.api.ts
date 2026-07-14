@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ContentType, FetchCache, HttpMethod } from '@/shared/data/constants/protocol'
 import { WORLD_BUILDING_TOOLKIT_API_BASE_PATH } from '../world-building-toolkit.config'
 import {
   assetListResponseSchema,
@@ -45,15 +46,15 @@ export const worldApi = {
   projects: {
     async list(): Promise<WorldProject[]> {
       const response = await fetch(buildUrl(`${WORLD_BUILDING_TOOLKIT_API_BASE_PATH}/projects`), {
-        cache: 'no-store',
+        cache: FetchCache.NoStore,
       })
       return parseResponse(response, projectListResponseSchema)
     },
     async create(input: CreateProjectRequest): Promise<WorldProject> {
       const body = createProjectRequestSchema.parse(input)
       const response = await fetch(`${WORLD_BUILDING_TOOLKIT_API_BASE_PATH}/projects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: HttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify(body),
       })
       return parseResponse(response, worldProjectSchema)
@@ -62,7 +63,7 @@ export const worldApi = {
       deleteProjectQuerySchema.parse({ projectId })
       const response = await fetch(
         buildUrl(`${WORLD_BUILDING_TOOLKIT_API_BASE_PATH}/projects`, { projectId }),
-        { method: 'DELETE' }
+        { method: HttpMethod.Delete }
       )
       await parseResponse(response, z.object({ success: z.literal(true) }))
     },
@@ -72,15 +73,15 @@ export const worldApi = {
       listTilesQuerySchema.parse({ projectId })
       const response = await fetch(
         buildUrl(`${WORLD_BUILDING_TOOLKIT_API_BASE_PATH}/tiles`, { projectId }),
-        { cache: 'no-store' }
+        { cache: FetchCache.NoStore }
       )
       return parseResponse(response, tileListResponseSchema)
     },
     async upsert(input: UpsertTileRequest): Promise<WorldTile> {
       const body = upsertTileRequestSchema.parse(input)
       const response = await fetch(`${WORLD_BUILDING_TOOLKIT_API_BASE_PATH}/tiles`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: HttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify(body),
       })
       return parseResponse(response, tileResponseSchema)
@@ -88,8 +89,8 @@ export const worldApi = {
     async remove(input: DeleteTileRequest): Promise<void> {
       const body = deleteTileRequestSchema.parse(input)
       const response = await fetch(`${WORLD_BUILDING_TOOLKIT_API_BASE_PATH}/tiles`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        method: HttpMethod.Delete,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify(body),
       })
       await parseResponse(response, z.object({ success: z.literal(true) }))
@@ -100,7 +101,7 @@ export const worldApi = {
       listAssetsQuerySchema.parse({ projectId })
       const response = await fetch(
         buildUrl(`${WORLD_BUILDING_TOOLKIT_API_BASE_PATH}/assets`, { projectId }),
-        { cache: 'no-store' }
+        { cache: FetchCache.NoStore }
       )
       return parseResponse(response, assetListResponseSchema)
     },

@@ -1,36 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { Database } from '@/shared/data/storage/database.types'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 
 type TileUpdate = Database['public']['Tables']['tiles']['Update']
 
-export const POST = withAuth<any>(
-  async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+export const POST = withAuth(
+  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const { projectId, x, y, upscaledUrl } = await request.json()
 
     if (!projectId || x === undefined || y === undefined || !upscaledUrl) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.MISSING_REQUIRED_FIELDS }, { status: 400 })
     }
 
     // Verify project access
     const hasAccess = await verifyProjectAccess(supabase, projectId)
     if (!hasAccess) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     // Update tile using authenticated client (RLS enforced)
     const updates: TileUpdate = { image_filename: upscaledUrl }
 
     const { error } = await supabase
-      .from('tiles')
+      .from(DB_TABLE.TILES)
       .update(updates)
-      .eq('project_id', projectId)
+      .eq(DB_COLUMN.PROJECT_ID, projectId)
       .eq('x', x)
       .eq('y', y)
 
     if (error) {
-      console.error('Failed to update tile:', error)
-      return NextResponse.json({ error: 'Failed to update tile in database' }, { status: 500 })
+      console.error(API_LOG_PREFIX.TILE_UPDATE_FAILED, error)
+      return NextResponse.json({ error: API_ERROR.FAILED_UPDATE_TILE }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, filename: upscaledUrl })

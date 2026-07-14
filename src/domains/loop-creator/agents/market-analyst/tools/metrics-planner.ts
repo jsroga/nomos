@@ -5,8 +5,8 @@
  * SECRET SAUCE: Real benchmark data from successful games and expert metric recommendations.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
+import { createLoopStructuredTool } from './structured-tool'
 
 /**
  * Metric definition with benchmarks
@@ -515,10 +515,29 @@ const GENRE_METRIC_PRIORITIES: Record<string, string[]> = {
   ],
 }
 
+const metricsPlannerSchema = z.object({
+  gameGenre: z.string().describe('Primary game genre'),
+  gameSubgenre: z.string().optional().describe('Subgenre if applicable'),
+  businessModel: z
+    .enum(['premium', 'f2p', 'freemium', 'subscription'])
+    .describe('Monetization approach'),
+  platform: z.enum(['pc', 'mobile', 'console', 'multi-platform']).describe('Target platform'),
+  developmentPhase: z
+    .enum(['concept', 'prototype', 'production', 'launch', 'live'])
+    .optional()
+    .describe('Current development phase'),
+  focusAreas: z
+    .array(
+      z.enum(['engagement', 'retention', 'monetization', 'virality', 'quality', 'loop_health'])
+    )
+    .optional()
+    .describe('Specific areas to focus metrics on'),
+})
+
 /**
  * Smart metrics planner tool
  */
-export const metricsPlannerTool = new DynamicStructuredTool({
+export const metricsPlannerTool = createLoopStructuredTool({
   name: 'metrics_planner',
   description: `Plan which KPIs and metrics to track based on game type. Returns:
 - Prioritized metrics for your specific game type
@@ -526,30 +545,16 @@ export const metricsPlannerTool = new DynamicStructuredTool({
 - Measurement timing and formulas
 - Custom metric recommendations
 Use this to understand what "good" looks like and set realistic targets.`,
-  schema: z.object({
-    gameGenre: z.string().describe('Primary game genre'),
-    gameSubgenre: z.string().optional().describe('Subgenre if applicable'),
-    businessModel: z
-      .enum(['premium', 'f2p', 'freemium', 'subscription'])
-      .describe('Monetization approach'),
-    platform: z.enum(['pc', 'mobile', 'console', 'multi-platform']).describe('Target platform'),
-    developmentPhase: z
-      .enum(['concept', 'prototype', 'production', 'launch', 'live'])
-      .optional()
-      .describe('Current development phase'),
-    focusAreas: z
-      .array(z.enum(['engagement', 'retention', 'monetization', 'virality', 'loop_health']))
-      .optional()
-      .describe('Specific areas to focus metrics on'),
-  }),
-  func: async ({
-    gameGenre,
-    gameSubgenre,
-    businessModel,
-    platform,
-    developmentPhase,
-    focusAreas,
-  }): Promise<string> => {
+  schema: metricsPlannerSchema,
+  func: async input => {
+    const {
+      gameGenre,
+      gameSubgenre,
+      businessModel,
+      platform,
+      developmentPhase,
+      focusAreas,
+    } = metricsPlannerSchema.parse(input)
     try {
       const genreLower = gameGenre.toLowerCase()
 

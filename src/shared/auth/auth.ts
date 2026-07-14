@@ -1,47 +1,56 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies, headers } from 'next/headers'
 
 import { Session } from '@supabase/supabase-js'
 import { createSupabaseRouteClient } from '@/shared/auth/supabase-route-client'
+import {
+  E2E_AUTH_ROLE,
+  E2E_MOCK_ACCESS_TOKEN,
+  E2E_MOCK_REFRESH_TOKEN,
+  E2E_MOCK_USER_EMAIL,
+  E2E_MOCK_USER_ID,
+  E2E_TOKEN_TYPE,
+} from '@/shared/auth/constants/e2e-auth'
+import {
+  ApiErrorMessage,
+  AuthBypassFlag,
+  HttpHeader,
+  NodeEnv,
+} from '@/shared/data/constants/protocol'
 
-// Mock session for E2E tests in development
 const DEV_MOCK_SESSION: Session = {
   user: {
-    id: '00000000-0000-4000-8000-000000000001',
-    email: 'e2e-test@example.com',
+    id: E2E_MOCK_USER_ID,
+    email: E2E_MOCK_USER_EMAIL,
     app_metadata: {},
     user_metadata: {},
-    aud: 'authenticated',
+    aud: E2E_AUTH_ROLE,
     created_at: new Date().toISOString(),
     phone: '',
     confirmed_at: new Date().toISOString(),
     email_confirmed_at: new Date().toISOString(),
     last_sign_in_at: new Date().toISOString(),
-    role: 'authenticated',
+    role: E2E_AUTH_ROLE,
     updated_at: new Date().toISOString(),
   },
-  access_token: 'e2e-mock-token',
-  token_type: 'bearer',
+  access_token: E2E_MOCK_ACCESS_TOKEN,
+  token_type: E2E_TOKEN_TYPE,
   expires_in: 3600,
   expires_at: Math.floor(Date.now() / 1000) + 3600,
-  refresh_token: 'e2e-mock-refresh',
+  refresh_token: E2E_MOCK_REFRESH_TOKEN,
 }
 
 export async function getUserSession() {
-  // Check for E2E test bypass in development or test environments
-  if (['development', 'test'].includes(process.env.NODE_ENV || '')) {
+  if (
+    process.env.NODE_ENV === NodeEnv.Development ||
+    process.env.NODE_ENV === NodeEnv.Test
+  ) {
     const headersList = await headers()
-    const e2eHeader = headersList.get('x-bypass-auth')
-    if (e2eHeader === 'true') {
+    const e2eHeader = headersList.get(HttpHeader.BYPASS_AUTH)
+    if (e2eHeader === AuthBypassFlag.True) {
       return { session: DEV_MOCK_SESSION, supabase: null, error: null }
     }
   }
 
-  /*
-   * Next.js 15+ requires awaiting cookies(), but @supabase/auth-helpers-nextjs
-   * expects the `cookies` option to return the store synchronously (or it doesn't await it).
-   * Since we've already awaited `cookies()` above, we should pass it directly.
-   */
   const cookieStore = await cookies()
   const supabase = createSupabaseRouteClient(cookieStore)
   const {
@@ -56,7 +65,7 @@ export async function requireAuth() {
   const { session, error } = await getUserSession()
 
   if (error || !session) {
-    return { session: null, error: error || new Error('Unauthorized') }
+    return { session: null, error: error || new Error(ApiErrorMessage.UNAUTHORIZED) }
   }
 
   return { session, error: null }

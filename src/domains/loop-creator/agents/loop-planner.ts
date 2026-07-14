@@ -9,7 +9,7 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
-import { LoopCreatorState, GameLoop, LoopAgentAction, NextAgent } from '../core/graph/state'
+import { LoopCreatorState, GameLoop, LoopAgentAction } from '../core/graph/state'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { v4 as uuidv4 } from 'uuid'
 

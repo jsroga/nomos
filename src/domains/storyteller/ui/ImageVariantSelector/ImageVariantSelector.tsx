@@ -2,6 +2,11 @@
 
 import React, { useState, useRef } from 'react'
 import { Loader2, Check } from 'lucide-react'
+import {
+  IMAGE_VARIANT_CROP_FAILED_LOG,
+  IMAGE_VARIANT_GRID,
+  ImageVariantCanvas,
+} from './constants/image-variant-selector'
 
 interface ImageVariantSelectorProps {
   gridImageUrl: string
@@ -16,7 +21,7 @@ export const ImageVariantSelector: React.FC<ImageVariantSelectorProps> = ({
   onCancel,
   isProcessing = false,
 }) => {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [_hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [imageLoaded, setImageLoaded] = useState(false)
 
@@ -33,7 +38,7 @@ export const ImageVariantSelector: React.FC<ImageVariantSelectorProps> = ({
       try {
         const img = imageRef.current
         const canvas = canvasRef.current
-        const ctx = canvas.getContext('2d')
+        const ctx = canvas.getContext(ImageVariantCanvas.Context2d)
 
         if (ctx) {
           const hw = Math.floor(img.naturalWidth / 2)
@@ -54,20 +59,14 @@ export const ImageVariantSelector: React.FC<ImageVariantSelectorProps> = ({
           dataUrl = canvas.toDataURL('image/png')
         }
       } catch (e) {
-        console.error('Failed to crop image', e)
+        console.error(IMAGE_VARIANT_CROP_FAILED_LOG, e)
       }
     }
 
     onSelect(index, dataUrl)
   }
 
-  // 1 = top-left, 2 = top-right, 3 = bottom-left, 4 = bottom-right
-  const variants = [
-    { index: 1 as const, label: 'V1', position: 'top-0 left-0' },
-    { index: 2 as const, label: 'V2', position: 'top-0 right-0' },
-    { index: 3 as const, label: 'V3', position: 'bottom-0 left-0' },
-    { index: 4 as const, label: 'V4', position: 'bottom-0 right-0' },
-  ]
+  const variants = IMAGE_VARIANT_GRID
 
   return (
     <div className="fixed inset-0 bg-black/80 z-[10000] flex items-center justify-center p-6 animate-in fade-in duration-200">

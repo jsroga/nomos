@@ -1,3 +1,4 @@
+import { useMemo, type FC } from 'react'
 import { recordArrayFromJson, recordFromJson, readString } from '@/shared/data/json-guards'
 import { Lightbulb, RefreshCw, Book, Film, Gamepad2, Loader2 } from 'lucide-react'
 import { InspirationItem } from '@/domains/storyteller/prompts/schemas/agent-schemas'
@@ -5,10 +6,30 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
+import {
+  BIBLE_INSPIRATION_GAME_KEYWORDS,
+  BIBLE_INSPIRATION_GAME_YEAR_PATTERN,
+  BIBLE_INSPIRATION_MOVIE_KEYWORDS,
+  BIBLE_INSPIRATION_MOVIE_YEAR_PATTERN,
+} from './constants/bible-inspirations'
 
 interface BibleInspirationsProps { }
 
-export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
+function inspirationItemFromWire(value: unknown): InspirationItem | null {
+  if (typeof value === 'string') return { title: value, description: '' }
+  const row = recordFromJson(value)
+  const title = readString(row.title)
+  if (!title) return null
+  return { title, description: readString(row.description) ?? '' }
+}
+
+function inspirationItemsFromJson(value: unknown): InspirationItem[] {
+  return recordArrayFromJson(value)
+    .map(inspirationItemFromWire)
+    .filter((item): item is InspirationItem => item !== null)
+}
+
+export const BibleInspirations: FC<BibleInspirationsProps> = () => {
   const {
     storyPlan,
     isEditing,
@@ -25,16 +46,16 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
 
   // Normalize inspirations - handle both flat array and categorized object formats
   // Use localPlan for display when not editing to show latest saved data
-  const normalizedInspirations = React.useMemo(() => {
+  const normalizedInspirations = useMemo(() => {
     const raw = isEditing ? localPlan.inspirations : (localPlan.inspirations || storyPlan.inspirations)
 
     // If already in correct format (object with books/movies/games keys)
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
       const categorized = recordFromJson(raw)
       return {
-        books: recordArrayFromJson(categorized.books),
-        movies: recordArrayFromJson(categorized.movies),
-        games: recordArrayFromJson(categorized.games),
+        books: inspirationItemsFromJson(categorized.books),
+        movies: inspirationItemsFromJson(categorized.movies),
+        games: inspirationItemsFromJson(categorized.games),
       }
     }
 
@@ -50,22 +71,13 @@ export const BibleInspirations: React.FC<BibleInspirationsProps> = () => {
 
         // Detect category from title patterns
         if (
-          titleLower.includes('(game)') ||
-          titleLower.includes('video game') ||
-          titleLower.match(/\(\d{4}\).*game/i) ||
-          titleLower.includes('bioshock') ||
-          titleLower.includes('rpg') ||
-          titleLower.includes('zelda') ||
-          titleLower.includes('souls')
+          BIBLE_INSPIRATION_GAME_KEYWORDS.some(keyword => titleLower.includes(keyword)) ||
+          BIBLE_INSPIRATION_GAME_YEAR_PATTERN.test(titleLower)
         ) {
           games.push(typeof item === 'string' ? { title: item } : item)
         } else if (
-          titleLower.includes('film') ||
-          titleLower.includes('movie') ||
-          titleLower.match(/\(\d{4}\)$/) ||
-          titleLower.includes('anime') ||
-          titleLower.includes('inside out') ||
-          titleLower.includes('weathering')
+          BIBLE_INSPIRATION_MOVIE_KEYWORDS.some(keyword => titleLower.includes(keyword)) ||
+          BIBLE_INSPIRATION_MOVIE_YEAR_PATTERN.test(titleLower)
         ) {
           movies.push(typeof item === 'string' ? { title: item } : item)
         } else {

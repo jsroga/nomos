@@ -11,6 +11,16 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
+import { FileEncoding } from '@/shared/data/constants/protocol'
+import {
+  STORYTELLER_WORKSPACE_ALL_DIRS,
+  STORYTELLER_WORKSPACE_AUTO_INDEX_DIRS,
+  StorytellerArtifactType,
+  StorytellerArtifactTypeValue,
+  StorytellerWorkspaceDefault,
+  StorytellerWorkspaceDir,
+  StorytellerWorkspaceFileExt,
+} from './constants/storyteller-workspace'
 import { scriptArtifactFromJson } from './script-artifact-wire'
 
 // Workspace configuration
@@ -23,7 +33,7 @@ export interface WorkspaceConfig {
 // Script artifact types
 export interface ScriptArtifact {
   id: string
-  type: 'script' | 'outline' | 'beat-board' | 'character-sheet' | 'world-bible'
+  type: StorytellerArtifactTypeValue
   name: string
   content: string
   metadata: {
@@ -57,9 +67,9 @@ export class StorytellerWorkspace {
 
   constructor(config?: Partial<WorkspaceConfig>) {
     this.config = {
-      basePath: config?.basePath || './workspace/storyteller',
+      basePath: config?.basePath || StorytellerWorkspaceDefault.BasePath,
       indexingEnabled: config?.indexingEnabled ?? true,
-      autoIndexPaths: config?.autoIndexPaths || ['scripts', 'world-bible', 'episodes'],
+      autoIndexPaths: config?.autoIndexPaths || [...STORYTELLER_WORKSPACE_AUTO_INDEX_DIRS],
     }
   }
 
@@ -69,11 +79,11 @@ export class StorytellerWorkspace {
   async initialize(): Promise<void> {
     const directories = [
       this.config.basePath,
-      path.join(this.config.basePath, 'scripts'),
-      path.join(this.config.basePath, 'world-bible'),
-      path.join(this.config.basePath, 'episodes'),
-      path.join(this.config.basePath, 'characters'),
-      path.join(this.config.basePath, 'outlines'),
+      path.join(this.config.basePath, StorytellerWorkspaceDir.Scripts),
+      path.join(this.config.basePath, StorytellerWorkspaceDir.WorldBible),
+      path.join(this.config.basePath, StorytellerWorkspaceDir.Episodes),
+      path.join(this.config.basePath, StorytellerWorkspaceDir.Characters),
+      path.join(this.config.basePath, StorytellerWorkspaceDir.Outlines),
     ]
 
     for (const dir of directories) {
@@ -113,10 +123,10 @@ export class StorytellerWorkspace {
 
     // Determine file path based on type
     const subDir = this.getSubdirectory(artifact.type)
-    const fileName = `${artifact.name.replace(/[^a-zA-Z0-9-_]/g, '_')}-${id.slice(0, 8)}.json`
+    const fileName = `${artifact.name.replace(/[^a-zA-Z0-9-_]/g, '_')}-${id.slice(0, 8)}${StorytellerWorkspaceFileExt.Json}`
     const filePath = path.join(this.config.basePath, subDir, fileName)
 
-    await fs.writeFile(filePath, JSON.stringify(fullArtifact, null, 2), 'utf-8')
+    await fs.writeFile(filePath, JSON.stringify(fullArtifact, null, 2), FileEncoding.Utf8)
 
     // Update index
     if (this.config.indexingEnabled) {
@@ -138,14 +148,14 @@ export class StorytellerWorkspace {
    */
   async loadScript(id: string): Promise<ScriptArtifact | null> {
     // Search through all subdirectories
-    for (const subDir of ['scripts', 'world-bible', 'episodes', 'characters', 'outlines']) {
+    for (const subDir of STORYTELLER_WORKSPACE_ALL_DIRS) {
       const dirPath = path.join(this.config.basePath, subDir)
       try {
         const files = await fs.readdir(dirPath)
         for (const file of files) {
           if (file.includes(id.slice(0, 8))) {
             const filePath = path.join(dirPath, file)
-            const content = await fs.readFile(filePath, 'utf-8')
+            const content = await fs.readFile(filePath, FileEncoding.Utf8)
             return scriptArtifactFromJson(content)
           }
         }
@@ -161,18 +171,16 @@ export class StorytellerWorkspace {
    */
   async listScripts(projectId: string, type?: ScriptArtifact['type']): Promise<ScriptArtifact[]> {
     const results: ScriptArtifact[] = []
-    const searchDirs = type
-      ? [this.getSubdirectory(type)]
-      : ['scripts', 'world-bible', 'episodes', 'characters', 'outlines']
+    const searchDirs = type ? [this.getSubdirectory(type)] : STORYTELLER_WORKSPACE_ALL_DIRS
 
     for (const subDir of searchDirs) {
       const dirPath = path.join(this.config.basePath, subDir)
       try {
         const files = await fs.readdir(dirPath)
         for (const file of files) {
-          if (file.endsWith('.json')) {
+          if (file.endsWith(StorytellerWorkspaceFileExt.Json)) {
             const filePath = path.join(dirPath, file)
-            const content = await fs.readFile(filePath, 'utf-8')
+            const content = await fs.readFile(filePath, FileEncoding.Utf8)
             const artifact = scriptArtifactFromJson(content)
             if (artifact && artifact.metadata.projectId === projectId) {
               results.push(artifact)
@@ -218,7 +226,7 @@ export class StorytellerWorkspace {
     for (const file of files) {
       if (file.includes(id.slice(0, 8))) {
         const filePath = path.join(dirPath, file)
-        await fs.writeFile(filePath, JSON.stringify(updated, null, 2), 'utf-8')
+        await fs.writeFile(filePath, JSON.stringify(updated, null, 2), FileEncoding.Utf8)
         return updated
       }
     }
@@ -230,7 +238,7 @@ export class StorytellerWorkspace {
    * Delete a script
    */
   async deleteScript(id: string): Promise<boolean> {
-    for (const subDir of ['scripts', 'world-bible', 'episodes', 'characters', 'outlines']) {
+    for (const subDir of STORYTELLER_WORKSPACE_ALL_DIRS) {
       const dirPath = path.join(this.config.basePath, subDir)
       try {
         const files = await fs.readdir(dirPath)
@@ -270,14 +278,14 @@ export class StorytellerWorkspace {
   private async getAllScripts(): Promise<ScriptArtifact[]> {
     const results: ScriptArtifact[] = []
 
-    for (const subDir of ['scripts', 'world-bible', 'episodes', 'characters', 'outlines']) {
+    for (const subDir of STORYTELLER_WORKSPACE_ALL_DIRS) {
       const dirPath = path.join(this.config.basePath, subDir)
       try {
         const files = await fs.readdir(dirPath)
         for (const file of files) {
-          if (file.endsWith('.json')) {
+          if (file.endsWith(StorytellerWorkspaceFileExt.Json)) {
             const filePath = path.join(dirPath, file)
-            const content = await fs.readFile(filePath, 'utf-8')
+            const content = await fs.readFile(filePath, FileEncoding.Utf8)
             const artifact = scriptArtifactFromJson(content)
             if (artifact) results.push(artifact)
           }
@@ -301,10 +309,10 @@ export class StorytellerWorkspace {
       try {
         const files = await fs.readdir(dirPath)
         for (const file of files) {
-          if (file.endsWith('.json')) {
+          if (file.endsWith(StorytellerWorkspaceFileExt.Json)) {
             const filePath = path.join(dirPath, file)
             const stats = await fs.stat(filePath)
-            const content = await fs.readFile(filePath, 'utf-8')
+            const content = await fs.readFile(filePath, FileEncoding.Utf8)
             const parsed = scriptArtifactFromJson(content)
             if (!parsed) continue
 
@@ -329,18 +337,18 @@ export class StorytellerWorkspace {
    */
   private getSubdirectory(type: ScriptArtifact['type']): string {
     switch (type) {
-      case 'script':
-        return 'scripts'
-      case 'outline':
-        return 'outlines'
-      case 'beat-board':
-        return 'scripts'
-      case 'character-sheet':
-        return 'characters'
-      case 'world-bible':
-        return 'world-bible'
+      case StorytellerArtifactType.Script:
+        return StorytellerWorkspaceDir.Scripts
+      case StorytellerArtifactType.Outline:
+        return StorytellerWorkspaceDir.Outlines
+      case StorytellerArtifactType.BeatBoard:
+        return StorytellerWorkspaceDir.Scripts
+      case StorytellerArtifactType.CharacterSheet:
+        return StorytellerWorkspaceDir.Characters
+      case StorytellerArtifactType.WorldBible:
+        return StorytellerWorkspaceDir.WorldBible
       default:
-        return 'scripts'
+        return StorytellerWorkspaceDir.Scripts
     }
   }
 

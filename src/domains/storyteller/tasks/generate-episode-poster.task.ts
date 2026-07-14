@@ -20,7 +20,7 @@ export const generateEpisodePoster = task({
   maxDuration: 300,
   run: async (payload: GenerateEpisodePosterPayload) => {
     const { episodeId, projectId, prompt, providerConfig } = payload
-    const { apiKey, modelId } = providerConfig
+    const { apiKey, modelId: _modelId } = providerConfig
 
     logger.info(`Starting episode poster generation for episode ${episodeId}`, { prompt })
 

@@ -3,6 +3,7 @@ import { db } from '@/db/client'
 import { episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import { generateCombinedStoryboard } from '@/domains/storyteller/tasks/generate-combined-storyboard.task'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
 export async function POST(req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
@@ -11,7 +12,7 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
     const { beats, config } = await req.json()
 
     if (!beats || !Array.isArray(beats) || beats.length === 0 || !config || !config.apiKey) {
-      return NextResponse.json({ error: 'Missing beats or API key' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.MISSING_BEATS_OR_API_KEY }, { status: 400 })
     }
 
     // 1. Get Project ID
@@ -26,13 +27,13 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       .then(rows => rows[0])
 
     if (!episodeData) {
-      return NextResponse.json({ error: 'Episode/Project not found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.EPISODE_PROJECT_NOT_FOUND }, { status: 404 })
     }
 
     const projectId = episodeData.projectId
 
     // 2. Trigger Background Task
-    console.log(`[API] Triggering combined storyboard generation for episode ${episodeId}`)
+    console.log(`${API_LOG_PREFIX.COMBINED_STORYBOARD_TRIGGER} ${episodeId}`)
 
     const handle = await generateCombinedStoryboard.trigger({
       episodeId,
@@ -46,7 +47,7 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       handleId: handle.id,
     })
   } catch (error) {
-    console.error('Error triggering combined storyboard generation:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error(API_LOG_PREFIX.COMBINED_STORYBOARD_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
   }
 }

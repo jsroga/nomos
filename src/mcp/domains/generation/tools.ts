@@ -18,7 +18,7 @@ const generateTile = createTool({
   id: 'generate_tile',
   description:
     'Generate a tile image using AI. This triggers a Trigger.dev task and returns a run ID immediately. Use get_run_status to track progress.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID'),
     x: z.number().int().describe('X coordinate for the tile'),
     y: z.number().int().describe('Y coordinate for the tile'),
@@ -52,6 +52,7 @@ const generateTile = createTool({
         prompt: data.prompt,
         aiProvider: data.aiProvider,
         isFirstTile: data.isFirstTile,
+        aiConfig: data.aiConfig ?? {},
         styleReferenceUrls: data.styleReferenceUrls,
       },
       { userId: context.userId }
@@ -63,7 +64,7 @@ const upscaleTile = createTool({
   id: 'upscale_tile',
   description:
     'Upscale an existing tile to higher resolution. Triggers a Trigger.dev task and returns a run ID.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID'),
     tileId: z.string().uuid().describe('The tile ID to upscale'),
     upscaleProvider: z
@@ -95,7 +96,7 @@ const upscaleTile = createTool({
 const generate3dModel = createTool({
   id: 'generate_3d_model',
   description: 'Generate a 3D model from text. Triggers a Trigger.dev task and returns a run ID.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID'),
     assetId: z.string().uuid().describe('The asset ID to attach the 3D model to'),
     prompt: z.string().describe('The prompt describing the 3D model to generate'),
@@ -124,7 +125,7 @@ const remesh3dModel = createTool({
   id: 'remesh_3d_model',
   description:
     'Remesh a 3D model to reduce polygon count. Triggers a Trigger.dev task and returns a run ID.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID'),
     assetId: z.string().uuid().describe('The asset ID with the 3D model to remesh'),
     targetPolycount: z
@@ -159,7 +160,7 @@ const remesh3dModel = createTool({
 const generatePortrait = createTool({
   id: 'generate_portrait',
   description: 'Generate a character portrait. Triggers a Trigger.dev task and returns a run ID.',
-  schema: z.object({
+  inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID'),
     characterId: z.string().uuid().describe('The character ID to generate a portrait for'),
     prompt: z.string().optional().describe('Additional prompt for the portrait (optional)'),

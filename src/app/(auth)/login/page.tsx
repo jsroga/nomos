@@ -13,13 +13,20 @@ import { Input } from '@/components/Input'
 import { Label } from '@/components/Label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/Tabs'
 import { signInSchema, signUpSchema, forgotPasswordSchema } from '@/shared/auth/validation'
+import {
+  AUTH_MESSAGE,
+  AUTH_PAGE_ELEMENT_ID,
+  AuthPageView,
+} from '@/shared/auth/constants/auth-messages'
+import { LOGIN_PAGE_STYLES } from '@/app/(auth)/constants/auth-styles'
+import { HttpMethod } from '@/shared/data/constants/protocol'
 
-type View = 'auth' | 'forgot-password'
+type View = AuthPageView
 
 export default function LoginPage() {
   const router = useRouter()
   const [bgElement, setBgElement] = useState<HTMLDivElement | null>(null)
-  const [view, setView] = useState<View>('auth')
+  const [view, setView] = useState<View>(AuthPageView.Auth)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [authError, setAuthError] = useState<string | null>(null)
 
@@ -28,7 +35,7 @@ export default function LoginPage() {
     let rafId: number
 
     const updateTexture = () => {
-      const bgCanvas = document.getElementById('turbulent-bg-canvas')
+      const bgCanvas = document.getElementById(AUTH_PAGE_ELEMENT_ID.TURBULENT_BG_CANVAS)
       const renderer = window.__liquidGLRenderer__
 
       if (bgCanvas instanceof HTMLCanvasElement && renderer?._uploadTexture) {
@@ -50,19 +57,19 @@ export default function LoginPage() {
       setAuthError(null)
       try {
         const res = await fetch('/api/auth/signin', {
-          method: 'POST',
+          method: HttpMethod.Post,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(values),
         })
         const data = await res.json()
         if (!res.ok) {
-          setAuthError(data.error || 'Sign in failed')
+          setAuthError(data.error || AUTH_MESSAGE.SIGN_IN_FAILED)
           return
         }
         router.push('/projects')
         router.refresh()
       } catch {
-        setAuthError('Something went wrong. Please try again.')
+        setAuthError(AUTH_MESSAGE.RESET_PASSWORD_ERROR)
       } finally {
         setSubmitting(false)
       }
@@ -77,18 +84,18 @@ export default function LoginPage() {
       setAuthError(null)
       try {
         const res = await fetch('/api/auth/signup', {
-          method: 'POST',
+          method: HttpMethod.Post,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(values),
         })
         const data = await res.json()
         if (!res.ok) {
-          setAuthError(data.error || 'Sign up failed')
+          setAuthError(data.error || AUTH_MESSAGE.SIGN_UP_FAILED)
           return
         }
-        setSuccessMessage('Check your email to confirm your account.')
+        setSuccessMessage(AUTH_MESSAGE.CHECK_EMAIL_WITH_PERIOD)
       } catch {
-        setAuthError('Something went wrong. Please try again.')
+        setAuthError(AUTH_MESSAGE.RESET_PASSWORD_ERROR)
       } finally {
         setSubmitting(false)
       }
@@ -103,27 +110,26 @@ export default function LoginPage() {
       setAuthError(null)
       try {
         const res = await fetch('/api/auth/forgot-password', {
-          method: 'POST',
+          method: HttpMethod.Post,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(values),
         })
         if (!res.ok) {
           const data = await res.json()
-          setAuthError(data.error || 'Failed to send reset link')
+          setAuthError(data.error || AUTH_MESSAGE.RESET_LINK_FAILED)
           return
         }
-        setSuccessMessage('If an account exists with that email, a password reset link has been sent.')
+        setSuccessMessage(AUTH_MESSAGE.PASSWORD_RESET_SENT)
       } catch {
-        setAuthError('Something went wrong. Please try again.')
+        setAuthError(AUTH_MESSAGE.RESET_PASSWORD_ERROR)
       } finally {
         setSubmitting(false)
       }
     },
   })
 
-  const inputClassName =
-    'bg-black/30 border-white/10 text-white placeholder:text-white/30 focus:border-white/30'
-  const errorClassName = 'text-red-400 text-xs mt-1'
+  const inputClassName = LOGIN_PAGE_STYLES.INPUT
+  const errorClassName = LOGIN_PAGE_STYLES.ERROR
 
   return (
     <TurbulentBackground onRef={setBgElement} {...TURBULENT_BG_PROPS}>
@@ -150,7 +156,7 @@ export default function LoginPage() {
                   <button
                     onClick={() => {
                       setSuccessMessage(null)
-                      setView('auth')
+                      setView(AuthPageView.Auth)
                     }}
                     className="block mx-auto mt-2 text-xs text-white/60 hover:text-white underline"
                   >
@@ -168,7 +174,7 @@ export default function LoginPage() {
 
               {!successMessage && (
                 <div className="space-y-6">
-                  {view === 'auth' ? (
+                  {view === AuthPageView.Auth ? (
                     <>
                       <Tabs
                         defaultValue="signin"
@@ -216,7 +222,7 @@ export default function LoginPage() {
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    setView('forgot-password')
+                                    setView(AuthPageView.ForgotPassword)
                                     setAuthError(null)
                                   }}
                                   className="text-xs text-white/50 hover:text-white transition-colors"
@@ -356,7 +362,7 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setView('auth')
+                          setView(AuthPageView.Auth)
                           setAuthError(null)
                         }}
                         className="w-full text-sm text-white/50 hover:text-white transition-colors"

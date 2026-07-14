@@ -2,6 +2,10 @@ import React, { useState } from 'react'
 import { Sparkles, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
+import {
+  STORYTELLER_IMAGE_ASPECT_SQUARE,
+  STORYTELLER_IMAGE_EMPTY_LABEL,
+} from '@/domains/storyteller/ui/StorytellerImage/constants/storyteller-image'
 // LiquidGlass removed
 
 
@@ -24,8 +28,8 @@ export const StorytellerImage: React.FC<StorytellerImageProps> = ({
   className,
   isLoading = false,
   onGenerate,
-  emptyLabel = 'No Image',
-  aspectRatio = 'aspect-square',
+  emptyLabel = STORYTELLER_IMAGE_EMPTY_LABEL,
+  aspectRatio = STORYTELLER_IMAGE_ASPECT_SQUARE,
   overlay,
   children,
   isPrimary = false,

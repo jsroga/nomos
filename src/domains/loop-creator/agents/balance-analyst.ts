@@ -15,7 +15,6 @@ import {
   BalanceAnalysis,
   BalanceIssue,
   LoopAgentAction,
-  NextAgent,
 } from '../core/graph/state'
 
 const BALANCE_ANALYST_SYSTEM_PROMPT = `You are a Game Balance Analyst - an expert in analyzing and optimizing game loop balance.

@@ -2,6 +2,13 @@
 
 import { useRef, useCallback, useEffect } from 'react'
 
+import {
+  BLEEDING_CANVAS_CONTEXT,
+  BLEEDING_CHARS,
+  BLEEDING_DEFAULT_PARTICLE_COLOR,
+  BLEEDING_DEFAULT_TEXT_COLOR,
+} from './constants/bleeding-text-defaults'
+
 interface Particle {
   x: number
   y: number
@@ -12,57 +19,6 @@ interface Particle {
   scale: number
 }
 
-// Strange/glitch characters for bleeding effect
-const CHARS = [
-  '҉',
-  '̈́',
-  '̈',
-  '̷',
-  '̸',
-  '̵', // Combining chars
-  '▓',
-  '░',
-  '▒',
-  '█',
-  '▀',
-  '▄', // Block elements
-  '†',
-  '‡',
-  '※',
-  '⁂',
-  '☠',
-  '⚠', // Symbols
-  '◬',
-  '◭',
-  '◮',
-  '◯',
-  '◰',
-  '◱', // Geometric
-  'Ξ',
-  'Ψ',
-  'Ω',
-  'λ',
-  'Σ',
-  'Δ', // Greek
-  '卐',
-  '卍',
-  '☣',
-  '☢',
-  '⛧',
-  '⁘', // Esoteric
-  '∞',
-  '∅',
-  '∴',
-  '∵',
-  '≈',
-  '≠', // Math
-  '⌀',
-  '⌁',
-  '⌂',
-  '⌘',
-  '⌬',
-  '⏚', // Technical
-]
 const VELOCITY_THRESHOLD = 2
 const MAX_PARTICLES = 80
 // Extra canvas space so particles can travel outside container bounds
@@ -79,8 +35,8 @@ interface BleedingTextProps {
 export function BleedingText({
   text,
   className = '',
-  textColor = 'text-red-500',
-  particleColor = '#ef4444',
+  textColor = BLEEDING_DEFAULT_TEXT_COLOR,
+  particleColor = BLEEDING_DEFAULT_PARTICLE_COLOR,
 }: BleedingTextProps) {
   const containerRef = useRef<HTMLSpanElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -101,7 +57,7 @@ export function BleedingText({
         rafRef.current = null
         return
       }
-      const ctx = canvas.getContext('2d')
+      const ctx = canvas.getContext(BLEEDING_CANVAS_CONTEXT)
       if (!ctx) {
         rafRef.current = null
         return
@@ -156,7 +112,7 @@ export function BleedingText({
         particlesRef.current.push({
           x,
           y,
-          char: CHARS[Math.floor(Math.random() * CHARS.length)],
+          char: BLEEDING_CHARS[Math.floor(Math.random() * BLEEDING_CHARS.length)],
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed + (burst ? 0 : 1),
           opacity: 0.9 + Math.random() * 0.1,

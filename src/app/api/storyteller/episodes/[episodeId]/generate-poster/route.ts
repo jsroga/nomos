@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { generatePoster } from '@/domains/storyteller/tasks/generate-poster.task'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
+import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 
 export async function POST(req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
@@ -15,11 +16,11 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
     // Use LegNext (The Next Leg) API Key
     const apiKey = config?.apiKey || process.env.LEGNEXT_API_KEY
     console.log(
-      `[API] Poster Gen - Config Key present: ${!!config?.apiKey}, Env Key present: ${!!process.env.LEGNEXT_API_KEY}`
+      `${API_LOG_PREFIX.POSTER_GEN_CONFIG} ${!!config?.apiKey}, Env Key present: ${!!process.env.LEGNEXT_API_KEY}`
     )
 
     if (!prompt) {
-      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.PROMPT_REQUIRED }, { status: 400 })
     }
 
     // 1. Get Project ID and Style References
@@ -36,16 +37,16 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       .then(rows => rows[0])
 
     if (!episodeData) {
-      return NextResponse.json({ error: 'Episode/Project not found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.EPISODE_PROJECT_NOT_FOUND }, { status: 404 })
     }
 
     const { projectId } = episodeData
     const styleReferenceUrls = resolveStyleReferenceUrls(episodeData)
 
     // 2. Trigger Background Task
-    console.log(`[API] Triggering poster generation for episode ${episodeId}`)
+    console.log(`${API_LOG_PREFIX.POSTER_TRIGGER} ${episodeId}`)
 
-    const handle = await tasks.trigger<typeof generatePoster>('generate-poster', {
+    const handle = await tasks.trigger<typeof generatePoster>(TRIGGER_TASK_ID.GENERATE_POSTER, {
       prompt,
       projectId,
       episodeId,
@@ -58,7 +59,7 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       handleId: handle.id,
     })
   } catch (error) {
-    console.error('Error triggering poster generation:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error(API_LOG_PREFIX.POSTER_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
   }
 }

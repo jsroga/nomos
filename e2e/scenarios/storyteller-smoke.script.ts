@@ -147,7 +147,7 @@ async function test_API_SectionDetection_Soundtracks() {
     if (toolResults.length > 0) {
       console.log('  Tool results:', toolResults.map(t => t.toolName).join(', '))
     } else {
-      console.log('  All Events:', JSON.stringify(events.map(e => ({ type: e.type, ...e })), null, 2))
+      console.log('  All Events:', JSON.stringify(events.map(e => ({ ...e, type: e.type })), null, 2))
     }
     throw new Error('Neither update_world_bible tool nor UPDATE_SOUNDTRACKS action found')
   }

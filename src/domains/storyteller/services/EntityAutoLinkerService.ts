@@ -10,6 +10,14 @@
  */
 
 import { namedRecordsFromJson, readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+import {
+  AutoLinkerEntityType,
+  EntityAutoLinkerArticlePrefix,
+  EntityAutoLinkerLog,
+  EntityAutoLinkerRegexFlag,
+  EntityAutoLinkerRegexReplacement,
+  EntityAutoLinkerStopWord,
+} from '@/domains/storyteller/services/constants/entity-auto-linker'
 
 interface EntityMatch {
   name: string
@@ -72,11 +80,11 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
     for (const faction of factions) {
       const name = faction.name
       const factionId = `faction-${readString(faction.id)?.slice(0, 8) || name.toLowerCase().replace(/\s+/g, '-')}`
-      entityMap.set(name.toLowerCase(), { id: factionId, type: 'faction' })
+      entityMap.set(name.toLowerCase(), { id: factionId, type: AutoLinkerEntityType.Faction })
 
-      if (name.startsWith('The ')) {
-        const withoutThe = name.slice(4)
-        entityMap.set(withoutThe.toLowerCase(), { id: factionId, type: 'faction' })
+      if (name.startsWith(EntityAutoLinkerArticlePrefix.The)) {
+        const withoutThe = name.slice(EntityAutoLinkerArticlePrefix.The.length)
+        entityMap.set(withoutThe.toLowerCase(), { id: factionId, type: AutoLinkerEntityType.Faction })
       }
     }
 
@@ -88,17 +96,17 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
       const charName = readString(char.name)
       if (charName) {
         const charId = `char-${readString(char.id)?.slice(0, 8) || charName.toLowerCase().replace(/\s+/g, '-')}`
-        entityMap.set(charName.toLowerCase(), { id: charId, type: 'character' })
+        entityMap.set(charName.toLowerCase(), { id: charId, type: AutoLinkerEntityType.Character })
 
         const firstName = charName.split(' ')[0]
         if (firstName && firstName.length > 2 && !entityMap.has(firstName.toLowerCase())) {
-          entityMap.set(firstName.toLowerCase(), { id: charId, type: 'character' })
+          entityMap.set(firstName.toLowerCase(), { id: charId, type: AutoLinkerEntityType.Character })
         }
 
-        if (charName.startsWith('The ')) {
-          const withoutThe = charName.slice(4)
+        if (charName.startsWith(EntityAutoLinkerArticlePrefix.The)) {
+          const withoutThe = charName.slice(EntityAutoLinkerArticlePrefix.The.length)
           if (withoutThe.length > 2 && !entityMap.has(withoutThe.toLowerCase())) {
-            entityMap.set(withoutThe.toLowerCase(), { id: charId, type: 'character' })
+            entityMap.set(withoutThe.toLowerCase(), { id: charId, type: AutoLinkerEntityType.Character })
           }
         }
       }
@@ -111,7 +119,7 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
       if (ruleText) {
         const ruleId = `rule-${readString(rule.id)?.slice(0, 8) || ruleText.toLowerCase().replace(/\s+/g, '-').slice(0, 30)}`
         const ruleKey = ruleText.split(' ').slice(0, 5).join(' ').toLowerCase()
-        entityMap.set(ruleKey, { id: ruleId, type: 'rule' })
+        entityMap.set(ruleKey, { id: ruleId, type: AutoLinkerEntityType.Rule })
       }
     }
 
@@ -121,11 +129,11 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
       const itemName = readString(item.name)
       if (itemName) {
         const itemId = `item-${readString(item.id)?.slice(0, 8) || itemName.toLowerCase().replace(/\s+/g, '-')}`
-        entityMap.set(itemName.toLowerCase(), { id: itemId, type: 'item' })
+        entityMap.set(itemName.toLowerCase(), { id: itemId, type: AutoLinkerEntityType.Item })
 
-        if (itemName.startsWith('The ')) {
-          const withoutThe = itemName.slice(4)
-          entityMap.set(withoutThe.toLowerCase(), { id: itemId, type: 'item' })
+        if (itemName.startsWith(EntityAutoLinkerArticlePrefix.The)) {
+          const withoutThe = itemName.slice(EntityAutoLinkerArticlePrefix.The.length)
+          entityMap.set(withoutThe.toLowerCase(), { id: itemId, type: AutoLinkerEntityType.Item })
         }
       }
     }
@@ -136,11 +144,11 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
       const eventName = readString(event.name)
       if (eventName) {
         const eventId = `event-${readString(event.id)?.slice(0, 8) || eventName.toLowerCase().replace(/\s+/g, '-')}`
-        entityMap.set(eventName.toLowerCase(), { id: eventId, type: 'event' })
+        entityMap.set(eventName.toLowerCase(), { id: eventId, type: AutoLinkerEntityType.Event })
 
-        if (eventName.startsWith('The ')) {
-          const withoutThe = eventName.slice(4)
-          entityMap.set(withoutThe.toLowerCase(), { id: eventId, type: 'event' })
+        if (eventName.startsWith(EntityAutoLinkerArticlePrefix.The)) {
+          const withoutThe = eventName.slice(EntityAutoLinkerArticlePrefix.The.length)
+          entityMap.set(withoutThe.toLowerCase(), { id: eventId, type: AutoLinkerEntityType.Event })
         }
       }
     }
@@ -158,7 +166,17 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
       while ((match = placePattern.exec(worldDesc)) !== null) {
         const placeName = match[0].trim()
         // Filter out common words and short phrases
-        if (placeName.length > 5 && !['The', 'A', 'An', 'In', 'On', 'At'].includes(placeName)) {
+        if (
+          placeName.length > 5 &&
+          ![
+            EntityAutoLinkerArticlePrefix.TheCapital,
+            EntityAutoLinkerStopWord.A,
+            EntityAutoLinkerStopWord.An,
+            EntityAutoLinkerStopWord.In,
+            EntityAutoLinkerStopWord.On,
+            EntityAutoLinkerStopWord.At,
+          ].some(word => word === placeName)
+        ) {
           potentialPlaces.add(placeName)
         }
       }
@@ -169,13 +187,13 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
         const lowerName = placeName.toLowerCase()
         if (!entityMap.has(lowerName)) {
           const placeId = `place-${placeName.toLowerCase().replace(/\s+/g, '-')}`
-          entityMap.set(lowerName, { id: placeId, type: 'place' })
+          entityMap.set(lowerName, { id: placeId, type: AutoLinkerEntityType.Place })
 
           // Also add variant without "The"
-          if (placeName.startsWith('The ')) {
-            const withoutThe = placeName.slice(4)
+          if (placeName.startsWith(EntityAutoLinkerArticlePrefix.The)) {
+            const withoutThe = placeName.slice(EntityAutoLinkerArticlePrefix.The.length)
             if (!entityMap.has(withoutThe.toLowerCase())) {
-              entityMap.set(withoutThe.toLowerCase(), { id: placeId, type: 'place' })
+              entityMap.set(withoutThe.toLowerCase(), { id: placeId, type: AutoLinkerEntityType.Place })
             }
           }
         }
@@ -214,8 +232,14 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
 
       // Create case-insensitive regex that matches whole words
       // Look for entity name NOT already in reference format
-      const escapedName = entityName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const pattern = new RegExp(`(?<!\\[)\\b(${escapedName})\\b(?!\\]\\[)`, 'gi')
+      const escapedName = entityName.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        EntityAutoLinkerRegexReplacement.EscapedMatch
+      )
+      const pattern = new RegExp(
+        `(?<!\\[)\\b(${escapedName})\\b(?!\\]\\[)`,
+        EntityAutoLinkerRegexFlag.GlobalCaseInsensitive
+      )
 
       let match
       while ((match = pattern.exec(text)) !== null) {
@@ -271,7 +295,7 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
 
     return result
   } catch (error) {
-    console.warn('[AutoLinker] Failed to auto-link entities:', error)
+    console.warn(EntityAutoLinkerLog.FailedAutoLink, error)
     return text // Return original text on error
   }
 }

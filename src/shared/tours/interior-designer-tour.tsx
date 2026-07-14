@@ -1,6 +1,7 @@
 import React from 'react'
 import { TourStep } from '@/shared/tours/tour-types'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { TourStepPosition } from '@/shared/tours/constants/tour-positions'
 import { MousePointer2, Hammer, Mountain, Package, Rocket } from 'lucide-react'
 
 export const interiorDesignerTourSteps: TourStep[] = [
@@ -17,7 +18,7 @@ export const interiorDesignerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.INTERIOR_CANVAS,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -32,7 +33,7 @@ export const interiorDesignerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.INTERIOR_TOOLBAR,
-    position: 'right',
+    position: TourStepPosition.Right,
   },
   {
     content: (
@@ -47,7 +48,7 @@ export const interiorDesignerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.INTERIOR_ASSETS,
-    position: 'bottom',
+    position: TourStepPosition.Bottom,
   },
   {
     content: (
@@ -62,7 +63,7 @@ export const interiorDesignerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.INTERIOR_TERRAIN,
-    position: 'bottom',
+    position: TourStepPosition.Bottom,
   },
   {
     content: (
@@ -77,6 +78,6 @@ export const interiorDesignerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.INTERIOR_EXPORT,
-    position: 'bottom',
+    position: TourStepPosition.Bottom,
   },
 ]

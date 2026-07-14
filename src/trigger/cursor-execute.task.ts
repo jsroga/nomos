@@ -1,5 +1,12 @@
 import { task, logger } from '@trigger.dev/sdk/v3'
 import { runExecute, type RunExecuteOptions } from '@/shared/agent-kernel/cursor-runner'
+import {
+  CURSOR_EXECUTE_FINISHED_LOG,
+  CURSOR_EXECUTE_FINISHED_STATUS,
+  CURSOR_EXECUTE_MODULE_REQUIRED_ERROR,
+  CURSOR_EXECUTE_START_LOG,
+  CURSOR_EXECUTE_TASK_ID,
+} from '@/trigger/constants/cursor-execute'
 
 /**
  * Trigger.dev v4 task that runs the Cursor SDK dark-factory execute loop.
@@ -12,7 +19,7 @@ import { runExecute, type RunExecuteOptions } from '@/shared/agent-kernel/cursor
  * `npm run trigger:deploy` (sets OTEL_TRACES_EXPORTER=none).
  */
 export const cursorExecuteTask = task({
-  id: 'cursor-execute',
+  id: CURSOR_EXECUTE_TASK_ID,
   maxDuration: 1800, // 30 min — covers plan + build + verify + e2e
   retry: { maxAttempts: 2, minTimeoutInMs: 5000, maxTimeoutInMs: 30000, factor: 2 },
   run: async (payload: {
@@ -31,7 +38,7 @@ export const cursorExecuteTask = task({
     /** Fabro environment id. Default execute-docker. */
     environment?: string;
   }) => {
-    if (!payload?.module) throw new Error('cursor-execute: payload.module is required')
+    if (!payload?.module) throw new Error(CURSOR_EXECUTE_MODULE_REQUIRED_ERROR)
 
     const opts: RunExecuteOptions = {
       module: payload.module,
@@ -43,12 +50,12 @@ export const cursorExecuteTask = task({
       environment: payload.environment,
     }
 
-    logger.info('Starting Cursor SDK execute loop', { module: payload.module, repo: payload.repo })
+    logger.info(CURSOR_EXECUTE_START_LOG, { module: payload.module, repo: payload.repo })
 
     const result = await runExecute(opts)
-    const ok = result.status === 'finished'
+    const ok = result.status === CURSOR_EXECUTE_FINISHED_STATUS
 
-    logger.info('Cursor SDK execute loop finished', { id: result.id, status: result.status, ok })
+    logger.info(CURSOR_EXECUTE_FINISHED_LOG, { id: result.id, status: result.status, ok })
 
     // triggerAndWait callers must check `ok` before reading `output`.
     return {

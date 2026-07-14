@@ -3,6 +3,7 @@ import 'server-only'
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { assets, projects, tiles } from '@/db/schema'
+import { recordFromJson } from '@/shared/data/json-guards'
 import type {
   CreateProjectRequest,
   DeleteTileRequest,
@@ -21,6 +22,7 @@ function mapProject(row: typeof projects.$inferSelect): WorldProject {
     description: row.description ?? null,
     seriesBible: recordFromJson(row.seriesBible),
     storyPlan: recordFromJson(row.storyPlan),
+    stylePreset: row.stylePreset ?? null,
     createdAt: row.createdAt?.toISOString(),
   }
 }

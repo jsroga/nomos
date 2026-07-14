@@ -7,6 +7,10 @@
 
 import { UndoAction, AppliedFix, ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
 import { revertFix } from '@/domains/storyteller/core/editing/CascadeEditor'
+import {
+  UndoActionType,
+  UNDO_MANAGER_NO_ACTIONS_LOG,
+} from '@/domains/storyteller/core/editing/constants/undo-manager'
 
 /**
  * Undo Manager class
@@ -21,7 +25,7 @@ export class UndoManager {
   recordConsistencyFix(fixes: ConsistencyFix[], appliedFixes: AppliedFix[]): string {
     const action: UndoAction = {
       id: `undo-${Date.now()}`,
-      type: 'consistency_fix',
+      type: UndoActionType.ConsistencyFix,
       fixes,
       appliedFixes,
       timestamp: Date.now(),
@@ -44,7 +48,7 @@ export class UndoManager {
     const action = this.undoStack.pop()
 
     if (!action) {
-      console.warn('[Undo Manager] No actions to undo')
+      console.warn(UNDO_MANAGER_NO_ACTIONS_LOG)
       return null
     }
 

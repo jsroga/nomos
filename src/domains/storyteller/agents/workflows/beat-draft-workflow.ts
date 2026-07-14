@@ -21,6 +21,7 @@
  * call still produces its own agent span in tracing.
  */
 
+import '@/shared/data/server-guard'
 import { createStep, createWorkflow } from '@mastra/core/workflows'
 import {
   isValidationError,
@@ -35,6 +36,9 @@ import {
   assessBeatPlanConcreteness,
   formatPlanQualityFeedback,
 } from '@/domains/storyteller/agents/BeatPlanner/beat-plan-quality'
+import { brainstormWildIdeas } from '@/domains/storyteller/agents/Muse/brainstorm'
+import { formatSparksForPlanner, rankWildIdeas } from '@/domains/storyteller/agents/Muse/rank'
+import type { RankedIdea } from '@/domains/storyteller/agents/Muse/ranked-idea-schema'
 import { statelessGrrmAuthor, statelessBeatPlanner } from './stateless-agents'
 import {
   continuityCritic,
@@ -43,6 +47,7 @@ import {
   CriticReportSchema,
   formatCriticReport,
 } from '@/domains/storyteller/agents/critics'
+import { proseCraftScorer, stakesCostScorer } from '@/shared/agent-kernel/scorers'
 import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/agents/tools/beat-tools'
 import { readWorldBibleTool } from '@/domains/storyteller/agents/tools/bible-tools'
 import {
@@ -51,7 +56,20 @@ import {
   beatDraftInputSchema,
   beatDraftOutputSchema,
 } from './beat-draft-contract'
-import { proseCraftScorer, stakesCostScorer } from '@/shared/agent-kernel/scorers'
+import {
+  BEAT_DRAFT_CHARACTERS_JOIN,
+  BEAT_DRAFT_CRITIQUE_JOIN,
+  BEAT_DRAFT_KILLED_MESSAGE,
+  BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
+  BEAT_DRAFT_NO_FINDINGS,
+  BEAT_DRAFT_VERDICT_NOTE_DESC,
+  BEAT_DRAFT_VERDICT_SUSPEND_REASON,
+  BeatDraftCriticName,
+  BeatDraftManageBeatOperation,
+  BeatDraftStepId,
+  BeatDraftToolChoice,
+  BeatDraftVerdictAction,
+} from './constants/beat-draft-workflow'
 
 /**
  * Craft scorers attached to the draft and revise steps (rate 1, StoryForge
@@ -59,9 +77,10 @@ import { proseCraftScorer, stakesCostScorer } from '@/shared/agent-kernel/scorer
  * "did the revision beat the draft?" across prompt changes. Scoring is async
  * observability — a judge failure never fails the run.
  */
+const RATIO_SAMPLING = 'ratio'
 const CRAFT_STEP_SCORERS = {
-  proseCraft: { scorer: proseCraftScorer, sampling: { type: 'ratio', rate: 1 } },
-  stakesCost: { scorer: stakesCostScorer, sampling: { type: 'ratio', rate: 1 } },
+  proseCraft: { scorer: proseCraftScorer, sampling: { type: RATIO_SAMPLING, rate: 1 } },
+  stakesCost: { scorer: stakesCostScorer, sampling: { type: RATIO_SAMPLING, rate: 1 } },
 } as const
 
 export { beatDraftInputSchema, beatDraftOutputSchema, BEAT_DRAFT_WORKFLOW_ID, VERDICT_STEP_ID }
@@ -88,9 +107,21 @@ export interface BeatDraftDeps {
   assembleCanon: (ctx: BeatDraftContext) => Promise<string>
   /**
    * Structured beat plan — never prose. `retryFeedback` is set on the single
-   * concreteness-gate retry and names exactly what failed.
+   * concreteness-gate retry and names exactly what failed. `sparksBlock`
+   * (when wildcards ran) carries ranked Muse sparks under the
+   * engage-or-reject contract (PLAN-V2 5.3).
    */
-  planBeat: (ctx: BeatDraftContext, canon: string, retryFeedback?: string) => Promise<BeatPlan>
+  planBeat: (
+    ctx: BeatDraftContext,
+    canon: string,
+    retryFeedback?: string,
+    sparksBlock?: string
+  ) => Promise<BeatPlan>
+  /**
+   * Muse brainstorm→rank (PLAN-V2 5.3). Returns kept sparks; empty array =
+   * proceed sparkless. Only called when the run sets `wildcards: true`.
+   */
+  generateSparks: (ctx: BeatDraftContext, canon: string) => Promise<RankedIdea[]>
   /** Script-format draft from the plan. */
   draftBeat: (ctx: BeatDraftContext, canon: string, plan: BeatPlan) => Promise<string>
   /** Three narrow critics; returns the formatted critique block. */
@@ -146,7 +177,7 @@ async function runCritic(critic: Agent, name: string, prompt: string): Promise<s
   const parsed = CriticReportSchema.safeParse(response.object)
   if (!parsed.success) {
     // Critic failed the schema — degrade to its raw text rather than losing the run.
-    return `## ${name} findings\n${response.text || 'NO FINDINGS.'}`
+    return `## ${name} findings\n${response.text || BEAT_DRAFT_NO_FINDINGS}`
   }
   return formatCriticReport(name, parsed.data)
 }
@@ -161,7 +192,7 @@ export const defaultBeatDraftDeps: BeatDraftDeps = {
     return `WORLD BIBLE (canon — do not contradict):\n${JSON.stringify(bible, null, 2)}\n\nEXISTING BEATS:\n${JSON.stringify(beats, null, 2)}`
   },
 
-  planBeat: async (ctx, canon, retryFeedback) => {
+  planBeat: async (ctx, canon, retryFeedback, sparksBlock) => {
     const retryBlock = retryFeedback
       ? `
 
@@ -175,8 +206,8 @@ Plan the next beat for episode ${ctx.episodeId}.
 Brief (what this beat must accomplish):
 ${ctx.brief}
 
-${ctx.characters.length > 0 ? `Characters available: ${ctx.characters.join(', ')}` : ''}
-
+${ctx.characters.length > 0 ? `Characters available: ${ctx.characters.join(BEAT_DRAFT_CHARACTERS_JOIN)}` : ''}
+${sparksBlock ?? ''}
 Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.${retryBlock}`
 
     const response = await statelessBeatPlanner.generate(prompt, {
@@ -196,7 +227,7 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
 
 Generate a script-format story beat for episode ${ctx.episodeId}.
 Beat plan: ${JSON.stringify(plan)}
-Characters involved: ${plan.charactersInvolved.join(', ')}
+Characters involved: ${plan.charactersInvolved.join(BEAT_DRAFT_CHARACTERS_JOIN)}
 
 Follow the Script Beat Format (§ GrrmSystemPrompt):
 - Slugline (INT/EXT location)
@@ -206,7 +237,7 @@ Follow the Script Beat Format (§ GrrmSystemPrompt):
 
 Output ONLY the script beat — no preamble, no notes.`
 
-    const response = await statelessGrrmAuthor.generate(prompt, { toolChoice: 'none' })
+    const response = await statelessGrrmAuthor.generate(prompt, { toolChoice: BeatDraftToolChoice.None })
     return response.text
   },
 
@@ -214,14 +245,14 @@ Output ONLY the script beat — no preamble, no notes.`
     const canonBlock = `CANON:\n${canon}`
     const draftBlock = `DRAFT BEAT:\n${draft}`
     const [continuity, prose, stakes] = await Promise.all([
-      runCritic(continuityCritic, 'Continuity', `${canonBlock}\n\n${draftBlock}`),
-      runCritic(proseCritic, 'Prose', draftBlock),
-      runCritic(stakesCritic, 'Stakes', `${canonBlock}\n\n${draftBlock}`),
+      runCritic(continuityCritic, BeatDraftCriticName.Continuity, `${canonBlock}\n\n${draftBlock}`),
+      runCritic(proseCritic, BeatDraftCriticName.Prose, draftBlock),
+      runCritic(stakesCritic, BeatDraftCriticName.Stakes, `${canonBlock}\n\n${draftBlock}`),
     ])
-    return [continuity, prose, stakes].join('\n\n')
+    return [continuity, prose, stakes].join(BEAT_DRAFT_CRITIQUE_JOIN)
   },
 
-  reviseBeat: async (ctx, canon, draft, critiques, editorNote) => {
+  reviseBeat: async (_ctx, canon, draft, critiques, editorNote) => {
     const noteBlock = editorNote
       ? `\nYOUR EDITOR'S DIRECTION (this outranks the critics and your own preferences):\n${editorNote}\n`
       : ''
@@ -237,8 +268,21 @@ ${critiques}
 ${noteBlock}
 Output the REVISED beat in full, in Script Beat Format. Script only — no preamble, no notes.`
 
-    const response = await statelessGrrmAuthor.generate(prompt, { toolChoice: 'none' })
+    const response = await statelessGrrmAuthor.generate(prompt, { toolChoice: BeatDraftToolChoice.None })
     return response.text
+  },
+
+  generateSparks: async (ctx, canon) => {
+    // Blank-context brainstorm (the Muse never sees canon), then the ranked
+    // judge scores WITH canon. Seed = episode + brief → deterministic hands
+    // per request shape, fresh hands when the brief changes.
+    const { ideas } = await brainstormWildIdeas({
+      premiseFragment: ctx.brief,
+      characters: ctx.characters,
+      seedText: `${ctx.episodeId}:${ctx.brief}`,
+    })
+    const { kept } = await rankWildIdeas({ ideas, canon, brief: ctx.brief })
+    return kept
   },
 
   persistBeat: async (ctx, plan, finalDraft) => {
@@ -246,7 +290,7 @@ Output the REVISED beat in full, in Script Beat Format. Script only — no pream
     // the action, the turn is what changed. Refined by the plan-quality item
     // (PLAN.md item 35) in a later wave.
     const result = await invokeTool(manageBeatTool, {
-      operation: 'create' as const,
+      operation: BeatDraftManageBeatOperation.Create,
       episodeId: ctx.episodeId,
       projectId: ctx.projectId,
       data: {
@@ -261,7 +305,7 @@ Output the REVISED beat in full, in Script Beat Format. Script only — no pream
     return {
       saved: result.success,
       beatId: result.beat?.id,
-      message: result.message ?? result.error ?? 'manage_beat completed',
+      message: result.message ?? result.error ?? BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
     }
   },
 }
@@ -275,6 +319,8 @@ const planOutputSchema = beatDraftInputSchema.extend({
   beatPlan: BeatPlanSchema,
   /** Concreteness-gate failures that survived the single retry (usually empty). */
   planWarnings: z.array(z.string()),
+  /** Kept Muse spark hooks (empty unless the run set wildcards: true). */
+  sparks: z.array(z.string()),
 })
 
 const draftOutputSchema = planOutputSchema.extend({
@@ -286,7 +332,11 @@ const critiqueOutputSchema = draftOutputSchema.extend({
 })
 
 const verdictOutputSchema = critiqueOutputSchema.extend({
-  action: z.enum(['approve', 'revise', 'kill']),
+  action: z.enum([
+    BeatDraftVerdictAction.Approve,
+    BeatDraftVerdictAction.Revise,
+    BeatDraftVerdictAction.Kill,
+  ]),
   note: z.string().optional(),
 })
 
@@ -296,7 +346,7 @@ const verdictOutputSchema = critiqueOutputSchema.extend({
 
 export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDeps) {
   const planStep = createStep({
-    id: 'plan-beat',
+    id: BeatDraftStepId.PlanBeat,
     inputSchema: beatDraftInputSchema,
     outputSchema: planOutputSchema,
     execute: async ({ inputData }) => {
@@ -307,26 +357,43 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
         characters: inputData.characters,
       }
       const canon = await deps.assembleCanon(ctx)
-      let beatPlan = await deps.planBeat(ctx, canon)
+
+      // Muse sparks (5.3): opt-in, never fatal — an empty result proceeds
+      // sparkless. The planner must engage-or-reject each spark by number.
+      const keptSparks = inputData.wildcards ? await deps.generateSparks(ctx, canon) : []
+      const sparksBlock = keptSparks.length > 0 ? formatSparksForPlanner(keptSparks) : undefined
+
+      let beatPlan = await deps.planBeat(ctx, canon, undefined, sparksBlock)
       let planWarnings: string[] = []
 
       // Concreteness gate: retry ONCE with the failures named; a second
       // failure passes through flagged rather than erroring the run.
       const quality = assessBeatPlanConcreteness(beatPlan, ctx.characters)
       if (!quality.ok) {
-        beatPlan = await deps.planBeat(ctx, canon, formatPlanQualityFeedback(quality.failures))
+        beatPlan = await deps.planBeat(
+          ctx,
+          canon,
+          formatPlanQualityFeedback(quality.failures),
+          sparksBlock
+        )
         const retriedQuality = assessBeatPlanConcreteness(beatPlan, ctx.characters)
         if (!retriedQuality.ok) {
           planWarnings = retriedQuality.failures
         }
       }
 
-      return { ...inputData, canon, beatPlan, planWarnings }
+      return {
+        ...inputData,
+        canon,
+        beatPlan,
+        planWarnings,
+        sparks: keptSparks.map(entry => entry.idea.hook),
+      }
     },
   })
 
   const draftStep = createStep({
-    id: 'draft-script',
+    id: BeatDraftStepId.DraftScript,
     inputSchema: planOutputSchema,
     outputSchema: draftOutputSchema,
     scorers: CRAFT_STEP_SCORERS,
@@ -346,7 +413,7 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
   })
 
   const critiqueStep = createStep({
-    id: 'critique',
+    id: BeatDraftStepId.Critique,
     inputSchema: draftOutputSchema,
     outputSchema: critiqueOutputSchema,
     execute: async ({ inputData }) => {
@@ -364,24 +431,30 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
       draft: z.string(),
       critiques: z.string(),
       planWarnings: z.array(z.string()).optional(),
+      /** Kept Muse spark hooks — the human sees what provoked the plan (5.3). */
+      sparks: z.array(z.string()).optional(),
     }),
     resumeSchema: z.object({
-      action: z.enum(['approve', 'revise', 'kill']),
-      note: z.string().optional().describe('Editorial direction, used when action is revise'),
+      action: z.enum([
+    BeatDraftVerdictAction.Approve,
+    BeatDraftVerdictAction.Revise,
+    BeatDraftVerdictAction.Kill,
+  ]),
+      note: z.string().optional().describe(BEAT_DRAFT_VERDICT_NOTE_DESC),
     }),
     outputSchema: verdictOutputSchema,
     execute: async ({ inputData, resumeData, suspend }) => {
       if (!resumeData) {
         if (inputData.autoApprove) {
-          return { ...inputData, action: 'approve' as const, note: undefined }
+          return { ...inputData, action: BeatDraftVerdictAction.Approve, note: undefined }
         }
         return await suspend({
-          reason:
-            'Editorial verdict required: approve (revise against critiques), revise (add your note), or kill (discard draft).',
+          reason: BEAT_DRAFT_VERDICT_SUSPEND_REASON,
           beatPlan: inputData.beatPlan,
           draft: inputData.draft,
           critiques: inputData.critiques,
           ...(inputData.planWarnings.length > 0 ? { planWarnings: inputData.planWarnings } : {}),
+          ...(inputData.sparks.length > 0 ? { sparks: inputData.sparks } : {}),
         })
       }
       return { ...inputData, action: resumeData.action, note: resumeData.note }
@@ -389,19 +462,19 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
   })
 
   const reviseStep = createStep({
-    id: 'revise',
+    id: BeatDraftStepId.Revise,
     inputSchema: verdictOutputSchema,
     outputSchema: beatDraftOutputSchema,
     scorers: CRAFT_STEP_SCORERS,
     execute: async ({ inputData }) => {
-      if (inputData.action === 'kill') {
+      if (inputData.action === BeatDraftVerdictAction.Kill) {
         return {
           finalDraft: '',
           critiques: inputData.critiques,
           beatPlan: inputData.beatPlan,
           saved: false,
           killed: true,
-          message: 'Draft killed by editor — nothing saved.',
+          message: BEAT_DRAFT_KILLED_MESSAGE,
         }
       }
 
@@ -416,7 +489,7 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
         inputData.canon,
         inputData.draft,
         inputData.critiques,
-        inputData.action === 'revise' ? inputData.note : undefined
+        inputData.action === BeatDraftVerdictAction.Revise ? inputData.note : undefined
       )
       const persisted = await deps.persistBeat(ctx, inputData.beatPlan, finalDraft)
 

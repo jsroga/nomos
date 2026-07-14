@@ -20,6 +20,11 @@ import { hasReferences } from '@/domains/storyteller/core/entities/ReferencePars
 import { cn } from '@/shared/data/utils'
 import { useBible } from '../WorldBible/BibleContext'
 import { extractEntitiesFromPlan } from '@/domains/storyteller/core/entities/EntityExtractor'
+import {
+  RICH_TEXT_EMPTY_PLACEHOLDER,
+  RichTextContainerTag,
+} from '@/domains/storyteller/ui/RichText/constants/rich-text'
+import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 
 interface RichTextProps {
   /** Text content (may contain entity references) */
@@ -53,11 +58,12 @@ export const RichText: React.FC<RichTextProps> = ({
   onEntityClick,
   fallback,
   showPlaceholder = false,
-  placeholder = 'No content',
+  placeholder = RICH_TEXT_EMPTY_PLACEHOLDER,
 }) => {
   // Call all hooks unconditionally (before any early returns)
   const containsReferences = hasReferences(text ?? '')
   const safeBible = useSafeBible()
+  const navigateToEntity = useStorytellerUiStore(state => state.navigateToEntity)
   const initialEntities = useMemo(() => {
     if (!containsReferences || !safeBible.storyPlan || !projectId) return undefined
     return extractEntitiesFromPlan(safeBible.storyPlan, projectId)
@@ -74,7 +80,7 @@ export const RichText: React.FC<RichTextProps> = ({
 
   // If no references, render plain text
   if (!containsReferences) {
-    const Container = inline ? 'span' : 'div'
+    const Container = inline ? RichTextContainerTag.Span : RichTextContainerTag.Div
     return <Container className={cn('whitespace-pre-wrap', className)}>{text}</Container>
   }
 
@@ -84,12 +90,12 @@ export const RichText: React.FC<RichTextProps> = ({
       onEntityClick(refId, entity)
       return
     }
-    // Dispatch global event to navigate to relationships tab with entity selected
-    window.dispatchEvent(
-      new CustomEvent('navigate-to-entity', {
-        detail: { refId, entityName: entity?.name || refId, entityType: entity?.type },
-      })
-    )
+    // Navigate to relationships tab with entity selected
+    navigateToEntity({
+      refId,
+      entityName: entity?.name || refId,
+      entityType: entity?.type,
+    })
   }
 
   // Render with reference support

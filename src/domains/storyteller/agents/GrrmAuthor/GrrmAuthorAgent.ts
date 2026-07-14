@@ -10,6 +10,7 @@
  * bible). Orchestration lives in agents/workflows/beat-draft-workflow.ts.
  */
 
+import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { Memory } from '@mastra/memory'
 import { v4 as uuidv4 } from 'uuid'
@@ -17,13 +18,21 @@ import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
 import { grrmTools } from '@/domains/storyteller/agents/tools'
 import { buildGrrmSystemPrompt } from '@/domains/storyteller/prompts/GrrmSystemPrompt'
 import type { RequestContext } from '@mastra/core/di'
-import { resolveRoleModel, resolveStorytellerModel } from '@/domains/storyteller/config/ModelConfig'
+import { resolveRoleModel, resolveStorytellerModel } from '@/domains/storyteller/config/constants/ModelConfig'
 import {
   STORYTELLER_AUTHOR_MODEL,
   requestContextString,
 } from '@/domains/storyteller/agents/request-context'
 import { withSpan } from '@/shared/observability/observability'
 import type { BeatPlan } from '@/domains/storyteller/agents/BeatPlanner/beat-plan-schema'
+import {
+  AgentModelRole,
+  GrrmAuthorAgentId,
+  GrrmAuthorAgentLabel,
+  GrrmAuthorAgentSpan,
+  GrrmAuthorCopy,
+  ListSeparator,
+} from '@/domains/storyteller/agents/constants/agent-identity'
 
 type GrrmTool = (typeof grrmTools)[number]
 
@@ -58,7 +67,7 @@ export class GrrmAuthorAgent {
     const model = config.modelName
       ? resolveStorytellerModel(config.modelName)
       : ({ requestContext }: { requestContext: RequestContext }) =>
-          resolveRoleModel('author', requestContextString(requestContext, STORYTELLER_AUTHOR_MODEL))
+          resolveRoleModel(AgentModelRole.Author, requestContextString(requestContext, STORYTELLER_AUTHOR_MODEL))
 
     const instructions = buildGrrmSystemPrompt({
       phase: config.phase,
@@ -79,8 +88,8 @@ export class GrrmAuthorAgent {
     })
 
     this.agent = new Agent({
-      id: 'grrm-author',
-      name: 'GRRM Author',
+      id: GrrmAuthorAgentId.GrrmAuthor,
+      name: GrrmAuthorAgentLabel.GrrmAuthor,
       instructions,
       model,
       tools: this.toolsMap,
@@ -119,11 +128,11 @@ export class GrrmAuthorAgent {
 
     return withSpan(
       id,
-      'GrrmAuthorAgent.run',
+      GrrmAuthorAgentSpan.Run,
       async _span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
         const response = await this.agent.generate(prompt, {
-          toolChoice: options?.toolChoice || 'auto',
+          toolChoice: options?.toolChoice || AgentModelRole.Auto,
           maxSteps: options?.maxSteps ?? 10,
           tracingOptions: {
             traceId: id,
@@ -152,12 +161,12 @@ export class GrrmAuthorAgent {
 
     return withSpan(
       id,
-      'GrrmAuthorAgent.generateBeat',
+      GrrmAuthorAgentSpan.GenerateBeat,
       async _span => {
         const prompt = `Generate a script-format story beat for episode ${context.episodeId}.
 ${context.beatPlan ? `Beat plan: ${JSON.stringify(context.beatPlan)}` : ''}
-${context.previousBeat ? `Previous beat: ${context.previousBeat}` : 'This is the opening beat.'}
-Characters involved: ${context.characters.join(', ')}
+${context.previousBeat ? `Previous beat: ${context.previousBeat}` : GrrmAuthorCopy.OpeningBeat}
+Characters involved: ${context.characters.join(ListSeparator.CommaSpace)}
 
 Follow the Script Beat Format (§ GrrmSystemPrompt):
 - Slugline (INT/EXT location)
@@ -165,7 +174,7 @@ Follow the Script Beat Format (§ GrrmSystemPrompt):
 - Dialogue blocks with subtext notes
 - Ensure Law of Motion fields: actionTaken, consequence, storyStateChange`
 
-        return this.run('Generate script beat', prompt, id, options)
+        return this.run(GrrmAuthorCopy.GenerateScriptBeat, prompt, id, options)
       },
       { episodeId: context.episodeId, characters: context.characters, id: spanId }
     )
@@ -176,7 +185,7 @@ Follow the Script Beat Format (§ GrrmSystemPrompt):
     const traceId = options?.traceId || this.generateHexId(32)
 
     return this.agent.stream(prompt, {
-      toolChoice: options?.toolChoice || 'auto',
+      toolChoice: options?.toolChoice || AgentModelRole.Auto,
       maxSteps: options?.maxSteps ?? 10,
       tracingOptions: {
         traceId,

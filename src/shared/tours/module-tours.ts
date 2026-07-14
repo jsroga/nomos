@@ -1,4 +1,5 @@
 import { ModuleTourConfig } from '@/shared/types/onboarding'
+import { ModuleDisplayName, ModuleIdKey } from '@/shared/types/constants/onboarding'
 import { storytellerTourSteps } from './storyteller-tour'
 import { interiorDesignerTourSteps } from './interior-designer-tour'
 import { loopCreatorTourSteps } from './loop-creator-tour'
@@ -7,32 +8,32 @@ import { assetExporterTourSteps } from './asset-exporter-tour'
 
 export const MODULE_TOUR_CONFIGS: ModuleTourConfig[] = [
   {
-    id: 'storyteller',
-    name: 'Storyteller',
+    id: ModuleIdKey.Storyteller,
+    name: ModuleDisplayName.Storyteller,
     routeMatch: /\/app\/[^/]+\/storyteller/,
     steps: storytellerTourSteps,
   },
   {
-    id: 'interior-designer',
-    name: 'Interior Designer',
+    id: ModuleIdKey.InteriorDesigner,
+    name: ModuleDisplayName.InteriorDesigner,
     routeMatch: /\/app\/[^/]+\/interior-design/,
     steps: interiorDesignerTourSteps,
   },
   {
-    id: 'loop-creator',
-    name: 'Loop Creator',
+    id: ModuleIdKey.LoopCreator,
+    name: ModuleDisplayName.LoopCreator,
     routeMatch: /\/app\/[^/]+\/loop-creator/,
     steps: loopCreatorTourSteps,
   },
   {
-    id: 'world-gen',
-    name: 'World Gen',
+    id: ModuleIdKey.WorldGen,
+    name: ModuleDisplayName.WorldGen,
     routeMatch: /\/app\/[^/]+\/world-gen/,
     steps: worldGenTourSteps,
   },
   {
-    id: 'asset-exporter',
-    name: 'Asset Exporter',
+    id: ModuleIdKey.AssetExporter,
+    name: ModuleDisplayName.AssetExporter,
     routeMatch: /\/app\/[^/]+\/asset-exporter/,
     steps: assetExporterTourSteps,
   },

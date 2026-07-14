@@ -90,7 +90,7 @@ async function pollLegNextTask(
 // Midjourney upscale via LegNext AI - uses upload_paint + upscale workflow
 async function upscaleWithLegNext(
   imageBase64: string,
-  prompt: string,
+  _prompt: string,
   apiKey: string,
   mimeType: string = 'image/png',
   styleReferenceUrls?: string[],
@@ -129,7 +129,7 @@ async function upscaleWithLegNext(
   // CRITICAL: We must preserve exact structure/composition, only enhance quality
   // --stylize 0 prevents MJ from adding artistic interpretation
   // --q 2 ensures maximum quality output
-  let remixPrompt = UPSCALE_PROMPTS.MIDJOURNEY
+  let remixPrompt: string = UPSCALE_PROMPTS.MIDJOURNEY
 
   // Add Style Reference if provided (--sref url1 url2)
   if (styleReferenceUrls && styleReferenceUrls.length > 0) {
@@ -192,7 +192,7 @@ async function upscaleWithLegNext(
   await metadata.set('stage', 'waiting_upload_paint')
   await metadata.set('progress', 40)
 
-  const uploadPaintResult = await pollLegNextTask(jobId, apiKey, 300, 40)
+  await pollLegNextTask(jobId, apiKey, 300, 40)
 
   logger.info('Upload_paint completed, submitting upscale', { jobId })
 
@@ -531,7 +531,6 @@ export const upscaleTileTask = task({
     await metadata.set('stage', 'provider_upscale')
     let finalImageUrl: string | null = null
     let finalImageBase64: string | null = null
-    const mjGridResult: any = null // For MJ variant selection
 
     switch (provider) {
       case 'midjourney':
@@ -642,7 +641,7 @@ export const upscaleTileTask = task({
       })
       originalUrl = originalBlob.url
     } catch (e) {
-      logger.warn('Failed to upload original image:', e)
+      logger.warn('Failed to upload original image:', { error: getErrorMessage(e) })
       // Use a placeholder or existing tile URL
       originalUrl = ''
     }

@@ -7,6 +7,9 @@ import { tasks } from '@trigger.dev/sdk/v3'
 import type { generatePortrait } from '@/domains/storyteller/tasks/generate-portrait.task'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
+import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { TriggerRunStatus } from '@/shared/data/constants/protocol'
+import { StorytellerTempIdPrefix } from '@/domains/storyteller/core/storyteller-page-wire'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
@@ -14,26 +17,26 @@ export const POST = withRateLimit(
     const { prompt, projectId, characterId, apiKey: clientApiKey } = body
 
     if (!prompt) {
-      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.PROMPT_REQUIRED }, { status: 400 })
     }
 
     if (!projectId) {
-      return NextResponse.json({ error: 'projectId is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED_LOWER }, { status: 400 })
     }
 
     // Verify project access
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
-    const effectiveCharacterId = characterId || `temp-${Date.now()}`
+    const effectiveCharacterId = characterId || `${StorytellerTempIdPrefix.Temp}${Date.now()}`
 
     const apiKey = clientApiKey || process.env.LEGNEXT_API_KEY
     if (!apiKey) {
       return NextResponse.json(
         {
-          error: 'LegNext API key not provided',
-          message: 'Please configure your LegNext API key in Settings',
+          error: API_ERROR.LEGNEXT_API_KEY_NOT_PROVIDED,
+          message: API_ERROR.LEGNEXT_API_KEY_CONFIGURE,
         },
         { status: 401 }
       )
@@ -47,10 +50,10 @@ export const POST = withRateLimit(
         styleReferenceUrls = resolveStyleReferenceUrls(project[0])
       }
     } catch (error) {
-      console.error('Failed to fetch project style references:', error)
+      console.error(API_LOG_PREFIX.PORTRAIT_STYLE_REF_ERROR, error)
     }
 
-    const handle = await tasks.trigger<typeof generatePortrait>('generate-portrait', {
+    const handle = await tasks.trigger<typeof generatePortrait>(TRIGGER_TASK_ID.GENERATE_PORTRAIT, {
       prompt,
       projectId,
       characterId: effectiveCharacterId,
@@ -62,7 +65,7 @@ export const POST = withRateLimit(
       success: true,
       handleId: handle.id,
       characterId: effectiveCharacterId,
-      status: 'queued',
+      status: TriggerRunStatus.Queued,
     })
   }),
   { maxRequests: 10, windowMs: 60000 }

@@ -47,7 +47,7 @@ export type ToolHandler = (
  * Interface for domain modules to implement.
  * Each domain must export tools and handlers.
  */
-interface MCPDomainModule {
+export interface MCPDomainModule {
   /**
    * Array of MCP Tool definitions for this domain
    */

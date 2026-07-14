@@ -7,6 +7,15 @@ import { TourAlertDialog, useTour } from '@/components/shell/Tour'
 import { getModuleConfigByUrl } from '@/shared/tours/module-tours'
 import { OnboardingState } from '@/shared/types/onboarding'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import {
+  OnboardingAction,
+} from '@/shared/types/constants/onboarding'
+import {
+  DocumentReadyStateValue,
+  DomLifecycleEvent,
+  ModuleOnboardingLog,
+} from '@/components/shell/ModuleOnboardingController/constants/module-onboarding'
+import { AuthBypassFlag, HttpMethod } from '@/shared/data/constants/protocol'
 
 export function ModuleOnboardingController() {
   const pathname = usePathname()
@@ -43,7 +52,7 @@ export function ModuleOnboardingController() {
     const onboarding: OnboardingState | undefined = user.user_metadata?.onboarding
     const forceOnboarding =
       typeof window !== 'undefined' &&
-      localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === 'true'
+      localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === AuthBypassFlag.True
 
     const isSkippedAll = onboarding?.skipAll
     
@@ -71,10 +80,10 @@ export function ModuleOnboardingController() {
       // Wait for everything to load before showing popup
       const timer = setTimeout(() => {
         // Double-check that DOM is ready and elements exist
-        if (document.readyState === 'complete') {
+        if (document.readyState === DocumentReadyStateValue.Complete) {
           setIsOpen(true)
         } else {
-          window.addEventListener('load', () => setIsOpen(true), { once: true })
+          window.addEventListener(DomLifecycleEvent.Load, () => setIsOpen(true), { once: true })
         }
       }, 1500)
       return () => clearTimeout(timer)
@@ -85,14 +94,14 @@ export function ModuleOnboardingController() {
   }, [user, pathname, setSteps, endTour])
 
   const handleAction = useCallback(
-    async (action: 'complete' | 'skip' | 'skipAll') => {
+    async (action: OnboardingAction) => {
       if (!user) return
 
       const moduleId = moduleConfig?.id
 
       try {
         const res = await fetch('/api/users/onboarding', {
-          method: 'POST',
+          method: HttpMethod.Post,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action,
@@ -114,7 +123,7 @@ export function ModuleOnboardingController() {
           }))
         }
       } catch (error) {
-        console.error('Failed to update onboarding status:', error)
+        console.error(ModuleOnboardingLog.UpdateFailed, error)
       }
     },
     [user, moduleConfig?.id, pathname]
@@ -127,24 +136,24 @@ export function ModuleOnboardingController() {
   const handleSkip = () => {
     const forceOnboarding =
       typeof window !== 'undefined' &&
-      localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === 'true'
+      localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === AuthBypassFlag.True
     
     // In debug mode: don't persist skip to user metadata (will reappear on refresh)
     // In normal mode: persist skip (normal user functionality)
     if (!forceOnboarding) {
-      handleAction('skip')
+      handleAction(OnboardingAction.Skip)
     }
   }
 
   const handleSkipAll = () => {
     const forceOnboarding =
       typeof window !== 'undefined' &&
-      localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === 'true'
+      localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === AuthBypassFlag.True
     
     // In debug mode: don't persist skipAll to user metadata (will reappear on refresh)
     // In normal mode: persist skipAll (normal user functionality)
     if (!forceOnboarding) {
-      handleAction('skipAll')
+      handleAction(OnboardingAction.SkipAll)
     }
   }
 
@@ -154,12 +163,12 @@ export function ModuleOnboardingController() {
     if (currentStep >= 0 && currentStep === steps.length - 1) {
       const forceOnboarding =
         typeof window !== 'undefined' &&
-        localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === 'true'
+        localStorage.getItem(LocalStorageKeys.FORCE_ONBOARDING) === AuthBypassFlag.True
       
       // In debug mode: don't persist completion to user metadata (will reappear on refresh)
       // In normal mode: persist completion (normal user functionality)
       if (!forceOnboarding) {
-        handleAction('complete')
+        handleAction(OnboardingAction.Complete)
       }
     }
   }, [currentStep, steps.length, handleAction])

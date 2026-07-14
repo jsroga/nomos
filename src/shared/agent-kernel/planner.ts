@@ -2,12 +2,23 @@ import { Plan, PlanItem, PlanItemStatusSchema } from './schemas'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { withSpan } from '../observability'
-
-// ==========================================
-// ABSTRACT PLANNER TOOL
-// ==========================================
-// Allows an agent to read, create, and update its own plan.
-// It is "Abstract" because persistence (File vs DB) is injected.
+import {
+  PLANNER_ERROR_ACTION_UNSUPPORTED,
+  PLANNER_ERROR_GOAL_REQUIRED,
+  PLANNER_ERROR_NO_PLAN,
+  PLANNER_ERROR_NO_PLAN_CREATE_FIRST,
+  PLANNER_ERROR_TASK_STATUS_REQUIRED,
+  PLANNER_ERROR_TITLE_REQUIRED,
+  PLANNER_FIELD_FEEDBACK,
+  PLANNER_FIELD_GOAL,
+  PLANNER_FIELD_TASK_ID,
+  PLANNER_FIELD_TITLE,
+  PLANNER_SPAN_NAME,
+  PLANNER_TOOL_DESCRIPTION,
+  PLANNER_TOOL_ID,
+  PlannerAction,
+  PlannerTaskStatus,
+} from '@/shared/agent-kernel/constants/planner-tool'
 
 export interface PlanPersistence {
   loadPlan(): Promise<Plan | null>
@@ -16,26 +27,39 @@ export interface PlanPersistence {
 
 export const createPlannerTool = (persistence: PlanPersistence) => {
   return createTool({
-    id: 'planner_tool',
-    description:
-      'Manage your high-level plan. use this to create tasks, mark them as done, or re-prioritize.',
+    id: PLANNER_TOOL_ID,
+    description: PLANNER_TOOL_DESCRIPTION,
     inputSchema: z.object({
-      action: z.enum(['create_plan', 'read_plan', 'add_task', 'update_task_status', 'reflect']),
-      goal: z.string().optional().describe('For \'create_plan\' or high-level context'),
-      title: z.string().optional().describe('For \'add_task\': concise title'),
-      taskId: z.string().optional().describe('For \'update_task_status\''),
-      status: z.enum(['pending', 'in-progress', 'completed', 'failed', 'skipped']).optional(),
-      feedback: z.string().optional().describe('Reason for update or reflection'),
+      action: z.enum([
+        PlannerAction.CreatePlan,
+        PlannerAction.ReadPlan,
+        PlannerAction.AddTask,
+        PlannerAction.UpdateTaskStatus,
+        PlannerAction.Reflect,
+      ]),
+      goal: z.string().optional().describe(PLANNER_FIELD_GOAL),
+      title: z.string().optional().describe(PLANNER_FIELD_TITLE),
+      taskId: z.string().optional().describe(PLANNER_FIELD_TASK_ID),
+      status: z
+        .enum([
+          PlannerTaskStatus.Pending,
+          PlannerTaskStatus.InProgress,
+          PlannerTaskStatus.Completed,
+          PlannerTaskStatus.Failed,
+          PlannerTaskStatus.Skipped,
+        ])
+        .optional(),
+      feedback: z.string().optional().describe(PLANNER_FIELD_FEEDBACK),
     }),
-    execute: async (input) => {
+    execute: async input => {
       return withSpan(
         crypto.randomUUID(),
-        'PlannerTool.execute',
+        PLANNER_SPAN_NAME,
         async _span => {
           let plan = await persistence.loadPlan()
 
-          if (input.action === 'create_plan') {
-            if (!input.goal) return { message: 'Error: \'goal\' is required to create a plan.' }
+          if (input.action === PlannerAction.CreatePlan) {
+            if (!input.goal) return { message: PLANNER_ERROR_GOAL_REQUIRED }
             plan = {
               id: crypto.randomUUID(),
               goal: input.goal,
@@ -48,29 +72,28 @@ export const createPlannerTool = (persistence: PlanPersistence) => {
             return { message: `Created new plan: "${input.goal}"` }
           }
 
-          if (input.action === 'read_plan') {
-            if (!plan) return { message: 'No active plan found. Use \'create_plan\' first.' }
+          if (input.action === PlannerAction.ReadPlan) {
+            if (!plan) return { message: PLANNER_ERROR_NO_PLAN_CREATE_FIRST }
             return { message: JSON.stringify(plan, null, 2) }
           }
 
-          if (!plan) return { message: 'No active plan found.' }
+          if (!plan) return { message: PLANNER_ERROR_NO_PLAN }
 
-          if (input.action === 'add_task') {
-            if (!input.title) return { message: 'Error: \'title\' is required for add_task.' }
+          if (input.action === PlannerAction.AddTask) {
+            if (!input.title) return { message: PLANNER_ERROR_TITLE_REQUIRED }
             const newId = (plan.items.length + 1).toString()
             const newItem: PlanItem = {
               id: newId,
               title: input.title,
-              status: 'pending',
+              status: PlannerTaskStatus.Pending,
             }
             plan.items.push(newItem)
             await persistence.savePlan(plan)
             return { message: `Added task ${newId}: ${newItem.title}` }
           }
 
-          if (input.action === 'update_task_status') {
-            if (!input.taskId || !input.status)
-              return { message: 'Error: \'taskId\' and \'status\' required.' }
+          if (input.action === PlannerAction.UpdateTaskStatus) {
+            if (!input.taskId || !input.status) return { message: PLANNER_ERROR_TASK_STATUS_REQUIRED }
             const task = plan.items.find(t => t.id === input.taskId)
             if (!task) return { message: `Error: Task ${input.taskId} not found.` }
 
@@ -84,7 +107,7 @@ export const createPlannerTool = (persistence: PlanPersistence) => {
             return { message: `Updated task ${input.taskId} to ${input.status}.` }
           }
 
-          return { message: 'Action not supported.' }
+          return { message: PLANNER_ERROR_ACTION_UNSUPPORTED }
         },
         { ...input }
       )

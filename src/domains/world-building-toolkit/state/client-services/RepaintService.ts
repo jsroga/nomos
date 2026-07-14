@@ -1,9 +1,31 @@
 import { useWorldStore } from '../useWorldStore'
 import type { Tile } from '../../core/world-types'
+import { TILE_COORD_SEPARATOR } from '../../ui/constants/tile-stage-labels'
+import {
+  CanvasContextType,
+  CanvasLineStyle,
+  ContentType,
+  HtmlElementTag,
+  HttpMethod,
+  HttpRequestHeader,
+  ImageCrossOrigin,
+  RepaintApiRoute,
+  RepaintCanvasFill,
+  RepaintDataUrlPrefix,
+  RepaintDefaultPrompt,
+  RepaintImageMime,
+  RepaintMaskColor,
+  RepaintServiceError,
+  RepaintServiceLog,
+  RepaintTilePrompt,
+  RepaintTileStatusLabel,
+  UrlScheme,
+} from '../../constants/repaint-service'
 
 interface Point {
   x: number
   y: number
+  radius?: number
 }
 
 interface RepaintResult {
@@ -15,10 +37,10 @@ export class RepaintService {
   private TILE_SIZE = 512
 
   async applyRepaint(result: RepaintResult): Promise<void> {
-    console.log('RepaintService: Applying repaint', result.bounds)
+    console.log(RepaintServiceLog.ApplyingRepaint, result.bounds)
 
     const { addTile, tiles, currentProject } = useWorldStore.getState()
-    if (!currentProject) throw new Error('No project selected')
+    if (!currentProject) throw new Error(RepaintServiceError.NoProjectSelected)
 
     // 1. Calculate which tiles are affected by the repaint bounds
     const minTileX = Math.floor(result.bounds.x / this.TILE_SIZE)
@@ -26,7 +48,7 @@ export class RepaintService {
     const minTileY = Math.floor(result.bounds.y / this.TILE_SIZE)
     const maxTileY = Math.floor((result.bounds.y + result.bounds.height) / this.TILE_SIZE)
 
-    console.log('Affected tiles:', { minTileX, maxTileX, minTileY, maxTileY })
+    console.log(RepaintServiceLog.AffectedTiles, { minTileX, maxTileX, minTileY, maxTileY })
 
     // 2. Load the repaint result image
     const repaintImg = await this.loadImageFromUrl(result.imageUrl)
@@ -74,10 +96,13 @@ export class RepaintService {
     try {
       for (let tileY = minTileY; tileY <= maxTileY; tileY++) {
         for (let tileX = minTileX; tileX <= maxTileX; tileX++) {
-          const tileKey = `${tileX},${tileY}`
+          const tileKey = `${tileX}${TILE_COORD_SEPARATOR}${tileY}`
           const existingTile = tiles[tileKey]
 
-          console.log(`Processing tile ${tileX},${tileY}`, existingTile ? 'exists' : 'new')
+          console.log(
+            `${RepaintServiceLog.ProcessingTile} ${tileX}${TILE_COORD_SEPARATOR}${tileY}`,
+            existingTile ? RepaintTileStatusLabel.Exists : RepaintTileStatusLabel.New
+          )
 
           // Skip tiles that don't actually overlap with repaint bounds
           const tileWorldX = tileX * this.TILE_SIZE
@@ -94,28 +119,31 @@ export class RepaintService {
             tileEndY <= result.bounds.y ||
             tileWorldY >= repaintEndY
           ) {
-            console.log(`  Skipping tile ${tileX},${tileY} - no overlap`)
+            console.log(`  ${RepaintServiceLog.SkippingTileNoOverlap} ${tileX}${TILE_COORD_SEPARATOR}${tileY} - no overlap`)
             continue
           }
 
           // Create a canvas for this tile
-          const tileCanvas = document.createElement('canvas')
+          const tileCanvas = document.createElement(HtmlElementTag.Canvas)
           tileCanvas.width = this.TILE_SIZE
           tileCanvas.height = this.TILE_SIZE
-          const ctx = tileCanvas.getContext('2d')!
+          const ctx = tileCanvas.getContext(CanvasContextType.TwoD)!
 
           // If tile exists, load and draw the existing image first
-          if (existingTile) {
-            const existingImageUrl = existingTile.image_filename.startsWith('http') ? existingTile.image_filename : `/projects/${currentProject.id}/${existingTile.image_filename}`
+          if (existingTile?.image_filename) {
+            const filename = existingTile.image_filename
+            const existingImageUrl = filename.startsWith(UrlScheme.Http)
+              ? filename
+              : `/projects/${currentProject.id}/${filename}`
             try {
               const existingImg = await this.loadImageFromUrl(existingImageUrl)
               ctx.drawImage(existingImg, 0, 0, this.TILE_SIZE, this.TILE_SIZE)
             } catch (e) {
-              console.warn('Could not load existing tile image, starting with blank', e)
+              console.warn(RepaintServiceLog.CouldNotLoadExistingTile, e)
             }
           } else {
             // Fill with transparent or gray background for new tiles
-            ctx.fillStyle = '#2a2a2a'
+            ctx.fillStyle = RepaintCanvasFill.NewTileGray
             ctx.fillRect(0, 0, this.TILE_SIZE, this.TILE_SIZE)
           }
 
@@ -140,7 +168,7 @@ export class RepaintService {
           const destW = overlapW
           const destH = overlapH
 
-          console.log(`Compositing onto tile ${tileX},${tileY}:`, {
+          console.log(`${RepaintServiceLog.CompositingOntoTile} ${tileX}${TILE_COORD_SEPARATOR}${tileY}:`, {
             srcX,
             srcY,
             srcW,
@@ -155,10 +183,10 @@ export class RepaintService {
           ctx.drawImage(repaintImg, srcX, srcY, srcW, srcH, destX, destY, destW, destH)
 
           // Convert tile canvas to base64
-          const base64 = tileCanvas.toDataURL('image/png').split(',')[1]
+          const base64 = tileCanvas.toDataURL(RepaintImageMime.Png).split(',')[1]
 
           // Save the tile (this will create or update it)
-          await addTile(tileX, tileY, existingTile?.tile_prompt || 'repainted tile', base64)
+          await addTile(tileX, tileY, existingTile?.tile_prompt || RepaintTilePrompt.Repainted, base64)
         }
       }
 
@@ -166,7 +194,7 @@ export class RepaintService {
       affectedTiles.forEach(({ x, y }) => {
         useWorldStore.getState().removeRepaintingTile(x, y)
       })
-      console.log('RepaintService: Repaint applied successfully')
+      console.log(RepaintServiceLog.RepaintAppliedSuccessfully)
     } catch (error) {
       // Clear repainting status on error
       affectedTiles.forEach(({ x, y }) => {
@@ -179,7 +207,7 @@ export class RepaintService {
   private loadImageFromUrl(url: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const img = new Image()
-      img.crossOrigin = 'Anonymous'
+      img.crossOrigin = ImageCrossOrigin.Anonymous
       img.onload = () => resolve(img)
       img.onerror = reject
       img.src = url
@@ -194,9 +222,9 @@ export class RepaintService {
     styleReferenceUrls?: string[]
   ): Promise<RepaintResult> {
     const { currentProject } = useWorldStore.getState()
-    if (!currentProject) throw new Error('No project selected')
+    if (!currentProject) throw new Error(RepaintServiceError.NoProjectSelected)
 
-    console.log('RepaintService: Using style references', styleReferenceUrls)
+    console.log(RepaintServiceLog.UsingStyleReferences, styleReferenceUrls)
 
     // 1. Calculate Bounding Box of strokes
     let minX = Infinity,
@@ -240,17 +268,17 @@ export class RepaintService {
     bounds.width = Math.ceil(bounds.width / 64) * 64
     bounds.height = Math.ceil(bounds.height / 64) * 64
 
-    console.log('Final bounds with 50% expansion:', bounds)
+    console.log(RepaintServiceLog.FinalBoundsWithExpansion, bounds)
 
     // 4. Create Canvas for Image
-    const canvas = document.createElement('canvas')
+    const canvas = document.createElement(HtmlElementTag.Canvas)
     canvas.width = bounds.width
     canvas.height = bounds.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Failed to create canvas')
+    const ctx = canvas.getContext(CanvasContextType.TwoD)
+    if (!ctx) throw new Error(RepaintServiceError.FailedToCreateCanvas)
 
     // Fill with gray initially to avoid transparency issues
-    ctx.fillStyle = '#808080'
+    ctx.fillStyle = RepaintCanvasFill.ContextGray
     ctx.fillRect(0, 0, bounds.width, bounds.height)
 
     // 5. Draw Underlying Tiles
@@ -263,9 +291,9 @@ export class RepaintService {
 
     for (let tx = startTileX; tx <= endTileX; tx++) {
       for (let ty = startTileY; ty <= endTileY; ty++) {
-        const tileKey = `${tx},${ty}`
+        const tileKey = `${tx}${TILE_COORD_SEPARATOR}${ty}`
         const tile = tiles[tileKey]
-        if (tile) {
+        if (tile?.image_filename) {
           const promise = this.loadImage(tile.image_filename, tile.project_id)
             .then(img => {
               const drawX = tx * this.TILE_SIZE - bounds.x
@@ -283,23 +311,23 @@ export class RepaintService {
     await Promise.all(imagePromises)
 
     // 6. Create Mask
-    const maskCanvas = document.createElement('canvas')
+    const maskCanvas = document.createElement(HtmlElementTag.Canvas)
     maskCanvas.width = bounds.width
     maskCanvas.height = bounds.height
-    const maskCtx = maskCanvas.getContext('2d')
-    if (!maskCtx) throw new Error('Failed to create mask canvas')
+    const maskCtx = maskCanvas.getContext(CanvasContextType.TwoD)
+    if (!maskCtx) throw new Error(RepaintServiceError.FailedToCreateMaskCanvas)
 
     // Fill with Black (Keep) - Standard for many models, but let's double check Gemini.
     // Gemini/Imagen usually expects:
     // - Mask where white = edit, black = keep (or vice versa depending on specific endpoint).
     // Let's assume standard: White (255) = Edit, Black (0) = Keep.
-    maskCtx.fillStyle = 'black'
+    maskCtx.fillStyle = RepaintMaskColor.Black
     maskCtx.fillRect(0, 0, bounds.width, bounds.height)
 
     // Draw Strokes in White (Edit)
-    maskCtx.fillStyle = 'white'
-    maskCtx.lineCap = 'round'
-    maskCtx.lineJoin = 'round'
+    maskCtx.fillStyle = RepaintMaskColor.White
+    maskCtx.lineCap = CanvasLineStyle.Round
+    maskCtx.lineJoin = CanvasLineStyle.Round
 
     strokes.forEach(p => {
       const drawX = p.x - bounds.x
@@ -310,37 +338,37 @@ export class RepaintService {
       maskCtx.fill()
     })
 
-    const base64Image = canvas.toDataURL('image/png').split(',')[1]
-    const maskBase64 = maskCanvas.toDataURL('image/png').split(',')[1]
+    const base64Image = canvas.toDataURL(RepaintImageMime.Png).split(',')[1]
+    const maskBase64 = maskCanvas.toDataURL(RepaintImageMime.Png).split(',')[1]
 
     // 7. Set Debug Info in Store
     useWorldStore.getState().setDebugInfo({
-      image: canvas.toDataURL('image/png'),
-      mask: maskCanvas.toDataURL('image/png'),
+      image: canvas.toDataURL(RepaintImageMime.Png),
+      mask: maskCanvas.toDataURL(RepaintImageMime.Png),
     })
 
     // 8. Call server-side inpainting API
-    console.log('Calling server-side repaint API...', { styleReferenceUrls })
+    console.log(RepaintServiceLog.CallingServerSideApi, { styleReferenceUrls })
 
-    const response = await fetch('/api/repaint', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch(RepaintApiRoute.Repaint, {
+      method: HttpMethod.Post,
+      headers: { [HttpRequestHeader.ContentType]: ContentType.Json },
       body: JSON.stringify({
         projectId: currentProject.id,
         base64Image,
         maskBase64,
-        prompt: prompt || 'High quality, detailed, seamless blend',
+        prompt: prompt || RepaintDefaultPrompt.SeamlessBlend,
         styleReferenceUrls,
       }),
     })
 
     const data = await response.json()
     if (!response.ok || !data.imageBase64) {
-      throw new Error(data.error || 'Repaint API failed')
+      throw new Error(data.error || RepaintServiceError.RepaintApiFailed)
     }
 
     return {
-      imageUrl: `data:image/png;base64,${data.imageBase64}`,
+      imageUrl: `${RepaintDataUrlPrefix.PngBase64}${data.imageBase64}`,
       bounds,
     }
   }
@@ -348,10 +376,10 @@ export class RepaintService {
   private loadImage(filename: string, projectId: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const img = new Image()
-      img.crossOrigin = 'Anonymous'
+      img.crossOrigin = ImageCrossOrigin.Anonymous
       img.onload = () => resolve(img)
       img.onerror = reject
-      img.src = filename.startsWith('http') ? filename : `/projects/${projectId}/${filename}`
+      img.src = filename.startsWith(UrlScheme.Http) ? filename : `/projects/${projectId}/${filename}`
     })
   }
 }

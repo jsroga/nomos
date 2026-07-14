@@ -13,15 +13,18 @@ import {
   storytellerEpisodesResponseSchema,
 } from '@/domains/storyteller/io/storyteller.dto'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { AuthBypassValue, HttpHeader, QueryParam } from '@/shared/data/constants/protocol'
+import { StorytellerEpisodeStatus } from '@/domains/storyteller/core/storyteller-page-wire'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const parsedQuery = storytellerEpisodesQuerySchema.safeParse({
-    projectId: searchParams.get('projectId'),
+    projectId: searchParams.get(QueryParam.ProjectId),
   })
 
   if (!parsedQuery.success) {
-    return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED }, { status: 400 })
   }
 
   const { projectId } = parsedQuery.data
@@ -29,12 +32,12 @@ export async function GET(req: Request) {
   try {
     const { session } = await requireAuth()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
     }
 
     const hasAccess = await verifyProjectAccess(projectId, session.user.id)
     if (!hasAccess) {
-      return NextResponse.json({ error: 'Unauthorized access to project' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED_PROJECT_ACCESS }, { status: 403 })
     }
 
     const projectEpisodes = await db
@@ -45,22 +48,22 @@ export async function GET(req: Request) {
 
     return NextResponse.json(storytellerEpisodesResponseSchema.parse(projectEpisodes))
   } catch (error) {
-    console.error('Error fetching episodes:', error)
-    return NextResponse.json({ error: 'Failed to fetch episodes' }, { status: 500 })
+    console.error(API_LOG_PREFIX.EPISODES_FETCH_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_FETCH_EPISODES }, { status: 500 })
   }
 }
 
 export async function POST(req: Request) {
   try {
-    const bypassHeader = req.headers.get('x-bypass-auth')
-    const isSystem = bypassHeader === 'system'
+    const bypassHeader = req.headers.get(HttpHeader.BYPASS_AUTH)
+    const isSystem = bypassHeader === AuthBypassValue.System
 
     let session
     if (!isSystem) {
       const authResult = await requireAuth()
       session = authResult.session
       if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
       }
     }
 
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
     if (!isSystem && session) {
       const hasAccess = await verifyProjectAccess(projectId, session.user.id)
       if (!hasAccess) {
-        return NextResponse.json({ error: 'Unauthorized access to project' }, { status: 403 })
+        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED_PROJECT_ACCESS }, { status: 403 })
       }
     }
 
@@ -82,7 +85,7 @@ export async function POST(req: Request) {
         sequence,
         masterPrompt,
         summary,
-        status: 'planning',
+        status: StorytellerEpisodeStatus.Planning,
       })
       .returning()
 
@@ -90,12 +93,12 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
-        { error: 'Invalid episode payload', details: error.flatten() },
+        { error: API_ERROR.INVALID_EPISODE_PAYLOAD, details: error.flatten() },
         { status: 400 }
       )
     }
 
-    console.error('Error creating episode:', error)
-    return NextResponse.json({ error: 'Failed to create episode' }, { status: 500 })
+    console.error(API_LOG_PREFIX.EPISODES_CREATE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_CREATE_EPISODE }, { status: 500 })
   }
 }

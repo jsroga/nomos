@@ -23,6 +23,7 @@ import {
   getEntityTypeFromId,
   relationshipEnricher,
 } from '@/domains/storyteller/server'
+import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
 import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 import {
@@ -31,6 +32,15 @@ import {
   recordFromJson,
 } from '@/shared/data/json-guards'
 import { storyPlanRecordFromJson } from '@/domains/storyteller/core/entities/story-plan-wire'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  BooleanQueryValue,
+  EntityAutoRegisterFallback,
+  EntityAutoRegisterStatus,
+  HttpStatus,
+  QueryParam,
+  StringSeparator,
+} from '@/shared/data/constants/protocol'
 
 /**
  * Try to find entity from project data and auto-register it
@@ -78,11 +88,11 @@ async function tryAutoRegisterEntity(
     console.log(`[AutoRegister] Trying to register ${type}: ${refId}`)
     console.log(`[AutoRegister] namePart: "${namePart}", normalizedName: "${normalizedName}"`)
 
-    if (type === 'faction') {
+    if (type === StoryEntityType.Faction) {
       const factions = namedRecordsFromJson(storyPlan.factions)
       console.log(`[AutoRegister] Found ${factions.length} factions in storyPlan`)
       console.log(
-        '[AutoRegister] Faction names:',
+        API_LOG_PREFIX.AUTO_REGISTER_FACTION_NAMES,
         factions.map(f => f.name)
       )
 
@@ -109,7 +119,7 @@ async function tryAutoRegisterEntity(
         if (powerStructure) descriptionParts.push(powerStructure)
         if (politicalForces) descriptionParts.push(politicalForces)
         if (goals.length > 0) {
-          descriptionParts.push(`Goals: ${goals.slice(0, 2).join('; ')}`)
+          descriptionParts.push(`Goals: ${goals.slice(0, 2).join(StringSeparator.SemicolonSpace)}`)
         }
 
         const factionDescription =
@@ -138,7 +148,7 @@ async function tryAutoRegisterEntity(
         await entityRegistry.registerWithId(refId, {
           name: normalizedName,
           description: stubDescription,
-          metadata: { status: 'discovered', inferredFromText: true },
+          metadata: { status: EntityAutoRegisterStatus.Discovered, inferredFromText: true },
           projectId,
         })
         console.log(`✅ [AutoRegister] Created stub faction with ID ${refId}: ${normalizedName}`)
@@ -146,14 +156,13 @@ async function tryAutoRegisterEntity(
       }
     }
 
-    if (type === 'character') {
+    if (type === StoryEntityType.Character) {
       console.log(`[AutoRegister] Looking for character: ${normalizedName}`)
 
-      // Check cast in project
       const cast = namedRecordsFromJson(recordFromJson(project).cast)
       console.log(`[AutoRegister] Found ${cast.length} characters in project.cast`)
       console.log(
-        '[AutoRegister] Character names:',
+        API_LOG_PREFIX.AUTO_REGISTER_CHARACTER_NAMES,
         cast.map(c => c.name)
       )
 
@@ -175,7 +184,7 @@ async function tryAutoRegisterEntity(
         }
         if (role) descParts.push(`Role: ${role}`)
 
-        const description = descParts.length > 0 ? descParts.join('. ') : character.name
+        const description = descParts.length > 0 ? descParts.join(StringSeparator.DotSpace) : character.name
 
         await entityRegistry.registerWithId(refId, {
           name: character.name,
@@ -191,13 +200,6 @@ async function tryAutoRegisterEntity(
       }
 
       // Check characters table
-      const [dbChar] = await db
-        .select()
-        .from(characters)
-        .where(eq(characters.projectId, projectId))
-        .limit(100)
-
-      // This returns all, we need to filter
       const dbCharacters = await db
         .select()
         .from(characters)
@@ -237,7 +239,7 @@ async function tryAutoRegisterEntity(
       }
     }
 
-    if (type === 'rule') {
+    if (type === StoryEntityType.Rule) {
       const rules = namedRecordsFromJson(storyPlan.worldRules)
       const rule = rules.find(
         (r, idx) =>
@@ -248,7 +250,7 @@ async function tryAutoRegisterEntity(
       if (rule) {
         const ruleText = readString(rule.rule)
         await entityRegistry.registerWithId(refId, {
-          name: ruleText?.slice(0, 50) || 'Rule',
+          name: ruleText?.slice(0, 50) || EntityAutoRegisterFallback.Rule,
           description: readString(rule.consequence) || ruleText || '',
           metadata: rule,
           projectId,
@@ -258,7 +260,7 @@ async function tryAutoRegisterEntity(
       }
     }
 
-    if (type === 'place') {
+    if (type === StoryEntityType.Place) {
       console.log(`[AutoRegister] Registering place: ${normalizedName}`)
 
       // Try to find place description from world description or other fields
@@ -284,11 +286,11 @@ async function tryAutoRegisterEntity(
         projectId,
       })
       console.log(`✅ [AutoRegister] Registered place with ID ${refId}: ${normalizedName}`)
-      console.log(`   Description: ${placeDescription.slice(0, 100) || '(none)'}`)
+      console.log(`   Description: ${placeDescription.slice(0, 100) || EntityAutoRegisterFallback.None}`)
       return true
     }
 
-    if (type === 'event') {
+    if (type === StoryEntityType.Event) {
       await entityRegistry.registerWithId(refId, {
         name: normalizedName,
         description: context?.slice(0, 300) || '', // Removed "An event in the story"
@@ -301,7 +303,7 @@ async function tryAutoRegisterEntity(
 
     return false
   } catch (error) {
-    console.warn('[Entity Resolution] Auto-register failed:', error)
+    console.warn(API_LOG_PREFIX.ENTITY_AUTO_REGISTER_FAILED, error)
     return false
   }
 }
@@ -314,26 +316,35 @@ export async function GET(request: NextRequest) {
 
     const { session } = await requireAuth()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
     }
 
     const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get('projectId')
-    const idsParam = searchParams.get('ids')
-    const enrichRelationships = searchParams.get('enrichRelationships') === 'true'
-    const context = searchParams.get('context') // Surrounding text for contextual summaries
+    const projectId = searchParams.get(QueryParam.ProjectId)
+    const idsParam = searchParams.get(QueryParam.Ids)
+    const enrichRelationships =
+      searchParams.get(QueryParam.EnrichRelationships) === BooleanQueryValue.True
+    const context = searchParams.get(QueryParam.Context)
 
     if (!projectId) {
-      return NextResponse.json({ error: 'Missing projectId parameter' }, { status: 400 })
+      return NextResponse.json(
+        { error: API_ERROR.MISSING_PROJECT_ID },
+        { status: HttpStatus.BAD_REQUEST }
+      )
     }
 
-    // Security: Verify user has access to this project
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 403 })
+      return NextResponse.json(
+        { error: API_ERROR.PROJECT_ACCESS_DENIED },
+        { status: HttpStatus.FORBIDDEN }
+      )
     }
 
     if (!idsParam) {
-      return NextResponse.json({ error: 'Missing ids parameter' }, { status: 400 })
+      return NextResponse.json(
+        { error: API_ERROR.MISSING_IDS_PARAMETER },
+        { status: HttpStatus.BAD_REQUEST }
+      )
     }
 
     // Security: Limit number of IDs to prevent abuse
@@ -346,7 +357,10 @@ export async function GET(request: NextRequest) {
     const validIdPattern = /^[a-z0-9-_.'’]+$/i
     const invalidIds = ids.filter(id => !validIdPattern.test(id))
     if (invalidIds.length > 0) {
-      return NextResponse.json({ error: 'Invalid entity ID format', invalidIds }, { status: 400 })
+      return NextResponse.json(
+        { error: API_ERROR.INVALID_ENTITY_IDS_FORMAT, invalidIds },
+        { status: HttpStatus.BAD_REQUEST }
+      )
     }
 
     if (ids.length === 0) {
@@ -442,7 +456,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ entities })
   } catch (error) {
-    console.error('[API] Entity resolution failed:', error)
-    return NextResponse.json({ error: 'Failed to resolve entities' }, { status: 500 })
+    console.error(API_LOG_PREFIX.ENTITY_RESOLUTION_FAILED, error)
+    return NextResponse.json(
+      { error: API_ERROR.FAILED_RESOLVE_ENTITIES },
+      { status: HttpStatus.INTERNAL }
+    )
   }
 }

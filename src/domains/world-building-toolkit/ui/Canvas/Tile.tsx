@@ -3,21 +3,13 @@ import { useWorldStore } from '@/domains/world-building-toolkit'
 import { cn } from '@/shared/data/utils'
 import { AlertCircle, Loader2 } from 'lucide-react'
 
-const STAGE_LABELS: Record<string, string> = {
-  initializing: 'Init',
-  assembling_context: 'Context',
-  generating_image: 'Generating',
-  uploading_variants: 'Uploading',
-  uploading: 'Uploading',
-  preparing_variants: 'Variants',
-  submitting_upload_paint: 'Submitting',
-  waiting_upload_paint: 'MJ…',
-  submitting_upscale: 'Upscaling',
-  waiting_upscale: 'MJ upscale…',
-  checking_original: 'Finishing',
-  completed: 'Done',
-  unknown: 'Starting',
-}
+import {
+  TILE_COORD_SEPARATOR,
+  TILE_STAGE_LABELS,
+  TileProgressLabel,
+} from '@/domains/world-building-toolkit/ui/constants/tile-stage-labels'
+
+const STAGE_LABELS = TILE_STAGE_LABELS
 
 interface TileProps {
   x: number
@@ -27,12 +19,13 @@ interface TileProps {
 
 interface TileProgressOverlayProps {
   tileProgressData?: { progress: number; stage: string }
+  empty?: boolean
 }
 
 const TileProgressOverlay: React.FC<TileProgressOverlayProps> = ({ tileProgressData, empty }) => {
   const progress = tileProgressData?.progress ?? 0
   const stage = tileProgressData?.stage ?? ''
-  const label = STAGE_LABELS[stage] ?? (stage ? stage.replace(/_/g, ' ') : 'Starting')
+  const label = STAGE_LABELS[stage] ?? (stage ? stage.replace(/_/g, ' ') : TileProgressLabel.Starting)
   const barWidth = Math.max(progress, progress > 0 ? 4 : 0)
 
   return (
@@ -62,24 +55,23 @@ const TileProgressOverlay: React.FC<TileProgressOverlayProps> = ({ tileProgressD
 
 export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
   // IMPORTANT: Access tiles directly, not via getTile(), so Zustand tracks the dependency
-  const tile = useWorldStore(state => state.tiles[`${x},${y}`])
+  const tile = useWorldStore(state => state.tiles[`${x}${TILE_COORD_SEPARATOR}${y}`])
   const selectedTiles = useWorldStore(state => state.selectedTiles)
-  const toggleTileSelection = useWorldStore(state => state.toggleTileSelection)
   const currentProject = useWorldStore(state => state.currentProject)
   const generatingTiles = useWorldStore(state => state.generatingTiles)
   const upscalingTiles = useWorldStore(state => state.upscalingTiles)
   const repaintingTiles = useWorldStore(state => state.repaintingTiles)
   const enhancingTiles = useWorldStore(state => state.enhancingTiles)
-  const tileError = useWorldStore(state => state.failedTiles[`${x},${y}`])
+  const tileError = useWorldStore(state => state.failedTiles[`${x}${TILE_COORD_SEPARATOR}${y}`])
 
   const isSelected = selectedTiles.some(t => t.x === x && t.y === y)
-  const isGenerating = !!generatingTiles[`${x},${y}`]
-  const isUpscaling = !!upscalingTiles[`${x},${y}`]
-  const isRepainting = !!repaintingTiles[`${x},${y}`]
-  const isEnhancing = !!enhancingTiles[`${x},${y}`]
+  const isGenerating = !!generatingTiles[`${x}${TILE_COORD_SEPARATOR}${y}`]
+  const isUpscaling = !!upscalingTiles[`${x}${TILE_COORD_SEPARATOR}${y}`]
+  const isRepainting = !!repaintingTiles[`${x}${TILE_COORD_SEPARATOR}${y}`]
+  const isEnhancing = !!enhancingTiles[`${x}${TILE_COORD_SEPARATOR}${y}`]
 
   const isSelectMode = useWorldStore(state => state.isSelectMode)
-  const tileProgressData = useWorldStore(state => state.tileProgress[`${x},${y}`])
+  const tileProgressData = useWorldStore(state => state.tileProgress[`${x}${TILE_COORD_SEPARATOR}${y}`])
 
   const handleClick = (e: React.MouseEvent) => {
     if (isSelectMode) {
@@ -91,7 +83,6 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
 
     // Single selection only
     useWorldStore.getState().setSelectedTile({ x, y })
-    window.dispatchEvent(new CustomEvent('tile-selected'))
   }
 
   // Construct image URL: /projects/<projectId>/<filename>

@@ -14,6 +14,7 @@ export type ScorerId =
   | 'persona-fidelity'
   | 'prose-craft'
   | 'stakes-cost'
+  | 'story-motion'
   | 'beat-plan-concreteness'
   | 'critic-discipline'
 

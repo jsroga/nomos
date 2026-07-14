@@ -4,6 +4,20 @@ import { characters } from '@/db'
 import { verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq, desc, and, sql } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  ApiRoutePath,
+  AppModuleId,
+  CharacterRole,
+  ContentType,
+  CrossDomainSuggestionCopy,
+  CrossDomainSuggestionType,
+  GameEntityKind,
+  HttpMethod,
+  HttpStatus,
+  QueryParam,
+} from '@/shared/data/constants/protocol'
+import { DEFAULT_BASE_URL } from '@/shared/data/constants/url'
 
 /**
  * @openapi
@@ -191,18 +205,18 @@ import { requireAuth } from '@/shared/auth/auth'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const projectId = searchParams.get('projectId')
+  const projectId = searchParams.get(QueryParam.ProjectId)
 
   if (!projectId) {
-    return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    return NextResponse.json({ error: API_ERROR.PROJECT_ID_IS_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
   }
 
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
 
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.FORBIDDEN })
     }
 
     const result = await db
@@ -212,15 +226,15 @@ export async function GET(req: NextRequest) {
       .orderBy(desc(characters.createdAt))
     return NextResponse.json(result)
   } catch (error) {
-    console.error('Failed to fetch characters:', error)
-    return NextResponse.json({ error: 'Failed to fetch characters' }, { status: 500 })
+    console.error(API_LOG_PREFIX.FAILED_FETCH_CHARACTERS_LOG, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_FETCH_CHARACTERS }, { status: HttpStatus.INTERNAL })
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
 
     const body = await req.json()
     const {
@@ -243,11 +257,11 @@ export async function POST(req: NextRequest) {
     } = body
 
     if (!projectId || !name) {
-      return NextResponse.json({ error: 'Project ID and Name are required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.CHARACTER_PROJECT_AND_NAME_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
     }
 
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.FORBIDDEN })
     }
 
     // Idempotency check: Check if character with same name exists in project
@@ -273,7 +287,7 @@ export async function POST(req: NextRequest) {
       .values({
         projectId,
         name,
-        role: role || 'Supporting',
+        role: role || CharacterRole.Supporting,
         gender,
         characterPrompt,
         description,
@@ -304,17 +318,17 @@ export async function POST(req: NextRequest) {
     let entityId: string | null = null
     try {
       const entityResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/entities`,
+        `${process.env.NEXT_PUBLIC_BASE_URL || DEFAULT_BASE_URL}${ApiRoutePath.Entities}`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify({
             projectId,
             userId: session.user.id,
-            entityType: 'character',
+            entityType: GameEntityKind.Character,
             name,
             description: description || characterPrompt,
-            sourceDomain: 'storyteller',
+            sourceDomain: AppModuleId.Storyteller,
             sourceEntityId: newCharacter.id,
             metadata: {
               role,
@@ -324,7 +338,7 @@ export async function POST(req: NextRequest) {
               metrics: { stress, trust, power, morality, hope, isolation, transformation },
             },
             imageUrl: portraitUrl,
-            tags: [role || 'Supporting', gender].filter(Boolean),
+            tags: [role || CharacterRole.Supporting, gender].filter(Boolean),
           }),
         }
       )
@@ -334,7 +348,7 @@ export async function POST(req: NextRequest) {
         entityId = entity?.id
       }
     } catch (error) {
-      console.error('[Character API] Failed to create game entity:', error)
+      console.error(API_LOG_PREFIX.CHARACTER_ENTITY_CREATE_FAILED, error)
       // Don't fail the character creation if entity creation fails
     }
 
@@ -342,10 +356,10 @@ export async function POST(req: NextRequest) {
     const suggestions = [
       {
         id: `char-to-mechanics-${newCharacter.id}`,
-        type: 'cross_domain',
+        type: CrossDomainSuggestionType.CrossDomain,
         title: `Design mechanics for ${name}`,
-        description: 'Create gameplay systems and abilities for this character',
-        targetDomain: 'loop-creator',
+        description: CrossDomainSuggestionCopy.CharToMechanicsDescription,
+        targetDomain: AppModuleId.LoopCreator,
         targetRoute: `/${projectId}/loop-creator`,
         autoMessage: `Design combat and movement mechanics for @${name}. Consider their role${role ? ` as ${role}` : ''}.`,
         priority: 5,
@@ -353,10 +367,10 @@ export async function POST(req: NextRequest) {
       },
       {
         id: `char-to-home-${newCharacter.id}`,
-        type: 'cross_domain',
+        type: CrossDomainSuggestionType.CrossDomain,
         title: `Build ${name}'s home`,
-        description: 'Design the character\'s living space in 3D',
-        targetDomain: 'interior-designer',
+        description: CrossDomainSuggestionCopy.CharToHomeDescription,
+        targetDomain: AppModuleId.InteriorDesigner,
         targetRoute: `/${projectId}/interior-design`,
         priority: 3,
         entityId: entityId || newCharacter.id,
@@ -368,15 +382,15 @@ export async function POST(req: NextRequest) {
       _suggestions: suggestions,
     })
   } catch (error) {
-    console.error('Failed to create character:', error)
-    return NextResponse.json({ error: 'Failed to create character' }, { status: 500 })
+    console.error(API_LOG_PREFIX.FAILED_CREATE_CHARACTER_LOG, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_CREATE_CHARACTER }, { status: HttpStatus.INTERNAL })
   }
 }
 
 export async function PATCH(req: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
 
     const body = await req.json()
     const {
@@ -389,7 +403,6 @@ export async function PATCH(req: NextRequest) {
       trust,
       power,
       morality,
-      hope,
       isolation,
       transformation,
       mbti,
@@ -400,12 +413,12 @@ export async function PATCH(req: NextRequest) {
     } = body
 
     if (!id) {
-      return NextResponse.json({ error: 'Character ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.CHARACTER_ID_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
     }
 
     const access = await verifyCharacterAccess(id, session.user.id)
     if (!access.hasAccess) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.FORBIDDEN })
     }
 
     // Build update object with only valid fields
@@ -439,26 +452,26 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json(updatedCharacter)
   } catch (error) {
-    console.error('Failed to update character:', error)
-    return NextResponse.json({ error: 'Failed to update character' }, { status: 500 })
+    console.error(API_LOG_PREFIX.FAILED_UPDATE_CHARACTER_LOG, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_UPDATE_CHARACTER }, { status: HttpStatus.INTERNAL })
   }
 }
 
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const id = searchParams.get('id')
+  const id = searchParams.get(QueryParam.Id)
 
   if (!id) {
-    return NextResponse.json({ error: 'Character ID is required' }, { status: 400 })
+    return NextResponse.json({ error: API_ERROR.CHARACTER_ID_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
   }
 
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
 
     const access = await verifyCharacterAccess(id, session.user.id)
     if (!access.hasAccess) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.FORBIDDEN })
     }
 
     // Get character to find associated entity
@@ -470,25 +483,25 @@ export async function DELETE(req: NextRequest) {
     if (character) {
       try {
         const entitiesResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/entities?projectId=${character.projectId}&sourceDomain=storyteller`
+          `${process.env.NEXT_PUBLIC_BASE_URL || DEFAULT_BASE_URL}${ApiRoutePath.Entities}?projectId=${character.projectId}&sourceDomain=${AppModuleId.Storyteller}`
         )
         const { entities } = await entitiesResponse.json()
         const entity = entities?.find((e: any) => e.source_entity_id === id)
 
         if (entity) {
           await fetch(
-            `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/entities/${entity.id}`,
-            { method: 'DELETE' }
+            `${process.env.NEXT_PUBLIC_BASE_URL || DEFAULT_BASE_URL}${ApiRoutePath.Entities}/${entity.id}`,
+            { method: HttpMethod.Delete }
           )
         }
       } catch (error) {
-        console.error('[Character API] Failed to delete game entity:', error)
+        console.error(API_LOG_PREFIX.CHARACTER_ENTITY_DELETE_FAILED, error)
       }
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Failed to delete character:', error)
-    return NextResponse.json({ error: 'Failed to delete character' }, { status: 500 })
+    console.error(API_LOG_PREFIX.FAILED_DELETE_CHARACTER_LOG, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_DELETE_CHARACTER }, { status: HttpStatus.INTERNAL })
   }
 }

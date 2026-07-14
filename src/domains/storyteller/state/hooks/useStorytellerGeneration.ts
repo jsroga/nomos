@@ -1,12 +1,33 @@
 'use client'
 
 import { useEffect, useCallback, useRef } from 'react'
-import { ActionHistoryStatus } from '@/domains/storyteller'
+import { ActionHistoryStatus, ActionType } from '@/domains/storyteller'
 import type { BeatCard as Beat } from '@/domains/storyteller/core/types/StoryTypes'
 import { resolveEpisodeId } from '@/domains/storyteller/state/utils/episode-route'
-import { customEventDetailRecord, readNumber, readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import {
+  StorytellerGenerationAgentName,
+  StorytellerGenerationAlert,
+  StorytellerGenerationFailLabel,
+  StorytellerGenerationLog,
+  StorytellerHttpMethod,
+  StorytellerLogMessage,
+  StorytellerPosterThemeFallback,
+  StorytellerPosterType,
+  StorytellerUnknownLabel,
+} from '@/domains/storyteller/core/storyteller-page-wire'
+import {
+  MoodboardStorageKey,
+  moodboardPrimaryStorageKey,
+} from '@/domains/storyteller/services/constants/moodboard-generation-service'
+import {
+  PosterPersistField,
+} from '@/domains/storyteller/services/constants/poster-generation-service'
+import { UrlScheme } from '@/shared/data/constants/protocol'
+import { BrowserStorageEventName } from '@/shared/chat/ui/constants/chat-interface'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 
 export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
@@ -37,7 +58,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
           currentProject!.id,
           async (url, episodeId, type) => {
             if (episodeId === currentEpisodeId) {
-              if (type === 'poster') {
+              if (type === StorytellerPosterType.Poster) {
                 setIsGeneratingPoster(false)
                 setStoryPlan(prev => (prev ? { ...prev, posterUrl: url } : null))
               } else {
@@ -47,14 +68,17 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
             }
 
             try {
-              const payload = type === 'poster' ? { posterUrl: url } : { storyboardUrl: url }
+              const payload =
+                type === StorytellerPosterType.Poster
+                  ? { [PosterPersistField.PosterUrl]: url }
+                  : { [PosterPersistField.StoryboardUrl]: url }
               await fetch(`/api/storyteller/episodes/${episodeId}`, {
-                method: 'PATCH',
+                method: StorytellerHttpMethod.Patch,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
               })
             } catch (e) {
-              console.error('Failed to save resumed generation:', e)
+              console.error(StorytellerLogMessage.FailedSaveResumedGeneration, e)
             }
           }
         )
@@ -81,14 +105,14 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       } catch { /* ignore */ }
 
       if (!geminiApiKey) {
-        alert('Gemini API Key missing! Configure it in your environment.')
+        alert(StorytellerGenerationAlert.GeminiApiKeyMissing)
         setIsGeneratingStoryboard(false)
         return
       }
 
       try {
         const premise = recordFromJson(recordFromJson(storyPlan).premise)
-        const prompt = `A visual storyboard for an episode titled "${readString(premise.title) ?? readString(storyPlan?.title) ?? 'Unknown'}".`
+        const prompt = `A visual storyboard for an episode titled "${readString(premise.title) ?? readString(storyPlan?.title) ?? StorytellerUnknownLabel.Unknown}".`
 
         const beatsPayload = beats.map((b: Beat) => ({
           logline: b.logline,
@@ -110,18 +134,18 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
             if (episodeId) {
               try {
                 await fetch(`/api/storyteller/episodes/${episodeId}`, {
-                  method: 'PATCH',
+                  method: StorytellerHttpMethod.Patch,
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ storyboardUrl: url }),
+                  body: JSON.stringify({ [PosterPersistField.StoryboardUrl]: url }),
                 })
               } catch (e) {
-                console.error('Failed to save storyboard URL:', e)
+                console.error(StorytellerLogMessage.FailedSaveStoryboardUrl, e)
               }
             }
           }
         )
       } catch (error) {
-        console.error('Storyboard generation failed', error)
+        console.error(StorytellerGenerationLog.StoryboardFailed, error)
         setIsGeneratingStoryboard(false)
       }
     },
@@ -143,26 +167,26 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       let apiKey = ''
       try {
         if (typeof window !== 'undefined') {
-          const stored = localStorage.getItem('ai-config-legnext')
+          const stored = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
           if (stored) {
             const parsed = JSON.parse(stored)
             apiKey = parsed.apiKey || ''
           }
         }
       } catch (e) {
-        console.warn('Failed to parse LegNext config', e)
+        console.warn(StorytellerGenerationLog.LegNextConfigParseFailed, e)
       }
 
       try {
         const premise = recordFromJson(recordFromJson(storyPlan).premise)
-        const prompt = `Title: ${readString(premise.title) ?? readString(storyPlan?.title) ?? 'Unknown'}. Theme: ${readString(premise.thematicFocus) ?? 'Cinematic'}. ${readString(premise.protagonistHook) ?? ''}`
+        const prompt = `Title: ${readString(premise.title) ?? readString(storyPlan?.title) ?? StorytellerUnknownLabel.Unknown}. Theme: ${readString(premise.thematicFocus) ?? StorytellerPosterThemeFallback.Cinematic}. ${readString(premise.protagonistHook) ?? ''}`
 
         // Log action start
         setActionHistory(prev => [
           {
             id: `poster-${Date.now()}`,
-            action: { type: 'GENERATE_POSTER', payload: { episodeId, prompt } },
-            agentName: 'PosterAgent',
+            action: { type: ActionType.GENERATE_POSTER, payload: { episodeId, prompt } },
+            agentName: StorytellerGenerationAgentName.PosterAgent,
             status: ActionHistoryStatus.COMMITTED,
             timestamp: new Date(),
           },
@@ -182,12 +206,12 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
             if (episodeId) {
               try {
                 await fetch(`/api/storyteller/episodes/${episodeId}`, {
-                  method: 'PATCH',
+                  method: StorytellerHttpMethod.Patch,
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ posterUrl: url }),
+                  body: JSON.stringify({ [PosterPersistField.PosterUrl]: url }),
                 })
               } catch (e) {
-                console.error('Failed to save poster URL:', e)
+                console.error(StorytellerLogMessage.FailedSavePosterUrl, e)
               }
             }
 
@@ -195,8 +219,8 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
             setActionHistory(prev => [
               {
                 id: `poster-complete-${Date.now()}`,
-                action: { type: 'GENERATE_POSTER', payload: { episodeId, prompt } },
-                agentName: 'PosterAgent',
+                action: { type: ActionType.GENERATE_POSTER, payload: { episodeId, prompt } },
+                agentName: StorytellerGenerationAgentName.PosterAgent,
                 status: ActionHistoryStatus.COMMITTED,
                 timestamp: new Date(),
               },
@@ -205,16 +229,19 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
           }
         )
       } catch (error) {
-        console.error('Poster generation failed', error)
+        console.error(StorytellerGenerationLog.PosterFailed, error)
         setIsGeneratingPoster(false)
-        alert('Poster generation failed. Please check the API key configuration or try again.')
+        alert(StorytellerGenerationAlert.PosterGenerationFailed)
 
         // Log failure
         setActionHistory(prev => [
           {
             id: `poster-fail-${Date.now()}`,
-            action: { type: 'GENERATE_POSTER', payload: { episodeId, prompt: 'Failed' } },
-            agentName: 'PosterAgent',
+            action: {
+              type: ActionType.GENERATE_POSTER,
+              payload: { episodeId, prompt: StorytellerGenerationFailLabel.Failed },
+            },
+            agentName: StorytellerGenerationAgentName.PosterAgent,
             status: ActionHistoryStatus.UNDONE,
             timestamp: new Date(),
           },
@@ -227,9 +254,8 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
 
   // Moodboard Generation Trigger
   const handleMoodboardTrigger = useCallback(
-    async (event?: Event) => {
-      const detail = event ? customEventDetailRecord(event) : {}
-      const projectId = readString(detail.projectId) || currentProject?.id
+    async (projectIdOverride?: string) => {
+      const projectId = projectIdOverride || currentProject?.id
 
       if (!projectId) return
 
@@ -257,42 +283,22 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
             }
           }
         } catch (error) {
-          console.error('Failed to refetch moodboard data:', error)
+          console.error(StorytellerLogMessage.FailedRefetchMoodboard, error)
         }
       })
     },
     [currentProject?.id]
   )
 
-  // Listeners
-  useEffect(() => {
-    const onStoryboard = (e: Event) => handleStoryboardTrigger(e)
-    const onPoster = (e: Event) => handlePosterTrigger(e)
-    const onMoodboard = (e: Event) => handleMoodboardTrigger(e)
-
-    window.addEventListener('trigger-storyboard-generation', onStoryboard)
-    window.addEventListener('generate-episode-poster', onPoster)
-    window.addEventListener('trigger-moodboard-generation', onMoodboard)
-
-    return () => {
-      window.removeEventListener('trigger-storyboard-generation', onStoryboard)
-      window.removeEventListener('generate-episode-poster', onPoster)
-      window.removeEventListener('trigger-moodboard-generation', onMoodboard)
-    }
-  }, [handleStoryboardTrigger, handlePosterTrigger, handleMoodboardTrigger])
-
-  // Update StoryPlanBoard to pass isGeneratingPoster
-  // ... (Wait, I need to check where StoryPlanBoard is rendered to pass the prop)
-
   // Update primary moodboard background
   const updatePrimaryMoodboard = useCallback(() => {
     if (!currentProject?.id) return
-    const savedPrimary = localStorage.getItem(`moodboard-primary-${currentProject.id}`)
+    const savedPrimary = localStorage.getItem(moodboardPrimaryStorageKey(currentProject.id))
     const primaryIdx = savedPrimary !== null ? parseInt(savedPrimary) : null
     if (primaryIdx !== null && storyPlan?.moodImages?.[primaryIdx]) {
       const img = storyPlan.moodImages[primaryIdx]
       // Handle both local filenames and absolute URLs
-      if (img.startsWith('http')) {
+      if (img.startsWith(UrlScheme.Http)) {
         setPrimaryMoodboardUrl(img)
       } else {
         setPrimaryMoodboardUrl(`/projects/${currentProject.id}/${img}`)
@@ -300,32 +306,46 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
     } else {
       setPrimaryMoodboardUrl(null)
     }
-  }, [currentProject, storyPlan?.moodImages])
+  }, [currentProject, storyPlan?.moodImages, setPrimaryMoodboardUrl])
 
   // Listen for primary moodboard changes and generation completion
   useEffect(() => {
     updatePrimaryMoodboard()
+  }, [updatePrimaryMoodboard])
+
+  useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key?.startsWith('moodboard-primary-')) {
+      if (e.key?.startsWith(MoodboardStorageKey.PrimaryPrefix)) {
         updatePrimaryMoodboard()
       }
     }
-    const handleCustomEvent = () => updatePrimaryMoodboard()
+    window.addEventListener(BrowserStorageEventName.Storage, handleStorageChange)
+    return () => window.removeEventListener(BrowserStorageEventName.Storage, handleStorageChange)
+  }, [updatePrimaryMoodboard])
 
-    // Handle moodboard generation completion from the service
-    const handleMoodboardComplete = async (e: Event) => {
-      const detail = customEventDetailRecord(e)
-      const detailProjectId = readString(detail.projectId)
-      if (!detailProjectId || detailProjectId !== currentProject?.id) return
+  const moodboardPrimaryVersion = useStorytellerUiStore(state => state.moodboardPrimaryVersion)
+  const moodboardComplete = useStorytellerUiStore(state => state.moodboardComplete)
+  const moodboardCompleteVersion = useStorytellerUiStore(state => state.moodboardCompleteVersion)
 
-      console.log('📸 [Moodboard] Generation complete, updating UI:', detail)
+  useEffect(() => {
+    if (moodboardPrimaryVersion === 0) return
+    updatePrimaryMoodboard()
+  }, [moodboardPrimaryVersion, updatePrimaryMoodboard])
 
-      const images = recordArrayFromJson(detail.images).map(img => readString(img)).filter((url): url is string => !!url)
+  useEffect(() => {
+    if (!moodboardComplete || moodboardCompleteVersion === 0) return
+    const detail = moodboardComplete
+    if (detail.projectId !== currentProject?.id) return
+
+    console.log(StorytellerLogMessage.MoodboardGenerationComplete, detail)
+
+    void (async () => {
+      const images = detail.images.filter((url): url is string => !!url)
       if (images.length > 0) {
         setStoryPlan(prev => {
           if (!prev) return prev
           const currentImages = prev.moodImages ?? []
-          const promptIndex = readNumber(detail.promptIndex)
+          const promptIndex = detail.promptIndex
 
           if (promptIndex !== undefined) {
             const updated = [...currentImages]
@@ -338,7 +358,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       }
 
       try {
-        const response = await fetch(`/api/storyteller/projects/${detailProjectId}`)
+        const response = await fetch(`/api/storyteller/projects/${detail.projectId}`)
         if (response.ok) {
           const data = await response.json()
           const bible = data.seriesBible || data.series_bible
@@ -347,21 +367,18 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
           }
         }
       } catch (error) {
-        console.error('Failed to refetch moodboard data:', error)
+        console.error(StorytellerLogMessage.FailedRefetchMoodboard, error)
       }
 
       updatePrimaryMoodboard()
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('moodboard-primary-changed', handleCustomEvent)
-    window.addEventListener('moodboard-generation-complete', handleMoodboardComplete)
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('moodboard-primary-changed', handleCustomEvent)
-      window.removeEventListener('moodboard-generation-complete', handleMoodboardComplete)
-    }
-  }, [updatePrimaryMoodboard, currentProject?.id])
+    })()
+  }, [
+    moodboardComplete,
+    moodboardCompleteVersion,
+    currentProject?.id,
+    setStoryPlan,
+    updatePrimaryMoodboard,
+  ])
 
   return {
     handleStoryboardTrigger,

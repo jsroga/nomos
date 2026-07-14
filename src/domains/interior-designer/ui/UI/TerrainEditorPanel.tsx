@@ -3,8 +3,8 @@
 import React from 'react'
 import {
   useInteriorStore,
-  TerrainQuality,
 } from '@/domains/interior-designer'
+import { ButtonVariantKey, ButtonSizeKey } from '@/components/Button/constants/button-styles'
 import { Slider } from '@/components/Slider'
 import { Switch } from '@/components/Switch'
 import { Button } from '@/components/Button'
@@ -23,32 +23,36 @@ import {
 
 import { cn } from '@/shared/data/utils'
 import { SidebarSection, SidebarLabel } from '@/components/DomainSidebar'
+import type { TerrainBrushType } from '@/domains/interior-designer/core/interior-types'
+import {
+  TERRAIN_BRUSH_LABELS,
+  TERRAIN_BRUSH_TYPES,
+  TERRAIN_MATERIAL_TYPES,
+  TERRAIN_QUALITIES,
+  TERRAIN_QUALITY_LABELS,
+  TerrainBrushKind,
+} from '@/domains/interior-designer/constants/terrain-editor-panel'
 
 // Brush type icon component
-const BrushIcon: React.FC<{ type: 'raise' | 'lower' | 'flatten' | 'smooth'; size?: number }> = ({
+const BrushIcon: React.FC<{ type: TerrainBrushType; size?: number }> = ({
   type,
   size = 18,
 }) => {
   switch (type) {
-    case 'raise':
+    case TerrainBrushKind.Raise:
       return <ChevronUp size={size} />
-    case 'lower':
+    case TerrainBrushKind.Lower:
       return <ChevronDown size={size} />
-    case 'flatten':
+    case TerrainBrushKind.Flatten:
       return <Minus size={size} />
-    case 'smooth':
+    case TerrainBrushKind.Smooth:
       return <Waves size={size} />
   }
 }
 
-// Quality preset labels
-const qualityLabels: Record<TerrainQuality, string> = {
-  low: 'Low (8/m)',
-  medium: 'Medium (16/m)',
-  high: 'High (40/m)',
-}
+// Quality preset labels imported from constants
 
-const terrainQualities: TerrainQuality[] = ['low', 'medium', 'high']
+const terrainQualities = TERRAIN_QUALITIES
 
 export const TerrainEditorPanel: React.FC = () => {
   // Terrain Settings
@@ -74,19 +78,17 @@ export const TerrainEditorPanel: React.FC = () => {
   // Material Paint Settings (kept for future use but not used in simplified UI)
   const resetTerrain = useInteriorStore(state => state.resetTerrain)
 
-  const brushTypes: Array<{ type: 'raise' | 'lower' | 'flatten' | 'smooth'; label: string }> = [
-    { type: 'raise', label: 'Raise' },
-    { type: 'lower', label: 'Lower' },
-    { type: 'flatten', label: 'Flatten' },
-    { type: 'smooth', label: 'Smooth' },
-  ]
+  const brushTypes = TERRAIN_BRUSH_TYPES.map(type => ({
+    type,
+    label: TERRAIN_BRUSH_LABELS[type],
+  }))
 
   // Section 5: Advanced (Hidable)
   const [showAdvanced, setShowAdvanced] = React.useState(false)
 
   // Check if there are any ground surfaces (grass, dirt, sand, rock)
   const surfaces = useInteriorStore(state => state.surfaces)
-  const groundSurfaceTypes = ['grass', 'dirt', 'sand', 'rock']
+  const groundSurfaceTypes = TERRAIN_MATERIAL_TYPES
   const hasGroundSurface = surfaces.some(s => groundSurfaceTypes.includes(s.type))
 
   // Auto-initialize heightmap when ground surface exists but heightmap doesn't
@@ -127,8 +129,8 @@ export const TerrainEditorPanel: React.FC = () => {
           Atmosphere & Terrain
         </h2>
         <Button
-          variant="ghost"
-          size="icon"
+          variant={ButtonVariantKey.Ghost}
+          size={ButtonSizeKey.Icon}
           className="h-8 w-8 text-zinc-500 hover:text-indigo-400 hover:bg-white/5 rounded-lg transition-all"
           onClick={resetTerrain}
           title="Reset"
@@ -383,7 +385,7 @@ export const TerrainEditorPanel: React.FC = () => {
                         : 'text-zinc-600 hover:text-zinc-400'
                     )}
                   >
-                    {q}
+                    {TERRAIN_QUALITY_LABELS[q]}
                   </button>
                 ))}
               </div>

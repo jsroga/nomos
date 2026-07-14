@@ -6,6 +6,16 @@ import { selectModeService } from '@/domains/world-building-toolkit/state/client
 import { Sparkles, X, ArrowRight } from 'lucide-react'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { useTour } from '@/components/shell/Tour'
+import { TILE_COORD_SEPARATOR } from '@/domains/world-building-toolkit/ui/constants/tile-stage-labels'
+import {
+  WORLD_CANVAS_API_CALLING_STATUS,
+  WORLD_CANVAS_APPLY_REPAINT_FAILED_LOG,
+  WORLD_CANVAS_ORIGIN_TILE_COORD,
+  WORLD_CANVAS_SEGMENTATION_FAILED_LOG,
+  WorldCanvasDomEvent,
+  WorldCanvasDomTag,
+  WorldCanvasKey,
+} from './constants/world-canvas'
 
 const TILE_SIZE = 512
 
@@ -142,7 +152,7 @@ export const WorldCanvas: React.FC = () => {
     }
   }
 
-  const handleMouseUp = (e: React.MouseEvent) => {
+  const handleMouseUp = (_e: React.MouseEvent) => {
     // Finalize box drawing
     if (isSelectMode && isDrawingBox && drawingBoxStart && drawingBoxEnd) {
       const boxWidth = Math.abs(drawingBoxEnd.x - drawingBoxStart.x)
@@ -196,7 +206,7 @@ export const WorldCanvas: React.FC = () => {
     setIsDragging(false)
   }
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (_e: React.MouseEvent) => {
     // Don't handle click in select mode (we use mousedown/mouseup for box drawing)
     if (isSelectMode) {
       return
@@ -231,7 +241,7 @@ export const WorldCanvas: React.FC = () => {
     setSegmenting(true)
     useWorldStore.getState().setSelectDebugInfo({
       box,
-      apiResponse: { status: 'Calling API...', textPrompt },
+      apiResponse: { status: WORLD_CANVAS_API_CALLING_STATUS, textPrompt },
     })
 
     try {
@@ -247,7 +257,7 @@ export const WorldCanvas: React.FC = () => {
         useWorldStore.getState().setSelectDebugInfo(result.debugInfo)
       }
     } catch (error: unknown) {
-      console.error('Segmentation failed:', error)
+      console.error(WORLD_CANVAS_SEGMENTATION_FAILED_LOG, error)
       useWorldStore.getState().setSelectDebugInfo({
         box,
         apiResponse: { error: getErrorMessage(error) || String(error) },
@@ -292,10 +302,10 @@ export const WorldCanvas: React.FC = () => {
     }
 
     // Add event listener with passive: false to allow preventDefault
-    container.addEventListener('wheel', handleWheel, { passive: false })
+    container.addEventListener(WorldCanvasDomEvent.Wheel, handleWheel, { passive: false })
 
     return () => {
-      container.removeEventListener('wheel', handleWheel)
+      container.removeEventListener(WorldCanvasDomEvent.Wheel, handleWheel)
     }
   }, [viewport, setViewport, isRepaintMode])
 
@@ -306,7 +316,9 @@ export const WorldCanvas: React.FC = () => {
       const target = e.target
       if (
         target instanceof HTMLElement &&
-        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+        (target.tagName === WorldCanvasDomTag.Input ||
+          target.tagName === WorldCanvasDomTag.Textarea ||
+          target.isContentEditable)
       ) {
         return
       }
@@ -324,7 +336,7 @@ export const WorldCanvas: React.FC = () => {
       }
 
       // ESC - Exit modes
-      if (e.key === 'Escape') {
+      if (e.key === WorldCanvasKey.Escape) {
         e.preventDefault()
         if (repaintResult) {
           setRepaintResult(null)
@@ -348,7 +360,7 @@ export const WorldCanvas: React.FC = () => {
       }
 
       // Enter - Apply repaint
-      if (e.key === 'Enter' && repaintResult) {
+      if (e.key === WorldCanvasKey.Enter && repaintResult) {
         e.preventDefault()
         try {
           const { repaintService } =
@@ -358,14 +370,14 @@ export const WorldCanvas: React.FC = () => {
           clearRepaintStrokes()
           setDebugInfo(null)
         } catch (error) {
-          console.error('Apply repaint failed:', error)
+          console.error(WORLD_CANVAS_APPLY_REPAINT_FAILED_LOG, error)
         }
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener(WorldCanvasDomEvent.KeyDown, handleKeyDown)
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener(WorldCanvasDomEvent.KeyDown, handleKeyDown)
     }
   }, [
     isRepaintMode,
@@ -384,13 +396,13 @@ export const WorldCanvas: React.FC = () => {
   // Render Visible Tiles Logic (Optimization)
   // For now, render known tiles + immediate neighbors of known tiles
   const renderTiles = () => {
-    const renderedTiles = []
+    const renderedTiles: React.ReactNode[] = []
     const knownCoords = new Set(Object.keys(tiles))
 
     // Add known tiles
     Object.values(tiles).forEach(tile => {
       renderedTiles.push(
-        <Tile key={`${tile.x},${tile.y}`} x={tile.x} y={tile.y} size={TILE_SIZE} />
+        <Tile key={`${tile.x}${TILE_COORD_SEPARATOR}${tile.y}`} x={tile.x} y={tile.y} size={TILE_SIZE} />
       )
     })
 
@@ -404,7 +416,7 @@ export const WorldCanvas: React.FC = () => {
         [1, 0],
         [-1, 0],
       ].forEach(([dx, dy]) => {
-        const key = `${tile.x + dx},${tile.y + dy}`
+        const key = `${tile.x + dx}${TILE_COORD_SEPARATOR}${tile.y + dy}`
         if (!knownCoords.has(key)) {
           potentialNeighbors.add(key)
         }
@@ -413,11 +425,11 @@ export const WorldCanvas: React.FC = () => {
 
     // If no tiles exist, show 0,0
     if (Object.keys(tiles).length === 0) {
-      potentialNeighbors.add('0,0')
+      potentialNeighbors.add(WORLD_CANVAS_ORIGIN_TILE_COORD)
     }
 
     potentialNeighbors.forEach(key => {
-      const [x, y] = key.split(',').map(Number)
+      const [x, y] = key.split(TILE_COORD_SEPARATOR).map(Number)
       renderedTiles.push(<Tile key={`empty-${x},${y}`} x={x} y={y} size={TILE_SIZE} />)
     })
 

@@ -13,9 +13,10 @@
 
 import type { BeatPlan } from './beat-plan-schema'
 import { BEAT_PLAN_VAGUE_PHRASES } from '@/domains/storyteller/prompts/guardrails/anti-slop-phrases'
-
-/** Fields the gate inspects — the ones the draft is actually built from. */
-const GATED_FIELDS = ['goal', 'conflict', 'turn'] as const
+import {
+  BEAT_PLAN_GATED_FIELDS,
+  LIST_JOIN_SEPARATOR,
+} from '@/domains/storyteller/agents/BeatPlanner/constants/beat-plan-quality'
 
 /** Below this many characters a goal/conflict/turn cannot be concrete. */
 const MIN_FIELD_LENGTH = 25
@@ -32,7 +33,7 @@ export function assessBeatPlanConcreteness(
 ): PlanQualityResult {
   const failures: string[] = []
 
-  for (const field of GATED_FIELDS) {
+  for (const field of BEAT_PLAN_GATED_FIELDS) {
     const value = plan[field].trim()
     if (value.length < MIN_FIELD_LENGTH) {
       failures.push(
@@ -54,11 +55,11 @@ export function assessBeatPlanConcreteness(
     name => name.trim().length > 0
   )
   if (names.length > 0) {
-    const combined = GATED_FIELDS.map(field => plan[field]).join(' ').toLowerCase()
+    const combined = BEAT_PLAN_GATED_FIELDS.map(field => plan[field]).join(' ').toLowerCase()
     const named = names.some(name => combined.includes(name.toLowerCase()))
     if (!named) {
       failures.push(
-        `None of goal/conflict/turn names a character (available: ${names.join(', ')}) — anchor the beat to who acts and who opposes.`
+        `None of goal/conflict/turn names a character (available: ${names.join(LIST_JOIN_SEPARATOR)}) — anchor the beat to who acts and who opposes.`
       )
     }
   }

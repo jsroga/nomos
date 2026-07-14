@@ -17,6 +17,11 @@
 
 import type { Agent } from '@mastra/core/agent'
 import type { AnyWorkflow } from '@mastra/core/workflows'
+import {
+  LIST_JOIN_SEPARATOR,
+  MASTRA_LATE_REGISTRATION_IMPORT_HINT,
+  MASTRA_LATE_REGISTRATION_WARN_PREFIX,
+} from '@/shared/agent-kernel/constants/runtime-registry'
 
 export interface MastraRuntimeModule {
   agents?: Record<string, Agent>
@@ -30,10 +35,10 @@ let consumed = false
 export function registerMastraModule(module: MastraRuntimeModule): void {
   if (consumed) {
     console.warn(
-      '⚠️ [Mastra] Runtime module registered AFTER the instance was created — ignored. ' +
-        `Agents: [${Object.keys(module.agents ?? {}).join(', ')}], ` +
-        `workflows: [${Object.keys(module.workflows ?? {}).join(', ')}]. ` +
-        'Import the domain registration module before the first getMastraInstance() call.'
+      MASTRA_LATE_REGISTRATION_WARN_PREFIX +
+        `Agents: [${Object.keys(module.agents ?? {}).join(LIST_JOIN_SEPARATOR)}], ` +
+        `workflows: [${Object.keys(module.workflows ?? {}).join(LIST_JOIN_SEPARATOR)}]. ` +
+        MASTRA_LATE_REGISTRATION_IMPORT_HINT
     )
     return
   }

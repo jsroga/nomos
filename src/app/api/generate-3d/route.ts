@@ -2,110 +2,88 @@ import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { sanitizePath, isValidProjectId, safeFetch, secureLog } from '@/shared/auth/security'
+import { MeshyModelFormat, MeshyResponseField } from '@/shared/ai/constants/meshy'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { recordFromJson } from '@/shared/data/deep-merge'
+import {
+  BufferEncoding,
+  ContentType,
+  FsDirectory,
+  Generate3dPathPrefix,
+  HttpMethod,
+  Hyper3dTaskStatus,
+  ImageFileExtension,
+  ImageMimeType,
+  JsonImageUrlType,
+  MeshyTaskStatus,
+  ModelProvider,
+  SecureLogMessage,
+  UrlScheme,
+} from '@/shared/data/constants/protocol'
 
-/**
- * @openapi
- * /api/generate-3d:
- *   post:
- *     summary: Generate 3D model from image
- *     description: Converts a 2D image to a 3D model using Meshy or Hyper3D API
- *     tags:
- *       - 3D Assets
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - assetId
- *               - imageUrl
- *               - provider
- *               - apiKey
- *             properties:
- *               assetId:
- *                 type: string
- *                 description: Unique identifier for the asset
- *               imageUrl:
- *                 type: string
- *                 description: URL or local path to the source image
- *               provider:
- *                 type: string
- *                 enum: [meshy, hyper3d]
- *                 description: 3D generation provider to use
- *               apiKey:
- *                 type: string
- *                 description: API key for the selected provider
- *     responses:
- *       200:
- *         description: Successfully generated 3D model
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 modelUrl:
- *                   type: string
- *                   description: URL to the generated GLB model
- *       400:
- *         description: Missing required fields or unknown provider
- *       404:
- *         description: Image file not found
- *       500:
- *         description: Generation failed
- */
+function readMeshyTaskStatus(value: unknown): MeshyTaskStatus {
+  if (value === MeshyTaskStatus.Succeeded) return MeshyTaskStatus.Succeeded
+  if (value === MeshyTaskStatus.Failed) return MeshyTaskStatus.Failed
+  return MeshyTaskStatus.Pending
+}
+
+function readHyper3dTaskStatus(value: unknown): Hyper3dTaskStatus {
+  if (value === Hyper3dTaskStatus.Completed) return Hyper3dTaskStatus.Completed
+  if (value === Hyper3dTaskStatus.Failed) return Hyper3dTaskStatus.Failed
+  return Hyper3dTaskStatus.Processing
+}
+
+function readStringField(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key]
+  return typeof value === 'string' ? value : undefined
+}
 
 export const POST = withRateLimit(
-  withAuth<any>(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+  withAuth<any>(async (request: NextRequest, {}: AuthenticatedRequest) => {
     const { assetId, imageUrl, provider, apiKey } = await request.json()
 
     if (!assetId || !imageUrl || !provider || !apiKey) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.MISSING_REQUIRED_FIELDS }, { status: 400 })
     }
 
-    // Convert relative URL to base64 data URI if it's a local file
     let finalImageUrl = imageUrl
 
-    if (imageUrl.startsWith('/projects/')) {
-      // Extract and validate project ID from path
+    if (imageUrl.startsWith(Generate3dPathPrefix.Projects)) {
       const pathParts = imageUrl.split('/')
       const projectId = pathParts[2]
 
       if (!projectId || !isValidProjectId(projectId)) {
-        return NextResponse.json({ error: 'Invalid project ID in path' }, { status: 400 })
+        return NextResponse.json({ error: API_ERROR.INVALID_PROJECT_ID_IN_PATH }, { status: 400 })
       }
 
-      // Sanitize and validate the path to prevent directory traversal
-      const relativePath = imageUrl.replace('/projects/', '')
-      const { safe, sanitizedPath, error } = sanitizePath(relativePath, 'projects')
+      const relativePath = imageUrl.replace(Generate3dPathPrefix.Projects, '')
+      const { safe, sanitizedPath, error } = sanitizePath(relativePath, FsDirectory.Projects)
 
       if (!safe || !sanitizedPath) {
-        secureLog.warn('Path traversal attempt blocked', { imageUrl, error })
-        return NextResponse.json({ error: 'Invalid file path' }, { status: 400 })
+        secureLog.warn(SecureLogMessage.PathTraversalBlocked, { imageUrl, error })
+        return NextResponse.json({ error: API_ERROR.INVALID_FILE_PATH }, { status: 400 })
       }
 
       if (!fs.existsSync(sanitizedPath)) {
-        return NextResponse.json({ error: 'Image file not found' }, { status: 404 })
+        return NextResponse.json({ error: API_ERROR.IMAGE_FILE_NOT_FOUND }, { status: 404 })
       }
 
       const fileBuffer = fs.readFileSync(sanitizedPath)
-      const base64 = fileBuffer.toString('base64')
-      const mimeType = imageUrl.endsWith('.png') ? 'image/png' : 'image/jpeg'
-      finalImageUrl = `data:${mimeType};base64,${base64}`
+      const base64 = fileBuffer.toString(BufferEncoding.Base64)
+      const mimeType = imageUrl.endsWith(ImageFileExtension.Png)
+        ? ImageMimeType.Png
+        : ImageMimeType.Jpeg
+      finalImageUrl = `${UrlScheme.Data}${mimeType};${BufferEncoding.Base64},${base64}`
     }
 
     let modelUrl = ''
 
-    if (provider === 'meshy') {
-      // Meshy API - Image to 3D
-      // Step 1: Create task
+    if (provider === ModelProvider.Meshy) {
       const createResponse = await safeFetch('https://api.meshy.ai/v1/image-to-3d', {
-        method: 'POST',
+        method: HttpMethod.Post,
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
+          'Content-Type': ContentType.Json,
         },
         body: JSON.stringify({
           image_url: finalImageUrl,
@@ -120,14 +98,17 @@ export const POST = withRateLimit(
 
       const { result: taskId } = await createResponse.json()
 
-      // Step 2: Poll for completion
-      let status = 'PENDING'
-      let result: any = null
-      const maxAttempts = 60 // 5 minutes max
+      let status = MeshyTaskStatus.Pending
+      let result: Record<string, unknown> | null = null
+      const maxAttempts = 60
       let attempts = 0
 
-      while (status !== 'SUCCEEDED' && status !== 'FAILED' && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000)) // Wait 5 seconds
+      while (
+        status !== MeshyTaskStatus.Succeeded &&
+        status !== MeshyTaskStatus.Failed &&
+        attempts < maxAttempts
+      ) {
+        await new Promise(resolve => setTimeout(resolve, 5000))
 
         const statusResponse = await safeFetch(`https://api.meshy.ai/v1/image-to-3d/${taskId}`, {
           headers: {
@@ -136,34 +117,42 @@ export const POST = withRateLimit(
         })
 
         if (!statusResponse.ok) {
-          throw new Error('Failed to check task status')
+          throw new Error(API_ERROR.FAILED_CHECK_TASK_STATUS)
         }
 
-        result = await statusResponse.json()
-        status = result.status
+        result = recordFromJson(await statusResponse.json())
+        status = readMeshyTaskStatus(result.status)
         attempts++
       }
 
-      if (status === 'FAILED') {
-        throw new Error('Meshy 3D generation failed')
+      if (status === MeshyTaskStatus.Failed) {
+        throw new Error(API_ERROR.MESHY_GENERATION_FAILED)
       }
 
-      if (status !== 'SUCCEEDED') {
-        throw new Error('Meshy 3D generation timed out')
+      if (status !== MeshyTaskStatus.Succeeded || !result) {
+        throw new Error(API_ERROR.MESHY_GENERATION_TIMEOUT)
       }
 
-      modelUrl = result.model_urls?.glb || result.model_url
-    } else if (provider === 'hyper3d') {
-      // Hyper3D API
+      const modelUrls = recordFromJson(result[MeshyResponseField.ModelUrls])
+      modelUrl =
+        readStringField(modelUrls, MeshyModelFormat.Glb) ||
+        readStringField(result, MeshyResponseField.ModelUrl) ||
+        ''
+    } else if (provider === ModelProvider.Hyper3d) {
       const response = await safeFetch('https://api.hyper3d.ai/v1/rodin', {
-        method: 'POST',
+        method: HttpMethod.Post,
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
+          'Content-Type': ContentType.Json,
         },
         body: JSON.stringify({
           images: [
-            { type: finalImageUrl.startsWith('data:') ? 'base64' : 'url', url: finalImageUrl },
+            {
+              type: finalImageUrl.startsWith(UrlScheme.Data)
+                ? JsonImageUrlType.Base64
+                : JsonImageUrlType.Url,
+              url: finalImageUrl,
+            },
           ],
         }),
       })
@@ -175,13 +164,12 @@ export const POST = withRateLimit(
 
       const { subscription_key } = await response.json()
 
-      // Poll for completion
-      let status = 'processing'
-      let result: any = null
+      let status = Hyper3dTaskStatus.Processing
+      let result: Record<string, unknown> | null = null
       const maxAttempts = 60
       let attempts = 0
 
-      while (status === 'processing' && attempts < maxAttempts) {
+      while (status === Hyper3dTaskStatus.Processing && attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 5000))
 
         const statusResponse = await safeFetch(
@@ -194,28 +182,32 @@ export const POST = withRateLimit(
         )
 
         if (!statusResponse.ok) {
-          throw new Error('Failed to check Hyper3D task status')
+          throw new Error(API_ERROR.FAILED_CHECK_HYPER3D_STATUS)
         }
 
-        result = await statusResponse.json()
-        status = result.status
+        result = recordFromJson(await statusResponse.json())
+        status = readHyper3dTaskStatus(result.status)
         attempts++
       }
 
-      if (status === 'failed') {
-        throw new Error('Hyper3D generation failed')
+      if (status === Hyper3dTaskStatus.Failed) {
+        throw new Error(API_ERROR.HYPER3D_GENERATION_FAILED)
       }
 
-      if (status !== 'completed') {
-        throw new Error('Hyper3D generation timed out')
+      if (status !== Hyper3dTaskStatus.Completed || !result) {
+        throw new Error(API_ERROR.HYPER3D_GENERATION_TIMEOUT)
       }
 
-      modelUrl = result.output?.model_url || result.model_url
+      const output = recordFromJson(result[MeshyResponseField.Output])
+      modelUrl =
+        readStringField(output, MeshyResponseField.ModelUrl) ||
+        readStringField(result, MeshyResponseField.ModelUrl) ||
+        ''
     } else {
-      return NextResponse.json({ error: 'Unknown provider' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.UNKNOWN_PROVIDER }, { status: 400 })
     }
 
     return NextResponse.json({ success: true, modelUrl })
   }),
-  { maxRequests: 5, windowMs: 60000 } // 5 3D generations per minute (expensive operation)
+  { maxRequests: 5, windowMs: 60000 }
 )

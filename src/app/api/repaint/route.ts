@@ -5,13 +5,22 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  GeminiFinishReason,
+  GeminiResponseModality,
+  REPAINT_DEFAULT_PROMPT,
+  REPAINT_MASK_INSTRUCTION,
+  REPAINT_STYLE_REF_PREFIX,
+} from '@/shared/data/constants/repaint-gemini'
+import { ContentType, GoogleModelId, HttpMethod, StringSeparator } from '@/shared/data/constants/protocol'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/repaint
  * Server-side Gemini inpainting for the repaint tool.
- * Keeps the GOOGLE_API_KEY on the server instead of exposing it to the client.
  */
 export const POST = withRateLimit(
   withAuth<any>(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
@@ -19,58 +28,56 @@ export const POST = withRateLimit(
     const { projectId, base64Image, maskBase64, prompt, styleReferenceUrls } = body
 
     if (!projectId || !base64Image || !maskBase64) {
-      return NextResponse.json(
-        { error: 'Missing required fields: projectId, base64Image, maskBase64' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: API_ERROR.MISSING_REPAINT_FIELDS }, { status: 400 })
     }
 
     const hasAccess = await verifyProjectAccess(supabase, projectId)
     if (!hasAccess) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     const apiKey = process.env.GOOGLE_API_KEY
     if (!apiKey) {
-      return NextResponse.json({ error: 'GOOGLE_API_KEY not configured on server' }, { status: 500 })
+      return NextResponse.json(
+        { error: API_ERROR.GOOGLE_API_KEY_NOT_CONFIGURED_SERVER },
+        { status: 500 }
+      )
     }
 
-    const model = 'gemini-3-pro-image-preview'
+    const model = GoogleModelId.Gemini3ProImagePreview
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
 
     const styleRefHint = styleReferenceUrls?.length
-      ? ` Use these style references for visual guidance: ${styleReferenceUrls.join(', ')}.`
+      ? `${REPAINT_STYLE_REF_PREFIX}${styleReferenceUrls.join(StringSeparator.CommaSpace)}.`
       : ''
 
-    const finalPrompt = (prompt || 'High quality, detailed, seamless blend') + styleRefHint
+    const finalPrompt = (prompt || REPAINT_DEFAULT_PROMPT) + styleRefHint
 
     const payload = {
       contents: [
         {
           parts: [
             { text: finalPrompt },
-            { inline_data: { mime_type: 'image/png', data: base64Image } },
-            { inline_data: { mime_type: 'image/png', data: maskBase64 } },
-            {
-              text: 'Edit the first image using the second image as a mask. The white area in the mask indicates where to edit. Seamlessly blend the changes.',
-            },
+            { inline_data: { mime_type: ContentType.Png, data: base64Image } },
+            { inline_data: { mime_type: ContentType.Png, data: maskBase64 } },
+            { text: REPAINT_MASK_INSTRUCTION },
           ],
         },
       ],
       generationConfig: {
-        responseModalities: ['IMAGE', 'TEXT'],
+        responseModalities: [GeminiResponseModality.Image, GeminiResponseModality.Text],
       },
     }
 
     const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: HttpMethod.Post,
+      headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify(payload),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Gemini inpainting error:', errorText)
+      console.error(API_LOG_PREFIX.GEMINI_INPAINTING_ERROR, errorText)
       return NextResponse.json(
         { error: `Gemini API error: ${response.status}` },
         { status: 502 }
@@ -81,16 +88,16 @@ export const POST = withRateLimit(
     const candidate = data.candidates?.[0]
 
     if (!candidate) {
-      return NextResponse.json({ error: 'No candidates returned from Gemini' }, { status: 502 })
+      return NextResponse.json({ error: API_ERROR.NO_CANDIDATES_GEMINI }, { status: 502 })
     }
 
-    if (candidate.finishReason === 'SAFETY') {
-      return NextResponse.json({ error: 'Generation blocked by safety filters' }, { status: 422 })
+    if (candidate.finishReason === GeminiFinishReason.Safety) {
+      return NextResponse.json({ error: API_ERROR.GENERATION_BLOCKED_SAFETY }, { status: 422 })
     }
 
     const parts = candidate.content?.parts
     if (!parts?.length) {
-      return NextResponse.json({ error: 'No content parts returned' }, { status: 502 })
+      return NextResponse.json({ error: API_ERROR.NO_CONTENT_PARTS_GEMINI }, { status: 502 })
     }
 
     const imagePart = parts.find((p: any) => p.inline_data || p.inlineData)
@@ -107,7 +114,7 @@ export const POST = withRateLimit(
       )
     }
 
-    return NextResponse.json({ error: 'No image found in Gemini response' }, { status: 502 })
+    return NextResponse.json({ error: API_ERROR.NO_IMAGE_GEMINI }, { status: 502 })
   }),
   { maxRequests: 10, windowMs: 60000 }
 )

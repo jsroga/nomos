@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Node, Edge } from '@xyflow/react'
+import { LoopAutoSaveMessage, LoopAutoSaveStatus } from '@/domains/loop-creator/constants/auto-save'
+import { LoopHttpMethod } from '@/domains/loop-creator/constants/loop-http'
 
 interface UseAutoSaveOptions {
   loopId: string | null
   nodes: Node[]
   edges: Edge[]
-  metadata?: any
-  analysis?: any
+  metadata?: unknown
+  analysis?: unknown
   debounceMs?: number
   enabled?: boolean
 }
 
 interface SaveStatus {
-  status: 'idle' | 'saving' | 'saved' | 'error'
+  status: LoopAutoSaveStatus
   lastSaved: Date | null
   error: string | null
 }
@@ -27,7 +29,7 @@ export function useAutoSave({
   enabled = true,
 }: UseAutoSaveOptions) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({
-    status: 'idle',
+    status: LoopAutoSaveStatus.Idle,
     lastSaved: null,
     error: null,
   })
@@ -39,10 +41,10 @@ export function useAutoSave({
     if (!loopId || !enabled) return
 
     try {
-      setSaveStatus(prev => ({ ...prev, status: 'saving', error: null }))
+      setSaveStatus(prev => ({ ...prev, status: LoopAutoSaveStatus.Saving, error: null }))
 
       const response = await fetch('/api/loop-creator/loops', {
-        method: 'PATCH',
+        method: LoopHttpMethod.Patch,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: loopId,
@@ -55,25 +57,25 @@ export function useAutoSave({
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to save')
+        throw new Error(error.error || LoopAutoSaveMessage.FailedToSave)
       }
 
       setSaveStatus({
-        status: 'saved',
+        status: LoopAutoSaveStatus.Saved,
         lastSaved: new Date(),
         error: null,
       })
 
       // Reset to idle after a brief period
       setTimeout(() => {
-        setSaveStatus(prev => ({ ...prev, status: 'idle' }))
+        setSaveStatus(prev => ({ ...prev, status: LoopAutoSaveStatus.Idle }))
       }, 2000)
     } catch (error) {
-      console.error('Auto-save failed:', error)
+      console.error(LoopAutoSaveMessage.AutoSaveFailedLog, error)
       setSaveStatus({
-        status: 'error',
+        status: LoopAutoSaveStatus.Error,
         lastSaved: null,
-        error: error instanceof Error ? error.message : 'Save failed',
+        error: error instanceof Error ? error.message : LoopAutoSaveMessage.SaveFailed,
       })
     }
   }, [loopId, nodes, edges, metadata, analysis, enabled])

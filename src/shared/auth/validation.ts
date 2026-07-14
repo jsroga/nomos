@@ -1,23 +1,30 @@
 import * as yup from 'yup'
+import {
+  AuthValidationField,
+  AuthValidationMessage,
+} from '@/shared/auth/constants/auth-validation-messages'
 
-const email = yup.string().email('Please enter a valid email address').required('Email is required')
+const email = yup
+  .string()
+  .email(AuthValidationMessage.EmailInvalid)
+  .required(AuthValidationMessage.EmailRequired)
 
 const password = yup
   .string()
-  .min(8, 'Password must be at least 8 characters')
-  .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
-  .matches(/[0-9]/, 'Password must contain at least one number')
-  .required('Password is required')
+  .min(8, AuthValidationMessage.PasswordMinLength)
+  .matches(/[A-Z]/, AuthValidationMessage.PasswordUppercase)
+  .matches(/[0-9]/, AuthValidationMessage.PasswordNumber)
+  .required(AuthValidationMessage.PasswordRequired)
 
 const passwordSignIn = yup
   .string()
-  .min(8, 'Password must be at least 8 characters')
-  .required('Password is required')
+  .min(8, AuthValidationMessage.PasswordMinLength)
+  .required(AuthValidationMessage.PasswordRequired)
 
 const confirmPassword = yup
   .string()
-  .oneOf([yup.ref('password')], 'Passwords must match')
-  .required('Please confirm your password')
+  .oneOf([yup.ref(AuthValidationField.Password)], AuthValidationMessage.PasswordsMustMatch)
+  .required(AuthValidationMessage.ConfirmPasswordRequired)
 
 export const signInSchema = yup.object({ email, password: passwordSignIn })
 

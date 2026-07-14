@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PROJECT_OR_DESIGN_ID_REQUIRED } from '@/domains/interior-designer/constants/interior-designer-messages'
 
 const dateLikeSchema = z.union([z.string(), z.date()]).transform(value => {
   if (value instanceof Date) {
@@ -153,7 +154,7 @@ export const interiorDesignLookupQuerySchema = z
     designId: z.string().min(1).optional(),
   })
   .refine(data => data.projectId || data.designId, {
-    message: 'Project ID or Design ID is required',
+    message: PROJECT_OR_DESIGN_ID_REQUIRED,
   })
 
 export const createInteriorDesignRequestSchema = z.object({

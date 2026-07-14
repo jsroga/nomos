@@ -7,6 +7,16 @@
 
 import { tasks, runs } from '@trigger.dev/sdk/v3'
 import { z } from 'zod'
+import {
+  AiUpscaleProvider,
+  GenerationServiceErrorCode,
+  GenerationServiceErrorMessage,
+  GenerationServiceErrorName,
+  GenerationServiceLog,
+  GenerationServiceUserMessage,
+  GenerationTriggerTaskId,
+  TriggerRunResultStatus,
+} from '@/shared/data/generation/constants/tiles-service'
 import { recordFromJson } from '@/shared/data/json-guards'
 
 // ============================================
@@ -29,7 +39,7 @@ export const generateTileSchema = z.object({
 export const upscaleTileSchema = z.object({
   projectId: z.string().uuid(),
   tileId: z.string().uuid(),
-  upscaleProvider: z.enum(['midjourney', 'stability', 'topaz']).optional().default('midjourney'),
+  upscaleProvider: z.enum(['midjourney', 'stability', 'topaz']).optional().default(AiUpscaleProvider.Midjourney),
 })
 
 export const getRunStatusSchema = z.object({
@@ -46,7 +56,7 @@ export type GetRunStatusInput = z.infer<typeof getRunStatusSchema>
 
 export interface TriggerRunResult {
   runId: string
-  status: 'triggered' | 'queued'
+  status: `${TriggerRunResultStatus}`
   message: string
   publicAccessToken?: string
 }
@@ -74,12 +84,12 @@ export class TilesService {
    * Generate a tile using AI
    * Returns immediately with a run ID - use getRunStatus to track progress
    */
-  async generateTile(input: GenerateTileInput, context: ServiceContext): Promise<TriggerRunResult> {
+  async generateTile(input: GenerateTileInput, _context: ServiceContext): Promise<TriggerRunResult> {
     const validated = generateTileSchema.parse(input)
 
     try {
       // Trigger the Trigger.dev task
-      const handle = await tasks.trigger('generate-tile', {
+      const handle = await tasks.trigger(`${GenerationTriggerTaskId.GenerateTile}`, {
         projectId: validated.projectId,
         x: validated.x,
         y: validated.y,
@@ -92,12 +102,15 @@ export class TilesService {
 
       return {
         runId: handle.id,
-        status: 'triggered',
-        message: `Tile generation started at (${validated.x}, ${validated.y}). Use get_run_status to track progress.`,
+        status: TriggerRunResultStatus.Triggered,
+        message: `${GenerationServiceUserMessage.TileGenerationStartedPrefix}(${validated.x}, ${validated.y}). ${GenerationServiceUserMessage.RunStatusHint}`,
       }
     } catch (error) {
-      console.error('[TilesService] Error triggering tile generation:', error)
-      throw new ServiceError('Failed to trigger tile generation', 'INTERNAL_ERROR')
+      console.error(GenerationServiceLog.TilesTriggerError, error)
+      throw new ServiceError(
+        GenerationServiceErrorMessage.FailedTriggerTileGeneration,
+        GenerationServiceErrorCode.InternalError
+      )
     }
   }
 
@@ -105,11 +118,11 @@ export class TilesService {
    * Upscale an existing tile
    * Returns immediately with a run ID - use getRunStatus to track progress
    */
-  async upscaleTile(input: UpscaleTileInput, context: ServiceContext): Promise<TriggerRunResult> {
+  async upscaleTile(input: UpscaleTileInput, _context: ServiceContext): Promise<TriggerRunResult> {
     const validated = upscaleTileSchema.parse(input)
 
     try {
-      const handle = await tasks.trigger('upscale-tile', {
+      const handle = await tasks.trigger(`${GenerationTriggerTaskId.UpscaleTile}`, {
         projectId: validated.projectId,
         tileId: validated.tileId,
         upscaleProvider: validated.upscaleProvider,
@@ -117,12 +130,15 @@ export class TilesService {
 
       return {
         runId: handle.id,
-        status: 'triggered',
-        message: 'Tile upscale started. Use get_run_status to track progress.',
+        status: TriggerRunResultStatus.Triggered,
+        message: GenerationServiceUserMessage.TileUpscaleStarted,
       }
     } catch (error) {
-      console.error('[TilesService] Error triggering tile upscale:', error)
-      throw new ServiceError('Failed to trigger tile upscale', 'INTERNAL_ERROR')
+      console.error(GenerationServiceLog.TilesUpscaleError, error)
+      throw new ServiceError(
+        GenerationServiceErrorMessage.FailedTriggerTileUpscale,
+        GenerationServiceErrorCode.InternalError
+      )
     }
   }
 
@@ -145,8 +161,11 @@ export class TilesService {
         updatedAt: run.updatedAt?.toISOString(),
       }
     } catch (error) {
-      console.error('[TilesService] Error retrieving run status:', error)
-      throw new ServiceError('Failed to retrieve run status', 'NOT_FOUND')
+      console.error(GenerationServiceLog.TilesRunStatusError, error)
+      throw new ServiceError(
+        GenerationServiceErrorMessage.FailedRetrieveRunStatus,
+        GenerationServiceErrorCode.NotFound
+      )
     }
   }
 
@@ -158,8 +177,11 @@ export class TilesService {
       await runs.cancel(runId)
       return { success: true }
     } catch (error) {
-      console.error('[TilesService] Error canceling run:', error)
-      throw new ServiceError('Failed to cancel run', 'INTERNAL_ERROR')
+      console.error(GenerationServiceLog.TilesCancelError, error)
+      throw new ServiceError(
+        GenerationServiceErrorMessage.FailedCancelRun,
+        GenerationServiceErrorCode.InternalError
+      )
     }
   }
 }
@@ -189,12 +211,12 @@ export class ThreeDService {
    */
   async generate3DModel(
     input: Generate3DModelInput,
-    context: ServiceContext
+    _context: ServiceContext
   ): Promise<TriggerRunResult> {
     const validated = generate3DModelSchema.parse(input)
 
     try {
-      const handle = await tasks.trigger('generate-3d-model', {
+      const handle = await tasks.trigger(`${GenerationTriggerTaskId.Generate3dModel}`, {
         projectId: validated.projectId,
         assetId: validated.assetId,
         prompt: validated.prompt,
@@ -202,12 +224,15 @@ export class ThreeDService {
 
       return {
         runId: handle.id,
-        status: 'triggered',
-        message: '3D model generation started. Use get_run_status to track progress.',
+        status: TriggerRunResultStatus.Triggered,
+        message: GenerationServiceUserMessage.ThreeDModelGenerationStarted,
       }
     } catch (error) {
-      console.error('[ThreeDService] Error triggering 3D model generation:', error)
-      throw new ServiceError('Failed to trigger 3D model generation', 'INTERNAL_ERROR')
+      console.error(GenerationServiceLog.ThreeDTriggerError, error)
+      throw new ServiceError(
+        GenerationServiceErrorMessage.FailedTrigger3dModelGeneration,
+        GenerationServiceErrorCode.InternalError
+      )
     }
   }
 
@@ -216,12 +241,12 @@ export class ThreeDService {
    */
   async remesh3DModel(
     input: Remesh3DModelInput,
-    context: ServiceContext
+    _context: ServiceContext
   ): Promise<TriggerRunResult> {
     const validated = remesh3DModelSchema.parse(input)
 
     try {
-      const handle = await tasks.trigger('remesh-3d-model', {
+      const handle = await tasks.trigger(`${GenerationTriggerTaskId.Remesh3dModel}`, {
         projectId: validated.projectId,
         assetId: validated.assetId,
         targetPolycount: validated.targetPolycount,
@@ -229,12 +254,15 @@ export class ThreeDService {
 
       return {
         runId: handle.id,
-        status: 'triggered',
-        message: '3D model remesh started. Use get_run_status to track progress.',
+        status: TriggerRunResultStatus.Triggered,
+        message: GenerationServiceUserMessage.ThreeDModelRemeshStarted,
       }
     } catch (error) {
-      console.error('[ThreeDService] Error triggering 3D model remesh:', error)
-      throw new ServiceError('Failed to trigger 3D model remesh', 'INTERNAL_ERROR')
+      console.error(GenerationServiceLog.ThreeDRemeshError, error)
+      throw new ServiceError(
+        GenerationServiceErrorMessage.FailedTrigger3dModelRemesh,
+        GenerationServiceErrorCode.InternalError
+      )
     }
   }
 }
@@ -258,12 +286,12 @@ export class PortraitService {
    */
   async generatePortrait(
     input: GeneratePortraitInput,
-    context: ServiceContext
+    _context: ServiceContext
   ): Promise<TriggerRunResult> {
     const validated = generatePortraitSchema.parse(input)
 
     try {
-      const handle = await tasks.trigger('generate-portrait', {
+      const handle = await tasks.trigger(`${GenerationTriggerTaskId.GeneratePortrait}`, {
         projectId: validated.projectId,
         characterId: validated.characterId,
         prompt: validated.prompt,
@@ -272,12 +300,15 @@ export class PortraitService {
 
       return {
         runId: handle.id,
-        status: 'triggered',
-        message: 'Portrait generation started. Use get_run_status to track progress.',
+        status: TriggerRunResultStatus.Triggered,
+        message: GenerationServiceUserMessage.PortraitGenerationStarted,
       }
     } catch (error) {
-      console.error('[PortraitService] Error triggering portrait generation:', error)
-      throw new ServiceError('Failed to trigger portrait generation', 'INTERNAL_ERROR')
+      console.error(GenerationServiceLog.PortraitTriggerError, error)
+      throw new ServiceError(
+        GenerationServiceErrorMessage.FailedTriggerPortraitGeneration,
+        GenerationServiceErrorCode.InternalError
+      )
     }
   }
 }
@@ -286,12 +317,7 @@ export class PortraitService {
 // ERROR HANDLING
 // ============================================
 
-export type ServiceErrorCode =
-  | 'NOT_FOUND'
-  | 'UNAUTHORIZED'
-  | 'VALIDATION_ERROR'
-  | 'INTERNAL_ERROR'
-  | 'RATE_LIMITED'
+export type ServiceErrorCode = `${GenerationServiceErrorCode}`
 
 export class ServiceError extends Error {
   constructor(
@@ -300,7 +326,7 @@ export class ServiceError extends Error {
     public details?: any
   ) {
     super(message)
-    this.name = 'ServiceError'
+    this.name = GenerationServiceErrorName.ServiceError
   }
 }
 

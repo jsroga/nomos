@@ -11,6 +11,13 @@
  */
 
 import { deepMerge } from '@/shared/data/deep-merge'
+import {
+  EnvFlagValue,
+  GuardrailSeverity,
+  STORYTELLER_PROMPT_ENVIRONMENTS,
+  StorytellerPromptEnvironment,
+  StorytellerPromptHubOwner,
+} from './constants/storyteller-config-defaults'
 
 // ============================================
 // TYPES
@@ -112,33 +119,33 @@ const DEFAULT_CONFIG: StorytellerConfig = {
   },
 
   features: {
-    hitlEnabled: process.env.STORYTELLER_HITL_ENABLED !== 'false',
+    hitlEnabled: process.env.STORYTELLER_HITL_ENABLED !== EnvFlagValue.False,
     ragEnabled: true,
     streamingEnabled: true,
-    tracingEnabled: process.env.LANGCHAIN_TRACING_V2 === 'true',
+    tracingEnabled: process.env.LANGCHAIN_TRACING_V2 === EnvFlagValue.True,
   },
 
   guardrails: {
-    globalEnabled: process.env.STORYTELLER_GUARDRAILS_ENABLED !== 'false',
+    globalEnabled: process.env.STORYTELLER_GUARDRAILS_ENABLED !== EnvFlagValue.False,
 
     antiSlop: {
       enabled: true,
-      severity: 'warning',
-      threshold: 60, // Score < 60 triggers warning (raised for higher quality bar)
-      blockOnCritical: true, // Block output if score indicates AI slop
+      severity: GuardrailSeverity.Warning,
+      threshold: 60,
+      blockOnCritical: true,
       minContentLength: 100,
     },
 
     hallucination: {
       enabled: true,
-      severity: 'error',
+      severity: GuardrailSeverity.Error,
       validateUrls: true,
       maxRetriesOnFailure: 2,
     },
 
     consistency: {
       enabled: true,
-      severity: 'warning',
+      severity: GuardrailSeverity.Warning,
       checkSeriesBible: true,
       checkCharacterVoice: true,
       checkPlotContinuity: true,
@@ -153,13 +160,13 @@ const DEFAULT_CONFIG: StorytellerConfig = {
   },
 
   prompts: {
-    useHub: process.env.STORYTELLER_USE_PROMPT_HUB !== 'false', // Default to TRUE
-    hubOwner: process.env.LANGSMITH_HUB_OWNER || 'tilemap',
+    useHub: process.env.STORYTELLER_USE_PROMPT_HUB !== EnvFlagValue.False,
+    hubOwner: process.env.LANGSMITH_HUB_OWNER || StorytellerPromptHubOwner.Tilemap,
     environment:
-      (['production', 'staging', 'dev'] as const).find(
+      STORYTELLER_PROMPT_ENVIRONMENTS.find(
         env => env === process.env.STORYTELLER_PROMPT_ENV
-      ) ?? 'dev', // Default to dev, safer than production
-    fallbackToLocal: false, // Strict mode by default
+      ) ?? StorytellerPromptEnvironment.Dev,
+    fallbackToLocal: false,
   },
 
   performance: {
@@ -169,9 +176,9 @@ const DEFAULT_CONFIG: StorytellerConfig = {
   },
 
   debug: {
-    verboseLogging: process.env.STORYTELLER_VERBOSE === 'true',
-    logAgentDecisions: process.env.STORYTELLER_LOG_DECISIONS === 'true',
-    logRAGQueries: process.env.STORYTELLER_LOG_RAG === 'true',
+    verboseLogging: process.env.STORYTELLER_VERBOSE === EnvFlagValue.True,
+    logAgentDecisions: process.env.STORYTELLER_LOG_DECISIONS === EnvFlagValue.True,
+    logRAGQueries: process.env.STORYTELLER_LOG_RAG === EnvFlagValue.True,
   },
 }
 
@@ -206,32 +213,7 @@ export function getEntityLinkRequirements(): EntityLinkRequirements {
  * Prompt identifiers for Langfuse / local registry names.
  * Push via: npm run prompts:push[:staging|:prod]
  */
-export const PROMPT_IDS = {
-  // Main Agent Prompts
-  supervisor: 'storyteller-supervisor',
-  plotArchitect: 'storyteller-plot-architect',
-  writer: 'storyteller-writer',
-  premiseArchitect: 'storyteller-premise-architect',
-  characterPsychology: 'storyteller-character-psychology',
-  devilsAdvocate: 'storyteller-devils-advocate',
-  scriptEditor: 'storyteller-script-editor',
-  consequenceTracker: 'storyteller-consequence-tracker',
-  episodePremiseArchitect: 'storyteller-episode-premise-architect',
-  planner: 'storyteller-planner',
-  magicAgent: 'storyteller-magic-agent',
-  worldSimulator: 'storyteller-world-simulator',
-  visualMoment: 'storyteller-visual-moment',
-
-  // Section-Specific Prompts (Premise Architect)
-  sectionWorldDescription: 'storyteller-section-world-description',
-  sectionWorldRules: 'storyteller-section-world-rules',
-  sectionFactions: 'storyteller-section-factions',
-  sectionInspirations: 'storyteller-section-inspirations',
-  sectionPlotTwists: 'storyteller-section-plot-twists',
-  sectionEpisodeRoadmap: 'storyteller-section-episode-roadmap',
-  sectionKeyCharacters: 'storyteller-section-key-characters',
-  sectionSoundtracks: 'storyteller-section-soundtracks',
-} as const
+export { PROMPT_IDS } from './constants/storyteller-config-defaults'
 
 // ============================================
 // ENVIRONMENT VARIABLE KEYS

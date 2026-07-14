@@ -1,5 +1,10 @@
 import React, { useRef, useEffect, useCallback } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
+import {
+  CanvasContextType,
+  CanvasLineStyle,
+  RepaintCanvasColor,
+} from '@/domains/world-building-toolkit/ui/constants/repaint-canvas'
 
 // Helper: World -> Screen (for rendering)
 const worldToScreen = (
@@ -50,7 +55,7 @@ export const RepaintCanvas: React.FC = () => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext(CanvasContextType.TwoD)
     if (!ctx) return
 
     // Update size if mismatch (handling resize natively in the loop)
@@ -91,9 +96,9 @@ export const RepaintCanvas: React.FC = () => {
 
     // Draw Strokes
     if (repaintStrokes.length > 0) {
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
-      ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'
+      ctx.lineCap = CanvasLineStyle.Round
+      ctx.lineJoin = CanvasLineStyle.Round
+      ctx.fillStyle = RepaintCanvasColor.StrokeFill
 
       for (const point of repaintStrokes) {
         const screen = worldToScreen(point.x, point.y, width, height, viewport)
@@ -111,13 +116,13 @@ export const RepaintCanvas: React.FC = () => {
       const radius = (brushSize / 2) * viewport.scale
 
       ctx.beginPath()
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
+      ctx.strokeStyle = RepaintCanvasColor.CursorOuter
       ctx.lineWidth = 2
       ctx.arc(mPos.x, mPos.y, radius, 0, Math.PI * 2)
       ctx.stroke()
 
       ctx.beginPath()
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)'
+      ctx.strokeStyle = RepaintCanvasColor.CursorInner
       ctx.lineWidth = 1
       ctx.arc(mPos.x, mPos.y, radius, 0, Math.PI * 2)
       ctx.stroke()

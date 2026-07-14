@@ -5,6 +5,11 @@ import { Button } from '@/components/Button'
 import { Textarea } from '@/components/Textarea'
 import { cn } from '@/shared/data/utils'
 import { AgentQuestion, QuestionOption } from '@/domains/storyteller/core/types/ActionTypes'
+import { QuestionType, QuestionUrgency } from '@/domains/storyteller/core/types/Enums'
+import {
+  QUESTION_URGENCY_BADGE,
+  QUESTION_URGENCY_BORDER_CLASS,
+} from '@/domains/storyteller/ui/QuestionCard/constants/question-card-display'
 import { Check, MessageCircleQuestion, Clock, Star, ChevronRight } from 'lucide-react'
 
 interface QuestionCardProps {
@@ -48,9 +53,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   const handleOptionClick = (optionId: string) => {
     if (disabled) return
 
-    const qType = question.questionType || 'single_choice'
+    const qType = question.questionType || QuestionType.SINGLE_CHOICE
 
-    if (qType === 'multiple_choice') {
+    if (qType === QuestionType.MULTIPLE_CHOICE) {
       setSelectedOptions(prev =>
         prev.includes(optionId) ? prev.filter(id => id !== optionId) : [...prev, optionId]
       )
@@ -63,36 +68,24 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   const handleSubmit = () => {
     if (disabled) return
 
-    const qType = question.questionType || 'single_choice'
+    const qType = question.questionType || QuestionType.SINGLE_CHOICE
 
-    if (qType === 'free_text') {
+    if (qType === QuestionType.FREE_TEXT) {
       onAnswer(freeText)
     } else if (selectedOptions.length > 0) {
-      // For single choice, send just the selected option; for multiple, send the array
-      onAnswer(qType === 'multiple_choice' ? selectedOptions : selectedOptions[0])
+      onAnswer(qType === QuestionType.MULTIPLE_CHOICE ? selectedOptions : selectedOptions[0])
     }
   }
 
-  const qType = question.questionType || 'single_choice'
+  const qType = question.questionType || QuestionType.SINGLE_CHOICE
   const canSubmit =
-    (qType === 'free_text' && freeText.trim().length > 0) || selectedOptions.length > 0
+    (qType === QuestionType.FREE_TEXT && freeText.trim().length > 0) || selectedOptions.length > 0
 
-  const urgencyColors: Record<string, string> = {
-    blocking: 'border-red-500/50 bg-red-500/5',
-    important: 'border-yellow-500/50 bg-yellow-500/5',
-    optional: 'border-blue-500/50 bg-blue-500/5',
-  }
-
-  const urgencyBadge: Record<string, { text: string; color: string }> = {
-    blocking: { text: 'Requires Answer', color: 'bg-red-500/20 text-red-400' },
-    important: { text: 'Important', color: 'bg-yellow-500/20 text-yellow-400' },
-    optional: { text: 'Optional', color: 'bg-blue-500/20 text-blue-400' },
-  }
-
-  // Default to 'important' if urgency is not set
-  const urgency = question.urgency || 'important'
-  const currentUrgencyColor = urgencyColors[urgency] || urgencyColors.important
-  const currentUrgencyBadge = urgencyBadge[urgency] || urgencyBadge.important
+  const urgency = question.urgency || QuestionUrgency.IMPORTANT
+  const currentUrgencyColor =
+    QUESTION_URGENCY_BORDER_CLASS[urgency] || QUESTION_URGENCY_BORDER_CLASS[QuestionUrgency.IMPORTANT]
+  const currentUrgencyBadge =
+    QUESTION_URGENCY_BADGE[urgency] || QUESTION_URGENCY_BADGE[QuestionUrgency.IMPORTANT]
 
   return (
     <div

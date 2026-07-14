@@ -8,7 +8,7 @@
  * only prompts/config/tools — never the Mastra instance itself.
  */
 
-import type { Agent } from '@mastra/core/agent'
+import { Agent } from '@mastra/core/agent'
 import { registerMastraModule } from '@/shared/agent-kernel/mastra/runtime-registry'
 import {
   statelessGrrmAuthor,
@@ -20,9 +20,63 @@ import {
   stakesCritic,
 } from '@/domains/storyteller/agents/critics'
 import { beatDraftWorkflow } from '@/domains/storyteller/agents/workflows/beat-draft-workflow'
+// Tools come from their CONCRETE modules, never the tools barrel — the barrel
+// side-effect-imports this file (registration ordering), so importing it here
+// would create a cycle.
+import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/agents/tools/beat-tools'
+import {
+  manageCharacterTool,
+  listCharactersTool,
+} from '@/domains/storyteller/agents/tools/character-tools'
+import {
+  manageEpisodeTool,
+  listEpisodesTool,
+} from '@/domains/storyteller/agents/tools/episode-tools'
+import {
+  updateWorldBibleTool,
+  readWorldBibleTool,
+  checkContinuityTool,
+} from '@/domains/storyteller/agents/tools/bible-tools'
+import { runBeatDraftWorkflowTool } from '@/domains/storyteller/agents/tools/workflow-tool'
+import { buildChatAdapterPrompt } from '@/domains/storyteller/prompts/chat-adapter-prompt'
+import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
+import { resolveRoleModel } from '@/domains/storyteller/config/constants/ModelConfig'
 
-/** The 5 GRRM-topology agents (author, planner, 3 critics). */
+const CHAT_ADAPTER_ID = 'storyteller'
+const CHAT_ADAPTER_NAME = 'Storyteller'
+const CHAT_ADAPTER_DESCRIPTION =
+  'Chat adapter: converse, keep the world bible current via tools, delegate beat drafting to the beat-draft workflow.'
+const CHAT_ROLE: Parameters<typeof resolveRoleModel>[0] = 'chat'
+
+/**
+ * The REAL chat adapter registered for Studio/observability parity: same
+ * prompt builder, same 'chat' role slot, same 10 tools as the production
+ * per-request `StorytellerAgent` (which additionally carries Memory). This is
+ * what replaces the hardcoded Studio stub (PLAN-V2 1.1).
+ */
+const chatAdapterAgent = new Agent({
+  id: CHAT_ADAPTER_ID,
+  name: CHAT_ADAPTER_NAME,
+  description: CHAT_ADAPTER_DESCRIPTION,
+  instructions: () => buildChatAdapterPrompt(getEntityLinkRequirements()),
+  model: () => resolveRoleModel(CHAT_ROLE),
+  tools: {
+    [manageBeatTool.id]: manageBeatTool,
+    [listBeatsTool.id]: listBeatsTool,
+    [manageCharacterTool.id]: manageCharacterTool,
+    [listCharactersTool.id]: listCharactersTool,
+    [manageEpisodeTool.id]: manageEpisodeTool,
+    [listEpisodesTool.id]: listEpisodesTool,
+    [updateWorldBibleTool.id]: updateWorldBibleTool,
+    [readWorldBibleTool.id]: readWorldBibleTool,
+    [checkContinuityTool.id]: checkContinuityTool,
+    [runBeatDraftWorkflowTool.id]: runBeatDraftWorkflowTool,
+  },
+})
+
+/** The 6 GRRM-topology agents (chat adapter, author, planner, 3 critics). */
 export const storytellerRuntimeAgents: Record<string, Agent> = {
+  storyteller: chatAdapterAgent,
   grrmAuthor: statelessGrrmAuthor,
   beatPlanner: statelessBeatPlanner,
   continuityCritic,

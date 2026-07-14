@@ -10,6 +10,26 @@ import { Workspace, LocalFilesystem } from '@mastra/core/workspace'
 import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import { SKILLS_DIR } from '../skills/skill-loader'
+import {
+  MASTRA_DATABASE_URL_WARNING,
+  MASTRA_DIR_NAME,
+  MASTRA_FALLBACK_DATABASE_URL,
+  MASTRA_LOGGER_LEVEL,
+  MASTRA_LOGGER_NAME,
+  MASTRA_NESTED_SERVER_PACKAGE,
+  MASTRA_OBSERVABILITY_SERVICE,
+  MASTRA_SERIALIZATION_MAX_ARRAY_ITEMS,
+  MASTRA_SERIALIZATION_MAX_ATTR_CHARS,
+  MASTRA_SERIALIZATION_MAX_DEPTH,
+  MASTRA_SERIALIZATION_MAX_KEYS,
+  MASTRA_SERIALIZATION_MAX_TOTAL_CHARS,
+  MASTRA_STORAGE_ID,
+  NEXT_CONFIG_FILENAME,
+  PACKAGE_JSON_FILENAME,
+  PACKAGE_JSON_NAME_FIELD,
+} from '@/shared/agent-kernel/constants/mastra-bootstrap'
+import { FileEncoding } from '@/shared/data/constants/protocol'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 
 let serializationConfigured = false
 
@@ -18,8 +38,7 @@ function resolveProjectRoot(): string {
   const envRoot = process.env.MASTRA_PROJECT_ROOT?.trim()
   if (envRoot) {
     const resolved = path.resolve(envRoot)
-    // Mastra CLI sets MASTRA_PROJECT_ROOT to <repo>/.mastra — browse the app repo instead
-    if (path.basename(resolved) === '.mastra') {
+    if (path.basename(resolved) === MASTRA_DIR_NAME) {
       return path.dirname(resolved)
     }
     return resolved
@@ -27,19 +46,17 @@ function resolveProjectRoot(): string {
 
   let dir = process.cwd()
   while (true) {
-    const pkgPath = path.join(dir, 'package.json')
+    const pkgPath = path.join(dir, PACKAGE_JSON_FILENAME)
     const isAppRoot =
       existsSync(pkgPath) &&
-      existsSync(path.join(dir, 'next.config.js')) &&
-      !path.basename(dir).startsWith('.mastra')
+      existsSync(path.join(dir, NEXT_CONFIG_FILENAME)) &&
+      !path.basename(dir).startsWith(MASTRA_DIR_NAME)
 
     if (isAppRoot) {
       try {
-        const pkg: unknown = JSON.parse(readFileSync(pkgPath, 'utf8'))
-        // Mastra build emits a nested "server" package under .mastra/output
-        const pkgName =
-          typeof pkg === 'object' && pkg !== null && 'name' in pkg ? pkg.name : undefined
-        if (pkgName !== 'server') return dir
+        const pkg: unknown = JSON.parse(readFileSync(pkgPath, FileEncoding.Utf8))
+        const pkgName = readString(recordFromJson(pkg)[PACKAGE_JSON_NAME_FIELD])
+        if (pkgName !== MASTRA_NESTED_SERVER_PACKAGE) return dir
       } catch {
         return dir
       }
@@ -54,11 +71,11 @@ function resolveProjectRoot(): string {
 function configureSerializationLimits() {
   if (serializationConfigured) return
 
-  process.env.MASTRA_SERIALIZATION_MAX_ATTR_CHARS = '100000'
-  process.env.MASTRA_SERIALIZATION_MAX_DEPTH = '20'
-  process.env.MASTRA_SERIALIZATION_MAX_KEYS = '500'
-  process.env.MASTRA_SERIALIZATION_MAX_ARRAY_ITEMS = '500'
-  process.env.MASTRA_SERIALIZATION_MAX_TOTAL_CHARS = '1000000'
+  process.env.MASTRA_SERIALIZATION_MAX_ATTR_CHARS = MASTRA_SERIALIZATION_MAX_ATTR_CHARS
+  process.env.MASTRA_SERIALIZATION_MAX_DEPTH = MASTRA_SERIALIZATION_MAX_DEPTH
+  process.env.MASTRA_SERIALIZATION_MAX_KEYS = MASTRA_SERIALIZATION_MAX_KEYS
+  process.env.MASTRA_SERIALIZATION_MAX_ARRAY_ITEMS = MASTRA_SERIALIZATION_MAX_ARRAY_ITEMS
+  process.env.MASTRA_SERIALIZATION_MAX_TOTAL_CHARS = MASTRA_SERIALIZATION_MAX_TOTAL_CHARS
 
   serializationConfigured = true
 }
@@ -67,12 +84,12 @@ export function createPostgresStore(): PostgresStore {
   const dbUrl = process.env.DATABASE_URL
 
   if (!dbUrl) {
-    console.warn('⚠️ [Mastra] DATABASE_URL is not set. Memory persistence might fail if storage is required.')
+    console.warn(MASTRA_DATABASE_URL_WARNING)
   }
 
   return new PostgresStore({
-    id: 'storyteller-storage',
-    connectionString: dbUrl || 'postgresql://postgres:postgres@localhost:5432/postgres',
+    id: MASTRA_STORAGE_ID,
+    connectionString: dbUrl || MASTRA_FALLBACK_DATABASE_URL,
   })
 }
 
@@ -108,15 +125,15 @@ export function createMastra(
     ...(options?.workflows ? { workflows: options.workflows } : {}),
     ...(options?.mcpServers ? { mcpServers: options.mcpServers } : {}),
     logger: new PinoLogger({
-      name: 'Mastra',
-      level: 'info',
+      name: MASTRA_LOGGER_NAME,
+      level: MASTRA_LOGGER_LEVEL,
     }),
     ...(storage
       ? {
           observability: new Observability({
             configs: {
               default: {
-                serviceName: 'storyteller',
+                serviceName: MASTRA_OBSERVABILITY_SERVICE,
                 exporters: [new MastraStorageExporter()],
               },
             },

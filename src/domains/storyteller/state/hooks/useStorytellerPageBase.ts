@@ -14,7 +14,6 @@ import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-sche
 import { Phase, type PhaseId } from '@/domains/storyteller/core/types/Enums'
 import {
   StorytellerTab,
-  StorytellerCustomEvent,
   StorytellerBibleTab,
   StorytellerOverrideState,
   StorytellerUnknownLabel,
@@ -22,11 +21,11 @@ import {
 } from '@/domains/storyteller/core/storyteller-page-wire'
 import type { BeatCard as Beat } from '@/domains/storyteller/core/types/StoryTypes'
 import type { StorytellerCharacter } from '@/domains/storyteller/core/entities/character-wire'
-import { customEventDetailRecord, readString } from '@/shared/data/json-guards'
-import { stringRecordFromJson } from '@/shared/data/json-guards'
+import { readString, stringRecordFromJson } from '@/shared/data/json-guards'
 import type { ProjectLike } from '@/domains/storyteller/state/queries/useStorytellerActions'
 import { useWorldStore } from '@/domains/storyteller/state/storyteller-world-seam'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
+import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 
 export function useStorytellerPageBase() {
   const searchParams = useSearchParams()
@@ -151,25 +150,28 @@ export function useStorytellerPageBase() {
     if (mapped) setBeats(mapped)
   }, [refreshBeatsRaw])
 
+  const entityNavigation = useStorytellerUiStore(state => state.entityNavigation)
+  const clearEntityNavigation = useStorytellerUiStore(state => state.clearEntityNavigation)
+  const requestBibleTab = useStorytellerUiStore(state => state.requestBibleTab)
+
   useEffect(() => {
-    const handleNavigateToEntity = (e: Event) => {
-      const detail = customEventDetailRecord(e)
-      const refId = readString(detail.refId)
-      if (!refId) return
-      setFocusEntityId(refId)
-      if (isWorldBibleOpen) {
-        window.dispatchEvent(
-          new CustomEvent(StorytellerCustomEvent.BibleSwitchTab, {
-            detail: { tab: StorytellerBibleTab.Relationships },
-          })
-        )
-      } else if (currentEpisodeId) {
-        setActiveTab(StorytellerTab.Relationships)
-      }
+    if (!entityNavigation?.refId) return
+    if (isWorldBibleOpen) {
+      requestBibleTab(StorytellerBibleTab.Relationships)
+      return
     }
-    window.addEventListener(StorytellerCustomEvent.NavigateToEntity, handleNavigateToEntity)
-    return () => window.removeEventListener(StorytellerCustomEvent.NavigateToEntity, handleNavigateToEntity)
-  }, [isWorldBibleOpen, currentEpisodeId])
+    setFocusEntityId(entityNavigation.refId)
+    if (currentEpisodeId) {
+      setActiveTab(StorytellerTab.Relationships)
+    }
+    clearEntityNavigation()
+  }, [
+    entityNavigation,
+    isWorldBibleOpen,
+    currentEpisodeId,
+    clearEntityNavigation,
+    requestBibleTab,
+  ])
 
   useEffect(() => {
     const phaseToTab: Record<PhaseId, string> = {

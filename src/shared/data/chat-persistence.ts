@@ -4,7 +4,8 @@
  * Handles saving and restoring chat state across page reloads and navigation.
  */
 
-import type { Message } from '@/domains/chat'
+import type { Message } from '@/shared/chat'
+import { ChatPersistenceLog } from '@/shared/data/constants/chat-persistence'
 
 export interface ChatState {
   messages: Message[]
@@ -41,7 +42,7 @@ export function saveChatState(persistKey: string, state: Partial<ChatState>): vo
 
     sessionStorage.setItem(`chat-state-${persistKey}`, JSON.stringify(fullState))
   } catch (error) {
-    console.warn('[Chat Persistence] Failed to save state:', error)
+    console.warn(ChatPersistenceLog.FailedSaveState, error)
   }
 }
 
@@ -60,14 +61,14 @@ export function loadChatState(persistKey: string): ChatState | null {
     const maxAge = 5 * 60 * 1000 // 5 minutes
 
     if (age > maxAge) {
-      console.log('[Chat Persistence] State too old, discarding')
+      console.log(ChatPersistenceLog.StateTooOld)
       clearChatState(persistKey)
       return null
     }
 
     return state
   } catch (error) {
-    console.warn('[Chat Persistence] Failed to load state:', error)
+    console.warn(ChatPersistenceLog.FailedLoadState, error)
     return null
   }
 }
@@ -80,7 +81,7 @@ export function clearChatState(persistKey: string): void {
     sessionStorage.removeItem(`chat-state-${persistKey}`)
     sessionStorage.removeItem(`stream-interrupted-${persistKey}`)
   } catch (error) {
-    console.warn('[Chat Persistence] Failed to clear state:', error)
+    console.warn(ChatPersistenceLog.FailedClearState, error)
   }
 }
 
@@ -91,7 +92,7 @@ export function saveInterruptedStream(persistKey: string, stream: InterruptedStr
   try {
     sessionStorage.setItem(`stream-interrupted-${persistKey}`, JSON.stringify(stream))
   } catch (error) {
-    console.warn('[Chat Persistence] Failed to save interrupted stream:', error)
+    console.warn(ChatPersistenceLog.FailedSaveInterruptedStream, error)
   }
 }
 
@@ -110,14 +111,14 @@ export function loadInterruptedStream(persistKey: string): InterruptedStream | n
     const maxAge = 10 * 60 * 1000 // 10 minutes
 
     if (age > maxAge) {
-      console.log('[Chat Persistence] Interrupted stream too old, discarding')
+      console.log(ChatPersistenceLog.InterruptedStreamTooOld)
       clearInterruptedStream(persistKey)
       return null
     }
 
     return stream
   } catch (error) {
-    console.warn('[Chat Persistence] Failed to load interrupted stream:', error)
+    console.warn(ChatPersistenceLog.FailedLoadInterruptedStream, error)
     return null
   }
 }
@@ -129,6 +130,6 @@ export function clearInterruptedStream(persistKey: string): void {
   try {
     sessionStorage.removeItem(`stream-interrupted-${persistKey}`)
   } catch (error) {
-    console.warn('[Chat Persistence] Failed to clear interrupted stream:', error)
+    console.warn(ChatPersistenceLog.FailedClearInterruptedStream, error)
   }
 }

@@ -20,23 +20,27 @@ import {
 } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import type { MarketAnalysisReport } from '@/domains/loop-creator/server'
+import {
+  MarketTrendDirection,
+} from '@/domains/loop-creator/constants/market-analysis'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
 interface RouteParams {
   params: Promise<{ gameLoopId: string }>
 }
 
-function parseTrendDirection(value: unknown): 'rising' | 'stable' | 'declining' {
-  if (value === 'rising' || value === 'stable' || value === 'declining') {
+function parseTrendDirection(value: unknown): MarketTrendDirection {
+  if (value === MarketTrendDirection.Rising || value === MarketTrendDirection.Stable || value === MarketTrendDirection.Declining) {
     return value
   }
-  return 'stable'
+  return MarketTrendDirection.Stable
 }
 
 /**
  * GET - Retrieve saved market analysis for a game loop
  * Uses eager loading to fetch all related data in a single query
  */
-export async function GET(req: NextRequest, { params }: RouteParams) {
+export async function GET(_req: NextRequest, { params }: RouteParams) {
   try {
     const { gameLoopId } = await params
 
@@ -64,7 +68,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         .limit(1)
 
       if (!gameLoop) {
-        return NextResponse.json({ error: 'Game loop not found' }, { status: 404 })
+        return NextResponse.json({ error: API_ERROR.GAME_LOOP_NOT_FOUND }, { status: 404 })
       }
 
       return NextResponse.json({ exists: false, analysis: null })
@@ -147,9 +151,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       },
     })
   } catch (error) {
-    console.error('Error fetching market analysis:', error)
+    console.error(API_LOG_PREFIX.ERROR_FETCHING_MARKET_ANALYSIS, error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch analysis' },
+      { error: error instanceof Error ? error.message : API_ERROR.FAILED_FETCH_MARKET_ANALYSIS },
       { status: 500 }
     )
   }
@@ -164,7 +168,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     const { session } = await requireAuth()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
     }
 
     const { gameLoopId } = await params
@@ -177,7 +181,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       .limit(1)
 
     if (!gameLoop) {
-      return NextResponse.json({ error: 'Game loop not found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.GAME_LOOP_NOT_FOUND }, { status: 404 })
     }
 
     const report: MarketAnalysisReport = await req.json()
@@ -290,9 +294,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       createdAt: newAnalysis.createdAt,
     })
   } catch (error) {
-    console.error('Error saving market analysis:', error)
+    console.error(API_LOG_PREFIX.ERROR_SAVING_MARKET_ANALYSIS, error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to save analysis' },
+      { error: error instanceof Error ? error.message : API_ERROR.FAILED_SAVE_MARKET_ANALYSIS },
       { status: 500 }
     )
   }
@@ -301,7 +305,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 /**
  * DELETE - Delete saved market analysis (to allow regeneration)
  */
-export async function DELETE(req: NextRequest, { params }: RouteParams) {
+export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   try {
     const { gameLoopId } = await params
 
@@ -313,7 +317,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       .limit(1)
 
     if (!gameLoop) {
-      return NextResponse.json({ error: 'Game loop not found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.GAME_LOOP_NOT_FOUND }, { status: 404 })
     }
 
     // Delete all analyses for this game loop (cascades to related tables)
@@ -321,9 +325,9 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true, deleted: true })
   } catch (error) {
-    console.error('Error deleting market analysis:', error)
+    console.error(API_LOG_PREFIX.ERROR_DELETING_MARKET_ANALYSIS, error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to delete analysis' },
+      { error: error instanceof Error ? error.message : API_ERROR.FAILED_DELETE_MARKET_ANALYSIS },
       { status: 500 }
     )
   }

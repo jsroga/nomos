@@ -3,61 +3,19 @@
  */
 
 import { Node, Edge } from '@xyflow/react'
+import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
+import {
+  parseRelationshipType,
+  RELATIONSHIP_DEFAULT_TYPE,
+  RELATIONSHIP_STYLES,
+  type RelationshipType,
+} from './constants/relationship-web-styles'
 
-export type RelationshipType =
-  | 'ally'
-  | 'enemy'
-  | 'rival'
-  | 'mentor'
-  | 'student'
-  | 'lover'
-  | 'family'
-  | 'member_of'
-  | 'leader_of'
-  | 'associated'
-  | 'related'
-  | 'owns'
-  | 'uses'
-  | 'caused_by'
-  | 'happened_at'
-  | 'located_in'
-  | 'temporal'
-  | 'stranger'
-  | 'acquaintance'
-  | 'complex'
-
-const RELATIONSHIP_TYPES: RelationshipType[] = [
-  'ally',
-  'enemy',
-  'rival',
-  'mentor',
-  'student',
-  'lover',
-  'family',
-  'member_of',
-  'leader_of',
-  'associated',
-  'related',
-  'owns',
-  'uses',
-  'caused_by',
-  'happened_at',
-  'located_in',
-  'temporal',
-  'stranger',
-  'acquaintance',
-  'complex',
-]
-
-const RELATIONSHIP_TYPE_SET = new Set<string>(RELATIONSHIP_TYPES)
-
-export function parseRelationshipType(value: string | undefined): RelationshipType {
-  if (value && RELATIONSHIP_TYPE_SET.has(value)) {
-    for (const type of RELATIONSHIP_TYPES) {
-      if (type === value) return type
-    }
-  }
-  return 'related'
+export type { RelationshipType }
+export {
+  parseRelationshipType,
+  RELATIONSHIP_DEFAULT_TYPE,
+  RELATIONSHIP_STYLES,
 }
 
 export function readRelationshipEdgeEvidence(
@@ -80,7 +38,7 @@ export interface CharacterNodeData {
   role?: string
   avatarUrl?: string
   description?: string
-  type: 'character' | 'faction' | 'place' | 'event' | 'rule'
+  type: `${StoryEntityType}`
   // Metrics for visualization
   stressLevel?: number // 0-100
   transformationProgress?: number // 0-100
@@ -113,46 +71,12 @@ export type CharacterWebNode = Node<CharacterNodeData>
 // Edge type for React Flow
 export type CharacterWebEdge = Edge<RelationshipEdgeData>
 
-// Edge styling based on relationship type
-export const RELATIONSHIP_STYLES: Record<
-  RelationshipType,
-  {
-    color: string
-    strokeStyle: string
-    strokeWidth: number
-    animated: boolean
-  }
-> = {
-  ally: { color: '#22c55e', strokeStyle: 'solid', strokeWidth: 2, animated: false },
-  enemy: { color: '#ef4444', strokeStyle: 'dashed', strokeWidth: 2, animated: true },
-  rival: { color: '#f97316', strokeStyle: 'dotted', strokeWidth: 2, animated: false },
-  mentor: { color: '#a855f7', strokeStyle: 'solid', strokeWidth: 3, animated: false },
-  student: { color: '#a855f7', strokeStyle: 'solid', strokeWidth: 1, animated: false },
-  lover: { color: '#ec4899', strokeStyle: 'solid', strokeWidth: 3, animated: true },
-  family: { color: '#3b82f6', strokeStyle: 'solid', strokeWidth: 2, animated: false },
-  member_of: { color: '#6366f1', strokeStyle: 'dashed', strokeWidth: 1, animated: false },
-  leader_of: { color: '#6366f1', strokeStyle: 'solid', strokeWidth: 3, animated: false },
-  associated: { color: '#94a3b8', strokeStyle: 'dotted', strokeWidth: 1, animated: false },
-  related: { color: '#64748b', strokeStyle: 'dotted', strokeWidth: 1, animated: false },
-  // Object / structural relationships
-  owns: { color: '#f59e0b', strokeStyle: 'solid', strokeWidth: 1, animated: false },
-  uses: { color: '#eab308', strokeStyle: 'dashed', strokeWidth: 1, animated: false },
-  caused_by: { color: '#f43f5e', strokeStyle: 'dotted', strokeWidth: 1, animated: false },
-  happened_at: { color: '#10b981', strokeStyle: 'solid', strokeWidth: 1, animated: false },
-  located_in: { color: '#10b981', strokeStyle: 'dashed', strokeWidth: 1, animated: false },
-  temporal: { color: '#8b5cf6', strokeStyle: 'dotted', strokeWidth: 1, animated: false },
-  // Soft relationships
-  stranger: { color: '#52525b', strokeStyle: 'dotted', strokeWidth: 1, animated: false },
-  acquaintance: { color: '#71717a', strokeStyle: 'dotted', strokeWidth: 1, animated: false },
-  complex: { color: '#fb923c', strokeStyle: 'dashed', strokeWidth: 2, animated: true },
-}
-
 // API response types
 export interface RelationshipMatrixResponse {
   nodes: Array<{
     id: string
     name: string
-    type: 'character' | 'faction' | 'place' | 'event' | 'rule'
+    type: `${StoryEntityType}`
     description?: string
     metadata: {
       role?: string

@@ -5,15 +5,22 @@
  * Narrow brief, diagnosis only, never rewrites.
  */
 
+import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
-import { resolveRoleModel } from '@/domains/storyteller/config/ModelConfig'
+import { resolveRoleModel } from '@/domains/storyteller/config/constants/ModelConfig'
+import {
+  CriticAgentDescription,
+  CriticAgentId,
+  CriticAgentName,
+  StorytellerModelRoleKey,
+} from '@/domains/storyteller/agents/critics/constants/critic-agents'
 import { CRITIC_RULES } from './critic-rules'
 
 export const stakesCritic = new Agent({
-  id: 'stakes-critic',
-  name: 'Stakes Critic',
-  description: 'Finds costless beats, unearned victories, and slack tension.',
-  model: () => resolveRoleModel('critic'),
+  id: CriticAgentId.Stakes,
+  name: CriticAgentName.Stakes,
+  description: CriticAgentDescription.Stakes,
+  model: () => resolveRoleModel(StorytellerModelRoleKey.Critic),
   instructions: `You are a structural critic focused exclusively on stakes and cost. You will receive a draft beat or scene (and the world bible for context).
 
 Your ONLY brief:

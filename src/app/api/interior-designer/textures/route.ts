@@ -5,13 +5,14 @@ import {
   interiorTexturesResponseSchema,
   type InteriorTexturesResponse,
 } from '@/domains/interior-designer/io/interior-designer.dto'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const POST = withRateLimit(
   withAuth(
     async (
       request: NextRequest,
-      { session }: AuthenticatedRequest
+      { session: _session }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorTexturesResponse | { error: string }>> => {
       const parsedBody = interiorTexturesRequestSchema.safeParse(await request.json())
       if (!parsedBody.success) {
@@ -22,7 +23,7 @@ export const POST = withRateLimit(
 
       const apiKey = process.env.REPLICATE_API_TOKEN
       if (!apiKey) {
-        return NextResponse.json({ error: 'Replicate API token not configured' }, { status: 500 })
+        return NextResponse.json({ error: API_ERROR.REPLICATE_TOKEN_NOT_CONFIGURED }, { status: 500 })
       }
 
       const client = new ReplicateClient(apiKey)

@@ -1,7 +1,14 @@
 import { readString, recordFromJson } from '@/shared/data/json-guards'
+import {
+  REPLICATE_DATA_URL_BASE64_PREFIX,
+  ReplicateImageOutputType,
+  ReplicateOutputField,
+  ReplicateOutputLogPrefix,
+} from '@/shared/ai/constants/replicate-output'
+import { BufferEncoding, ReplicateOutputMethod, UrlScheme } from '@/shared/data/constants/protocol'
 
 export interface ParsedImageOutput {
-  type: 'url' | 'base64'
+  type: ReplicateImageOutputType
   data: string
 }
 
@@ -14,16 +21,20 @@ export function isReplicateModelId(model: string): model is ReplicateModelId {
 
 function urlFromRecord(record: Record<string, unknown>): string | undefined {
   return (
-    readString(record.url) ??
-    readString(record.href) ??
-    readString(record.uri) ??
-    readString(record.output) ??
-    readString(record.image)
+    readString(record[ReplicateOutputField.Url]) ??
+    readString(record[ReplicateOutputField.Href]) ??
+    readString(record[ReplicateOutputField.Uri]) ??
+    readString(record[ReplicateOutputField.Output]) ??
+    readString(record[ReplicateOutputField.Image])
   )
 }
 
 function isReadableStream(value: unknown): value is ReadableStream<Uint8Array> {
-  return typeof value === 'object' && value !== null && 'getReader' in value
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    ReplicateOutputMethod.GetReader in value
+  )
 }
 
 async function imageFromReadableStream(stream: ReadableStream<Uint8Array>): Promise<ParsedImageOutput> {
@@ -41,38 +52,52 @@ async function imageFromReadableStream(stream: ReadableStream<Uint8Array>): Prom
     combined.set(chunk, offset)
     offset += chunk.length
   }
-  return { type: 'base64', data: Buffer.from(combined).toString('base64') }
+  return {
+    type: ReplicateImageOutputType.Base64,
+    data: Buffer.from(combined).toString(BufferEncoding.Base64),
+  }
 }
 
 export async function parseReplicateImageOutput(output: unknown): Promise<ParsedImageOutput> {
   if (typeof output === 'string') {
-    if (output.startsWith('http')) return { type: 'url', data: output }
-    if (output.startsWith('data:')) {
-      return { type: 'base64', data: output.replace(/^data:image\/\w+;base64,/, '') }
+    if (output.startsWith(UrlScheme.Http)) {
+      return { type: ReplicateImageOutputType.Url, data: output }
     }
-    return { type: 'base64', data: output }
+    if (output.startsWith(UrlScheme.Data)) {
+      return {
+        type: ReplicateImageOutputType.Base64,
+        data: output.replace(REPLICATE_DATA_URL_BASE64_PREFIX, ''),
+      }
+    }
+    return { type: ReplicateImageOutputType.Base64, data: output }
   }
 
   if (Array.isArray(output) && output.length > 0) {
     const first = output[0]
-    if (typeof first === 'string' && first.startsWith('http')) {
-      return { type: 'url', data: first }
+    if (typeof first === 'string' && first.startsWith(UrlScheme.Http)) {
+      return { type: ReplicateImageOutputType.Url, data: first }
     }
     if (typeof first === 'object' && first !== null) {
       const url = urlFromRecord(recordFromJson(first))
-      if (url?.startsWith('http')) return { type: 'url', data: url }
+      if (url?.startsWith(UrlScheme.Http)) {
+        return { type: ReplicateImageOutputType.Url, data: url }
+      }
     }
   }
 
   if (output && typeof output === 'object' && !Array.isArray(output)) {
     const record = recordFromJson(output)
     const url = urlFromRecord(record)
-    if (url?.startsWith('http')) return { type: 'url', data: url }
+    if (url?.startsWith(UrlScheme.Http)) {
+      return { type: ReplicateImageOutputType.Url, data: url }
+    }
 
     if (isReadableStream(output)) {
       return imageFromReadableStream(output)
     }
   }
 
-  throw new Error(`Unexpected Replicate output format: ${JSON.stringify(output).substring(0, 500)}`)
+  throw new Error(
+    `${ReplicateOutputLogPrefix.UnexpectedFormat} ${JSON.stringify(output).substring(0, 500)}`
+  )
 }

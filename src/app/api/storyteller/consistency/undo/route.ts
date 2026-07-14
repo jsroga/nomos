@@ -10,14 +10,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
 export async function POST(request: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const body = recordFromJson(await request.json())
     const projectId = readString(body.projectId)
@@ -25,17 +27,17 @@ export async function POST(request: NextRequest) {
     const undoId = readString(body.undoId)
 
     if (!projectId) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED }, { status: 400 })
     }
 
     // Verify project access
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     const undoManager = getUndoManager()
 
-    console.log('[Undo API] Undoing fixes for project:', projectId)
+    console.log(API_LOG_PREFIX.UNDO_API_UNDOING, projectId)
 
     let action
     if (undoId) {
@@ -45,17 +47,21 @@ export async function POST(request: NextRequest) {
     }
 
     if (!action) {
-      return NextResponse.json({ error: 'No actions to undo' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.NO_ACTIONS_TO_UNDO }, { status: 404 })
     }
 
-    console.log('[Undo API] Successfully undid action:', action.id)
+    console.log(API_LOG_PREFIX.UNDO_API_SUCCESS, action.id)
 
-    return NextResponse.json({ success: true, action, message: 'Consistency fixes reverted' })
+    return NextResponse.json({
+      success: true,
+      action,
+      message: API_ERROR.CONSISTENCY_FIXES_REVERTED,
+    })
   } catch (error) {
-    console.error('[Undo API] Error:', error)
+    console.error(API_LOG_PREFIX.UNDO_API_ERROR, error)
     return NextResponse.json(
       {
-        error: 'Failed to undo consistency fixes',
+        error: API_ERROR.FAILED_UNDO_CONSISTENCY_FIXES,
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

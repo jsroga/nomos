@@ -14,9 +14,17 @@
 import { entityReferences } from '@/db'
 import { db } from '@/db/client'
 import { eq, and, sql, inArray, desc } from 'drizzle-orm'
-import { EntityReference, EntityType } from './EntityRegistryService'
+import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
 import { entityMetadata, parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
+import { EntityGraphLog } from '@/domains/storyteller/services/constants/entity-graph-log'
+import {
+  InferredRelationshipType,
+  VectorStringError,
+} from '@/domains/storyteller/services/constants/entity-graph-wire'
+import { EntityRegistryNote } from '@/domains/storyteller/services/constants/entity-registry-log'
+import { SqlResultColumn } from '@/shared/data/constants/protocol'
 import { readRowNumber, readRowString, sqlResultRows } from '@/shared/data/json-guards'
+import { EntityReference, EntityType } from './EntityRegistryService'
 
 // Embedding model configuration (must match what's stored)
 // Using Voyage voyage-3 model which produces 1024-dimensional vectors
@@ -37,17 +45,17 @@ function toVectorString(embedding: unknown): string {
   // If already a string (from DB), validate format
   if (typeof embedding === 'string') {
     if (!embedding.startsWith('[') || !embedding.endsWith(']')) {
-      throw new Error('toVectorString: invalid string format')
+      throw new Error(VectorStringError.InvalidStringFormat)
     }
     return embedding
   }
 
   if (!Array.isArray(embedding)) {
-    throw new Error('toVectorString: expected array')
+    throw new Error(VectorStringError.ExpectedArray)
   }
 
   if (embedding.length === 0) {
-    throw new Error('toVectorString: empty embedding')
+    throw new Error(VectorStringError.EmptyEmbedding)
   }
 
   // Security: Validate every element is a finite number (prevents SQL injection)
@@ -102,7 +110,7 @@ interface GraphEdge {
   relationship: 'semantic' | 'co-occurrence' | 'explicit'
 }
 
-interface EntityGraph {
+export interface EntityGraph {
   nodes: Map<string, GraphNode>
   edges: GraphEdge[]
 }
@@ -168,7 +176,9 @@ function scoredEntityFromRow(
     id: row.id,
     name: row.name,
     type,
-    description: row.description?.startsWith('Auto-registered') ? '' : (row.description || ''),
+    description: row.description?.startsWith(EntityRegistryNote.AutoRegistered)
+      ? ''
+      : (row.description || ''),
     metadata: entityMetadata(row.metadata),
     projectId: row.projectId,
     sourceEntityId: row.sourceEntityId || undefined,
@@ -180,7 +190,7 @@ function scoredEntityFromRow(
 
 function similarityFromSqlResult(result: unknown): number {
   const row = sqlResultRows(result)[0]
-  return readRowNumber(row ?? {}, 'similarity') ?? 0
+  return readRowNumber(row ?? {}, SqlResultColumn.Similarity) ?? 0
 }
 
 /**
@@ -325,7 +335,7 @@ class EntityGraphService {
 
       return results.slice(0, opts.maxResults)
     } catch (err) {
-      console.warn('[EntityGraphService] Graph traversal failed:', err)
+      console.warn(EntityGraphLog.GraphTraversalFailed, err)
       return []
     }
   }
@@ -457,7 +467,7 @@ class EntityGraphService {
         )
       }
     } catch (err) {
-      console.warn('[EntityGraphService] Failed to build embedding:', err)
+      console.warn(EntityGraphLog.FailedToBuildEmbedding, err)
     }
   }
 
@@ -483,7 +493,7 @@ class EntityGraphService {
       const queryEmbedding = await embeddings.embedQuery(query)
 
       if (!queryEmbedding || queryEmbedding.length !== EMBEDDING_DIMENSION) {
-        console.warn('[EntityGraphService] Invalid query embedding')
+        console.warn(EntityGraphLog.InvalidQueryEmbedding)
         return []
       }
 
@@ -522,7 +532,7 @@ class EntityGraphService {
         })
         .filter((entity): entity is EntityReference => entity !== null)
     } catch (err) {
-      console.warn('[EntityGraphService] Semantic search failed:', err)
+      console.warn(EntityGraphLog.SemanticSearchFailed, err)
       return []
     }
   }
@@ -565,7 +575,7 @@ class EntityGraphService {
     entityId: string,
     projectId: string,
     options: GraphRAGOptions = {}
-  ): Promise<Array<ScoredEntity & { relationshipType: string }>> {
+  ): Promise<Array<ScoredEntity & { relationshipType: InferredRelationshipType }>> {
     const opts = { ...DEFAULT_OPTIONS, ...options }
 
     try {
@@ -633,7 +643,7 @@ class EntityGraphService {
           }]
         })
     } catch (err) {
-      console.warn('[EntityGraphService] Failed to get direct relationships:', err)
+      console.warn(EntityGraphLog.FailedGetDirectRelationships, err)
       return []
     }
   }
@@ -645,33 +655,57 @@ class EntityGraphService {
     sourceType: EntityType,
     targetType: EntityType,
     similarity: number
-  ): string {
+  ): InferredRelationshipType {
     // Same type relationships
     if (sourceType === targetType) {
-      if (sourceType === 'character') {
-        if (similarity > 0.9) return 'closely_connected'
-        if (similarity > 0.8) return 'associated'
-        return 'related'
+      if (sourceType === StoryEntityType.Character) {
+        if (similarity > 0.9) return InferredRelationshipType.CloselyConnected
+        if (similarity > 0.8) return InferredRelationshipType.Associated
+        return InferredRelationshipType.Related
       }
-      if (sourceType === 'faction') return 'allied_or_rival'
-      return 'related'
+      if (sourceType === StoryEntityType.Faction) return InferredRelationshipType.AlliedOrRival
+      return InferredRelationshipType.Related
     }
 
     // Cross-type relationships
-    if (sourceType === 'character' && targetType === 'faction') return 'member_of'
-    if (sourceType === 'faction' && targetType === 'character') return 'has_member'
-    if (sourceType === 'character' && targetType === 'place') return 'associated_with'
-    if (sourceType === 'character' && targetType === 'event') return 'involved_in'
-    if (sourceType === 'character' && targetType === 'item') return 'uses'
-    if (sourceType === 'faction' && targetType === 'item') return 'owns'
-    if (sourceType === 'faction' && targetType === 'place') return 'controls'
-    if (sourceType === 'event' && targetType === 'character') return 'involves'
-    if (sourceType === 'event' && targetType === 'place') return 'occurred_at'
-    if (sourceType === 'event' && targetType === 'item') return 'caused_by'
-    if (sourceType === 'event' && targetType === 'event') return 'temporal'
-    if (sourceType === 'item' && targetType === 'place') return 'located_in'
+    if (sourceType === StoryEntityType.Character && targetType === StoryEntityType.Faction) {
+      return InferredRelationshipType.MemberOf
+    }
+    if (sourceType === StoryEntityType.Faction && targetType === StoryEntityType.Character) {
+      return InferredRelationshipType.HasMember
+    }
+    if (sourceType === StoryEntityType.Character && targetType === StoryEntityType.Place) {
+      return InferredRelationshipType.AssociatedWith
+    }
+    if (sourceType === StoryEntityType.Character && targetType === StoryEntityType.Event) {
+      return InferredRelationshipType.InvolvedIn
+    }
+    if (sourceType === StoryEntityType.Character && targetType === StoryEntityType.Item) {
+      return InferredRelationshipType.Uses
+    }
+    if (sourceType === StoryEntityType.Faction && targetType === StoryEntityType.Item) {
+      return InferredRelationshipType.Owns
+    }
+    if (sourceType === StoryEntityType.Faction && targetType === StoryEntityType.Place) {
+      return InferredRelationshipType.Controls
+    }
+    if (sourceType === StoryEntityType.Event && targetType === StoryEntityType.Character) {
+      return InferredRelationshipType.Involves
+    }
+    if (sourceType === StoryEntityType.Event && targetType === StoryEntityType.Place) {
+      return InferredRelationshipType.OccurredAt
+    }
+    if (sourceType === StoryEntityType.Event && targetType === StoryEntityType.Item) {
+      return InferredRelationshipType.CausedBy
+    }
+    if (sourceType === StoryEntityType.Event && targetType === StoryEntityType.Event) {
+      return InferredRelationshipType.Temporal
+    }
+    if (sourceType === StoryEntityType.Item && targetType === StoryEntityType.Place) {
+      return InferredRelationshipType.LocatedIn
+    }
 
-    return 'related'
+    return InferredRelationshipType.Related
   }
 
   /**
@@ -687,9 +721,10 @@ class EntityGraphService {
     options: { types?: EntityType[]; minStrength?: number } = {}
   ): Promise<{
     nodes: Array<{ id: string; name: string; type: EntityType; metadata: Record<string, unknown> }>
-    edges: Array<{ source: string; target: string; weight: number; type: string }>
+    edges: Array<{ source: string; target: string; weight: number; type: InferredRelationshipType }>
   }> {
-    const { types = ['character', 'faction'], minStrength = 0.6 } = options
+    const { types = [StoryEntityType.Character, StoryEntityType.Faction], minStrength = 0.6 } =
+      options
 
     try {
       // Get all entities of specified types (limit to 50 for performance)
@@ -718,7 +753,12 @@ class EntityGraphService {
 
       // Performance: Compute all pairwise similarities in a single SQL query
       // Uses a self-join with cosine distance, much faster than N^2 individual queries
-      const edges: Array<{ source: string; target: string; weight: number; type: string }> = []
+      const edges: Array<{
+        source: string
+        target: string
+        weight: number
+        type: InferredRelationshipType
+      }> = []
 
       if (entities.length > 1) {
         try {
@@ -744,11 +784,11 @@ class EntityGraphService {
           `)
 
           for (const row of sqlResultRows(result)) {
-            const sourceId = readRowString(row, 'source_id')
-            const targetId = readRowString(row, 'target_id')
-            const sourceType = parseEntityType(readRowString(row, 'source_type'))
-            const targetType = parseEntityType(readRowString(row, 'target_type'))
-            const weight = readRowNumber(row, 'similarity') ?? 0
+            const sourceId = readRowString(row, SqlResultColumn.SourceId)
+            const targetId = readRowString(row, SqlResultColumn.TargetId)
+            const sourceType = parseEntityType(readRowString(row, SqlResultColumn.SourceType))
+            const targetType = parseEntityType(readRowString(row, SqlResultColumn.TargetType))
+            const weight = readRowNumber(row, SqlResultColumn.Similarity) ?? 0
             if (!sourceId || !targetId || !sourceType || !targetType) continue
 
             edges.push({
@@ -759,10 +799,7 @@ class EntityGraphService {
             })
           }
         } catch (queryErr) {
-          console.warn(
-            '[EntityGraphService] Batch similarity query failed, falling back:',
-            queryErr
-          )
+          console.warn(EntityGraphLog.BatchSimilarityFailed, queryErr)
           // Fallback: simple pairwise (limited to first 20 entities)
           const limited = entities.slice(0, 20)
           for (let i = 0; i < limited.length; i++) {
@@ -797,7 +834,7 @@ class EntityGraphService {
       console.log(`[EntityGraph] Built graph: ${nodes.length} nodes, ${edges.length} edges`)
       return { nodes, edges }
     } catch (err) {
-      console.warn('[EntityGraphService] Failed to build project graph:', err)
+      console.warn(EntityGraphLog.FailedBuildProjectGraph, err)
       return { nodes: [], edges: [] }
     }
   }
@@ -806,8 +843,20 @@ class EntityGraphService {
    * Extract literal relationships from text based on regex patterns.
    * Finds sentences matching "[A] owns/uses/caused [B]" and generates structured edges.
    */
-  extractRelationshipsFromText(text: string): Array<{ sourceId: string; targetId: string; type: string; evidence: string }> {
-    const relationships: Array<{ sourceId: string; targetId: string; type: string; evidence: string }> = []
+  extractRelationshipsFromText(
+    text: string
+  ): Array<{
+    sourceId: string
+    targetId: string
+    type: InferredRelationshipType
+    evidence: string
+  }> {
+    const relationships: Array<{
+      sourceId: string
+      targetId: string
+      type: InferredRelationshipType
+      evidence: string
+    }> = []
 
     // Split into sentences for context boundary
     const sentences = text.split(/[.!?]+/)
@@ -815,12 +864,12 @@ class EntityGraphService {
     // Pattern to match explicit verbs between two references
     // E.g., "[Marcus][char-123] uses the [One Ring][item-456]"
     const verbPatterns = [
-      { regex: /owns|possesses|has/i, type: 'owns' },
-      { regex: /uses|wields|utilizes/i, type: 'uses' },
-      { regex: /caused|created|triggered/i, type: 'caused_by' },
-      { regex: /happened at|took place at|occurred at/i, type: 'happened_at' },
-      { regex: /located in|found in|hidden in/i, type: 'located_in' },
-      { regex: /before|after|during/i, type: 'temporal' }
+      { regex: /owns|possesses|has/i, type: InferredRelationshipType.Owns },
+      { regex: /uses|wields|utilizes/i, type: InferredRelationshipType.Uses },
+      { regex: /caused|created|triggered/i, type: InferredRelationshipType.CausedBy },
+      { regex: /happened at|took place at|occurred at/i, type: InferredRelationshipType.HappenedAt },
+      { regex: /located in|found in|hidden in/i, type: InferredRelationshipType.LocatedIn },
+      { regex: /before|after|during/i, type: InferredRelationshipType.Temporal },
     ]
 
     for (const sentence of sentences) {

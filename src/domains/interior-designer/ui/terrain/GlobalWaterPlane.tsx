@@ -2,6 +2,8 @@
 'use client'
 
 import React, { useRef } from 'react'
+import { GROUND_SURFACE_TYPES_FOR_WATER } from '@/domains/interior-designer/constants/ground-surfaces'
+import { INTERACTION_MODE_TERRAIN } from '@/domains/interior-designer/constants/interaction-modes'
 import { useInteriorStore } from '@/domains/interior-designer'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -18,7 +20,7 @@ export const GlobalWaterPlane: React.FC = () => {
     terrainSettings
 
   // Check if there are any ground surfaces
-  const groundSurfaceTypes = ['grass', 'dirt', 'sand', 'rock']
+  const groundSurfaceTypes = GROUND_SURFACE_TYPES_FOR_WATER
   const hasGroundSurface = surfaces.some(s => groundSurfaceTypes.includes(s.type))
 
   // Animate water slightly
@@ -30,7 +32,7 @@ export const GlobalWaterPlane: React.FC = () => {
   })
 
   // Only show when ground surface exists, heightmap initialized, in terrain mode, and showWaterPlane is true
-  if (!hasGroundSurface || !heightmap || mode !== 'TERRAIN' || !showWaterPlane) return null
+  if (!hasGroundSurface || !heightmap || mode !== INTERACTION_MODE_TERRAIN || !showWaterPlane) return null
 
   return (
     <mesh

@@ -3,6 +3,8 @@ import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { eq, asc } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { StorytellerBeatStatus } from '@/domains/storyteller/core/storyteller-page-wire'
 
 async function verifyEpisodeAccess(episodeId: string, userId: string) {
   const [episode] = await db.select().from(episodes).where(eq(episodes.id, episodeId))
@@ -14,16 +16,16 @@ async function verifyEpisodeAccess(episodeId: string, userId: string) {
   return true
 }
 
-export async function GET(req: Request, props: { params: Promise<{ episodeId: string }> }) {
+export async function GET(_req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { episodeId } = params
 
     if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
     const episodeBeats = await db
@@ -34,8 +36,8 @@ export async function GET(req: Request, props: { params: Promise<{ episodeId: st
 
     return NextResponse.json(episodeBeats)
   } catch (error) {
-    console.error('Error fetching beats:', error)
-    return NextResponse.json({ error: 'Failed to fetch beats' }, { status: 500 })
+    console.error(API_LOG_PREFIX.FETCH_BEATS_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_FETCH_BEATS }, { status: 500 })
   }
 }
 
@@ -43,12 +45,12 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
   const params = await props.params
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { episodeId } = params
 
     if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
     const body = await req.json()
@@ -63,13 +65,13 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
         sequence,
         content,
         visualHook,
-        status: 'proposed',
+        status: StorytellerBeatStatus.Proposed,
       })
       .returning()
 
     return NextResponse.json(newBeat)
   } catch (error) {
-    console.error('Error creating beat:', error)
-    return NextResponse.json({ error: 'Failed to create beat' }, { status: 500 })
+    console.error(API_LOG_PREFIX.BEAT_CREATE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_CREATE_BEAT }, { status: 500 })
   }
 }

@@ -9,6 +9,12 @@ import type {
 } from '@mastra/core/storage'
 import { InMemoryStore, MastraStorage } from '@mastra/core/storage'
 import { MastraVector } from '@mastra/core/vector'
+import {
+  AgentMemoryLog,
+  AgentMemoryMessage,
+  AgentMemoryVectorIndex,
+  MastraStoreName,
+} from '@/shared/agent-kernel/constants/agent-memory'
 
 export class AgentMemory extends MastraMemory {
   constructor(config: { name: string; storage?: MastraStorage; vector?: MastraVector }) {
@@ -22,9 +28,9 @@ export class AgentMemory extends MastraMemory {
   }
 
   private async memoryStore(): Promise<MemoryStorage> {
-    const memory = await this.storage.getStore('memory')
+    const memory = await this.storage.getStore(MastraStoreName.Memory)
     if (!memory) {
-      throw new Error('[AgentMemory] Memory store not configured on MastraCompositeStore')
+      throw new Error(AgentMemoryLog.StoreNotConfigured)
     }
     return memory
   }
@@ -70,13 +76,13 @@ export class AgentMemory extends MastraMemory {
           const { embeddings } = await this.embedder.doEmbed({ values: inputs.map(i => i.text) })
 
           await this.vector.upsert({
-            indexName: 'messages',
+            indexName: AgentMemoryVectorIndex.Messages,
             vectors: embeddings,
             metadata: inputs.map(i => i.metadata),
             ids: inputs.map(i => i.id),
           })
         } catch (err) {
-          console.warn('[AgentMemory] Vector indexing failed:', err)
+          console.warn(AgentMemoryLog.VectorIndexingFailed, err)
         }
       }
     }
@@ -132,7 +138,7 @@ export class AgentMemory extends MastraMemory {
     searchString?: string
     memoryConfig?: MemoryConfig
   }) {
-    return { success: false, reason: 'Not implemented' }
+    return { success: false, reason: AgentMemoryMessage.NotImplemented }
   }
 
   async deleteMessages(messageIds: string[]) {
@@ -170,7 +176,7 @@ export class AgentMemory extends MastraMemory {
         const queryVector = embeddings[0]
 
         const results = await this.vector.query({
-          indexName: 'messages',
+          indexName: AgentMemoryVectorIndex.Messages,
           queryVector: queryVector,
           topK: 5,
         })
@@ -181,7 +187,7 @@ export class AgentMemory extends MastraMemory {
           vectorResult.messages.forEach(m => messages.push(m))
         }
       } catch (err) {
-        console.warn('[AgentMemory] Vector search failed:', err)
+        console.warn(AgentMemoryLog.VectorSearchFailed, err)
       }
     }
 

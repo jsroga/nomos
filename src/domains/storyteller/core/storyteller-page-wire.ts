@@ -59,7 +59,12 @@ export enum StorytellerCustomEvent {
 }
 
 export enum StorytellerBibleTab {
+  Content = 'content',
   Relationships = 'relationships',
+}
+
+export enum StorytellerBibleUrlParam {
+  BibleTab = 'bibleTab',
 }
 
 export enum StorytellerOverrideState {
@@ -79,7 +84,9 @@ export enum StorytellerHttpMethod {
 }
 
 export enum StorytellerQueryParam {
+  ProjectId = 'projectId',
   EpisodeId = 'episodeId',
+  BeatId = 'beatId',
   Bible = 'bible',
 }
 
@@ -100,6 +107,7 @@ export enum StorytellerChatTool {
   CreateCharacter = 'create_character',
   UpdateWorldBible = 'update_world_bible',
   UpdateStoryPhase = 'update_story_phase',
+  ManageBeat = 'manage_beat',
 }
 
 export enum StorytellerGlobalOperation {
@@ -126,7 +134,19 @@ export enum StorytellerLogMessage {
   FailedCreateCharacter = 'Failed to create character:',
   FailedUpdateCharacter = 'Failed to update character:',
   FailedDeleteCharacter = 'Failed to delete character:',
+  FailedPersistPremise = 'Failed to persist premise update:',
   FailedRefetchMoodboard = 'Failed to refetch moodboard data:',
+  FailedSaveResumedGeneration = 'Failed to save resumed generation:',
+  FailedSaveStoryboardUrl = 'Failed to save storyboard URL:',
+  FailedSavePosterUrl = 'Failed to save poster URL:',
+  FailedSaveMasterPrompt = 'Failed to save master prompt:',
+  FailedSaveEpisodePrompt = 'Failed to save episode prompt:',
+  FailedSaveGlobalBible = 'Failed to save global bible:',
+  FailedSaveBible = 'Failed to save bible:',
+  StoryboardGenerationFailed = 'Storyboard generation failed',
+  PosterGenerationFailed = 'Poster generation failed',
+  CharacterWebNodeClicked = 'Character web node clicked:',
+  MoodboardGenerationComplete = '📸 [Moodboard] Generation complete, updating UI:',
   PhaseSyncPremiseToBreaking = '🔄 [Phase Sync] Beats exist but phase is premise - advancing to breaking',
   ApprovalFailed = 'Approval failed',
 }
@@ -147,8 +167,10 @@ export enum StorytellerEpisodeSeed {
 }
 
 export enum StorytellerUserPrompt {
-  DraftFirstEpisode = "Let's draft the first episode. Start by generating a compelling premise for 'Episode 1: The Beginning'.",
-  BuildSeriesFoundation = "Let's build the series foundation. Help me define the genre, tone, and core rules for this world.",
+  DraftFirstEpisode =
+    'Let\'s draft the first episode. Start by generating a compelling premise for \'Episode 1: The Beginning\'.',
+  BuildSeriesFoundation =
+    'Let\'s build the series foundation. Help me define the genre, tone, and core rules for this world.',
 }
 
 export enum StorytellerActionPrefix {
@@ -200,4 +222,127 @@ export enum StorytellerQuestionFallback {
 
 export enum StorytellerAnswerSeparator {
   CommaSpace = ', ',
+}
+
+export enum StorytellerEpisodeStatus {
+  Planning = 'planning',
+}
+
+export enum StorytellerLegacyPlanField {
+  WorldDescription = 'worldDescription',
+  Genre = 'genre',
+  Tone = 'tone',
+  WorldRules = 'worldRules',
+  Factions = 'factions',
+  KeyCharacters = 'keyCharacters',
+  PlotTwists = 'plotTwists',
+  Inspirations = 'inspirations',
+}
+
+export enum StorytellerTempIdPrefix {
+  Temp = 'temp-',
+}
+
+export enum StorytellerStorageSegment {
+  Public = 'public',
+  Projects = 'projects',
+  Portraits = 'portraits',
+  Episodes = 'episodes',
+}
+
+export enum StorytellerImageVariantLabel {
+  Cropped = 'cropped',
+}
+
+export enum StorytellerMoodboardProvider {
+  Midjourney = 'midjourney',
+  Nanobanana = 'nanobanana',
+}
+
+export enum StorytellerPosterThemeFallback {
+  Cinematic = 'Cinematic',
+}
+
+export enum StorytellerGenerationFailLabel {
+  Failed = 'Failed',
+}
+
+export enum StorytellerGenerationAgentName {
+  PosterAgent = 'PosterAgent',
+}
+
+export enum StorytellerGenerationAlert {
+  GeminiApiKeyMissing = 'Gemini API Key missing! Configure it in your environment.',
+  PosterGenerationFailed =
+    'Poster generation failed. Please check the API key configuration or try again.',
+}
+
+export enum StorytellerGenerationLog {
+  StoryboardFailed = 'Storyboard generation failed',
+  PosterFailed = 'Poster generation failed',
+  LegNextConfigParseFailed = 'Failed to parse LegNext config',
+}
+
+export enum StorytellerMoodboardDefault {
+  UntitledProject = 'Untitled Project',
+  UnknownGenre = 'Unknown genre',
+  AtmosphericTone = 'atmospheric',
+}
+
+export enum StorytellerMoodboardPromptCategory {
+  Environment =
+    'Wide establishing shot of the main environment, focusing on scale and atmosphere.',
+  DailyLife = 'Street level or interior view showing daily life and culture.',
+  CharacterPortrait =
+    'Portrait of a typical inhabitant or faction member, highlighting attire and traits.',
+}
+
+export enum StorytellerRagEntityType {
+  WorldRule = 'world_rule',
+}
+
+export enum StorytellerRagQuery {
+  WorldLogic = 'important world logic and atmosphere',
+}
+
+export enum StorytellerRagSummaryFormat {
+  ContextHeader = '\n\n=== ADDITIONAL CONTEXT (RAG) ===\n',
+  BulletPrefix = '- ',
+  LineBreak = '\n',
+}
+
+export enum StorytellerTextSeparator {
+  CommaSpace = ', ',
+  PeriodSpace = '. ',
+}
+
+export enum StorytellerWorkflowVerdict {
+  Approve = 'approve',
+  Revise = 'revise',
+  Kill = 'kill',
+}
+
+export enum StorytellerPromptTemplateToken {
+  BeatContent = '{beatContent}',
+  BeatType = '{beatType}',
+  Characters = '{characters}',
+  VisualHook = '{visualHook}',
+  Setting = '{setting}',
+}
+
+export enum StorytellerBeatTypeFallback {
+  Scene = 'scene',
+}
+
+export enum StorytellerSettingFallback {
+  Unknown = 'Unknown setting',
+}
+
+export enum StorytellerPromptAgentInstruction {
+  GenerateImagePrompt = 'Generate image prompt',
+  GenerateImagePromptSuffix = '\n\nInstructions: Generate the image prompt.',
+}
+
+export enum StorytellerGeneratePromptTask {
+  Title = 'Generate image prompt',
 }

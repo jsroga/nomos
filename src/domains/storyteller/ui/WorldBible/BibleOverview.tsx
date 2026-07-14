@@ -10,6 +10,7 @@ import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
+import { MoodboardProvider } from '@/domains/storyteller/ui/WorldBible/constants/bible-overview'
 
 interface BibleOverviewProps {
   primaryImageIndex: number | null
@@ -87,7 +88,7 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
   }, [])
 
   const hasMoodboardApiKey = (config: { provider: string; apiKey?: string }) =>
-    config.apiKey || (config.provider === 'midjourney' && legnextFromServer)
+    config.apiKey || (config.provider === MoodboardProvider.Midjourney && legnextFromServer)
 
   return (
     <div className="space-y-8">

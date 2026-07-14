@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { useGameEntities } from '@/shared/data/queries/useGameEntities'
 import {
@@ -24,6 +23,16 @@ import {
   Activity,
 } from 'lucide-react'
 import { EntityPicker } from '@/components/EntityPicker'
+import {
+  AppModuleId,
+  GameEntityKind,
+  GameHubDomainDescription,
+  GameHubDomainGradient,
+  GameHubDomainLabel,
+  GameHubDomainStats,
+  GameHubEntityStatsSuffix,
+  GameHubRouteId,
+} from '@/components/shell/GameHubDashboard/constants/game-hub-dashboard'
 
 interface GameHubDashboardProps {
   projectId: string
@@ -31,24 +40,28 @@ interface GameHubDashboardProps {
 
 export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
   const { entities, loading } = useGameEntities({ projectId, autoFetch: true })
-  const [searchQuery, setSearchQuery] = useState('')
 
   // Stats by entity type
   const stats = {
-    characters: entities.filter(e => e.entityType === 'character').length,
-    locations: entities.filter(e => e.entityType === 'location').length,
-    mechanics: entities.filter(e => e.entityType === 'mechanic').length,
-    factions: entities.filter(e => e.entityType === 'faction').length,
-    items: entities.filter(e => e.entityType === 'item').length,
-    quests: entities.filter(e => e.entityType === 'quest').length,
+    characters: entities.filter(e => e.entityType === GameEntityKind.Character).length,
+    locations: entities.filter(e => e.entityType === GameEntityKind.Location).length,
+    mechanics: entities.filter(e => e.entityType === GameEntityKind.Mechanic).length,
+    factions: entities.filter(e => e.entityType === GameEntityKind.Faction).length,
+    items: entities.filter(e => e.entityType === GameEntityKind.Item).length,
+    quests: entities.filter(e => e.entityType === GameEntityKind.Quest).length,
   }
 
   // Stats by domain
-  const domainStats = {
-    storyteller: entities.filter(e => e.usedInDomains.includes('storyteller')).length,
-    'loop-creator': entities.filter(e => e.usedInDomains.includes('loop-creator')).length,
-    'interior-designer': entities.filter(e => e.usedInDomains.includes('interior-designer')).length,
-    'world-building': entities.filter(e => e.usedInDomains.includes('world-building')).length,
+  const domainStats: Record<AppModuleId, number> = {
+    [AppModuleId.Storyteller]: entities.filter(e => e.usedInDomains.includes(AppModuleId.Storyteller))
+      .length,
+    [AppModuleId.LoopCreator]: entities.filter(e => e.usedInDomains.includes(AppModuleId.LoopCreator))
+      .length,
+    [AppModuleId.InteriorDesigner]: entities.filter(e =>
+      e.usedInDomains.includes(AppModuleId.InteriorDesigner)
+    ).length,
+    [AppModuleId.WorldBuilding]: entities.filter(e => e.usedInDomains.includes(AppModuleId.WorldBuilding))
+      .length,
   }
 
   const totalEntities = entities.length
@@ -56,59 +69,51 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
   // Domains/tools available
   const domains = [
     {
-      id: 'storyteller',
-      name: 'Storyteller',
-      description: 'Write scripts, develop characters, build story world',
+      id: GameHubRouteId.Storyteller,
+      name: GameHubDomainLabel.Storyteller,
+      description: GameHubDomainDescription.Storyteller,
       icon: <Tv className="w-5 h-5" />,
-      color: 'from-purple-500 to-pink-500',
-      href: `/${projectId}/storyteller`,
-      stats: `${domainStats.storyteller} entities`,
+      color: GameHubDomainGradient.Storyteller,
+      href: `/${projectId}/${GameHubRouteId.Storyteller}`,
+      stats: `${domainStats[AppModuleId.Storyteller]} ${GameHubEntityStatsSuffix.Entities}`,
     },
     {
-      id: 'loop-creator',
-      name: 'Loop Creator',
-      description: 'Design game loops, mechanics, and progression',
+      id: GameHubRouteId.LoopCreator,
+      name: GameHubDomainLabel.LoopCreator,
+      description: GameHubDomainDescription.LoopCreator,
       icon: <Gamepad2 className="w-5 h-5" />,
-      color: 'from-blue-500 to-cyan-500',
-      href: `/${projectId}/loop-creator`,
-      stats: `${domainStats['loop-creator']} entities`,
+      color: GameHubDomainGradient.LoopCreator,
+      href: `/${projectId}/${GameHubRouteId.LoopCreator}`,
+      stats: `${domainStats[AppModuleId.LoopCreator]} ${GameHubEntityStatsSuffix.Entities}`,
     },
     {
-      id: 'world-gen',
-      name: 'World Builder',
-      description: 'Generate tile maps and world layouts',
+      id: GameHubRouteId.WorldGen,
+      name: GameHubDomainLabel.WorldBuilder,
+      description: GameHubDomainDescription.WorldBuilder,
       icon: <Map className="w-5 h-5" />,
-      color: 'from-green-500 to-emerald-500',
-      href: `/${projectId}/world-gen`,
-      stats: `${domainStats['world-building']} entities`,
+      color: GameHubDomainGradient.WorldBuilder,
+      href: `/${projectId}/${GameHubRouteId.WorldGen}`,
+      stats: `${domainStats[AppModuleId.WorldBuilding]} ${GameHubEntityStatsSuffix.Entities}`,
     },
     {
-      id: 'interior-design',
-      name: 'Interior Designer',
-      description: 'Build 3D interior spaces and levels',
+      id: GameHubRouteId.InteriorDesign,
+      name: GameHubDomainLabel.InteriorDesigner,
+      description: GameHubDomainDescription.InteriorDesigner,
       icon: <Home className="w-5 h-5" />,
-      color: 'from-orange-500 to-red-500',
-      href: `/${projectId}/interior-design`,
-      stats: `${domainStats['interior-designer']} entities`,
+      color: GameHubDomainGradient.InteriorDesigner,
+      href: `/${projectId}/${GameHubRouteId.InteriorDesign}`,
+      stats: `${domainStats[AppModuleId.InteriorDesigner]} ${GameHubEntityStatsSuffix.Entities}`,
     },
     {
-      id: 'asset-exporter',
-      name: 'Asset Exporter',
-      description: 'Convert 2D assets to 3D models',
+      id: GameHubRouteId.AssetExporter,
+      name: GameHubDomainLabel.AssetExporter,
+      description: GameHubDomainDescription.AssetExporter,
       icon: <Brush className="w-5 h-5" />,
-      color: 'from-yellow-500 to-amber-500',
-      href: `/${projectId}/asset-exporter`,
-      stats: 'Export tools',
+      color: GameHubDomainGradient.AssetExporter,
+      href: `/${projectId}/${GameHubRouteId.AssetExporter}`,
+      stats: GameHubDomainStats.ExportTools,
     },
-    {
-      id: 'deduction-puzzle',
-      name: 'Puzzle Designer',
-      description: 'Create deduction puzzles and logic challenges',
-      icon: <Target className="w-5 h-5" />,
-      color: 'from-indigo-500 to-purple-500',
-      href: `/${projectId}/deduction-puzzle`,
-      stats: 'Coming soon',
-    },
+    // deduction-puzzle-designer deleted (user-confirmed, PLAN-V2 6.2)
   ]
 
   // Recent activity (mock for now - would come from actual activity log)
@@ -116,14 +121,6 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5)
 
-  // Filter entities for search
-  const filteredEntities = searchQuery
-    ? entities.filter(
-        e =>
-          e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          e.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : []
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
@@ -252,10 +249,10 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
                 onSelectEntity={entity => {
                   // Navigate to the entity's source domain
                   const domainMap: Record<string, string> = {
-                    storyteller: `/${projectId}/storyteller`,
-                    'loop-creator': `/${projectId}/loop-creator`,
-                    'interior-designer': `/${projectId}/interior-design`,
-                    'world-building': `/${projectId}/world-gen`,
+                    [AppModuleId.Storyteller]: `/${projectId}/${GameHubRouteId.Storyteller}`,
+                    [AppModuleId.LoopCreator]: `/${projectId}/${GameHubRouteId.LoopCreator}`,
+                    [AppModuleId.InteriorDesigner]: `/${projectId}/${GameHubRouteId.InteriorDesign}`,
+                    [AppModuleId.WorldBuilding]: `/${projectId}/${GameHubRouteId.WorldGen}`,
                   }
                   const url = domainMap[entity.sourceDomain]
                   if (url) window.location.href = url
@@ -310,19 +307,19 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
               </h2>
               <div className="space-y-2">
                 <Link
-                  href={`/${projectId}/storyteller`}
+                  href={`/${projectId}/${GameHubRouteId.Storyteller}`}
                   className="block p-3 bg-gray-900/50 hover:bg-gray-900/70 rounded-lg transition-colors text-sm text-gray-300"
                 >
                   <span className="font-medium">→</span> Create a character
                 </Link>
                 <Link
-                  href={`/${projectId}/loop-creator`}
+                  href={`/${projectId}/${GameHubRouteId.LoopCreator}`}
                   className="block p-3 bg-gray-900/50 hover:bg-gray-900/70 rounded-lg transition-colors text-sm text-gray-300"
                 >
                   <span className="font-medium">→</span> Design a game loop
                 </Link>
                 <Link
-                  href={`/${projectId}/world-gen`}
+                  href={`/${projectId}/${GameHubRouteId.WorldGen}`}
                   className="block p-3 bg-gray-900/50 hover:bg-gray-900/70 rounded-lg transition-colors text-sm text-gray-300"
                 >
                   <span className="font-medium">→</span> Build a world

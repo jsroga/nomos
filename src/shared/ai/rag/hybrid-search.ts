@@ -10,6 +10,10 @@ import { documentEmbeddings } from '@/db'
 import { sql, and, desc } from 'drizzle-orm'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { getVoyageEmbeddings } from '../embeddings/voyage-embeddings'
+import {
+  HYBRID_SEARCH_KEYWORD_FAILED_LOG,
+  HYBRID_SEARCH_VECTOR_FAILED_LOG,
+} from '@/shared/ai/constants/hybrid-search'
 
 export interface SearchResult {
   id: string
@@ -212,7 +216,7 @@ export class HybridSearchEngine {
         score: r.score,
       }))
     } catch (error) {
-      console.error('[HybridSearch] Vector search failed:', error)
+      console.error(HYBRID_SEARCH_VECTOR_FAILED_LOG, error)
       return []
     }
   }
@@ -282,7 +286,7 @@ export class HybridSearchEngine {
         })
         .sort((a, b) => b.score - a.score)
     } catch (error) {
-      console.error('[HybridSearch] Keyword search failed:', error)
+      console.error(HYBRID_SEARCH_KEYWORD_FAILED_LOG, error)
       return []
     }
   }

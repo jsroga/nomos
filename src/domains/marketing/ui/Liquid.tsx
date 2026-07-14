@@ -1,5 +1,6 @@
 'use client'
 
+import { LIQUID_GL_INIT_FAILED_LOG } from '@/domains/marketing/constants/liquid'
 import { useEffect, useRef, useState } from 'react'
 
 interface LiquidProps {
@@ -86,7 +87,7 @@ export function Liquid({
             })
             lensRef.current = lens
           } catch (err) {
-            console.error('LiquidGL initialization failed:', err)
+            console.error(LIQUID_GL_INIT_FAILED_LOG, err)
           }
         }, 200)
       } else if (attempts < maxAttempts) {

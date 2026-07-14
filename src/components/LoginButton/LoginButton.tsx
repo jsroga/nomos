@@ -3,6 +3,7 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/Button'
 import { getSiteURL } from '@/shared/data/url'
+import { AUTH_CALLBACK_PATH, OAUTH_PROVIDER } from './constants/login-button'
 
 // Google Icon Component
 function GoogleIcon({ className }: { className?: string }) {
@@ -33,9 +34,9 @@ export default function LoginButton() {
 
   const handleLogin = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: OAUTH_PROVIDER.GOOGLE,
       options: {
-        redirectTo: `${getSiteURL()}auth/callback`,
+        redirectTo: `${getSiteURL()}${AUTH_CALLBACK_PATH}`,
       },
     })
   }

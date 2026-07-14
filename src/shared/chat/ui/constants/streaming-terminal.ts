@@ -1,0 +1,1 @@
+export const STREAMING_TERMINAL_FALLBACK_AGENT = 'agent'

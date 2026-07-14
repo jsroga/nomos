@@ -6,6 +6,9 @@
  * and multi-hop orchestration are gone.
  */
 
+// agents/ is a server-only layer (browser-bundle guard; node/Studio/evals safe)
+import '@/shared/data/server-guard'
+
 // Chat adapter (conversation glue; owns the 10-tool surface)
 export { StorytellerAgent, createStorytellerAgent } from './StorytellerAgent'
 

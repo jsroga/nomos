@@ -1,4 +1,5 @@
 import { MASK_CONFIG } from '@/shared/data/server/prompts'
+import { LegnextMaskMode } from '@/trigger/constants/legnext-upload-paint'
 
 export interface LegNextUploadPaintPayload {
   imgUrl: string
@@ -58,7 +59,7 @@ export function buildLegNextUploadPaintPayload(params: {
   maskBounds?: MaskBounds
 }): {
   payload: LegNextUploadPaintPayload
-  maskMode: 'mask-url' | 'polygon-areas'
+  maskMode: LegnextMaskMode
 } {
   const canvasW = DEFAULT_CANVAS_SIZE
   const canvasH = DEFAULT_CANVAS_SIZE
@@ -105,7 +106,7 @@ export function buildLegNextUploadPaintPayload(params: {
           url: params.maskUrl,
         },
       },
-      maskMode: 'mask-url',
+      maskMode: LegnextMaskMode.MaskUrl,
     }
   }
 
@@ -117,11 +118,11 @@ export function buildLegNextUploadPaintPayload(params: {
           {
             width: maskConfig.width,
             height: maskConfig.height,
-            points: maskConfig.points,
+            points: [...maskConfig.points],
           },
         ],
       },
     },
-    maskMode: 'polygon-areas',
+    maskMode: LegnextMaskMode.PolygonAreas,
   }
 }

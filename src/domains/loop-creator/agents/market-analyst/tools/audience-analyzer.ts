@@ -11,8 +11,8 @@
  * - Engagement motivations
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { countOccurrences } from '@/shared/data/count-occurrences'
+import { createLoopStructuredTool } from './structured-tool'
 import { z } from 'zod'
 
 /**
@@ -609,10 +609,30 @@ const AUDIENCE_PROFILES: AudienceProfile[] = [
   },
 ]
 
+const audienceAnalyzerSchema = z.object({
+  mechanics: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        description: z.string().optional(),
+      })
+    )
+    .describe('Game mechanics to analyze'),
+  targetAudience: z
+    .string()
+    .optional()
+    .describe('Primary target audience (optional - will analyze all if not specified)'),
+  platform: z.string().optional().describe('Target platform'),
+  sessionLength: z.string().optional().describe('Expected session length'),
+  gameGenre: z.string().optional().describe('Game genre'),
+  gameDescription: z.string().optional().describe('Overall game description'),
+})
+
 /**
  * Audience analyzer tool with psychographic profiling
  */
-export const audienceAnalyzerTool = new DynamicStructuredTool({
+export const audienceAnalyzerTool = createLoopStructuredTool({
   name: 'audience_analyzer',
   description: `Analyze how well the game design fits target audiences using psychographic profiling.
 Returns:
@@ -622,33 +642,16 @@ Returns:
 - Specific recommendations for each audience
 
 Audience types include: Achievement Hunter, Discovery Seeker, Social Player, Competitive Player, Casual Relaxer, Mobile Commuter, Narrative Seeker.`,
-  schema: z.object({
-    mechanics: z
-      .array(
-        z.object({
-          name: z.string(),
-          type: z.string(),
-          description: z.string().optional(),
-        })
-      )
-      .describe('Game mechanics to analyze'),
-    targetAudience: z
-      .string()
-      .optional()
-      .describe('Primary target audience (optional - will analyze all if not specified)'),
-    platform: z.string().optional().describe('Target platform'),
-    sessionLength: z.string().optional().describe('Expected session length'),
-    gameGenre: z.string().optional().describe('Game genre'),
-    gameDescription: z.string().optional().describe('Overall game description'),
-  }),
-  func: async ({
-    mechanics,
-    targetAudience,
-    platform,
-    sessionLength,
-    gameGenre,
-    gameDescription,
-  }): Promise<string> => {
+  schema: audienceAnalyzerSchema,
+  func: async input => {
+    const {
+      mechanics,
+      targetAudience,
+      platform,
+      sessionLength,
+      gameGenre,
+      gameDescription,
+    } = audienceAnalyzerSchema.parse(input)
     try {
       // Build analysis context
       const allText = [

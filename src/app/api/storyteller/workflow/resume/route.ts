@@ -6,7 +6,11 @@ import {
   VERDICT_STEP_ID,
 } from '@/domains/storyteller/io/mastra-runtime'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { MastraWorkflowStatus, QueryParam } from '@/shared/data/constants/protocol'
+import { StorytellerWorkflowVerdict } from '@/domains/storyteller/core/storyteller-page-wire'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const runtime = 'nodejs'
 
 /**
@@ -21,7 +25,11 @@ const ResumeSchema = z.object({
   additionalFeedback: z.string().optional(),
 })
 
-const VERDICT_ACTIONS = ['approve', 'revise', 'kill'] as const
+const VERDICT_ACTIONS = [
+  StorytellerWorkflowVerdict.Approve,
+  StorytellerWorkflowVerdict.Revise,
+  StorytellerWorkflowVerdict.Kill,
+] as const
 type VerdictAction = (typeof VERDICT_ACTIONS)[number]
 
 function toVerdictAction(selectedOption: string): VerdictAction | null {
@@ -43,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     if (!payload.success) {
       return NextResponse.json(
-        { error: 'Invalid payload', details: payload.error.errors },
+        { error: API_ERROR.INVALID_PAYLOAD, details: payload.error.errors },
         { status: 400 }
       )
     }
@@ -64,16 +72,16 @@ export async function POST(req: NextRequest) {
     const workflow = getMastraInstance().getWorkflow(BEAT_DRAFT_WORKFLOW_ID)
     if (!workflow) {
       return NextResponse.json(
-        { error: 'Workflow not registered' },
+        { error: API_ERROR.WORKFLOW_NOT_REGISTERED },
         { status: 500 }
       )
     }
 
     // Recover the persisted run state from storage (survives restarts).
     const state = await workflow.getWorkflowRunById(runId)
-    if (!state || state.status !== 'suspended') {
+    if (!state || state.status !== MastraWorkflowStatus.Suspended) {
       return NextResponse.json(
-        { error: 'Workflow not found or already completed', runId },
+        { error: API_ERROR.WORKFLOW_NOT_FOUND_OR_COMPLETED, runId },
         { status: 404 }
       )
     }
@@ -87,9 +95,9 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    if (result.status === 'failed') {
+    if (result.status === MastraWorkflowStatus.Failed) {
       return NextResponse.json(
-        { error: 'Failed to resume workflow', runId, details: getErrorMessage(result.error) },
+        { error: API_ERROR.FAILED_RESUME_WORKFLOW, runId, details: getErrorMessage(result.error) },
         { status: 500 }
       )
     }
@@ -101,9 +109,9 @@ export async function POST(req: NextRequest) {
       selectedOption,
     })
   } catch (error: unknown) {
-    console.error('[Workflow Resume] Error:', error)
+    console.error(API_LOG_PREFIX.STORYTELLER_WORKFLOW_RESUME_ERROR, error)
     return NextResponse.json(
-      { error: 'Internal Server Error', details: getErrorMessage(error) },
+      { error: API_ERROR.INTERNAL_SERVER_ERROR, details: getErrorMessage(error) },
       { status: 500 }
     )
   }
@@ -115,18 +123,18 @@ export async function POST(req: NextRequest) {
  * Check status of a suspended workflow run (from durable storage).
  */
 export async function GET(req: NextRequest) {
-  const runId = req.nextUrl.searchParams.get('runId')
+  const runId = req.nextUrl.searchParams.get(QueryParam.RunId)
 
   if (!runId) {
     return NextResponse.json(
-      { error: 'runId query parameter is required' },
+      { error: API_ERROR.RUN_ID_QUERY_REQUIRED },
       { status: 400 }
     )
   }
 
   const workflow = getMastraInstance().getWorkflow(BEAT_DRAFT_WORKFLOW_ID)
   if (!workflow) {
-    return NextResponse.json({ error: 'Workflow not registered' }, { status: 500 })
+    return NextResponse.json({ error: API_ERROR.WORKFLOW_NOT_REGISTERED }, { status: 500 })
   }
 
   const state = await workflow.getWorkflowRunById(runId)
@@ -138,6 +146,6 @@ export async function GET(req: NextRequest) {
     found: true,
     runId,
     status: state.status,
-    stepId: state.status === 'suspended' ? VERDICT_STEP_ID : undefined,
+    stepId: state.status === MastraWorkflowStatus.Suspended ? VERDICT_STEP_ID : undefined,
   })
 }

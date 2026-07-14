@@ -13,8 +13,8 @@
  * This is a HIDDEN score - used for internal analysis.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
-import { z } from 'zod'
+import { createLoopStructuredTool } from '../structured-tool'
+import { mechanicsLoopsToolSchema } from '../mechanics-loops-schema'
 
 interface DesignAnalysis {
   mechanics: Array<{ name: string; type: string; description?: string }>
@@ -308,34 +308,10 @@ const REFERENCE_SCORES = {
   'Counter-Strike': { score: 25, notes: 'Skill-focused, no power fantasy' },
 }
 
-/** Input schema for Vampire Survivors scorer (extracted to avoid deep type instantiation). */
-const vampireSurvivorsScorerSchema = z.object({
-  mechanics: z
-    .array(
-      z.object({
-        name: z.string(),
-        type: z.string(),
-        description: z.string().optional(),
-      })
-    )
-    .describe('Game mechanics to analyze'),
-  loops: z
-    .array(
-      z.object({
-        name: z.string(),
-        type: z.string(),
-        description: z.string().optional(),
-      })
-    )
-    .optional()
-    .describe('Game loops if defined'),
-  gameDescription: z.string().optional().describe('Overall game description'),
-})
-
 /**
  * Vampire Survivors scorer tool
  */
-export const vampireSurvivorsScorerTool = new DynamicStructuredTool({
+export const vampireSurvivorsScorerTool = createLoopStructuredTool({
   name: 'vampire_survivors_scorer',
   description: `Score the game design against Vampire Survivors-style action criteria.
 Evaluates:
@@ -346,8 +322,9 @@ Evaluates:
 - Content Revelation (15%): Unlocks, meta-progression, "one more run"
 
 Returns 0-100 score with detailed breakdown. High scores indicate strong VS-like appeal.`,
-  schema: vampireSurvivorsScorerSchema,
-  func: async ({ mechanics, loops, gameDescription }): Promise<string> => {
+  schema: mechanicsLoopsToolSchema,
+  func: async input => {
+    const { mechanics, loops, gameDescription } = mechanicsLoopsToolSchema.parse(input)
     try {
       // Build analysis context
       const allText = [

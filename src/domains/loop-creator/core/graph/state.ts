@@ -6,6 +6,11 @@
  */
 
 import { BaseMessage } from '@langchain/core/messages'
+import {
+  CANVAS_NODE_TYPE_GROUP,
+  LOOP_CREATOR_PHASE_INITIAL,
+  NEXT_AGENT_SUPERVISOR,
+} from '@/domains/loop-creator/constants/graph-state-defaults'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 
 /**
@@ -336,7 +341,7 @@ export function createInitialLoopState(
 
   // Convert canvas nodes to mechanics format
   const mechanics: MechanicNode[] = (context?.existingNodes || [])
-    .filter((n: Record<string, unknown>) => n.type !== 'group')
+    .filter((n: Record<string, unknown>) => n.type !== CANVAS_NODE_TYPE_GROUP)
     .map((n: Record<string, unknown>) => mechanicNodeFromCanvasNode(n))
 
   const connections: MechanicEdge[] = (context?.existingEdges || []).map(
@@ -347,8 +352,8 @@ export function createInitialLoopState(
     projectId,
     sessionId: `loop-${Date.now()}`,
     messages: [new HumanMessage(message)],
-    currentPhase: 'initial',
-    nextAgent: 'supervisor',
+    currentPhase: LOOP_CREATOR_PHASE_INITIAL,
+    nextAgent: NEXT_AGENT_SUPERVISOR,
     lastAgent: null,
     roundCount: 0,
     gameGenre: context?.gameGenre || '',
@@ -428,38 +433,39 @@ export const loopCreatorChannels = {
     default: () => [],
   },
   // Simple overwrites for the rest
-  projectId: { reducer: (_, incoming: string) => incoming, default: () => '' },
-  sessionId: { reducer: (_, incoming: string) => incoming, default: () => '' },
+  projectId: { reducer: (_: string, incoming: string) => incoming, default: () => '' },
+  sessionId: { reducer: (_: string, incoming: string) => incoming, default: () => '' },
   currentPhase: {
     reducer: (_: LoopCreatorPhase, incoming: LoopCreatorPhase) => incoming,
-    default: (): LoopCreatorPhase => 'initial',
+    default: (): LoopCreatorPhase => LOOP_CREATOR_PHASE_INITIAL,
   },
   nextAgent: {
     reducer: (_: NextAgent, incoming: NextAgent) => incoming,
-    default: (): NextAgent => 'supervisor',
+    default: (): NextAgent => NEXT_AGENT_SUPERVISOR,
   },
   lastAgent: {
     reducer: (_: NextAgent | null, incoming: NextAgent | null) => incoming,
     default: (): NextAgent | null => null,
   },
-  roundCount: { reducer: (_, incoming: number) => incoming, default: () => 0 },
-  gameGenre: { reducer: (_, incoming: string) => incoming, default: () => '' },
-  gamePlatform: { reducer: (_, incoming: string) => incoming, default: () => '' },
-  targetAudience: { reducer: (_, incoming: string) => incoming, default: () => '' },
-  gameDescription: { reducer: (_, incoming: string) => incoming, default: () => '' },
-  referenceGames: { reducer: (_, incoming: string[]) => incoming, default: () => [] },
+  roundCount: { reducer: (_: number, incoming: number) => incoming, default: () => 0 },
+  gameGenre: { reducer: (_: string, incoming: string) => incoming, default: () => '' },
+  gamePlatform: { reducer: (_: string, incoming: string) => incoming, default: () => '' },
+  targetAudience: { reducer: (_: string, incoming: string) => incoming, default: () => '' },
+  gameDescription: { reducer: (_: string, incoming: string) => incoming, default: () => '' },
+  referenceGames: { reducer: (_: string[], incoming: string[]) => incoming, default: () => [] },
   progressionSystems: {
-    reducer: (_, incoming: ProgressionSystem[]) => incoming,
+    reducer: (_: ProgressionSystem[], incoming: ProgressionSystem[]) => incoming,
     default: () => [],
   },
   balanceAnalysis: {
-    reducer: (_, incoming: BalanceAnalysis | null) => incoming,
+    reducer: (_: BalanceAnalysis | null, incoming: BalanceAnalysis | null) => incoming,
     default: () => null,
   },
   userAnswers: {
-    reducer: (_, incoming: Record<string, string | string[]>) => incoming,
+    reducer: (_: Record<string, string | string[]>, incoming: Record<string, string | string[]>) =>
+      incoming,
     default: () => ({}),
   },
-  ragContext: { reducer: (_, incoming: any) => incoming, default: () => undefined },
-  modelConfig: { reducer: (_, incoming: any) => incoming, default: () => undefined },
+  ragContext: { reducer: (_: unknown, incoming: unknown) => incoming, default: () => undefined },
+  modelConfig: { reducer: (_: unknown, incoming: unknown) => incoming, default: () => undefined },
 }

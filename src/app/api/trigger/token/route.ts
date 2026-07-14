@@ -4,6 +4,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@trigger.dev/sdk/v3'
+import { API_ERROR, API_LOG_PREFIX, TRIGGER_TOKEN_EXPIRY } from '@/shared/data/constants/api-errors'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest) => {
@@ -11,7 +12,7 @@ export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedReques
     const { runIds } = await req.json()
 
     if (!runIds || !Array.isArray(runIds) || runIds.length === 0) {
-      return NextResponse.json({ error: 'runIds array is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.RUN_IDS_REQUIRED }, { status: 400 })
     }
 
     // Generate a public token with read access to the specified runs
@@ -21,14 +22,14 @@ export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedReques
           runs: runIds,
         },
       },
-      expirationTime: '1h', // Token valid for 1 hour
+      expirationTime: TRIGGER_TOKEN_EXPIRY,
     })
 
     return NextResponse.json({ token: publicToken })
   } catch (error) {
-    console.error('Error generating trigger token:', error)
+    console.error(API_LOG_PREFIX.TRIGGER_TOKEN_ERROR, error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate token' },
+      { error: error instanceof Error ? error.message : API_ERROR.FAILED_GENERATE_TOKEN },
       { status: 500 }
     )
   }

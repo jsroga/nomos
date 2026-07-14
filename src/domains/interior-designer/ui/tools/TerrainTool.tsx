@@ -2,6 +2,7 @@
 'use client'
 
 import React, { useRef, useState, useCallback } from 'react'
+import { TERRAIN_MESH_NAME } from '@/domains/interior-designer/constants/three-js'
 import { useInteriorStore } from '@/domains/interior-designer'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -10,19 +11,15 @@ const TERRAIN_SIZE = 64 // Must match TerrainMesh
 const BRUSH_UPDATE_THROTTLE_MS = 33 // ~30fps for brush position updates
 
 export const TerrainTool: React.FC = () => {
-  const mode = useInteriorStore(state => state.mode)
   const terrainBrush = useInteriorStore(state => state.terrainBrush)
-  const terrainMaterialPaint = useInteriorStore(state => state.terrainMaterialPaint)
   const setTerrainBrushPosition = useInteriorStore(state => state.setTerrainBrushPosition)
   const updateHeightmapAt = useInteriorStore(state => state.updateHeightmapAt)
-  const paintMaterialAt = useInteriorStore(state => state.paintMaterialAt)
   const terrainSettings = useInteriorStore(state => state.terrainSettings)
 
   const { raycaster, pointer, camera, scene } = useThree()
 
   const [isPainting, setIsPainting] = useState(false)
   const lastPaintPosition = useRef<THREE.Vector3 | null>(null)
-  const paintIntervalRef = useRef<number | null>(null)
 
   // OPTIMIZATION: Cache terrain mesh reference (avoid scene traversal every frame)
   const cachedTerrainMeshRef = useRef<THREE.Mesh | null>(null)
@@ -38,7 +35,7 @@ export const TerrainTool: React.FC = () => {
     // Traverse scene only if cache miss
     let terrainMesh: THREE.Mesh | null = null
     scene.traverse(obj => {
-      if (obj.name === 'terrain-mesh' && obj instanceof THREE.Mesh) {
+      if (obj.name === TERRAIN_MESH_NAME && obj instanceof THREE.Mesh) {
         terrainMesh = obj
       }
     })

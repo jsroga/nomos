@@ -1,4 +1,9 @@
 import Replicate from 'replicate'
+import { z } from 'zod'
+import {
+  ReplicateClientLog,
+  ReplicateTextureParam,
+} from '@/shared/ai/constants/replicate-client'
 
 // Singleton client cache - reuse clients with same API key
 const clientCache = new Map<string, Replicate>()
@@ -9,8 +14,6 @@ function getReplicateClient(apiKey: string): Replicate {
   }
   return clientCache.get(apiKey)!
 }
-
-import { z } from 'zod'
 
 // Schema for Replicate SAM-2 output
 const ReplicateSAM2Schema = z.object({
@@ -29,7 +32,7 @@ export class ReplicateClient {
 
   async segmentObject(
     image: string, // base64 or url
-    points: Array<{ x: number; y: number; label: number }> // We won't send these to the model, but we need them for filtering later
+    _points: Array<{ x: number; y: number; label: number }> // We won't send these to the model, but we need them for filtering later
   ): Promise<any> {
     // meta/sam-2 is an Automatic Mask Generator. It ignores points.
     // We just send the image.
@@ -47,12 +50,12 @@ export class ReplicateClient {
       { input }
     )
 
-    console.log('[ReplicateClient] Raw output:', JSON.stringify(output, null, 2))
+    console.log(ReplicateClientLog.RawOutput, JSON.stringify(output, null, 2))
 
     // Validate output structure instead of blind casting
     const parsed = ReplicateSAM2Schema.safeParse(output)
     if (!parsed.success) {
-      console.warn('[ReplicateClient] Unexpected output format:', parsed.error)
+      console.warn(ReplicateClientLog.UnexpectedFormat, parsed.error)
       // Fallback to returning raw output but logged warning
       return output
     }
@@ -60,23 +63,23 @@ export class ReplicateClient {
     const typedOutput = parsed.data
 
     if (typedOutput?.individual_masks && typedOutput.individual_masks.length > 0) {
-      console.log('[ReplicateClient] First mask type:', typeof typedOutput.individual_masks[0])
+      console.log(ReplicateClientLog.FirstMaskType, typeof typedOutput.individual_masks[0])
       console.log(
-        '[ReplicateClient] First mask keys:',
+        ReplicateClientLog.FirstMaskKeys,
         Object.keys(typedOutput.individual_masks[0] || {})
       )
-      console.log('[ReplicateClient] First mask:', typedOutput.individual_masks[0])
+      console.log(ReplicateClientLog.FirstMask, typedOutput.individual_masks[0])
     }
     return output
   }
   async generateTexture(prompt: string): Promise<string> {
     const input = {
       prompt: `seamless texture of ${prompt}, top down view, flat lighting, high quality, 8k, disco elysium style, oil painting style`,
-      negative_prompt: 'text, watermark, low quality, blurred, distorted, perspective, shadows',
+      negative_prompt: ReplicateTextureParam.NegativePrompt,
       width: 1024,
       height: 1024,
-      refine: 'expert_ensemble_refiner',
-      scheduler: 'K_EULER',
+      refine: ReplicateTextureParam.Refine,
+      scheduler: ReplicateTextureParam.Scheduler,
       lora_scale: 0.6,
       num_outputs: 1,
       guidance_scale: 7.5,
@@ -89,7 +92,7 @@ export class ReplicateClient {
       { input }
     )
 
-    console.log('[ReplicateClient] Texture output:', output)
+    console.log(ReplicateClientLog.TextureOutput, output)
 
     if (Array.isArray(output) && output.length > 0) {
       return output[0]

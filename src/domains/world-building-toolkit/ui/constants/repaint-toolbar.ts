@@ -1,0 +1,5 @@
+export const REPAINT_STYLE_REFS_FAILED_LOG = 'Failed to load project style refs:'
+export const REPAINT_GENERATED_TOAST = 'Repaint generated! Review the result.'
+export const REPAINT_GENERATION_FAILED_TOAST = 'Repaint generation failed'
+export const REPAINT_CHANGES_APPLIED_TOAST = 'Changes applied!'
+export const REPAINT_CHANGES_DISCARDED_TOAST = 'Changes discarded'

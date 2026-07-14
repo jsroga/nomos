@@ -26,7 +26,7 @@ import {
   SmartQuickActions,
   StreamingTerminal,
   StreamingSectionsInline,
-} from '@/domains/chat'
+} from '@/shared/chat'
 import {
   getLoopCreatorMentionProviders,
   buildLoopCreatorProjectContext,
@@ -62,14 +62,79 @@ import {
   nodeLabel,
   readChangeNodeType,
 } from '@/domains/loop-creator/core/loop-node-wire'
+import {
+  parseAddNodePayload,
+  parseConnectionPayload,
+  parseIdPayload,
+  parseLoopStreamStateCounts,
+  parseLoopStreamThreadId,
+  parseMechanicPayload,
+  parseModifyNodePayload,
+} from '@/domains/loop-creator/core/loop-agent-action-wire'
+import type { PersistedGameLoop } from './LoopSelector'
 import { useAutoSave } from '../state/useAutoSave'
 import { SuggestionPanel, Suggestion } from './SuggestionPanel'
 import { PropertiesPanel } from './PropertiesPanel'
 import { MarketAnalysisPanel } from './MarketAnalysisPanel'
 import { LoopSelector } from './LoopSelector'
 import { LoopEmptyState } from './LoopEmptyState'
-
-const EDGE_LABEL_BG_PADDING: [number, number] = [6, 4]
+import { LoopNodeType } from '@/domains/loop-creator/constants/custom-nodes'
+import {
+  CANVAS_NODE_TYPE_GROUP,
+  NEXT_AGENT_SUPERVISOR,
+} from '@/domains/loop-creator/constants/graph-state-defaults'
+import { LoopHttpMethod } from '@/domains/loop-creator/constants/loop-http'
+import {
+  LoopAgentBgClass,
+  LoopAgentTextClass,
+  LoopCanvasKind,
+  LoopChatMessageType,
+  LoopCreatorAgentKey,
+  LoopEdgeLabel,
+  LoopEdgeType,
+  LoopFlowNodeType,
+  LoopFlowPosition,
+  LoopGroupBorderStyle,
+  LoopLayoutAgentAction,
+  LoopLlmRole,
+  LoopMechanicKind,
+  LoopNodeTimescale,
+  LoopPlayerAgencyLevel,
+  LoopSuggestionKind,
+  LOOP_CONNECTION_STROKE,
+  LOOP_CREATE_DEFAULT_DESCRIPTIONS,
+  LOOP_CREATE_DEFAULT_LABELS,
+  LOOP_CREATE_FAILED_ERROR,
+  LOOP_DOMAIN_TO_FLOW_NODE,
+  LOOP_GENRE_JOIN,
+  LOOP_GROUP_BG_COLOR,
+  LOOP_GROUP_BORDER_COLOR,
+  LOOP_IMPORT_EDGE_LABEL_BG,
+  LOOP_IMPORT_EDGE_LABEL_FILL,
+  LOOP_JSON_EXTENSION,
+  LOOP_JSON_PARSE_ALERT,
+  LOOP_LOG_ACCEPT_SUGGESTION,
+  LOOP_LOG_ACTION_RECEIVED,
+  LOOP_LOG_APPLIED_ALL,
+  LOOP_LOG_APPLY_ALL,
+  LOOP_LOG_AUTO_MESSAGE_SUFFIX,
+  LOOP_LOG_AUTO_START,
+  LOOP_LOG_CANVAS_RESET,
+  LOOP_LOG_CLEAR_CANVAS,
+  LOOP_LOG_CREATE_FAILED,
+  LOOP_LOG_JSON_PARSE_ERROR,
+  LOOP_LOG_LOOP_CREATED,
+  LOOP_LOG_MARKET_ANALYSIS_OPEN,
+  LOOP_LOG_REJECT_SUGGESTION,
+  LOOP_LOG_SEND_AUTO_MESSAGE,
+  LOOP_LOG_SWITCHED_LOOP,
+  LOOP_LOG_UNKNOWN_ACTION,
+  LOOP_MECHANIC_LABEL_SUFFIX,
+  LOOP_MODIFY_NODE_JOIN,
+  LOOP_NEW_NODE_LABEL,
+  flowNodeTypeForDomain,
+  loopSuggestionSortOrder,
+} from './constants/loop-creator-layout'
 import { Button } from '@/components/Button'
 import { EntitySelectorButton } from '@/components/EntityPicker'
 import {
@@ -85,59 +150,61 @@ import { DomainSidebar } from '@/components/DomainSidebar'
 
 // Agent configuration with icons for each loop creator agent
 const LOOP_AGENT_CONFIG = {
-  System: {
-    color: 'text-muted-foreground',
-    bgColor: 'bg-muted/50 border-border',
+  [LoopCreatorAgentKey.System]: {
+    color: LoopAgentTextClass.Muted,
+    bgColor: LoopAgentBgClass.System,
     icon: <Bot className="w-4 h-4" />,
   },
-  supervisor: {
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-500/10 border-blue-500/30',
+  [LoopCreatorAgentKey.Supervisor]: {
+    color: LoopAgentTextClass.Blue,
+    bgColor: LoopAgentBgClass.Blue,
     icon: <Brain className="w-4 h-4" />,
   },
-  loop_planner: {
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/10 border-purple-500/30',
+  [LoopCreatorAgentKey.LoopPlanner]: {
+    color: LoopAgentTextClass.Purple,
+    bgColor: LoopAgentBgClass.Purple,
     icon: <Layout className="w-4 h-4" />,
   },
-  mechanics_designer: {
-    color: 'text-emerald-400',
-    bgColor: 'bg-emerald-500/10 border-emerald-500/30',
+  [LoopCreatorAgentKey.MechanicsDesigner]: {
+    color: LoopAgentTextClass.Emerald,
+    bgColor: LoopAgentBgClass.Emerald,
     icon: <Cpu className="w-4 h-4" />,
   },
-  balance_analyst: {
-    color: 'text-amber-400',
-    bgColor: 'bg-amber-500/10 border-amber-500/30',
+  [LoopCreatorAgentKey.BalanceAnalyst]: {
+    color: LoopAgentTextClass.Amber,
+    bgColor: LoopAgentBgClass.Amber,
     icon: <Scale className="w-4 h-4" />,
   },
-  progression_architect: {
-    color: 'text-rose-400',
-    bgColor: 'bg-rose-500/10 border-rose-500/30',
+  [LoopCreatorAgentKey.ProgressionArchitect]: {
+    color: LoopAgentTextClass.Rose,
+    bgColor: LoopAgentBgClass.Rose,
     icon: <TrendingUp className="w-4 h-4" />,
   },
-  market_analyst: {
-    color: 'text-indigo-400',
-    bgColor: 'bg-indigo-500/10 border-indigo-500/30',
+  [LoopCreatorAgentKey.MarketAnalyst]: {
+    color: LoopAgentTextClass.Indigo,
+    bgColor: LoopAgentBgClass.Indigo,
     icon: <Search className="w-4 h-4" />,
   },
-  LoopAssistant: {
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/10 border-purple-500/30',
+  [LoopCreatorAgentKey.LoopAssistant]: {
+    color: LoopAgentTextClass.Purple,
+    bgColor: LoopAgentBgClass.Purple,
     icon: <Sparkles className="w-4 h-4" />,
   },
-  User: {
-    color: 'text-foreground',
-    bgColor: 'bg-card border-border',
+  [LoopCreatorAgentKey.User]: {
+    color: LoopAgentTextClass.Foreground,
+    bgColor: LoopAgentBgClass.Card,
     icon: <Bot className="w-4 h-4" />,
   },
-}
-
-interface LoopCreatorLayoutProps {
-  projectId: string
 }
 
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { useTour } from '@/components/shell/Tour'
+
+const EDGE_LABEL_BG_PADDING: [number, number] = [6, 4]
+
+interface LoopCreatorLayoutProps {
+  projectId: string
+}
 
 export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   const { currentStep } = useTour()
@@ -181,7 +248,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   }, [])
 
   // Auto-save hook for persisting changes
-  const { saveStatus, saveNow } = useAutoSave({
+  const { saveStatus } = useAutoSave({
     loopId: currentLoopId,
     nodes,
     edges,
@@ -220,7 +287,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
       buildLoopCreatorProjectContext({
         projectId,
         mechanics: nodes
-          .filter(n => n.type !== 'loop')
+          .filter(n => n.type !== LoopCanvasKind.Loop)
           .map(n => ({
             id: n.id,
             name: nodeLabel(n),
@@ -228,11 +295,11 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
             description: nodeDescription(n),
           })),
         loops: nodes
-          .filter(n => n.type === 'loop')
+          .filter(n => n.type === LoopCanvasKind.Loop)
           .map(n => ({
             id: n.id,
             name: nodeLabel(n),
-            type: 'loop',
+            type: LoopCanvasKind.Loop,
             description: nodeDescription(n),
           })),
         connections: edges.map(e => ({
@@ -259,7 +326,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
     ) => {
       try {
         const response = await fetch('/api/loop-creator/loops', {
-          method: 'POST',
+          method: LoopHttpMethod.Post,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             projectId,
@@ -272,15 +339,15 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
         })
 
         if (!response.ok) {
-          throw new Error('Failed to create loop')
+          throw new Error(LOOP_CREATE_FAILED_ERROR)
         }
 
         const newLoop = await response.json()
         setCurrentLoopId(newLoop.id)
-        console.log('✅ Loop created:', newLoop.id)
+        console.log(LOOP_LOG_LOOP_CREATED, newLoop.id)
         return newLoop
       } catch (error) {
-        console.error('Failed to create loop:', error)
+        console.error(LOOP_LOG_CREATE_FAILED, error)
         return null
       }
     },
@@ -298,7 +365,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
         setCurrentLoopId(loop.id)
         setSuggestions([])
         setSelectedNode(null)
-        console.log('✅ Switched to loop:', loop.name)
+        console.log(LOOP_LOG_SWITCHED_LOOP, loop.name)
       } else {
         setNodes([])
         setEdges([])
@@ -320,7 +387,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
     setAnalysis(null)
     setSuggestions([])
     setSelectedNode(null)
-    console.log('✅ Canvas reset')
+    console.log(LOOP_LOG_CANVAS_RESET)
     // Auto-save will persist the empty state
   }, [setNodes, setEdges])
 
@@ -343,8 +410,8 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   const [pendingAutoMessage, setPendingAutoMessage] = useState<string | null>(null)
 
   // Auto-start generation when loop is created with game concept
-  const handleLoopCreatedWithConcept = useCallback((loop: any, gameConcept: string) => {
-    console.log('🚀 Loop created, auto-starting generation with concept:', gameConcept)
+  const handleLoopCreatedWithConcept = useCallback((_loop: PersistedGameLoop, gameConcept: string) => {
+    console.log(LOOP_LOG_AUTO_START, gameConcept)
 
     // Update game context
     setGameContext(prev => ({
@@ -360,74 +427,70 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   // Suggestion handlers
   const handleAcceptSuggestion = useCallback(
     (suggestion: Suggestion) => {
-      console.log('✅ Accepting suggestion:', suggestion.type, suggestion.payload)
+      console.log(LOOP_LOG_ACCEPT_SUGGESTION, suggestion.type, suggestion.payload)
 
       switch (suggestion.type) {
-        case 'ADD_NODE': {
+        case LoopSuggestionKind.AddNode: {
           const payload = suggestion.payload
-          const nodeTypeMap: Record<string, string> = {
-            challenge: 'challengeNode',
-            action: 'actionNode',
-            reward: 'rewardNode',
-            feedback: 'feedbackNode',
-            group: 'group',
-          }
           const newNode: Node = {
             id: payload.id || `${payload.nodeType}-${Date.now()}`,
-            type: nodeTypeMap[payload.nodeType] || 'actionNode',
+            type: flowNodeTypeForDomain(payload.nodeType),
             position: payload.position || { x: 200, y: 200 },
             data: {
-              label: payload.label || 'New Node',
+              label: payload.label || LOOP_NEW_NODE_LABEL,
               description: payload.description || '',
-              nodeType: payload.nodeType || 'action',
-              timescale: payload.timescale || 'custom',
+              nodeType: payload.nodeType || LoopNodeType.Action,
+              timescale: payload.timescale || LoopNodeTimescale.Custom,
               duration: payload.duration || '',
-              playerAgency: payload.playerAgency || 'medium',
+              playerAgency: payload.playerAgency || LoopPlayerAgencyLevel.Medium,
             },
           }
           setNodes(nds => [...nds, newNode])
           break
         }
-        case 'REMOVE_NODE': {
+        case LoopSuggestionKind.RemoveNode: {
           const nodeId = suggestion.payload.id
           setNodes(nds => nds.filter(n => n.id !== nodeId))
           // Also remove connected edges
           setEdges(eds => eds.filter(e => e.source !== nodeId && e.target !== nodeId))
           break
         }
-        case 'ADD_EDGE': {
+        case LoopSuggestionKind.AddEdge: {
           const payload = suggestion.payload
           const newEdge: Edge = {
             id: payload.id || `edge-${Date.now()}`,
             source: payload.source,
             target: payload.target,
             // Only show label if it's meaningful (not just "triggers")
-            label: payload.label && payload.label !== 'triggers' ? payload.label : undefined,
+            label:
+              payload.label && payload.label !== LoopEdgeLabel.Triggers
+                ? payload.label
+                : undefined,
             animated: true,
-            type: 'smoothstep',
+            type: LoopEdgeType.Smoothstep,
           }
           setEdges(eds => [...eds, newEdge])
           break
         }
-        case 'REMOVE_EDGE': {
+        case LoopSuggestionKind.RemoveEdge: {
           const edgeId = suggestion.payload.id
           setEdges(eds => eds.filter(e => e.id !== edgeId))
           break
         }
-        case 'MODIFY_NODE': {
+        case LoopSuggestionKind.ModifyNode: {
           const { id, updates } = suggestion.payload
           setNodes(nds =>
             nds.map(n => (n.id === id ? { ...n, data: { ...n.data, ...updates } } : n))
           )
           break
         }
-        case 'MODIFY_EDGE': {
+        case LoopSuggestionKind.ModifyEdge: {
           const { id, updates } = suggestion.payload
           setEdges(eds => eds.map(e => (e.id === id ? { ...e, ...updates } : e)))
           break
         }
-        case 'REMOVE_ALL_NODES': {
-          console.log('🗑️ Clearing all nodes and edges from canvas')
+        case LoopSuggestionKind.RemoveAllNodes: {
+          console.log(LOOP_LOG_CLEAR_CANVAS)
           setNodes([])
           setEdges([])
           // Also clear metadata since we're starting fresh
@@ -444,7 +507,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   )
 
   const handleRejectSuggestion = useCallback((suggestion: Suggestion) => {
-    console.log('❌ Rejecting suggestion:', suggestion.id)
+    console.log(LOOP_LOG_REJECT_SUGGESTION, suggestion.id)
     setSuggestions(prev => prev.filter(s => s.id !== suggestion.id))
   }, [])
 
@@ -454,94 +517,80 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
 
   // Apply all suggestions at once, then auto-tidy the layout
   const handleAcceptAllSuggestions = useCallback(() => {
-    console.log('✅ Applying all suggestions:', suggestions.length)
+    console.log(LOOP_LOG_APPLY_ALL, suggestions.length)
 
     // Sort suggestions: nodes first, then edges (so edges can reference existing nodes)
-    const sortedSuggestions = [...suggestions].sort((a, b) => {
-      const order: Record<string, number> = {
-        ADD_NODE: 1,
-        MODIFY_NODE: 2,
-        ADD_EDGE: 3,
-        MODIFY_EDGE: 4,
-        REMOVE_EDGE: 5,
-        REMOVE_NODE: 6,
-        REMOVE_ALL_NODES: 0,
-      }
-      return (order[a.type] || 99) - (order[b.type] || 99)
-    })
+    const sortedSuggestions = [...suggestions].sort(
+      (a, b) => loopSuggestionSortOrder(a.type) - loopSuggestionSortOrder(b.type)
+    )
 
     // Collect new nodes and edges
     let newNodes: Node[] = [...nodes]
     let newEdges: Edge[] = [...edges]
 
-    const nodeTypeMap: Record<string, string> = {
-      challenge: 'challengeNode',
-      action: 'actionNode',
-      reward: 'rewardNode',
-      feedback: 'feedbackNode',
-      group: 'group',
-    }
-
     for (const suggestion of sortedSuggestions) {
       switch (suggestion.type) {
-        case 'ADD_NODE': {
+        case LoopSuggestionKind.AddNode: {
           const payload = suggestion.payload
           const newNode: Node = {
             id:
               payload.id ||
               `${payload.nodeType}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            type: nodeTypeMap[payload.nodeType] || 'actionNode',
+            type: flowNodeTypeForDomain(payload.nodeType),
             position: payload.position || { x: 200, y: 200 },
             data: {
-              label: payload.label || 'New Node',
+              label: payload.label || LOOP_NEW_NODE_LABEL,
               description: payload.description || '',
-              nodeType: payload.nodeType || 'action',
-              timescale: payload.timescale || 'custom',
+              nodeType: payload.nodeType || LoopNodeType.Action,
+              timescale: payload.timescale || LoopNodeTimescale.Custom,
               duration: payload.duration || '',
-              playerAgency: payload.playerAgency || 'medium',
+              playerAgency: payload.playerAgency || LoopPlayerAgencyLevel.Medium,
             },
           }
           newNodes = [...newNodes, newNode]
           break
         }
-        case 'ADD_EDGE': {
+        case LoopSuggestionKind.AddEdge: {
           const payload = suggestion.payload
           const newEdge: Edge = {
             id: payload.id || `edge-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             source: payload.source,
             target: payload.target,
             // Only show label if it's meaningful (not just "triggers")
-            label: payload.label && payload.label !== 'triggers' ? payload.label : undefined,
+            label:
+              payload.label && payload.label !== LoopEdgeLabel.Triggers
+                ? payload.label
+                : undefined,
             animated: true,
-            type: 'smoothstep',
+            type: LoopEdgeType.Smoothstep,
           }
           newEdges = [...newEdges, newEdge]
           break
         }
-        case 'REMOVE_NODE': {
+        case LoopSuggestionKind.RemoveNode: {
           const nodeId = suggestion.payload.id
           newNodes = newNodes.filter(n => n.id !== nodeId)
           newEdges = newEdges.filter(e => e.source !== nodeId && e.target !== nodeId)
           break
         }
-        case 'REMOVE_EDGE': {
+        case LoopSuggestionKind.RemoveEdge: {
           const edgeId = suggestion.payload.id
           newEdges = newEdges.filter(e => e.id !== edgeId)
           break
         }
-        case 'MODIFY_NODE': {
+        case LoopSuggestionKind.ModifyNode: {
           const { id, updates } = suggestion.payload
           newNodes = newNodes.map(n =>
             n.id === id ? { ...n, data: { ...n.data, ...updates } } : n
           )
           break
         }
-        case 'MODIFY_EDGE': {
+        case LoopSuggestionKind.ModifyEdge: {
           const { id, updates } = suggestion.payload
           newEdges = newEdges.map(e => (e.id === id ? { ...e, ...updates } : e))
           break
         }
-        case 'REMOVE_ALL_NODES': {
+        case LoopSuggestionKind.RemoveAllNodes: {
           newNodes = []
           newEdges = []
           break
@@ -561,7 +610,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
       rfInstance?.fitView({ padding: 0.2, duration: 300 })
     }, 100)
 
-    console.log('✅ Applied all suggestions and tidied layout')
+    console.log(LOOP_LOG_APPLIED_ALL)
   }, [suggestions, nodes, edges, setNodes, setEdges, rfInstance])
 
   // Smart tidy layout that follows edge connections for proper flow
@@ -576,8 +625,8 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
     const START_Y = 100
 
     // Separate groups from regular nodes
-    const groups = nodesToLayout.filter(n => n.type === 'group')
-    const regularNodes = nodesToLayout.filter(n => n.type !== 'group')
+    const groups = nodesToLayout.filter(n => n.type === LoopFlowNodeType.Group)
+    const regularNodes = nodesToLayout.filter(n => n.type !== LoopFlowNodeType.Group)
 
     if (regularNodes.length === 0) return nodesToLayout
 
@@ -654,7 +703,6 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
     // Position nodes based on level (x) and lane (y)
     const positionedNodes = regularNodes.map(node => {
       const level = nodeLevel[node.id] || 0
-      const lane = nodeLane[node.id] || 0
       const nodesAtLevel = nodesPerLevel[level] || []
       const indexAtLevel = nodesAtLevel.indexOf(node.id)
 
@@ -731,62 +779,42 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
 
   // Node creation functions
   const createNode = useCallback(
-    (nodeType: 'challenge' | 'action' | 'reward' | 'feedback' | 'group') => {
+    (nodeType: LoopNodeType | typeof CANVAS_NODE_TYPE_GROUP) => {
       const id = `${nodeType}-${Date.now()}`
-      const defaultLabels: Record<string, string> = {
-        challenge: 'New Challenge',
-        action: 'New Action',
-        reward: 'New Reward',
-        feedback: 'New Feedback',
-        group: 'New Loop',
-      }
-      const defaultDescriptions: Record<string, string> = {
-        challenge: 'Describe the obstacle or goal',
-        action: 'Describe the player input or decision',
-        reward: 'Describe the positive outcome',
-        feedback: 'Describe the information provided to player',
-        group: 'A timescale loop container',
-      }
 
-      if (nodeType === 'group') {
+      if (nodeType === CANVAS_NODE_TYPE_GROUP) {
         const newNode: Node = {
           id,
-          type: 'group',
+          type: LoopFlowNodeType.Group,
           position: { x: 100, y: 100 },
           style: {
             width: 500,
             height: 400,
-            backgroundColor: 'rgba(100, 100, 255, 0.05)',
-            borderColor: '#6466f1',
+            backgroundColor: LOOP_GROUP_BG_COLOR,
+            borderColor: LOOP_GROUP_BORDER_COLOR,
             borderWidth: 2,
-            borderStyle: 'dashed',
+            borderStyle: LoopGroupBorderStyle.Dashed,
             borderRadius: 16,
           },
           data: {
-            label: defaultLabels[nodeType],
-            timescale: 'custom',
-            description: defaultDescriptions[nodeType],
+            label: LOOP_CREATE_DEFAULT_LABELS[nodeType],
+            timescale: LoopNodeTimescale.Custom,
+            description: LOOP_CREATE_DEFAULT_DESCRIPTIONS[nodeType],
           },
         }
         setNodes(nds => [...nds, newNode])
       } else {
-        const nodeTypeMap: Record<string, string> = {
-          challenge: 'challengeNode',
-          action: 'actionNode',
-          reward: 'rewardNode',
-          feedback: 'feedbackNode',
-        }
         const newNode: Node = {
           id,
-          type: nodeTypeMap[nodeType],
+          type: LOOP_DOMAIN_TO_FLOW_NODE[nodeType],
           position: { x: 200, y: 200 },
           data: {
-            label: defaultLabels[nodeType],
-            description: defaultDescriptions[nodeType],
+            label: LOOP_CREATE_DEFAULT_LABELS[nodeType],
+            description: LOOP_CREATE_DEFAULT_DESCRIPTIONS[nodeType],
             nodeType,
-            timescale: 'custom',
+            timescale: LoopNodeTimescale.Custom,
             duration: '',
-            playerAgency: 'medium',
+            playerAgency: LoopPlayerAgencyLevel.Medium,
           },
         }
         setNodes(nds => [...nds, newNode])
@@ -814,7 +842,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
               // Convert parentNode to parentId for @xyflow/react v12
               parentId: node.parentNode || node.parentId,
               parentNode: undefined, // Remove deprecated property
-              draggable: node.type !== 'group',
+              draggable: node.type !== LoopFlowNodeType.Group,
             }))
             // Automatically tidy up imported nodes
             transformedNodes = autoLayoutNodes(transformedNodes, data.edges || [])
@@ -824,14 +852,14 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
           if (data.edges) {
             const transformedEdges = data.edges.map((edge: any) => ({
               ...edge,
-              type: 'smoothstep',
+              type: LoopEdgeType.Smoothstep,
               // For vertical flow: source from bottom, target to top
-              sourcePosition: 'bottom',
-              targetPosition: 'top',
-              labelBgStyle: { fill: '#0d0d14', fillOpacity: 0.9 },
+              sourcePosition: LoopFlowPosition.Bottom,
+              targetPosition: LoopFlowPosition.Top,
+              labelBgStyle: { fill: LOOP_IMPORT_EDGE_LABEL_BG, fillOpacity: 0.9 },
               labelBgPadding: [6, 10],
               labelBgBorderRadius: 6,
-              labelStyle: { fill: '#fff', fontSize: 11, fontWeight: 500 },
+              labelStyle: { fill: LOOP_IMPORT_EDGE_LABEL_FILL, fontSize: 11, fontWeight: 500 },
             }))
             setEdges(transformedEdges)
           }
@@ -840,7 +868,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
             setLoopMetadata(data.metadata)
             setGameContext(prev => ({
               ...prev,
-              gameGenre: data.metadata.genre?.join(', ') || prev.gameGenre,
+              gameGenre: data.metadata.genre?.join(LOOP_GENRE_JOIN) || prev.gameGenre,
               gameDescription: data.metadata.description || prev.gameDescription,
             }))
           }
@@ -850,7 +878,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
           }
 
           // Save imported loop to database
-          const loopName = data.metadata?.name || file.name.replace('.json', '')
+          const loopName = data.metadata?.name || file.name.replace(LOOP_JSON_EXTENSION, '')
           createNewLoop(loopName, transformedNodes, data.edges || [], data.metadata, data.analysis)
 
           // Fit view after a small delay to allow nodes to render
@@ -860,8 +888,8 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
             }
           }, 200)
         } catch (error) {
-          console.error('Error parsing JSON:', error)
-          alert('Failed to parse JSON file. Please ensure it follows the correct format.')
+          console.error(LOOP_LOG_JSON_PARSE_ERROR, error)
+          alert(LOOP_JSON_PARSE_ALERT)
         }
       }
       reader.readAsText(file)
@@ -874,7 +902,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
   const onConnect = useCallback(
     (params: Connection) =>
       setEdges(eds =>
-        addEdge({ ...params, animated: true, style: { stroke: 'hsl(235 88% 65%)' } }, eds)
+        addEdge({ ...params, animated: true, style: { stroke: LOOP_CONNECTION_STROKE } }, eds)
       ),
     [setEdges]
   )
@@ -890,14 +918,13 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
     isTokenStreaming,
     activeAgents,
     streamingSections,
-    citations,
     groundingScore,
   } = useChatStream({
     // Langfuse session tracking for loop-creator domain
     projectId,
     initialMessages: [
       {
-        sender: 'supervisor',
+        sender: NEXT_AGENT_SUPERVISOR,
         content: `👋 Hello! I'm your Game Loop Design Assistant. I coordinate a team of specialists to help you create engaging game mechanics and loops.
 
 **My team includes:**
@@ -907,44 +934,45 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
 - 📈 **Progression Architect** - Designs progression systems
 
 To get started, tell me about the game you're designing. What **genre** and **platform** are you targeting?`,
-        type: 'ai',
+        type: LoopChatMessageType.Ai,
       },
     ],
     onStreamingUpdate: data => {
-      // Handle state updates from the graph
-      if (data.type === 'state') {
-        // Update nodes/edges based on mechanics and connections
-        if (data.mechanics > 0 || data.loops > 0) {
-          console.log(
-            `[LoopCreator] State update: ${data.mechanics} mechanics, ${data.loops} loops`
-          )
-        }
+      const stateCounts = parseLoopStreamStateCounts(data)
+      if (stateCounts && (stateCounts.mechanics > 0 || stateCounts.loops > 0)) {
+        console.log(
+          `[LoopCreator] State update: ${stateCounts.mechanics} mechanics, ${stateCounts.loops} loops`
+        )
       }
-      // Capture threadId for conversation continuity
-      if (data.type === 'start' && data.threadId) {
-        setThreadId(data.threadId)
+      const thread = parseLoopStreamThreadId(data)
+      if (thread) {
+        setThreadId(thread)
       }
     },
     onAction: async action => {
       // Handle actions from the loop creator graph
-      console.log('[LoopCreator] Action received:', action.type, action.payload)
+      console.log(LOOP_LOG_ACTION_RECEIVED, action.type, action.payload)
 
       const createSuggestionId = () =>
         `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
       // Convert actions to suggestions for user approval
       switch (action.type) {
-        case 'ADD_MECHANIC': {
-          const mechanic = action.payload
+        case LoopLayoutAgentAction.AddMechanic: {
+          const mechanic = parseMechanicPayload(action.payload)
+          if (!mechanic) break
           const suggestion: Suggestion = {
             id: createSuggestionId(),
-            type: 'ADD_NODE',
-            description: `Add "${mechanic.name}" ${mechanic.type || 'mechanic'} node`,
+            type: LoopSuggestionKind.AddNode,
+            description: `Add "${mechanic.name}" ${mechanic.type || LOOP_MECHANIC_LABEL_SUFFIX} node`,
             payload: {
               id: mechanic.id || `mechanic-${Date.now()}`,
               label: mechanic.name,
               description: mechanic.description || '',
-              nodeType: mechanic.type === 'core' ? 'challenge' : 'action',
+              nodeType:
+                mechanic.type === LoopMechanicKind.Core
+                  ? LoopNodeType.Challenge
+                  : LoopNodeType.Action,
               position: { x: Math.random() * 400 + 100, y: Math.random() * 300 + 100 },
             },
           }
@@ -952,12 +980,13 @@ To get started, tell me about the game you're designing. What **genre** and **pl
           break
         }
 
-        case 'ADD_CONNECTION':
-        case 'ADD_EDGE': {
-          const conn = action.payload
+        case LoopLayoutAgentAction.AddConnection:
+        case LoopLayoutAgentAction.AddEdge: {
+          const conn = parseConnectionPayload(action.payload)
+          if (!conn) break
           const suggestion: Suggestion = {
             id: createSuggestionId(),
-            type: 'ADD_EDGE',
+            type: LoopSuggestionKind.AddEdge,
             description: `Connect "${conn.sourceLabel || conn.source}" → "${conn.targetLabel || conn.target}"${conn.label ? ` (${conn.label})` : ''}`,
             payload: {
               id: conn.id || `edge-${Date.now()}`,
@@ -970,17 +999,18 @@ To get started, tell me about the game you're designing. What **genre** and **pl
           break
         }
 
-        case 'ADD_NODE': {
-          const node = action.payload
+        case LoopLayoutAgentAction.AddNode: {
+          const node = parseAddNodePayload(action.payload)
+          if (!node) break
           const suggestion: Suggestion = {
             id: createSuggestionId(),
-            type: 'ADD_NODE',
+            type: LoopSuggestionKind.AddNode,
             description: `Add "${node.label}" node`,
             payload: {
               id: node.id || `node-${Date.now()}`,
               label: node.label,
               description: node.description || '',
-              nodeType: node.nodeType || 'action',
+              nodeType: node.nodeType || LoopNodeType.Action,
               position: node.position || {
                 x: Math.random() * 400 + 100,
                 y: Math.random() * 300 + 100,
@@ -991,12 +1021,14 @@ To get started, tell me about the game you're designing. What **genre** and **pl
           break
         }
 
-        case 'REMOVE_NODE': {
-          const nodeId = action.payload.id
+        case LoopLayoutAgentAction.RemoveNode: {
+          const payload = parseIdPayload(action.payload)
+          if (!payload) break
+          const nodeId = payload.id
           const nodeToRemove = nodes.find(n => n.id === nodeId)
           const suggestion: Suggestion = {
             id: createSuggestionId(),
-            type: 'REMOVE_NODE',
+            type: LoopSuggestionKind.RemoveNode,
             description: `Remove "${nodeToRemove?.data?.label || nodeId}" node`,
             payload: { id: nodeId },
           }
@@ -1004,10 +1036,10 @@ To get started, tell me about the game you're designing. What **genre** and **pl
           break
         }
 
-        case 'REMOVE_ALL_NODES': {
+        case LoopLayoutAgentAction.RemoveAllNodes: {
           const suggestion: Suggestion = {
             id: createSuggestionId(),
-            type: 'REMOVE_ALL_NODES',
+            type: LoopSuggestionKind.RemoveAllNodes,
             description: `Clear all nodes and edges from canvas (${nodes.length} nodes, ${edges.length} edges)`,
             payload: {},
           }
@@ -1015,24 +1047,28 @@ To get started, tell me about the game you're designing. What **genre** and **pl
           break
         }
 
-        case 'MODIFY_NODE': {
-          const { id, updates } = action.payload
+        case LoopLayoutAgentAction.ModifyNode: {
+          const modify = parseModifyNodePayload(action.payload)
+          if (!modify) break
+          const { id, updates } = modify
           const nodeToModify = nodes.find(n => n.id === id)
           const suggestion: Suggestion = {
             id: createSuggestionId(),
-            type: 'MODIFY_NODE',
-            description: `Update "${nodeToModify?.data?.label || id}": ${Object.keys(updates).join(', ')}`,
+            type: LoopSuggestionKind.ModifyNode,
+            description: `Update "${nodeToModify?.data?.label || id}": ${Object.keys(updates).join(LOOP_MODIFY_NODE_JOIN)}`,
             payload: { id, updates },
           }
           setSuggestions(prev => [...prev, suggestion])
           break
         }
 
-        case 'REMOVE_EDGE': {
-          const edgeId = action.payload.id
+        case LoopLayoutAgentAction.RemoveEdge: {
+          const payload = parseIdPayload(action.payload)
+          if (!payload) break
+          const edgeId = payload.id
           const suggestion: Suggestion = {
             id: createSuggestionId(),
-            type: 'REMOVE_EDGE',
+            type: LoopSuggestionKind.RemoveEdge,
             description: `Remove connection "${edgeId}"`,
             payload: { id: edgeId },
           }
@@ -1040,16 +1076,16 @@ To get started, tell me about the game you're designing. What **genre** and **pl
           break
         }
 
-        case 'MARKET_ANALYSIS_COMPLETE': {
+        case LoopLayoutAgentAction.MarketAnalysisComplete: {
           // When market analysis is done via chat, open the panel and refresh it
-          console.log('[LoopCreator] Market analysis complete, opening panel')
+          console.log(LOOP_LOG_MARKET_ANALYSIS_OPEN)
           setMarketAnalysisKey(prev => prev + 1) // Force panel refresh
           setIsMarketAnalysisOpen(true)
           break
         }
 
         default:
-          console.log('[LoopCreator] Unknown action type:', action.type)
+          console.log(LOOP_LOG_UNKNOWN_ACTION, action.type)
       }
     },
   })
@@ -1059,12 +1095,15 @@ To get started, tell me about the game you're designing. What **genre** and **pl
       if (!msg.trim()) return
 
       // Optimistic update
-      setMessages(prev => [...prev, { sender: 'User', content: msg, type: 'human' }])
+      setMessages(prev => [
+        ...prev,
+        { sender: LoopCreatorAgentKey.User, content: msg, type: LoopChatMessageType.Human },
+      ])
 
       const recentMessages = messages
         .slice(-10)
         .map(m => ({
-          role: m.type === 'human' ? 'user' : 'assistant',
+          role: m.type === LoopChatMessageType.Human ? LoopLlmRole.User : LoopLlmRole.Assistant,
           content: typeof m.content === 'string' ? m.content : '',
         }))
         .filter(m => m.content.length > 0)
@@ -1092,7 +1131,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
   // Effect to send pending auto-message when a loop is created
   useEffect(() => {
     if (pendingAutoMessage && currentLoopId && !isSending) {
-      console.log('📤 Sending auto-message:', pendingAutoMessage.slice(0, 50) + '...')
+      console.log(LOOP_LOG_SEND_AUTO_MESSAGE, pendingAutoMessage.slice(0, 50) + LOOP_LOG_AUTO_MESSAGE_SUFFIX)
       handleSendMessage(pendingAutoMessage)
       setPendingAutoMessage(null)
     }
@@ -1319,7 +1358,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
               variant="ghost"
               size="sm"
               className="h-7 px-2.5 gap-1.5 text-xs hover:bg-red-500/10 hover:text-red-400 border border-transparent hover:border-red-500/30"
-              onClick={() => createNode('challenge')}
+              onClick={() => createNode(LoopNodeType.Challenge)}
             >
               <Swords className="w-3.5 h-3.5 text-red-400" />
               Challenge
@@ -1328,7 +1367,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
               variant="ghost"
               size="sm"
               className="h-7 px-2.5 gap-1.5 text-xs hover:bg-blue-500/10 hover:text-blue-400 border border-transparent hover:border-blue-500/30"
-              onClick={() => createNode('action')}
+              onClick={() => createNode(LoopNodeType.Action)}
             >
               <Gamepad2 className="w-3.5 h-3.5 text-blue-400" />
               Action
@@ -1337,7 +1376,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
               variant="ghost"
               size="sm"
               className="h-7 px-2.5 gap-1.5 text-xs hover:bg-yellow-500/10 hover:text-yellow-400 border border-transparent hover:border-yellow-500/30"
-              onClick={() => createNode('reward')}
+              onClick={() => createNode(LoopNodeType.Reward)}
             >
               <Star className="w-3.5 h-3.5 text-yellow-400" />
               Reward
@@ -1346,7 +1385,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
               variant="ghost"
               size="sm"
               className="h-7 px-2.5 gap-1.5 text-xs hover:bg-green-500/10 hover:text-green-400 border border-transparent hover:border-green-500/30"
-              onClick={() => createNode('feedback')}
+              onClick={() => createNode(LoopNodeType.Feedback)}
             >
               <BarChart3 className="w-3.5 h-3.5 text-green-400" />
               Feedback
@@ -1356,7 +1395,7 @@ To get started, tell me about the game you're designing. What **genre** and **pl
               variant="ghost"
               size="sm"
               className="h-7 px-2.5 gap-1.5 text-xs hover:bg-purple-500/10 hover:text-purple-400 border border-transparent hover:border-purple-500/30"
-              onClick={() => createNode('group')}
+              onClick={() => createNode(CANVAS_NODE_TYPE_GROUP)}
             >
               <Layers className="w-3.5 h-3.5 text-purple-400" />
               Group

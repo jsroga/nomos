@@ -2,6 +2,11 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
+import { INTERACTION_MODE_WALL } from '@/domains/interior-designer/constants/interaction-modes'
+import {
+  ADDING_WALL_LOG,
+  CREATING_FLOOR_LOG,
+} from '@/domains/interior-designer/constants/wall-tool-messages'
 import { useInteriorStore } from '@/domains/interior-designer'
 import { useThree, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -34,14 +39,14 @@ export const WallTool: React.FC = () => {
 
   // Reset state when switching away from WALL mode
   React.useEffect(() => {
-    if (mode !== 'WALL') {
+    if (mode !== INTERACTION_MODE_WALL) {
       setStartPoint(null)
       setCurrentPoint(null)
     }
   }, [mode])
 
   // Only active in WALL mode
-  if (mode !== 'WALL') return null
+  if (mode !== INTERACTION_MODE_WALL) return null
 
   const findNearestEndpoint = (point: THREE.Vector3): THREE.Vector3 | null => {
     let nearest: THREE.Vector3 | null = null
@@ -93,7 +98,7 @@ export const WallTool: React.FC = () => {
     }
   }
 
-  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
+  const handlePointerDown = (_e: ThreeEvent<PointerEvent>) => {
     const point = getIntersection()
     if (!point) return
 
@@ -107,7 +112,7 @@ export const WallTool: React.FC = () => {
       const closedPolygon = findClosedPolygons(walls, newWallStart, newWallEnd)
 
       // Add the wall
-      console.log('Adding wall:', { start: newWallStart, end: newWallEnd })
+      console.log(ADDING_WALL_LOG, { start: newWallStart, end: newWallEnd })
       addWall({
         start: newWallStart,
         end: newWallEnd,
@@ -118,7 +123,7 @@ export const WallTool: React.FC = () => {
 
       // If a closed polygon was formed, auto-create a floor
       if (closedPolygon && closedPolygon.length >= 3) {
-        console.log('Creating floor with polygon:', closedPolygon)
+        console.log(CREATING_FLOOR_LOG, closedPolygon)
         addFloor({
           points: closedPolygon,
           y: 0,

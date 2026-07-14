@@ -3,8 +3,18 @@
 import React, { useState, useEffect, memo } from 'react'
 import { ChevronLeft, ChevronRight, Play, Pause, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/Button'
+import {
+  ButtonSizeKey,
+  ButtonVariantKey,
+} from '@/components/Button/constants/button-styles'
 
 import { QuestionSession } from '@/domains/storyteller/core/types/ActionTypes'
+import {
+  TIMELINE_BEAT_COLORS,
+  TIMELINE_FETCH_SNAPSHOTS_FAILED_LOG,
+  TimelineStorageKey,
+  TimelineStorageValue,
+} from './constants/timeline'
 
 interface Beat {
   id: string
@@ -31,14 +41,7 @@ export interface TimelineProps {
 }
 
 // Beat type colors
-const BEAT_COLORS: Record<string, string> = {
-  setup: 'bg-blue-500',
-  complication: 'bg-orange-500',
-  revelation: 'bg-purple-500',
-  decision: 'bg-yellow-500',
-  consequence: 'bg-red-500',
-  default: 'bg-muted-foreground',
-}
+const BEAT_COLORS = TIMELINE_BEAT_COLORS
 
 // Memoized beat item component to prevent unnecessary re-renders
 memo(function BeatItem({
@@ -76,24 +79,24 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
   beats,
   onBeatSelect,
   selectedBeatId,
-  pendingQuestions,
+  pendingQuestions: _pendingQuestions,
 }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [snapshots, setSnapshots] = useState<CharacterSnapshot[]>([])
+  const [_snapshots, setSnapshots] = useState<CharacterSnapshot[]>([])
   const [hoveredBeat, setHoveredBeat] = useState<string | null>(null)
   const [isCollapsed, setIsCollapsed] = useState(() => {
     // Initialize from localStorage
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('storyteller-timeline-collapsed')
-      return saved === 'true'
+      const saved = localStorage.getItem(TimelineStorageKey.Collapsed)
+      return saved === TimelineStorageValue.True
     }
     return false
   })
 
   // Persist collapsed state to localStorage
   useEffect(() => {
-    localStorage.setItem('storyteller-timeline-collapsed', String(isCollapsed))
+    localStorage.setItem(TimelineStorageKey.Collapsed, String(isCollapsed))
   }, [isCollapsed])
 
   // Sort beats by sequence
@@ -115,7 +118,7 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
         .then(data => {
           if (data.snapshots) setSnapshots(data.snapshots)
         })
-        .catch(err => console.error('Failed to fetch snapshots:', err))
+        .catch(err => console.error(TIMELINE_FETCH_SNAPSHOTS_FAILED_LOG, err))
     } else {
       setSnapshots([])
     }
@@ -163,7 +166,7 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
   if (!episodeId) {
     return (
       <div className="h-10 border-t border-border bg-card/80 backdrop-blur flex items-center justify-center text-muted-foreground text-sm">
-        <Button variant="ghost" size="sm" className="h-8 px-3 text-xs gap-1" disabled>
+        <Button variant={ButtonVariantKey.Ghost} size={ButtonSizeKey.Sm} className="h-8 px-3 text-xs gap-1" disabled>
           Select an episode to view timeline
         </Button>
       </div>
@@ -182,8 +185,8 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
       <div className="h-10 px-4 flex items-center justify-between border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <Button
-            variant="ghost"
-            size="sm"
+            variant={ButtonVariantKey.Ghost}
+            size={ButtonSizeKey.Sm}
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="h-7 w-7 p-0"
             title={isCollapsed ? 'Expand timeline' : 'Collapse timeline'}
@@ -194,8 +197,8 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
           {!isCollapsed && (
             <>
               <Button
-                variant="ghost"
-                size="sm"
+                variant={ButtonVariantKey.Ghost}
+                size={ButtonSizeKey.Sm}
                 onClick={handlePrevious}
                 disabled={currentIndex === 0}
                 className="h-7 w-7 p-0"
@@ -203,16 +206,16 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
                 <ChevronLeft size={16} />
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
+                variant={ButtonVariantKey.Ghost}
+                size={ButtonSizeKey.Sm}
                 onClick={() => setIsPlaying(!isPlaying)}
                 className="h-7 w-7 p-0"
               >
                 {isPlaying ? <Pause size={16} /> : <Play size={16} />}
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
+                variant={ButtonVariantKey.Ghost}
+                size={ButtonSizeKey.Sm}
                 onClick={handleNext}
                 disabled={currentIndex >= sortedBeats.length - 1}
                 className="h-7 w-7 p-0"

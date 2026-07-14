@@ -10,14 +10,28 @@ import { QuestionCard } from '../QuestionCard'
 import { ReferenceText } from '../ReferenceText'
 import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
 import {
+  AGENT_LOG_DEFAULT_COLOR,
+  AGENT_LOG_SCROLL_BEHAVIOR,
+  AGENT_NAME_CAMEL_CASE_SPLIT,
+  AGENT_NAME_DELEGATE_PREFIX_PATTERN,
+  AGENT_NAME_UNDERSCORE_REPLACEMENT,
+  AgentLogMessageContent,
+  AgentLogUrlHost,
+  AgentWireId,
+  ChatMessageRole,
+  DelegationPhrase,
+  DELEGATION_ELLIPSIS_SUFFIX,
+  DELEGATION_HANDOFF_PREFIX,
+  MessageGroupType,
+  QuestionUrgency,
+  StorytellerAgentDisplayName,
+  STORYTELLER_AGENT_DISPLAY_NAMES,
+} from './constants/agent-log'
+import { STORYTELLER_AGENT_LOG_CONFIG } from './constants/agent-log-config'
+import {
   Bot,
   User,
-  Sparkles,
   Brain,
-  Lightbulb,
-  Scale,
-  Eye,
-  Pen,
   ChevronDown,
   ChevronRight,
   Loader2,
@@ -62,56 +76,14 @@ interface AgentLogProps {
   projectId?: string
 }
 
-// Friendly display name mapping for agents
-const AGENT_DISPLAY_NAMES: Record<string, string> = {
-  // Internal/technical names -> Friendly names
-  Showrunner: 'Showrunner',
-  PlotArchitect: 'Plot Architect',
-  CharacterPsychology: 'Character Expert',
-  ConsequenceTracker: 'Logic Guardian',
-  DevilsAdvocate: 'Devil\'s Advocate',
-  VisualMoment: 'Visual Designer',
-  Writer: 'Writer',
-  User: 'You',
-  Supervisor: 'Showrunner',
-  supervisor: 'Showrunner',
-  // Delegate names
-  delegate_to_premise_architect: 'Premise Architect',
-  DELEGATE_TO_PREMISE_ARCHITECT: 'Premise Architect',
-  premiseArchitect: 'Premise Architect',
-  PremiseArchitect: 'Premise Architect',
-  PREMISEARCHITECT: 'Premise Architect',
-  delegate_to_plot_architect: 'Plot Architect',
-  delegate_to_character_psychology: 'Character Expert',
-  delegate_to_world_simulator: 'World Simulator',
-  delegate_to_magic_agent: 'Creative Spark',
-  WorldSimulator: 'World Simulator',
-  MagicAgent: 'Creative Spark',
-  EpisodePremiseArchitect: 'Premise Architect',
-  episodePremiseArchitect: 'Premise Architect',
-  ScriptEditor: 'Script Editor',
-  // Specialized Council Agents (v2)
-  Psychologist: 'Character Psychologist',
-  Gardener: 'The Gardener',
-  Storyteller: 'Storyteller',
-  // Creative Directors
-  CreativeDirector_GRRM: 'GRRM (Creative Director)',
-  CreativeDirector_Gilligan: 'Vince Gilligan (Creative Director)',
-  GRRM: 'George R.R. Martin',
-  Gilligan: 'Vince Gilligan',
-}
-
-// Get friendly display name for an agent
 const getAgentDisplayName = (agentName: string): string => {
-  // Check direct mapping first
-  if (AGENT_DISPLAY_NAMES[agentName]) {
-    return AGENT_DISPLAY_NAMES[agentName]
+  if (STORYTELLER_AGENT_DISPLAY_NAMES[agentName]) {
+    return STORYTELLER_AGENT_DISPLAY_NAMES[agentName]
   }
-  // Try to convert camelCase/PascalCase to Title Case
   const converted = agentName
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/_/g, ' ')
-    .replace(/delegate to /i, '')
+    .replace(/([A-Z])/g, AGENT_NAME_CAMEL_CASE_SPLIT)
+    .replace(/_/g, AGENT_NAME_UNDERSCORE_REPLACEMENT)
+    .replace(AGENT_NAME_DELEGATE_PREFIX_PATTERN, '')
     .trim()
     .split(' ')
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
@@ -119,98 +91,18 @@ const getAgentDisplayName = (agentName: string): string => {
   return converted || agentName
 }
 
-// Agent configuration with colors and icons - Minimalist version
-const AGENT_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
-  Showrunner: {
-    color:
-      'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300 bg-primary/10 border border-primary/30 text-primary',
-    icon: <Sparkles className="w-3.5 h-3.5" />,
-  },
-  PlotArchitect: {
-    color: 'text-blue-400/80',
-    icon: <Lightbulb className="w-3.5 h-3.5" />,
-  },
-  CharacterPsychology: {
-    color: 'text-purple-400/80',
-    icon: <Brain className="w-3.5 h-3.5" />,
-  },
-  ConsequenceTracker: {
-    color: 'text-green-400/80',
-    icon: <Bot className="w-3.5 h-3.5" />,
-  },
-  DevilsAdvocate: {
-    color: 'text-red-400/80',
-    icon: <Scale className="w-3.5 h-3.5" />,
-  },
-  VisualMoment: {
-    color: 'text-cyan-400/80',
-    icon: <Eye className="w-3.5 h-3.5" />,
-  },
-  Writer: {
-    color: 'text-orange-400/80',
-    icon: <Pen className="w-3.5 h-3.5" />,
-  },
-  User: {
-    color: 'text-primary',
-    icon: <User className="w-3.5 h-3.5" />,
-  },
-  // Additional agents
-  PremiseArchitect: {
-    color: 'text-indigo-400/80',
-    icon: <Lightbulb className="w-3.5 h-3.5" />,
-  },
-  Supervisor: {
-    color:
-      'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-300 bg-primary/10 border border-primary/30 text-primary',
-    icon: <Sparkles className="w-3.5 h-3.5" />,
-  },
-  // Specialized Council Agents (v2)
-  Psychologist: {
-    color: 'text-pink-400/80',
-    icon: <Brain className="w-3.5 h-3.5" />,
-  },
-  Gardener: {
-    color: 'text-emerald-400/80',
-    icon: <Pen className="w-3.5 h-3.5" />,
-  },
-  Storyteller: {
-    color: 'text-amber-400/80',
-    icon: <Sparkles className="w-3.5 h-3.5" />,
-  },
-  // Creative Directors (GRRM & Gilligan style meta-agents)
-  CreativeDirector_GRRM: {
-    color: 'text-rose-500/90',
-    icon: <Sparkles className="w-3.5 h-3.5" />,
-  },
-  CreativeDirector_Gilligan: {
-    color: 'text-yellow-500/90',
-    icon: <Eye className="w-3.5 h-3.5" />,
-  },
-  GRRM: {
-    color: 'text-rose-500/90',
-    icon: <Sparkles className="w-3.5 h-3.5" />,
-  },
-  Gilligan: {
-    color: 'text-yellow-500/90',
-    icon: <Eye className="w-3.5 h-3.5" />,
-  },
-}
-
 const getAgentConfig = (agentName: string) => {
-  // Try exact match first
-  if (AGENT_CONFIG[agentName]) {
-    return AGENT_CONFIG[agentName]
+  if (STORYTELLER_AGENT_LOG_CONFIG[agentName]) {
+    return STORYTELLER_AGENT_LOG_CONFIG[agentName]
   }
-  // Try to find a match by normalized name
   const normalized = agentName.replace(/[_-]/g, '').toLowerCase()
-  for (const [key, config] of Object.entries(AGENT_CONFIG)) {
+  for (const [key, config] of Object.entries(STORYTELLER_AGENT_LOG_CONFIG)) {
     if (key.toLowerCase() === normalized) {
       return config
     }
   }
-  // Default fallback
   return {
-    color: 'text-muted-foreground',
+    color: AGENT_LOG_DEFAULT_COLOR,
     icon: <Bot className="w-3.5 h-3.5" />,
   }
 }
@@ -221,11 +113,11 @@ const isDelegationMessage = (msg: Message): boolean => {
   const sender = (msg.sender || msg.name || '').toLowerCase()
 
   return (
-    content.includes('delegating to') ||
-    content.includes('delegated task') ||
-    sender.includes('delegate_to_') ||
-    sender === 'supervisor' ||
-    (sender.includes('delegate') && content.length < 100)
+    content.includes(DelegationPhrase.DelegatingTo) ||
+    content.includes(DelegationPhrase.DelegatedTask) ||
+    sender.includes(DelegationPhrase.DelegateToPrefix) ||
+    sender === AgentWireId.supervisor ||
+    (sender.includes(DelegationPhrase.Delegate) && content.length < 100)
   )
 }
 
@@ -247,7 +139,11 @@ const DelegationChain: React.FC<{ messages: Message[] }> = ({ messages }) => {
           <ChevronRight className="w-2.5 h-2.5" />
         )}
         <Loader2 className="w-2.5 h-2.5 animate-spin opacity-50" />
-        <span>Process: {messages.length} steps</span>
+        <span>
+          {AgentLogMessageContent.ProcessStepsPrefix}
+          {messages.length}
+          {AgentLogMessageContent.ProcessStepsSuffix}
+        </span>
       </button>
 
       {isExpanded && (
@@ -287,11 +183,11 @@ export const AgentLog: React.FC<AgentLogProps> = ({
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    bottomRef.current?.scrollIntoView({ behavior: AGENT_LOG_SCROLL_BEHAVIOR })
   }, [messages])
 
   // Group messages: collect consecutive delegation messages into chains
-  const groupedMessages: Array<{ type: 'message' | 'delegation'; messages: Message[] }> = []
+  const groupedMessages: Array<{ type: MessageGroupType; messages: Message[] }> = []
   let currentDelegationChain: Message[] = []
 
   messages.forEach((msg, _idx) => {
@@ -300,27 +196,27 @@ export const AgentLog: React.FC<AgentLogProps> = ({
     } else {
       // If we have a pending delegation chain, add it first
       if (currentDelegationChain.length > 0) {
-        groupedMessages.push({ type: 'delegation', messages: currentDelegationChain })
+        groupedMessages.push({ type: MessageGroupType.Delegation, messages: currentDelegationChain })
         currentDelegationChain = []
       }
-      groupedMessages.push({ type: 'message', messages: [msg] })
+      groupedMessages.push({ type: MessageGroupType.Message, messages: [msg] })
     }
   })
   // Don't forget trailing delegation chain (shown as "Processing...")
   if (currentDelegationChain.length > 0) {
-    groupedMessages.push({ type: 'delegation', messages: currentDelegationChain })
+    groupedMessages.push({ type: MessageGroupType.Delegation, messages: currentDelegationChain })
   }
 
   return (
     <div className="flex-1 overflow-y-auto space-y-6 pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent pb-4">
       {groupedMessages.map((group, groupIdx) => {
         // Strict Activity Filtering: Skip technical delegation if Activity is OFF
-        if (group.type === 'delegation' && !isActivityPanelOpen) {
+        if (group.type === MessageGroupType.Delegation && !isActivityPanelOpen) {
           return null
         }
 
         // Render delegation chain as collapsed
-        if (group.type === 'delegation') {
+        if (group.type === MessageGroupType.Delegation) {
           return <DelegationChain key={`delegation-${groupIdx}`} messages={group.messages} />
         }
 
@@ -328,7 +224,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
         const msg = group.messages[0]
         const agentName = msg.sender || msg.name || 'Unknown'
         const displayName = getAgentDisplayName(agentName)
-        const isHuman = msg.type === 'human' || agentName === 'User'
+        const isHuman = msg.type === ChatMessageRole.Human || agentName === AgentWireId.User
         const config = getAgentConfig(agentName)
 
         return (
@@ -402,7 +298,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                               {entryDisplayName}
                             </span>
                             <span className="ml-auto text-[9px] text-muted-foreground/50 font-mono">
-                              thinking...
+                              {AgentLogMessageContent.ThinkingEllipsis}
                             </span>
                           </div>
                           {/* Thinking Content */}
@@ -428,7 +324,9 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                       <Brain className="w-3 h-3 text-purple-400/70" />
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400/70">
-                      {hasExtendedThinking ? 'Extended Thinking' : 'Thinking'}
+                      {hasExtendedThinking
+                        ? StorytellerAgentDisplayName.ExtendedThinking
+                        : StorytellerAgentDisplayName.Thinking}
                     </span>
                   </div>
                   <div className="p-3 text-[11px] text-muted-foreground/80 leading-relaxed">
@@ -501,7 +399,7 @@ export const AgentLog: React.FC<AgentLogProps> = ({
                     question={question}
                     onAnswer={answer => onQuestionAnswer?.(question.id, answer)}
                     onSkip={
-                      question.urgency !== 'blocking'
+                      question.urgency !== QuestionUrgency.BLOCKING
                         ? () => onQuestionSkip?.(question.id)
                         : undefined
                     }
@@ -555,7 +453,8 @@ const parseInlineFormatting = (text: string, keyPrefix: string = ''): React.Reac
     } else if (match[5]) {
       // URL
       const url = match[5]
-      const isYouTube = url.includes('youtube.com') || url.includes('youtu.be')
+      const isYouTube =
+        url.includes(AgentLogUrlHost.YouTube) || url.includes(AgentLogUrlHost.YouTubeShort)
       parts.push(
         <a
           key={key}
@@ -567,7 +466,7 @@ const parseInlineFormatting = (text: string, keyPrefix: string = ''): React.Reac
             isYouTube ? 'text-red-400 hover:text-red-300' : 'text-blue-400 hover:text-blue-300'
           )}
         >
-          {isYouTube ? '▶ ' : ''}
+          {isYouTube ? AgentLogMessageContent.YouTubeLinkPrefix : ''}
           {url.length > 50 ? url.slice(0, 50) + '...' : url}
         </a>
       )
@@ -603,15 +502,20 @@ const MessageContent: React.FC<{ content: string; projectId?: string }> = ({
   }
 
   // Custom rendering for delegation messages (shouldn't show normally due to collapsing)
-  if (displayContent.includes('Delegating to')) {
-    const toolName = displayContent.replace('Delegating to', '').trim().replace('...', '')
+  if (displayContent.includes(DELEGATION_HANDOFF_PREFIX)) {
+    const toolName = displayContent
+      .replace(DELEGATION_HANDOFF_PREFIX, '')
+      .trim()
+      .replace(DELEGATION_ELLIPSIS_SUFFIX, '')
     const friendlyName = getAgentDisplayName(toolName)
 
     return (
       <div className="flex items-center gap-2 text-muted-foreground italic">
         <span className="text-primary">→</span>
         <span>
-          Handing off to <span className="font-semibold text-primary">{friendlyName}</span>...
+          {AgentLogMessageContent.HandingOffPrefix}
+          <span className="font-semibold text-primary">{friendlyName}</span>
+          {AgentLogMessageContent.HandingOffSuffix}
         </span>
       </div>
     )

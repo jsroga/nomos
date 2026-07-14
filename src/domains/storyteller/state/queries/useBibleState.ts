@@ -3,25 +3,29 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useBibleLock } from '@/domains/storyteller/state/queries/useBibleLock'
+import {
+  StorytellerBibleQuery,
+  StorytellerQueryParam,
+} from '@/domains/storyteller/state/constants/bible-state'
 
 export function useBibleState(projectId: string | undefined) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
 
-  const bibleParamValue = searchParams?.get('bible') ?? null
+  const bibleParamValue = searchParams?.get(StorytellerQueryParam.Bible) ?? null
   const [optimisticBibleOpen, setOptimisticBibleOpen] = useState<boolean | null>(null)
   const bibleLockQuery = useBibleLock(projectId)
 
   useEffect(() => {
     if (optimisticBibleOpen === null) return
-    const urlState = bibleParamValue === 'open'
+    const urlState = bibleParamValue === StorytellerBibleQuery.Open
     if (optimisticBibleOpen === urlState) {
       setOptimisticBibleOpen(null)
     }
   }, [bibleParamValue, optimisticBibleOpen])
 
-  const isWorldBibleOpen = optimisticBibleOpen ?? (bibleParamValue === 'open')
+  const isWorldBibleOpen = optimisticBibleOpen ?? (bibleParamValue === StorytellerBibleQuery.Open)
 
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
@@ -38,52 +42,27 @@ export function useBibleState(projectId: string | undefined) {
 
   // Default to bible=open on first visit
   useEffect(() => {
-    if (!pathname || searchParams?.has('bible')) return
+    if (!pathname || searchParams?.has(StorytellerQueryParam.Bible)) return
     const next = new URLSearchParams(searchParams?.toString() || '')
-    next.set('bible', 'open')
+    next.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Open)
     router.replace(`${pathname}?${next.toString()}`, { scroll: false })
   }, [pathname, router, searchParams])
-
-  // Notify components when bible opens/closes
-  useEffect(() => {
-    if (bibleParamValue === 'open') {
-      window.dispatchEvent(new CustomEvent('bible-opened'))
-    }
-  }, [bibleParamValue])
-
-  // Listen for world bible toggle
-  useEffect(() => {
-    const handleToggle = () => {
-      const nextState = !isWorldBibleOpen
-      setOptimisticBibleOpen(nextState)
-      const params = new URLSearchParams(searchParams?.toString() || '')
-      if (nextState) {
-        params.set('bible', 'open')
-      } else {
-        params.set('bible', 'off')
-      }
-      router.push(`?${params.toString()}`)
-    }
-    window.addEventListener('toggle-world-bible', handleToggle)
-    return () => window.removeEventListener('toggle-world-bible', handleToggle)
-  }, [isWorldBibleOpen, searchParams, router])
 
   const toggleBible = useCallback(() => {
     const nextState = !isWorldBibleOpen
     setOptimisticBibleOpen(nextState)
     const params = new URLSearchParams(searchParams?.toString() || '')
     if (nextState) {
-      params.set('bible', 'open')
-      window.dispatchEvent(new Event('bible-opened'))
+      params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Open)
     } else {
-      params.set('bible', 'off')
+      params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Off)
     }
     router.push(`?${params.toString()}`)
   }, [isWorldBibleOpen, searchParams, router])
 
   const closeBible = useCallback(() => {
     const params = new URLSearchParams(searchParams?.toString() || '')
-    params.set('bible', 'off')
+    params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Off)
     router.push(`?${params.toString()}`)
   }, [searchParams, router])
 

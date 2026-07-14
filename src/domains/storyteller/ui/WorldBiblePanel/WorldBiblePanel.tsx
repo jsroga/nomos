@@ -2,14 +2,27 @@ import { Save, Edit2, X, Lock, Unlock, Shield, Loader2, Network, BookOpen } from
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
-import { customEventDetailRecord, readString } from '@/shared/data/json-guards'
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 
 // Lazy load CharacterWeb since it's a heavy component
 const CharacterWeb = lazy(() => import('../CharacterWeb').then(m => ({ default: m.CharacterWeb })))
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { isCentralUser, canEditBible } from '@/shared/auth/bible-permissions'
+import {
+  MoodboardDefaultModelId,
+  MoodboardModelStorageKey,
+  MoodboardProvider,
+  MoodboardStorageKey,
+  StorytellerBibleTab,
+  StorytellerBibleUrlParam,
+  StorytellerLogMessage,
+  WorldBiblePanelProviderModel,
+  WorldBiblePanelUiCopy,
+  moodboardGenOperationPrefix,
+  moodboardPrimaryStorageKey,
+} from './constants/world-bible-panel'
 
 import { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 // CharacterCreationDialog removed - Cast is managed via CharacterPanel sidebar
@@ -27,7 +40,8 @@ import { BibleProvider, useBible } from '../WorldBible/BibleContext'
 
 // Helper to get provider config from localStorage
 const getProviderConfig = () => {
-  const provider = localStorage.getItem('MOODBOARD_PROVIDER') || 'midjourney'
+  const provider =
+    localStorage.getItem(MoodboardStorageKey.Provider) || MoodboardProvider.Midjourney
 
   // Get Gemini API key (for Nano Banana)
   const geminiConfigStr = localStorage.getItem(LocalStorageKeys.AI_CONFIG_GEMINI)
@@ -50,19 +64,19 @@ const getProviderConfig = () => {
     legnextKey = legnextConfigStr || ''
   }
 
-  if (provider === 'nanobanana') {
+  if (provider === MoodboardProvider.Nanobanana) {
     return {
-      provider: 'nanobanana' as const,
+      provider: MoodboardProvider.Nanobanana,
       apiKey: geminiKey,
-      modelId: localStorage.getItem('NANO_BANANA_MODEL_ID') || 'flux-pro',
+      modelId: localStorage.getItem(MoodboardModelStorageKey) || MoodboardDefaultModelId,
     }
-  } else {
-    // Default to midjourney
-    return {
-      provider: 'midjourney' as const,
-      apiKey: legnextKey,
-      modelId: 'midjourney',
-    }
+  }
+
+  // Default to midjourney
+  return {
+    provider: MoodboardProvider.Midjourney,
+    apiKey: legnextKey,
+    modelId: WorldBiblePanelProviderModel.Midjourney,
   }
 }
 
@@ -120,90 +134,72 @@ const WorldBiblePanel: React.FC<WorldBiblePanelProps> = props => {
 }
 
 const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
-  storyPlan,
   onUpdate,
-  isReadOnly = false,
-  onSendMessage,
   projectId,
-  onClose,
   isLoading,
 }) => {
   // All hooks must come before any conditional returns
   const {
-    localPlan,
     isEditing,
     setIsEditing,
     savePlan,
     cancelEdit,
     toggleLock,
-    updateLocalPlan,
     isLocked: isBibleLocked,
     lockedBy,
     lockedAt,
     userEmail,
     isLockLoading,
     isReadOnly: effectiveReadOnly,
-    updateWorldRule,
-    addWorldRule,
-    removeWorldRule,
-    updateFaction,
-    addFaction,
-    removeFaction,
-    updateSequence,
-    addSequence,
-    removeSequence,
-    updatePlotTwist,
-    addPlotTwist,
-    removePlotTwist,
-    updateInspiration,
   } = useBible()
 
   const [primaryImageIndex, setPrimaryImageIndex] = useState<number | null>(null)
   const [focusEntityId, setFocusEntityId] = useState<string | null>(null)
+  const entityNavigation = useStorytellerUiStore(state => state.entityNavigation)
+  const clearEntityNavigation = useStorytellerUiStore(state => state.clearEntityNavigation)
+  const bibleTabRequest = useStorytellerUiStore(state => state.bibleTabRequest)
+  const clearBibleTabRequest = useStorytellerUiStore(state => state.clearBibleTabRequest)
+  const moodboardCompleteVersion = useStorytellerUiStore(state => state.moodboardCompleteVersion)
+  const notifyMoodboardPrimaryChanged = useStorytellerUiStore(
+    state => state.notifyMoodboardPrimaryChanged
+  )
 
   // Read initial tab from URL
-  const [activeTab, setActiveTab] = useState<'content' | 'relationships'>(() => {
-    if (typeof window === 'undefined') return 'content'
+  const [activeTab, setActiveTab] = useState<StorytellerBibleTab>(() => {
+    if (typeof window === 'undefined') return StorytellerBibleTab.Content
     const params = new URLSearchParams(window.location.search)
-    return params.get('bibleTab') === 'relationships' ? 'relationships' : 'content'
+    return params.get(StorytellerBibleUrlParam.BibleTab) === StorytellerBibleTab.Relationships
+      ? StorytellerBibleTab.Relationships
+      : StorytellerBibleTab.Content
   })
 
   // Persist tab in URL
-  const switchTab = useCallback((tab: 'content' | 'relationships') => {
+  const switchTab = useCallback((tab: StorytellerBibleTab) => {
     setActiveTab(tab)
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
-    if (tab === 'relationships') {
-      url.searchParams.set('bibleTab', 'relationships')
+    if (tab === StorytellerBibleTab.Relationships) {
+      url.searchParams.set(StorytellerBibleUrlParam.BibleTab, StorytellerBibleTab.Relationships)
     } else {
-      url.searchParams.delete('bibleTab')
+      url.searchParams.delete(StorytellerBibleUrlParam.BibleTab)
     }
     window.history.replaceState({}, '', url.toString())
   }, [])
 
-  // Listen for tab switch events (from entity click navigation)
+  // React to cross-panel navigation signals
   useEffect(() => {
-    const handleSwitchTab = (e: Event) => {
-      const { tab } = customEventDetailRecord(e)
-      if (tab === 'relationships') {
-        switchTab('relationships')
-      }
+    if (bibleTabRequest === StorytellerBibleTab.Relationships) {
+      switchTab(StorytellerBibleTab.Relationships)
+      clearBibleTabRequest()
     }
-    const handleNavigateToEntity = (e: Event) => {
-      const refId = readString(customEventDetailRecord(e).refId)
-      if (refId) {
-        setFocusEntityId(refId)
-        switchTab('relationships')
-      }
-    }
+  }, [bibleTabRequest, switchTab, clearBibleTabRequest])
 
-    window.addEventListener('bible-switch-tab', handleSwitchTab)
-    window.addEventListener('navigate-to-entity', handleNavigateToEntity)
-    return () => {
-      window.removeEventListener('bible-switch-tab', handleSwitchTab)
-      window.removeEventListener('navigate-to-entity', handleNavigateToEntity)
-    }
-  }, [switchTab])
+  useEffect(() => {
+    if (!entityNavigation?.refId) return
+    setFocusEntityId(entityNavigation.refId)
+    switchTab(StorytellerBibleTab.Relationships)
+    clearEntityNavigation()
+  }, [entityNavigation, switchTab, clearEntityNavigation])
 
   const isUserCentralUser = isCentralUser(userEmail)
   const canUserEditBible = canEditBible(userEmail, isBibleLocked)
@@ -211,7 +207,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
   // Derive generating state from global operations
   const operations = useGlobalStatusStore(state => state.operations)
   const generatingIndices = new Set<number>()
-  const prefix = `moodboard-gen-${projectId}`
+  const prefix = moodboardGenOperationPrefix(projectId ?? '')
 
   operations.forEach(op => {
     if (op.id === prefix) {
@@ -237,26 +233,19 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
         }
       }
     } catch (error) {
-      console.error('Failed to refetch moodboard data:', error)
+      console.error(StorytellerLogMessage.FailedRefetchMoodboard, error)
     }
   }, [projectId, onUpdate])
 
   useEffect(() => {
-    const handler = (event: Event) => {
-      if (customEventDetailRecord(event).projectId === projectId) refetchMoodboardData()
-    }
-    window.addEventListener('moodboard-generation-complete', handler)
+    if (!projectId) return
+    refetchMoodboardData()
 
     // Resume any pending generations for this project
-    if (projectId) {
-      import('../../services/MoodboardGenerationService').then(({ moodboardGenerationService }) => {
-        moodboardGenerationService.resumePendingGenerations(projectId, refetchMoodboardData)
-      })
-    }
-
-    return () =>
-      window.removeEventListener('moodboard-generation-complete', handler)
-  }, [projectId, refetchMoodboardData])
+    import('../../services/MoodboardGenerationService').then(({ moodboardGenerationService }) => {
+      moodboardGenerationService.resumePendingGenerations(projectId, refetchMoodboardData)
+    })
+  }, [projectId, refetchMoodboardData, moodboardCompleteVersion])
 
   // Shimmer State - check after all hooks
   if (isLoading) {
@@ -309,9 +298,9 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     setPrimaryImageIndex(newIndex)
     if (typeof window !== 'undefined' && projectId) {
       if (newIndex !== null)
-        localStorage.setItem(`moodboard-primary-${projectId}`, newIndex.toString())
-      else localStorage.removeItem(`moodboard-primary-${projectId}`)
-      window.dispatchEvent(new CustomEvent('moodboard-primary-changed'))
+        localStorage.setItem(moodboardPrimaryStorageKey(projectId), newIndex.toString())
+      else localStorage.removeItem(moodboardPrimaryStorageKey(projectId))
+      notifyMoodboardPrimaryChanged()
     }
   }
 
@@ -327,33 +316,33 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
         }}
       >
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold font-syne text-primary">Storybible</h2>
+          <h2 className="text-xl font-bold font-syne text-primary">{WorldBiblePanelUiCopy.StorybibleTitle}</h2>
 
           {/* Tab buttons */}
           <div className="flex gap-1 p-1 bg-muted/30 rounded-lg">
             <button
-              onClick={() => switchTab('content')}
+              onClick={() => switchTab(StorytellerBibleTab.Content)}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                activeTab === 'content'
+                activeTab === StorytellerBibleTab.Content
                   ? 'bg-primary/20 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               )}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              Content
+              {WorldBiblePanelUiCopy.ContentTab}
             </button>
             <button
-              onClick={() => switchTab('relationships')}
+              onClick={() => switchTab(StorytellerBibleTab.Relationships)}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                activeTab === 'relationships'
+                activeTab === StorytellerBibleTab.Relationships
                   ? 'bg-purple-500/20 text-purple-400'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               )}
             >
               <Network className="w-3.5 h-3.5" />
-              Relationships
+              {WorldBiblePanelUiCopy.RelationshipsTab}
             </button>
           </div>
         </div>
@@ -417,7 +406,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
             onUpdate &&
             canUserEditBible &&
             !isEditing &&
-            activeTab === 'content' && (
+            activeTab === StorytellerBibleTab.Content && (
               <Button
                 variant="outline"
                 size="sm"
@@ -473,7 +462,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
         </div>
       </div>
 
-      {activeTab === 'content' ? (
+      {activeTab === StorytellerBibleTab.Content ? (
         <div className="flex-1 min-h-0 overflow-y-auto pr-2 pt-6">
           <div className="space-y-8 pb-20">
             <BibleOverview

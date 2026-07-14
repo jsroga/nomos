@@ -5,6 +5,13 @@
  */
 
 import { createStorytellerAgent } from '@/domains/storyteller/agents'
+import {
+  SCRIPT_CONDENSE_INSTRUCTION,
+  SCRIPT_EDIT_PROMPT_LABEL,
+  SCRIPT_EXPAND_INSTRUCTION,
+  SCRIPT_REGENERATION_FAILED_LOG,
+  SCRIPT_VISUAL_HOOK_INSTRUCTION,
+} from '@/domains/storyteller/services/constants/script-operations'
 
 // ... existing code ...
 
@@ -54,12 +61,12 @@ ${
   try {
     const agent = await createStorytellerAgent()
     const result = await agent.run(
-      'Edit script',
+      SCRIPT_EDIT_PROMPT_LABEL,
       `${SCRIPT_EDITOR_PROMPT}\n\n${contextInfo}\n\nSELECTED TEXT TO EDIT:\n"""\n${selection}\n"""\n\nINSTRUCTION: ${instruction}\n\nReturn only the edited text:`
     )
     return result.trim()
   } catch (error) {
-    console.error('Script regeneration failed:', error)
+    console.error(SCRIPT_REGENERATION_FAILED_LOG, error)
     throw error
   }
 }
@@ -70,7 +77,7 @@ export async function expandScene(
 ): Promise<string> {
   return regenerateText(
     selection,
-    'Expand this section with more visual detail, sensory descriptions, and beat-by-beat action. Add subtext to any dialogue. Make it more cinematic.',
+    SCRIPT_EXPAND_INSTRUCTION,
     context
   )
 }
@@ -81,7 +88,7 @@ export async function condenseScene(
 ): Promise<string> {
   return regenerateText(
     selection,
-    'Condense this to its essential elements. Remove redundant action lines, tighten dialogue, but keep the core dramatic beats.',
+    SCRIPT_CONDENSE_INSTRUCTION,
     context
   )
 }
@@ -105,7 +112,7 @@ export async function addVisualHook(
 ): Promise<string> {
   return regenerateText(
     selection,
-    'Add a strong visual hook to open this scene. What\'s the first, most striking image we see? Make it iconic and meaningful.',
+    SCRIPT_VISUAL_HOOK_INSTRUCTION,
     context
   )
 }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 
 // Entity update schema
 const updateEntitySchema = z.object({
@@ -18,25 +20,29 @@ const updateEntitySchema = z.object({
  */
 export const GET = withAuth(
   async (
-    request: NextRequest,
-    { session, supabase }: AuthenticatedRequest,
+    _request: NextRequest,
+    { session: _session, supabase }: AuthenticatedRequest,
     context?: { params: Record<string, string> }
   ) => {
+    if (!supabase) {
+      return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
+    }
+
     const entityId = context?.params?.entityId
 
     if (!entityId) {
-      return NextResponse.json({ error: 'Entity ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.ENTITY_ID_REQUIRED }, { status: 400 })
     }
 
     // RLS will ensure user can only see their own entities
     const { data, error } = await supabase
-      .from('game_entities')
+      .from(DB_TABLE.GAME_ENTITIES)
       .select('*')
-      .eq('id', entityId)
+      .eq(DB_COLUMN.ID, entityId)
       .single()
 
     if (error || !data) {
-      return NextResponse.json({ error: 'Entity not found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.ENTITY_NOT_FOUND }, { status: 404 })
     }
 
     return NextResponse.json({ entity: data })
@@ -51,13 +57,17 @@ export const PATCH = withRateLimit(
   withAuth(
     async (
       request: NextRequest,
-      { session, supabase }: AuthenticatedRequest,
+      { session: _session, supabase }: AuthenticatedRequest,
       context?: { params: Record<string, string> }
     ) => {
+      if (!supabase) {
+        return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
+      }
+
       const entityId = context?.params?.entityId
 
       if (!entityId) {
-        return NextResponse.json({ error: 'Entity ID is required' }, { status: 400 })
+        return NextResponse.json({ error: API_ERROR.ENTITY_ID_REQUIRED }, { status: 400 })
       }
 
       const body = await request.json()
@@ -65,37 +75,39 @@ export const PATCH = withRateLimit(
       try {
         const validated = updateEntitySchema.parse(body)
 
-        const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+        const updates: Record<string, unknown> = { [DB_COLUMN.UPDATED_AT]: new Date().toISOString() }
 
-        if (validated.name !== undefined) updates.name = validated.name
+        if (validated.name !== undefined) updates[DB_COLUMN.NAME] = validated.name
         if (validated.description !== undefined) updates.description = validated.description
         if (validated.metadata !== undefined) updates.metadata = validated.metadata
         if (validated.tags !== undefined) updates.tags = validated.tags
-        if (validated.imageUrl !== undefined) updates.image_url = validated.imageUrl
-        if (validated.usedInDomains !== undefined) updates.used_in_domains = validated.usedInDomains
+        if (validated.imageUrl !== undefined) updates[DB_COLUMN.IMAGE_URL] = validated.imageUrl
+        if (validated.usedInDomains !== undefined) {
+          updates[DB_COLUMN.USED_IN_DOMAINS] = validated.usedInDomains
+        }
 
         // RLS will ensure user can only update their own entities
         const { data, error } = await supabase
-          .from('game_entities')
+          .from(DB_TABLE.GAME_ENTITIES)
           .update(updates)
-          .eq('id', entityId)
+          .eq(DB_COLUMN.ID, entityId)
           .select()
           .single()
 
         if (error) {
-          console.error('[Entities API] Error updating entity:', error)
-          return NextResponse.json({ error: 'Failed to update entity' }, { status: 500 })
+          console.error(API_LOG_PREFIX.ENTITIES_UPDATE_ERROR, error)
+          return NextResponse.json({ error: API_ERROR.FAILED_UPDATE_ENTITY }, { status: 500 })
         }
 
         if (!data) {
-          return NextResponse.json({ error: 'Entity not found or access denied' }, { status: 404 })
+          return NextResponse.json({ error: API_ERROR.ENTITY_ACCESS_DENIED }, { status: 404 })
         }
 
         return NextResponse.json({ entity: data })
       } catch (error) {
         if (error instanceof z.ZodError) {
           return NextResponse.json(
-            { error: 'Invalid request data', details: error.errors },
+            { error: API_ERROR.INVALID_REQUEST, details: error.errors },
             { status: 400 }
           )
         }
@@ -112,22 +124,29 @@ export const PATCH = withRateLimit(
  */
 export const DELETE = withAuth(
   async (
-    request: NextRequest,
-    { session, supabase }: AuthenticatedRequest,
+    _request: NextRequest,
+    { session: _session, supabase }: AuthenticatedRequest,
     context?: { params: Record<string, string> }
   ) => {
+    if (!supabase) {
+      return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
+    }
+
     const entityId = context?.params?.entityId
 
     if (!entityId) {
-      return NextResponse.json({ error: 'Entity ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.ENTITY_ID_REQUIRED }, { status: 400 })
     }
 
     // RLS will ensure user can only delete their own entities
-    const { error } = await supabase.from('game_entities').delete().eq('id', entityId)
+    const { error } = await supabase
+      .from(DB_TABLE.GAME_ENTITIES)
+      .delete()
+      .eq(DB_COLUMN.ID, entityId)
 
     if (error) {
-      console.error('[Entities API] Error deleting entity:', error)
-      return NextResponse.json({ error: 'Failed to delete entity' }, { status: 500 })
+      console.error(API_LOG_PREFIX.ENTITIES_DELETE_ERROR, error)
+      return NextResponse.json({ error: API_ERROR.FAILED_DELETE_ENTITY }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

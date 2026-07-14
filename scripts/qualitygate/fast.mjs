@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { checkCodeMetrics } from '../check-code-metrics.mjs'
 
-const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=4096'
+const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=6144'
 
 export function parseFastArgs(argv) {
   const opts = { files: [], changed: false, fromMarker: false, hookMode: false }

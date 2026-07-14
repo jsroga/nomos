@@ -5,8 +5,17 @@ import type { NextRequest } from 'next/server'
 import type { IncomingHttpHeaders } from 'node:http'
 import { IncomingMessage, ServerResponse } from 'node:http'
 import { Socket } from 'node:net'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  HttpAuthScheme,
+  HttpHeaderName,
+  HttpMethod,
+  StringSeparator,
+} from '@/shared/data/constants/protocol'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const runtime = 'nodejs'
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const dynamic = 'force-dynamic'
 
 interface IncomingMessageWithBody extends IncomingMessage {
@@ -14,7 +23,7 @@ interface IncomingMessageWithBody extends IncomingMessage {
 }
 
 async function readRequestBody(request: NextRequest): Promise<unknown> {
-  if (request.method === 'GET' || request.method === 'HEAD') {
+  if (request.method === HttpMethod.Get || request.method === HttpMethod.Head) {
     return undefined
   }
   try {
@@ -72,7 +81,7 @@ class CapturingServerResponse extends ServerResponse<IncomingMessage> {
     const headers = new Headers()
     for (const [key, value] of Object.entries(this.getHeaders())) {
       if (value === undefined) continue
-      headers.set(key, Array.isArray(value) ? value.join(', ') : String(value))
+      headers.set(key, Array.isArray(value) ? value.join(StringSeparator.CommaSpace) : String(value))
     }
     this.resolveResponse(
       new Response(this.chunks.length ? Buffer.concat(this.chunks) : null, {
@@ -85,9 +94,9 @@ class CapturingServerResponse extends ServerResponse<IncomingMessage> {
 }
 
 async function handleMcp(request: NextRequest): Promise<Response> {
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader?.startsWith('Bearer ')) {
-    return Response.json({ error: 'Missing or invalid Authorization header' }, { status: 401 })
+  const authHeader = request.headers.get(HttpHeaderName.Authorization)
+  if (!authHeader?.startsWith(HttpAuthScheme.Bearer)) {
+    return Response.json({ error: API_ERROR.MCP_AUTH_HEADER_INVALID }, { status: 401 })
   }
 
   const providedKey = authHeader.split(' ')[1]
@@ -95,7 +104,7 @@ async function handleMcp(request: NextRequest): Promise<Response> {
   try {
     const authResult = await validateApiKey(providedKey)
     if (!authResult.valid) {
-      return Response.json({ error: 'Forbidden: Invalid API Key' }, { status: 403 })
+      return Response.json({ error: API_ERROR.MCP_FORBIDDEN_INVALID_KEY }, { status: 403 })
     }
 
     const context = await getServiceContext(authResult)
@@ -118,8 +127,8 @@ async function handleMcp(request: NextRequest): Promise<Response> {
 
     return await res.toWebResponse()
   } catch (error) {
-    console.error('MCP Handler Error:', error)
-    return Response.json({ error: 'Internal Server Error' }, { status: 500 })
+    console.error(API_LOG_PREFIX.MCP_HANDLER_ERROR, error)
+    return Response.json({ error: API_ERROR.INTERNAL_SERVER_ERROR }, { status: 500 })
   }
 }
 

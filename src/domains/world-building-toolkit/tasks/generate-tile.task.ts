@@ -12,6 +12,7 @@ import {
   logLLMRequestComplete,
   logLLMRequestError,
 } from '@/trigger/utils/llm-logger'
+import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export const generateTileTask = task({
   id: 'generate-tile',
@@ -217,7 +218,7 @@ async function generateWithGemini(
   styleReferenceUrls?: string[],
   contextImageBase64?: string,
   styleContext?: string,
-  neighbors?: any
+  _neighbors?: unknown
 ): Promise<string> {
   // Model comes from settings (params.modelId) or fallback to config.model or default
   const model = config.params?.modelId || config.model || 'gemini-3-pro-image-preview'
@@ -913,25 +914,6 @@ async function generateWithStability(
 
 async function analyzeStyleWithSharp(imageBase64: string): Promise<StyleInfo> {
   return imageService.analyzeStyle(Buffer.from(imageBase64, 'base64'))
-}
-
-// Creativity prompt helper for generation
-function getCreativityPrompt(creativity: number): string {
-  const level = Math.round(creativity * 100)
-  let hint: string
-  if (creativity <= 0.2) {
-    hint =
-      'VERY CONSERVATIVE - propagate existing patterns from edges exactly. Do not add new elements.'
-  } else if (creativity <= 0.4) {
-    hint = 'CONSERVATIVE - closely match surrounding style and patterns. Minimal interpretation.'
-  } else if (creativity <= 0.6) {
-    hint = 'BALANCED - match edges while adding appropriate detail consistent with style.'
-  } else if (creativity <= 0.8) {
-    hint = 'CREATIVE - match edges but freely enhance with rich details and textures.'
-  } else {
-    hint = 'MAXIMUM FREEDOM - match edge connections but add maximum detail and richness.'
-  }
-  return `CREATIVITY: ${level}/100. ${hint}`
 }
 
 // Poll LegNext API task for completion

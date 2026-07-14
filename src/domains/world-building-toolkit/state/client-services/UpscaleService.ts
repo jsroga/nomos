@@ -8,6 +8,26 @@ import {
   parseUpscaleProvider,
   UpscaleProvider,
 } from '../../core/upscale-provider-wire'
+import {
+  AsyncOperationStatus,
+  BooleanQueryValue,
+  ContentType,
+  DynamicLocalStoragePrefix,
+  HttpMethod,
+  HttpRequestHeader,
+  OperationTypeId,
+  TriggerTerminalStatus,
+  TileProgressStage,
+  UpscaleApiRoute,
+  UpscaleOperationDetailSuffix,
+  UpscaleOperationIdPrefix,
+  UpscaleOperationLabel,
+  UpscaleServiceError,
+  UpscaleServiceLog,
+  UrlScheme,
+  WorldGenReviewType,
+} from '../../constants/upscale-service'
+import { getWorldUiStore } from '../useWorldUiStore'
 
 interface UpscaleRunState {
   runId: string
@@ -26,7 +46,7 @@ export class UpscaleService {
    * Cleanup all polling intervals - call on unmount to prevent memory leaks
    */
   cleanup() {
-    for (const [runId, timeout] of this.pollingIntervals) {
+    for (const [, timeout] of this.pollingIntervals) {
       clearTimeout(timeout)
     }
     this.pollingIntervals.clear()
@@ -41,7 +61,7 @@ export class UpscaleService {
     styleReferenceUrls?: string[],
     provider?: UpscaleProvider
   ): Promise<string | null> {
-    console.log('Starting upscale via Trigger.dev for tile', tile.id, 'creativity', creativity, {
+    console.log(UpscaleServiceLog.StartingViaTrigger, tile.id, UpscaleServiceLog.Creativity, creativity, {
       styleReferenceUrls,
     })
 
@@ -52,22 +72,27 @@ export class UpscaleService {
         : UpscaleProvider.Stability)
 
     const skipGeminiPreUpscale = typeof window !== 'undefined'
-      ? localStorage.getItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE) === 'true'
+      ? localStorage.getItem(LocalStorageKeys.SKIP_GEMINI_PRE_UPSCALE) === BooleanQueryValue.True
       : false
 
     // Track upscaling status
     useWorldStore.getState().addUpscalingTile(tile.x, tile.y)
-    const opId = `upscale-${tile.x}-${tile.y}`
+    const opId = `${UpscaleOperationIdPrefix.Upscale}${tile.x}-${tile.y}`
     useGlobalStatusStore.getState().addOperation({
       id: opId,
-      type: 'world-gen',
-      label: 'Upscaling Tile',
+      type: OperationTypeId.WorldGen,
+      label: UpscaleOperationLabel.UpscalingTile,
       details: `(${tile.x}, ${tile.y}) via ${activeUpscaler}`,
-      status: 'in-progress',
+      status: AsyncOperationStatus.InProgress,
     })
 
     try {
-      const imageUrl = tile.image_filename.startsWith('http') ? tile.image_filename : `/projects/${tile.project_id}/${tile.image_filename}`
+      if (!tile.image_filename) {
+        throw new Error(UpscaleServiceError.TileHasNoImage)
+      }
+      const imageUrl = tile.image_filename.startsWith(UrlScheme.Http)
+        ? tile.image_filename
+        : `/projects/${tile.project_id}/${tile.image_filename}`
       const response = await fetch(imageUrl)
       if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`)
       const blob = await response.blob()
@@ -77,7 +102,7 @@ export class UpscaleService {
         reader.onloadend = () => {
           const dataUrl = fileReaderText(reader.result)
           if (!dataUrl || !dataUrl.includes(',')) {
-            reject(new Error('Invalid data URL'))
+            reject(new Error(UpscaleServiceError.InvalidDataUrl))
             return
           }
           resolve(dataUrl.split(',')[1])
@@ -85,11 +110,11 @@ export class UpscaleService {
         reader.readAsDataURL(blob)
       })
 
-      console.log(`Triggering upscale-tile task with provider: ${activeUpscaler}`)
+      console.log(`${UpscaleServiceLog.TriggeringTask} ${activeUpscaler}`)
 
-      const triggerResponse = await fetch('/api/trigger-upscale', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const triggerResponse = await fetch(UpscaleApiRoute.Trigger, {
+        method: HttpMethod.Post,
+        headers: { [HttpRequestHeader.ContentType]: ContentType.Json },
         body: JSON.stringify({
           tileId: tile.id,
           projectId: tile.project_id,
@@ -105,10 +130,10 @@ export class UpscaleService {
       const triggerData = await triggerResponse.json()
 
       if (!triggerResponse.ok || !triggerData.runId) {
-        throw new Error(triggerData.error || 'Failed to trigger upscale task')
+        throw new Error(triggerData.error || UpscaleServiceError.FailedToTriggerTask)
       }
 
-      console.log('Upscale task triggered:', triggerData.runId)
+      console.log(UpscaleServiceLog.TaskTriggered, triggerData.runId)
 
       // 3. Save run state to localStorage for recovery
       const runState: UpscaleRunState = {
@@ -130,9 +155,13 @@ export class UpscaleService {
 
       return triggerData.runId
     } catch (error) {
-      console.error('Upscale error:', error)
+      console.error(UpscaleServiceLog.UpscaleError, error)
       // Clean up status on error
-      useWorldStore.getState().setTileError(tile.x, tile.y, error instanceof Error ? error.message : 'Upscale failed')
+      useWorldStore.getState().setTileError(
+        tile.x,
+        tile.y,
+        error instanceof Error ? error.message : UpscaleServiceError.UpscaleFailed
+      )
       useWorldStore.getState().removeUpscalingTile(tile.x, tile.y)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
@@ -150,14 +179,14 @@ export class UpscaleService {
 
     const poll = async () => {
       try {
-        const statusResponse = await fetch(`/api/trigger-upscale/status?runId=${runState.runId}`)
+        const statusResponse = await fetch(`${UpscaleApiRoute.Status}?runId=${runState.runId}`)
         const statusData = await statusResponse.json()
 
         if (statusResponse.status === 404) {
           consecutiveErrors++
           if (consecutiveErrors > 5) {
-            console.warn('Upscale run not found after retries, clearing state')
-            useWorldStore.getState().setTileError(runState.tileX, runState.tileY, 'Upscale task not found')
+            console.warn(UpscaleServiceLog.RunNotFoundAfterRetries)
+            useWorldStore.getState().setTileError(runState.tileX, runState.tileY, UpscaleServiceError.TaskNotFound)
             this.clearRunState(runState, opId)
             return
           }
@@ -167,7 +196,7 @@ export class UpscaleService {
 
         consecutiveErrors = 0
         const progress = statusData.metadata?.progress || 0
-        const stage = statusData.metadata?.stage || 'unknown'
+        const stage = statusData.metadata?.stage || TileProgressStage.Unknown
 
         // Track progress changes for adaptive polling
         if (progress === lastProgress) {
@@ -183,23 +212,23 @@ export class UpscaleService {
         })
 
         // Check if completed
-        if (statusData.status === 'COMPLETED') {
-          console.log('Upscale completed:', statusData.output)
+        if (statusData.status === TriggerTerminalStatus.Completed) {
+          console.log(UpscaleServiceLog.UpscaleCompleted, statusData.output)
           await this.handleCompletion(runState, statusData.output, opId)
           return
         }
 
         // Check if failed
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          const errorMsg = statusData.error || `Upscale failed (${statusData.status})`
-          console.error('Upscale failed:', errorMsg)
+          const errorMsg = statusData.error || `${UpscaleServiceError.UpscaleFailed} (${statusData.status})`
+          console.error(UpscaleServiceLog.UpscaleFailed, errorMsg)
           useWorldStore.getState().setTileError(runState.tileX, runState.tileY, errorMsg)
           this.clearRunState(runState, opId)
           return
         }
 
         // Adaptive polling interval
-        let nextInterval = POLLING_INTERVALS.DEFAULT
+        let nextInterval: number = POLLING_INTERVALS.DEFAULT
         if (stableProgressCount === 0) {
           nextInterval = 2000
         } else if (stableProgressCount < 3) {
@@ -210,7 +239,7 @@ export class UpscaleService {
 
         this.scheduleNextPoll(runState.runId, poll, nextInterval)
       } catch (error) {
-        console.error('Status polling error:', error)
+        console.error(UpscaleServiceLog.StatusPollingError, error)
         consecutiveErrors++
         const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
         this.scheduleNextPoll(runState.runId, poll, backoffInterval)
@@ -239,7 +268,7 @@ export class UpscaleService {
     try {
       // Check if upscale requires user review (new flow)
       if (output?.pendingReview && output?.upscaledUrl) {
-        console.log('[UpscaleService] Upscale completed with Supabase URLs:', {
+        console.log(UpscaleServiceLog.CompletedWithSupabaseUrls, {
           upscaledUrl: output.upscaledUrl,
           originalUrl: output.originalUrl,
           filename: output.filename,
@@ -252,7 +281,9 @@ export class UpscaleService {
         const tiles = useWorldStore.getState().tiles
         const existingTile = tiles[`${runState.tileX},${runState.tileY}`]
         const originalUrl = existingTile?.image_filename
-          ? (existingTile.image_filename.startsWith('http') ? existingTile.image_filename : `/projects/${runState.projectId}/${existingTile.image_filename}`)
+          ? (existingTile.image_filename.startsWith(UrlScheme.Http)
+              ? existingTile.image_filename
+              : `/projects/${runState.projectId}/${existingTile.image_filename}`)
           : output.originalUrl
 
         // Store pending upscale in store
@@ -262,22 +293,19 @@ export class UpscaleService {
 
         // Update global status to show review is needed
         useGlobalStatusStore.getState().updateOperation(opId, {
-          status: 'completed',
-          details: `(${runState.tileX}, ${runState.tileY}) - Review upscale`,
+          status: AsyncOperationStatus.Completed,
+          details: `(${runState.tileX}, ${runState.tileY})${UpscaleOperationDetailSuffix.ReviewUpscale}`,
         })
 
-        // Emit event for UI to show review dialog
+        // Notify UI to show review dialog
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('upscale-review-ready', {
-              detail: {
-                tileX: runState.tileX,
-                tileY: runState.tileY,
-                upscaledUrl,
-                originalUrl,
-              },
-            })
-          )
+          getWorldUiStore().enqueueReviewRequest({
+            type: WorldGenReviewType.Upscale,
+            tileX: runState.tileX,
+            tileY: runState.tileY,
+            newUrl: upscaledUrl,
+            originalUrl,
+          })
         }
 
         this.clearRunState(runState, opId)
@@ -286,7 +314,7 @@ export class UpscaleService {
 
       // Check if MJ returned a grid requiring variant selection
       if (output?.requiresVariantSelection) {
-        console.log('MJ grid received, storing for variant selection:', output)
+        console.log(UpscaleServiceLog.MjGridReceived, output)
 
         // Store the grid data for variant selection UI
         if (typeof window !== 'undefined') {
@@ -305,8 +333,8 @@ export class UpscaleService {
 
         // Update global status to show variant selection is needed
         useGlobalStatusStore.getState().updateOperation(opId, {
-          status: 'completed',
-          details: `(${runState.tileX}, ${runState.tileY}) - Select variant`,
+          status: AsyncOperationStatus.Completed,
+          details: `(${runState.tileX}, ${runState.tileY})${UpscaleOperationDetailSuffix.SelectVariant}`,
         })
 
         // Don't clear run state - keep it for variant selection
@@ -317,20 +345,16 @@ export class UpscaleService {
           this.pollingIntervals.delete(runState.runId)
         }
 
-        // Emit event for UI to show variant picker
+        // Notify UI to show variant picker
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('mj-grid-ready', {
-              detail: {
-                tileId: runState.tileId,
-                tileX: runState.tileX,
-                tileY: runState.tileY,
-                gridImageUrl: output.gridImageUrl,
-                buttons: output.buttons,
-                taskId: output.taskId,
-              },
-            })
-          )
+          getWorldUiStore().notifyMjGridReady({
+            tileId: runState.tileId,
+            tileX: runState.tileX,
+            tileY: runState.tileY,
+            gridImageUrl: output.gridImageUrl,
+            buttons: output.buttons ?? [],
+            taskId: output.taskId,
+          })
         }
         return
       }
@@ -342,18 +366,18 @@ export class UpscaleService {
         const tileKey = `${runState.tileX},${runState.tileY}`
 
         if (tiles[tileKey]) {
-          useWorldStore.setState(state => ({
+          useWorldStore.setState({
             tiles: {
-              ...state.tiles,
-              [tileKey]: { ...state.tiles[tileKey], image_filename: output.filename },
+              ...tiles,
+              [tileKey]: { ...tiles[tileKey], image_filename: output.filename },
             },
-          }))
+          })
         }
 
-        console.log('Tile updated with upscaled image:', output.filename)
+        console.log(UpscaleServiceLog.TileUpdatedWithUpscaledImage, output.filename)
       }
     } catch (error) {
-      console.error('Error updating tile after completion:', error)
+      console.error(UpscaleServiceLog.ErrorUpdatingTileAfterCompletion, error)
     } finally {
       this.clearRunState(runState, opId)
     }
@@ -389,28 +413,28 @@ export class UpscaleService {
     // Find all upscale run keys in localStorage
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      if (key?.startsWith('upscale-run-')) {
+      if (key?.startsWith(DynamicLocalStoragePrefix.UpscaleRun)) {
         try {
           const runState: UpscaleRunState = JSON.parse(localStorage.getItem(key) || '')
           if (runState.runId) {
-            console.log('Resuming upscale polling for:', runState.runId)
+            console.log(UpscaleServiceLog.ResumingPolling, runState.runId)
 
             // Re-add status indicators
             useWorldStore.getState().addUpscalingTile(runState.tileX, runState.tileY)
-            const opId = `upscale-${runState.tileX}-${runState.tileY}`
+            const opId = `${UpscaleOperationIdPrefix.Upscale}${runState.tileX}-${runState.tileY}`
             useGlobalStatusStore.getState().addOperation({
               id: opId,
-              type: 'world-gen',
-              label: 'Upscaling Tile (resumed)',
+              type: OperationTypeId.WorldGen,
+              label: UpscaleOperationLabel.UpscalingTileResumed,
               details: `(${runState.tileX}, ${runState.tileY}) via ${runState.provider}`,
-              status: 'in-progress',
+              status: AsyncOperationStatus.InProgress,
             })
 
             // Start polling
             this.startPolling(runState, opId)
           }
         } catch (e) {
-          console.warn('Failed to parse upscale run state:', key)
+          console.warn(UpscaleServiceLog.FailedToParseRunState, key)
           localStorage.removeItem(key)
         }
       }
@@ -423,14 +447,14 @@ export class UpscaleService {
   stopUpscale(tileId: string) {
     if (typeof window === 'undefined') return
 
-    const key = `upscale-run-${tileId}`
+    const key = DynamicLocalStorageKeys.upscaleRun(tileId)
     const data = localStorage.getItem(key)
     if (data) {
       try {
         const runState: UpscaleRunState = JSON.parse(data)
-        const opId = `upscale-${runState.tileX}-${runState.tileY}`
+        const opId = `${UpscaleOperationIdPrefix.Upscale}${runState.tileX}-${runState.tileY}`
         this.clearRunState(runState, opId)
-        console.log('Stopped upscale for tile:', tileId)
+        console.log(UpscaleServiceLog.StoppedForTile, tileId)
       } catch (e) {
         localStorage.removeItem(key)
       }
@@ -470,24 +494,24 @@ export class UpscaleService {
 
     const gridData = this.getMjGrid(tileId)
     if (!gridData) {
-      throw new Error('No MJ grid data found for this tile')
+      throw new Error(UpscaleServiceError.NoMjGridData)
     }
 
-    console.log('Cropping variant', variantIndex, 'from:', gridData.gridImageUrl)
+    console.log(UpscaleServiceLog.CroppingVariant, variantIndex, UpscaleServiceLog.From, gridData.gridImageUrl)
 
-    const opId = `mj-variant-${gridData.runState?.tileX || 0}-${gridData.runState?.tileY || 0}`
+    const opId = `${UpscaleOperationIdPrefix.MjVariant}${gridData.runState?.tileX || 0}-${gridData.runState?.tileY || 0}`
     useGlobalStatusStore.getState().addOperation({
       id: opId,
-      type: 'world-gen',
-      label: 'Cropping MJ Variant',
+      type: OperationTypeId.WorldGen,
+      label: UpscaleOperationLabel.CroppingMjVariant,
       details: `Variant ${variantIndex}`,
-      status: 'in-progress',
+      status: AsyncOperationStatus.InProgress,
     })
 
     try {
-      const response = await fetch('/api/trigger-upscale/select-variant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(UpscaleApiRoute.SelectVariant, {
+        method: HttpMethod.Post,
+        headers: { [HttpRequestHeader.ContentType]: ContentType.Json },
         body: JSON.stringify({
           tileId,
           projectId: gridData.projectId,
@@ -498,10 +522,10 @@ export class UpscaleService {
 
       const data = await response.json()
       if (!response.ok || !data.runId) {
-        throw new Error(data.error || 'Failed to trigger variant selection')
+        throw new Error(data.error || UpscaleServiceError.FailedToTriggerVariantSelection)
       }
 
-      console.log('Variant selection triggered:', data.runId)
+      console.log(UpscaleServiceLog.VariantSelectionTriggered, data.runId)
 
       // Store run state
       const runState: UpscaleRunState = {
@@ -510,7 +534,7 @@ export class UpscaleService {
         tileX: gridData.runState?.tileX || 0,
         tileY: gridData.runState?.tileY || 0,
         projectId: gridData.projectId,
-        provider: 'midjourney',
+        provider: UpscaleProvider.Midjourney,
         startedAt: new Date().toISOString(),
       }
       localStorage.setItem(DynamicLocalStorageKeys.upscaleRun(tileId), JSON.stringify(runState))
@@ -523,7 +547,7 @@ export class UpscaleService {
 
       return data.runId
     } catch (error) {
-      console.error('Variant selection error:', error)
+      console.error(UpscaleServiceLog.VariantSelectionError, error)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
     }
@@ -536,40 +560,6 @@ export class UpscaleService {
     if (typeof window === 'undefined') return
     localStorage.removeItem(DynamicLocalStorageKeys.mjGrid(tileId))
     localStorage.removeItem(DynamicLocalStorageKeys.upscaleRun(tileId))
-  }
-
-  /**
-   * Legacy resize helper (kept for compatibility)
-   */
-  private async resizeImage(
-    base64Image: string,
-    targetWidth: number,
-    targetHeight: number
-  ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = targetWidth
-        canvas.height = targetHeight
-        const ctx = canvas.getContext('2d')
-
-        if (!ctx) {
-          reject(new Error('Failed to get canvas context'))
-          return
-        }
-
-        ctx.drawImage(img, 0, 0, targetWidth, targetHeight)
-        const resized = canvas.toDataURL('image/png').split(',')[1]
-        resolve(resized)
-      }
-      img.onerror = reject
-
-      const imageData = base64Image.startsWith('data:')
-        ? base64Image
-        : `data:image/png;base64,${base64Image}`
-      img.src = imageData
-    })
   }
 }
 

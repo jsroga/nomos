@@ -6,6 +6,7 @@ import { Loader2, Download, Save, Focus } from 'lucide-react'
 import { debounce } from 'lodash'
 import { Button } from '@/components/Button'
 import { DomainSidebar } from '@/components/DomainSidebar'
+import { DOM_EVENT_KEYDOWN, KEYBOARD_KEY_TAB } from '@/domains/interior-designer/constants/keyboard'
 import { DesignManager } from '@/domains/interior-designer/ui/DesignManager'
 import { InteriorRightSidebar } from '@/domains/interior-designer/ui/UI/InteriorRightSidebar'
 import { Toolbar } from '@/domains/interior-designer/ui/UI/Toolbar'
@@ -70,13 +71,13 @@ export function InteriorDesignerWorkspace() {
   // keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Tab') {
+      if (e.key === KEYBOARD_KEY_TAB) {
         e.preventDefault()
         toggleZenMode()
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener(DOM_EVENT_KEYDOWN, handleKeyDown)
+    return () => window.removeEventListener(DOM_EVENT_KEYDOWN, handleKeyDown)
   }, [toggleZenMode])
 
   return (

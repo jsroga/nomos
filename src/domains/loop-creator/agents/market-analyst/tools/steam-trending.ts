@@ -10,8 +10,22 @@
  * - Market share by genre
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
+import { createLoopStructuredTool } from './structured-tool'
+
+const steamTrendingSchema = z.object({
+  genre: z
+    .string()
+    .optional()
+    .describe('Filter by genre (e.g., "roguelike", "fps", "extraction", "survivors")'),
+  includeIndieOnly: z.boolean().optional().default(false).describe('Only include indie games'),
+  limit: z.number().optional().default(10).describe('Number of games to return'),
+  sortBy: z
+    .enum(['players', 'growth', 'review'])
+    .optional()
+    .default('players')
+    .describe('Sort criteria'),
+})
 
 /**
  * Steam game data
@@ -332,7 +346,7 @@ const GENRE_MARKET_DATA: GenreMarketData[] = [
 /**
  * Steam Trending Tool
  */
-export const steamTrendingTool = new DynamicStructuredTool({
+export const steamTrendingTool = createLoopStructuredTool({
   name: 'steam_trending',
   description: `Fetch current trending games and market data from Steam.
 
@@ -344,20 +358,9 @@ Returns:
 - Comparison data for reference games
 
 Use this to understand current player preferences and market movements.`,
-  schema: z.object({
-    genre: z
-      .string()
-      .optional()
-      .describe('Filter by genre (e.g., "roguelike", "fps", "extraction", "survivors")'),
-    includeIndieOnly: z.boolean().optional().default(false).describe('Only include indie games'),
-    limit: z.number().optional().default(10).describe('Number of games to return'),
-    sortBy: z
-      .enum(['players', 'growth', 'review'])
-      .optional()
-      .default('players')
-      .describe('Sort criteria'),
-  }),
-  func: async ({ genre, includeIndieOnly, limit, sortBy }): Promise<string> => {
+  schema: steamTrendingSchema,
+  func: async input => {
+    const { genre, includeIndieOnly, limit, sortBy } = steamTrendingSchema.parse(input)
     try {
       let games = [...STEAM_TOP_GAMES]
 

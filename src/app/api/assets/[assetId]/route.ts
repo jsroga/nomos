@@ -5,7 +5,9 @@ import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { recordFromJson } from '@/shared/data/json-guards'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const dynamic = 'force-dynamic'
 
 async function verifyAssetAccess(assetId: string, userId: string) {
@@ -19,22 +21,22 @@ async function verifyAssetAccess(assetId: string, userId: string) {
 }
 
 // GET asset by ID
-export async function GET(request: Request, props: { params: Promise<{ assetId: string }> }) {
+export async function GET(_request: Request, props: { params: Promise<{ assetId: string }> }) {
   const params = await props.params
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { assetId } = params
 
     if (!(await verifyAssetAccess(assetId, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
     const [data] = await db.select().from(assets).where(eq(assets.id, assetId))
 
     if (!data) {
-      return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.ASSET_NOT_FOUND }, { status: 404 })
     }
 
     return NextResponse.json(data)
@@ -48,12 +50,12 @@ export async function PATCH(request: Request, props: { params: Promise<{ assetId
   const params = await props.params
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { assetId } = params
 
     if (!(await verifyAssetAccess(assetId, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
     const body = await request.json()
@@ -77,16 +79,16 @@ export async function PATCH(request: Request, props: { params: Promise<{ assetId
 }
 
 // DELETE asset
-export async function DELETE(request: Request, props: { params: Promise<{ assetId: string }> }) {
+export async function DELETE(_request: Request, props: { params: Promise<{ assetId: string }> }) {
   const params = await props.params
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { assetId } = params
 
     if (!(await verifyAssetAccess(assetId, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
     await db.delete(assets).where(eq(assets.id, assetId))

@@ -88,7 +88,10 @@ function collectChangedTsFiles() {
         .join('\n')
         .split('\n')
         .map((f) => f.trim())
-        .filter((f) => /\.(ts|tsx)$/.test(f)),
+        .filter((f) => /\.(ts|tsx)$/.test(f))
+        // A file can be M/A in the committed range but renamed/deleted in the
+        // uncommitted worktree — feeding the stale path crashes ESLint.
+        .filter((f) => existsSync(f)),
     ),
   ];
 }

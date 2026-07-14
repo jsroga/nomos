@@ -14,49 +14,51 @@ import {
 import type { ConsistencyCheckRequest } from '@/domains/storyteller/core/types/ConsistencyTypes'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const body: ConsistencyCheckRequest = await request.json()
     const { projectId, episodeId, trigger } = body
 
     if (!projectId) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED }, { status: 400 })
     }
 
     // Verify project access
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     if (!trigger || !trigger.context) {
-      return NextResponse.json({ error: 'Trigger context is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.TRIGGER_CONTEXT_REQUIRED }, { status: 400 })
     }
 
-    console.log('[Consistency Check API] Starting check for project:', projectId)
+    console.log(API_LOG_PREFIX.CONSISTENCY_CHECK_START, projectId)
 
     const result = await runConsistencyCheck(
       { ...trigger.context, projectId, episodeId },
       trigger.action
     )
 
-    console.log('[Consistency Check API] Check complete:', {
+    console.log(API_LOG_PREFIX.CONSISTENCY_CHECK_COMPLETE, {
       inconsistencies: result.inconsistencies.length,
       fixes: result.fixes.length,
     })
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('[Consistency Check API] Error:', error)
+    console.error(API_LOG_PREFIX.CONSISTENCY_CHECK_ERROR, error)
     return NextResponse.json(
       {
-        error: 'Failed to run consistency check',
+        error: API_ERROR.FAILED_RUN_CONSISTENCY_CHECK,
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

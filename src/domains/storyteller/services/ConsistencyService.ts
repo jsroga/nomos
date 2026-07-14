@@ -17,6 +17,14 @@ import {
   shouldRunCheck,
   worldRulesFromStoryPlan,
 } from './consistency-types'
+import {
+  CONSISTENCY_SEVERITY_ORDER,
+  ConsistencyIssueType,
+  ConsistencyServiceError,
+  ConsistencySeverity,
+  ConsistencySuggestion,
+  ConsistencyUnknownLocation,
+} from '@/domains/storyteller/services/constants/consistency-issues'
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string }
 
@@ -136,12 +144,12 @@ export class ConsistencyService {
       // For MVP, world_rules and setup_payoff are the core checks
 
       // Sort by severity
-      const severityOrder = { critical: 0, major: 1, minor: 2 }
+      const severityOrder = CONSISTENCY_SEVERITY_ORDER
       allIssues.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])
 
-      const criticalCount = allIssues.filter(i => i.severity === 'critical').length
-      const majorCount = allIssues.filter(i => i.severity === 'major').length
-      const minorCount = allIssues.filter(i => i.severity === 'minor').length
+      const criticalCount = allIssues.filter(i => i.severity === ConsistencySeverity.Critical).length
+      const majorCount = allIssues.filter(i => i.severity === ConsistencySeverity.Major).length
+      const minorCount = allIssues.filter(i => i.severity === ConsistencySeverity.Minor).length
 
       return {
         ok: true,
@@ -159,7 +167,7 @@ export class ConsistencyService {
     } catch (error) {
       return {
         ok: false,
-        error: error instanceof Error ? error.message : 'Unknown consistency check error',
+        error: error instanceof Error ? error.message : ConsistencyServiceError.UnknownCheckError,
       }
     }
   }
@@ -199,12 +207,12 @@ function checkWorldRuleViolations(beatsToCheck: BeatRow[], storyPlan: unknown): 
       violationKeywords.forEach(keyword => {
         if (content.includes(keyword.term) && keyword.violation) {
           issues.push({
-            type: 'contradiction',
-            severity: 'critical',
+            type: ConsistencyIssueType.Contradiction,
+            severity: ConsistencySeverity.Critical,
             description: `Beat [${beat.sequence}] may violate: "${ruleText}"`,
             location: beat.id,
             affectedElements: [ruleText],
-            suggestion: rule.consequence || 'Revise beat to comply with world rules',
+            suggestion: rule.consequence || ConsistencySuggestion.ReviseBeatWorldRules,
           })
         }
       })
@@ -231,12 +239,12 @@ function checkSetupPayoffs(beatsToCheck: BeatRow[]): ContinuityIssue[] {
     )
     if (!setupExists) {
       issues.push({
-        type: 'orphaned_setup',
-        severity: 'major',
+        type: ConsistencyIssueType.OrphanedSetup,
+        severity: ConsistencySeverity.Major,
         description: `Payoff "${payoffFor}" in beat [${beat.sequence}] has no setup`,
         location: beat.id,
-        affectedElements: [payoffFor || 'unknown'],
-        suggestion: 'Create the setup in an earlier beat',
+        affectedElements: [payoffFor || ConsistencyUnknownLocation.Unknown],
+        suggestion: ConsistencySuggestion.CreateSetupEarlier,
       })
     }
   })
@@ -248,12 +256,12 @@ function checkSetupPayoffs(beatsToCheck: BeatRow[]): ContinuityIssue[] {
     )
     if (!hasPayoff) {
       issues.push({
-        type: 'missing_payoff',
-        severity: 'minor',
+        type: ConsistencyIssueType.MissingPayoff,
+        severity: ConsistencySeverity.Minor,
         description: `Setup "${setupId}" in beat [${beat.sequence}] has no payoff yet`,
         location: beat.id,
-        affectedElements: [setupId ?? 'unknown'],
-        suggestion: 'Add a beat that pays off this setup',
+        affectedElements: [setupId ?? ConsistencyUnknownLocation.Unknown],
+        suggestion: ConsistencySuggestion.AddPayoffBeat,
       })
     }
   })

@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { useEpisode, useEpisodes } from '@/domains/storyteller/state/queries/useEpisodes'
+import {
+  StorytellerOverrideState,
+  StorytellerQueryParam,
+} from '@/domains/storyteller/core/storyteller-page-wire'
 
 interface EpisodeBasic {
   id: string
@@ -16,7 +20,7 @@ export function useEpisodeData(projectId: string | undefined) {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  const episodeParam = searchParams?.get('episodeId') ?? null
+  const episodeParam = searchParams?.get(StorytellerQueryParam.EpisodeId) ?? null
   const [currentEpisodeId, setCurrentEpisodeId] = useState<string | null>(episodeParam)
   const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState<string>('')
   const [currentEpisode, setCurrentEpisode] = useState<EpisodeBasic | null>(null)
@@ -37,10 +41,10 @@ export function useEpisodeData(projectId: string | undefined) {
   useEffect(() => {
     if (!projectId) return
 
-    if (overrideState === 'HAS_EPISODES') {
+    if (overrideState === StorytellerOverrideState.HasEpisodes) {
       setHasEpisodes(true)
       return
-    } else if (overrideState === 'NO_EPISODES') {
+    } else if (overrideState === StorytellerOverrideState.NoEpisodes) {
       setHasEpisodes(false)
       return
     }
@@ -84,7 +88,7 @@ export function useEpisodeData(projectId: string | undefined) {
     (id: string) => {
       setCurrentEpisodeId(id)
       const params = new URLSearchParams(searchParams?.toString() || '')
-      params.set('episodeId', id)
+      params.set(StorytellerQueryParam.EpisodeId, id)
       router.push(`?${params.toString()}`)
     },
     [searchParams, router]

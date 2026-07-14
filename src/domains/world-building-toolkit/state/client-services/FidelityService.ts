@@ -3,6 +3,26 @@ import type { Tile } from '../../core/world-types'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
+import { TILE_COORD_SEPARATOR } from '../../ui/constants/tile-stage-labels'
+import {
+  AsyncOperationStatus,
+  ContentType,
+  DynamicLocalStoragePrefix,
+  FidelityApiRoute,
+  FidelityOperationDetailSuffix,
+  FidelityOperationIdPrefix,
+  FidelityOperationLabel,
+  FidelityServiceError,
+  FidelityServiceLog,
+  HttpMethod,
+  HttpRequestHeader,
+  OperationTypeId,
+  TileProgressStage,
+  TriggerTerminalStatus,
+  UrlScheme,
+  WorldGenReviewType,
+} from '../../constants/fidelity-service'
+import { getWorldUiStore } from '../useWorldUiStore'
 
 interface FidelityRunState {
   runId: string
@@ -20,7 +40,7 @@ export class FidelityService {
    * Cleanup all polling intervals - call on unmount to prevent memory leaks
    */
   cleanup() {
-    for (const [runId, timeout] of this.pollingIntervals) {
+    for (const [, timeout] of this.pollingIntervals) {
       clearTimeout(timeout)
     }
     this.pollingIntervals.clear()
@@ -35,25 +55,28 @@ export class FidelityService {
     creativity: number,
     styleReferenceUrls?: string[]
   ): Promise<string | null> {
-    console.log('Starting fidelity enhancement via Trigger.dev for tile', tile.id, {
+    console.log(FidelityServiceLog.StartingViaTrigger, tile.id, {
       creativity,
       styleReferenceUrls,
     })
 
     // Track enhancing status
     useWorldStore.getState().addEnhancingTile(tile.x, tile.y)
-    const opId = `fidelity-${tile.x}-${tile.y}`
+    const opId = `${FidelityOperationIdPrefix.Fidelity}${tile.x}-${tile.y}`
     useGlobalStatusStore.getState().addOperation({
       id: opId,
-      type: 'world-gen',
-      label: 'Enhancing Fidelity',
+      type: OperationTypeId.WorldGen,
+      label: FidelityOperationLabel.EnhancingFidelity,
       details: `(${tile.x}, ${tile.y})`,
-      status: 'in-progress',
+      status: AsyncOperationStatus.InProgress,
     })
 
     try {
+      if (!tile.image_filename) {
+        throw new Error(FidelityServiceError.TileHasNoImage)
+      }
       let imageUrl = tile.image_filename
-      if (!imageUrl.startsWith('http')) {
+      if (!imageUrl.startsWith(UrlScheme.Http)) {
         imageUrl = `/projects/${tile.project_id}/${tile.image_filename}`
       }
 
@@ -70,11 +93,11 @@ export class FidelityService {
         reader.readAsDataURL(blob)
       })
 
-      console.log('Triggering enhance-fidelity task')
+      console.log(FidelityServiceLog.TriggeringTask)
 
-      const triggerResponse = await fetch('/api/trigger-fidelity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const triggerResponse = await fetch(FidelityApiRoute.Trigger, {
+        method: HttpMethod.Post,
+        headers: { [HttpRequestHeader.ContentType]: ContentType.Json },
         body: JSON.stringify({
           tileId: tile.id,
           projectId: tile.project_id,
@@ -88,10 +111,10 @@ export class FidelityService {
       const triggerData = await triggerResponse.json()
 
       if (!triggerResponse.ok || !triggerData.runId) {
-        throw new Error(triggerData.error || 'Failed to trigger fidelity enhancement task')
+        throw new Error(triggerData.error || FidelityServiceError.FailedToTriggerTask)
       }
 
-      console.log('Fidelity enhancement task triggered:', triggerData.runId)
+      console.log(FidelityServiceLog.TaskTriggered, triggerData.runId)
 
       // 3. Save run state to localStorage for recovery
       const runState: FidelityRunState = {
@@ -112,9 +135,15 @@ export class FidelityService {
 
       return triggerData.runId
     } catch (error) {
-      console.error('Fidelity enhancement error:', error)
+      console.error(FidelityServiceLog.EnhancementError, error)
       // Clean up status on error
-      useWorldStore.getState().setTileError(tile.x, tile.y, error instanceof Error ? error.message : 'Enhancement failed')
+      useWorldStore
+        .getState()
+        .setTileError(
+          tile.x,
+          tile.y,
+          error instanceof Error ? error.message : FidelityServiceError.EnhancementFailed
+        )
       useWorldStore.getState().removeEnhancingTile(tile.x, tile.y)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
@@ -131,14 +160,16 @@ export class FidelityService {
 
     const poll = async () => {
       try {
-        const statusResponse = await fetch(`/api/trigger-fidelity/status?runId=${runState.runId}`)
+        const statusResponse = await fetch(`${FidelityApiRoute.Status}?runId=${runState.runId}`)
         const statusData = await statusResponse.json()
 
         if (statusResponse.status === 404) {
           consecutiveErrors++
           if (consecutiveErrors > 5) {
-            console.warn('Fidelity run not found after retries, clearing state')
-            useWorldStore.getState().setTileError(runState.tileX, runState.tileY, 'Enhancement task not found')
+            console.warn(FidelityServiceLog.RunNotFoundAfterRetries)
+            useWorldStore
+              .getState()
+              .setTileError(runState.tileX, runState.tileY, FidelityServiceError.TaskNotFound)
             this.clearRunState(runState, opId)
             return
           }
@@ -148,7 +179,7 @@ export class FidelityService {
 
         consecutiveErrors = 0
         const progress = statusData.metadata?.progress || 0
-        const stage = statusData.metadata?.stage || 'unknown'
+        const stage = statusData.metadata?.stage || TileProgressStage.Unknown
 
         if (progress === lastProgress) {
           stableProgressCount++
@@ -161,21 +192,21 @@ export class FidelityService {
           details: `(${runState.tileX}, ${runState.tileY}) ${stage} ${progress}%`,
         })
 
-        if (statusData.status === 'COMPLETED') {
-          console.log('Fidelity enhancement completed:', statusData.output)
+        if (statusData.status === TriggerTerminalStatus.Completed) {
+          console.log(FidelityServiceLog.EnhancementCompleted, statusData.output)
           await this.handleCompletion(runState, statusData.output, opId)
           return
         }
 
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          const errorMsg = statusData.error || `Enhancement failed (${statusData.status})`
-          console.error('Fidelity enhancement failed:', errorMsg)
+          const errorMsg = statusData.error || `${FidelityServiceError.EnhancementFailed} (${statusData.status})`
+          console.error(FidelityServiceLog.EnhancementFailed, errorMsg)
           useWorldStore.getState().setTileError(runState.tileX, runState.tileY, errorMsg)
           this.clearRunState(runState, opId)
           return
         }
 
-        let nextInterval = POLLING_INTERVALS.DEFAULT
+        let nextInterval: number = POLLING_INTERVALS.DEFAULT
         if (stableProgressCount === 0) {
           nextInterval = 2000
         } else if (stableProgressCount < 3) {
@@ -186,7 +217,7 @@ export class FidelityService {
 
         this.scheduleNextPoll(runState.runId, poll, nextInterval)
       } catch (error) {
-        console.error('Status polling error:', error)
+        console.error(FidelityServiceLog.StatusPollingError, error)
         consecutiveErrors++
         const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
         this.scheduleNextPoll(runState.runId, poll, backoffInterval)
@@ -223,7 +254,7 @@ export class FidelityService {
     try {
       // Check if fidelity enhancement requires user review (new flow)
       if (output?.pendingReview && output?.enhancedUrl) {
-        console.log('[FidelityService] Enhancement completed with Supabase URL:', {
+        console.log(FidelityServiceLog.CompletedWithSupabaseUrl, {
           enhancedUrl: output.enhancedUrl,
           originalUrl: output.originalUrl,
         })
@@ -233,9 +264,11 @@ export class FidelityService {
 
         // For original, prefer local existing tile (if any)
         const tiles = useWorldStore.getState().tiles
-        const existingTile = tiles[`${runState.tileX},${runState.tileY}`]
+        const existingTile = tiles[`${runState.tileX}${TILE_COORD_SEPARATOR}${runState.tileY}`]
         const originalUrl = existingTile?.image_filename
-          ? (existingTile.image_filename.startsWith('http') ? existingTile.image_filename : `/projects/${runState.projectId}/${existingTile.image_filename}`)
+          ? (existingTile.image_filename.startsWith(UrlScheme.Http)
+              ? existingTile.image_filename
+              : `/projects/${runState.projectId}/${existingTile.image_filename}`)
           : output.originalUrl || ''
 
         // Store pending fidelity in store
@@ -247,22 +280,19 @@ export class FidelityService {
 
         // Update global status to show review is needed
         useGlobalStatusStore.getState().updateOperation(opId, {
-          status: 'completed',
-          details: `(${runState.tileX}, ${runState.tileY}) - Review enhancement`,
+          status: AsyncOperationStatus.Completed,
+          details: `(${runState.tileX}, ${runState.tileY})${FidelityOperationDetailSuffix.ReviewEnhancement}`,
         })
 
-        // Emit event for UI to show review dialog
+        // Notify UI to show review dialog
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('fidelity-review-ready', {
-              detail: {
-                tileX: runState.tileX,
-                tileY: runState.tileY,
-                newUrl: enhancedUrl,
-                originalUrl,
-              },
-            })
-          )
+          getWorldUiStore().enqueueReviewRequest({
+            type: WorldGenReviewType.Fidelity,
+            tileX: runState.tileX,
+            tileY: runState.tileY,
+            newUrl: enhancedUrl,
+            originalUrl,
+          })
         }
 
         this.clearRunState(runState, opId)
@@ -272,21 +302,21 @@ export class FidelityService {
       // Legacy flow - direct update (shouldn't happen anymore)
       if (output?.success && output?.filename) {
         const { tiles } = useWorldStore.getState()
-        const tileKey = `${runState.tileX},${runState.tileY}`
+        const tileKey = `${runState.tileX}${TILE_COORD_SEPARATOR}${runState.tileY}`
 
         if (tiles[tileKey]) {
-          useWorldStore.setState(state => ({
+          useWorldStore.setState({
             tiles: {
-              ...state.tiles,
-              [tileKey]: { ...state.tiles[tileKey], image_filename: output.filename },
+              ...tiles,
+              [tileKey]: { ...tiles[tileKey], image_filename: output.filename },
             },
-          }))
+          })
         }
 
-        console.log('Tile updated with enhanced image:', output.filename)
+        console.log(FidelityServiceLog.TileUpdatedWithEnhancedImage, output.filename)
       }
     } catch (error) {
-      console.error('Error updating tile after completion:', error)
+      console.error(FidelityServiceLog.ErrorUpdatingTileAfterCompletion, error)
     } finally {
       this.clearRunState(runState, opId)
     }
@@ -322,28 +352,28 @@ export class FidelityService {
     // Find all fidelity run keys in localStorage
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      if (key?.startsWith('fidelity-run-')) {
+      if (key?.startsWith(DynamicLocalStoragePrefix.FidelityRun)) {
         try {
           const runState: FidelityRunState = JSON.parse(localStorage.getItem(key) || '')
           if (runState.runId) {
-            console.log('Resuming fidelity enhancement polling for:', runState.runId)
+            console.log(FidelityServiceLog.ResumingPolling, runState.runId)
 
             // Re-add status indicators
             useWorldStore.getState().addEnhancingTile(runState.tileX, runState.tileY)
-            const opId = `fidelity-${runState.tileX}-${runState.tileY}`
+            const opId = `${FidelityOperationIdPrefix.Fidelity}${runState.tileX}-${runState.tileY}`
             useGlobalStatusStore.getState().addOperation({
               id: opId,
-              type: 'world-gen',
-              label: 'Enhancing Fidelity (resumed)',
+              type: OperationTypeId.WorldGen,
+              label: FidelityOperationLabel.EnhancingFidelityResumed,
               details: `(${runState.tileX}, ${runState.tileY})`,
-              status: 'in-progress',
+              status: AsyncOperationStatus.InProgress,
             })
 
             // Start polling
             this.startPolling(runState, opId)
           }
-        } catch (e) {
-          console.warn('Failed to parse fidelity run state:', key)
+        } catch (_e) {
+          console.warn(FidelityServiceLog.FailedToParseRunState, key)
           localStorage.removeItem(key)
         }
       }
@@ -361,10 +391,10 @@ export class FidelityService {
     if (data) {
       try {
         const runState: FidelityRunState = JSON.parse(data)
-        const opId = `fidelity-${runState.tileX}-${runState.tileY}`
+        const opId = `${FidelityOperationIdPrefix.Fidelity}${runState.tileX}-${runState.tileY}`
         this.clearRunState(runState, opId)
-        console.log('Stopped fidelity enhancement for tile:', tileId)
-      } catch (e) {
+        console.log(FidelityServiceLog.StoppedForTile, tileId)
+      } catch (_e) {
         localStorage.removeItem(key)
       }
     }

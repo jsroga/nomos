@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { OpenAiChatRole, OpenAiModel, OpenAiResponseFormat } from '@/shared/data/constants/protocol'
 
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY
@@ -12,21 +14,21 @@ export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedReques
   try {
     const openai = getOpenAIClient()
     if (!openai) {
-      return NextResponse.json({ error: 'OPENAI_API_KEY is not configured' }, { status: 500 })
+      return NextResponse.json({ error: API_ERROR.OPENAI_API_KEY_NOT_CONFIGURED }, { status: 500 })
     }
 
     const body = await req.json()
     const { description } = body
 
     if (!description) {
-      return NextResponse.json({ error: 'Description is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.DESCRIPTION_REQUIRED }, { status: 400 })
     }
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: OpenAiModel.Gpt4o,
       messages: [
         {
-          role: 'system',
+          role: OpenAiChatRole.System,
           content: `You are an expert character psychologist. Analyze the character description and generate baseline psychological metrics (based on Affective Circumplex Model + Self-Determination Theory).
                     
 Return ONLY a JSON object with these keys: valence, arousal, autonomy, competence, relatedness, cognitiveClarity, perceivedStakes, socialSafety, moralAlignment.
@@ -99,22 +101,22 @@ Return ONLY a JSON object with these keys: valence, arousal, autonomy, competenc
 Analyze the provided description and return appropriate baseline metrics.`,
         },
         {
-          role: 'user',
+          role: OpenAiChatRole.User,
           content: description,
         },
       ],
-      response_format: { type: 'json_object' },
+      response_format: { type: OpenAiResponseFormat.JsonObject },
     })
 
     const content = completion.choices[0].message.content
     if (!content) {
-      throw new Error('No content generated')
+      throw new Error(API_ERROR.NO_CONTENT_GENERATED)
     }
 
     const metrics = JSON.parse(content)
     return NextResponse.json({ metrics })
   } catch (error) {
-    console.error('Error generating metrics:', error)
-    return NextResponse.json({ error: 'Failed to generate metrics' }, { status: 500 })
+    console.error(API_LOG_PREFIX.METRICS_GENERATION_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_GENERATE_METRICS }, { status: 500 })
   }
 })

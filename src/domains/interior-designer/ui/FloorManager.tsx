@@ -1,6 +1,13 @@
 'use client'
 
 import React, { useMemo } from 'react'
+import { FloorManagerLog } from '@/domains/interior-designer/constants/floor-manager'
+import {
+  FLOOR_DEFAULT_COLOR,
+  TEXTURED_WALL_COLOR,
+} from '@/domains/interior-designer/constants/mesh-colors'
+import { INTERACTION_MODE_SELECT } from '@/domains/interior-designer/constants/interaction-modes'
+import { HTTP_URL_PREFIX } from '@/domains/interior-designer/constants/three-js'
 import { useInteriorStore } from '@/domains/interior-designer'
 import * as THREE from 'three'
 import { useTexture } from '@react-three/drei'
@@ -18,14 +25,14 @@ const FloorMesh: React.FC<{
   // Note: Shape uses X,Y coordinates. We use X and -Z (negated) because
   // the mesh rotation of -PI/2 around X axis will negate Y->Z transformation
   const shape = useMemo(() => {
-    console.log('FloorMesh - Creating shape from points:', floor.points)
+    console.log(FloorManagerLog.CreatingShape, floor.points)
     const s = new THREE.Shape()
     if (floor.points.length > 0) {
       // Use X and NEGATED Z for the shape (rotation will negate it back)
-      console.log('FloorMesh - moveTo:', floor.points[0][0], -floor.points[0][2])
+      console.log(FloorManagerLog.MoveTo, floor.points[0][0], -floor.points[0][2])
       s.moveTo(floor.points[0][0], -floor.points[0][2])
       for (let i = 1; i < floor.points.length; i++) {
-        console.log('FloorMesh - lineTo:', floor.points[i][0], -floor.points[i][2])
+        console.log(FloorManagerLog.LineTo, floor.points[i][0], -floor.points[i][2])
         s.lineTo(floor.points[i][0], -floor.points[i][2])
       }
       s.closePath()
@@ -33,8 +40,8 @@ const FloorMesh: React.FC<{
     return s
   }, [floor.points])
 
-  const textureUrl = floor.texture && floor.texture.startsWith('http') ? floor.texture : null
-  const color = !textureUrl ? floor.texture || '#94a3b8' : '#ffffff'
+  const textureUrl = floor.texture && floor.texture.startsWith(HTTP_URL_PREFIX) ? floor.texture : null
+  const color = !textureUrl ? floor.texture || FLOOR_DEFAULT_COLOR : TEXTURED_WALL_COLOR
 
   return (
     <mesh
@@ -103,7 +110,7 @@ export const FloorManager: React.FC = () => {
               isSelected={floor.id === selectedId}
               onClick={e => {
                 e.stopPropagation()
-                if (mode === 'SELECT') {
+                if (mode === INTERACTION_MODE_SELECT) {
                   setSelected(floor.id)
                 }
               }}

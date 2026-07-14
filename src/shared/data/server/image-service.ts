@@ -1,10 +1,19 @@
 // import 'server-only'
 import sharp from 'sharp'
 import { TileContext } from '@/shared/ai/types'
+import { BufferEncoding, UrlScheme } from '@/shared/data/constants/protocol'
+import {
+  DataUrlSeparator,
+  ImageServiceLog,
+  ImageStyleBrightness,
+  ImageStyleWarmth,
+  SharpBlendMode,
+  TileNeighborEdge,
+} from '@/shared/data/server/constants/image-service'
 
 export interface StyleInfo {
-  brightness: 'bright' | 'medium' | 'dark'
-  warmth: 'warm' | 'neutral' | 'cool'
+  brightness: `${ImageStyleBrightness}`
+  warmth: `${ImageStyleWarmth}`
   description: string
 }
 
@@ -62,69 +71,71 @@ export class ImageService {
     // Helper to fetch image buffer (supports http/https URLs and data URLs)
     const fetchImageBuffer = async (url: string): Promise<Buffer | null> => {
       try {
-        if (url.startsWith('data:')) {
-          const base64 = url.includes(';base64,') ? url.split(';base64,')[1] : null
+        if (url.startsWith(UrlScheme.Data)) {
+          const base64 = url.includes(DataUrlSeparator.Base64Marker)
+            ? url.split(DataUrlSeparator.Base64Marker)[1]
+            : null
           if (!base64) return null
-          return Buffer.from(base64, 'base64')
+          return Buffer.from(base64, BufferEncoding.Base64)
         }
         const response = await fetch(url)
         if (!response.ok) return null
         return Buffer.from(await response.arrayBuffer())
       } catch (e) {
-        console.error(`[ImageService] Failed to fetch neighbor image: ${url.substring(0, 80)}`, e)
+        console.error(`${ImageServiceLog.NeighborFetchFailed} ${url.substring(0, 80)}`, e)
         return null
       }
     }
 
     // Crop semantics (must match contextAssembler): key 'up' = bottom half of neighbor image, 'down' = top, 'left' = right part, 'right' = left part; corners = corresponding corner of neighbor.
-    const getEdgeCrop = async (imgBuffer: Buffer, edge: string) => {
+    const getEdgeCrop = async (imgBuffer: Buffer, edge: TileNeighborEdge) => {
       const metadata = await sharp(imgBuffer).metadata()
       const w = metadata.width || TILE_SIZE
       const h = metadata.height || TILE_SIZE
       const ratio = 0.5 // We want 256/512 of the edge
 
       switch (edge) {
-        case 'up':
+        case TileNeighborEdge.Up:
           return {
             left: 0,
             top: Math.round(h * (1 - ratio)),
             width: w,
             height: Math.round(h * ratio),
           }
-        case 'down':
+        case TileNeighborEdge.Down:
           return { left: 0, top: 0, width: w, height: Math.round(h * ratio) }
-        case 'left':
+        case TileNeighborEdge.Left:
           return {
             left: Math.round(w * (1 - ratio)),
             top: 0,
             width: Math.round(w * ratio),
             height: h,
           }
-        case 'right':
+        case TileNeighborEdge.Right:
           return { left: 0, top: 0, width: Math.round(w * ratio), height: h }
         // Corners
-        case 'topLeft':
+        case TileNeighborEdge.TopLeft:
           return {
             left: Math.round(w * (1 - ratio)),
             top: Math.round(h * (1 - ratio)),
             width: Math.round(w * ratio),
             height: Math.round(h * ratio),
           }
-        case 'topRight':
+        case TileNeighborEdge.TopRight:
           return {
             left: 0,
             top: Math.round(h * (1 - ratio)),
             width: Math.round(w * ratio),
             height: Math.round(h * ratio),
           }
-        case 'bottomLeft':
+        case TileNeighborEdge.BottomLeft:
           return {
             left: Math.round(w * (1 - ratio)),
             top: 0,
             width: Math.round(w * ratio),
             height: Math.round(h * ratio),
           }
-        case 'bottomRight':
+        case TileNeighborEdge.BottomRight:
           return { left: 0, top: 0, width: Math.round(w * ratio), height: Math.round(h * ratio) }
         default:
           return null
@@ -133,10 +144,24 @@ export class ImageService {
 
     const neighbors = context.neighbors
     // Order must match contextAssembler.ts: corners first, then edges (so edges overlay corners).
-    const items = [
-      { key: 'topLeft', neighbor: neighbors.topLeft, x: 0, y: 0, w: CONTEXT_SIZE, h: CONTEXT_SIZE },
+    const items: Array<{
+      key: TileNeighborEdge
+      neighbor: (typeof neighbors)[keyof typeof neighbors]
+      x: number
+      y: number
+      w: number
+      h: number
+    }> = [
       {
-        key: 'topRight',
+        key: TileNeighborEdge.TopLeft,
+        neighbor: neighbors.topLeft,
+        x: 0,
+        y: 0,
+        w: CONTEXT_SIZE,
+        h: CONTEXT_SIZE,
+      },
+      {
+        key: TileNeighborEdge.TopRight,
         neighbor: neighbors.topRight,
         x: TARGET_X + TILE_SIZE,
         y: 0,
@@ -144,7 +169,7 @@ export class ImageService {
         h: CONTEXT_SIZE,
       },
       {
-        key: 'bottomLeft',
+        key: TileNeighborEdge.BottomLeft,
         neighbor: neighbors.bottomLeft,
         x: 0,
         y: TARGET_Y + TILE_SIZE,
@@ -152,25 +177,39 @@ export class ImageService {
         h: CONTEXT_SIZE,
       },
       {
-        key: 'bottomRight',
+        key: TileNeighborEdge.BottomRight,
         neighbor: neighbors.bottomRight,
         x: TARGET_X + TILE_SIZE,
         y: TARGET_Y + TILE_SIZE,
         w: CONTEXT_SIZE,
         h: CONTEXT_SIZE,
       },
-      { key: 'up', neighbor: neighbors.up, x: TARGET_X, y: 0, w: TILE_SIZE, h: CONTEXT_SIZE },
       {
-        key: 'down',
+        key: TileNeighborEdge.Up,
+        neighbor: neighbors.up,
+        x: TARGET_X,
+        y: 0,
+        w: TILE_SIZE,
+        h: CONTEXT_SIZE,
+      },
+      {
+        key: TileNeighborEdge.Down,
         neighbor: neighbors.down,
         x: TARGET_X,
         y: TARGET_Y + TILE_SIZE,
         w: TILE_SIZE,
         h: CONTEXT_SIZE,
       },
-      { key: 'left', neighbor: neighbors.left, x: 0, y: TARGET_Y, w: CONTEXT_SIZE, h: TILE_SIZE },
       {
-        key: 'right',
+        key: TileNeighborEdge.Left,
+        neighbor: neighbors.left,
+        x: 0,
+        y: TARGET_Y,
+        w: CONTEXT_SIZE,
+        h: TILE_SIZE,
+      },
+      {
+        key: TileNeighborEdge.Right,
         neighbor: neighbors.right,
         x: TARGET_X + TILE_SIZE,
         y: TARGET_Y,
@@ -247,7 +286,14 @@ export class ImageService {
       .toBuffer()
 
     const finalMask = await sharp(maskBase)
-      .composite([{ input: transparentCenter, top: TARGET_Y, left: TARGET_X, blend: 'dest-out' }])
+      .composite([
+        {
+          input: transparentCenter,
+          top: TARGET_Y,
+          left: TARGET_X,
+          blend: SharpBlendMode.DestOut,
+        },
+      ])
       .png()
       .toBuffer()
 
@@ -267,15 +313,15 @@ export class ImageService {
     const { dominant } = stats
 
     const avgBrightness = (dominant.r + dominant.g + dominant.b) / 3
-    let brightness: 'bright' | 'medium' | 'dark'
-    if (avgBrightness > 180) brightness = 'bright'
-    else if (avgBrightness > 80) brightness = 'medium'
-    else brightness = 'dark'
+    let brightness: `${ImageStyleBrightness}`
+    if (avgBrightness > 180) brightness = ImageStyleBrightness.Bright
+    else if (avgBrightness > 80) brightness = ImageStyleBrightness.Medium
+    else brightness = ImageStyleBrightness.Dark
 
-    let warmth: 'warm' | 'neutral' | 'cool'
-    if (dominant.r > dominant.b + 30) warmth = 'warm'
-    else if (dominant.b > dominant.r + 30) warmth = 'cool'
-    else warmth = 'neutral'
+    let warmth: `${ImageStyleWarmth}`
+    if (dominant.r > dominant.b + 30) warmth = ImageStyleWarmth.Warm
+    else if (dominant.b > dominant.r + 30) warmth = ImageStyleWarmth.Cool
+    else warmth = ImageStyleWarmth.Neutral
 
     return {
       brightness,

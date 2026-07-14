@@ -3,6 +3,7 @@ import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import { generateStoryboard } from '@/domains/storyteller/tasks/generate-storyboard.task'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
 export async function POST(req: Request, props: { params: Promise<{ beatId: string }> }) {
   const params = await props.params
@@ -11,7 +12,7 @@ export async function POST(req: Request, props: { params: Promise<{ beatId: stri
     const { prompt, config } = await req.json()
 
     if (!prompt || !config || !config.apiKey) {
-      return NextResponse.json({ error: 'Missing prompt or API key' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.MISSING_PROMPT_OR_API_KEY }, { status: 400 })
     }
 
     // 1. Get Project ID
@@ -27,13 +28,13 @@ export async function POST(req: Request, props: { params: Promise<{ beatId: stri
       .then(rows => rows[0])
 
     if (!beatData) {
-      return NextResponse.json({ error: 'Beat/Project not found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.BEAT_PROJECT_NOT_FOUND }, { status: 404 })
     }
 
     const projectId = beatData.projectId
 
     // 2. Trigger Background Task
-    console.log(`[API] Triggering storyboard generation for beat ${beatId}`)
+    console.log(`${API_LOG_PREFIX.BEAT_IMAGE_TRIGGER} ${beatId}`)
 
     const handle = await generateStoryboard.trigger({
       beatId,
@@ -47,7 +48,7 @@ export async function POST(req: Request, props: { params: Promise<{ beatId: stri
       handleId: handle.id,
     })
   } catch (error) {
-    console.error('Error triggering beat image generation:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error(API_LOG_PREFIX.BEAT_IMAGE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
   }
 }

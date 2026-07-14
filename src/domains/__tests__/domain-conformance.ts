@@ -17,7 +17,10 @@ export const BLUEPRINT_TOP_LEVEL = new Set([
   'prompts',
   '__tests__',
   'config',
-  'db', // storyteller interim until D-1
+  // Domain-level string-artifact tables (no-magic-string convention dirs)
+  'constants',
+  // 'db' removed — the duplicate storyteller schema was deleted (PLAN-V2 6.1);
+  // the one Drizzle schema lives at src/db/schema.ts
 ])
 
 export type DomainConformance = {
@@ -33,6 +36,15 @@ export type DomainConformance = {
   servicesServerOnlyOptional?: boolean
   /** Allow React imports in core/ (legacy shared UI types) */
   coreAllowsReact?: boolean
+  /**
+   * agents/ files must import `@/shared/data/server-guard` (ARCHITECTURE §4
+   * server-only layer; the guard, not the `server-only` package — that one
+   * throws under the node default condition and would crash Mastra Studio,
+   * evals, and vitest). Ratchet: flip to true per domain as its agents/ tree
+   * is audited (loop-creator still carries a legacy LangChain market-analyst
+   * tree — guard it when that is migrated or deleted).
+   */
+  agentsGuardEnforced?: boolean
 }
 
 export const DOMAIN_CONFORMANCE: Record<string, DomainConformance> = {
@@ -40,8 +52,9 @@ export const DOMAIN_CONFORMANCE: Record<string, DomainConformance> = {
     requiresIndex: true,
     legacyTopLevel: [],
     requiredFolders: ['ui', 'state', 'io', 'core', 'services', 'agents', 'prompts'],
-    optionalFolders: ['tasks', 'config', 'db', '__tests__'],
+    optionalFolders: ['tasks', 'config', '__tests__'],
     servicesServerOnlyOptional: true,
+    agentsGuardEnforced: true,
   },
   'interior-designer': {
     requiresIndex: true,
@@ -55,13 +68,7 @@ export const DOMAIN_CONFORMANCE: Record<string, DomainConformance> = {
     requiredFolders: ['ui', 'state', 'io', 'core', 'services'],
     optionalFolders: ['tasks', '__tests__'],
   },
-  chat: {
-    requiresIndex: true,
-    legacyTopLevel: [],
-    requiredFolders: ['ui', 'state', 'core'],
-    optionalFolders: ['io', '__tests__'],
-    coreAllowsReact: true,
-  },
+  // chat moved to src/shared/chat (PLAN-V2 3.1) — platform module, not a domain.
   'loop-creator': {
     requiresIndex: true,
     legacyTopLevel: [],
@@ -74,12 +81,7 @@ export const DOMAIN_CONFORMANCE: Record<string, DomainConformance> = {
     requiredFolders: ['ui', 'state'],
     optionalFolders: ['core'],
   },
-  'deduction-puzzle-designer': {
-    requiresIndex: true,
-    legacyTopLevel: [],
-    requiredFolders: ['ui', 'state'],
-    optionalFolders: ['core', 'io'],
-  },
+  // deduction-puzzle-designer deleted (user-confirmed, PLAN-V2 6.2)
   '3d-asset-exporter': {
     requiresIndex: true,
     legacyTopLevel: [],

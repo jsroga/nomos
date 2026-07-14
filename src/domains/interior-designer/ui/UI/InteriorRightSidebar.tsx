@@ -10,35 +10,40 @@ import { Package, Settings, Layers } from 'lucide-react'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { Button } from '@/components/Button'
 
-type TabId = 'assets' | 'properties' | 'layers'
+import {
+  INTERACTION_MODE_TERRAIN,
+  InteriorSidebarTabId,
+  InteriorSidebarTabLabel,
+} from '@/domains/interior-designer/constants/asset-library'
+
+type TabId = InteriorSidebarTabId
 
 export const InteriorRightSidebar: React.FC = () => {
   const mode = useInteriorStore(state => state.mode)
-  const [activeTab, setActiveTab] = useState<TabId>('assets')
+  const [activeTab, setActiveTab] = useState<TabId>(InteriorSidebarTabId.Assets)
 
-  // Auto-switch to properties tab when in TERRAIN mode
   React.useEffect(() => {
-    if (mode === 'TERRAIN') {
-      setActiveTab('properties')
+    if (mode === INTERACTION_MODE_TERRAIN) {
+      setActiveTab(InteriorSidebarTabId.Properties)
     }
   }, [mode])
 
   const tabs: Array<{ id: TabId; label: string; icon: React.ReactNode; tourId?: string }> = [
     {
-      id: 'assets',
-      label: 'Assets',
+      id: InteriorSidebarTabId.Assets,
+      label: InteriorSidebarTabLabel.Assets,
       icon: <Package size={12} />,
       tourId: TOUR_STEP_IDS.INTERIOR_ASSETS,
     },
     {
-      id: 'properties',
-      label: mode === 'TERRAIN' ? 'Terrain' : 'Properties',
+      id: InteriorSidebarTabId.Properties,
+      label: mode === INTERACTION_MODE_TERRAIN ? InteriorSidebarTabLabel.Terrain : InteriorSidebarTabLabel.Properties,
       icon: <Settings size={12} />,
       tourId: TOUR_STEP_IDS.INTERIOR_TERRAIN,
     },
     {
-      id: 'layers',
-      label: 'Layers',
+      id: InteriorSidebarTabId.Layers,
+      label: InteriorSidebarTabLabel.Layers,
       icon: <Layers size={12} />,
     },
   ]

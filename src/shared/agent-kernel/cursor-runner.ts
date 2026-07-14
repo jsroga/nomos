@@ -14,36 +14,55 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { Agent, CursorAgentError, type RunResult, type SDKCustomTool } from '@cursor/sdk'
+import {
+  CURSOR_RUNNER_DEFAULT_ENVIRONMENT,
+  CURSOR_RUNNER_DEFAULT_MODEL,
+  CursorRunnerCliFlag,
+  CursorRunnerContentType,
+  CursorRunnerEncoding,
+  CursorRunnerEnvVar,
+  CursorRunnerErrorMessage,
+  CursorRunnerExecField,
+  CursorRunnerFabroCommand,
+  CursorRunnerFabroFlag,
+  CursorRunnerJsonSchemaType,
+  CursorRunnerPromptCopy,
+  CursorRunnerRunStatus,
+  CursorRunnerRuntime,
+  CursorRunnerSchemaDescription,
+  CursorRunnerSchemaProperty,
+  CursorRunnerStartupLog,
+  CursorRunnerStdio,
+  CursorRunnerToolDescription,
+  CursorRunnerToolMessage,
+} from '@/shared/agent-kernel/constants/cursor-runner'
 
-export type ExecuteRuntime = 'local' | 'cloud';
+export type ExecuteRuntime = CursorRunnerRuntime
 
 export interface RunExecuteOptions {
   /** Folder under src/domains/, or `domains-catalog` / `src-root`. */
-  module: string;
+  module: string
   /** Local cwd (local runtime) — defaults to process.cwd(). */
-  cwd?: string;
+  cwd?: string
   /** Cloud repo `owner/repo` (cloud runtime). */
-  repo?: string;
+  repo?: string
   /** Cloud: open a real PR from the run branch. */
-  autoCreatePR?: boolean;
+  autoCreatePR?: boolean
   /** Suppress reviewer-request notifications in CI. Default true. */
-  skipReviewerRequest?: boolean;
+  skipReviewerRequest?: boolean
   /** Cursor model id. Required for local; defaults to `composer-2.5`. */
-  model?: string;
+  model?: string
   /** Extra operator instructions appended to the /execute prompt. */
-  notes?: string;
+  notes?: string
   /** Pass `--auto-approve` to the Fabro sandbox run (unattended builds). */
-  autoApprove?: boolean;
+  autoApprove?: boolean
   /** Fabro environment id. Default `execute-docker`. */
-  environment?: string;
+  environment?: string
 }
-
-const DEFAULT_MODEL = 'composer-2.5'
-const DEFAULT_ENVIRONMENT = 'execute-docker'
 
 function execErrorStderr(err: unknown): string {
   if (err instanceof Error) {
-    if ('stderr' in err && typeof err.stderr === 'string') {
+    if (CursorRunnerExecField.Stderr in err && typeof err.stderr === 'string') {
       return err.stderr
     }
     return err.message
@@ -53,7 +72,12 @@ function execErrorStderr(err: unknown): string {
 
 function sh(cmd: string, cwd: string): { ok: true; stdout: string } | { ok: false; stderr: string } {
   try {
-    const stdout = execSync(cmd, { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 1024 * 1024 * 32 })
+    const stdout = execSync(cmd, {
+      cwd,
+      encoding: CursorRunnerEncoding.Utf8,
+      stdio: [CursorRunnerStdio.Pipe, CursorRunnerStdio.Pipe, CursorRunnerStdio.Pipe],
+      maxBuffer: 1024 * 1024 * 32,
+    })
     return { ok: true, stdout }
   } catch (err) {
     return { ok: false, stderr: execErrorStderr(err) }
@@ -62,76 +86,132 @@ function sh(cmd: string, cwd: string): { ok: true; stdout: string } | { ok: fals
 
 /** Custom tools exposed to the agent as the `custom-user-tools` MCP server. */
 function buildCustomTools(cwd: string, opts: RunExecuteOptions): Record<string, SDKCustomTool> {
-  const environment = opts.environment ?? DEFAULT_ENVIRONMENT
+  const environment = opts.environment ?? CURSOR_RUNNER_DEFAULT_ENVIRONMENT
 
   const fabroRun: SDKCustomTool = {
-    description:
-      'Launch a Fabro execute workflow run for a module in the sandbox. Returns the run id and tail of the run output. Use for isolated dark-factory builds.',
+    description: CursorRunnerToolDescription.FabroRun,
     inputSchema: {
-      type: 'object',
+      type: CursorRunnerJsonSchemaType.Object,
       properties: {
-        module: { type: 'string', description: 'src/domains/<folder>, domains-catalog, or src-root' },
-        environment: { type: 'string', description: 'Fabro environment id', default: environment },
-        autoApprove: { type: 'boolean', description: 'Pass --auto-approve (unattended build). Default false.' },
+        module: {
+          type: CursorRunnerJsonSchemaType.String,
+          description: 'src/domains/<folder>, domains-catalog, or src-root',
+        },
+        environment: {
+          type: CursorRunnerJsonSchemaType.String,
+          description: CursorRunnerSchemaDescription.FabroEnvironmentId,
+          default: environment,
+        },
+        autoApprove: {
+          type: CursorRunnerJsonSchemaType.Boolean,
+          description: CursorRunnerSchemaDescription.AutoApprove,
+        },
       },
-      required: ['module'],
+      required: [CursorRunnerSchemaProperty.Module],
     },
-    execute: (args) => {
+    execute: args => {
       const mod = String(args.module ?? '')
       const env = String(args.environment ?? environment)
-      const approve = args.autoApprove ?? opts.autoApprove ? ' --auto-approve' : ''
-      if (!mod) return { content: [{ type: 'text', text: 'fabro_run: module is required' }] }
+      const approve =
+        args.autoApprove ?? opts.autoApprove ? CursorRunnerFabroFlag.AutoApprove : ''
+      if (!mod) {
+        return {
+          content: [
+            {
+              type: CursorRunnerContentType.Text,
+              text: CursorRunnerToolMessage.FabroRunModuleRequired,
+            },
+          ],
+        }
+      }
       const r = sh(
         `fabro run .fabro/workflows/execute/workflow.toml -I module=${JSON.stringify(mod)} --environment ${env}${approve} --json`,
         cwd,
       )
-      const text = r.ok ? r.stdout : `FABRO RUN FAILED:\n${r.stderr}`
-      return { content: [{ type: 'text', text }] }
+      const text = r.ok ? r.stdout : `${CursorRunnerToolMessage.FabroRunFailed}${r.stderr}`
+      return { content: [{ type: CursorRunnerContentType.Text, text }] }
     },
   }
 
   const fabroVerify: SDKCustomTool = {
-    description:
-      'Run the module-scoped typecheck + lint gate (node scripts/fabro-verify.mjs). Reads the module from PLAN.md. Use before declaring work done; mirrors the Fabro verify stage.',
-    inputSchema: { type: 'object', properties: {} },
+    description: CursorRunnerToolDescription.FabroVerify,
+    inputSchema: { type: CursorRunnerJsonSchemaType.Object, properties: {} },
     execute: () => {
-      const r = sh('node scripts/fabro-verify.mjs', cwd)
-      const text = r.ok ? 'fabro-verify passed\n' + r.stdout : 'fabro-verify FAILED\n' + r.stderr
-      return { content: [{ type: 'text', text }] }
+      const r = sh(CursorRunnerFabroCommand.Verify, cwd)
+      const text = r.ok
+        ? `${CursorRunnerToolMessage.FabroVerifyPassed}${r.stdout}`
+        : `${CursorRunnerToolMessage.FabroVerifyFailed}${r.stderr}`
+      return { content: [{ type: CursorRunnerContentType.Text, text }] }
     },
   }
 
   const npmScript: SDKCustomTool = {
-    description:
-      'Run an npm script from package.json (e.g. "test:unit", "test:e2e", "eval", "typecheck", "lint"). Returns stdout/stderr.',
+    description: CursorRunnerToolDescription.NpmScript,
     inputSchema: {
-      type: 'object',
-      properties: { script: { type: 'string' }, args: { type: 'string', description: 'Extra args after --' } },
-      required: ['script'],
+      type: CursorRunnerJsonSchemaType.Object,
+      properties: {
+        script: { type: CursorRunnerJsonSchemaType.String },
+        args: {
+          type: CursorRunnerJsonSchemaType.String,
+          description: CursorRunnerSchemaDescription.NpmScriptArgs,
+        },
+      },
+      required: [CursorRunnerSchemaProperty.Script],
     },
-    execute: (args) => {
+    execute: args => {
       const script = String(args.script ?? '')
-      if (!script) return { content: [{ type: 'text', text: 'npm_script: script is required' }] }
+      if (!script) {
+        return {
+          content: [
+            {
+              type: CursorRunnerContentType.Text,
+              text: CursorRunnerToolMessage.NpmScriptRequired,
+            },
+          ],
+        }
+      }
       const extra = args.args ? ` -- ${String(args.args)}` : ''
       const r = sh(`npm run ${JSON.stringify(script)}${extra}`, cwd)
-      const text = r.ok ? r.stdout : `npm run ${script} FAILED\n${r.stderr}`
-      return { content: [{ type: 'text', text }] }
+      const text = r.ok
+        ? r.stdout
+        : `npm run ${script}${CursorRunnerToolMessage.NpmScriptFailedSuffix}${r.stderr}`
+      return { content: [{ type: CursorRunnerContentType.Text, text }] }
     },
   }
 
   const readArtifact: SDKCustomTool = {
-    description:
-      'Read a run artifact file (PLAN.md, DECISIONS.md, STRUCTURE.md, UX.md, SCREENSHOTS.md, RETRO.md, .local/findings/scope.md). Returns the file contents or "missing".',
+    description: CursorRunnerToolDescription.ReadArtifact,
     inputSchema: {
-      type: 'object',
-      properties: { path: { type: 'string', description: 'Repo-relative path to the artifact.' } },
-      required: ['path'],
+      type: CursorRunnerJsonSchemaType.Object,
+      properties: {
+        path: {
+          type: CursorRunnerJsonSchemaType.String,
+          description: CursorRunnerSchemaDescription.ArtifactPath,
+        },
+      },
+      required: [CursorRunnerSchemaProperty.Path],
     },
-    execute: (args) => {
+    execute: args => {
       const rel = String(args.path ?? '')
       const abs = `${cwd}/${rel}`
-      if (!existsSync(abs)) return { content: [{ type: 'text', text: `missing: ${rel}` }] }
-      return { content: [{ type: 'text', text: readFileSync(abs, 'utf8') }] }
+      if (!existsSync(abs)) {
+        return {
+          content: [
+            {
+              type: CursorRunnerContentType.Text,
+              text: `${CursorRunnerToolMessage.MissingArtifactPrefix}${rel}`,
+            },
+          ],
+        }
+      }
+      return {
+        content: [
+          {
+            type: CursorRunnerContentType.Text,
+            text: readFileSync(abs, CursorRunnerEncoding.Utf8),
+          },
+        ],
+      }
     },
   }
 
@@ -140,22 +220,22 @@ function buildCustomTools(cwd: string, opts: RunExecuteOptions): Record<string, 
 
 function buildPrompt(opts: RunExecuteOptions): string {
   const parts = [`/execute ${opts.module}`]
-  if (opts.notes) parts.push(`\nOperator notes: ${opts.notes}`)
-  if (opts.autoApprove) parts.push('\nOperator has authorized unattended builds (--auto-approve). At the Verification gate, proceed with [A] Approve & build automatically.')
+  if (opts.notes) parts.push(`${CursorRunnerPromptCopy.OperatorNotesPrefix}${opts.notes}`)
+  if (opts.autoApprove) parts.push(CursorRunnerPromptCopy.AutoApproveGate)
   return parts.join('\n')
 }
 
 /** Run the dark-factory execute loop via a Cursor SDK agent. */
 export async function runExecute(opts: RunExecuteOptions): Promise<RunResult> {
-  const apiKey = process.env.CURSOR_API_KEY
-  if (!apiKey) throw new Error('CURSOR_API_KEY is required (user key or team service-account key).')
+  const apiKey = process.env[CursorRunnerEnvVar.CursorApiKey]
+  if (!apiKey) throw new Error(CursorRunnerErrorMessage.ApiKeyRequired)
 
-  const model = { id: opts.model ?? process.env.CURSOR_MODEL ?? DEFAULT_MODEL }
+  const model = { id: opts.model ?? process.env[CursorRunnerEnvVar.CursorModel] ?? CURSOR_RUNNER_DEFAULT_MODEL }
   const prompt = buildPrompt(opts)
-  const runtime: ExecuteRuntime = opts.repo ? 'cloud' : 'local'
+  const runtime: ExecuteRuntime = opts.repo ? CursorRunnerRuntime.Cloud : CursorRunnerRuntime.Local
 
-  if (runtime === 'cloud') {
-    if (!opts.repo) throw new Error('cloud runtime requires --repo owner/repo')
+  if (runtime === CursorRunnerRuntime.Cloud) {
+    if (!opts.repo) throw new Error(CursorRunnerErrorMessage.CloudRepoRequired)
     const repoUrl = /^https?:\/\//.test(opts.repo) ? opts.repo : `https://github.com/${opts.repo}`
     await using agent = await Agent.create({
       apiKey,
@@ -198,35 +278,39 @@ async function main(): Promise<void> {
   }
   const flag = (k: string): boolean => args.includes(`--${k}`)
 
-  const module = get('module')
+  const module = get(CursorRunnerCliFlag.Module)
   if (!module) {
-    console.error('Usage: cursor-runner --module <domain-folder|domains-catalog|src-root> [--cloud --repo owner/repo] [--auto-approve] [--model id] [--notes ...]')
+    console.error(
+      'Usage: cursor-runner --module <domain-folder|domains-catalog|src-root> [--cloud --repo owner/repo] [--auto-approve] [--model id] [--notes ...]',
+    )
     process.exit(64)
   }
 
   try {
     const result = await runExecute({
       module,
-      cwd: get('cwd'),
-      repo: get('repo'),
-      autoCreatePR: flag('auto-create-pr'),
-      model: get('model'),
-      notes: get('notes'),
-      autoApprove: flag('auto-approve'),
-      environment: get('environment'),
+      cwd: get(CursorRunnerCliFlag.Cwd),
+      repo: get(CursorRunnerCliFlag.Repo),
+      autoCreatePR: flag(CursorRunnerCliFlag.AutoCreatePr),
+      model: get(CursorRunnerCliFlag.Model),
+      notes: get(CursorRunnerCliFlag.Notes),
+      autoApprove: flag(CursorRunnerCliFlag.AutoApprove),
+      environment: get(CursorRunnerCliFlag.Environment),
     })
     console.log(JSON.stringify({ id: result.id, status: result.status, result: result.result }, null, 2))
-    process.exit(result.status === 'finished' ? 0 : 2)
+    process.exit(result.status === CursorRunnerRunStatus.Finished ? 0 : 2)
   } catch (err) {
     if (err instanceof CursorAgentError) {
-      console.error(`startup failed: ${err.message}, retryable=${err.isRetryable}`)
+      console.error(
+        `${CursorRunnerStartupLog.StartupFailedPrefix}${err.message}${CursorRunnerStartupLog.RetryableSuffix}${err.isRetryable}`,
+      )
       process.exit(1)
     }
     throw err
   }
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error(err)
   process.exit(1)
 })

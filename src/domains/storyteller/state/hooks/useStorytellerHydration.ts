@@ -9,6 +9,11 @@ import {
   readCastFromPlan,
 } from '@/domains/storyteller/core/formatting/StoryPlanFields'
 import { recordArrayFromJson, recordFromJson, stringRecordFromJson } from '@/shared/data/json-guards'
+import {
+  HYDRATION_BIBLE_CATEGORIES,
+  HYDRATION_PLAN_FIELDS,
+  StorytellerHydrationLog,
+} from '@/domains/storyteller/state/constants/hydration'
 
 interface HydratableProject {
   id?: string
@@ -22,36 +27,6 @@ interface HydrationParams {
   setStoryDecisions: React.Dispatch<React.SetStateAction<Record<string, string>>>
 }
 
-const PLAN_FIELDS = [
-  'soundtracks',
-  'worldRules',
-  'factions',
-  'keyCharacters',
-  'plotTwists',
-  'inspirations',
-  'worldDescription',
-  'genre',
-  'tone',
-  'sequences',
-  'seasonStructure',
-  'centralTheme',
-  'masterPrompt',
-  'moodImages',
-  'executiveSummary',
-  'episodeRoadmap',
-] as const
-
-const BIBLE_CATEGORIES = [
-  'General',
-  'Setting',
-  'History',
-  'Magic',
-  'Factions',
-  'Technology',
-  'Culture',
-  'updatedFields',
-] as const
-
 function mergePlanFields(
   target: Record<string, unknown>,
   source: Record<string, unknown> | undefined,
@@ -59,7 +34,7 @@ function mergePlanFields(
 ): void {
   if (!source) return
 
-  for (const field of PLAN_FIELDS) {
+  for (const field of HYDRATION_PLAN_FIELDS) {
     const value = source[field]
     if (value === undefined || value === null) continue
     if (onlyIfMissing && target[field] !== undefined && target[field] !== null) continue
@@ -109,7 +84,7 @@ export function useStorytellerHydration({
     const bible = recordFromJson(rawBible)
     const nestedStoryPlan = recordFromJson(bible.storyPlan)
 
-    console.log('🔍 [StorytellerPage] Hydration Check:', {
+    console.log(StorytellerHydrationLog.Check, {
       hasRawBible: Object.keys(rawBible).length > 0,
       hasRawStoryPlan: Object.keys(rawStoryPlan).length > 0,
       rawStoryPlanKeys: Object.keys(rawStoryPlan),
@@ -122,7 +97,7 @@ export function useStorytellerHydration({
 
     if (Object.keys(rawBible).length === 0 && Object.keys(rawStoryPlan).length === 0) return
 
-    console.log('🔄 [StorytellerPage] Hydrating state from project...')
+    console.log(StorytellerHydrationLog.Hydrating)
 
     const userDecisions = stringRecordFromJson(bible.userDecisions)
     if (Object.keys(userDecisions).length > 0) {
@@ -133,7 +108,7 @@ export function useStorytellerHydration({
 
     mergePlanFields(initialPlan, rawStoryPlan, false)
 
-    for (const cat of BIBLE_CATEGORIES) {
+    for (const cat of HYDRATION_BIBLE_CATEGORIES) {
       mergePlanFields(initialPlan, recordFromJson(bible[cat]), true)
     }
 
@@ -151,9 +126,9 @@ export function useStorytellerHydration({
     }
 
     setStoryPlan(prev => applyUpdatesToStoryPlan(prev, initialPlan))
-    console.log('✅ [StorytellerPage] Hydrated storyPlan keys:', Object.keys(initialPlan))
+    console.log(StorytellerHydrationLog.HydratedKeys, Object.keys(initialPlan))
     console.log(
-      '✅ [StorytellerPage] worldRules count:',
+      StorytellerHydrationLog.WorldRulesCount,
       recordArrayFromJson(initialPlan.worldRules).length
     )
   }, [currentProject, hydrationSignature, setStoryDecisions, setStoryPlan])

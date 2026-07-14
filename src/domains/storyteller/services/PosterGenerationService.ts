@@ -1,7 +1,20 @@
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
-
-// Define local storage keys
+import { ContentType } from '@/shared/data/constants/protocol'
+import {
+  PosterGenerationError,
+  PosterGenerationLog,
+  PosterGenerationType,
+  PosterHttpMethod,
+  PosterOperationDetail,
+  PosterOperationLabel,
+  PosterOperationStatus,
+  PosterOperationTypeId,
+  PosterPersistField,
+  PosterStorageKeyPrefix,
+  PosterTriggerStatus,
+  PosterUnknownLabel,
+} from '@/domains/storyteller/services/constants/poster-generation-service'
 
 interface PosterGenRunState {
   runId: string
@@ -9,7 +22,7 @@ interface PosterGenRunState {
   episodeId: string
   prompt: string
   startedAt: string
-  type?: 'poster' | 'storyboard'
+  type?: `${PosterGenerationType}`
 }
 
 export class PosterGenerationService {
@@ -29,22 +42,22 @@ export class PosterGenerationService {
     config: any,
     onComplete?: (url: string) => void
   ): Promise<string | null> {
-    console.log(`Starting storyboard generation for episode ${episodeId}`)
+    console.log(`${PosterGenerationLog.StoryboardStart}${episodeId}`)
 
-    const opId = `storyboard-gen-${episodeId}`
+    const opId = `${PosterStorageKeyPrefix.StoryboardGen}${episodeId}`
 
     useGlobalStatusStore.getState().addOperation({
       id: opId,
-      type: 'story-agent',
-      label: 'Generating Storyboard',
-      details: 'Creating visual script...',
-      status: 'in-progress',
+      type: PosterOperationTypeId.StoryAgent,
+      label: PosterOperationLabel.GeneratingStoryboard,
+      details: PosterOperationDetail.CreatingVisualScript,
+      status: PosterOperationStatus.InProgress,
     })
 
     try {
       const response = await fetch(`/api/storyteller/episodes/${episodeId}/generate-combined`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: PosterHttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify({
           beats: beatsPayload,
           config,
@@ -54,7 +67,7 @@ export class PosterGenerationService {
       const triggerData = await response.json()
 
       if (!response.ok || !triggerData.handleId) {
-        throw new Error(triggerData.error || 'Failed to trigger storyboard generation task')
+        throw new Error(triggerData.error || PosterGenerationError.StoryboardTriggerFailed)
       }
 
       const runState: PosterGenRunState = {
@@ -63,7 +76,7 @@ export class PosterGenerationService {
         episodeId,
         prompt,
         startedAt: new Date().toISOString(),
-        type: 'storyboard',
+        type: PosterGenerationType.Storyboard,
       }
 
       if (typeof window !== 'undefined') {
@@ -74,7 +87,7 @@ export class PosterGenerationService {
 
       return triggerData.handleId
     } catch (error) {
-      console.error('Storyboard generation error:', error)
+      console.error(PosterGenerationLog.StoryboardError, error)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
     }
@@ -90,22 +103,22 @@ export class PosterGenerationService {
     config: any,
     onComplete?: (url: string) => void
   ): Promise<string | null> {
-    console.log(`Starting poster generation for episode ${episodeId}`)
+    console.log(`${PosterGenerationLog.PosterStart}${episodeId}`)
 
-    const opId = `poster-gen-${episodeId}`
+    const opId = `${PosterStorageKeyPrefix.PosterGen}${episodeId}`
 
     useGlobalStatusStore.getState().addOperation({
       id: opId,
-      type: 'story-agent', // or 'portrait-gen' equivalent
-      label: 'Generating Episode Poster',
-      details: 'Creating cinematic poster via Midjourney...',
-      status: 'in-progress',
+      type: PosterOperationTypeId.StoryAgent,
+      label: PosterOperationLabel.GeneratingEpisodePoster,
+      details: PosterOperationDetail.CreatingCinematicPoster,
+      status: PosterOperationStatus.InProgress,
     })
 
     try {
       const response = await fetch(`/api/storyteller/episodes/${episodeId}/generate-poster`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: PosterHttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify({
           prompt,
           config,
@@ -115,7 +128,7 @@ export class PosterGenerationService {
       const triggerData = await response.json()
 
       if (!response.ok || !triggerData.handleId) {
-        throw new Error(triggerData.error || 'Failed to trigger poster generation task')
+        throw new Error(triggerData.error || PosterGenerationError.PosterTriggerFailed)
       }
 
       const runState: PosterGenRunState = {
@@ -124,7 +137,7 @@ export class PosterGenerationService {
         episodeId,
         prompt,
         startedAt: new Date().toISOString(),
-        type: 'poster',
+        type: PosterGenerationType.Poster,
       }
 
       if (typeof window !== 'undefined') {
@@ -135,7 +148,7 @@ export class PosterGenerationService {
 
       return triggerData.handleId
     } catch (error) {
-      console.error('Poster generation error:', error)
+      console.error(PosterGenerationLog.PosterError, error)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
     }
@@ -154,7 +167,7 @@ export class PosterGenerationService {
     }
 
     console.log(
-      `📡 Starting status polling for run: ${runState.runId} (${runState.type || 'unknown'})`
+      `${PosterGenerationLog.PollingStart}${runState.runId} (${runState.type || PosterUnknownLabel.Unknown})`
     )
 
     let consecutiveErrors = 0
@@ -170,7 +183,7 @@ export class PosterGenerationService {
         if (statusResponse.status === 404) {
           consecutiveErrors++
           if (consecutiveErrors > 10) {
-            console.warn('Poster generation run not found, clearing state')
+            console.warn(PosterGenerationLog.RunNotFound)
             this.clearRunState(runState, opId)
             return
           }
@@ -183,33 +196,32 @@ export class PosterGenerationService {
         lastStatus = statusData.status
 
         useGlobalStatusStore.getState().updateOperation(opId, {
-          details: `Status: ${statusData.status}`,
+          details: `${PosterOperationDetail.StatusPrefix}${statusData.status}`,
         })
 
-        if (statusData.status === 'COMPLETED') {
-          console.log('✅ Poster generation completed:', statusData.output)
+        if (statusData.status === PosterTriggerStatus.Completed) {
+          console.log(PosterGenerationLog.Completed, statusData.output)
 
           const imageUrl = statusData.output?.imageUrl
           if (imageUrl) {
             await this.handleCompletion(runState, imageUrl, opId, onComplete)
           } else {
-            console.warn('Completed but no image URL found')
+            console.warn(PosterGenerationLog.NoImageUrl)
             this.clearRunState(runState, opId)
           }
           return
         }
 
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          console.error('❌ Poster generation failed:', statusData.error || statusData.status)
+          console.error(PosterGenerationLog.Failed, statusData.error || statusData.status)
           this.clearRunState(runState, opId)
           return
         }
 
-        // Adaptive polling
         const nextInterval = statusChanged ? 2000 : POLLING_INTERVALS.SLOW
         this.scheduleNextPoll(runState.runId, poll, nextInterval)
       } catch (error) {
-        console.error('Status polling error:', error)
+        console.error(PosterGenerationLog.PollingError, error)
         consecutiveErrors++
         const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
         this.scheduleNextPoll(runState.runId, poll, backoffInterval)
@@ -238,37 +250,31 @@ export class PosterGenerationService {
     onComplete?: (url: string) => void
   ) {
     try {
-      console.log('Poster generated successfully, persisting to DB...')
+      console.log(PosterGenerationLog.Persisting)
 
-      // 1. Persist to Database immediately
       try {
         const payload =
-          runState.type === 'storyboard'
-            ? { storyboardUrl: imageUrl }
-            : { posterUrl: imageUrl, posterPrompt: runState.prompt }
+          runState.type === PosterGenerationType.Storyboard
+            ? { [PosterPersistField.StoryboardUrl]: imageUrl }
+            : {
+                [PosterPersistField.PosterUrl]: imageUrl,
+                [PosterPersistField.PosterPrompt]: runState.prompt,
+              }
 
         await fetch(`/api/storyteller/episodes/${runState.episodeId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          method: PosterHttpMethod.Patch,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(payload),
         })
         console.log(
-          `✅ ${runState.type === 'storyboard' ? 'Storyboard' : 'Poster'} URL persisted to DB`
+          runState.type === PosterGenerationType.Storyboard
+            ? PosterGenerationLog.PersistedStoryboard
+            : PosterGenerationLog.PersistedPoster
         )
       } catch (dbErr) {
-        console.error(`❌ Failed to persist ${runState.type} URL:`, dbErr)
-      }
-
-      // Dispatch custom event to notify UI (optional, if components need it)
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('poster-generation-complete', {
-            detail: {
-              episodeId: runState.episodeId,
-              imageUrl: imageUrl,
-              prompt: runState.prompt,
-            },
-          })
+        console.error(
+          `${PosterGenerationLog.PersistFailed}${runState.type} URL:`,
+          dbErr
         )
       }
 
@@ -276,7 +282,7 @@ export class PosterGenerationService {
         onComplete(imageUrl)
       }
     } catch (error) {
-      console.error('Error handling poster completion:', error)
+      console.error(PosterGenerationLog.CompletionError, error)
     } finally {
       this.clearRunState(runState, opId)
     }
@@ -286,19 +292,16 @@ export class PosterGenerationService {
    * Clear run state and stop polling
    */
   private clearRunState(runState: PosterGenRunState, opId: string) {
-    // Stop polling (now uses timeouts instead of intervals)
     const timeout = this.pollingIntervals.get(runState.runId)
     if (timeout) {
       clearTimeout(timeout)
       this.pollingIntervals.delete(runState.runId)
     }
 
-    // Clear localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem(opId)
     }
 
-    // Clear UI status
     useGlobalStatusStore.getState().removeOperation(opId)
   }
 
@@ -307,13 +310,11 @@ export class PosterGenerationService {
    */
   resumePendingGenerations(
     projectId: string,
-    onComplete?: (url: string, episodeId: string, type?: 'poster' | 'storyboard') => void
+    onComplete?: (url: string, episodeId: string, type?: `${PosterGenerationType}`) => void
   ) {
     if (typeof window === 'undefined') return
 
-    // Scan all local storage keys - simplified for now since we use poster-gen-episodeId
-    // We iterate through all keys to find relevant ones
-    const prefix = 'poster-gen-'
+    const prefix = PosterStorageKeyPrefix.PosterGen
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
@@ -323,36 +324,31 @@ export class PosterGenerationService {
           if (!data) continue
 
           const runState: PosterGenRunState = JSON.parse(data)
-          // Basic check to see if this belongs to project/episode context - tricky if we don't store project ID in LS key
-          // But we store it in runState
           if (runState.projectId !== projectId) continue
 
           if (runState.runId) {
-            console.log('Resuming poster generation polling for:', runState.runId)
+            console.log(PosterGenerationLog.ResumingPolling, runState.runId)
 
             const label =
-              runState.type === 'poster'
-                ? 'Generating Episode Poster (resumed)'
-                : 'Generating Storyboard (resumed)'
+              runState.type === PosterGenerationType.Poster
+                ? PosterOperationLabel.GeneratingEpisodePosterResumed
+                : PosterOperationLabel.GeneratingStoryboardResumed
 
-            // Re-add status indicators
             useGlobalStatusStore.getState().addOperation({
-              id: key, // key is the opId
-              type: 'story-agent',
+              id: key,
+              type: PosterOperationTypeId.StoryAgent,
               label: label,
-              details: 'Resuming generation...',
-              status: 'in-progress',
+              details: PosterOperationDetail.ResumingGeneration,
+              status: PosterOperationStatus.InProgress,
             })
 
-            // Start polling
-            // Wrap onComplete to match signature if needed
             const completionHandler = onComplete
               ? (url: string) => onComplete(url, runState.episodeId, runState.type)
               : undefined
             this.startPolling(runState, key, completionHandler)
           }
         } catch (_e) {
-          console.warn('Failed to parse poster generation run state:', key)
+          console.warn(PosterGenerationLog.ParseStateFailed, key)
         }
       }
     }

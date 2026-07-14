@@ -2,6 +2,11 @@
 
 import React from 'react'
 import { useInteriorStore } from '@/domains/interior-designer'
+import { GROUND_SURFACE_TYPES } from '@/domains/interior-designer/state/interior-store-constants'
+import {
+  INTERACTION_MODE_TERRAIN,
+} from '@/domains/interior-designer/constants/interaction-modes'
+import { SurfaceTypeValue } from '@/domains/interior-designer/constants/terrain-defaults'
 import { Square, Trash2, GitCommit, BrickWall, Box, Mountain, Droplets } from 'lucide-react'
 import { cn } from '@/shared/data/utils'
 import { Button } from '@/components/Button'
@@ -95,12 +100,12 @@ export const LayerPanel: React.FC = () => {
   const removeObject = useInteriorStore(state => state.removeObject)
 
   // Derived groups
-  const terrain = surfaces.filter(s => ['grass', 'dirt', 'sand', 'rock', 'mars'].includes(s.type))
-  const water = surfaces.filter(s => s.type === 'water')
-  const roads = surfaces.filter(s => s.type === 'road' || s.isPath)
-  const wallSurfaces = surfaces.filter(s => s.type === 'wall')
+  const terrain = surfaces.filter(s => GROUND_SURFACE_TYPES.includes(s.type))
+  const water = surfaces.filter(s => s.type === SurfaceTypeValue.Water)
+  const roads = surfaces.filter(s => s.type === SurfaceTypeValue.Road || s.isPath)
+  const wallSurfaces = surfaces.filter(s => s.type === SurfaceTypeValue.Wall)
 
-  if (mode === 'TERRAIN') {
+  if (mode === INTERACTION_MODE_TERRAIN) {
     return (
       <div className="h-full flex flex-col bg-transparent">
         <div className="flex-1 overflow-y-auto pb-0">
@@ -345,7 +350,7 @@ export const LayerPanel: React.FC = () => {
             {terrain.length === 0 ? (
               <SidebarEmptyState message="No terrain items" />
             ) : (
-              terrain.map((s, i) => (
+              terrain.map(s => (
                 <LayerItem
                   key={s.id}
                   id={s.id}

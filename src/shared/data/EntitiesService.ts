@@ -7,25 +7,33 @@
 
 import { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
+import {
+  EntitiesServiceErrorCode,
+  EntitiesServiceErrorName,
+  EntitiesServiceLog,
+} from '@/shared/data/constants/entities-service'
+import { ApiErrorMessage, AppModuleId, GameEntityKind } from '@/shared/data/constants/protocol'
 
 // ============================================
 // SCHEMAS
 // ============================================
 
 export const entityTypeSchema = z.enum([
-  'character',
-  'location',
-  'mechanic',
-  'faction',
-  'item',
-  'quest',
+  GameEntityKind.Character,
+  GameEntityKind.Location,
+  GameEntityKind.Mechanic,
+  GameEntityKind.Faction,
+  GameEntityKind.Item,
+  GameEntityKind.Quest,
 ])
 
 export const sourceDomainSchema = z.enum([
-  'storyteller',
-  'loop-creator',
-  'interior-designer',
-  'world-building',
+  AppModuleId.Storyteller,
+  AppModuleId.LoopCreator,
+  AppModuleId.InteriorDesigner,
+  AppModuleId.WorldBuilding,
 ])
 
 export const listEntitiesSchema = z.object({
@@ -103,21 +111,24 @@ export class EntitiesService {
     // Verify project access via RLS
     const hasAccess = await this.verifyProjectAccess(context.supabase, validated.projectId)
     if (!hasAccess) {
-      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        ApiErrorMessage.PROJECT_NOT_FOUND,
+        EntitiesServiceErrorCode.NotFound
+      )
     }
 
     let query = context.supabase
-      .from('game_entities')
+      .from(DB_TABLE.GAME_ENTITIES)
       .select('*')
-      .eq('project_id', validated.projectId)
-      .order('created_at', { ascending: false })
+      .eq(DB_COLUMN.PROJECT_ID, validated.projectId)
+      .order(DB_COLUMN.CREATED_AT, { ascending: false })
 
     if (validated.entityType) {
-      query = query.eq('entity_type', validated.entityType)
+      query = query.eq(DB_COLUMN.ENTITY_TYPE, validated.entityType)
     }
 
     if (validated.sourceDomain) {
-      query = query.eq('source_domain', validated.sourceDomain)
+      query = query.eq(DB_COLUMN.SOURCE_DOMAIN, validated.sourceDomain)
     }
 
     if (validated.search) {
@@ -127,8 +138,11 @@ export class EntitiesService {
     const { data, error } = await query
 
     if (error) {
-      console.error('[EntitiesService] Error fetching entities:', error)
-      throw new ServiceError('Failed to fetch entities', 'INTERNAL_ERROR')
+      console.error(EntitiesServiceLog.FetchError, error)
+      throw new ServiceError(
+        API_ERROR.FAILED_FETCH_ENTITIES,
+        EntitiesServiceErrorCode.InternalError
+      )
     }
 
     return { entities: data || [] }
@@ -139,19 +153,22 @@ export class EntitiesService {
    */
   async get(entityId: string, context: ServiceContext): Promise<{ entity: GameEntity }> {
     const { data, error } = await context.supabase
-      .from('game_entities')
+      .from(DB_TABLE.GAME_ENTITIES)
       .select('*')
-      .eq('id', entityId)
+      .eq(DB_COLUMN.ID, entityId)
       .single()
 
     if (error || !data) {
-      throw new ServiceError('Entity not found', 'NOT_FOUND')
+      throw new ServiceError(API_ERROR.ENTITY_NOT_FOUND, EntitiesServiceErrorCode.NotFound)
     }
 
     // Verify project access
     const hasAccess = await this.verifyProjectAccess(context.supabase, data.project_id)
     if (!hasAccess) {
-      throw new ServiceError('Entity not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        API_ERROR.ENTITY_ACCESS_DENIED,
+        EntitiesServiceErrorCode.NotFound
+      )
     }
 
     return { entity: data }
@@ -166,11 +183,14 @@ export class EntitiesService {
     // Verify project access via RLS
     const hasAccess = await this.verifyProjectAccess(context.supabase, validated.projectId)
     if (!hasAccess) {
-      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        ApiErrorMessage.PROJECT_NOT_FOUND,
+        EntitiesServiceErrorCode.NotFound
+      )
     }
 
     const { data, error } = await context.supabase
-      .from('game_entities')
+      .from(DB_TABLE.GAME_ENTITIES)
       .insert({
         project_id: validated.projectId,
         user_id: context.userId,
@@ -188,8 +208,11 @@ export class EntitiesService {
       .single()
 
     if (error) {
-      console.error('[EntitiesService] Error creating entity:', error)
-      throw new ServiceError('Failed to create entity', 'INTERNAL_ERROR')
+      console.error(EntitiesServiceLog.CreateError, error)
+      throw new ServiceError(
+        API_ERROR.FAILED_CREATE_ENTITY,
+        EntitiesServiceErrorCode.InternalError
+      )
     }
 
     return { entity: data }
@@ -217,15 +240,18 @@ export class EntitiesService {
     if (validated.usedInDomains !== undefined) updateData.used_in_domains = validated.usedInDomains
 
     const { data, error } = await context.supabase
-      .from('game_entities')
+      .from(DB_TABLE.GAME_ENTITIES)
       .update(updateData)
-      .eq('id', entityId)
+      .eq(DB_COLUMN.ID, entityId)
       .select()
       .single()
 
     if (error) {
-      console.error('[EntitiesService] Error updating entity:', error)
-      throw new ServiceError('Failed to update entity', 'INTERNAL_ERROR')
+      console.error(EntitiesServiceLog.UpdateError, error)
+      throw new ServiceError(
+        API_ERROR.FAILED_UPDATE_ENTITY,
+        EntitiesServiceErrorCode.InternalError
+      )
     }
 
     return { entity: data }
@@ -238,11 +264,17 @@ export class EntitiesService {
     // First verify the entity exists and user has access
     await this.get(entityId, context)
 
-    const { error } = await context.supabase.from('game_entities').delete().eq('id', entityId)
+    const { error } = await context.supabase
+      .from(DB_TABLE.GAME_ENTITIES)
+      .delete()
+      .eq(DB_COLUMN.ID, entityId)
 
     if (error) {
-      console.error('[EntitiesService] Error deleting entity:', error)
-      throw new ServiceError('Failed to delete entity', 'INTERNAL_ERROR')
+      console.error(EntitiesServiceLog.DeleteError, error)
+      throw new ServiceError(
+        API_ERROR.FAILED_DELETE_ENTITY,
+        EntitiesServiceErrorCode.InternalError
+      )
     }
 
     return { success: true }
@@ -253,9 +285,9 @@ export class EntitiesService {
    */
   private async verifyProjectAccess(supabase: SupabaseClient, projectId: string): Promise<boolean> {
     const { data, error } = await supabase
-      .from('projects')
-      .select('id')
-      .eq('id', projectId)
+      .from(DB_TABLE.PROJECTS)
+      .select(DB_COLUMN.ID)
+      .eq(DB_COLUMN.ID, projectId)
       .single()
 
     return !error && !!data
@@ -266,21 +298,16 @@ export class EntitiesService {
 // ERROR HANDLING
 // ============================================
 
-export type ServiceErrorCode =
-  | 'NOT_FOUND'
-  | 'UNAUTHORIZED'
-  | 'VALIDATION_ERROR'
-  | 'INTERNAL_ERROR'
-  | 'RATE_LIMITED'
+export type ServiceErrorCode = `${EntitiesServiceErrorCode}`
 
 export class ServiceError extends Error {
   constructor(
     message: string,
     public code: ServiceErrorCode,
-    public details?: any
+    public details?: unknown
   ) {
     super(message)
-    this.name = 'ServiceError'
+    this.name = EntitiesServiceErrorName.ServiceError
   }
 }
 

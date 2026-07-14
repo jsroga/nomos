@@ -2,6 +2,13 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { useErrorStore } from '@/shared/errors/useErrorStore'
+import {
+  ErrorBoundaryLog,
+  ErrorBoundaryMessage,
+  ErrorBoundarySource,
+  HmrErrorFragment,
+} from '@/components/ErrorBoundary/constants/error-boundary'
+import { DomEventType } from '@/shared/data/constants/protocol'
 
 interface Props {
   children: ReactNode
@@ -31,8 +38,8 @@ class ErrorBoundaryClass extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught error:', error, errorInfo)
-    addErrorToStore(error, 'React Error Boundary')
+    console.error(ErrorBoundaryLog.CaughtError, error, errorInfo)
+    addErrorToStore(error, ErrorBoundarySource.React)
   }
 
   public render() {
@@ -64,25 +71,25 @@ export function useGlobalErrorListener() {
   React.useEffect(() => {
     const handleError = (event: ErrorEvent) => {
       // Skip Next.js HMR errors in dev
-      if (event.message?.includes('hmr') || event.message?.includes('HMR')) {
+      if (event.message?.includes(HmrErrorFragment.Lower) || event.message?.includes(HmrErrorFragment.Upper)) {
         return
       }
 
       useErrorStore.getState().addError({
-        message: event.message || 'Unknown error',
+        message: event.message || ErrorBoundaryMessage.Unknown,
         stack: event.error?.stack,
         source: event.filename
           ? `${event.filename}:${event.lineno}:${event.colno}`
-          : 'Window Error',
+          : ErrorBoundarySource.Window,
       })
     }
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const error = event.reason
       useErrorStore.getState().addError({
-        message: error?.message || String(error) || 'Unhandled Promise Rejection',
+        message: error?.message || String(error) || ErrorBoundaryMessage.UnhandledRejection,
         stack: error?.stack,
-        source: 'Unhandled Promise Rejection',
+        source: ErrorBoundarySource.UnhandledRejection,
       })
     }
 
@@ -94,7 +101,7 @@ export function useGlobalErrorListener() {
 
       // Skip our own error boundary logs to avoid loops
       const firstArg = String(args[0] || '')
-      if (firstArg.includes('ErrorBoundary caught')) {
+      if (firstArg.includes(ErrorBoundaryLog.CaughtPrefix)) {
         return
       }
 
@@ -131,18 +138,18 @@ export function useGlobalErrorListener() {
       }
 
       useErrorStore.getState().addError({
-        message: message || 'Console error',
+        message: message || ErrorBoundaryMessage.ConsoleError,
         stack,
-        source: 'console.error',
+        source: ErrorBoundarySource.ConsoleError,
       })
     }
 
-    window.addEventListener('error', handleError)
-    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+    window.addEventListener(DomEventType.Error, handleError)
+    window.addEventListener(DomEventType.UnhandledRejection, handleUnhandledRejection)
 
     return () => {
-      window.removeEventListener('error', handleError)
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+      window.removeEventListener(DomEventType.Error, handleError)
+      window.removeEventListener(DomEventType.UnhandledRejection, handleUnhandledRejection)
       console.error = originalConsoleError
     }
   }, [])

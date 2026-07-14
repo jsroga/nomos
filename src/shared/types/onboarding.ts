@@ -1,11 +1,7 @@
 import type { TourStep } from '@/shared/tours/tour-types'
+import { ModuleIdKey, MODULE_ID_VALUES } from '@/shared/types/constants/onboarding'
 
-export type ModuleId =
-  | 'storyteller'
-  | 'interior-designer'
-  | 'loop-creator'
-  | 'world-gen'
-  | 'asset-exporter'
+export type ModuleId = `${ModuleIdKey}`
 
 export interface ModuleOnboardingState {
   completed: boolean
@@ -21,22 +17,14 @@ export interface OnboardingState {
 export const DEFAULT_ONBOARDING_STATE: OnboardingState = {
   skipAll: false,
   modules: {
-    storyteller: { completed: false, skipped: false },
-    'interior-designer': { completed: false, skipped: false },
-    'loop-creator': { completed: false, skipped: false },
-    'world-gen': { completed: false, skipped: false },
-    'asset-exporter': { completed: false, skipped: false },
+    [ModuleIdKey.Storyteller]: { completed: false, skipped: false },
+    [ModuleIdKey.InteriorDesigner]: { completed: false, skipped: false },
+    [ModuleIdKey.LoopCreator]: { completed: false, skipped: false },
+    [ModuleIdKey.WorldGen]: { completed: false, skipped: false },
+    [ModuleIdKey.AssetExporter]: { completed: false, skipped: false },
   },
   routes: {}, // Per-route onboarding state
 }
-
-const MODULE_ID_VALUES: ModuleId[] = [
-  'storyteller',
-  'interior-designer',
-  'loop-creator',
-  'world-gen',
-  'asset-exporter',
-]
 
 const MODULE_IDS = new Set<string>(MODULE_ID_VALUES)
 

@@ -4,8 +4,9 @@ import { episodes } from '@/db'
 import { eq } from 'drizzle-orm'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { storyPlanRecordFromJson } from '@/domains/storyteller/core/entities/story-plan-wire'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
-export async function GET(req: Request, props: { params: Promise<{ episodeId: string }> }) {
+export async function GET(_req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
   try {
     const { episodeId } = params
@@ -14,13 +15,13 @@ export async function GET(req: Request, props: { params: Promise<{ episodeId: st
     })
 
     if (!episode) {
-      return NextResponse.json({ error: 'Episode not found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.EPISODE_NOT_FOUND }, { status: 404 })
     }
 
     return NextResponse.json(episode)
   } catch (error) {
-    console.error('Error fetching episode:', error)
-    return NextResponse.json({ error: 'Failed to fetch episode' }, { status: 500 })
+    console.error(API_LOG_PREFIX.EPISODE_FETCH_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_FETCH_EPISODE }, { status: 500 })
   }
 }
 
@@ -32,7 +33,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
     const { posterUrl, storyboardUrl, ...rest } = body
 
     // Start with whatever is in rest
-    const updateData: any = { ...rest }
+    const updateData: Record<string, unknown> = { ...rest }
 
     // Explicitly map posterUrl to match schema key (though usually same)
     if (posterUrl) {
@@ -89,7 +90,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
 
     // Ensure we actually have something to update
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ message: 'No updates provided' })
+      return NextResponse.json({ message: API_ERROR.NO_UPDATES_PROVIDED })
     }
 
     const [updatedEpisode] = await db
@@ -100,19 +101,19 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
 
     return NextResponse.json(updatedEpisode)
   } catch (error) {
-    console.error('Error updating episode:', error)
-    return NextResponse.json({ error: 'Failed to update episode' }, { status: 500 })
+    console.error(API_LOG_PREFIX.EPISODE_UPDATE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_UPDATE_EPISODE }, { status: 500 })
   }
 }
 
-export async function DELETE(req: Request, props: { params: Promise<{ episodeId: string }> }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
   try {
     const { episodeId } = params
     await db.delete(episodes).where(eq(episodes.id, episodeId))
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting episode:', error)
-    return NextResponse.json({ error: 'Failed to delete episode' }, { status: 500 })
+    console.error(API_LOG_PREFIX.EPISODE_DELETE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_DELETE_EPISODE }, { status: 500 })
   }
 }

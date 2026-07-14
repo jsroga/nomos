@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  ContentType,
+  HttpMethod,
+  MidjourneyAccountMode,
+  MidjourneyBotType,
+  MidjourneyButtonLabel,
+  MidjourneyTaskStatus,
+  MidjourneyUpsampleId,
+} from '@/shared/data/constants/protocol'
 
-// Poll for task completion
 async function pollForCompletion(
   taskId: string,
   apiKey: string,
   maxAttempts: number = 120
-): Promise<any> {
+): Promise<Record<string, unknown>> {
   let attempts = 0
 
   while (attempts < maxAttempts) {
@@ -14,7 +23,7 @@ async function pollForCompletion(
 
     try {
       const fetchResponse = await fetch(`https://api.cometapi.com/mj/task/${taskId}/fetch`, {
-        method: 'GET',
+        method: HttpMethod.Get,
         headers: { Authorization: `Bearer ${apiKey}` },
       })
 
@@ -29,35 +38,33 @@ async function pollForCompletion(
       const result = fetchData.result || fetchData
       const status = result.status
 
-      if (status === 'SUCCESS') {
-        console.log('Task completed successfully')
+      if (status === MidjourneyTaskStatus.Success) {
+        console.log(API_LOG_PREFIX.MJ_TASK_COMPLETED)
         return result
-      } else if (status === 'FAILED') {
-        throw new Error(result.failReason || 'Task failed')
+      } else if (status === MidjourneyTaskStatus.Failed) {
+        const failReason = typeof result.failReason === 'string' ? result.failReason : API_ERROR.MJ_TASK_FAILED
+        throw new Error(failReason)
       }
     } catch (e) {
-      console.warn('Polling fetch error:', e)
+      console.warn(API_LOG_PREFIX.MJ_POLL_ERROR, e)
     }
 
     attempts++
   }
 
-  throw new Error('Task timeout - Status did not reach SUCCESS')
+  throw new Error(API_ERROR.MJ_TASK_TIMEOUT)
 }
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, {}: AuthenticatedRequest) => {
     const body = await request.json()
     const { imageUrl, imageBase64, prompt, apiKey, styleReferenceUrls } = body
 
     if ((!imageUrl && !imageBase64) || !apiKey) {
-      return NextResponse.json(
-        { error: 'Missing required parameters (imageUrl/imageBase64, apiKey)' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: API_ERROR.MISSING_UPSCALE_PARAMS }, { status: 400 })
     }
 
-    console.log('Starting Midjourney upscale. Has Base64:', !!imageBase64, 'Has URL:', !!imageUrl)
+    console.log(API_LOG_PREFIX.MJ_STARTING_UPSCALE, !!imageBase64, API_LOG_PREFIX.MJ_HAS_URL, !!imageUrl)
 
     const srefParam =
       Array.isArray(styleReferenceUrls) && styleReferenceUrls.length > 0
@@ -67,10 +74,10 @@ export const POST = withRateLimit(
     const promptText =
       `${imageUrl ? imageUrl + ' ' : ''}${prompt || ''} --v 6.1 --q 2 --s 250${srefParam}`.trim()
 
-    const payload: any = {
-      botType: 'MID_JOURNEY',
+    const payload: Record<string, unknown> = {
+      botType: MidjourneyBotType.MidJourney,
       prompt: promptText,
-      accountFilter: { modes: ['FAST'] },
+      accountFilter: { modes: [MidjourneyAccountMode.Fast] },
     }
 
     if (imageBase64) {
@@ -78,51 +85,53 @@ export const POST = withRateLimit(
     }
 
     const imagineResponse = await fetch('https://api.cometapi.com/mj/submit/imagine', {
-      method: 'POST',
+      method: HttpMethod.Post,
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        'Content-Type': ContentType.Json,
       },
       body: JSON.stringify(payload),
     })
 
     const imagineData = await imagineResponse.json()
-    console.log('Imagine response:', imagineData)
+    console.log(API_LOG_PREFIX.MJ_IMAGINE_RESPONSE, imagineData)
 
     if (imagineData.code !== 1) {
-      throw new Error(imagineData.description || 'Failed to submit imagine task')
+      throw new Error(imagineData.description || API_ERROR.MJ_FAILED_SUBMIT)
     }
 
     const imagineTaskId = imagineData.result
 
-    console.log('Waiting for imagine task:', imagineTaskId)
+    console.log(API_LOG_PREFIX.MJ_WAITING_IMAGINE, imagineTaskId)
     const imagineResult = await pollForCompletion(imagineTaskId, apiKey, 600)
-    console.log('Imagine completed, image URL:', imagineResult.imageUrl)
+    console.log(API_LOG_PREFIX.MJ_IMAGINE_COMPLETED, imagineResult.imageUrl)
 
-    const buttons = imagineResult.buttons || []
-    const u1Button = buttons.find(
-      (b: any) => b.customId?.includes('upsample::1') || b.label === 'U1'
-    )
+    const buttons = Array.isArray(imagineResult.buttons) ? imagineResult.buttons : []
+    const u1Button = buttons.find((button: Record<string, unknown>) => {
+      const customId = typeof button.customId === 'string' ? button.customId : ''
+      const label = typeof button.label === 'string' ? button.label : ''
+      return customId.includes(MidjourneyUpsampleId.Upsample1) || label === MidjourneyButtonLabel.U1
+    })
 
     if (!u1Button) {
       console.log(
-        'Available buttons:',
-        buttons.map((b: any) => b.label || b.customId)
+        API_LOG_PREFIX.MJ_AVAILABLE_BUTTONS,
+        buttons.map((button: Record<string, unknown>) => button.label || button.customId)
       )
-      console.log('No U1 button found, returning imagine result')
+      console.log(API_LOG_PREFIX.MJ_NO_U1)
       return NextResponse.json({
         url: imagineResult.imageUrl,
         taskId: imagineTaskId,
-        note: 'Returned variation grid (no upscale button available)',
+        note: API_ERROR.MJ_UPSCALE_VARIATION_NOTE,
       })
     }
 
-    console.log('Submitting U1 upscale action')
+    console.log(API_LOG_PREFIX.MJ_SUBMITTING_U1)
     const actionResponse = await fetch('https://api.cometapi.com/mj/submit/action', {
-      method: 'POST',
+      method: HttpMethod.Post,
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        'Content-Type': ContentType.Json,
       },
       body: JSON.stringify({
         customId: u1Button.customId,
@@ -131,22 +140,22 @@ export const POST = withRateLimit(
     })
 
     const actionData = await actionResponse.json()
-    console.log('Action response:', actionData)
+    console.log(API_LOG_PREFIX.MJ_ACTION_RESPONSE, actionData)
 
     if (actionData.code !== 1) {
-      console.warn('Action failed, returning imagine result:', actionData.description)
+      console.warn(API_LOG_PREFIX.MJ_ACTION_FAILED, actionData.description)
       return NextResponse.json({
         url: imagineResult.imageUrl,
         taskId: imagineTaskId,
-        note: 'Upscale action failed, returned variation instead',
+        note: API_ERROR.MJ_UPSCALE_VARIATION_FAILED_NOTE,
       })
     }
 
     const actionTaskId = actionData.result
 
-    console.log('Waiting for upscale task:', actionTaskId)
+    console.log(API_LOG_PREFIX.MJ_WAITING_UPSCALE, actionTaskId)
     const upscaleResult = await pollForCompletion(actionTaskId, apiKey, 600)
-    console.log('Upscale completed:', upscaleResult.imageUrl)
+    console.log(API_LOG_PREFIX.MJ_UPSCALE_COMPLETED, upscaleResult.imageUrl)
 
     return NextResponse.json({
       url: upscaleResult.imageUrl,

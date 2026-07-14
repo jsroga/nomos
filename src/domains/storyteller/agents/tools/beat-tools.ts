@@ -5,6 +5,7 @@
  * Every beat must move action forward (Law of Motion).
  */
 
+import '@/shared/data/server-guard'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { beats } from '@/db/schema'
@@ -15,7 +16,6 @@ import { BeatType, BeatStatus } from '@/domains/storyteller/core/types/Enums'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { recordFromJson, stringArrayFromJson } from '@/shared/data/deep-merge'
 import {
-  STORYTELLER_PROJECT_ID,
   STORYTELLER_EPISODE_ID,
   requestContextString,
 } from '@/domains/storyteller/agents/request-context'
@@ -164,8 +164,6 @@ export const manageBeatTool = createTool({
   execute: async (inputData, context) => {
     const { operation, beatId, sequence, data } = inputData
     // Server-trusted request-context IDs beat model-supplied input.
-    const projectId =
-      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
     const episodeId =
       requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
 
@@ -383,8 +381,6 @@ export const listBeatsTool = createTool({
   execute: async (inputData, context) => {
     const { status, includeContent } = inputData
     // Server-trusted request-context IDs beat model-supplied input.
-    const projectId =
-      requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
     const episodeId =
       requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
 

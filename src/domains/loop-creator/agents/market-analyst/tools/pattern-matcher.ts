@@ -11,10 +11,10 @@
  * - Engagement hook identification
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
 import { countOccurrences } from '@/shared/data/count-occurrences'
 import { PatternMatch } from '../types'
+import { createLoopStructuredTool } from './structured-tool'
 
 /**
  * Comprehensive game design patterns with deep analysis
@@ -497,10 +497,34 @@ const DESIGN_PATTERNS: DesignPattern[] = [
   },
 ]
 
+const patternMatcherSchema = z.object({
+  mechanics: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        description: z.string().optional(),
+      })
+    )
+    .describe('List of game mechanics to analyze'),
+  connections: z
+    .array(
+      z.object({
+        source: z.string(),
+        target: z.string(),
+        label: z.string().optional(),
+      })
+    )
+    .optional()
+    .describe('Connections between mechanics'),
+  gameGenre: z.string().optional().describe('Game genre for context'),
+  gameDescription: z.string().optional().describe('Overall game description'),
+})
+
 /**
  * Pattern matcher tool with sophisticated analysis
  */
-export const patternMatcherTool = new DynamicStructuredTool({
+export const patternMatcherTool = createLoopStructuredTool({
   name: 'pattern_matcher',
   description: `Analyze game loop against known successful design patterns. Returns:
 - Which patterns the design follows and how well
@@ -509,30 +533,10 @@ export const patternMatcherTool = new DynamicStructuredTool({
 - Compatibility analysis between patterns
 
 Patterns include: Loop structures, Progression systems, Engagement hooks, Feedback systems, Player experience patterns.`,
-  schema: z.object({
-    mechanics: z
-      .array(
-        z.object({
-          name: z.string(),
-          type: z.string(),
-          description: z.string().optional(),
-        })
-      )
-      .describe('List of game mechanics to analyze'),
-    connections: z
-      .array(
-        z.object({
-          source: z.string(),
-          target: z.string(),
-          label: z.string().optional(),
-        })
-      )
-      .optional()
-      .describe('Connections between mechanics'),
-    gameGenre: z.string().optional().describe('Game genre for context'),
-    gameDescription: z.string().optional().describe('Overall game description'),
-  }),
-  func: async ({ mechanics, connections, gameGenre, gameDescription }): Promise<string> => {
+  schema: patternMatcherSchema,
+  func: async input => {
+    const { mechanics, connections, gameGenre, gameDescription } =
+      patternMatcherSchema.parse(input)
     try {
       // Combine all text for analysis
       const allText = [

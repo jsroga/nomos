@@ -1,4 +1,4 @@
-import { retextureModelTask } from '@/trigger/retexture-model'
+import { retextureModelTask } from '@/trigger'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { NextRequest, NextResponse } from 'next/server'
 import { recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
@@ -13,12 +13,19 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
+import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
+import { EnvVarName, HttpMethod } from '@/shared/data/constants/protocol'
+import {
+  InteriorDefaultProjectId,
+  InteriorTempAssetId,
+} from '@/domains/interior-designer/constants/interior-api-defaults'
 
 export const POST = withRateLimit(
   withAuth(
     async (
       request: NextRequest,
-      { session, supabase }: AuthenticatedRequest
+      { supabase }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorRetextureResponse | { error: string }>> => {
       const parsedBody = interiorRetextureRequestSchema.safeParse(await request.json())
       if (!parsedBody.success) {
@@ -27,19 +34,19 @@ export const POST = withRateLimit(
 
       const { modelUrlOrBase64, prompt, assetId, projectId, apiKey } = parsedBody.data
 
-      if (projectId !== 'default') {
+      if (projectId !== InteriorDefaultProjectId.Default) {
         const hasAccess = await verifyProjectAccess(supabase, projectId)
         if (!hasAccess) {
-          return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+          return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
         }
       }
 
       let styleImageUrl: string | undefined
-      if (projectId !== 'default') {
+      if (projectId !== InteriorDefaultProjectId.Default) {
         const { data } = await supabase
-          .from('projects')
-          .select('style_reference_urls')
-          .eq('id', projectId)
+          .from(DB_TABLE.PROJECTS)
+          .select(DB_COLUMN.STYLE_REFERENCE_URLS)
+          .eq(DB_COLUMN.ID, projectId)
           .single()
 
         const projectRecord = recordFromJson(data)
@@ -48,7 +55,7 @@ export const POST = withRateLimit(
         if (styleReferenceUrls.length > 0) {
           try {
             const response = await fetch(styleReferenceUrls[0], {
-              method: 'HEAD',
+              method: HttpMethod.Head,
               signal: AbortSignal.timeout(5000),
             })
             if (response.ok) {
@@ -60,15 +67,15 @@ export const POST = withRateLimit(
         }
       }
 
-      const meshyApiKey = apiKey || process.env.MESHY_API_KEY
+      const meshyApiKey = apiKey || process.env[EnvVarName.MeshyApiKey]
       if (!meshyApiKey) {
-        return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
+        return NextResponse.json({ error: API_ERROR.MESHY_API_KEY_NOT_CONFIGURED }, { status: 400 })
       }
 
-      const handle = await tasks.trigger<typeof retextureModelTask>('retexture-model', {
+      const handle = await tasks.trigger<typeof retextureModelTask>(TRIGGER_TASK_ID.RETEXTURE_MODEL, {
         modelBase64: modelUrlOrBase64,
         prompt,
-        assetId: assetId || 'temp-asset',
+        assetId: assetId || InteriorTempAssetId.TempAsset,
         projectId,
         apiKey: meshyApiKey,
         styleImageUrl,

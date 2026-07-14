@@ -13,6 +13,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react'
+import { LoadingOperationStatus } from '@/domains/storyteller/state/constants/loading-operation-status'
 
 export interface LoadingOperation {
   id: string
@@ -20,7 +21,7 @@ export interface LoadingOperation {
   label: string
   startTime: number
   progress?: number // 0-100
-  status: 'pending' | 'loading' | 'completing' | 'done' | 'error'
+  status: LoadingOperationStatus
   details?: string
 }
 
@@ -58,7 +59,7 @@ export function useLoadingStates(): UseLoadingStatesReturn {
         label,
         startTime: Date.now(),
         progress: 0,
-        status: 'loading',
+        status: LoadingOperationStatus.Loading,
       })
       return next
     })
@@ -74,7 +75,7 @@ export function useLoadingStates(): UseLoadingStatesReturn {
         ...op,
         progress: Math.min(100, Math.max(0, progress)),
         details,
-        status: progress >= 100 ? 'completing' : 'loading',
+        status: progress >= 100 ? LoadingOperationStatus.Completing : LoadingOperationStatus.Loading,
       })
       return next
     })
@@ -96,7 +97,7 @@ export function useLoadingStates(): UseLoadingStatesReturn {
       const next = new Map(prev)
       next.set(id, {
         ...op,
-        status: 'error',
+        status: LoadingOperationStatus.Error,
         details: error,
       })
       // Auto-remove errors after 3 seconds
@@ -119,7 +120,12 @@ export function useLoadingStates(): UseLoadingStatesReturn {
   const operationsList = useMemo(() => Array.from(operations.values()), [operations])
 
   const isAnyLoading = useMemo(
-    () => operationsList.some(op => op.status === 'loading' || op.status === 'completing'),
+    () =>
+      operationsList.some(
+        op =>
+          op.status === LoadingOperationStatus.Loading ||
+          op.status === LoadingOperationStatus.Completing
+      ),
     [operationsList]
   )
 
@@ -127,7 +133,11 @@ export function useLoadingStates(): UseLoadingStatesReturn {
     () => [
       ...new Set(
         operationsList
-          .filter(op => op.status === 'loading' || op.status === 'completing')
+          .filter(
+            op =>
+              op.status === LoadingOperationStatus.Loading ||
+              op.status === LoadingOperationStatus.Completing
+          )
           .map(op => op.section)
       ),
     ],
@@ -137,7 +147,10 @@ export function useLoadingStates(): UseLoadingStatesReturn {
   const isSectionLoading = useCallback(
     (section: string) => {
       return operationsList.some(
-        op => op.section === section && (op.status === 'loading' || op.status === 'completing')
+        op =>
+          op.section === section &&
+          (op.status === LoadingOperationStatus.Loading ||
+            op.status === LoadingOperationStatus.Completing)
       )
     },
     [operationsList]
@@ -156,7 +169,9 @@ export function useLoadingStates(): UseLoadingStatesReturn {
 
   const getSectionLabel = useCallback(
     (section: string) => {
-      const op = operationsList.find(op => op.section === section && op.status === 'loading')
+      const op = operationsList.find(
+        op => op.section === section && op.status === LoadingOperationStatus.Loading
+      )
       return op?.label || null
     },
     [operationsList]
@@ -173,7 +188,7 @@ export function useLoadingStates(): UseLoadingStatesReturn {
     finishLoading,
     errorLoading,
     clearAll,
-    activeCount: operationsList.filter(op => op.status === 'loading').length,
+    activeCount: operationsList.filter(op => op.status === LoadingOperationStatus.Loading).length,
     loadingSections,
   }
 }

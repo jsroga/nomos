@@ -1,42 +1,43 @@
 import React from 'react'
 import { Handle, Position, NodeProps, Node } from '@xyflow/react'
+import {
+  LOOP_DURATION_UNIT,
+  LOOP_HANDLE_BORDER,
+  LOOP_NODE_COLORS,
+  LOOP_NODE_DEFAULT_COLOR,
+  LOOP_NODE_DEFAULT_ICON,
+  LOOP_NODE_ICONS,
+  LOOP_TIMEFRAME_TEXT_CLASS,
+  LoopNodeType,
+  LoopPlayerAgency,
+  LoopTimeframe,
+} from '../constants/custom-nodes'
 
-export const nodeColors: Record<string, string> = {
-  challenge: '#ff4444',
-  action: '#4488ff',
-  reward: '#ffcc00',
-  feedback: '#44dd66',
-}
-
-export const nodeIcons: Record<string, string> = {
-  challenge: '⚔️',
-  action: '🎮',
-  reward: '⭐',
-  feedback: '📊',
-}
+export const nodeColors: Record<string, string> = LOOP_NODE_COLORS
+export const nodeIcons: Record<string, string> = LOOP_NODE_ICONS
 
 export interface LoopNodeData {
   label: string
   description: string
-  nodeType: 'challenge' | 'action' | 'reward' | 'feedback'
+  nodeType: LoopNodeType
   timescale: string
   duration?: string
   playerAgency?: string
   skillTypes?: string[]
   designNotes?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export const LoopNode: React.FC<NodeProps<Node<LoopNodeData>>> = ({ data, selected }) => {
-  const nodeType = data.nodeType || 'action'
-  const borderColor = nodeColors[nodeType] || '#666'
-  const icon = nodeIcons[nodeType] || '●'
+  const nodeType = data.nodeType || LoopNodeType.Action
+  const borderColor = nodeColors[nodeType] || LOOP_NODE_DEFAULT_COLOR
+  const icon = nodeIcons[nodeType] || LOOP_NODE_DEFAULT_ICON
 
   const handleStyle = {
     background: borderColor,
     width: 12,
     height: 12,
-    border: '2px solid #1a1a24',
+    border: LOOP_HANDLE_BORDER,
   }
 
   return (
@@ -81,7 +82,7 @@ export const LoopNode: React.FC<NodeProps<Node<LoopNodeData>>> = ({ data, select
 
       {data.playerAgency && (
         <div
-          className={`text-[10px] mt-1 ${data.playerAgency === 'high' ? 'text-emerald-400' : 'text-gray-500'}`}
+          className={`text-[10px] mt-1 ${data.playerAgency === LoopPlayerAgency.High ? 'text-emerald-400' : 'text-gray-500'}`}
         >
           Agency: {data.playerAgency}
         </div>
@@ -104,7 +105,7 @@ export const LoopNode: React.FC<NodeProps<Node<LoopNodeData>>> = ({ data, select
 export interface GroupNodeData {
   label: string
   description?: string
-  timeframe?: 'micro' | 'core' | 'session' | 'meta'
+  timeframe?: LoopTimeframe
   timescale?: string
   loopData?: {
     type?: string
@@ -113,28 +114,28 @@ export interface GroupNodeData {
     playerExperience?: string
     satisfactionPeak?: string
   }
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const timeframeColors: Record<string, { bg: string; border: string; text: string }> = {
-  micro: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/50', text: 'text-cyan-400' },
-  core: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/50', text: 'text-emerald-400' },
-  session: { bg: 'bg-amber-500/10', border: 'border-amber-500/50', text: 'text-amber-400' },
-  meta: { bg: 'bg-purple-500/10', border: 'border-purple-500/50', text: 'text-purple-400' },
-  progression: { bg: 'bg-rose-500/10', border: 'border-rose-500/50', text: 'text-rose-400' },
+  [LoopTimeframe.Micro]: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/50', text: LOOP_TIMEFRAME_TEXT_CLASS[LoopTimeframe.Micro] },
+  [LoopTimeframe.Core]: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/50', text: LOOP_TIMEFRAME_TEXT_CLASS[LoopTimeframe.Core] },
+  [LoopTimeframe.Session]: { bg: 'bg-amber-500/10', border: 'border-amber-500/50', text: LOOP_TIMEFRAME_TEXT_CLASS[LoopTimeframe.Session] },
+  [LoopTimeframe.Meta]: { bg: 'bg-purple-500/10', border: 'border-purple-500/50', text: LOOP_TIMEFRAME_TEXT_CLASS[LoopTimeframe.Meta] },
+  [LoopTimeframe.Progression]: { bg: 'bg-rose-500/10', border: 'border-rose-500/50', text: LOOP_TIMEFRAME_TEXT_CLASS[LoopTimeframe.Progression] },
 }
 
 export const GroupNode: React.FC<NodeProps<Node<GroupNodeData>>> = ({ data, selected }) => {
-  const timeframe = data.loopData?.timeframe || data.timeframe || 'core'
-  const colors = timeframeColors[timeframe] || timeframeColors.core
+  const timeframe = data.loopData?.timeframe || data.timeframe || LoopTimeframe.Core
+  const colors = timeframeColors[timeframe] || timeframeColors[LoopTimeframe.Core]
   const duration = data.loopData?.duration
-  const durationText = duration ? `${duration.typical} ${duration.unit || 'min'}` : ''
+  const durationText = duration ? `${duration.typical} ${duration.unit || LOOP_DURATION_UNIT}` : ''
 
   const handleStyle = {
-    background: '#666',
+    background: LOOP_NODE_DEFAULT_COLOR,
     width: 10,
     height: 10,
-    border: '2px solid #1a1a24',
+    border: LOOP_HANDLE_BORDER,
   }
 
   return (

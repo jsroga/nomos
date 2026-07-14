@@ -8,6 +8,8 @@ import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import { Label } from '@/components/Label'
 import { resetPasswordSchema } from '@/shared/auth/validation'
+import { AUTH_MESSAGE } from '@/shared/auth/constants/auth-messages'
+import { RESET_PASSWORD_STYLES } from '@/app/(auth)/constants/auth-styles'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -33,16 +35,15 @@ export default function ResetPasswordPage() {
         setSuccess(true)
         setTimeout(() => router.push('/projects'), 2000)
       } catch {
-        setError('Something went wrong. Please try again.')
+        setError(AUTH_MESSAGE.RESET_PASSWORD_ERROR)
       } finally {
         setSubmitting(false)
       }
     },
   })
 
-  const inputClassName =
-    'bg-black/30 border-white/10 text-white placeholder:text-white/30 focus:border-white/30'
-  const errorClassName = 'text-red-400 text-xs mt-1'
+  const inputClassName = RESET_PASSWORD_STYLES.INPUT
+  const errorClassName = RESET_PASSWORD_STYLES.ERROR
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-4 bg-black">

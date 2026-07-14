@@ -14,22 +14,37 @@
 
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
 import { RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID } from '@/domains/storyteller/agents/workflows/beat-draft-contract'
+import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page-wire'
+import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
+import {
+  BIBLE_SECTION_UPDATE_KEYS,
+  PREMISE_SECTION_UPDATE_KEYS,
+} from './constants/bible-wire-fields'
+import {
+  BEAT_DRAFT_COMPLETED_STATUS,
+  BEAT_PIPELINE_COMPLETED_MESSAGE,
+  ManageBeatOperationToken,
+  MANAGE_BEAT_UNTITLED_LABEL,
+  ToolResultDetectedSection,
+  ToolResultOutcomeKind,
+  ToolResultPayloadField,
+} from './constants/tool-result-wire'
 import { processToolResultToAction, getActionTypeForSection } from './action-config'
 
-export type DetectedSection = BibleSection | 'beats'
+export type DetectedSection = BibleSection | ToolResultDetectedSection
 
 export type ToolResultOutcome =
-  | { kind: 'questions'; questions: unknown[] }
-  | { kind: 'info'; message: string; data: unknown }
-  | { kind: 'navigation'; action: string; episodeId?: string | null }
+  | { kind: ToolResultOutcomeKind.Questions; questions: unknown[] }
+  | { kind: ToolResultOutcomeKind.Info; message: string; data: unknown }
+  | { kind: ToolResultOutcomeKind.Navigation; action: string; episodeId?: string | null }
   | {
-      kind: 'action'
+      kind: ToolResultOutcomeKind.Action
       actionType: string
       actionPayload: Record<string, unknown>
       requiresApproval: boolean
       detectedSection: DetectedSection
     }
-  | { kind: 'none' }
+  | { kind: ToolResultOutcomeKind.None }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -41,49 +56,12 @@ function stringField(source: Record<string, unknown> | undefined, key: string): 
 }
 
 /** Section keys recognised in update tool args (for the section_loading shimmer). */
-const SECTION_KEYS = [
-  'soundtracks',
-  'worldRules',
-  'factions',
-  'inspirations',
-  'keyCharacters',
-  'worldDescription',
-  'plotTwists',
-  'episodePremise',
-  'episodeRoadmap',
-  'sequences',
-  'premise',
-  'characters',
-  'cast',
-  'protagonistHook',
-  'fatalFlaw',
-  'stakes',
-  'inevitableConsequence',
-  'theHook',
-  'theTurn',
-  'theAftermath',
-  'transformation',
-  'thematicFocus',
-  'logline',
-  'title',
-]
+const SECTION_KEYS = BIBLE_SECTION_UPDATE_KEYS
 
-const PREMISE_SECTIONS = [
-  'protagonistHook',
-  'fatalFlaw',
-  'stakes',
-  'inevitableConsequence',
-  'theHook',
-  'theTurn',
-  'theAftermath',
-  'transformation',
-  'thematicFocus',
-  'logline',
-  'title',
-]
+const PREMISE_SECTIONS = PREMISE_SECTION_UPDATE_KEYS
 
-const UPDATE_WORLD_BIBLE_TOOL_ID = 'update_world_bible'
-const MANAGE_BEAT_TOOL_ID = 'manage_beat'
+const UPDATE_WORLD_BIBLE_TOOL_ID = StorytellerChatTool.UpdateWorldBible
+const MANAGE_BEAT_TOOL_ID = StorytellerChatTool.ManageBeat
 
 /**
  * Determine which bible section a tool call is loading, for the UI shimmer.
@@ -98,16 +76,19 @@ export function detectLoadingSection(
   }
 
   let argSection =
-    stringField(toolArgs, 'section') || Object.keys(toolArgs).find(k => SECTION_KEYS.includes(k))
+    stringField(toolArgs, ToolResultPayloadField.Section) ||
+    Object.keys(toolArgs).find(k => SECTION_KEYS.includes(k))
 
   if (argSection && PREMISE_SECTIONS.includes(argSection)) {
     // Regenerating an individual premise field → show shimmer on the premise panel
-    argSection = 'episodePremise'
+    argSection = BibleSection.EPISODE_PREMISE
   }
 
   if (!argSection) return null
 
-  return argSection === 'characters' || argSection === 'cast' ? 'keyCharacters' : argSection
+  return argSection === CastFieldAlias.Characters || argSection === CastFieldAlias.Cast
+    ? CastFieldAlias.KeyCharacters
+    : argSection
 }
 
 /**
@@ -121,8 +102,14 @@ export function getActionDedupeKey(
 ): string {
   if (toolName === MANAGE_BEAT_TOOL_ID) {
     const beat = isRecord(payload.beat) ? payload.beat : undefined
-    const beatId = stringField(payload, 'id') || stringField(payload, 'beatId') || stringField(beat, 'id')
-    const beatTitle = stringField(payload, 'title') || stringField(beat, 'title') || 'untitled'
+    const beatId =
+      stringField(payload, ToolResultPayloadField.Id) ||
+      stringField(payload, ToolResultPayloadField.BeatId) ||
+      stringField(beat, ToolResultPayloadField.Id)
+    const beatTitle =
+      stringField(payload, ToolResultPayloadField.Title) ||
+      stringField(beat, ToolResultPayloadField.Title) ||
+      MANAGE_BEAT_UNTITLED_LABEL
     return `manage_beat:${beatId || beatTitle}`
   }
 
@@ -161,16 +148,17 @@ export function mapToolResultToAction(args: {
   if (
     toolName === RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID &&
     parsedRecord &&
-    parsedRecord.status === 'completed'
+    parsedRecord[ToolResultPayloadField.Status] === BEAT_DRAFT_COMPLETED_STATUS
   ) {
     return {
-      kind: 'info',
-      message: stringField(parsedRecord, 'message') ?? 'Beat pipeline completed.',
-      data: parsedRecord.output ?? null,
+      kind: ToolResultOutcomeKind.Info,
+      message:
+        stringField(parsedRecord, ToolResultPayloadField.Message) ?? BEAT_PIPELINE_COMPLETED_MESSAGE,
+      data: parsedRecord[ToolResultPayloadField.Output] ?? null,
     }
   }
 
-  if (parsedRecord?.success) {
+  if (parsedRecord?.[ToolResultPayloadField.Success]) {
     if (toolName === UPDATE_WORLD_BIBLE_TOOL_ID) {
       const fields = isRecord(parsedRecord.updatedFields)
         ? parsedRecord.updatedFields
@@ -186,28 +174,33 @@ export function mapToolResultToAction(args: {
       }
     } else if (toolName === MANAGE_BEAT_TOOL_ID && isRecord(parsedRecord.beat)) {
       const beat = parsedRecord.beat
-      const operation = stringField(parsedRecord, 'message')?.toLowerCase() ?? ''
+      const operation =
+        stringField(parsedRecord, ToolResultPayloadField.Message)?.toLowerCase() ?? ''
       const beatActions: Record<
         string,
         { type: ActionType; payload: Record<string, unknown>; approval: boolean }
       > = {
-        created: { type: ActionType.CREATE_BEAT, payload: beat, approval: true },
-        updated: {
+        [ManageBeatOperationToken.Created]: {
+          type: ActionType.CREATE_BEAT,
+          payload: beat,
+          approval: true,
+        },
+        [ManageBeatOperationToken.Updated]: {
           type: ActionType.UPDATE_BEAT,
           payload: { beatId: beat.id, updates: beat },
           approval: true,
         },
-        deleted: {
+        [ManageBeatOperationToken.Deleted]: {
           type: ActionType.DELETE_BEAT,
           payload: { beatId: parsedRecord.deletedId ?? beat.id },
           approval: false,
         },
-        approved: {
+        [ManageBeatOperationToken.Approved]: {
           type: ActionType.UPDATE_BEAT,
           payload: { beatId: beat.id, updates: { status: parsedRecord.status } },
           approval: false,
         },
-        locked: {
+        [ManageBeatOperationToken.Locked]: {
           type: ActionType.UPDATE_BEAT,
           payload: { beatId: beat.id, updates: { status: parsedRecord.status } },
           approval: false,
@@ -220,7 +213,7 @@ export function mapToolResultToAction(args: {
         actionType = config.type
         actionPayload = config.payload
         requiresApproval = config.approval
-        detectedSection = 'beats'
+        detectedSection = ToolResultDetectedSection.Beats
       }
     }
   }
@@ -231,7 +224,7 @@ export function mapToolResultToAction(args: {
     !actionType &&
     isSectionUpdate &&
     toolName === UPDATE_WORLD_BIBLE_TOOL_ID &&
-    detectedSection !== 'beats'
+    detectedSection !== ToolResultDetectedSection.Beats
   ) {
     actionType = getActionTypeForSection(detectedSection)
     actionPayload = isRecord(parsedRecord?.updatedFields)
@@ -240,7 +233,13 @@ export function mapToolResultToAction(args: {
     requiresApproval = true
   }
 
-  if (!actionType) return { kind: 'none' }
+  if (!actionType) return { kind: ToolResultOutcomeKind.None }
 
-  return { kind: 'action', actionType, actionPayload, requiresApproval, detectedSection }
+  return {
+    kind: ToolResultOutcomeKind.Action,
+    actionType,
+    actionPayload,
+    requiresApproval,
+    detectedSection,
+  }
 }

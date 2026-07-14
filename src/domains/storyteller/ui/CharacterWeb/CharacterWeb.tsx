@@ -41,10 +41,27 @@ import {
   RELATIONSHIP_STYLES,
   RelationshipMatrixResponse,
 } from './types'
+import {
+  CharacterWebApiError,
+  CHARACTER_WEB_DEFAULT_ENTITY_TYPE,
+  CHARACTER_WEB_DEFAULT_RELATIONSHIP,
+  CHARACTER_WEB_LAYOUT_TYPES,
+  CHARACTER_WEB_LEGEND_ITEMS,
+  CHARACTER_WEB_STROKE_DASH_BY_STYLE,
+  CharacterWebEdgeStyle,
+  CharacterWebLog,
+  CharacterWebMinimapColor,
+  CharacterWebNodeType,
+  CharacterWebQueryParam,
+  CharacterWebSurfaceColor,
+  CharacterWebUiCopy,
+} from './constants/character-web'
+import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
+import { RelationshipStrokeStyle } from './constants/relationship-web-styles'
 
 // Register custom node types
 const nodeTypes = {
-  characterNode: CharacterNode,
+  [CharacterWebNodeType.CharacterNode]: CharacterNode,
 }
 
 const PERF_DEBUG = process.env.NEXT_PUBLIC_PERF_DEBUG === '1'
@@ -92,11 +109,11 @@ function applyForceLayout(
   // Initial placement: radial by type for natural clustering
   const grouped = new Map<string, CharacterWebNode[]>()
   for (const node of nodes) {
-    const t = node.data.type || 'character'
+    const t = node.data.type || CHARACTER_WEB_DEFAULT_ENTITY_TYPE
     if (!grouped.has(t)) grouped.set(t, [])
     grouped.get(t)!.push(node)
   }
-  const typeOrder = Array.from(new Set(['faction', 'character', 'place', 'event', 'rule', 'item', ...grouped.keys()]))
+  const typeOrder = Array.from(new Set([...CHARACTER_WEB_LAYOUT_TYPES, ...grouped.keys()]))
 
   const baseRadius = Math.min(width, height) * 0.3
 
@@ -252,7 +269,7 @@ function convertToFlowData(data: RelationshipMatrixResponse): {
 } {
   const nodes: CharacterWebNode[] = data.nodes.map((n, _index) => ({
     id: n.id,
-    type: 'characterNode',
+    type: CharacterWebNodeType.CharacterNode,
     position: { x: 0, y: 0 }, // Will be set by layout
     data: {
       name: n.name,
@@ -278,17 +295,17 @@ function convertToFlowData(data: RelationshipMatrixResponse): {
       target: e.target,
       animated: style.animated,
       label: e.label || relType.replace(/_/g, ' '),
-      labelStyle: { fill: '#94a3b8', fontSize: 9, fontWeight: 500 },
-      labelBgStyle: { fill: '#18181b', fillOpacity: 0.8 },
+      labelStyle: { fill: CharacterWebEdgeStyle.LabelFill, fontSize: 9, fontWeight: 500 },
+      labelBgStyle: { fill: CharacterWebEdgeStyle.LabelBgFill, fillOpacity: 0.8 },
       labelBgPadding: [4, 2] satisfies [number, number],
       style: {
         stroke: style.color,
         strokeWidth: scaledWidth,
         strokeDasharray:
-          style.strokeStyle === 'dashed'
-            ? '5,5'
-            : style.strokeStyle === 'dotted'
-              ? '2,2'
+          style.strokeStyle === RelationshipStrokeStyle.Dashed
+            ? CHARACTER_WEB_STROKE_DASH_BY_STYLE[RelationshipStrokeStyle.Dashed]
+            : style.strokeStyle === RelationshipStrokeStyle.Dotted
+              ? CHARACTER_WEB_STROKE_DASH_BY_STYLE[RelationshipStrokeStyle.Dotted]
               : undefined,
         opacity: Math.max(0.3, e.weight || 0.5),
       },
@@ -316,7 +333,7 @@ export function CharacterWeb({
   focusEntityId,
   className,
   showMinimap = true,
-  showLegend = true,
+  showLegend: _showLegend = true,
 }: CharacterWebProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<CharacterWebNode>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<CharacterWebEdge>([])
@@ -351,9 +368,9 @@ export function CharacterWeb({
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
     if (nodeId) {
-      url.searchParams.set('node', nodeId)
+      url.searchParams.set(CharacterWebQueryParam.Node, nodeId)
     } else {
-      url.searchParams.delete('node')
+      url.searchParams.delete(CharacterWebQueryParam.Node)
     }
     window.history.replaceState({}, '', url.toString())
   }, [])
@@ -362,7 +379,7 @@ export function CharacterWeb({
   useEffect(() => {
     if (typeof window === 'undefined' || nodes.length === 0) return
     const url = new URL(window.location.href)
-    const nodeParam = url.searchParams.get('node')
+    const nodeParam = url.searchParams.get(CharacterWebQueryParam.Node)
     if (nodeParam && !selectedNodeId) {
       const targetNode = nodes.find(n => n.id === nodeParam)
       if (targetNode) {
@@ -387,7 +404,7 @@ export function CharacterWeb({
     if (targetNode) {
       setSelectedNodeId(targetNode.id)
       updateUrlWithNode(targetNode.id)
-      console.log(`[CharacterWeb] Focused on entity: ${targetNode.data.name} (${targetNode.id})`)
+      console.log(`${CharacterWebLog.FocusedEntity}${targetNode.data.name} (${targetNode.id})`)
     }
   }, [focusEntityId, nodes, updateUrlWithNode])
 
@@ -401,7 +418,7 @@ export function CharacterWeb({
       const response = await fetch(`/api/storyteller/relationships?projectId=${projectId}`)
 
       if (!response.ok) {
-        throw new Error('Failed to fetch relationships')
+        throw new Error(CharacterWebApiError.FetchFailed)
       }
 
       const data: RelationshipMatrixResponse = await response.json()
@@ -424,12 +441,12 @@ export function CharacterWeb({
       setNodes(layoutedNodes)
       setEdges(flowEdges)
     } catch (err) {
-      console.error('[CharacterWeb] Failed to fetch:', err)
-      setError('Failed to load relationships')
+      console.error(CharacterWebLog.FetchFailed, err)
+      setError(CharacterWebUiCopy.LoadFailed)
     } finally {
       if (PERF_DEBUG && typeof performance !== 'undefined') {
         const duration = Math.round(performance.now() - startedAt)
-        console.debug(`[CharacterWeb][perf] fetch+layout completed in ${duration}ms`)
+        console.debug(`${CharacterWebLog.PerfCompleted}${duration}ms`)
       }
       setIsLoading(false)
     }
@@ -457,7 +474,7 @@ export function CharacterWeb({
         style: {
           ...node.style,
           opacity: isConnected ? 1 : 0.15,
-          transition: 'opacity 0.3s ease',
+          transition: CharacterWebEdgeStyle.OpacityTransition,
         },
       }
     })
@@ -470,7 +487,7 @@ export function CharacterWeb({
         style: {
           ...edge.style,
           opacity: Math.max(0.3, edge.data?.strength || 0.5),
-          transition: 'opacity 0.3s ease',
+          transition: CharacterWebEdgeStyle.OpacityTransition,
         },
         labelStyle: { ...(edge.labelStyle ?? {}), opacity: 1 },
       }))
@@ -483,7 +500,7 @@ export function CharacterWeb({
         style: {
           ...edge.style,
           opacity: isConnected ? 1 : 0.08,
-          transition: 'opacity 0.3s ease',
+          transition: CharacterWebEdgeStyle.OpacityTransition,
         },
         labelStyle: {
           ...(edge.labelStyle ?? {}),
@@ -531,14 +548,12 @@ export function CharacterWeb({
 
   // Legend items
   useMemo(
-        () => [
-          { type: 'ally', label: 'Ally', color: RELATIONSHIP_STYLES.ally.color },
-          { type: 'enemy', label: 'Enemy', color: RELATIONSHIP_STYLES.enemy.color },
-          { type: 'rival', label: 'Rival', color: RELATIONSHIP_STYLES.rival.color },
-          { type: 'mentor', label: 'Mentor', color: RELATIONSHIP_STYLES.mentor.color },
-          { type: 'lover', label: 'Lover', color: RELATIONSHIP_STYLES.lover.color },
-          { type: 'family', label: 'Family', color: RELATIONSHIP_STYLES.family.color },
-        ],
+        () =>
+          CHARACTER_WEB_LEGEND_ITEMS.map(item => ({
+            type: item.type,
+            label: item.label,
+            color: RELATIONSHIP_STYLES[item.type].color,
+          })),
         []
       )
 
@@ -547,7 +562,7 @@ export function CharacterWeb({
       <div className={cn('flex items-center justify-center h-full', className)}>
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span>Loading relationships...</span>
+          <span>{CharacterWebUiCopy.Loading}</span>
         </div>
       </div>
     )
@@ -574,8 +589,8 @@ export function CharacterWeb({
     return (
       <div className={cn('flex items-center justify-center h-full', className)}>
         <div className="text-muted-foreground text-center">
-          <p>No character relationships found.</p>
-          <p className="text-sm opacity-70 mt-1">Add characters to the cast to see their web.</p>
+          <p>{CharacterWebUiCopy.EmptyTitle}</p>
+          <p className="text-sm opacity-70 mt-1">{CharacterWebUiCopy.EmptyHint}</p>
         </div>
       </div>
     )
@@ -598,7 +613,7 @@ export function CharacterWeb({
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#27272a" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color={CharacterWebSurfaceColor.Canvas} />
         <Controls
           className="bg-zinc-900 border-zinc-700 [&_button]:bg-zinc-800 [&_button]:border-zinc-700 [&_button]:text-zinc-400 [&_button:hover]:bg-zinc-700"
           showInteractive={false}
@@ -609,16 +624,19 @@ export function CharacterWeb({
             nodeColor={(node: CharacterWebNode) => {
               const nodeType = node.data.type
               const colors: Record<CharacterNodeData['type'], string> = {
-                character: '#9333ea',
-                faction: '#3b82f6',
-                place: '#10b981',
-                event: '#f59e0b',
-                rule: '#f43f5e',
+                [StoryEntityType.Character]: CharacterWebMinimapColor.Character,
+                [StoryEntityType.Faction]: CharacterWebMinimapColor.Faction,
+                [StoryEntityType.Place]: CharacterWebMinimapColor.Place,
+                [StoryEntityType.Event]: CharacterWebMinimapColor.Event,
+                [StoryEntityType.Rule]: CharacterWebMinimapColor.Rule,
+                [StoryEntityType.Beat]: CharacterWebMinimapColor.Character,
+                [StoryEntityType.Episode]: CharacterWebMinimapColor.Character,
+                [StoryEntityType.Item]: CharacterWebMinimapColor.Character,
               }
-              return colors[nodeType] ?? '#6b7280'
+              return colors[nodeType] ?? CharacterWebMinimapColor.Fallback
             }}
-            style={{ backgroundColor: '#18181b' }}
-            maskColor="rgba(0,0,0,0.8)"
+            style={{ backgroundColor: CharacterWebSurfaceColor.PanelBg }}
+            maskColor={CharacterWebSurfaceColor.Mask}
             className="bg-zinc-900 border border-zinc-700 rounded"
           />
         )}
@@ -628,7 +646,7 @@ export function CharacterWeb({
           <button
             onClick={fetchRelationships}
             className="p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
-            title="Refresh relationships"
+            title={CharacterWebUiCopy.RefreshTitle}
           >
             <RefreshCw size={14} />
           </button>
@@ -675,8 +693,8 @@ function NodeDetailsPanel({
   projectId: string
 }) {
   const data = node.data
-  const type = data.type || 'character'
-  const isCharacter = type === 'character'
+  const type = data.type || CHARACTER_WEB_DEFAULT_ENTITY_TYPE
+  const isCharacter = type === StoryEntityType.Character
 
   // Helper to format relationship type labels
   const getLabel = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')
@@ -696,11 +714,11 @@ function NodeDetailsPanel({
             <div
               className={cn(
                 'w-10 h-10 rounded-md flex items-center justify-center border border-zinc-700/50 shadow-sm text-sm font-bold',
-                type === 'character'
+                type === StoryEntityType.Character
                   ? 'bg-purple-900/20 text-purple-200'
-                  : type === 'faction'
+                  : type === StoryEntityType.Faction
                     ? 'bg-blue-900/20 text-blue-200'
-                    : type === 'place'
+                    : type === StoryEntityType.Place
                       ? 'bg-emerald-900/20 text-emerald-200'
                       : 'bg-zinc-800/50 text-zinc-300'
               )}
@@ -713,7 +731,7 @@ function NodeDetailsPanel({
           <div
             className={cn(
               'absolute -bottom-1 -right-1 px-1 py-px rounded-[2px] text-[8px] uppercase font-bold tracking-wider leading-none shadow-sm border border-black/20',
-              type === 'character'
+              type === StoryEntityType.Character
                 ? 'bg-purple-500/20 text-purple-300'
                 : 'bg-zinc-500/20 text-zinc-400'
             )}
@@ -845,7 +863,7 @@ function EdgeDetailsPanel({
   onClose: () => void
 }) {
   const data = edge.data
-  const relType = data?.relationshipType || 'related'
+  const relType = data?.relationshipType || CHARACTER_WEB_DEFAULT_RELATIONSHIP
   const strength = data?.strength ?? 0
   const evidence = readRelationshipEdgeEvidence(data)
   const llmGrounded = readRelationshipEdgeLlmGrounded(data)

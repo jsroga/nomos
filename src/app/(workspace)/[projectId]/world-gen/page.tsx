@@ -11,6 +11,11 @@ import {
   type TileReviewType,
 } from '@/domains/world-building-toolkit'
 import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
+import { useWorldUiStore } from '@/domains/world-building-toolkit/state/useWorldUiStore'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import {
+  WORLD_GEN_REVIEW_QUEUE_LOG_PREFIX,
+} from '@/domains/world-building-toolkit/ui/constants/world-gen-page'
 
 interface ReviewQueueItem {
   id: string
@@ -23,37 +28,31 @@ interface ReviewQueueItem {
   tokenId?: string
 }
 
-import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
-
 export default function WorldBuildingPage() {
-  // ...
-  // Load project from URL
   const { projectId } = useProjectFromUrl()
 
-  // Review queue - items are added to the END, processed from the START (FIFO)
   const [reviewQueue, setReviewQueue] = useState<ReviewQueueItem[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  // Clear review queue when project changes so stale modals don't bleed into a new project
+  const reviewRequestVersion = useWorldUiStore(state => state.reviewRequestVersion)
+  const pendingReviewRequest = useWorldUiStore(state => state.pendingReviewRequest)
+
   useEffect(() => {
     setReviewQueue([])
     setIsDialogOpen(false)
   }, [projectId])
 
-  // Get the current item (first in queue)
   const currentReview = reviewQueue[0] || null
 
-  // Add item to the END of the queue
   const addToQueue = useCallback((item: Omit<ReviewQueueItem, 'id'>) => {
     const id = `${item.type}-${item.tileX}-${item.tileY}-${Date.now()}`
     const cacheBust = `?t=${Date.now()}`
 
-    // Add cache-busting to URLs
     const newUrl = item.newUrl ? `${item.newUrl}${cacheBust}` : item.newUrl
     const originalUrl = item.originalUrl ? `${item.originalUrl}${cacheBust}` : item.originalUrl
     const variantUrls = item.variantUrls?.map(url => `${url}${cacheBust}`)
 
-    console.log('[ReviewQueue] Adding item:', {
+    console.log(WORLD_GEN_REVIEW_QUEUE_LOG_PREFIX, {
       type: item.type,
       tileX: item.tileX,
       tileY: item.tileY,
@@ -66,10 +65,9 @@ export default function WorldBuildingPage() {
     setIsDialogOpen(true)
   }, [])
 
-  // Remove current item and show next (or close if empty)
   const handleClose = useCallback(() => {
     setReviewQueue(prev => {
-      const newQueue = prev.slice(1) // Remove first item
+      const newQueue = prev.slice(1)
       if (newQueue.length === 0) {
         setIsDialogOpen(false)
       }
@@ -77,73 +75,19 @@ export default function WorldBuildingPage() {
     })
   }, [])
 
-  // Listen for upscale review events
   useEffect(() => {
-    const handleUpscaleReview = (event: any) => {
-      const { tileX, tileY, upscaledUrl, originalUrl } = event.detail
-      addToQueue({
-        tileX,
-        tileY,
-        newUrl: upscaledUrl,
-        originalUrl,
-        type: 'upscale',
-      })
-    }
-
-    window.addEventListener('upscale-review-ready', handleUpscaleReview)
-    return () => window.removeEventListener('upscale-review-ready', handleUpscaleReview)
-  }, [addToQueue])
-
-  // Listen for generation review events
-  useEffect(() => {
-    const handleGenerationReview = (event: any) => {
-      const { tileX, tileY, newUrl, variantUrls, originalUrl } = event.detail
-      addToQueue({
-        tileX,
-        tileY,
-        newUrl,
-        variantUrls,
-        originalUrl,
-        type: 'generation',
-      })
-    }
-
-    window.addEventListener('generation-review-ready', handleGenerationReview)
-    return () => window.removeEventListener('generation-review-ready', handleGenerationReview)
-  }, [addToQueue])
-
-  // Listen for fidelity review events
-  useEffect(() => {
-    const handleFidelityReview = (event: any) => {
-      const { tileX, tileY, newUrl, originalUrl } = event.detail
-      addToQueue({
-        tileX,
-        tileY,
-        newUrl,
-        originalUrl,
-        type: 'fidelity',
-      })
-    }
-
-    window.addEventListener('fidelity-review-ready', handleFidelityReview)
-    return () => window.removeEventListener('fidelity-review-ready', handleFidelityReview)
-  }, [addToQueue])
-
-  useEffect(() => {
-    const handleVariantSelection = (event: any) => {
-      const { tileX, tileY, variantUrls, tokenId } = event.detail
-      addToQueue({
-        tileX,
-        tileY,
-        newUrl: variantUrls[0] ?? '',
-        variantUrls,
-        tokenId,
-        type: 'generation',
-      })
-    }
-    window.addEventListener('generation-variant-selection-ready', handleVariantSelection)
-    return () => window.removeEventListener('generation-variant-selection-ready', handleVariantSelection)
-  }, [addToQueue])
+    if (!pendingReviewRequest || reviewRequestVersion === 0) return
+    const item = pendingReviewRequest
+    addToQueue({
+      tileX: item.tileX,
+      tileY: item.tileY,
+      newUrl: item.newUrl,
+      variantUrls: item.variantUrls,
+      originalUrl: item.originalUrl,
+      type: item.type as TileReviewType,
+      tokenId: item.tokenId,
+    })
+  }, [pendingReviewRequest, reviewRequestVersion, addToQueue])
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-black text-zinc-200 font-sans selection:bg-indigo-500/30">
@@ -151,7 +95,6 @@ export default function WorldBuildingPage() {
         <Sidebar />
       </div>
 
-      {/* Toolbar (Left) */}
       <div className="w-16 border-r border-border/70 bg-background z-10">
         <WorldGenToolbar />
       </div>
@@ -168,7 +111,6 @@ export default function WorldBuildingPage() {
         </div>
       </div>
 
-      {/* Unified Review Dialog with Queue */}
       {currentReview && (
         <TileReviewDialog
           open={isDialogOpen}

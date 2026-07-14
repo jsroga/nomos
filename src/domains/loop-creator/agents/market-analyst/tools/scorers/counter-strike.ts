@@ -13,8 +13,8 @@
  * This is a HIDDEN score - used for internal analysis.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
-import { z } from 'zod'
+import { createLoopStructuredTool } from '../structured-tool'
+import { mechanicsLoopsToolSchema } from '../mechanics-loops-schema'
 
 interface DesignAnalysis {
   mechanics: Array<{ name: string; type: string; description?: string }>
@@ -301,7 +301,7 @@ const REFERENCE_SCORES = {
 /**
  * Counter-Strike scorer tool
  */
-export const counterStrikeScorerTool = new DynamicStructuredTool({
+export const counterStrikeScorerTool = createLoopStructuredTool({
   name: 'counter_strike_scorer',
   description: `Score the game design against Counter-Strike-style competitive shooter criteria.
 Evaluates:
@@ -312,29 +312,9 @@ Evaluates:
 - Competitive Ladder (15%): Ranking, seasons, esports potential
 
 Returns 0-100 score with detailed breakdown. High scores indicate strong competitive shooter appeal.`,
-  schema: z.object({
-    mechanics: z
-      .array(
-        z.object({
-          name: z.string(),
-          type: z.string(),
-          description: z.string().optional(),
-        })
-      )
-      .describe('Game mechanics to analyze'),
-    loops: z
-      .array(
-        z.object({
-          name: z.string(),
-          type: z.string(),
-          description: z.string().optional(),
-        })
-      )
-      .optional()
-      .describe('Game loops if defined'),
-    gameDescription: z.string().optional().describe('Overall game description'),
-  }),
-  func: async ({ mechanics, loops, gameDescription }): Promise<string> => {
+  schema: mechanicsLoopsToolSchema,
+  func: async input => {
+    const { mechanics, loops, gameDescription } = mechanicsLoopsToolSchema.parse(input)
     try {
       // Build analysis context
       const allText = [

@@ -5,31 +5,33 @@ import {
   interiorTextureResponseSchema,
   type InteriorTextureResponse,
 } from '@/domains/interior-designer/io/interior-designer.dto'
+import { DEFAULT_TEXTURE_STYLE } from '@/domains/interior-designer/constants/texture-defaults'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const POST = withRateLimit(
   withAuth(
     async (
       request: NextRequest,
-      { session }: AuthenticatedRequest
+      { session: _session }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorTextureResponse | { error: string }>> => {
       const body = await request.json()
       const parsedBody = interiorTextureRequestSchema.parse(body)
       const { prompt, apiKey, style, useSemanticSearch, width, height } = parsedBody
 
       if (!prompt) {
-        return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
+        return NextResponse.json({ error: API_ERROR.PROMPT_REQUIRED }, { status: 400 })
       }
 
       if (!apiKey) {
-        return NextResponse.json({ error: 'API Key is required' }, { status: 401 })
+        return NextResponse.json({ error: API_ERROR.API_KEY_IS_REQUIRED }, { status: 401 })
       }
 
       const dims = { width: width || 1024, height: height || 1024 }
       const imageUrl = await textureService.generateTexture(
         prompt,
         apiKey,
-        style || 'painterly',
+        style || DEFAULT_TEXTURE_STYLE,
         useSemanticSearch,
         dims
       )

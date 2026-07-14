@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { TRACE_ID_HEX_ENCODING } from '@/domains/storyteller/agents/constants/tracing'
 
 /**
  * Trace-id helpers shared by the chat routes and the dev tooling.
@@ -8,7 +9,7 @@ import { randomBytes } from 'node:crypto'
 
 /** Mastra expects traceId to be 1-32 hexadecimal characters (no UUIDs). */
 export function createMastraTraceId(): string {
-  return randomBytes(16).toString('hex')
+  return randomBytes(16).toString(TRACE_ID_HEX_ENCODING)
 }
 
 /** Return a Mastra-compatible trace ID (1–32 hex chars). UUIDs are converted to 32 hex; invalid values get a new id. */

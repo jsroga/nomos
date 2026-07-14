@@ -1,8 +1,9 @@
 import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper'
+import { WORKSPACE_PAGE_TITLE } from '@/shared/data/constants/route-metadata'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Dashboard',
+  title: WORKSPACE_PAGE_TITLE.DASHBOARD,
 }
 
 

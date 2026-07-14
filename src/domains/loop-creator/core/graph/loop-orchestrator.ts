@@ -10,10 +10,25 @@ import { loopPlannerAgent } from '../../agents/loop-planner'
 import { mechanicsDesignerAgent } from '../../agents/mechanics-designer'
 import { balanceAnalystAgent } from '../../agents/balance-analyst'
 import { progressionArchitectAgent } from '../../agents/progression-architect'
-import { nextAgentFromAgentNode } from './agent-nodes'
+import { marketAnalystAgent } from '../../agents/market-analyst-wrapper'
+import { nextAgentFromAgentNode, type AgentNode, isRegisteredAgent } from './agent-nodes'
+import { LoopAgentNode } from '@/domains/loop-creator/constants/agent-nodes'
+import {
+  LOOP_CREATOR_PHASE_COMPLETE,
+  NEXT_AGENT_END,
+  NEXT_AGENT_SUPERVISOR,
+} from '@/domains/loop-creator/constants/graph-state-defaults'
+import {
+  LOOP_AGENT_DISPLAY_NAMES,
+  LOOP_ORCHESTRATOR_UNKNOWN_ERROR,
+  LangChainMessageWire,
+  LoopOrchestratorEventType,
+  LoopOrchestratorLog,
+  LoopOrchestratorMessageType,
+} from '@/domains/loop-creator/constants/loop-orchestrator'
 
 export interface StreamEvent {
-  type: 'node' | 'message' | 'action' | 'questions' | 'token' | 'error'
+  type: LoopOrchestratorEventType
   node?: string
   agent?: string
   content?: string
@@ -37,31 +52,29 @@ export interface StreamEvent {
 
 const MAX_ROUNDS = 15
 
-import { AGENT_NODES, type AgentNode, isRegisteredAgent } from './agent-nodes'
-
 const AGENT_FNS: Record<
   AgentNode,
   (state: LoopCreatorState) => Promise<Partial<LoopCreatorState>>
 > = {
-  supervisor: supervisorAgent,
-  loop_planner: loopPlannerAgent,
-  mechanics_designer: mechanicsDesignerAgent,
-  balance_analyst: balanceAnalystAgent,
-  progression_architect: progressionArchitectAgent,
-  market_analyst: marketAnalystAgent,
+  [LoopAgentNode.Supervisor]: supervisorAgent,
+  [LoopAgentNode.LoopPlanner]: loopPlannerAgent,
+  [LoopAgentNode.MechanicsDesigner]: mechanicsDesignerAgent,
+  [LoopAgentNode.BalanceAnalyst]: balanceAnalystAgent,
+  [LoopAgentNode.ProgressionArchitect]: progressionArchitectAgent,
+  [LoopAgentNode.MarketAnalyst]: marketAnalystAgent,
 }
 
-function routeToNextAgent(state: LoopCreatorState): NextAgent | 'END' {
-  if (state.roundCount >= MAX_ROUNDS) return 'END'
-  if (state.currentPhase === 'complete') return 'END'
+function routeToNextAgent(state: LoopCreatorState): NextAgent | typeof NEXT_AGENT_END {
+  if (state.roundCount >= MAX_ROUNDS) return NEXT_AGENT_END
+  if (state.currentPhase === LOOP_CREATOR_PHASE_COMPLETE) return NEXT_AGENT_END
 
   const nextAgent = state.nextAgent
-  if (nextAgent && nextAgent !== 'END' && nextAgent !== 'supervisor') {
+  if (nextAgent && nextAgent !== NEXT_AGENT_END && nextAgent !== NEXT_AGENT_SUPERVISOR) {
     return nextAgent
   }
 
   if (state.pendingQuestions && state.pendingQuestions.length > 0) {
-    return 'END'
+    return NEXT_AGENT_END
   }
 
   return nextAgent
@@ -72,31 +85,33 @@ async function invokeAgent(
   state: LoopCreatorState,
 ): Promise<Partial<LoopCreatorState>> {
   try {
-    console.log(`[LoopOrchestrator] Invoking ${agentName}...`)
+    console.log(`${LoopOrchestratorLog.Invoking}${agentName}...`)
     const startTime = Date.now()
     const result = await AGENT_FNS[agentName](state)
-    console.log(`[LoopOrchestrator] ${agentName} completed in ${Date.now() - startTime}ms`)
+    console.log(
+      `${LoopOrchestratorLog.Completed}${agentName}${LoopOrchestratorLog.CompletedSuffix}${Date.now() - startTime}${LoopOrchestratorLog.CompletedMsSuffix}`
+    )
 
     const lastAgent = nextAgentFromAgentNode(agentName)
     const baseResult = { ...result, lastAgent }
 
-    if (agentName === 'supervisor') {
+    if (agentName === LoopAgentNode.Supervisor) {
       return { ...baseResult, roundCount: state.roundCount + 1 }
     }
 
     return baseResult
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`[LoopOrchestrator] Agent ${agentName} failed:`, errorMsg)
+    const errorMsg = error instanceof Error ? error.message : LOOP_ORCHESTRATOR_UNKNOWN_ERROR
+    console.error(`${LoopOrchestratorLog.AgentFailed}${agentName}${LoopOrchestratorLog.AgentFailedSuffix}`, errorMsg)
 
     const lastAgent = nextAgentFromAgentNode(agentName)
     return {
       errors: [errorMsg],
-      nextAgent: 'END',
+      nextAgent: NEXT_AGENT_END,
       lastAgent,
       messages: [
         new AIMessage({
-          content: `Error in ${agentName}: ${errorMsg}. Please try again.`,
+          content: `${LoopOrchestratorLog.ErrorInAgent}${agentName}${LoopOrchestratorLog.ErrorRetrySuffix}${errorMsg}${LoopOrchestratorLog.ErrorRetryPrompt}`,
           name: agentName,
         }),
       ],
@@ -104,29 +119,29 @@ async function invokeAgent(
   }
 }
 
-function resolveNode(next: NextAgent | 'END'): AgentNode | null {
-  if (next === 'END' || !next) return null
+function resolveNode(next: NextAgent | typeof NEXT_AGENT_END): AgentNode | null {
+  if (next === NEXT_AGENT_END || !next) return null
   if (isRegisteredAgent(next)) return next
-  console.warn(`[LoopOrchestrator] Unknown nextAgent: ${next}`)
+  console.warn(`${LoopOrchestratorLog.UnknownNextAgent}${next}`)
   return null
-}
-
-const FRIENDLY_NAMES: Record<string, string> = {
-  supervisor: 'Showrunner',
-  loop_planner: 'Loop Planner',
-  mechanics_designer: 'Mechanics Designer',
-  balance_analyst: 'Balance Analyst',
-  progression_architect: 'Progression Architect',
-  market_analyst: 'Market Analyst',
 }
 
 function isLangChainAIMessage(msg: unknown): boolean {
   if (msg instanceof AIMessage) return true
-  if (typeof msg === 'object' && msg !== null && '_getType' in msg) {
-    const getType = Reflect.get(msg, '_getType')
-    return typeof getType === 'function' && getType() === 'ai'
+  if (typeof msg === 'object' && msg !== null && LangChainMessageWire.GetType in msg) {
+    const getType = Reflect.get(msg, LangChainMessageWire.GetType)
+    return typeof getType === 'function' && getType() === LangChainMessageWire.Ai
   }
   return false
+}
+
+function displayNameForNode(nodeName: string): string {
+  for (const agent of Object.values(LoopAgentNode)) {
+    if (agent === nodeName) {
+      return LOOP_AGENT_DISPLAY_NAMES[agent]
+    }
+  }
+  return nodeName
 }
 
 function emitNodeOutput(
@@ -135,14 +150,14 @@ function emitNodeOutput(
   onEvent: (event: StreamEvent) => void,
 ) {
   const nodeEvent = {
-    type: 'node' as const,
+    type: LoopOrchestratorEventType.Node,
     node: nodeName,
-    agent: FRIENDLY_NAMES[nodeName] || nodeName,
+    agent: displayNameForNode(nodeName),
     timestamp: Date.now(),
   }
   onEvent(nodeEvent)
   onEvent({
-    type: 'token',
+    type: LoopOrchestratorEventType.Token,
     token: `${JSON.stringify(nodeEvent, null, 2)}\n`,
     timestamp: Date.now(),
   })
@@ -153,15 +168,20 @@ function emitNodeOutput(
 
       const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
       const msgEvent = {
-        type: 'message' as const,
+        type: LoopOrchestratorEventType.Message,
         node: nodeName,
         agent: nodeName,
-        message: { type: 'ai', content, sender: nodeName, name: nodeName },
+        message: {
+          type: LoopOrchestratorMessageType.Ai,
+          content,
+          sender: nodeName,
+          name: nodeName,
+        },
         timestamp: Date.now(),
       }
       onEvent(msgEvent)
       onEvent({
-        type: 'token',
+        type: LoopOrchestratorEventType.Token,
         token: `${JSON.stringify(msgEvent, null, 2)}\n`,
         timestamp: Date.now(),
       })
@@ -171,7 +191,7 @@ function emitNodeOutput(
   if (output.pendingActions) {
     for (const action of output.pendingActions) {
       const actionEvent = {
-        type: 'action' as const,
+        type: LoopOrchestratorEventType.Action,
         action: {
           type: action.type,
           payload: action.payload,
@@ -183,7 +203,7 @@ function emitNodeOutput(
       }
       onEvent(actionEvent)
       onEvent({
-        type: 'token',
+        type: LoopOrchestratorEventType.Token,
         token: `${JSON.stringify(actionEvent, null, 2)}\n`,
         timestamp: Date.now(),
       })
@@ -192,7 +212,7 @@ function emitNodeOutput(
 
   if (output.pendingQuestions && output.pendingQuestions.length > 0) {
     onEvent({
-      type: 'questions',
+      type: LoopOrchestratorEventType.Questions,
       questions: output.pendingQuestions,
       timestamp: Date.now(),
     })
@@ -205,9 +225,9 @@ export async function streamLoopCreator(
   onEvent: (event: StreamEvent) => void,
 ): Promise<LoopCreatorState> {
   let state = initialState
-  let currentNode: AgentNode = 'supervisor'
+  let currentNode: AgentNode = LoopAgentNode.Supervisor
 
-  console.log('[LoopOrchestrator] Starting run...')
+  console.log(LoopOrchestratorLog.StartingRun)
 
   while (true) {
     const output = await invokeAgent(currentNode, state)
@@ -215,7 +235,7 @@ export async function streamLoopCreator(
     emitNodeOutput(currentNode, output, onEvent)
 
     const next = routeToNextAgent(state)
-    if (next === 'END') break
+    if (next === NEXT_AGENT_END) break
 
     const resolved = resolveNode(next)
     if (!resolved) break

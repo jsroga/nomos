@@ -13,11 +13,11 @@ const strictTypeScriptRules = typescript.configs.strict.rules
 
 const DOMAIN_MODULES = [
   'storyteller',
-  'chat',
+  // chat moved to src/shared/chat (PLAN-V2 3.1 — platform, not a domain)
   'interior-designer',
   'loop-creator',
   'marketing',
-  'deduction-puzzle-designer',
+  // deduction-puzzle-designer deleted (user-confirmed, PLAN-V2 6.2)
   '3d-asset-exporter',
   'game-design',
   'world-building-toolkit',
@@ -40,8 +40,9 @@ const DOMAIN_BARREL_GUARD_PATTERNS = [
       'Import from "@/domains/world-building-toolkit" instead of world-building-toolkit internals.',
   },
   {
-    group: ['@/domains/chat/*'],
-    message: 'Import from "@/domains/chat" instead of chat internals.',
+    // chat lives in src/shared/chat now (PLAN-V2 3.1); the old path must not come back
+    group: ['@/domains/chat', '@/domains/chat/*'],
+    message: 'chat moved to @/shared/chat (platform module) — import from there.',
   },
   {
     group: ['@/domains/loop-creator/*'],
@@ -50,11 +51,6 @@ const DOMAIN_BARREL_GUARD_PATTERNS = [
   {
     group: ['@/domains/marketing/*'],
     message: 'Import from "@/domains/marketing" instead of marketing internals.',
-  },
-  {
-    group: ['@/domains/deduction-puzzle-designer/*'],
-    message:
-      'Import from "@/domains/deduction-puzzle-designer" instead of deduction-puzzle-designer internals.',
   },
   {
     group: ['@/domains/3d-asset-exporter/*'],
@@ -346,6 +342,15 @@ module.exports = [
   },
   {
     files: ['eslint-rules/**/*.js'],
+    rules: {
+      'local/no-magic-string': 'off',
+    },
+  },
+  {
+    // Test files: describe/it titles, fixtures, and assertion messages are
+    // inherently string-heavy — the magic-string rule targets RUNTIME wire/
+    // domain values, not test prose. Other quality rules still apply.
+    files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', '**/*.e2e.test.{ts,tsx}'],
     rules: {
       'local/no-magic-string': 'off',
     },

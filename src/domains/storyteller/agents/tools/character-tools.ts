@@ -4,6 +4,7 @@
  * Consolidated character CRUD (merge create+update into manageCharacterTool).
  */
 
+import '@/shared/data/server-guard'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { characters } from '@/db/schema'

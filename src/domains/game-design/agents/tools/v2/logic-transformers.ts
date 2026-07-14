@@ -29,7 +29,7 @@ export const createIdentifyCoreLoopTool = () =>
     description: `Analyzes a set of game mechanics and identifies the core gameplay loop.
 This tool uses AI to determine which mechanics form the central engagement cycle,
 what psychological hooks are at play, and how long each cycle typically takes.`,
-    schema: IdentifyCoreLoopInputSchema,
+    inputSchema: IdentifyCoreLoopInputSchema,
     execute: async (args) => {
       try {
         const mechanics = args.mechanics || []
@@ -122,7 +122,7 @@ export const createAnalyzeMechanicBalanceTool = () =>
     description: `Analyzes the balance of game mechanics within a loop.
 Checks for reward imbalances, effort mismatches, dead ends, and grind detection.
 Returns a comprehensive balance report with actionable recommendations.`,
-    schema: AnalyzeMechanicBalanceInputSchema,
+    inputSchema: AnalyzeMechanicBalanceInputSchema,
     execute: async (args) => {
       try {
         const mechanics = args.mechanics || []
@@ -232,7 +232,7 @@ export const createSuggestProgressionTool = () =>
     description: `Suggests ways to expand and improve a game loop's progression system.
 Can suggest new mechanics, balance tweaks, or progression gates based on the
 desired expansion direction (depth, breadth, or complexity).`,
-    schema: SuggestProgressionToolInputSchema,
+    inputSchema: SuggestProgressionToolInputSchema,
     execute: async (args) => {
       try {
         const currentLoop = args.currentLoop
@@ -357,7 +357,7 @@ export const createValidateLoopStructureTool = () =>
     description: `Validates the structural integrity of a game loop.
 Checks for orphan nodes, missing mechanics, broken cycles, and unreachable states.
 Returns validation results with specific issues and graph metrics.`,
-    schema: ValidateLoopStructureInputSchema,
+    inputSchema: ValidateLoopStructureInputSchema,
     execute: async (args) => {
       try {
         const loop = args.loop

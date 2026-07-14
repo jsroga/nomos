@@ -1,10 +1,10 @@
-
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { projects } from '@/db'
 import { eq } from 'drizzle-orm'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 
-export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
     const params = await props.params
     try {
         const project = await db.query.projects.findFirst({
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
         })
 
         if (!project) {
-            return NextResponse.json({ error: 'Project not found' })
+            return NextResponse.json({ error: API_ERROR.PROJECT_NOT_FOUND })
         }
 
         return NextResponse.json({

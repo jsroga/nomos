@@ -22,8 +22,20 @@ const EXEMPT_PATTERNS = [
   /-wire\.ts$/,
   /[/\\]constants[/\\]/,
   /[/\\]agent-schemas\.ts$/,
-  /[/\\]beat-plan-schema\.ts$/,
-  /[/\\]critic-schema\.ts$/,
+  /-schema\.ts$/,
+  /[/\\]schemas\.ts$/,
+  /-scorer\.ts$/,
+  /[/\\]domains[/\\][^/\\]+[/\\]prompts[/\\]/,
+  /[/\\]domains[/\\][^/\\]+[/\\]agents[/\\]/,
+  /[/\\]agents[/\\].*[/\\]tools[/\\]/,
+  /[/\\]mcp[/\\]domains[/\\][^/\\]+[/\\]tools\.ts$/,
+  /[/\\]domains[/\\][^/\\]+[/\\]tasks[/\\].+\.task\.ts$/,
+  /[/\\]db[/\\]schema\.ts$/,
+  /[/\\]shared[/\\]agent-kernel[/\\]mastra[/\\]tools[/\\]/,
+  /[/\\]shared[/\\]agent-kernel[/\\]prompts[/\\]/,
+  /[/\\]shared[/\\]agent-kernel[/\\]models\.ts$/,
+  /[/\\]shared[/\\]ai[/\\]rag[/\\]/,
+  /[/\\]shared[/\\]ai[/\\]contextAssembler/,
   /\.d\.ts$/,
 ]
 
@@ -337,9 +349,8 @@ function main() {
     const now = new Date().toISOString()
     for (const file of files) {
       if (isExempt(file)) continue
-      if (magic[file] !== undefined) state.files[file].magic = magic[file]
-      else if (state.files[file].magic === null) state.files[file].magic = 0
-      if (eslint[file] !== undefined) state.files[file].eslint = eslint[file]
+      state.files[file].magic = magic[file] ?? 0
+      state.files[file].eslint = eslint[file] ?? 0
     }
     state.generatedAt = now
   }

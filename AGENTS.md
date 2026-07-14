@@ -26,14 +26,17 @@ The dark-factory execute loop has three interchangeable runners that share the *
 
 | Concern | Location |
 |---------|----------|
-| Mastra instance | `src/mastra.ts` (Studio CLI), `src/shared/agent-kernel/MastraInstance.ts` (app) |
-| Agents | `src/domains/*/agents` |
-| Tools | `src/domains/*/agents/tools`, `src/shared/agent-kernel/mastra/tools/` |
-| Models | `src/agent-core/models.ts`, domain `ModelConfig/` |
+| Mastra instance | `src/mastra.ts` (Studio CLI canonical export), `src/shared/agent-kernel/MastraInstance.ts` (app) |
+| CLI shim | `src/mastra/index.ts` — 2-line re-export of `src/mastra.ts`; exists only because `mastra dev/build` resolves `src/mastra/index.ts`. Keep both; do not add code here. |
+| Agents | `src/domains/*/agents` (server-only layer — see `docs/unified/ARCHITECTURE.md` §4; enforced via `import '@/shared/data/server-guard'`, NOT the `server-only` package, which throws under node and would crash Mastra Studio/evals/vitest; structure test checks it, pure schema modules allowlisted) |
+| Agent registration | `src/shared/agent-kernel/mastra/runtime-registry.ts` (domains register at import via `io/mastra-runtime.ts`; shared never imports domains) |
+| AgentController | `@mastra/core/agent-controller` — sessions, modes, plan→build gate (see "Plan-first agents" below) |
+| Tools | `src/domains/*/agents/tools`, `src/shared/agent-kernel/mastra/tools/` (bundler-safe Studio stubs) |
+| Models | `src/shared/agent-kernel/models.ts` (kernel/judging), domain `config/ModelConfig.ts` (`resolveRoleModel` role slots) |
 | Memory | `@mastra/memory` + `PostgresStore` via shared storage |
 | Observability | `@mastra/observability`, `src/shared/observability/observability.ts` |
-| Evals / scorers | `@mastra/core/evals` `createScorer`, `src/shared/agent-kernel/scorers/` |
-| Prompts | `src/prompts/*`, domain `prompts/` |
+| Evals / scorers | `@mastra/core/evals` `createScorer`, `src/shared/agent-kernel/scorers/` + domain deterministic scorers unioned in `evals/run.ts` |
+| Prompts | `src/shared/agent-kernel/prompts/` (repository + core prompts), domain `prompts/` |
 
 ## Tool pattern
 
@@ -54,6 +57,20 @@ Delegate business logic to `src/services/*` when it exists. Tool `id` is snake_c
 Register through the central Mastra instance so storage, workspace, and tracing are shared. Wrap runs in `withSpan` where the domain already does. Bound memory (`lastMessages: 10` or similar).
 
 Subagents → `agents` config (`agent-<key>` tools). Mastra workflows ≠ Fabro workflows (`.fabro/workflows/execute/`).
+
+## Plan-first agents (AgentController)
+
+Mastra supports forcing an agent to **plan before it builds** — natively, no custom scaffolding:
+
+- **`AgentController`** (`@mastra/core/agent-controller`) owns sessions, modes, shared memory/storage. Each consumer creates a `Session` (`createSession({ resourceId, tags })`) and drives work through it.
+- **Modes** carve operating profiles. Each mode may set a `tools` allowlist — only listed tools are visible/executable in that mode. A mode may declare a **plan→build target**: when the model calls `submit_plan` in plan mode and the plan is **approved**, the session flips to the target mode idempotently. Unapproved = stays in plan mode.
+- **The forced-plan-first recipe:** `modes: [{ id: 'plan', default: true, tools: [read-only tools + submit_plan], target: 'build' }, { id: 'build', tools: [everything] }]`. Plan mode physically cannot mutate — the mutating tools are not exposed to the model at all.
+- **Per-tool/category permissions** (`session.permissions.setForCategory`) layer on top: a category `deny` wins even inside build mode.
+- **Storyteller policy (decided 2026-07-09): mutations only.** Reads are never gated; the plan/build split is exactly the read-only vs mutating tool boundary. See `PLAN-V2.md` Phase 4.
+
+When to use **workflow suspend/resume instead**: approvals that must survive restarts and arrive out-of-band (e.g. the beat-draft editorial verdict) belong in a Mastra **workflow** `suspendSchema`/`resumeSchema` step — durable snapshot in Postgres, resumable from any surface. Controller modes gate *what the agent may do next*; workflow suspend gates *a specific decision inside a run*. They compose.
+
+Docs: `mastra.ai/docs/agent-controller/{overview,session,modes,tool-approvals}.md`, `mastra.ai/docs/workflows/{suspend-and-resume,human-in-the-loop}.md`. The pinned local types are authoritative: `node_modules/@mastra/core/dist/agent-controller/types.d.ts`.
 
 ## Don't
 

@@ -1,11 +1,20 @@
 /**
  * LLM Request Logger for Trigger.dev Tasks
- * 
+ *
  * Logs all LLM requests with exact input/output, prompts, and image URLs
  * to the Trigger.dev panel for debugging and monitoring.
  */
 
 import { logger } from '@trigger.dev/sdk/v3'
+import {
+  LLM_LOG_USER_ROLE,
+  LlmContentPartType,
+  LlmLogEntryType,
+  LlmLogFallback,
+  LlmLogMessage,
+  LlmLogSanitize,
+  LlmLogSensitiveKeyFragment,
+} from '@/trigger/constants/llm-logger'
 
 export interface LLMRequestLog {
   provider: 'openai' | 'gemini' | 'nano-banana' | 'anthropic' | 'stability' | 'midjourney' | 'meshy' | 'other'
@@ -20,9 +29,6 @@ export interface LLMRequestLog {
   metadata?: Record<string, any>
 }
 
-/**
- * Log an LLM request with full details
- */
 export function logLLMRequest(logData: LLMRequestLog) {
   const {
     provider,
@@ -37,11 +43,10 @@ export function logLLMRequest(logData: LLMRequestLog) {
     metadata = {},
   } = logData
 
-  // Build comprehensive log entry
   const logEntry = {
-    type: 'llm_request',
+    type: LlmLogEntryType.Request,
     provider,
-    model: model || 'unknown',
+    model: model || LlmLogFallback.UnknownModel,
     timestamp: new Date().toISOString(),
     ...(prompt && { prompt }),
     ...(messages && { messages }),
@@ -54,15 +59,12 @@ export function logLLMRequest(logData: LLMRequestLog) {
   }
 
   if (error) {
-    logger.error('[LLM Request]', logEntry)
+    logger.error(LlmLogMessage.Request, logEntry)
   } else {
-    logger.info('[LLM Request]', logEntry)
+    logger.info(LlmLogMessage.Request, logEntry)
   }
 }
 
-/**
- * Log LLM request start (before making the call)
- */
 export function logLLMRequestStart(logData: Omit<LLMRequestLog, 'output' | 'error'>) {
   const {
     provider,
@@ -75,9 +77,9 @@ export function logLLMRequestStart(logData: Omit<LLMRequestLog, 'output' | 'erro
   } = logData
 
   const logEntry = {
-    type: 'llm_request_start',
+    type: LlmLogEntryType.RequestStart,
     provider,
-    model: model || 'unknown',
+    model: model || LlmLogFallback.UnknownModel,
     timestamp: new Date().toISOString(),
     ...(prompt && { prompt }),
     ...(messages && { messages }),
@@ -86,12 +88,9 @@ export function logLLMRequestStart(logData: Omit<LLMRequestLog, 'output' | 'erro
     ...metadata,
   }
 
-  logger.info('[LLM Request Start]', logEntry)
+  logger.info(LlmLogMessage.RequestStart, logEntry)
 }
 
-/**
- * Log LLM request completion (after successful call)
- */
 export function logLLMRequestComplete(logData: Omit<LLMRequestLog, 'error'>) {
   const {
     provider,
@@ -102,21 +101,18 @@ export function logLLMRequestComplete(logData: Omit<LLMRequestLog, 'error'>) {
   } = logData
 
   const logEntry = {
-    type: 'llm_request_complete',
+    type: LlmLogEntryType.RequestComplete,
     provider,
-    model: model || 'unknown',
+    model: model || LlmLogFallback.UnknownModel,
     timestamp: new Date().toISOString(),
     ...(outputImageUrls && outputImageUrls.length > 0 && { outputImageUrls }),
     ...(output && { output: sanitizeForLogging(output) }),
     ...metadata,
   }
 
-  logger.info('[LLM Request Complete]', logEntry)
+  logger.info(LlmLogMessage.RequestComplete, logEntry)
 }
 
-/**
- * Log LLM request error
- */
 export function logLLMRequestError(logData: LLMRequestLog) {
   const {
     provider,
@@ -127,52 +123,47 @@ export function logLLMRequestError(logData: LLMRequestLog) {
   } = logData
 
   const logEntry = {
-    type: 'llm_request_error',
+    type: LlmLogEntryType.RequestError,
     provider,
-    model: model || 'unknown',
+    model: model || LlmLogFallback.UnknownModel,
     timestamp: new Date().toISOString(),
-    error: error || 'Unknown error',
+    error: error || LlmLogFallback.UnknownError,
     ...(input && { input: sanitizeForLogging(input) }),
     ...metadata,
   }
 
-  logger.error('[LLM Request Error]', logEntry)
+  logger.error(LlmLogMessage.RequestError, logEntry)
 }
 
-/**
- * Sanitize data for logging (remove sensitive info, truncate large values)
- */
 function sanitizeForLogging(data: any): any {
   if (data === null || data === undefined) {
     return data
   }
 
-  // Handle base64 image data - replace with placeholder
   if (typeof data === 'string' && data.length > 1000 && data.match(/^data:image/)) {
-    return '[Base64 Image Data - truncated]'
+    return LlmLogSanitize.Base64ImageTruncated
   }
 
-  // Handle large base64 strings
   if (typeof data === 'string' && data.length > 5000) {
-    return data.substring(0, 500) + '... [truncated]'
+    return data.substring(0, 500) + LlmLogSanitize.TruncatedSuffix
   }
 
-  // Handle arrays
   if (Array.isArray(data)) {
     return data.map(item => sanitizeForLogging(item))
   }
 
-  // Handle objects
   if (typeof data === 'object') {
     const sanitized: any = {}
     for (const [key, value] of Object.entries(data)) {
-      // Skip sensitive keys
-      if (key.toLowerCase().includes('key') || key.toLowerCase().includes('secret') || key.toLowerCase().includes('token')) {
-        sanitized[key] = '[REDACTED]'
+      if (
+        key.toLowerCase().includes(LlmLogSensitiveKeyFragment.Key) ||
+        key.toLowerCase().includes(LlmLogSensitiveKeyFragment.Secret) ||
+        key.toLowerCase().includes(LlmLogSensitiveKeyFragment.Token)
+      ) {
+        sanitized[key] = LlmLogSanitize.Redacted
         continue
       }
 
-      // Handle nested objects
       if (typeof value === 'object' && value !== null) {
         sanitized[key] = sanitizeForLogging(value)
       } else {
@@ -185,36 +176,30 @@ function sanitizeForLogging(data: any): any {
   return data
 }
 
-/**
- * Extract image URLs from various response formats
- */
 export function extractImageUrls(data: any): string[] {
   const urls: string[] = []
 
   if (!data) return urls
 
-  // Handle OpenAI DALL-E response
   if (data.data && Array.isArray(data.data)) {
     for (const item of data.data) {
       if (item.url) urls.push(item.url)
-      if (item.b64_json) urls.push('[Base64 Image Data]')
+      if (item.b64_json) urls.push(LlmLogSanitize.Base64Image)
     }
   }
 
-  // Handle Gemini response
   if (data.candidates && Array.isArray(data.candidates)) {
     for (const candidate of data.candidates) {
       if (candidate.content?.parts) {
         for (const part of candidate.content.parts) {
           if (part.inline_data || part.inlineData) {
-            urls.push('[Base64 Image Data]')
+            urls.push(LlmLogSanitize.Base64Image)
           }
         }
       }
     }
   }
 
-  // Handle LegNext/Midjourney response
   if (data.output) {
     if (data.output.image_url) urls.push(data.output.image_url)
     if (data.output.image_urls && Array.isArray(data.output.image_urls)) {
@@ -222,13 +207,11 @@ export function extractImageUrls(data: any): string[] {
     }
   }
 
-  // Handle direct image_url
   if (data.image_url) urls.push(data.image_url)
   if (data.image_urls && Array.isArray(data.image_urls)) {
     urls.push(...data.image_urls)
   }
 
-  // Handle nested objects recursively
   if (typeof data === 'object') {
     for (const value of Object.values(data)) {
       if (typeof value === 'object' && value !== null) {
@@ -237,34 +220,28 @@ export function extractImageUrls(data: any): string[] {
     }
   }
 
-  return [...new Set(urls)] // Remove duplicates
+  return [...new Set(urls)]
 }
 
-/**
- * Extract prompt from various input formats
- */
 export function extractPrompt(data: any): string | undefined {
   if (!data) return undefined
 
-  // Direct prompt
   if (typeof data.prompt === 'string') return data.prompt
   if (typeof data.text === 'string') return data.text
 
-  // From messages array
   if (data.messages && Array.isArray(data.messages)) {
-    const userMessage = data.messages.find((m: any) => m.role === 'user')
+    const userMessage = data.messages.find((m: any) => m.role === LLM_LOG_USER_ROLE)
     if (userMessage?.content) {
       if (typeof userMessage.content === 'string') {
         return userMessage.content
       }
       if (Array.isArray(userMessage.content)) {
-        const textPart = userMessage.content.find((p: any) => p.type === 'text')
+        const textPart = userMessage.content.find((p: any) => p.type === LlmContentPartType.Text)
         if (textPart?.text) return textPart.text
       }
     }
   }
 
-  // From contents array (Gemini format)
   if (data.contents && Array.isArray(data.contents)) {
     for (const content of data.contents) {
       if (content.parts && Array.isArray(content.parts)) {

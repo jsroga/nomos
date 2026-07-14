@@ -3,6 +3,15 @@
 
 import React, { useState } from 'react'
 import { useInteriorStore } from '@/domains/interior-designer'
+import { InteriorObjectModel, INTERACTION_MODE_OBJECT } from '@/domains/interior-designer/constants/interaction-modes'
+import {
+  OBJECT_GHOST_BLOCKED_COLOR,
+  OBJECT_GHOST_PLACABLE_COLOR,
+} from '@/domains/interior-designer/constants/mesh-colors'
+import {
+  SceneUserDataType,
+  THREE_MESH_OBJECT_TYPE,
+} from '@/domains/interior-designer/constants/three-js'
 import { vec3 } from '@/domains/interior-designer/core/vec3'
 import { useThree, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -18,13 +27,13 @@ export const ObjectTool: React.FC = () => {
   const [currentRotation, setCurrentRotation] = useState<[number, number, number]>([0, 0, 0])
   const [isPlacable, setIsPlacable] = useState<boolean>(true)
 
-  // Only active in OBJECT mode
-  if (mode !== 'OBJECT') return null
+  if (mode !== INTERACTION_MODE_OBJECT) return null
 
   const getIntersection = () => {
     raycaster.setFromCamera(pointer, camera)
 
-    const isWindowOrDoor = activeModelUrl === 'window' || activeModelUrl === 'door'
+    const isWindowOrDoor =
+      activeModelUrl === InteriorObjectModel.Window || activeModelUrl === InteriorObjectModel.Door
 
     // First, try to intersect with the scene (surfaces, etc)
     const intersects = raycaster.intersectObjects(scene.children, true)
@@ -32,12 +41,12 @@ export const ObjectTool: React.FC = () => {
     if (isWindowOrDoor) {
       // Filter hits to only walls
       const wallHit = intersects.find(hit => {
-        return hit.object.type === 'Mesh' && hit.object.visible && hit.object.userData?.type === 'wall'
+        return hit.object.type === THREE_MESH_OBJECT_TYPE && hit.object.visible && hit.object.userData?.type === SceneUserDataType.Wall
       })
 
       if (wallHit) {
         // Extract wall data
-        const { start, end, thickness, height } = wallHit.object.userData
+        const { start, end, height } = wallHit.object.userData
         const dx = end[0] - start[0]
         const dz = end[2] - start[2]
 
@@ -48,7 +57,7 @@ export const ObjectTool: React.FC = () => {
         // but perhaps center it vertically based on activeLevel or just use hit Y.
         // Let's strictly place it at Y=0 relative to the group for now or specific wall height.
         let y = 0
-        if (activeModelUrl === 'window') {
+        if (activeModelUrl === InteriorObjectModel.Window) {
           // Constrain window vertically to the center of the wall
           y = height / 2
         }
@@ -82,7 +91,7 @@ export const ObjectTool: React.FC = () => {
     // Default object placement logic
     const groundHit = intersects.find(hit => {
       // Prioritize surfaces, ignore ghosts
-      return hit.object.type === 'Mesh' && hit.object.visible && hit.object.userData?.type !== 'wall'
+      return hit.object.type === THREE_MESH_OBJECT_TYPE && hit.object.visible && hit.object.userData?.type !== SceneUserDataType.Wall
     })
 
     if (groundHit) {
@@ -114,7 +123,7 @@ export const ObjectTool: React.FC = () => {
     }
   }
 
-  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
+  const handlePointerDown = (_e: ThreeEvent<PointerEvent>) => {
     const intersection = getIntersection()
     if (!intersection) return
 
@@ -129,44 +138,44 @@ export const ObjectTool: React.FC = () => {
     })
   }
 
-  const ghostColor = isPlacable ? '#f59e0b' : '#ef4444'
+  const ghostColor = isPlacable ? OBJECT_GHOST_PLACABLE_COLOR : OBJECT_GHOST_BLOCKED_COLOR
 
   return (
     <group position={[0, activeLevel * 3, 0]}>
       {/* Preview Ghost Object */}
       {currentPoint && (
         <group position={currentPoint} rotation={currentRotation} raycast={() => null}>
-          {activeModelUrl === 'window' && (
+          {activeModelUrl === InteriorObjectModel.Window && (
             <mesh position={[0, 0, 0]}>
               <boxGeometry args={[1, 1.2, 0.1]} />
               <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
             </mesh>
           )}
-          {activeModelUrl === 'door' && (
+          {activeModelUrl === InteriorObjectModel.Door && (
             <mesh position={[0, 1.05, 0]}>
               <boxGeometry args={[0.9, 2.1, 0.05]} />
               <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
             </mesh>
           )}
-          {activeModelUrl === 'cube' && (
+          {activeModelUrl === InteriorObjectModel.Cube && (
             <mesh position={[0, 0.5, 0]}>
               <boxGeometry args={[1, 1, 1]} />
               <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
             </mesh>
           )}
-          {activeModelUrl === 'sphere' && (
+          {activeModelUrl === InteriorObjectModel.Sphere && (
             <mesh position={[0, 0.5, 0]}>
               <sphereGeometry args={[0.5]} />
               <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
             </mesh>
           )}
-          {activeModelUrl === 'cylinder' && (
+          {activeModelUrl === InteriorObjectModel.Cylinder && (
             <mesh position={[0, 0.5, 0]}>
               <cylinderGeometry args={[0.5, 0.5, 1]} />
               <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />
             </mesh>
           )}
-          {activeModelUrl === 'cone' && (
+          {activeModelUrl === InteriorObjectModel.Cone && (
             <mesh position={[0, 0.5, 0]}>
               <coneGeometry args={[0.5, 1]} />
               <meshStandardMaterial color={ghostColor} transparent opacity={0.5} />

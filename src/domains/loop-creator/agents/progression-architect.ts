@@ -10,7 +10,7 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
-import { LoopCreatorState, ProgressionSystem, LoopAgentAction, NextAgent } from '../core/graph/state'
+import { LoopCreatorState, ProgressionSystem, LoopAgentAction } from '../core/graph/state'
 import { v4 as uuidv4 } from 'uuid'
 
 const PROGRESSION_ARCHITECT_SYSTEM_PROMPT = `You are a Progression Architect - an expert in designing compelling player progression systems.

@@ -17,7 +17,7 @@ export const generate3DModelTask = task({
     targetPolycount?: number
     topology?: 'quad' | 'triangle'
   }) => {
-    const { projectId, assetId, imageUrl, provider, apiKey, targetPolycount, topology } = payload
+    const { assetId, imageUrl, provider, apiKey, targetPolycount, topology } = payload
 
     logger.info(`Generating 3D model for asset ${assetId} using ${provider}`)
 

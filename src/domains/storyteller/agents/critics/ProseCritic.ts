@@ -5,16 +5,23 @@
  * Narrow brief, diagnosis only, never rewrites.
  */
 
+import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
-import { resolveRoleModel } from '@/domains/storyteller/config/ModelConfig'
+import { resolveRoleModel } from '@/domains/storyteller/config/constants/ModelConfig'
+import {
+  CriticAgentDescription,
+  CriticAgentId,
+  CriticAgentName,
+  StorytellerModelRoleKey,
+} from '@/domains/storyteller/agents/critics/constants/critic-agents'
 import { CRITIC_RULES } from './critic-rules'
 import { formatBannedPhrasesForPrompt } from '@/domains/storyteller/prompts/guardrails/anti-slop-phrases'
 
 export const proseCritic = new Agent({
-  id: 'prose-critic',
-  name: 'Prose Critic',
-  description: 'Finds stated emotion, clichés, POV breaks, and voice flattening.',
-  model: () => resolveRoleModel('critic'),
+  id: CriticAgentId.Prose,
+  name: CriticAgentName.Prose,
+  description: CriticAgentDescription.Prose,
+  model: () => resolveRoleModel(StorytellerModelRoleKey.Critic),
   instructions: `You are a line-level prose critic. You will receive a draft beat or scene.
 
 Your ONLY brief:

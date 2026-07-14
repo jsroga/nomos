@@ -1,0 +1,5 @@
+export const LEGAL_DOC_TERMS_FILENAME = 'terms.md'
+export const LEGAL_DOC_TERMS_TITLE = 'Terms and Conditions'
+export const LEGAL_DOC_PRIVACY_FILENAME = 'privacy.md'
+export const LEGAL_DOC_PRIVACY_TITLE = 'Privacy Policy'
+export const FILE_ENCODING_UTF8 = 'utf8'

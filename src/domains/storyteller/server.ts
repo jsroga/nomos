@@ -3,8 +3,8 @@
  * Use in API routes, MCP, and Trigger tasks — never import from the client barrel.
  */
 
-export * from './db/schema'
-export * as storytellerSchema from './db/schema'
+// (Schema re-exports removed with the duplicate domain schema, PLAN-V2 6.1 —
+// tables live at @/db/schema; no server-barrel consumer imported them.)
 
 export * from './services/AccessVerificationService'
 export * from './services/ContextAssemblyService'

@@ -13,6 +13,20 @@ import {
 import { canEditBible } from '@/shared/auth/bible-permissions'
 import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
 import { recordFromJson } from '@/shared/data/json-guards'
+import {
+  BIBLE_CONTEXT_DEFAULT_WORLD_RULE_CATEGORY,
+  BIBLE_CONTEXT_HOOK_ERROR,
+  BIBLE_CONTEXT_LOCK_API_PATH,
+  BIBLE_CONTEXT_LOCK_CACHE_PREFIX,
+  BIBLE_CONTEXT_LOG_LOCK_FETCH_FAILED,
+  BIBLE_CONTEXT_LOG_PARENT_CAUGHT_UP,
+  BIBLE_CONTEXT_TOAST_LOCKED,
+  BIBLE_CONTEXT_TOAST_LOCK_FAILED,
+  BIBLE_CONTEXT_TOAST_UNLOCKED,
+  BIBLE_CONTEXT_TOAST_UPDATED,
+  BibleContextHttpMethod,
+  BibleLockAction,
+} from './constants/bible-context'
 
 // Pending action for a section
 export interface PendingAction {
@@ -161,7 +175,7 @@ export const BibleProvider: React.FC<{
 
       if (lastSavedPlan.current) {
         if (lastSavedPlan.current === planStr) {
-          console.info('[BibleContext] Parent caught up with saved data. Clearing lock.')
+          console.info(BIBLE_CONTEXT_LOG_PARENT_CAUGHT_UP)
           lastSavedPlan.current = null
           // Continue to sync just in case
         } else {
@@ -182,9 +196,9 @@ export const BibleProvider: React.FC<{
       if (!projectId) return
 
       cachedFetch(
-        `bible-lock:${projectId}`,
+        `${BIBLE_CONTEXT_LOCK_CACHE_PREFIX}${projectId}`,
         async () => {
-          const response = await fetch(`/api/storyteller/bible/lock?projectId=${projectId}`)
+          const response = await fetch(`${BIBLE_CONTEXT_LOCK_API_PATH}?projectId=${projectId}`)
           if (response.ok) {
             return response.json()
           }
@@ -205,7 +219,7 @@ export const BibleProvider: React.FC<{
           setLockedAt(data.lockedAt ? new Date(data.lockedAt) : null)
         })
         .catch(error => {
-          console.warn('[Bible Context] Failed to fetch lock status:', error)
+          console.warn(BIBLE_CONTEXT_LOG_LOCK_FETCH_FAILED, error)
         })
 
       return () => {
@@ -231,7 +245,7 @@ export const BibleProvider: React.FC<{
       lastSavedPlan.current = JSON.stringify(toSave)
       await onUpdate(toSave)
       setIsEditing(false)
-      toast.success('World Bible updated')
+      toast.success(BIBLE_CONTEXT_TOAST_UPDATED)
     }, [localPlan, onUpdate])
 
     const cancelEdit = useCallback(() => {
@@ -243,23 +257,23 @@ export const BibleProvider: React.FC<{
       if (!projectId || !userEmail) return
       setIsLockLoading(true)
       try {
-        const action = isLocked ? 'unlock' : 'lock'
-        const response = await fetch('/api/storyteller/bible/lock', {
-          method: 'POST',
+        const action = isLocked ? BibleLockAction.Unlock : BibleLockAction.Lock
+        const response = await fetch(BIBLE_CONTEXT_LOCK_API_PATH, {
+          method: BibleContextHttpMethod.Post,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ projectId, action, userEmail }),
         })
         if (response.ok) {
           const data = await response.json()
           // Clear the cache so future fetches get updated data
-          clearFetchCache(`bible-lock:${projectId}`)
-          setIsLocked(data.action === 'lock')
+          clearFetchCache(`${BIBLE_CONTEXT_LOCK_CACHE_PREFIX}${projectId}`)
+          setIsLocked(data.action === BibleLockAction.Lock)
           setLockedBy(data.lockedBy)
           setLockedAt(data.lockedAt ? new Date(data.lockedAt) : null)
-          toast.success(data.action === 'lock' ? '🔒 Bible locked' : '🔓 Bible unlocked')
+          toast.success(data.action === BibleLockAction.Lock ? BIBLE_CONTEXT_TOAST_LOCKED : BIBLE_CONTEXT_TOAST_UNLOCKED)
         }
       } catch (_error) {
-        toast.error('Failed to update lock status')
+        toast.error(BIBLE_CONTEXT_TOAST_LOCK_FAILED)
       } finally {
         setIsLockLoading(false)
       }
@@ -286,7 +300,7 @@ export const BibleProvider: React.FC<{
     const addWorldRule = useCallback(() => {
       setLocalPlan(prev => ({
         ...prev,
-        worldRules: [...(prev.worldRules || []), { rule: '', consequence: '', category: 'Society' }],
+        worldRules: [...(prev.worldRules || []), { rule: '', consequence: '', category: BIBLE_CONTEXT_DEFAULT_WORLD_RULE_CATEGORY }],
       }))
     }, [])
 
@@ -576,7 +590,7 @@ export const BibleProvider: React.FC<{
 export const useBible = () => {
   const context = useContext(BibleContext)
   if (context === undefined) {
-    throw new Error('useBible must be used within a BibleProvider')
+    throw new Error(BIBLE_CONTEXT_HOOK_ERROR)
   }
   return context
 }

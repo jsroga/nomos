@@ -7,15 +7,21 @@ import { AssetsPanel } from '@/domains/world-building-toolkit/ui/AssetsPanel'
 import { AssetUploadZone } from '@/domains/3d-asset-exporter'
 import { Box, Circle, Cylinder, Cone, LayoutGrid, DoorOpen } from 'lucide-react'
 import { cn } from '@/shared/data/utils'
+import {
+  INTERACTION_MODE_OBJECT,
+  INTERACTION_MODE_SCATTER,
+  PRIMITIVE_ASSETS,
+  PrimitiveAssetId,
+} from '@/domains/interior-designer/constants/asset-library'
 
-const PRIMITIVES = [
-  { id: 'cube', name: 'Cube', icon: Box },
-  { id: 'sphere', name: 'Sphere', icon: Circle },
-  { id: 'cylinder', name: 'Cylinder', icon: Cylinder },
-  { id: 'cone', name: 'Cone', icon: Cone },
-  { id: 'window', name: 'Window', icon: LayoutGrid },
-  { id: 'door', name: 'Door', icon: DoorOpen },
-]
+const PRIMITIVE_ICONS = {
+  [PrimitiveAssetId.Cube]: Box,
+  [PrimitiveAssetId.Sphere]: Circle,
+  [PrimitiveAssetId.Cylinder]: Cylinder,
+  [PrimitiveAssetId.Cone]: Cone,
+  [PrimitiveAssetId.Window]: LayoutGrid,
+  [PrimitiveAssetId.Door]: DoorOpen,
+} as const
 
 export const AssetLibrary: React.FC = () => {
   const activeModelUrl = useInteriorStore(state => state.activeModelUrl)
@@ -25,13 +31,13 @@ export const AssetLibrary: React.FC = () => {
 
   const currentProject = useWorldStore(state => state.currentProject)
 
-  const isObjectMode = mode === 'OBJECT' || mode === 'SCATTER'
+  const isObjectMode = mode === INTERACTION_MODE_OBJECT || mode === INTERACTION_MODE_SCATTER
 
   const handleSelectAsset = (url: string, is3D: boolean) => {
     if (is3D) {
       setActiveModelUrl(url)
       if (!isObjectMode) {
-        setMode('OBJECT') // Auto-switch mode for convenience
+        setMode(INTERACTION_MODE_OBJECT)
       }
     }
   }
@@ -45,9 +51,9 @@ export const AssetLibrary: React.FC = () => {
               Foundations
             </span>
             <div className="grid grid-cols-3 gap-2">
-              {PRIMITIVES.map(prim => {
+              {PRIMITIVE_ASSETS.map(prim => {
                 const isSelected = activeModelUrl === prim.id
-                const Icon = prim.icon
+                const Icon = PRIMITIVE_ICONS[prim.id]
                 return (
                   <button
                     key={prim.id}
@@ -89,10 +95,7 @@ export const AssetLibrary: React.FC = () => {
               }}
             />
 
-            <AssetsPanel
-              showHelpText={false}
-              onSelectAsset={handleSelectAsset}
-            />
+            <AssetsPanel showHelpText={false} onSelectAsset={handleSelectAsset} />
           </div>
         </>
       ) : (

@@ -14,7 +14,6 @@ import {
   MechanicNode,
   MechanicEdge,
   LoopAgentAction,
-  NextAgent,
 } from '../core/graph/state'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -364,7 +363,7 @@ export async function mechanicsDesignerAgent(
       evaluationNote = `\n\n⚠️ **Concept Alignment: ${evaluation.overallAlignment}/100**\n${evaluation.summary}`
 
       // Add missing element suggestions
-      if (evaluation.conceptMatch.missingElements.length > 0) {
+      if (evaluation.conceptMatch?.missingElements?.length) {
         evaluationNote += `\n\nMissing elements: ${evaluation.conceptMatch.missingElements.join(', ')}`
       }
     } else if (evaluation.overallAlignment >= 80) {

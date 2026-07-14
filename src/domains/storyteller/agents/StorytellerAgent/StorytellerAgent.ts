@@ -8,6 +8,7 @@
  * See: https://mastra.ai/docs/agents/agent-memory
  */
 
+import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/di'
@@ -21,12 +22,21 @@ import {
   AGENT_RUNTIME_DEFAULTS,
   resolveRoleModel,
   resolveStorytellerModel,
-} from '@/domains/storyteller/config/ModelConfig'
+} from '@/domains/storyteller/config/constants/ModelConfig'
 
 // Import consolidated GRRM tools (9 CRUD) + the workflow entry tool (#10)
 import { grrmTools, runBeatDraftWorkflowTool } from '@/domains/storyteller/agents/tools'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { buildChatAdapterPrompt } from '@/domains/storyteller/prompts/chat-adapter-prompt'
+import {
+  AgentModelRole,
+  BeatPlannerCopy,
+  StorytellerAgentId,
+  StorytellerAgentLabel,
+  StorytellerAgentSpan,
+  StorytellerSystemPromptId,
+  ListSeparator,
+} from '@/domains/storyteller/agents/constants/agent-identity'
 
 interface StorytellerConfig {
   /** Explicit model for CLI/testing; when omitted the fixed 'chat' role slot applies. */
@@ -62,7 +72,7 @@ export class StorytellerAgent {
     // modelName (CLI/testing) still wins.
     const model = config.modelName
       ? resolveStorytellerModel(config.modelName)
-      : () => resolveRoleModel('chat')
+      : () => resolveRoleModel(AgentModelRole.Chat)
 
     // Configure memory for multi-turn conversation context
     // See: https://mastra.ai/docs/agents/agent-memory
@@ -74,8 +84,8 @@ export class StorytellerAgent {
     })
 
     this.agent = new Agent({
-      id: 'storyteller',
-      name: 'Storyteller',
+      id: StorytellerAgentId.Storyteller,
+      name: StorytellerAgentLabel.Storyteller,
       instructions,
       model,
       tools: this.toolsMap,
@@ -98,7 +108,7 @@ export class StorytellerAgent {
 
     // Register/refresh in the prompt repository (observability + reuse)
     promptRepository.register({
-      name: 'storyteller-system',
+      name: StorytellerSystemPromptId.StorytellerSystem,
       version: 2,
       variables: [],
       text: instructions,
@@ -127,15 +137,15 @@ export class StorytellerAgent {
     goal: string,
     context: string,
     traceId?: string,
-    toolChoice: 'auto' | 'none' | 'required' = 'auto',
-    options?: { temperature?: number; topP?: number }
+    toolChoice: 'auto' | 'none' | 'required' = AgentModelRole.Auto,
+    _options?: { temperature?: number; topP?: number }
   ): Promise<string> {
     const id = traceId || this.generateHexId(32)
     const spanId = this.generateHexId(16)
 
     return withSpan(
       id,
-      'StorytellerAgent.run',
+      StorytellerAgentSpan.Run,
       async _span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
         const response = await this.agent.generate(prompt, {
@@ -169,12 +179,12 @@ export class StorytellerAgent {
 
     return withSpan(
       id,
-      'StorytellerAgent.generateBeat',
+      StorytellerAgentSpan.GenerateBeat,
       async _span => {
         const prompt = `Generate a new story beat for episode ${context.episodeId}.
-${context.previousBeat ? `Previous beat: ${context.previousBeat}` : 'This is the opening beat.'}
+${context.previousBeat ? `Previous beat: ${context.previousBeat}` : BeatPlannerCopy.OpeningBeat}
 ${context.targetEmotion ? `Target emotional tone: ${context.targetEmotion}` : ''}
-Characters involved: ${context.characters.join(', ')}
+Characters involved: ${context.characters.join(ListSeparator.CommaSpace)}
 
 Create a beat with:
 - A compelling logline
@@ -182,7 +192,7 @@ Create a beat with:
 - Clear emotional stakes
 - Character advancement`
 
-        return this.run('Generate story beat', prompt, id)
+        return this.run(BeatPlannerCopy.GenerateStoryBeat, prompt, id)
       },
       { ...context, id: spanId }
     )
@@ -197,10 +207,10 @@ Create a beat with:
 
     return withSpan(
       id,
-      'StorytellerAgent.checkStoryContinuity',
+      StorytellerAgentSpan.CheckStoryContinuity,
       async _span => {
         return this.run(
-          'Check story continuity',
+          BeatPlannerCopy.CheckStoryContinuity,
           `Review the beat board for continuity issues. There are ${beatBoard.length} beats to check.`,
           id
         )
@@ -222,10 +232,10 @@ Create a beat with:
 
     return withSpan(
       id,
-      'StorytellerAgent.analyzeCharacterDynamics',
+      StorytellerAgentSpan.AnalyzeCharacterDynamics,
       async _span => {
         return this.run(
-          'Analyze character dynamics',
+          BeatPlannerCopy.AnalyzeCharacterDynamics,
           `Analyze the relationship between ${character1} and ${character2}. Consider their goals, fears, and emotional states.`,
           id
         )
@@ -248,7 +258,7 @@ Create a beat with:
     const traceId = options?.traceId || this.generateHexId(32)
 
     return this.agent.stream(prompt, {
-      toolChoice: options?.toolChoice || 'auto',
+      toolChoice: options?.toolChoice || AgentModelRole.Auto,
       maxSteps: AGENT_RUNTIME_DEFAULTS.maxSteps,
       ...(options?.requestContext ? { requestContext: options.requestContext } : {}),
       tracingOptions: {

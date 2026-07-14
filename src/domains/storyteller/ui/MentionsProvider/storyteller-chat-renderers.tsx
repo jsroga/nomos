@@ -1,0 +1,39 @@
+'use client'
+
+/**
+ * Storyteller's tenant renderers for the chat platform (PLAN-V2 3.1 / D7):
+ * entity-reference chips via ReferenceText, and the consistency payload via
+ * ConsistencyMessage. Injected through `ChatRenderersProvider` around the
+ * writers-room chat surface — the chat platform never imports these.
+ */
+
+import * as React from 'react'
+import type { ChatRenderers } from '@/shared/chat'
+import { ReferenceText } from '@/domains/storyteller/ui/ReferenceText'
+import { ConsistencyMessage } from '@/domains/storyteller/ui/ConsistencyMessage'
+import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
+import { recordFromJson } from '@/shared/data/json-guards'
+import type { ConsistencyCheckResult } from '@/domains/storyteller/core/types/ConsistencyTypes'
+
+/**
+ * Narrow the platform's opaque consistency payload back to the domain type.
+ * Only the storyteller stream sets it, so a structural spot-check suffices.
+ */
+function isConsistencyCheckResult(value: unknown): value is ConsistencyCheckResult {
+  const record = recordFromJson(value)
+  return Array.isArray(record.inconsistencies) && typeof record.summary === 'string'
+}
+
+export const storytellerChatRenderers: ChatRenderers = {
+  hasRichMarkup: text => hasReferences(text),
+  renderRichText: (text, { projectId, inline }) =>
+    !text || !hasReferences(text) ? (
+      text
+    ) : (
+      <ReferenceText text={text} projectId={projectId} inline={inline} />
+    ),
+  renderConsistency: (result, { canUndo }) =>
+    isConsistencyCheckResult(result) ? (
+      <ConsistencyMessage result={result} canUndo={canUndo ?? false} />
+    ) : null,
+}

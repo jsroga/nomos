@@ -13,6 +13,13 @@ import {
 } from '@/components/AlertDialog'
 import { cn } from '@/shared/data/utils'
 import type { TourStep } from '@/shared/tours/tour-types'
+import { TourStepPosition } from '@/shared/tours/constants/tour-positions'
+import {
+  TOUR_DEFAULT_MODULE_NAME,
+  TOUR_HOOK_ERROR,
+  TourDomEvent,
+  TourSelectorId,
+} from '@/shared/tours/constants/tour-ui'
 import { X, ArrowLeft, ArrowRight, Play, SkipForward, XCircle } from 'lucide-react'
 
 export type { TourStep } from '@/shared/tours/tour-types'
@@ -46,7 +53,7 @@ const CONTENT_HEIGHT = 200
 
 function getElementPosition(id: string) {
   // Special case for body
-  if (id === 'body') {
+  if (id === TourSelectorId.Body) {
     return {
       top: 0,
       left: 0,
@@ -71,7 +78,7 @@ function getElementPosition(id: string) {
 
 function calculateContentPosition(
   elementPos: { top: number; left: number; width: number; height: number },
-  position: 'top' | 'bottom' | 'left' | 'right' | 'center' = 'bottom'
+  position: `${TourStepPosition}` = TourStepPosition.Bottom
 ) {
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
@@ -80,23 +87,23 @@ function calculateContentPosition(
   let top = elementPos.top
 
   switch (position) {
-    case 'top':
+    case TourStepPosition.Top:
       top = elementPos.top - CONTENT_HEIGHT - PADDING
       left = elementPos.left + elementPos.width / 2 - CONTENT_WIDTH / 2
       break
-    case 'bottom':
+    case TourStepPosition.Bottom:
       top = elementPos.top + elementPos.height + PADDING
       left = elementPos.left + elementPos.width / 2 - CONTENT_WIDTH / 2
       break
-    case 'left':
+    case TourStepPosition.Left:
       left = elementPos.left - CONTENT_WIDTH - PADDING
       top = elementPos.top + elementPos.height / 2 - CONTENT_HEIGHT / 2
       break
-    case 'right':
+    case TourStepPosition.Right:
       left = elementPos.left + elementPos.width + PADDING
       top = elementPos.top + elementPos.height / 2 - CONTENT_HEIGHT / 2
       break
-    case 'center':
+    case TourStepPosition.Center:
       // Center the content in the viewport
       left = (viewportWidth - CONTENT_WIDTH) / 2
       top = (viewportHeight - CONTENT_HEIGHT) / 2
@@ -164,9 +171,9 @@ export function TourProvider({
 
   useEffect(() => {
     updateElementPosition()
-    window.addEventListener('resize', updateElementPosition)
-    window.addEventListener('scroll', updateElementPosition)
-    window.addEventListener('click', updateElementPosition) // Re-check on clicks too
+    window.addEventListener(TourDomEvent.Resize, updateElementPosition)
+    window.addEventListener(TourDomEvent.Scroll, updateElementPosition)
+    window.addEventListener(TourDomEvent.Click, updateElementPosition)
 
     // Add ResizeObserver for the target element
     let observer: ResizeObserver | null = null
@@ -187,9 +194,9 @@ export function TourProvider({
     }
 
     return () => {
-      window.removeEventListener('resize', updateElementPosition)
-      window.removeEventListener('scroll', updateElementPosition)
-      window.removeEventListener('click', updateElementPosition)
+      window.removeEventListener(TourDomEvent.Resize, updateElementPosition)
+      window.removeEventListener(TourDomEvent.Scroll, updateElementPosition)
+      window.removeEventListener(TourDomEvent.Click, updateElementPosition)
       if (observer) {
         observer.disconnect()
       }
@@ -240,9 +247,9 @@ export function TourProvider({
   )
 
   useEffect(() => {
-    window.addEventListener('click', handleClick)
+    window.addEventListener(TourDomEvent.Click, handleClick)
     return () => {
-      window.removeEventListener('click', handleClick)
+      window.removeEventListener(TourDomEvent.Click, handleClick)
     }
   }, [handleClick])
 
@@ -404,7 +411,7 @@ export function TourProvider({
 export function useTour() {
   const context = useContext(TourContext)
   if (!context) {
-    throw new Error('useTour must be used within a TourProvider')
+    throw new Error(TOUR_HOOK_ERROR)
   }
   return context
 }
@@ -415,7 +422,7 @@ export function TourAlertDialog({
   onStartTour,
   onSkip,
   onSkipAll,
-  moduleName = 'Application',
+  moduleName = TOUR_DEFAULT_MODULE_NAME,
 }: {
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void

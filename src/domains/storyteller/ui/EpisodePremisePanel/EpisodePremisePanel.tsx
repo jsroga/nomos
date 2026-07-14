@@ -21,6 +21,20 @@ import { StorytellerImage } from '../StorytellerImage'
 import { ImageVariantSelector } from '../ImageVariantSelector'
 import { ReferenceText } from '../ReferenceText'
 import { cn } from '@/shared/data/utils'
+import {
+  EPISODE_PREMISE_LOG_NO_EPISODE,
+  EPISODE_PREMISE_LOG_RESPONSE_DATA,
+  EPISODE_PREMISE_LOG_RESPONSE_STATUS,
+  EPISODE_PREMISE_LOG_SAVE_API,
+  EPISODE_PREMISE_LOG_SAVE_ERROR,
+  EPISODE_PREMISE_LOG_SAVE_FAILED,
+  EPISODE_PREMISE_LOG_SAVED,
+  EPISODE_PREMISE_LOG_VARIANT_SELECT,
+  EPISODE_PREMISE_PROJECTS_PATH_PREFIX,
+  EPISODE_PREMISE_SAVE_POSTER_PATH,
+  EpisodePremiseHttpMethod,
+  EpisodePremiseUrlScheme,
+} from './constants/episode-premise-panel'
 
 interface EpisodePremisePanelProps {
   premise: EpisodePremise | null
@@ -51,17 +65,17 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
   onUpdate,
   onGenerate,
   onGeneratePoster,
-  onGenerateStoryboard,
+  onGenerateStoryboard: _onGenerateStoryboard,
   onGenerateSection,
   isGenerating = false,
   isGeneratingPoster = false,
-  isGeneratingStoryboard = false,
+  isGeneratingStoryboard: _isGeneratingStoryboard = false,
   projectId,
   episodeId,
-  storyboardUrl,
+  storyboardUrl: _storyboardUrl,
   generatingSection = null,
 }) => {
-  const [showBibleContext, setShowBibleContext] = useState(false)
+  const [showBibleContext, _setShowBibleContext] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   // Extend type to allow poster field for optimistic updates
   const [localPremise, setLocalPremise] = useState<Partial<EpisodePremise> & { poster?: string }>(
@@ -121,17 +135,18 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
 
   // Compute full poster URL for use in useEffect
   const fullPosterUrl = localPremise.poster
-    ? localPremise.poster.startsWith('data:')
+    ? localPremise.poster.startsWith(EpisodePremiseUrlScheme.Data)
       ? localPremise.poster
-      : localPremise.poster.startsWith('http') || localPremise.poster.startsWith('/')
+      : localPremise.poster.startsWith(EpisodePremiseUrlScheme.Http) ||
+          localPremise.poster.startsWith('/')
         ? localPremise.poster
-        : localPremise.poster.startsWith('projects/')
+        : localPremise.poster.startsWith(EPISODE_PREMISE_PROJECTS_PATH_PREFIX)
           ? `/${localPremise.poster}`
           : `/projects/${projectId}/${localPremise.poster}`
     : posterUrl
-      ? posterUrl.startsWith('http') || posterUrl.startsWith('/')
+      ? posterUrl.startsWith(EpisodePremiseUrlScheme.Http) || posterUrl.startsWith('/')
         ? posterUrl
-        : posterUrl.startsWith('projects/')
+        : posterUrl.startsWith(EPISODE_PREMISE_PROJECTS_PATH_PREFIX)
           ? `/${posterUrl}`
           : `/projects/${projectId}/${posterUrl}`
       : null
@@ -145,7 +160,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
 
     // A URL is considered a "grid" (unpicked multi-variant) ONLY if it's an external HTTP URL.
     // Saved variants are always local paths like /projects/.../poster_xxx_v1_xxx.png
-    const isGrid = posterUrl && posterUrl.startsWith('http')
+    const isGrid = posterUrl && posterUrl.startsWith(EpisodePremiseUrlScheme.Http)
 
     // Only auto-pop if we have a grid and haven't checked yet
     if ((justFinished || (!hasCheckedInitialRef.current && isGrid)) && fullPosterUrl) {
@@ -185,7 +200,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
   }
 
   const handleVariantSelect = async (variantIndex: number, croppedDataUrl: string) => {
-    console.log('[EpisodePremise] handleVariantSelect called:', {
+    console.log(EPISODE_PREMISE_LOG_VARIANT_SELECT, {
       variantIndex,
       episodeId,
       projectId,
@@ -200,9 +215,9 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
     // Persist to database if episodeId is present
     if (episodeId) {
       try {
-        console.log('[EpisodePremise] Calling save API...')
-        const res = await fetch('/api/storyteller/save-episode-poster-variant', {
-          method: 'POST',
+        console.log(EPISODE_PREMISE_LOG_SAVE_API)
+        const res = await fetch(EPISODE_PREMISE_SAVE_POSTER_PATH, {
+          method: EpisodePremiseHttpMethod.Post,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             episodeId,
@@ -212,25 +227,25 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
           }),
         })
 
-        console.log('[EpisodePremise] API response status:', res.status)
+        console.log(EPISODE_PREMISE_LOG_RESPONSE_STATUS, res.status)
         if (res.ok) {
           const data = await res.json()
-          console.log('[EpisodePremise] API response data:', data)
+          console.log(EPISODE_PREMISE_LOG_RESPONSE_DATA, data)
           if (data.posterUrl) {
             setLocalPremise(prev => ({ ...prev, poster: data.posterUrl }))
             // Update parent with the permanent URL
             onUpdate({ ...localPremise, poster: data.posterUrl })
-            console.log('[EpisodePremise] Saved successfully, new posterUrl:', data.posterUrl)
+            console.log(EPISODE_PREMISE_LOG_SAVED, data.posterUrl)
           }
         } else {
           const err = await res.json()
-          console.error('[EpisodePremise] Failed to save poster variant:', err)
+          console.error(EPISODE_PREMISE_LOG_SAVE_FAILED, err)
         }
       } catch (error) {
-        console.error('[EpisodePremise] Error saving poster variant:', error)
+        console.error(EPISODE_PREMISE_LOG_SAVE_ERROR, error)
       }
     } else {
-      console.warn('[EpisodePremise] No episodeId, skipping DB save')
+      console.warn(EPISODE_PREMISE_LOG_NO_EPISODE)
       // If no episodeId yet (unlikely if generating poster), pass optimistic
       onUpdate({ ...localPremise, poster: croppedDataUrl })
     }

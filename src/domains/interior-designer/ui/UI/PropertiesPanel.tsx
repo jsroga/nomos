@@ -26,7 +26,7 @@ import { Input } from '@/components/Input'
 import toast from 'react-hot-toast'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS, isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/constants/polling'
 import {
   SidebarSection,
   SidebarLabel,
@@ -35,9 +35,28 @@ import {
   SidebarEmptyState,
 } from '@/components/DomainSidebar'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-
-const isActiveTaskStatus = (status: string) =>
-  ACTIVE_TASK_STATUSES.some(activeStatus => activeStatus === status)
+import {
+  AsyncOperationStatus,
+  isActiveOperationStatus,
+  isTerminalOperationStatus,
+} from '@/shared/jobs/constants/async-operation-status'
+import { INTERACTION_MODE_TERRAIN } from '@/domains/interior-designer/constants/interaction-modes'
+import { InteriorDefaultProjectId } from '@/domains/interior-designer/constants/interior-api-defaults'
+import {
+  InteriorAsyncOperationType,
+  InteriorElementPropertyKey,
+  ModelFileExtension,
+  PropertiesPanelError,
+  PropertiesPanelLabel,
+  PropertiesPanelLog,
+  PropertiesPanelStatusLabel,
+  PropertiesPanelToast,
+  RetextureMetadataOriginalType,
+  RETEXTURE_OPERATION_ID_PREFIX,
+  TEXT_TO_3D_OPERATION_ID_PREFIX,
+  UrlSchemePrefix,
+} from '@/domains/interior-designer/constants/properties-panel'
+import { RETEXTURE_EMPTY_METADATA } from '@/domains/interior-designer/constants/retexture-slice-log'
 
 export const PropertiesPanel: React.FC = () => {
   const selectedId = useInteriorStore(state => state.selectedId)
@@ -58,19 +77,8 @@ export const PropertiesPanel: React.FC = () => {
   const removeSurface = useInteriorStore(state => state.removeSurface) // NEW
   const removeObject = useInteriorStore(state => state.removeObject) // NEW
 
-  const updateSurface = useInteriorStore(state => state.updateSurface)
-  const createFloorFromSurface = useInteriorStore(state => state.createFloorFromSurface)
-
   const [combineRoundness, setCombineRoundness] = React.useState(0.2)
   const [batchHeight, setBatchHeight] = React.useState(3)
-
-  // Object Controls
-  const lockY = useInteriorStore(state => state.lockY)
-  const setLockY = useInteriorStore(state => state.setLockY)
-  const snapEnabled = useInteriorStore(state => state.snapEnabled)
-  const setSnapEnabled = useInteriorStore(state => state.setSnapEnabled)
-  const snapSize = useInteriorStore(state => state.snapSize)
-  const setSnapSize = useInteriorStore(state => state.setSnapSize)
 
   const transformMode = useInteriorStore(state => state.transformMode)
   const setTransformMode = useInteriorStore(state => state.setTransformMode)
@@ -80,14 +88,12 @@ export const PropertiesPanel: React.FC = () => {
   // Group Actions
   const groups = useInteriorStore(state => state.groups)
   const createGroup = useInteriorStore(state => state.createGroup)
-  const deleteGroup = useInteriorStore(state => state.deleteGroup)
-  const removeFromGroup = useInteriorStore(state => state.removeFromGroup)
 
   // Derive selected surface from selectedId
   const selectedSurface = selectedId ? surfaces.find(s => s.id === selectedId) : null
 
   // Show Terrain Editor Panel when in TERRAIN mode
-  if (mode === 'TERRAIN') {
+  if (mode === INTERACTION_MODE_TERRAIN) {
     return <TerrainEditorPanel />
   }
 
@@ -101,9 +107,14 @@ export const PropertiesPanel: React.FC = () => {
     floors.find(f => f.id === selectedId) ||
     objects.find(o => o.id === selectedId)
 
-  const isWall = (item: any): item is (typeof walls)[0] => 'thickness' in item
-  const isFloor = (item: any): item is (typeof floors)[0] => 'points' in item
-  const isObject = (item: any): item is (typeof objects)[0] => 'modelUrl' in item
+  const isWall = (item: unknown): item is (typeof walls)[0] =>
+    typeof item === 'object' &&
+    item !== null &&
+    InteriorElementPropertyKey.Thickness in item
+  const isFloor = (item: unknown): item is (typeof floors)[0] =>
+    typeof item === 'object' && item !== null && InteriorElementPropertyKey.Points in item
+  const isObject = (item: unknown): item is (typeof objects)[0] =>
+    typeof item === 'object' && item !== null && InteriorElementPropertyKey.ModelUrl in item
 
   // MULTI-SELECTION UI
   if (multiSelectedIds.length > 1) {
@@ -447,7 +458,7 @@ function SnapControls() {
 
 // Height Scale Control Component - for uniform scaling based on height in meters
 function HeightScaleControl({
-  objectId,
+  objectId: _objectId,
   currentScale,
   onScaleChange,
 }: {
@@ -509,7 +520,6 @@ function HeightScaleControl({
 function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl: string }) {
   const [prompt, setPrompt] = React.useState('')
   const [isStarting, setIsStarting] = React.useState(false)
-  const [previewScale, setPreviewScale] = React.useState(1)
 
   // Use GlobalStatusStore for job tracking
   const operations = useGlobalStatusStore(state => state.operations)
@@ -521,32 +531,30 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
   const previewRetexture = useInteriorStore(state => state.previewRetexture)
   const cancelRetexture = useInteriorStore(state => state.cancelRetexture)
 
-  const requestRetextureExport = useInteriorStore(state => state.requestRetextureExport)
   const setRequestRetextureExport = useInteriorStore(state => state.setRequestRetextureExport)
   const retextureModelBase64 = useInteriorStore(state => state.retextureModelBase64)
   const setRetextureModelBase64 = useInteriorStore(state => state.setRetextureModelBase64)
 
   const updateObject = useInteriorStore(state => state.updateObject)
   const object = useInteriorStore(state => state.objects.find(o => o.id === objectId))
-  const wall = useInteriorStore(state => state.walls.find(w => w.id === objectId))
 
   // Find this element's operation
-  const operationId = `retexture-${objectId}`
+  const operationId = `${RETEXTURE_OPERATION_ID_PREFIX}${objectId}`
   const currentOperation = operations.find(op => op.id === operationId)
 
   // Auto-cleanup: Check stale operations on mount
   React.useEffect(() => {
     const cleanupStaleOperation = async () => {
       if (!currentOperation) return
-      if (currentOperation.status === 'completed' || currentOperation.status === 'failed') return
+      if (isTerminalOperationStatus(currentOperation.status)) return
 
       // Extract task ID and original URL
       let taskId: string | null = null
       try {
-        const metadata = JSON.parse(currentOperation.details || '{}')
+        const metadata = JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA)
         taskId = metadata.taskId
       } catch (e) {
-        console.error('[Retexture] Failed to parse operation metadata for cleanup', e)
+        console.error(PropertiesPanelLog.RetextureMetadataParseFailed, e)
         return
       }
 
@@ -558,16 +566,16 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
         const data = await interiorDesignerApi.retexture.getStatus(taskId)
         if (!data.status) {
           updateOperation(operationId, {
-            status: 'failed',
+            status: AsyncOperationStatus.Failed,
             details: JSON.stringify({
-              ...JSON.parse(currentOperation.details || '{}'),
-              error: 'Task not found',
+              ...JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA),
+              error: PropertiesPanelError.TaskNotFound,
             }),
           })
           return
         }
 
-        if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
+        if (isSuccessTaskStatus(data.status)) {
           const output = data.output
           if (output && output.success) {
             const retexturedUrl = output.retexturedUrl
@@ -580,24 +588,24 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
             previewRetexture(objectId, retexturedUrl)
 
             updateOperation(operationId, {
-              status: 'completed',
+              status: AsyncOperationStatus.Completed,
               details: JSON.stringify({
-                ...JSON.parse(currentOperation.details || '{}'),
+                ...JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA),
                 retexturedUrl: output.retexturedUrl,
               }),
             })
           }
         } else if (!isActiveTaskStatus(data.status)) {
           updateOperation(operationId, {
-            status: 'failed',
+            status: AsyncOperationStatus.Failed,
             details: JSON.stringify({
-              ...JSON.parse(currentOperation.details || '{}'),
+              ...JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA),
               error: data.error,
             }),
           })
         }
       } catch (err) {
-        console.error('[Retexture] Cleanup check error', err)
+        console.error(PropertiesPanelLog.RetextureCleanupError, err)
       }
     }
 
@@ -608,8 +616,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
   React.useEffect(() => {
     if (!currentOperation) return
 
-    const isTerminalState =
-      currentOperation.status === 'completed' || currentOperation.status === 'failed'
+    const isTerminalState = isTerminalOperationStatus(currentOperation.status)
     if (isTerminalState) return
 
     const checkStatus = async () => {
@@ -617,11 +624,11 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
         const latestOp = useGlobalStatusStore
           .getState()
           .operations.find(op => op.id === operationId)
-        if (!latestOp || latestOp.status === 'completed' || latestOp.status === 'failed') return
+        if (!latestOp || isTerminalOperationStatus(latestOp.status)) return
 
         let taskId: string | null = null
         try {
-          const metadata = JSON.parse(currentOperation.details || '{}')
+          const metadata = JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA)
           taskId = metadata.taskId
         } catch (e) {
           return
@@ -631,7 +638,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
 
         const data = await interiorDesignerApi.retexture.getStatus(taskId)
 
-        if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
+        if (isSuccessTaskStatus(data.status)) {
           const output = data.output
           const retexturedUrl = output?.retexturedUrl || output?.url || output?.modelUrl
 
@@ -640,32 +647,32 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
             previewRetexture(objectId, retexturedUrl)
 
             updateOperation(operationId, {
-              status: 'completed',
+              status: AsyncOperationStatus.Completed,
               details: JSON.stringify({
-                ...JSON.parse(currentOperation.details || '{}'),
+                ...JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA),
                 retexturedUrl: retexturedUrl,
               }),
             })
           } else {
             updateOperation(operationId, {
-              status: 'failed',
+              status: AsyncOperationStatus.Failed,
               details: JSON.stringify({
-                ...JSON.parse(currentOperation.details || '{}'),
-                error: 'Output missing URL',
+                ...JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA),
+                error: PropertiesPanelError.OutputMissingUrl,
               }),
             })
           }
         } else if (!isActiveTaskStatus(data.status)) {
           updateOperation(operationId, {
-            status: 'failed',
+            status: AsyncOperationStatus.Failed,
             details: JSON.stringify({
-              ...JSON.parse(currentOperation.details || '{}'),
+              ...JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA),
               error: data.error,
             }),
           })
         }
       } catch (err) {
-        console.error('Poll error', err)
+        console.error(PropertiesPanelLog.PollError, err)
       }
     }
 
@@ -681,12 +688,12 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
           const savedMeshy = localStorage.getItem(LocalStorageKeys.AI_CONFIG_MESHY)
           if (savedMeshy) apiKey = JSON.parse(savedMeshy).apiKey || ''
         } catch (err) {
-          console.warn('[RetextureControls] Failed to read Meshy API key from localStorage:', err)
+          console.warn(PropertiesPanelLog.RetextureMeshyKeyReadFailed, err)
         }
 
         // Get actual project ID for style reference lookup
         const currentProject = useWorldStore.getState().currentProject
-        const currentProjectId = currentProject?.id || 'default'
+        const currentProjectId = currentProject?.id || InteriorDefaultProjectId.Default
         console.log(
           `[RetextureControls] Sending retexture request with projectId: ${currentProjectId}`,
           { currentProject: currentProject?.name }
@@ -702,7 +709,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
 
         if (data.runId) {
           // Prepare metadata with original state for undo
-          const metadata: any = {
+          const metadata: Record<string, unknown> = {
             taskId: data.runId,
             originalModelUrl: modelUrl,
           }
@@ -710,26 +717,26 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
           // If it's a wall, save its data so we can revert
           const wallData = useInteriorStore.getState().walls.find(w => w.id === objectId)
           if (wallData) {
-            metadata.originalType = 'wall'
+            metadata.originalType = RetextureMetadataOriginalType.Wall
             metadata.originalData = wallData
           } else {
             // Check if it's a surface
             const surfaceData = useInteriorStore.getState().surfaces.find(s => s.id === objectId)
             if (surfaceData) {
-              metadata.originalType = 'surface'
+              metadata.originalType = RetextureMetadataOriginalType.Surface
               metadata.originalData = surfaceData
             } else {
-              metadata.originalType = 'object'
+              metadata.originalType = RetextureMetadataOriginalType.Object
             }
           }
 
           updateOperation(operationId, {
-            status: 'in-progress',
+            status: AsyncOperationStatus.InProgress,
             details: JSON.stringify(metadata),
           })
         }
-      } catch (e: unknown) {
-        toast.error('Failed to start retexture')
+      } catch (_e: unknown) {
+        toast.error(PropertiesPanelToast.RetextureStartFailed)
         removeOperation(operationId)
         setIsStarting(false)
       }
@@ -749,11 +756,8 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
   const handleGenerate = async () => {
     if (!prompt) return
 
-    if (
-      currentOperation &&
-      (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')
-    ) {
-      toast.error('Job already in progress')
+    if (currentOperation && isActiveOperationStatus(currentOperation.status)) {
+      toast.error(PropertiesPanelToast.JobInProgress)
       return
     }
 
@@ -762,17 +766,19 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
     // Add operation to GlobalStatusStore with ORIGINAL URL
     addOperation({
       id: operationId,
-      type: 'retexture',
-      label: 'Retexturing Element',
+      type: InteriorAsyncOperationType.Retexture,
+      label: PropertiesPanelLabel.RetexturingElement,
       details: JSON.stringify({ prompt, originalModelUrl: modelUrl }),
-      status: 'pending',
+      status: AsyncOperationStatus.Pending,
     })
 
     setRetextureModelBase64(null)
 
     const is3DModelUrl =
       modelUrl &&
-      (modelUrl.endsWith('.glb') || modelUrl.endsWith('.gltf') || modelUrl.startsWith('http'))
+      (modelUrl.endsWith(ModelFileExtension.Glb) ||
+        modelUrl.endsWith(ModelFileExtension.Gltf) ||
+        modelUrl.startsWith(UrlSchemePrefix.Http))
 
     if (!is3DModelUrl) {
       setRequestRetextureExport(true)
@@ -804,7 +810,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
   }
 
   // COMPLETED STATE - Show Approve/Reject + Scale Fix
-  if (currentOperation && currentOperation.status === 'completed') {
+  if (currentOperation && currentOperation.status === AsyncOperationStatus.Completed) {
     return (
       <div className="pt-4 border-t border-zinc-800 animate-in fade-in space-y-3">
         <h3 className="text-xs font-mono font-bold uppercase tracking-wide mb-2 flex items-center gap-2 text-primary">
@@ -848,16 +854,15 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
   }
 
   // IN PROGRESS STATE - Show Loading
-  if (
-    currentOperation &&
-    (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')
-  ) {
+  if (currentOperation && isActiveOperationStatus(currentOperation.status)) {
     return (
       <div className="pt-4 border-t border-zinc-800">
         <div className="flex flex-col items-center justify-center p-4 bg-zinc-950/20 rounded gap-2">
           <Loader2 className="animate-spin text-primary" size={20} />
           <span className="text-xs font-mono text-muted-foreground">
-            {currentOperation.status === 'pending' ? 'Starting Job...' : 'Generating Texture...'}
+            {currentOperation.status === AsyncOperationStatus.Pending
+              ? PropertiesPanelStatusLabel.StartingJob
+              : PropertiesPanelStatusLabel.GeneratingTexture}
           </span>
         </div>
       </div>
@@ -865,7 +870,7 @@ function RetextureControls({ objectId, modelUrl }: { objectId: string; modelUrl:
   }
 
   // FAILED STATE - Show Error
-  if (currentOperation && currentOperation.status === 'failed') {
+  if (currentOperation && currentOperation.status === AsyncOperationStatus.Failed) {
     return (
       <div className="pt-4 border-t border-zinc-800">
         <div className="bg-destructive/10 border border-destructive/20 p-3 rounded text-xs">
@@ -933,22 +938,22 @@ function TextTo3DControls({
   const removeOperation = useGlobalStatusStore(state => state.removeOperation)
 
   // Find this element's operation
-  const operationId = `text-to-3d-${objectId}`
+  const operationId = `${TEXT_TO_3D_OPERATION_ID_PREFIX}${objectId}`
   const currentOperation = operations.find(op => op.id === operationId)
 
   // Auto-cleanup: Check stale operations on mount
   React.useEffect(() => {
     const cleanupStaleOperation = async () => {
       if (!currentOperation) return
-      if (currentOperation.status === 'completed' || currentOperation.status === 'failed') return
+      if (isTerminalOperationStatus(currentOperation.status)) return
 
       // Extract task ID
       let taskId: string | null = null
       try {
-        const metadata = JSON.parse(currentOperation.details || '{ }')
+        const metadata = JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA)
         taskId = metadata.taskId
       } catch (e) {
-        console.error('[TextTo3D] Failed to parse operation metadata for cleanup', e)
+        console.error(PropertiesPanelLog.TextTo3DMetadataParseFailed, e)
         return
       }
 
@@ -960,11 +965,11 @@ function TextTo3DControls({
         const data = await interiorDesignerApi.textTo3D.getStatus(taskId)
         console.log(`[TextTo3D] Stale check result for ${operationId}:`, data.status)
 
-        if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
+        if (isSuccessTaskStatus(data.status)) {
           const output = data.output
           if (output && output.success) {
             updateOperation(operationId, {
-              status: 'completed',
+              status: AsyncOperationStatus.Completed,
               details: JSON.stringify({
                 taskId,
                 modelUrl: output.modelUrl,
@@ -976,15 +981,15 @@ function TextTo3DControls({
           }
         } else if (!isActiveTaskStatus(data.status)) {
           console.warn(
-            `[TextTo3D] Stale operation ${operationId} has failed status: ${data.status}`
+            `${PropertiesPanelLog.TextTo3DTaskFailed} ${data.status}`
           )
           updateOperation(operationId, {
-            status: 'failed',
+            status: AsyncOperationStatus.Failed,
             details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status }),
           })
         }
       } catch (err) {
-        console.error('[TextTo3D] Cleanup check error', err)
+        console.error(PropertiesPanelLog.TextTo3DCleanupError, err)
       }
     }
 
@@ -996,8 +1001,7 @@ function TextTo3DControls({
     if (!currentOperation) return
 
     // Stop polling if operation is in a terminal state
-    const isTerminalState =
-      currentOperation.status === 'completed' || currentOperation.status === 'failed'
+    const isTerminalState = isTerminalOperationStatus(currentOperation.status)
     if (isTerminalState) {
       console.log(
         `[TextTo3D] Polling stopped for ${operationId} - terminal state: ${currentOperation.status}`
@@ -1017,18 +1021,18 @@ function TextTo3DControls({
         const latestOp = useGlobalStatusStore
           .getState()
           .operations.find(op => op.id === operationId)
-        if (!latestOp || latestOp.status === 'completed' || latestOp.status === 'failed') {
-          console.log('[TextTo3D] Skipping poll - operation is in terminal state or missing')
+        if (!latestOp || isTerminalOperationStatus(latestOp.status)) {
+          console.log(PropertiesPanelLog.TextTo3DPollSkipped)
           return
         }
 
         // Extract task ID from operation details
         let taskId: string | null = null
         try {
-          const metadata = JSON.parse(currentOperation.details || '{ }')
+          const metadata = JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA)
           taskId = metadata.taskId
         } catch (e) {
-          console.error('Failed to parse operation metadata', e)
+          console.error(PropertiesPanelLog.OperationMetadataParseFailed, e)
           return
         }
 
@@ -1038,12 +1042,12 @@ function TextTo3DControls({
 
         console.log(`[TextTo3D] Poll result for ${operationId}:`, data.status)
 
-        if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
+        if (isSuccessTaskStatus(data.status)) {
           const output = data.output
           if (output && output.success) {
             // Store result in operation metadata
             updateOperation(operationId, {
-              status: 'completed',
+              status: AsyncOperationStatus.Completed,
               details: JSON.stringify({
                 taskId,
                 modelUrl: output.modelUrl,
@@ -1055,19 +1059,19 @@ function TextTo3DControls({
           }
         } else if (!isActiveTaskStatus(data.status)) {
           // Task is no longer active (FAILED, CANCELED, etc.)
-          console.error('Text-to-3D task failed or was terminated:', data.status, data.error)
+          console.error(PropertiesPanelLog.TextTo3DTaskFailed, data.status, data.error)
           updateOperation(operationId, {
-            status: 'failed',
+            status: AsyncOperationStatus.Failed,
             details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status }),
           })
         }
       } catch (err) {
-        console.error('Poll error', err)
+        console.error(PropertiesPanelLog.PollError, err)
       }
     }
 
     // Poll every 15 seconds (text-to-3d takes longer than retexture)
-    pollInterval = setInterval(checkStatus, 15000)
+    pollInterval = setInterval(checkStatus, POLLING_INTERVALS.SLOW)
     return () => {
       console.log(`[TextTo3D] Clearing interval for ${operationId}`)
       clearInterval(pollInterval)
@@ -1078,11 +1082,8 @@ function TextTo3DControls({
     if (!prompt) return
 
     // DUPLICATE PREVENTION: Check if job already exists
-    if (
-      currentOperation &&
-      (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')
-    ) {
-      toast.error('Text-to-3D job already in progress for this element')
+    if (currentOperation && isActiveOperationStatus(currentOperation.status)) {
+      toast.error(PropertiesPanelToast.TextTo3DJobInProgress)
       return
     }
 
@@ -1091,10 +1092,10 @@ function TextTo3DControls({
     // Add operation to GlobalStatusStore
     addOperation({
       id: operationId,
-      type: 'text-to-3d',
+      type: InteriorAsyncOperationType.TextTo3D,
       label: `Generating 3D: ${prompt.slice(0, 30)}...`,
       details: JSON.stringify({ prompt }),
-      status: 'pending',
+      status: AsyncOperationStatus.Pending,
     })
 
     try {
@@ -1107,7 +1108,7 @@ function TextTo3DControls({
           apiKey = config.apiKey || ''
         }
       } catch (err) {
-        console.warn('Failed to read Meshy API key from settings', err)
+        console.warn(PropertiesPanelLog.MeshyKeyReadFailed, err)
       }
 
       // Get master prompt for seed generation
@@ -1125,7 +1126,7 @@ function TextTo3DControls({
       const seed = seedFromString(`${masterPrompt}|${prompt}`)
 
       const data = await interiorDesignerApi.textTo3D.start({
-        projectId: currentProjectId || 'default',
+        projectId: currentProjectId || InteriorDefaultProjectId.Default,
         prompt,
         seed,
         apiKey,
@@ -1133,13 +1134,13 @@ function TextTo3DControls({
       if (data.runId) {
         // Update operation with task ID
         updateOperation(operationId, {
-          status: 'in-progress',
+          status: AsyncOperationStatus.InProgress,
           details: JSON.stringify({ taskId: data.runId, prompt, seed }),
-          })
-          toast.success('3D generation started!')
+        })
+        toast.success(PropertiesPanelToast.TextTo3DStarted)
       }
     } catch (e: unknown) {
-      toast.error('Failed to start text-to-3d: ' + getErrorMessage(e))
+      toast.error(PropertiesPanelToast.TextTo3DStartFailed + getErrorMessage(e))
       removeOperation(operationId)
     } finally {
       setIsStarting(false)
@@ -1150,13 +1151,13 @@ function TextTo3DControls({
     if (!currentOperation) return
 
     try {
-      const metadata = JSON.parse(currentOperation.details || '{ }')
+      const metadata = JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA)
       if (metadata.modelUrl) {
         onModelGenerated(metadata.modelUrl)
-        toast.success('3D model applied!')
+        toast.success(PropertiesPanelToast.ModelApplied)
       }
     } catch (e) {
-      console.error('Failed to apply model', e)
+      console.error(PropertiesPanelLog.ApplyModelFailed, e)
     }
 
     removeOperation(operationId)
@@ -1169,10 +1170,10 @@ function TextTo3DControls({
   }
 
   // COMPLETED STATE - Show Apply/Discard
-  if (currentOperation && currentOperation.status === 'completed') {
+  if (currentOperation && currentOperation.status === AsyncOperationStatus.Completed) {
     let thumbnailUrl = ''
     try {
-      const metadata = JSON.parse(currentOperation.details || '{ }')
+      const metadata = JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA)
       thumbnailUrl = metadata.thumbnailUrl || ''
     } catch { }
 
@@ -1216,16 +1217,15 @@ function TextTo3DControls({
   }
 
   // IN PROGRESS STATE - Show Loading
-  if (
-    currentOperation &&
-    (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')
-  ) {
+  if (currentOperation && isActiveOperationStatus(currentOperation.status)) {
     return (
       <div className="pt-4 border-t border-zinc-800">
         <div className="flex flex-col items-center justify-center p-4 bg-blue-500/10 rounded gap-2">
           <Loader2 className="animate-spin text-blue-500" size={20} />
           <span className="text-xs text-muted-foreground font-mono">
-            {currentOperation.status === 'pending' ? 'Starting Job...' : 'Generating 3D Model...'}
+            {currentOperation.status === AsyncOperationStatus.Pending
+              ? PropertiesPanelStatusLabel.StartingJob
+              : PropertiesPanelStatusLabel.Generating3DModel}
           </span>
           <span className="text-[10px] text-muted-foreground">This may take several minutes</span>
         </div>
@@ -1234,7 +1234,7 @@ function TextTo3DControls({
   }
 
   // FAILED STATE - Show Error
-  if (currentOperation && currentOperation.status === 'failed') {
+  if (currentOperation && currentOperation.status === AsyncOperationStatus.Failed) {
     return (
       <div className="pt-4 border-t border-zinc-800">
         <div className="bg-destructive/10 border border-destructive/20 p-3 rounded text-xs">

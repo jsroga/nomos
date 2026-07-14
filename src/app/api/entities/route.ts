@@ -6,6 +6,9 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
+import { GameEntityQueryParam } from '@/shared/data/constants/game-entities-wire'
 
 // Entity creation schema
 const createEntitySchema = z.object({
@@ -23,46 +26,43 @@ const createEntitySchema = z.object({
 /**
  * GET /api/entities
  * List entities for a project with optional filtering
- * Query params:
- *   - projectId: UUID (required)
- *   - entityType: character | location | mechanic | faction | item | quest (optional)
- *   - sourceDomain: storyteller | loop-creator | interior-designer | world-building (optional)
- *   - search: string (optional, searches name and description)
  */
 export const GET = withAuth(
-  async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
-    const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get('projectId')
-    const entityType = searchParams.get('entityType')
-    const sourceDomain = searchParams.get('sourceDomain')
-    const search = searchParams.get('search')
-
-    if (!projectId) {
-      return NextResponse.json({ error: 'projectId is required' }, { status: 400 })
+  async (request: NextRequest, { session: _session, supabase }: AuthenticatedRequest) => {
+    if (!supabase) {
+      return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
     }
 
-    // Verify project access via RLS (authenticated client)
+    const { searchParams } = new URL(request.url)
+    const projectId = searchParams.get(GameEntityQueryParam.ProjectId)
+    const entityType = searchParams.get(GameEntityQueryParam.EntityType)
+    const sourceDomain = searchParams.get(GameEntityQueryParam.SourceDomain)
+    const search = searchParams.get(GameEntityQueryParam.Search)
+
+    if (!projectId) {
+      return NextResponse.json({ error: API_ERROR.PROJECT_ID_QUERY_REQUIRED }, { status: 400 })
+    }
+
     const hasAccess = await verifyProjectAccess(supabase, projectId)
     if (!hasAccess) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     let query = supabase
-      .from('game_entities')
+      .from(DB_TABLE.GAME_ENTITIES)
       .select('*')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: false })
+      .eq(DB_COLUMN.PROJECT_ID, projectId)
+      .order(DB_COLUMN.CREATED_AT, { ascending: false })
 
     if (entityType) {
-      query = query.eq('entity_type', entityType)
+      query = query.eq(DB_COLUMN.ENTITY_TYPE, entityType)
     }
 
     if (sourceDomain) {
-      query = query.eq('source_domain', sourceDomain)
+      query = query.eq(DB_COLUMN.SOURCE_DOMAIN, sourceDomain)
     }
 
     if (search) {
-      // Escape PostgREST special characters to prevent filter injection
       const sanitizedSearch = search.replace(/[.,()\\]/g, '')
       query = query.or(`name.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%`)
     }
@@ -70,8 +70,8 @@ export const GET = withAuth(
     const { data, error } = await query
 
     if (error) {
-      console.error('[Entities API] Error fetching entities:', error)
-      return NextResponse.json({ error: 'Failed to fetch entities' }, { status: 500 })
+      console.error(API_LOG_PREFIX.ENTITIES_FETCH_ERROR, error)
+      return NextResponse.json({ error: API_ERROR.FAILED_FETCH_ENTITIES }, { status: 500 })
     }
 
     return NextResponse.json({ entities: data })
@@ -84,50 +84,53 @@ export const GET = withAuth(
  */
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+    if (!supabase) {
+      return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
+    }
+
     const body = await request.json()
 
     try {
       const validated = createEntitySchema.parse(body)
 
-      // Verify project access via RLS
       const hasAccess = await verifyProjectAccess(supabase, validated.projectId)
       if (!hasAccess) {
-        return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+        return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
 
       const { data, error } = await supabase
-        .from('game_entities')
+        .from(DB_TABLE.GAME_ENTITIES)
         .insert({
-          project_id: validated.projectId,
-          user_id: session.user.id, // Use authenticated user's ID
-          entity_type: validated.entityType,
-          name: validated.name,
+          [DB_COLUMN.PROJECT_ID]: validated.projectId,
+          [DB_COLUMN.USER_ID]: session.user.id,
+          [DB_COLUMN.ENTITY_TYPE]: validated.entityType,
+          [DB_COLUMN.NAME]: validated.name,
           description: validated.description,
-          source_domain: validated.sourceDomain,
-          source_entity_id: validated.sourceEntityId,
+          [DB_COLUMN.SOURCE_DOMAIN]: validated.sourceDomain,
+          [DB_COLUMN.SOURCE_ENTITY_ID]: validated.sourceEntityId,
           metadata: validated.metadata || {},
           tags: validated.tags || [],
-          image_url: validated.imageUrl,
-          used_in_domains: [validated.sourceDomain],
+          [DB_COLUMN.IMAGE_URL]: validated.imageUrl,
+          [DB_COLUMN.USED_IN_DOMAINS]: [validated.sourceDomain],
         })
         .select()
         .single()
 
       if (error) {
-        console.error('[Entities API] Error creating entity:', error)
-        return NextResponse.json({ error: 'Failed to create entity' }, { status: 500 })
+        console.error(API_LOG_PREFIX.ENTITIES_CREATE_ERROR, error)
+        return NextResponse.json({ error: API_ERROR.FAILED_CREATE_ENTITY }, { status: 500 })
       }
 
       return NextResponse.json({ entity: data }, { status: 201 })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Invalid request data', details: error.errors },
+          { error: API_ERROR.INVALID_REQUEST, details: error.errors },
           { status: 400 }
         )
       }
       throw error
     }
   }),
-  { maxRequests: 30, windowMs: 60000 } // 30 entity creates per minute
+  { maxRequests: 30, windowMs: 60000 }
 )

@@ -14,15 +14,16 @@ import {
 } from '@/domains/storyteller/io/storyteller.dto'
 import { isCentralUser } from '@/shared/auth/bible-permissions'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
-
-enum BibleLockAction {
-  LOCK = 'lock',
-  UNLOCK = 'unlock',
-}
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { QueryParam, SupabaseColumn, SupabaseTable } from '@/shared/data/constants/protocol'
+import {
+  BibleLockAction,
+  BIBLE_LOCK_ACTION_INVALID,
+} from '@/domains/storyteller/io/constants/bible-lock'
 
 function parseBibleLockAction(value: unknown): BibleLockAction | undefined {
   const action = readString(value)
-  if (action === BibleLockAction.LOCK || action === BibleLockAction.UNLOCK) {
+  if (action === BibleLockAction.Lock || action === BibleLockAction.Unlock) {
     return action
   }
   return undefined
@@ -31,19 +32,19 @@ function parseBibleLockAction(value: unknown): BibleLockAction | undefined {
 export async function POST(request: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const body = recordFromJson(await request.json())
     const projectId = readString(body.projectId)
     const action = parseBibleLockAction(body.action)
 
     if (!projectId) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ID_IS_REQUIRED }, { status: 400 })
     }
 
     // Verify project access
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     // Check if user is a central user
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!action) {
-      return NextResponse.json({ error: 'Action must be "lock" or "unlock"' }, { status: 400 })
+      return NextResponse.json({ error: BIBLE_LOCK_ACTION_INVALID }, { status: 400 })
     }
 
     console.log(
@@ -64,36 +65,36 @@ export async function POST(request: NextRequest) {
 
     const { supabase } = await getUserSession()
     if (!supabase) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
     }
 
     const updates = {
-      is_locked: action === BibleLockAction.LOCK,
-      locked_by: action === BibleLockAction.LOCK ? session.user.email : null,
-      locked_at: action === BibleLockAction.LOCK ? new Date().toISOString() : null,
+      is_locked: action === BibleLockAction.Lock,
+      locked_by: action === BibleLockAction.Lock ? session.user.email : null,
+      locked_at: action === BibleLockAction.Lock ? new Date().toISOString() : null,
     }
 
     const { error: updateError } = await supabase
-      .from('series_bibles')
+      .from(SupabaseTable.SeriesBibles)
       .update(updates)
-      .eq('project_id', projectId)
+      .eq(SupabaseColumn.ProjectId, projectId)
 
     if (updateError) {
-      console.error('[Bible Lock API] Update error:', updateError)
-      return NextResponse.json({ error: 'Failed to update lock status' }, { status: 500 })
+      console.error(API_LOG_PREFIX.BIBLE_LOCK_UPDATE_ERROR, updateError)
+      return NextResponse.json({ error: API_ERROR.FAILED_UPDATE_BIBLE_LOCK }, { status: 500 })
     }
 
     return NextResponse.json({
       success: true,
       action,
-      lockedBy: action === BibleLockAction.LOCK ? session.user.email : null,
-      lockedAt: action === BibleLockAction.LOCK ? new Date().toISOString() : null,
+      lockedBy: action === BibleLockAction.Lock ? session.user.email : null,
+      lockedAt: action === BibleLockAction.Lock ? new Date().toISOString() : null,
     })
   } catch (error) {
-    console.error('[Bible Lock API] Error:', error)
+    console.error(API_LOG_PREFIX.BIBLE_LOCK_ERROR, error)
     return NextResponse.json(
       {
-        error: 'Failed to update Bible lock status',
+        error: API_ERROR.FAILED_UPDATE_BIBLE_LOCK_STATUS,
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
@@ -104,37 +105,37 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const parsedQuery = storytellerBibleLockQuerySchema.safeParse({
-      projectId: searchParams.get('projectId'),
+      projectId: searchParams.get(QueryParam.ProjectId),
     })
 
     if (!parsedQuery.success) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ID_IS_REQUIRED }, { status: 400 })
     }
 
     const { projectId } = parsedQuery.data
 
     // Verify project access
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     const { supabase } = await getUserSession()
     if (!supabase) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
     }
 
     const { data, error } = await supabase
-      .from('series_bibles')
-      .select('is_locked, locked_by, locked_at')
-      .eq('project_id', projectId)
+      .from(SupabaseTable.SeriesBibles)
+      .select(SupabaseColumn.BibleLockSelect)
+      .eq(SupabaseColumn.ProjectId, projectId)
       .maybeSingle()
 
     if (error) {
-      console.error('[Bible Lock API] Fetch error:', error)
+      console.error(API_LOG_PREFIX.BIBLE_LOCK_FETCH_ERROR, error)
       return NextResponse.json(
         storytellerBibleLockResponseSchema.parse({ isLocked: false, lockedBy: null, lockedAt: null }),
         { status: 200 }
@@ -149,10 +150,10 @@ export async function GET(request: NextRequest) {
       })
     )
   } catch (error) {
-    console.error('[Bible Lock API] Error:', error)
+    console.error(API_LOG_PREFIX.BIBLE_LOCK_ERROR, error)
     return NextResponse.json(
       {
-        error: 'Failed to get Bible lock status',
+        error: API_ERROR.FAILED_GET_BIBLE_LOCK_STATUS,
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

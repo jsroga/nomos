@@ -9,6 +9,11 @@ import { ActionType } from '@/domains/storyteller/core/types/Enums'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { formatActionForDisplay } from '@/domains/storyteller/core/formatting/ActionFormatters'
+import {
+  ACTION_TOAST_ACTION_PAYLOAD,
+  ACTION_TOAST_MANAGE_BEAT,
+  ACTION_TOAST_UPDATE_WORLD_BIBLE,
+} from '@/domains/storyteller/ui/ActionToast/constants/action-toast-display'
 import { X, Undo2, Check, Loader2, Eye } from 'lucide-react'
 
 interface ActionToastProps {
@@ -144,7 +149,7 @@ interface ActionToastContainerProps {
   maxVisible?: number
 }
 
-const ActionToastContainer: React.FC<ActionToastContainerProps> = ({
+export const ActionToastContainer: React.FC<ActionToastContainerProps> = ({
   entries,
   onUndo,
   onDismiss,
@@ -298,16 +303,16 @@ const VisualJsonDiff: React.FC<{
       action.type === ActionType.UPDATE_BIBLE
     ) {
       return {
-        type: 'Update World Bible',
+        type: ACTION_TOAST_UPDATE_WORLD_BIBLE,
         changes: action.payload,
         isPartial: true,
       }
     }
 
     // 2. Beat Management
-    if (action.type === 'CREATE_BEAT' || action.type === 'UPDATE_BEAT') {
+    if (action.type === ActionType.CREATE_BEAT || action.type === ActionType.UPDATE_BEAT) {
       return {
-        type: 'Manage Beat',
+        type: ACTION_TOAST_MANAGE_BEAT,
         changes: action.payload,
         isPartial: false, // Usually a full object or significant chunk
       }
@@ -315,7 +320,7 @@ const VisualJsonDiff: React.FC<{
 
     // 3. Fallback
     return {
-      type: 'Action Payload',
+      type: ACTION_TOAST_ACTION_PAYLOAD,
       changes: action.payload,
       isPartial: false,
     }
@@ -324,7 +329,7 @@ const VisualJsonDiff: React.FC<{
   const { type, changes, isPartial } = getDiffData()
 
   // Recursive renderer for diff highlighting
-  const renderValue = (key: string, value: unknown, depth = 0): React.ReactNode => {
+  const renderValue = (_key: string, value: unknown, depth = 0): React.ReactNode => {
     if (value === null) return <span className="text-muted-foreground">null</span>
     if (typeof value === 'boolean') return <span className="text-orange-400">{String(value)}</span>
     if (typeof value === 'number') return <span className="text-cyan-400">{value}</span>

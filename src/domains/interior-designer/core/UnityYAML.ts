@@ -1,3 +1,8 @@
+import {
+  UNITY_DEFAULT_MATERIAL_REF,
+  UNITY_GUID_TEMPLATE,
+} from '@/domains/interior-designer/constants/unity-yaml'
+
 // ------------------------------------------------------------------
 // UNITY YAML GENERATION HELPER
 // ------------------------------------------------------------------
@@ -5,7 +10,7 @@
 export const UnityYAML = {
   // Generate a random 32-character hex GUID
   generateGUID: (): string => {
-    return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    return UNITY_GUID_TEMPLATE.replace(/[xy]/g, c => {
       const r = (Math.random() * 16) | 0
       const v = c === 'x' ? r : (r & 0x3) | 0x8
       return v.toString(16)
@@ -226,7 +231,7 @@ MeshFilter:
     // TODO: If we want textures, we strictly need to generate a .mat file per texture and reference it here.
     const matRef = materialGuid
       ? `{fileID: 2100000, guid: ${materialGuid}, type: 2}`
-      : '{fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}'
+      : UNITY_DEFAULT_MATERIAL_REF
 
     return `--- !u!23 &${id}
 MeshRenderer:
@@ -300,8 +305,6 @@ MeshRenderer:
     // For "Copy Paste" to work with Models, we really need the Prefab reference.
     // But referencing a Model (GLB) as a Prefab requires knowing the FileID of the root GameObject inside the GLB.
     // Standard GLB import usually assigns FileID 100100000 to the root. Let's try guessing it.
-
-    const transformId = id + 1
 
     return `--- !u!1001 &${id}
 PrefabInstance:

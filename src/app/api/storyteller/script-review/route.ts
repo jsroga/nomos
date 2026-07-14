@@ -17,6 +17,20 @@ import {
 } from '@/domains/storyteller/server'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  HttpMethod,
+  ScriptReviewApiDoc,
+  ScriptReviewMode,
+  StringSeparator,
+} from '@/shared/data/constants/protocol'
+import { ReviewPersonaKey } from '@/domains/storyteller/services/constants/script-review'
+
+const VALID_SCRIPT_REVIEW_PERSONAS = [
+  ReviewPersonaKey.GeorgeRrMartin,
+  ReviewPersonaKey.VinceGilligan,
+  ReviewPersonaKey.DavidLynch,
+] as const
 
 export const POST = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
   try {
@@ -24,22 +38,19 @@ export const POST = withAuth(async (request: NextRequest, _auth: AuthenticatedRe
     const { script, episodePremise, characters, focusAreas, quickMode, persona } = body
 
     if (!script || typeof script !== 'string') {
-      return NextResponse.json({ error: 'Script content is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.SCRIPT_CONTENT_REQUIRED }, { status: 400 })
     }
 
     if (script.length < 50) {
-      return NextResponse.json(
-        { error: 'Script too short for meaningful review (min 50 characters)' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: API_ERROR.SCRIPT_TOO_SHORT }, { status: 400 })
     }
 
-    // Quick mode: single persona review
     if (quickMode && persona) {
-      const validPersonas = ['george-rr-martin', 'vince-gilligan', 'david-lynch']
-      if (!validPersonas.includes(persona)) {
+      if (!VALID_SCRIPT_REVIEW_PERSONAS.includes(persona)) {
         return NextResponse.json(
-          { error: `Invalid persona. Choose from: ${validPersonas.join(', ')}` },
+          {
+            error: `Invalid persona. Choose from: ${VALID_SCRIPT_REVIEW_PERSONAS.join(StringSeparator.CommaSpace)}`,
+          },
           { status: 400 }
         )
       }
@@ -47,13 +58,12 @@ export const POST = withAuth(async (request: NextRequest, _auth: AuthenticatedRe
       const review = await quickReview(script, persona)
       return NextResponse.json({
         success: true,
-        mode: 'quick',
+        mode: ScriptReviewMode.Quick,
         persona,
         review,
       })
     }
 
-    // Full review: all three personas + synthesis
     const reviewRequest: ScriptReviewRequest = {
       script,
       episodePremise,
@@ -65,47 +75,55 @@ export const POST = withAuth(async (request: NextRequest, _auth: AuthenticatedRe
 
     return NextResponse.json({
       success: true,
-      mode: 'full',
+      mode: ScriptReviewMode.Full,
       ...result,
     })
   } catch (error: unknown) {
-    console.error('[ScriptReview] Error:', error)
-    return NextResponse.json({ error: getErrorMessage(error) || 'Script review failed' }, { status: 500 })
+    console.error(API_LOG_PREFIX.SCRIPT_REVIEW_ERROR, error)
+    return NextResponse.json(
+      { error: getErrorMessage(error) || API_ERROR.SCRIPT_REVIEW_FAILED },
+      { status: 500 }
+    )
   }
 })
 
 export async function GET() {
   return NextResponse.json({
-    endpoint: '/api/storyteller/script-review',
-    method: 'POST',
-    description: 'Review scripts using three legendary storyteller personas',
+    endpoint: ScriptReviewApiDoc.Endpoint,
+    method: HttpMethod.Post,
+    description: ScriptReviewApiDoc.Description,
     personas: [
       {
-        id: 'george-rr-martin',
-        focus: 'Character depth, consequences, moral complexity, world texture',
+        id: ReviewPersonaKey.GeorgeRrMartin,
+        focus: ScriptReviewApiDoc.GeorgeFocus,
       },
       {
-        id: 'vince-gilligan',
-        focus: 'Visual storytelling, transformation arcs, rigorous logic, blocking',
+        id: ReviewPersonaKey.VinceGilligan,
+        focus: ScriptReviewApiDoc.VinceFocus,
       },
       {
-        id: 'david-lynch',
-        focus: 'Atmosphere, dream logic, the uncanny, soundscapes',
+        id: ReviewPersonaKey.DavidLynch,
+        focus: ScriptReviewApiDoc.LynchFocus,
       },
     ],
     usage: {
       full: {
         body: {
-          script: 'Your script content here...',
-          episodePremise: { title: 'Episode Title', logline: '...' },
-          characters: [{ name: 'Character', role: 'Protagonist' }],
+          script: ScriptReviewApiDoc.SampleScript,
+          episodePremise: {
+            title: ScriptReviewApiDoc.SampleEpisodeTitle,
+            logline: ScriptReviewApiDoc.SampleEllipsis,
+          },
+          characters: [
+            { name: ScriptReviewApiDoc.SampleCharacter, role: ScriptReviewApiDoc.SampleProtagonist },
+          ],
         },
       },
       quick: {
         body: {
-          script: 'Your script content here...',
+          script: ScriptReviewApiDoc.SampleScript,
           quickMode: true,
-          persona: 'george-rr-martin | vince-gilligan | david-lynch',
+          persona: ScriptReviewApiDoc.PersonaChoices,
         },
       },
     },

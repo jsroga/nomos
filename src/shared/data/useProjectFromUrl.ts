@@ -3,6 +3,10 @@
 import { useParams, useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
+import {
+  ProjectLoaderLog,
+  ProjectLoaderMessage,
+} from '@/shared/data/constants/project-loader'
 
 export function useProjectFromUrl() {
   const params = useParams()
@@ -31,7 +35,7 @@ export function useProjectFromUrl() {
       projectId && currentProject?.id !== projectId && loadedProjectIdRef.current !== projectId
 
     if (shouldLoad) {
-      console.log('🔄 [DEBUG] useProjectFromUrl: starting load for', projectId)
+      console.log(ProjectLoaderLog.StartingLoad, projectId)
       setIsLoading(true)
       setError(null)
       loadedProjectIdRef.current = projectId // Mark as loading
@@ -40,21 +44,19 @@ export function useProjectFromUrl() {
         .then(() => {
           // Check if project was actually loaded
           const loadedProject = useWorldStore.getState().currentProject
-          console.log('✅ [DEBUG] useProjectFromUrl: load complete. Result:', !!loadedProject)
+          console.log(ProjectLoaderLog.LoadComplete, !!loadedProject)
           if (!loadedProject) {
             // Project doesn't exist - redirect to base path
-            console.warn(
-              '⚠️ [DEBUG] useProjectFromUrl: project not found, redirecting to base path'
-            )
-            setError('Project not found')
+            console.warn(ProjectLoaderLog.ProjectNotFoundRedirect)
+            setError(ProjectLoaderMessage.ProjectNotFound)
             loadedProjectIdRef.current = null // Reset on error
             const basePath = '/' + (pathname?.split('/')[1] || '')
             router.replace(basePath)
           }
         })
         .catch(err => {
-          console.error('Failed to load project:', err)
-          setError('Failed to load project')
+          console.error(ProjectLoaderLog.FailedLoadProject, err)
+          setError(ProjectLoaderMessage.FailedLoadProject)
           loadedProjectIdRef.current = null // Reset on error
           // Redirect to base path
           const basePath = '/' + (pathname?.split('/')[1] || '')

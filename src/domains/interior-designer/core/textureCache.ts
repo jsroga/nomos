@@ -8,7 +8,6 @@
 import * as THREE from 'three'
 
 const textureCache = new Map<string, THREE.Texture>()
-const loadingPromises = new Map<string, Promise<THREE.Texture>>()
 const loader = new THREE.TextureLoader()
 
 /**

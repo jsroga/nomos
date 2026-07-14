@@ -5,6 +5,8 @@ import {
 } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { recordFromJson, stringArrayFromJson } from '@/shared/data/deep-merge'
 
+import { EpisodePremiseField } from '@/domains/storyteller/ui/StoryPlanBoard/constants/episode-premise-fields'
+
 function isStringRecord(value: unknown): value is Record<string, string> {
   return (
     typeof value === 'object' &&
@@ -28,17 +30,17 @@ function bridgeEpisodePremise(
   }
   return {
     ...source,
-    title: str('title') || fallbackTitle || '',
-    logline: str('logline'),
-    theHook: str('theHook'),
-    theTurn: str('theTurn'),
-    theAftermath: str('theAftermath'),
-    protagonistHook: str('protagonistHook') || null,
-    fatalFlaw: str('fatalFlaw'),
-    stakes: str('stakes'),
-    transformation: str('transformation'),
-    inevitableConsequence: str('inevitableConsequence'),
-    thematicFocus: str('thematicFocus'),
+    title: str(EpisodePremiseField.Title) || fallbackTitle || '',
+    logline: str(EpisodePremiseField.Logline),
+    theHook: str(EpisodePremiseField.TheHook),
+    theTurn: str(EpisodePremiseField.TheTurn),
+    theAftermath: str(EpisodePremiseField.TheAftermath),
+    protagonistHook: str(EpisodePremiseField.ProtagonistHook) || null,
+    fatalFlaw: str(EpisodePremiseField.FatalFlaw),
+    stakes: str(EpisodePremiseField.Stakes),
+    transformation: str(EpisodePremiseField.Transformation),
+    inevitableConsequence: str(EpisodePremiseField.InevitableConsequence),
+    thematicFocus: str(EpisodePremiseField.ThematicFocus),
     charactersInvolved: stringArrayFromJson(source.charactersInvolved),
     tenPointsPlan: Array.isArray(source.tenPointsPlan)
       ? source.tenPointsPlan.filter(
@@ -57,6 +59,13 @@ export interface StoryPlanBoardProps {
   storyPlan: StoryPlan | null
   globalBible: Partial<StoryPlan> | Record<string, unknown>
   onApprove: () => void
+  onUpdatePremise?: (updates: Partial<EpisodePremise> & Record<string, unknown>) => void
+  onGeneratePremise?: () => void
+  onGeneratePoster?: (episodeId?: string) => void
+  onGenerateStoryboard?: (episodeId?: string) => void
+  onGeneratePremiseSection?: (
+    section: 'protagonistHook' | 'fatalFlaw' | 'stakes' | 'inevitableConsequence' | 'logline' | 'tenPointsPlan'
+  ) => void
   isGenerating?: boolean
   onUpdateSequence?: (id: number, updates: Partial<StorySequence>) => void
   isGeneratingPoster?: boolean
@@ -71,6 +80,11 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
   storyPlan,
   globalBible,
   onApprove,
+  onUpdatePremise,
+  onGeneratePremise,
+  onGeneratePoster,
+  onGenerateStoryboard,
+  onGeneratePremiseSection,
   isGenerating = false,
   isGeneratingPoster = false,
   isGeneratingStoryboard = false,
@@ -130,42 +144,12 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
         posterPrompt={stringOrNull(storyPlanRecord.posterPrompt)}
         projectId={projectId}
         onUpdate={updated => {
-          // Handle updates - likely need a prop for this or dispatch event
-          console.log('Update premise:', updated)
-          window.dispatchEvent(
-            new CustomEvent('update_episode_premise', {
-              detail: updated,
-            })
-          )
+          void onUpdatePremise?.(updated)
         }}
-        onGenerate={() =>
-          window.dispatchEvent(
-            new CustomEvent('trigger-agent-action', {
-              detail: { type: 'generate_episode_premise' },
-            })
-          )
-        }
-        onGeneratePoster={() =>
-          window.dispatchEvent(
-            new CustomEvent('generate-episode-poster', {
-              detail: { episodeId: storyPlanId },
-            })
-          )
-        }
-        onGenerateStoryboard={() =>
-          window.dispatchEvent(
-            new CustomEvent('trigger-storyboard-generation', {
-              detail: { episodeId: storyPlanId },
-            })
-          )
-        }
-        onGenerateSection={section =>
-          window.dispatchEvent(
-            new CustomEvent('trigger-agent-action', {
-              detail: { type: 'generate_episode_premise_section', section },
-            })
-          )
-        }
+        onGenerate={() => onGeneratePremise?.()}
+        onGeneratePoster={() => onGeneratePoster?.(storyPlanId)}
+        onGenerateStoryboard={() => onGenerateStoryboard?.(storyPlanId)}
+        onGenerateSection={section => onGeneratePremiseSection?.(section)}
         isGenerating={isGenerating}
         generatingSection={generatingSection}
         isGeneratingPoster={isGeneratingPoster}

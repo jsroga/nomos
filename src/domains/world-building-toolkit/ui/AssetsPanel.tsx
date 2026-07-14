@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import { getSupabaseClient } from '@/shared/data/storage/supabaseClient'
+import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
+import { ContentType, HttpMethod, UrlScheme } from '@/shared/data/constants/protocol'
+import { ASSETS_PANEL_COPY } from '@/domains/world-building-toolkit/ui/constants/assets-panel'
 import { Loader2, Trash2, AlertTriangle, Cuboid } from 'lucide-react'
 import { Button } from '@/components/Button'
 import {
@@ -21,12 +24,10 @@ interface AssetsPanelProps {
 export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true, onSelectAsset }) => {
   const currentProject = useWorldStore(state => state.currentProject)
   const assets = useWorldStore(state => state.assets)
-  const setAssets = useWorldStore(state => state.setAssets)
   const removeAsset = useWorldStore(state => state.removeAsset)
   const previewAssetId = useWorldStore(state => state.previewAssetId)
   const setPreviewAssetId = useWorldStore(state => state.setPreviewAssetId)
   const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
-  const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
   const fetchAssets = useWorldStore(state => state.fetchAssets)
   const [loading, setLoading] = React.useState(false)
 
@@ -58,13 +59,13 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true, o
     try {
       // Delete from DB
       const supabase = getSupabaseClient()
-      const { error } = await supabase.from('assets').delete().eq('id', assetToDelete.id)
+      const { error } = await supabase.from(DB_TABLE.ASSETS).delete().eq(DB_COLUMN.ID, assetToDelete.id)
       if (error) throw error
 
       // Delete file via API
       await fetch('/api/delete-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: HttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify({
           projectId: currentProject?.id,
           filename: `assets/${assetToDelete.filename}`,
@@ -73,10 +74,10 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true, o
 
       // Update local state
       removeAsset(assetToDelete.id)
-      toast.success('Asset deleted')
+      toast.success(ASSETS_PANEL_COPY.ASSET_DELETED_TOAST)
     } catch (error: unknown) {
-      console.error('Error deleting asset:', error)
-      toast.error('Failed to delete asset')
+      console.error(ASSETS_PANEL_COPY.ERROR_DELETING_ASSET_LOG, error)
+      toast.error(ASSETS_PANEL_COPY.FAILED_DELETE_ASSET_TOAST)
     } finally {
       setIsDeleting(false)
       setDeleteDialogOpen(false)
@@ -84,16 +85,15 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true, o
     }
   }
 
-  const handlePreview = (id: string, modelFilename?: string) => {
+  const handlePreview = (id: string, modelFilename?: string | null) => {
     // Toggle preview - if same asset clicked, turn off preview
     const isSelecting = previewAssetId !== id
     setPreviewAssetId(isSelecting ? id : null)
 
     if (isSelecting) {
-      window.dispatchEvent(new CustomEvent('asset-selected'))
       if (onSelectAsset && modelFilename && currentProject) {
         const glbUrl =
-          modelFilename.startsWith('http') || modelFilename.startsWith('https')
+          modelFilename.startsWith(UrlScheme.Http) || modelFilename.startsWith(UrlScheme.Https)
             ? modelFilename
             : `/projects/${currentProject.id}/assets/${modelFilename}`
         onSelectAsset(glbUrl, true)

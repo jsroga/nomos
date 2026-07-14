@@ -4,9 +4,11 @@
  * Provides middleware-like utilities for API routes
  */
 
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserSession } from '@/shared/auth/auth'
+import { API_ERROR, API_LOG_PREFIX, RATE_LIMIT } from '@/shared/data/constants/api-errors'
+import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 
 // Re-exported so existing `@/shared/data/api-utils` importers keep working.
 // Canonical implementation (incl. E2E bypass) lives in @/shared/auth/auth.
@@ -23,7 +25,7 @@ export interface AuthenticatedRequest {
       email?: string
     }
   }
-  supabase: ReturnType<typeof createRouteHandlerClient>
+  supabase: SupabaseClient
 }
 
 export type ApiHandler<T = unknown> = (
@@ -43,7 +45,7 @@ export async function requireAuth() {
   const { session, supabase, error } = await getUserSession()
 
   if (error || !session) {
-    return { session: null, supabase: null, error: error || new Error('Unauthorized') }
+    return { session: null, supabase: null, error: error || new Error(API_ERROR.UNAUTHORIZED) }
   }
 
   return { session, supabase, error: null }
@@ -66,19 +68,29 @@ export function withAuth<T = unknown>(handler: ApiHandler<NoInfer<T>>) {
 
     if (error || !session) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Authentication required' },
+        { error: API_ERROR.UNAUTHORIZED, message: API_ERROR.AUTH_REQUIRED },
         { status: 401 }
+      )
+    }
+
+    // A valid session with no client is only the dev/test E2E-bypass path
+    // (getUserSession returns supabase: null there) — DB-backed handlers can't
+    // run without a client, so fail closed rather than expose a nullable type.
+    if (!supabase) {
+      return NextResponse.json(
+        { error: API_ERROR.INTERNAL_SERVER_ERROR, message: API_ERROR.UNKNOWN_ERROR },
+        { status: 500 }
       )
     }
 
     try {
       return await handler(request, { session, supabase }, context)
     } catch (err) {
-      console.error('API Error:', err)
+      console.error(API_LOG_PREFIX.API_ERROR, err)
       return NextResponse.json(
         {
-          error: 'Internal Server Error',
-          message: err instanceof Error ? err.message : 'Unknown error',
+          error: API_ERROR.INTERNAL_SERVER_ERROR,
+          message: err instanceof Error ? err.message : API_ERROR.UNKNOWN_ERROR,
         },
         { status: 500 }
       )
@@ -108,7 +120,7 @@ export function checkRateLimit(
   key: string,
   config: RateLimitConfig = {}
 ): { allowed: boolean; remaining: number; resetAt: number } {
-  const { windowMs = 60000, maxRequests = 60, keyPrefix = 'rl' } = config
+  const { windowMs = 60000, maxRequests = 60, keyPrefix = RATE_LIMIT.KEY_PREFIX } = config
   const fullKey = `${keyPrefix}:${key}`
   const now = Date.now()
 
@@ -148,7 +160,7 @@ export function withRateLimit<T = unknown>(
   return async (request: NextRequest, context?: { params: Record<string, string> }) => {
     const {
       // NextRequest has no `ip` in Next 15 — the proxy header is the source.
-      getKey = req => req.headers.get('x-forwarded-for') || 'anonymous',
+      getKey = req => req.headers.get(RATE_LIMIT.FORWARDED_FOR_HEADER) || RATE_LIMIT.ANONYMOUS_KEY,
       ...rateLimitConfig
     } = config
     const key = getKey(request)
@@ -156,7 +168,7 @@ export function withRateLimit<T = unknown>(
 
     if (!allowed) {
       return NextResponse.json(
-        { error: 'Too Many Requests', message: 'Rate limit exceeded' },
+        { error: API_ERROR.TOO_MANY_REQUESTS, message: API_ERROR.RATE_LIMIT_EXCEEDED },
         {
           status: 429,
           headers: {
@@ -171,23 +183,13 @@ export function withRateLimit<T = unknown>(
     const response = await handler(request, context)
 
     // Add rate limit headers to successful response
-    response.headers.set('X-RateLimit-Remaining', String(remaining))
-    response.headers.set('X-RateLimit-Reset', String(Math.ceil(resetAt / 1000)))
+    response.headers.set(RATE_LIMIT.REMAINING_HEADER, String(remaining))
+    response.headers.set(RATE_LIMIT.RESET_HEADER, String(Math.ceil(resetAt / 1000)))
 
     return response
   }
 }
 
-// ============================================
-// CSRF PROTECTION
-// ============================================
-
-const ALLOWED_ORIGINS = [
-  process.env.NEXT_PUBLIC_APP_URL,
-  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-  'http://localhost:4000',
-  'http://localhost:3001',
-].filter((origin): origin is string => Boolean(origin))
 // ============================================
 // PROJECT ACCESS VERIFICATION
 // ============================================
@@ -197,10 +199,14 @@ const ALLOWED_ORIGINS = [
  * Uses authenticated Supabase client (RLS enforced)
  */
 export async function verifyProjectAccess(
-  supabase: ReturnType<typeof createRouteHandlerClient>,
+  supabase: SupabaseClient,
   projectId: string
 ): Promise<boolean> {
-  const { data, error } = await supabase.from('projects').select('id').eq('id', projectId).single()
+  const { data, error } = await supabase
+    .from(DB_TABLE.PROJECTS)
+    .select(DB_COLUMN.ID)
+    .eq(DB_COLUMN.ID, projectId)
+    .single()
 
   return !error && !!data
 }

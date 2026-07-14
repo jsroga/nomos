@@ -1,5 +1,7 @@
+import { ERROR_MESSAGE_FIELD } from '@/shared/errors/constants/error-utils'
+
 function hasMessageField(error: unknown): error is { message: unknown } {
-  return typeof error === 'object' && error !== null && 'message' in error
+  return typeof error === 'object' && error !== null && ERROR_MESSAGE_FIELD in error
 }
 
 export function getErrorMessage(error: unknown): string {

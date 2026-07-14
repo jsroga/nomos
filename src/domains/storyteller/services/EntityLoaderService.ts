@@ -1,6 +1,7 @@
 import { EntityReference } from '@/domains/storyteller/core/entities/EntityReferences'
 import { parseEntityType, entityMetadata } from '@/domains/storyteller/core/entities/entity-type-guards'
 import { readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+import { ENTITY_FETCH_FAILED_MESSAGE } from '@/domains/storyteller/services/constants/entity-loader'
 
 function entityReferenceFromJson(value: unknown): EntityReference | null {
   const row = recordFromJson(value)
@@ -110,7 +111,7 @@ export class EntityLoader {
 
           const res = await fetch(url)
 
-          if (!res.ok) throw new Error('Failed to fetch')
+          if (!res.ok) throw new Error(ENTITY_FETCH_FAILED_MESSAGE)
 
           const data = recordFromJson(await res.json())
           const entities = recordArrayFromJson(data.entities)

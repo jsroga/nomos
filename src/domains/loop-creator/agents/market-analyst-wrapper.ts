@@ -5,8 +5,25 @@
  */
 
 import { AIMessage } from '@langchain/core/messages'
+import { LoopAgentNode } from '@/domains/loop-creator/constants/agent-nodes'
+import { LoopAgentActionKind } from '@/domains/loop-creator/constants/loop-agent-actions'
+import {
+  LoopGameAudienceDefault,
+  LoopGameGenreDefault,
+  LoopGamePlatformDefault,
+  MARKET_ANALYSIS_COMPLETE_REASONING,
+  MarketViabilityScoreEmoji,
+} from '@/domains/loop-creator/constants/market-analysis'
+import { NEXT_AGENT_SUPERVISOR } from '@/domains/loop-creator/constants/graph-state-defaults'
 import { LoopCreatorState } from '../core/graph/state'
 import { runMarketAnalysis, LoopAnalysisInput } from './market-analyst'
+
+function viabilityScoreEmoji(score: number): string {
+  if (score >= 70) return MarketViabilityScoreEmoji.High
+  if (score >= 50) return MarketViabilityScoreEmoji.Medium
+  if (score >= 30) return MarketViabilityScoreEmoji.Low
+  return MarketViabilityScoreEmoji.Critical
+}
 
 /**
  * Market analyst agent for the loop-graph
@@ -16,27 +33,12 @@ export async function marketAnalystAgent(
 ): Promise<Partial<LoopCreatorState>> {
   // Build input from state
   const input: LoopAnalysisInput = {
-    mechanics: state.mechanics.map(m => ({
-      id: m.id,
-      name: m.name,
-      type: m.type,
-      description: m.description || '',
-    })),
-    connections: state.connections.map(c => ({
-      id: c.id,
-      source: c.source,
-      target: c.target,
-      label: c.label,
-    })),
-    loops: state.loops.map(l => ({
-      id: l.id,
-      name: l.name,
-      type: l.type,
-      description: l.description,
-    })),
-    gameGenre: state.gameGenre || 'indie',
-    gamePlatform: state.gamePlatform || 'pc',
-    targetAudience: state.targetAudience || 'core',
+    mechanics: state.mechanics,
+    connections: state.connections,
+    loops: state.loops,
+    gameGenre: state.gameGenre || LoopGameGenreDefault.Indie,
+    gamePlatform: state.gamePlatform || LoopGamePlatformDefault.Pc,
+    targetAudience: state.targetAudience || LoopGameAudienceDefault.Core,
     gameDescription: state.gameDescription || '',
   }
 
@@ -53,15 +55,7 @@ export async function marketAnalystAgent(
   if (report) {
     responseContent = `## Market Analysis Complete
 
-**Market Viability Score: ${report.overallScore}/100** ${
-      report.overallScore >= 70
-        ? '🟢'
-        : report.overallScore >= 50
-          ? '🟡'
-          : report.overallScore >= 30
-            ? '🟠'
-            : '🔴'
-    }
+**Market Viability Score: ${report.overallScore}/100** ${viabilityScoreEmoji(report.overallScore)}
 
 ### Market Size
 - **Total Addressable Market**: ${report.marketSize.tam}
@@ -108,19 +102,19 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
     messages: [
       new AIMessage({
         content: responseContent,
-        name: 'market_analyst',
+        name: LoopAgentNode.MarketAnalyst,
       }),
     ],
-    nextAgent: 'supervisor', // Return to supervisor to present results
+    nextAgent: NEXT_AGENT_SUPERVISOR, // Return to supervisor to present results
     marketAnalysis: report || undefined,
     // Emit action to open the market analysis panel in the UI
     pendingActions: report
       ? [
           {
-            type: 'MARKET_ANALYSIS_COMPLETE' as const,
+            type: LoopAgentActionKind.MarketAnalysisComplete,
             payload: { timestamp: Date.now() },
             confidence: 1.0,
-            reasoning: 'Market analysis completed successfully',
+            reasoning: MARKET_ANALYSIS_COMPLETE_REASONING,
           },
         ]
       : undefined,

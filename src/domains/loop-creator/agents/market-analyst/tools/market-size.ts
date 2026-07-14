@@ -4,9 +4,9 @@
  * Estimates Total Addressable Market for a game genre/platform combination.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
 import { MarketSizeData } from '../types'
+import { createLoopStructuredTool } from './structured-tool'
 
 /**
  * Market data by genre (2024 estimates)
@@ -76,23 +76,26 @@ const MARKET_DATA: Record<
   },
 }
 
+const marketSizeSchema = z.object({
+  genre: z.string().describe('Primary game genre (e.g., roguelike, fps, rpg)'),
+  subGenre: z
+    .string()
+    .optional()
+    .describe('Sub-genre if applicable (e.g., survivors-like, deck-builder)'),
+  platform: z.enum(['pc', 'console', 'mobile', 'all']).describe('Target platform'),
+  isIndie: z.boolean().optional().describe('Is this an indie game?'),
+})
+
 /**
  * Market size estimator tool
  */
-export const marketSizeEstimatorTool = new DynamicStructuredTool({
+export const marketSizeEstimatorTool = createLoopStructuredTool({
   name: 'market_size_estimator',
   description:
     'Estimate the Total Addressable Market (TAM) and Serviceable Market (SAM) for a game genre and platform combination.',
-  schema: z.object({
-    genre: z.string().describe('Primary game genre (e.g., roguelike, fps, rpg)'),
-    subGenre: z
-      .string()
-      .optional()
-      .describe('Sub-genre if applicable (e.g., survivors-like, deck-builder)'),
-    platform: z.enum(['pc', 'console', 'mobile', 'all']).describe('Target platform'),
-    isIndie: z.boolean().optional().describe('Is this an indie game?'),
-  }),
-  func: async ({ genre, subGenre, platform, isIndie }): Promise<string> => {
+  schema: marketSizeSchema,
+  func: async input => {
+    const { genre, subGenre, platform, isIndie } = marketSizeSchema.parse(input)
     try {
       // Find best matching market data
       const searchTerms = [subGenre, genre, 'indie'].filter(Boolean)

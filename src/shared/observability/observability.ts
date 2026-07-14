@@ -7,6 +7,12 @@
  * wrappers for legacy call sites.
  */
 
+import { recordFromJson } from '@/shared/data/json-guards'
+import {
+  TraceSanitizeFallback,
+  traceFieldFallback,
+} from '@/shared/observability/constants/trace-sanitize'
+
 export type TraceSpan = {
   end: (args?: unknown) => void
 }
@@ -38,7 +44,7 @@ function isSensitiveField(key: string): boolean {
   return SENSITIVE_PATTERNS.some(pattern => pattern.test(key))
 }
 
-export function sanitizeTraceValue(value: unknown, fallback: string = '(empty)'): unknown {
+export function sanitizeTraceValue(value: unknown, fallback: string = TraceSanitizeFallback.Empty): unknown {
   if (value === undefined || value === null) {
     return fallback
   }
@@ -52,9 +58,9 @@ export function sanitizeTraceValue(value: unknown, fallback: string = '(empty)')
     const sanitized: Record<string, unknown> = {}
     for (const [key, val] of Object.entries(value)) {
       if (isSensitiveField(key)) {
-        sanitized[key] = '***REDACTED***'
+        sanitized[key] = TraceSanitizeFallback.Redacted
       } else {
-        sanitized[key] = sanitizeTraceValue(val, `(no ${key})`)
+        sanitized[key] = sanitizeTraceValue(val, traceFieldFallback(key))
       }
     }
     return sanitized
@@ -65,29 +71,29 @@ export function sanitizeTraceValue(value: unknown, fallback: string = '(empty)')
 function sanitizedObjectRecord(value: unknown, fallback: string): Record<string, unknown> {
   const result = sanitizeTraceValue(value, fallback)
   if (typeof result === 'object' && result !== null && !Array.isArray(result)) {
-    return result
+    return recordFromJson(result)
   }
   return { value: result }
 }
 
 export function sanitizeInput(input: unknown): string | Record<string, unknown> {
   if (input === undefined || input === null) {
-    return '(no input provided)'
+    return TraceSanitizeFallback.NoInputProvided
   }
   if (typeof input === 'string') {
-    return input || '(empty input)'
+    return input || TraceSanitizeFallback.EmptyInput
   }
-  return sanitizedObjectRecord(input, '(empty)')
+  return sanitizedObjectRecord(input, TraceSanitizeFallback.Empty)
 }
 
 export function sanitizeOutput(output: unknown): string | Record<string, unknown> {
   if (output === undefined || output === null) {
-    return '(no output)'
+    return TraceSanitizeFallback.NoOutput
   }
   if (typeof output === 'string') {
-    return output || '(empty output)'
+    return output || TraceSanitizeFallback.EmptyOutput
   }
-  return sanitizedObjectRecord(output, '(empty)')
+  return sanitizedObjectRecord(output, TraceSanitizeFallback.Empty)
 }
 
 /** @deprecated Use sanitizeTraceValue */

@@ -3,16 +3,13 @@
  */
 
 import { smartMergeArray } from '@/domains/storyteller/core/editing/DeepMerge'
+import {
+  CAST_FIELD_ALIASES,
+  CastEntryField,
+  CastFieldAlias,
+} from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 
-/** Aliases for the project cast field. `cast` is canonical at the persistence boundary. */
-export const CAST_FIELD_ALIASES = [
-  'cast',
-  'characters',
-  'keyCharacters',
-  'key_characters',
-  'keyPlayers',
-  'key_players',
-] as const
+export { CAST_FIELD_ALIASES } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 
 export function readCastFromPlan(plan: Record<string, unknown> | null | undefined): unknown[] {
   if (!plan) return []
@@ -43,15 +40,15 @@ export function normalizeCastInUpdates(
   const result = Object.fromEntries(
     Object.entries(updates).filter(([key]) => !CAST_FIELD_ALIASES.some(alias => alias === key))
   )
-  result.cast = cast
+  result[CastFieldAlias.Cast] = cast
   return result
 }
 
 export function dedupeCastByName(cast: unknown[]): unknown[] {
   const unique = new Map<string, unknown>()
   for (const entry of cast) {
-    if (typeof entry === 'object' && entry !== null && 'name' in entry) {
-      const name = String(Reflect.get(entry, 'name'))
+    if (typeof entry === 'object' && entry !== null && CastEntryField.Name in entry) {
+      const name = String(Reflect.get(entry, CastEntryField.Name))
       if (name) unique.set(name, entry)
     }
   }
@@ -67,6 +64,6 @@ export function mergeCastFromSource(
   if (!incoming?.length) return
 
   const merged = dedupeCastByName(smartMergeArray(readCastFromPlan(target), incoming))
-  target.cast = merged
-  target.keyCharacters = merged
+  target[CastFieldAlias.Cast] = merged
+  target[CastFieldAlias.KeyCharacters] = merged
 }

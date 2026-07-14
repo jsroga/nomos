@@ -6,6 +6,8 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { QueryParam, SupabaseColumn, SupabaseTable } from '@/shared/data/constants/protocol'
 
 // Relationship creation schema
 const createRelationshipSchema = z.object({
@@ -31,31 +33,31 @@ const createRelationshipSchema = z.object({
  *   - projectId: UUID (optional) - filter by project
  */
 export const GET = withAuth(
-  async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const { searchParams } = new URL(request.url)
-    const entityId = searchParams.get('entityId')
-    const projectId = searchParams.get('projectId')
+    const entityId = searchParams.get(QueryParam.EntityId)
+    const projectId = searchParams.get(QueryParam.ProjectId)
 
     if (!entityId) {
-      return NextResponse.json({ error: 'entityId is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.ENTITY_ID_QUERY_REQUIRED }, { status: 400 })
     }
 
     // Validate entityId is a UUID to prevent PostgREST filter injection
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entityId)) {
-      return NextResponse.json({ error: 'Invalid entityId format' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.INVALID_ENTITY_ID_FORMAT }, { status: 400 })
     }
 
     // If projectId provided, verify access
     if (projectId) {
       const hasAccess = await verifyProjectAccess(supabase, projectId)
       if (!hasAccess) {
-        return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+        return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
     }
 
     // RLS will filter relationships based on project access
     let query = supabase
-      .from('entity_relationships')
+      .from(SupabaseTable.EntityRelationships)
       .select(
         `
       *,
@@ -66,14 +68,14 @@ export const GET = withAuth(
       .or(`from_entity_id.eq.${entityId},to_entity_id.eq.${entityId}`)
 
     if (projectId) {
-      query = query.eq('project_id', projectId)
+      query = query.eq(SupabaseColumn.ProjectId, projectId)
     }
 
     const { data, error } = await query
 
     if (error) {
-      console.error('[Relationships API] Error fetching relationships:', error)
-      return NextResponse.json({ error: 'Failed to fetch relationships' }, { status: 500 })
+      console.error(API_LOG_PREFIX.RELATIONSHIPS_FETCH_ERROR, error)
+      return NextResponse.json({ error: API_ERROR.FAILED_FETCH_RELATIONSHIPS }, { status: 500 })
     }
 
     return NextResponse.json({ relationships: data })
@@ -85,7 +87,7 @@ export const GET = withAuth(
  * Create a new relationship between entities
  */
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const body = await request.json()
 
     try {
@@ -94,7 +96,7 @@ export const POST = withRateLimit(
       // Prevent self-relationships
       if (validated.fromEntityId === validated.toEntityId) {
         return NextResponse.json(
-          { error: 'Cannot create relationship from entity to itself' },
+          { error: API_ERROR.CANNOT_RELATE_ENTITY_TO_SELF },
           { status: 400 }
         )
       }
@@ -102,11 +104,11 @@ export const POST = withRateLimit(
       // Verify project access via RLS
       const hasAccess = await verifyProjectAccess(supabase, validated.projectId)
       if (!hasAccess) {
-        return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+        return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
 
       const { data, error } = await supabase
-        .from('entity_relationships')
+        .from(SupabaseTable.EntityRelationships)
         .insert({
           project_id: validated.projectId,
           from_entity_id: validated.fromEntityId,
@@ -124,15 +126,15 @@ export const POST = withRateLimit(
         .single()
 
       if (error) {
-        console.error('[Relationships API] Error creating relationship:', error)
-        return NextResponse.json({ error: 'Failed to create relationship' }, { status: 500 })
+        console.error(API_LOG_PREFIX.RELATIONSHIPS_CREATE_ERROR, error)
+        return NextResponse.json({ error: API_ERROR.FAILED_CREATE_RELATIONSHIP }, { status: 500 })
       }
 
       return NextResponse.json({ relationship: data }, { status: 201 })
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Invalid request data', details: error.errors },
+          { error: API_ERROR.INVALID_REQUEST, details: error.errors },
           { status: 400 }
         )
       }
@@ -149,20 +151,23 @@ export const POST = withRateLimit(
  *   - id: UUID (required) - relationship ID to delete
  */
 export const DELETE = withAuth(
-  async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const { searchParams } = new URL(request.url)
-    const relationshipId = searchParams.get('id')
+    const relationshipId = searchParams.get(QueryParam.Id)
 
     if (!relationshipId) {
-      return NextResponse.json({ error: 'relationshipId is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.RELATIONSHIP_ID_REQUIRED }, { status: 400 })
     }
 
     // RLS will ensure user can only delete relationships in their projects
-    const { error } = await supabase.from('entity_relationships').delete().eq('id', relationshipId)
+    const { error } = await supabase
+      .from(SupabaseTable.EntityRelationships)
+      .delete()
+      .eq(QueryParam.Id, relationshipId)
 
     if (error) {
-      console.error('[Relationships API] Error deleting relationship:', error)
-      return NextResponse.json({ error: 'Failed to delete relationship' }, { status: 500 })
+      console.error(API_LOG_PREFIX.RELATIONSHIPS_DELETE_ERROR, error)
+      return NextResponse.json({ error: API_ERROR.FAILED_DELETE_RELATIONSHIP }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

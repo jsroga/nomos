@@ -925,4 +925,4 @@ export const PremiseArchitectResponseSchema = BaseAgentResponseSchema.extend({
   storyPlan: StoryPlanSchema.nullable().optional(),
 })
 
-type PremiseArchitectResponse = z.infer<typeof PremiseArchitectResponseSchema>
+export type PremiseArchitectResponse = z.infer<typeof PremiseArchitectResponseSchema>

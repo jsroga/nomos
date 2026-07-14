@@ -5,11 +5,12 @@
  * - `deepMerge` / `smartMergeArray` — nested arrays merge by id/name/rule/title when present.
  */
 
-import { isPlainObject, recordFromJson, stringArrayFromJson } from './json-guards'
+import { isPlainObject, recordFromJson } from './json-guards'
+import { DEEP_MERGE_IDENTIFIER_KEYS } from '@/shared/data/constants/deep-merge'
 
 export { recordFromJson, stringArrayFromJson, stringRecordFromJson } from './json-guards'
 
-const IDENTIFIER_KEYS = ['id', 'name', 'rule', 'title'] as const
+const IDENTIFIER_KEYS = DEEP_MERGE_IDENTIFIER_KEYS
 
 function identifierKey(item: unknown): (typeof IDENTIFIER_KEYS)[number] | undefined {
   if (!isPlainObject(item)) return undefined

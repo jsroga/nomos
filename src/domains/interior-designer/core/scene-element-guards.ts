@@ -1,27 +1,24 @@
 import { readString, recordFromJson } from '@/shared/data/json-guards'
-import type { Surface, SurfaceType, Wall } from '../state/useInteriorStore'
+import { SurfaceTypeValue } from '@/domains/interior-designer/constants/terrain-defaults'
+import type { Surface, SurfaceType, Wall } from './interior-types'
 import { vec3FromArray } from './vec3'
-
-const SURFACE_TYPES = new Set<string>([
-  'grass',
-  'water',
-  'road',
-  'dirt',
-  'pavement',
-  'mars',
-  'sand',
-  'rock',
-  'wall',
-])
 
 function parseSurfaceType(value: unknown): SurfaceType {
   const raw = readString(value)
-  if (raw && SURFACE_TYPES.has(raw)) {
-    for (const entry of SURFACE_TYPES) {
-      if (entry === raw) return entry
-    }
+  switch (raw) {
+    case SurfaceTypeValue.Grass:
+    case SurfaceTypeValue.Water:
+    case SurfaceTypeValue.Road:
+    case SurfaceTypeValue.Dirt:
+    case SurfaceTypeValue.Pavement:
+    case SurfaceTypeValue.Mars:
+    case SurfaceTypeValue.Sand:
+    case SurfaceTypeValue.Rock:
+    case SurfaceTypeValue.Wall:
+      return raw
+    default:
+      return SurfaceTypeValue.Grass
   }
-  return 'grass'
 }
 
 function vec3ArrayFromJson(value: unknown): [number, number, number][] {

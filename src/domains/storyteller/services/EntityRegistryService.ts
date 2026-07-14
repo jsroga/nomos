@@ -31,6 +31,11 @@ export { ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/enti
 export type { EntityType } from '@/domains/storyteller/core/entities/ReferenceParser'
 
 import { EntityType, ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/ReferenceParser'
+import {
+  EntityRegistryLog,
+  EntityRegistryNote,
+} from '@/domains/storyteller/services/constants/entity-registry-log'
+import { StringSeparator } from '@/shared/data/constants/protocol'
 
 export interface EntityReference {
   id: string // e.g., "char-a1b2c3d4"
@@ -164,7 +169,7 @@ class EntityRegistryService {
 
     // Persist to DB (async, non-blocking)
     this.persistEntity(entity).catch(err => {
-      console.warn('[EntityRegistry] Failed to persist entity:', err)
+      console.warn(EntityRegistryLog.PersistFailed, err)
     })
 
     return refId
@@ -205,7 +210,7 @@ class EntityRegistryService {
 
     // Persist to DB (async, non-blocking)
     this.persistEntity(entity).catch(err => {
-      console.warn('[EntityRegistry] Failed to persist entity:', err)
+      console.warn(EntityRegistryLog.PersistFailed, err)
     })
 
     console.log(`[EntityRegistry] Registered entity with explicit ID: ${refId}`)
@@ -265,7 +270,7 @@ class EntityRegistryService {
         }
       }
     } catch (err) {
-      console.warn('[EntityRegistry] DB lookup failed:', err)
+      console.warn(EntityRegistryLog.DbLookupFailed, err)
     }
 
     return null
@@ -297,7 +302,7 @@ class EntityRegistryService {
         }
       }
     } catch (err) {
-      console.warn('[EntityRegistry] Failed to resolve entity:', err)
+      console.warn(EntityRegistryLog.ResolveFailed, err)
     }
 
     return null
@@ -335,7 +340,7 @@ class EntityRegistryService {
           result.set(entity.id, entity)
         }
       } catch (err) {
-        console.warn('[EntityRegistry] Failed to resolve entities:', err)
+        console.warn(EntityRegistryLog.ResolveEntitiesFailed, err)
       }
     }
 
@@ -398,7 +403,7 @@ class EntityRegistryService {
 
       return entities
     } catch (err) {
-      console.warn('[EntityRegistry] Failed to get project entities:', err)
+      console.warn(EntityRegistryLog.ProjectEntitiesFailed, err)
       return []
     }
   }
@@ -417,7 +422,7 @@ class EntityRegistryService {
         .map(e => this.dbToEntity(e))
         .filter((entity): entity is EntityReference => entity !== null)
     } catch (err) {
-      console.warn('[EntityRegistry] Failed to get entities by type:', err)
+      console.warn(EntityRegistryLog.EntitiesByTypeFailed, err)
       return []
     }
   }
@@ -444,7 +449,7 @@ class EntityRegistryService {
         .set({ lastReferencedAt: new Date() })
         .where(eq(entityReferences.id, refId))
     } catch (err) {
-      console.warn('[EntityRegistry] Failed to update reference timestamp:', err)
+      console.warn(EntityRegistryLog.UpdateReferenceFailed, err)
     }
   }
 
@@ -455,14 +460,14 @@ class EntityRegistryService {
     this.cache.delete(refId)
 
     // Remove from project cache
-    for (const [projectId, refs] of this.projectCaches) {
+    for (const [_projectId, refs] of this.projectCaches) {
       refs.delete(refId)
     }
 
     try {
       await db.delete(entityReferences).where(eq(entityReferences.id, refId))
     } catch (err) {
-      console.warn('[EntityRegistry] Failed to delete entity:', err)
+      console.warn(EntityRegistryLog.DeleteFailed, err)
     }
   }
 
@@ -552,7 +557,7 @@ class EntityRegistryService {
       if (typeof meta.ideology === 'string') metaParts.push(`Ideology: ${meta.ideology}`)
       if (typeof meta.description === 'string') metaParts.push(meta.description)
       if (typeof meta.powerStructure === 'string') metaParts.push(meta.powerStructure)
-      if (meta.goals && Array.isArray(meta.goals)) metaParts.push(`Goals: ${meta.goals.join(', ')}`)
+      if (meta.goals && Array.isArray(meta.goals)) metaParts.push(`Goals: ${meta.goals.join(StringSeparator.CommaSpace)}`)
 
       const embeddingContent = [
         `${entity.type}: ${entity.name}`,
@@ -560,7 +565,7 @@ class EntityRegistryService {
         ...metaParts,
       ]
         .filter(Boolean)
-        .join('. ')
+        .join(StringSeparator.DotSpace)
 
       if (embeddingContent.length < 5) return // Skip if too little content
 
@@ -580,7 +585,7 @@ class EntityRegistryService {
     }
 
     let description = dbEntity.description || ''
-    if (description.startsWith('Auto-registered')) {
+    if (description.startsWith(EntityRegistryNote.AutoRegistered)) {
       description = ''
     }
 

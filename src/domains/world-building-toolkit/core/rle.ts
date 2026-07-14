@@ -1,4 +1,11 @@
 // Bright colors for mask visualization
+import {
+  CANVAS_2D_CONTEXT,
+  CANVAS_CONTEXT_FAILED_MESSAGE,
+  CanvasElementTag,
+  RLE_DECODE_LOG_PREFIX,
+} from '@/domains/world-building-toolkit/core/constants/rle'
+
 const MASK_COLORS = [
   { r: 59, g: 130, b: 246 }, // Blue
   { r: 16, g: 185, b: 129 }, // Green
@@ -37,7 +44,7 @@ export function decodeRLE(
     pixels[i + 3] = 0 // A
   }
 
-  console.log('[RLE] Decoding mask:', { width, height, totalPixels, color: maskColor })
+  console.log(RLE_DECODE_LOG_PREFIX, { width, height, totalPixels, color: maskColor })
 
   // Process pairs of (start_position, run_length)
   // Positions are directly in row-major order (no conversion needed)
@@ -66,11 +73,11 @@ export function decodeRLE(
  * Convert ImageData to a data URL
  */
 export function imageDataToDataURL(imageData: ImageData): string {
-  const canvas = document.createElement('canvas')
+  const canvas = document.createElement(CanvasElementTag.Canvas)
   canvas.width = imageData.width
   canvas.height = imageData.height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('Failed to create canvas context')
+  const ctx = canvas.getContext(CANVAS_2D_CONTEXT)
+  if (!ctx) throw new Error(CANVAS_CONTEXT_FAILED_MESSAGE)
 
   ctx.putImageData(imageData, 0, 0)
   return canvas.toDataURL('image/png')

@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import { JobStatus, JobType } from '@/shared/types/enums'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
+import {
+  GlobalOperationStatus,
+  WORLD_GEN_REPAINTING_LABEL,
+  WorldGenOperationType,
+  type MjGridPayload,
+  type WorldGenReviewPayload,
+} from '@/domains/world-building-toolkit/state/constants/world-ui-store'
 import type { SelectResult } from './client-services/SelectModeService'
 
 export type SelectBox = { x1: number; y1: number; x2: number; y2: number }
@@ -111,6 +118,12 @@ export interface WorldUiState {
   setPendingFidelity: (x: number, y: number, data: Omit<PendingFidelity, 'timestamp'>) => void
   rejectFidelity: (x: number, y: number) => void
   getPendingFidelity: (x: number, y: number) => PendingFidelity | undefined
+  reviewRequestVersion: number
+  pendingReviewRequest: WorldGenReviewPayload | null
+  mjGridVersion: number
+  pendingMjGrid: MjGridPayload | null
+  enqueueReviewRequest: (payload: WorldGenReviewPayload) => void
+  notifyMjGridReady: (payload: MjGridPayload) => void
 }
 
 export const useWorldUiStore = create<WorldUiState>((set, get) => ({
@@ -143,6 +156,10 @@ export const useWorldUiStore = create<WorldUiState>((set, get) => ({
   pendingUpscales: {},
   pendingGenerations: {},
   pendingFidelity: {},
+  reviewRequestVersion: 0,
+  pendingReviewRequest: null,
+  mjGridVersion: 0,
+  pendingMjGrid: null,
 
   setViewport: viewport => set({ viewport }),
   setSelectedTile: selectedTile =>
@@ -208,10 +225,10 @@ export const useWorldUiStore = create<WorldUiState>((set, get) => ({
   addRepaintingTile: (x, y) => {
     useGlobalStatusStore.getState().addOperation({
       id: `rep-${x},${y}`,
-      type: 'world-gen',
-      label: 'Repainting',
+      type: WorldGenOperationType.WorldGen,
+      label: WORLD_GEN_REPAINTING_LABEL,
       details: `(${x}, ${y})`,
-      status: 'in-progress',
+      status: GlobalOperationStatus.InProgress,
     })
     const key = `${x},${y}`
     set(state => {
@@ -326,4 +343,20 @@ export const useWorldUiStore = create<WorldUiState>((set, get) => ({
       return { pendingFidelity }
     }),
   getPendingFidelity: (x, y) => get().pendingFidelity[`${x},${y}`],
+
+  enqueueReviewRequest: payload =>
+    set(state => ({
+      pendingReviewRequest: payload,
+      reviewRequestVersion: state.reviewRequestVersion + 1,
+    })),
+  notifyMjGridReady: payload =>
+    set(state => ({
+      pendingMjGrid: payload,
+      mjGridVersion: state.mjGridVersion + 1,
+    })),
 }))
+
+/** Imperative access for client services that cannot use React hooks. */
+export function getWorldUiStore() {
+  return useWorldUiStore.getState()
+}

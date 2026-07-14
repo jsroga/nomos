@@ -3,9 +3,18 @@
 import React, { useState } from 'react'
 import { RefreshCcw, Check, AlertTriangle, User, Zap, Scroll, Brain, Palette } from 'lucide-react'
 import { Button } from '@/components/Button'
+import {
+  ButtonSizeKey,
+  ButtonVariantKey,
+} from '@/components/Button/constants/button-styles'
 import { cn } from '@/shared/data/utils'
 import { ConsistencyCheckResult, Inconsistency, ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
 import { JSONDiffViewer } from '../JSONDiffViewer'
+import {
+  CONSISTENCY_DEFAULT_SEVERITY_CLASS,
+  CONSISTENCY_SEVERITY_TEXT_CLASS,
+  ConsistencyMessageAction,
+} from './constants/consistency-message-display'
 
 interface ConsistencyMessageProps {
   result: ConsistencyCheckResult
@@ -23,11 +32,7 @@ const INCONSISTENCY_ICONS: Record<string, React.ReactNode> = {
   tone: <Palette className="w-4 h-4" />,
 }
 
-const SEVERITY_COLORS: Record<string, string> = {
-  minor: 'text-yellow-500',
-  major: 'text-orange-500',
-  critical: 'text-red-500',
-}
+const SEVERITY_COLORS = CONSISTENCY_SEVERITY_TEXT_CLASS
 
 export const ConsistencyMessage: React.FC<ConsistencyMessageProps> = ({
   result,
@@ -37,7 +42,7 @@ export const ConsistencyMessage: React.FC<ConsistencyMessageProps> = ({
   className,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
-  const [actionTaken, setActionTaken] = useState<'kept' | 'undone' | null>(null)
+  const [actionTaken, setActionTaken] = useState<ConsistencyMessageAction | null>(null)
 
   const { inconsistencies, fixes, summary } = result
 
@@ -68,7 +73,7 @@ export const ConsistencyMessage: React.FC<ConsistencyMessageProps> = ({
   }
 
   // Action taken states
-  if (actionTaken === 'kept') {
+  if (actionTaken === ConsistencyMessageAction.Kept) {
     return (
       <div className={cn('p-4 rounded-lg border border-primary/30 bg-primary/5', className)}>
         <div className="flex items-center gap-3">
@@ -79,7 +84,7 @@ export const ConsistencyMessage: React.FC<ConsistencyMessageProps> = ({
     )
   }
 
-  if (actionTaken === 'undone') {
+  if (actionTaken === ConsistencyMessageAction.Undone) {
     return (
       <div
         className={cn('p-4 rounded-lg border border-muted-foreground/30 bg-muted/20', className)}
@@ -112,8 +117,8 @@ export const ConsistencyMessage: React.FC<ConsistencyMessageProps> = ({
             <div className="text-xs text-foreground/80 mt-1">{summary}</div>
           </div>
           <Button
-            variant="ghost"
-            size="sm"
+            variant={ButtonVariantKey.Ghost}
+            size={ButtonSizeKey.Sm}
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-xs h-7 flex-shrink-0"
           >
@@ -143,11 +148,11 @@ export const ConsistencyMessage: React.FC<ConsistencyMessageProps> = ({
       <div className="p-3 border-t border-primary/20 bg-muted/10 flex items-center justify-end gap-2">
         {canUndo && onUndo && (
           <Button
-            variant="outline"
-            size="sm"
+            variant={ButtonVariantKey.Outline}
+            size={ButtonSizeKey.Sm}
             onClick={() => {
               onUndo()
-              setActionTaken('undone')
+              setActionTaken(ConsistencyMessageAction.Undone)
             }}
             className="text-xs h-8"
           >
@@ -157,11 +162,11 @@ export const ConsistencyMessage: React.FC<ConsistencyMessageProps> = ({
         )}
         {onKeep && (
           <Button
-            variant="default"
-            size="sm"
+            variant={ButtonVariantKey.Default}
+            size={ButtonSizeKey.Sm}
             onClick={() => {
               onKeep()
-              setActionTaken('kept')
+              setActionTaken(ConsistencyMessageAction.Kept)
             }}
             className="text-xs h-8"
           >
@@ -184,7 +189,7 @@ const InconsistencyCard: React.FC<{
   const [isExpanded, setIsExpanded] = useState(false)
 
   const icon = INCONSISTENCY_ICONS[inconsistency.type] || <AlertTriangle className="w-4 h-4" />
-  const severityColor = SEVERITY_COLORS[inconsistency.severity] || 'text-muted-foreground'
+  const severityColor = SEVERITY_COLORS[inconsistency.severity] || CONSISTENCY_DEFAULT_SEVERITY_CLASS
 
   return (
     <div className="border border-border/30 rounded-lg overflow-hidden bg-background">

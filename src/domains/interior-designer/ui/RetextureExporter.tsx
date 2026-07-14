@@ -1,9 +1,26 @@
 import React, { useEffect } from 'react'
 import { useInteriorStore } from '@/domains/interior-designer'
+import {
+  RETEXTURE_EMPTY_METADATA,
+} from '@/domains/interior-designer/constants/retexture-slice-log'
+import {
+  RetextureExporterLog,
+  RetextureExporterMimeType,
+} from '@/domains/interior-designer/constants/retexture-exporter-log'
 import { useThree } from '@react-three/fiber'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 import * as THREE from 'three'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
+
+function findSelectedObject(scene: THREE.Object3D, selectedId: string): THREE.Object3D | null {
+  let found: THREE.Object3D | null = null
+  scene.traverse(child => {
+    if (child.name === selectedId || child.userData?.id === selectedId) {
+      found = child
+    }
+  })
+  return found
+}
 
 export const RetextureExporter: React.FC = () => {
   const requestRetextureExport = useInteriorStore(state => state.requestRetextureExport)
@@ -15,29 +32,22 @@ export const RetextureExporter: React.FC = () => {
 
   useEffect(() => {
     if (requestRetextureExport && selectedId) {
-      let targetObject: THREE.Object3D | null = null
+      const exportTarget = findSelectedObject(scene, selectedId)
 
-      scene.traverse(child => {
-        // Check both name (objects) and userData.id (surfaces)
-        if (child.name === selectedId || (child.userData && child.userData.id === selectedId)) {
-          targetObject = child
-        }
-      })
-
-      if (targetObject) {
-        console.log('📦 Starting Retexture Export for:', selectedId)
-        console.log('📏 Original Transform:', {
-          position: targetObject.position.toArray(),
-          rotation: targetObject.rotation.toArray(),
-          scale: targetObject.scale.toArray(),
+      if (exportTarget) {
+        console.log(RetextureExporterLog.StartingExport, selectedId)
+        console.log(RetextureExporterLog.OriginalTransform, {
+          position: exportTarget.position.toArray(),
+          rotation: exportTarget.rotation.toArray(),
+          scale: exportTarget.scale.toArray(),
         })
 
-        const box = new THREE.Box3().setFromObject(targetObject)
+        const box = new THREE.Box3().setFromObject(exportTarget)
         const center = new THREE.Vector3()
         const size = new THREE.Vector3()
         box.getCenter(center)
         box.getSize(size)
-        console.log('📐 Bounding Box:', {
+        console.log(RetextureExporterLog.BoundingBox, {
           min: box.min.toArray(),
           max: box.max.toArray(),
           size: size.toArray(),
@@ -51,7 +61,7 @@ export const RetextureExporter: React.FC = () => {
           .operations.find(op => op.id === operationId)
         if (existingOp) {
           try {
-            const metadata = JSON.parse(existingOp.details || '{}')
+            const metadata = JSON.parse(existingOp.details || RETEXTURE_EMPTY_METADATA)
             updateOperation(operationId, {
               details: JSON.stringify({
                 ...metadata,
@@ -64,32 +74,32 @@ export const RetextureExporter: React.FC = () => {
               }),
             })
           } catch (e) {
-            console.error('Failed to update operation with bounding box:', e)
+            console.error(RetextureExporterLog.UpdateBoundingBoxFailed, e)
           }
         }
 
         const exporter = new GLTFExporter()
         exporter.parse(
-          targetObject!,
+          exportTarget,
           gltf => {
             // Match Exporter.tsx: binary: false returns a JSON object
             const output = JSON.stringify(gltf, null, 2)
-            console.log('💾 GLTF JSON Size:', output.length)
+            console.log(RetextureExporterLog.GltfJsonSize, output.length)
 
             // Use correct MIME type for GLTF so Meshy API recognizes it
-            const blob = new Blob([output], { type: 'model/gltf+json' })
+            const blob = new Blob([output], { type: RetextureExporterMimeType.GltfJson })
             const reader = new FileReader()
             reader.readAsDataURL(blob)
             reader.onloadend = () => {
               if (typeof reader.result !== 'string') return
               const base64data = reader.result
-              console.log('✅ Base64 Data Ready (prefix):', base64data.substring(0, 50))
+              console.log(RetextureExporterLog.Base64Ready, base64data.substring(0, 50))
               setRetextureModelBase64(base64data)
               setRequestRetextureExport(false)
             }
           },
           error => {
-            console.error('❌ An error happened during retexture export:', error)
+            console.error(RetextureExporterLog.ExportError, error)
             setRequestRetextureExport(false)
           },
           {
@@ -98,7 +108,7 @@ export const RetextureExporter: React.FC = () => {
           }
         )
       } else {
-        console.error('❌ Object not found for retexture export:', selectedId)
+        console.error(RetextureExporterLog.ObjectNotFound, selectedId)
         setRequestRetextureExport(false)
       }
     }

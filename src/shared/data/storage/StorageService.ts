@@ -1,7 +1,30 @@
 import { put } from '@vercel/blob'
+import {
+  StorageApiRoute,
+  StorageBucket,
+  StorageClientError,
+  StorageFileExtension,
+  StorageFormField,
+  StorageHttpMethod,
+  StorageLogField,
+  StorageLogMessage,
+  StorageMimeType,
+  StoragePathPrefix,
+  TmpFilesApi,
+  TmpFilesResponseStatus,
+} from '@/shared/data/storage/constants/storage-service'
+import {
+  BlobAccess,
+  BufferEncoding,
+  ContentType,
+  FsDirectory,
+  HttpMethod,
+  NodeEnv,
+  UrlScheme,
+} from '@/shared/data/constants/protocol'
 import { supabase } from '@/shared/data/storage/supabase'
 
-const isProduction = process.env.NODE_ENV === 'production'
+const isProduction = process.env.NODE_ENV === NodeEnv.Production
 
 export class StorageService {
   /**
@@ -27,14 +50,14 @@ export class StorageService {
       let body: Buffer | Blob
       if (typeof data === 'string') {
         const base64Data = data.replace(/^data:image\/\w+;base64,/, '')
-        body = Buffer.from(base64Data, 'base64')
+        body = Buffer.from(base64Data, BufferEncoding.Base64)
       } else {
         body = data
       }
 
       // Upload
-      const { data: uploadData, error } = await supabase.storage
-        .from('projects')
+      const { error } = await supabase.storage
+        .from(StorageBucket.Projects)
         .upload(`${projectId}/${cleanFilename}`, body, {
           contentType: finalContentType,
           upsert: true,
@@ -45,7 +68,7 @@ export class StorageService {
       // Return public URL (or signed URL logic later)
       const {
         data: { publicUrl },
-      } = supabase.storage.from('projects').getPublicUrl(`${projectId}/${cleanFilename}`)
+      } = supabase.storage.from(StorageBucket.Projects).getPublicUrl(`${projectId}/${cleanFilename}`)
 
       return publicUrl
     } else {
@@ -53,14 +76,14 @@ export class StorageService {
       // Use the existing API route
       let imageData = ''
       if (Buffer.isBuffer(data)) {
-        imageData = data.toString('base64')
+        imageData = data.toString(BufferEncoding.Base64)
       } else {
         imageData = data
       }
 
-      const response = await fetch('/api/save-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(StorageApiRoute.SaveImage, {
+        method: HttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify({
           projectId,
           filename: cleanFilename,
@@ -68,7 +91,7 @@ export class StorageService {
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to save image locally')
+      if (!response.ok) throw new Error(StorageClientError.FailedSaveImageLocally)
 
       const result = await response.json()
       return result.path // e.g. /projects/123/image.png
@@ -81,18 +104,18 @@ export class StorageService {
    */
   getImageUrl(projectId: string, filename: string): string {
     // If filename is already a full URL (e.g. from Vercel Blob), return as-is
-    if (filename.startsWith('http://') || filename.startsWith('https://')) {
+    if (filename.startsWith(`${UrlScheme.Http}://`) || filename.startsWith(`${UrlScheme.Https}://`)) {
       return filename
     }
 
     if (isProduction) {
       const {
         data: { publicUrl },
-      } = supabase.storage.from('projects').getPublicUrl(`${projectId}/${filename}`)
+      } = supabase.storage.from(StorageBucket.Projects).getPublicUrl(`${projectId}/${filename}`)
       return publicUrl
     } else {
       // Local dev path logic
-      return `/projects/${projectId}/${filename}`
+      return `/${FsDirectory.Projects}/${projectId}/${filename}`
     }
   }
 
@@ -101,7 +124,7 @@ export class StorageService {
    * Priority: Vercel Blob -> Supabase -> TmpFiles
    */
   async uploadPublicImage(filename: string, data: string | Buffer): Promise<string | null> {
-    return this.uploadPublicFile(filename, data, 'image/png')
+    return this.uploadPublicFile(filename, data, StorageMimeType.Png)
   }
 
   /**
@@ -112,7 +135,7 @@ export class StorageService {
   async uploadPublicFile(
     filename: string,
     data: string | Buffer,
-    contentType: string = 'application/octet-stream'
+    contentType: string = StorageMimeType.OctetStream
   ): Promise<string | null> {
     try {
       // 1. Try Vercel Blob (Primary)
@@ -120,40 +143,40 @@ export class StorageService {
         return this.uploadToVercelBlob(filename, data, contentType)
       }
 
-      console.warn('Vercel Blob token not found (BLOB_READ_WRITE_TOKEN), falling back...')
+      console.warn(StorageLogMessage.VercelBlobTokenMissing)
 
       // 2. Fallback: Try Supabase
       let body: Buffer | Blob
       if (typeof data === 'string') {
         // Handle data URIs (data:application/octet-stream;base64,...) or raw base64
         const base64Data = data.replace(/^data:[^;]+;base64,/, '')
-        body = Buffer.from(base64Data, 'base64')
+        body = Buffer.from(base64Data, BufferEncoding.Base64)
       } else {
         body = data
       }
 
-      const path = `temp/${filename}`
-      const { error } = await supabase.storage.from('projects').upload(path, body, {
+      const path = `${StoragePathPrefix.Temp}${filename}`
+      const { error } = await supabase.storage.from(StorageBucket.Projects).upload(path, body, {
         contentType,
         upsert: true,
       })
 
       if (!error) {
-        const { data: publicData } = supabase.storage.from('projects').getPublicUrl(path)
+        const { data: publicData } = supabase.storage.from(StorageBucket.Projects).getPublicUrl(path)
         return publicData.publicUrl
       }
 
-      console.warn('Supabase upload failed:', error)
+      console.warn(StorageLogMessage.SupabaseUploadFailed, error)
 
       // 3. Last Resort: TmpFiles (only supports images)
       if (contentType.startsWith('image/')) {
         return this.uploadToTempHost(filename, data)
       }
 
-      console.warn('TmpFiles does not support non-image content types')
+      console.warn(StorageLogMessage.TmpFilesNonImage)
       return null
     } catch (e) {
-      console.warn('Public file upload failed:', e)
+      console.warn(StorageLogMessage.PublicFileUploadFailed, e)
       return null
     }
   }
@@ -161,37 +184,37 @@ export class StorageService {
   private async uploadToVercelBlob(
     filename: string,
     data: string | Buffer,
-    contentType: string = 'image/png'
+    contentType: string = StorageMimeType.Png
   ): Promise<string | null> {
     try {
       let body: Buffer
       if (typeof data === 'string') {
         // Handle both data URIs and raw base64 strings
         const base64Data = data.replace(/^data:[^;]+;base64,/, '')
-        body = Buffer.from(base64Data, 'base64')
+        body = Buffer.from(base64Data, BufferEncoding.Base64)
       } else {
         // data is already a Buffer
         body = data
       }
 
-      console.log('[Vercel Blob] Token present?', !!process.env.BLOB_READ_WRITE_TOKEN)
+      console.log(StorageLogMessage.VercelBlobTokenPresent, !!process.env.BLOB_READ_WRITE_TOKEN)
       console.log(
-        '[Vercel Blob] Uploading:',
+        StorageLogMessage.VercelBlobUploading,
         filename,
-        'size:',
+        StorageLogField.Size,
         body.byteLength,
-        'contentType:',
+        StorageLogField.ContentType,
         contentType
       )
 
       const blob = await put(filename, body, {
-        access: 'public',
+        access: BlobAccess.Public,
         token: process.env.BLOB_READ_WRITE_TOKEN || process.env.NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN,
         contentType,
         multipart: false,
       })
 
-      console.log('[Vercel Blob] Upload response:', {
+      console.log(StorageLogMessage.VercelBlobUploadResponse, {
         url: blob.url,
         contentType: blob.contentType,
         pathname: blob.pathname,
@@ -202,24 +225,24 @@ export class StorageService {
 
       // Verify URL is accessible
       try {
-        const headResp = await fetch(blob.url, { method: 'HEAD' })
+        const headResp = await fetch(blob.url, { method: StorageHttpMethod.Head })
         console.log(
-          '[Vercel Blob] Verification HEAD request:',
+          StorageLogMessage.VercelBlobVerificationHead,
           headResp.status,
           headResp.statusText
         )
         if (!headResp.ok) {
-          console.warn('[Vercel Blob] URL not accessible yet - falling back to Supabase')
+          console.warn(StorageLogMessage.VercelBlobUrlNotAccessible)
           return null
         }
       } catch (verifyErr) {
-        console.error('[Vercel Blob] Verification failed:', verifyErr)
+        console.error(StorageLogMessage.VercelBlobVerificationFailed, verifyErr)
         return null
       }
 
       return blob.url
     } catch (error) {
-      console.error('Vercel Blob upload failed:', error)
+      console.error(StorageLogMessage.VercelBlobUploadFailed, error)
       return null
     }
   }
@@ -242,27 +265,16 @@ export class StorageService {
           byteNumbers[i] = byteCharacters.charCodeAt(i)
         }
         const byteArray = new Uint8Array(byteNumbers)
-        blob = new Blob([byteArray], { type: 'image/png' })
+        blob = new Blob([byteArray], { type: StorageMimeType.Png })
       } else {
-        // Fix: buffer might be Node Buffer, convert to Uint8Array for Blob
-        let bufferData: Uint8Array
-        if (Buffer.isBuffer(data)) {
-          bufferData = new Uint8Array(data)
-        } else if (data instanceof Uint8Array) {
-          bufferData = data
-        } else if (data instanceof ArrayBuffer) {
-          bufferData = new Uint8Array(data)
-        } else {
-          throw new Error('Unsupported upload buffer type')
-        }
-        blob = new Blob([bufferData], { type: 'image/png' })
+        blob = new Blob([new Uint8Array(data)], { type: StorageMimeType.Png })
       }
 
-      formData.append('file', blob, filename)
+      formData.append(StorageFormField.File, blob, filename)
 
       // Upload
-      const response = await fetch('https://tmpfiles.org/api/v1/upload', {
-        method: 'POST',
+      const response = await fetch(TmpFilesApi.UploadUrl, {
+        method: StorageHttpMethod.Post,
         body: formData,
       })
 
@@ -277,37 +289,37 @@ export class StorageService {
           : null
       const viewUrl =
         dataField && typeof dataField.url === 'string' ? dataField.url : null
-      if (resultRecord.status === 'success' && viewUrl) {
+      if (resultRecord.status === TmpFilesResponseStatus.Success && viewUrl) {
         // Convert view URL to direct download URL
         // Example: https://tmpfiles.org/123/img.png -> https://tmpfiles.org/dl/123/img.png
-        const dlUrl = viewUrl.replace('tmpfiles.org/', 'tmpfiles.org/dl/')
+        const dlUrl = viewUrl.replace(TmpFilesApi.ViewPathSegment, TmpFilesApi.DownloadPathSegment)
         return dlUrl
       }
 
       return null
     } catch (err) {
-      console.error('Temp host upload failed:', err)
+      console.error(StorageLogMessage.TempHostUploadFailed, err)
       return null
     }
   }
   private getContentType(filename: string): string {
     const ext = filename.split('.').pop()?.toLowerCase()
     switch (ext) {
-      case 'glb':
-        return 'model/gltf-binary'
-      case 'gltf':
-        return 'model/gltf+json'
-      case 'png':
-        return 'image/png'
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg'
-      case 'webp':
-        return 'image/webp'
-      case 'svg':
-        return 'image/svg+xml'
+      case StorageFileExtension.Glb:
+        return StorageMimeType.GltfBinary
+      case StorageFileExtension.Gltf:
+        return StorageMimeType.GltfJson
+      case StorageFileExtension.Png:
+        return StorageMimeType.Png
+      case StorageFileExtension.Jpg:
+      case StorageFileExtension.Jpeg:
+        return StorageMimeType.Jpeg
+      case StorageFileExtension.Webp:
+        return StorageMimeType.Webp
+      case StorageFileExtension.Svg:
+        return StorageMimeType.SvgXml
       default:
-        return 'application/octet-stream'
+        return StorageMimeType.OctetStream
     }
   }
 }

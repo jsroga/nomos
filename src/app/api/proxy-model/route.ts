@@ -1,37 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/shared/auth/auth'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  ApiErrorMessage,
+  CacheControl,
+  ContentType,
+  ModelFileExtension,
+  ProxyAllowedHost,
+  QueryParamKey,
+} from '@/shared/data/constants/protocol'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const dynamic = 'force-dynamic'
+
+const PROXY_ALLOWED_HOSTS = [
+  ProxyAllowedHost.AssetsMeshy,
+  ProxyAllowedHost.CdnMeshy,
+  ProxyAllowedHost.GoogleStorage,
+  ProxyAllowedHost.Supabase,
+]
 
 export async function GET(request: NextRequest) {
   try {
     const { session } = await requireAuth()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: ApiErrorMessage.UNAUTHORIZED }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
-    const url = searchParams.get('url')
+    const url = searchParams.get(QueryParamKey.Url)
 
     if (!url) {
-      return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.MISSING_URL_PARAMETER }, { status: 400 })
     }
 
-    // Basic SSRF protection - only allow specific domains
     const parsedUrl = new URL(url)
-    const allowedDomains = [
-      'assets.meshy.ai',
-      'cdn.meshy.ai',
-      'storage.googleapis.com',
-      'supabase.co',
-    ]
-
-    const isAllowed = allowedDomains.some(
+    const isAllowed = PROXY_ALLOWED_HOSTS.some(
       domain => parsedUrl.hostname === domain || parsedUrl.hostname.endsWith('.' + domain)
     )
     if (!isAllowed) {
-      return NextResponse.json({ error: 'URL domain not allowed' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.URL_DOMAIN_NOT_ALLOWED }, { status: 403 })
     }
 
     const response = await fetch(url)
@@ -45,21 +54,21 @@ export async function GET(request: NextRequest) {
 
     const buffer = await response.arrayBuffer()
 
-    let contentType = 'application/octet-stream'
-    if (url.includes('.glb')) contentType = 'model/gltf-binary'
-    else if (url.includes('.fbx')) contentType = 'application/octet-stream'
-    else if (url.includes('.obj')) contentType = 'text/plain'
-    else if (url.includes('.usdz')) contentType = 'model/vnd.usdz+zip'
+    let contentType = ContentType.OctetStream
+    if (url.includes(ModelFileExtension.Glb)) contentType = ContentType.GltfBinary
+    else if (url.includes(ModelFileExtension.Fbx)) contentType = ContentType.OctetStream
+    else if (url.includes(ModelFileExtension.Obj)) contentType = ContentType.PlainText
+    else if (url.includes(ModelFileExtension.Usdz)) contentType = ContentType.Usdz
 
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': contentType,
         'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=86400',
+        'Cache-Control': CacheControl.PublicMaxAge86400,
       },
     })
   } catch (error: unknown) {
-    console.error('Proxy error:', error)
+    console.error(API_LOG_PREFIX.PROXY_ERROR, error)
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }

@@ -7,6 +7,7 @@ import { Users } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { DomainSidebar } from '@/components/DomainSidebar'
 import { isAdminUser } from '@/shared/auth/admin-users'
+import { USER_SELECTABLE_CHAT_MODELS } from '@/domains/storyteller/config/constants/ChatModelCatalog'
 import { recordFromJson } from '@/shared/data/json-guards'
 import type { StorytellerPageState } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 
@@ -75,7 +76,11 @@ export function StorytellerWritersRoom(props: StorytellerPageState) {
               showThinking={showThinking}
               currentPhase={currentPhase}
               headerContent={
-                <ModelSelector value={selectedModel} onChange={handleModelChange} />
+                <ModelSelector
+                  value={selectedModel}
+                  onChange={handleModelChange}
+                  models={USER_SELECTABLE_CHAT_MODELS}
+                />
               }
               ActionComponent={MemoizedActionComponent}
               QuestionComponent={StableQuestionComponent}

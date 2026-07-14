@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { sql } from 'drizzle-orm'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
-export const POST = withAuth(async (_request: NextRequest, { session }: AuthenticatedRequest) => {
+export const POST = withAuth(async (_request: NextRequest, { session: _session }: AuthenticatedRequest) => {
   try {
     // Enable pgvector extension
     await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector`)
@@ -43,10 +44,10 @@ export const POST = withAuth(async (_request: NextRequest, { session }: Authenti
 
     return NextResponse.json({
       success: true,
-      message: 'entity_references table created successfully',
+      message: API_ERROR.MIGRATION_SUCCESS,
     })
   } catch (error: unknown) {
-    console.error('Migration failed:', error)
+    console.error(API_LOG_PREFIX.MIGRATION_FAILED, error)
     return NextResponse.json(
       {
         success: false,

@@ -7,20 +7,12 @@ import {
   ChevronDown,
   Trash2,
   Loader2,
-  Heart, // Valence
-  Zap, // Arousal
-  Compass, // Autonomy
-  Target, // Competence
-  Users, // Relatedness
-  Brain, // CognitiveClarity
-  Flame, // PerceivedStakes
-  ShieldCheck, // SocialSafety
-  Scale, // MoralAlignment
-  TrendingUp,
+  Users, // Relatedness / cast header
   Edit2,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import {
   characterPortraitUrl,
@@ -29,99 +21,15 @@ import {
   type StorytellerCharacter,
 } from '@/domains/storyteller/core/entities/character-wire'
 import type { CharacterMetrics } from '@/domains/storyteller/core/types/StoryTypes'
-
-// Metric configuration for UI - aligned with backend psychological model
-const METRIC_CONFIG: {
-  key: keyof CharacterMetrics
-  label: string
-  icon: any // Use any or Import LucideIcon if possible
-  color: string
-  lowLabel: string
-  highLabel: string
-  isValence?: boolean // Special handling for -100 to +100 scale
-}[] = [
-    {
-      key: 'valence',
-      label: 'Mood',
-      icon: Heart,
-      color: 'text-pink-400',
-      lowLabel: 'Negative',
-      highLabel: 'Positive',
-      isValence: true,
-    },
-    {
-      key: 'arousal',
-      label: 'Energy',
-      icon: Zap,
-      color: 'text-yellow-400',
-      lowLabel: 'Calm',
-      highLabel: 'Activated',
-    },
-    {
-      key: 'autonomy',
-      label: 'Freedom',
-      icon: Compass,
-      color: 'text-blue-400',
-      lowLabel: 'Constrained',
-      highLabel: 'Free',
-    },
-    {
-      key: 'competence',
-      label: 'Confidence',
-      icon: Target,
-      color: 'text-green-400',
-      lowLabel: 'Doubt',
-      highLabel: 'Capable',
-    },
-    {
-      key: 'relatedness',
-      label: 'Connection',
-      icon: Users,
-      color: 'text-cyan-400',
-      lowLabel: 'Isolated',
-      highLabel: 'Connected',
-    },
-    {
-      key: 'cognitiveClarity',
-      label: 'Clarity',
-      icon: Brain,
-      color: 'text-purple-400',
-      lowLabel: 'Confused',
-      highLabel: 'Sharp',
-    },
-    {
-      key: 'perceivedStakes',
-      label: 'Tension',
-      icon: Flame,
-      color: 'text-orange-400',
-      lowLabel: 'Low',
-      highLabel: 'Critical',
-    },
-    {
-      key: 'socialSafety',
-      label: 'Security',
-      icon: ShieldCheck,
-      color: 'text-teal-400',
-      lowLabel: 'Threatened',
-      highLabel: 'Safe',
-    },
-    {
-      key: 'moralAlignment',
-      label: 'Integrity',
-      icon: Scale,
-      color: 'text-indigo-400',
-      lowLabel: 'Compromised',
-      highLabel: 'Aligned',
-    },
-    {
-      key: 'transformation',
-      label: 'Arc Progress',
-      icon: TrendingUp,
-      color: 'text-emerald-400',
-      lowLabel: 'Start',
-      highLabel: 'Complete',
-    },
-  ]
+import { CharacterDialogMode } from '@/domains/storyteller/ui/CharacterCreationDialog/constants/character-creation-dialog'
+import {
+  CHARACTER_METRIC_CONFIG,
+  CHARACTER_PANEL_LOG_FETCH_FAILED,
+  CharacterMetricKey,
+  CharacterPanelConfirmCopy,
+  StorytellerConfirmCopy,
+  StorytellerConfirmVariant,
+} from './constants/character-panel-metrics'
 
 interface CharacterPanelProps {
   characters: StorytellerCharacter[]
@@ -163,14 +71,14 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
                 snap[key] ?? snap[key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)] ?? def
               snapshotMap[snap.characterId] = {
                 valence: snap.valence ?? snap.stress_level ?? snap.stressLevel ?? 0,
-                arousal: getVal('arousal', 50),
-                autonomy: getVal('autonomy', 60),
-                competence: getVal('competence', 60),
-                relatedness: getVal('relatedness', 50),
-                cognitiveClarity: getVal('cognitiveClarity', 70),
-                perceivedStakes: getVal('perceivedStakes', 40),
-                socialSafety: getVal('socialSafety', 60),
-                moralAlignment: getVal('moralAlignment', 70),
+                arousal: getVal(CharacterMetricKey.Arousal, 50),
+                autonomy: getVal(CharacterMetricKey.Autonomy, 60),
+                competence: getVal(CharacterMetricKey.Competence, 60),
+                relatedness: getVal(CharacterMetricKey.Relatedness, 50),
+                cognitiveClarity: getVal(CharacterMetricKey.CognitiveClarity, 70),
+                perceivedStakes: getVal(CharacterMetricKey.PerceivedStakes, 40),
+                socialSafety: getVal(CharacterMetricKey.SocialSafety, 60),
+                moralAlignment: getVal(CharacterMetricKey.MoralAlignment, 70),
                 transformation:
                   snap.transformationProgress ??
                   snap.transformation ??
@@ -181,7 +89,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
             setBeatSnapshots(snapshotMap)
           }
         })
-        .catch(err => console.error('Failed to fetch character snapshots:', err))
+        .catch(err => console.error(CHARACTER_PANEL_LOG_FETCH_FAILED, err))
     } else {
       // No beat selected - clear snapshots to show base character data
       setBeatSnapshots({})
@@ -272,7 +180,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
             setIsCreationOpen(false)
           }}
           projectId={projectId}
-          mode="create"
+          mode={CharacterDialogMode.Create}
         />
 
         {/* Edit Dialog */}
@@ -284,7 +192,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
             if (onUpdate) await onUpdate(id, updates)
           }}
           projectId={projectId}
-          mode="edit"
+          mode={CharacterDialogMode.Edit}
           initialData={editingCharacter ? characterToDialogInitial(editingCharacter) : undefined}
         />
       </div>
@@ -304,21 +212,23 @@ interface CharacterCardProps {
 
 const CharacterCard: React.FC<CharacterCardProps> = ({
   character,
-  onUpdate,
   onDelete,
   onEdit,
   isDeleting,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
+  const psychology = recordFromJson(character.psychology)
+  const fatalFlaw = readString(psychology.fatalFlaw)
+  const secrets = readString(psychology.secrets)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
 
   const handleDelete = async () => {
     const confirmed = await confirm({
-      title: 'Delete Character',
+      title: CharacterPanelConfirmCopy.DeleteTitle,
       description: `Are you sure you want to delete ${character.name}? This action cannot be undone.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      variant: 'destructive',
+      confirmLabel: CharacterPanelConfirmCopy.DeleteLabel,
+      cancelLabel: StorytellerConfirmCopy.CancelLabel,
+      variant: StorytellerConfirmVariant.Destructive,
     })
     if (confirmed && onDelete) {
       onDelete(character.id)
@@ -408,16 +318,16 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
                   <div className="text-xs font-medium">{character.archetype}</div>
                 </div>
               )}
-              {character.psychology?.fatalFlaw && (
+              {fatalFlaw && (
                 <div className="bg-background/50 p-2 rounded border border-destructive/20">
                   <div className="text-[10px] text-destructive/70 uppercase mb-1">Fatal Flaw</div>
-                  <div className="text-xs text-foreground/80">{character.psychology.fatalFlaw}</div>
+                  <div className="text-xs text-foreground/80">{fatalFlaw}</div>
                 </div>
               )}
-              {character.psychology?.secrets && (
+              {secrets && (
                 <div className="bg-background/50 p-2 rounded border border-amber-500/20">
                   <div className="text-[10px] text-amber-500/70 uppercase mb-1">Secret</div>
-                  <div className="text-xs text-foreground/80 italic">{character.psychology.secrets}</div>
+                  <div className="text-xs text-foreground/80 italic">{secrets}</div>
                 </div>
               )}
             </div>
@@ -428,7 +338,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-2">
               Character Metrics
             </div>
-            {METRIC_CONFIG.map(metric => {
+            {CHARACTER_METRIC_CONFIG.map(metric => {
               const rawValue = readCharacterMetric(character, metric.key)
 
               // Handle valence (-100 to +100) vs standard (0-100)
@@ -445,11 +355,11 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
               const displayValue = isValenceMetric ? `${value > 0 ? '+' : ''}${value}` : `${value}%`
               // High risk conditions for new metrics
               const isHighRisk =
-                (metric.key === 'valence' && value < -50) || // Very negative mood
-                (metric.key === 'autonomy' && value < 25) || // Feels trapped
-                (metric.key === 'socialSafety' && value < 25) || // Feels threatened
-                (metric.key === 'perceivedStakes' && value > 85) || // Extremely high stakes
-                (metric.key === 'moralAlignment' && value < 25) // Acting against values
+                (metric.key === CharacterMetricKey.Valence && value < -50) ||
+                (metric.key === CharacterMetricKey.Autonomy && value < 25) ||
+                (metric.key === CharacterMetricKey.SocialSafety && value < 25) ||
+                (metric.key === CharacterMetricKey.PerceivedStakes && value > 85) ||
+                (metric.key === CharacterMetricKey.MoralAlignment && value < 25)
 
               // Color gradient based on value
               const getBarColor = () => {

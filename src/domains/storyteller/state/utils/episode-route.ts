@@ -1,12 +1,20 @@
+import type { MouseEvent as ReactMouseEvent } from 'react'
 import { customEventDetailRecord, readString } from '@/shared/data/json-guards'
 
+function domEventFromInput(event: Event | ReactMouseEvent): Event {
+  if (event instanceof Event) {
+    return event
+  }
+  return event.nativeEvent
+}
+
 export function resolveEpisodeId(
-  eventOrEpisodeId: Event | string | React.MouseEvent | undefined,
+  eventOrEpisodeId: Event | ReactMouseEvent | string | undefined,
   fallback?: string | null
 ): string | undefined {
   if (typeof eventOrEpisodeId === 'string') return eventOrEpisodeId
   if (eventOrEpisodeId) {
-    return readString(customEventDetailRecord(eventOrEpisodeId).episodeId)
+    return readString(customEventDetailRecord(domEventFromInput(eventOrEpisodeId)).episodeId)
   }
   return fallback ?? undefined
 }

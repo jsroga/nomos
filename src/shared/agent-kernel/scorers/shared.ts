@@ -1,5 +1,6 @@
 import { MODELS } from '@/shared/agent-kernel/models'
 import { isPlainObject } from '@/shared/data/json-guards'
+import { ScorerOutputField } from '@/shared/agent-kernel/scorers/constants/shared'
 
 export function toMastraJudgingModel(): string {
   // Read at call time so evals/run.ts can load .env.local before scorer modules import.
@@ -13,7 +14,7 @@ export function normalizeScore(score: number): number {
 
 export function outputToString(output: unknown): string {
   if (typeof output === 'string') return output
-  if (output && typeof output === 'object' && 'response' in output) {
+  if (output && typeof output === 'object' && ScorerOutputField.Response in output) {
     return String(output.response)
   }
   return JSON.stringify(output)
@@ -26,8 +27,8 @@ export function outputToString(output: unknown): string {
 export function extractProse(output: unknown): string {
   if (typeof output === 'string') return output
   if (output && typeof output === 'object') {
-    if ('draft' in output && typeof output.draft === 'string') return output.draft
-    if ('finalDraft' in output && typeof output.finalDraft === 'string') return output.finalDraft
+    if (ScorerOutputField.Draft in output && typeof output.draft === 'string') return output.draft
+    if (ScorerOutputField.FinalDraft in output && typeof output.finalDraft === 'string') return output.finalDraft
   }
   return JSON.stringify(output ?? '')
 }

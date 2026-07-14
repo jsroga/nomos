@@ -6,21 +6,27 @@
  */
 
 import { GameEntity } from '@/shared/data/queries/useGameEntities'
+import {
+  CROSS_DOMAIN_ENTITIES_API_PATH,
+  CrossDomainContextLog,
+  CrossDomainXmlTag,
+  GameEntityTypeKey,
+  XmlEscapeEntity,
+} from '@/shared/agent-kernel/constants/cross-domain-context'
+import { DEFAULT_DEV_PORT, URL_HTTP_PREFIX } from '@/shared/data/constants/url'
+import { QueryParam, StringSeparator } from '@/shared/data/constants/protocol'
 
-/**
- * Build cross-domain context XML for AI agents
- */
 export async function buildCrossDomainContext(projectId: string): Promise<string> {
   if (!projectId) return ''
 
   try {
-    // Fetch all game entities for this project
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${URL_HTTP_PREFIX}://localhost:${DEFAULT_DEV_PORT}`
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000'}/api/entities?projectId=${projectId}`
+      `${baseUrl}${CROSS_DOMAIN_ENTITIES_API_PATH}?${QueryParam.ProjectId}=${projectId}`
     )
 
     if (!response.ok) {
-      console.warn('[CrossDomainContext] Failed to fetch entities')
+      console.warn(CrossDomainContextLog.FetchFailed)
       return ''
     }
 
@@ -30,7 +36,6 @@ export async function buildCrossDomainContext(projectId: string): Promise<string
       return ''
     }
 
-    // Group entities by type
     const byType: Record<string, GameEntity[]> = {}
     for (const entity of entities) {
       if (!byType[entity.entityType]) {
@@ -39,123 +44,143 @@ export async function buildCrossDomainContext(projectId: string): Promise<string
       byType[entity.entityType].push(entity)
     }
 
-    // Build XML context
-    const parts: string[] = ['<cross_domain_context>']
-    parts.push(`  <project_entities count="${entities.length}">`)
+    const parts: string[] = [`<${CrossDomainXmlTag.Root}>`]
+    parts.push(`  <${CrossDomainXmlTag.ProjectEntities} count="${entities.length}">`)
 
-    // Characters
-    if (byType.character?.length > 0) {
-      parts.push(`    <characters count="${byType.character.length}">`)
-      for (const char of byType.character) {
+    if (byType[GameEntityTypeKey.Character]?.length > 0) {
+      parts.push(
+        `    <${CrossDomainXmlTag.Characters} count="${byType[GameEntityTypeKey.Character].length}">`
+      )
+      for (const char of byType[GameEntityTypeKey.Character]) {
         parts.push(
-          `      <character id="${char.id}" name="${escapeXml(char.name)}" source="${char.sourceDomain}">`
+          `      <${CrossDomainXmlTag.Character} id="${char.id}" name="${escapeXml(char.name)}" source="${char.sourceDomain}">`
         )
         if (char.description) {
-          parts.push(`        <description>${escapeXml(char.description)}</description>`)
+          parts.push(
+            `        <${CrossDomainXmlTag.Description}>${escapeXml(char.description)}</${CrossDomainXmlTag.Description}>`
+          )
         }
         if (char.metadata) {
-          parts.push(`        <metadata>${JSON.stringify(char.metadata, null, 2)}</metadata>`)
+          parts.push(
+            `        <${CrossDomainXmlTag.Metadata}>${JSON.stringify(char.metadata, null, 2)}</${CrossDomainXmlTag.Metadata}>`
+          )
         }
-        parts.push(`        <used_in>${char.usedInDomains.join(', ')}</used_in>`)
-        parts.push('      </character>')
+        parts.push(
+          `        <${CrossDomainXmlTag.UsedIn}>${char.usedInDomains.join(StringSeparator.CommaSpace)}</${CrossDomainXmlTag.UsedIn}>`
+        )
+        parts.push(`      </${CrossDomainXmlTag.Character}>`)
       }
-      parts.push('    </characters>')
+      parts.push(`    </${CrossDomainXmlTag.Characters}>`)
     }
 
-    // Locations
-    if (byType.location?.length > 0) {
-      parts.push(`    <locations count="${byType.location.length}">`)
-      for (const loc of byType.location) {
+    if (byType[GameEntityTypeKey.Location]?.length > 0) {
+      parts.push(
+        `    <${CrossDomainXmlTag.Locations} count="${byType[GameEntityTypeKey.Location].length}">`
+      )
+      for (const loc of byType[GameEntityTypeKey.Location]) {
         parts.push(
-          `      <location id="${loc.id}" name="${escapeXml(loc.name)}" source="${loc.sourceDomain}">`
+          `      <${CrossDomainXmlTag.Location} id="${loc.id}" name="${escapeXml(loc.name)}" source="${loc.sourceDomain}">`
         )
         if (loc.description) {
-          parts.push(`        <description>${escapeXml(loc.description)}</description>`)
+          parts.push(
+            `        <${CrossDomainXmlTag.Description}>${escapeXml(loc.description)}</${CrossDomainXmlTag.Description}>`
+          )
         }
-        parts.push(`        <used_in>${loc.usedInDomains.join(', ')}</used_in>`)
-        parts.push('      </location>')
+        parts.push(
+          `        <${CrossDomainXmlTag.UsedIn}>${loc.usedInDomains.join(StringSeparator.CommaSpace)}</${CrossDomainXmlTag.UsedIn}>`
+        )
+        parts.push(`      </${CrossDomainXmlTag.Location}>`)
       }
-      parts.push('    </locations>')
+      parts.push(`    </${CrossDomainXmlTag.Locations}>`)
     }
 
-    // Mechanics
-    if (byType.mechanic?.length > 0) {
-      parts.push(`    <mechanics count="${byType.mechanic.length}">`)
-      for (const mech of byType.mechanic) {
+    if (byType[GameEntityTypeKey.Mechanic]?.length > 0) {
+      parts.push(
+        `    <${CrossDomainXmlTag.Mechanics} count="${byType[GameEntityTypeKey.Mechanic].length}">`
+      )
+      for (const mech of byType[GameEntityTypeKey.Mechanic]) {
         parts.push(
-          `      <mechanic id="${mech.id}" name="${escapeXml(mech.name)}" source="${mech.sourceDomain}">`
+          `      <${CrossDomainXmlTag.Mechanic} id="${mech.id}" name="${escapeXml(mech.name)}" source="${mech.sourceDomain}">`
         )
         if (mech.description) {
-          parts.push(`        <description>${escapeXml(mech.description)}</description>`)
+          parts.push(
+            `        <${CrossDomainXmlTag.Description}>${escapeXml(mech.description)}</${CrossDomainXmlTag.Description}>`
+          )
         }
         if (mech.metadata) {
-          parts.push(`        <metadata>${JSON.stringify(mech.metadata, null, 2)}</metadata>`)
+          parts.push(
+            `        <${CrossDomainXmlTag.Metadata}>${JSON.stringify(mech.metadata, null, 2)}</${CrossDomainXmlTag.Metadata}>`
+          )
         }
-        parts.push(`        <used_in>${mech.usedInDomains.join(', ')}</used_in>`)
-        parts.push('      </mechanic>')
+        parts.push(
+          `        <${CrossDomainXmlTag.UsedIn}>${mech.usedInDomains.join(StringSeparator.CommaSpace)}</${CrossDomainXmlTag.UsedIn}>`
+        )
+        parts.push(`      </${CrossDomainXmlTag.Mechanic}>`)
       }
-      parts.push('    </mechanics>')
+      parts.push(`    </${CrossDomainXmlTag.Mechanics}>`)
     }
 
-    // Factions
-    if (byType.faction?.length > 0) {
-      parts.push(`    <factions count="${byType.faction.length}">`)
-      for (const faction of byType.faction) {
+    if (byType[GameEntityTypeKey.Faction]?.length > 0) {
+      parts.push(
+        `    <${CrossDomainXmlTag.Factions} count="${byType[GameEntityTypeKey.Faction].length}">`
+      )
+      for (const faction of byType[GameEntityTypeKey.Faction]) {
         parts.push(
-          `      <faction id="${faction.id}" name="${escapeXml(faction.name)}" source="${faction.sourceDomain}">`
+          `      <${CrossDomainXmlTag.Faction} id="${faction.id}" name="${escapeXml(faction.name)}" source="${faction.sourceDomain}">`
         )
         if (faction.description) {
-          parts.push(`        <description>${escapeXml(faction.description)}</description>`)
+          parts.push(
+            `        <${CrossDomainXmlTag.Description}>${escapeXml(faction.description)}</${CrossDomainXmlTag.Description}>`
+          )
         }
-        parts.push('      </faction>')
+        parts.push(`      </${CrossDomainXmlTag.Faction}>`)
       }
-      parts.push('    </factions>')
+      parts.push(`    </${CrossDomainXmlTag.Factions}>`)
     }
 
-    // Items
-    if (byType.item?.length > 0) {
-      parts.push(`    <items count="${byType.item.length}">`)
-      for (const item of byType.item) {
+    if (byType[GameEntityTypeKey.Item]?.length > 0) {
+      parts.push(`    <${CrossDomainXmlTag.Items} count="${byType[GameEntityTypeKey.Item].length}">`)
+      for (const item of byType[GameEntityTypeKey.Item]) {
         parts.push(
-          `      <item id="${item.id}" name="${escapeXml(item.name)}" source="${item.sourceDomain}" />`
+          `      <${CrossDomainXmlTag.Item} id="${item.id}" name="${escapeXml(item.name)}" source="${item.sourceDomain}" />`
         )
       }
-      parts.push('    </items>')
+      parts.push(`    </${CrossDomainXmlTag.Items}>`)
     }
 
-    // Quests
-    if (byType.quest?.length > 0) {
-      parts.push(`    <quests count="${byType.quest.length}">`)
-      for (const quest of byType.quest) {
+    if (byType[GameEntityTypeKey.Quest]?.length > 0) {
+      parts.push(
+        `    <${CrossDomainXmlTag.Quests} count="${byType[GameEntityTypeKey.Quest].length}">`
+      )
+      for (const quest of byType[GameEntityTypeKey.Quest]) {
         parts.push(
-          `      <quest id="${quest.id}" name="${escapeXml(quest.name)}" source="${quest.sourceDomain}">`
+          `      <${CrossDomainXmlTag.Quest} id="${quest.id}" name="${escapeXml(quest.name)}" source="${quest.sourceDomain}">`
         )
         if (quest.description) {
-          parts.push(`        <description>${escapeXml(quest.description)}</description>`)
+          parts.push(
+            `        <${CrossDomainXmlTag.Description}>${escapeXml(quest.description)}</${CrossDomainXmlTag.Description}>`
+          )
         }
-        parts.push('      </quest>')
+        parts.push(`      </${CrossDomainXmlTag.Quest}>`)
       }
-      parts.push('    </quests>')
+      parts.push(`    </${CrossDomainXmlTag.Quests}>`)
     }
 
-    parts.push('  </project_entities>')
-    parts.push('</cross_domain_context>')
+    parts.push(`  </${CrossDomainXmlTag.ProjectEntities}>`)
+    parts.push(`</${CrossDomainXmlTag.Root}>`)
 
     return parts.join('\n')
   } catch (error) {
-    console.error('[CrossDomainContext] Error building context:', error)
+    console.error(CrossDomainContextLog.BuildError, error)
     return ''
   }
 }
 
-/**
- * Escape special XML characters
- */
 function escapeXml(str: string): string {
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;')
+    .replace(/&/g, XmlEscapeEntity.Amp)
+    .replace(/</g, XmlEscapeEntity.Lt)
+    .replace(/>/g, XmlEscapeEntity.Gt)
+    .replace(/"/g, XmlEscapeEntity.Quot)
+    .replace(/'/g, XmlEscapeEntity.Apos)
 }

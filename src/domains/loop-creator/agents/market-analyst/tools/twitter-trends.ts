@@ -10,6 +10,7 @@
  * - Emerging game comparisons (e.g., "the new CS2", "better than Vampire Survivors")
  */
 
+import { createLoopStructuredTool } from './structured-tool'
 import { recordArrayFromJson } from '@/shared/data/json-guards'
 import { z } from 'zod'
 
@@ -316,10 +317,23 @@ function analyzeSentiment(text: string): {
   return { sentiment: 'neutral', score }
 }
 
+const twitterTrendsSchema = z.object({
+  topic: z
+    .string()
+    .describe(
+      'Gaming topic to search for (e.g., "roguelike", "extraction shooter", "indie games")'
+    ),
+  includeEmerging: z.boolean().optional().default(true).describe('Include hot emerging trends'),
+  sentimentFilter: z
+    .enum(['all', 'positive', 'negative', 'mixed'])
+    .optional()
+    .describe('Filter by sentiment'),
+})
+
 /**
  * Twitter Trends Tool
  */
-export const twitterTrendsTool = new DynamicStructuredTool({
+export const twitterTrendsTool = createLoopStructuredTool({
   name: 'twitter_gaming_trends',
   description: `Fetch real-time gaming discussions and trends from Twitter/X.
 
@@ -331,19 +345,9 @@ Returns:
 - Sample tweets showing community sentiment
 
 Use this to understand current market buzz and player sentiment.`,
-  schema: z.object({
-    topic: z
-      .string()
-      .describe(
-        'Gaming topic to search for (e.g., "roguelike", "extraction shooter", "indie games")'
-      ),
-    includeEmerging: z.boolean().optional().default(true).describe('Include hot emerging trends'),
-    sentimentFilter: z
-      .enum(['all', 'positive', 'negative', 'mixed'])
-      .optional()
-      .describe('Filter by sentiment'),
-  }),
-  func: async ({ topic, includeEmerging, sentimentFilter }): Promise<string> => {
+  schema: twitterTrendsSchema,
+  func: async input => {
+    const { topic, includeEmerging, sentimentFilter } = twitterTrendsSchema.parse(input)
     try {
       const results: TwitterTrendResult[] = []
       const topicLower = topic.toLowerCase()

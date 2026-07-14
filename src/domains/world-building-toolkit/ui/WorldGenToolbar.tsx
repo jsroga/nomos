@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { DomEventType, FormField, HttpMethod } from '@/shared/data/constants/protocol'
+import { WORLD_GEN_TOOLBAR_COPY } from '@/domains/world-building-toolkit/ui/constants/world-gen-toolbar'
 
 interface ToolButtonProps {
   icon: React.ReactNode
@@ -74,7 +76,7 @@ export const WorldGenToolbar: React.FC = () => {
 
   const handleUploadClick = () => {
     if (!currentProject) {
-      toast.error('Please select a project first')
+      toast.error(WORLD_GEN_TOOLBAR_COPY.SELECT_PROJECT_FIRST)
       return
     }
 
@@ -111,7 +113,7 @@ export const WorldGenToolbar: React.FC = () => {
             }
           }
         }
-        toast.error('No empty tile position found')
+        toast.error(WORLD_GEN_TOOLBAR_COPY.NO_EMPTY_TILE_POSITION)
       }
     }
   }
@@ -126,34 +128,35 @@ export const WorldGenToolbar: React.FC = () => {
     setIsUploading(true)
     try {
       const formData = new FormData()
-      formData.append('file', file)
-      formData.append('projectId', currentProject.id)
+      formData.append(FormField.File, file)
+      formData.append(FormField.ProjectId, currentProject.id)
       formData.append('x', target.x.toString())
       formData.append('y', target.y.toString())
 
       const response = await fetch('/api/tiles/upload', {
-        method: 'POST',
+        method: HttpMethod.Post,
         body: formData,
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Upload failed')
+        throw new Error(data.error || WORLD_GEN_TOOLBAR_COPY.UPLOAD_FAILED)
       }
 
       // Update local state with the new tile
-      useWorldStore.setState(state => ({
+      const { tiles } = useWorldStore.getState()
+      useWorldStore.setState({
         tiles: {
-          ...state.tiles,
+          ...tiles,
           [`${target.x},${target.y}`]: data.tile,
         },
-      }))
+      })
 
       toast.success(`Tile uploaded at (${target.x}, ${target.y})`)
     } catch (error: unknown) {
-      console.error('Upload error:', error)
-      toast.error(getErrorMessage(error) || 'Failed to upload tile')
+      console.error(WORLD_GEN_TOOLBAR_COPY.UPLOAD_ERROR_LOG, error)
+      toast.error(getErrorMessage(error) || WORLD_GEN_TOOLBAR_COPY.FAILED_UPLOAD_TILE)
     } finally {
       setIsUploading(false)
       // Reset file input
@@ -185,8 +188,8 @@ export const WorldGenToolbar: React.FC = () => {
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener(DomEventType.KeyDown, handleKeyDown)
+    return () => window.removeEventListener(DomEventType.KeyDown, handleKeyDown)
   }, [currentProject, selectedTile, tiles])
 
   return (

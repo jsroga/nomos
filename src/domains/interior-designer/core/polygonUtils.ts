@@ -1,33 +1,4 @@
-import { Wall } from '../state/useInteriorStore'
-
-/**
- * Point represented as [x, z] (ignoring y for 2D floor plan)
- */
-type Point2D = [number, number]
-
-const EPSILON = 0.01 // Tolerance for point comparison
-
-/**
- * Build an adjacency map from walls for graph traversal
- */
-function buildAdjacencyMap(walls: Wall[]): Map<string, Set<string>> {
-  const adj = new Map<string, Set<string>>()
-
-  const pointKey = (p: Point2D): string => `${p[0].toFixed(2)},${p[1].toFixed(2)}`
-
-  for (const wall of walls) {
-    const startKey = pointKey([wall.start[0], wall.start[2]])
-    const endKey = pointKey([wall.end[0], wall.end[2]])
-
-    if (!adj.has(startKey)) adj.set(startKey, new Set())
-    if (!adj.has(endKey)) adj.set(endKey, new Set())
-
-    adj.get(startKey)!.add(endKey)
-    adj.get(endKey)!.add(startKey)
-  }
-
-  return adj
-}
+import type { Wall } from './interior-types'
 
 /**
  * Find closed polygon when a new wall completes a shape.

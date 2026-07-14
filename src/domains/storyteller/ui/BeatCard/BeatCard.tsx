@@ -5,6 +5,15 @@ import { Textarea } from '@/components/Textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { Skeleton } from '@/components/Skeleton'
 import { cn } from '@/shared/data/utils'
+import {
+  BEAT_STATUS_BADGE_CLASS,
+  BEAT_STATUS_DEFAULT_BADGE,
+  BEAT_TYPE_BORDER_CLASS,
+  BeatCardType,
+  BeatGenerationMode,
+  isBeatCardStatus,
+  isBeatCardType,
+} from './constants/beat-card'
 
 interface Beat {
   id: string
@@ -44,11 +53,11 @@ export const BeatCard: React.FC<BeatCardProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editState, setEditState] = useState(beat)
-  const [isGenerating, setIsGenerating] = useState<'content' | 'image' | null>(null)
+  const [isGenerating, setIsGenerating] = useState<BeatGenerationMode | null>(null)
 
   const handleGenerateContent = () => {
     if (!onSendMessage) return
-    setIsGenerating('content')
+    setIsGenerating(BeatGenerationMode.Content)
     const message = `Write detailed scene content for beat #${beat.sequence} "${beat.logline}". Include visual descriptions, dialogue, and subtext. Beat type: ${beat.beatType || beat.type}.`
     onSendMessage(message)
     // Reset after a short delay (chat will handle actual completion)
@@ -57,44 +66,26 @@ export const BeatCard: React.FC<BeatCardProps> = ({
 
   const handleGenerateImage = () => {
     if (!onSendMessage) return
-    setIsGenerating('image')
+    setIsGenerating(BeatGenerationMode.Image)
     const message = `Generate a storyboard image for beat #${beat.sequence} "${beat.logline}". Create a cinematic visual that captures the mood and action.`
     onSendMessage(message)
     setTimeout(() => setIsGenerating(null), 2000)
   }
 
-  const beatType = beat.beatType || beat.type || 'default'
+  const beatType = beat.beatType || beat.type || BeatCardType.Default
 
   const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'setup':
-        return 'border-l-blue-500 bg-card'
-      case 'complication':
-        return 'border-l-red-500 bg-card'
-      case 'revelation':
-        return 'border-l-amber-500 bg-card'
-      case 'decision':
-        return 'border-l-purple-500 bg-card'
-      case 'consequence':
-        return 'border-l-orange-500 bg-card'
-      case 'resolution':
-        return 'border-l-emerald-500 bg-card'
-      default:
-        return 'border-l-border bg-card'
+    if (isBeatCardType(type)) {
+      return BEAT_TYPE_BORDER_CLASS[type]
     }
+    return BEAT_TYPE_BORDER_CLASS[BeatCardType.Default]
   }
 
   const getStatusBadge = (status?: string) => {
-    switch (status) {
-      case 'approved':
-        return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-      case 'proposed':
-        return 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-      case 'locked':
-        return 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-      default:
-        return 'bg-muted text-muted-foreground border border-border'
+    if (status && isBeatCardStatus(status)) {
+      return BEAT_STATUS_BADGE_CLASS[status]
     }
+    return BEAT_STATUS_DEFAULT_BADGE
   }
 
   const handleSave = () => {
@@ -129,12 +120,12 @@ export const BeatCard: React.FC<BeatCardProps> = ({
               setEditState({ ...editState, type: e.target.value, beatType: e.target.value })
             }
           >
-            <option value="setup">Setup</option>
-            <option value="complication">Complication</option>
-            <option value="revelation">Revelation</option>
-            <option value="decision">Decision</option>
-            <option value="consequence">Consequence</option>
-            <option value="resolution">Resolution</option>
+            <option value={BeatCardType.Setup}>Setup</option>
+            <option value={BeatCardType.Complication}>Complication</option>
+            <option value={BeatCardType.Revelation}>Revelation</option>
+            <option value={BeatCardType.Decision}>Decision</option>
+            <option value={BeatCardType.Consequence}>Consequence</option>
+            <option value={BeatCardType.Resolution}>Resolution</option>
           </select>
         ) : (
           <div className="flex items-center gap-2 min-w-0">
@@ -230,7 +221,7 @@ export const BeatCard: React.FC<BeatCardProps> = ({
                       variant="ghost"
                       className={cn(
                         'h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10',
-                        isGenerating === 'content' && 'animate-pulse text-primary'
+                        isGenerating === BeatGenerationMode.Content && 'animate-pulse text-primary'
                       )}
                       onClick={handleGenerateContent}
                       disabled={isGenerating !== null}
@@ -251,7 +242,7 @@ export const BeatCard: React.FC<BeatCardProps> = ({
                       variant="ghost"
                       className={cn(
                         'h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-cyan-400 hover:bg-cyan-500/10',
-                        isGenerating === 'image' && 'animate-pulse text-cyan-400'
+                        isGenerating === BeatGenerationMode.Image && 'animate-pulse text-cyan-400'
                       )}
                       onClick={handleGenerateImage}
                       disabled={isGenerating !== null}

@@ -6,41 +6,50 @@ import { eq } from 'drizzle-orm'
 import fs from 'fs'
 import path from 'path'
 import { requireAuth } from '@/shared/auth/auth'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { BufferEncoding } from '@/shared/data/constants/protocol'
+import {
+  StorytellerImageVariantLabel,
+  StorytellerStorageSegment,
+} from '@/domains/storyteller/core/storyteller-page-wire'
 
 export async function POST(req: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const body = await req.json()
     const { episodeId, projectId, croppedImageDataUrl, variantIndex } = body
 
     if (!episodeId || !projectId || !croppedImageDataUrl) {
-      return NextResponse.json(
-        { error: 'episodeId, projectId, and croppedImageDataUrl are required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: API_ERROR.EPISODE_POSTER_FIELDS_REQUIRED }, { status: 400 })
     }
 
     // Verify access
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
     if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
-      return NextResponse.json({ error: 'Episode not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.EPISODE_ACCESS_DENIED }, { status: 404 })
     }
 
     const matches = croppedImageDataUrl.match(/^data:image\/(\w+);base64,(.+)$/)
     if (!matches) {
-      return NextResponse.json({ error: 'Invalid image data URL format' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.INVALID_IMAGE_DATA_URL }, { status: 400 })
     }
 
     const imageType = matches[1]
     const base64Data = matches[2]
-    const buffer = Buffer.from(base64Data, 'base64')
+    const buffer = Buffer.from(base64Data, BufferEncoding.Base64)
 
-    const filename = `poster_${episodeId}_v${variantIndex || 'cropped'}_${Date.now()}.${imageType}`
-    const projectDir = path.join(process.cwd(), 'public', 'projects', projectId, 'episodes')
+    const filename = `poster_${episodeId}_v${variantIndex || StorytellerImageVariantLabel.Cropped}_${Date.now()}.${imageType}`
+    const projectDir = path.join(
+      process.cwd(),
+      StorytellerStorageSegment.Public,
+      StorytellerStorageSegment.Projects,
+      projectId,
+      StorytellerStorageSegment.Episodes
+    )
 
     if (!fs.existsSync(projectDir)) {
       fs.mkdirSync(projectDir, { recursive: true })
@@ -49,17 +58,17 @@ export async function POST(req: NextRequest) {
     const filePath = path.join(projectDir, filename)
     fs.writeFileSync(filePath, buffer)
 
-    const localPath = `/projects/${projectId}/episodes/${filename}`
+    const localPath = `/${StorytellerStorageSegment.Projects}/${projectId}/${StorytellerStorageSegment.Episodes}/${filename}`
 
     await db.update(episodes).set({ posterUrl: localPath }).where(eq(episodes.id, episodeId))
 
     return NextResponse.json({ success: true, posterUrl: localPath, variantIndex })
   } catch (error) {
-    console.error('Error saving episode poster variant:', error)
+    console.error(API_LOG_PREFIX.EPISODE_POSTER_VARIANT_ERROR, error)
     return NextResponse.json(
       {
-        error: 'Failed to save episode poster variant',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: API_ERROR.FAILED_SAVE_EPISODE_POSTER_VARIANT,
+        details: error instanceof Error ? error.message : API_ERROR.UNKNOWN_ERROR,
       },
       { status: 500 }
     )

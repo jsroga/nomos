@@ -13,8 +13,8 @@
  * This is a HIDDEN score - used for internal analysis.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
-import { z } from 'zod'
+import { createLoopStructuredTool } from '../structured-tool'
+import { mechanicsLoopsToolSchema } from '../mechanics-loops-schema'
 
 /**
  * Scoring criteria with sophisticated analysis
@@ -305,7 +305,7 @@ const REFERENCE_SCORES = {
 /**
  * Disco Elysium scorer tool
  */
-export const discoElysiumScorerTool = new DynamicStructuredTool({
+export const discoElysiumScorerTool = createLoopStructuredTool({
   name: 'disco_elysium_scorer',
   description: `Score the game design against Disco Elysium-style narrative RPG criteria.
 Evaluates:
@@ -316,29 +316,9 @@ Evaluates:
 - Thematic Cohesion (15%): Unified theme through mechanics
 
 Returns 0-100 score with detailed breakdown. High scores indicate strong narrative RPG appeal.`,
-  schema: z.object({
-    mechanics: z
-      .array(
-        z.object({
-          name: z.string(),
-          type: z.string(),
-          description: z.string().optional(),
-        })
-      )
-      .describe('Game mechanics to analyze'),
-    loops: z
-      .array(
-        z.object({
-          name: z.string(),
-          type: z.string(),
-          description: z.string().optional(),
-        })
-      )
-      .optional()
-      .describe('Game loops if defined'),
-    gameDescription: z.string().optional().describe('Overall game description'),
-  }),
-  func: async ({ mechanics, loops, gameDescription }): Promise<string> => {
+  schema: mechanicsLoopsToolSchema,
+  func: async input => {
+    const { mechanics, loops, gameDescription } = mechanicsLoopsToolSchema.parse(input)
     try {
       // Build analysis context
       const allText = [

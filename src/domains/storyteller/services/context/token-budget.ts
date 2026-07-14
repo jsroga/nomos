@@ -5,37 +5,44 @@
  * truncating by relevance or recency when over budget.
  */
 
+import {
+  CONTEXT_BUDGET_SECTION_KEYS,
+  ContextBudgetSection,
+  TOKEN_BUDGET_SECTION_JOIN,
+  TOKEN_BUDGET_TRUNCATION_SUFFIX,
+} from '@/domains/storyteller/services/constants/token-budget'
+
 export interface TokenBudgets {
-  systemPrompt: number
-  projectContext: number
-  characters: number
-  beats: number
-  memory: number
-  rag: number
-  userMessage: number
-  relationships: number
+  [ContextBudgetSection.SystemPrompt]: number
+  [ContextBudgetSection.ProjectContext]: number
+  [ContextBudgetSection.Characters]: number
+  [ContextBudgetSection.Beats]: number
+  [ContextBudgetSection.Memory]: number
+  [ContextBudgetSection.Rag]: number
+  [ContextBudgetSection.UserMessage]: number
+  [ContextBudgetSection.Relationships]: number
 }
 
 export const DEFAULT_TOKEN_BUDGETS: TokenBudgets = {
-  systemPrompt: 3000, // Fixed, not truncated
-  projectContext: 4000, // Bible, rules, factions
-  characters: 2000, // Top N most relevant characters
-  beats: 2000, // Last N beats (summarized)
-  memory: 4000, // Compressed conversation history
-  rag: 1500, // RAG results
-  userMessage: 500, // Current message
-  relationships: 500, // Active relationship context
+  [ContextBudgetSection.SystemPrompt]: 3000, // Fixed, not truncated
+  [ContextBudgetSection.ProjectContext]: 4000, // Bible, rules, factions
+  [ContextBudgetSection.Characters]: 2000, // Top N most relevant characters
+  [ContextBudgetSection.Beats]: 2000, // Last N beats (summarized)
+  [ContextBudgetSection.Memory]: 4000, // Compressed conversation history
+  [ContextBudgetSection.Rag]: 1500, // RAG results
+  [ContextBudgetSection.UserMessage]: 500, // Current message
+  [ContextBudgetSection.Relationships]: 500, // Active relationship context
 }
 
 export interface RawContextParts {
-  systemPrompt?: string
-  projectContext?: string
-  characters?: string
-  beats?: string
-  memory?: string
-  rag?: string
-  userMessage?: string
-  relationships?: string
+  [ContextBudgetSection.SystemPrompt]?: string
+  [ContextBudgetSection.ProjectContext]?: string
+  [ContextBudgetSection.Characters]?: string
+  [ContextBudgetSection.Beats]?: string
+  [ContextBudgetSection.Memory]?: string
+  [ContextBudgetSection.Rag]?: string
+  [ContextBudgetSection.UserMessage]?: string
+  [ContextBudgetSection.Relationships]?: string
 }
 
 export interface BudgetedContext {
@@ -66,23 +73,14 @@ function truncateToTokenBudget(text: string, maxTokens: number): string {
 
   // Approximate char limit
   const maxChars = maxTokens * 4
-  return text.slice(0, maxChars) + '\n... [truncated for token budget]'
+  return text.slice(0, maxChars) + TOKEN_BUDGET_TRUNCATION_SUFFIX
 }
 
 /**
  * Apply token budgets to raw context parts.
  * Truncates each section that exceeds its budget.
  */
-const BUDGET_SECTION_KEYS: Array<keyof RawContextParts & keyof TokenBudgets> = [
-  'systemPrompt',
-  'projectContext',
-  'characters',
-  'beats',
-  'memory',
-  'rag',
-  'userMessage',
-  'relationships',
-]
+const BUDGET_SECTION_KEYS = CONTEXT_BUDGET_SECTION_KEYS
 
 export function budgetContext(
   rawContext: RawContextParts,
@@ -107,7 +105,7 @@ export function budgetContext(
     sections.push(budgeted)
   }
 
-  const context = sections.join('\n\n')
+  const context = sections.join(TOKEN_BUDGET_SECTION_JOIN)
   const totalTokens = estimateTokens(context)
 
   return { context, trimmed, totalTokens }

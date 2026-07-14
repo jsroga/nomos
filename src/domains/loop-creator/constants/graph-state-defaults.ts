@@ -1,0 +1,6 @@
+export const CANVAS_NODE_TYPE_GROUP = 'group'
+export const CANVAS_EXTENT_PARENT = 'parent'
+export const LOOP_CREATOR_PHASE_INITIAL = 'initial'
+export const LOOP_CREATOR_PHASE_COMPLETE = 'complete'
+export const NEXT_AGENT_SUPERVISOR = 'supervisor'
+export const NEXT_AGENT_END = 'END'

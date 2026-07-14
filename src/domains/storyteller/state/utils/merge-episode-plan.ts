@@ -1,37 +1,18 @@
 import { recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
+import { StoryPlanMergeField } from '@/domains/storyteller/config/constants/bible-wire-fields'
+import { ToolResultPayloadField } from '@/domains/storyteller/config/constants/tool-result-wire'
+import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import { Phase, parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/Enums'
 import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import {
+  BIBLE_CATEGORY_KEYS,
+  EpisodePlanMergeField,
+  HYDRATION_CATEGORY_KEYS,
+  HYDRATION_PLAN_FIELDS,
+  SCRIPT_WRITING_PHASE_MIN_LENGTH,
+} from '@/domains/storyteller/state/constants/merge-episode-plan'
 import { projectHasStoredPlan } from '@/domains/storyteller/state/utils/episode-route'
-
-const BIBLE_CATEGORY_KEYS = [
-  'General',
-  'Setting',
-  'History',
-  'Magic',
-  'Factions',
-  'Technology',
-  'Culture',
-] as const
-
-const HYDRATION_CATEGORY_KEYS = [...BIBLE_CATEGORY_KEYS, 'updatedFields'] as const
-
-const HYDRATION_PLAN_FIELDS = [
-  'soundtracks',
-  'worldRules',
-  'factions',
-  'keyCharacters',
-  'plotTwists',
-  'inspirations',
-  'worldDescription',
-  'genre',
-  'tone',
-  'sequences',
-  'seasonStructure',
-  'centralTheme',
-  'masterPrompt',
-  'moodImages',
-] as const
 
 function firstNonEmptyArray(...candidates: unknown[]) {
   for (const candidate of candidates) {
@@ -71,57 +52,65 @@ export function buildMergedEpisodePlan(
   const { hasSeriesBible: hasProjectBible, hasStoryPlan: hasProjectPlan } =
     projectHasStoredPlan(planContext)
 
-  if (!data.storyPlan && !hasProjectBible && !hasProjectPlan) {
+  if (!data[EpisodePlanMergeField.StoryPlan] && !hasProjectBible && !hasProjectPlan) {
     return null
   }
 
   const bible = unpackBibleCategories(recordFromJson(currentProject?.series_bible))
   const seasonPlan = recordFromJson(currentProject?.story_plan)
-  const episodePlan = recordFromJson(data.storyPlan)
-  const seasonRoadmap = recordFromJson(seasonPlan.episodeRoadmap)
-  const bibleUpdated = recordFromJson(bible.updatedFields)
+  const episodePlan = recordFromJson(data[EpisodePlanMergeField.StoryPlan])
+  const seasonRoadmap = recordFromJson(seasonPlan[EpisodePlanMergeField.EpisodeRoadmap])
+  const bibleUpdated = recordFromJson(bible[ToolResultPayloadField.UpdatedFields])
 
   return applyUpdatesToStoryPlan<StoryPlan>(null, {
     ...bible,
     ...seasonPlan,
     ...episodePlan,
-    sequences: firstNonEmptyArray(
-      episodePlan.sequences,
-      seasonPlan.sequences,
-      seasonRoadmap.episodes,
-      seasonRoadmap.sequences,
+    [StoryPlanMergeField.Sequences]: firstNonEmptyArray(
+      episodePlan[StoryPlanMergeField.Sequences],
+      seasonPlan[StoryPlanMergeField.Sequences],
+      seasonRoadmap[EpisodePlanMergeField.Episodes],
+      seasonRoadmap[StoryPlanMergeField.Sequences],
     ),
-    factions: firstNonEmptyArray(
-      episodePlan.factions,
-      seasonPlan.factions,
-      bible.factions,
-      bibleUpdated.factions,
+    [StoryPlanMergeField.Factions]: firstNonEmptyArray(
+      episodePlan[StoryPlanMergeField.Factions],
+      seasonPlan[StoryPlanMergeField.Factions],
+      bible[StoryPlanMergeField.Factions],
+      bibleUpdated[StoryPlanMergeField.Factions],
     ),
-    worldRules: firstNonEmptyArray(
-      episodePlan.worldRules,
-      seasonPlan.worldRules,
-      bible.worldRules,
-      bibleUpdated.worldRules,
+    [StoryPlanMergeField.WorldRules]: firstNonEmptyArray(
+      episodePlan[StoryPlanMergeField.WorldRules],
+      seasonPlan[StoryPlanMergeField.WorldRules],
+      bible[StoryPlanMergeField.WorldRules],
+      bibleUpdated[StoryPlanMergeField.WorldRules],
     ),
-    plotTwists: firstNonEmptyArray(
-      episodePlan.plotTwists,
-      seasonPlan.plotTwists,
-      bible.plotTwists,
-      bibleUpdated.plotTwists,
+    [StoryPlanMergeField.PlotTwists]: firstNonEmptyArray(
+      episodePlan[StoryPlanMergeField.PlotTwists],
+      seasonPlan[StoryPlanMergeField.PlotTwists],
+      bible[StoryPlanMergeField.PlotTwists],
+      bibleUpdated[StoryPlanMergeField.PlotTwists],
     ),
-    keyCharacters: firstNonEmptyArray(
-      episodePlan.keyCharacters,
-      seasonPlan.keyCharacters,
-      bible.keyCharacters,
-      bibleUpdated.characters,
+    [CastFieldAlias.KeyCharacters]: firstNonEmptyArray(
+      episodePlan[CastFieldAlias.KeyCharacters],
+      seasonPlan[CastFieldAlias.KeyCharacters],
+      bible[CastFieldAlias.KeyCharacters],
+      bibleUpdated[CastFieldAlias.Characters],
     ),
-    soundtracks: firstNonEmptyArray(episodePlan.soundtracks, seasonPlan.soundtracks, bible.soundtracks),
-    moodImages: recordArrayFromJson(episodePlan.moodImages).length
-      ? recordArrayFromJson(episodePlan.moodImages)
-      : recordArrayFromJson(bible.moodImages),
-    imagePrompts: recordFromJson(episodePlan.imagePrompts ?? bible.imagePrompts),
-    seasonStructure: recordFromJson(
-      episodePlan.seasonStructure ?? seasonPlan.seasonStructure ?? bible.seasonStructure,
+    [StoryPlanMergeField.Soundtracks]: firstNonEmptyArray(
+      episodePlan[StoryPlanMergeField.Soundtracks],
+      seasonPlan[StoryPlanMergeField.Soundtracks],
+      bible[StoryPlanMergeField.Soundtracks],
+    ),
+    [StoryPlanMergeField.MoodImages]: recordArrayFromJson(episodePlan[StoryPlanMergeField.MoodImages]).length
+      ? recordArrayFromJson(episodePlan[StoryPlanMergeField.MoodImages])
+      : recordArrayFromJson(bible[StoryPlanMergeField.MoodImages]),
+    [EpisodePlanMergeField.ImagePrompts]: recordFromJson(
+      episodePlan[EpisodePlanMergeField.ImagePrompts] ?? bible[EpisodePlanMergeField.ImagePrompts],
+    ),
+    [StoryPlanMergeField.SeasonStructure]: recordFromJson(
+      episodePlan[StoryPlanMergeField.SeasonStructure] ??
+        seasonPlan[StoryPlanMergeField.SeasonStructure] ??
+        bible[StoryPlanMergeField.SeasonStructure],
     ),
     projectId: currentProject?.id,
   })
@@ -132,7 +121,7 @@ export function buildFallbackBiblePlan(
 ): StoryPlan | null {
   const rawBible = recordFromJson(currentProject?.series_bible)
   const rawStoryPlan = recordFromJson(currentProject?.story_plan)
-  const rawBibleUpdated = recordFromJson(rawBible.updatedFields)
+  const rawBibleUpdated = recordFromJson(rawBible[ToolResultPayloadField.UpdatedFields])
 
   if (Object.keys(rawBible).length === 0 && Object.keys(rawStoryPlan).length === 0) {
     return null
@@ -149,25 +138,37 @@ export function buildFallbackBiblePlan(
 
   return applyUpdatesToStoryPlan<StoryPlan>(null, {
     ...processedBible,
-    worldRules: firstNonEmptyArray(
-      rawStoryPlan.worldRules,
-      rawBible.worldRules,
-      rawBibleUpdated.worldRules,
+    [StoryPlanMergeField.WorldRules]: firstNonEmptyArray(
+      rawStoryPlan[StoryPlanMergeField.WorldRules],
+      rawBible[StoryPlanMergeField.WorldRules],
+      rawBibleUpdated[StoryPlanMergeField.WorldRules],
     ),
-    plotTwists: firstNonEmptyArray(
-      rawStoryPlan.plotTwists,
-      rawBible.plotTwists,
-      rawBibleUpdated.plotTwists,
+    [StoryPlanMergeField.PlotTwists]: firstNonEmptyArray(
+      rawStoryPlan[StoryPlanMergeField.PlotTwists],
+      rawBible[StoryPlanMergeField.PlotTwists],
+      rawBibleUpdated[StoryPlanMergeField.PlotTwists],
     ),
-    keyCharacters: firstNonEmptyArray(
-      rawStoryPlan.keyCharacters,
-      rawBible.keyCharacters,
-      rawBibleUpdated.characters,
+    [CastFieldAlias.KeyCharacters]: firstNonEmptyArray(
+      rawStoryPlan[CastFieldAlias.KeyCharacters],
+      rawBible[CastFieldAlias.KeyCharacters],
+      rawBibleUpdated[CastFieldAlias.Characters],
     ),
-    factions: firstNonEmptyArray(rawStoryPlan.factions, rawBible.factions, rawBibleUpdated.factions),
-    soundtracks: firstNonEmptyArray(rawStoryPlan.soundtracks, rawBible.soundtracks),
-    sequences: firstNonEmptyArray(rawStoryPlan.sequences, rawBible.sequences),
-    seasonStructure: recordFromJson(rawStoryPlan.seasonStructure ?? rawBible.seasonStructure),
+    [StoryPlanMergeField.Factions]: firstNonEmptyArray(
+      rawStoryPlan[StoryPlanMergeField.Factions],
+      rawBible[StoryPlanMergeField.Factions],
+      rawBibleUpdated[StoryPlanMergeField.Factions],
+    ),
+    [StoryPlanMergeField.Soundtracks]: firstNonEmptyArray(
+      rawStoryPlan[StoryPlanMergeField.Soundtracks],
+      rawBible[StoryPlanMergeField.Soundtracks],
+    ),
+    [StoryPlanMergeField.Sequences]: firstNonEmptyArray(
+      rawStoryPlan[StoryPlanMergeField.Sequences],
+      rawBible[StoryPlanMergeField.Sequences],
+    ),
+    [StoryPlanMergeField.SeasonStructure]: recordFromJson(
+      rawStoryPlan[StoryPlanMergeField.SeasonStructure] ?? rawBible[StoryPlanMergeField.SeasonStructure],
+    ),
   })
 }
 
@@ -176,7 +177,7 @@ export function buildManualHydratedPlan(
 ): StoryPlan | null {
   const rawBible = recordFromJson(currentProject?.series_bible)
   const rawStoryPlan = recordFromJson(currentProject?.story_plan)
-  const rawBibleUpdated = recordFromJson(rawBible.updatedFields)
+  const rawBibleUpdated = recordFromJson(rawBible[ToolResultPayloadField.UpdatedFields])
 
   const initialPlan: Record<string, unknown> = { ...rawStoryPlan }
 
@@ -205,10 +206,10 @@ export function buildManualHydratedPlan(
   }
 
   if (
-    recordArrayFromJson(rawBibleUpdated.characters).length > 0 &&
-    recordArrayFromJson(initialPlan.keyCharacters).length === 0
+    recordArrayFromJson(rawBibleUpdated[CastFieldAlias.Characters]).length > 0 &&
+    recordArrayFromJson(initialPlan[CastFieldAlias.KeyCharacters]).length === 0
   ) {
-    initialPlan.keyCharacters = rawBibleUpdated.characters
+    initialPlan[CastFieldAlias.KeyCharacters] = rawBibleUpdated[CastFieldAlias.Characters]
   }
 
   return Object.keys(initialPlan).length > 0
@@ -217,9 +218,13 @@ export function buildManualHydratedPlan(
 }
 
 export function inferEpisodePhase(data: Record<string, unknown>): PhaseId {
-  let phase = parsePhaseId(readPhase(data.currentPhase))
-  const script = readScript(data.script)
-  if (script && script.length > 100 && (phase === Phase.PREMISE || phase === Phase.BREAKING)) {
+  let phase = parsePhaseId(readPhase(data[EpisodePlanMergeField.CurrentPhase]))
+  const script = readScript(data[EpisodePlanMergeField.Script])
+  if (
+    script &&
+    script.length > SCRIPT_WRITING_PHASE_MIN_LENGTH &&
+    (phase === Phase.PREMISE || phase === Phase.BREAKING)
+  ) {
     phase = Phase.WRITING
   }
   return phase

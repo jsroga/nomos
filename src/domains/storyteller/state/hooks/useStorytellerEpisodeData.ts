@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
 import { recordArrayFromJson, recordFromJson, readNumber, readString } from '@/shared/data/json-guards'
+import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
 import {
   StorytellerHttpMethod,
   StorytellerLogMessage,
@@ -40,6 +41,7 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
     setCurrentPhase,
     setScript,
     setIsFetchingPlan,
+    setCurrentEpisodeTitle,
     storyPlan,
   } = core
 
@@ -258,6 +260,40 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
     }
   }
 
+  const updateEpisodePremise = useCallback(
+    async (detail: Record<string, unknown>) => {
+      if (Object.keys(detail).length === 0) return
+
+      setStoryPlan(prev =>
+        applyUpdatesToStoryPlan(prev, {
+          premise: detail,
+          title: readString(detail.title),
+        })
+      )
+
+      const title = readString(detail.title)
+      if (title) {
+        setCurrentEpisodeTitle(title)
+      }
+
+      if (currentEpisodeId) {
+        try {
+          await fetch(`/api/storyteller/episodes/${currentEpisodeId}`, {
+            method: StorytellerHttpMethod.Patch,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              premise: detail,
+              title: detail.title,
+            }),
+          })
+        } catch (err) {
+          console.error(StorytellerLogMessage.FailedPersistPremise, err)
+        }
+      }
+    },
+    [currentEpisodeId, setCurrentEpisodeTitle, setStoryPlan]
+  )
+
   return {
     isFetchingCharacters,
     isDeletingCharacter,
@@ -265,5 +301,6 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
     handleCreateCharacter,
     handleUpdateCharacter,
     handleDeleteCharacter,
+    updateEpisodePremise,
   }
 }

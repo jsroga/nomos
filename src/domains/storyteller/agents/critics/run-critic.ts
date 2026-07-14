@@ -4,6 +4,7 @@
  * a flaky critic must never take down the caller.
  */
 
+import '@/shared/data/server-guard'
 import type { Agent } from '@mastra/core/agent'
 import { CriticReportSchema, type CriticReport } from './critic-schema'
 

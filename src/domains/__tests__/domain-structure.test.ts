@@ -15,6 +15,32 @@ import {
 
 const DOMAINS_ROOT = path.resolve(__dirname, '..')
 
+/**
+ * Pure modules under agents/ that stay importable from evals/tests without
+ * the server guard: zod schemas, deterministic gate logic, deterministic
+ * eval scorers, and pure helpers (no Mastra runtime, no DB).
+ */
+const PURE_AGENTS_MODULES: Record<string, readonly string[]> = {
+  storyteller: [
+    'agents/BeatPlanner/beat-plan-schema.ts',
+    'agents/BeatPlanner/beat-plan-quality.ts',
+    'agents/BeatPlanner/beat-plan-concreteness-scorer.ts',
+    'agents/critics/critic-schema.ts',
+    'agents/critics/critic-rules.ts',
+    'agents/critics/critic-discipline-scorer.ts',
+    'agents/request-context.ts',
+    'agents/tracing.ts',
+    'agents/workflows/beat-draft-contract.ts',
+    'agents/Muse/wild-idea-schema.ts',
+    'agents/Muse/ranked-idea-schema.ts',
+  ],
+}
+
+function isPureAgentsModule(domain: string, file: string): boolean {
+  const rel = path.relative(path.join(DOMAINS_ROOT, domain), file).split(path.sep).join('/')
+  return (PURE_AGENTS_MODULES[domain] ?? []).includes(rel)
+}
+
 function listTopLevel(domain: string): string[] {
   const domainPath = path.join(DOMAINS_ROOT, domain)
   if (!fs.existsSync(domainPath)) return []
@@ -88,10 +114,59 @@ describe('Domain folder structure conformance', () => {
         for (const file of files) {
           const content = fs.readFileSync(file, 'utf8')
           expect(
-            content.includes("import 'server-only'") ||
+            content.includes('import \'server-only\'') ||
               content.includes('import "server-only"'),
             `${path.relative(DOMAINS_ROOT, file)} must import server-only`,
           ).toBe(true)
+        }
+      })
+
+      it('agents/ files import the server guard (server-only layer)', () => {
+        if (!config.agentsGuardEnforced) return // ratchet — see domain-conformance.ts
+        const agentsDir = path.join(DOMAINS_ROOT, domain, 'agents')
+        if (!fs.existsSync(agentsDir)) return
+
+        const files = walkFiles(agentsDir).filter(
+          (f) =>
+            !f.includes('__tests__') &&
+            !f.endsWith('.test.ts') &&
+            // constants/ dirs hold pure string-artifact tables by convention
+            !f.split(path.sep).includes('constants') &&
+            !isPureAgentsModule(domain, f),
+        )
+
+        for (const file of files) {
+          const content = fs.readFileSync(file, 'utf8')
+          expect(
+            content.includes('import \'@/shared/data/server-guard\'') ||
+              content.includes('import "@/shared/data/server-guard"'),
+            `${path.relative(DOMAINS_ROOT, file)} must import @/shared/data/server-guard ` +
+              '(agents/ is server-only — see ARCHITECTURE §4; the official server-only ' +
+              'package is not usable here: it throws under the node default condition, ' +
+              'crashing Mastra Studio, evals, and vitest)',
+          ).toBe(true)
+        }
+      })
+
+      it('agents/ files do not import ui/ or state/ layers', () => {
+        const agentsDir = path.join(DOMAINS_ROOT, domain, 'agents')
+        if (!fs.existsSync(agentsDir)) return
+
+        const forbidden = [
+          new RegExp(`from ['"]@/domains/${domain}/ui`),
+          new RegExp(`from ['"]@/domains/${domain}/state`),
+          /from ['"]\.\.\/(\.\.\/)*ui\//,
+          /from ['"]\.\.\/(\.\.\/)*state\//,
+        ]
+
+        for (const file of walkFiles(agentsDir)) {
+          const content = fs.readFileSync(file, 'utf8')
+          for (const pattern of forbidden) {
+            expect(
+              pattern.test(content),
+              `${path.relative(DOMAINS_ROOT, file)} violates the layer rule (agents/ may not import ui/ or state/): ${pattern}`,
+            ).toBe(false)
+          }
         }
       })
 

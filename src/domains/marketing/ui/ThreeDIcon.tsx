@@ -2,7 +2,16 @@
 
 import React, { useRef, useMemo, useState, useEffect } from 'react'
 import * as THREE from 'three'
-import { vec3, type Vec3Tuple } from '@/domains/interior-designer/core/vec3'
+import { BufferGeometryAttribute } from '@/domains/interior-designer/constants/three-js'
+import {
+  MARKETING_THREE_D_LOAD_ERROR,
+  MARKETING_THREE_D_VIGNETTE_MASK,
+  MarketingDomEvent,
+  MarketingIconType,
+  MarketingThreeDColor,
+  MarketingThreeDLayout,
+  MarketingThreeDModelPath,
+} from '@/domains/marketing/constants/three-d-icon'
 
 // Lazy-loaded Three.js components
 let Canvas: any = null
@@ -12,17 +21,6 @@ let useGLTF: any = null
 // ═══════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════
-type IconType =
-  | 'WORLD_GEN'
-  | 'AI_NARRATIVE'
-  | 'SCULPT_SIM'
-  | 'EXPORT_SEC'
-  | 'LOP_DES'
-  | 'STR_TST'
-  | 'SEC_AST'
-  | 'GENERATOR'
-  | 'NEURAL'
-  | 'EXPORTER'
 
 interface ThreeDIconProps {
   type: string
@@ -73,41 +71,6 @@ function MouseRotationGroup({
   })
 
   return <group ref={groupRef}>{children}</group>
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// LIGHTWEIGHT ORGANIC TUBE
-// ═══════════════════════════════════════════════════════════════════
-function createSimpleTube(
-  curve: THREE.Curve<THREE.Vector3>,
-  segments: number = 32,
-  radius: number = 0.03,
-  radialSegments: number = 8
-): THREE.BufferGeometry {
-  return new THREE.TubeGeometry(curve, segments, radius, radialSegments, false)
-}
-
-/**
- * Simple flowing curve
- */
-function createFlowingCurve(
-  start: THREE.Vector3,
-  end: THREE.Vector3,
-  wave: number = 0.2,
-  seed: number = 0
-): THREE.CatmullRomCurve3 {
-  const points: THREE.Vector3[] = []
-  const segments = 12
-
-  for (let i = 0; i <= segments; i++) {
-    const t = i / segments
-    const p = start.clone().lerp(end, t)
-    p.x += Math.sin(t * Math.PI * 2 + seed) * wave
-    p.y += Math.sin(t * Math.PI * 1.5 + seed * 0.7) * wave * 0.5
-    points.push(p)
-  }
-
-  return new THREE.CatmullRomCurve3(points)
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -400,7 +363,7 @@ const kurvitzaFragmentShader = `
 function KurvitzaSphere({
   position = [0, 0, 0] satisfies [number, number, number],
   radius = 0.12,
-  color = '#a855f7',
+  color = MarketingThreeDColor.KurvitzaDefault,
   distortion = 0.4,
   speed = 1,
   frequency = 1.0,
@@ -436,7 +399,7 @@ function KurvitzaSphere({
     [color] // Re-create if color prop changes mainly. Other updates via useFrame/refs usually better for simple floats but this is safe.
   )
 
-  useFrame(state => {
+  useFrame((state: { clock: { elapsedTime: number } }) => {
     if (meshRef.current) {
       const material = meshRef.current.material
       if (!(material instanceof THREE.ShaderMaterial)) return
@@ -575,7 +538,7 @@ function geometryToPoints(
  */
 function PointCloudDots({
   geometry,
-  color = '#ffffff',
+  color = MarketingThreeDColor.White,
   density = 1.5,
 }: {
   geometry: THREE.BufferGeometry
@@ -586,9 +549,12 @@ function PointCloudDots({
 
   const pointsGeometry = useMemo(() => {
     const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.BufferAttribute(pointsData.positions, 3))
-    geo.setAttribute('size', new THREE.BufferAttribute(pointsData.sizes, 1))
-    geo.setAttribute('brightness', new THREE.BufferAttribute(pointsData.brightnesses, 1))
+    geo.setAttribute(BufferGeometryAttribute.Position, new THREE.BufferAttribute(pointsData.positions, 3))
+    geo.setAttribute(BufferGeometryAttribute.Size, new THREE.BufferAttribute(pointsData.sizes, 1))
+    geo.setAttribute(
+      BufferGeometryAttribute.Brightness,
+      new THREE.BufferAttribute(pointsData.brightnesses, 1)
+    )
     return geo
   }, [pointsData])
 
@@ -632,7 +598,7 @@ interface GLTFModelProps {
 function GLTFModel({
   url,
   scale = 1,
-  dotsColor = '#ffffff',
+  dotsColor = MarketingThreeDColor.White,
   dotsDensity = 0.25,
   glowScale = 1,
   distortion = 0,
@@ -686,393 +652,6 @@ function GLTFModel({
   )
 }
 
-/**
- * Wrapper component for using GLTF models - call this from your code
- */
-function GLTFIcon({ url, size = 180, ...props }: GLTFModelProps & { size?: number }) {
-  const [isLoaded, setIsLoaded] = useState(false)
-  const [hasError, setHasError] = useState(false)
-
-  useEffect(() => {
-    const loadThree = async () => {
-      try {
-        const [fiberModule, dreiModule] = await Promise.all([
-          import('@react-three/fiber'),
-          import('@react-three/drei'),
-        ])
-        Canvas = fiberModule.Canvas
-        useFrame = fiberModule.useFrame
-        useGLTF = dreiModule.useGLTF
-        setIsLoaded(true)
-      } catch (err) {
-        console.error('Failed to load Three.js:', err)
-        setHasError(true)
-      }
-    }
-    loadThree()
-  }, [])
-
-  if (hasError || !isLoaded || !Canvas) {
-    return (
-      <div className="flex items-center justify-center" style={{ width: '100%', height: '100%' }}>
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    )
-  }
-
-  return (
-    <div style={{ width: '100%', height: '100%' }}>
-      <Canvas
-        camera={{ position: [0, 0, 1.1], fov: 50 }}
-        style={{ background: 'transparent' }}
-        gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
-        dpr={1}
-        frameloop="always"
-      >
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[2, 2, 2]} intensity={1} />
-        <React.Suspense fallback={null}>
-          <GLTFModel url={url} {...props} />
-        </React.Suspense>
-      </Canvas>
-    </div>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// ICON SCULPTURES - Abstract Organic Forms
-// ═══════════════════════════════════════════════════════════════════
-
-function WorldGenSculpture() {
-  const groupRef = useRef<THREE.Group>(null)
-
-  const geometries = useMemo(() => {
-    const geos: THREE.BufferGeometry[] = []
-
-    // Core sphere - reduced segments
-    geos.push(new THREE.SphereGeometry(0.25, 16, 16))
-
-    // Orbital rings - reduced segments
-    for (let i = 0; i < 2; i++) {
-      const r = 0.38 + i * 0.12
-      const torus = new THREE.TorusGeometry(r, 0.025, 6, 24)
-      torus.rotateX(Math.PI / 2 + i * 0.4)
-      torus.rotateY(i * 0.6)
-      geos.push(torus)
-    }
-
-    // Flowing tendril - reduced segments
-    const curve = createFlowingCurve(
-      new THREE.Vector3(0, 0.2, 0),
-      new THREE.Vector3(0.35, 0.55, 0.2),
-      0.15,
-      1
-    )
-    geos.push(createSimpleTube(curve, 16, 0.03, 6))
-
-    return geos
-  }, [])
-
-  useFrame((state: any) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.15
-    }
-  })
-
-  return (
-    <group ref={groupRef}>
-      {geometries.map((geo, i) => (
-        <PointCloudDots key={i} geometry={geo} color="#ffffff" density={0.8} />
-      ))}
-      <KurvitzaSphere position={[0.4, 0.3, 0.2]} radius={0.12} />
-    </group>
-  )
-}
-
-function AINarrativeSculpture() {
-  const groupRef = useRef<THREE.Group>(null)
-
-  const geometries = useMemo(() => {
-    const geos: THREE.BufferGeometry[] = []
-
-    // Torus knot - brain-like form - reduced segments
-    geos.push(new THREE.TorusKnotGeometry(0.22, 0.07, 48, 8, 2, 3))
-
-    // Converging tendrils - reduced
-    const directions = [
-      [-0.45, -0.25, 0.1],
-      [0.45, -0.2, 0.15],
-      [0, -0.4, -0.15],
-    ]
-
-    directions.forEach((d, i) => {
-      const curve = createFlowingCurve(
-        new THREE.Vector3(d[0], d[1], d[2]),
-        new THREE.Vector3(0, 0, 0),
-        0.12,
-        i
-      )
-      geos.push(createSimpleTube(curve, 12, 0.025, 6))
-    })
-
-    return geos
-  }, [])
-
-  useFrame((state: any) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.12
-    }
-  })
-
-  return (
-    <group ref={groupRef}>
-      {geometries.map((geo, i) => (
-        <PointCloudDots key={i} geometry={geo} color="#ffffff" density={0.8} />
-      ))}
-      <KurvitzaSphere position={[0, 0, 0.18]} radius={0.1} />
-    </group>
-  )
-}
-
-function SculptSimSculpture() {
-  const groupRef = useRef<THREE.Group>(null)
-
-  const geometries = useMemo(() => {
-    const geos: THREE.BufferGeometry[] = []
-
-    // Organic blob - distorted icosahedron - reduced detail
-    const blob = new THREE.IcosahedronGeometry(0.28, 2)
-    const pos = blob.attributes.position
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i),
-        y = pos.getY(i),
-        z = pos.getZ(i)
-      const noise = Math.sin(x * 5) * Math.cos(y * 4) * 0.12
-      pos.setXYZ(i, x * (1 + noise), y * (1 + noise * 0.7), z * (1 + noise))
-    }
-    blob.computeVertexNormals()
-    geos.push(blob)
-
-    // Emerging tendrils - reduced
-    const dirs = [
-      [0.6, 0.4, 0.2],
-      [-0.55, 0.35, 0.4],
-      [0.25, -0.6, 0.35],
-    ]
-    dirs.forEach((d, i) => {
-      const dir = new THREE.Vector3(d[0] ?? 0, d[1] ?? 0, d[2] ?? 0).normalize()
-      const curve = createFlowingCurve(
-        dir.clone().multiplyScalar(0.22),
-        dir.clone().multiplyScalar(0.5),
-        0.1,
-        i
-      )
-      geos.push(createSimpleTube(curve, 12, 0.03, 6))
-    })
-
-    return geos
-  }, [])
-
-  useFrame((state: any) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.1
-    }
-  })
-
-  return (
-    <group ref={groupRef}>
-      {geometries.map((geo, i) => (
-        <PointCloudDots key={i} geometry={geo} color="#ffffff" density={0.8} />
-      ))}
-      <KurvitzaSphere position={[0.25, 0.2, 0.25]} radius={0.1} />
-    </group>
-  )
-}
-
-function ExportSecSculpture() {
-  const groupRef = useRef<THREE.Group>(null)
-
-  const geometries = useMemo(() => {
-    const geos: THREE.BufferGeometry[] = []
-
-    // Central dodecahedron
-    geos.push(new THREE.DodecahedronGeometry(0.18, 0))
-
-    // Outward flowing ribbons - reduced
-    for (let i = 0; i < 4; i++) {
-      const angle = (i / 4) * Math.PI * 2
-      const dir = new THREE.Vector3(Math.cos(angle), 0.25, Math.sin(angle)).normalize()
-      const curve = createFlowingCurve(
-        dir.clone().multiplyScalar(0.15),
-        dir.clone().multiplyScalar(0.5),
-        0.1,
-        i
-      )
-      geos.push(createSimpleTube(curve, 12, 0.025, 6))
-    }
-
-    return geos
-  }, [])
-
-  useFrame((state: any) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.18
-    }
-  })
-
-  return (
-    <group ref={groupRef}>
-      {geometries.map((geo, i) => (
-        <PointCloudDots key={i} geometry={geo} color="#ffffff" density={0.8} />
-      ))}
-      <KurvitzaSphere position={[0, 0, 0]} radius={0.1} />
-    </group>
-  )
-}
-
-function LoopDesSculpture() {
-  const groupRef = useRef<THREE.Group>(null)
-
-  const geometries = useMemo(() => {
-    const geos: THREE.BufferGeometry[] = []
-
-    // Figure-8 torus knot - reduced segments
-    geos.push(new THREE.TorusKnotGeometry(0.28, 0.06, 48, 8, 2, 1))
-
-    // Secondary intertwining torus - reduced
-    const torus = new THREE.TorusGeometry(0.25, 0.03, 8, 24)
-    torus.rotateX(Math.PI / 3)
-    geos.push(torus)
-
-    return geos
-  }, [])
-
-  useFrame((state: any) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.15
-    }
-  })
-
-  return (
-    <group ref={groupRef}>
-      {geometries.map((geo, i) => (
-        <PointCloudDots key={i} geometry={geo} color="#ffffff" density={0.8} />
-      ))}
-      <KurvitzaSphere position={[0.3, 0.12, 0.18]} radius={0.1} />
-    </group>
-  )
-}
-
-function StrTstSculpture({
-  density,
-  distortion,
-  speed,
-  frequency,
-  contrast,
-  twist,
-  metalness,
-}: {
-  density?: number
-  distortion?: number
-  speed?: number
-  frequency?: number
-  contrast?: number
-  twist?: number
-  metalness?: number
-}) {
-  const groupRef = useRef<THREE.Group>(null)
-
-  const geometries = useMemo(() => {
-    const geos: THREE.BufferGeometry[] = []
-
-    // Central burst icosahedron
-    geos.push(new THREE.IcosahedronGeometry(0.12, 1))
-
-    // Radiating spikes - reduced
-    for (let i = 0; i < 6; i++) {
-      const theta = (i / 6) * Math.PI * 2
-      const phi = Math.PI / 2 + (i % 2 === 0 ? 0.4 : -0.4)
-      const dir = new THREE.Vector3(
-        Math.sin(phi) * Math.cos(theta),
-        Math.cos(phi),
-        Math.sin(phi) * Math.sin(theta)
-      )
-      const curve = createFlowingCurve(new THREE.Vector3(0, 0, 0), dir.multiplyScalar(0.4), 0.08, i)
-      geos.push(createSimpleTube(curve, 10, 0.025, 6))
-    }
-
-    return geos
-  }, [])
-
-  useFrame((state: any) => {
-    if (groupRef.current) {
-      // Rotation respects speed prop (speed=0 means no rotation)
-      const effectiveSpeed = speed ?? 0.1
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.2 * effectiveSpeed
-    }
-  })
-
-  return (
-    <group ref={groupRef}>
-      {geometries.map((geo, i) => (
-        <PointCloudDots key={i} geometry={geo} color="#FFFFFF" density={density ?? 2.5} />
-      ))}
-      <KurvitzaSphere
-        position={[0, 0, 0]}
-        radius={0.024}
-        distortion={distortion ?? 0.25}
-        speed={speed ?? 0.1}
-        frequency={frequency ?? 0.8}
-        contrast={contrast}
-        twist={twist}
-        metalness={metalness}
-      />
-    </group>
-  )
-}
-
-function SecAstSculpture() {
-  const groupRef = useRef<THREE.Group>(null)
-
-  const geometries = useMemo(() => {
-    const geos: THREE.BufferGeometry[] = []
-
-    // Inner octahedron core
-    geos.push(new THREE.OctahedronGeometry(0.15, 1))
-
-    // Protective spiral wraps - reduced
-    for (let i = 0; i < 3; i++) {
-      const points: THREE.Vector3[] = []
-      const baseAngle = (i / 3) * Math.PI * 2
-      for (let j = 0; j <= 20; j++) {
-        const t = j / 20
-        const angle = baseAngle + t * Math.PI * 2
-        const r = 0.25 + Math.sin(t * Math.PI) * 0.1
-        const y = (t - 0.5) * 0.45
-        points.push(new THREE.Vector3(Math.cos(angle) * r, y, Math.sin(angle) * r))
-      }
-      const curve = new THREE.CatmullRomCurve3(points)
-      geos.push(createSimpleTube(curve, 16, 0.022, 6))
-    }
-
-    return geos
-  }, [])
-
-  useFrame((state: any) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.elapsedTime * 0.12
-    }
-  })
-
-  return (
-    <group ref={groupRef}>
-      {geometries.map((geo, i) => (
-        <PointCloudDots key={i} geometry={geo} color="#ffffff" density={0.8} />
-      ))}
-      <KurvitzaSphere position={[0, 0, 0.12]} radius={0.1} />
-    </group>
-  )
-}
 
 // ═══════════════════════════════════════════════════════════════════
 // ICON SCENE WRAPPER - Using GLB models from public/3d-models
@@ -1119,69 +698,60 @@ function IconScene({
   }
 
   switch (type) {
-    case 'WORLD_GEN':
-    case 'GENERATOR':
-      // Cosmos generation - perfect for world building
+    case MarketingIconType.WorldGen:
+    case MarketingIconType.Generator:
       return (
         <GLTFModel
-          url="/3d-models/Meshy_AI_Generate_the_cosmos__0120111501_texture.glb"
+          url={MarketingThreeDModelPath.Cosmos}
           dotsDensity={highDensity}
           {...commonProps}
         />
       )
-    case 'AI_NARRATIVE':
-    case 'NEURAL':
-      // Neural connections - AI storytelling (keep original sparse look)
+    case MarketingIconType.AiNarrative:
+    case MarketingIconType.Neural:
       return (
         <GLTFModel
-          url="/3d-models/Meshy_AI_Neural_Connections_0120093533_texture.glb"
+          url={MarketingThreeDModelPath.NeuralConnections}
           dotsDensity={lowDensity}
           {...commonProps}
         />
       )
-    case 'SCULPT_SIM':
-      // Enchanted code cosmos - 3D canvas/sculpting
+    case MarketingIconType.SculptSim:
       return (
         <GLTFModel
-          url="/3d-models/Meshy_AI_Enchanted_Cosmos_Code_0120111422_texture.glb"
+          url={MarketingThreeDModelPath.EnchantedCosmosCode}
           dotsDensity={highDensity}
           {...commonProps}
         />
       )
-    case 'EXPORT_SEC':
-    case 'EXPORTER':
-      // Predator of cosmos - export functionality
+    case MarketingIconType.ExportSec:
+    case MarketingIconType.Exporter:
       return (
         <GLTFModel
-          url="/3d-models/Meshy_AI_Predator_of_the_Cosmo_0120111442_texture.glb"
+          url={MarketingThreeDModelPath.PredatorCosmos}
           dotsDensity={highDensity}
           {...commonProps}
         />
       )
-    case 'LOP_DES':
-      // Oceanic cosmos predator - loop designer
+    case MarketingIconType.LoopDes:
       return (
         <GLTFModel
-          url="/3d-models/Meshy_AI_Oceanic_Cosmos_Predat_0120111415_texture.glb"
+          url={MarketingThreeDModelPath.OceanicCosmos}
           dotsDensity={highDensity}
           {...commonProps}
         />
       )
-    case 'STR_TST':
-      // Realistic 14k - stress testing/simulation
-      // Pure Kurvitza Sphere for maximum shader effect
+    case MarketingIconType.StrTst:
       return (
         <group scale={scale}>
-          {/* Background High Density Model */}
           <GLTFModel
-            url="/3d-models/Meshy_AI_Realistic_14k_textur_0120110958_texture.glb"
+            url={MarketingThreeDModelPath.Realistic14k}
             dotsDensity={density ?? highDensity}
             dotsColor={color}
             includeSphere={false}
             {...commonProps}
-            scale={1} // Override scale from commonProps since we apply it to the parent group
+            scale={1}
           />
-          {/* Liquid Chrome Core - Random position each render */}
           <KurvitzaSphere
             position={[
               (Math.random() - 0.5) * 0.3,
@@ -1189,21 +759,20 @@ function IconScene({
               (Math.random() - 0.5) * 0.2,
             ]}
             radius={0.065 * Math.max(0.3, (glowScale ?? 1) * 2.5)}
-            distortion={(distortion ?? 0.08) * Math.max(0.3, (glowScale ?? 1) * 2.5)} // Low for sculptural look
-            speed={speed ?? 0.15} // Slow, elegant rotation
-            frequency={frequency ?? 3.0} // Larger, cleaner patterns
-            contrast={contrast ?? 6.0} // Sharp, defined chrome lines
-            twist={twist ?? 3.0} // Dramatic flower petal twist
-            metalness={metalness ?? 0.95} // High chrome reflection
+            distortion={(distortion ?? 0.08) * Math.max(0.3, (glowScale ?? 1) * 2.5)}
+            speed={speed ?? 0.15}
+            frequency={frequency ?? 3.0}
+            contrast={contrast ?? 6.0}
+            twist={twist ?? 3.0}
+            metalness={metalness ?? 0.95}
             glowScale={(glowScale ?? 1) * 0.2}
           />
         </group>
       )
-    case 'SEC_AST':
-      // Fallback to enchanted cosmos code
+    case MarketingIconType.SecAst:
       return (
         <GLTFModel
-          url="/3d-models/Meshy_AI_Enchanted_Cosmos_Code_0120111422_texture.glb"
+          url={MarketingThreeDModelPath.EnchantedCosmosCode}
           dotsDensity={highDensity}
           {...commonProps}
         />
@@ -1211,7 +780,7 @@ function IconScene({
     default:
       return (
         <GLTFModel
-          url="/3d-models/Meshy_AI_Generate_the_cosmos__0120111501_texture.glb"
+          url={MarketingThreeDModelPath.Cosmos}
           dotsDensity={highDensity}
           {...commonProps}
         />
@@ -1227,7 +796,6 @@ export function ThreeDIcon({
   size = 180,
   scale: propScale,
   offset = [0, 0],
-  color,
   density,
   glowScale,
   distortion,
@@ -1256,7 +824,7 @@ export function ThreeDIcon({
         useGLTF = dreiModule.useGLTF
         setIsLoaded(true)
       } catch (err) {
-        console.error('Failed to load Three.js:', err)
+        console.error(MARKETING_THREE_D_LOAD_ERROR, err)
         setHasError(true)
       }
     }
@@ -1271,8 +839,8 @@ export function ThreeDIcon({
       mousePosition.current.x = (e.clientX / window.innerWidth) * 2 - 1
       mousePosition.current.y = (e.clientY / window.innerHeight) * 2 - 1
     }
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
+    window.addEventListener(MarketingDomEvent.MouseMove, handleMouseMove)
+    return () => window.removeEventListener(MarketingDomEvent.MouseMove, handleMouseMove)
   }, [mouseRotation])
 
   if (hasError) {
@@ -1297,13 +865,13 @@ export function ThreeDIcon({
   // Vignette style: Use CSS Masking to fade edges to transparent
   // This is superior to box-shadow for "fading out" effectively
   const containerStyle: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
-    position: 'relative',
+    width: MarketingThreeDLayout.Full,
+    height: MarketingThreeDLayout.Full,
+    position: MarketingThreeDLayout.Relative,
     ...(vignette
       ? {
-          WebkitMaskImage: 'radial-gradient(circle at center, black 30%, transparent 70%)',
-          maskImage: 'radial-gradient(circle at center, black 30%, transparent 70%)',
+          WebkitMaskImage: MARKETING_THREE_D_VIGNETTE_MASK,
+          maskImage: MARKETING_THREE_D_VIGNETTE_MASK,
         }
       : {}),
   }

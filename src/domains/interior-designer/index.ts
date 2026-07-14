@@ -7,7 +7,8 @@
 
 export { InteriorDesignerWorkspace } from './ui'
 
-export { useInteriorStore, TERRAIN_QUALITY_RESOLUTION } from './state'
+export { useInteriorStore } from './state'
+export { TERRAIN_QUALITY_RESOLUTION } from './core/interior-types'
 export type { TextureStyle } from './prompts'
 export { interiorDesignerApi } from './io/interior-designer.api'
 export type { InteriorDesign } from './io/interior-designer.dto'

@@ -54,6 +54,7 @@ export const SRC_TOP_LEVEL_FORBIDDEN = new Set([
 export const SHARED_TOP_LEVEL_TARGET = new Set([
   'agent-kernel',
   'auth',
+  'chat', // chat platform (moved from src/domains/chat — PLAN-V2 3.1 / D7)
   'data',
   'errors',
   'jobs',

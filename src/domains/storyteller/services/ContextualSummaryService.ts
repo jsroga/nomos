@@ -14,6 +14,13 @@ import { generateText } from 'ai'
 import { entityGraphService } from './EntityGraphService'
 import { relationshipEnricher } from './RelationshipEnricherService'
 import { parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
+import {
+  CONTEXTUAL_SUMMARY_GENERATION_FAILED_LOG,
+  CONTEXTUAL_SUMMARY_GRAPHRAG_FAILED_LOG,
+  CONTEXTUAL_SUMMARY_MODEL,
+  CONTEXTUAL_SUMMARY_NO_DESCRIPTION,
+  RELATIONSHIP_JOIN_SEPARATOR,
+} from '@/domains/storyteller/services/constants/contextual-summary'
 
 interface ContextualSummaryRequest {
   entityId: string
@@ -124,7 +131,7 @@ async function buildGraphRAGContext(
     }
 
     const relationshipContext =
-      relationshipParts.length > 0 ? `Known relationships: ${relationshipParts.join('; ')}` : ''
+      relationshipParts.length > 0 ? `Known relationships: ${relationshipParts.join(RELATIONSHIP_JOIN_SEPARATOR)}` : ''
 
     const relatedNames = [
       ...enriched.relationships.map(r => r.targetName),
@@ -133,7 +140,7 @@ async function buildGraphRAGContext(
 
     return { relationshipContext, relatedEntities: relatedNames }
   } catch (error) {
-    console.warn('[ContextualSummary] GraphRAG context failed:', error)
+    console.warn(CONTEXTUAL_SUMMARY_GRAPHRAG_FAILED_LOG, error)
     return { relationshipContext: '', relatedEntities: [] }
   }
 }
@@ -217,7 +224,7 @@ export async function generateContextualSummary(
     )
 
     const { text } = await generateText({
-      model: openai('gpt-4o-mini'),
+      model: openai(CONTEXTUAL_SUMMARY_MODEL),
       system: `You are a story assistant that provides brief, contextual descriptions of story elements.
 Given an entity, its relationships, and the sentence where it appears, explain the entity's relevance in that specific context.
 
@@ -232,7 +239,7 @@ Rules:
 - Don't repeat obvious information already in the sentence
 - DO NOT say "There isn't enough information" or similar phrases. Always provide a thematic, immersive description based on the name.`,
       prompt: `Entity: ${safeRequest.entityName} (${safeRequest.entityType})
-Base description: ${safeRequest.entityDescription || 'No description available'}
+Base description: ${safeRequest.entityDescription || CONTEXTUAL_SUMMARY_NO_DESCRIPTION}
 ${relationshipContext ? `\n${relationshipContext}` : ''}
 
 Sentence containing this entity (might be very short):
@@ -255,7 +262,7 @@ Write a 1-2 sentence contextual description explaining ${safeRequest.entityName}
 
     return result
   } catch (error) {
-    console.error('[ContextualSummary] Generation failed:', error)
+    console.error(CONTEXTUAL_SUMMARY_GENERATION_FAILED_LOG, error)
     // Fallback to base description
     return {
       contextualSummary:

@@ -1,6 +1,10 @@
 /* eslint-disable react/no-unknown-property */
 'use client'
 
+import {
+  DEFAULT_FRAME_COLOR,
+  WINDOW_GLASS_COLOR,
+} from '@/domains/interior-designer/constants/mesh-colors'
 import React, { useMemo } from 'react'
 import * as THREE from 'three'
 
@@ -15,12 +19,12 @@ interface WindowMeshProps {
  * Default dimensions: 1m × 1.2m × 0.1m
  */
 export const WindowMesh: React.FC<WindowMeshProps> = ({
-  color = '#7a6f5e', // Warm brownish-gray, close to wall color
+  color = DEFAULT_FRAME_COLOR, // Warm brownish-gray, close to wall color
   isSelected = false,
   opacity = 1,
 }) => {
   const frameColor = useMemo(() => new THREE.Color(color), [color])
-  const glassColor = useMemo(() => new THREE.Color('#87CEEB'), [])
+  const glassColor = useMemo(() => new THREE.Color(WINDOW_GLASS_COLOR), [])
 
   // Window dimensions
   const width = 1

@@ -3,13 +3,16 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/components/AuthProvider'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { JetBrains_Mono, Inter, Syne } from 'next/font/google'
 import { GlobalLiquidLoader } from '@/domains/marketing'
 import ReactQueryProvider from '@/shared/data/react-query'
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
-const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
-const syne = Syne({ subsets: ['latin'], variable: '--font-syne' })
+import {
+  inter,
+  jetbrainsMono,
+  syne,
+  ROOT_LAYOUT_DESCRIPTION,
+  ROOT_LAYOUT_OG_DESCRIPTION,
+  OpenGraphType,
+} from '@/shared/data/constants/root-layout-fonts'
 
 import type { Metadata } from 'next'
 
@@ -18,14 +21,14 @@ export const metadata: Metadata = {
     template: '/kur/ %s',
     default: '/kur/ Build Worlds',
   },
-  description: 'AI-powered infinite canvas for world generation and game development',
+  description: ROOT_LAYOUT_DESCRIPTION,
   icons: {
     icon: '/favicon.svg?v=9',
   },
   openGraph: {
     title: '/kur/ Build Worlds',
-    description: 'AI-powered infinite canvas for world generation',
-    type: 'website',
+    description: ROOT_LAYOUT_OG_DESCRIPTION,
+    type: OpenGraphType.Website,
   },
 }
 
@@ -36,9 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // @ts-expect-error - Next 15 cookies are async but auth-helpers expects a specific type that conflicts in this version
   const supabase = createServerComponentClient({ cookies: () => cookieStore })
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  await supabase.auth.getSession()
 
   return (
     <html lang="en" className="dark">

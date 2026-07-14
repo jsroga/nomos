@@ -5,102 +5,30 @@ import React, { useMemo } from 'react'
 import {
   useInteriorStore,
   Surface,
-  SurfaceType,
 } from '@/domains/interior-designer'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
+import { isActiveOperationStatus } from '@/shared/jobs/constants/async-operation-status'
 import * as THREE from 'three'
 import { Extrude } from '@react-three/drei'
 import { RoadMesh } from '@/domains/interior-designer/ui/meshes/RoadMesh'
 import { SculptableSurface } from './SculptableSurface'
 import { getCachedTexture } from '@/domains/interior-designer/core/textureCache'
+import {
+  GROUND_TINT_SURFACE_TYPES,
+  SCULPTABLE_SURFACE_TYPES,
+  SURFACE_RENDER_CONFIG,
+  SurfaceGeometryKind,
+  SurfaceMaterialColor,
+} from '@/domains/interior-designer/constants/surface-render-config'
+import { SurfaceTypeValue } from '@/domains/interior-designer/constants/terrain-defaults'
+import { INTERACTION_MODE_SELECT, INTERACTION_MODE_SURFACE } from '@/domains/interior-designer/constants/interaction-modes'
 
 // Helper to check if a surface is being generated
 const useSurfaceGenerating = (surfaceId: string) => {
   const operations = useGlobalStatusStore(state => state.operations)
   const operationId = `material-${surfaceId}`
   const operation = operations.find(op => op.id === operationId)
-  return operation && (operation.status === 'pending' || operation.status === 'in-progress')
-}
-
-// Configuration for rendering each surface type
-const SURFACE_RENDER_CONFIG: Record<
-  SurfaceType,
-  {
-    color: string
-    metalness: number
-    roughness: number
-    transmission?: number
-    opacity?: number
-    emissive?: string
-    depth: number // height extrusion
-    verticalOffset: number // to prevent z-fighting
-  }
-> = {
-  grass: {
-    color: '#4ade80',
-    metalness: 0,
-    roughness: 1,
-    depth: 0.5,
-    verticalOffset: 0,
-  },
-  water: {
-    color: '#06b6d4',
-    metalness: 0.1,
-    roughness: 0.1,
-    transmission: 0.9,
-    opacity: 0.8,
-    depth: 0.45, // Slightly less than ground? Or make it deep.
-    verticalOffset: -0.05, // Slightly sunken
-  },
-  dirt: {
-    color: '#d97706',
-    metalness: 0,
-    roughness: 1,
-    depth: 0.5,
-    verticalOffset: 0.005, // On top of grass
-  },
-  road: {
-    color: '#374151',
-    metalness: 0,
-    roughness: 0.8,
-    depth: 0.05, // Roads remain fairly thin overlays or pavers
-    verticalOffset: 0.01, // On top of dirt/grass
-  },
-  pavement: {
-    color: '#9ca3af',
-    metalness: 0,
-    roughness: 0.5,
-    depth: 0.2, // Pavement usually implies a slab
-    verticalOffset: 0.01,
-  },
-  mars: {
-    color: '#9f3528',
-    metalness: 0,
-    roughness: 1,
-    depth: 0.5,
-    verticalOffset: 0,
-  },
-  sand: {
-    color: '#fcd34d',
-    metalness: 0,
-    roughness: 0.9,
-    depth: 0.5,
-    verticalOffset: 0,
-  },
-  rock: {
-    color: '#57534e',
-    metalness: 0,
-    roughness: 1,
-    depth: 0.5,
-    verticalOffset: 0.01,
-  },
-  wall: {
-    color: '#9ca3af',
-    metalness: 0.1,
-    roughness: 0.6,
-    depth: 0.2,
-    verticalOffset: 0.01,
-  },
+  return operation && isActiveOperationStatus(operation.status)
 }
 
 export const SurfaceManager: React.FC = () => {
@@ -125,9 +53,9 @@ export const SurfaceManager: React.FC = () => {
               isSelected={surface.id === selectedId}
               onClick={e => {
                 e.stopPropagation()
-                if (mode === 'SELECT') setSelected(surface.id)
+                if (mode === INTERACTION_MODE_SELECT) setSelected(surface.id)
                 // Allow deleting in Surface mode with Alt key, handy for cleanup
-                if (mode === 'SURFACE' && e.altKey) removeSurface(surface.id)
+                if (mode === INTERACTION_MODE_SURFACE && e.altKey) removeSurface(surface.id)
               }}
               opacity={isOnActiveLevel ? 1 : 0.3}
               groundColor={groundColor}
@@ -152,10 +80,10 @@ const SurfaceRenderer: React.FC<{
 
   const config = useMemo(() => {
     const base = SURFACE_RENDER_CONFIG[surface.type]
-    if (surface.type === 'water') return { ...base, color: waterColor }
-    // For ground types (grass, dirt, sand, rock, mars), use the global ground color
-    const groundTypes = ['grass', 'dirt', 'sand', 'rock', 'mars']
-    if (groundTypes.includes(surface.type)) return { ...base, color: groundColor }
+    if (surface.type === SurfaceTypeValue.Water) return { ...base, color: waterColor }
+    if (GROUND_TINT_SURFACE_TYPES.includes(surface.type)) {
+      return { ...base, color: groundColor }
+    }
     return base
   }, [surface.type, groundColor, waterColor])
 
@@ -175,7 +103,7 @@ const SurfaceRenderer: React.FC<{
 
   // Geometry Generation
   // Only for Shapes now (Ground, Mars, etc)
-  const geometry = useMemo((): { type: 'shape'; shape: THREE.Shape } | null => {
+  const geometry = useMemo((): { type: SurfaceGeometryKind; shape: THREE.Shape } | null => {
     if (!surface.points || surface.points.length < 2) return null
     if (surface.isPath) return null // RoadMesh handles paths independently now
 
@@ -186,7 +114,7 @@ const SurfaceRenderer: React.FC<{
     shape.moveTo(vectors[0].x, vectors[0].z)
     vectors.slice(1).forEach(v => shape.lineTo(v.x, v.z))
     shape.lineTo(vectors[0].x, vectors[0].z)
-    return { type: 'shape', shape }
+    return { type: SurfaceGeometryKind.Shape, shape }
   }, [surface])
 
   if (surface.isPath) {
@@ -204,11 +132,7 @@ const SurfaceRenderer: React.FC<{
 
   if (!geometry) return null
 
-  // For ground surfaces (sculptable), use the new SculptableSurface component
-  // Check types: grass, dirt, sand, rock, mars
-  // Check types: grass, dirt, sand, rock, mars, road, pavement
-  const sculptableTypes = ['grass', 'dirt', 'sand', 'rock', 'mars', 'road', 'pavement']
-  if (sculptableTypes.includes(surface.type) && geometry.type === 'shape') {
+  if (sculptableTypesIncludes(surface.type) && geometry.type === SurfaceGeometryKind.Shape) {
     return (
       <SculptableSurface
         surface={surface}
@@ -230,7 +154,7 @@ const SurfaceRenderer: React.FC<{
       userData={{ id: surface.id }}
       name={surface.id}
     >
-      {geometry.type === 'shape' && (
+      {geometry.type === SurfaceGeometryKind.Shape && (
         <Extrude
           args={[geometry.shape, { depth: config.depth, bevelEnabled: false }]}
           rotation={[Math.PI / 2, 0, 0]}
@@ -239,14 +163,14 @@ const SurfaceRenderer: React.FC<{
           receiveShadow
         >
           <meshPhysicalMaterial
-            color={surface.texture ? 'white' : config.color} // Use white if texture is present so it doesn't tint
+            color={surface.texture ? SurfaceMaterialColor.White : config.color}
             map={surface.texture ? textureMap : null}
             metalness={surface.metalness ?? config.metalness}
             roughness={surface.roughness ?? config.roughness}
             transmission={config.transmission || 0}
             opacity={(config.opacity || 1) * opacity}
             transparent={opacity < 1 || (!!config.opacity && config.opacity < 1)}
-            envMapIntensity={surface.texture ? 1.0 : 0.5} // Add some environment mapping for nicer look if texture is present
+            envMapIntensity={surface.texture ? 1.0 : 0.5}
           />
           {isSelected && (
             <lineSegments>
@@ -258,7 +182,7 @@ const SurfaceRenderer: React.FC<{
                   }),
                 ]}
               />
-              <lineBasicMaterial color="#ffffff" />
+              <lineBasicMaterial color={SurfaceMaterialColor.Highlight} />
             </lineSegments>
           )}
         </Extrude>
@@ -274,11 +198,15 @@ const SurfaceRenderer: React.FC<{
               userData={{ isControlPoint: true, index: i, surfaceId: surface.id }}
             >
               <sphereGeometry args={[0.2]} />
-              <meshBasicMaterial color="white" />
+              <meshBasicMaterial color={SurfaceMaterialColor.White} />
             </mesh>
           ))}
         </group>
       )}
     </group>
   )
+}
+
+function sculptableTypesIncludes(type: Surface['type']): boolean {
+  return SCULPTABLE_SURFACE_TYPES.includes(type)
 }

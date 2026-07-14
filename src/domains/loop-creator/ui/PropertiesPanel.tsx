@@ -6,6 +6,22 @@ import { Textarea } from '@/components/Textarea'
 import { Label } from '@/components/Label'
 import { X, Trash2, Swords, Gamepad2, Star, BarChart3, Layers } from 'lucide-react'
 import { Badge } from '@/components/Badge'
+import { readString } from '@/shared/data/json-guards'
+import { LoopNodeType } from '@/domains/loop-creator/constants/custom-nodes'
+import { LOOP_NODE_DEFAULT_COLOR } from '@/domains/loop-creator/constants/custom-nodes'
+import { LOOP_NODE_TYPE_DEFAULT } from '@/domains/loop-creator/constants/loop-node-defaults'
+import { LoopTimescaleOrder } from '@/domains/loop-creator/constants/timescale-order'
+import { LoopPlayerAgency } from '@/domains/loop-creator/constants/custom-nodes'
+import { CANVAS_NODE_TYPE_GROUP } from '@/domains/loop-creator/constants/graph-state-defaults'
+import {
+  PROPERTIES_PANEL_AGENCY_OPTIONS,
+  PROPERTIES_PANEL_NODE_TYPE_OPTIONS,
+  PROPERTIES_PANEL_TIMESCALE_OPTIONS,
+} from '@/domains/loop-creator/constants/properties-panel'
+import {
+  LOOP_DOMAIN_TO_FLOW_NODE,
+  LoopFlowNodeType,
+} from '@/domains/loop-creator/ui/constants/loop-creator-layout'
 import { nodeColors } from './CustomNodes'
 
 interface PropertiesPanelProps {
@@ -15,26 +31,20 @@ interface PropertiesPanelProps {
   onDelete: (nodeId: string) => void
 }
 
-const nodeTypeOptions = [
-  { value: 'challenge', label: 'Challenge', icon: Swords, color: 'text-red-400' },
-  { value: 'action', label: 'Action', icon: Gamepad2, color: 'text-blue-400' },
-  { value: 'reward', label: 'Reward', icon: Star, color: 'text-yellow-400' },
-  { value: 'feedback', label: 'Feedback', icon: BarChart3, color: 'text-green-400' },
-]
+const nodeTypeIcons = {
+  [LoopNodeType.Challenge]: Swords,
+  [LoopNodeType.Action]: Gamepad2,
+  [LoopNodeType.Reward]: Star,
+  [LoopNodeType.Feedback]: BarChart3,
+} as const
 
-const agencyOptions = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-]
+const nodeTypeOptions = PROPERTIES_PANEL_NODE_TYPE_OPTIONS.map(option => ({
+  ...option,
+  icon: nodeTypeIcons[option.value],
+}))
 
-const timescaleOptions = [
-  { value: 'moment', label: 'Moment (seconds)' },
-  { value: 'minute', label: 'Minute' },
-  { value: 'hour', label: 'Hour' },
-  { value: 'day', label: 'Day' },
-  { value: 'custom', label: 'Custom' },
-]
+const agencyOptions = PROPERTIES_PANEL_AGENCY_OPTIONS
+const timescaleOptions = PROPERTIES_PANEL_TIMESCALE_OPTIONS
 
 // Styled native select component
 function StyledSelect({
@@ -44,7 +54,7 @@ function StyledSelect({
 }: {
   value: string
   onChange: (value: string) => void
-  options: { value: string; label: string }[]
+  options: readonly { value: string; label: string }[]
 }) {
   return (
     <select
@@ -87,11 +97,12 @@ export function PropertiesPanel({
 
   if (!selectedNode) return null
 
-  const isGroup = selectedNode.type === 'group'
-  const nodeType = localData.nodeType || 'action'
-  const borderColor = nodeColors[nodeType] || '#666'
+  const isGroup = selectedNode.type === CANVAS_NODE_TYPE_GROUP
+  const nodeType = readString(localData.nodeType) ?? LOOP_NODE_TYPE_DEFAULT
+  const borderColor = nodeColors[nodeType] || LOOP_NODE_DEFAULT_COLOR
+  const selectedNodeTypeOption = nodeTypeOptions.find(t => t.value === nodeType)
 
-  const handleFieldChange = (field: string, value: any) => {
+  const handleFieldChange = (field: string, value: unknown) => {
     const newData = { ...localData, [field]: value }
     setLocalData(newData)
     onUpdate(selectedNode.id, { [field]: value })
@@ -99,17 +110,17 @@ export function PropertiesPanel({
 
   const handleNodeTypeChange = (newType: string) => {
     const nodeTypeMap: Record<string, string> = {
-      challenge: 'challengeNode',
-      action: 'actionNode',
-      reward: 'rewardNode',
-      feedback: 'feedbackNode',
+      [LoopNodeType.Challenge]: LOOP_DOMAIN_TO_FLOW_NODE[LoopNodeType.Challenge],
+      [LoopNodeType.Action]: LOOP_DOMAIN_TO_FLOW_NODE[LoopNodeType.Action],
+      [LoopNodeType.Reward]: LOOP_DOMAIN_TO_FLOW_NODE[LoopNodeType.Reward],
+      [LoopNodeType.Feedback]: LOOP_DOMAIN_TO_FLOW_NODE[LoopNodeType.Feedback],
     }
 
     // Update both the data.nodeType and the node.type
     setLocalData(prev => ({ ...prev, nodeType: newType }))
     onUpdate(selectedNode.id, {
       nodeType: newType,
-      _changeNodeType: nodeTypeMap[newType], // Special flag to change node type
+      _changeNodeType: nodeTypeMap[newType] ?? LoopFlowNodeType.Action,
     })
   }
 
@@ -124,9 +135,9 @@ export function PropertiesPanel({
           {isGroup ? (
             <Layers className="w-4 h-4 text-purple-400" />
           ) : (
-            nodeTypeOptions.find(t => t.value === nodeType)?.icon &&
-            React.createElement(nodeTypeOptions.find(t => t.value === nodeType)!.icon, {
-              className: `w-4 h-4 ${nodeTypeOptions.find(t => t.value === nodeType)!.color}`,
+            selectedNodeTypeOption?.icon &&
+            React.createElement(selectedNodeTypeOption.icon, {
+              className: `w-4 h-4 ${selectedNodeTypeOption.color}`,
             })
           )}
           <span className="text-sm font-semibold text-white">
@@ -152,7 +163,7 @@ export function PropertiesPanel({
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-400">{isGroup ? 'Group Name' : 'Label'}</Label>
           <Input
-            value={localData.label || ''}
+            value={readString(localData.label) ?? ''}
             onChange={e => handleFieldChange('label', e.target.value)}
             className="h-8 bg-slate-900/50 border-slate-700/50 text-sm"
             placeholder={isGroup ? 'e.g., Moment Loop' : 'e.g., Collect Coins'}
@@ -163,7 +174,7 @@ export function PropertiesPanel({
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-400">Description</Label>
           <Textarea
-            value={localData.description || ''}
+            value={readString(localData.description) ?? ''}
             onChange={e => handleFieldChange('description', e.target.value)}
             className="min-h-[60px] bg-slate-900/50 border-slate-700/50 text-sm resize-none"
             placeholder="Describe this element..."
@@ -175,7 +186,7 @@ export function PropertiesPanel({
           <div className="space-y-1.5">
             <Label className="text-xs text-slate-400">Timescale</Label>
             <StyledSelect
-              value={localData.timescale || 'custom'}
+              value={readString(localData.timescale) ?? LoopTimescaleOrder.Custom}
               onChange={v => handleFieldChange('timescale', v)}
               options={timescaleOptions}
             />
@@ -198,7 +209,7 @@ export function PropertiesPanel({
             <div className="space-y-1.5">
               <Label className="text-xs text-slate-400">Duration</Label>
               <Input
-                value={localData.duration || ''}
+                value={readString(localData.duration) ?? ''}
                 onChange={e => handleFieldChange('duration', e.target.value)}
                 className="h-8 bg-slate-900/50 border-slate-700/50 text-sm"
                 placeholder="e.g., 0.5-2s, 5min"
@@ -209,7 +220,7 @@ export function PropertiesPanel({
             <div className="space-y-1.5">
               <Label className="text-xs text-slate-400">Player Agency</Label>
               <StyledSelect
-                value={localData.playerAgency || 'medium'}
+                value={readString(localData.playerAgency) ?? LoopPlayerAgency.Medium}
                 onChange={v => handleFieldChange('playerAgency', v)}
                 options={agencyOptions}
               />
@@ -219,7 +230,7 @@ export function PropertiesPanel({
             <div className="space-y-1.5">
               <Label className="text-xs text-slate-400">Timescale</Label>
               <StyledSelect
-                value={localData.timescale || 'custom'}
+                value={readString(localData.timescale) ?? LoopTimescaleOrder.Custom}
                 onChange={v => handleFieldChange('timescale', v)}
                 options={timescaleOptions}
               />

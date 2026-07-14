@@ -3,6 +3,7 @@ import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
 /**
  * Verify beat access using a single JOIN query instead of 3 sequential queries
@@ -50,13 +51,13 @@ export async function PATCH(req: Request, props: { params: Promise<{ beatId: str
   const params = await props.params
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { beatId } = params
     const { hasAccess } = await verifyBeatAccess(beatId, session.user.id)
 
     if (!hasAccess) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
     const body = await req.json()
@@ -65,28 +66,28 @@ export async function PATCH(req: Request, props: { params: Promise<{ beatId: str
 
     return NextResponse.json(updatedBeat)
   } catch (error) {
-    console.error('Error updating beat:', error)
-    return NextResponse.json({ error: 'Failed to update beat' }, { status: 500 })
+    console.error(API_LOG_PREFIX.BEAT_UPDATE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_UPDATE_BEAT }, { status: 500 })
   }
 }
 
-export async function DELETE(req: Request, props: { params: Promise<{ beatId: string }> }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ beatId: string }> }) {
   const params = await props.params
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { beatId } = params
     const { hasAccess } = await verifyBeatAccess(beatId, session.user.id)
 
     if (!hasAccess) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
     await db.delete(beats).where(eq(beats.id, beatId))
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting beat:', error)
-    return NextResponse.json({ error: 'Failed to delete beat' }, { status: 500 })
+    console.error(API_LOG_PREFIX.BEAT_DELETE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_DELETE_BEAT }, { status: 500 })
   }
 }

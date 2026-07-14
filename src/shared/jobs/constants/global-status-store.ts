@@ -1,0 +1,5 @@
+export const GLOBAL_STATUS_ADD_OPERATION_LOG = '🔄 [GlobalStatusStore] addOperation:'
+export const GLOBAL_STATUS_REMOVE_OPERATION_LOG = '🔄 [GlobalStatusStore] removeOperation:'
+export const GLOBAL_STATUS_UPDATE_OPERATION_LOG = '🔄 [GlobalStatusStore] updateOperation:'
+export const GLOBAL_STATUS_STORAGE_KEY = 'global-status-storage'
+export const GLOBAL_STATUS_INITIAL_STATE_LOG = '🔄 [GlobalStatusStore] Initial state:'

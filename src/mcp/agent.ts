@@ -1,15 +1,21 @@
 import { Agent } from '@mastra/core/agent'
+import type { ToolsInput } from '@mastra/core/agent'
 import { Memory } from '@mastra/memory'
 import { PostgresStore } from '@mastra/pg'
 import { entitiesTools } from './domains/entities/tools'
 import { storytellerTools } from './domains/storyteller/tools'
 import { generationTools } from './domains/generation/tools'
 import { triggerTools } from './domains/trigger/tools'
+import {
+  MCP_AGENT_DESCRIPTION,
+  MCP_POSTGRES_STORE_ID,
+  McpAgentName,
+} from './constants/agent'
 
 // Initialize Memory with Postgres persistence
 const connectionString = process.env.DATABASE_URL!
 const store = new PostgresStore({
-  id: 'world-building-store',
+  id: MCP_POSTGRES_STORE_ID,
   connectionString,
 })
 const memory = new Memory({ storage: store })
@@ -17,7 +23,10 @@ const memory = new Memory({ storage: store })
 // Aggregate all implemented tools.
 // loop-creator, interior-designer, and world-building domains are not yet
 // implemented as MCP tools — add them here when their tools.ts is built.
-export const allTools = {
+// Typed as ToolsInput so the Agent constructor doesn't try to infer a circular
+// generic from these tools (they omit outputSchema, which otherwise leaks an
+// unresolved InferPublicSchema<T> into AgentConfig).
+export const allTools: ToolsInput = {
   ...entitiesTools,
   ...storytellerTools,
   ...generationTools,
@@ -26,8 +35,9 @@ export const allTools = {
 
 // Define the Agent
 export const worldBuildingAgent = new Agent({
-  name: 'world-building-agent',
-  description: 'AI assistant for managing game entities, stories, and assets.',
+  id: McpAgentName.WorldBuilding,
+  name: McpAgentName.WorldBuilding,
+  description: MCP_AGENT_DESCRIPTION,
   instructions: `You are the World Building Kit AI, a powerful assistant for game developers and storytellers.
 You have access to a wide range of tools to manage game entities, characters, episodes, assets, and more.
 You can remember context from previous interactions to assist in long-term world building.`,

@@ -6,6 +6,13 @@
 
 import * as fs from 'fs/promises'
 import * as path from 'path'
+import {
+  SKILL_LOADER_ENCODING,
+  SKILL_LOADER_SEPARATOR,
+  SkillDirectory,
+  SkillFileExtension,
+  SkillFileName,
+} from '@/shared/agent-kernel/constants/skill-loader'
 
 /**
  * Location of agent skill files, relative to the project root (process.cwd()).
@@ -22,11 +29,6 @@ export interface Skill {
   references: Map<string, string>
 }
 
-interface SkillReference {
-  name: string
-  content: string
-}
-
 /**
  * Load a skill from the skills directory
  */
@@ -35,20 +37,20 @@ export async function loadSkill(skillName: string): Promise<Skill | null> {
 
   try {
     // Load main SKILL.md
-    const skillMdPath = path.join(skillPath, 'SKILL.md')
-    const content = await fs.readFile(skillMdPath, 'utf-8')
+    const skillMdPath = path.join(skillPath, SkillFileName.Main)
+    const content = await fs.readFile(skillMdPath, SKILL_LOADER_ENCODING)
 
     // Load references
     const references = new Map<string, string>()
-    const referencesPath = path.join(skillPath, 'references')
+    const referencesPath = path.join(skillPath, SkillDirectory.References)
 
     try {
       const refFiles = await fs.readdir(referencesPath)
       for (const refFile of refFiles) {
-        if (refFile.endsWith('.md')) {
+        if (refFile.endsWith(SkillFileExtension.Markdown)) {
           const refPath = path.join(referencesPath, refFile)
-          const refContent = await fs.readFile(refPath, 'utf-8')
-          references.set(refFile.replace('.md', ''), refContent)
+          const refContent = await fs.readFile(refPath, SKILL_LOADER_ENCODING)
+          references.set(refFile.replace(SkillFileExtension.Markdown, ''), refContent)
         }
       }
     } catch {
@@ -90,7 +92,7 @@ export function formatSkillForPrompt(skill: Skill, includeReferences: boolean = 
   formatted += skill.content
 
   if (includeReferences && skill.references.size > 0) {
-    formatted += '\n\n---\n## Reference Materials\n\n'
+    formatted += SKILL_LOADER_SEPARATOR.ReferenceBlock
     for (const [refName, refContent] of skill.references) {
       formatted += `### ${refName}\n\n${refContent}\n\n`
     }
@@ -103,7 +105,7 @@ export function formatSkillForPrompt(skill: Skill, includeReferences: boolean = 
  * Build a combined prompt from multiple skills
  */
 export function buildSkillsPrompt(skills: Skill[], includeReferences: boolean = true): string {
-  return skills.map(s => formatSkillForPrompt(s, includeReferences)).join('\n\n---\n\n')
+  return skills.map(s => formatSkillForPrompt(s, includeReferences)).join(SKILL_LOADER_SEPARATOR.SkillsJoin)
 }
 
 /**
@@ -117,36 +119,5 @@ export async function listAvailableSkills(): Promise<string[]> {
     return entries.filter(e => e.isDirectory()).map(e => e.name)
   } catch {
     return []
-  }
-}
-
-/**
- * Get skill metadata
- */
-async function getSkillMetadata(skillName: string): Promise<{
-  exists: boolean
-  hasReferences: boolean
-  referenceCount: number
-} | null> {
-  const skillPath = path.join(process.cwd(), SKILLS_DIR, skillName)
-
-  try {
-    await fs.access(path.join(skillPath, 'SKILL.md'))
-
-    let referenceCount = 0
-    try {
-      const refs = await fs.readdir(path.join(skillPath, 'references'))
-      referenceCount = refs.filter(r => r.endsWith('.md')).length
-    } catch {
-      // No references
-    }
-
-    return {
-      exists: true,
-      hasReferences: referenceCount > 0,
-      referenceCount,
-    }
-  } catch {
-    return null
   }
 }

@@ -5,6 +5,11 @@ import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/Dialog'
 
+import {
+  IMAGE_LIGHTBOX_DOM_EVENT_KEYDOWN,
+  IMAGE_LIGHTBOX_KEYBOARD_KEY,
+} from './constants/image-lightbox-keys'
+
 interface ImageLightboxProps {
   isOpen: boolean
   onClose: () => void
@@ -31,9 +36,9 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
     (e: KeyboardEvent) => {
       if (!isOpen) return
 
-      if (e.key === 'ArrowRight' && hasNext && onNext) {
+      if (e.key === IMAGE_LIGHTBOX_KEYBOARD_KEY.ARROW_RIGHT && hasNext && onNext) {
         onNext()
-      } else if (e.key === 'ArrowLeft' && hasPrev && onPrev) {
+      } else if (e.key === IMAGE_LIGHTBOX_KEYBOARD_KEY.ARROW_LEFT && hasPrev && onPrev) {
         onPrev()
       }
     },
@@ -41,8 +46,8 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
   )
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener(IMAGE_LIGHTBOX_DOM_EVENT_KEYDOWN, handleKeyDown)
+    return () => window.removeEventListener(IMAGE_LIGHTBOX_DOM_EVENT_KEYDOWN, handleKeyDown)
   }, [handleKeyDown])
 
   if (!isOpen) return null

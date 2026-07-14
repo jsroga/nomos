@@ -8,9 +8,9 @@ import {
   getSectionForActionType,
   type QuestionSession,
 } from '@/domains/storyteller'
-import { parsePhaseId } from '@/domains/storyteller/core/types/Enums'
-import { useChatStream, type Message } from '@/domains/chat'
-import { DEFAULT_CHAT_MODEL, getChatModelOption } from '@/domains/storyteller/config/ChatModelCatalog'
+import { parsePhaseId, BibleSection } from '@/domains/storyteller/core/types/Enums'
+import { useChatStream, type Message } from '@/shared/chat'
+import { DEFAULT_CHAT_MODEL, getChatModelOption } from '@/domains/storyteller/config/constants/ChatModelCatalog'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { clearFetchCache } from '@/shared/data/fetch-cache'
@@ -18,6 +18,23 @@ import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { storytellerCharacterFromRow } from '@/domains/storyteller/core/entities/character-wire'
 import { useStoryActionRenderer } from '@/domains/storyteller/ui/StorytellerLayout/StoryActionRenderer'
+import {
+  AsyncOperationStatus,
+  ChatFrameType,
+  ChatMessageRole,
+  ChatSenderName,
+  OpenAiChatRole,
+  Phase as StorytellerPhase,
+  STORYTELLER_CHAT_WELCOME_MESSAGE,
+  StorytellerChatLog,
+  StorytellerChatTool,
+  StorytellerGlobalOperation,
+  StorytellerMessageRole,
+  StorytellerMessageType,
+  StorytellerStreamMode,
+  StorytellerTab,
+  StorytellerThreadId,
+} from '@/domains/storyteller/state/constants/storyteller-chat'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 
 export function useStorytellerChat(core: StorytellerWorkspaceCore) {
@@ -71,10 +88,12 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
     loadingSections, // Section-specific loading states for granular shimmer
     setLoadingSections, // To set loading state immediately on button click
   } = useChatStream({
+    // Tenant-explicit (D7): the platform default matches, but storyteller owns its resume endpoint.
+    resumeUrl: '/api/storyteller/workflow/resume',
     verboseUiEnabled: isActivityPanelOpen,
     // Use project + episode as persist key
     persistKey: currentProject?.id
-      ? `storyteller-${currentProject.id}-${currentEpisodeId || 'global'}`
+      ? `storyteller-${currentProject.id}-${currentEpisodeId || StorytellerThreadId.General}`
       : undefined,
     // Langfuse session tracking - groups all chat interactions for this project/episode
     projectId: currentProject?.id,
@@ -82,16 +101,15 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
     userId: userEmail || undefined,
     initialMessages: [
       {
-        sender: 'Showrunner',
-        content:
-          'Welcome to the Writers Room! Select an episode to begin, then tell me about the story you want to create.',
-        type: 'ai',
+        sender: StorytellerMessageRole.Showrunner,
+        content: STORYTELLER_CHAT_WELCOME_MESSAGE,
+        type: StorytellerMessageType.Ai,
       },
     ],
     onAction: async action => {
       // Handle action events from tool results
       // CRITICAL: Don't block the stream - use fire-and-forget pattern
-      if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') console.log('[Action received]', action.type)
+      if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') console.log(StorytellerChatLog.ActionReceived, action.type)
 
         // Fire and forget - don't await to prevent blocking/crashing the stream
         ; (async () => {
@@ -100,8 +118,8 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
             const requiresApproval = actionRequiresApproval(action.type, action.status)
 
             if (requiresApproval) {
-              if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') console.log(`[Action received] ${action.type} - awaiting user approval`, {
-                payload: action.payload ? Object.keys(action.payload) : 'no payload',
+              if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') console.log(`${StorytellerChatLog.ActionReceived} ${action.type} - awaiting user approval`, {
+                payload: action.payload ? Object.keys(action.payload) : StorytellerChatLog.NoPayload,
                 status: action.status,
               })
               // Do NOT auto-apply to local state.
@@ -109,15 +127,21 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
 
               // Set section pending action for Bible sections (for blur overlay)
               const section = getSectionForActionType(action.type)
-              if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') console.log(`[Action] Mapped '${action.type}' -> '${section}'`)
+              if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') {
+                console.log(`${StorytellerChatLog.ActionMapped} '${action.type}' -> '${section}'`)
+              }
 
               // For 'full' section or no section, we don't blur a specific Bible panel
               // but the action is still shown as a pending action in the chat interface
-              if (section && section !== 'full') {
-                if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') console.log(`[Action] Pending overlay for ${section}`)
+              if (section && section !== BibleSection.FULL) {
+                if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') {
+                  console.log(`${StorytellerChatLog.ActionPendingOverlay} ${section}`)
+                }
                 // Create handlers that will execute/reject the action
                 const handleSectionAccept = async () => {
-                  if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') console.log(`[Section Accept] ${action.type} for ${section}`)
+                  if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') {
+                    console.log(`${StorytellerChatLog.SectionAccept} ${action.type} for ${section}`)
+                  }
                   // Set processing state on both section overlay AND chat widget
                   if (action.id) {
                     syncActionStatus(action, ApprovalActionStatus.EXECUTING)
@@ -154,7 +178,7 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
                       ...prevHistory.slice(0, 49),
                     ])
                   } catch (e) {
-                    console.error('[Section Accept] Failed:', e)
+                    console.error(StorytellerChatLog.SectionAcceptFailed, e)
                     // Reset processing state on failure for both section and chat
                     if (action.id) {
                       syncActionStatus(action, ApprovalActionStatus.PENDING)
@@ -170,7 +194,9 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
                 }
 
                 const handleSectionReject = () => {
-                  if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') console.log(`[Section Reject] ${action.type} for ${section}`)
+                  if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') {
+                    console.log(`${StorytellerChatLog.SectionReject} ${action.type} for ${section}`)
+                  }
                   // Sync chat status using ID
                   if (action.id) {
                     syncActionStatus(action, ApprovalActionStatus.REJECTED)
@@ -194,7 +220,7 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
                     onReview: () =>
                       setReviewModalAction({
                         action,
-                        agentName: 'Storyteller',
+                        agentName: ChatSenderName.Storyteller,
                         messageIndex: -1,
                         actionIndex: -1,
                       }),
@@ -210,16 +236,16 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
                 {
                   id: `stream-${Date.now()}`,
                   action,
-                  agentName: 'Storyteller',
+                  agentName: ChatSenderName.Storyteller,
                   status: ActionHistoryStatus.COMMITTED,
                   timestamp: new Date(),
                 },
                 ...prev,
               ])
-              if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') console.log('[Action committed]', action.type)
+              if (process.env.NEXT_PUBLIC_CHAT_DEBUG === '1') console.log(StorytellerChatLog.ActionCommitted, action.type)
             }
           } catch (err) {
-            console.error('[Action failed]', action.type, err)
+            console.error(StorytellerChatLog.ActionFailed, action.type, err)
           }
         })()
     },
@@ -243,29 +269,32 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
     },
     onStreamingUpdate: data => {
       // DEBUG: Log streaming updates
-      console.log('📡 [DEBUG] Streaming update:', data.type)
-      if (data.type === 'start') {
+      console.log(StorytellerChatLog.StreamingUpdate, data.type)
+      if (data.type === ChatFrameType.Start) {
         useGlobalStatusStore.getState().addOperation({
-          id: 'story-session',
-          type: 'story-agent',
-          label: 'Story Session',
-          details: 'Writers Room',
-          status: 'in-progress',
+          id: StorytellerGlobalOperation.StorySession,
+          type: StorytellerGlobalOperation.StoryAgent,
+          label: StorytellerGlobalOperation.StorySession,
+          details: StorytellerGlobalOperation.WritersRoom,
+          status: AsyncOperationStatus.InProgress,
         })
-      } else if (data.type === 'node_start' || (data.type === 'message' && 'node' in data && data.node)) {
+      } else if (
+        data.type === ChatFrameType.NodeStart ||
+        (data.type === ChatFrameType.Message && ChatFrameType.Node in data && data.node)
+      ) {
         const nodeDetail = readString(recordFromJson(data).node)
-        useGlobalStatusStore.getState().updateOperation('story-session', {
+        useGlobalStatusStore.getState().updateOperation(StorytellerGlobalOperation.StorySession, {
           details: nodeDetail ?? undefined,
         })
       } else if (
-        data.type === 'done' ||
-        data.type === 'terminated' ||
-        data.type === 'error' ||
-        data.type === 'complete'
+        data.type === ChatFrameType.Done ||
+        data.type === ChatFrameType.Terminated ||
+        data.type === ChatFrameType.Error ||
+        data.type === ChatFrameType.Complete
       ) {
-        useGlobalStatusStore.getState().removeOperation('story-session')
-      } else if (data.type === 'tool_result' && data.toolName === 'create_character') {
-        console.log('🔄 [Storyteller] Character created by agent, syncing sidebar...')
+        useGlobalStatusStore.getState().removeOperation(StorytellerGlobalOperation.StorySession)
+      } else if (data.type === ChatFrameType.ToolResult && data.toolName === StorytellerChatTool.CreateCharacter) {
+        console.log(StorytellerChatLog.CharacterCreatedSync)
         if (currentProject?.id) {
           clearFetchCache(`characters:${currentProject.id}`)
           const resultRecord = recordFromJson(data.result)
@@ -302,17 +331,15 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
                   setCharacters(mapped)
                 }
               })
-              .catch(e => console.error('Failed to refetch characters', e))
+              .catch(e => console.error(StorytellerChatLog.RefetchCharactersFailed, e))
           }
         }
-      } else if (data.type === 'tool_result' && data.toolName === 'update_world_bible') {
-        // NOTE: Don't call loadProject here - it causes a heavy refresh that disrupts UI
-        // The action event handler (onAction -> executeAction) already updates the Bible state
-        console.log('🔄 [Storyteller] World Bible updated by agent tool')
-      } else if (data.type === 'tool_result' && data.toolName === 'update_story_phase') {
+      } else if (data.type === ChatFrameType.ToolResult && data.toolName === StorytellerChatTool.UpdateWorldBible) {
+        console.log(StorytellerChatLog.WorldBibleUpdated)
+      } else if (data.type === ChatFrameType.ToolResult && data.toolName === StorytellerChatTool.UpdateStoryPhase) {
         const phase = readString(recordFromJson(data.result).phase)
         if (phase) {
-          console.log('🎬 [Storyteller] Story phase updated to:', phase)
+          console.log(StorytellerChatLog.PhaseUpdated, phase)
           setCurrentPhase(parsePhaseId(phase))
         }
       }
@@ -376,7 +403,10 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
     const cached = serializedMessagesRef.current
     if (cached && cached.src === msgs) return cached.mapped
     const mapped = msgs.map(m => ({
-      role: m.type === 'human' || m.sender === 'User' ? 'user' : 'assistant',
+      role:
+        m.type === ChatMessageRole.Human || m.sender === StorytellerMessageRole.User
+          ? OpenAiChatRole.User
+          : OpenAiChatRole.Assistant,
       content: m.content,
       name: m.sender,
     }))
@@ -425,29 +455,29 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
       if (!content.trim()) return
 
       if (isSending) {
-        console.warn('[Storyteller] Blocked send - already processing a message')
+        console.warn(StorytellerChatLog.BlockedSend)
         return
       }
 
       if (section) {
         setLoadingSections(prev => ({
           ...prev,
-          [section]: { loading: true, message: 'Generating...' },
+          [section]: { loading: true, message: StorytellerChatLog.Generating },
         }))
       }
 
       setInput('')
-      setMessages(prev => [...prev, { sender: 'User', content, type: 'human' }])
+      setMessages(prev => [...prev, { sender: StorytellerMessageRole.User, content, type: ChatMessageRole.Human }])
 
       let effectivePhase = currentPhase
       if (isWorldBibleOpen) {
-        effectivePhase = 'premise'
-      } else if (activeTab === 'script') {
-        effectivePhase = 'writing'
-      } else if (activeTab === 'board') {
-        effectivePhase = 'breaking'
-      } else if (activeTab === 'plan') {
-        effectivePhase = 'premise'
+        effectivePhase = StorytellerPhase.PREMISE
+      } else if (activeTab === StorytellerTab.Script) {
+        effectivePhase = StorytellerPhase.WRITING
+      } else if (activeTab === StorytellerTab.Board) {
+        effectivePhase = StorytellerPhase.BREAKING
+      } else if (activeTab === StorytellerTab.Plan) {
+        effectivePhase = StorytellerPhase.PREMISE
       }
 
       const serializedMessages = getSerializedMessages(messages)
@@ -469,12 +499,12 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
         message: content,
         messages: serializedMessages,
         projectId: currentProject?.id,
-        threadId: currentEpisodeId || 'general',
+        threadId: currentEpisodeId || StorytellerThreadId.General,
         episodeId: currentEpisodeId,
         currentPhase: effectivePhase,
         seriesBible,
         characters: charactersSummary,
-        streamMode: useEnhancedStreaming ? 'events' : 'nodes',
+        streamMode: useEnhancedStreaming ? StorytellerStreamMode.Events : StorytellerStreamMode.Nodes,
         modelName: selectedModel,
       })
     },

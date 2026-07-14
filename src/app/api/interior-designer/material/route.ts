@@ -5,21 +5,28 @@ import {
   interiorMaterialResponseSchema,
   type InteriorMaterialResponse,
 } from '@/domains/interior-designer/io/interior-designer.dto'
-import type { surfaceMaterialTask } from '@/trigger/surface-material'
+import type { surfaceMaterialTask } from '@/trigger'
 import {
   withAuth,
   withRateLimit,
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
+import {
+  API_ERROR,
+  TRIGGER_TASK_ID,
+  TRIGGER_TOKEN_EXPIRY,
+} from '@/shared/data/constants/api-errors'
+import { EnvVarName, MeshyArtStyle } from '@/shared/data/constants/protocol'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const dynamic = 'force-dynamic'
 
 export const POST = withRateLimit(
   withAuth(
     async (
       request: NextRequest,
-      { session, supabase }: AuthenticatedRequest
+      { supabase }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorMaterialResponse | { error: string }>> => {
       const parsedBody = interiorMaterialRequestSchema.safeParse(await request.json())
       if (!parsedBody.success) {
@@ -30,25 +37,25 @@ export const POST = withRateLimit(
 
       const hasAccess = await verifyProjectAccess(supabase, projectId)
       if (!hasAccess) {
-        return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+        return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
 
-      const meshyApiKey = apiKey || process.env.MESHY_API_KEY
+      const meshyApiKey = apiKey || process.env[EnvVarName.MeshyApiKey]
       if (!meshyApiKey) {
-        return NextResponse.json({ error: 'Meshy API key not configured' }, { status: 400 })
+        return NextResponse.json({ error: API_ERROR.MESHY_API_KEY_NOT_CONFIGURED }, { status: 400 })
       }
 
       const handle = await tasks.trigger<typeof surfaceMaterialTask>(
-        'surface-material',
+        TRIGGER_TASK_ID.SURFACE_MATERIAL,
         {
           projectId,
           surfaceId,
           prompt,
           apiKey: meshyApiKey,
-          artStyle: artStyle || 'realistic',
+          artStyle: artStyle || MeshyArtStyle.Realistic,
           surfaceBounds,
         },
-        { ttl: '1h' }
+        { ttl: TRIGGER_TOKEN_EXPIRY }
       )
 
       return NextResponse.json(

@@ -4,18 +4,24 @@ import React, { useState, useRef, DragEvent } from 'react'
 import { Upload, X, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-
-const SUPPORTED_FORMATS = {
-  images: ['.png', '.jpg', '.jpeg', '.webp'],
-  models: ['.glb', '.gltf', '.fbx', '.obj', '.usdz'],
-}
+import {
+  ASSET_SUPPORTED_FORMATS,
+  ASSET_UPLOAD_ENDPOINT,
+  ASSET_UPLOAD_FILE_SIZE_ERROR,
+  ASSET_UPLOAD_FORM_FIELD_FILE,
+  ASSET_UPLOAD_FORM_FIELD_PROJECT_ID,
+  ASSET_UPLOAD_HTTP_METHOD,
+  ASSET_UPLOAD_NETWORK_ERROR,
+  AssetUploadStatus,
+  AssetUploadXhrEvent,
+} from '@/domains/3d-asset-exporter/constants/asset-upload'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
 interface UploadFile {
   file: File
   id: string
-  status: 'pending' | 'uploading' | 'success' | 'error'
+  status: AssetUploadStatus
   progress: number
   error?: string
   assetId?: string
@@ -34,7 +40,7 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
   const [files, setFiles] = useState<UploadFile[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const allFormats = [...SUPPORTED_FORMATS.images, ...SUPPORTED_FORMATS.models]
+  const allFormats: string[] = [...ASSET_SUPPORTED_FORMATS.images, ...ASSET_SUPPORTED_FORMATS.models]
 
   const validateFile = (file: File): { valid: boolean; error?: string } => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase()
@@ -44,7 +50,7 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return { valid: false, error: 'File exceeds 50MB limit' }
+      return { valid: false, error: ASSET_UPLOAD_FILE_SIZE_ERROR }
     }
 
     return { valid: true }
@@ -56,7 +62,7 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
       return {
         file,
         id: `${file.name}-${Date.now()}-${Math.random()}`,
-        status: validation.valid ? 'pending' : 'error',
+        status: validation.valid ? AssetUploadStatus.Pending : AssetUploadStatus.Error,
         progress: 0,
         error: validation.error,
       }
@@ -66,24 +72,28 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
 
     // Start uploading valid files
     newFiles.forEach(uploadFile => {
-      if (uploadFile.status === 'pending') {
+      if (uploadFile.status === AssetUploadStatus.Pending) {
         uploadSingleFile(uploadFile)
       }
     })
   }
 
   const uploadSingleFile = async (uploadFile: UploadFile) => {
-    setFiles(prev => prev.map(f => (f.id === uploadFile.id ? { ...f, status: 'uploading' } : f)))
+    setFiles(prev =>
+      prev.map(f =>
+        f.id === uploadFile.id ? { ...f, status: AssetUploadStatus.Uploading } : f
+      )
+    )
 
     try {
       const formData = new FormData()
-      formData.append('file', uploadFile.file)
-      formData.append('projectId', projectId)
+      formData.append(ASSET_UPLOAD_FORM_FIELD_FILE, uploadFile.file)
+      formData.append(ASSET_UPLOAD_FORM_FIELD_PROJECT_ID, projectId)
 
       const xhr = new XMLHttpRequest()
 
       // Track upload progress
-      xhr.upload.addEventListener('progress', e => {
+      xhr.upload.addEventListener(AssetUploadXhrEvent.Progress, e => {
         if (e.lengthComputable) {
           const progress = Math.round((e.loaded / e.total) * 100)
           setFiles(prev => prev.map(f => (f.id === uploadFile.id ? { ...f, progress } : f)))
@@ -91,13 +101,18 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
       })
 
       // Handle completion
-      xhr.addEventListener('load', () => {
+      xhr.addEventListener(AssetUploadXhrEvent.Load, () => {
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText)
           setFiles(prev =>
             prev.map(f =>
               f.id === uploadFile.id
-                ? { ...f, status: 'success', progress: 100, assetId: response.assetId }
+                ? {
+                    ...f,
+                    status: AssetUploadStatus.Success,
+                    progress: 100,
+                    assetId: response.assetId,
+                  }
                 : f
             )
           )
@@ -112,20 +127,24 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
       })
 
       // Handle errors
-      xhr.addEventListener('error', () => {
+      xhr.addEventListener(AssetUploadXhrEvent.Error, () => {
         setFiles(prev =>
           prev.map(f =>
-            f.id === uploadFile.id ? { ...f, status: 'error', error: 'Network error' } : f
+            f.id === uploadFile.id
+              ? { ...f, status: AssetUploadStatus.Error, error: ASSET_UPLOAD_NETWORK_ERROR }
+              : f
           )
         )
       })
 
-      xhr.open('POST', '/api/assets/upload')
+      xhr.open(ASSET_UPLOAD_HTTP_METHOD, ASSET_UPLOAD_ENDPOINT)
       xhr.send(formData)
     } catch (error: unknown) {
       setFiles(prev =>
         prev.map(f =>
-          f.id === uploadFile.id ? { ...f, status: 'error', error: getErrorMessage(error) } : f
+          f.id === uploadFile.id
+            ? { ...f, status: AssetUploadStatus.Error, error: getErrorMessage(error) }
+            : f
         )
       )
     }
@@ -166,18 +185,18 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
 
   const clearCompleted = () => {
     const completedAssetIds = files
-      .filter(f => f.status === 'success' && f.assetId)
+      .filter(f => f.status === AssetUploadStatus.Success && f.assetId)
       .map(f => f.assetId!)
 
     if (onUploadComplete && completedAssetIds.length > 0) {
       onUploadComplete(completedAssetIds)
     }
 
-    setFiles(prev => prev.filter(f => f.status !== 'success'))
+    setFiles(prev => prev.filter(f => f.status !== AssetUploadStatus.Success))
   }
 
-  const hasUploading = files.some(f => f.status === 'uploading')
-  const hasCompleted = files.some(f => f.status === 'success')
+  const hasUploading = files.some(f => f.status === AssetUploadStatus.Uploading)
+  const hasCompleted = files.some(f => f.status === AssetUploadStatus.Success)
 
   return (
     <div className="w-full space-y-3">
@@ -244,23 +263,23 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
                 className="flex items-center gap-2 p-2 bg-background/50 border border-border rounded-md text-xs overflow-hidden"
               >
                 {/* Status Icon */}
-                {uploadFile.status === 'uploading' && (
+                {uploadFile.status === AssetUploadStatus.Uploading && (
                   <Loader2 size={14} className="text-blue-500 animate-spin flex-shrink-0" />
                 )}
-                {uploadFile.status === 'success' && (
+                {uploadFile.status === AssetUploadStatus.Success && (
                   <Check size={14} className="text-green-500 flex-shrink-0" />
                 )}
-                {uploadFile.status === 'error' && (
+                {uploadFile.status === AssetUploadStatus.Error && (
                   <AlertCircle size={14} className="text-destructive flex-shrink-0" />
                 )}
-                {uploadFile.status === 'pending' && (
+                {uploadFile.status === AssetUploadStatus.Pending && (
                   <Loader2 size={14} className="text-muted-foreground animate-spin flex-shrink-0" />
                 )}
 
                 {/* File Info */}
                 <div className="flex-1 w-0">
                   <p className="font-medium truncate">{uploadFile.file.name}</p>
-                  {uploadFile.status === 'uploading' && (
+                  {uploadFile.status === AssetUploadStatus.Uploading && (
                     <div className="w-full h-1 bg-muted rounded-full overflow-hidden mt-1">
                       <div
                         className="h-full bg-blue-500 transition-all"
@@ -268,13 +287,13 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
                       />
                     </div>
                   )}
-                  {uploadFile.status === 'error' && uploadFile.error && (
+                  {uploadFile.status === AssetUploadStatus.Error && uploadFile.error && (
                     <p className="text-destructive text-[10px] mt-0.5">{uploadFile.error}</p>
                   )}
                 </div>
 
                 {/* Remove Button */}
-                {uploadFile.status !== 'uploading' && (
+                {uploadFile.status !== AssetUploadStatus.Uploading && (
                   <button
                     onClick={() => removeFile(uploadFile.id)}
                     className="p-1 hover:bg-muted rounded"

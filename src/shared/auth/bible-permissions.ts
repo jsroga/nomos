@@ -5,12 +5,14 @@
  * Central users can lock the Bible to prevent changes.
  */
 
+import { BIBLE_PERMISSION_EMAILS } from '@/shared/auth/constants/bible-permissions'
+
 /**
  * Get list of central users from environment
  */
 export function getCentralUsers(): string[] {
   const envValue =
-    process.env.NEXT_PUBLIC_CENTRAL_USERS || 'jacek.sroga.itc@gmail.com,jsroga@example.com'
+    process.env.NEXT_PUBLIC_CENTRAL_USERS || BIBLE_PERMISSION_EMAILS
   return envValue.split(',').map(email => email.trim().toLowerCase())
 }
 

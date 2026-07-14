@@ -7,4 +7,10 @@ export * from './api-utils'
 export * from './EntitiesService'
 export * from './generation/TilesService'
 export * from './queries/useGameEntities'
-export * from './queries/useProjectFromUrl'
+export * from './useProjectFromUrl'
+
+// ServiceContext/ServiceError/ServiceErrorCode and GameEntity are declared in
+// more than one of the modules above; EntitiesService is the canonical source,
+// so re-export those names explicitly to resolve the star-export ambiguity.
+export { ServiceError } from './EntitiesService'
+export type { ServiceContext, ServiceErrorCode, GameEntity } from './EntitiesService'

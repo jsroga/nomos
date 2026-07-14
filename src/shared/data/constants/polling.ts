@@ -42,12 +42,12 @@ export const ACTIVE_TASK_STATUSES = [
 /**
  * Trigger.dev task statuses that indicate the task completed successfully
  */
-const SUCCESS_STATUSES = ['COMPLETED', 'SUCCESS'] as const
+export const SUCCESS_STATUSES = ['COMPLETED', 'SUCCESS'] as const
 
 /**
  * Trigger.dev task statuses that indicate the task failed
  */
-const FAILED_STATUSES = [
+export const FAILED_STATUSES = [
   'FAILED',
   'CANCELED',
   'TIMED_OUT',
@@ -55,3 +55,9 @@ const FAILED_STATUSES = [
   'SYSTEM_FAILURE',
   'INTERRUPTED',
 ] as const
+
+export const isActiveTaskStatus = (status: string): boolean =>
+  ACTIVE_TASK_STATUSES.some(activeStatus => activeStatus === status)
+
+export const isSuccessTaskStatus = (status: string): boolean =>
+  SUCCESS_STATUSES.some(successStatus => successStatus === status)

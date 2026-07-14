@@ -3,12 +3,19 @@
 import React, { useEffect, useState } from 'react'
 import { TransformControls } from '@react-three/drei'
 import { useInteriorStore } from '@/domains/interior-designer'
+import {
+  INTERACTION_MODE_SELECT,
+  TransformMode,
+} from '@/domains/interior-designer/constants/interaction-modes'
+import { OrbitControlsProperty } from '@/domains/interior-designer/constants/three-js'
+import { DOM_EVENT_KEYDOWN } from '@/domains/interior-designer/constants/keyboard'
+import { DomTagName } from '@/shared/data/constants/protocol'
 import * as THREE from 'three'
 import { useThree } from '@react-three/fiber'
 
 function setOrbitControlsEnabled(controls: unknown, enabled: boolean): void {
-  if (typeof controls === 'object' && controls !== null && 'enabled' in controls) {
-    Object.assign(controls, { enabled })
+  if (typeof controls === 'object' && controls !== null && OrbitControlsProperty.Enabled in controls) {
+    Object.assign(controls, { [OrbitControlsProperty.Enabled]: enabled })
   }
 }
 
@@ -41,22 +48,22 @@ export const TransformManager: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger shortcuts if typing in an input
-      if (document.activeElement?.tagName === 'INPUT') return
+      if (document.activeElement?.tagName === DomTagName.Input) return
 
       switch (e.key.toLowerCase()) {
         case 'g':
-          setTransformMode('translate')
+          setTransformMode(TransformMode.Translate)
           break
         case 'r':
-          setTransformMode('rotate')
+          setTransformMode(TransformMode.Rotate)
           break
         case 's':
-          setTransformMode('scale')
+          setTransformMode(TransformMode.Scale)
           break
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener(DOM_EVENT_KEYDOWN, handleKeyDown)
+    return () => window.removeEventListener(DOM_EVENT_KEYDOWN, handleKeyDown)
   }, [setTransformMode])
 
   useEffect(() => {
@@ -76,7 +83,7 @@ export const TransformManager: React.FC = () => {
     }
   }, [selectedId, scene, objects]) // Re-run if objects change (e.g. position update)
 
-  if (mode !== 'SELECT' || !isValidSelection || !target) {
+  if (mode !== INTERACTION_MODE_SELECT || !isValidSelection || !target) {
     return null
   }
 
@@ -89,7 +96,7 @@ export const TransformManager: React.FC = () => {
       // Always hide Y handle for objects in translate mode - objects must be at Y=0
       // For surfaces, respect lockY setting
       showY={
-        transformMode === 'translate'
+        transformMode === TransformMode.Translate
           ? selectedObject
             ? false // Objects always locked to Y=0
             : !lockY // Surfaces respect lockY setting

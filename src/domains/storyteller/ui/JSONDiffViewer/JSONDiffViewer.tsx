@@ -4,6 +4,13 @@ import React, { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/data/utils'
 import { ConsistencyChange } from '@/domains/storyteller/core/types/ConsistencyTypes'
+import {
+  JSON_VALUE_INDENT,
+  JSON_VALUE_LIST_SEPARATOR,
+  JSON_ARRAY_ITEM_SEPARATOR,
+  JsonValueDisplay,
+  JsonValueType,
+} from './constants/json-diff-viewer'
 
 interface JSONDiffViewerProps {
   changes: ConsistencyChange[]
@@ -97,23 +104,23 @@ const JSONValue: React.FC<{ value: unknown }> = ({ value }) => {
  * Format a value for display
  */
 function formatValue(value: unknown): string {
-  if (value === null) return 'null'
-  if (value === undefined) return 'undefined'
+  if (value === null) return JsonValueDisplay.Null
+  if (value === undefined) return JsonValueDisplay.Undefined
 
   const type = typeof value
 
-  if (type === 'string') return `"${value}"`
-  if (type === 'number' || type === 'boolean') return String(value)
+  if (type === JsonValueType.String) return `"${value}"`
+  if (type === JsonValueType.Number || type === JsonValueType.Boolean) return String(value)
 
   if (Array.isArray(value)) {
-    if (value.length === 0) return '[]'
+    if (value.length === 0) return JsonValueDisplay.EmptyArray
     if (value.length <= 3) {
-      return `[${value.map(v => formatValue(v)).join(', ')}]`
+      return `[${value.map(v => formatValue(v)).join(JSON_VALUE_LIST_SEPARATOR)}]`
     }
-    return `[\n${value.map(v => '  ' + formatValue(v)).join(',\n')}\n]`
+    return `[\n${value.map(v => JSON_VALUE_INDENT + formatValue(v)).join(JSON_ARRAY_ITEM_SEPARATOR)}\n]`
   }
 
-  if (type === 'object') {
+  if (type === JsonValueType.Object) {
     try {
       return JSON.stringify(value, null, 2)
     } catch {

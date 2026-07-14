@@ -4,10 +4,11 @@ import { ProjectLoader } from '@/components/shell/ProjectLoader'
 import { ProjectTourWrapper } from '@/components/shell/ProjectTourWrapper'
 
 import { TooltipProvider } from '@/components/Tooltip'
+import { WORKSPACE_PAGE_TITLE } from '@/shared/data/constants/route-metadata'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Project',
+  title: WORKSPACE_PAGE_TITLE.PROJECT,
 }
 
 export default function ProjectLayout({ children }: { children: React.ReactNode }) {

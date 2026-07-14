@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
-import { useRouter, usePathname, useParams } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { ChevronDown, Plus, FolderOpen, Check } from 'lucide-react'
@@ -13,7 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/DropdownMenu'
-import { readString } from '@/shared/data/json-guards'
 import {
   Dialog,
   DialogContent,
@@ -23,8 +22,27 @@ import {
 } from '@/components/Dialog'
 import { Input } from '@/components/Input'
 import { Textarea } from '@/components/Textarea'
-import { Liquid } from '@/domains/marketing'
-import { useLiquid } from '@/domains/marketing'
+import { Liquid, useLiquid } from '@/domains/marketing'
+import { DB_TABLE } from '@/shared/data/constants/db-tables'
+import {
+  AppRouteSegment,
+  DefaultWorkspaceModule,
+  PROJECT_SELECTOR_BIBLE_QUERY,
+  PROJECT_SELECTOR_CANCEL_LABEL,
+  PROJECT_SELECTOR_CREATE_BUTTON,
+  PROJECT_SELECTOR_CREATE_LABEL,
+  PROJECT_SELECTOR_DIALOG_TITLE,
+  PROJECT_SELECTOR_EMPTY_LABEL,
+  PROJECT_SELECTOR_LIQUID_WARN,
+  PROJECT_SELECTOR_LOAD_ERROR,
+  PROJECT_SELECTOR_NAME_LABEL,
+  PROJECT_SELECTOR_NAME_PLACEHOLDER,
+  PROJECT_SELECTOR_NO_PROJECTS,
+  PROJECT_SELECTOR_PROMPT_LABEL,
+  PROJECT_SELECTOR_PROMPT_PLACEHOLDER,
+  ProjectsDbOrder,
+  ProjectsDbSelect,
+} from '@/components/shell/ProjectSelectorDropdown/constants/project-selector-dropdown'
 
 export function ProjectSelectorDropdown() {
   const router = useRouter()
@@ -40,8 +58,6 @@ export function ProjectSelectorDropdown() {
   const createProject = useWorldStore(state => state.createProject)
   const user = useWorldStore(state => state.user)
 
-  const params = useParams()
-  const currentProjectId = readString(params?.projectId)
 
   // Safe access to liquid context in case it's not wrapped (though we wrapped it in layout)
   let liquidOptions = {}
@@ -50,13 +66,13 @@ export function ProjectSelectorDropdown() {
     liquidOptions = context.liquidOptions
   } catch (e) {
     // Fallback if not in LiquidProvider
-    console.warn('ProjectSelectorDropdown used outside LiquidProvider')
+    console.warn(PROJECT_SELECTOR_LIQUID_WARN)
   }
 
   // Extract current module from pathname (e.g., /project-id/storyteller -> storyteller)
   // Pathname: /:projectId/:module...
   const getNextUrl = (nextProjectId: string) => {
-    if (!pathname) return `/${nextProjectId}/storyteller?bible=open`
+    if (!pathname) return `/${nextProjectId}/${DefaultWorkspaceModule.Storyteller}?${PROJECT_SELECTOR_BIBLE_QUERY}`
 
     const parts = pathname.split('/').filter(Boolean)
     // parts[0] is app, parts[1] is projectId, parts[2] is module
@@ -67,12 +83,12 @@ export function ProjectSelectorDropdown() {
 
     // Let's just hardcode the structure we want: /app/[projectId]/[module]
 
-    let module = 'storyteller'
+    let module: string = DefaultWorkspaceModule.Storyteller
 
     // Check if we can extract a module from current path
     // If path is /app/123/storyteller -> parts=['app', '123', 'storyteller']
     // If path is /app/123/world -> parts=['app', '123', 'world']
-    if (parts.length >= 3 && parts[0] === 'app') {
+    if (parts.length >= 3 && parts[0] === AppRouteSegment.App) {
       module = parts[2]
     }
 
@@ -82,12 +98,12 @@ export function ProjectSelectorDropdown() {
   // Define loadProjects BEFORE using it in useEffect
   const loadProjects = useCallback(async () => {
     const { data, error } = await supabase
-      .from('projects')
-      .select('id, name')
-      .order('created_at', { ascending: false })
+      .from(DB_TABLE.PROJECTS)
+      .select(ProjectsDbSelect.IdName)
+      .order(ProjectsDbOrder.CreatedAtDesc, { ascending: false })
 
     if (error) {
-      console.error('Error loading projects:', error)
+      console.error(PROJECT_SELECTOR_LOAD_ERROR, error)
     }
     if (data) setProjects(data)
   }, [supabase])
@@ -111,7 +127,7 @@ export function ProjectSelectorDropdown() {
       setNewProjectPrompt('')
       await loadProjects()
       // Navigate to the new project with bible open
-      router.push(`/${id}/storyteller?bible=open`)
+      router.push(`/${id}/${DefaultWorkspaceModule.Storyteller}?${PROJECT_SELECTOR_BIBLE_QUERY}`)
     }
   }
 
@@ -122,7 +138,7 @@ export function ProjectSelectorDropdown() {
           <Button variant="outline" className="h-8 min-w-[200px] justify-between gap-2 px-3 py-1.5">
             <div className="flex items-center gap-2">
               <FolderOpen size={16} />
-              <span className="truncate">{currentProject?.name || 'Select Project'}</span>
+              <span className="truncate">{currentProject?.name || PROJECT_SELECTOR_EMPTY_LABEL}</span>
             </div>
             <ChevronDown size={16} className="ml-auto" />
           </Button>
@@ -140,7 +156,7 @@ export function ProjectSelectorDropdown() {
             <div className="p-1">
               {projects.length === 0 ? (
                 <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                  No projects yet
+                  {PROJECT_SELECTOR_NO_PROJECTS}
                 </div>
               ) : (
                 projects.map(project => (
@@ -164,7 +180,7 @@ export function ProjectSelectorDropdown() {
                 className="cursor-pointer text-primary hover:text-primary hover:bg-primary/10 focus:bg-primary/10 focus:text-primary"
               >
                 <Plus size={14} className="mr-2" />
-                Create New Project
+                {PROJECT_SELECTOR_CREATE_LABEL}
               </DropdownMenuItem>
             </div>
           </Liquid>
@@ -174,21 +190,21 @@ export function ProjectSelectorDropdown() {
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
+            <DialogTitle>{PROJECT_SELECTOR_DIALOG_TITLE}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Project Name</label>
+              <label className="text-sm font-medium">{PROJECT_SELECTOR_NAME_LABEL}</label>
               <Input
-                placeholder="My Fantasy World"
+                placeholder={PROJECT_SELECTOR_NAME_PLACEHOLDER}
                 value={newProjectName}
                 onChange={e => setNewProjectName(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Master Prompt (Optional)</label>
+              <label className="text-sm font-medium">{PROJECT_SELECTOR_PROMPT_LABEL}</label>
               <Textarea
-                placeholder="Describe your world context..."
+                placeholder={PROJECT_SELECTOR_PROMPT_PLACEHOLDER}
                 value={newProjectPrompt}
                 onChange={e => setNewProjectPrompt(e.target.value)}
                 rows={4}
@@ -197,10 +213,10 @@ export function ProjectSelectorDropdown() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreating(false)}>
-              Cancel
+              {PROJECT_SELECTOR_CANCEL_LABEL}
             </Button>
             <Button onClick={handleCreate} disabled={!newProjectName}>
-              Create Project
+              {PROJECT_SELECTOR_CREATE_BUTTON}
             </Button>
           </DialogFooter>
         </DialogContent>

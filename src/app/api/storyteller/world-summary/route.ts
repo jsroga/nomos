@@ -5,7 +5,6 @@ import {
   bibleToPrompt,
   bibleToVisualPrompt,
   ragService,
-  type SeriesBible,
 } from '@/domains/storyteller/server'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
@@ -15,27 +14,38 @@ import { generateText } from 'ai'
 import { requireAuth } from '@/shared/auth/auth'
 import {
   firstNonEmptyRecord,
-  namedRecordsFromJson,
   readString,
-  recordArrayFromJson,
   recordFromJson,
 } from '@/shared/data/json-guards'
+import {
+  mergeNamedRecords,
+  mergeWorldRules,
+  seriesBibleFromRecord,
+} from '@/domains/storyteller/services/context/series-bible-from-record'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { GoogleModel, OpenAiModel, QueryParam } from '@/shared/data/constants/protocol'
+import {
+  StorytellerRagEntityType,
+  StorytellerRagQuery,
+  StorytellerRagSummaryFormat,
+  StorytellerTextSeparator,
+} from '@/domains/storyteller/core/storyteller-page-wire'
 
 export async function GET(req: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
-    const projectId = searchParams.get('projectId')
+    const projectId = searchParams.get(QueryParam.ProjectId)
 
     if (!projectId) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED }, { status: 400 })
     }
 
     // Verify project access
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
     const project = await db.query.projects.findFirst({
@@ -47,31 +57,49 @@ export async function GET(req: NextRequest) {
     })
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_NOT_FOUND }, { status: 404 })
     }
 
     // Priority 1: Use dedicated series_bibles / story_plans table content
     // Priority 2: Use project.series_bible / project.story_plan column (legacy/fallback)
     const rawBible = firstNonEmptyRecord(project.seriesBibleTable?.content, project.seriesBible)
     const rawStoryPlan = firstNonEmptyRecord(project.storyPlanTable?.content, project.storyPlan)
-    const bible: SeriesBible = { ...rawBible }
+    const bible = seriesBibleFromRecord({ ...rawBible, ...rawStoryPlan })
 
-    const storyPlanWorldRules = recordArrayFromJson(rawStoryPlan.worldRules)
-    const storyPlanFactions = namedRecordsFromJson(rawStoryPlan.factions)
-    if (storyPlanWorldRules.length > 0) bible.worldRules = storyPlanWorldRules
-    if (storyPlanFactions.length > 0) bible.factions = storyPlanFactions
-    if (!bible.setting && rawStoryPlan.setting) bible.setting = rawStoryPlan.setting
-    if (!bible.worldDescription && rawStoryPlan.worldDescription) {
-      bible.worldDescription = readString(rawStoryPlan.worldDescription)
+    const mergedWorldRules = mergeWorldRules(
+      rawStoryPlan.worldRules,
+      rawBible.worldRules,
+      recordFromJson(rawBible.updatedFields).worldRules,
+    )
+    if (mergedWorldRules.length > 0) bible.worldRules = mergedWorldRules
+
+    const mergedFactions = mergeNamedRecords(
+      rawStoryPlan.factions,
+      rawBible.factions,
+      recordFromJson(rawBible.updatedFields).factions,
+    )
+    if (mergedFactions.length > 0) bible.factions = mergedFactions
+
+    const storyPlanSetting = recordFromJson(rawStoryPlan.setting)
+    if (
+      !bible.setting.time &&
+      !bible.setting.place &&
+      !bible.setting.socialContext &&
+      Object.keys(storyPlanSetting).length > 0
+    ) {
+      bible.setting = {
+        time: readString(storyPlanSetting.time) ?? '',
+        place: readString(storyPlanSetting.place) ?? '',
+        socialContext: readString(storyPlanSetting.socialContext) ?? '',
+      }
     }
 
-    const updatedFields = recordFromJson(rawBible.updatedFields)
-    const updatedWorldRules = recordArrayFromJson(updatedFields.worldRules)
-    const updatedFactions = namedRecordsFromJson(updatedFields.factions)
-    if (updatedWorldRules.length > 0) bible.worldRules = updatedWorldRules
-    if (updatedFactions.length > 0) bible.factions = updatedFactions
+    const storyPlanWorldDescription = readString(rawStoryPlan.worldDescription)
+    if (!bible.worldDescription && storyPlanWorldDescription) {
+      bible.worldDescription = storyPlanWorldDescription
+    }
 
-    console.log('[WorldSummary] Project fetched:', {
+    console.log(API_LOG_PREFIX.WORLD_SUMMARY_PROJECT_FETCHED, {
       id: project.id,
       hasSeriesBibleTable: !!project.seriesBibleTable,
       hasStoryPlanTable: !!project.storyPlanTable,
@@ -83,7 +111,7 @@ export async function GET(req: NextRequest) {
     })
 
     if (!bible || (!bible.title && !bible.logline && !bible.premise)) {
-      console.warn('Series Bible not created, returning empty summary')
+      console.warn(API_LOG_PREFIX.WORLD_SUMMARY_BIBLE_EMPTY)
       // Continue with empty bible effectively
     }
 
@@ -104,19 +132,19 @@ export async function GET(req: NextRequest) {
     try {
       const ragResults = await ragService.retrieveByType(
         projectId,
-        'world_rule',
-        'important world logic and atmosphere',
+        StorytellerRagEntityType.WorldRule,
+        StorytellerRagQuery.WorldLogic,
         3
       )
 
       if (ragResults.length > 0) {
-        summary += '\n\n=== ADDITIONAL CONTEXT (RAG) ===\n'
+        summary += StorytellerRagSummaryFormat.ContextHeader
         ragResults.forEach(r => {
-          summary += `- ${r.content}\n`
+          summary += `${StorytellerRagSummaryFormat.BulletPrefix}${r.content}${StorytellerRagSummaryFormat.LineBreak}`
         })
       }
     } catch (e) {
-      console.warn('Failed to fetch RAG context:', e)
+      console.warn(API_LOG_PREFIX.WORLD_SUMMARY_RAG_FAILED, e)
     }
 
     // Build a compact context snippet for the style-prompt agent
@@ -130,10 +158,10 @@ export async function GET(req: NextRequest) {
       ) ?? []),
       ...(bible.visualMotifs?.slice(0, 4) ?? []),
       ...(bible.colorPalette?.slice(0, 4) ?? []),
-      bible.tone?.join(', '),
+      bible.tone?.join(StorytellerTextSeparator.CommaSpace),
     ]
       .filter(Boolean)
-      .join('. ')
+      .join(StorytellerTextSeparator.PeriodSpace)
 
     let worldGenPrompt = fallbackPrompt
 
@@ -141,8 +169,8 @@ export async function GET(req: NextRequest) {
       try {
         const googleKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
         const model = googleKey
-          ? createGoogleGenerativeAI({ apiKey: googleKey })('gemini-2.0-flash')
-          : createOpenAI({ apiKey: process.env.OPENAI_API_KEY })('gpt-4o-mini')
+          ? createGoogleGenerativeAI({ apiKey: googleKey })(GoogleModel.Gemini20Flash)
+          : createOpenAI({ apiKey: process.env.OPENAI_API_KEY })(OpenAiModel.Gpt4oMini)
 
         const { text } = await generateText({
           model,
@@ -169,7 +197,7 @@ Write 1-2 sentences describing the small visual details and atmosphere that shou
           worldGenPrompt = cleaned
         }
       } catch (e) {
-        console.warn('[WorldSummary] AI prompt generation failed, using fallback:', e)
+        console.warn(API_LOG_PREFIX.WORLD_SUMMARY_AI_FALLBACK, e)
       }
     }
 
@@ -178,7 +206,7 @@ Write 1-2 sentences describing the small visual details and atmosphere that shou
       worldGenPrompt,
     })
   } catch (error) {
-    console.error('Error serving world summary:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    console.error(API_LOG_PREFIX.WORLD_SUMMARY_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.INTERNAL_SERVER_ERROR }, { status: 500 })
   }
 }

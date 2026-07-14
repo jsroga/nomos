@@ -27,6 +27,7 @@ export function StorytellerLeftSidebar(props: StorytellerPageState) {
     characters,
     selectedBeatId,
     currentEpisodeId,
+    currentEpisodeTitle,
     setCurrentEpisodeId,
     setCurrentEpisodeTitle,
     currentEpisode,
@@ -118,6 +119,7 @@ export function StorytellerLeftSidebar(props: StorytellerPageState) {
                     <EpisodeManager
                       projectId={currentProject.id}
                       currentEpisodeId={currentEpisodeId}
+                      currentEpisodeTitle={currentEpisodeTitle}
                       onEpisodeChange={id => {
                         // Optimistic update
                         setCurrentEpisodeId(id)

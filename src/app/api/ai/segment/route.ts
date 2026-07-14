@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ReplicateClient } from '@/shared/ai/replicate'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { session: _session }: AuthenticatedRequest) => {
     const { image, points, apiKey } = await request.json()
 
     if (!image || !points) {
-      return NextResponse.json({ error: 'Missing image or points' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.MISSING_IMAGE_OR_POINTS }, { status: 400 })
     }
 
     if (!apiKey) {
-      return NextResponse.json({ error: 'Missing API Key' }, { status: 401 })
+      return NextResponse.json({ error: API_ERROR.MISSING_API_KEY }, { status: 401 })
     }
 
     const client = new ReplicateClient(apiKey)

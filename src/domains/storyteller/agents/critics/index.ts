@@ -3,6 +3,8 @@
  * Diagnose only — quoted evidence, never replacement prose.
  */
 
+import '@/shared/data/server-guard'
+
 export { continuityCritic } from './ContinuityCritic'
 export { proseCritic } from './ProseCritic'
 export { stakesCritic } from './StakesCritic'

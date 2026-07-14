@@ -1,5 +1,4 @@
 export * from './contextAssembler'
-export * from './contextAssemblerWorker'
 export * from './fal'
 export * from './legnext'
 export * from './meshy'

@@ -4,9 +4,9 @@
  * Analyzes current and emerging trends in game genres and mechanics.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
 import { TrendData } from '../types'
+import { createLoopStructuredTool } from './structured-tool'
 
 /**
  * Current gaming trends database
@@ -132,19 +132,22 @@ const TRENDS_DB: TrendData[] = [
   },
 ]
 
+const trendAnalyzerSchema = z.object({
+  genre: z.string().describe('Game genre to analyze trends for'),
+  mechanics: z.array(z.string()).optional().describe('Key mechanics to consider'),
+  platform: z.string().optional().describe('Target platform'),
+})
+
 /**
  * Trend analyzer tool
  */
-export const trendAnalyzerTool = new DynamicStructuredTool({
+export const trendAnalyzerTool = createLoopStructuredTool({
   name: 'trend_analyzer',
   description:
     'Analyze current and emerging trends relevant to a game genre and mechanics. Identifies opportunities and risks.',
-  schema: z.object({
-    genre: z.string().describe('Game genre to analyze trends for'),
-    mechanics: z.array(z.string()).optional().describe('Key mechanics to consider'),
-    platform: z.string().optional().describe('Target platform'),
-  }),
-  func: async ({ genre, mechanics, platform }): Promise<string> => {
+  schema: trendAnalyzerSchema,
+  func: async input => {
+    const { genre, mechanics, platform } = trendAnalyzerSchema.parse(input)
     try {
       const searchText = [genre, ...(mechanics || []), platform || ''].join(' ').toLowerCase()
 

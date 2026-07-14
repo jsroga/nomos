@@ -1,6 +1,11 @@
 'use client'
 
 import React from 'react'
+import {
+  DEFAULT_WALL_COLOR,
+  TEXTURED_WALL_COLOR,
+} from '@/domains/interior-designer/constants/mesh-colors'
+import { HTTP_URL_PREFIX } from '@/domains/interior-designer/constants/three-js'
 import { useInteriorStore } from '@/domains/interior-designer'
 import * as THREE from 'three'
 import { useTexture } from '@react-three/drei'
@@ -21,8 +26,8 @@ const WallMesh: React.FC<{
   const angle = Math.atan2(direction.z, direction.x)
   const midPoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5)
 
-  const textureUrl = wall.texture && wall.texture.startsWith('http') ? wall.texture : null
-  const color = !textureUrl ? wall.texture || '#e2e8f0' : '#ffffff'
+  const textureUrl = wall.texture && wall.texture.startsWith(HTTP_URL_PREFIX) ? wall.texture : null
+  const color = !textureUrl ? wall.texture || DEFAULT_WALL_COLOR : TEXTURED_WALL_COLOR
 
   return (
     <mesh

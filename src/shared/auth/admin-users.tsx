@@ -7,11 +7,13 @@
  * - Advanced features access
  */
 
+import { ADMIN_USER_EMAIL } from '@/shared/auth/constants/admin-users'
+
 /**
  * Get list of admin users from environment
  */
 export function getAdminUsers(): string[] {
-  const envValue = process.env.NEXT_PUBLIC_CENTRAL_USERS || 'jacek.sroga.itc@gmail.com'
+  const envValue = process.env.NEXT_PUBLIC_CENTRAL_USERS || ADMIN_USER_EMAIL
   return envValue.split(',').map(email => email.trim().toLowerCase())
 }
 

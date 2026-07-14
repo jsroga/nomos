@@ -1,19 +1,9 @@
 import type { EntityType } from './ReferenceParser'
-
-const ENTITY_TYPES: EntityType[] = [
-  'character',
-  'place',
-  'event',
-  'faction',
-  'rule',
-  'beat',
-  'episode',
-  'item',
-]
+import { STORY_ENTITY_TYPES } from './constants/entity-types'
 
 export function parseEntityType(value: unknown): EntityType | undefined {
   if (typeof value !== 'string') return undefined
-  for (const type of ENTITY_TYPES) {
+  for (const type of STORY_ENTITY_TYPES) {
     if (type === value) return type
   }
   return undefined

@@ -16,6 +16,10 @@ import {
 } from 'lucide-react'
 import { cn } from '@/shared/data/utils'
 import { ReferenceText } from '../ReferenceText'
+import {
+  EpisodeRoadmapBeatColor,
+  EpisodeRoadmapBeatLabel,
+} from './constants/episode-roadmap-card'
 
 interface EpisodeRoadmapCardProps {
   // Fields accept `null` too — RoadmapEpisodeSchema (zod) uses .nullable(),
@@ -57,7 +61,7 @@ interface EpisodeRoadmapCardProps {
 export const EpisodeRoadmapCard: React.FC<EpisodeRoadmapCardProps> = ({
   episode,
   index,
-  isLast = false,
+  isLast: _isLast = false,
   className,
   factions = [],
   projectId,
@@ -113,17 +117,40 @@ export const EpisodeRoadmapCard: React.FC<EpisodeRoadmapCardProps> = ({
 
   // Collect structural beats for the card grid
   const structuralBeats = [
-    episode.protagonistHook && { label: 'Protagonist Hook', value: episode.protagonistHook, icon: Anchor, color: 'text-emerald-400' },
-    episode.antagonistMove && { label: 'Antagonist Move', value: episode.antagonistMove, icon: Swords, color: 'text-rose-400' },
-    episode.fatalFlaw && { label: 'Fatal Flaw', value: episode.fatalFlaw, icon: Skull, color: 'text-red-400' },
-    episode.thematicQuestion && { label: 'Thematic Question', value: episode.thematicQuestion, icon: HelpCircle, color: 'text-blue-400' },
+    episode.protagonistHook && {
+      label: EpisodeRoadmapBeatLabel.ProtagonistHook,
+      value: episode.protagonistHook,
+      icon: Anchor,
+      color: EpisodeRoadmapBeatColor.ProtagonistHook,
+    },
+    episode.antagonistMove && {
+      label: EpisodeRoadmapBeatLabel.AntagonistMove,
+      value: episode.antagonistMove,
+      icon: Swords,
+      color: EpisodeRoadmapBeatColor.AntagonistMove,
+    },
+    episode.fatalFlaw && {
+      label: EpisodeRoadmapBeatLabel.FatalFlaw,
+      value: episode.fatalFlaw,
+      icon: Skull,
+      color: EpisodeRoadmapBeatColor.FatalFlaw,
+    },
+    episode.thematicQuestion && {
+      label: EpisodeRoadmapBeatLabel.ThematicQuestion,
+      value: episode.thematicQuestion,
+      icon: HelpCircle,
+      color: EpisodeRoadmapBeatColor.ThematicQuestion,
+    },
   ].flatMap(beat => (beat ? [beat] : []))
 
   // Act structure timeline (from RoadmapEpisodeSchema)
   const actBeats = [
-    episode.incitingIncident && { label: 'Inciting Incident', value: episode.incitingIncident },
-    episode.midpoint && { label: 'Midpoint', value: episode.midpoint },
-    episode.finale && { label: 'Finale', value: episode.finale },
+    episode.incitingIncident && {
+      label: EpisodeRoadmapBeatLabel.IncitingIncident,
+      value: episode.incitingIncident,
+    },
+    episode.midpoint && { label: EpisodeRoadmapBeatLabel.Midpoint, value: episode.midpoint },
+    episode.finale && { label: EpisodeRoadmapBeatLabel.Finale, value: episode.finale },
   ].flatMap(beat => (beat ? [beat] : []))
 
   // A/B story threads (from StoryArcSchema)

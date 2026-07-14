@@ -4,6 +4,10 @@ import { Card, CardContent } from '@/components/Card'
 import { WorldRule } from '@/domains/storyteller/prompts/schemas/agent-schemas'
 import { cn } from '@/shared/data/utils'
 import { RichText } from '../RichText'
+import {
+  WORLD_RULE_CATEGORY_DEFAULT,
+  WORLD_RULE_CATEGORY_MATCHES,
+} from './constants/world-rule-display'
 
 interface WorldRuleCardProps {
   rule: WorldRule
@@ -11,38 +15,27 @@ interface WorldRuleCardProps {
   className?: string
 }
 
+const CATEGORY_ICONS = [Sparkles, Building2, Cpu, Users, Eye, Atom, Sparkles] as const
+
 export const WorldRuleCard: React.FC<WorldRuleCardProps> = ({ rule, projectId, className }) => {
-  // Parse category to get primary type
   const categoryLower = (rule.category || '').toLowerCase()
 
   const getCategoryStyle = () => {
-    if (
-      categoryLower.includes('magic') ||
-      categoryLower.includes('metaphysics') ||
-      categoryLower.includes('gnostic')
-    ) {
-      return {
-        color: 'text-violet-300',
-        bg: 'bg-violet-500/15 border-violet-500/20',
-        icon: Sparkles,
+    for (let index = 0; index < WORLD_RULE_CATEGORY_MATCHES.length; index++) {
+      const match = WORLD_RULE_CATEGORY_MATCHES[index]
+      if (match.keywords.some(keyword => categoryLower.includes(keyword))) {
+        return {
+          color: match.color,
+          bg: match.bg,
+          icon: CATEGORY_ICONS[index] ?? Sparkles,
+        }
       }
     }
-    if (categoryLower.includes('politic') || categoryLower.includes('visitor')) {
-      return { color: 'text-amber-300', bg: 'bg-amber-500/15 border-amber-500/20', icon: Building2 }
+
+    return {
+      ...WORLD_RULE_CATEGORY_DEFAULT,
+      icon: Sparkles,
     }
-    if (categoryLower.includes('tech')) {
-      return { color: 'text-cyan-300', bg: 'bg-cyan-500/15 border-cyan-500/20', icon: Cpu }
-    }
-    if (categoryLower.includes('society') || categoryLower.includes('control')) {
-      return { color: 'text-rose-300', bg: 'bg-rose-500/15 border-rose-500/20', icon: Users }
-    }
-    if (categoryLower.includes('ufo') || categoryLower.includes('perception')) {
-      return { color: 'text-emerald-300', bg: 'bg-emerald-500/15 border-emerald-500/20', icon: Eye }
-    }
-    if (categoryLower.includes('physic') || categoryLower.includes('cost')) {
-      return { color: 'text-blue-300', bg: 'bg-blue-500/15 border-blue-500/20', icon: Atom }
-    }
-    return { color: 'text-purple-300', bg: 'bg-purple-500/15 border-purple-500/20', icon: Sparkles }
   }
 
   const style = getCategoryStyle()

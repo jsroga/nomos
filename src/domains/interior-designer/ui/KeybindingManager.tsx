@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useEffect } from 'react'
+import { InteriorKeyboardKey } from '@/domains/interior-designer/constants/keyboard'
 import { useInteriorStore } from '@/domains/interior-designer'
+import { DomEventType, DomTagName } from '@/shared/data/constants/protocol'
 
 export const KeybindingManager: React.FC = () => {
   const selectedId = useInteriorStore(state => state.selectedId)
@@ -20,9 +22,10 @@ export const KeybindingManager: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if typing in an input
-      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '')) return
+      const activeTag = document.activeElement?.tagName
+      if (activeTag === DomTagName.Input || activeTag === DomTagName.Textarea) return
 
-      if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (e.key === InteriorKeyboardKey.Delete || e.key === InteriorKeyboardKey.Backspace) {
         if (!selectedId) return
 
         // Check what type of item it is to delete it
@@ -40,8 +43,8 @@ export const KeybindingManager: React.FC = () => {
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener(DomEventType.KeyDown, handleKeyDown)
+    return () => window.removeEventListener(DomEventType.KeyDown, handleKeyDown)
   }, [
     selectedId,
     walls,

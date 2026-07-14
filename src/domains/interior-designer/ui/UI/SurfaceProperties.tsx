@@ -5,7 +5,7 @@ import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import { Slider } from '@/components/Slider'
 import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
-import { useInteriorStore, SurfaceType } from '@/domains/interior-designer'
+import { useInteriorStore } from '@/domains/interior-designer'
 import {
   Loader2,
   Wand2,
@@ -24,91 +24,36 @@ import { SidebarSection, SidebarLabel, SidebarSliderRow } from '@/components/Dom
 import { Switch } from '@/components/Switch'
 import { TextureStyle } from '@/domains/interior-designer'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/constants/polling'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
+import { AsyncOperationStatus, isActiveOperationStatus, isTerminalOperationStatus } from '@/shared/jobs/constants/async-operation-status'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import toast from 'react-hot-toast'
 import { cn } from '@/shared/data/utils'
 import { Progress } from '@/components/Progress'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { DEFAULT_TEXTURE_STYLE } from '@/domains/interior-designer/constants/texture-defaults'
+import { GROUND_SURFACE_TYPE_VALUES, SurfaceTypeValue } from '@/domains/interior-designer/constants/terrain-defaults'
+import { InteriorDefaultProjectId } from '@/domains/interior-designer/constants/interior-api-defaults'
+import {
+  MaterialArtStyle,
+  MaterialGenerationMode,
+  MaterialGenerationOperationType,
+  MaterialGenerationStage,
+  SurfacePropertiesError,
+  SurfacePropertiesLog,
+  SurfacePropertiesToast,
+  SurfaceRetextureOriginalType,
+  SURFACE_MATERIAL_OPERATION_ID_PREFIX,
+} from '@/domains/interior-designer/constants/surface-material-generation'
+import {
+  getMaterialGenerationStageLabel,
+  MATERIAL_3D_PRESETS,
+  PROMPT_PRESETS,
+  STYLE_OPTIONS,
+} from './constants/surface-properties-presets'
 
-// Active task statuses that indicate work is still in progress
-const ACTIVE_TASK_STATUSES = ['PENDING', 'QUEUED', 'EXECUTING', 'WAITING', 'DEQUEUED']
-
-const PROMPT_PRESETS: Record<SurfaceType, string[]> = {
-  grass: [
-    'Lush green grass field',
-    'Wild meadow with wildflowers',
-    'Tall swaying grass',
-    'Short manicured lawn',
-  ],
-  water: ['Deep blue ocean', 'Murky swamp water', 'Clear pool water', 'Frozen ice'],
-  road: ['Cracked asphalt', 'Cobblestone street', 'Dirt path', 'Modern highway'],
-  dirt: ['Rich dark soil patch', 'Dry cracked mud', 'Forest floor with leaves', 'Sandy loam'],
-  pavement: ['Concrete slabs', 'Brick walkway', 'Hexagon tiles', 'Stone pavers'],
-  mars: ['Red dusty martian soil', 'Alien rock formation', 'Crater surface', 'Rusty metal ground'],
-  sand: ['Golden beach sand dunes', 'White desert dunes', 'Wet compact sand', 'Desert ripples'],
-  rock: [
-    'Grey mountain rocks',
-    'Volcanic basalt formation',
-    'Smooth river stones',
-    'Jagged cliff rocks',
-  ],
-  wall: ['Stone wall', 'Brick wall', 'Wooden fence', 'Modern concrete wall'],
-}
-
-// 3D Material presets - more descriptive for 3D generation
-const MATERIAL_3D_PRESETS: Record<SurfaceType, string[]> = {
-  grass: [
-    'Dense grass patch with varied heights',
-    'Wildflower meadow with tall grass',
-    'Tropical tall grass field',
-    'Short clipped lawn grass',
-  ],
-  water: [
-    'Coral reef underwater scene',
-    'Lily pads on water',
-    'Ice sheet with cracks',
-    'Seaweed bed',
-  ],
-  road: [
-    'Broken asphalt chunks',
-    'Cobblestone path section',
-    'Wooden planks walkway',
-    'Gravel path',
-  ],
-  dirt: [
-    'Plowed field rows',
-    'Muddy terrain with puddles',
-    'Root covered forest floor',
-    'Rocky soil patch',
-  ],
-  pavement: [
-    'Cracked concrete tiles',
-    'Mossy brick pathway',
-    'Hexagonal stone tiles',
-    'Marble floor section',
-  ],
-  mars: [
-    'Martian rock outcrop',
-    'Alien crystal formation',
-    'Meteor impact crater',
-    'Rusted debris field',
-  ],
-  sand: ['Sand dunes with ripples', 'Beach with shells', 'Desert oasis patch', 'Quicksand pit'],
-  rock: ['Boulder cluster', 'Volcanic rock formation', 'Cliff face section', 'Cave stalagmites'],
-  wall: ['Medieval stone wall', 'Red brick wall', 'Graffiti covered concrete', 'Log cabin walls'],
-}
-
-const STYLE_OPTIONS: { value: TextureStyle; label: string }[] = [
-  { value: 'painterly', label: 'Painterly' },
-  { value: 'realistic', label: 'Realistic' },
-  { value: 'sketch', label: 'Sketch' },
-  { value: 'decay', label: 'Decay' },
-  { value: 'metallic', label: 'Metallic' },
-  { value: 'organic', label: 'Organic' },
-]
-
-type MaterialMode = '2d' | '3d'
+type MaterialMode = MaterialGenerationMode.TwoD | MaterialGenerationMode.ThreeD
 
 // Slider with label
 const LabeledSlider: React.FC<{
@@ -149,22 +94,6 @@ const LabeledSlider: React.FC<{
   </div>
 )
 
-// Progress stages for 3D generation
-const getStageLabel = (stage: string | undefined, progress: number): string => {
-  switch (stage) {
-    case 'preview':
-      return `Generating mesh... ${progress}%`
-    case 'refine':
-      return `Adding textures... ${progress}%`
-    case 'saving':
-      return `Saving model... ${progress}%`
-    case 'completed':
-      return 'Complete!'
-    default:
-      return `Processing... ${progress}%`
-  }
-}
-
 export const SurfaceProperties: React.FC = () => {
   const selectedId = useInteriorStore(state => state.selectedId)
   const surfaces = useInteriorStore(state => state.surfaces)
@@ -173,7 +102,6 @@ export const SurfaceProperties: React.FC = () => {
   const createFloorFromSurface = useInteriorStore(state => state.createFloorFromSurface)
   const previewRetexture = useInteriorStore(state => state.previewRetexture)
   const approveRetexture = useInteriorStore(state => state.approveRetexture)
-  const cancelRetexture = useInteriorStore(state => state.cancelRetexture)
 
   const selectedSurface = surfaces.find(s => s.id === selectedId)
   const terrainSettings = useInteriorStore(state => state.terrainSettings)
@@ -192,11 +120,11 @@ export const SurfaceProperties: React.FC = () => {
   const currentProject = useWorldStore(state => state.currentProject)
 
   // Mode toggle - default to 3D (Meshy) since 2D requires separate Stability API key
-  const [mode, setMode] = useState<MaterialMode>('3d')
+  const [mode] = useState<MaterialMode>(MaterialGenerationMode.ThreeD)
 
   // 2D Texture state
   const [prompt, setPrompt] = useState('')
-  const [style, setStyle] = useState<TextureStyle>('painterly')
+  const [style, setStyle] = useState<TextureStyle>(DEFAULT_TEXTURE_STYLE)
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -208,7 +136,7 @@ export const SurfaceProperties: React.FC = () => {
   const [isStarting3D, setIsStarting3D] = useState(false)
 
   // Get operation ID for this surface
-  const operationId = selectedId ? `material-${selectedId}` : null
+  const operationId = selectedId ? `${SURFACE_MATERIAL_OPERATION_ID_PREFIX}${selectedId}` : null
   const currentOperation = operationId ? operations.find(op => op.id === operationId) : null
 
   // Parse operation metadata
@@ -226,7 +154,7 @@ export const SurfaceProperties: React.FC = () => {
       setPrompt(selectedSurface.type)
       setPreviewUrl(null)
       setError(null)
-      setStyle('painterly')
+      setStyle(DEFAULT_TEXTURE_STYLE)
       setScale(selectedSurface.textureScale || 0.5)
     }
   }, [selectedSurface?.id])
@@ -240,7 +168,7 @@ export const SurfaceProperties: React.FC = () => {
   // Polling for 3D generation status
   useEffect(() => {
     if (!currentOperation || !operationId) return
-    if (currentOperation.status === 'completed' || currentOperation.status === 'failed') return
+    if (isTerminalOperationStatus(currentOperation.status)) return
 
     const checkStatus = async () => {
       const taskId = operationMetaRef.current?.taskId
@@ -249,7 +177,7 @@ export const SurfaceProperties: React.FC = () => {
       try {
         const data = await interiorDesignerApi.material.getStatus(taskId)
         const progress = data.metadata?.progress || 0
-        const stage = data.metadata?.stage || 'processing'
+        const stage = data.metadata?.stage || MaterialGenerationStage.Processing
 
         // Update progress in operation details
         updateOperation(operationId, {
@@ -260,31 +188,31 @@ export const SurfaceProperties: React.FC = () => {
           }),
         })
 
-        if (data.status === 'COMPLETED' || data.status === 'SUCCESS') {
+        if (isSuccessTaskStatus(data.status)) {
           const output = data.output
           if (output?.success && output?.modelUrl) {
             updateOperation(operationId, {
-              status: 'completed',
+              status: AsyncOperationStatus.Completed,
               details: JSON.stringify({
                 ...operationMetaRef.current,
                 progress: 100,
-                stage: 'completed',
+                stage: MaterialGenerationStage.Completed,
                 modelUrl: output.modelUrl,
                 thumbnailUrl: output.thumbnailUrl,
               }),
             })
           }
-        } else if (!ACTIVE_TASK_STATUSES.includes(data.status)) {
+        } else if (!isActiveTaskStatus(data.status)) {
           updateOperation(operationId, {
-            status: 'failed',
+            status: AsyncOperationStatus.Failed,
             details: JSON.stringify({
               ...operationMetaRef.current,
-              error: data.error || 'Generation failed',
+              error: data.error || SurfacePropertiesError.GenerationFailed,
             }),
           })
         }
       } catch (err) {
-        console.error('Poll error:', err)
+        console.error(SurfacePropertiesLog.PollError, err)
       }
     }
 
@@ -309,7 +237,7 @@ export const SurfaceProperties: React.FC = () => {
     try {
       const apiKey = localStorage.getItem(LocalStorageKeys.STABILITY_API_KEY_LEGACY)
       if (!apiKey) {
-        toast.error('Stability API Key required for 2D textures. Go to Settings.')
+        toast.error(SurfacePropertiesToast.StabilityApiKeyRequired)
         setIsGenerating(false)
         return
       }
@@ -317,7 +245,10 @@ export const SurfaceProperties: React.FC = () => {
       let width = 1024
       let height = 1024
 
-      if (selectedSurface && (selectedSurface.isPath || selectedSurface.type === 'road')) {
+      if (
+        selectedSurface &&
+        (selectedSurface.isPath || selectedSurface.type === SurfaceTypeValue.Road)
+      ) {
         width = 1536
         height = 640
       }
@@ -343,11 +274,8 @@ export const SurfaceProperties: React.FC = () => {
     if (!prompt || !selectedSurface || !operationId) return
 
     // Prevent duplicate jobs
-    if (
-      currentOperation &&
-      (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')
-    ) {
-      toast.error('3D generation already in progress')
+    if (currentOperation && isActiveOperationStatus(currentOperation.status)) {
+      toast.error(SurfacePropertiesToast.GenerationInProgress)
       return
     }
 
@@ -364,11 +292,11 @@ export const SurfaceProperties: React.FC = () => {
           apiKey = config.apiKey || ''
         }
       } catch (err) {
-        console.warn('Failed to read Meshy API key', err)
+        console.warn(SurfacePropertiesLog.MeshyApiKeyReadFailed, err)
       }
 
       if (!apiKey) {
-        toast.error('Please set Meshy API Key in Settings')
+        toast.error(SurfacePropertiesToast.MeshyApiKeyRequired)
         setIsStarting3D(false)
         return
       }
@@ -390,42 +318,42 @@ export const SurfaceProperties: React.FC = () => {
       // Add operation to GlobalStatusStore
       addOperation({
         id: operationId,
-        type: 'material-gen',
+        type: MaterialGenerationOperationType.MaterialGen,
         label: `Generating: ${prompt.slice(0, 25)}...`,
         details: JSON.stringify({
           prompt,
           surfaceId: selectedSurface.id,
           progress: 0,
-          stage: 'starting',
+          stage: MaterialGenerationStage.Starting,
         }),
-        status: 'pending',
+        status: AsyncOperationStatus.Pending,
       })
 
       const data = await interiorDesignerApi.material.start({
-        projectId: currentProject?.id || 'default',
+        projectId: currentProject?.id || InteriorDefaultProjectId.Default,
         surfaceId: selectedSurface.id,
         prompt,
         apiKey,
-        artStyle: 'realistic',
+        artStyle: MaterialArtStyle.Realistic,
         surfaceBounds,
       })
       if (data.runId) {
         updateOperation(operationId, {
-          status: 'in-progress',
+          status: AsyncOperationStatus.InProgress,
           details: JSON.stringify({
             taskId: data.runId,
             prompt,
             surfaceId: selectedSurface.id,
             surfaceBounds,
             progress: 0,
-            stage: 'preview',
+            stage: MaterialGenerationStage.Preview,
           }),
         })
-        toast.success('3D generation started! This may take a few minutes.')
+        toast.success(SurfacePropertiesToast.GenerationStarted)
       }
     } catch (e: unknown) {
       setError(getErrorMessage(e))
-      toast.error('Failed to start 3D generation: ' + getErrorMessage(e))
+      toast.error(SurfacePropertiesToast.GenerationStartFailed + getErrorMessage(e))
       if (operationId) removeOperation(operationId)
     } finally {
       setIsStarting3D(false)
@@ -446,7 +374,7 @@ export const SurfaceProperties: React.FC = () => {
     // Store original surface data in operation for potential revert
     const updatedMeta = {
       ...operationMeta,
-      originalType: 'surface',
+      originalType: SurfaceRetextureOriginalType.Surface,
       originalData: selectedSurface,
       originalBoundingBox: {
         center: [
@@ -473,7 +401,7 @@ export const SurfaceProperties: React.FC = () => {
     setTimeout(() => {
       approveRetexture(selectedSurface.id)
       if (operationId) removeOperation(operationId)
-      toast.success('3D material applied!')
+      toast.success(SurfacePropertiesToast.MaterialApplied)
     }, 100)
   }
 
@@ -489,23 +417,19 @@ export const SurfaceProperties: React.FC = () => {
     if (operationId) {
       removeOperation(operationId)
     }
-    toast('Generation cancelled')
+    toast(SurfacePropertiesToast.GenerationCancelled)
   }
 
-  const surfaceLabel =
-    selectedSurface.type === 'grass'
-      ? 'Land'
-      : selectedSurface.type.charAt(0).toUpperCase() + selectedSurface.type.slice(1)
-  const isGroundType = ['grass', 'dirt', 'sand', 'rock', 'mars'].includes(selectedSurface.type)
+  const isGroundType = GROUND_SURFACE_TYPE_VALUES.includes(selectedSurface.type)
 
   // Check if surface is being generated
   const isGenerating3D =
-    currentOperation &&
-    (currentOperation.status === 'pending' || currentOperation.status === 'in-progress')
-  const is3DComplete = currentOperation?.status === 'completed'
-  const is3DFailed = currentOperation?.status === 'failed'
+    currentOperation && isActiveOperationStatus(currentOperation.status)
+  const is3DComplete = currentOperation?.status === AsyncOperationStatus.Completed
+  const is3DFailed = currentOperation?.status === AsyncOperationStatus.Failed
 
-  const presets = mode === '2d' ? PROMPT_PRESETS : MATERIAL_3D_PRESETS
+  const presets =
+    mode === MaterialGenerationMode.TwoD ? PROMPT_PRESETS : MATERIAL_3D_PRESETS
 
   return (
     <div className="p-6 space-y-8">
@@ -601,7 +525,7 @@ export const SurfaceProperties: React.FC = () => {
       )}
 
       {/* Geometry Section - For Paths/Walls */}
-      {(selectedSurface.isPath || selectedSurface.type === 'road') && (
+      {(selectedSurface.isPath || selectedSurface.type === SurfaceTypeValue.Road) && (
         <SidebarSection title="Geometry" icon={<Ruler size={12} />}>
           <div className="space-y-4 pt-1">
             <LabeledSlider
@@ -664,13 +588,16 @@ export const SurfaceProperties: React.FC = () => {
       {/* AI Material Generation (Meshy) */}
       <SidebarSection title="AI Material (Meshy)" icon={<Palette size={12} />} separator>
         {/* 3D Generation In Progress */}
-        {mode === '3d' && isGenerating3D && (
+        {mode === MaterialGenerationMode.ThreeD && isGenerating3D && (
           <div className="space-y-3 p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />
                 <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-300">
-                  {getStageLabel(operationMeta?.stage, operationMeta?.progress || 0)}
+                  {getMaterialGenerationStageLabel(
+                    operationMeta?.stage,
+                    operationMeta?.progress || 0
+                  )}
                 </span>
               </div>
               <Button
@@ -694,7 +621,7 @@ export const SurfaceProperties: React.FC = () => {
         )}
 
         {/* 3D Generation Complete */}
-        {mode === '3d' && is3DComplete && operationMeta?.modelUrl && (
+        {mode === MaterialGenerationMode.ThreeD && is3DComplete && operationMeta?.modelUrl && (
           <div className="space-y-3 animate-in fade-in">
             <div className="flex items-center gap-2 text-green-500">
               <Check size={14} />
@@ -730,7 +657,7 @@ export const SurfaceProperties: React.FC = () => {
         )}
 
         {/* 3D Generation Failed */}
-        {mode === '3d' && is3DFailed && (
+        {mode === MaterialGenerationMode.ThreeD && is3DFailed && (
           <div className="space-y-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
             <div className="flex items-center gap-2 text-red-500">
               <X size={14} />
@@ -755,7 +682,7 @@ export const SurfaceProperties: React.FC = () => {
         {!(isGenerating3D || is3DComplete || is3DFailed) && (
           <>
             {/* Style Selector - Only for 2D mode */}
-            {mode === '2d' && (
+            {mode === MaterialGenerationMode.TwoD && (
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {STYLE_OPTIONS.map(opt => (
                   <button
@@ -777,7 +704,11 @@ export const SurfaceProperties: React.FC = () => {
             {/* Prompt Input */}
             <div className="relative mb-3 group">
               <Input
-                placeholder={mode === '2d' ? 'Describe texture...' : 'Describe object...'}
+                placeholder={
+                  mode === MaterialGenerationMode.TwoD
+                    ? 'Describe texture...'
+                    : 'Describe object...'
+                }
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
                 disabled={isGenerating || isStarting3D}
@@ -786,8 +717,12 @@ export const SurfaceProperties: React.FC = () => {
               <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
                 <Button
                   size="icon"
-                  onClick={mode === '2d' ? handleGenerate2D : handleGenerate3D}
-                  disabled={(mode === '2d' ? isGenerating : isStarting3D) || !prompt}
+                  onClick={
+                    mode === MaterialGenerationMode.TwoD ? handleGenerate2D : handleGenerate3D
+                  }
+                  disabled={
+                    (mode === MaterialGenerationMode.TwoD ? isGenerating : isStarting3D) || !prompt
+                  }
                   className={cn(
                     'h-7 w-7 rounded-xl transition-all shadow-lg',
                     prompt
@@ -795,7 +730,7 @@ export const SurfaceProperties: React.FC = () => {
                       : 'bg-zinc-800 text-zinc-600 shadow-none'
                   )}
                 >
-                  {(mode === '2d' ? isGenerating : isStarting3D) ? (
+                  {(mode === MaterialGenerationMode.TwoD ? isGenerating : isStarting3D) ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <Wand2 className="h-3.5 w-3.5" />
@@ -838,7 +773,7 @@ export const SurfaceProperties: React.FC = () => {
 
             {/* Info */}
             <div className="text-[9px] text-zinc-500 italic leading-snug px-3 py-2 bg-white/2 border border-white/5 rounded-2xl">
-              {mode === '2d'
+              {mode === MaterialGenerationMode.TwoD
                 ? 'Generates a repeatable PBR texture using AI.'
                 : 'Generates a fully detailed 3D model. Takes 2-5 minutes.'}
             </div>
@@ -853,7 +788,7 @@ export const SurfaceProperties: React.FC = () => {
       </SidebarSection>
 
       {/* 2D Preview */}
-      {mode === '2d' && previewUrl && (
+      {mode === MaterialGenerationMode.TwoD && previewUrl && (
         <SidebarSection
           title="Generated Result"
           icon={<Sparkles size={12} />}

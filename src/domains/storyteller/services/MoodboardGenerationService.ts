@@ -1,10 +1,23 @@
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
+import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import {
+  MoodboardGenerationError,
+  MoodboardGenerationLog,
+  MoodboardHttpMethod,
+  MoodboardOperationDetail,
+  MoodboardOperationLabel,
+  MoodboardOperationStatus,
+  MoodboardOperationType,
+  MoodboardStorageKey,
+  MoodboardTriggerStage,
+  MoodboardTriggerStatus,
+} from '@/domains/storyteller/services/constants/moodboard-generation-service'
 
 // Define local storage keys
 const DynamicLocalStorageKeys = {
   moodboardGen: (projectId: string, index?: number) =>
-    `moodboard-gen-${projectId}${index !== undefined ? `-${index}` : ''}`,
+    `${MoodboardStorageKey.GenPrefix}${projectId}${index !== undefined ? `-${index}` : ''}`,
 }
 
 interface MoodboardGenRunState {
@@ -36,16 +49,19 @@ export class MoodboardGenerationService {
 
     useGlobalStatusStore.getState().addOperation({
       id: opId,
-      type: 'story-agent',
-      label: promptIndex !== undefined ? 'Regenerating Image' : 'Generating Moodboard',
-      details: 'Initializing...',
-      status: 'in-progress',
+      type: MoodboardOperationType.StoryAgent,
+      label:
+        promptIndex !== undefined
+          ? MoodboardOperationLabel.Regenerating
+          : MoodboardOperationLabel.Generating,
+      details: MoodboardOperationDetail.Initializing,
+      status: MoodboardOperationStatus.InProgress,
     })
 
     try {
       // Trigger the moodboard generation task
       const triggerResponse = await fetch('/api/storyteller/moodboard/trigger', {
-        method: 'POST',
+        method: MoodboardHttpMethod.Post,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           projectId,
@@ -60,10 +76,10 @@ export class MoodboardGenerationService {
 
       // The trigger route returns { success: true, handleId: "..." }
       if (!triggerResponse.ok || !triggerData.handleId) {
-        throw new Error(triggerData.error || 'Failed to trigger moodboard generation task')
+        throw new Error(triggerData.error || MoodboardGenerationError.TriggerFailed)
       }
 
-      console.log('Moodboard generation task triggered:', triggerData.handleId)
+      console.log(MoodboardGenerationLog.TaskTriggered, triggerData.handleId)
 
       // Save run state to localStorage for recovery
       const runState: MoodboardGenRunState = {
@@ -83,7 +99,7 @@ export class MoodboardGenerationService {
 
       return triggerData.handleId
     } catch (error) {
-      console.error('Moodboard generation error:', error)
+      console.error(MoodboardGenerationLog.GenerationError, error)
       // Clean up status on error
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
@@ -117,7 +133,7 @@ export class MoodboardGenerationService {
             this.scheduleNextPoll(runState.runId, poll, 2000)
             return
           }
-          console.warn('Moodboard generation run not found after grace period, clearing state')
+          console.warn(MoodboardGenerationLog.RunNotFound)
           this.clearRunState(runState, opId)
           return
         }
@@ -150,25 +166,25 @@ export class MoodboardGenerationService {
 
         // Poll frequently enough so user sees progress (every 3s when running)
         let nextInterval = statusChanged ? 2000 : POLLING_INTERVALS.FAST
-        if (statusData.metadata?.stage === 'waiting_diffusion') {
+        if (statusData.metadata?.stage === MoodboardTriggerStage.WaitingDiffusion) {
           nextInterval = 4000 // MJ diffusion poll; still show progress regularly
         }
 
-        if (statusData.status === 'COMPLETED') {
-          console.log('✅ Moodboard generation completed:', statusData.output)
+        if (statusData.status === MoodboardTriggerStatus.Completed) {
+          console.log(MoodboardGenerationLog.Completed, statusData.output)
           await this.handleCompletion(runState, statusData.output, opId, onComplete)
           return
         }
 
         if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          console.error('❌ Moodboard generation failed:', statusData.error || statusData.status)
+          console.error(MoodboardGenerationLog.Failed, statusData.error || statusData.status)
           this.clearRunState(runState, opId)
           return
         }
 
         this.scheduleNextPoll(runState.runId, poll, nextInterval)
       } catch (error) {
-        console.error('Status polling error:', error)
+        console.error(MoodboardGenerationLog.PollingError, error)
         consecutiveErrors++
         const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
         this.scheduleNextPoll(runState.runId, poll, backoffInterval)
@@ -198,19 +214,15 @@ export class MoodboardGenerationService {
   ) {
     try {
       if (output?.success) {
-        console.log('Moodboard generated successfully')
+        console.log(MoodboardGenerationLog.GeneratedSuccessfully)
 
-        // Dispatch custom event to notify UI to refresh data
+        // Notify UI to refresh moodboard data
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('moodboard-generation-complete', {
-              detail: {
-                projectId: runState.projectId,
-                promptIndex: runState.promptIndex,
-                images: output.images,
-              },
-            })
-          )
+          getStorytellerUiStore().notifyMoodboardComplete({
+            projectId: runState.projectId,
+            promptIndex: runState.promptIndex,
+            images: output.images,
+          })
         }
 
         if (onComplete) {
@@ -218,7 +230,7 @@ export class MoodboardGenerationService {
         }
       }
     } catch (error) {
-      console.error('Error handling moodboard completion:', error)
+      console.error(MoodboardGenerationLog.CompletionError, error)
     } finally {
       this.clearRunState(runState, opId)
     }
@@ -251,7 +263,7 @@ export class MoodboardGenerationService {
     if (typeof window === 'undefined') return
 
     // Scan all local storage keys for this project's moodboard generations
-    const prefix = `moodboard-gen-${projectId}`
+    const prefix = MoodboardStorageKey.GenPrefix + projectId
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
@@ -262,25 +274,25 @@ export class MoodboardGenerationService {
 
           const runState: MoodboardGenRunState = JSON.parse(data)
           if (runState.runId) {
-            console.log('Resuming moodboard generation polling for:', runState.runId)
+            console.log(MoodboardGenerationLog.ResumingPolling, runState.runId)
 
             // Re-add status indicators
             useGlobalStatusStore.getState().addOperation({
               id: key, // key is the opId logic now
-              type: 'story-agent',
+              type: MoodboardOperationType.StoryAgent,
               label:
                 runState.promptIndex !== undefined
-                  ? 'Regenerating Image (resumed)'
-                  : 'Generating Moodboard (resumed)',
-              details: `Project: ${projectId}`,
-              status: 'in-progress',
+                  ? MoodboardOperationLabel.RegeneratingResumed
+                  : MoodboardOperationLabel.GeneratingResumed,
+              details: `${MoodboardOperationDetail.ProjectPrefix}${projectId}`,
+              status: MoodboardOperationStatus.InProgress,
             })
 
             // Start polling
             this.startPolling(runState, key, onComplete)
           }
         } catch (_e) {
-          console.warn('Failed to parse moodboard generation run state:', key)
+          console.warn(MoodboardGenerationLog.ParseStateFailed, key)
         }
       }
     }

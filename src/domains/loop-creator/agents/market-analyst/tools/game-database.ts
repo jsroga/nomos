@@ -4,23 +4,26 @@
  * Queries game databases (IGDB, etc.) for metadata and similar games.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
 import { GameDatabaseEntry } from '../types'
+import { createLoopStructuredTool } from './structured-tool'
+
+const gameDatabaseSchema = z.object({
+  query: z.string().describe('Game name or genre to search for'),
+  searchType: z.enum(['game', 'genre', 'similar']).describe('Type of search to perform'),
+  limit: z.number().optional().describe('Maximum results to return (default 5)'),
+})
 
 /**
  * Game database tool for metadata lookup
  */
-export const gameDatabaseTool = new DynamicStructuredTool({
+export const gameDatabaseTool = createLoopStructuredTool({
   name: 'game_database',
   description:
     'Query game databases for metadata, similar games, genres, and ratings. Use this to find comparable titles and understand genre conventions.',
-  schema: z.object({
-    query: z.string().describe('Game name or genre to search for'),
-    searchType: z.enum(['game', 'genre', 'similar']).describe('Type of search to perform'),
-    limit: z.number().optional().describe('Maximum results to return (default 5)'),
-  }),
-  func: async ({ query, searchType, limit = 5 }): Promise<string> => {
+  schema: gameDatabaseSchema,
+  func: async input => {
+    const { query, searchType, limit = 5 } = gameDatabaseSchema.parse(input)
     try {
       // In production, this would call IGDB API
       // For now, we'll use a curated database of reference games

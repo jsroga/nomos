@@ -105,7 +105,7 @@ async function runEval(): Promise<MultiVariantReport> {
 
   if (globalScorers.length === 0) {
     throw new Error(
-      'No scorers selected. Available: magic, consistency, hallucination, persona-fidelity, prose-craft, stakes-cost, beat-plan-concreteness, critic-discipline'
+      'No scorers selected. Available: magic, consistency, hallucination, persona-fidelity, prose-craft, stakes-cost, story-motion, beat-plan-concreteness, critic-discipline'
     )
   }
 

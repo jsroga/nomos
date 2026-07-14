@@ -2,6 +2,10 @@ import type { Mastra } from '@mastra/core/mastra'
 import type { PostgresStore } from '@mastra/pg'
 import { createMastra, createPostgresStore } from '@/shared/agent-kernel/mastra/create-mastra'
 import { consumeMastraRegistrations } from '@/shared/agent-kernel/mastra/runtime-registry'
+import {
+  LIST_JOIN_SEPARATOR,
+  MASTRA_STORAGE_INITIALIZED_LOG,
+} from '@/shared/agent-kernel/constants/mastra-instance'
 
 let mastraInstance: Mastra | null = null
 let storageInstance: PostgresStore | null = null
@@ -13,7 +17,7 @@ let storageInstance: PostgresStore | null = null
 export function getStorageInstance(): PostgresStore {
   if (!storageInstance) {
     storageInstance = createPostgresStore()
-    console.log('💾 [Mastra] Storage initialized with Postgres')
+    console.log(MASTRA_STORAGE_INITIALIZED_LOG)
   }
   return storageInstance
 }
@@ -34,7 +38,7 @@ export function getMastraInstance(): Mastra {
       workflows,
     })
     console.log(
-      `🚀 [Mastra] Centralized instance initialized — agents: [${Object.keys(agents).join(', ')}], workflows: [${Object.keys(workflows).join(', ')}]`
+      `🚀 [Mastra] Centralized instance initialized — agents: [${Object.keys(agents).join(LIST_JOIN_SEPARATOR)}], workflows: [${Object.keys(workflows).join(LIST_JOIN_SEPARATOR)}]`
     )
   }
   return mastraInstance

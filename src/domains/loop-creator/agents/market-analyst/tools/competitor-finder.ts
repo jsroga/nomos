@@ -5,10 +5,10 @@
  * SECRET SAUCE: Detailed competitor profiles with real metrics, loop breakdowns, and market positioning.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
 import { countOccurrences } from '@/shared/data/count-occurrences'
 import { CompetitorData } from '../types'
+import { createLoopStructuredTool } from './structured-tool'
 
 /**
  * Extended competitor profile with deep analysis
@@ -481,13 +481,29 @@ const COMPETITOR_DB: DetailedCompetitor[] = [
   },
 ]
 
+const competitorFinderSchema = z.object({
+  genre: z
+    .string()
+    .describe('Primary genre to search (roguelike, survivors-like, deck-builder, etc.)'),
+  mechanics: z
+    .array(z.string())
+    .optional()
+    .describe('Key mechanics to match (auto-attack, deck-building, etc.)'),
+  platform: z.string().optional().describe('Target platform (PC, mobile, console)'),
+  analysisDepth: z
+    .enum(['quick', 'detailed', 'comprehensive'])
+    .optional()
+    .describe('How deep to analyze competitors'),
+  limit: z.number().optional().describe('Max competitors to return (default 5)'),
+})
+
 /**
  * Competitor finder tool
  *
  * AGENT INTELLIGENCE: Knows to look for both direct and adjacent competitors,
  * extract actionable insights, and identify real differentiation opportunities.
  */
-export const competitorFinderTool = new DynamicStructuredTool({
+export const competitorFinderTool = createLoopStructuredTool({
   name: 'competitor_finder',
   description: `Find and deeply analyze competing games. Returns detailed profiles with:
 - Business metrics (revenue, pricing, monetization)
@@ -495,28 +511,15 @@ export const competitorFinderTool = new DynamicStructuredTool({
 - Success factors and innovation points
 - Design lessons and mistakes to avoid
 Use this to understand what works in the market and find differentiation opportunities.`,
-  schema: z.object({
-    genre: z
-      .string()
-      .describe('Primary genre to search (roguelike, survivors-like, deck-builder, etc.)'),
-    mechanics: z
-      .array(z.string())
-      .optional()
-      .describe('Key mechanics to match (auto-attack, deck-building, etc.)'),
-    platform: z.string().optional().describe('Target platform (PC, mobile, console)'),
-    analysisDepth: z
-      .enum(['quick', 'detailed', 'comprehensive'])
-      .optional()
-      .describe('How deep to analyze competitors'),
-    limit: z.number().optional().describe('Max competitors to return (default 5)'),
-  }),
-  func: async ({
-    genre,
-    mechanics,
-    platform,
-    analysisDepth = 'detailed',
-    limit = 5,
-  }): Promise<string> => {
+  schema: competitorFinderSchema,
+  func: async input => {
+    const {
+      genre,
+      mechanics,
+      platform,
+      analysisDepth = 'detailed',
+      limit = 5,
+    } = competitorFinderSchema.parse(input)
     try {
       const genreLower = genre.toLowerCase()
       const mechanicsLower = (mechanics || []).map(m => m.toLowerCase())

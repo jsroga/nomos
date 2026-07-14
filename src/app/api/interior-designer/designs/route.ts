@@ -13,6 +13,8 @@ import {
   updateInteriorDesignRequestSchema,
 } from '@/domains/interior-designer/io/interior-designer.dto'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { FormField, QueryParam } from '@/shared/data/constants/protocol'
 
 /**
  * Verify design access using single JOIN query
@@ -46,8 +48,8 @@ async function verifyDesignAccess(
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const parsedQuery = interiorDesignLookupQuerySchema.safeParse({
-    projectId: searchParams.get('projectId') ?? undefined,
-    designId: searchParams.get('designId') ?? undefined,
+    projectId: searchParams.get(FormField.ProjectId) ?? undefined,
+    designId: searchParams.get(FormField.DesignId) ?? undefined,
   })
 
   if (!parsedQuery.success) {
@@ -56,14 +58,14 @@ export async function GET(req: NextRequest) {
 
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { projectId, designId } = parsedQuery.data
 
     if (designId) {
       const { hasAccess } = await verifyDesignAccess(designId, session.user.id)
       if (!hasAccess) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
       const [design] = await db
@@ -74,7 +76,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(interiorDesignResponseSchema.parse(design || null))
     } else {
       if (!(await verifyProjectAccess(projectId!, session.user.id))) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
       const designs = await db
@@ -86,21 +88,21 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(interiorDesignListResponseSchema.parse(designs))
     }
   } catch (error) {
-    console.error('Failed to fetch interior designs:', error)
-    return NextResponse.json({ error: 'Failed to fetch designs' }, { status: 500 })
+    console.error(API_LOG_PREFIX.INTERIOR_DESIGNS_FETCH_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_FETCH_DESIGNS }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { allowed } = checkRateLimit(`design-create:${session.user.id}`, {
       maxRequests: 20,
       windowMs: 60000,
     })
-    if (!allowed) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    if (!allowed) return NextResponse.json({ error: API_ERROR.RATE_LIMIT_EXCEEDED }, { status: 429 })
 
     const parsedBody = createInteriorDesignRequestSchema.safeParse(await req.json())
     if (!parsedBody.success) {
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
     const { projectId, name, sceneData } = parsedBody.data
 
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
     const [newDesign] = await db
@@ -120,15 +122,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(interiorDesignResponseSchema.parse(newDesign))
   } catch (error) {
-    console.error('Failed to create interior design:', error)
-    return NextResponse.json({ error: 'Failed to create design' }, { status: 500 })
+    console.error(API_LOG_PREFIX.INTERIOR_DESIGNS_CREATE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_CREATE_DESIGN }, { status: 500 })
   }
 }
 
 export async function PATCH(req: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const parsedBody = updateInteriorDesignRequestSchema.safeParse(await req.json())
     if (!parsedBody.success) {
@@ -138,7 +140,7 @@ export async function PATCH(req: NextRequest) {
     const { id, name, sceneData } = parsedBody.data
 
     const { hasAccess } = await verifyDesignAccess(id, session.user.id)
-    if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    if (!hasAccess) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
 
     const updates: Record<string, unknown> = { updatedAt: new Date() }
     if (name !== undefined) updates.name = name
@@ -152,15 +154,15 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json(interiorDesignResponseSchema.parse(updatedDesign))
   } catch (error) {
-    console.error('Failed to update interior design:', error)
-    return NextResponse.json({ error: 'Failed to update design' }, { status: 500 })
+    console.error(API_LOG_PREFIX.INTERIOR_DESIGNS_UPDATE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_UPDATE_DESIGN }, { status: 500 })
   }
 }
 
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const parsedQuery = deleteInteriorDesignQuerySchema.safeParse({
-    id: searchParams.get('id') ?? undefined,
+    id: searchParams.get(QueryParam.Id) ?? undefined,
   })
 
   if (!parsedQuery.success) {
@@ -169,17 +171,17 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const { id } = parsedQuery.data
 
     const { hasAccess } = await verifyDesignAccess(id, session.user.id)
-    if (!hasAccess) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    if (!hasAccess) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
 
     await db.delete(interiorDesigns).where(eq(interiorDesigns.id, id))
     return NextResponse.json(deleteInteriorDesignResponseSchema.parse({ success: true }))
   } catch (error) {
-    console.error('Failed to delete interior design:', error)
-    return NextResponse.json({ error: 'Failed to delete design' }, { status: 500 })
+    console.error(API_LOG_PREFIX.INTERIOR_DESIGNS_DELETE_ERROR, error)
+    return NextResponse.json({ error: API_ERROR.FAILED_DELETE_DESIGN }, { status: 500 })
   }
 }

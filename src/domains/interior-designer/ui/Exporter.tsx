@@ -1,6 +1,11 @@
 'use client'
 
 import React, { useEffect } from 'react'
+import {
+  EXPORT_ERROR_LOG,
+  EXPORT_LINK_DISPLAY_NONE,
+  INTERIOR_DESIGN_GLTF_FILENAME,
+} from '@/domains/interior-designer/constants/export'
 import { useInteriorStore } from '@/domains/interior-designer'
 import { useThree } from '@react-three/fiber'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
@@ -20,9 +25,9 @@ export const Exporter: React.FC = () => {
           const blob = new Blob([output], { type: 'text/plain' })
           const url = URL.createObjectURL(blob)
           const link = document.createElement('a')
-          link.style.display = 'none'
+          link.style.display = EXPORT_LINK_DISPLAY_NONE
           link.href = url
-          link.download = 'interior-design.gltf'
+          link.download = INTERIOR_DESIGN_GLTF_FILENAME
           document.body.appendChild(link)
           link.click()
           document.body.removeChild(link)
@@ -30,7 +35,7 @@ export const Exporter: React.FC = () => {
           setExportRequested(false)
         },
         error => {
-          console.error('An error happened during export:', error)
+          console.error(EXPORT_ERROR_LOG, error)
           setExportRequested(false)
         },
         {

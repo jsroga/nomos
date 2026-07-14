@@ -1,6 +1,11 @@
 'use client'
 
 import React, { useState } from 'react'
+import {
+  MJ_VARIANT_PICKER_COPY,
+  MjVariantLabel,
+  MjVariantPosition,
+} from '@/domains/world-building-toolkit/ui/constants/mj-variant-picker'
 import { X, Loader2 } from 'lucide-react'
 import { upscaleService } from '../state/client-services/UpscaleService'
 import toast from 'react-hot-toast'
@@ -22,8 +27,6 @@ export const MjVariantPicker: React.FC<MjVariantPickerProps> = ({
   tileX,
   tileY,
   gridImageUrl,
-  buttons,
-  taskId,
   onClose,
   onSelected,
 }) => {
@@ -37,8 +40,8 @@ export const MjVariantPicker: React.FC<MjVariantPickerProps> = ({
       onSelected()
       onClose()
     } catch (error: unknown) {
-      console.error('Failed to select variant:', error)
-      toast.error(getErrorMessage(error) || 'Failed to select variant')
+      console.error(MJ_VARIANT_PICKER_COPY.FAILED_SELECT_VARIANT_LOG, error)
+      toast.error(getErrorMessage(error) || MJ_VARIANT_PICKER_COPY.FAILED_SELECT_VARIANT_TOAST)
       setSelecting(null)
     }
   }
@@ -51,10 +54,10 @@ export const MjVariantPicker: React.FC<MjVariantPickerProps> = ({
   // Map variant positions in the 2x2 grid
   // 1 = top-left, 2 = top-right, 3 = bottom-left, 4 = bottom-right
   const variantPositions = [
-    { index: 1 as const, label: 'U1', position: 'top-0 left-0' },
-    { index: 2 as const, label: 'U2', position: 'top-0 right-0' },
-    { index: 3 as const, label: 'U3', position: 'bottom-0 left-0' },
-    { index: 4 as const, label: 'U4', position: 'bottom-0 right-0' },
+    { index: 1 as const, label: MjVariantLabel.U1, position: MjVariantPosition.TopLeft },
+    { index: 2 as const, label: MjVariantLabel.U2, position: MjVariantPosition.TopRight },
+    { index: 3 as const, label: MjVariantLabel.U3, position: MjVariantPosition.BottomLeft },
+    { index: 4 as const, label: MjVariantLabel.U4, position: MjVariantPosition.BottomRight },
   ]
 
   return (

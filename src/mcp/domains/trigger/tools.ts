@@ -17,7 +17,7 @@ const getRunStatus = createTool({
   id: 'get_run_status',
   description:
     'Get the status of a Trigger.dev task run. Use this to track progress of async operations like tile generation, 3D model creation, or portrait generation.',
-  schema: z.object({
+  inputSchema: z.object({
     runId: z.string().describe('The run ID returned from a generation task (starts with run_)'),
   }),
   execute: async ({ context: _ctx, data }) => {
@@ -35,7 +35,7 @@ const getRunStatus = createTool({
 const cancelRun = createTool({
   id: 'cancel_run',
   description: 'Cancel a running Trigger.dev task.',
-  schema: z.object({
+  inputSchema: z.object({
     runId: z.string().describe('The run ID to cancel'),
   }),
   execute: async ({ context: _ctx, data }) => {
@@ -53,7 +53,7 @@ const waitForRun = createTool({
   id: 'wait_for_run',
   description:
     'Wait for a Trigger.dev run to complete and return the result. This will poll the run status until it completes, fails, or times out.',
-  schema: z.object({
+  inputSchema: z.object({
     runId: z.string().describe('The run ID to wait for'),
     timeoutSeconds: z
       .number()

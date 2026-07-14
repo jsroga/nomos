@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import React, { useMemo, useRef, useEffect, useCallback } from 'react'
+import { CATMULL_ROM_CURVE_TYPE } from '@/domains/interior-designer/constants/three-js'
 import { useInteriorStore, Surface } from '@/domains/interior-designer'
 import { getCachedTexture } from '@/domains/interior-designer/core/textureCache'
 
@@ -29,7 +30,6 @@ export const RoadMesh: React.FC<RoadMeshProps> = ({
   isSelected,
   onClick,
   opacity = 1,
-  isGenerating = false,
 }) => {
   // Refs
   const meshRef = useRef<THREE.Mesh>(null)
@@ -51,8 +51,8 @@ export const RoadMesh: React.FC<RoadMeshProps> = ({
 
     const tension = surface.roundness ?? 0.5
     const curve = surface.curved
-      ? new THREE.CatmullRomCurve3(curvePoints, isClosed, 'catmullrom', tension)
-      : new THREE.CatmullRomCurve3(curvePoints, isClosed, 'catmullrom', 0)
+      ? new THREE.CatmullRomCurve3(curvePoints, isClosed, CATMULL_ROM_CURVE_TYPE, tension)
+      : new THREE.CatmullRomCurve3(curvePoints, isClosed, CATMULL_ROM_CURVE_TYPE, 0)
 
     // Shape Generation
     const shape = new THREE.Shape()

@@ -12,8 +12,8 @@
  * - Secondary archetypes for reference (but not required to score well)
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
-import { z } from 'zod'
+import { createLoopStructuredTool } from '../structured-tool'
+import { mechanicsLoopsWithGenreSchema } from '../mechanics-loops-schema'
 
 /**
  * Archetype identifiers
@@ -303,7 +303,7 @@ function scoreArchetype(
 /**
  * Best Match Scorer Tool
  */
-export const bestMatchScorerTool = new DynamicStructuredTool({
+export const bestMatchScorerTool = createLoopStructuredTool({
   name: 'best_match_archetype_scorer',
   description: `Analyze game design against three reference archetypes (Vampire Survivors, Disco Elysium, Counter-Strike) and identify the STRONGEST match.
 
@@ -317,30 +317,10 @@ Returns:
 - Other archetypes for reference
 - Viability verdict (strong/moderate/niche/unclear)
 - Market positioning recommendation`,
-  schema: z.object({
-    mechanics: z
-      .array(
-        z.object({
-          name: z.string(),
-          type: z.string(),
-          description: z.string().optional(),
-        })
-      )
-      .describe('Game mechanics to analyze'),
-    loops: z
-      .array(
-        z.object({
-          name: z.string(),
-          type: z.string(),
-          description: z.string().optional(),
-        })
-      )
-      .optional()
-      .describe('Game loops if defined'),
-    gameDescription: z.string().optional().describe('Overall game description'),
-    gameGenre: z.string().optional().describe('Target game genre'),
-  }),
-  func: async ({ mechanics, loops, gameDescription, gameGenre }): Promise<string> => {
+  schema: mechanicsLoopsWithGenreSchema,
+  func: async input => {
+    const { mechanics, loops, gameDescription, gameGenre } =
+      mechanicsLoopsWithGenreSchema.parse(input)
     try {
       // Build analysis context
       const allText = [

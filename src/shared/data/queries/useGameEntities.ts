@@ -1,4 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
+import {
+  DomAbortErrorName,
+  GameEntityClientLog,
+  GameEntityQueryParam,
+} from '@/shared/data/constants/game-entities-wire'
+import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 
 export type EntityType = 'character' | 'location' | 'mechanic' | 'faction' | 'item' | 'quest'
 export type SourceDomain = 'storyteller' | 'loop-creator' | 'interior-designer' | 'world-building'
@@ -20,7 +27,7 @@ export interface GameEntity {
   updatedAt: string
 }
 
-interface EntityRelationship {
+export interface EntityRelationship {
   id: string
   projectId: string
   fromEntityId: string
@@ -80,17 +87,17 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
 
       try {
         const params = new URLSearchParams()
-        if (projectId) params.append('projectId', projectId)
-        if (entityType) params.append('entityType', entityType)
-        if (sourceDomain) params.append('sourceDomain', sourceDomain)
-        if (search) params.append('search', search)
+        if (projectId) params.append(GameEntityQueryParam.ProjectId, projectId)
+        if (entityType) params.append(GameEntityQueryParam.EntityType, entityType)
+        if (sourceDomain) params.append(GameEntityQueryParam.SourceDomain, sourceDomain)
+        if (search) params.append(GameEntityQueryParam.Search, search)
 
         const response = await fetch(`/api/entities?${params.toString()}`, {
           signal: abortControllerRef.current.signal,
         })
 
         if (!response.ok) {
-          throw new Error('Failed to fetch entities')
+          throw new Error(API_ERROR.FAILED_FETCH_ENTITIES)
         }
 
         const data = await response.json()
@@ -99,11 +106,11 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
         prevOptionsRef.current = optionsKey
       } catch (err) {
         // Ignore abort errors
-        if (err instanceof Error && err.name === 'AbortError') {
+        if (err instanceof Error && err.name === DomAbortErrorName.AbortError) {
           return
         }
-        setError(err instanceof Error ? err.message : 'Failed to fetch entities')
-        console.error('[useGameEntities] Error:', err)
+        setError(err instanceof Error ? err.message : API_ERROR.FAILED_FETCH_ENTITIES)
+        console.error(GameEntityClientLog.FetchError, err)
       } finally {
         setLoading(false)
       }
@@ -129,14 +136,14 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
 
       try {
         const response = await fetch('/api/entities', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(entity),
         })
 
         if (!response.ok) {
           const error = await response.json()
-          throw new Error(error.error || 'Failed to create entity')
+          throw new Error(error.error || API_ERROR.FAILED_CREATE_ENTITY)
         }
 
         const data = await response.json()
@@ -146,8 +153,8 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
 
         return data.entity
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to create entity')
-        console.error('[useGameEntities] Create error:', err)
+        setError(err instanceof Error ? err.message : API_ERROR.FAILED_CREATE_ENTITY)
+        console.error(GameEntityClientLog.CreateError, err)
         return null
       } finally {
         setLoading(false)
@@ -173,14 +180,14 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
 
       try {
         const response = await fetch(`/api/entities/${entityId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Patch,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(updates),
         })
 
         if (!response.ok) {
           const error = await response.json()
-          throw new Error(error.error || 'Failed to update entity')
+          throw new Error(error.error || API_ERROR.FAILED_UPDATE_ENTITY)
         }
 
         const data = await response.json()
@@ -190,8 +197,8 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
 
         return data.entity
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to update entity')
-        console.error('[useGameEntities] Update error:', err)
+        setError(err instanceof Error ? err.message : API_ERROR.FAILED_UPDATE_ENTITY)
+        console.error(GameEntityClientLog.UpdateError, err)
         return null
       } finally {
         setLoading(false)
@@ -206,11 +213,11 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
 
     try {
       const response = await fetch(`/api/entities/${entityId}`, {
-        method: 'DELETE',
+        method: HttpMethod.Delete,
       })
 
       if (!response.ok) {
-        throw new Error('Failed to delete entity')
+        throw new Error(API_ERROR.FAILED_DELETE_ENTITY)
       }
 
       // Remove from local state
@@ -218,8 +225,8 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
 
       return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete entity')
-      console.error('[useGameEntities] Delete error:', err)
+      setError(err instanceof Error ? err.message : API_ERROR.FAILED_DELETE_ENTITY)
+      console.error(GameEntityClientLog.DeleteError, err)
       return false
     } finally {
       setLoading(false)

@@ -154,7 +154,7 @@
     "quality:backlog": "npm run qualitygate:backlog --",
     "typecheck:file": "npm run qualitygate:tsc -- --files",
     "typecheck:fast": "npm run qualitygate:tsc -- --changed",
-    "typecheck": "tsc --noEmit && npm run qualitygate:metrics",
+    "typecheck": "node --max-old-space-size=8192 node_modules/typescript/bin/tsc --noEmit && npm run qualitygate:metrics",
     "mcp:start": "npx tsx src/mcp/stdio.ts",
     "start": "next start",
     "test:playwright:install": "playwright install --with-deps",

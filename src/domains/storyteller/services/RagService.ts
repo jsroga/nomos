@@ -24,17 +24,18 @@ import {
 import { getSemanticChunker, SemanticChunker } from '@/shared/ai/rag/semantic-chunker'
 import { getQueryExpander, QueryExpander } from '@/shared/ai/rag/query-expander'
 import { getReranker, Reranker } from '@/shared/ai/rag/reranker'
-import { entityMetadata, readString } from '@/domains/storyteller/core/entities/entity-type-guards'
+import { entityMetadata } from '@/domains/storyteller/core/entities/entity-type-guards'
+import { readString } from '@/shared/data/json-guards'
 import { STORYTELLER_CONFIG } from '../config/storyteller-config'
 
-// Document types for categorized retrieval
-export type DocumentType =
-  | 'beat_decision' // Past beat creation/rejection with reasoning
-  | 'character_arc' // Character development history
-  | 'world_rule' // Series bible world rules
-  | 'episode_summary' // Episode summaries
-  | 'user_feedback' // User corrections/preferences
-  | 'agent_reasoning' // Agent thought processes
+import {
+  RAG_CONTEXT_SEPARATOR,
+  RagDocumentType,
+  RagServiceLog,
+  RagUnknownValue,
+} from '@/domains/storyteller/services/constants/rag-document-type'
+
+export type DocumentType = `${RagDocumentType}`
 
 export interface RagResult {
   id: string
@@ -113,7 +114,7 @@ export class RagService {
    */
   private shouldChunkByType(documentType: DocumentType): boolean {
     // These types are typically short and should not be chunked
-    const noChunkTypes: DocumentType[] = ['beat_decision', 'user_feedback']
+    const noChunkTypes: DocumentType[] = [RagDocumentType.BeatDecision, RagDocumentType.UserFeedback]
     return !noChunkTypes.includes(documentType)
   }
 
@@ -202,7 +203,7 @@ Reasoning: ${reasoning}
 By: ${agentName}`
 
     await this.ingest(projectId, content, {
-      documentType: 'beat_decision',
+      documentType: RagDocumentType.BeatDecision,
       beatId,
       agentName,
       chunkDocument: false, // Beat decisions should stay whole
@@ -223,7 +224,7 @@ By: ${agentName}`
 Development: ${development}`
 
     await this.ingest(projectId, content, {
-      documentType: 'character_arc',
+      documentType: RagDocumentType.CharacterArc,
       characterId,
       episodeId,
     })
@@ -237,7 +238,7 @@ Development: ${development}`
 Context: ${context}`
 
     await this.ingest(projectId, content, {
-      documentType: 'user_feedback',
+      documentType: RagDocumentType.UserFeedback,
       chunkDocument: false,
     })
   }
@@ -319,7 +320,7 @@ Context: ${context}`
 
       return results
     } catch (error) {
-      console.warn('[RAG] Retrieval failed:', error)
+      console.warn(RagServiceLog.RetrievalFailed, error)
       // Fallback to simple vector search
       return this.fallbackVectorSearch(projectId, query, limit)
     }
@@ -371,7 +372,7 @@ Context: ${context}`
       citation: {
         id: result.chunkId,
         marker: `[${index + 1}]`,
-        source: String(result.metadata.documentType || 'unknown'),
+        source: String(result.metadata.documentType || RagUnknownValue.Unknown),
         chunkId: result.chunkId,
         confidence: result.combinedScore,
       },
@@ -412,14 +413,14 @@ Context: ${context}`
           citation: {
             id: r.id,
             marker: `[${index + 1}]`,
-            source: readString(metadata.documentType) ?? 'unknown',
+            source: readString(metadata.documentType) ?? RagUnknownValue.Unknown,
             chunkId: r.id,
             confidence: r.similarity,
           },
         }
       })
     } catch (error) {
-      console.error('[RAG] Fallback search failed:', error)
+      console.error(RagServiceLog.FallbackSearchFailed, error)
       return []
     }
   }
@@ -434,7 +435,7 @@ Context: ${context}`
   ): Promise<RagResult[]> {
     return this.retrieveByType(
       projectId,
-      'character_arc',
+      RagDocumentType.CharacterArc,
       `${characterName} character development arc`,
       limit
     )
@@ -448,7 +449,7 @@ Context: ${context}`
     beatLogline: string,
     limit = 5
   ): Promise<RagResult[]> {
-    return this.retrieveByType(projectId, 'beat_decision', beatLogline, limit)
+    return this.retrieveByType(projectId, RagDocumentType.BeatDecision, beatLogline, limit)
   }
 
   /**
@@ -459,7 +460,7 @@ Context: ${context}`
     context: string,
     limit = 5
   ): Promise<RagResult[]> {
-    return this.retrieveByType(projectId, 'user_feedback', context, limit)
+    return this.retrieveByType(projectId, RagDocumentType.UserFeedback, context, limit)
   }
 
   /**
@@ -468,7 +469,7 @@ Context: ${context}`
    */
   async assembleAgentContext(
     projectId: string,
-    agentRole: string,
+    _agentRole: string,
     currentContext: string
   ): Promise<{
     relevantHistory: string
@@ -479,8 +480,8 @@ Context: ${context}`
     // Parallel retrieval for efficiency
     const [generalHistory, pastDecisions, userPrefs] = await Promise.all([
       this.retrieve(projectId, currentContext, { limit: 3 }),
-      this.retrieveByType(projectId, 'beat_decision', currentContext, 3),
-      this.retrieveByType(projectId, 'user_feedback', currentContext, 2),
+      this.retrieveByType(projectId, RagDocumentType.BeatDecision, currentContext, 3),
+      this.retrieveByType(projectId, RagDocumentType.UserFeedback, currentContext, 2),
     ])
 
     // Collect all citations
@@ -500,7 +501,7 @@ Context: ${context}`
           }
           return r.content
         })
-        .join('\n---\n')
+        .join(RAG_CONTEXT_SEPARATOR)
     }
 
     return {

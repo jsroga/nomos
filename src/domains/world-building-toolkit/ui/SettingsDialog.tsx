@@ -14,7 +14,32 @@ import { cn } from '@/shared/data/utils'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { STYLE_PRESETS } from '@/shared/data/constants/style-presets'
+import { TESTABLE_LLM_PROVIDERS } from '@/shared/data/constants/llm-providers'
 import { useWorldStore } from '@/domains/world-building-toolkit'
+import {
+  SETTINGS_API_KEYS_ENDPOINT,
+  SETTINGS_CONTENT_TYPE_JSON,
+  SETTINGS_COPIED_TOAST,
+  SETTINGS_HTTP_DELETE,
+  SETTINGS_HTTP_PATCH,
+  SETTINGS_HTTP_POST,
+  SETTINGS_LOAD_MCP_KEYS_FAILED_LOG,
+  SETTINGS_LOAD_PROJECT_FAILED_LOG,
+  SETTINGS_LOAD_PROVIDERS_FAILED_LOG,
+  SETTINGS_MCP_CREATE_KEY_FAILED,
+  SETTINGS_MCP_CREATE_KEY_FAILED_TOAST,
+  SETTINGS_MCP_KEY_CREATED_TOAST,
+  SETTINGS_MCP_KEY_NAME_REQUIRED,
+  SETTINGS_MCP_KEY_REVOKED_TOAST,
+  SETTINGS_MCP_REVOKE_KEY_FAILED,
+  SETTINGS_PROVIDER_PROBE_ENDPOINT,
+  SETTINGS_PROVIDERS_ENDPOINT,
+  SETTINGS_SAVE_PROJECT_FAILED_LOG,
+  SETTINGS_SAVE_PROJECT_FAILED_TOAST,
+  SETTINGS_TEST_REQUEST_FAILED,
+  SettingsDialogTab,
+  SettingsStyleMode,
+} from '@/domains/world-building-toolkit/constants/settings-dialog'
 
 interface SettingsDialogProps {
   isOpen: boolean
@@ -22,7 +47,7 @@ interface SettingsDialogProps {
   projectId?: string
 }
 
-type Tab = 'general' | 'mcpkeys' | 'projectSettings'
+type Tab = SettingsDialogTab
 
 interface ProviderStatus {
   openai: boolean
@@ -72,29 +97,131 @@ const ConnectionDot = ({ connected, label }: { connected: boolean; label: string
   </div>
 )
 
+interface ProviderTestResult {
+  ok: boolean
+  latencyMs?: number
+  model?: string
+  error?: string
+}
+
+/**
+ * Provider row with live status — no key / key untested / verified (latency)
+ * / failed. Test fires ONE tiny generation through the same model-resolution
+ * path production uses (POST /api/settings/providers/test).
+ */
+const TestableProviderRow = ({
+  connected,
+  label,
+  result,
+  testing,
+  onTest,
+}: {
+  connected: boolean
+  label: string
+  result?: ProviderTestResult
+  testing: boolean
+  onTest: () => void
+}) => (
+  <div className="flex items-center gap-2 text-xs bg-muted/30 p-2 rounded border border-border w-full">
+    <div
+      className={cn(
+        'w-2 h-2 rounded-full shrink-0',
+        !connected
+          ? 'bg-red-500'
+          : result
+            ? result.ok
+              ? 'bg-green-500'
+              : 'bg-red-500'
+            : 'bg-yellow-500'
+      )}
+    />
+    <span className="text-muted-foreground">{label}</span>
+    <span className="ml-auto flex items-center gap-2 shrink-0">
+      {result?.ok && (
+        <span className="text-green-500" title={result.model}>
+          {result.latencyMs}ms
+        </span>
+      )}
+      {result && !result.ok && (
+        <span className="text-red-400 max-w-36 truncate" title={result.error}>
+          {result.error}
+        </span>
+      )}
+      {!result && connected && <span className="text-yellow-500/80">untested</span>}
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-6 px-2 text-[10px]"
+        disabled={!connected || testing}
+        onClick={onTest}
+      >
+        {testing ? 'Testing…' : 'Test'}
+      </Button>
+    </span>
+  </div>
+)
+
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose, projectId }) => {
   const loadProject = useWorldStore(state => state.loadProject)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  const [activeTab, setActiveTab] = useState<Tab>('general')
+  const [activeTab, setActiveTab] = useState<Tab>(SettingsDialogTab.General)
 
   // General tab state
   const [providers, setProviders] = useState<ProviderStatus | null>(null)
   const [loadingProviders, setLoadingProviders] = useState(false)
 
+  // Live provider tests (PLAN-V2 1.4)
+  const [providerTests, setProviderTests] = useState<Record<string, ProviderTestResult>>({})
+  const [testingProvider, setTestingProvider] = useState<string | null>(null)
+
+  const runProviderTest = async (providerKey: string): Promise<void> => {
+    setTestingProvider(providerKey)
+    try {
+      const res = await fetch(SETTINGS_PROVIDER_PROBE_ENDPOINT, {
+        method: SETTINGS_HTTP_POST,
+        headers: { 'Content-Type': SETTINGS_CONTENT_TYPE_JSON },
+        body: JSON.stringify({ providerKey }),
+      })
+      const data: ProviderTestResult = await res.json()
+      setProviderTests(prev => ({ ...prev, [providerKey]: data }))
+    } catch (error) {
+      setProviderTests(prev => ({
+        ...prev,
+        [providerKey]: { ok: false, error: getErrorMessage(error) || SETTINGS_TEST_REQUEST_FAILED },
+      }))
+    } finally {
+      setTestingProvider(null)
+    }
+  }
+
+  // Sequential on purpose — provider rate limits, and our own 5/min limiter.
+  const runAllProviderTests = async (): Promise<void> => {
+    if (!providers) return
+    for (const { key } of TESTABLE_LLM_PROVIDERS) {
+      if (providers[key]) {
+        await runProviderTest(key)
+      }
+    }
+  }
+
   // Project Settings state
   const [projectData, setProjectData] = useState<ProjectData | null>(null)
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [newStyleUrl, setNewStyleUrl] = useState<string>('')
-  const [styleMode, setStyleMode] = useState<'preset' | 'custom'>('custom')
+  const [styleMode, setStyleMode] = useState<SettingsStyleMode>(SettingsStyleMode.Custom)
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
 
-  const saveStyleSettings = async (mode: 'preset' | 'custom', preset: string | null, urls: string[]) => {
+  const saveStyleSettings = async (
+    mode: SettingsStyleMode,
+    preset: string | null,
+    urls: string[]
+  ) => {
     if (!projectId) return
     try {
       const body: Record<string, unknown> = {}
-      if (mode === 'preset') {
+      if (mode === SettingsStyleMode.Preset) {
         body.stylePreset = preset
         body.style_reference_urls = []
       } else {
@@ -102,15 +229,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
         body.style_reference_urls = urls
       }
       await fetch(`/api/storyteller/projects/${projectId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: SETTINGS_HTTP_PATCH,
+        headers: { 'Content-Type': SETTINGS_CONTENT_TYPE_JSON },
         body: JSON.stringify(body),
       })
-      // Refresh store so Sidebar picks up the new stylePreset immediately
       await loadProject(projectId)
     } catch (error) {
-      console.error('Failed to save project settings:', error)
-      toast.error('Failed to save project settings')
+      console.error(SETTINGS_SAVE_PROJECT_FAILED_LOG, error)
+      toast.error(SETTINGS_SAVE_PROJECT_FAILED_TOAST)
     }
   }
 
@@ -125,10 +251,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     if (isOpen) {
       // Fetch provider status
       setLoadingProviders(true)
-      fetch('/api/settings/providers')
+      fetch(SETTINGS_PROVIDERS_ENDPOINT)
         .then(res => res.json())
         .then(data => setProviders(data.providers))
-        .catch(err => console.error('Failed to load provider status:', err))
+        .catch(err => console.error(SETTINGS_LOAD_PROVIDERS_FAILED_LOG, err))
         .finally(() => setLoadingProviders(false))
 
       // Load project settings if projectId provided
@@ -139,30 +265,30 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
             setProjectData(data)
             setStyleReferenceUrls(data.styleReferenceUrls || [])
             if (data.stylePreset) {
-              setStyleMode('preset')
+              setStyleMode(SettingsStyleMode.Preset)
               setSelectedPreset(data.stylePreset)
             } else {
-              setStyleMode('custom')
+              setStyleMode(SettingsStyleMode.Custom)
               setSelectedPreset(null)
             }
           })
-          .catch(err => console.error('Failed to load project:', err))
+          .catch(err => console.error(SETTINGS_LOAD_PROJECT_FAILED_LOG, err))
       }
 
       // Load MCP API keys
       setIsLoadingMcpKeys(true)
-      fetch('/api/api-keys')
+      fetch(SETTINGS_API_KEYS_ENDPOINT)
         .then(res => res.json())
         .then(data => setMcpKeys(data.apiKeys || []))
-        .catch(err => console.error('Failed to load MCP keys:', err))
+        .catch(err => console.error(SETTINGS_LOAD_MCP_KEYS_FAILED_LOG, err))
         .finally(() => setIsLoadingMcpKeys(false))
     }
   }, [isOpen, projectId])
 
   const handleSave = async () => {
     // If user is on Custom mode, persist the current URL list (including empty) on explicit Save
-    if (styleMode === 'custom') {
-      await saveStyleSettings('custom', null, styleReferenceUrls)
+    if (styleMode === SettingsStyleMode.Custom) {
+      await saveStyleSettings(SettingsStyleMode.Custom, null, styleReferenceUrls)
     }
     onClose()
   }
@@ -170,26 +296,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   // MCP Key Management
   const handleCreateMcpKey = async () => {
     if (!newMcpKeyName.trim()) {
-      toast.error('Please enter a key name')
+      toast.error(SETTINGS_MCP_KEY_NAME_REQUIRED)
       return
     }
     setIsCreatingKey(true)
     setNewlyCreatedKey(null)
     try {
-      const res = await fetch('/api/api-keys', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(SETTINGS_API_KEYS_ENDPOINT, {
+        method: SETTINGS_HTTP_POST,
+        headers: { 'Content-Type': SETTINGS_CONTENT_TYPE_JSON },
         body: JSON.stringify({ name: newMcpKeyName.trim() }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create key')
+      if (!res.ok) throw new Error(data.error || SETTINGS_MCP_CREATE_KEY_FAILED)
 
       setNewlyCreatedKey(data.apiKey.key)
       setMcpKeys(prev => [data.apiKey, ...prev])
       setNewMcpKeyName('')
-      toast.success('API key created! Save it now.')
+      toast.success(SETTINGS_MCP_KEY_CREATED_TOAST)
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err) || 'Failed to create API key')
+      toast.error(getErrorMessage(err) || SETTINGS_MCP_CREATE_KEY_FAILED_TOAST)
     } finally {
       setIsCreatingKey(false)
     }
@@ -197,18 +323,20 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
 
   const handleRevokeMcpKey = async (keyId: string) => {
     try {
-      const res = await fetch(`/api/api-keys?id=${keyId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Failed to revoke key')
+      const res = await fetch(`${SETTINGS_API_KEYS_ENDPOINT}?id=${keyId}`, {
+        method: SETTINGS_HTTP_DELETE,
+      })
+      if (!res.ok) throw new Error(SETTINGS_MCP_REVOKE_KEY_FAILED)
       setMcpKeys(prev => prev.filter(k => k.id !== keyId))
-      toast.success('API key revoked')
+      toast.success(SETTINGS_MCP_KEY_REVOKED_TOAST)
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err) || 'Failed to revoke key')
+      toast.error(getErrorMessage(err) || SETTINGS_MCP_REVOKE_KEY_FAILED)
     }
   }
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    toast.success('Copied to clipboard!')
+    toast.success(SETTINGS_COPIED_TOAST)
   }
 
   if (!isOpen || !mounted) return null
@@ -228,26 +356,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           <h2 className="text-lg font-bold mb-6 px-2">Settings</h2>
           <nav className="space-y-2 flex-1">
             <Button
-              variant={activeTab === 'general' ? 'secondary' : 'ghost'}
+              variant={activeTab === SettingsDialogTab.General ? 'secondary' : 'ghost'}
               className="w-full justify-start gap-2"
-              onClick={() => setActiveTab('general')}
+              onClick={() => setActiveTab(SettingsDialogTab.General)}
             >
               <Settings className="w-4 h-4" />
               General
             </Button>
             <Button
-              variant={activeTab === 'mcpkeys' ? 'secondary' : 'ghost'}
+              variant={activeTab === SettingsDialogTab.McpKeys ? 'secondary' : 'ghost'}
               className="w-full justify-start gap-2"
-              onClick={() => setActiveTab('mcpkeys')}
+              onClick={() => setActiveTab(SettingsDialogTab.McpKeys)}
             >
               <Key className="w-4 h-4" />
               MCP Keys
             </Button>
             {projectId && (
               <Button
-                variant={activeTab === 'projectSettings' ? 'secondary' : 'ghost'}
+                variant={activeTab === SettingsDialogTab.ProjectSettings ? 'secondary' : 'ghost'}
                 className="w-full justify-start gap-2"
-                onClick={() => setActiveTab('projectSettings')}
+                onClick={() => setActiveTab(SettingsDialogTab.ProjectSettings)}
               >
                 <ImageIcon className="w-4 h-4" />
                 Project Settings
@@ -261,7 +389,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           <ScrollArea className="flex-1 p-6">
             <div className="max-w-2xl mx-auto space-y-8 pb-20">
               {/* General Tab */}
-              {activeTab === 'general' && (
+              {activeTab === SettingsDialogTab.General && (
                 <div className="space-y-6">
                   {/* Provider Connection Status */}
                   <div>
@@ -279,14 +407,30 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                       ) : providers ? (
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
-                              LLM Providers
-                            </h5>
-                            <ConnectionDot connected={providers.openai} label="OpenAI" />
-                            <ConnectionDot connected={providers.anthropic} label="Anthropic" />
-                            <ConnectionDot connected={providers.google} label="Google / Gemini" />
-                            <ConnectionDot connected={providers.zhipu} label="Z.AI (GLM)" />
-                            <ConnectionDot connected={providers.moonshot} label="Moonshot (Kimi)" />
+                            <div className="flex items-center justify-between">
+                              <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
+                                LLM Providers
+                              </h5>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-[10px]"
+                                disabled={testingProvider !== null}
+                                onClick={() => void runAllProviderTests()}
+                              >
+                                Test all
+                              </Button>
+                            </div>
+                            {TESTABLE_LLM_PROVIDERS.map(({ key, label }) => (
+                              <TestableProviderRow
+                                key={key}
+                                connected={providers[key]}
+                                label={label}
+                                result={providerTests[key]}
+                                testing={testingProvider === key}
+                                onTest={() => void runProviderTest(key)}
+                              />
+                            ))}
                           </div>
 
                           <div className="space-y-2">
@@ -347,7 +491,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
               )}
 
               {/* MCP Keys Tab */}
-              {activeTab === 'mcpkeys' && (
+              {activeTab === SettingsDialogTab.McpKeys && (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-medium mb-4">MCP API Keys</h3>
@@ -436,7 +580,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
               )}
 
               {/* Project Settings Tab */}
-              {activeTab === 'projectSettings' && projectId && (
+              {activeTab === SettingsDialogTab.ProjectSettings && projectId && (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-medium mb-4">Project Settings</h3>
@@ -459,10 +603,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         {/* Mode Toggle */}
                         <div className="flex gap-1 p-1 bg-muted/40 rounded-lg mb-4 w-fit">
                           <button
-                            onClick={() => setStyleMode('custom')}
+                            onClick={() => setStyleMode(SettingsStyleMode.Custom)}
                             className={cn(
                               'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                              styleMode === 'custom'
+                              styleMode === SettingsStyleMode.Custom
                                 ? 'bg-background shadow-sm text-foreground'
                                 : 'text-muted-foreground hover:text-foreground'
                             )}
@@ -470,10 +614,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                             Custom URLs
                           </button>
                           <button
-                            onClick={() => setStyleMode('preset')}
+                            onClick={() => setStyleMode(SettingsStyleMode.Preset)}
                             className={cn(
                               'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                              styleMode === 'preset'
+                              styleMode === SettingsStyleMode.Preset
                                 ? 'bg-background shadow-sm text-foreground'
                                 : 'text-muted-foreground hover:text-foreground'
                             )}
@@ -483,7 +627,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         </div>
 
                         {/* Preset Mode */}
-                        {styleMode === 'preset' && (
+                        {styleMode === SettingsStyleMode.Preset && (
                           <div className="grid grid-cols-2 gap-2">
                             {STYLE_PRESETS.map(preset => (
                               <button
@@ -491,7 +635,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                                 onClick={() => {
                                   const newPreset = selectedPreset === preset.id ? null : preset.id
                                   setSelectedPreset(newPreset)
-                                  saveStyleSettings('preset', newPreset, [])
+                                  saveStyleSettings(SettingsStyleMode.Preset, newPreset, [])
                                 }}
                                 className={cn(
                                   'flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left',
@@ -521,7 +665,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         )}
 
                         {/* Custom Mode */}
-                        {styleMode === 'custom' && (
+                        {styleMode === SettingsStyleMode.Custom && (
                           <div>
                             {/* Current URLs */}
                             {styleReferenceUrls.length > 0 && (
@@ -538,7 +682,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                                       onClick={() => {
                                         const updated = styleReferenceUrls.filter((_, i) => i !== index)
                                         setStyleReferenceUrls(updated)
-                                        saveStyleSettings('custom', null, updated)
+                                        saveStyleSettings(SettingsStyleMode.Custom, null, updated)
                                       }}
                                       className="text-destructive hover:text-destructive/80 text-xs px-2 py-1"
                                     >
@@ -565,7 +709,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                                     const updated = [...styleReferenceUrls, newStyleUrl]
                                     setStyleReferenceUrls(updated)
                                     setNewStyleUrl('')
-                                    saveStyleSettings('custom', null, updated)
+                                    saveStyleSettings(SettingsStyleMode.Custom, null, updated)
                                   }
                                 }}
                                 disabled={!newStyleUrl || !newStyleUrl.startsWith('http')}

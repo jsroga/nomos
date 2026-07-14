@@ -1,9 +1,23 @@
 import { BeatCard } from '@/domains/storyteller/core/types/StoryTypes'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import {
+  BEAT_IMAGE_DEFAULT_MODEL_ID,
+  BEAT_IMAGE_ERROR_MISSING_API_KEY,
+  BEAT_IMAGE_ERROR_NO_HANDLE,
+  BEAT_IMAGE_ERROR_PROMPT,
+  BEAT_IMAGE_ERROR_TASK_TIMEOUT,
+  BEAT_IMAGE_ERROR_TRIGGER,
+  BEAT_IMAGE_LOG_COMPLETE,
+  BEAT_IMAGE_LOG_GENERATION_FAILED,
+  BEAT_IMAGE_LOG_POLLING_ERROR,
+  BEAT_IMAGE_MODEL_STORAGE_KEY,
+  BeatImageProvider,
+  BeatImageTriggerStatus,
+} from '@/domains/storyteller/services/constants/beat-image-service'
+import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 
 class BeatImageService {
   private getProviderConfig() {
-    // Reusing logic from WorldBiblePanel, but ensuring we look for Nano Banana first as requested
     const geminiConfigStr = localStorage.getItem(LocalStorageKeys.AI_CONFIG_GEMINI)
     let geminiKey = ''
     try {
@@ -15,51 +29,45 @@ class BeatImageService {
       geminiKey = geminiConfigStr || ''
     }
 
-    // Ensure we default to nanobanana if keys are present, or fall back to what's configured
-    // The user specifically asked for "Nano Banana"
     return {
-      provider: 'nanobanana' as const,
+      provider: BeatImageProvider.NanoBanana,
       apiKey: geminiKey,
-      modelId: localStorage.getItem('NANO_BANANA_MODEL_ID') || 'flu-pro', // typo in user prompt 'flux-pro'? 'flu-pro'? defaulting to flux-pro
+      modelId: localStorage.getItem(BEAT_IMAGE_MODEL_STORAGE_KEY) || BEAT_IMAGE_DEFAULT_MODEL_ID,
     }
   }
 
   async generateImageForBeat(
-    projectId: string,
+    _projectId: string,
     beat: BeatCard,
     onUpdate: (beatId: string, updates: Partial<BeatCard>) => void
   ) {
     try {
       console.log(`🎨 Generating image for beat ${beat.sequence}...`)
 
-      // 1. Generate Prompt using Server Action/API (to avoid bundling Mastra on client)
       const promptRes = await fetch('/api/storyteller/beats/generate-prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: HttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify({ beat }),
       })
 
       if (!promptRes.ok) {
-        throw new Error('Failed to generate image prompt')
+        throw new Error(BEAT_IMAGE_ERROR_PROMPT)
       }
 
       const { prompt: imagePrompt } = await promptRes.json()
 
       console.log(`📝 Generated Prompt: ${imagePrompt}`)
 
-      // Update beat with prompt immediately
       onUpdate(beat.id, { imagePrompt })
 
-      // 2. config
       const config = this.getProviderConfig()
       if (!config.apiKey) {
-        throw new Error('Missing Nano Banana (Gemini) API Key')
+        throw new Error(BEAT_IMAGE_ERROR_MISSING_API_KEY)
       }
 
-      // 3. Trigger Image Generation
       const response = await fetch(`/api/storyteller/beats/${beat.id}/generate-image`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: HttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify({
           prompt: imagePrompt,
           config,
@@ -67,24 +75,23 @@ class BeatImageService {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to trigger beat image generation')
+        throw new Error(BEAT_IMAGE_ERROR_TRIGGER)
       }
 
       const data = await response.json()
       const handleId = data.handleId
 
       if (!handleId) {
-        throw new Error('No handleId returned from trigger')
+        throw new Error(BEAT_IMAGE_ERROR_NO_HANDLE)
       }
 
       console.log(`🚀 Task triggered: ${handleId}. Polling for completion...`)
 
-      // 4. Poll for completion
       let attempts = 0
-      const maxAttempts = 60 // 2 minutes max
+      const maxAttempts = 60
 
       while (attempts < maxAttempts) {
-        await new Promise(r => setTimeout(r, 2000)) // Poll every 2s
+        await new Promise(r => setTimeout(r, 2000))
 
         try {
           const statusRes = await fetch(`/api/storyteller/beats/status?runId=${handleId}`)
@@ -95,26 +102,29 @@ class BeatImageService {
 
           console.log(`...Status: ${status}`)
 
-          if (status === 'COMPLETED') {
+          if (status === BeatImageTriggerStatus.Completed) {
             if (statusData.output && statusData.output.imageUrl) {
-              console.log('✅ Generation complete!')
+              console.log(BEAT_IMAGE_LOG_COMPLETE)
               onUpdate(beat.id, { imageUrl: statusData.output.imageUrl })
             }
             return
           }
 
-          if (status === 'FAILED' || status === 'CANCELED') {
+          if (
+            status === BeatImageTriggerStatus.Failed ||
+            status === BeatImageTriggerStatus.Canceled
+          ) {
             throw new Error(`Task failed with status: ${status}`)
           }
         } catch (e) {
-          console.warn('Polling error:', e)
+          console.warn(BEAT_IMAGE_LOG_POLLING_ERROR, e)
         }
         attempts++
       }
 
-      throw new Error('Task timed out')
+      throw new Error(BEAT_IMAGE_ERROR_TASK_TIMEOUT)
     } catch (error) {
-      console.error('Failed to generate beat image:', error)
+      console.error(BEAT_IMAGE_LOG_GENERATION_FAILED, error)
     }
   }
 }

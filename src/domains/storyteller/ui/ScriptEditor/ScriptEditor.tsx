@@ -2,6 +2,14 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { Wand2, RotateCcw, Sparkles, ChevronDown } from 'lucide-react'
+import {
+  SCRIPT_EDITOR_CONDENSE_PROMPT,
+  SCRIPT_EDITOR_EXPAND_PROMPT,
+  SCRIPT_EDITOR_REGENERATION_FAILED_LOG,
+  SCRIPT_EDITOR_REWRITE_PROMPT,
+  ScriptEditorCommand,
+  ScriptRegenerateAction,
+} from './constants/script-editor'
 
 export interface ScriptEditorProps {
   content: string
@@ -67,21 +75,21 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
   }, [])
 
   // Handle regeneration
-  const handleRegenerate = async (type: 'expand' | 'condense' | 'rewrite' | 'custom') => {
+  const handleRegenerate = async (type: ScriptRegenerateAction) => {
     if (!selection.text || !onRegenerateSelection) return
 
     let prompt = ''
     switch (type) {
-      case 'expand':
-        prompt = 'Expand this section with more detail and sensory description'
+      case ScriptRegenerateAction.Expand:
+        prompt = SCRIPT_EDITOR_EXPAND_PROMPT
         break
-      case 'condense':
-        prompt = 'Condense this to be more concise while keeping the essence'
+      case ScriptRegenerateAction.Condense:
+        prompt = SCRIPT_EDITOR_CONDENSE_PROMPT
         break
-      case 'rewrite':
-        prompt = 'Rewrite this in a different way, maintaining the same meaning'
+      case ScriptRegenerateAction.Rewrite:
+        prompt = SCRIPT_EDITOR_REWRITE_PROMPT
         break
-      case 'custom':
+      case ScriptRegenerateAction.Custom:
         prompt = instruction
         break
     }
@@ -99,10 +107,10 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
         sel?.addRange(selection.range)
         // execCommand is deprecated but is currently the only reliable way to
         // insert text while preserving undo history in contentEditable
-        document.execCommand('insertText', false, newText)
+        document.execCommand(ScriptEditorCommand.InsertText, false, newText)
       }
     } catch (e) {
-      console.error('Regeneration failed:', e)
+      console.error(SCRIPT_EDITOR_REGENERATION_FAILED_LOG, e)
     } finally {
       setIsRegenerating(false)
       setShowContextMenu(false)
@@ -156,7 +164,7 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
           </div>
 
           <button
-            onClick={() => handleRegenerate('expand')}
+            onClick={() => handleRegenerate(ScriptRegenerateAction.Expand)}
             disabled={isRegenerating}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-accent rounded transition-colors disabled:opacity-50"
           >
@@ -165,7 +173,7 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
           </button>
 
           <button
-            onClick={() => handleRegenerate('condense')}
+            onClick={() => handleRegenerate(ScriptRegenerateAction.Condense)}
             disabled={isRegenerating}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-accent rounded transition-colors disabled:opacity-50"
           >
@@ -174,7 +182,7 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
           </button>
 
           <button
-            onClick={() => handleRegenerate('rewrite')}
+            onClick={() => handleRegenerate(ScriptRegenerateAction.Rewrite)}
             disabled={isRegenerating}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-accent rounded transition-colors disabled:opacity-50"
           >
@@ -190,10 +198,10 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
                 value={instruction}
                 onChange={e => setInstruction(e.target.value)}
                 className="flex-1 bg-background border border-input rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                onKeyDown={e => e.key === 'Enter' && handleRegenerate('custom')}
+                onKeyDown={e => e.key === 'Enter' && handleRegenerate(ScriptRegenerateAction.Custom)}
               />
               <button
-                onClick={() => handleRegenerate('custom')}
+                onClick={() => handleRegenerate(ScriptRegenerateAction.Custom)}
                 disabled={isRegenerating || !instruction}
                 className="p-1 hover:bg-accent rounded disabled:opacity-50"
               >

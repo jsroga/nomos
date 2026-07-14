@@ -31,6 +31,21 @@ import {
   stringArrayFromJson,
 } from '@/shared/data/json-guards'
 import { entityMetadata } from '@/domains/storyteller/core/entities/entity-type-guards'
+import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
+import { StorytellerRelationshipType } from '@/domains/storyteller/services/constants/relationship-enricher'
+import {
+  EmbeddingSimilaritySqlColumn,
+  GraphNodeIdPrefix,
+  GraphNodeSource,
+  GRAPH_NODE_TYPES,
+  RelationshipsApiError,
+  RelationshipsApiLog,
+  RelationshipsQueryParam,
+  RelationshipsQueryValue,
+  RelationshipEdgeLabel,
+  RELATIONSHIP_EDGE_DEFAULT_TYPE,
+  RELATIONSHIPS_CENTRAL_CHARACTER_NONE,
+} from '@/domains/storyteller/io/constants/relationships-api'
 
 // =============================================================================
 // TYPES
@@ -39,7 +54,7 @@ import { entityMetadata } from '@/domains/storyteller/core/entities/entity-type-
 interface GraphNode {
   id: string
   name: string
-  type: 'character' | 'faction' | 'place' | 'event' | 'rule'
+  type: StoryEntityType
   metadata: Record<string, unknown>
 }
 
@@ -71,16 +86,10 @@ function slugify(name: string): string {
 
 function parseGraphNodeType(value: unknown): GraphNode['type'] | undefined {
   if (typeof value !== 'string') return undefined
-  switch (value) {
-    case 'character':
-    case 'faction':
-    case 'place':
-    case 'event':
-    case 'rule':
-      return value
-    default:
-      return undefined
+  for (const nodeType of GRAPH_NODE_TYPES) {
+    if (value === nodeType) return nodeType
   }
+  return undefined
 }
 
 function addNode(
@@ -118,10 +127,10 @@ function addEdge(
 export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get('projectId')
+    const projectId = searchParams.get(RelationshipsQueryParam.ProjectId)
 
     if (!projectId) {
-      return NextResponse.json({ error: 'Missing projectId' }, { status: 400 })
+      return NextResponse.json({ error: RelationshipsApiError.MissingProjectId }, { status: 400 })
     }
 
     // ─── 1. Gather ALL data sources in parallel ─────────────────────────
@@ -145,7 +154,7 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
     ])
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      return NextResponse.json({ error: RelationshipsApiError.ProjectNotFound }, { status: 404 })
     }
 
     const storyPlan = firstNonEmptyRecord(project.storyPlanTable?.content, project.storyPlan)
@@ -156,8 +165,6 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
     )
     const projectRecord = recordFromJson(project)
     const projectCast = namedRecordsFromJson(projectRecord.cast)
-    const projectTitle =
-      readString(projectRecord.name) ?? readString(storyPlan.title) ?? 'Untitled'
 
     // ─── 2. Build nodes from every source (deduplicated) ────────────────
     const nodes: GraphNode[] = []
@@ -181,35 +188,35 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
         }
       }
       seenEntityNames.set(key, entity.id)
-      const nodeType = parseGraphNodeType(entity.type) ?? 'character'
+      const nodeType = parseGraphNodeType(entity.type) ?? StoryEntityType.Character
       addNode(nodes, nodeIds, entity.id, entity.name, nodeType, {
         ...entityMetadata(entity.metadata),
         description: entity.description,
         hasEmbedding: entity.hasEmbedding,
-        source: 'entity_registry',
+        source: GraphNodeSource.EntityRegistry,
       })
     }
 
     // Source B: characters table
     for (const char of dbCharacters) {
-      const id = `character-${slugify(char.name)}`
+      const id = `${GraphNodeIdPrefix.Character}${slugify(char.name)}`
       const charRecord = recordFromJson(char)
-      addNode(nodes, nodeIds, id, char.name, 'character', {
+      addNode(nodes, nodeIds, id, char.name, StoryEntityType.Character, {
         role: char.role,
         archetype: readString(charRecord.archetype),
         motivation: readString(charRecord.motivation),
-        source: 'characters_table',
+        source: GraphNodeSource.CharactersTable,
       })
     }
 
     // Source C: storyPlan.keyCharacters / cast
     for (const char of [...projectCast, ...keyCharacters]) {
-      const id = `character-${slugify(char.name)}`
-      addNode(nodes, nodeIds, id, char.name, 'character', {
+      const id = `${GraphNodeIdPrefix.Character}${slugify(char.name)}`
+      addNode(nodes, nodeIds, id, char.name, StoryEntityType.Character, {
         role: readString(char.role) ?? readString(char.archetype),
         archetype: readString(char.archetype),
         motivation: readString(char.motivation) ?? readString(char.description),
-        source: 'story_plan',
+        source: GraphNodeSource.StoryPlan,
       })
     }
 
@@ -217,12 +224,12 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
     for (const faction of factions) {
       const name = readString(faction.name)
       if (!name) continue
-      const id = `faction-${slugify(name)}`
-      addNode(nodes, nodeIds, id, name, 'faction', {
+      const id = `${GraphNodeIdPrefix.Faction}${slugify(name)}`
+      addNode(nodes, nodeIds, id, name, StoryEntityType.Faction, {
         ideology: readString(faction.ideology),
         description: readString(faction.description),
         powerStructure: readString(faction.powerStructure),
-        source: 'story_plan',
+        source: GraphNodeSource.StoryPlan,
       })
     }
 
@@ -234,7 +241,7 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
     const canonicalMap = new Map<string, string>() // slug-ID → canonical UUID
     for (const node of nodes) {
       // Build reverse: for each UUID node, find if there's a slug version
-      if (!node.id.startsWith('character-') && !node.id.startsWith('faction-')) {
+      if (!node.id.startsWith(GraphNodeIdPrefix.Character) && !node.id.startsWith(GraphNodeIdPrefix.Faction)) {
         // This is a UUID from entity_references
         const slugId = `${node.type}-${slugify(node.name)}`
         if (nodeIds.has(slugId) && slugId !== node.id) {
@@ -260,8 +267,8 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
     // them directly without running LLM extraction. This makes page loads O(1).
     const EDGE_CACHE_TTL_MS = 30 * 60 * 1000 // 30 minutes
     const cacheThreshold = new Date(Date.now() - EDGE_CACHE_TTL_MS)
-    const refreshParam = new URL(request.url).searchParams.get('refresh')
-    const forceRefresh = refreshParam === 'true'
+    const refreshParam = new URL(request.url).searchParams.get(RelationshipsQueryParam.Refresh)
+    const forceRefresh = refreshParam === RelationshipsQueryValue.RefreshTrue
 
     if (!forceRefresh) {
       try {
@@ -310,7 +317,7 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
           }
         }
       } catch (err) {
-        console.warn('[Relationships] DB cache read failed, continuing with live extraction:', err)
+        console.warn(RelationshipsApiLog.DbCacheReadFailed, err)
       }
     }
 
@@ -349,11 +356,11 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
         `)
 
         for (const row of sqlResultRows(pairwiseResult)) {
-          const sourceType = readRowString(row, 'source_type') ?? ''
-          const targetType = readRowString(row, 'target_type') ?? ''
-          const similarity = readRowNumber(row, 'similarity') ?? 0
-          const sourceId = readRowString(row, 'source_id')
-          const targetId = readRowString(row, 'target_id')
+          const sourceType = readRowString(row, EmbeddingSimilaritySqlColumn.SourceType) ?? ''
+          const targetType = readRowString(row, EmbeddingSimilaritySqlColumn.TargetType) ?? ''
+          const similarity = readRowNumber(row, EmbeddingSimilaritySqlColumn.Similarity) ?? 0
+          const sourceId = readRowString(row, EmbeddingSimilaritySqlColumn.SourceId)
+          const targetId = readRowString(row, EmbeddingSimilaritySqlColumn.TargetId)
           if (!sourceId || !targetId) continue
 
           // Only add if not already covered by an LLM-grounded edge
@@ -363,18 +370,18 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
           // Structural cross-type relationships are safe to infer directly.
           // Same-type (character-character, faction-faction) get a generic
           // 'associated' label — never fabricate ally/rival from thresholds.
-          let relType = 'associated'
-          let label = 'Connected'
+          let relType = RELATIONSHIP_EDGE_DEFAULT_TYPE
+          let label = RelationshipEdgeLabel.Connected
 
           if (
-            (sourceType === 'character' && targetType === 'faction') ||
-            (sourceType === 'faction' && targetType === 'character')
+            (sourceType === StoryEntityType.Character && targetType === StoryEntityType.Faction) ||
+            (sourceType === StoryEntityType.Faction && targetType === StoryEntityType.Character)
           ) {
-            relType = 'associated'
-            label = 'Affiliated'
-          } else if (sourceType === 'place' || targetType === 'place') {
-            relType = 'associated'
-            label = 'Located in'
+            relType = RELATIONSHIP_EDGE_DEFAULT_TYPE
+            label = RelationshipEdgeLabel.Affiliated
+          } else if (sourceType === StoryEntityType.Place || targetType === StoryEntityType.Place) {
+            relType = RELATIONSHIP_EDGE_DEFAULT_TYPE
+            label = RelationshipEdgeLabel.LocatedIn
           }
 
           addEdge(edges, edgeIds, sourceId, targetId, similarity, relType, label)
@@ -382,7 +389,7 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
 
         console.log(`[Relationships] Embedding similarity: added supplemental edges, total now ${edges.length}`)
       } catch (err) {
-        console.warn('[Relationships] Embedding similarity query failed:', err)
+        console.warn(RelationshipsApiLog.EmbeddingSimilarityFailed, err)
       }
     }
 
@@ -390,23 +397,23 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
     for (const faction of factions) {
       const factionName = readString(faction.name)
       if (!factionName) continue
-      const factionId = `faction-${slugify(factionName)}`
+      const factionId = `${GraphNodeIdPrefix.Faction}${slugify(factionName)}`
 
       const members = [
         ...stringArrayFromJson(faction.members),
         ...stringArrayFromJson(faction.keyMembers),
       ]
       for (const member of members) {
-        const charId = `character-${slugify(member)}`
+        const charId = `${GraphNodeIdPrefix.Character}${slugify(member)}`
         if (nodeIds.has(charId)) {
-          addEdge(edges, edgeIds, charId, factionId, 0.9, 'member_of', 'Member')
+          addEdge(edges, edgeIds, charId, factionId, 0.9, StorytellerRelationshipType.MemberOf, RelationshipEdgeLabel.Member)
         }
       }
 
       for (const rival of stringArrayFromJson(faction.rivals)) {
-        const rivalId = `faction-${slugify(rival)}`
+        const rivalId = `${GraphNodeIdPrefix.Faction}${slugify(rival)}`
         if (nodeIds.has(rivalId)) {
-          addEdge(edges, edgeIds, factionId, rivalId, 0.8, 'rival', 'Rivals')
+          addEdge(edges, edgeIds, factionId, rivalId, 0.8, StorytellerRelationshipType.Rival, RelationshipEdgeLabel.Rivals)
         }
       }
     }
@@ -455,15 +462,15 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
             const a = mentionedNodes[i]
             const b = mentionedNodes[j]
 
-            let relType = 'associated'
+            let relType = RELATIONSHIP_EDGE_DEFAULT_TYPE
             if (
-              (a.type === 'character' && b.type === 'faction') ||
-              (a.type === 'faction' && b.type === 'character')
+              (a.type === StoryEntityType.Character && b.type === StoryEntityType.Faction) ||
+              (a.type === StoryEntityType.Faction && b.type === StoryEntityType.Character)
             ) {
-              relType = 'member_of'
+              relType = StorytellerRelationshipType.MemberOf
             }
 
-            addEdge(edges, edgeIds, a.id, b.id, 0.5, relType, 'Co-mentioned')
+            addEdge(edges, edgeIds, a.id, b.id, 0.5, relType, RelationshipEdgeLabel.CoMentioned)
           }
         }
       }
@@ -473,7 +480,7 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
     // Showing no edges is more honest than fabricating 0.25-weight phantom connections.
     // The LLM extractor (Strategy 0) will find real relationships if the story has them.
     if (edges.length === 0) {
-      console.log('[Relationships] No edges found — story may not have documented relationships yet')
+      console.log(RelationshipsApiLog.NoEdgesFound)
     }
 
     // Filter edges to only reference existing nodes
@@ -497,7 +504,7 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
     }
 
     console.log(
-      `[Relationships] Final: ${nodes.length} nodes, ${validEdges.length} edges (${edges.length - validEdges.length} orphaned removed), central: ${centralCharacter || 'none'}`
+      `[Relationships] Final: ${nodes.length} nodes, ${validEdges.length} edges (${edges.length - validEdges.length} orphaned removed), central: ${centralCharacter || RELATIONSHIPS_CENTRAL_CHARACTER_NONE}`
     )
 
     return NextResponse.json({
@@ -506,7 +513,7 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
       centralCharacter,
     } satisfies RelationshipResponse)
   } catch (error) {
-    console.error('[Relationships API] Failed:', error)
-    return NextResponse.json({ error: 'Failed to fetch relationships' }, { status: 500 })
+    console.error(RelationshipsApiLog.ApiFailed, error)
+    return NextResponse.json({ error: RelationshipsApiError.FetchFailed }, { status: 500 })
   }
 })

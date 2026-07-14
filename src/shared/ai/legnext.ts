@@ -1,9 +1,17 @@
+import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
+import {
+  LEGNEXT_ERROR_SEPARATOR,
+  LEGNEXT_UNKNOWN_ERROR,
+  LegNextErrorMessage,
+  LegNextJobStatus,
+} from '@/shared/ai/constants/legnext'
+
 export async function submitImagineTask(prompt: string, apiKey: string): Promise<string> {
   const response = await fetch('https://api.legnext.ai/api/v1/diffusion', {
-    method: 'POST',
+    method: HttpMethod.Post,
     headers: {
       'x-api-key': apiKey,
-      'Content-Type': 'application/json',
+      'Content-Type': ContentType.Json,
     },
     body: JSON.stringify({
       text: prompt,
@@ -32,7 +40,7 @@ export async function pollLegNextTask(
 ): Promise<any> {
   for (let i = 0; i < maxAttempts; i++) {
     const response = await fetch(`https://api.legnext.ai/api/v1/job/${jobId}`, {
-      method: 'GET',
+      method: HttpMethod.Get,
       headers: {
         'x-api-key': apiKey,
       },
@@ -44,17 +52,17 @@ export async function pollLegNextTask(
 
     const data = await response.json()
     // Status values: pending, staged, processing, failed, completed
-    if (data.status === 'completed') {
+    if (data.status === LegNextJobStatus.Completed) {
       return data.output
     }
 
-    if (data.status === 'failed') {
-      const errorMsg = data.output?.error_messages?.join(', ') || data.message || 'Unknown error'
+    if (data.status === LegNextJobStatus.Failed) {
+      const errorMsg = data.output?.error_messages?.join(LEGNEXT_ERROR_SEPARATOR) || data.message || LEGNEXT_UNKNOWN_ERROR
       throw new Error(`LegNext task failed: ${errorMsg}`)
     }
 
     await new Promise(resolve => setTimeout(resolve, intervalMs))
   }
 
-  throw new Error('LegNext task timed out')
+  throw new Error(LegNextErrorMessage.TaskTimedOut)
 }

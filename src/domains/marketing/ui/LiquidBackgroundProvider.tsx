@@ -1,5 +1,6 @@
 'use client'
 
+import { TURBULENT_BG_CANVAS_ID } from '@/domains/marketing/constants/liquid'
 import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { LiquidProvider } from '../state/LiquidContext'
@@ -42,7 +43,7 @@ export function LiquidBackgroundProvider({
   useEffect(() => {
     let rafId: number
     const updateTexture = () => {
-      const bgCanvas = document.getElementById('turbulent-bg-canvas')
+      const bgCanvas = document.getElementById(TURBULENT_BG_CANVAS_ID)
       const renderer = window.__liquidGLRenderer__
 
       if (bgCanvas instanceof HTMLCanvasElement && renderer?._uploadTexture) {

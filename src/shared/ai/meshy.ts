@@ -1,12 +1,35 @@
-// Simple log function - can be replaced with a more sophisticated logger if needed
-const log = (level: 'info' | 'warn' | 'error', message: string, data?: any) => {
-  const prefix = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : '✅'
-  console.log(`${prefix} [MeshyClient] ${message}`, data ? JSON.stringify(data, null, 2) : '')
+import {
+  MeshyAiModelId,
+  MeshyApiBaseUrl,
+  MeshyApiPath,
+  MeshyErrorMessage,
+  MeshyLogEmoji,
+  MeshyLogLevel,
+  MeshyLogMessage,
+  MeshyLogPrefix,
+  MeshyModelFormat,
+} from '@/shared/ai/constants/meshy'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
+import {
+  CentralityFallback,
+  HttpMethod,
+  MeshyTaskStatus,
+  UrlScheme,
+} from '@/shared/data/constants/protocol'
+
+const log = (level: MeshyLogLevel, message: string, data?: unknown) => {
+  const prefix =
+    level === MeshyLogLevel.Error
+      ? MeshyLogEmoji.Error
+      : level === MeshyLogLevel.Warn
+        ? MeshyLogEmoji.Warning
+        : MeshyLogEmoji.Success
+  console.log(`${prefix} ${MeshyLogPrefix.Client} ${message}`, data ? JSON.stringify(data, null, 2) : '')
 }
 
 export class MeshyClient {
   private apiKey: string
-  private baseUrl = 'https://api.meshy.ai/v2'
+  private baseUrl = MeshyApiBaseUrl.V2
   // Store current task ID for external access
   public currentTaskId: string | null = null
 
@@ -16,8 +39,8 @@ export class MeshyClient {
 
   async generateModel(imageUrl: string): Promise<string> {
     // Step 1: Initiate Generation (Image to 3D)
-    const response = await fetch(`${this.baseUrl}/image-to-3d`, {
-      method: 'POST',
+    const response = await fetch(`${this.baseUrl}${MeshyApiPath.ImageTo3d}`, {
+      method: HttpMethod.Post,
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
@@ -35,7 +58,7 @@ export class MeshyClient {
 
     const { result: taskId } = await response.json()
     this.currentTaskId = taskId
-    log('info', 'Image-to-3D task created', { taskId })
+    log(MeshyLogLevel.Info, MeshyLogMessage.ImageTo3dTaskCreated, { taskId })
 
     // Step 2: Poll for completion
     return this.pollTask(taskId)
@@ -48,7 +71,7 @@ export class MeshyClient {
     while (attempts < maxRetries) {
       await new Promise(resolve => setTimeout(resolve, 2000))
 
-      const response = await fetch(`${this.baseUrl}/image-to-3d/${taskId}`, {
+      const response = await fetch(`${this.baseUrl}${MeshyApiPath.ImageTo3d}/${taskId}`, {
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
         },
@@ -58,22 +81,24 @@ export class MeshyClient {
 
       const data = await response.json()
 
-      if (data.status === 'SUCCEEDED') {
-        return data.model_urls.glb // Prefer GLB for web
-      } else if (data.status === 'FAILED') {
-        throw new Error(`Meshy Task Failed: ${data.task_error?.message || 'Unknown error'}`)
+      if (data.status === MeshyTaskStatus.Succeeded) {
+        return data.model_urls[MeshyModelFormat.Glb] // Prefer GLB for web
+      } else if (data.status === MeshyTaskStatus.Failed) {
+        throw new Error(
+          `Meshy Task Failed: ${data.task_error?.message || API_ERROR.UNKNOWN_ERROR}`
+        )
       }
 
       attempts++
     }
 
-    throw new Error('Meshy Task Timed Out')
+    throw new Error(MeshyErrorMessage.TaskTimedOut)
   }
 
   async retextureModel(
     modelUrlOrBase64: string,
     prompt: string,
-    aiModel: 'latest' | 'meshy-4' | 'meshy-5' = 'latest',
+    aiModel: `${MeshyAiModelId}` = MeshyAiModelId.Latest,
     styleImageUrl?: string
   ): Promise<string> {
     // Determine if input is valid URL or needs to be treated as Base64 Data URI
@@ -87,9 +112,9 @@ export class MeshyClient {
     // The docs say `https://api.meshy.ai/openapi/v1/retexture`.
     // I will use the absolute URL for retexture to be safe.
 
-    const textureBaseUrl = 'https://api.meshy.ai/openapi/v1/retexture'
+    const textureBaseUrl = MeshyApiBaseUrl.RetextureV1
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       model_url: modelUrlOrBase64,
       text_style_prompt: prompt,
       ai_model: aiModel,
@@ -100,21 +125,21 @@ export class MeshyClient {
     // Add style reference image if provided (from project settings)
     if (styleImageUrl) {
       payload.image_style_url = styleImageUrl
-      log('info', 'Using style reference image', { styleImageUrl })
+      log(MeshyLogLevel.Info, MeshyLogMessage.UsingStyleReferenceImage, { styleImageUrl })
     }
 
-    log('info', 'Retexture request', {
+    log(MeshyLogLevel.Info, MeshyLogMessage.RetextureRequest, {
       url: textureBaseUrl,
       prompt,
       aiModel,
-      styleImageUrl: styleImageUrl || 'none',
+      styleImageUrl: styleImageUrl || CentralityFallback.None,
       modelUrlLength: modelUrlOrBase64.length,
-      isDataUri: modelUrlOrBase64.startsWith('data:'),
-      isHttpUrl: modelUrlOrBase64.startsWith('http'),
+      isDataUri: modelUrlOrBase64.startsWith(UrlScheme.Data),
+      isHttpUrl: modelUrlOrBase64.startsWith(UrlScheme.Http),
     })
 
     const response = await fetch(textureBaseUrl, {
-      method: 'POST',
+      method: HttpMethod.Post,
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
@@ -126,7 +151,7 @@ export class MeshyClient {
       const errorText = await response.text()
       let message = response.statusText
 
-      log('error', 'Retexture API error', {
+      log(MeshyLogLevel.Error, MeshyLogMessage.RetextureApiError, {
         statusCode: response.status,
         statusText: response.statusText,
         errorResponse: errorText,
@@ -145,7 +170,7 @@ export class MeshyClient {
     const { result: taskId } = responseData
     this.currentTaskId = taskId
 
-    log('info', 'Retexture task created', { taskId })
+    log(MeshyLogLevel.Info, MeshyLogMessage.RetextureTaskCreated, { taskId })
 
     // Step 2: Poll for completion
     return this.pollRetextureTask(taskId, textureBaseUrl)
@@ -168,16 +193,16 @@ export class MeshyClient {
 
       const data = await response.json()
 
-      if (data.status === 'SUCCEEDED') {
-        return data.model_urls.glb
-      } else if (data.status === 'FAILED') {
-        const errorMsg = data.task_error?.message || 'Unknown error'
+      if (data.status === MeshyTaskStatus.Succeeded) {
+        return data.model_urls[MeshyModelFormat.Glb]
+      } else if (data.status === MeshyTaskStatus.Failed) {
+        const errorMsg = data.task_error?.message || API_ERROR.UNKNOWN_ERROR
         throw new Error(`Meshy Retexture Task Failed: ${errorMsg}`)
       }
 
       attempts++
     }
 
-    throw new Error('Meshy Retexture Task Timed Out')
+    throw new Error(MeshyErrorMessage.RetextureTaskTimedOut)
   }
 }

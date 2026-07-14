@@ -8,6 +8,7 @@
 // Side effect: registers the storyteller agents + beat-draft-workflow on the
 // kernel runtime registry BEFORE any agent constructor can call
 // getMastraInstance() (every agent imports this barrel). See io/mastra-runtime.
+import '@/shared/data/server-guard'
 import '@/domains/storyteller/io/mastra-runtime'
 
 import { manageBeatTool, listBeatsTool } from './beat-tools'

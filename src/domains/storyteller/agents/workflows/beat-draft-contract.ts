@@ -26,6 +26,12 @@ export const beatDraftInputSchema = z.object({
     .boolean()
     .optional()
     .describe('Skip the editorial-verdict suspension (batch/eval mode)'),
+  wildcards: z
+    .boolean()
+    .optional()
+    .describe(
+      'Run the Muse brainstorm→rank stage and feed surviving sparks to the planner (PLAN-V2 5.3). Default OFF until the A/B gate (5.6) flips it.'
+    ),
 })
 
 export const beatDraftOutputSchema = z.object({

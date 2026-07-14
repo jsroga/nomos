@@ -8,62 +8,62 @@ import {
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
 import { formFile, formInt, formString } from '@/shared/data/form-data-guards'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import {
+  BlobAccess,
+  ContentType,
+  FormField,
+  SharpFit,
+  SharpPosition,
+} from '@/shared/data/constants/protocol'
+import { DB_TABLE, DB_UPSERT } from '@/shared/data/constants/db-tables'
 
 const TILE_SIZE = 1024
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const formData = await request.formData()
-    const file = formFile(formData, 'file')
-    const projectId = formString(formData, 'projectId')
+    const file = formFile(formData, FormField.File)
+    const projectId = formString(formData, FormField.ProjectId)
     const x = formInt(formData, 'x')
     const y = formInt(formData, 'y')
 
     if (!file || !projectId || x === null || y === null) {
-      return NextResponse.json(
-        { error: 'Missing required fields: file, projectId, x, y' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: API_ERROR.MISSING_TILE_UPLOAD_FIELDS }, { status: 400 })
     }
 
-    // Verify project access
     const hasAccess = await verifyProjectAccess(supabase, projectId)
     if (!hasAccess) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
-    // Validate file type
     const validTypes = ['image/png', 'image/jpeg', 'image/webp']
     if (!validTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Invalid file type. Only PNG, JPEG, and WebP are allowed.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: API_ERROR.INVALID_TILE_FILE_TYPE }, { status: 400 })
     }
 
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
     const resizedBuffer = await sharp(buffer)
-      .resize(TILE_SIZE, TILE_SIZE, { fit: 'cover', position: 'center' })
+      .resize(TILE_SIZE, TILE_SIZE, { fit: SharpFit.Cover, position: SharpPosition.Center })
       .png()
       .toBuffer()
 
-    const filename = `tiles/${projectId}/${x}_${y}_${Date.now()}.png`
+    const filename = `${DB_TABLE.TILES}/${projectId}/${x}_${y}_${Date.now()}.png`
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      return NextResponse.json({ error: 'BLOB_READ_WRITE_TOKEN not configured' }, { status: 500 })
+      return NextResponse.json({ error: API_ERROR.BLOB_TOKEN_NOT_CONFIGURED }, { status: 500 })
     }
 
     const blob = await put(filename, resizedBuffer, {
-      access: 'public',
+      access: BlobAccess.Public,
       token: process.env.BLOB_READ_WRITE_TOKEN,
-      contentType: 'image/png',
+      contentType: ContentType.Png,
     })
 
-    // Save to database using authenticated client (RLS enforced)
     const { data: tile, error } = await supabase
-      .from('tiles')
+      .from(DB_TABLE.TILES)
       .upsert(
         {
           project_id: projectId,
@@ -72,13 +72,13 @@ export const POST = withRateLimit(
           tile_prompt: `Uploaded tile at (${x}, ${y})`,
           image_filename: blob.url,
         },
-        { onConflict: 'project_id,x,y' }
+        { onConflict: DB_UPSERT.TILES_PROJECT_XY }
       )
       .select()
       .single()
 
     if (error) {
-      console.error('Database error:', error)
+      console.error(API_LOG_PREFIX.UPLOAD_TILE_DB_ERROR, error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 

@@ -43,6 +43,7 @@ function makeDeps(overrides: Partial<BeatDraftDeps> = {}) {
       note ? `${draft}\n[revised per: ${note}]` : `${draft}\n[revised]`
     ),
     persistBeat: vi.fn(async () => ({ saved: true, beatId: 'beat-123', message: 'saved' })),
+    generateSparks: vi.fn(async () => []),
     ...overrides,
   }
   return deps
@@ -212,5 +213,48 @@ describe('beat-plan concreteness gate (item 35)', () => {
     expect(String(payload?.planWarnings)).toContain('goal is too thin')
     // The vague plan still flows through — flagged, not fatal.
     expect(deps.draftBeat).toHaveBeenCalled()
+  })
+})
+
+describe('Muse sparks wiring (item 5.3)', () => {
+  const KEPT_SPARK = {
+    idea: {
+      hook: 'Vera burns the ledger page she came to steal',
+      mechanism: 'The candle is the instrumental object; vespers are the countdown.',
+      collision: 'Destroys the evidence both factions need.',
+    },
+    scores: { surprise: 8, storyMotion: 9, fit: 7, cost: 8 },
+    verdict: 'keep' as const,
+    reason: 'Irreversible and collides with the ledger plot',
+  }
+
+  it('feeds ranked sparks to the planner and surfaces them at the verdict', async () => {
+    const deps = makeDeps({ generateSparks: vi.fn(async () => [KEPT_SPARK]) })
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    const result = await run.start({ inputData: { ...INPUT, wildcards: true } })
+
+    expect(deps.generateSparks).toHaveBeenCalledTimes(1)
+    // planBeat received the sparks block (4th arg) containing the hook.
+    const planBeatCall = vi.mocked(deps.planBeat).mock.calls[0]
+    expect(String(planBeatCall[3])).toContain(KEPT_SPARK.idea.hook)
+
+    expect(result.status).toBe('suspended')
+    const payload: Record<string, unknown> | undefined =
+      result.steps[VERDICT_STEP_ID]?.suspendPayload
+    expect(payload?.sparks).toEqual([KEPT_SPARK.idea.hook])
+  })
+
+  it('never runs the Muse when wildcards is off', async () => {
+    const deps = makeDeps()
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    const result = await run.start({ inputData: INPUT })
+
+    expect(deps.generateSparks).not.toHaveBeenCalled()
+    expect(result.status).toBe('suspended')
+    const payload: Record<string, unknown> | undefined =
+      result.steps[VERDICT_STEP_ID]?.suspendPayload
+    expect(payload?.sparks).toBeUndefined()
   })
 })

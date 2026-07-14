@@ -2,6 +2,12 @@ import { PgVector } from '@mastra/pg'
 import { OpenAIEmbeddings } from '@langchain/openai'
 
 import { gameDesignPatternFromVectorRow } from './pattern-wire'
+import {
+  GAME_DESIGN_EMBEDDING_MODEL,
+  GameDesignMemoryError,
+  GameDesignPatternDelimiter,
+  VectorIndexMetric,
+} from './constants/memory'
 
 export interface GameDesignPattern {
   id: string
@@ -39,7 +45,7 @@ export class GameDesignMemory {
       connectionString: config.connectionString,
     })
     this.embeddings = new OpenAIEmbeddings({
-      modelName: 'text-embedding-3-small',
+      modelName: GAME_DESIGN_EMBEDDING_MODEL,
     })
     this.indexName = config.indexName || DEFAULT_INDEX_NAME
     this.dimension = config.dimension || DEFAULT_DIMENSION
@@ -54,7 +60,7 @@ export class GameDesignMemory {
     await this.vector.createIndex({
       indexName: this.indexName,
       dimension: this.dimension,
-      metric: 'cosine',
+      metric: VectorIndexMetric.Cosine,
     })
 
     this.initialized = true
@@ -82,8 +88,8 @@ export class GameDesignMemory {
           title: pattern.title,
           description: pattern.description,
           category: pattern.category,
-          tags: pattern.tags.join(','),
-          examples: pattern.examples?.join('|||') || '',
+          tags: pattern.tags.join(GameDesignPatternDelimiter.TagsJoin),
+          examples: pattern.examples?.join(GameDesignPatternDelimiter.ExamplesJoin) || '',
         },
       ],
       ids: [pattern.id],
@@ -112,8 +118,8 @@ export class GameDesignMemory {
         title: p.title,
         description: p.description,
         category: p.category,
-        tags: p.tags.join(','),
-        examples: p.examples?.join('|||') || '',
+        tags: p.tags.join(GameDesignPatternDelimiter.TagsJoin),
+        examples: p.examples?.join(GameDesignPatternDelimiter.ExamplesJoin) || '',
       })),
       ids: patterns.map(p => p.id),
     })
@@ -205,11 +211,11 @@ export class GameDesignMemory {
     ]
 
     if (pattern.tags.length > 0) {
-      parts.push(`Tags: ${pattern.tags.join(', ')}`)
+      parts.push(`Tags: ${pattern.tags.join(GameDesignPatternDelimiter.TagsJoin)}`)
     }
 
     if (pattern.examples && pattern.examples.length > 0) {
-      parts.push(`Examples: ${pattern.examples.join('; ')}`)
+      parts.push(`Examples: ${pattern.examples.join(GameDesignPatternDelimiter.ExamplesTextJoin)}`)
     }
 
     return parts.join('\n')
@@ -223,7 +229,7 @@ export function createGameDesignMemory(connectionString?: string): GameDesignMem
   const connString = connectionString || process.env.DATABASE_URL
 
   if (!connString) {
-    throw new Error('DATABASE_URL environment variable is required for GameDesignMemory')
+    throw new Error(GameDesignMemoryError.DatabaseUrlRequired)
   }
 
   return new GameDesignMemory({

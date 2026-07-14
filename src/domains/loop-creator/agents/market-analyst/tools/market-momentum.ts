@@ -10,8 +10,25 @@
  * - Social proof signals for game concepts
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
+import { createLoopStructuredTool } from './structured-tool'
+
+const marketMomentumSchema = z.object({
+  targetGenres: z
+    .array(z.string())
+    .optional()
+    .describe('Specific genres to analyze (e.g., ["roguelike", "extraction", "narrative"])'),
+  includeRisingCompetitors: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe('Include rising competitors analysis'),
+  includeSocialBuzz: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe('Include social buzz indicators'),
+})
 
 /**
  * Genre momentum data
@@ -400,7 +417,7 @@ const RISING_COMPETITORS: RisingCompetitor[] = [
 /**
  * Market Momentum Tool
  */
-export const marketMomentumTool = new DynamicStructuredTool({
+export const marketMomentumTool = createLoopStructuredTool({
   name: 'market_momentum_analysis',
   description: `Aggregate real-time market signals from Twitter, Steam, and Reddit.
 
@@ -413,23 +430,10 @@ Provides:
 - Opportunities and risks per genre
 
 Use this for comprehensive market timing and positioning decisions.`,
-  schema: z.object({
-    targetGenres: z
-      .array(z.string())
-      .optional()
-      .describe('Specific genres to analyze (e.g., ["roguelike", "extraction", "narrative"])'),
-    includeRisingCompetitors: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe('Include rising competitors analysis'),
-    includeSocialBuzz: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe('Include social buzz indicators'),
-  }),
-  func: async ({ targetGenres, includeRisingCompetitors, includeSocialBuzz }): Promise<string> => {
+  schema: marketMomentumSchema,
+  func: async input => {
+    const { targetGenres, includeRisingCompetitors, includeSocialBuzz } =
+      marketMomentumSchema.parse(input)
     try {
       let genreData = [...GENRE_MOMENTUM_DATA]
 

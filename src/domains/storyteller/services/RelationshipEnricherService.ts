@@ -9,7 +9,18 @@ import { z } from 'zod'
 import { db } from '@/db/client'
 import { projects } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
+import { EntityRefPrefix } from '@/domains/storyteller/core/entities/constants/reference-parser'
+import {
+  INFERRED_RELATIONSHIP_MAP,
+  RELATIONSHIP_SUMMARY_LABELS,
+  RelationshipEnricherLog,
+  RelationshipSummaryLabel,
+  StorytellerRelationshipType,
+} from '@/domains/storyteller/services/constants/relationship-enricher'
+import { InferredRelationshipType } from '@/domains/storyteller/services/constants/entity-graph-wire'
 import { recordFromJson } from '@/shared/data/deep-merge'
+import { StorytellerAnswerSeparator, StorytellerTextSeparator } from '@/domains/storyteller/core/storyteller-page-wire'
 import { EntityType } from './EntityRegistryService'
 import { entityGraphService } from './EntityGraphService'
 
@@ -17,27 +28,7 @@ import { entityGraphService } from './EntityGraphService'
 // TYPES
 // ==========================================
 
-export type RelationshipType =
-  | 'ally'
-  | 'enemy'
-  | 'rival'
-  | 'mentor'
-  | 'student'
-  | 'lover'
-  | 'family'
-  | 'stranger'
-  | 'acquaintance'
-  | 'complex'
-  | 'member_of'
-  | 'leader_of'
-  | 'associated'
-  | 'related'
-  | 'owns'
-  | 'uses'
-  | 'caused_by'
-  | 'happened_at'
-  | 'located_in'
-  | 'temporal'
+export type RelationshipType = `${StorytellerRelationshipType}`
 
 export interface Relationship {
   targetId: string
@@ -147,7 +138,7 @@ class RelationshipEnricherService {
       let relationships: Relationship[] = []
 
       switch (entityType) {
-        case 'character':
+        case StoryEntityType.Character:
           relationships = await this.buildCharacterRelationships(
             entityId,
             entityName,
@@ -156,12 +147,12 @@ class RelationshipEnricherService {
             storyPlan
           )
           break
-        case 'faction':
+        case StoryEntityType.Faction:
           relationships = this.buildFactionRelationships(entityName, storyPlan)
           break
-        case 'place':
-        case 'event':
-        case 'rule':
+        case StoryEntityType.Place:
+        case StoryEntityType.Event:
+        case StoryEntityType.Rule:
           // Use graph service for these types
           relationships = await this.buildGraphBasedRelationships(entityId, projectId, entityType)
           break
@@ -186,7 +177,7 @@ class RelationshipEnricherService {
 
       return enriched
     } catch (error) {
-      console.warn('[RelationshipEnricher] Failed to enrich entity:', error)
+      console.warn(RelationshipEnricherLog.FailedToEnrichEntity, error)
       return this.createBasicEnriched(entityId, entityType, entityName, baseDescription)
     }
   }
@@ -211,12 +202,12 @@ class RelationshipEnricherService {
       const normalizedMembers = members.map((m: string) => m.toLowerCase())
 
       if (normalizedMembers.includes(normalizedName)) {
-        const factionId = `faction-${faction.name.toLowerCase().replace(/\s+/g, '-')}`
+        const factionId = `${EntityRefPrefix.Faction}-${faction.name.toLowerCase().replace(/\s+/g, '-')}`
         relationships.push({
           targetId: factionId,
           targetName: faction.name,
-          targetType: 'faction',
-          relationshipType: 'member_of',
+          targetType: StoryEntityType.Faction,
+          relationshipType: StorytellerRelationshipType.MemberOf,
           strength: 0.8,
           description: `Member of ${faction.name}`,
         })
@@ -225,12 +216,12 @@ class RelationshipEnricherService {
       // Check if this character is mentioned as a rival
       const rivals = faction.rivals || []
       if (rivals.some((r: string) => r.toLowerCase().includes(normalizedName))) {
-        const factionId = `faction-${faction.name.toLowerCase().replace(/\s+/g, '-')}`
+        const factionId = `${EntityRefPrefix.Faction}-${faction.name.toLowerCase().replace(/\s+/g, '-')}`
         relationships.push({
           targetId: factionId,
           targetName: faction.name,
-          targetType: 'faction',
-          relationshipType: 'rival',
+          targetType: StoryEntityType.Faction,
+          relationshipType: StorytellerRelationshipType.Rival,
           strength: 0.7,
           description: `Rival of ${faction.name}`,
         })
@@ -239,7 +230,7 @@ class RelationshipEnricherService {
 
     // 2. Find relationships with other characters via graph service
     const graphRelations = await entityGraphService.getDirectRelationships(characterId, projectId, {
-      types: ['character'],
+      types: [StoryEntityType.Character],
       maxResults: 5,
       threshold: 0.6,
     })
@@ -250,7 +241,7 @@ class RelationshipEnricherService {
         relationships.push({
           targetId: rel.id,
           targetName: rel.name,
-          targetType: 'character',
+          targetType: StoryEntityType.Character,
           relationshipType: this.mapRelationshipType(rel.relationshipType),
           strength: rel.relevance,
           description: undefined,
@@ -266,9 +257,9 @@ class RelationshipEnricherService {
       for (const rel of characterInCast.relationships) {
         if (rel.target && rel.type) {
           relationships.push({
-            targetId: `character-${rel.target.toLowerCase().replace(/\s+/g, '-')}`,
+            targetId: `${EntityRefPrefix.Character}-${rel.target.toLowerCase().replace(/\s+/g, '-')}`,
             targetName: rel.target,
-            targetType: 'character',
+            targetType: StoryEntityType.Character,
             relationshipType: this.mapRelationshipType(rel.type),
             strength: rel.strength || 0.7,
             description: rel.description,
@@ -299,12 +290,12 @@ class RelationshipEnricherService {
     const members = [...(thisFaction.members || []), ...(thisFaction.keyMembers || [])]
     for (const member of members.slice(0, 5)) {
       // Limit to 5 members
-      const memberId = `character-${member.toLowerCase().replace(/\s+/g, '-')}`
+      const memberId = `${EntityRefPrefix.Character}-${member.toLowerCase().replace(/\s+/g, '-')}`
       relationships.push({
         targetId: memberId,
         targetName: member,
-        targetType: 'character',
-        relationshipType: 'member_of',
+        targetType: StoryEntityType.Character,
+        relationshipType: StorytellerRelationshipType.MemberOf,
         strength: 0.8,
         description: `${member} is a member`,
       })
@@ -315,14 +306,14 @@ class RelationshipEnricherService {
     for (const rival of rivals) {
       // Check if rival is a faction or character
       const isFaction = factions.some(f => f.name.toLowerCase() === rival.toLowerCase())
-      const targetType: EntityType = isFaction ? 'faction' : 'character'
+      const targetType: EntityType = isFaction ? StoryEntityType.Faction : StoryEntityType.Character
       const targetId = `${targetType}-${rival.toLowerCase().replace(/\s+/g, '-')}`
 
       relationships.push({
         targetId,
         targetName: rival,
         targetType,
-        relationshipType: 'rival',
+        relationshipType: StorytellerRelationshipType.Rival,
         strength: 0.7,
         description: `Rival: ${rival}`,
       })
@@ -373,57 +364,23 @@ class RelationshipEnricherService {
 
     const parts: string[] = []
 
-    // Format each group
-    const typeLabels: Record<RelationshipType, string> = {
-      ally: 'Ally of',
-      enemy: 'Enemy of',
-      rival: 'Rival of',
-      mentor: 'Mentor to',
-      student: 'Student of',
-      lover: 'Lover of',
-      family: 'Family of',
-      stranger: 'Stranger to',
-      acquaintance: 'Acquaintance of',
-      complex: 'Complex relationship with',
-      member_of: 'Member of',
-      leader_of: 'Leader of',
-      associated: 'Associated with',
-      related: 'Related to',
-      owns: 'Owns',
-      uses: 'Uses',
-      caused_by: 'Caused by',
-      happened_at: 'Happened at',
-      located_in: 'Located in',
-      temporal: 'Temporally linked to',
-    }
-
     for (const [type, rels] of grouped) {
-      const label = typeLabels[type] || 'Related to'
-      const names = rels.map(r => `[${r.targetName}][${r.targetId}]`).join(', ')
+      const label = RELATIONSHIP_SUMMARY_LABELS[type] ?? RelationshipSummaryLabel.RelatedTo
+      const names = rels.map(r => `[${r.targetName}][${r.targetId}]`).join(StorytellerAnswerSeparator.CommaSpace)
       parts.push(`${label} ${names}`)
     }
 
-    return parts.join('. ') + '.'
+    return parts.join(StorytellerTextSeparator.PeriodSpace) + StorytellerTextSeparator.PeriodSpace
   }
 
   /**
    * Map inferred relationship type to our enum
    */
   private mapRelationshipType(inferred: string): RelationshipType {
-    const mapping: Record<string, RelationshipType> = {
-      closely_connected: 'ally',
-      associated: 'associated',
-      related: 'related',
-      allied_or_rival: 'rival',
-      member_of: 'member_of',
-      has_member: 'leader_of',
-      associated_with: 'associated',
-      involved_in: 'associated',
-      controls: 'leader_of',
-      involves: 'associated',
-      occurred_at: 'associated',
+    if (isInferredRelationshipKey(inferred)) {
+      return INFERRED_RELATIONSHIP_MAP[inferred]
     }
-    return mapping[inferred] || 'related'
+    return StorytellerRelationshipType.Related
   }
 
   /**
@@ -469,3 +426,7 @@ export const relationshipEnricher = new RelationshipEnricherService()
 
 // Export class for testing
 export { RelationshipEnricherService }
+
+function isInferredRelationshipKey(value: string): value is InferredRelationshipType {
+  return Object.prototype.hasOwnProperty.call(INFERRED_RELATIONSHIP_MAP, value)
+}

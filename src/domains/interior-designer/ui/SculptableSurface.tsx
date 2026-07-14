@@ -16,6 +16,15 @@ import {
   Surface,
   TERRAIN_QUALITY_RESOLUTION,
 } from '@/domains/interior-designer'
+import { TerrainColor } from '@/domains/interior-designer/constants/terrain-defaults'
+import {
+  TERRAIN_WALL_SIDE_COLOR,
+} from '@/domains/interior-designer/constants/mesh-colors'
+import {
+  BufferGeometryAttribute,
+  TERRAIN_MESH_NAME,
+  TERRAIN_WALLS_MESH_NAME,
+} from '@/domains/interior-designer/constants/three-js'
 import { vec2 } from '@/domains/interior-designer/core/vec3'
 import { VoxelTerrainMesh } from './VoxelTerrainMesh'
 
@@ -32,6 +41,22 @@ interface SculptableSurfaceProps {
 
 const TERRAIN_WORLD_SIZE = 64
 const MAX_POLYGON_VERTICES = 32
+
+function writeHeightmapToTexture(
+  heightmap: Float32Array,
+  texture: THREE.DataTexture,
+  baseHeight: number
+): void {
+  const rawData = texture.image.data
+  if (!(rawData instanceof Float32Array)) return
+  const imageData: Float32Array = rawData
+
+  const maxDisplacement = 10
+  for (let i = 0; i < heightmap.length && i < imageData.length; i++) {
+    imageData[i] = (heightmap[i] - baseHeight) / maxDisplacement + 0.5
+  }
+  texture.needsUpdate = true
+}
 
 // ============================================================
 // GPU POLYGON CLIP SHADER WITH LIGHTING
@@ -203,7 +228,6 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
   isSelected,
   onClick,
   textureMap,
-  geometry,
   isGenerating = false,
 }) => {
   const groupRef = useRef<THREE.Group>(null)
@@ -227,20 +251,10 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
         prevVersion = state.terrainSettings.heightmapVersion
 
         // Update texture data directly
-        const { heightmap, heightmapSize, baseGroundHeight: baseHeight } = state.terrainSettings
+        const { heightmap: nextHeightmap, baseGroundHeight: baseHeight } = state.terrainSettings
 
-        if (heightmap && heightmapTextureRef.current) {
-          const imageData = heightmapTextureRef.current.image.data
-          if (!(imageData instanceof Float32Array)) return
-          const data = imageData
-          const maxDisplacement = 10
-
-          for (let i = 0; i < heightmap.length && i < data.length; i++) {
-            const displacement = heightmap[i] - baseHeight
-            data[i] = displacement / maxDisplacement + 0.5
-          }
-
-          heightmapTextureRef.current.needsUpdate = true
+        if (nextHeightmap && heightmapTextureRef.current) {
+          writeHeightmapToTexture(nextHeightmap, heightmapTextureRef.current, baseHeight)
         }
 
         // Force wall geometry update
@@ -306,7 +320,7 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
     const colors: number[] = []
     const indices: number[] = []
 
-    const groundColor = new THREE.Color(config.color || '#4a7c59')
+    const groundColor = new THREE.Color(config.color || TerrainColor.Ground)
 
     for (let iz = 0; iz <= segZ; iz++) {
       for (let ix = 0; ix <= segX; ix++) {
@@ -327,9 +341,9 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
     }
 
     const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+    geo.setAttribute(BufferGeometryAttribute.Position, new THREE.Float32BufferAttribute(positions, 3))
+    geo.setAttribute(BufferGeometryAttribute.Uv, new THREE.Float32BufferAttribute(uvs, 2))
+    geo.setAttribute(BufferGeometryAttribute.Color, new THREE.Float32BufferAttribute(colors, 3))
     geo.setIndex(indices)
     geo.computeVertexNormals()
 
@@ -355,12 +369,12 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
 
     const mat = new THREE.ShaderMaterial({
       uniforms: {
-        heightmapTexture: { value: heightmapTextureRef.current },
+        heightmapTexture: { value: heightmapTexture },
         displacementScale: { value: 10 },
         terrainWorldSize: { value: TERRAIN_WORLD_SIZE },
         boundsMin: { value: new THREE.Vector2(bounds.minX, bounds.minZ) },
         boundsSize: { value: new THREE.Vector2(width, depth) },
-        groundColor: { value: new THREE.Color(config.color || '#4a7c59') },
+        groundColor: { value: new THREE.Color(config.color || TerrainColor.Ground) },
         opacity: { value: (config.opacity || 1) * opacity },
         polygonVertices: { value: paddedVertices },
         vertexCount: { value: polygon2D.length },
@@ -386,6 +400,7 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
     textureMap,
     config.metalness,
     config.roughness,
+    heightmapTexture,
   ])
 
   // Create side wall geometry (regenerated on heightmap change)
@@ -404,7 +419,7 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
     const indices: number[] = []
     let vertexIndex = 0
 
-    const wallColor = new THREE.Color('#3d6b4a')
+    const wallColor = new THREE.Color(TERRAIN_WALL_SIDE_COLOR)
     const edgeSubdivisions = 20
 
     for (let i = 0; i < n; i++) {
@@ -444,8 +459,8 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
     }
 
     const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+    geo.setAttribute(BufferGeometryAttribute.Position, new THREE.Float32BufferAttribute(positions, 3))
+    geo.setAttribute(BufferGeometryAttribute.Color, new THREE.Float32BufferAttribute(colors, 3))
     geo.setIndex(indices)
     geo.computeVertexNormals()
 
@@ -479,7 +494,7 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
     >
       {/* Voxel Mode: Render Minecraft-style cubes */}
       {voxelMode && (
-        <VoxelTerrainMesh surface={surface} opacity={opacity} color={config.color || '#4a7c59'} />
+        <VoxelTerrainMesh surface={surface} opacity={opacity} color={config.color || TerrainColor.Ground} />
       )}
 
       {/* Smooth Mode: Original GPU polygon clipping */}
@@ -487,7 +502,7 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
         <>
           <mesh
             ref={topMeshRef}
-            name="terrain-mesh"
+            name={TERRAIN_MESH_NAME}
             geometry={topGeometry}
             material={topMaterial}
             receiveShadow
@@ -498,7 +513,7 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
           {wallGeometry && (
             <mesh
               ref={wallMeshRef}
-              name="terrain-walls"
+              name={TERRAIN_WALLS_MESH_NAME}
               geometry={wallGeometry}
               material={wallMaterial}
               receiveShadow

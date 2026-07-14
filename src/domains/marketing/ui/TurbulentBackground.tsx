@@ -1,5 +1,10 @@
 'use client'
 
+import {
+  DOM_EVENT_RESIZE,
+  TURBULENT_BG_CANVAS_ID,
+  WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE,
+} from '@/domains/marketing/constants/liquid'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
@@ -288,12 +293,12 @@ export function TurbulentBackground({
     const renderer = new THREE.WebGLRenderer({
       antialias: false, // Disable for performance
       alpha: false,
-      powerPreference: 'high-performance',
+      powerPreference: WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE,
       preserveDrawingBuffer: true, // Required for html2canvas/liquidGL to capture it
     })
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Cap at 2x for performance
-    renderer.domElement.id = 'turbulent-bg-canvas' // Add ID for liquidGL capture
+    renderer.domElement.id = TURBULENT_BG_CANVAS_ID // Add ID for liquidGL capture
     container.appendChild(renderer.domElement)
     rendererRef.current = renderer
 
@@ -360,11 +365,11 @@ export function TurbulentBackground({
       }
     }
 
-    window.addEventListener('resize', handleResize)
+    window.addEventListener(DOM_EVENT_RESIZE, handleResize)
 
     // Cleanup
     return () => {
-      window.removeEventListener('resize', handleResize)
+      window.removeEventListener(DOM_EVENT_RESIZE, handleResize)
 
       if (frameIdRef.current !== null) {
         cancelAnimationFrame(frameIdRef.current)

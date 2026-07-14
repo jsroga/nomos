@@ -1,4 +1,7 @@
-export type FollowUpImageProvider = 'nano-banana' | 'legnext-upload-paint'
+import { TileTriggerProvider } from '@/shared/data/constants/trigger-tile-route'
+import { AuthBypassFlag } from '@/shared/data/constants/protocol'
+
+export type FollowUpImageProvider = `${TileTriggerProvider.LegnextUploadPaint}` | `${TileTriggerProvider.NanoBanana}`
 export type TileAIProvider =
   | 'gemini'
   | 'nano-banana'
@@ -12,13 +15,19 @@ export function resolveFollowUpImageProviderFromEnv(
 ): FollowUpImageProvider {
   const configuredProvider = env.FOLLOW_UP_IMAGE_PROVIDER?.trim().toLowerCase()
 
-  if (configuredProvider === 'legnext-upload-paint' || configuredProvider === 'nano-banana') {
+  if (
+    configuredProvider === TileTriggerProvider.LegnextUploadPaint ||
+    configuredProvider === TileTriggerProvider.NanoBanana
+  ) {
     return configuredProvider
   }
 
   // Legacy fallback for existing deployments.
   const useLegnextForFollowUp =
-    env.USE_LEGNEXT_FOR_FOLLOWUP === 'true' && env.USE_NANO_BANANA_FOR_FOLLOWUP !== 'true'
+    env.USE_LEGNEXT_FOR_FOLLOWUP === AuthBypassFlag.True &&
+    env.USE_NANO_BANANA_FOR_FOLLOWUP !== AuthBypassFlag.True
 
-  return useLegnextForFollowUp ? 'legnext-upload-paint' : 'nano-banana'
+  return useLegnextForFollowUp
+    ? TileTriggerProvider.LegnextUploadPaint
+    : TileTriggerProvider.NanoBanana
 }

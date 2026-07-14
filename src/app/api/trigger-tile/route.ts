@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
-import type { generateTileTask } from '@/trigger/generate-tile'
+import type { generateTileTask } from '@/trigger'
 import {
   withAuth,
   withRateLimit,
@@ -13,7 +13,16 @@ import {
   resolveFollowUpImageProviderFromEnv,
   type TileAIProvider,
 } from '@/trigger/providers/follow-up-provider'
+import {
+  API_ERROR,
+  TRIGGER_TASK_ID,
+  TRIGGER_TASK_TTL,
+} from '@/shared/data/constants/api-errors'
+import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
+import { EnvVarName, GoogleModelId } from '@/shared/data/constants/protocol'
+import { TileTriggerProvider } from '@/shared/data/constants/trigger-tile-route'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const dynamic = 'force-dynamic'
 
 /**
@@ -21,72 +30,72 @@ export const dynamic = 'force-dynamic'
  * Trigger tile generation task
  */
 export const POST = withRateLimit(
-  withAuth<any>(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
+  withAuth<any>(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const payload = await request.json()
 
-    // Validate required fields
     if (
       !payload.projectId ||
       payload.x === undefined ||
       payload.y === undefined ||
       payload.prompt === undefined
     ) {
-      return NextResponse.json(
-        { error: 'Missing required fields: projectId, x, y, prompt' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: API_ERROR.MISSING_TILE_TRIGGER_FIELDS }, { status: 400 })
     }
 
-    // Verify project access via RLS
     const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
     if (!hasAccess) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
-    // Determine if this is a first tile (no neighbors) or follow-up tile
     const isFirstTile = payload.isFirstTile ?? true
 
     const followUpProvider = resolveFollowUpImageProviderFromEnv()
     let aiProvider: TileAIProvider
     let aiConfig: Record<string, unknown>
     const hasLegNext = !!process.env.LEGNEXT_API_KEY
-    const hasGoogle = !!process.env.GOOGLE_API_KEY
+    const hasGoogle = !!process.env[EnvVarName.GoogleApiKey]
 
     if (!hasLegNext && !hasGoogle) {
-      return NextResponse.json({ error: 'No AI provider configured (LEGNEXT_API_KEY or GOOGLE_API_KEY required)' }, { status: 500 })
+      return NextResponse.json({ error: API_ERROR.NO_AI_PROVIDER_CONFIGURED }, { status: 500 })
     }
 
     if (isFirstTile) {
       if (hasLegNext) {
-        aiProvider = 'midjourney'
+        aiProvider = TileTriggerProvider.Midjourney
         aiConfig = { apiKey: process.env.LEGNEXT_API_KEY }
       } else {
-        // Fallback to Gemini
-        aiProvider = 'gemini'
-        aiConfig = { apiKey: process.env.GOOGLE_API_KEY, model: 'gemini-3-pro-image-preview' }
-      }
-    } else {
-      if (followUpProvider === 'legnext-upload-paint' && hasLegNext) {
-        aiProvider = 'legnext-upload-paint'
-        aiConfig = { apiKey: process.env.LEGNEXT_API_KEY }
-      } else {
-        // Default follow-up provider: nano-banana (Gemini)
-        if (!hasGoogle) {
-          return NextResponse.json({ error: 'GOOGLE_API_KEY not configured on server' }, { status: 500 })
+        aiProvider = TileTriggerProvider.Gemini
+        aiConfig = {
+          apiKey: process.env[EnvVarName.GoogleApiKey],
+          model: GoogleModelId.Gemini3ProImagePreview,
         }
-        aiProvider = 'nano-banana'
-        aiConfig = { apiKey: process.env.GOOGLE_API_KEY, model: 'gemini-3-pro-image-preview' }
+      }
+    } else if (followUpProvider === TileTriggerProvider.LegnextUploadPaint && hasLegNext) {
+      aiProvider = TileTriggerProvider.LegnextUploadPaint
+      aiConfig = { apiKey: process.env.LEGNEXT_API_KEY }
+    } else {
+      if (!hasGoogle) {
+        return NextResponse.json(
+          { error: API_ERROR.GOOGLE_API_KEY_NOT_CONFIGURED_SERVER },
+          { status: 500 }
+        )
+      }
+      aiProvider = TileTriggerProvider.NanoBanana
+      aiConfig = {
+        apiKey: process.env[EnvVarName.GoogleApiKey],
+        model: GoogleModelId.Gemini3ProImagePreview,
       }
     }
 
-    // Fetch style references and style context from project
     const { data: projectData } = await supabase
-      .from('projects')
-      .select('style_reference_urls, style_preset')
-      .eq('id', payload.projectId)
+      .from(DB_TABLE.PROJECTS)
+      .select(DB_SELECT.PROJECT_STYLE_REFS)
+      .eq(DB_COLUMN.ID, payload.projectId)
       .single()
 
-    const styleContext = resolveStyleContext({ stylePreset: readString(projectData?.style_preset) ?? null })
+    const styleContext = resolveStyleContext({
+      stylePreset: readString(projectData?.style_preset) ?? null,
+    })
 
     const styleReferenceUrls: string[] | undefined =
       payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
@@ -96,9 +105,8 @@ export const POST = withRateLimit(
             styleReferenceUrls: stringArrayFromJson(projectData?.style_reference_urls),
           })
 
-    // Trigger the tile generation task
     const handle = await tasks.trigger<typeof generateTileTask>(
-      'generate-tile',
+      TRIGGER_TASK_ID.GENERATE_TILE,
       {
         projectId: payload.projectId,
         x: payload.x,
@@ -113,7 +121,7 @@ export const POST = withRateLimit(
         ...(payload.contextImageBase64 ? { contextImageBase64: payload.contextImageBase64 } : {}),
       },
       {
-        ttl: '10m', // Match maxDuration
+        ttl: TRIGGER_TASK_TTL.GENERATE_TILE,
       }
     )
 
@@ -123,5 +131,5 @@ export const POST = withRateLimit(
       publicAccessToken: handle.publicAccessToken,
     })
   }),
-  { maxRequests: 20, windowMs: 60000 } // 20 tile generations per minute
+  { maxRequests: 20, windowMs: 60000 }
 )

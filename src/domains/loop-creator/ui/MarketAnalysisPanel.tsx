@@ -27,6 +27,22 @@ import { Badge } from '@/components/Badge'
 import { ScrollArea } from '@/components/ScrollArea'
 import { MarketAnalysisReport } from '../agents/market-analyst/types'
 import { Node, Edge } from '@xyflow/react'
+import { LoopAbortErrorName } from '@/domains/loop-creator/constants/abort-error'
+import { CANVAS_NODE_TYPE_GROUP } from '@/domains/loop-creator/constants/graph-state-defaults'
+import { LoopHttpMethod } from '@/domains/loop-creator/constants/loop-http'
+import {
+  LOOP_GROUP_LABEL_UNNAMED,
+  LOOP_NODE_LABEL_UNNAMED,
+  LOOP_NODE_TYPE_DEFAULT,
+} from '@/domains/loop-creator/constants/loop-node-defaults'
+import {
+  LoopGameAudienceDefault,
+  LoopGameGenreDefault,
+  LoopGamePlatformDefault,
+  MARKET_ANALYSIS_SSE_DATA_PREFIX,
+  MarketAnalysisErrorMessage,
+  MarketAnalysisStreamEvent,
+} from '@/domains/loop-creator/constants/market-analysis'
 import {
   edgeLabel,
   groupTimescale,
@@ -50,7 +66,7 @@ interface MarketAnalysisPanelProps {
 }
 
 interface ProgressMessage {
-  type: 'progress' | 'tool_call' | 'tool_result' | 'message' | 'report' | 'error'
+  type: MarketAnalysisStreamEvent
   content: string
   timestamp: number
 }
@@ -103,7 +119,7 @@ export function MarketAnalysisPanel({
         setSavedAt(new Date(data.metadata.createdAt))
         setHasUnsavedChanges(false)
       }
-    } catch (err) {
+    } catch (_err) {
       // No saved analysis is fine
     } finally {
       setIsLoading(false)
@@ -119,11 +135,11 @@ export function MarketAnalysisPanel({
 
     // Prepare input from current nodes/edges
     const mechanics = nodes
-      .filter(n => n.type !== 'group')
+      .filter(n => n.type !== CANVAS_NODE_TYPE_GROUP)
       .map(n => ({
         id: n.id,
-        name: nodeLabel(n, 'Unnamed'),
-        type: nodeTypeField(n, 'action'),
+        name: nodeLabel(n, LOOP_NODE_LABEL_UNNAMED),
+        type: nodeTypeField(n, LOOP_NODE_TYPE_DEFAULT),
         description: nodeDescription(n),
       }))
 
@@ -135,10 +151,10 @@ export function MarketAnalysisPanel({
     }))
 
     const loops = nodes
-      .filter(n => n.type === 'group')
+      .filter(n => n.type === CANVAS_NODE_TYPE_GROUP)
       .map(n => ({
         id: n.id,
-        name: nodeLabel(n, 'Unnamed Loop'),
+        name: nodeLabel(n, LOOP_GROUP_LABEL_UNNAMED),
         type: groupTimescale(n),
         description: nodeDescription(n),
       }))
@@ -147,15 +163,15 @@ export function MarketAnalysisPanel({
       abortControllerRef.current = new AbortController()
 
       const response = await fetch('/api/loop-creator/market-analysis', {
-        method: 'POST',
+        method: LoopHttpMethod.Post,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mechanics,
           connections,
           loops,
-          gameGenre: gameContext.gameGenre || 'indie',
-          gamePlatform: gameContext.gamePlatform || 'pc',
-          targetAudience: gameContext.targetAudience || 'core',
+          gameGenre: gameContext.gameGenre || LoopGameGenreDefault.Indie,
+          gamePlatform: gameContext.gamePlatform || LoopGamePlatformDefault.Pc,
+          targetAudience: gameContext.targetAudience || LoopGameAudienceDefault.Core,
           gameDescription: gameContext.gameDescription || '',
         }),
         signal: abortControllerRef.current.signal,
@@ -167,7 +183,7 @@ export function MarketAnalysisPanel({
 
       // Handle streaming response
       const reader = response.body?.getReader()
-      if (!reader) throw new Error('No response body')
+      if (!reader) throw new Error(MarketAnalysisErrorMessage.NoResponseBody)
 
       const decoder = new TextDecoder()
       let buffer = ''
@@ -183,15 +199,19 @@ export function MarketAnalysisPanel({
         buffer = lines.pop() || '' // Keep incomplete line in buffer
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith(MARKET_ANALYSIS_SSE_DATA_PREFIX)) {
             try {
-              const data = JSON.parse(line.slice(6))
+              const data = JSON.parse(line.slice(MARKET_ANALYSIS_SSE_DATA_PREFIX.length))
 
-              if (data.type === 'report' && data.content) {
+              if (data.type === MarketAnalysisStreamEvent.Report && data.content) {
                 setReport(data.content)
                 setHasUnsavedChanges(true) // New report needs saving
-              } else if (data.type === 'error') {
-                setError(typeof data.content === 'string' ? data.content : 'Analysis error')
+              } else if (data.type === MarketAnalysisStreamEvent.Error) {
+                setError(
+                  typeof data.content === 'string'
+                    ? data.content
+                    : MarketAnalysisErrorMessage.AnalysisError,
+                )
               } else {
                 setProgressMessages(prev => [
                   ...prev,
@@ -212,7 +232,7 @@ export function MarketAnalysisPanel({
         }
       }
     } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
+      if (err instanceof Error && err.name !== LoopAbortErrorName.AbortError) {
         setError(err.message)
       }
     } finally {
@@ -229,7 +249,7 @@ export function MarketAnalysisPanel({
 
     try {
       const response = await fetch(`/api/loop-creator/market-analysis/${gameLoopId}`, {
-        method: 'POST',
+        method: LoopHttpMethod.Post,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(report),
       })
@@ -237,13 +257,13 @@ export function MarketAnalysisPanel({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to save')
+        throw new Error(data.error || MarketAnalysisErrorMessage.FailedToSave)
       }
 
       setSavedAt(new Date(data.createdAt))
       setHasUnsavedChanges(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save')
+      setError(err instanceof Error ? err.message : MarketAnalysisErrorMessage.FailedToSave)
     } finally {
       setIsSaving(false)
     }
@@ -254,7 +274,7 @@ export function MarketAnalysisPanel({
       // Delete existing first
       try {
         await fetch(`/api/loop-creator/market-analysis/${gameLoopId}`, {
-          method: 'DELETE',
+          method: LoopHttpMethod.Delete,
         })
       } catch {
         // Ignore delete errors
@@ -376,7 +396,7 @@ export function MarketAnalysisPanel({
                 </div>
                 <div className="flex flex-wrap gap-2 justify-center text-xs text-slate-500">
                   <Badge variant="secondary" className="bg-slate-800/50">
-                    {nodes.filter(n => n.type !== 'group').length} mechanics
+                    {nodes.filter(n => n.type !== CANVAS_NODE_TYPE_GROUP).length} mechanics
                   </Badge>
                   <Badge variant="secondary" className="bg-slate-800/50">
                     {edges.length} connections
@@ -417,7 +437,11 @@ export function MarketAnalysisPanel({
                     {progressMessages.slice(-10).map((msg, i) => (
                       <div key={i} className="text-xs text-slate-400 flex items-start gap-2">
                         <span className="text-indigo-400 shrink-0">
-                          {msg.type === 'tool_call' ? '🔧' : msg.type === 'tool_result' ? '✓' : '→'}
+                          {msg.type === MarketAnalysisStreamEvent.ToolCall
+                            ? '🔧'
+                            : msg.type === MarketAnalysisStreamEvent.ToolResult
+                              ? '✓'
+                              : '→'}
                         </span>
                         <span>{msg.content}</span>
                       </div>

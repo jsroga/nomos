@@ -16,6 +16,16 @@ import { cn } from '@/shared/data/utils'
 import { Sparkles, LayoutGrid, PenTool, Check, Lock, ChevronRight, Loader2 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import type { PhaseId } from '@/domains/storyteller/core/types/Enums'
+import {
+  PhaseNavigatorActiveStyle,
+  PhaseNavigatorColor,
+  PhaseNavigatorCompletedStyle,
+  PhaseNavigatorDescription,
+  PhaseNavigatorLabel,
+  PhaseNavigatorPhase,
+  PhaseNavigatorShortLabel,
+  PhaseNavigatorState,
+} from '@/domains/storyteller/ui/PhaseNavigator/constants/phase-navigator'
 
 // Canonical Phase type: PhaseId (string union from Enums.ts)
 
@@ -32,39 +42,34 @@ interface PhaseConfig {
 
 const PHASES: PhaseConfig[] = [
   {
-    id: 'premise',
-    label: 'Premise',
-    shortLabel: 'PREMISE',
+    id: PhaseNavigatorPhase.PREMISE,
+    label: PhaseNavigatorLabel.Premise,
+    shortLabel: PhaseNavigatorShortLabel.Premise,
     icon: <Sparkles size={14} />,
-    color: 'text-purple-400',
-    activeColor:
-      'bg-transparent border-purple-400 text-white shadow-[0_0_15px_rgba(192,132,252,0.5)]',
-    completedColor:
-      'bg-transparent border-purple-500/40 text-purple-400 hover:border-purple-500 shadow-[0_0_5px_rgba(168,85,247,0.2)]',
-    description: 'Define the hook, stakes, and transformation',
+    color: PhaseNavigatorColor.Premise,
+    activeColor: PhaseNavigatorActiveStyle.Premise,
+    completedColor: PhaseNavigatorCompletedStyle.Premise,
+    description: PhaseNavigatorDescription.Premise,
   },
   {
-    id: 'breaking',
-    label: 'Break',
-    shortLabel: 'BREAK',
+    id: PhaseNavigatorPhase.BREAKING,
+    label: PhaseNavigatorLabel.Break,
+    shortLabel: PhaseNavigatorShortLabel.Break,
     icon: <LayoutGrid size={14} />,
-    color: 'text-blue-400',
-    activeColor: 'bg-transparent border-blue-400 text-white shadow-[0_0_15px_rgba(96,165,250,0.5)]',
-    completedColor:
-      'bg-transparent border-blue-500/40 text-blue-400 hover:border-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.2)]',
-    description: 'Structure beats and scenes',
+    color: PhaseNavigatorColor.Break,
+    activeColor: PhaseNavigatorActiveStyle.Break,
+    completedColor: PhaseNavigatorCompletedStyle.Break,
+    description: PhaseNavigatorDescription.Break,
   },
   {
-    id: 'writing',
-    label: 'Write',
-    shortLabel: 'WRITE',
+    id: PhaseNavigatorPhase.WRITING,
+    label: PhaseNavigatorLabel.Write,
+    shortLabel: PhaseNavigatorShortLabel.Write,
     icon: <PenTool size={14} />,
-    color: 'text-emerald-400',
-    activeColor:
-      'bg-transparent border-emerald-400 text-white shadow-[0_0_15px_rgba(52,211,153,0.5)]',
-    completedColor:
-      'bg-transparent border-emerald-500/40 text-emerald-400 hover:border-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.2)]',
-    description: 'Draft the script',
+    color: PhaseNavigatorColor.Write,
+    activeColor: PhaseNavigatorActiveStyle.Write,
+    completedColor: PhaseNavigatorCompletedStyle.Write,
+    description: PhaseNavigatorDescription.Write,
   },
 ]
 
@@ -89,23 +94,26 @@ export const PhaseNavigator: React.FC<PhaseNavigatorProps> = ({
   completedPhases = [],
   isWorking = false,
   onPhaseChange,
-  onGoBack,
+  onGoBack: _onGoBack,
   compact = false,
   episodeTitle,
 }) => {
   const currentIndex = PHASES.findIndex(p => p.id === currentPhase)
 
-  const getPhaseState = (phase: PhaseConfig, index: number): 'completed' | 'active' | 'locked' => {
-    if (completedPhases.includes(phase.id)) return 'completed'
-    if (phase.id === currentPhase) return 'active'
-    if (index < currentIndex) return 'completed' // Phases before current are accessible
-    return 'locked'
+  const getPhaseState = (
+    phase: PhaseConfig,
+    index: number
+  ): `${PhaseNavigatorState}` => {
+    if (completedPhases.includes(phase.id)) return PhaseNavigatorState.Completed
+    if (phase.id === currentPhase) return PhaseNavigatorState.Active
+    if (index < currentIndex) return PhaseNavigatorState.Completed
+    return PhaseNavigatorState.Locked
   }
 
   const canNavigateTo = (phase: PhaseConfig, index: number): boolean => {
     if (isWorking) return false
     const state = getPhaseState(phase, index)
-    return state === 'completed' || state === 'active'
+    return state === PhaseNavigatorState.Completed || state === PhaseNavigatorState.Active
   }
 
   if (compact) {
@@ -124,19 +132,19 @@ export const PhaseNavigator: React.FC<PhaseNavigatorProps> = ({
                     disabled={!canNav}
                     className={cn(
                       'relative flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200',
-                      state === 'active' && phase.activeColor,
-                      state === 'completed' && phase.completedColor,
-                      state === 'locked' &&
+                      state === PhaseNavigatorState.Active && phase.activeColor,
+                      state === PhaseNavigatorState.Completed && phase.completedColor,
+                      state === PhaseNavigatorState.Locked &&
                         'text-zinc-600 cursor-not-allowed border border-transparent',
-                      canNav && state !== 'active' && 'hover:scale-105',
+                      canNav && state !== PhaseNavigatorState.Active && 'hover:scale-105',
                       'border-2' // Match Web button border width
                     )}
                   >
-                    {state === 'completed' ? (
+                    {state === PhaseNavigatorState.Completed ? (
                       <Check size={12} className="text-green-400" />
-                    ) : state === 'locked' ? (
+                    ) : state === PhaseNavigatorState.Locked ? (
                       <Lock size={10} className="opacity-50" />
-                    ) : isWorking && state === 'active' ? (
+                    ) : isWorking && state === PhaseNavigatorState.Active ? (
                       <Loader2 size={12} className="animate-spin" />
                     ) : (
                       phase.icon
@@ -144,7 +152,7 @@ export const PhaseNavigator: React.FC<PhaseNavigatorProps> = ({
                     <span>{phase.shortLabel}</span>
 
                     {/* Active indicator dot */}
-                    {state === 'active' && (
+                    {state === PhaseNavigatorState.Active && (
                       <span
                         className={cn(
                           'absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full',
@@ -157,7 +165,7 @@ export const PhaseNavigator: React.FC<PhaseNavigatorProps> = ({
                 <TooltipContent side="bottom" className="max-w-[200px]">
                   <p className="font-medium">{phase.label}</p>
                   <p className="text-xs text-muted-foreground">{phase.description}</p>
-                  {state === 'locked' && (
+                  {state === PhaseNavigatorState.Locked && (
                     <p className="text-xs text-amber-400 mt-1">Complete previous phases first</p>
                   )}
                 </TooltipContent>
@@ -196,17 +204,17 @@ export const PhaseNavigator: React.FC<PhaseNavigatorProps> = ({
                         'relative flex items-center gap-2 px-4 py-2 text-xs font-semibold transition-all duration-300',
                         'border-2 rounded-md',
                         // State-based styling
-                        state === 'active' && [
+                        state === PhaseNavigatorState.Active && [
                           phase.activeColor,
                           'shadow-lg shadow-current/20',
                           'scale-105',
                         ],
-                        state === 'completed' && [
+                        state === PhaseNavigatorState.Completed && [
                           'bg-zinc-800/60 border-zinc-700/80 text-zinc-300',
                           'hover:bg-zinc-700/60 hover:border-zinc-600',
                           'cursor-pointer',
                         ],
-                        state === 'locked' && [
+                        state === PhaseNavigatorState.Locked && [
                           'bg-zinc-900/30 border-zinc-800/50 text-zinc-600',
                           'cursor-not-allowed opacity-60',
                         ]
@@ -216,16 +224,16 @@ export const PhaseNavigator: React.FC<PhaseNavigatorProps> = ({
                       <span
                         className={cn(
                           'flex items-center justify-center w-6 h-6 rounded-full',
-                          state === 'active' && 'bg-current/20',
-                          state === 'completed' && 'bg-green-500/20',
-                          state === 'locked' && 'bg-zinc-800/50'
+                          state === PhaseNavigatorState.Active && 'bg-current/20',
+                          state === PhaseNavigatorState.Completed && 'bg-green-500/20',
+                          state === PhaseNavigatorState.Locked && 'bg-zinc-800/50'
                         )}
                       >
-                        {state === 'completed' ? (
+                        {state === PhaseNavigatorState.Completed ? (
                           <Check size={14} className="text-green-400" />
-                        ) : state === 'locked' ? (
+                        ) : state === PhaseNavigatorState.Locked ? (
                           <Lock size={12} />
-                        ) : isWorking && state === 'active' ? (
+                        ) : isWorking && state === PhaseNavigatorState.Active ? (
                           <Loader2 size={14} className="animate-spin" />
                         ) : (
                           phase.icon
@@ -237,7 +245,7 @@ export const PhaseNavigator: React.FC<PhaseNavigatorProps> = ({
                       <span className="sm:hidden">{phase.shortLabel}</span>
 
                       {/* Working indicator */}
-                      {isWorking && state === 'active' && (
+                      {isWorking && state === PhaseNavigatorState.Active && (
                         <span className="absolute -top-1 -right-1 flex h-3 w-3">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75" />
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-current" />
@@ -250,10 +258,10 @@ export const PhaseNavigator: React.FC<PhaseNavigatorProps> = ({
                     <p className="text-xs text-muted-foreground max-w-[180px]">
                       {phase.description}
                     </p>
-                    {state === 'locked' && (
+                    {state === PhaseNavigatorState.Locked && (
                       <p className="text-xs text-amber-400 mt-1">Complete previous phases first</p>
                     )}
-                    {state === 'completed' && (
+                    {state === PhaseNavigatorState.Completed && (
                       <p className="text-xs text-green-400 mt-1">Click to revisit</p>
                     )}
                   </TooltipContent>
@@ -280,10 +288,10 @@ export const PhaseNavigator: React.FC<PhaseNavigatorProps> = ({
           <div
             className={cn(
               'h-full transition-all duration-500 rounded-full',
-              currentPhase === 'premise' && 'bg-purple-500 w-[33%]',
-              currentPhase === 'breaking' && 'bg-blue-500 w-[66%]',
-              currentPhase === 'writing' && 'bg-emerald-500 w-full',
-              currentPhase === 'complete' && 'bg-green-500 w-full'
+              currentPhase === PhaseNavigatorPhase.PREMISE && 'bg-purple-500 w-[33%]',
+              currentPhase === PhaseNavigatorPhase.BREAKING && 'bg-blue-500 w-[66%]',
+              currentPhase === PhaseNavigatorPhase.WRITING && 'bg-emerald-500 w-full',
+              currentPhase === PhaseNavigatorPhase.COMPLETE && 'bg-green-500 w-full'
             )}
           />
         </div>

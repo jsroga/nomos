@@ -15,14 +15,29 @@ import {
 } from '@/components/Dialog'
 import { ScrollArea } from '@/components/ScrollArea'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { LoopHttpMethod } from '@/domains/loop-creator/constants/loop-http'
+import {
+  LOOP_SELECTOR_DEFAULT_NAME,
+  LOOP_SELECTOR_DELETE_CANCEL,
+  LOOP_SELECTOR_DELETE_CONFIRM,
+  LOOP_SELECTOR_DELETE_FAILED_LOG,
+  LOOP_SELECTOR_DELETE_TITLE,
+  LOOP_SELECTOR_FETCH_FAILED_LOG,
+  LOOP_SELECTOR_RESET_CANCEL,
+  LOOP_SELECTOR_RESET_CONFIRM,
+  LOOP_SELECTOR_RESET_DESCRIPTION,
+  LOOP_SELECTOR_RESET_TITLE,
+  LoopSelectorConfirmVariant,
+  LoopSelectorLocale,
+} from '@/domains/loop-creator/constants/loop-selector'
 
-interface GameLoop {
+export interface PersistedGameLoop {
   id: string
   name: string
-  nodes: any[]
-  edges: any[]
-  metadata: any
-  analysis: any
+  nodes: unknown[]
+  edges: unknown[]
+  metadata: unknown
+  analysis: unknown
   createdAt: string
   updatedAt: string
 }
@@ -30,12 +45,12 @@ interface GameLoop {
 interface LoopSelectorProps {
   projectId: string
   currentLoopId: string | null
-  onLoopChange: (loop: GameLoop | null) => void
-  onCreateLoop: (name: string, gameConcept?: string) => Promise<GameLoop | null>
+  onLoopChange: (loop: PersistedGameLoop | null) => void
+  onCreateLoop: (name: string, gameConcept?: string) => Promise<PersistedGameLoop | null>
   onReset: () => void
   externalOpenDialog?: boolean
   onExternalOpenDialogChange?: (open: boolean) => void
-  onLoopCreated?: (loop: GameLoop, gameConcept: string) => void
+  onLoopCreated?: (loop: PersistedGameLoop, gameConcept: string) => void
 }
 
 export function LoopSelector({
@@ -48,7 +63,7 @@ export function LoopSelector({
   onExternalOpenDialogChange,
   onLoopCreated,
 }: LoopSelectorProps) {
-  const [loops, setLoops] = useState<GameLoop[]>([])
+  const [loops, setLoops] = useState<PersistedGameLoop[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
@@ -56,7 +71,7 @@ export function LoopSelector({
 
   // Dialog states
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false)
-  const [loopName, setLoopName] = useState('New Loop')
+  const [loopName, setLoopName] = useState(LOOP_SELECTOR_DEFAULT_NAME)
   const [gameConcept, setGameConcept] = useState('')
   const [editingLoopId, setEditingLoopId] = useState<string | null>(null)
 
@@ -66,7 +81,7 @@ export function LoopSelector({
   useEffect(() => {
     if (externalOpenDialog) {
       setEditingLoopId(null)
-      setLoopName('New Loop')
+      setLoopName(LOOP_SELECTOR_DEFAULT_NAME)
       setGameConcept('')
       setIsNameDialogOpen(true)
       onExternalOpenDialogChange?.(false)
@@ -87,7 +102,7 @@ export function LoopSelector({
         setLoops(data)
       }
     } catch (error) {
-      console.error('Failed to fetch loops:', error)
+      console.error(LOOP_SELECTOR_FETCH_FAILED_LOG, error)
     } finally {
       setIsLoading(false)
     }
@@ -100,7 +115,7 @@ export function LoopSelector({
   // Handle creating a new loop
   const handleNew = () => {
     setEditingLoopId(null)
-    setLoopName('New Loop')
+    setLoopName(LOOP_SELECTOR_DEFAULT_NAME)
     setGameConcept('')
     setIsNameDialogOpen(true)
   }
@@ -125,7 +140,7 @@ export function LoopSelector({
       if (editingLoopId) {
         // Renaming existing loop
         const response = await fetch('/api/loop-creator/loops', {
-          method: 'PATCH',
+          method: LoopHttpMethod.Patch,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editingLoopId, name: loopName.trim() }),
         })
@@ -150,7 +165,7 @@ export function LoopSelector({
   }
 
   // Handle switching loops
-  const handleSwitchLoop = (loop: GameLoop) => {
+  const handleSwitchLoop = (loop: PersistedGameLoop) => {
     onLoopChange(loop)
     setIsOpen(false)
   }
@@ -158,11 +173,11 @@ export function LoopSelector({
   // Handle deleting a loop
   const handleDeleteLoop = async (loopId: string, loopName: string) => {
     const confirmed = await confirm({
-      title: 'Delete Loop',
+      title: LOOP_SELECTOR_DELETE_TITLE,
       description: `Are you sure you want to delete "${loopName}"? This action cannot be undone.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      variant: 'destructive',
+      confirmLabel: LOOP_SELECTOR_DELETE_CONFIRM,
+      cancelLabel: LOOP_SELECTOR_DELETE_CANCEL,
+      variant: LoopSelectorConfirmVariant.Destructive,
     })
 
     if (!confirmed) return
@@ -170,7 +185,7 @@ export function LoopSelector({
     setIsDeleting(true)
     try {
       const response = await fetch(`/api/loop-creator/loops?id=${loopId}`, {
-        method: 'DELETE',
+        method: LoopHttpMethod.Delete,
       })
 
       if (response.ok) {
@@ -182,7 +197,7 @@ export function LoopSelector({
         }
       }
     } catch (error) {
-      console.error('Failed to delete loop:', error)
+      console.error(LOOP_SELECTOR_DELETE_FAILED_LOG, error)
     } finally {
       setIsDeleting(false)
     }
@@ -191,11 +206,11 @@ export function LoopSelector({
   // Handle reset confirmation
   const handleReset = async () => {
     const confirmed = await confirm({
-      title: 'Reset Canvas',
-      description: 'This will clear all nodes and edges from the current loop. Are you sure?',
-      confirmLabel: 'Reset',
-      cancelLabel: 'Cancel',
-      variant: 'destructive',
+      title: LOOP_SELECTOR_RESET_TITLE,
+      description: LOOP_SELECTOR_RESET_DESCRIPTION,
+      confirmLabel: LOOP_SELECTOR_RESET_CONFIRM,
+      cancelLabel: LOOP_SELECTOR_RESET_CANCEL,
+      variant: LoopSelectorConfirmVariant.Destructive,
     })
 
     if (confirmed) {
@@ -206,11 +221,11 @@ export function LoopSelector({
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleDateString(LoopSelectorLocale.Tag, {
+      month: LoopSelectorLocale.Month,
+      day: LoopSelectorLocale.Day,
+      hour: LoopSelectorLocale.Hour,
+      minute: LoopSelectorLocale.Minute,
     })
   }
 
@@ -309,7 +324,8 @@ export function LoopSelector({
                               e.stopPropagation()
                               handleDeleteLoop(loop.id, loop.name)
                             }}
-                            className="p-1.5 hover:bg-red-500/20 rounded transition-colors"
+                            disabled={isDeleting}
+                            className="p-1.5 hover:bg-red-500/20 rounded transition-colors disabled:opacity-50"
                             title="Delete"
                           >
                             <Trash2 className="h-3 w-3 text-red-500" />

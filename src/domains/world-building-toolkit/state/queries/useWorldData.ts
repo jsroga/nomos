@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { WorldQueryKey } from '../../io/constants/query-keys'
 import { worldApi } from '../../io/world.api'
 import { worldKeys } from '../../io/world.keys'
 import type { CreateProjectRequest, UpsertTileRequest } from '../../io/world.dto'
@@ -16,7 +17,9 @@ export function useWorldProjects() {
 
 export function useWorldTiles(projectId: string | undefined) {
   return useQuery({
-    queryKey: projectId ? worldKeys.tiles(projectId) : ['world', 'tiles', 'none'],
+    queryKey: projectId
+      ? worldKeys.tiles(projectId)
+      : [WorldQueryKey.Root, WorldQueryKey.Tiles, WorldQueryKey.None],
     queryFn: async () => {
       if (!projectId) return {}
       const tiles = await worldApi.tiles.list(projectId)
@@ -28,7 +31,9 @@ export function useWorldTiles(projectId: string | undefined) {
 
 export function useWorldAssets(projectId: string | undefined) {
   return useQuery({
-    queryKey: projectId ? worldKeys.assets(projectId) : ['world', 'assets', 'none'],
+    queryKey: projectId
+      ? worldKeys.assets(projectId)
+      : [WorldQueryKey.Root, WorldQueryKey.Assets, WorldQueryKey.None],
     queryFn: async () => {
       if (!projectId) return []
       const assets = await worldApi.assets.list(projectId)

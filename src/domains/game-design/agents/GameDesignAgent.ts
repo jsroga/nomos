@@ -272,11 +272,13 @@ If you use any tools, describe what you learned from them.`
    * Stream response from the agent (Mastra pattern, same as StorytellerAgent).
    * Options: memory (resource, thread), maxSteps, toolChoice, etc.
    */
-  async stream(prompt: string, options?: Record<string, unknown>) {
+  async stream(
+    prompt: string,
+    options?: { toolChoice?: 'auto' | 'none' | 'required'; maxSteps?: number }
+  ) {
     return this.agent.stream(prompt, {
       toolChoice: options?.toolChoice ?? 'auto',
       maxSteps: options?.maxSteps ?? 10,
-      ...options,
     })
   }
 

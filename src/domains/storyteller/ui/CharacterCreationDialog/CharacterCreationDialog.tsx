@@ -6,6 +6,22 @@ import { X, Wand2, Loader2 } from 'lucide-react'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { ImageVariantSelector } from '../ImageVariantSelector'
 import { StorytellerImage } from '../StorytellerImage'
+import {
+  CHARACTER_DIALOG_DEFAULT_ROLE,
+  CHARACTER_DIALOG_ERROR_GENERATE_METRICS,
+  CHARACTER_DIALOG_ERROR_GENERATE_PORTRAIT,
+  CHARACTER_DIALOG_ERROR_NO_HANDLE,
+  CHARACTER_DIALOG_ERROR_PORTRAIT_FAILED,
+  CHARACTER_DIALOG_ERROR_SAVE_CHARACTER,
+  CHARACTER_DIALOG_ERROR_SAVE_VARIANT,
+  CHARACTER_DIALOG_LOG_INIT,
+  CHARACTER_DIALOG_LOG_POLL_CANCELLED,
+  CHARACTER_DIALOG_LOG_VARIANT_SAVED,
+  CHARACTER_DIALOG_NEW_ID,
+  CharacterDialogHttpMethod,
+  CharacterDialogMode,
+  CharacterDialogTriggerStatus,
+} from './constants/character-creation-dialog'
 
 interface InitialCharacterData {
   id?: string // For editing existing characters
@@ -40,7 +56,7 @@ interface CharacterCreationDialogProps {
   onUpdate?: (characterId: string, updates: any) => void | Promise<void> // For editing
   projectId?: string // Optional: for project-scoped style references
   initialData?: InitialCharacterData // Optional: for pre-filling from key player or editing
-  mode?: 'create' | 'edit' // Default: create
+  mode?: CharacterDialogMode
 }
 
 const INITIAL_METRICS = {
@@ -62,11 +78,11 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   onUpdate,
   projectId,
   initialData,
-  mode = 'create',
+  mode = CharacterDialogMode.Create,
 }) => {
   const [name, setName] = useState('')
   const [gender, setGender] = useState('')
-  const [role, setRole] = useState('Supporting')
+  const [role, setRole] = useState(CHARACTER_DIALOG_DEFAULT_ROLE)
   const [description, setDescription] = useState('')
   const [mbti, setMbti] = useState('')
   const [portraitUrl, setPortraitUrl] = useState('')
@@ -92,7 +108,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   }>>({})
   const generationIdsRef = React.useRef<Record<string, number>>({})
 
-  const activeCharId = initialData?.id || 'new'
+  const activeCharId = initialData?.id || CHARACTER_DIALOG_NEW_ID
   const activeGenState = genStates[activeCharId] || {
     isGenerating: false,
     gridImageUrl: null,
@@ -120,10 +136,10 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   useEffect(() => {
     if (isOpen && initialData) {
       // Only initialize if we haven't for this character ID yet (avoids overwriting while open)
-      const charId = initialData.id || 'new'
+      const charId = initialData.id || CHARACTER_DIALOG_NEW_ID
       if (hasInitializedRef.current === charId) return
 
-      console.log('[CharacterDialog] Initializing form with data for:', charId)
+      console.log(CHARACTER_DIALOG_LOG_INIT, charId)
       if (initialData.name) setName(initialData.name)
       if (initialData.description) setDescription(initialData.description)
       if (initialData.role) setRole(initialData.role)
@@ -187,7 +203,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   const handleClose = () => {
     setName('')
     setGender('')
-    setRole('Supporting')
+    setRole(CHARACTER_DIALOG_DEFAULT_ROLE)
     setDescription('')
     setMbti('')
     setPortraitUrl('')
@@ -225,7 +241,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       }
 
       const res = await fetch('/api/storyteller/generate-portrait', {
-        method: 'POST',
+        method: CharacterDialogHttpMethod.Post,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: description || `A portrait of ${name}, ${gender}`,
@@ -236,7 +252,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       const data = await res.json()
 
       if (!data.handleId) {
-        console.error('No handleId returned:', data)
+        console.error(CHARACTER_DIALOG_ERROR_NO_HANDLE, data)
         updateGenState(targetCharId, { isGenerating: false })
         return
       }
@@ -247,7 +263,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
         await new Promise(r => setTimeout(r, 5000)) // Poll every 5s
 
         if (currentGenId !== generationIdsRef.current[targetCharId]) {
-          console.log('[CharacterDialog] Portrait generation polling cancelled for', targetCharId)
+          console.log(CHARACTER_DIALOG_LOG_POLL_CANCELLED, targetCharId)
           break
         }
 
@@ -256,7 +272,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
         )
         const statusData = await statusRes.json()
 
-        if (statusData.status === 'COMPLETED') {
+        if (statusData.status === CharacterDialogTriggerStatus.Completed) {
           if (statusData.output?.imageUrl) {
             const newUrl = statusData.output.imageUrl
             updateGenState(targetCharId, {
@@ -269,15 +285,15 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
             updateGenState(targetCharId, { isGenerating: false })
           }
           break
-        } else if (statusData.status === 'FAILED' || statusData.error) {
-          console.error('Portrait generation failed:', statusData.error)
+        } else if (statusData.status === CharacterDialogTriggerStatus.Failed || statusData.error) {
+          console.error(CHARACTER_DIALOG_ERROR_PORTRAIT_FAILED, statusData.error)
           updateGenState(targetCharId, { isGenerating: false })
           break
         }
         // Continue polling if PENDING, EXECUTING, etc.
       }
     } catch (error) {
-      console.error('Failed to generate portrait:', error)
+      console.error(CHARACTER_DIALOG_ERROR_GENERATE_PORTRAIT, error)
       updateGenState(targetCharId, { isGenerating: false })
     }
   }
@@ -287,7 +303,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     setIsGeneratingMetrics(true)
     try {
       const res = await fetch('/api/storyteller/generate-metrics', {
-        method: 'POST',
+        method: CharacterDialogHttpMethod.Post,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description }),
       })
@@ -296,7 +312,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
         setMetrics(prev => ({ ...prev, ...data.metrics }))
       }
     } catch (error) {
-      console.error('Failed to generate metrics:', error)
+      console.error(CHARACTER_DIALOG_ERROR_GENERATE_METRICS, error)
     } finally {
       setIsGeneratingMetrics(false)
     }
@@ -313,7 +329,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     if (initialData?.id && projectId) {
       try {
         const res = await fetch('/api/storyteller/save-portrait-variant', {
-          method: 'POST',
+          method: CharacterDialogHttpMethod.Post,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             characterId: initialData.id,
@@ -326,12 +342,12 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
         if (res.ok) {
           const data = await res.json()
           if (data.portraitUrl) {
-            console.log('[CharacterDialog] Variant saved, updating URL to:', data.portraitUrl)
+            console.log(CHARACTER_DIALOG_LOG_VARIANT_SAVED, data.portraitUrl)
             setPortraitUrl(data.portraitUrl)
           }
         }
       } catch (error) {
-        console.error('Failed to save variant to server:', error)
+        console.error(CHARACTER_DIALOG_ERROR_SAVE_VARIANT, error)
       }
     }
   }
@@ -358,7 +374,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       portraitUrl,
       voiceSignature,
       ...metrics,
-      role: role || 'Supporting',
+      role: role || CHARACTER_DIALOG_DEFAULT_ROLE,
       transformation: 0,
       characterPrompt: `You are ${name}. ${description}`,
       psychology: {
@@ -371,14 +387,14 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
 
     setIsSaving(true)
     try {
-      if (mode === 'edit' && initialData?.id && onUpdate) {
+      if (mode === CharacterDialogMode.Edit && initialData?.id && onUpdate) {
         await onUpdate(initialData.id, characterData)
       } else {
         await onCreate(characterData)
       }
       handleClose()
     } catch (error) {
-      console.error('Failed to save character:', error)
+      console.error(CHARACTER_DIALOG_ERROR_SAVE_CHARACTER, error)
     } finally {
       setIsSaving(false)
     }

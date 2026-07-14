@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url'
 import { parseFastArgs, runFastGate, printFastGateResult } from './qualitygate/fast.mjs'
 import { captureBacklog, markBacklogDone, showBacklog } from './qualitygate/backlog.mjs'
 
-const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=4096'
+const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=6144'
 
 function runNode(script, args) {
   const result = spawnSync('node', [script, ...args], {

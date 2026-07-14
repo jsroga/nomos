@@ -1,7 +1,9 @@
 /* eslint-disable react/no-unknown-property */
 'use client'
 
-import React, { Suspense, useState, useEffect, useMemo } from 'react'
+import React, { Suspense, useEffect, useMemo } from 'react'
+import { MODEL_ERROR_LOG } from '@/domains/interior-designer/constants/object-manager-messages'
+import { DATA_URL_PREFIX } from '@/domains/interior-designer/constants/three-js'
 import { useInteriorStore, SceneObject } from '@/domains/interior-designer'
 import { Box, useGLTF, Html } from '@react-three/drei'
 import { Loader2 } from 'lucide-react'
@@ -18,7 +20,7 @@ const getProxiedUrl = (url: string): string => {
 }
 
 // Loading placeholder component
-const LoadingPlaceholder: React.FC<{ thumbnailUrl?: string }> = ({ thumbnailUrl }) => {
+const LoadingPlaceholder: React.FC = () => {
   return (
     <group>
       <Box args={[1, 1, 1]}>
@@ -49,7 +51,7 @@ class ModelErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
-    console.error('Model Error:', error, errorInfo)
+    console.error(MODEL_ERROR_LOG, error, errorInfo)
   }
 
   render() {
@@ -63,10 +65,9 @@ class ModelErrorBoundary extends React.Component<
 // GLB Model loader component
 const GLBModel: React.FC<{
   url: string
-  isSelected: boolean
   onLoaded: () => void
   onDimensionsCalculated?: (dimensions: THREE.Vector3) => void
-}> = ({ url, isSelected, onLoaded, onDimensionsCalculated }) => {
+}> = ({ url, onLoaded, onDimensionsCalculated }) => {
   const proxiedUrl = getProxiedUrl(url)
   // useGLTF suspends automatically. We rely on Suspense parent.
   const { scene } = useGLTF(proxiedUrl)
@@ -111,34 +112,21 @@ const ObjectRenderer: React.FC<{
   onClick: () => void
   opacity?: number
 }> = ({ obj, isSelected, onClick, opacity = 1 }) => {
-  const [isLoaded, setIsLoaded] = useState(false)
   const updateObject = useInteriorStore(state => state.updateObject)
 
   // Retexture Preview is now handled by updating obj.modelUrl directly in the store
   // const pendingRetextureUrl = useInteriorStore(state => state.pendingRetextureUrl)
   // const isRetexturing = useInteriorStore(state => state.isRetexturing)
-  const selectedId = useInteriorStore(state => state.selectedId)
 
   // Determine effective URL
   const effectiveModelUrl = obj.modelUrl
 
-  const isPrimitive = [
-    'cube',
-    'sphere',
-    'cylinder',
-    'cone',
-    'building',
-    'tree',
-    'window',
-    'door',
-  ].includes(effectiveModelUrl)
   const isExternalModel =
     effectiveModelUrl.startsWith('http://') ||
     effectiveModelUrl.startsWith('https://') ||
-    effectiveModelUrl.startsWith('data:')
+    effectiveModelUrl.startsWith(DATA_URL_PREFIX)
 
   const handleLoaded = () => {
-    setIsLoaded(true)
     if (obj.isLoading) {
       updateObject(obj.id, { isLoading: false })
     }
@@ -258,10 +246,9 @@ const ObjectRenderer: React.FC<{
             </Box>
           }
         >
-          <Suspense fallback={<LoadingPlaceholder thumbnailUrl={obj.thumbnailUrl} />}>
+          <Suspense fallback={<LoadingPlaceholder />}>
             <GLBModel
               url={effectiveModelUrl}
-              isSelected={isSelected}
               onLoaded={handleLoaded}
               onDimensionsCalculated={handleDimensionsCalculated}
             />

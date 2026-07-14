@@ -36,6 +36,10 @@ export function StorytellerCenterPanel(props: StorytellerPageState) {
     focusEntityId,
     storyPlan,
     handleApprovePlan,
+    updateEpisodePremise,
+    generateEpisodePremise,
+    generateEpisodePremiseSection,
+    handlePosterTrigger,
     isGeneratingPoster,
     isGeneratingStoryboard,
     isFetchingPlan,
@@ -127,6 +131,11 @@ export function StorytellerCenterPanel(props: StorytellerPageState) {
                     storyPlan={storyPlan}
                     globalBible={currentProject?.series_bible ?? {}}
                     onApprove={handleApprovePlan}
+                    onUpdatePremise={updateEpisodePremise}
+                    onGeneratePremise={generateEpisodePremise}
+                    onGeneratePoster={episodeId => void handlePosterTrigger(episodeId)}
+                    onGenerateStoryboard={episodeId => void handleStoryboardTrigger(episodeId)}
+                    onGeneratePremiseSection={generateEpisodePremiseSection}
                     isGenerating={isSending}
                     isGeneratingPoster={isGeneratingPoster}
                     isGeneratingStoryboard={isGeneratingStoryboard}

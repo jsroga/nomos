@@ -2,6 +2,12 @@
 
 import { useEffect } from 'react'
 import { useThree } from '@react-three/fiber'
+import * as THREE from 'three'
+import {
+  ORBIT_CONTROLS_TARGET_KEY,
+  ORBIT_CONTROLS_UPDATE_KEY,
+  ORTHOGRAPHIC_CAMERA_ZOOM_KEY,
+} from '@/domains/interior-designer/constants/camera-controller'
 import { useInteriorStore } from '@/domains/interior-designer'
 
 // Disco Elysium style camera - user-configured position
@@ -21,20 +27,16 @@ export const CameraController: React.FC = () => {
       camera.lookAt(...DISCO_ELYSIUM_TARGET)
 
       // Set zoom for orthographic camera
-      if ('zoom' in camera && typeof camera.zoom === 'number') {
+      if (ORTHOGRAPHIC_CAMERA_ZOOM_KEY in camera && typeof camera.zoom === 'number') {
         camera.zoom = DISCO_ELYSIUM_ZOOM
       }
       camera.updateProjectionMatrix()
 
       // Reset OrbitControls target if available
-      if (controls && 'target' in controls && 'update' in controls) {
-        const target = controls.target
-        if (target && typeof target.set === 'function') {
-          target.set(...DISCO_ELYSIUM_TARGET)
-        }
-        if (typeof controls.update === 'function') {
-          controls.update()
-        }
+      if (controls && ORBIT_CONTROLS_TARGET_KEY in controls && ORBIT_CONTROLS_UPDATE_KEY in controls) {
+        const orbitControls = controls as { target: THREE.Vector3; update: () => void }
+        orbitControls.target.set(...DISCO_ELYSIUM_TARGET)
+        orbitControls.update()
       }
 
       // Clear the reset request

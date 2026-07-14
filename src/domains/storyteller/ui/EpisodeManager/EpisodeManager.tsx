@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { customEventDetailRecord, readString } from '@/shared/data/json-guards'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Plus, Edit2, Film, Trash2 } from 'lucide-react'
 import { Button } from '@/components/Button'
@@ -16,6 +15,24 @@ import {
   DialogTitle,
 } from '@/components/Dialog'
 import { Input } from '@/components/Input'
+import {
+  EPISODE_MANAGER_DELETE_CANCEL,
+  EPISODE_MANAGER_DELETE_CONFIRM,
+  EPISODE_MANAGER_DELETE_ERROR_LOG,
+  EPISODE_MANAGER_DELETE_FAILED,
+  EPISODE_MANAGER_DELETE_TITLE,
+  EPISODE_MANAGER_FETCH_ERROR_LOG,
+  EPISODE_MANAGER_FETCH_FAILED_LOG,
+  EPISODE_MANAGER_UNTITLED,
+  episodeDeleteDescription,
+} from './constants/episode-manager'
+import { ContentType } from '@/shared/data/constants/protocol'
+import {
+  StorytellerConfirmVariant,
+  StorytellerHttpMethod,
+  StorytellerQueryParam,
+  StorytellerBibleQuery,
+} from '@/domains/storyteller/core/storyteller-page-wire'
 
 interface Episode {
   id: string
@@ -26,6 +43,7 @@ interface Episode {
 interface EpisodeManagerProps {
   projectId: string
   currentEpisodeId: string | null
+  currentEpisodeTitle?: string | null
   onEpisodeChange: (episodeId: string) => void
   onEpisodeTitleChange?: (title: string) => void
   isWorldBibleOpen?: boolean
@@ -34,9 +52,10 @@ interface EpisodeManagerProps {
 export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
   projectId,
   currentEpisodeId,
+  currentEpisodeTitle,
   onEpisodeChange,
   onEpisodeTitleChange,
-  isWorldBibleOpen,
+  isWorldBibleOpen: _isWorldBibleOpen,
 }) => {
   const router = useRouter()
   const pathname = usePathname()
@@ -56,26 +75,19 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
     if (currentEpisodeId && episodes.length > 0) {
       const current = episodes.find(ep => ep.id === currentEpisodeId)
       if (current && onEpisodeTitleChange) {
-        onEpisodeTitleChange(current.title || 'Untitled Episode')
+        onEpisodeTitleChange(current.title || EPISODE_MANAGER_UNTITLED)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentEpisodeId, episodes])
 
-  // Listen for external title updates (e.g. from AI)
+  // Sync episode list when title changes via workspace state (e.g. premise panel save)
   useEffect(() => {
-    const handleRemoteUpdate = (e: Event) => {
-      const detail = customEventDetailRecord(e)
-      const title = readString(detail.title)
-      if (title && currentEpisodeId) {
-        setEpisodes(prev =>
-          prev.map(ep => (ep.id === currentEpisodeId ? { ...ep, title } : ep))
-        )
-      }
-    }
-    window.addEventListener('update_episode_premise', handleRemoteUpdate)
-    return () => window.removeEventListener('update_episode_premise', handleRemoteUpdate)
-  }, [currentEpisodeId])
+    if (!currentEpisodeTitle || !currentEpisodeId) return
+    setEpisodes(prev =>
+      prev.map(ep => (ep.id === currentEpisodeId ? { ...ep, title: currentEpisodeTitle } : ep))
+    )
+  }, [currentEpisodeTitle, currentEpisodeId])
 
   const handleRename = async (id: string, newTitle: string) => {
     setEditingId(null)
@@ -85,19 +97,19 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
     setEpisodes(episodes.map(ep => (ep.id === id ? { ...ep, title: newTitle } : ep)))
 
     await fetch(`/api/storyteller/episodes/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: StorytellerHttpMethod.Patch,
+      headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify({ title: newTitle }),
     })
   }
 
   const handleDelete = async (id: string, title: string) => {
     const confirmed = await confirm({
-      title: 'Delete Episode',
-      description: `Are you sure you want to delete "${title || 'Untitled Episode'}"? This cannot be undone.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
-      variant: 'destructive',
+      title: EPISODE_MANAGER_DELETE_TITLE,
+      description: episodeDeleteDescription(title),
+      confirmLabel: EPISODE_MANAGER_DELETE_CONFIRM,
+      cancelLabel: EPISODE_MANAGER_DELETE_CANCEL,
+      variant: StorytellerConfirmVariant.Destructive,
     })
 
     if (!confirmed) return
@@ -108,8 +120,8 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
     // If we deleted the current episode, redirect to Story Bible (clear prompt)
     if (currentEpisodeId === id) {
       const params = new URLSearchParams(searchParams?.toString() || '')
-      params.delete('episodeId')
-      params.set('bible', 'open')
+      params.delete(StorytellerQueryParam.EpisodeId)
+      params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Open)
       router.push(`${pathname}?${params.toString()}`)
     } else {
       // If we deleted a non-active episode, no nav change needed
@@ -118,14 +130,14 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
 
     try {
       const res = await fetch(`/api/storyteller/episodes/${id}`, {
-        method: 'DELETE',
+        method: StorytellerHttpMethod.Delete,
       })
 
-      if (!res.ok) throw new Error('Failed to delete')
+      if (!res.ok) throw new Error(EPISODE_MANAGER_DELETE_FAILED)
 
       clearFetchCache(`episodes:${projectId}`)
     } catch (err) {
-      console.error('Failed to delete episode:', err)
+      console.error(EPISODE_MANAGER_DELETE_ERROR_LOG, err)
       // Revert on error (could fetch fresh list instead)
       // For now we just log, real app might want to show toast and revert state
     }
@@ -154,12 +166,12 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
         if (Array.isArray(data)) {
           setEpisodes(data)
         } else {
-          console.error('Failed to fetch episodes:', data)
+          console.error(EPISODE_MANAGER_FETCH_FAILED_LOG, data)
           setEpisodes([])
         }
       })
       .catch(err => {
-        console.error('Error fetching episodes:', err)
+        console.error(EPISODE_MANAGER_FETCH_ERROR_LOG, err)
         if (isMounted) setEpisodes([])
       })
       .finally(() => {
@@ -181,8 +193,8 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
     if (!newEpisodeTitle.trim()) return
 
     const res = await fetch('/api/storyteller/episodes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: StorytellerHttpMethod.Post,
+      headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify({
         projectId,
         title: newEpisodeTitle.trim(),

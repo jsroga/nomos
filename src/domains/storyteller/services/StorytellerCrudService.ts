@@ -8,13 +8,24 @@ import 'server-only'
  */
 
 import { db } from '@/db/client'
-import { characters, projects, episodes, beats } from '@/domains/storyteller/db/schema'
+import { characters, projects, episodes, beats } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 
 type CharacterRow = typeof characters.$inferSelect
 type EpisodeRow = typeof episodes.$inferSelect
 type BeatRow = typeof beats.$inferSelect
 import { z } from 'zod'
+import {
+  STORYTELLER_CHARACTER_ROLE_VALUES,
+  STORYTELLER_CRUD_ACCESS_ERRORS,
+  StorytellerChatRole,
+  StorytellerCrudAgentPrompt,
+  StorytellerCrudErrorCode,
+  StorytellerCrudErrorMessage,
+  StorytellerCrudErrorName,
+  StorytellerCrudListSeparator,
+  StorytellerCharacterRole,
+} from '@/domains/storyteller/services/constants/storyteller-crud-service'
 
 // ============================================
 // SCHEMAS
@@ -27,7 +38,10 @@ export const listCharactersSchema = z.object({
 export const createCharacterSchema = z.object({
   projectId: z.string().uuid(),
   name: z.string().min(1),
-  role: z.enum(['Lead', 'Supporting', 'Background']).optional().default('Supporting'),
+  role: z
+    .enum(STORYTELLER_CHARACTER_ROLE_VALUES)
+    .optional()
+    .default(StorytellerCharacterRole.Supporting),
   gender: z.string().optional(),
   characterPrompt: z.string().optional(),
   description: z.string().optional(),
@@ -45,7 +59,7 @@ export const createCharacterSchema = z.object({
 
 export const updateCharacterSchema = z.object({
   name: z.string().min(1).optional(),
-  role: z.enum(['Lead', 'Supporting', 'Background']).optional(),
+  role: z.enum(STORYTELLER_CHARACTER_ROLE_VALUES).optional(),
   gender: z.string().optional(),
   characterPrompt: z.string().optional(),
   description: z.string().optional(),
@@ -132,7 +146,10 @@ export class StorytellerService {
 
     const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
     if (!hasAccess) {
-      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.project,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     const result = await db
@@ -154,12 +171,18 @@ export class StorytellerService {
     const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
 
     if (!character) {
-      throw new ServiceError('Character not found', 'NOT_FOUND')
+      throw new ServiceError(
+        StorytellerCrudErrorMessage.CharacterNotFound,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     const hasAccess = await this.verifyProjectAccess(character.projectId, context.userId)
     if (!hasAccess) {
-      throw new ServiceError('Character not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.character,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     return { character }
@@ -176,7 +199,10 @@ export class StorytellerService {
 
     const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
     if (!hasAccess) {
-      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.project,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     const [newCharacter] = await db
@@ -216,7 +242,10 @@ export class StorytellerService {
 
     const hasAccess = await this.verifyCharacterAccess(characterId, context.userId)
     if (!hasAccess) {
-      throw new ServiceError('Character not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.character,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     const dbUpdates: Record<string, unknown> = {}
@@ -258,7 +287,10 @@ export class StorytellerService {
   ): Promise<{ success: boolean }> {
     const hasAccess = await this.verifyCharacterAccess(characterId, context.userId)
     if (!hasAccess) {
-      throw new ServiceError('Character not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.character,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     await db.delete(characters).where(eq(characters.id, characterId))
@@ -277,7 +309,10 @@ export class StorytellerService {
 
     const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
     if (!hasAccess) {
-      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.project,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     const result = await db
@@ -298,12 +333,18 @@ export class StorytellerService {
     // Get episode to verify access
     const [episode] = await db.select().from(episodes).where(eq(episodes.id, validated.episodeId))
     if (!episode) {
-      throw new ServiceError('Episode not found', 'NOT_FOUND')
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.episode,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     const hasAccess = await this.verifyProjectAccess(episode.projectId, context.userId)
     if (!hasAccess) {
-      throw new ServiceError('Episode not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.episodeAccess,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     const result = await db
@@ -324,7 +365,10 @@ export class StorytellerService {
   ): Promise<{ seriesBible: unknown }> {
     const hasAccess = await this.verifyProjectAccess(projectId, context.userId)
     if (!hasAccess) {
-      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.project,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
@@ -349,7 +393,10 @@ export class StorytellerService {
 
     const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
     if (!hasAccess) {
-      throw new ServiceError('Project not found or access denied', 'NOT_FOUND')
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.project,
+        StorytellerCrudErrorCode.NotFound
+      )
     }
 
     // Dynamic import to avoid a static service ↔ agents cycle.
@@ -373,17 +420,20 @@ export class StorytellerService {
       `Project: ${validated.projectId}`,
       validated.episodeId ? `Episode: ${validated.episodeId}` : '',
       `Bible: ${JSON.stringify(seriesBible)}`,
-      `Characters: ${projectCharacters.map(c => c.name).join(', ')}`,
+      `Characters: ${projectCharacters.map(c => c.name).join(StorytellerCrudListSeparator.CommaSpace)}`,
     ]
       .filter(Boolean)
       .join('\n')
 
     const content = await agent.run(
-      'Respond to user',
+      StorytellerCrudAgentPrompt.RespondToUser,
       `${chatContext}\n\nUser: ${validated.message}`
     )
 
-    return { response: { messages: [{ role: 'assistant', content }] }, threadId }
+    return {
+      response: { messages: [{ role: StorytellerChatRole.Assistant, content }] },
+      threadId,
+    }
   }
 }
 
@@ -392,11 +442,11 @@ export class StorytellerService {
 // ============================================
 
 export type ServiceErrorCode =
-  | 'NOT_FOUND'
-  | 'UNAUTHORIZED'
-  | 'VALIDATION_ERROR'
-  | 'INTERNAL_ERROR'
-  | 'RATE_LIMITED'
+  | `${StorytellerCrudErrorCode.NotFound}`
+  | `${StorytellerCrudErrorCode.Unauthorized}`
+  | `${StorytellerCrudErrorCode.ValidationError}`
+  | `${StorytellerCrudErrorCode.InternalError}`
+  | `${StorytellerCrudErrorCode.RateLimited}`
 
 export class ServiceError extends Error {
   constructor(
@@ -405,7 +455,7 @@ export class ServiceError extends Error {
     public details?: unknown
   ) {
     super(message)
-    this.name = 'ServiceError'
+    this.name = StorytellerCrudErrorName.ServiceError
   }
 }
 

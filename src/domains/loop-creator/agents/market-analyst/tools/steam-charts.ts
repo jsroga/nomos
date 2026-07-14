@@ -4,22 +4,25 @@
  * Fetches player statistics and trends from Steam for comparable games.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools'
 import { z } from 'zod'
 import { SteamChartsData } from '../types'
+import { createLoopStructuredTool } from './structured-tool'
+
+const steamChartsSchema = z.object({
+  gameName: z.string().describe('Name of the game to look up'),
+  includeHistory: z.boolean().optional().describe('Include historical player data'),
+})
 
 /**
  * Steam charts tool for player data
  */
-export const steamChartsTool = new DynamicStructuredTool({
+export const steamChartsTool = createLoopStructuredTool({
   name: 'steam_charts',
   description:
     'Get player statistics and trends from Steam for a specific game or list of similar games. Useful for understanding market performance of comparable titles.',
-  schema: z.object({
-    gameName: z.string().describe('Name of the game to look up'),
-    includeHistory: z.boolean().optional().describe('Include historical player data'),
-  }),
-  func: async ({ gameName, includeHistory }): Promise<string> => {
+  schema: steamChartsSchema,
+  func: async input => {
+    const { gameName, includeHistory } = steamChartsSchema.parse(input)
     try {
       // In production, this would call SteamDB API or scrape steamcharts.com
       // For now, we'll use known data for popular reference games

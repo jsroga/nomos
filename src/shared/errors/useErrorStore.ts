@@ -45,7 +45,7 @@ export const useErrorStore = create<ErrorState>()(set => ({
   markErrorsAsViewed: () => set({ hasUnviewedErrors: false }),
 
   openPanel: () =>
-    set(state => ({
+    set(() => ({
       isPanelOpen: true,
       hasUnviewedErrors: false,
     })),

@@ -6,9 +6,12 @@
  */
 
 import { db } from '@/db/client'
-import { beats, episodes, projects, characters } from '@/domains/storyteller/db/schema'
-import { gameLoops } from '@/db/schema'
+import { beats, episodes, projects, characters, gameLoops } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import {
+  E2E_BYPASS_NODE_ENVS,
+  E2E_TEST_USER_ID,
+} from '@/domains/storyteller/services/constants/access-verification'
 
 // ============================================
 // TYPES
@@ -42,8 +45,8 @@ export async function verifyProjectAccess(projectId: string, userId: string): Pr
 
   // Allow E2E test user to bypass access checks in dev/test
   if (
-    userId === 'e2e-test-user-id' &&
-    ['development', 'test'].includes(process.env.NODE_ENV || '')
+    userId === E2E_TEST_USER_ID &&
+    E2E_BYPASS_NODE_ENVS.has(process.env.NODE_ENV || '')
   ) {
     return true
   }
@@ -203,18 +206,4 @@ export async function verifyGameLoopAccess(loopId: string, userId: string): Prom
 // ============================================
 // BULK ACCESS (for lists)
 // ============================================
-
-/**
- * Get all projects accessible by a user
- * Returns list of project IDs
- */
-async function getUserProjects(userId: string): Promise<string[]> {
-  const result = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.userId, userId))
-
-  return result.map(r => r.id)
-}
-
 

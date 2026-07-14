@@ -1,0 +1,49 @@
+export enum TileProgressStage {
+  Initializing = 'initializing',
+  AssemblingContext = 'assembling_context',
+  GeneratingImage = 'generating_image',
+  UploadingVariants = 'uploading_variants',
+  Uploading = 'uploading',
+  PreparingVariants = 'preparing_variants',
+  SubmittingUploadPaint = 'submitting_upload_paint',
+  WaitingUploadPaint = 'waiting_upload_paint',
+  SubmittingUpscale = 'submitting_upscale',
+  WaitingUpscale = 'waiting_upscale',
+  CheckingOriginal = 'checking_original',
+  Completed = 'completed',
+  WaitingVariantSelection = 'waiting_variant_selection',
+  Unknown = 'unknown',
+}
+
+export enum TileProgressLabel {
+  Init = 'Init',
+  Context = 'Context',
+  Generating = 'Generating',
+  Uploading = 'Uploading',
+  Variants = 'Variants',
+  Submitting = 'Submitting',
+  Midjourney = 'MJ…',
+  Upscaling = 'Upscaling',
+  MidjourneyUpscale = 'MJ upscale…',
+  Finishing = 'Finishing',
+  Done = 'Done',
+  Starting = 'Starting',
+}
+
+export const TILE_STAGE_LABELS: Record<string, TileProgressLabel> = {
+  [TileProgressStage.Initializing]: TileProgressLabel.Init,
+  [TileProgressStage.AssemblingContext]: TileProgressLabel.Context,
+  [TileProgressStage.GeneratingImage]: TileProgressLabel.Generating,
+  [TileProgressStage.UploadingVariants]: TileProgressLabel.Uploading,
+  [TileProgressStage.Uploading]: TileProgressLabel.Uploading,
+  [TileProgressStage.PreparingVariants]: TileProgressLabel.Variants,
+  [TileProgressStage.SubmittingUploadPaint]: TileProgressLabel.Submitting,
+  [TileProgressStage.WaitingUploadPaint]: TileProgressLabel.Midjourney,
+  [TileProgressStage.SubmittingUpscale]: TileProgressLabel.Upscaling,
+  [TileProgressStage.WaitingUpscale]: TileProgressLabel.MidjourneyUpscale,
+  [TileProgressStage.CheckingOriginal]: TileProgressLabel.Finishing,
+  [TileProgressStage.Completed]: TileProgressLabel.Done,
+  [TileProgressStage.Unknown]: TileProgressLabel.Starting,
+}
+
+export const TILE_COORD_SEPARATOR = ','

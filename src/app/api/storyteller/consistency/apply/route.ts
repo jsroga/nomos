@@ -7,65 +7,97 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { isPlainObject, readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+import { readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
 import { applyCascadingFixes } from '@/domains/storyteller/core/editing/CascadeEditor'
 import type { ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
 import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-function isConsistencyFix(value: unknown): value is ConsistencyFix {
+function consistencyFixFromRow(value: unknown): ConsistencyFix | null {
   const row = recordFromJson(value)
+  const id = readString(row.id)
+  const inconsistencyId = readString(row.inconsistencyId)
   const target = recordFromJson(row.targetElement)
-  return (
-    typeof row.id === 'string' &&
-    typeof row.inconsistencyId === 'string' &&
-    typeof target.type === 'string' &&
-    typeof target.id === 'string' &&
-    Array.isArray(row.changes)
-  )
+  const targetType = readString(target.type)
+  const targetId = readString(target.id)
+  if (!id || !inconsistencyId || !targetType || !targetId) return null
+
+  const changes = recordArrayFromJson(row.changes).map(changeRow => {
+    const change = recordFromJson(changeRow)
+    return {
+      path: readString(change.path) ?? '',
+      before: change.before,
+      after: change.after,
+      reason: readString(change.reason) ?? '',
+    }
+  })
+
+  return {
+    id,
+    inconsistencyId,
+    targetElement: {
+      type: targetType,
+      id: targetId,
+      name: readString(target.name),
+    },
+    changes,
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const { session } = await requireAuth()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
     const body = recordFromJson(await request.json())
     const projectId = readString(body.projectId)
     const episodeId = readString(body.episodeId)
     const fixRows = recordArrayFromJson(body.fixes)
-    const fixes: ConsistencyFix[] = fixRows.filter(isConsistencyFix)
+    const fixes = fixRows
+      .map(consistencyFixFromRow)
+      .filter((fix): fix is ConsistencyFix => fix !== null)
 
     if (fixes.length === 0) {
-      return NextResponse.json({ error: 'Fixes array is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.FIXES_ARRAY_REQUIRED }, { status: 400 })
     }
 
     if (!projectId) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED }, { status: 400 })
     }
 
     if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
-    console.log('[Apply Fixes API] Applying', fixes.length, 'fixes for project:', projectId)
+    console.log(
+      API_LOG_PREFIX.APPLY_FIXES_APPLYING,
+      fixes.length,
+      API_LOG_PREFIX.APPLY_FIXES_FIXES_FOR,
+      projectId
+    )
 
     const result = await applyCascadingFixes(fixes, projectId, episodeId)
 
     const undoManager = getUndoManager()
     const undoId = undoManager.recordConsistencyFix(fixes, result.results)
 
-    console.log('[Apply Fixes API] Applied', result.totalAffected, 'fixes successfully')
+    console.log(
+      API_LOG_PREFIX.APPLY_FIXES_APPLIED,
+      result.totalAffected,
+      API_LOG_PREFIX.APPLY_FIXES_SUCCESS_SUFFIX
+    )
 
     return NextResponse.json({ ...result, undoId })
   } catch (error) {
-    console.error('[Apply Fixes API] Error:', error)
+    console.error(API_LOG_PREFIX.APPLY_FIXES_ERROR, error)
     return NextResponse.json(
       {
-        error: 'Failed to apply consistency fixes',
+        error: API_ERROR.FAILED_APPLY_CONSISTENCY_FIXES,
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

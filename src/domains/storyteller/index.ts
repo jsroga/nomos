@@ -30,7 +30,7 @@ export type { WorldBiblePanelProps } from './ui/WorldBiblePanel'
 
 // Config
 export * from './config/action-config'
-export * from './config/storyteller-agents'
+export * from './config/constants/storyteller-agents'
 export * from './config/tool-result-mapper'
 
 // Core (re-exported from unified barrel)

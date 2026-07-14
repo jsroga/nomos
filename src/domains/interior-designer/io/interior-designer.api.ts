@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { INTERIOR_DESIGNER_API_BASE_PATH } from '../interior-designer.config'
 import {
   createInteriorDesignRequestSchema,
@@ -109,8 +110,8 @@ export const interiorDesignerApi = {
 
       return parseResponse(
         await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/designs`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(parsed),
         }),
         interiorDesignResponseSchema
@@ -122,8 +123,8 @@ export const interiorDesignerApi = {
 
       return parseResponse(
         await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/designs`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Patch,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(parsed),
         }),
         interiorDesignResponseSchema
@@ -139,7 +140,7 @@ export const interiorDesignerApi = {
             id: parsed.id,
           }),
           {
-            method: 'DELETE',
+            method: HttpMethod.Delete,
           }
         ),
         deleteInteriorDesignResponseSchema
@@ -153,8 +154,8 @@ export const interiorDesignerApi = {
 
       return parseResponse(
         await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/texture`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(parsed),
         }),
         interiorTextureResponseSchema
@@ -168,8 +169,8 @@ export const interiorDesignerApi = {
 
       return parseResponse(
         await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/textures`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(parsed),
         }),
         interiorTexturesResponseSchema
@@ -183,8 +184,8 @@ export const interiorDesignerApi = {
 
       return parseResponse(
         await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/retexture`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(parsed),
         }),
         interiorRetextureResponseSchema
@@ -204,8 +205,8 @@ export const interiorDesignerApi = {
 
       return parseResponse(
         await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/text-to-3d`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(parsed),
         }),
         interiorTextTo3DResponseSchema
@@ -225,8 +226,8 @@ export const interiorDesignerApi = {
 
       return parseResponse(
         await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/material`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(parsed),
         }),
         interiorMaterialResponseSchema

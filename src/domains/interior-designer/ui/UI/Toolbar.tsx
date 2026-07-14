@@ -16,6 +16,17 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
+import { DOM_EVENT_KEYDOWN } from '@/domains/interior-designer/constants/keyboard'
+import {
+  INTERACTION_MODE_OBJECT,
+  INTERACTION_MODE_SCATTER,
+  INTERACTION_MODE_SELECT,
+  INTERACTION_MODE_SURFACE,
+  INTERACTION_MODE_TERRAIN,
+  INTERACTION_MODE_WALL,
+  InteriorObjectModel,
+  InteriorSurfacePreset,
+} from '@/domains/interior-designer/constants/interaction-modes'
 
 interface ToolButtonProps {
   icon: React.ReactNode
@@ -39,14 +50,7 @@ const ToolButton: React.FC<ToolButtonProps> = ({ icon, label, isActive, onClick 
 
 export const Toolbar: React.FC = () => {
   const mode = useInteriorStore(state => state.mode)
-  const setMode = (newMode: any) => {
-    useInteriorStore.getState().setMode(newMode)
-    window.dispatchEvent(
-      new CustomEvent('interior-designer-mode-changed', { detail: { mode: newMode } })
-    )
-  }
-  const activeLevel = useInteriorStore(state => state.activeLevel)
-  const setActiveLevel = useInteriorStore(state => state.setActiveLevel)
+  const setMode = useInteriorStore(state => state.setMode)
   const undo = useInteriorStore.temporal.getState().undo
   const redo = useInteriorStore.temporal.getState().redo
   const setCameraResetRequested = useInteriorStore(state => state.setCameraResetRequested)
@@ -66,40 +70,38 @@ export const Toolbar: React.FC = () => {
 
       switch (e.key.toLowerCase()) {
         case 'v':
-          setMode('SELECT')
+          setMode(INTERACTION_MODE_SELECT)
           break
         case 'w':
           if (e.shiftKey) {
-            // Shift+W = Window
-            setMode('OBJECT')
-            setActiveModelUrl('window')
+            setMode(INTERACTION_MODE_OBJECT)
+            setActiveModelUrl(InteriorObjectModel.Window)
           } else {
-            setMode('WALL')
+            setMode(INTERACTION_MODE_WALL)
           }
           break
         case 'd':
-          // D = Door
-          setMode('OBJECT')
-          setActiveModelUrl('door')
+          setMode(INTERACTION_MODE_OBJECT)
+          setActiveModelUrl(InteriorObjectModel.Door)
           break
         case 'g':
-          setMode('SURFACE')
-          setActiveSurfaceType('grass')
+          setMode(INTERACTION_MODE_SURFACE)
+          setActiveSurfaceType(InteriorSurfacePreset.Grass)
           break
 
         case 'r':
-          setMode('SURFACE')
-          setActiveSurfaceType('road')
+          setMode(INTERACTION_MODE_SURFACE)
+          setActiveSurfaceType(InteriorSurfacePreset.Road)
           setIsCurved(true)
           break
         case 'o':
-          setMode('OBJECT')
+          setMode(INTERACTION_MODE_OBJECT)
           break
         case 's':
-          setMode('SCATTER')
+          setMode(INTERACTION_MODE_SCATTER)
           break
         case 't':
-          setMode('TERRAIN')
+          setMode(INTERACTION_MODE_TERRAIN)
           break
         case 'z':
           if ((e.ctrlKey || e.metaKey) && !e.shiftKey) undo()
@@ -115,8 +117,8 @@ export const Toolbar: React.FC = () => {
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener(DOM_EVENT_KEYDOWN, handleKeyDown)
+    return () => window.removeEventListener(DOM_EVENT_KEYDOWN, handleKeyDown)
   }, [setMode, setActiveSurfaceType, setIsCurved, undo, redo, setActiveModelUrl])
 
   return (

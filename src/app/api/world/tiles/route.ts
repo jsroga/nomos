@@ -6,16 +6,18 @@ import {
   upsertTileRequestSchema,
 } from '@/domains/world-building-toolkit/io/world.dto'
 import { worldTileService } from '@/domains/world-building-toolkit/services/WorldDataService'
+import { WORLD_QUERY_PARAM } from '@/domains/world-building-toolkit/constants/world-query-params'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 
 export async function GET(req: Request) {
   const { session, error } = await requireAuth()
   if (error || !session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
   }
 
   const { searchParams } = new URL(req.url)
   const { projectId } = listTilesQuerySchema.parse({
-    projectId: searchParams.get('projectId'),
+    projectId: searchParams.get(WORLD_QUERY_PARAM.PROJECT_ID),
   })
 
   const tiles = await worldTileService.listForProject(projectId)
@@ -25,7 +27,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const { session, error } = await requireAuth()
   if (error || !session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
   }
 
   const body = upsertTileRequestSchema.parse(await req.json())
@@ -36,7 +38,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   const { session, error } = await requireAuth()
   if (error || !session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
   }
 
   const body = deleteTileRequestSchema.parse(await req.json())

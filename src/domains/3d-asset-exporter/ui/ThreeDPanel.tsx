@@ -13,9 +13,6 @@ import {
   RefreshCw,
   Settings,
   Layers,
-  ToggleLeft,
-  ToggleRight,
-  Upload,
 } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { useWorldStore } from '@/domains/world-building-toolkit'
@@ -820,7 +817,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
   }
 
   // Helper to clear upload state
-  const clearUploadState = async (status: 'completed' | 'failed' = 'failed') => {
+  const clearUploadState = async (_status: 'completed' | 'failed' = 'failed') => {
     if (!isMounted.current) return
     setIsUploading(false)
     setUploadRunId(null)
@@ -890,6 +887,9 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
     await clearUploadState('failed')
     toast('Upload stopped.', { icon: 'ℹ️' })
   }
+
+  // Upload UI not yet exposed; keep handlers referenced for TS until wired
+  void [isUploading, uploadProgress, handleUpload, handleStopUpload]
 
   return (
     <div className="flex flex-col h-full bg-card border border-border rounded-lg overflow-hidden shadow-sm">

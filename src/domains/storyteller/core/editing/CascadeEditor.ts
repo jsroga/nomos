@@ -7,6 +7,11 @@
 
 import { ConsistencyFix, CascadeResult, AppliedFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
 import { set } from 'lodash'
+import {
+  CascadeEditorError,
+  CascadeEditorHttpMethod,
+  CascadeElementType,
+} from '@/domains/storyteller/core/constants/cascade-editor'
 
 /**
  * Apply cascading fixes to story elements
@@ -54,23 +59,23 @@ async function applyFix(fix: ConsistencyFix, projectId: string, episodeId?: stri
   const { targetElement, changes } = fix
 
   switch (targetElement.type) {
-    case 'character':
+    case CascadeElementType.Character:
       await updateCharacter(targetElement.id, changes, projectId)
       break
 
-    case 'beat':
+    case CascadeElementType.Beat:
       await updateBeat(targetElement.id, changes, projectId, episodeId)
       break
 
-    case 'episode':
+    case CascadeElementType.Episode:
       await updateEpisode(targetElement.id, changes, projectId)
       break
 
-    case 'world_rule':
+    case CascadeElementType.WorldRule:
       await updateWorldRules(changes, projectId)
       break
 
-    case 'premise':
+    case CascadeElementType.Premise:
       await updatePremise(changes, projectId, episodeId)
       break
 
@@ -89,7 +94,7 @@ async function updateCharacter(
 ): Promise<void> {
   // Fetch current character
   const response = await fetch(`/api/storyteller/characters/${characterId}`)
-  if (!response.ok) throw new Error('Failed to fetch character')
+  if (!response.ok) throw new Error(CascadeEditorError.FailedFetchCharacter)
 
   const character = await response.json()
 
@@ -98,12 +103,12 @@ async function updateCharacter(
 
   // Save updated character
   const saveResponse = await fetch(`/api/storyteller/characters/${characterId}`, {
-    method: 'PATCH',
+    method: CascadeEditorHttpMethod.Patch,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updated),
   })
 
-  if (!saveResponse.ok) throw new Error('Failed to save character')
+  if (!saveResponse.ok) throw new Error(CascadeEditorError.FailedSaveCharacter)
 }
 
 /**
@@ -112,14 +117,14 @@ async function updateCharacter(
 async function updateBeat(
   beatId: string,
   changes: any[],
-  projectId: string,
+  _projectId: string,
   episodeId?: string
 ): Promise<void> {
-  if (!episodeId) throw new Error('Episode ID required for beat updates')
+  if (!episodeId) throw new Error(CascadeEditorError.EpisodeIdRequiredForBeat)
 
   // Fetch current beat
   const response = await fetch(`/api/storyteller/timeline?episodeId=${episodeId}`)
-  if (!response.ok) throw new Error('Failed to fetch beats')
+  if (!response.ok) throw new Error(CascadeEditorError.FailedFetchBeats)
 
   const { beats } = await response.json()
   const beat = beats.find((b: any) => b.id === beatId)
@@ -131,12 +136,12 @@ async function updateBeat(
 
   // Save updated beat
   const saveResponse = await fetch(`/api/storyteller/timeline/${beatId}`, {
-    method: 'PATCH',
+    method: CascadeEditorHttpMethod.Patch,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updated),
   })
 
-  if (!saveResponse.ok) throw new Error('Failed to save beat')
+  if (!saveResponse.ok) throw new Error(CascadeEditorError.FailedSaveBeat)
 }
 
 /**
@@ -145,7 +150,7 @@ async function updateBeat(
 async function updateEpisode(episodeId: string, changes: any[], _projectId: string): Promise<void> {
   // Fetch current episode
   const response = await fetch(`/api/storyteller/episodes/${episodeId}`)
-  if (!response.ok) throw new Error('Failed to fetch episode')
+  if (!response.ok) throw new Error(CascadeEditorError.FailedFetchEpisode)
 
   const episode = await response.json()
 
@@ -154,12 +159,12 @@ async function updateEpisode(episodeId: string, changes: any[], _projectId: stri
 
   // Save updated episode
   const saveResponse = await fetch(`/api/storyteller/episodes/${episodeId}`, {
-    method: 'PATCH',
+    method: CascadeEditorHttpMethod.Patch,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updated),
   })
 
-  if (!saveResponse.ok) throw new Error('Failed to save episode')
+  if (!saveResponse.ok) throw new Error(CascadeEditorError.FailedSaveEpisode)
 }
 
 /**
@@ -168,7 +173,7 @@ async function updateEpisode(episodeId: string, changes: any[], _projectId: stri
 async function updateWorldRules(changes: any[], projectId: string): Promise<void> {
   // Fetch current series bible
   const response = await fetch(`/api/storyteller/bible?projectId=${projectId}`)
-  if (!response.ok) throw new Error('Failed to fetch series bible')
+  if (!response.ok) throw new Error(CascadeEditorError.FailedFetchSeriesBible)
 
   const bible = await response.json()
 
@@ -177,23 +182,23 @@ async function updateWorldRules(changes: any[], projectId: string): Promise<void
 
   // Save updated bible
   const saveResponse = await fetch('/api/storyteller/bible', {
-    method: 'PUT',
+    method: CascadeEditorHttpMethod.Put,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ projectId, bible: updated }),
   })
 
-  if (!saveResponse.ok) throw new Error('Failed to save world rules')
+  if (!saveResponse.ok) throw new Error(CascadeEditorError.FailedSaveWorldRules)
 }
 
 /**
  * Update episode premise with consistency fixes
  */
-async function updatePremise(changes: any[], projectId: string, episodeId?: string): Promise<void> {
-  if (!episodeId) throw new Error('Episode ID required for premise updates')
+async function updatePremise(changes: any[], _projectId: string, episodeId?: string): Promise<void> {
+  if (!episodeId) throw new Error(CascadeEditorError.EpisodeIdRequiredForPremise)
 
   // Fetch current plan
   const response = await fetch(`/api/storyteller/plan?episodeId=${episodeId}`)
-  if (!response.ok) throw new Error('Failed to fetch plan')
+  if (!response.ok) throw new Error(CascadeEditorError.FailedFetchPlan)
 
   const plan = await response.json()
 
@@ -202,7 +207,7 @@ async function updatePremise(changes: any[], projectId: string, episodeId?: stri
 
   // Save updated plan
   const saveResponse = await fetch('/api/storyteller/plan', {
-    method: 'POST',
+    method: CascadeEditorHttpMethod.Post,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       episodeId,
@@ -210,7 +215,7 @@ async function updatePremise(changes: any[], projectId: string, episodeId?: stri
     }),
   })
 
-  if (!saveResponse.ok) throw new Error('Failed to save premise')
+  if (!saveResponse.ok) throw new Error(CascadeEditorError.FailedSavePremise)
 }
 
 /**

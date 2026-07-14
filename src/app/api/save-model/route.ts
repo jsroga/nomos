@@ -13,61 +13,56 @@ import {
   secureLog,
 } from '@/shared/auth/security'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { ApiErrorMessage, FsDirectory } from '@/shared/data/constants/protocol'
 
 export async function POST(request: NextRequest) {
   try {
     const { session } = await requireAuth()
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: ApiErrorMessage.UNAUTHORIZED }, { status: 401 })
     }
 
     const { projectId, filename, modelUrl } = await request.json()
 
     if (!projectId || !filename || !modelUrl) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.MISSING_REQUIRED_FIELDS }, { status: 400 })
     }
 
-    // Validate project ID format
     if (!isValidProjectId(projectId)) {
-      return NextResponse.json({ error: 'Invalid project ID format' }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.INVALID_PROJECT_ID_FORMAT }, { status: 400 })
     }
 
-    // Verify user owns the project
     const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
     if (!project || project.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return NextResponse.json({ error: API_ERROR.ACCESS_DENIED }, { status: 403 })
     }
 
-    // Sanitize filename
     const safeFilename = sanitizeFilename(filename)
     if (!safeFilename) {
-      secureLog.warn('Invalid filename rejected', { filename })
-      return NextResponse.json({ error: 'Invalid filename' }, { status: 400 })
+      secureLog.warn(API_ERROR.INVALID_FILENAME_REJECTED, { filename })
+      return NextResponse.json({ error: API_ERROR.INVALID_FILENAME }, { status: 400 })
     }
 
-    // SSRF protection on modelUrl
     const urlCheck = isAllowedUrl(modelUrl)
     if (!urlCheck.allowed) {
-      secureLog.warn('SSRF attempt blocked in save-model', { modelUrl, reason: urlCheck.reason })
-      return NextResponse.json({ error: 'URL not allowed' }, { status: 403 })
+      secureLog.warn(API_LOG_PREFIX.SSRF_BLOCKED_SAVE_MODEL, { modelUrl, reason: urlCheck.reason })
+      return NextResponse.json({ error: API_ERROR.URL_NOT_ALLOWED }, { status: 403 })
     }
 
-    // Construct safe file path
     const relativePath = `${projectId}/assets/${safeFilename}`
-    const { safe, sanitizedPath, error } = sanitizePath(relativePath, 'projects')
+    const { safe, sanitizedPath, error } = sanitizePath(relativePath, FsDirectory.Projects)
 
     if (!safe || !sanitizedPath) {
-      secureLog.warn('Path traversal blocked in save-model', { relativePath, error })
-      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 })
+      secureLog.warn(API_LOG_PREFIX.PATH_TRAVERSAL_SAVE_MODEL, { relativePath, error })
+      return NextResponse.json({ error: API_ERROR.INVALID_FILE_PATH }, { status: 400 })
     }
 
-    // Ensure directory exists
     const dir = sanitizedPath.substring(0, sanitizedPath.lastIndexOf('/'))
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true })
     }
 
-    // Fetch the model file with SSRF protection
     const response = await safeFetch(modelUrl)
     if (!response.ok) {
       throw new Error(`Failed to fetch model: ${response.statusText}`)
@@ -75,9 +70,8 @@ export async function POST(request: NextRequest) {
 
     const buffer = await response.arrayBuffer()
 
-    // Validate file size (max 100MB)
     if (buffer.byteLength > 100 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large (max 100MB)' }, { status: 413 })
+      return NextResponse.json({ error: API_ERROR.FILE_TOO_LARGE_100MB }, { status: 413 })
     }
 
     fs.writeFileSync(sanitizedPath, Buffer.from(buffer))
@@ -87,7 +81,7 @@ export async function POST(request: NextRequest) {
       path: `/projects/${projectId}/assets/${safeFilename}`,
     })
   } catch (error: unknown) {
-    secureLog.error('Error saving model:', { message: getErrorMessage(error) })
-    return NextResponse.json({ error: 'Failed to save model' }, { status: 500 })
+    secureLog.error(API_LOG_PREFIX.SAVE_MODEL_ERROR, { message: getErrorMessage(error) })
+    return NextResponse.json({ error: API_ERROR.FAILED_SAVE_MODEL }, { status: 500 })
   }
 }

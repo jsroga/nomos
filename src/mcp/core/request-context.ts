@@ -1,6 +1,10 @@
 import { AsyncLocalStorage } from 'async_hooks'
 import { MCPServiceContext } from './types'
 import { validateApiKey, getServiceContext } from './auth'
+import {
+  MCP_AUTH_INVALID_KEY_MESSAGE,
+  MCP_AUTH_REQUIRED_MESSAGE,
+} from './constants/request-context'
 
 /**
  * AsyncLocalStorage store for request-scoped context.
@@ -26,14 +30,14 @@ export async function getCurrentContext(): Promise<MCPServiceContext> {
   // 2. Fallback to Environment (Stdio/Local)
   const apiKey = process.env.MCP_API_KEY
   if (!apiKey) {
-    throw new Error('Authentication required: No Context or MCP_API_KEY found.')
+    throw new Error(MCP_AUTH_REQUIRED_MESSAGE)
   }
 
   // We cache the validation result for the process lifetime if needed,
   // but for now re-validating is safer and fast enough for local dev.
   const authResult = await validateApiKey(apiKey)
   if (!authResult.valid) {
-    throw new Error('Authentication failed: Invalid MCP_API_KEY in environment.')
+    throw new Error(MCP_AUTH_INVALID_KEY_MESSAGE)
   }
 
   return getServiceContext(authResult)

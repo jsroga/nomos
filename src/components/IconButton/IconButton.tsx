@@ -5,6 +5,12 @@ import { Button } from '@/components/Button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { cn } from '@/shared/data/utils'
 
+import {
+  ICON_BUTTON_DEFAULT_SIZE,
+  ICON_BUTTON_DEFAULT_VARIANT,
+  ICON_BUTTON_SIZE_CLASSES,
+} from './constants/icon-button-styles'
+
 interface IconButtonProps {
   icon: React.ReactNode
   onClick: () => void
@@ -28,15 +34,11 @@ export const IconButton: React.FC<IconButtonProps> = ({
   disabled = false,
   isActive = false,
   isLoading = false,
-  variant = 'ghost',
-  size = 'default',
+  variant = ICON_BUTTON_DEFAULT_VARIANT,
+  size = ICON_BUTTON_DEFAULT_SIZE,
   className,
 }) => {
-  const sizeClasses = {
-    sm: 'h-7 w-7',
-    default: 'h-9 w-9',
-    lg: 'h-10 w-10',
-  }
+  const sizeClasses = ICON_BUTTON_SIZE_CLASSES
 
   const button = (
     <Button

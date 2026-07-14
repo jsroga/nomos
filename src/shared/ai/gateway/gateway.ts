@@ -12,7 +12,6 @@
 import {
   AIGatewayRequest,
   AIGatewayResult,
-  AIGatewayResponse,
   AIProvider,
   AIProviderConfig,
   AIErrorCode,
@@ -22,6 +21,10 @@ import {
   ProviderMetrics,
   isAIGatewayError,
 } from './types'
+import {
+  AI_GATEWAY_ALL_PROVIDERS_FAILED,
+  AI_GATEWAY_UNKNOWN_ERROR,
+} from '@/shared/ai/constants/gateway'
 
 // =============================================================================
 // GATEWAY CLASS
@@ -177,7 +180,7 @@ export class AIGateway {
         console.error(`[AIGateway] Provider ${providerId} threw:`, error)
         lastError = {
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : AI_GATEWAY_UNKNOWN_ERROR,
           code: AIErrorCode.UNKNOWN,
           provider: providerId,
           retryable: true,
@@ -192,7 +195,7 @@ export class AIGateway {
     return (
       lastError || {
         success: false,
-        error: 'All providers failed',
+        error: AI_GATEWAY_ALL_PROVIDERS_FAILED,
         code: AIErrorCode.PROVIDER_UNAVAILABLE,
         retryable: false,
       }

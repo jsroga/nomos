@@ -10,12 +10,24 @@
 
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
+import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page-wire'
+import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import { deepMerge, recordFromJson, smartMergeArray } from '@/shared/data/deep-merge'
 import {
   extractCastFromUpdates,
   normalizeCastInUpdates,
   readCastFromPlan,
 } from '@/domains/storyteller/core/formatting/StoryPlanFields'
+import {
+  EpisodePremiseFieldAlias,
+  EpisodeRoadmapFieldAlias,
+  MoodboardFieldAlias,
+  PlotTwistFieldAlias,
+  SoundtrackFieldAlias,
+  STORY_PLAN_MERGE_FIELDS,
+  WorldDescriptionFieldAlias,
+  WorldRulesFieldAlias,
+} from './constants/bible-wire-fields'
 
 // Re-export merge helpers for callers and tests
 export { deepMerge, smartMergeArray } from '@/shared/data/deep-merge'
@@ -52,111 +64,140 @@ export const SECTION_CONFIGS: SectionConfig[] = [
   {
     section: BibleSection.SOUNDTRACKS,
     actionType: ActionType.UPDATE_SOUNDTRACKS,
-    fieldNames: ['soundtracks', 'tracks', 'music', 'soundtrack'],
+    fieldNames: [SoundtrackFieldAlias.Soundtracks, SoundtrackFieldAlias.Tracks, SoundtrackFieldAlias.Music, SoundtrackFieldAlias.Soundtrack],
     requiresApproval: true,
     extractPayload: fields => ({
-      soundtracks: fields.soundtracks || fields.tracks || fields.music || fields.soundtrack,
+      soundtracks:
+        fields[SoundtrackFieldAlias.Soundtracks] ||
+        fields[SoundtrackFieldAlias.Tracks] ||
+        fields[SoundtrackFieldAlias.Music] ||
+        fields[SoundtrackFieldAlias.Soundtrack],
     }),
   },
   {
     section: BibleSection.MOODBOARD,
     actionType: ActionType.UPDATE_MOODBOARD,
-    fieldNames: ['moodImages', 'moodboard'],
+    fieldNames: [MoodboardFieldAlias.MoodImages, MoodboardFieldAlias.Moodboard],
     requiresApproval: false, // Moodboard updates don't need approval (async generation)
-    extractPayload: fields => ({ moodImages: fields.moodImages || fields.moodboard }),
+    extractPayload: fields => ({
+      moodImages: fields[MoodboardFieldAlias.MoodImages] || fields[MoodboardFieldAlias.Moodboard],
+    }),
   },
   {
     section: BibleSection.WORLD_RULES,
     actionType: ActionType.UPDATE_WORLD_RULES,
-    fieldNames: ['worldRules', 'rules', 'world_rules'],
+    fieldNames: [WorldRulesFieldAlias.WorldRules, WorldRulesFieldAlias.Rules, WorldRulesFieldAlias.WorldRulesSnake],
     requiresApproval: true,
     extractPayload: fields => ({
-      worldRules: fields.worldRules || fields.rules || fields.world_rules,
+      worldRules:
+        fields[WorldRulesFieldAlias.WorldRules] ||
+        fields[WorldRulesFieldAlias.Rules] ||
+        fields[WorldRulesFieldAlias.WorldRulesSnake],
     }),
   },
   {
     section: BibleSection.FACTIONS,
     actionType: ActionType.UPDATE_FACTIONS,
-    fieldNames: ['factions'],
+    fieldNames: [BibleSection.FACTIONS],
     requiresApproval: true,
-    extractPayload: fields => ({ factions: fields.factions }),
+    extractPayload: fields => ({ factions: fields[BibleSection.FACTIONS] }),
   },
   {
     section: BibleSection.INSPIRATIONS,
     actionType: ActionType.UPDATE_INSPIRATIONS,
-    fieldNames: ['inspirations'],
+    fieldNames: [BibleSection.INSPIRATIONS],
     requiresApproval: true,
-    extractPayload: fields => ({ inspirations: fields.inspirations }),
+    extractPayload: fields => ({ inspirations: fields[BibleSection.INSPIRATIONS] }),
   },
   {
     section: BibleSection.CAST,
     actionType: ActionType.UPDATE_CAST,
-    fieldNames: ['cast', 'characters', 'keyCharacters', 'key_characters'], // Multiple aliases for backwards compat
+    fieldNames: [
+      CastFieldAlias.Cast,
+      CastFieldAlias.Characters,
+      CastFieldAlias.KeyCharacters,
+      CastFieldAlias.KeyCharactersSnake,
+    ],
     requiresApproval: true,
     extractPayload: fields => ({
-      cast: fields.cast || fields.characters || fields.keyCharacters || fields.key_characters,
+      cast:
+        fields[CastFieldAlias.Cast] ||
+        fields[CastFieldAlias.Characters] ||
+        fields[CastFieldAlias.KeyCharacters] ||
+        fields[CastFieldAlias.KeyCharactersSnake],
     }),
   },
   {
     section: BibleSection.WORLD_DESCRIPTION,
     actionType: ActionType.UPDATE_WORLD_DESCRIPTION,
-    fieldNames: ['worldDescription', 'description', 'world_description', 'overview'],
+    fieldNames: [
+      WorldDescriptionFieldAlias.WorldDescription,
+      WorldDescriptionFieldAlias.Description,
+      WorldDescriptionFieldAlias.WorldDescriptionSnake,
+      WorldDescriptionFieldAlias.Overview,
+    ],
     requiresApproval: true,
     extractPayload: fields => ({
       worldDescription:
-        fields.worldDescription ||
-        fields.description ||
-        fields.world_description ||
-        fields.overview,
+        fields[WorldDescriptionFieldAlias.WorldDescription] ||
+        fields[WorldDescriptionFieldAlias.Description] ||
+        fields[WorldDescriptionFieldAlias.WorldDescriptionSnake] ||
+        fields[WorldDescriptionFieldAlias.Overview],
     }),
   },
   {
     section: BibleSection.PLOT_TWISTS,
     actionType: ActionType.UPDATE_PLOT_TWISTS,
-    fieldNames: ['plotTwists', 'twists', 'plot_twists'],
+    fieldNames: [
+      PlotTwistFieldAlias.PlotTwists,
+      PlotTwistFieldAlias.Twists,
+      PlotTwistFieldAlias.PlotTwistsSnake,
+    ],
     requiresApproval: true,
     extractPayload: fields => ({
-      plotTwists: fields.plotTwists || fields.twists || fields.plot_twists,
+      plotTwists:
+        fields[PlotTwistFieldAlias.PlotTwists] ||
+        fields[PlotTwistFieldAlias.Twists] ||
+        fields[PlotTwistFieldAlias.PlotTwistsSnake],
     }),
   },
   {
     section: BibleSection.EPISODE_PREMISE,
     actionType: ActionType.UPDATE_EPISODE_PREMISE,
-    fieldNames: ['episodePremise', 'premise'],
+    fieldNames: [EpisodePremiseFieldAlias.EpisodePremise, EpisodePremiseFieldAlias.Premise],
     requiresApproval: true,
     extractPayload: (fields, episodeId) => ({
       episodeId: episodeId || null,
-      premise: fields.episodePremise || fields.premise,
+      premise:
+        fields[EpisodePremiseFieldAlias.EpisodePremise] || fields[EpisodePremiseFieldAlias.Premise],
     }),
   },
   {
     section: BibleSection.EPISODE_ROADMAP,
     actionType: ActionType.UPDATE_EPISODE_ROADMAP,
-    fieldNames: ['sequences', 'episodeRoadmap'],
+    fieldNames: [EpisodeRoadmapFieldAlias.Sequences, EpisodeRoadmapFieldAlias.EpisodeRoadmap],
     requiresApproval: true,
     extractPayload: fields => ({
-      // Pass the whole object as-is, just like other sections
-      // Normalize 'sequences' to 'episodes' key — BibleRoadmap reads episodeRoadmap.episodes
-      episodeRoadmap: fields.episodeRoadmap || {
-        episodes: fields.sequences,
-        seasonStructure: fields.seasonStructure,
-        executiveSummary: fields.executiveSummary,
+      episodeRoadmap: fields[EpisodeRoadmapFieldAlias.EpisodeRoadmap] || {
+        episodes: fields[EpisodeRoadmapFieldAlias.Sequences],
+        seasonStructure: fields[EpisodeRoadmapFieldAlias.SeasonStructure],
+        executiveSummary: fields[EpisodeRoadmapFieldAlias.ExecutiveSummary],
       },
     }),
   },
   {
     section: BibleSection.ITEMS,
     actionType: ActionType.UPDATE_ITEMS,
-    fieldNames: ['items'],
+    fieldNames: [BibleSection.ITEMS],
     requiresApproval: true,
-    extractPayload: fields => ({ items: fields.items }),
+    extractPayload: fields => ({ items: fields[BibleSection.ITEMS] }),
   },
   {
     section: BibleSection.EVENTS,
     actionType: ActionType.UPDATE_EVENTS,
-    fieldNames: ['events'],
+    fieldNames: [BibleSection.EVENTS],
     requiresApproval: true,
-    extractPayload: fields => ({ events: fields.events }),
+    extractPayload: fields => ({ events: fields[BibleSection.EVENTS] }),
   },
 ]
 
@@ -224,7 +265,7 @@ export function processToolResultToAction(
   fields: Record<string, unknown>,
   episodeId?: string | null
 ): ProcessedAction | null {
-  if (toolName !== 'update_world_bible') {
+  if (toolName !== StorytellerChatTool.UpdateWorldBible) {
     return null
   }
 
@@ -256,27 +297,7 @@ export function processToolResultToAction(
 /**
  * Fields that should be directly merged into storyPlan
  */
-export const STORY_PLAN_FIELDS = [
-  'soundtracks',
-  'worldRules',
-  'factions',
-  'cast', // Project-level cast (replaces keyCharacters)
-  'plotTwists',
-  'inspirations',
-  'worldDescription',
-  'genre',
-  'tone',
-  'sequences',
-  'seasonStructure',
-  'executiveSummary',
-  'moodImages',
-  'moodboard',
-  'masterPrompt',
-  'centralTheme',
-  'episodeRoadmap',
-  'items',
-  'events',
-] as const
+export const STORY_PLAN_FIELDS = STORY_PLAN_MERGE_FIELDS
 
 /**
  * Apply updates to a story plan state, handling merging correctly
@@ -308,22 +329,24 @@ export function applyUpdatesToStoryPlan<T extends object>(
   if (cast) {
     const currentCast = readCastFromPlan(current)
     const mergedCast = Array.isArray(cast) ? smartMergeArray(currentCast, cast) : cast
-    result.cast = mergedCast
-    result.keyCharacters = mergedCast
+    result[CastFieldAlias.Cast] = mergedCast
+    result[CastFieldAlias.KeyCharacters] = mergedCast
   }
 
   // Handle moodboard/moodImages aliases
-  const moodImages = normalizedUpdates.moodImages || normalizedUpdates.moodboard
+  const moodImages = normalizedUpdates[MoodboardFieldAlias.MoodImages] || normalizedUpdates[MoodboardFieldAlias.Moodboard]
   if (moodImages) {
-    result.moodImages = moodImages
+    result[MoodboardFieldAlias.MoodImages] = moodImages
   }
 
   // Handle episode premise - MERGE, don't replace
-  const premiseUpdate = normalizedUpdates.episodePremise || normalizedUpdates.premise
+  const premiseUpdate =
+    normalizedUpdates[EpisodePremiseFieldAlias.EpisodePremise] ||
+    normalizedUpdates[EpisodePremiseFieldAlias.Premise]
   if (premiseUpdate) {
-    result.premise =
+    result[EpisodePremiseFieldAlias.Premise] =
       typeof premiseUpdate === 'object' && !Array.isArray(premiseUpdate)
-        ? deepMerge(recordFromJson(current.premise), recordFromJson(premiseUpdate))
+        ? deepMerge(recordFromJson(current[EpisodePremiseFieldAlias.Premise]), recordFromJson(premiseUpdate))
         : premiseUpdate
   }
 

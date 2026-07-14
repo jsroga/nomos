@@ -28,55 +28,46 @@ import {
   TextSegment,
   stripReferences,
   PREFIX_TO_TYPE,
-  type EntityType as ParsedEntityType,
 } from '@/domains/storyteller/core/entities/ReferenceParser'
 import {
   EntityReference,
   EntityRelationship,
   EntityType,
 } from '@/domains/storyteller/core/entities/EntityReferences'
-import { User, MapPin, Calendar, Users, Scroll, Film, BookOpen, Loader2 } from 'lucide-react'
+import {
+  DOM_EVENT_KEYDOWN,
+  ENTITY_COLORS,
+  ENTITY_ICONS,
+  HttpMethod,
+  REFERENCE_TEXT_DEFAULT_COLOR,
+  REFERENCE_TEXT_DEFAULT_ENTITY_TYPE,
+  REFERENCE_TEXT_DEFAULT_ICON,
+  REFERENCE_TEXT_DEFAULT_RELATIONSHIP_TYPE,
+  REFERENCE_TEXT_DOM_EVENT_KEYUP,
+  ReferenceSegmentType,
+  ReferenceTextKeyboardKey,
+  ReferenceTextMetaLabel,
+  ReferenceTextTooltipCopy,
+  ReferenceTextFallbackColor,
+  RELATIONSHIP_TYPE_PLURAL_LABELS,
+  RichTextContainerTag,
+  StoryEntityType,
+  StorytellerTextSeparator,
+} from './constants/reference-text-display'
+import { Users, Loader2 } from 'lucide-react'
 
 export type { EntityReference, EntityRelationship, EntityType }
 
 // Global Alt-key state for sticky tooltips
 let isAltKeyDown = false
 if (typeof window !== 'undefined') {
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Alt') isAltKeyDown = true
+  window.addEventListener(DOM_EVENT_KEYDOWN, e => {
+    if (e.key === ReferenceTextKeyboardKey.Alt) isAltKeyDown = true
   })
-  window.addEventListener('keyup', e => {
-    if (e.key === 'Alt') isAltKeyDown = false
+  window.addEventListener(REFERENCE_TEXT_DOM_EVENT_KEYUP, e => {
+    if (e.key === ReferenceTextKeyboardKey.Alt) isAltKeyDown = false
   })
 }
-
-// Entity type to icon mapping. Keyed by the parser's EntityType (a superset
-// including 'item') and Partial so lookups fall through to the || defaults.
-const ENTITY_ICONS: Partial<
-  Record<ParsedEntityType, React.ComponentType<{ className?: string; size?: number }>>
-> = {
-  character: User,
-  place: MapPin,
-  event: Calendar,
-  faction: Users,
-  rule: Scroll,
-  beat: Film,
-  episode: BookOpen,
-}
-
-// Entity type to color mapping
-const ENTITY_COLORS: Partial<Record<ParsedEntityType, string>> = {
-  character: 'text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20',
-  place: 'text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20',
-  event: 'text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20',
-  faction: 'text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20',
-  rule: 'text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20',
-  beat: 'text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20',
-  episode: 'text-orange-400 hover:text-orange-300 bg-orange-500/10 hover:bg-orange-500/20',
-}
-
-// Default color for unknown types
-const DEFAULT_COLOR = 'text-gray-400 hover:text-gray-300 bg-gray-500/10 hover:bg-gray-500/20'
 
 /**
  * Loose typed view over `entity.metadata` (Record<string, unknown>) for the
@@ -165,21 +156,18 @@ const StickyTooltip: React.FC<{
     setIsAltHeld(isAltKeyDown)
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Alt') setIsAltHeld(true)
+      if (e.key === ReferenceTextKeyboardKey.Alt) setIsAltHeld(true)
     }
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Alt') {
+      if (e.key === ReferenceTextKeyboardKey.Alt) {
         setIsAltHeld(false)
-        // Close tooltip when Alt is released (unless still hovering)
-        // We need to check the REF value of isHoveringContent because this closure might be stale
-        // But simpler: just rely on the effect dependency which we have below.
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
+    window.addEventListener(DOM_EVENT_KEYDOWN, handleKeyDown)
+    window.addEventListener(REFERENCE_TEXT_DOM_EVENT_KEYUP, handleKeyUp)
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
+      window.removeEventListener(DOM_EVENT_KEYDOWN, handleKeyDown)
+      window.removeEventListener(REFERENCE_TEXT_DOM_EVENT_KEYUP, handleKeyUp)
     }
   }, []) // Empty dependency to set up once. The state setter is stable.
 
@@ -273,16 +261,16 @@ const StickyTooltip: React.FC<{
  * Individual entity chip with sticky tooltip
  */
 const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick }) => {
-  const type = ref.type || 'character'
-  const Icon = ENTITY_ICONS[type] || User
-  const colorClass = ENTITY_COLORS[type] || DEFAULT_COLOR
+  const type = ref.type || REFERENCE_TEXT_DEFAULT_ENTITY_TYPE
+  const Icon = ENTITY_ICONS[type] || REFERENCE_TEXT_DEFAULT_ICON
+  const colorClass = ENTITY_COLORS[type] || REFERENCE_TEXT_DEFAULT_COLOR
 
   const tooltipContent = useMemo(() => {
     if (isLoading) {
       return (
         <div className="flex items-center gap-2">
           <Loader2 className="h-3 w-3 animate-spin" />
-          <span>Loading...</span>
+          <span>{ReferenceTextTooltipCopy.Loading}</span>
         </div>
       )
     }
@@ -310,19 +298,18 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
       const parts: string[] = []
 
       // For characters
-      if (entity.type === 'character') {
+      if (entity.type === StoryEntityType.Character) {
         if (meta.role) parts.push(meta.role)
         if (meta.shortDescription) parts.push(meta.shortDescription)
-        if (meta.archetype) parts.push(`Archetype: ${meta.archetype}`)
-        if (meta.motivation) parts.push(`Motivation: ${meta.motivation}`)
-        if (meta.fatalFlaw) parts.push(`Fatal Flaw: ${meta.fatalFlaw}`)
+        if (meta.archetype) parts.push(`${ReferenceTextTooltipCopy.ArchetypePrefix} ${meta.archetype}`)
+        if (meta.motivation) parts.push(`${ReferenceTextTooltipCopy.MotivationPrefix} ${meta.motivation}`)
+        if (meta.fatalFlaw) parts.push(`${ReferenceTextTooltipCopy.FatalFlawPrefix} ${meta.fatalFlaw}`)
         if (meta.traits && Array.isArray(meta.traits)) {
-          parts.push(`Traits: ${meta.traits.slice(0, 3).join(', ')}`)
+          parts.push(`${ReferenceTextTooltipCopy.TraitsPrefix} ${meta.traits.slice(0, 3).join(StorytellerTextSeparator.CommaSpace)}`)
         }
       }
 
-      // For factions - handle both schema versions
-      if (entity.type === 'faction') {
+      if (entity.type === StoryEntityType.Faction) {
         // Primary description field
         if (meta.description) parts.push(meta.description)
         if (meta.ideology && !meta.description) parts.push(meta.ideology)
@@ -335,38 +322,35 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
 
         // Legacy fields
         if (meta.goals && Array.isArray(meta.goals)) {
-          parts.push(`Goals: ${meta.goals.slice(0, 2).join('; ')}`)
+          parts.push(`${ReferenceTextTooltipCopy.GoalsPrefix} ${meta.goals.slice(0, 2).join(StorytellerTextSeparator.CommaSpace)}`)
         }
-        if (meta.resources) parts.push(`Resources: ${meta.resources}`)
+        if (meta.resources) parts.push(`${ReferenceTextTooltipCopy.ResourcesPrefix} ${meta.resources}`)
       }
 
-      // For places
-      if (entity.type === 'place') {
+      if (entity.type === StoryEntityType.Place) {
         if (meta.description) parts.push(meta.description)
         if (meta.atmosphere) parts.push(meta.atmosphere)
         if (meta.significance) parts.push(meta.significance)
       }
 
       // For events
-      if (entity.type === 'event') {
+      if (entity.type === StoryEntityType.Event) {
         if (meta.description) parts.push(meta.description)
-        if (meta.impact) parts.push(`Impact: ${meta.impact}`)
-        if (meta.date) parts.push(`Date: ${meta.date}`)
+        if (meta.impact) parts.push(`${ReferenceTextTooltipCopy.ImpactPrefix} ${meta.impact}`)
+        if (meta.date) parts.push(`${ReferenceTextTooltipCopy.DatePrefix} ${meta.date}`)
       }
 
-      // For rules
-      if (entity.type === 'rule') {
+      if (entity.type === StoryEntityType.Rule) {
         if (meta.rule) parts.push(meta.rule)
-        if (meta.consequence) parts.push(`Consequence: ${meta.consequence}`)
+        if (meta.consequence) parts.push(`${ReferenceTextTooltipCopy.ConsequencePrefix} ${meta.consequence}`)
       }
 
-      // For beats
-      if (entity.type === 'beat') {
+      if (entity.type === StoryEntityType.Beat) {
         if (meta.logline) parts.push(meta.logline)
         if (meta.action) parts.push(meta.action)
       }
 
-      return parts.length > 0 ? parts.slice(0, 3).join('. ') + '.' : null
+      return parts.length > 0 ? parts.slice(0, 3).join(StorytellerTextSeparator.PeriodSpace) + '.' : null
     }
 
     const description = synthesizeDescription()
@@ -375,36 +359,37 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
     const displayMeta: Array<{ label: string; value: string }> = []
     const meta = tooltipMetaFrom(entity.metadata)
 
-    if (entity.type === 'character') {
+    if (entity.type === StoryEntityType.Character) {
       if (meta.role && !description?.includes(meta.role)) {
-        displayMeta.push({ label: 'Role', value: meta.role })
+        displayMeta.push({ label: ReferenceTextMetaLabel.Role, value: meta.role })
       }
       if (meta.motivation && !description?.includes(meta.motivation)) {
-        displayMeta.push({ label: 'Motivation', value: meta.motivation })
+        displayMeta.push({ label: ReferenceTextMetaLabel.Motivation, value: meta.motivation })
       }
       if (meta.fatalFlaw && !description?.includes(meta.fatalFlaw)) {
-        displayMeta.push({ label: 'Fatal Flaw', value: meta.fatalFlaw })
+        displayMeta.push({ label: ReferenceTextMetaLabel.FatalFlaw, value: meta.fatalFlaw })
       }
     }
 
-    if (entity.type === 'faction') {
+    if (entity.type === StoryEntityType.Faction) {
       // Show powerStructure if not already in description
       if (meta.powerStructure && !description?.includes(meta.powerStructure)) {
-        displayMeta.push({ label: 'Power', value: meta.powerStructure.slice(0, 150) })
+        displayMeta.push({ label: ReferenceTextMetaLabel.Power, value: meta.powerStructure.slice(0, 150) })
       }
-      // Show political forces if not already in description
       if (meta.politicalForces && !description?.includes(meta.politicalForces)) {
-        displayMeta.push({ label: 'Politics', value: meta.politicalForces.slice(0, 150) })
+        displayMeta.push({ label: ReferenceTextMetaLabel.Politics, value: meta.politicalForces.slice(0, 150) })
       }
-      // Legacy fields
       if (meta.resources && !description?.includes(meta.resources)) {
-        displayMeta.push({ label: 'Resources', value: meta.resources })
+        displayMeta.push({ label: ReferenceTextMetaLabel.Resources, value: meta.resources })
       }
       if (meta.goals && Array.isArray(meta.goals) && meta.goals.length > 0) {
-        displayMeta.push({ label: 'Goals', value: meta.goals.slice(0, 2).join('; ') })
+        displayMeta.push({
+          label: ReferenceTextMetaLabel.Goals,
+          value: meta.goals.slice(0, 2).join(StorytellerTextSeparator.CommaSpace),
+        })
       }
       if (meta.weaknesses) {
-        displayMeta.push({ label: 'Weakness', value: meta.weaknesses })
+        displayMeta.push({ label: ReferenceTextMetaLabel.Weakness, value: meta.weaknesses })
       }
     }
 
@@ -415,7 +400,7 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
       // Group by relationship type
       const grouped = new Map<string, EntityRelationship[]>()
       for (const rel of entity.relationships) {
-        const relType = rel.relationshipType || 'related'
+        const relType = rel.relationshipType || REFERENCE_TEXT_DEFAULT_RELATIONSHIP_TYPE
         const bucket = grouped.get(relType)
         if (bucket) {
           bucket.push(rel)
@@ -424,46 +409,30 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
         }
       }
 
-      const typeLabels: Record<string, string> = {
-        ally: 'Allies',
-        enemy: 'Enemies',
-        rival: 'Rivals',
-        mentor: 'Mentors',
-        student: 'Students',
-        lover: 'Lovers',
-        family: 'Family',
-        member_of: 'Member of',
-        leader_of: 'Leads',
-        associated: 'Associated with',
-        associated_with: 'Associated with',
-        related: 'Related to',
-        complex: 'Complex relationship',
-        closely_connected: 'Closely connected to',
-        acquaintance: 'Acquaintances',
-        stranger: 'Strangers',
-      }
-
       return (
         <div className="mt-2 pt-2 border-t border-zinc-700">
           <div className="text-[10px] opacity-50 uppercase tracking-wide mb-1 flex items-center gap-1">
             <Users size={10} />
-            Relationships
+            {ReferenceTextTooltipCopy.Relationships}
           </div>
           <div className="space-y-1.5">
             {Array.from(grouped.entries())
               .slice(0, 4)
               .map(([relType, rels]) => (
                 <div key={relType} className="text-xs">
-                  <span className="opacity-50 text-[10px]">{typeLabels[relType] || relType}:</span>
+                  <span className="opacity-50 text-[10px]">
+                    {RELATIONSHIP_TYPE_PLURAL_LABELS[relType] || relType}:
+                  </span>
                   <div className="flex flex-wrap gap-1 mt-0.5">
                     {rels.slice(0, 3).map((rel, idx) => {
                       // Use targetType if available, otherwise infer from targetId
                       const relEntityType =
                         rel.targetType || PREFIX_TO_TYPE[rel.targetId.split('-')[0]]
-                      const RelIcon = (relEntityType && ENTITY_ICONS[relEntityType]) || User
+                      const RelIcon =
+                        (relEntityType && ENTITY_ICONS[relEntityType]) || REFERENCE_TEXT_DEFAULT_ICON
                       const relColor =
                         (relEntityType && ENTITY_COLORS[relEntityType])?.split(' ')[0] ||
-                        'text-gray-400'
+                        ReferenceTextFallbackColor.Gray
 
                       return (
                         <span
@@ -514,7 +483,7 @@ const EntityChip: React.FC<EntityChipProps> = ({ ref, entity, isLoading, onClick
             {description && (
               <div className="text-[10px] opacity-50 uppercase tracking-wide mb-1 flex items-center gap-1">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                In this context
+                {ReferenceTextTooltipCopy.InThisContext}
               </div>
             )}
             <div className={cn('text-xs opacity-90 leading-relaxed', description && 'italic')}>
@@ -591,7 +560,10 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
   // Extract reference IDs that need resolution
   const refIds = useMemo(() => {
     return segments
-      .filter((s): s is TextSegment & { type: 'reference' } => s.type === 'reference')
+      .filter(
+        (s): s is TextSegment & { type: ReferenceSegmentType.Reference } =>
+          s.type === ReferenceSegmentType.Reference
+      )
       .map(s => s.ref.refId)
   }, [segments])
 
@@ -621,7 +593,7 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
     // Mark as referenced via API (fire and forget)
     if (projectId) {
       fetch(`/api/entities/mark-referenced?projectId=${projectId}&id=${refId}`, {
-        method: 'POST',
+        method: HttpMethod.Post,
       }).catch(() => { })
     }
     onEntityClick?.(refId, entity)
@@ -629,7 +601,7 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
 
   // Render segments
   const renderedContent = segments.map((segment, index) => {
-    if (segment.type === 'text') {
+    if (segment.type === ReferenceSegmentType.Text) {
       if (renderText) {
         return <React.Fragment key={index}>{renderText(segment.content, index)}</React.Fragment>
       }
@@ -651,7 +623,7 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
     )
   })
 
-  const Container = inline ? 'span' : 'div'
+  const Container = inline ? RichTextContainerTag.Span : RichTextContainerTag.Div
 
   return <Container className={cn('whitespace-pre-wrap', className)}>{renderedContent}</Container>
 }

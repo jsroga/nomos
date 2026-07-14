@@ -1,5 +1,11 @@
 import { Workflow, createStep } from '@mastra/core/workflows'
 import { z } from 'zod'
+import {
+  HUMAN_LOOP_NO_HANDLER_FEEDBACK,
+  HUMAN_LOOP_SUSPENDED_FEEDBACK,
+  HUMAN_LOOP_WAITING_REASON,
+  HumanLoopApprovalAction,
+} from '@/shared/agent-kernel/workflows/constants/human-loop-workflow'
 
 export class HumanLoopWorkflow extends Workflow {
   constructor(name: string) {
@@ -7,7 +13,7 @@ export class HumanLoopWorkflow extends Workflow {
   }
 
   // Helper to register an approval step
-  addApprovalStep(stepId: string, description: string) {
+  addApprovalStep(stepId: string, _description: string) {
     const step = createStep({
       id: stepId,
       inputSchema: z.object({
@@ -23,18 +29,18 @@ export class HumanLoopWorkflow extends Workflow {
         // In a real generic implementation, we'd check if approval is already present in context
         if (context && context.approvalAction) {
           return {
-            approved: context.approvalAction === 'approve',
+            approved: context.approvalAction === HumanLoopApprovalAction.Approve,
             feedback: context.approvalFeedback,
           }
         }
 
         // Suspend execution!
         if (suspend) {
-          await suspend({ reason: 'Waiting for approval', stepId })
-          return { approved: false, feedback: 'Suspended for approval' }
+          await suspend({ reason: HUMAN_LOOP_WAITING_REASON, stepId })
+          return { approved: false, feedback: HUMAN_LOOP_SUSPENDED_FEEDBACK }
         }
 
-        return { approved: false, feedback: 'No suspension handler available' }
+        return { approved: false, feedback: HUMAN_LOOP_NO_HANDLER_FEEDBACK }
       },
     })
 

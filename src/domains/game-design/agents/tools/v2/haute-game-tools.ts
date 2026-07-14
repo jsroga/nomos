@@ -60,7 +60,7 @@ export const createAtomicLoomTool = () =>
     description: `Breaks a game concept into atomic verbs and nouns, then maps their interactions.
 Creates elegant rule systems where simple elements combine into emergent complexity.
 Inspired by Klei's design philosophy: few rules, many outcomes.`,
-    schema: AtomicLoomInputSchema,
+    inputSchema: AtomicLoomInputSchema,
     execute: async (args) => {
       try {
         const { gameDescription, genre, existingMechanics, complexityTarget } = args
@@ -76,7 +76,7 @@ ${gameDescription}
 ${genre}
 
 ## Existing Mechanics
-${existingMechanics?.map(m => `- ${m.name}: ${m.description || 'No description'}`).join('\n') || 'None yet'}
+${existingMechanics?.map((m: { name: string; description?: string }) => `- ${m.name}: ${m.description || 'No description'}`).join('\n') || 'None yet'}
 
 ## Complexity Target
 ${complexityTarget}
@@ -149,7 +149,7 @@ export const createMemoryKeeperTool = () =>
     description: `Designs systems where the world remembers player actions.
 NPCs witness events, rumors spread, and past actions seed future quests.
 Inspired by CDPR's narrative depth: every quest connects, nothing is throwaway.`,
-    schema: MemoryKeeperInputSchema,
+    inputSchema: MemoryKeeperInputSchema,
     execute: async (args) => {
       try {
         const { gameContext, playerActions, npcs, timeScope } = args
@@ -162,10 +162,10 @@ Your philosophy: The world remembers. The butcher you helped in Act 1 appears in
 ${gameContext}
 
 ## Recent Player Actions
-${playerActions?.map(a => `- ${a.action}${a.target ? ` (target: ${a.target})` : ''}${a.location ? ` at ${a.location}` : ''}`).join('\n') || 'New game'}
+${playerActions?.map((a: { action: string; target?: string; location?: string }) => `- ${a.action}${a.target ? ` (target: ${a.target})` : ''}${a.location ? ` at ${a.location}` : ''}`).join('\n') || 'New game'}
 
 ## NPCs in World
-${npcs?.map(n => `- ${n.name} (${n.role})${n.faction ? ` - ${n.faction}` : ''}`).join('\n') || 'To be designed'}
+${npcs?.map((n: { name: string; role: string; faction?: string }) => `- ${n.name} (${n.role})${n.faction ? ` - ${n.faction}` : ''}`).join('\n') || 'To be designed'}
 
 ## Persistence Scope
 ${timeScope}
@@ -226,7 +226,7 @@ export const createGreyPaletteTool = () =>
     description: `Creates morally complex choices where no option is clearly "right."
 Every choice has real cost, factions react, and consequences ripple through time.
 Inspired by CDPR: "Evil is evil, lesser, greater, middling... makes no difference."`,
-    schema: GreyPaletteInputSchema,
+    inputSchema: GreyPaletteInputSchema,
     execute: async (args) => {
       try {
         const { situation, factions, stakes, genre } = args
@@ -239,7 +239,7 @@ Your philosophy: No good choices. No bad choices. Only human choices.
 ${situation}
 
 ## Factions Involved
-${factions?.map(f => `- ${f.name}: Values ${f.values.join(', ')}${f.playerRelation ? ` (${f.playerRelation})` : ''}`).join('\n') || 'Design factions as needed'}
+${factions?.map((f: { name: string; values: string[]; playerRelation?: string }) => `- ${f.name}: Values ${f.values.join(', ')}${f.playerRelation ? ` (${f.playerRelation})` : ''}`).join('\n') || 'Design factions as needed'}
 
 ## Stakes Level
 ${stakes}
@@ -320,7 +320,7 @@ export const createStrandWeaverTool = () =>
     description: `Designs asynchronous multiplayer systems where players leave traces for others.
 Not lobbies or chat - legacies, echoes, inherited consequences.
 Inspired by Kojima: "Games should connect strangers in ways social media never could."`,
-    schema: StrandWeaverInputSchema,
+    inputSchema: StrandWeaverInputSchema,
     execute: async (args) => {
       try {
         const { gameType, multiplayerModel, persistenceLevel, connectionTheme } = args
@@ -413,7 +413,7 @@ export const createSilentTeacherTool = () =>
     description: `Designs learning through play, not instruction.
 No tutorials, no markers, no "press X to not die." Trust players to discover.
 Inspired by Klei: Death should teach, not punish.`,
-    schema: SilentTeacherInputSchema,
+    inputSchema: SilentTeacherInputSchema,
     execute: async (args) => {
       try {
         const { mechanicsToTeach, playerSkillCurve, genre } = args
@@ -423,7 +423,7 @@ Inspired by Klei: Death should teach, not punish.`,
 Your philosophy: No tutorials. No markers. Trust them to figure it out. Death teaches.
 
 ## Mechanics to Teach
-${mechanicsToTeach.map(m => `- ${m.name} (${m.complexity})${m.dependencies?.length ? ` - requires: ${m.dependencies.join(', ')}` : ''}`).join('\n')}
+${mechanicsToTeach.map((m: { name: string; complexity: string; dependencies?: string[] }) => `- ${m.name} (${m.complexity})${m.dependencies?.length ? ` - requires: ${m.dependencies.join(', ')}` : ''}`).join('\n')}
 
 ## Skill Curve
 ${playerSkillCurve}
@@ -503,7 +503,7 @@ export const createMundanePoetTool = () =>
     description: `Transforms routine mechanics into meaningful rituals.
 Walking, cooking, waiting - these can be profound when designed with intention.
 Inspired by Kojima: "Death Stranding taught us walking can be profound."`,
-    schema: MundanePoetInputSchema,
+    inputSchema: MundanePoetInputSchema,
     execute: async (args) => {
       try {
         const { routineMechanics, gameTheme, pacing } = args
@@ -513,7 +513,7 @@ Inspired by Kojima: "Death Stranding taught us walking can be profound."`,
 Your philosophy: If walking isn't meaningful, why is it in the game?
 
 ## Routine Mechanics to Elevate
-${routineMechanics.map(m => `- ${m.name}: Currently ${m.currentFeeling}, happens ${m.frequency}`).join('\n')}
+${routineMechanics.map((m: { name: string; currentFeeling: string; frequency: string }) => `- ${m.name}: Currently ${m.currentFeeling}, happens ${m.frequency}`).join('\n')}
 
 ## Game Theme
 ${gameTheme}
