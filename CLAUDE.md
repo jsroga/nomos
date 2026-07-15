@@ -23,7 +23,7 @@ npm run test:e2e smoke   # storyteller smoke; also: actions, full-loop, swiss-kn
 Single unit test (Vitest; `@/` → `src/`):
 
 ```bash
-npx vitest run src/domains/storyteller/agents/tools/__tests__/storytelling.test.ts
+npx vitest run src/domains/storyteller/ai/tools/__tests__/storytelling.test.ts
 npx vitest run src/domains/loop-creator            # whole directory
 ```
 
@@ -45,11 +45,11 @@ npx vitest run src/domains/loop-creator            # whole directory
 | `trigger/` | Trigger.dev task registry |
 | `mcp/` | MCP server (separate deployable) |
 
-Each `src/domains/<module>/` follows the blueprint in [docs/unified/ARCHITECTURE.md](docs/unified/ARCHITECTURE.md): `ui/`, `state/`, `io/`, `core/`, `services/`, `agents/`, `tasks/`, `prompts/` + a **single public `index.ts` barrel**. Dependency rule: `ui → state → io → core → services → agents`; no cross-module deep imports, `core/` is pure (no React/DB/IO), server data lives in TanStack Query not Zustand. Enforced by `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel guards. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/`, not `agents/`.
+Each `src/domains/<module>/` follows the blueprint in [docs/unified/ARCHITECTURE.md](docs/unified/ARCHITECTURE.md): `ui/`, `state/`, `core/` (with `core/io/`), `services/`, `ai/`, `tasks/` + a **single public `index.ts` barrel**. Dependency rule: `ui → state → core → services → ai`; no cross-module deep imports, pure `core/` (outside `core/io/`) has no React/DB/fetch, server data lives in TanStack Query not Zustand. Enforced by `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel guards. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/`, not `ai/`.
 
-Two Mastra entries: `src/mastra.ts` is the Studio CLI entry (bundler-safe tool stubs in `src/shared/agent-kernel/mastra/tools/`); `src/shared/agent-kernel/MastraInstance.ts` is the production instance (Postgres memory, tracing). Production agents live in `src/domains/*/agents/`. Never create a second Mastra instance or Postgres store.
+Two Mastra entries: `src/mastra.ts` is the Studio CLI entry (bundler-safe tool stubs in `src/shared/agent-kernel/mastra/tools/`); `src/shared/agent-kernel/MastraInstance.ts` is the production instance (Postgres memory, tracing). Production Mastra agents live in `src/domains/*/ai/agents/`. Never create a second Mastra instance or Postgres store.
 
-**TypeScript is strict**: implicit `any` is a compile error; `@typescript-eslint/no-explicit-any` is `error`; **`as` type assertions are banned** (`assertionStyle: 'never'`, `as const` only). Legacy `@ts-nocheck` files exist; don't add new ones. **Domains must not import each other** — shared code in `@/shared`. Magic-string protocol values → **`enum`**, not const object maps. See `.cursor/rules/eslint-boundaries.mdc`.
+**TypeScript is strict**: implicit `any` is a compile error; `@typescript-eslint/no-explicit-any` is `error`; **`as` type assertions are banned** (`assertionStyle: 'never'`, `as const` only); non-null `!` is banned (`no-non-null-assertion` — guard instead). Legacy `@ts-nocheck` files exist; don't add new ones. **Domains must not import each other**, and `shared/` must not import `@/domains/*` — lift shared code to `@/shared` (a re-export "seam" still trips `no-restricted-imports`). Magic-string values → an `enum` **or** a `SCREAMING` const / `constants/` module (`local/no-magic-string`); but an enum member that references another enum/const or duplicates a value is illegal → use `const X = { … } as const`. Also live: `local/no-repeated-array-filter` (partition in one pass). Full patterns: `.agents/execute/implement.md` § Code rules. See `.cursor/rules/eslint-boundaries.mdc`.
 
 ## Mastra
 
@@ -108,7 +108,7 @@ Shared prompts: **`.agents/execute/`** · skills: **`.agents/skills/`** (Cursor/
 
 ## Quality gates
 
-**During agent work** — fast, scoped only (never full-repo `tsc --noEmit` mid-task; it OOMs):
+**During agent work** — use scoped `qualitygate:file` for the fast loop. `npm run typecheck` now runs with an 8 GB heap and excludes `ds-bundle` (fixed 2026-07-14) so it no longer OOMs (~20s warm) — run it after changing any `shared/**` or `core/types` type to catch cross-file cascades that `qualitygate:file` (single-file scoped) misses:
 
 ```bash
 npm run qualitygate:file -- src/path/to/file.ts   # TSC + ESLint + metrics (~5s)

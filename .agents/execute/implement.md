@@ -17,18 +17,35 @@ chose **[A] Approve & build** at Verification.
 - **No `z.any()`** at tool/workflow/API boundaries — use real Zod DTOs from `core/`.
 - **No `as` type assertions** — `assertionStyle: 'never'` (`as const` only). Use type guards,
   `satisfies`, Zod, or `recordFromJson()` from `@/shared/data/deep-merge` at jsonb edges.
-- **No `: any` / `as any`** — `@typescript-eslint/no-explicit-any` is `error`.
-- **No cross-domain imports** — `src/domains/<A>` must not import `@/domains/<B>`; lift shared
-  code to `@/shared`. `src/shared` must not import domains.
-- **No `@/agent-core/*`** — import from `@/shared/agent-kernel` (ESLint `no-restricted-imports`).
-- **No browser → Supabase writes** — use API routes + TanStack Query mutations.
+- **No `: any` / `as any`** — `@typescript-eslint/no-explicit-any` is `error`. For loose JSON,
+  define a small interface (`interface XResponse { field?: T; [key: string]: unknown }`) or use
+  `unknown` + guards from **`@/shared/data/json-guards`** (`recordFromJson`, `readString`,
+  `readNumber`, `stringArrayFromJson`) — not `@/shared/data/deep-merge`.
+- **No non-null `!`** (`no-non-null-assertion`). Fixes: guard + early return; `?? fallback`; `?.`;
+  Map get-or-create (`const v = m.get(k) ?? new Set(); v.add(x); m.set(k, v)`); `getContext('2d')`
+  → guard-throw with a `SCREAMING` const; `process.env.X` → `?? ''` (fails loud at use).
+- **No repeated `.filter()` on the same array in one scope** (`local/no-repeated-array-filter`) —
+  partition in a **single pass** (`reduce`) or compute both predicates in one loop.
+- **No cross-domain imports** — `src/domains/<A>` must not import `@/domains/<B>`; `src/shared`
+  must not import `@/domains/*`. Fix by **moving the shared type/store to `@/shared`** (e.g. `Tile`,
+  `useWorldStore`) — a re-export "seam" file still trips `no-restricted-imports`.
+- **No `@/agent-core/*`** — import from `@/shared/agent-kernel`.
+- **No browser → Supabase writes** — API routes + TanStack Query mutations.
 - **No server state in Zustand** — UI ephemeral state only.
-- **No local `deepMerge`** — use `@/shared/data/deep-merge` (`deepMerge`, `deepMergeRecords`,
-  `smartMergeArray`, `recordFromJson`).
-- **Magic string protocol values** (action types, statuses, phases) → **`enum`**, not inline
-  literals or `as const` object maps.
-- **Domain imports (from outside):** external code imports `@/domains/<module>` barrel only — not
-  deep paths (except allowed `storyteller/io`, `interior-designer/io` seams).
+- **Magic strings** (`local/no-magic-string`, broadly enforced) → a `SCREAMING` module const, an
+  `enum`, or a `constants/` module. Exempt paths (put the literal there): `constants/`, `*-wire.ts`,
+  `enums.ts`, `*-schema.ts`, `*-scorer.ts`, domain `prompts/`, `agents/tools/*-tools.ts`,
+  `mcp/domains/*/tools.ts`, tests. Comparison/`typeof` literals, paths (`/`), URLs, and JSX allowed.
+- **Enums vs const maps:** prefer `enum` for pure string/number literals. But an enum member that
+  **references another enum/const** (`A = Other.B`) or **duplicates a value** is illegal → use
+  `export const X = { … } as const` (+ `export type X = (typeof X)[keyof typeof X]` if used as a
+  type). String-enum props that reject literal call sites → widen the prop to `` `${Enum}` ``.
+- **Supabase `.select(runtimeString)`** loses column inference (`data: GenericStringError`) →
+  declare a row interface and chain **`.returns<Row>()`** (no cast).
+- **Widening a shared type is a cascade risk** — after changing a `shared/**` or `core/types` type,
+  run full `npm run typecheck` (not just `qualitygate:file`, which is single-file scoped) to catch
+  breakage in consumers.
+- **Domain imports (from outside):** external code imports the `@/domains/<module>` barrel only.
 
 Full reference: `.cursor/rules/eslint-boundaries.mdc`.
 
@@ -64,8 +81,14 @@ and `orchestration/StorytellerPlanner.ts` — left the tree non-compiling while 
 ### Verify reality
 
 - `node scripts/fabro-verify.mjs` — module-scoped typecheck + ESLint + module unit tests, **then husky pre-commit parity**: architecture layout, docs sync (`--working-tree`), full `npm run test:unit`, `npm run build`.
-- Full `npm run typecheck` **OOMs** (~4GB+) in Fabro Docker sandbox — do not use it; fabro-verify uses scoped `tsc` instead (same role as pre-commit staged typecheck).
+- `npm run typecheck` now runs with an 8 GB heap and excludes `ds-bundle` (fixed 2026-07-14) — it no longer OOMs (~1.25 GB peak, ~20 s warm). Use it to catch cross-file cascades; fabro-verify's scoped `tsc` is still fine for the fast per-module loop.
 - Verify fails → up to **3 fix loops** back to you; then run ships to Retro anyway.
+
+### Commit discipline (learned — uncommitted sweeps got reset twice)
+
+- Land work in **small commits per lane** as you go; do not leave a large sweep uncommitted — it can be reset by a concurrent rename/refactor and the whole effort is lost.
+- **Never `git add -A`** while another agent is mid-refactor — it recaptures their broken WIP and regresses a green typecheck. Stage only the specific files you fixed (`git add path/to/file …`).
+- Structure/casing renames (PascalCase → kebab-case) may move files under your edits — re-read a file before an edit that depends on surrounding content, and re-run the lint scan (line numbers shift).
 - **Do not claim complete** unless `fabro-verify.mjs` exits 0 (including pre-commit parity) and todos are done.
 
 ### Trigger.dev v4 (when touching tasks)

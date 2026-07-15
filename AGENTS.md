@@ -1,6 +1,6 @@
 # AGENTS.md — Mastra development
 
-This repo uses **Mastra v1** (`@mastra/core@^1.x`). Read this before changing agents, tools, workflows, or memory. Mirror patterns in `src/domains/storyteller/agents/*` and `src/shared/agent-kernel/mastra/*`.
+This repo uses **Mastra v1** (`@mastra/core@^1.x`). Read this before changing agents, tools, workflows, or memory. Mirror patterns in `src/domains/storyteller/ai/*` and `src/shared/agent-kernel/mastra/*`.
 
 ## Dark factory
 
@@ -28,10 +28,10 @@ The dark-factory execute loop has three interchangeable runners that share the *
 |---------|----------|
 | Mastra instance | `src/mastra.ts` (Studio CLI canonical export), `src/shared/agent-kernel/MastraInstance.ts` (app) |
 | CLI shim | `src/mastra/index.ts` — 2-line re-export of `src/mastra.ts`; exists only because `mastra dev/build` resolves `src/mastra/index.ts`. Keep both; do not add code here. |
-| Agents | `src/domains/*/agents` (server-only layer — see `docs/unified/ARCHITECTURE.md` §4; enforced via `import '@/shared/data/server-guard'`, NOT the `server-only` package, which throws under node and would crash Mastra Studio/evals/vitest; structure test checks it, pure schema modules allowlisted) |
-| Agent registration | `src/shared/agent-kernel/mastra/runtime-registry.ts` (domains register at import via `io/mastra-runtime.ts`; shared never imports domains) |
+| Agents | `src/domains/*/ai/agents/` (implementations) inside `src/domains/*/ai/` (Mastra layer — server-only; see `docs/unified/ARCHITECTURE.md` §4; enforced via `import '@/shared/data/server-guard'`, NOT the `server-only` package; pure schema modules allowlisted) |
+| Agent registration | `src/shared/agent-kernel/mastra/runtime-registry.ts` (domains register at import via `core/io/mastra-runtime.ts`; shared never imports domains) |
 | AgentController | `@mastra/core/agent-controller` — sessions, modes, plan→build gate (see "Plan-first agents" below) |
-| Tools | `src/domains/*/agents/tools`, `src/shared/agent-kernel/mastra/tools/` (bundler-safe Studio stubs) |
+| Tools | `src/domains/*/ai/tools`, `src/shared/agent-kernel/mastra/tools/` (bundler-safe Studio stubs) |
 | Models | `src/shared/agent-kernel/models.ts` (kernel/judging), domain `config/ModelConfig.ts` (`resolveRoleModel` role slots) |
 | Memory | `@mastra/memory` + `PostgresStore` via shared storage |
 | Observability | `@mastra/observability`, `src/shared/observability/observability.ts` |
@@ -81,7 +81,10 @@ Docs: `mastra.ai/docs/agent-controller/{overview,session,modes,tool-approvals}.m
 - **Type assertions** (`as any`, `as Type`) — use guards, Zod, or `recordFromJson`; `as const` only.
 - **Cross-domain imports** (`src/domains/foo` importing `@/domains/bar`) — lift to `@/shared`.
 - **Local `deepMerge`** — use `@/shared/data/deep-merge`.
-- **Magic string protocol values** as bare literals — use **`enum`**, not `as const` object maps.
+- **Magic string values** as bare literals — use an `enum`, a `SCREAMING` const, or a `constants/` module. Use `enum` for plain literals; but an enum member referencing another enum/const or duplicating a value is illegal → `const X = { … } as const` (+ `type X = (typeof X)[keyof typeof X]`).
+- **Non-null `!`** (`no-non-null-assertion`) — guard/`?.`/`?? fallback` instead.
+- **Repeated `.filter()`** on the same array in one scope (`local/no-repeated-array-filter`) — one pass.
+- **Manual URL construction** (`?foo=${x}`, `encodeURIComponent`, local `buildUrl`) — use `@/shared/data/url-builder` (`buildUrl`, `joinUrlPath`, `appendQueryParams`, `cloneSearchParams`).
 - **File-level `eslint-disable`** for quality rules (`local/no-magic-string`, `local/complexity-strict`, `local/max-lines-strict`, etc.) — forbidden without explicit user approval.
 
 ## Verify
