@@ -1,7 +1,7 @@
-import { useMemo, type FC } from 'react'
+import { useMemo, type FC, type ReactNode } from 'react'
 import { recordArrayFromJson, recordFromJson, readString } from '@/shared/data/json-guards'
 import { Lightbulb, RefreshCw, Book, Film, Gamepad2, Loader2 } from 'lucide-react'
-import { InspirationItem } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { InspirationItem } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 
 import { useBible } from './BibleContext'
@@ -28,6 +28,77 @@ function inspirationItemsFromJson(value: unknown): InspirationItem[] {
     .map(inspirationItemFromWire)
     .filter((item): item is InspirationItem => item !== null)
 }
+
+const InspirationLink: FC<{ title: string; description: string | null; searchSuffix: string }> = ({
+  title,
+  description,
+  searchSuffix,
+}) => {
+  const link = (
+    <a
+      href={`https://www.google.com/search?q=${encodeURIComponent(`${title} ${searchSuffix}`)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block text-xs text-muted-foreground/70 font-sans hover:text-foreground transition-colors"
+    >
+      {title}
+    </a>
+  )
+  if (!description) return link
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{link}</TooltipTrigger>
+      <TooltipContent side="right" className="max-w-xs font-sans text-xs">
+        <p>{description}</p>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+const InspirationCategory: FC<{
+  icon: ReactNode
+  colorClass: string
+  label: string
+  categoryKey: 'books' | 'movies' | 'games'
+  searchSuffix: string
+  isEditing: boolean
+  editValue: string
+  items: InspirationItem[]
+  onChange: (key: 'books' | 'movies' | 'games', value: string) => void
+}> = ({ icon, colorClass, label, categoryKey, searchSuffix, isEditing, editValue, items, onChange }) => (
+  <div className="p-4 bg-muted/5 border border-border/30 rounded-xl">
+    <div className={`flex items-center gap-2 mb-3 ${colorClass} font-mono text-[10px] uppercase tracking-widest`}>
+      {icon} {label}
+    </div>
+    {isEditing ? (
+      <textarea
+        className="w-full h-16 p-2 bg-background border border-border rounded text-xs font-mono resize-none"
+        placeholder="Comma separated..."
+        value={editValue}
+        onChange={e => onChange(categoryKey, e.target.value)}
+      />
+    ) : (
+      <div className="space-y-1">
+        {items.length ? (
+          items.map((item: InspirationItem, i: number) => {
+            const title = typeof item === 'string' ? item : item.title
+            const description = typeof item === 'object' ? item.description : null
+            return (
+              <InspirationLink
+                key={i}
+                title={title}
+                description={description ?? null}
+                searchSuffix={searchSuffix}
+              />
+            )
+          })
+        ) : (
+          <div className="text-xs text-muted-foreground/40 font-sans italic">None</div>
+        )}
+      </div>
+    )}
+  </div>
+)
 
 export const BibleInspirations: FC<BibleInspirationsProps> = () => {
   const {
@@ -129,176 +200,47 @@ export const BibleInspirations: FC<BibleInspirationsProps> = () => {
       </div>
       <TooltipProvider>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* BOOKS */}
-          <div className="p-4 bg-muted/5 border border-border/30 rounded-xl">
-            <div className="flex items-center gap-2 mb-3 text-emerald-400/70 font-mono text-[10px] uppercase tracking-widest">
-              <Book className="w-3.5 h-3.5" /> Books
-            </div>
-            {isEditing ? (
-              <textarea
-                className="w-full h-16 p-2 bg-background border border-border rounded text-xs font-mono resize-none"
-                placeholder="Comma separated..."
-                value={(localPlan.inspirations?.books || [])
-                  .map((item: string | InspirationItem) =>
-                    typeof item === 'string' ? item : item.title
-                  )
-                  .join(', ')}
-                onChange={e => onInspirationChange('books', e.target.value)}
-              />
-            ) : (
-              <div className="space-y-1">
-                {normalizedInspirations.books?.length ? (
-                  normalizedInspirations.books.map((item: InspirationItem, i: number) => {
-                    const title = typeof item === 'string' ? item : item.title
-                    const description = typeof item === 'object' ? item.description : null
-                    return description ? (
-                      <Tooltip key={i}>
-                        <TooltipTrigger asChild>
-                          <a
-                            href={`https://www.google.com/search?q=${encodeURIComponent(title + ' book')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block text-xs text-muted-foreground/70 font-sans hover:text-foreground transition-colors"
-                          >
-                            {title}
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="max-w-xs font-sans text-xs">
-                          <p>{description}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <a
-                        key={i}
-                        href={`https://www.google.com/search?q=${encodeURIComponent(title + ' book')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-xs text-muted-foreground/70 font-sans hover:text-foreground transition-colors"
-                      >
-                        {title}
-                      </a>
-                    )
-                  })
-                ) : (
-                  <div className="text-xs text-muted-foreground/40 font-sans italic">None</div>
-                )}
-              </div>
-            )}
-          </div>
+          <InspirationCategory
+            icon={<Book className="w-3.5 h-3.5" />}
+            colorClass="text-emerald-400/70"
+            label="Books"
+            categoryKey="books"
+            searchSuffix="book"
+            isEditing={isEditing}
+            editValue={(localPlan.inspirations?.books || [])
+              .map((item: string | InspirationItem) => (typeof item === 'string' ? item : item.title))
+              .join(', ')}
+            items={normalizedInspirations.books ?? []}
+            onChange={onInspirationChange}
+          />
 
-          {/* MOVIES */}
-          <div className="p-4 bg-muted/5 border border-border/30 rounded-xl">
-            <div className="flex items-center gap-2 mb-3 text-rose-400/70 font-mono text-[10px] uppercase tracking-widest">
-              <Film className="w-3.5 h-3.5" /> Movies
-            </div>
-            {isEditing ? (
-              <textarea
-                className="w-full h-16 p-2 bg-background border border-border rounded text-xs font-mono resize-none"
-                placeholder="Comma separated..."
-                value={(localPlan.inspirations?.movies || [])
-                  .map((item: string | InspirationItem) =>
-                    typeof item === 'string' ? item : item.title
-                  )
-                  .join(', ')}
-                onChange={e => onInspirationChange('movies', e.target.value)}
-              />
-            ) : (
-              <div className="space-y-1">
-                {normalizedInspirations.movies?.length ? (
-                  normalizedInspirations.movies.map((item: InspirationItem, i: number) => {
-                    const title = typeof item === 'string' ? item : item.title
-                    const description = typeof item === 'object' ? item.description : null
-                    return description ? (
-                      <Tooltip key={i}>
-                        <TooltipTrigger asChild>
-                          <a
-                            href={`https://www.google.com/search?q=${encodeURIComponent(title + ' movie')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block text-xs text-muted-foreground/70 font-sans hover:text-foreground transition-colors"
-                          >
-                            {title}
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="max-w-xs font-sans text-xs">
-                          <p>{description}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <a
-                        key={i}
-                        href={`https://www.google.com/search?q=${encodeURIComponent(title + ' movie')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-xs text-muted-foreground/70 font-sans hover:text-foreground transition-colors"
-                      >
-                        {title}
-                      </a>
-                    )
-                  })
-                ) : (
-                  <div className="text-xs text-muted-foreground/40 font-sans italic">None</div>
-                )}
-              </div>
-            )}
-          </div>
+          <InspirationCategory
+            icon={<Film className="w-3.5 h-3.5" />}
+            colorClass="text-rose-400/70"
+            label="Movies"
+            categoryKey="movies"
+            searchSuffix="movie"
+            isEditing={isEditing}
+            editValue={(localPlan.inspirations?.movies || [])
+              .map((item: string | InspirationItem) => (typeof item === 'string' ? item : item.title))
+              .join(', ')}
+            items={normalizedInspirations.movies ?? []}
+            onChange={onInspirationChange}
+          />
 
-          {/* GAMES */}
-          <div className="p-4 bg-muted/5 border border-border/30 rounded-xl">
-            <div className="flex items-center gap-2 mb-3 text-violet-400/70 font-mono text-[10px] uppercase tracking-widest">
-              <Gamepad2 className="w-3.5 h-3.5" /> Games
-            </div>
-            {isEditing ? (
-              <textarea
-                className="w-full h-16 p-2 bg-background border border-border rounded text-xs font-mono resize-none"
-                placeholder="Comma separated..."
-                value={(localPlan.inspirations?.games || [])
-                  .map((item: string | InspirationItem) =>
-                    typeof item === 'string' ? item : item.title
-                  )
-                  .join(', ')}
-                onChange={e => onInspirationChange('games', e.target.value)}
-              />
-            ) : (
-              <div className="space-y-1">
-                {normalizedInspirations.games?.length ? (
-                  normalizedInspirations.games.map((item: InspirationItem, i: number) => {
-                    const title = typeof item === 'string' ? item : item.title
-                    const description = typeof item === 'object' ? item.description : null
-                    return description ? (
-                      <Tooltip key={i}>
-                        <TooltipTrigger asChild>
-                          <a
-                            href={`https://www.google.com/search?q=${encodeURIComponent(title + ' game')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block text-xs text-muted-foreground/70 font-sans hover:text-foreground transition-colors"
-                          >
-                            {title}
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="max-w-xs font-sans text-xs">
-                          <p>{description}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <a
-                        key={i}
-                        href={`https://www.google.com/search?q=${encodeURIComponent(title + ' game')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-xs text-muted-foreground/70 font-sans hover:text-foreground transition-colors"
-                      >
-                        {title}
-                      </a>
-                    )
-                  })
-                ) : (
-                  <div className="text-xs text-muted-foreground/40 font-sans italic">None</div>
-                )}
-              </div>
-            )}
-          </div>
+          <InspirationCategory
+            icon={<Gamepad2 className="w-3.5 h-3.5" />}
+            colorClass="text-violet-400/70"
+            label="Games"
+            categoryKey="games"
+            searchSuffix="game"
+            isEditing={isEditing}
+            editValue={(localPlan.inspirations?.games || [])
+              .map((item: string | InspirationItem) => (typeof item === 'string' ? item : item.title))
+              .join(', ')}
+            items={normalizedInspirations.games ?? []}
+            onChange={onInspirationChange}
+          />
         </div>
       </TooltipProvider>
     </section>
