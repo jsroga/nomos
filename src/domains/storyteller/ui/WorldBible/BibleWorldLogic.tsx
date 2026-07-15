@@ -1,6 +1,6 @@
 import React from 'react'
 import { Scale, Plus, RefreshCw, Trash2, Shuffle, Loader2 } from 'lucide-react'
-import { WorldRule } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { WorldRule } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import {
   isWorldRule,
   parseWorldRuleCategory,
@@ -24,6 +24,208 @@ function bibleSectionItems<T>(local: unknown, saved: unknown, editing: boolean):
 }
 
 interface BibleWorldLogicProps { }
+
+const WorldRuleEditItem: React.FC<{
+  rule: WorldRule
+  idx: number
+  onChange: <K extends keyof WorldRule>(index: number, field: K, value: WorldRule[K]) => void
+  onRemove: (index: number) => void
+}> = ({ rule, idx, onChange, onRemove }) => (
+  <div className="p-4 bg-muted/10 border border-border rounded-lg space-y-3">
+    <div className="flex items-start justify-between">
+      <select
+        className="p-2 bg-background border border-border rounded text-sm"
+        value={rule.category}
+        onChange={e => {
+          const category = parseWorldRuleCategory(e.target.value)
+          if (category) onChange(idx, 'category', category)
+        }}
+      >
+        {Object.values(WorldRuleCategory).map(cat => (
+          <option key={cat} value={cat}>
+            {cat}
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={() => onRemove(idx)}
+        className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
+        title="Remove Rule"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+    <input
+      type="text"
+      className="w-full p-2 bg-background border border-border rounded text-sm"
+      placeholder="The rule..."
+      value={rule.rule || ''}
+      onChange={e => onChange(idx, 'rule', e.target.value)}
+    />
+    <input
+      type="text"
+      className="w-full p-2 bg-background border border-border rounded text-sm"
+      placeholder="Consequence if broken..."
+      value={rule.consequence || ''}
+      onChange={e => onChange(idx, 'consequence', e.target.value)}
+    />
+    <input
+      type="text"
+      className="w-full p-2 bg-background border border-border rounded text-sm"
+      placeholder="Exceptions (optional)..."
+      value={rule.exceptions || ''}
+      onChange={e => onChange(idx, 'exceptions', e.target.value || null)}
+    />
+  </div>
+)
+
+const PlotTwistDisplayItem: React.FC<{ twist: unknown; index: number; projectId: string }> = ({
+  twist,
+  index,
+  projectId,
+}) => {
+  if (typeof twist === 'string') {
+    return (
+      <div className="p-3 bg-card/50 border border-border/50 rounded-lg">
+        <p className="text-sm text-muted-foreground">
+          <RichText text={twist} projectId={projectId} inline />
+        </p>
+      </div>
+    )
+  }
+  const t = plotTwistObjectFromJson(twist)
+  return (
+    <div className="p-4 bg-card/50 border border-border/50 rounded-lg space-y-2">
+      <h4 className="font-semibold text-red-400">
+        <RichText text={t.title || `Twist ${index + 1}`} projectId={projectId} inline />
+      </h4>
+      {t.description && (
+        <p className="text-sm text-muted-foreground">
+          <RichText text={t.description} projectId={projectId} inline />
+        </p>
+      )}
+      {t.impact && (
+        <p className="text-xs text-muted-foreground/70">
+          <span className="font-medium text-amber-400/80">Impact:</span>{' '}
+          <RichText text={t.impact} projectId={projectId} inline />
+        </p>
+      )}
+      {t.foreshadowing && (
+        <p className="text-xs text-muted-foreground/70">
+          <span className="font-medium text-blue-400/80">Foreshadowing:</span>{' '}
+          <RichText text={t.foreshadowing} projectId={projectId} inline />
+        </p>
+      )}
+    </div>
+  )
+}
+
+const PlotTwistsSection: React.FC<{
+  isLoading: boolean
+  pending: React.ComponentProps<typeof SectionPendingOverlay>['pendingAction'] | undefined
+  isEditing: boolean
+  isReadOnly: boolean
+  onSendMessage?: (msg: string, section?: string) => void
+  onAddPlotTwist: () => void
+  localPlotTwists: string[]
+  displayPlotTwists: unknown[]
+  onPlotTwistChange: (index: number, value: string) => void
+  onRemovePlotTwist: (index: number) => void
+  projectId: string
+}> = ({
+  isLoading,
+  pending,
+  isEditing,
+  isReadOnly,
+  onSendMessage,
+  onAddPlotTwist,
+  localPlotTwists,
+  displayPlotTwists,
+  onPlotTwistChange,
+  onRemovePlotTwist,
+  projectId,
+}) => (
+  <section className={isLoading || pending ? 'relative' : ''}>
+    {isLoading && !pending && (
+      <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin text-red-400" />
+          <span>Weaving plot surprises...</span>
+        </div>
+      </div>
+    )}
+    {pending && <SectionPendingOverlay pendingAction={pending} onReview={pending.onReview} />}
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2">
+        <Shuffle className="w-5 h-5 text-red-400/80" />
+        <h3 className="font-syne font-bold text-lg">Twists</h3>
+      </div>
+      <div className="flex gap-2">
+        {isEditing && (
+          <button
+            onClick={onAddPlotTwist}
+            className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
+            title="Add Plot Twist"
+            disabled={isLoading}
+          >
+            <Plus size={14} />
+          </button>
+        )}
+        {!isReadOnly && onSendMessage && (
+          <button
+            onClick={() =>
+              onSendMessage?.('Generate 3 completely BRAND NEW major plot twists for this story. IMPORTANT: Take a completely new creative direction and do NOT repeat previous twists.', 'plotTwists')
+            }
+            className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
+            title="Generate Twists"
+            disabled={isLoading}
+          >
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+          </button>
+        )}
+      </div>
+    </div>
+    {isEditing ? (
+      <div className="space-y-2">
+        {localPlotTwists.length === 0 ? (
+          <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+            No plot twists defined. Click + to add one.
+          </div>
+        ) : (
+          localPlotTwists.map((twist, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="text-muted-foreground text-sm">{i + 1}.</span>
+              <input
+                type="text"
+                className="flex-1 p-2 bg-background border border-border rounded text-sm"
+                placeholder="Describe the plot twist..."
+                value={twist}
+                onChange={e => onPlotTwistChange(i, e.target.value)}
+              />
+              <button
+                onClick={() => onRemovePlotTwist(i)}
+                className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
+                title="Remove Twist"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    ) : displayPlotTwists.length > 0 ? (
+      <div className="space-y-4">
+        {displayPlotTwists.map((twist, i) => (
+          <PlotTwistDisplayItem key={i} twist={twist} index={i} projectId={projectId} />
+        ))}
+      </div>
+    ) : (
+      <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
+        No plot twists revealed yet.
+      </div>
+    )}
+  </section>
+)
 
 export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
   const {
@@ -118,55 +320,13 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
               </div>
             ) : (
               localRules.map((rule, idx) => (
-                <div
+                <WorldRuleEditItem
                   key={idx}
-                  className="p-4 bg-muted/10 border border-border rounded-lg space-y-3"
-                >
-                  <div className="flex items-start justify-between">
-                    <select
-                      className="p-2 bg-background border border-border rounded text-sm"
-                      value={rule.category}
-                      onChange={e => {
-                        const category = parseWorldRuleCategory(e.target.value)
-                        if (category) onWorldRuleChange(idx, 'category', category)
-                      }}
-                    >
-                      {Object.values(WorldRuleCategory).map(cat => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => onRemoveWorldRule(idx)}
-                      className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
-                      title="Remove Rule"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    className="w-full p-2 bg-background border border-border rounded text-sm"
-                    placeholder="The rule..."
-                    value={rule.rule || ''}
-                    onChange={e => onWorldRuleChange(idx, 'rule', e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    className="w-full p-2 bg-background border border-border rounded text-sm"
-                    placeholder="Consequence if broken..."
-                    value={rule.consequence || ''}
-                    onChange={e => onWorldRuleChange(idx, 'consequence', e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    className="w-full p-2 bg-background border border-border rounded text-sm"
-                    placeholder="Exceptions (optional)..."
-                    value={rule.exceptions || ''}
-                    onChange={e => onWorldRuleChange(idx, 'exceptions', e.target.value || null)}
-                  />
-                </div>
+                  rule={rule}
+                  idx={idx}
+                  onChange={onWorldRuleChange}
+                  onRemove={onRemoveWorldRule}
+                />
               ))
             )}
           </div>
@@ -186,131 +346,19 @@ export const BibleWorldLogic: React.FC<BibleWorldLogicProps> = () => {
       </section>
 
       {/* PLOT TWISTS SECTION */}
-      <section className={isPlotTwistsLoading || plotTwistsPending ? 'relative' : ''}>
-        {/* Loading overlay */}
-        {isPlotTwistsLoading && !plotTwistsPending && (
-          <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin text-red-400" />
-              <span>Weaving plot surprises...</span>
-            </div>
-          </div>
-        )}
-        {/* Pending action overlay */}
-        {plotTwistsPending && (
-          <SectionPendingOverlay
-            pendingAction={plotTwistsPending}
-            onReview={plotTwistsPending.onReview}
-          />
-        )}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Shuffle className="w-5 h-5 text-red-400/80" />
-            <h3 className="font-syne font-bold text-lg">Twists</h3>
-          </div>
-          <div className="flex gap-2">
-            {isEditing && (
-              <button
-                onClick={onAddPlotTwist}
-                className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isPlotTwistsLoading ? 'pointer-events-none opacity-50' : ''}`}
-                title="Add Plot Twist"
-                disabled={isPlotTwistsLoading}
-              >
-                <Plus size={14} />
-              </button>
-            )}
-            {!isReadOnly && onSendMessage && (
-              <button
-                onClick={() =>
-                  onSendMessage?.('Generate 3 completely BRAND NEW major plot twists for this story. IMPORTANT: Take a completely new creative direction and do NOT repeat previous twists.', 'plotTwists')
-                }
-                className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isPlotTwistsLoading ? 'pointer-events-none opacity-50' : ''}`}
-                title="Generate Twists"
-                disabled={isPlotTwistsLoading}
-              >
-                <RefreshCw size={14} className={isPlotTwistsLoading ? 'animate-spin' : ''} />
-              </button>
-            )}
-          </div>
-        </div>
-        {isEditing ? (
-          <div className="space-y-2">
-            {localPlotTwists.length === 0 ? (
-              <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-                No plot twists defined. Click + to add one.
-              </div>
-            ) : (
-              localPlotTwists.map((twist, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-sm">{i + 1}.</span>
-                  <input
-                    type="text"
-                    className="flex-1 p-2 bg-background border border-border rounded text-sm"
-                    placeholder="Describe the plot twist..."
-                    value={twist}
-                    onChange={e => onPlotTwistChange(i, e.target.value)}
-                  />
-                  <button
-                    onClick={() => onRemovePlotTwist(i)}
-                    className="p-1.5 text-red-400 hover:bg-red-400/20 rounded"
-                    title="Remove Twist"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        ) : displayPlotTwists.length > 0 ? (
-          <div className="space-y-4">
-            {displayPlotTwists.map((twist, i) => {
-              // Handle both string and object formats
-              if (typeof twist === 'string') {
-                return (
-                  <div key={i} className="p-3 bg-card/50 border border-border/50 rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      <RichText text={twist} projectId={projectId} inline />
-                    </p>
-                  </div>
-                )
-              }
-              // Object format: {title, description, impact, foreshadowing}
-              const t = plotTwistObjectFromJson(twist)
-              return (
-                <div
-                  key={i}
-                  className="p-4 bg-card/50 border border-border/50 rounded-lg space-y-2"
-                >
-                  <h4 className="font-semibold text-red-400">
-                    <RichText text={t.title || `Twist ${i + 1}`} projectId={projectId} inline />
-                  </h4>
-                  {t.description && (
-                    <p className="text-sm text-muted-foreground">
-                      <RichText text={t.description} projectId={projectId} inline />
-                    </p>
-                  )}
-                  {t.impact && (
-                    <p className="text-xs text-muted-foreground/70">
-                      <span className="font-medium text-amber-400/80">Impact:</span>{' '}
-                      <RichText text={t.impact} projectId={projectId} inline />
-                    </p>
-                  )}
-                  {t.foreshadowing && (
-                    <p className="text-xs text-muted-foreground/70">
-                      <span className="font-medium text-blue-400/80">Foreshadowing:</span>{' '}
-                      <RichText text={t.foreshadowing} projectId={projectId} inline />
-                    </p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
-            No plot twists revealed yet.
-          </div>
-        )}
-      </section>
+      <PlotTwistsSection
+        isLoading={isPlotTwistsLoading}
+        pending={plotTwistsPending}
+        isEditing={isEditing}
+        isReadOnly={isReadOnly}
+        onSendMessage={onSendMessage}
+        onAddPlotTwist={onAddPlotTwist}
+        localPlotTwists={localPlotTwists}
+        displayPlotTwists={displayPlotTwists}
+        onPlotTwistChange={onPlotTwistChange}
+        onRemovePlotTwist={onRemovePlotTwist}
+        projectId={projectId}
+      />
     </div>
   )
 }
