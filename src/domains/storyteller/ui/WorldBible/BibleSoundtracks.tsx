@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Music, RefreshCw, Loader2 } from 'lucide-react'
-import { SoundtrackTrack } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { SoundtrackTrack } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { YouTubePlayer, YouTubeEmbedPlayer } from '../YouTubePlayer'
 import { extractVideoId } from '@/domains/storyteller/core/utils/youtube-utils'
 
@@ -8,6 +8,62 @@ import { useBible } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 
 interface BibleSoundtracksProps { }
+
+const SoundtrackList: React.FC<{
+  tracks: SoundtrackTrack[]
+  playingTrackIndex: number | null
+  playingVideoId: string | null
+  onPlay: (track: SoundtrackTrack, index: number) => void
+  onStop: () => void
+}> = ({ tracks, playingTrackIndex, playingVideoId, onPlay, onStop }) => (
+  <div className="space-y-1">
+    {tracks.map((track: SoundtrackTrack, i: number) => (
+      <YouTubePlayer
+        key={i}
+        title={track.title}
+        artist={track.artist}
+        youtubeUrl={track.youtubeUrl}
+        mood={track.mood || undefined}
+        isCurrentlyPlaying={playingTrackIndex === i}
+        onPlay={() => onPlay(track, i)}
+        onStop={onStop}
+      />
+    ))}
+    {playingVideoId && <YouTubeEmbedPlayer videoId={playingVideoId} onEnded={onStop} />}
+  </div>
+)
+
+const SoundtrackDisplay: React.FC<{
+  moodSoundtrack: string
+  tracks: SoundtrackTrack[]
+  playingTrackIndex: number | null
+  playingVideoId: string | null
+  onPlay: (track: SoundtrackTrack, index: number) => void
+  onStop: () => void
+}> = ({ moodSoundtrack, tracks, playingTrackIndex, playingVideoId, onPlay, onStop }) => (
+  <div className="space-y-2">
+    {moodSoundtrack && (
+      <div className="p-3 bg-muted/10 border border-border rounded">
+        <span className="text-sm text-muted-foreground font-mono">{moodSoundtrack}</span>
+      </div>
+    )}
+    {tracks.length > 0 ? (
+      <SoundtrackList
+        tracks={tracks}
+        playingTrackIndex={playingTrackIndex}
+        playingVideoId={playingVideoId}
+        onPlay={onPlay}
+        onStop={onStop}
+      />
+    ) : (
+      !moodSoundtrack && (
+        <div className="p-3 border border-dashed border-border rounded text-sm text-muted-foreground font-mono italic">
+          No soundtrack defined.
+        </div>
+      )
+    )}
+  </div>
+)
 
 export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
   const {
@@ -22,6 +78,18 @@ export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
   } = useBible()
   const [playingTrackIndex, setPlayingTrackIndex] = useState<number | null>(null)
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null)
+
+  const handlePlayTrack = (track: SoundtrackTrack, index: number) => {
+    const videoId = extractVideoId(track.youtubeUrl)
+    if (videoId) {
+      setPlayingTrackIndex(index)
+      setPlayingVideoId(videoId)
+    }
+  }
+  const handleStopTrack = () => {
+    setPlayingTrackIndex(null)
+    setPlayingVideoId(null)
+  }
 
   // Check if soundtracks section is loading or has pending action
   const isLoading = loadingSections?.soundtracks?.loading ?? false
@@ -80,60 +148,14 @@ export const BibleSoundtracks: React.FC<BibleSoundtracksProps> = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {/* Legacy mood description */}
-          {(localPlan.moodSoundtrack || storyPlan.moodSoundtrack) && (
-            <div className="p-3 bg-muted/10 border border-border rounded">
-              <span className="text-sm text-muted-foreground font-mono">
-                {localPlan.moodSoundtrack || storyPlan.moodSoundtrack}
-              </span>
-            </div>
-          )}
-
-          {/* YouTube Tracks */}
-          {((localPlan.soundtracks && localPlan.soundtracks.length > 0) || (storyPlan.soundtracks && storyPlan.soundtracks.length > 0)) ? (
-            <div className="space-y-1">
-              {(localPlan.soundtracks || storyPlan.soundtracks || []).map((track: SoundtrackTrack, i: number) => (
-                <YouTubePlayer
-                  key={i}
-                  title={track.title}
-                  artist={track.artist}
-                  youtubeUrl={track.youtubeUrl}
-                  mood={track.mood || undefined}
-                  isCurrentlyPlaying={playingTrackIndex === i}
-                  onPlay={() => {
-                    const videoId = extractVideoId(track.youtubeUrl)
-                    if (videoId) {
-                      setPlayingTrackIndex(i)
-                      setPlayingVideoId(videoId)
-                    }
-                  }}
-                  onStop={() => {
-                    setPlayingTrackIndex(null)
-                    setPlayingVideoId(null)
-                  }}
-                />
-              ))}
-
-              {/* Floating YouTube Player */}
-              {playingVideoId && (
-                <YouTubeEmbedPlayer
-                  videoId={playingVideoId}
-                  onEnded={() => {
-                    setPlayingTrackIndex(null)
-                    setPlayingVideoId(null)
-                  }}
-                />
-              )}
-            </div>
-          ) : (
-            !(localPlan.moodSoundtrack || storyPlan.moodSoundtrack) && (
-              <div className="p-3 border border-dashed border-border rounded text-sm text-muted-foreground font-mono italic">
-                No soundtrack defined.
-              </div>
-            )
-          )}
-        </div>
+        <SoundtrackDisplay
+          moodSoundtrack={localPlan.moodSoundtrack || storyPlan.moodSoundtrack || ''}
+          tracks={localPlan.soundtracks || storyPlan.soundtracks || []}
+          playingTrackIndex={playingTrackIndex}
+          playingVideoId={playingVideoId}
+          onPlay={handlePlayTrack}
+          onStop={handleStopTrack}
+        />
       )}
     </section>
   )
