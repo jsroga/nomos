@@ -43,16 +43,21 @@ function formatDuration(ms: number): string {
  * Calculate estimated remaining time based on completed sections
  */
 function calculateEstimatedTime(sections: ProgressSection[]): number | null {
-  const completed = sections.filter(s => s.status === SectionProgressStatus.Completed && s.startTime && s.endTime)
-  const pending = sections.filter(s => s.status === SectionProgressStatus.Pending)
-  const inProgress = sections.filter(s => s.status === SectionProgressStatus.InProgress)
+  const completed: ProgressSection[] = []
+  const pending: ProgressSection[] = []
+  const inProgress: ProgressSection[] = []
+  for (const s of sections) {
+    if (s.status === SectionProgressStatus.Completed && s.startTime && s.endTime) completed.push(s)
+    else if (s.status === SectionProgressStatus.Pending) pending.push(s)
+    else if (s.status === SectionProgressStatus.InProgress) inProgress.push(s)
+  }
 
   if (completed.length === 0 || (pending.length === 0 && inProgress.length === 0)) {
     return null
   }
 
   // Average time per completed section
-  const totalCompletedTime = completed.reduce((sum, s) => sum + (s.endTime! - s.startTime!), 0)
+  const totalCompletedTime = completed.reduce((sum, s) => sum + ((s.endTime ?? 0) - (s.startTime ?? 0)), 0)
   const avgTimePerSection = totalCompletedTime / completed.length
 
   // Estimated remaining = avg time * (pending + 0.5 * in_progress)

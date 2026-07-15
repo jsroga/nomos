@@ -23,10 +23,15 @@ export function buildMentionContext(mentions: MentionItem[]): string {
 
   const parts: string[] = [MENTION_CONTEXT_OPEN]
 
-  // Group by category
-  const entities = mentions.filter(m => m.category === MentionCategoryId.Entity)
-  const agents = mentions.filter(m => m.category === MentionCategoryId.Agent)
-  const sections = mentions.filter(m => m.category === MentionCategoryId.Section)
+  // Group by category in a single pass
+  const entities: typeof mentions = []
+  const agents: typeof mentions = []
+  const sections: typeof mentions = []
+  for (const m of mentions) {
+    if (m.category === MentionCategoryId.Entity) entities.push(m)
+    else if (m.category === MentionCategoryId.Agent) agents.push(m)
+    else if (m.category === MentionCategoryId.Section) sections.push(m)
+  }
 
   // Entities with full context
   for (const entity of entities) {

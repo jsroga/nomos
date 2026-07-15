@@ -98,9 +98,14 @@ export const ActionApprovalModal: React.FC<ActionApprovalModalProps> = React.mem
   }, [changes])
 
   const stats = useMemo(() => {
-    const adds = changes.filter(change => change.changeType === ActionChangeType.ADD).length
-    const mods = changes.filter(change => change.changeType === ActionChangeType.MODIFY).length
-    const removes = changes.filter(change => change.changeType === ActionChangeType.REMOVE).length
+    let adds = 0
+    let mods = 0
+    let removes = 0
+    for (const change of changes) {
+      if (change.changeType === ActionChangeType.ADD) adds++
+      else if (change.changeType === ActionChangeType.MODIFY) mods++
+      else if (change.changeType === ActionChangeType.REMOVE) removes++
+    }
     return { adds, mods, removes, total: changes.length }
   }, [changes])
 

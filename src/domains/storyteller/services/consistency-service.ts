@@ -67,19 +67,30 @@ export interface ConsistencyCheckResult {
   }
 }
 
+function countIssuesBySeverity(issues: ContinuityIssue[]) {
+  return issues.reduce(
+    (counts, issue) => {
+      if (issue.severity === ConsistencySeverity.Critical) counts.critical += 1
+      else if (issue.severity === ConsistencySeverity.Major) counts.major += 1
+      else if (issue.severity === ConsistencySeverity.Minor) counts.minor += 1
+      return counts
+    },
+    { critical: 0, major: 0, minor: 0 }
+  )
+}
+
 // ==========================================
 // CONSISTENCY SERVICE
 // ==========================================
 
-export class ConsistencyService {
-  /**
-   * Run consistency check
-   * Consolidates the logic from old ConsistencyAgent
-   */
-  static async runConsistencyCheck(
-    input: ConsistencyCheckInput
-  ): Promise<Result<ConsistencyCheckResult>> {
-    try {
+/**
+ * Run consistency check
+ * Consolidates the logic from old ConsistencyAgent
+ */
+export async function runConsistencyCheck(
+  input: ConsistencyCheckInput
+): Promise<Result<ConsistencyCheckResult>> {
+  try {
       const { projectId, episodeId, beatIds, checkTypes = [ConsistencyCheckKind.ALL] } = input
 
       // Fetch project with storyPlan (contains worldRules, etc.)
@@ -147,9 +158,8 @@ export class ConsistencyService {
       const severityOrder = CONSISTENCY_SEVERITY_ORDER
       allIssues.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])
 
-      const criticalCount = allIssues.filter(i => i.severity === ConsistencySeverity.Critical).length
-      const majorCount = allIssues.filter(i => i.severity === ConsistencySeverity.Major).length
-      const minorCount = allIssues.filter(i => i.severity === ConsistencySeverity.Minor).length
+      const { critical: criticalCount, major: majorCount, minor: minorCount } =
+        countIssuesBySeverity(allIssues)
 
       return {
         ok: true,
@@ -170,7 +180,6 @@ export class ConsistencyService {
         error: error instanceof Error ? error.message : ConsistencyServiceError.UnknownCheckError,
       }
     }
-  }
 }
 
 // ==========================================
@@ -223,14 +232,13 @@ function checkWorldRuleViolations(beatsToCheck: BeatRow[], storyPlan: unknown): 
 
 function checkSetupPayoffs(beatsToCheck: BeatRow[]): ContinuityIssue[] {
   const issues: ContinuityIssue[] = []
-  const beatsWithSetups = beatsToCheck.filter(b => {
+  const beatsWithSetups: typeof beatsToCheck = []
+  const beatsWithPayoffs: typeof beatsToCheck = []
+  for (const b of beatsToCheck) {
     const sp = setupsPayoffsFromJson(b.setupsPayoffs)
-    return Boolean(sp.setupId)
-  })
-  const beatsWithPayoffs = beatsToCheck.filter(b => {
-    const sp = setupsPayoffsFromJson(b.setupsPayoffs)
-    return Boolean(sp.payoffFor)
-  })
+    if (sp.setupId) beatsWithSetups.push(b)
+    if (sp.payoffFor) beatsWithPayoffs.push(b)
+  }
 
   beatsWithPayoffs.forEach(beat => {
     const payoffFor = setupsPayoffsFromJson(beat.setupsPayoffs).payoffFor

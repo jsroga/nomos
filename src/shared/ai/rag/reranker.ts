@@ -74,11 +74,22 @@ function rerankHeuristic(
     // never existed — it read undefined, poisoning every heuristic score
     // to NaN so the minScore filter dropped all results.
     let score = result.combinedScore // Start with original score
+    const firstLine = content.split('\n')[0]
+
+    // Single pass over query terms: term overlap, position, and title match.
+    let matchedCount = 0
+    let titleMatchCount = 0
+    let positionScore = 0
+    for (const term of queryTerms) {
+      if (content.includes(term)) matchedCount++
+      if (firstLine.includes(term)) titleMatchCount++
+      const pos = content.indexOf(term)
+      // Earlier position = higher score (inverse relationship)
+      if (pos !== -1) positionScore += Math.max(0, 1 - pos / content.length)
+    }
 
     // 1. Term overlap bonus
-    const matchedTerms = queryTerms.filter(term => content.includes(term))
-    const termOverlap = matchedTerms.length / queryTerms.length
-    score += termOverlap * 0.2
+    score += (matchedCount / queryTerms.length) * 0.2
 
     // 2. Exact phrase match bonus
     if (content.includes(queryLower)) {
@@ -86,14 +97,6 @@ function rerankHeuristic(
     }
 
     // 3. Position bonus (terms appearing earlier = better)
-    let positionScore = 0
-    for (const term of queryTerms) {
-      const pos = content.indexOf(term)
-      if (pos !== -1) {
-        // Earlier position = higher score (inverse relationship)
-        positionScore += Math.max(0, 1 - pos / content.length)
-      }
-    }
     score += (positionScore / queryTerms.length) * 0.1
 
     // 4. Document length penalty (very long docs might be less focused)
@@ -104,9 +107,7 @@ function rerankHeuristic(
     }
 
     // 5. Title/header match bonus
-    const firstLine = content.split('\n')[0]
-    const titleMatch = queryTerms.filter(term => firstLine.includes(term)).length
-    score += (titleMatch / queryTerms.length) * 0.1
+    score += (titleMatchCount / queryTerms.length) * 0.1
 
     return { ...result, score: Math.min(1, score) }
   })

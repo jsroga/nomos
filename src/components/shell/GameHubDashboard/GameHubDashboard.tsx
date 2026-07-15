@@ -41,27 +41,26 @@ interface GameHubDashboardProps {
 export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
   const { entities, loading } = useGameEntities({ projectId, autoFetch: true })
 
-  // Stats by entity type
-  const stats = {
-    characters: entities.filter(e => e.entityType === GameEntityKind.Character).length,
-    locations: entities.filter(e => e.entityType === GameEntityKind.Location).length,
-    mechanics: entities.filter(e => e.entityType === GameEntityKind.Mechanic).length,
-    factions: entities.filter(e => e.entityType === GameEntityKind.Faction).length,
-    items: entities.filter(e => e.entityType === GameEntityKind.Item).length,
-    quests: entities.filter(e => e.entityType === GameEntityKind.Quest).length,
+  // Stats by entity type + domain, tallied in a single pass over entities.
+  const stats = { characters: 0, locations: 0, mechanics: 0, factions: 0, items: 0, quests: 0 }
+  const domainStats: Record<string, number> = {
+    [AppModuleId.Storyteller]: 0,
+    [AppModuleId.LoopCreator]: 0,
+    [AppModuleId.InteriorDesigner]: 0,
+    [AppModuleId.WorldBuilding]: 0,
   }
-
-  // Stats by domain
-  const domainStats: Record<AppModuleId, number> = {
-    [AppModuleId.Storyteller]: entities.filter(e => e.usedInDomains.includes(AppModuleId.Storyteller))
-      .length,
-    [AppModuleId.LoopCreator]: entities.filter(e => e.usedInDomains.includes(AppModuleId.LoopCreator))
-      .length,
-    [AppModuleId.InteriorDesigner]: entities.filter(e =>
-      e.usedInDomains.includes(AppModuleId.InteriorDesigner)
-    ).length,
-    [AppModuleId.WorldBuilding]: entities.filter(e => e.usedInDomains.includes(AppModuleId.WorldBuilding))
-      .length,
+  for (const e of entities) {
+    switch (e.entityType) {
+      case GameEntityKind.Character: stats.characters++; break
+      case GameEntityKind.Location: stats.locations++; break
+      case GameEntityKind.Mechanic: stats.mechanics++; break
+      case GameEntityKind.Faction: stats.factions++; break
+      case GameEntityKind.Item: stats.items++; break
+      case GameEntityKind.Quest: stats.quests++; break
+    }
+    for (const domain of e.usedInDomains) {
+      if (domain in domainStats) domainStats[domain]++
+    }
   }
 
   const totalEntities = entities.length

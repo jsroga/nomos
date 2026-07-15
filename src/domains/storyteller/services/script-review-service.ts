@@ -19,9 +19,9 @@ import {
   continuityCritic,
   proseCritic,
   stakesCritic,
-} from '@/domains/storyteller/agents/critics'
-import { generateCriticReport } from '@/domains/storyteller/agents/critics/run-critic'
-import type { CriticReport } from '@/domains/storyteller/agents/critics'
+} from '@/domains/storyteller/ai/agents/critics'
+import { generateCriticReport } from '@/domains/storyteller/ai/agents/critics/run-critic'
+import type { CriticReport } from '@/domains/storyteller/ai/agents/critics'
 import { ConsistencySeverity } from '@/domains/storyteller/services/constants/consistency-issues'
 import {
   ReviewPersonaKey,
@@ -154,6 +154,13 @@ export async function reviewScript(request: ScriptReviewRequest): Promise<Script
     reviews.reduce((sum, r) => sum + r.score, 0) / reviews.length
   )
 
+  const criticalFindings: typeof allFindings = []
+  const otherFindings: typeof allFindings = []
+  for (const f of allFindings) {
+    if (f.severity === ConsistencySeverity.Critical) criticalFindings.push(f)
+    else otherFindings.push(f)
+  }
+
   return {
     overallScore,
     overallFeedback:
@@ -162,12 +169,8 @@ export async function reviewScript(request: ScriptReviewRequest): Promise<Script
         : `${allFindings.length} finding(s) across three critics — most severe first in each review.`,
     reviews,
     synthesis: {
-      mustFix: allFindings
-        .filter(f => f.severity === ConsistencySeverity.Critical)
-        .map(f => `"${f.quote}" — ${f.why}`),
-      suggestions: allFindings
-        .filter(f => f.severity !== ConsistencySeverity.Critical)
-        .map(f => `[${f.severity}] ${f.why}`),
+      mustFix: criticalFindings.map(f => `"${f.quote}" — ${f.why}`),
+      suggestions: otherFindings.map(f => `[${f.severity}] ${f.why}`),
       // Critics don't praise; standout detection was judge-era behavior.
       standoutMoments: [],
     },
