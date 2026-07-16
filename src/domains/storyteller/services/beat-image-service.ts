@@ -9,6 +9,8 @@ import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
 import { browserStorage } from '@/shared/data/browser-storage'
 import { waitForTriggerRun } from '@/shared/data/polling/wait-for-trigger-run'
+
+const UNKNOWN_STATUS = 'unknown'
 import {
   BEAT_IMAGE_DEFAULT_MODEL_ID,
   BEAT_IMAGE_ERROR_MISSING_API_KEY,
@@ -77,7 +79,7 @@ class BeatImageService {
       const runResult = await waitForTriggerRun(() => fetchBeatImageRunStatus(handleId), {
         intervalMs: POLLING_INTERVALS.FAST,
         onPoll: data => {
-          console.log(`...Status: ${data.status ?? 'unknown'}`)
+          console.log(`...Status: ${data.status ?? UNKNOWN_STATUS}`)
         },
         onFetchError: error => {
           console.warn(BEAT_IMAGE_LOG_POLLING_ERROR, error)

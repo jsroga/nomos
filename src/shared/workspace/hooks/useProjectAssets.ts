@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+
+const LOAD_ASSETS_ERROR = 'Failed to load project assets:'
 import {
   listProjectAssets,
   type WorkspaceAsset,
@@ -20,7 +22,7 @@ export function useProjectAssets(projectId: string | undefined) {
       const nextAssets = await listProjectAssets(projectId)
       setAssets(nextAssets)
     } catch (error) {
-      console.error('Failed to load project assets:', error)
+      console.error(LOAD_ASSETS_ERROR, error)
       setAssets([])
     } finally {
       setLoading(false)

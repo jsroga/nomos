@@ -24,6 +24,9 @@ import {
   MoodboardTriggerStatus,
 } from '@/domains/storyteller/services/constants/moodboard-generation-service'
 
+const MOODBOARD_UNKNOWN_STATUS = 'unknown'
+const MOODBOARD_METADATA_KEY = 'metadata'
+
 const DynamicLocalStorageKeys = {
   moodboardGen: (projectId: string, index?: number) =>
     `${MoodboardStorageKey.GenPrefix}${projectId}${index !== undefined ? `-${index}` : ''}`,
@@ -61,7 +64,7 @@ function formatMoodboardStatusDetail(
   status: string | null | undefined,
   metadata?: Record<string, unknown>
 ): string {
-  let statusDetail = `Status: ${status ?? 'unknown'}`
+  let statusDetail = `Status: ${status ?? MOODBOARD_UNKNOWN_STATUS}`
   const progressVal = typeof metadata?.progress === 'number' ? metadata.progress : 0
   const stage = readString(metadata?.stage)
   if (stage) {
@@ -150,7 +153,7 @@ export class MoodboardGenerationService {
         maxPolls: 120,
         onPoll: data => {
           const metadata =
-            'metadata' in data && data.metadata && typeof data.metadata === 'object'
+            MOODBOARD_METADATA_KEY in data && data.metadata && typeof data.metadata === 'object'
               ? recordFromJson(data.metadata)
               : undefined
           useGlobalStatusStore.getState().updateOperation(opId, {

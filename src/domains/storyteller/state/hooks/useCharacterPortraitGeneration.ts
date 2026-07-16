@@ -12,6 +12,9 @@ import {
 } from '../../core/io/character.api'
 import { isFailedTaskStatus, isSuccessTaskStatus } from '@/shared/data/constants/polling'
 
+const PROJECT_ID_REQUIRED_ERROR = 'projectId required'
+const CHARACTER_PORTRAIT_RUN_QUERY_KEY = 'character-portrait-run'
+
 export interface PortraitGenerationResult {
   imageUrl: string
 }
@@ -38,7 +41,7 @@ export function useCharacterPortraitGeneration({
 
   const startMutation = useMutation({
     mutationFn: async (input: { prompt: string; name: string; gender: string }) => {
-      if (!projectId) throw new Error('projectId required')
+      if (!projectId) throw new Error(PROJECT_ID_REQUIRED_ERROR)
 
       const apiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
 
@@ -61,7 +64,7 @@ export function useCharacterPortraitGeneration({
   })
 
   const statusQuery = useQuery({
-    queryKey: ['character-portrait-run', charId, activeRunId],
+    queryKey: [CHARACTER_PORTRAIT_RUN_QUERY_KEY, charId, activeRunId],
     queryFn: () => fetchCharacterPortraitRunStatus(activeRunId ?? ''),
     enabled: Boolean(activeRunId),
     refetchInterval: query => triggerRunRefetchInterval(query),
@@ -73,15 +76,15 @@ export function useCharacterPortraitGeneration({
     const currentGenId = generationIdsRef.current[charId] ?? 0
     if (currentGenId !== activeGenerationId) {
       onPollCancelled()
-      setActiveRunId(null)
+      queueMicrotask(() => setActiveRunId(null))
       return
     }
 
     const { status, imageUrl, error } = statusQuery.data
 
     if (status && isSuccessTaskStatus(status)) {
-      setActiveRunId(null)
-      queryClient.removeQueries({ queryKey: ['character-portrait-run', charId, activeRunId] })
+      queueMicrotask(() => setActiveRunId(null))
+      queryClient.removeQueries({ queryKey: [CHARACTER_PORTRAIT_RUN_QUERY_KEY, charId, activeRunId] })
       if (imageUrl) {
         onComplete({ imageUrl })
       }
@@ -89,7 +92,7 @@ export function useCharacterPortraitGeneration({
     }
 
     if ((status && isFailedTaskStatus(status)) || error != null) {
-      setActiveRunId(null)
+      queueMicrotask(() => setActiveRunId(null))
       onFailed(error)
     }
   }, [

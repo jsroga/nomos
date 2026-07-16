@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { toast } from 'sonner'
+import {
+  StoryPlan,
+  WorldRule,
+  Faction,
+  KeyCharacter,
+  StorySequence,
+  Item,
+  StoryEvent,
+} from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
+import { canEditBible } from '@/shared/auth/bible-permissions'
 import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
 import { recordFromJson } from '@/shared/data/json-guards'
 import {
@@ -19,22 +29,12 @@ import {
   BIBLE_CONTEXT_TOAST_UPDATED,
   BibleLockAction,
 } from '../constants/bible-context'
-import {
-  StoryPlan,
-  WorldRule,
-  Faction,
-  KeyCharacter,
-  StorySequence,
-  Item,
-  StoryEvent,
-} from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
-import { canEditBible } from '@/shared/auth/bible-permissions'
 
 // Pending action for a section
 export interface PendingAction {
   section: string
-  preview: unknown
-  action: unknown
+  preview: any
+  action: any
   onAccept: () => void
   onReject: () => void
   onReview?: () => void
@@ -54,7 +54,7 @@ interface BibleContextType {
   isLockLoading: boolean
   projectId: string
   onSendMessage?: (msg: string, section?: string) => void
-  getProviderConfig: () => { provider: string; apiKey?: string }
+  getProviderConfig: () => any
 
   // Section loading states
   loadingSections: Record<string, { loading: boolean; message?: string }>
@@ -119,7 +119,7 @@ export const BibleProvider: React.FC<{
   isReadOnly?: boolean
   projectId: string
   onSendMessage?: (msg: string, section?: string) => void
-  getProviderConfig: () => { provider: string; apiKey?: string }
+  getProviderConfig: () => any
   loadingSections?: Record<string, { loading: boolean; message?: string }>
   pendingActions?: Record<string, PendingAction>
   onSetPendingAction?: (section: string, action: PendingAction | null) => void

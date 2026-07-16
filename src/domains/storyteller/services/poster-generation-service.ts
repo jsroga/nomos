@@ -8,6 +8,9 @@ import {
 import { readTriggerRunOutputField } from '@/shared/data/polling/trigger-run-polling'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { patchStorytellerEpisode } from '@/domains/storyteller/core/io/storyteller.api'
+
+const POSTER_UNKNOWN_STATUS = 'unknown'
+const POSTER_IMAGE_URL_FIELD = 'imageUrl'
 import {
   fetchPosterRunStatus,
   triggerCombinedStoryboard,
@@ -170,13 +173,13 @@ export class PosterGenerationService {
         maxPolls: 120,
         onPoll: data => {
           useGlobalStatusStore.getState().updateOperation(opId, {
-            details: `${PosterOperationDetail.StatusPrefix}${data.status ?? 'unknown'}`,
+            details: `${PosterOperationDetail.StatusPrefix}${data.status ?? POSTER_UNKNOWN_STATUS}`,
           })
         },
       })
 
       if (result.status === PosterTriggerStatus.Completed) {
-        const imageUrl = readTriggerRunOutputField(result, 'imageUrl')
+        const imageUrl = readTriggerRunOutputField(result, POSTER_IMAGE_URL_FIELD)
         if (imageUrl) {
           await this.handleCompletion(runState, imageUrl, opId, onComplete)
           return
