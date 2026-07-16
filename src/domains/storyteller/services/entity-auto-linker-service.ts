@@ -13,6 +13,7 @@ import { namedRecordsFromJson, readString, recordArrayFromJson, recordFromJson }
 import {
   AutoLinkerEntityType,
   EntityAutoLinkerArticlePrefix,
+  EntityAutoLinkerIdPrefix,
   EntityAutoLinkerLog,
   EntityAutoLinkerRegexFlag,
   EntityAutoLinkerRegexReplacement,
@@ -25,6 +26,231 @@ interface EntityMatch {
   type: string
   startIndex: number
   endIndex: number
+}
+
+interface EntityRef {
+  id: string
+  type: string
+}
+
+const slugify = (value: string): string => value.toLowerCase().replace(/\s+/g, '-')
+
+/** Set the "The "-stripped variant of a name, optionally only when unclaimed. */
+function addArticleVariant(
+  map: Map<string, EntityRef>,
+  name: string,
+  ref: EntityRef,
+  opts: { guard?: boolean; minLen?: number } = {}
+): void {
+  if (!name.startsWith(EntityAutoLinkerArticlePrefix.The)) return
+  const withoutThe = name.slice(EntityAutoLinkerArticlePrefix.The.length)
+  const key = withoutThe.toLowerCase()
+  if (opts.minLen !== undefined && withoutThe.length <= opts.minLen) return
+  if (opts.guard && map.has(key)) return
+  map.set(key, ref)
+}
+
+function addFactions(map: Map<string, EntityRef>, storyPlan: Record<string, unknown>): void {
+  for (const faction of namedRecordsFromJson(storyPlan.factions)) {
+    const name = faction.name
+    const ref: EntityRef = {
+      id: `${EntityAutoLinkerIdPrefix.Faction}-${readString(faction.id)?.slice(0, 8) || slugify(name)}`,
+      type: AutoLinkerEntityType.Faction,
+    }
+    map.set(name.toLowerCase(), ref)
+    addArticleVariant(map, name, ref)
+  }
+}
+
+function addCharacters(
+  map: Map<string, EntityRef>,
+  cast: Record<string, unknown>[],
+  storyPlan: Record<string, unknown>
+): void {
+  const allCharacters = [...cast, ...recordArrayFromJson(storyPlan.keyCharacters)]
+  for (const rawChar of allCharacters) {
+    const char = recordFromJson(rawChar)
+    const charName = readString(char.name)
+    if (!charName) continue
+    const ref: EntityRef = {
+      id: `${EntityAutoLinkerIdPrefix.Character}-${readString(char.id)?.slice(0, 8) || slugify(charName)}`,
+      type: AutoLinkerEntityType.Character,
+    }
+    map.set(charName.toLowerCase(), ref)
+
+    const firstName = charName.split(' ')[0]
+    if (firstName && firstName.length > 2 && !map.has(firstName.toLowerCase())) {
+      map.set(firstName.toLowerCase(), ref)
+    }
+    addArticleVariant(map, charName, ref, { guard: true, minLen: 2 })
+  }
+}
+
+function addWorldRules(map: Map<string, EntityRef>, storyPlan: Record<string, unknown>): void {
+  for (const rawRule of recordArrayFromJson(storyPlan.worldRules)) {
+    const rule = recordFromJson(rawRule)
+    const ruleText = readString(rule.rule)
+    if (!ruleText) continue
+    const ruleId = `${EntityAutoLinkerIdPrefix.Rule}-${readString(rule.id)?.slice(0, 8) || slugify(ruleText).slice(0, 30)}`
+    const ruleKey = ruleText.split(' ').slice(0, 5).join(' ').toLowerCase()
+    map.set(ruleKey, { id: ruleId, type: AutoLinkerEntityType.Rule })
+  }
+}
+
+/** Named entities (items, events) that share the base-name + article-variant pattern. */
+function addNamedEntities(
+  map: Map<string, EntityRef>,
+  rows: Record<string, unknown>[],
+  idPrefix: string,
+  type: string
+): void {
+  for (const raw of rows) {
+    const row = recordFromJson(raw)
+    const name = readString(row.name)
+    if (!name) continue
+    const ref: EntityRef = {
+      id: `${idPrefix}-${readString(row.id)?.slice(0, 8) || slugify(name)}`,
+      type,
+    }
+    map.set(name.toLowerCase(), ref)
+    addArticleVariant(map, name, ref)
+  }
+}
+
+function addPlaces(
+  map: Map<string, EntityRef>,
+  storyPlan: Record<string, unknown>,
+  seriesBible: Record<string, unknown>
+): void {
+  const worldDesc =
+    readString(storyPlan.worldDescription) ?? readString(seriesBible.worldDescription) ?? ''
+  if (!worldDesc) return
+
+  const placePattern = /\b(The\s+)?([A-Z][a-z]+(?:\s+(?:of|the)\s+[A-Z][a-z]+|\s+[A-Z][a-z]+)*)\b/g
+  const stopWords = [
+    EntityAutoLinkerArticlePrefix.TheCapital,
+    EntityAutoLinkerStopWord.A,
+    EntityAutoLinkerStopWord.An,
+    EntityAutoLinkerStopWord.In,
+    EntityAutoLinkerStopWord.On,
+    EntityAutoLinkerStopWord.At,
+  ]
+  const potentialPlaces = new Set<string>()
+  let match
+  while ((match = placePattern.exec(worldDesc)) !== null) {
+    const placeName = match[0].trim()
+    if (placeName.length > 5 && !stopWords.some(word => word === placeName)) {
+      potentialPlaces.add(placeName)
+    }
+  }
+
+  for (const placeName of Array.from(potentialPlaces).slice(0, 20)) {
+    const lowerName = placeName.toLowerCase()
+    if (map.has(lowerName)) continue
+    const ref: EntityRef = {
+      id: `${EntityAutoLinkerIdPrefix.Place}-${slugify(placeName)}`,
+      type: AutoLinkerEntityType.Place,
+    }
+    map.set(lowerName, ref)
+    addArticleVariant(map, placeName, ref, { guard: true })
+  }
+}
+
+function buildEntityMap(
+  storyPlan: Record<string, unknown>,
+  seriesBible: Record<string, unknown>,
+  cast: Record<string, unknown>[]
+): Map<string, EntityRef> {
+  const entityMap = new Map<string, EntityRef>()
+  addFactions(entityMap, storyPlan)
+  addCharacters(entityMap, cast, storyPlan)
+  addWorldRules(entityMap, storyPlan)
+  addNamedEntities(
+    entityMap,
+    recordArrayFromJson(storyPlan.items),
+    EntityAutoLinkerIdPrefix.Item,
+    AutoLinkerEntityType.Item
+  )
+  addNamedEntities(
+    entityMap,
+    recordArrayFromJson(storyPlan.events),
+    EntityAutoLinkerIdPrefix.Event,
+    AutoLinkerEntityType.Event
+  )
+  addPlaces(entityMap, storyPlan, seriesBible)
+  return entityMap
+}
+
+/** Find plain-text occurrences of known entity names not already inside a reference. */
+function collectEntityMatches(text: string, entityMap: Map<string, EntityRef>): EntityMatch[] {
+  const existingRefRanges: Array<{ start: number; end: number }> = []
+  const existingRefPattern = /\[([^\]]+)\]\[([^\]\s]+)\]/g
+  let existingMatch
+  while ((existingMatch = existingRefPattern.exec(text)) !== null) {
+    existingRefRanges.push({
+      start: existingMatch.index,
+      end: existingMatch.index + existingMatch[0].length,
+    })
+  }
+  const isInsideExistingRef = (start: number, end: number) =>
+    existingRefRanges.some(r => start >= r.start && end <= r.end)
+
+  const matches: EntityMatch[] = []
+  // Longest names first so "The Mood Wardens" wins over "Mood Wardens".
+  const sortedNames = Array.from(entityMap.keys()).sort((a, b) => b.length - a.length)
+
+  for (const entityName of sortedNames) {
+    const entity = entityMap.get(entityName)
+    if (!entity) continue
+    const escapedName = entityName.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      EntityAutoLinkerRegexReplacement.EscapedMatch
+    )
+    const pattern = new RegExp(
+      `(?<!\\[)\\b(${escapedName})\\b(?!\\]\\[)`,
+      EntityAutoLinkerRegexFlag.GlobalCaseInsensitive
+    )
+    let match
+    while ((match = pattern.exec(text)) !== null) {
+      if (isInsideExistingRef(match.index, match.index + match[1].length)) continue
+      matches.push({
+        name: match[1],
+        id: entity.id,
+        type: entity.type,
+        startIndex: match.index,
+        endIndex: match.index + match[1].length,
+      })
+    }
+  }
+  return matches
+}
+
+/** Drop overlaps and rewrite matched names as [name][id] references (end-to-start). */
+function linkMatches(text: string, matches: EntityMatch[]): string {
+  // Descending start index so replacements don't shift later indices.
+  matches.sort((a, b) => b.startIndex - a.startIndex)
+
+  const nonOverlapping: EntityMatch[] = []
+  for (const match of matches) {
+    const overlaps = nonOverlapping.some(
+      existing =>
+        (match.startIndex >= existing.startIndex && match.startIndex < existing.endIndex) ||
+        (match.endIndex > existing.startIndex && match.endIndex <= existing.endIndex)
+    )
+    if (!overlaps) nonOverlapping.push(match)
+  }
+
+  let result = text
+  for (const match of nonOverlapping) {
+    const before = result.slice(0, match.startIndex)
+    const after = result.slice(match.endIndex)
+    result = `${before}[${match.name}][${match.id}]${after}`
+  }
+
+  if (nonOverlapping.length > 0) {
+    console.log(`🔗 [AutoLinker] Linked ${nonOverlapping.length} entities in generated text`)
+  }
+  return result
 }
 
 /**
@@ -69,232 +295,15 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
     const projectCharacters = await db.query.characters.findMany({
       where: eq(characters.projectId, projectId),
     })
+    const cast = (projectCharacters || []).map(recordFromJson)
 
-    const cast = projectCharacters || []
+    const entityMap = buildEntityMap(storyPlan, seriesBible, cast)
+    if (entityMap.size === 0) return text // No entities to link
 
-    // Build entity lookup map: name -> {id, type}
-    const entityMap = new Map<string, { id: string; type: string }>()
+    const matches = collectEntityMatches(text, entityMap)
+    if (matches.length === 0) return text // No matches found
 
-    // Add factions
-    const factions = namedRecordsFromJson(storyPlan.factions)
-    for (const faction of factions) {
-      const name = faction.name
-      const factionId = `faction-${readString(faction.id)?.slice(0, 8) || name.toLowerCase().replace(/\s+/g, '-')}`
-      entityMap.set(name.toLowerCase(), { id: factionId, type: AutoLinkerEntityType.Faction })
-
-      if (name.startsWith(EntityAutoLinkerArticlePrefix.The)) {
-        const withoutThe = name.slice(EntityAutoLinkerArticlePrefix.The.length)
-        entityMap.set(withoutThe.toLowerCase(), { id: factionId, type: AutoLinkerEntityType.Faction })
-      }
-    }
-
-    const keyCharacters = recordArrayFromJson(storyPlan.keyCharacters)
-    const allCharacters = [...cast, ...keyCharacters]
-
-    for (const rawChar of allCharacters) {
-      const char = recordFromJson(rawChar)
-      const charName = readString(char.name)
-      if (charName) {
-        const charId = `char-${readString(char.id)?.slice(0, 8) || charName.toLowerCase().replace(/\s+/g, '-')}`
-        entityMap.set(charName.toLowerCase(), { id: charId, type: AutoLinkerEntityType.Character })
-
-        const firstName = charName.split(' ')[0]
-        if (firstName && firstName.length > 2 && !entityMap.has(firstName.toLowerCase())) {
-          entityMap.set(firstName.toLowerCase(), { id: charId, type: AutoLinkerEntityType.Character })
-        }
-
-        if (charName.startsWith(EntityAutoLinkerArticlePrefix.The)) {
-          const withoutThe = charName.slice(EntityAutoLinkerArticlePrefix.The.length)
-          if (withoutThe.length > 2 && !entityMap.has(withoutThe.toLowerCase())) {
-            entityMap.set(withoutThe.toLowerCase(), { id: charId, type: AutoLinkerEntityType.Character })
-          }
-        }
-      }
-    }
-
-    const worldRules = recordArrayFromJson(storyPlan.worldRules)
-    for (const rawRule of worldRules) {
-      const rule = recordFromJson(rawRule)
-      const ruleText = readString(rule.rule)
-      if (ruleText) {
-        const ruleId = `rule-${readString(rule.id)?.slice(0, 8) || ruleText.toLowerCase().replace(/\s+/g, '-').slice(0, 30)}`
-        const ruleKey = ruleText.split(' ').slice(0, 5).join(' ').toLowerCase()
-        entityMap.set(ruleKey, { id: ruleId, type: AutoLinkerEntityType.Rule })
-      }
-    }
-
-    const items = recordArrayFromJson(storyPlan.items)
-    for (const rawItem of items) {
-      const item = recordFromJson(rawItem)
-      const itemName = readString(item.name)
-      if (itemName) {
-        const itemId = `item-${readString(item.id)?.slice(0, 8) || itemName.toLowerCase().replace(/\s+/g, '-')}`
-        entityMap.set(itemName.toLowerCase(), { id: itemId, type: AutoLinkerEntityType.Item })
-
-        if (itemName.startsWith(EntityAutoLinkerArticlePrefix.The)) {
-          const withoutThe = itemName.slice(EntityAutoLinkerArticlePrefix.The.length)
-          entityMap.set(withoutThe.toLowerCase(), { id: itemId, type: AutoLinkerEntityType.Item })
-        }
-      }
-    }
-
-    const events = recordArrayFromJson(storyPlan.events)
-    for (const rawEvent of events) {
-      const event = recordFromJson(rawEvent)
-      const eventName = readString(event.name)
-      if (eventName) {
-        const eventId = `event-${readString(event.id)?.slice(0, 8) || eventName.toLowerCase().replace(/\s+/g, '-')}`
-        entityMap.set(eventName.toLowerCase(), { id: eventId, type: AutoLinkerEntityType.Event })
-
-        if (eventName.startsWith(EntityAutoLinkerArticlePrefix.The)) {
-          const withoutThe = eventName.slice(EntityAutoLinkerArticlePrefix.The.length)
-          entityMap.set(withoutThe.toLowerCase(), { id: eventId, type: AutoLinkerEntityType.Event })
-        }
-      }
-    }
-
-    const worldDesc =
-      readString(storyPlan.worldDescription) ?? readString(seriesBible.worldDescription) ?? ''
-    if (worldDesc) {
-      // Match capitalized phrases that might be place names
-      // Pattern: "The [Capitalized Word(s)]" or standalone "Capitalized Word(s)"
-      const placePattern =
-        /\b(The\s+)?([A-Z][a-z]+(?:\s+(?:of|the)\s+[A-Z][a-z]+|\s+[A-Z][a-z]+)*)\b/g
-      let match
-      const potentialPlaces = new Set<string>()
-
-      while ((match = placePattern.exec(worldDesc)) !== null) {
-        const placeName = match[0].trim()
-        // Filter out common words and short phrases
-        if (
-          placeName.length > 5 &&
-          ![
-            EntityAutoLinkerArticlePrefix.TheCapital,
-            EntityAutoLinkerStopWord.A,
-            EntityAutoLinkerStopWord.An,
-            EntityAutoLinkerStopWord.In,
-            EntityAutoLinkerStopWord.On,
-            EntityAutoLinkerStopWord.At,
-          ].some(word => word === placeName)
-        ) {
-          potentialPlaces.add(placeName)
-        }
-      }
-
-      // Add potential places to entity map (only if not already added)
-      for (const placeName of Array.from(potentialPlaces).slice(0, 20)) {
-        // Limit to 20 places
-        const lowerName = placeName.toLowerCase()
-        if (!entityMap.has(lowerName)) {
-          const placeId = `place-${placeName.toLowerCase().replace(/\s+/g, '-')}`
-          entityMap.set(lowerName, { id: placeId, type: AutoLinkerEntityType.Place })
-
-          // Also add variant without "The"
-          if (placeName.startsWith(EntityAutoLinkerArticlePrefix.The)) {
-            const withoutThe = placeName.slice(EntityAutoLinkerArticlePrefix.The.length)
-            if (!entityMap.has(withoutThe.toLowerCase())) {
-              entityMap.set(withoutThe.toLowerCase(), { id: placeId, type: AutoLinkerEntityType.Place })
-            }
-          }
-        }
-      }
-    }
-
-    if (entityMap.size === 0) {
-      // console.log('[AutoLinker] No entities found in project to link')
-      return text // No entities to link
-    }
-
-    // console.log(`[AutoLinker] Found ${entityMap.size} entities to potentially link`)
-
-    // Find ranges of existing entity references to avoid re-linking inside them
-    const existingRefRanges: Array<{ start: number; end: number }> = []
-    const existingRefPattern = /\[([^\]]+)\]\[([^\]\s]+)\]/g
-    let existingMatch
-    while ((existingMatch = existingRefPattern.exec(text)) !== null) {
-      existingRefRanges.push({
-        start: existingMatch.index,
-        end: existingMatch.index + existingMatch[0].length,
-      })
-    }
-
-    const isInsideExistingRef = (start: number, end: number) =>
-      existingRefRanges.some(r => start >= r.start && end <= r.end)
-
-    // Find all entity name matches in text
-    const matches: EntityMatch[] = []
-
-    // Sort entity names by length (longest first) to match "The Mood Wardens" before "Mood Wardens"
-    const sortedNames = Array.from(entityMap.keys()).sort((a, b) => b.length - a.length)
-
-    for (const entityName of sortedNames) {
-      const entity = entityMap.get(entityName)
-      if (!entity) continue
-
-      // Create case-insensitive regex that matches whole words
-      // Look for entity name NOT already in reference format
-      const escapedName = entityName.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        EntityAutoLinkerRegexReplacement.EscapedMatch
-      )
-      const pattern = new RegExp(
-        `(?<!\\[)\\b(${escapedName})\\b(?!\\]\\[)`,
-        EntityAutoLinkerRegexFlag.GlobalCaseInsensitive
-      )
-
-      let match
-      while ((match = pattern.exec(text)) !== null) {
-        // Skip matches that fall inside existing entity references
-        if (isInsideExistingRef(match.index, match.index + match[1].length)) continue
-
-        matches.push({
-          name: match[1], // Use actual matched text (preserves casing)
-          id: entity.id,
-          type: entity.type,
-          startIndex: match.index,
-          endIndex: match.index + match[1].length,
-        })
-      }
-    }
-
-    // console.log(`[AutoLinker] Found ${matches.length} total matches before overlap removal`)
-
-    if (matches.length === 0) {
-      return text // No matches found
-    }
-
-    // Sort matches by start index (descending) so we can replace from end to start
-    // This prevents index shifting issues
-    matches.sort((a, b) => b.startIndex - a.startIndex)
-
-    // Remove overlapping matches (keep the longest/first one)
-    const nonOverlapping: EntityMatch[] = []
-    for (const match of matches) {
-      const overlaps = nonOverlapping.some(
-        existing =>
-          (match.startIndex >= existing.startIndex && match.startIndex < existing.endIndex) ||
-          (match.endIndex > existing.startIndex && match.endIndex <= existing.endIndex)
-      )
-      if (!overlaps) {
-        nonOverlapping.push(match)
-      }
-    }
-
-    // Apply replacements from end to start
-    let result = text
-    for (const match of nonOverlapping) {
-      const before = result.slice(0, match.startIndex)
-      const after = result.slice(match.endIndex)
-      const replacement = `[${match.name}][${match.id}]`
-      result = before + replacement + after
-    }
-
-    const linkedCount = nonOverlapping.length
-    if (linkedCount > 0) {
-      console.log(`🔗 [AutoLinker] Linked ${linkedCount} entities in generated text`)
-    }
-
-    return result
+    return linkMatches(text, matches)
   } catch (error) {
     console.warn(EntityAutoLinkerLog.FailedAutoLink, error)
     return text // Return original text on error

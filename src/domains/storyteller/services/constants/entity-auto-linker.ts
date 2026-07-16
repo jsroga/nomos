@@ -9,6 +9,16 @@ export enum EntityAutoLinkerArticlePrefix {
   TheCapital = 'The',
 }
 
+/** Prefixes for the synthetic entity ids the auto-linker generates. */
+export enum EntityAutoLinkerIdPrefix {
+  Faction = 'faction',
+  Character = 'char',
+  Rule = 'rule',
+  Item = 'item',
+  Event = 'event',
+  Place = 'place',
+}
+
 export enum EntityAutoLinkerStopWord {
   A = 'A',
   An = 'An',
