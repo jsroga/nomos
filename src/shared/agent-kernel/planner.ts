@@ -1,7 +1,7 @@
 import { Plan, PlanItem, PlanItemStatusSchema } from './schemas'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { withSpan } from '../observability'
+import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import {
   PLANNER_ERROR_ACTION_UNSUPPORTED,
   PLANNER_ERROR_GOAL_REQUIRED,
@@ -52,7 +52,7 @@ export const createPlannerTool = (persistence: PlanPersistence) => {
       feedback: z.string().optional().describe(PLANNER_FIELD_FEEDBACK),
     }),
     execute: async input => {
-      return withSpan(
+      return withMastraSpan(
         crypto.randomUUID(),
         PLANNER_SPAN_NAME,
         async _span => {

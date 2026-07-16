@@ -1,5 +1,5 @@
 import { Agent } from '@mastra/core/agent'
-import { withSpan } from '../observability'
+import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import { promptRepository } from './prompts/repository'
 import { registerCorePrompts } from './prompts/registry'
 import { getErrorMessage } from '@/shared/errors/error-utils'
@@ -88,7 +88,7 @@ export class ExecutiveAgent {
   }
 
   async runLoop(goal: string, context: string): Promise<CoPilotInteraction> {
-    return withSpan(
+    return withMastraSpan(
       crypto.randomUUID(),
       ExecutiveSpanName.RunLoop,
       async _span => {
@@ -125,7 +125,7 @@ export class ExecutiveAgent {
   }
 
   async executeStep(stepId: string, toolName: string, args: Record<string, unknown>) {
-    return withSpan(
+    return withMastraSpan(
       crypto.randomUUID(),
       ExecutiveSpanName.ExecuteStep,
       async _span => {

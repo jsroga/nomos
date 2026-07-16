@@ -18,12 +18,25 @@ import {
 } from '@mastra/core/observability'
 import { getMastraInstance } from '@/shared/agent-kernel/mastra-instance'
 import { toError } from '@/shared/errors/error-utils'
-import { sanitizeInput, sanitizeOutput, type TraceSpan } from './observability'
+import { sanitizeInput, sanitizeOutput } from './observability'
 
 interface WithSpanMetadata {
   userId?: string
   sessionId?: string
   [key: string]: unknown
+}
+
+/**
+ * Handle passed to a {@link withMastraSpan} callback.
+ *
+ * `spanId` is the REAL Mastra span id — pass it as `tracingOptions.parentSpanId`
+ * on an inner `agent.generate()/stream()` to nest that run explicitly under this
+ * span (belt-and-suspenders alongside the ambient tracing context). Undefined
+ * only when tracing is disabled.
+ */
+export interface MastraSpanHandle {
+  spanId?: string
+  end: () => void
 }
 
 /**
@@ -33,7 +46,7 @@ interface WithSpanMetadata {
 export async function withMastraSpan<T>(
   traceId: string,
   name: string,
-  fn: (span: TraceSpan) => Promise<T>,
+  fn: (span: MastraSpanHandle) => Promise<T>,
   input?: unknown,
   metadata?: WithSpanMetadata
 ): Promise<T> {
@@ -50,11 +63,12 @@ export async function withMastraSpan<T>(
     return fn({ end: () => {} })
   }
 
+  const handle: MastraSpanHandle = { spanId: span.id, end: () => span.end() }
   return executeWithContext({
     span,
     fn: async () => {
       try {
-        const result = await fn({ end: () => span.end() })
+        const result = await fn(handle)
         span.end({ output: sanitizeOutput(result) })
         return result
       } catch (error) {

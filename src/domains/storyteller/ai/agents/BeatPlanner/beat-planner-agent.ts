@@ -16,7 +16,7 @@ import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
 import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/ai/tools'
 import { resolveRoleModel, resolveStorytellerModel } from '@/domains/storyteller/config/constants/model-config'
 import { buildBeatPlannerPrompt } from '@/domains/storyteller/ai/prompts/beat-planner-prompt'
-import { withSpan } from '@/shared/observability/observability'
+import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import {
   AgentModelRole,
   BeatPlannerAgentId,
@@ -113,12 +113,11 @@ export class BeatPlannerAgent {
     traceId?: string
   ): Promise<BeatPlan> {
     const id = traceId || this.generateHexId(32)
-    const spanId = this.generateHexId(16)
 
-    return withSpan(
+    return withMastraSpan(
       id,
       BeatPlannerAgentSpan.PlanNextBeat,
-      async _span => {
+      async span => {
         const prompt = `Plan the next beat for episode ${context.episodeId}.
 
 ${context.brief ? `Brief (what this beat must accomplish):\n${context.brief}\n` : ''}
@@ -135,7 +134,7 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
           structuredOutput: { schema: BeatPlanSchema },
           tracingOptions: {
             traceId: id,
-            parentSpanId: spanId,
+            ...(span.spanId ? { parentSpanId: span.spanId } : {}),
           },
         })
 
@@ -145,31 +144,30 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
         }
         return plan.data
       },
-      { episodeId: context.episodeId, characters: context.characters, id: spanId }
+      { episodeId: context.episodeId, characters: context.characters }
     )
   }
 
   /** Run the agent with a free-form planning request. */
   async run(goal: string, context: string, traceId?: string): Promise<string> {
     const id = traceId || this.generateHexId(32)
-    const spanId = this.generateHexId(16)
 
-    return withSpan(
+    return withMastraSpan(
       id,
       BeatPlannerAgentSpan.Run,
-      async _span => {
+      async span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
         const response = await this.agent.generate(prompt, {
           toolChoice: AgentModelRole.Auto,
           maxSteps: 5,
           tracingOptions: {
             traceId: id,
-            parentSpanId: spanId,
+            ...(span.spanId ? { parentSpanId: span.spanId } : {}),
           },
         })
         return response.text
       },
-      { goal, context, id: spanId }
+      { goal, context }
     )
   }
 

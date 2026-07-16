@@ -23,7 +23,7 @@ import {
   STORYTELLER_AUTHOR_MODEL,
   requestContextString,
 } from '@/domains/storyteller/ai/request-context'
-import { withSpan } from '@/shared/observability/observability'
+import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import type { BeatPlan } from '@/domains/storyteller/ai/agents/BeatPlanner/beat-plan-schema'
 import {
   AgentModelRole,
@@ -124,24 +124,24 @@ export class GrrmAuthorAgent {
     options?: GrrmAuthorRunOptions
   ): Promise<string> {
     const id = traceId || this.generateHexId(32)
-    const spanId = this.generateHexId(16)
 
-    return withSpan(
+    return withMastraSpan(
       id,
       GrrmAuthorAgentSpan.Run,
-      async _span => {
+      async span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
+        // Nest the generate span under this operation span explicitly (real span id).
         const response = await this.agent.generate(prompt, {
           toolChoice: options?.toolChoice || AgentModelRole.Auto,
           maxSteps: options?.maxSteps ?? 10,
           tracingOptions: {
             traceId: id,
-            parentSpanId: spanId,
+            ...(span.spanId ? { parentSpanId: span.spanId } : {}),
           },
         })
         return response.text
       },
-      { goal, context, id: spanId }
+      { goal, context }
     )
   }
 
@@ -157,9 +157,8 @@ export class GrrmAuthorAgent {
     options?: GrrmAuthorRunOptions
   ): Promise<string> {
     const id = traceId || this.generateHexId(32)
-    const spanId = this.generateHexId(16)
 
-    return withSpan(
+    return withMastraSpan(
       id,
       GrrmAuthorAgentSpan.GenerateBeat,
       async _span => {
@@ -176,7 +175,7 @@ Follow the Script Beat Format (§ GrrmSystemPrompt):
 
         return this.run(GrrmAuthorCopy.GenerateScriptBeat, prompt, id, options)
       },
-      { episodeId: context.episodeId, characters: context.characters, id: spanId }
+      { episodeId: context.episodeId, characters: context.characters }
     )
   }
 

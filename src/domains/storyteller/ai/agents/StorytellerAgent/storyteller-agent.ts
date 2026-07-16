@@ -145,14 +145,16 @@ export class StorytellerAgent {
     return withMastraSpan(
       id,
       StorytellerAgentSpan.Run,
-      async _span => {
+      async span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
-        // No parentSpanId: the generate span nests under the withMastraSpan
-        // span via the active tracing context.
+        // Nest the generate span under this operation span explicitly (real span id).
         const response = await this.agent.generate(prompt, {
           toolChoice,
           maxSteps: AGENT_RUNTIME_DEFAULTS.maxSteps,
-          tracingOptions: { traceId: id },
+          tracingOptions: {
+            traceId: id,
+            ...(span.spanId ? { parentSpanId: span.spanId } : {}),
+          },
         })
         return response.text
       },

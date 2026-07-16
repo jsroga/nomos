@@ -1,14 +1,7 @@
-/**
- * GameDesignAgent - Mastra Implementation
- *
- * Core agent for game loop design, following the same pattern as StorytellerAgent.
- * Uses specialized game design tools and prompts.
- */
-
 import { Agent } from '@mastra/core/agent'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { registerCorePrompts, registerGameDesignPrompts } from '@/shared/agent-kernel/prompts/registry'
-import { withSpan } from '@/shared/observability/observability'
+import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import { v4 as uuidv4 } from 'uuid'
 
 import {
@@ -19,9 +12,29 @@ import {
 import { invokeGameDesignTool } from '../constants/invoke-game-design-tool'
 import {
   GameDesignResponseType,
-  parseGameDesignResponseRecord,
   type GameDesignResponse,
 } from '../constants/game-design-response'
+import {
+  GameDesignAgentCopy,
+  GameDesignAgentPromptCopy,
+  NewlineSeparator,
+  ListSeparator,
+} from '../constants/agent-copy'
+import {
+  GameDesignAgentId,
+  GameDesignAgentLabel,
+  GameDesignAgentSpan,
+  GameDesignDefaultModel,
+  GameDesignModelSeparator,
+  GameDesignStreamToolChoice,
+  GameDesignSystemPromptId,
+} from '../constants/agent-identity'
+import {
+  buildDesignLoopUserMessage,
+  buildGameDesignContextString,
+  formatRecentConversation,
+  parseGameDesignAgentResponse,
+} from './game-design-agent-helpers'
 import { GameDesignMemory } from './memory'
 import { GameLoop, GameMechanic } from '../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
@@ -42,11 +55,8 @@ export interface GameDesignContext {
   targetAudience?: 'casual' | 'midcore' | 'hardcore'
   theme?: string
   userMessage?: string
-  /** High-level game concept from the user; critical for coherent suggestions */
   gameDescription?: string
-  /** Platform (e.g. PC, mobile, console) */
   platform?: string
-  /** Recent conversation turns so the agent can stay on topic and avoid repeating */
   recentMessages?: { role: 'user' | 'assistant'; content: string }[]
 }
 
@@ -64,12 +74,14 @@ export class GameDesignAgent {
     }, {})
     this.memory = config.memory
 
-    // Use string model identifier for Mastra AI SDK v5 compatibility
-    const modelString = (config.modelName || 'openai:gpt-4o').replace(':', '/')
+    const modelString = (config.modelName || GameDesignDefaultModel.OpenAiGpt4o).replace(
+      GameDesignModelSeparator.Colon,
+      GameDesignModelSeparator.Slash
+    )
 
     this.agent = new Agent({
-      id: 'game-design-agent',
-      name: 'Game Design Agent',
+      id: GameDesignAgentId.GameDesignAgent,
+      name: GameDesignAgentLabel.GameDesignAgent,
       instructions,
       model: modelString,
       tools: this.toolsMap,
@@ -80,12 +92,10 @@ export class GameDesignAgent {
     registerCorePrompts()
     registerGameDesignPrompts()
 
-    // Get the game design system prompt
     let instructions: string
     try {
-      instructions = await promptRepository.getPrompt('game-design-system')
+      instructions = await promptRepository.getPrompt(GameDesignSystemPromptId.GameDesignSystem)
     } catch {
-      // Fallback prompt if not registered
       instructions = `You are a senior game designer combining the philosophies of:
 - **Klei** (Don't Starve, ONI): Elegant systems with emergent complexity
 - **CD Projekt Red** (Witcher, Cyberpunk): Deep narrative with moral grey areas
@@ -117,17 +127,14 @@ The ultimate test: "Would players tell stories about what happened to them?"`
     return new GameDesignAgent(config, instructions)
   }
 
-  /**
-   * Run the agent with a simple goal and context
-   */
   async run(goal: string, context: string, traceId?: string): Promise<string> {
     const id = traceId || uuidv4()
 
-    return withSpan(
+    return withMastraSpan(
       id,
-      'GameDesignAgent.run',
+      GameDesignAgentSpan.Run,
       async () => {
-        const prompt = `Goal: ${goal}\n\nContext:\n${context}`
+        const prompt = `${GameDesignAgentPromptCopy.GoalPrefix}${goal}${NewlineSeparator.Double}${GameDesignAgentPromptCopy.ContextPrefix}${context}`
         const response = await this.agent.generate(prompt)
         return response.text
       },
@@ -135,65 +142,50 @@ The ultimate test: "Would players tell stories about what happened to them?"`
     )
   }
 
-  /**
-   * Run with structured context and return CoPilot-compatible response
-   */
   async runWithContext(context: GameDesignContext): Promise<GameDesignResponse> {
     const id = uuidv4()
 
-    return withSpan(
+    return withMastraSpan(
       id,
-      'GameDesignAgent.runWithContext',
+      GameDesignAgentSpan.RunWithContext,
       async () => {
         try {
-          // Build rich context
-          let enrichedContext = this.buildContextString(context)
+          let enrichedContext = buildGameDesignContextString(context)
 
-          // If memory is available, retrieve relevant patterns
           if (this.memory) {
             try {
               const relevantPatterns = await this.memory.search(
-                context.userMessage || context.genre || 'game loop design',
+                context.userMessage || context.genre || GameDesignAgentCopy.MemorySearchDefault,
                 5
               )
               if (relevantPatterns.length > 0) {
-                enrichedContext += '\n\n## Relevant Game Design Patterns\n'
+                enrichedContext += GameDesignAgentCopy.RelevantPatternsHeader
                 enrichedContext += relevantPatterns
-                  .map(p => `- ${p.title}: ${p.description}`)
-                  .join('\n')
+                  .map(pattern => `${GameDesignAgentCopy.PatternBulletPrefix}${pattern.title}: ${pattern.description}`)
+                  .join(NewlineSeparator.Single)
               }
-            } catch (e) {
-              // Memory search failed, continue without patterns
-              console.warn('Memory search failed:', e)
+            } catch (error: unknown) {
+              console.warn(GameDesignAgentCopy.MemorySearchFailed, error)
             }
           }
 
-          const goal = context.userMessage || 'Analyze and improve the game loop design'
+          const goal = context.userMessage || GameDesignAgentCopy.DefaultGoal
           let prompt = ''
 
           if (context.recentMessages?.length) {
-            const convo = context.recentMessages
-              .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
-              .join('\n\n')
-            prompt += `## Recent conversation\n${convo}\n\n`
+            prompt += `${GameDesignAgentCopy.RecentConversationHeader}${NewlineSeparator.Single}${formatRecentConversation(context.recentMessages)}${NewlineSeparator.Double}`
           }
 
-          prompt += `Goal (current message): ${goal}\n\nContext:\n${enrichedContext}
-
-Please analyze and respond with your thoughts and recommendations.
-If you use any tools, describe what you learned from them.`
+          prompt += `${GameDesignAgentPromptCopy.GoalCurrentPrefix}${goal}${NewlineSeparator.Double}${GameDesignAgentPromptCopy.ContextPrefix}${enrichedContext}${NewlineSeparator.Double}${GameDesignAgentPromptCopy.AnalyzeFooter}`
 
           const response = await this.agent.generate(prompt)
-          const text = response.text
-
-          // Parse response into structured format
-          return this.parseResponse(text)
-        } catch (e: unknown) {
-          console.error('GameDesignAgent.runWithContext failed:', e)
+          return parseGameDesignAgentResponse(response.text)
+        } catch (error: unknown) {
+          console.error(GameDesignAgentCopy.RunWithContextFailed, error)
           return {
             type: GameDesignResponseType.Finish,
-            payload: { result: `Error: ${getErrorMessage(e)}` },
-            thought: 'An error occurred during processing.',
+            payload: { result: `Error: ${getErrorMessage(error)}` },
+            thought: GameDesignAgentCopy.ProcessingError,
           }
         }
       },
@@ -201,9 +193,6 @@ If you use any tools, describe what you learned from them.`
     )
   }
 
-  /**
-   * Design a new game loop
-   */
   async designLoop(input: {
     genre: string
     targetAudience: 'casual' | 'midcore' | 'hardcore'
@@ -216,15 +205,12 @@ If you use any tools, describe what you learned from them.`
       genre: input.genre,
       targetAudience: input.targetAudience,
       theme: input.theme,
-      userMessage: `Design a ${input.loopType || 'core'} game loop for a ${input.genre} game targeting ${input.targetAudience} players.${input.theme ? ` Theme: ${input.theme}.` : ''}${input.referenceGames?.length ? ` Reference games: ${input.referenceGames.join(', ')}.` : ''}`,
+      userMessage: buildDesignLoopUserMessage(input),
     }
 
     return this.runWithContext(context)
   }
 
-  /**
-   * Analyze an existing loop
-   */
   async analyzeLoop(loop: GameLoop, mechanics: GameMechanic[]): Promise<GameDesignResponse> {
     const context: GameDesignContext = {
       projectId: loop.projectId,
@@ -236,124 +222,25 @@ If you use any tools, describe what you learned from them.`
     return this.runWithContext(context)
   }
 
-  /**
-   * Stream response from the agent (Mastra pattern, same as StorytellerAgent).
-   * Options: memory (resource, thread), maxSteps, toolChoice, etc.
-   */
   async stream(
     prompt: string,
     options?: { toolChoice?: 'auto' | 'none' | 'required'; maxSteps?: number }
   ) {
     return this.agent.stream(prompt, {
-      toolChoice: options?.toolChoice ?? 'auto',
+      toolChoice: options?.toolChoice ?? GameDesignStreamToolChoice.Auto,
       maxSteps: options?.maxSteps ?? 10,
     })
   }
 
-  /**
-   * Execute a specific tool directly
-   */
   async executeTool(toolId: string, args: Record<string, unknown>): Promise<unknown> {
     const tool = this.toolsMap[toolId]
     if (!tool) {
       throw new Error(
-        `Tool ${toolId} not found. Available: ${Object.keys(this.toolsMap).join(', ')}`
+        `Tool ${toolId} not found. Available: ${Object.keys(this.toolsMap).join(ListSeparator.CommaSpace)}`
       )
     }
     return invokeGameDesignTool(tool, args)
   }
-
-  private buildContextString(context: GameDesignContext): string {
-    const parts: string[] = []
-
-    parts.push(`## Project: ${context.projectId}`)
-
-    if (context.genre) {
-      parts.push(`## Genre: ${context.genre}`)
-    }
-
-    if (context.platform) {
-      parts.push(`## Platform: ${context.platform}`)
-    }
-
-    if (context.targetAudience) {
-      parts.push(`## Target Audience: ${context.targetAudience}`)
-    }
-
-    if (context.gameDescription) {
-      parts.push(`## Game concept / description\n${context.gameDescription}`)
-    }
-
-    if (context.theme) {
-      parts.push(`## Theme: ${context.theme}`)
-    }
-
-    if (context.existingLoops?.length) {
-      parts.push('## Existing Loops')
-      for (const loop of context.existingLoops) {
-        parts.push(
-          `- ${loop.name} (${loop.type}): ${loop.nodes?.length || 0} nodes, ${loop.edges?.length || 0} edges`
-        )
-      }
-    }
-
-    if (context.existingMechanics?.length) {
-      parts.push('## Existing Mechanics')
-      for (const mech of context.existingMechanics) {
-        parts.push(`- ${mech.name} (${mech.type}): ${mech.description || 'No description'}`)
-      }
-    }
-
-    return parts.join('\n')
-  }
-
-  private parseResponse(text: string): GameDesignResponse {
-    // Extract <thinking> block content
-    const thinkingMatch = text.match(/<thinking>([\s\S]*?)<\/thinking>/i)
-    const thought = thinkingMatch ? thinkingMatch[1].trim() : text
-
-    // Extract text after </thinking> tag, or use full text if no thinking block
-    const afterThinking = thinkingMatch
-      ? text.slice(text.indexOf('</thinking>') + '</thinking>'.length).trim()
-      : text.trim()
-
-    // Try to parse structured JSON response (e.g. { "type": "PROPOSE_PLAN", "payload": ... })
-    const jsonMatch = afterThinking.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      try {
-        const parsed = parseGameDesignResponseRecord(JSON.parse(jsonMatch[0]), thought)
-        if (parsed) return parsed
-      } catch {
-        // Not valid JSON, continue
-      }
-    }
-
-    // Check if there are tool results in the response
-    const toolMatch = text.match(/Tool Result:?\s*({[\s\S]*?})/i)
-    if (toolMatch) {
-      try {
-        const toolResult: unknown = JSON.parse(toolMatch[1])
-        return {
-          type: GameDesignResponseType.ExecuteStep,
-          payload: {
-            tool: 'analysis',
-            result: toolResult,
-          },
-          thought,
-        }
-      } catch {
-        // Not valid JSON, continue
-      }
-    }
-
-    return {
-      type: GameDesignResponseType.Finish,
-      payload: { result: text },
-      thought,
-    }
-  }
 }
 
-// Factory function for easy instantiation
-// Re-export for convenience
 export { GameDesignMemory } from './memory'
