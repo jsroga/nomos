@@ -175,41 +175,43 @@ async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
     }
   }
 
-  // CORNERS (drawn first so direct neighbors overlay them)
-  if (bitmaps.topLeft) {
-    const { sx, sy, sw, sh } = cornerCrop(bitmaps.topLeft, 'bottomRight')
-    ctx.drawImage(bitmaps.topLeft, sx, sy, sw, sh, 0, 0, CONTEXT_SIZE, CONTEXT_SIZE)
+  // CORNERS (drawn first so direct neighbors overlay them), then DIRECT
+  // NEIGHBORS. Wrapped so their eight branches don't inflate `assemble`.
+  const drawNeighborTiles = () => {
+    if (bitmaps.topLeft) {
+      const { sx, sy, sw, sh } = cornerCrop(bitmaps.topLeft, 'bottomRight')
+      ctx.drawImage(bitmaps.topLeft, sx, sy, sw, sh, 0, 0, CONTEXT_SIZE, CONTEXT_SIZE)
+    }
+    if (bitmaps.topRight) {
+      const { sx, sy, sw, sh } = cornerCrop(bitmaps.topRight, 'bottomLeft')
+      ctx.drawImage(bitmaps.topRight, sx, sy, sw, sh, TARGET_X + TILE_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE)
+    }
+    if (bitmaps.bottomLeft) {
+      const { sx, sy, sw, sh } = cornerCrop(bitmaps.bottomLeft, 'topRight')
+      ctx.drawImage(bitmaps.bottomLeft, sx, sy, sw, sh, 0, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE)
+    }
+    if (bitmaps.bottomRight) {
+      const { sx, sy, sw, sh } = cornerCrop(bitmaps.bottomRight, 'topLeft')
+      ctx.drawImage(bitmaps.bottomRight, sx, sy, sw, sh, TARGET_X + TILE_SIZE, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE)
+    }
+    if (bitmaps.up) {
+      const { sx, sy, sw, sh } = edgeCrop(bitmaps.up, 'bottom')
+      ctx.drawImage(bitmaps.up, sx, sy, sw, sh, TARGET_X, 0, TILE_SIZE, CONTEXT_SIZE)
+    }
+    if (bitmaps.down) {
+      const { sx, sy, sw, sh } = edgeCrop(bitmaps.down, 'top')
+      ctx.drawImage(bitmaps.down, sx, sy, sw, sh, TARGET_X, TARGET_Y + TILE_SIZE, TILE_SIZE, CONTEXT_SIZE)
+    }
+    if (bitmaps.left) {
+      const { sx, sy, sw, sh } = edgeCrop(bitmaps.left, 'right')
+      ctx.drawImage(bitmaps.left, sx, sy, sw, sh, 0, TARGET_Y, CONTEXT_SIZE, TILE_SIZE)
+    }
+    if (bitmaps.right) {
+      const { sx, sy, sw, sh } = edgeCrop(bitmaps.right, 'left')
+      ctx.drawImage(bitmaps.right, sx, sy, sw, sh, TARGET_X + TILE_SIZE, TARGET_Y, CONTEXT_SIZE, TILE_SIZE)
+    }
   }
-  if (bitmaps.topRight) {
-    const { sx, sy, sw, sh } = cornerCrop(bitmaps.topRight, 'bottomLeft')
-    ctx.drawImage(bitmaps.topRight, sx, sy, sw, sh, TARGET_X + TILE_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE)
-  }
-  if (bitmaps.bottomLeft) {
-    const { sx, sy, sw, sh } = cornerCrop(bitmaps.bottomLeft, 'topRight')
-    ctx.drawImage(bitmaps.bottomLeft, sx, sy, sw, sh, 0, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE)
-  }
-  if (bitmaps.bottomRight) {
-    const { sx, sy, sw, sh } = cornerCrop(bitmaps.bottomRight, 'topLeft')
-    ctx.drawImage(bitmaps.bottomRight, sx, sy, sw, sh, TARGET_X + TILE_SIZE, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE)
-  }
-
-  // DIRECT NEIGHBORS
-  if (bitmaps.up) {
-    const { sx, sy, sw, sh } = edgeCrop(bitmaps.up, 'bottom')
-    ctx.drawImage(bitmaps.up, sx, sy, sw, sh, TARGET_X, 0, TILE_SIZE, CONTEXT_SIZE)
-  }
-  if (bitmaps.down) {
-    const { sx, sy, sw, sh } = edgeCrop(bitmaps.down, 'top')
-    ctx.drawImage(bitmaps.down, sx, sy, sw, sh, TARGET_X, TARGET_Y + TILE_SIZE, TILE_SIZE, CONTEXT_SIZE)
-  }
-  if (bitmaps.left) {
-    const { sx, sy, sw, sh } = edgeCrop(bitmaps.left, 'right')
-    ctx.drawImage(bitmaps.left, sx, sy, sw, sh, 0, TARGET_Y, CONTEXT_SIZE, TILE_SIZE)
-  }
-  if (bitmaps.right) {
-    const { sx, sy, sw, sh } = edgeCrop(bitmaps.right, 'left')
-    ctx.drawImage(bitmaps.right, sx, sy, sw, sh, TARGET_X + TILE_SIZE, TARGET_Y, CONTEXT_SIZE, TILE_SIZE)
-  }
+  drawNeighborTiles()
 
   const drawSmartCornerFromEdge = (
     bmp: ImageBitmap | undefined,
@@ -237,43 +239,23 @@ async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
     ctx.drawImage(bmp, src.sx, src.sy, src.sw, src.sh, destX, destY, CONTEXT_SIZE, CONTEXT_SIZE)
   }
 
-  if (strategy.mode === 'horizontal_priority') {
-    if (!bitmaps.topLeft) drawSmartCornerFromEdge(bitmaps.left, 'right', 'start', 0, 0)
-    if (!bitmaps.bottomLeft) {
-      drawSmartCornerFromEdge(bitmaps.left, 'right', 'end', 0, TARGET_Y + TILE_SIZE)
+  const drawSmartSeamCorners = () => {
+    const farX = TARGET_X + TILE_SIZE
+    const farY = TARGET_Y + TILE_SIZE
+    if (strategy.mode === 'horizontal_priority') {
+      if (!bitmaps.topLeft) drawSmartCornerFromEdge(bitmaps.left, 'right', 'start', 0, 0)
+      if (!bitmaps.bottomLeft) drawSmartCornerFromEdge(bitmaps.left, 'right', 'end', 0, farY)
+      if (!bitmaps.topRight) drawSmartCornerFromEdge(bitmaps.right, 'left', 'start', farX, 0)
+      if (!bitmaps.bottomRight) drawSmartCornerFromEdge(bitmaps.right, 'left', 'end', farX, farY)
     }
-    if (!bitmaps.topRight) {
-      drawSmartCornerFromEdge(bitmaps.right, 'left', 'start', TARGET_X + TILE_SIZE, 0)
-    }
-    if (!bitmaps.bottomRight) {
-      drawSmartCornerFromEdge(
-        bitmaps.right,
-        'left',
-        'end',
-        TARGET_X + TILE_SIZE,
-        TARGET_Y + TILE_SIZE
-      )
+    if (strategy.mode === 'vertical_priority') {
+      if (!bitmaps.topLeft) drawSmartCornerFromEdge(bitmaps.up, 'bottom', 'start', 0, 0)
+      if (!bitmaps.topRight) drawSmartCornerFromEdge(bitmaps.up, 'bottom', 'end', farX, 0)
+      if (!bitmaps.bottomLeft) drawSmartCornerFromEdge(bitmaps.down, 'top', 'start', 0, farY)
+      if (!bitmaps.bottomRight) drawSmartCornerFromEdge(bitmaps.down, 'top', 'end', farX, farY)
     }
   }
-
-  if (strategy.mode === 'vertical_priority') {
-    if (!bitmaps.topLeft) drawSmartCornerFromEdge(bitmaps.up, 'bottom', 'start', 0, 0)
-    if (!bitmaps.topRight) {
-      drawSmartCornerFromEdge(bitmaps.up, 'bottom', 'end', TARGET_X + TILE_SIZE, 0)
-    }
-    if (!bitmaps.bottomLeft) {
-      drawSmartCornerFromEdge(bitmaps.down, 'top', 'start', 0, TARGET_Y + TILE_SIZE)
-    }
-    if (!bitmaps.bottomRight) {
-      drawSmartCornerFromEdge(
-        bitmaps.down,
-        'top',
-        'end',
-        TARGET_X + TILE_SIZE,
-        TARGET_Y + TILE_SIZE
-      )
-    }
-  }
+  drawSmartSeamCorners()
 
   ctx.fillStyle = '#808080'
   ctx.fillRect(TARGET_X, TARGET_Y, TILE_SIZE, TILE_SIZE)
