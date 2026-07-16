@@ -15,7 +15,7 @@ import type { RequestContext } from '@mastra/core/di'
 import { Memory } from '@mastra/memory'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { registerCorePrompts } from '@/shared/agent-kernel/prompts/registry'
-import { withSpan } from '@/shared/observability/observability'
+import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import { v4 as uuidv4 } from 'uuid'
 import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
 import {
@@ -141,25 +141,23 @@ export class StorytellerAgent {
     _options?: { temperature?: number; topP?: number }
   ): Promise<string> {
     const id = traceId || this.generateHexId(32)
-    const spanId = this.generateHexId(16)
 
-    return withSpan(
+    return withMastraSpan(
       id,
       StorytellerAgentSpan.Run,
       async _span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
+        // No parentSpanId: the generate span nests under the withMastraSpan
+        // span via the active tracing context.
         const response = await this.agent.generate(prompt, {
           toolChoice,
           maxSteps: AGENT_RUNTIME_DEFAULTS.maxSteps,
-          tracingOptions: {
-            traceId: id,
-            parentSpanId: spanId,
-          },
+          tracingOptions: { traceId: id },
         })
         return response.text
       },
-      { goal, context, id: spanId }
-    ) // Pass id: spanId in metadata to force span ID
+      { goal, context }
+    )
   }
 
   /**
@@ -175,9 +173,8 @@ export class StorytellerAgent {
     traceId?: string
   ): Promise<string> {
     const id = traceId || this.generateHexId(32)
-    const spanId = this.generateHexId(16)
 
-    return withSpan(
+    return withMastraSpan(
       id,
       StorytellerAgentSpan.GenerateBeat,
       async _span => {
@@ -194,7 +191,7 @@ Create a beat with:
 
         return this.run(BeatPlannerCopy.GenerateStoryBeat, prompt, id)
       },
-      { ...context, id: spanId }
+      { ...context }
     )
   }
 
@@ -203,9 +200,8 @@ Create a beat with:
    */
   async checkStoryContinuity(beatBoard: unknown[], traceId?: string): Promise<string> {
     const id = traceId || this.generateHexId(32)
-    const spanId = this.generateHexId(16)
 
-    return withSpan(
+    return withMastraSpan(
       id,
       StorytellerAgentSpan.CheckStoryContinuity,
       async _span => {
@@ -215,7 +211,7 @@ Create a beat with:
           id
         )
       },
-      { beatCount: beatBoard.length, id: spanId }
+      { beatCount: beatBoard.length }
     )
   }
 
@@ -228,9 +224,8 @@ Create a beat with:
     traceId?: string
   ): Promise<string> {
     const id = traceId || this.generateHexId(32)
-    const spanId = this.generateHexId(16)
 
-    return withSpan(
+    return withMastraSpan(
       id,
       StorytellerAgentSpan.AnalyzeCharacterDynamics,
       async _span => {
@@ -240,7 +235,7 @@ Create a beat with:
           id
         )
       },
-      { character1, character2, id: spanId }
+      { character1, character2 }
     )
   }
 
