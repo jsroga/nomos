@@ -144,6 +144,58 @@ export function useStorytellerActions({
         const result = jsonRecordFromJson(data.result)
         if (data.success === true) {
           const resultType = readString(result.type)
+
+          // Bible-update branch extracted so the dispatch chain stays under the
+          // complexity limit; captures the surrounding setters/action/result.
+          const applyBibleUpdatedResult = () => {
+            const seriesBible = jsonRecordFromJson(result.seriesBible)
+            if (Object.keys(seriesBible).length === 0) return
+            const bible = seriesBible
+            console.log(StorytellerActionsLog.BibleUpdatedApplying, Object.keys(bible))
+
+            setStoryDecisions(prev => ({ ...prev, ...(bible.userDecisions || {}) }))
+
+            setStoryPlan(prev => {
+              const storyPlanUpdates = bible.storyPlan || {}
+              const directUpdates = { ...bible }
+              delete directUpdates.storyPlan
+              const allUpdates = { ...storyPlanUpdates, ...directUpdates }
+              const updated = applyUpdatesToStoryPlan(prev, allUpdates)
+              console.log(
+                StorytellerActionsLog.BibleUpdatedAppliedFields,
+                Object.keys(updated).filter(k => updated[k])
+              )
+              return updated
+            })
+
+            if (action.type === StorytellerActionType.UPDATE_EPISODE_ROADMAP && bible.storyPlan) {
+              const plan = recordFromJson(bible.storyPlan)
+              setStoryPlan(prev => {
+                const prevRecord = recordFromJson(prev)
+                return Object.assign({}, prev, {
+                  sequences: plan.sequences || prevRecord.sequences,
+                  episodeRoadmap: plan.episodeRoadmap || prevRecord.episodeRoadmap,
+                  seasonStructure: plan.seasonStructure || prevRecord.seasonStructure,
+                  executiveSummary: plan.executiveSummary || prevRecord.executiveSummary,
+                })
+              })
+            }
+
+            if (result.characters_synced === true && currentProject?.id) {
+              console.log(StorytellerActionsLog.CharactersSyncedRefetch)
+              fetchStorytellerCharacters(currentProject.id)
+                .then(charData => {
+                  if (Array.isArray(charData)) {
+                    const mapped = charData
+                      .map(row => storytellerCharacterFromRow(row))
+                      .filter((character): character is StorytellerCharacter => character !== null)
+                    setCharacters(mapped)
+                  }
+                })
+                .catch(e => console.error(StorytellerActionsLog.FailedRefetchCharacters, e))
+            }
+          }
+
           if (
             resultType === StorytellerActionResultType.BEAT_CREATED ||
             resultType === StorytellerActionResultType.BEAT_UPDATED ||
@@ -155,59 +207,7 @@ export function useStorytellerActions({
             resultType === StorytellerActionResultType.BIBLE_UPDATED ||
             resultType === StorytellerActionExtraResultType.WorldRuleAdded
           ) {
-            const seriesBible = jsonRecordFromJson(result.seriesBible)
-            if (Object.keys(seriesBible).length > 0) {
-              const bible = seriesBible
-              console.log(
-                StorytellerActionsLog.BibleUpdatedApplying,
-                Object.keys(bible)
-              )
-
-              setStoryDecisions(prev => ({
-                ...prev,
-                ...(bible.userDecisions || {}),
-              }))
-
-              setStoryPlan(prev => {
-                const storyPlanUpdates = bible.storyPlan || {}
-                const directUpdates = { ...bible }
-                delete directUpdates.storyPlan
-                const allUpdates = { ...storyPlanUpdates, ...directUpdates }
-                const updated = applyUpdatesToStoryPlan(prev, allUpdates)
-                console.log(
-                  StorytellerActionsLog.BibleUpdatedAppliedFields,
-                  Object.keys(updated).filter(k => updated[k])
-                )
-                return updated
-              })
-
-              if (action.type === StorytellerActionType.UPDATE_EPISODE_ROADMAP && bible.storyPlan) {
-                const plan = recordFromJson(bible.storyPlan)
-                setStoryPlan(prev => {
-                  const prevRecord = recordFromJson(prev)
-                  return Object.assign({}, prev, {
-                    sequences: plan.sequences || prevRecord.sequences,
-                    episodeRoadmap: plan.episodeRoadmap || prevRecord.episodeRoadmap,
-                    seasonStructure: plan.seasonStructure || prevRecord.seasonStructure,
-                    executiveSummary: plan.executiveSummary || prevRecord.executiveSummary,
-                  })
-                })
-              }
-
-              if (result.characters_synced === true && currentProject?.id) {
-                console.log(StorytellerActionsLog.CharactersSyncedRefetch)
-                fetchStorytellerCharacters(currentProject.id)
-                  .then(charData => {
-                    if (Array.isArray(charData)) {
-                      const mapped = charData
-                        .map(row => storytellerCharacterFromRow(row))
-                        .filter((character): character is StorytellerCharacter => character !== null)
-                      setCharacters(mapped)
-                    }
-                  })
-                  .catch(e => console.error(StorytellerActionsLog.FailedRefetchCharacters, e))
-              }
-            }
+            applyBibleUpdatedResult()
           } else if (
             action.type === StorytellerActionType.UPDATE_SERIES_BIBLE ||
             action.type.startsWith(StorytellerActionsUpdatePrefix.Update)
