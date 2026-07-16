@@ -61,6 +61,7 @@ export enum NodeEnv {
 export enum HttpMethod {
   Get = 'GET',
   Post = 'POST',
+  Put = 'PUT',
   Head = 'HEAD',
   Patch = 'PATCH',
   Delete = 'DELETE',

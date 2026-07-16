@@ -13,10 +13,17 @@ export {
   type TriggerRunStatusPayload,
 } from './trigger-run-polling'
 
+const TRIGGER_POLL_TIMEOUT_MESSAGE = 'Trigger run polling timed out'
+const TRIGGER_POLL_TIMEOUT_NAME = 'TriggerRunPollTimeoutError'
+const TRIGGER_POLL_FAILED_NAME = 'TriggerRunPollFailedError'
+const TRIGGER_POLL_ABORTED_MESSAGE = 'Trigger run polling aborted'
+const TRIGGER_POLL_ABORTED_NAME = 'TriggerRunPollAbortedError'
+const TRIGGER_POLL_UNKNOWN_STATUS = 'unknown'
+
 export class TriggerRunPollTimeoutError extends Error {
-  constructor(message = 'Trigger run polling timed out') {
+  constructor(message = TRIGGER_POLL_TIMEOUT_MESSAGE) {
     super(message)
-    this.name = 'TriggerRunPollTimeoutError'
+    this.name = TRIGGER_POLL_TIMEOUT_NAME
   }
 }
 
@@ -25,17 +32,17 @@ export class TriggerRunPollFailedError extends Error {
   readonly runError: unknown
 
   constructor(status: string | null | undefined, runError: unknown, message?: string) {
-    super(message ?? `Trigger run failed with status: ${status ?? 'unknown'}`)
-    this.name = 'TriggerRunPollFailedError'
+    super(message ?? `Trigger run failed with status: ${status ?? TRIGGER_POLL_UNKNOWN_STATUS}`)
+    this.name = TRIGGER_POLL_FAILED_NAME
     this.status = status
     this.runError = runError
   }
 }
 
 export class TriggerRunPollAbortedError extends Error {
-  constructor(message = 'Trigger run polling aborted') {
+  constructor(message = TRIGGER_POLL_ABORTED_MESSAGE) {
     super(message)
-    this.name = 'TriggerRunPollAbortedError'
+    this.name = TRIGGER_POLL_ABORTED_NAME
   }
 }
 

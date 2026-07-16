@@ -29,6 +29,9 @@ import {
 import { set } from 'lodash'
 import { CascadeElementType } from '@/domains/storyteller/core/constants/cascade-editor'
 
+const EPISODE_ID_REQUIRED_BEATS = 'Episode ID required for beat updates'
+const EPISODE_ID_REQUIRED_PREMISE = 'Episode ID required for premise updates'
+
 /**
  * Apply cascading fixes to story elements
  */
@@ -113,7 +116,7 @@ async function updateBeat(
   _projectId: string,
   episodeId?: string
 ): Promise<void> {
-  if (!episodeId) throw new Error('Episode ID required for beat updates')
+  if (!episodeId) throw new Error(EPISODE_ID_REQUIRED_BEATS)
 
   const timeline = await fetchStorytellerTimeline(episodeId)
   const beats = recordArrayFromJson(timeline.beats)
@@ -147,7 +150,7 @@ async function updatePremise(
   _projectId: string,
   episodeId?: string
 ): Promise<void> {
-  if (!episodeId) throw new Error('Episode ID required for premise updates')
+  if (!episodeId) throw new Error(EPISODE_ID_REQUIRED_PREMISE)
 
   const plan = await fetchStorytellerPlan(episodeId)
   const updated = applyChangesToObject(plan, changes)

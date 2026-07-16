@@ -10,6 +10,9 @@ import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
 
 const BEAT_PROMPT_ROUTE = '/api/storyteller/beats/generate-prompt'
 const BEAT_STATUS_ROUTE = '/api/storyteller/beats/status'
+const GENERATE_IMAGE_SEGMENT = 'generate-image'
+const BEAT_IMAGE_URL_FIELD = 'imageUrl'
+const MISSING_PROMPT_ERROR = 'Missing prompt in beat image prompt response'
 
 export async function fetchBeatImagePrompt(beat: BeatCard): Promise<string> {
   const data = await fetchJsonRecord(BEAT_PROMPT_ROUTE, {
@@ -19,7 +22,7 @@ export async function fetchBeatImagePrompt(beat: BeatCard): Promise<string> {
   })
   const prompt = readString(data.prompt)
   if (!prompt) {
-    throw new Error('Missing prompt in beat image prompt response')
+    throw new Error(MISSING_PROMPT_ERROR)
   }
   return prompt
 }
@@ -31,7 +34,7 @@ export async function triggerBeatImageGeneration(
     config: Record<string, unknown>
   }
 ): Promise<{ handleId: string | null }> {
-  const data = await fetchJsonRecord(joinUrlPath('/api/storyteller/beats', beatId, 'generate-image'), {
+  const data = await fetchJsonRecord(joinUrlPath('/api/storyteller/beats', beatId, GENERATE_IMAGE_SEGMENT), {
     method: HttpMethod.Post,
     headers: { 'Content-Type': ContentType.Json },
     body: JSON.stringify(input),
@@ -49,5 +52,5 @@ export async function fetchBeatImageRunStatus(runId: string): Promise<TriggerRun
 }
 
 export function readBeatImageUrlFromRun(run: TriggerRunStatusPayload): string | null {
-  return readTriggerRunOutputField(run, 'imageUrl')
+  return readTriggerRunOutputField(run, BEAT_IMAGE_URL_FIELD)
 }

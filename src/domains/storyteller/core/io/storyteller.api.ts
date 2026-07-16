@@ -1,5 +1,5 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
-import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
+import { fetchJson, fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
 
@@ -16,16 +16,7 @@ import {
 } from './storyteller.dto'
 
 const JSON_HEADERS = { 'Content-Type': ContentType.Json }
-
-async function fetchJson(input: RequestInfo | URL, init?: RequestInit): Promise<unknown> {
-  const response = await fetch(input, init)
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`)
-  }
-
-  return response.json()
-}
+const EPISODE_BEATS_SEGMENT = 'beats'
 
 async function fetchAndParse<T>(input: RequestInfo | URL, schema: { parse: (value: unknown) => T }) {
   return schema.parse(await fetchJson(input))
@@ -204,7 +195,7 @@ export async function fetchStorytellerRelationships(
 }
 
 export async function fetchEpisodeBeats(episodeId: string): Promise<Record<string, unknown>> {
-  return recordFromJson(await fetchJson(joinUrlPath('/api/storyteller/episodes', episodeId, 'beats')))
+  return recordFromJson(await fetchJson(joinUrlPath('/api/storyteller/episodes', episodeId, EPISODE_BEATS_SEGMENT)))
 }
 
 export async function createEpisodeBeat(
@@ -212,7 +203,7 @@ export async function createEpisodeBeat(
   body: Record<string, unknown>
 ): Promise<Record<string, unknown>> {
   return recordFromJson(
-    await fetchJson(joinUrlPath('/api/storyteller/episodes', episodeId, 'beats'), {
+    await fetchJson(joinUrlPath('/api/storyteller/episodes', episodeId, EPISODE_BEATS_SEGMENT), {
       method: HttpMethod.Post,
       headers: JSON_HEADERS,
       body: JSON.stringify(body),
@@ -235,7 +226,7 @@ export async function deleteBeat(beatId: string): Promise<void> {
 }
 
 export async function fetchEpisodeBeatsList(episodeId: string): Promise<unknown[]> {
-  const data = await fetchJson(joinUrlPath('/api/storyteller/episodes', episodeId, 'beats'))
+  const data = await fetchJson(joinUrlPath('/api/storyteller/episodes', episodeId, EPISODE_BEATS_SEGMENT))
   return Array.isArray(data) ? data : []
 }
 
@@ -285,7 +276,7 @@ export async function saveStorytellerBible(input: {
   bible: Record<string, unknown>
 }): Promise<void> {
   const response = await fetch('/api/storyteller/bible', {
-    method: 'PUT',
+    method: HttpMethod.Put,
     headers: JSON_HEADERS,
     body: JSON.stringify(input),
   })

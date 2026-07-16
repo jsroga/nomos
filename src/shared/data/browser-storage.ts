@@ -90,6 +90,8 @@ export const browserStorage = {
 }
 
 const STORE_NAME = 'kurvitza-browser'
+const LOCALFORAGE_STORE_NAME = 'keyvalue'
+const LOCALFORAGE_DESCRIPTION = 'Browser key-value persistence (localforage)'
 
 let configured = false
 
@@ -97,8 +99,8 @@ function ensureConfigured(): void {
   if (configured) return
   localforage.config({
     name: STORE_NAME,
-    storeName: 'keyvalue',
-    description: 'Browser key-value persistence (localforage)',
+    storeName: LOCALFORAGE_STORE_NAME,
+    description: LOCALFORAGE_DESCRIPTION,
   })
   configured = true
 }
