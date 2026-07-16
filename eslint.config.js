@@ -357,10 +357,10 @@ module.exports = [
     },
   },
   {
-    // Eval golden datasets: the prompts, reference prose, and descriptions ARE
-    // the artifact (same class as test fixtures and `-scorer.ts` `.describe()`
-    // text). Row ids/categories read as data, not runtime wire values.
-    files: ['evals/datasets/**/*.{ts,tsx}'],
+    // Eval golden datasets + experiment runners: prompts, reference prose,
+    // descriptions, and operator CLI output ARE the artifact (same class as
+    // test fixtures and `-scorer.ts` `.describe()` text), not runtime wire values.
+    files: ['evals/datasets/**/*.{ts,tsx}', 'evals/experiments/**/*.{ts,tsx}'],
     rules: {
       'local/no-magic-string': 'off',
     },
