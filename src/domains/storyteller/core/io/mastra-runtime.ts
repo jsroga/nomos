@@ -41,6 +41,9 @@ import { runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools/workflo
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import { AgentController } from '@mastra/core/agent-controller'
+import { buildStorytellerControllerConfig } from '@/domains/storyteller/ai/controller/storyteller-controller'
+import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
 
 const CHAT_ADAPTER_ID = 'storyteller'
 const CHAT_ADAPTER_NAME = 'Storyteller'
@@ -108,3 +111,22 @@ registerMastraModule({
   agents: storytellerRuntimeAgents,
   workflows: storytellerRuntimeWorkflows,
 })
+
+// PLAN-V2 Phase 4.2/4.3 — lazily-initialized storyteller chat controller.
+// Instantiation is deferred (not at module load) so the legacy path pays
+// nothing; the flagged route (`STORYTELLER_CONTROLLER=1`) awaits this getter.
+// Reuses the EXISTING Postgres store — never a second store (AGENTS.md).
+let storytellerControllerPromise: Promise<AgentController> | null = null
+
+export function getStorytellerController(): Promise<AgentController> {
+  if (!storytellerControllerPromise) {
+    const controller = new AgentController(
+      buildStorytellerControllerConfig({
+        agent: chatAdapterAgent,
+        storage: getStorageInstance(),
+      })
+    )
+    storytellerControllerPromise = controller.init().then(() => controller)
+  }
+  return storytellerControllerPromise
+}
