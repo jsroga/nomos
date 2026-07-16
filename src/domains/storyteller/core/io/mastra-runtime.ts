@@ -148,3 +148,26 @@ export function getStorytellerAutonomousAgent(): DurableAgent {
   }
   return autonomousDurableAgent
 }
+
+/**
+ * Start (or restart) the autonomous drafting loop for a thread: set the standing
+ * objective in thread state, then stream the durable run. Reconnect a dropped
+ * client with `getStorytellerAutonomousAgent().observe(runId)`; the returned
+ * `runId`/`cleanup` come from the durable stream.
+ */
+export async function startAutonomousEpisodeDraft(params: {
+  threadId: string
+  resourceId: string
+  objective: string
+  prompt: string
+  maxRuns?: number
+}) {
+  await autonomousAuthorAgent.setObjective(params.objective, {
+    threadId: params.threadId,
+    resourceId: params.resourceId,
+    ...(params.maxRuns !== undefined ? { maxRuns: params.maxRuns } : {}),
+  })
+  return getStorytellerAutonomousAgent().stream(params.prompt, {
+    memory: { thread: params.threadId, resource: params.resourceId },
+  })
+}
