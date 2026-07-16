@@ -42,7 +42,10 @@ import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-ad
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
 import { AgentController } from '@mastra/core/agent-controller'
+import { createDurableAgent } from '@mastra/core/agent/durable'
+import type { DurableAgent } from '@mastra/core/agent/durable'
 import { buildStorytellerControllerConfig } from '@/domains/storyteller/ai/controller/storyteller-controller'
+import { autonomousAuthorAgent } from '@/domains/storyteller/ai/agents/AutonomousAuthor/autonomous-author-agent'
 import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
 
 const CHAT_ADAPTER_ID = 'storyteller'
@@ -85,6 +88,8 @@ export const storytellerRuntimeAgents: Record<string, Agent> = {
   continuityCritic,
   proseCritic,
   stakesCritic,
+  // Registered so its goal/objective state persists to the Postgres store.
+  autonomousAuthor: autonomousAuthorAgent,
 }
 
 /** Workflows registered on the production Mastra instance. */
@@ -129,4 +134,17 @@ export function getStorytellerController(): Promise<AgentController> {
     storytellerControllerPromise = controller.init().then(() => controller)
   }
   return storytellerControllerPromise
+}
+
+// Eval-recommendation Phase — durable wrap of the autonomous author (goals loop).
+// Lazily created so the legacy path pays nothing; the flagged entry
+// (`STORYTELLER_AUTONOMOUS=1`) uses it. In-process cache for the pilot (no Redis);
+// swap in RedisServerCache for multi-process reconnection.
+let autonomousDurableAgent: DurableAgent | null = null
+
+export function getStorytellerAutonomousAgent(): DurableAgent {
+  if (!autonomousDurableAgent) {
+    autonomousDurableAgent = createDurableAgent({ agent: autonomousAuthorAgent })
+  }
+  return autonomousDurableAgent
 }
