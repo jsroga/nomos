@@ -8,6 +8,7 @@ import {
   buildStorytellerRequestContext,
 } from '@/domains/storyteller/core/io/mastra-runtime'
 import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/constants/chat-model-catalog'
+import { isStorytellerControllerEnabled } from '@/domains/storyteller/ai/controller/storyteller-controller'
 import { BibleSection } from '@/domains/storyteller/core'
 import { type DetectedSection } from '@/domains/storyteller/config/tool-result-mapper'
 import { assembleStorytellerContext } from '@/domains/storyteller/services/context-assembly-service'
@@ -158,6 +159,19 @@ For any request to write, draft, or generate a story beat or scene, call 'run_be
       episodeId,
       authorModel: requestedModel,
     })
+
+    // PLAN-V2 4.3: flagged controller path (plan-first modes). Default off —
+    // the legacy StorytellerAgent.stream() below is untouched.
+    if (isStorytellerControllerEnabled()) {
+      const { streamStorytellerControllerResponse } = await import('./controller-stream-wire')
+      return streamStorytellerControllerResponse({
+        prompt: promptWithContext,
+        traceId,
+        requestContext,
+        userId: session.user.id,
+        projectId,
+      })
+    }
 
     // toolChoice 'auto' — 'required' causes infinite loops; the prompt already
     // instructs when to use tools. (The previous untyped options bag also

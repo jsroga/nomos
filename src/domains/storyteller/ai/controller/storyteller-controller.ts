@@ -21,6 +21,15 @@ import { listEpisodesTool } from '@/domains/storyteller/ai/tools/episode-tools'
 
 export const STORYTELLER_CONTROLLER_ID = 'storyteller-chat'
 
+/** Env flag (`STORYTELLER_CONTROLLER=1`) that routes chat through the controller. */
+const CONTROLLER_FLAG_ENABLED = '1'
+export const STORYTELLER_CONTROLLER_ENV = 'STORYTELLER_CONTROLLER'
+
+/** True when the flagged controller path should replace the legacy `StorytellerAgent.stream()`. */
+export function isStorytellerControllerEnabled(): boolean {
+  return process.env[STORYTELLER_CONTROLLER_ENV] === CONTROLLER_FLAG_ENABLED
+}
+
 /** Plan-first modes — reads answer in `chat`; mutations require an approved plan → `build`. */
 export enum StorytellerControllerMode {
   Chat = 'chat',
