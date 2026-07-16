@@ -250,6 +250,113 @@ async function getRAGContext(projectId: string, query: string): Promise<string> 
   }
 }
 
+function formatFactionsBlock(factions: StoryPlan['factions']): string {
+  if (!factions || factions.length === 0) return ContextAssemblyFallback.None
+  return factions
+    .map(f => {
+      const factionId = slugId(EntityRefPrefix.Faction, f.id, f.name)
+      return `- [${f.name}][${factionId}]: ${f.ideology || f.description || ContextAssemblyFallback.NoDescription}`
+    })
+    .join('\n')
+}
+
+function formatNamedRefBlock(rows: StoryPlan['items'], prefix: EntityRefPrefix): string {
+  if (!rows || rows.length === 0) return ContextAssemblyFallback.None
+  return rows
+    .map(x => {
+      const refId = slugId(prefix, x.id, x.name)
+      return `- [${x.name}][${refId}]: ${x.description || ContextAssemblyFallback.NoDescription}`
+    })
+    .join('\n')
+}
+
+function formatWorldRulesLinkedBlock(rules: StoryPlan['worldRules']): string {
+  if (!rules || rules.length === 0) return ContextAssemblyFallback.None
+  return rules
+    .map(r => {
+      const ruleId = slugId(EntityRefPrefix.Rule, r.id, r.name ?? r.category ?? StoryEntityType.Rule)
+      return `- [${r.name || r.category || ContextAssemblyFallback.RuleLabel}][${ruleId}]: ${r.rule || ContextAssemblyFallback.NoDescription}`
+    })
+    .join('\n')
+}
+
+function formatWorldRulesPlainBlock(rules: StoryPlan['worldRules']): string {
+  if (!rules || rules.length === 0) return ContextAssemblyFallback.None
+  return rules
+    .map(
+      r =>
+        `- [${r.category || BibleCategoryKey.General}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
+    )
+    .join('\n')
+}
+
+function formatInspirationsBlock(inspirations: StoryPlan['inspirations']): string {
+  if (!inspirations) return ContextAssemblyFallback.None
+  const sep = StorytellerAnswerSeparator.CommaSpace
+  const movies = inspirations.movies?.join(sep) || ContextAssemblyFallback.NoneLabel
+  const books = inspirations.books?.join(sep) || ContextAssemblyFallback.NoneLabel
+  const games = inspirations.games?.join(sep) || ContextAssemblyFallback.NoneLabel
+  return `Movies: ${movies} | Books: ${books} | Games: ${games}`
+}
+
+function formatSequencesBlock(sequences: StoryPlan['sequences']): string {
+  if (!sequences || sequences.length === 0) return ContextAssemblyFallback.None
+  return sequences.map((s, i) => `${i + 1}. ${s.name}: ${s.description || ''}`).join('\n')
+}
+
+function formatCharactersBlock(sortedChars: Character[]): string {
+  if (sortedChars.length === 0) return ''
+  const lines = sortedChars
+    .slice(0, 20)
+    .map(c => {
+      const charId = slugId(EntityRefPrefix.Character, c.id, c.name)
+      return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || ContextAssemblyFallback.NoDescription}`
+    })
+    .join('\n')
+  return `=== CHARACTERS (${sortedChars.length}) ===\n${lines}`
+}
+
+function formatBeatsBlock(beats: BeatRow[]): string {
+  if (beats.length === 0) return ''
+  const lines = beats
+    .slice(-3)
+    .map(b => {
+      const beatId = slugId(EntityRefPrefix.Beat, b.id, String(b.sequence ?? '0'))
+      return `- [${b.logline || `Beat ${b.sequence}`}][${beatId}]`
+    })
+    .join('\n')
+  return `=== RECENT BEATS (${beats.length}) ===\n${lines}`
+}
+
+interface ProjectMeta {
+  genre: string
+  tone: string
+  theme: string
+  premise: Record<string, unknown>
+}
+
+function deriveProjectMeta(storyPlan: StoryPlan, bible: Record<string, unknown>): ProjectMeta {
+  const genre = Array.isArray(storyPlan.genre)
+    ? storyPlan.genre.join(StorytellerAnswerSeparator.CommaSpace)
+    : storyPlan.genre || readString(bible.genre) || ContextAssemblyFallback.NotSet
+  const tone = Array.isArray(storyPlan.tone)
+    ? storyPlan.tone.join(StorytellerAnswerSeparator.CommaSpace)
+    : storyPlan.tone || readString(bible.tone) || ContextAssemblyFallback.NotSet
+  const theme =
+    storyPlan.centralTheme || readString(bible.centralTheme) || ContextAssemblyFallback.NotSet
+  const premise =
+    storyPlan.premise ?? storyPlan.episodePremise ?? recordFromJson(bible.episodePremise)
+  return { genre, tone, theme, premise }
+}
+
+function sortCharactersByRole(characters: Character[]): Character[] {
+  return [...characters].sort((a, b) => {
+    const priorityA = ROLE_PRIORITY[(a.role || '').toLowerCase()] ?? 99
+    const priorityB = ROLE_PRIORITY[(b.role || '').toLowerCase()] ?? 99
+    return priorityA - priorityB
+  })
+}
+
 export async function assembleStorytellerContext(
   params: AssembleContextParams
 ): Promise<AssembledContext> {
@@ -332,18 +439,7 @@ CURRENT STORY PHASE: ${phase}
 ${masterPrompt ? `\n=== MASTER PROMPT ===\n${masterPrompt}` : ''}
 `
 
-    const genre =
-      Array.isArray(storyPlan.genre)
-        ? storyPlan.genre.join(StorytellerAnswerSeparator.CommaSpace)
-        : storyPlan.genre || readString(bible.genre) || ContextAssemblyFallback.NotSet
-    const tone =
-      Array.isArray(storyPlan.tone)
-        ? storyPlan.tone.join(StorytellerAnswerSeparator.CommaSpace)
-        : storyPlan.tone || readString(bible.tone) || ContextAssemblyFallback.NotSet
-    const theme =
-      storyPlan.centralTheme || readString(bible.centralTheme) || ContextAssemblyFallback.NotSet
-    const premise =
-      storyPlan.premise ?? storyPlan.episodePremise ?? recordFromJson(bible.episodePremise)
+    const { genre, tone, theme, premise } = deriveProjectMeta(storyPlan, bible)
 
     const projectCtx = `=== PROJECT ===
 Title: ${projectData?.name || StorytellerDefaultTitle.Untitled} | Genre: ${genre} | Tone: ${tone} | Theme: ${theme}
@@ -355,110 +451,29 @@ ${Object.keys(premise).length > 0 ? JSON.stringify(premise) : ContextAssemblyFal
 ${storyPlan.worldDescription || readString(bible.worldDescription) || ContextAssemblyFallback.NoWorldDescription}
 
 === WORLD RULES ===
-${storyPlan.worldRules && storyPlan.worldRules.length > 0
-        ? storyPlan.worldRules
-            .map(
-              r =>
-                `- [${r.category || BibleCategoryKey.General}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
-            )
-            .join('\n')
-        : ContextAssemblyFallback.None
-      }
+${formatWorldRulesPlainBlock(storyPlan.worldRules)}
 
 === FACTIONS ===
-${storyPlan.factions && storyPlan.factions.length > 0
-        ? storyPlan.factions
-            .map(f => {
-              const factionId = slugId(EntityRefPrefix.Faction, f.id, f.name)
-              return `- [${f.name}][${factionId}]: ${f.ideology || f.description || ContextAssemblyFallback.NoDescription}`
-            })
-            .join('\n')
-        : ContextAssemblyFallback.None
-      }
+${formatFactionsBlock(storyPlan.factions)}
 
 === ITEMS ===
-${storyPlan.items && storyPlan.items.length > 0
-        ? storyPlan.items
-            .map(i => {
-              const itemId = slugId(EntityRefPrefix.Item, i.id, i.name)
-              return `- [${i.name}][${itemId}]: ${i.description || ContextAssemblyFallback.NoDescription}`
-            })
-            .join('\n')
-        : ContextAssemblyFallback.None
-      }
+${formatNamedRefBlock(storyPlan.items, EntityRefPrefix.Item)}
 
 === EVENTS ===
-${storyPlan.events && storyPlan.events.length > 0
-        ? storyPlan.events
-            .map(e => {
-              const eventId = slugId(EntityRefPrefix.Event, e.id, e.name)
-              return `- [${e.name}][${eventId}]: ${e.description || ContextAssemblyFallback.NoDescription}`
-            })
-            .join('\n')
-        : ContextAssemblyFallback.None
-      }
+${formatNamedRefBlock(storyPlan.events, EntityRefPrefix.Event)}
 
 === WORLD RULES (linked) ===
-${storyPlan.worldRules && storyPlan.worldRules.length > 0
-        ? storyPlan.worldRules
-            .map(r => {
-              const ruleId = slugId(
-                EntityRefPrefix.Rule,
-                r.id,
-                r.name ?? r.category ?? StoryEntityType.Rule
-              )
-              return `- [${r.name || r.category || ContextAssemblyFallback.RuleLabel}][${ruleId}]: ${r.rule || ContextAssemblyFallback.NoDescription}`
-            })
-            .join('\n')
-        : ContextAssemblyFallback.None
-      }
+${formatWorldRulesLinkedBlock(storyPlan.worldRules)}
 
 === INSPIRATIONS ===
-${storyPlan.inspirations
-        ? `Movies: ${storyPlan.inspirations.movies?.join(StorytellerAnswerSeparator.CommaSpace) || ContextAssemblyFallback.NoneLabel} | Books: ${storyPlan.inspirations.books?.join(StorytellerAnswerSeparator.CommaSpace) || ContextAssemblyFallback.NoneLabel} | Games: ${storyPlan.inspirations.games?.join(StorytellerAnswerSeparator.CommaSpace) || ContextAssemblyFallback.NoneLabel}`
-        : ContextAssemblyFallback.None
-      }
+${formatInspirationsBlock(storyPlan.inspirations)}
 
 === SEQUENCES ===
-${storyPlan.sequences && storyPlan.sequences.length > 0
-        ? storyPlan.sequences
-            .map((s, i) => `${i + 1}. ${s.name}: ${s.description || ''}`)
-            .join('\n')
-        : ContextAssemblyFallback.None
-      }`
+${formatSequencesBlock(storyPlan.sequences)}`
 
-    const sortedChars = [...characters].sort((a, b) => {
-      const roleA = (a.role || '').toLowerCase()
-      const roleB = (b.role || '').toLowerCase()
-      const priorityA = ROLE_PRIORITY[roleA] ?? 99
-      const priorityB = ROLE_PRIORITY[roleB] ?? 99
-      if (priorityA !== priorityB) return priorityA - priorityB
-      return 0
-    })
-
-    const charsCtx =
-      sortedChars.length > 0
-        ? `=== CHARACTERS (${sortedChars.length}) ===\n` +
-          sortedChars
-            .slice(0, 20)
-            .map(c => {
-              const charId = slugId(EntityRefPrefix.Character, c.id, c.name)
-              return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || ContextAssemblyFallback.NoDescription}`
-            })
-            .join('\n')
-        : ''
-
-    const beatsCtx =
-      beats.length > 0
-        ? `=== RECENT BEATS (${beats.length}) ===\n` +
-          beats
-            .slice(-3)
-            .map(b => {
-              const beatId = slugId(EntityRefPrefix.Beat, b.id, String(b.sequence ?? '0'))
-              return `- [${b.logline || `Beat ${b.sequence}`}][${beatId}]`
-            })
-            .join('\n')
-        : ''
+    const sortedChars = sortCharactersByRole(characters)
+    const charsCtx = formatCharactersBlock(sortedChars)
+    const beatsCtx = formatBeatsBlock(beats)
 
     const rawParts: RawContextParts = {
       systemPrompt: systemCtx,
