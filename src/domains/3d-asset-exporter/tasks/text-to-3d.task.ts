@@ -1,7 +1,12 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
-import { storageService } from '@/shared/data/storage/StorageService'
+import { supabaseAdmin } from '@/shared/auth/supabase-admin'
+import { storageService } from '@/shared/data/storage/storage-service'
 import { v4 as uuidv4 } from 'uuid'
+import {
+  MeshyTaskStatusValue,
+  parseMeshyTaskResult,
+  type MeshyTaskResult,
+} from './constants/meshy-task-types'
 
 const MESHY_BASE_URL = 'https://api.meshy.ai/openapi/v2/text-to-3d'
 
@@ -163,10 +168,7 @@ export const textTo3DTask = task({
     // ============================================
     await metadata.set('stage', 'creating_asset')
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = supabaseAdmin
 
     const assetId = uuidv4()
     const { error: insertError } = await supabase.from('assets').insert({
@@ -215,7 +217,7 @@ async function pollMeshyTask(
   taskId: string,
   apiKey: string,
   stage: 'preview' | 'refine'
-): Promise<any> {
+): Promise<MeshyTaskResult> {
   const maxAttempts = 180 // 30 minutes (10s interval)
   let attempts = 0
 
@@ -234,8 +236,8 @@ async function pollMeshyTask(
       continue
     }
 
-    const result = await response.json()
-    const progress = result.progress || 0
+    const result = parseMeshyTaskResult(await response.json())
+    const progress = result.progress ?? 0
 
     // Update metadata with progress
     if (stage === 'preview') {
@@ -246,12 +248,12 @@ async function pollMeshyTask(
 
     logger.info(`${stage} task progress: ${progress}%`, { status: result.status })
 
-    if (result.status === 'SUCCEEDED') {
+    if (result.status === MeshyTaskStatusValue.Succeeded) {
       return result
     }
 
-    if (result.status === 'FAILED') {
-      const errorMsg = result.task_error?.message || 'Unknown error'
+    if (result.status === MeshyTaskStatusValue.Failed) {
+      const errorMsg = result.task_error?.message ?? 'Unknown error'
       throw new Error(`Meshy ${stage} task failed: ${errorMsg}`)
     }
 

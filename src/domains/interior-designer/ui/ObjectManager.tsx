@@ -2,6 +2,7 @@
 'use client'
 
 import React, { Suspense, useEffect, useMemo } from 'react'
+import { ApiRoutePath } from '@/shared/data/constants/protocol'
 import { MODEL_ERROR_LOG } from '@/domains/interior-designer/constants/object-manager-messages'
 import { DATA_URL_PREFIX } from '@/domains/interior-designer/constants/three-js'
 import { useInteriorStore, SceneObject } from '@/domains/interior-designer'
@@ -10,11 +11,12 @@ import { Loader2 } from 'lucide-react'
 import * as THREE from 'three'
 import { WindowMesh } from './meshes/WindowMesh'
 import { DoorMesh } from './meshes/DoorMesh'
+import { buildUrl } from '@/shared/data/url-builder';
 
 // Proxy external URLs to avoid CORS issues
 const getProxiedUrl = (url: string): string => {
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    return `/api/proxy-model?url=${encodeURIComponent(url)}`
+    return buildUrl(ApiRoutePath.ProxyModel, { url })
   }
   return url
 }

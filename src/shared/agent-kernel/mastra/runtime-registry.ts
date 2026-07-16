@@ -5,7 +5,7 @@
  * shared/ MAY NOT import domains (ESLint boundary rule), but the single
  * production Mastra instance must register domain agents and workflows.
  * Domains therefore push their runtime here at module-load time (see
- * `src/domains/storyteller/io/mastra-runtime.ts`), and `getMastraInstance()`
+ * `src/domains/storyteller/core/io/mastra-runtime.ts`), and `getMastraInstance()`
  * drains the registry when it constructs the instance.
  *
  * Ordering contract: a domain's registration module must be imported before

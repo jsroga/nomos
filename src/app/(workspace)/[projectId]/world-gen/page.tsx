@@ -84,7 +84,7 @@ export default function WorldBuildingPage() {
       newUrl: item.newUrl,
       variantUrls: item.variantUrls,
       originalUrl: item.originalUrl,
-      type: item.type as TileReviewType,
+      type: item.type,
       tokenId: item.tokenId,
     })
   }, [pendingReviewRequest, reviewRequestVersion, addToQueue])

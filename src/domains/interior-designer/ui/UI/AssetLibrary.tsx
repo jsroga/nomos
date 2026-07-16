@@ -1,10 +1,9 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useInteriorStore } from '@/domains/interior-designer'
-import { useWorldStore } from '@/domains/world-building-toolkit'
-import { AssetsPanel } from '@/domains/world-building-toolkit/ui/AssetsPanel'
-import { AssetUploadZone } from '@/domains/3d-asset-exporter'
+import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
+import { ProjectAssetUploadZone, ProjectAssetsPanel } from '@/shared/workspace'
 import { Box, Circle, Cylinder, Cone, LayoutGrid, DoorOpen } from 'lucide-react'
 import { cn } from '@/shared/data/utils'
 import {
@@ -29,7 +28,8 @@ export const AssetLibrary: React.FC = () => {
   const mode = useInteriorStore(state => state.mode)
   const setMode = useInteriorStore(state => state.setMode)
 
-  const currentProject = useWorldStore(state => state.currentProject)
+  const { currentProject } = useProjectFromUrl()
+  const [assetsVersion, setAssetsVersion] = useState(0)
 
   const isObjectMode = mode === INTERACTION_MODE_OBJECT || mode === INTERACTION_MODE_SCATTER
 
@@ -85,17 +85,17 @@ export const AssetLibrary: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 px-1 block">
               Custom Assets
             </span>
-            <AssetUploadZone
+            <ProjectAssetUploadZone
               projectId={currentProject.id}
-              onUploadComplete={() => {
-                const fetchAssets = useWorldStore.getState().fetchAssets
-                if (fetchAssets) {
-                  fetchAssets()
-                }
-              }}
+              onUploadComplete={() => setAssetsVersion(version => version + 1)}
             />
 
-            <AssetsPanel showHelpText={false} onSelectAsset={handleSelectAsset} />
+            <ProjectAssetsPanel
+              key={`${currentProject.id}-${assetsVersion}`}
+              showHelpText={false}
+              projectId={currentProject.id}
+              onSelectAsset={handleSelectAsset}
+            />
           </div>
         </>
       ) : (

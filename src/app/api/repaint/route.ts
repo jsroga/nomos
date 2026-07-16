@@ -13,6 +13,11 @@ import {
   REPAINT_MASK_INSTRUCTION,
   REPAINT_STYLE_REF_PREFIX,
 } from '@/shared/data/constants/repaint-gemini'
+import {
+  findGeminiImagePart,
+  findGeminiTextPart,
+  parseGeminiResponse,
+} from '@/shared/ai/gemini-response-guards'
 import { ContentType, GoogleModelId, HttpMethod, StringSeparator } from '@/shared/data/constants/protocol'
 
 // eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
@@ -23,7 +28,7 @@ export const dynamic = 'force-dynamic'
  * Server-side Gemini inpainting for the repaint tool.
  */
 export const POST = withRateLimit(
-  withAuth<any>(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const body = await request.json()
     const { projectId, base64Image, maskBase64, prompt, styleReferenceUrls } = body
 
@@ -84,8 +89,9 @@ export const POST = withRateLimit(
       )
     }
 
-    const data = await response.json()
-    const candidate = data.candidates?.[0]
+    const data: unknown = await response.json()
+    const parsed = parseGeminiResponse(data)
+    const candidate = parsed.candidates?.[0]
 
     if (!candidate) {
       return NextResponse.json({ error: API_ERROR.NO_CANDIDATES_GEMINI }, { status: 502 })
@@ -95,19 +101,22 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.GENERATION_BLOCKED_SAFETY }, { status: 422 })
     }
 
-    const parts = candidate.content?.parts
-    if (!parts?.length) {
+    const parts = candidate.content?.parts ?? []
+    if (parts.length === 0) {
       return NextResponse.json({ error: API_ERROR.NO_CONTENT_PARTS_GEMINI }, { status: 502 })
     }
 
-    const imagePart = parts.find((p: any) => p.inline_data || p.inlineData)
+    const imagePart = findGeminiImagePart(parts)
     if (imagePart) {
-      const inlineData = imagePart.inline_data || imagePart.inlineData
-      return NextResponse.json({ imageBase64: inlineData.data })
+      const inlineData = imagePart.inline_data ?? imagePart.inlineData
+      const imageBase64 = inlineData?.data
+      if (imageBase64) {
+        return NextResponse.json({ imageBase64 })
+      }
     }
 
-    const textPart = parts.find((p: any) => p.text)
-    if (textPart) {
+    const textPart = findGeminiTextPart(parts)
+    if (textPart?.text) {
       return NextResponse.json(
         { error: `Gemini returned text instead of image: ${textPart.text.substring(0, 100)}` },
         { status: 502 }

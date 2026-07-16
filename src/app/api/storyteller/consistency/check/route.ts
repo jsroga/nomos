@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   runConsistencyCheck,
 } from '@/domains/storyteller/server'
-import type { ConsistencyCheckRequest } from '@/domains/storyteller/core/types/ConsistencyTypes'
+import type { ConsistencyCheckRequest } from '@/domains/storyteller/core/types/consistency-types'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'

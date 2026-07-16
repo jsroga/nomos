@@ -64,7 +64,7 @@ export interface TriggerRunResult {
 export interface RunStatus {
   runId: string
   status: string
-  output?: any
+  output?: unknown
   error?: string
   metadata?: Record<string, unknown>
   createdAt?: string
@@ -323,7 +323,7 @@ export class ServiceError extends Error {
   constructor(
     message: string,
     public code: ServiceErrorCode,
-    public details?: any
+    public details?: unknown
   ) {
     super(message)
     this.name = GenerationServiceErrorName.ServiceError

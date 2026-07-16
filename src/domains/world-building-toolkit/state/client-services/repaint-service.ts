@@ -1,15 +1,12 @@
 import { useWorldStore } from '../useWorldStore'
 import type { Tile } from '../../core/world-types'
 import { TILE_COORD_SEPARATOR } from '../../ui/constants/tile-stage-labels'
+import { postRepaint } from '../../core/io/repaint.api'
 import {
   CanvasContextType,
   CanvasLineStyle,
-  ContentType,
   HtmlElementTag,
-  HttpMethod,
-  HttpRequestHeader,
   ImageCrossOrigin,
-  RepaintApiRoute,
   RepaintCanvasFill,
   RepaintDataUrlPrefix,
   RepaintDefaultPrompt,
@@ -127,7 +124,10 @@ export class RepaintService {
           const tileCanvas = document.createElement(HtmlElementTag.Canvas)
           tileCanvas.width = this.TILE_SIZE
           tileCanvas.height = this.TILE_SIZE
-          const ctx = tileCanvas.getContext(CanvasContextType.TwoD)!
+          const ctx = tileCanvas.getContext(CanvasContextType.TwoD)
+          if (!ctx) {
+            throw new Error(RepaintServiceError.FailedToAcquireCanvasContext)
+          }
 
           // If tile exists, load and draw the existing image first
           if (existingTile?.image_filename) {
@@ -350,25 +350,16 @@ export class RepaintService {
     // 8. Call server-side inpainting API
     console.log(RepaintServiceLog.CallingServerSideApi, { styleReferenceUrls })
 
-    const response = await fetch(RepaintApiRoute.Repaint, {
-      method: HttpMethod.Post,
-      headers: { [HttpRequestHeader.ContentType]: ContentType.Json },
-      body: JSON.stringify({
-        projectId: currentProject.id,
-        base64Image,
-        maskBase64,
-        prompt: prompt || RepaintDefaultPrompt.SeamlessBlend,
-        styleReferenceUrls,
-      }),
+    const { imageBase64 } = await postRepaint({
+      projectId: currentProject.id,
+      base64Image,
+      maskBase64,
+      prompt: prompt || RepaintDefaultPrompt.SeamlessBlend,
+      styleReferenceUrls,
     })
 
-    const data = await response.json()
-    if (!response.ok || !data.imageBase64) {
-      throw new Error(data.error || RepaintServiceError.RepaintApiFailed)
-    }
-
     return {
-      imageUrl: `${RepaintDataUrlPrefix.PngBase64}${data.imageBase64}`,
+      imageUrl: `${RepaintDataUrlPrefix.PngBase64}${imageBase64}`,
       bounds,
     }
   }

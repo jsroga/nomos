@@ -15,13 +15,14 @@ export const LOOP_SELECTOR_RESET_CANCEL = 'Cancel'
 export const LOOP_SELECTOR_FETCH_FAILED_LOG = 'Failed to fetch loops:'
 export const LOOP_SELECTOR_DELETE_FAILED_LOG = 'Failed to delete loop:'
 
-export enum LoopSelectorLocale {
-  Tag = 'en-US',
-  Month = 'short',
-  Day = 'numeric',
-  Hour = '2-digit',
-  Minute = '2-digit',
-}
+export const LOOP_SELECTOR_LOCALE_TAG = 'en-US'
+
+export const LOOP_SELECTOR_LOCALE_OPTIONS = {
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+} as const
 
 export enum LoopSelectorConfirmVariant {
   Destructive = 'destructive',

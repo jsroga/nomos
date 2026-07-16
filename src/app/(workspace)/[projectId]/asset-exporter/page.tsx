@@ -1,12 +1,16 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AssetExporterSidebar,
   AssetEditor,
   ThreeDPanel,
 } from '@/domains/3d-asset-exporter'
-import { useWorldStore } from '@/domains/world-building-toolkit'
+import {
+  AssetsPanel,
+  SettingsDialog,
+  useWorldStore,
+} from '@/domains/world-building-toolkit'
 import { Image as ImageIcon, Box } from 'lucide-react'
 import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
@@ -20,6 +24,9 @@ export default function AssetExporterPage() {
   const assets = useWorldStore(state => state.assets)
   const previewAssetId = useWorldStore(state => state.previewAssetId)
   const setPreviewAssetId = useWorldStore(state => state.setPreviewAssetId)
+  const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
+  const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   // Clear selected asset when navigating away from this page
   useEffect(() => {
@@ -33,7 +40,22 @@ export default function AssetExporterPage() {
   return (
     <div className="flex h-full w-full overflow-hidden bg-background text-foreground">
       <div id={TOUR_STEP_IDS.EXPORTED_ASSETS_LIST}>
-        <AssetExporterSidebar />
+        <AssetExporterSidebar
+          currentProject={currentProject}
+          assetCount={assets.length}
+          showAllAssetMasks={showAllAssetMasks}
+          onToggleAssetMasks={() => setShowAllAssetMasks(!showAllAssetMasks)}
+          onUploadComplete={() => {
+            const fetchAssets = useWorldStore.getState().fetchAssets
+            if (fetchAssets) {
+              void fetchAssets()
+            }
+          }}
+          assetsPanel={<AssetsPanel showHelpText={false} />}
+          settingsDialog={
+            <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+          }
+        />
       </div>
       <div className="flex-1 relative flex flex-col bg-muted/10 overflow-hidden">
         {/* Always render editor panel container for tour selector */}

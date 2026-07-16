@@ -41,6 +41,7 @@ export enum RepaintServiceError {
   NoProjectSelected = 'No project selected',
   FailedToCreateCanvas = 'Failed to create canvas',
   FailedToCreateMaskCanvas = 'Failed to create mask canvas',
+  FailedToAcquireCanvasContext = 'Failed to acquire 2D canvas context for tile repaint',
   RepaintApiFailed = 'Repaint API failed',
 }
 

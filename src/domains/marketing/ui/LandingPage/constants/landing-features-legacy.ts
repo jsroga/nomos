@@ -1,7 +1,16 @@
-import { Boxes, Brain, Flame, Map, Palette, Shield, Zap } from 'lucide-react'
+import { Boxes, Brain, Flame, Map, Palette, Shield, Zap, type LucideIcon } from 'lucide-react'
+
+export interface LegacyFeature {
+  icon: LucideIcon
+  title: string
+  description: string
+  accent: string
+  code: string
+  img: string
+}
 
 /** Legacy FEATURES / STEPS data — preserved for BrutalCard / unused step flows. */
-export const LEGACY_FEATURES = [
+export const LEGACY_FEATURES: LegacyFeature[] = [
   {
     icon: Map,
     title: 'World Generation',
@@ -58,9 +67,18 @@ export const LEGACY_FEATURES = [
     code: 'SEC_AST',
     img: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80',
   },
-] as const
+]
 
-export const LEGACY_STEPS = [
+export interface LegacyStep {
+  title: string
+  subtitle: string
+  description: string
+  type3d: string
+  stat: string
+  statLabel: string
+}
+
+export const LEGACY_STEPS: LegacyStep[] = [
   {
     title: 'Generate',
     subtitle: 'PROCEDURAL_ENGINE',
@@ -87,4 +105,4 @@ export const LEGACY_STEPS = [
     stat: '300%',
     statLabel: 'more content',
   },
-] as const
+]

@@ -12,18 +12,26 @@ Each module under `src/domains/<module>/` is a vertical slice with this layer sh
 src/domains/<module>/
 ├── ui/           # React components (presentational + container)
 ├── state/        # Zustand client UI state; TanStack Query for server data
-├── io/           # network/api boundaries
-├── core/         # pure domain logic (no React, no DB, no IO)
+├── core/         # domain logic + network boundaries
+│   ├── io/       # fetch clients, DTOs, query keys (no React, no DB)
+│   └── …         # pure types, reducers, validators (no fetch)
 ├── services/     # orchestration / business services
-├── agents/       # Mastra agents + tools (domain-specific)
-├── tasks/        # Trigger.dev tasks (asset modules lean here, not agents/)
-├── prompts/      # agent prompts + Workspace skills
+├── ai/             # SERVER-ONLY Mastra layer: constants, tools, workflows, prompts
+│   ├── agents/     # Mastra Agent classes + multi-file agent packages
+│   └── prompts/    # agent prompts + Workspace skills
+├── tasks/          # Trigger.dev tasks (asset modules lean here, not ai/)
 └── index.ts      # single public barrel
 ```
 
 ## Dependency rule (inward → outward allowed; outward → inward forbidden)
 
-`ui → state → io → core → services → agents`, and `ui` may read `services`/`agents` only via the barrel. **Never**: `ui` touching `db`/`io` directly, `core` importing React/DB/IO, cross-module internal (non-barrel) imports.
+`ui → state → core → services → ai`, and `ui` may read `services`/`ai` only via the barrel. **Never**: `ui` touching `db` directly, pure `core/` (outside `core/io/`) importing React/DB/fetch, cross-module internal (non-barrel) imports.
+
+## Layer folder discipline
+
+When `hooks/`, `utils/`, or `constants/` sit beside UI components, **PascalCase components go under `ui/components/`** — not at `ui/` root.
+
+When `constants/`, `tools/`, `workflows/`, or `prompts/` sit beside Mastra agents, **agent packages go under `ai/agents/`** — not at `ai/` root. The domain folder is `ai/` (not `agents/`); nested agent implementations live in `ai/agents/`. Prompts and skills live in `ai/prompts/`.
 
 ## Non-negotiable invariants
 
@@ -34,7 +42,7 @@ src/domains/<module>/
 5. Typed boundaries — no `any` at module edges; no `z.any()` in workflow/agent schemas; **no `as` type assertions** (`as const` only).
 6. File size / complexity — warn **400** / error **800** lines; complexity **15** / **25** — see `.cursor/rules/code-metrics.mdc` and `quality-backlog.mdc` when splitting god files.
 7. ESLint import guards — barrel guards for outsiders; **cross-domain imports forbidden** (`@/domains/A` must not import `@/domains/B`; shared code goes in `@/shared`). See `.cursor/rules/eslint-boundaries.mdc`.
-8. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/` not `agents/`.
+8. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/` not `ai/`.
 9. Magic string sets (action types, statuses, phases) → **TypeScript `enum`**, not inline literals or `as const` object maps.
 
 ## When changing a module

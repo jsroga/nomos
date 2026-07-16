@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { normalizeMastraTraceId } from '@/domains/storyteller/agents/tracing'
+import { normalizeMastraTraceId } from '@/domains/storyteller/ai/tracing'
 // Value import from io/mastra-runtime also registers the storyteller agents +
 // workflow on the kernel runtime registry before getMastraInstance() runs.
-import { BEAT_DRAFT_WORKFLOW_ID } from '@/domains/storyteller/io/mastra-runtime'
-import { beatDraftOutputSchema } from '@/domains/storyteller/agents/workflows/beat-draft-contract'
-import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/constants/ChatModelCatalog'
+import { BEAT_DRAFT_WORKFLOW_ID } from '@/domains/storyteller/core/io/mastra-runtime'
+import { beatDraftOutputSchema } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
+import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import {
   ChatContinuitySeverity,
   ChatPipelineRunStatus,
   ChatResponseStatus,
   ChatSenderName,
-} from '@/domains/storyteller/io/constants/chat-route'
+} from '@/domains/storyteller/core/io/constants/chat-route'
 import {
   StorytellerMessageRole,
   StorytellerMessageType,

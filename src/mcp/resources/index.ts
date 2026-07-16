@@ -6,7 +6,7 @@
  */
 
 import { MCPServerResources } from '@mastra/mcp'
-import { entitiesService } from '@/shared/data/EntitiesService'
+import { entitiesService } from '@/shared/data/entities-service'
 import { storytellerService } from '@/domains/storyteller/server'
 import { validateApiKey, getServiceContext } from '../core/auth'
 import {

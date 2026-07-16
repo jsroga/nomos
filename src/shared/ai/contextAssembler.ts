@@ -24,6 +24,7 @@ type DirectNeighborKey = 'up' | 'down' | 'left' | 'right'
 const DIRECT_NEIGHBOR_KEYS: readonly DirectNeighborKey[] = ['up', 'down', 'left', 'right']
 const HORIZONTAL_NEIGHBOR_KEYS: readonly DirectNeighborKey[] = ['left', 'right']
 const VERTICAL_NEIGHBOR_KEYS: readonly DirectNeighborKey[] = ['up', 'down']
+const CANVAS_2D_UNAVAILABLE = 'Failed to acquire 2D canvas context'
 
 export type ContextImageVariant = 'canonicalFullContext' | 'smartSeamContext'
 
@@ -358,7 +359,8 @@ async function assembleOnMainThread(
   const maskCanvas = document.createElement('canvas')
   maskCanvas.width = size
   maskCanvas.height = size
-  const maskCtx = maskCanvas.getContext('2d')!
+  const maskCtx = maskCanvas.getContext('2d')
+  if (!maskCtx) throw new Error(CANVAS_2D_UNAVAILABLE)
   const imageData = ctx.getImageData(0, 0, size, size)
   const maskImageData = maskCtx.createImageData(size, size)
   const source = imageData.data

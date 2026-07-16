@@ -8,7 +8,8 @@ import {
   type MjGridPayload,
   type WorldGenReviewPayload,
 } from '@/domains/world-building-toolkit/state/constants/world-ui-store'
-import type { SelectResult } from './client-services/SelectModeService'
+import type { SelectResult } from './client-services/select-mode-service'
+import { omitRecordKey } from './utils/omit-record-key'
 
 export type SelectBox = { x1: number; y1: number; x2: number; y2: number }
 
@@ -188,40 +189,32 @@ export const useWorldUiStore = create<WorldUiState>((set, get) => ({
       return { jobs: { ...state.jobs, [id]: { ...state.jobs[id], status } } }
     }),
   removeJob: id =>
-    set(state => {
-      const jobs = { ...state.jobs }
-      delete jobs[id]
-      return { jobs }
-    }),
+    set(state => ({
+      jobs: omitRecordKey(state.jobs, id),
+    })),
 
   addGeneratingTile: (x, y) => {
     const key = `${x},${y}`
-    set(state => {
-      const failedTiles = { ...state.failedTiles }
-      delete failedTiles[key]
-      return { generatingTiles: { ...state.generatingTiles, [key]: true }, failedTiles }
-    })
+    set(state => ({
+      generatingTiles: { ...state.generatingTiles, [key]: true },
+      failedTiles: omitRecordKey(state.failedTiles, key),
+    }))
   },
   removeGeneratingTile: (x, y) =>
-    set(state => {
-      const generatingTiles = { ...state.generatingTiles }
-      delete generatingTiles[`${x},${y}`]
-      return { generatingTiles }
-    }),
+    set(state => ({
+      generatingTiles: omitRecordKey(state.generatingTiles, `${x},${y}`),
+    })),
   addUpscalingTile: (x, y) => {
     const key = `${x},${y}`
-    set(state => {
-      const failedTiles = { ...state.failedTiles }
-      delete failedTiles[key]
-      return { upscalingTiles: { ...state.upscalingTiles, [key]: true }, failedTiles }
-    })
+    set(state => ({
+      upscalingTiles: { ...state.upscalingTiles, [key]: true },
+      failedTiles: omitRecordKey(state.failedTiles, key),
+    }))
   },
   removeUpscalingTile: (x, y) =>
-    set(state => {
-      const upscalingTiles = { ...state.upscalingTiles }
-      delete upscalingTiles[`${x},${y}`]
-      return { upscalingTiles }
-    }),
+    set(state => ({
+      upscalingTiles: omitRecordKey(state.upscalingTiles, `${x},${y}`),
+    })),
   addRepaintingTile: (x, y) => {
     useGlobalStatusStore.getState().addOperation({
       id: `rep-${x},${y}`,
@@ -231,52 +224,42 @@ export const useWorldUiStore = create<WorldUiState>((set, get) => ({
       status: GlobalOperationStatus.InProgress,
     })
     const key = `${x},${y}`
-    set(state => {
-      const failedTiles = { ...state.failedTiles }
-      delete failedTiles[key]
-      return { repaintingTiles: { ...state.repaintingTiles, [key]: true }, failedTiles }
-    })
+    set(state => ({
+      repaintingTiles: { ...state.repaintingTiles, [key]: true },
+      failedTiles: omitRecordKey(state.failedTiles, key),
+    }))
   },
   removeRepaintingTile: (x, y) => {
     useGlobalStatusStore.getState().removeOperation(`rep-${x},${y}`)
-    set(state => {
-      const repaintingTiles = { ...state.repaintingTiles }
-      delete repaintingTiles[`${x},${y}`]
-      return { repaintingTiles }
-    })
+    set(state => ({
+      repaintingTiles: omitRecordKey(state.repaintingTiles, `${x},${y}`),
+    }))
   },
   addEnhancingTile: (x, y) => {
     const key = `${x},${y}`
-    set(state => {
-      const failedTiles = { ...state.failedTiles }
-      delete failedTiles[key]
-      return { enhancingTiles: { ...state.enhancingTiles, [key]: true }, failedTiles }
-    })
+    set(state => ({
+      enhancingTiles: { ...state.enhancingTiles, [key]: true },
+      failedTiles: omitRecordKey(state.failedTiles, key),
+    }))
   },
   removeEnhancingTile: (x, y) =>
-    set(state => {
-      const enhancingTiles = { ...state.enhancingTiles }
-      delete enhancingTiles[`${x},${y}`]
-      return { enhancingTiles }
-    }),
+    set(state => ({
+      enhancingTiles: omitRecordKey(state.enhancingTiles, `${x},${y}`),
+    })),
   setTileError: (x, y, message) =>
     set(state => ({ failedTiles: { ...state.failedTiles, [`${x},${y}`]: message } })),
   clearTileError: (x, y) =>
-    set(state => {
-      const failedTiles = { ...state.failedTiles }
-      delete failedTiles[`${x},${y}`]
-      return { failedTiles }
-    }),
+    set(state => ({
+      failedTiles: omitRecordKey(state.failedTiles, `${x},${y}`),
+    })),
   setTileProgress: (x, y, progress, stage) =>
     set(state => ({
       tileProgress: { ...state.tileProgress, [`${x},${y}`]: { progress, stage } },
     })),
   clearTileProgress: (x, y) =>
-    set(state => {
-      const tileProgress = { ...state.tileProgress }
-      delete tileProgress[`${x},${y}`]
-      return { tileProgress }
-    }),
+    set(state => ({
+      tileProgress: omitRecordKey(state.tileProgress, `${x},${y}`),
+    })),
 
   setRepaintMode: isRepaintMode => set({ isRepaintMode }),
   setBrushSize: brushSize => set({ brushSize }),
@@ -307,11 +290,9 @@ export const useWorldUiStore = create<WorldUiState>((set, get) => ({
       },
     })),
   rejectUpscale: (x, y) =>
-    set(state => {
-      const pendingUpscales = { ...state.pendingUpscales }
-      delete pendingUpscales[`${x},${y}`]
-      return { pendingUpscales }
-    }),
+    set(state => ({
+      pendingUpscales: omitRecordKey(state.pendingUpscales, `${x},${y}`),
+    })),
   getPendingUpscale: (x, y) => get().pendingUpscales[`${x},${y}`],
 
   setPendingGeneration: (x, y, data) =>
@@ -322,11 +303,9 @@ export const useWorldUiStore = create<WorldUiState>((set, get) => ({
       },
     })),
   rejectGeneration: (x, y) =>
-    set(state => {
-      const pendingGenerations = { ...state.pendingGenerations }
-      delete pendingGenerations[`${x},${y}`]
-      return { pendingGenerations }
-    }),
+    set(state => ({
+      pendingGenerations: omitRecordKey(state.pendingGenerations, `${x},${y}`),
+    })),
   getPendingGeneration: (x, y) => get().pendingGenerations[`${x},${y}`],
 
   setPendingFidelity: (x, y, data) =>
@@ -337,11 +316,9 @@ export const useWorldUiStore = create<WorldUiState>((set, get) => ({
       },
     })),
   rejectFidelity: (x, y) =>
-    set(state => {
-      const pendingFidelity = { ...state.pendingFidelity }
-      delete pendingFidelity[`${x},${y}`]
-      return { pendingFidelity }
-    }),
+    set(state => ({
+      pendingFidelity: omitRecordKey(state.pendingFidelity, `${x},${y}`),
+    })),
   getPendingFidelity: (x, y) => get().pendingFidelity[`${x},${y}`],
 
   enqueueReviewRequest: payload =>

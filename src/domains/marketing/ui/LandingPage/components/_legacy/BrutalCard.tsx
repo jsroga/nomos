@@ -1,9 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { LEGACY_FEATURES } from '@/domains/marketing/ui/LandingPage/constants/landing-features-legacy'
-
-type LegacyFeature = (typeof LEGACY_FEATURES)[number]
+import type { LegacyFeature } from '@/domains/marketing/ui/LandingPage/constants/landing-features-legacy'
 
 export function BrutalCard({
   feature,

@@ -3,7 +3,7 @@ import { Globe, RefreshCw, Zap, Palette, Sparkles, Star, Loader2, Trash2, Plus }
 import { IconButton } from '@/components/IconButton'
 import { StorytellerImage } from '../StorytellerImage'
 import toast from 'react-hot-toast'
-import { moodboardGenerationService } from '../../services/MoodboardGenerationService'
+import { moodboardGenerationService } from '@/domains/storyteller/services/moodboard-generation-service'
 import { RichText } from '../RichText'
 
 import { useBible } from './BibleContext'
@@ -11,6 +11,8 @@ import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { MoodboardProvider } from '@/domains/storyteller/ui/WorldBible/constants/bible-overview'
+import { settingsApi } from '@/domains/world-building-toolkit/core/io/settings.api'
+import { patchStorytellerProject } from '@/domains/storyteller/core/io/storyteller.api'
 
 interface BibleOverviewProps {
   primaryImageIndex: number | null
@@ -81,9 +83,11 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
   // LegNext/Midjourney can be configured via env on server; avoid "Missing API key" when set there
   const [legnextFromServer, setLegnextFromServer] = useState(false)
   useEffect(() => {
-    fetch('/api/settings/providers')
-      .then(res => res.ok ? res.json() : null)
-      .then(data => data?.providers?.legnext === true && setLegnextFromServer(true))
+    settingsApi
+      .fetchProviders()
+      .then(providers => {
+        if (providers.legnext) setLegnextFromServer(true)
+      })
       .catch(() => {})
   }, [])
 
@@ -340,14 +344,9 @@ export const BibleOverview: React.FC<BibleOverviewProps> = ({
                               const updatedImages = [...displayMoodImages].filter(
                                 (_, idx) => idx !== i
                               )
-                              const res = await fetch(`/api/storyteller/projects/${projectId}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  seriesBible: { moodImages: updatedImages },
-                                }),
+                              await patchStorytellerProject(projectId, {
+                                seriesBible: { moodImages: updatedImages },
                               })
-                              if (!res.ok) throw new Error('Failed to remove image')
                               await onRefetchMoodboardData()
                               toast.success('Image removed')
                             } catch (err) {

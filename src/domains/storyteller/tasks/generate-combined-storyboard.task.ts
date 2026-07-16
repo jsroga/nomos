@@ -1,5 +1,5 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
 import { getErrorMessage } from '@/shared/errors/error-utils'
@@ -136,10 +136,7 @@ Output: A single high-resolution Board/Map image.
 
       await metadata.set('stage', 'updating_database')
 
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const supabase = createSupabaseServiceClient()
 
       // Fetch current story_plan from events
       const { data: episodeData, error: fetchError } = await supabase

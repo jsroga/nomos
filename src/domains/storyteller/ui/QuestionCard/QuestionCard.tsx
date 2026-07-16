@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/Button'
 import { Textarea } from '@/components/Textarea'
 import { cn } from '@/shared/data/utils'
-import { AgentQuestion, QuestionOption } from '@/domains/storyteller/core/types/ActionTypes'
-import { QuestionType, QuestionUrgency } from '@/domains/storyteller/core/types/Enums'
+import { AgentQuestion, QuestionOption } from '@/domains/storyteller/core/types/action-types'
+import { QuestionType, QuestionUrgency } from '@/domains/storyteller/core/types/enums'
 import {
   QUESTION_URGENCY_BADGE,
   QUESTION_URGENCY_BORDER_CLASS,

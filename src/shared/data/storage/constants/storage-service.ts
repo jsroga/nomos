@@ -24,15 +24,18 @@ export enum StorageFileExtension {
   Svg = 'svg',
 }
 
-export enum StorageMimeType {
-  GltfBinary = ContentType.GltfBinary,
-  GltfJson = 'model/gltf+json',
-  Png = ContentType.Png,
-  Jpeg = 'image/jpeg',
-  Webp = 'image/webp',
-  SvgXml = 'image/svg+xml',
-  OctetStream = ContentType.OctetStream,
-}
+// Const maps (not enums): several members alias other enums' values, which
+// enums can't express as literal members.
+export const StorageMimeType = {
+  GltfBinary: ContentType.GltfBinary,
+  GltfJson: 'model/gltf+json',
+  Png: ContentType.Png,
+  Jpeg: 'image/jpeg',
+  Webp: 'image/webp',
+  SvgXml: 'image/svg+xml',
+  OctetStream: ContentType.OctetStream,
+} as const
+export type StorageMimeType = (typeof StorageMimeType)[keyof typeof StorageMimeType]
 
 export enum StorageEncoding {
   Base64 = 'base64',
@@ -42,14 +45,15 @@ export enum StorageBlobAccess {
   Public = 'public',
 }
 
-export enum StorageFormField {
-  File = FormField.File,
-}
+export const StorageFormField = {
+  File: FormField.File,
+} as const
 
-export enum StorageHttpMethod {
-  Post = HttpMethod.Post,
-  Head = HttpMethod.Head,
-}
+export const StorageHttpMethod = {
+  Post: HttpMethod.Post,
+  Head: HttpMethod.Head,
+} as const
+export type StorageHttpMethod = (typeof StorageHttpMethod)[keyof typeof StorageHttpMethod]
 
 export enum TmpFilesApi {
   UploadUrl = 'https://tmpfiles.org/api/v1/upload',

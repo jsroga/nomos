@@ -1,4 +1,4 @@
-import type { WorldAsset, WorldProject, WorldTile } from '../io/world.dto'
+import type { WorldAsset, WorldProject, WorldTile } from './io/world.dto'
 import { readNumber, recordFromJson } from '@/shared/data/json-guards'
 
 /** Legacy snake_case tile shape used by existing UI code */

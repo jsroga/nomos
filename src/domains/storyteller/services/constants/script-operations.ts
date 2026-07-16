@@ -9,4 +9,4 @@ export const SCRIPT_CONDENSE_INSTRUCTION =
   'Condense this to its essential elements. Remove redundant action lines, tighten dialogue, but keep the core dramatic beats.'
 
 export const SCRIPT_VISUAL_HOOK_INSTRUCTION =
-  "Add a strong visual hook to open this scene. What's the first, most striking image we see? Make it iconic and meaningful."
+  'Add a strong visual hook to open this scene. What\'s the first, most striking image we see? Make it iconic and meaningful.'

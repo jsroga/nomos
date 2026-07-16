@@ -11,7 +11,7 @@ import {
   interiorDesignLookupQuerySchema,
   interiorDesignResponseSchema,
   updateInteriorDesignRequestSchema,
-} from '@/domains/interior-designer/io/interior-designer.dto'
+} from '@/domains/interior-designer/core/io/interior-designer.dto'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { FormField, QueryParam } from '@/shared/data/constants/protocol'
@@ -75,14 +75,17 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.json(interiorDesignResponseSchema.parse(design || null))
     } else {
-      if (!(await verifyProjectAccess(projectId!, session.user.id))) {
+      if (!projectId) {
+        return NextResponse.json({ error: API_ERROR.MISSING_PROJECT_ID }, { status: 403 })
+      }
+      if (!(await verifyProjectAccess(projectId, session.user.id))) {
         return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
       const designs = await db
         .select()
         .from(interiorDesigns)
-        .where(eq(interiorDesigns.projectId, projectId!))
+        .where(eq(interiorDesigns.projectId, projectId))
         .orderBy(desc(interiorDesigns.updatedAt))
 
       return NextResponse.json(interiorDesignListResponseSchema.parse(designs))

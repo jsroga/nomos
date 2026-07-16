@@ -9,14 +9,17 @@ import {
   StorySequence,
   Item,
   StoryEvent,
-} from '@/domains/storyteller/prompts/schemas/agent-schemas'
+} from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { canEditBible } from '@/shared/auth/bible-permissions'
 import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
 import { recordFromJson } from '@/shared/data/json-guards'
 import {
+  fetchStorytellerBibleLockOptional,
+  postStorytellerBibleLock,
+} from '@/domains/storyteller/core/io/storyteller.api'
+import {
   BIBLE_CONTEXT_DEFAULT_WORLD_RULE_CATEGORY,
   BIBLE_CONTEXT_HOOK_ERROR,
-  BIBLE_CONTEXT_LOCK_API_PATH,
   BIBLE_CONTEXT_LOCK_CACHE_PREFIX,
   BIBLE_CONTEXT_LOG_LOCK_FETCH_FAILED,
   BIBLE_CONTEXT_LOG_PARENT_CAUGHT_UP,
@@ -24,7 +27,6 @@ import {
   BIBLE_CONTEXT_TOAST_LOCK_FAILED,
   BIBLE_CONTEXT_TOAST_UNLOCKED,
   BIBLE_CONTEXT_TOAST_UPDATED,
-  BibleContextHttpMethod,
   BibleLockAction,
 } from './constants/bible-context'
 
@@ -197,13 +199,7 @@ export const BibleProvider: React.FC<{
 
       cachedFetch(
         `${BIBLE_CONTEXT_LOCK_CACHE_PREFIX}${projectId}`,
-        async () => {
-          const response = await fetch(`${BIBLE_CONTEXT_LOCK_API_PATH}?projectId=${projectId}`)
-          if (response.ok) {
-            return response.json()
-          }
-          return { isLocked: false, lockedBy: null, lockedAt: null }
-        },
+        () => fetchStorytellerBibleLockOptional(projectId),
         {
           ttlMs: 60_000,
           validate: (value): value is { isLocked: boolean; lockedBy: string | null; lockedAt: string | null } => {
@@ -258,20 +254,12 @@ export const BibleProvider: React.FC<{
       setIsLockLoading(true)
       try {
         const action = isLocked ? BibleLockAction.Unlock : BibleLockAction.Lock
-        const response = await fetch(BIBLE_CONTEXT_LOCK_API_PATH, {
-          method: BibleContextHttpMethod.Post,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectId, action, userEmail }),
-        })
-        if (response.ok) {
-          const data = await response.json()
-          // Clear the cache so future fetches get updated data
-          clearFetchCache(`${BIBLE_CONTEXT_LOCK_CACHE_PREFIX}${projectId}`)
-          setIsLocked(data.action === BibleLockAction.Lock)
-          setLockedBy(data.lockedBy)
-          setLockedAt(data.lockedAt ? new Date(data.lockedAt) : null)
-          toast.success(data.action === BibleLockAction.Lock ? BIBLE_CONTEXT_TOAST_LOCKED : BIBLE_CONTEXT_TOAST_UNLOCKED)
-        }
+        const data = await postStorytellerBibleLock({ projectId, action, userEmail })
+        clearFetchCache(`${BIBLE_CONTEXT_LOCK_CACHE_PREFIX}${projectId}`)
+        setIsLocked(data.isLocked)
+        setLockedBy(data.lockedBy)
+        setLockedAt(data.lockedAt ? new Date(data.lockedAt) : null)
+        toast.success(data.isLocked ? BIBLE_CONTEXT_TOAST_LOCKED : BIBLE_CONTEXT_TOAST_UNLOCKED)
       } catch (_error) {
         toast.error(BIBLE_CONTEXT_TOAST_LOCK_FAILED)
       } finally {

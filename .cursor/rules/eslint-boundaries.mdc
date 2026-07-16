@@ -38,7 +38,7 @@ Cross-domain import forbidden: use @/shared instead of @/domains/<other>.
 
 **Also enforced:**
 
-- Outside `src/domains/**` → domain **barrels** only (deep imports blocked except allowed `*/io/*` seams).
+- Outside `src/domains/**` → domain **barrels** only (deep imports blocked except allowed `*/core/io/*` seams).
 - `src/shared/**` → must **not** import `@/domains/*` or `@/app/*`.
 - Legacy root folders (`@/lib`, `@/agent-core`, …) → use `@/shared/*` paths.
 
@@ -52,6 +52,21 @@ Use `@/shared/data/deep-merge` — do not add local `deepMerge` helpers:
 | `deepMergeRecords` | Nested objects; arrays/scalars from source **replace** |
 | `smartMergeArray` | Identity-based array merge only |
 | `recordFromJson` | Untyped JSON/jsonb → `Record<string, unknown>` without `as` |
+
+## URL construction (single implementation)
+
+Use `@/shared/data/url-builder` — do not hand-build paths or query strings:
+
+| Export | When |
+|--------|------|
+| `buildUrl(path, query?)` | API routes with query params (`QueryParam` enum keys) |
+| `joinUrlPath(base, ...segments)` | Path params (`/api/foo/${id}/bar`) |
+| `appendQueryParams(url, params)` | Merge query onto an existing URL |
+| `cloneSearchParams(source)` | Clone Next.js `searchParams` before mutation |
+| `buildPathWithSearchParams(pathname, params)` | `router.push` / `router.replace` |
+| `encodePathSegment(value)` | Single encoded segment (rare — prefer `joinUrlPath`) |
+
+ESLint warns on raw `encodeURIComponent` (except inside `url-builder.ts`).
 
 ## Magic strings → prefer **enums**, not string const objects
 

@@ -14,7 +14,7 @@ import {
   ROLE_ENV_VARS,
   resolveRoleModel,
   type StorytellerModelRole,
-} from '@/domains/storyteller/config/constants/ModelConfig'
+} from '@/domains/storyteller/config/constants/model-config'
 
 // Node.js Runtime required for Mastra core dependencies
 // eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)

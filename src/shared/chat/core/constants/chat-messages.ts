@@ -57,7 +57,7 @@ export const CHAT_QUOTA_EXCEEDED_MESSAGE =
 export const CHAT_RATE_LIMITED_MESSAGE =
   '⏳ **Rate Limited**\n\nToo many requests. Please wait a moment and try again.'
 export const CHAT_CONNECTION_ERROR_MESSAGE =
-  "🌐 **Connection Error**\n\nCouldn't reach the AI service. Please check your internet connection and try again."
+  '🌐 **Connection Error**\n\nCouldn\'t reach the AI service. Please check your internet connection and try again.'
 export const CHAT_HOT_RELOAD_ERROR_MESSAGE =
   'Connection interrupted (possibly due to Hot Reload). Please try again.'
 export const CHAT_SEND_MESSAGE_FAILED = 'Failed to send message. Please try again.'

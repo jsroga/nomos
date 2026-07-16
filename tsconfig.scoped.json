@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "include": [
+    "src/domains/storyteller/ui/PhaseNavigator/constants/phase-navigator.ts",
+    "src/domains/storyteller/ui/QuestionCard/QuestionCard.tsx",
+    "src/domains/storyteller/ui/QuestionCard/constants/question-card-display.ts",
+    "src/domains/storyteller/ui/ReferenceText/ReferenceText.tsx",
+    "src/domains/storyteller/ui/RichText/RichText.tsx",
+    "src/domains/storyteller/ui/SeasonOverviewCard/SeasonOverviewCard.tsx",
+    "src/domains/storyteller/ui/StoryPlanBoard/StoryPlanBoard.tsx",
+    "src/domains/storyteller/ui/StorytellerLayout/StoryActionRenderer.tsx"
+  ]
+}

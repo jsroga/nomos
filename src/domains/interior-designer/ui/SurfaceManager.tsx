@@ -10,6 +10,7 @@ import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { isActiveOperationStatus } from '@/shared/jobs/constants/async-operation-status'
 import * as THREE from 'three'
 import { Extrude } from '@react-three/drei'
+import { ThreeEvent } from '@react-three/fiber'
 import { RoadMesh } from '@/domains/interior-designer/ui/meshes/RoadMesh'
 import { SculptableSurface } from './SculptableSurface'
 import { getCachedTexture } from '@/domains/interior-designer/core/textureCache'
@@ -71,7 +72,7 @@ export const SurfaceManager: React.FC = () => {
 const SurfaceRenderer: React.FC<{
   surface: Surface
   isSelected: boolean
-  onClick: (e: any) => void
+  onClick: (e: ThreeEvent<MouseEvent>) => void
   opacity?: number
   groundColor: string
   waterColor: string

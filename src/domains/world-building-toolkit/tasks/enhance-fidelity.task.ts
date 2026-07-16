@@ -1,5 +1,4 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
 import { FIDELITY_PROMPTS, getCreativityPrompt } from '@/shared/data/server/prompts'
 import {
@@ -7,6 +6,12 @@ import {
   logLLMRequestComplete,
   logLLMRequestError,
 } from '@/trigger/utils/llm-logger'
+import {
+  parseGeminiResponse,
+  readGeminiImageData,
+  type GeminiContentPart,
+} from './constants/generate-tile-json-guards'
+import { createSupabaseServiceClient } from './constants/generate-tile-persist'
 
 // NOTE: getCreativityPrompt is now imported from @/shared/data/constants/prompts
 
@@ -118,7 +123,8 @@ export const enhanceFidelityTask = task({
     }
 
     const data = await response.json()
-    const candidate = data.candidates?.[0]
+    const geminiResponse = parseGeminiResponse(data)
+    const candidate = geminiResponse.candidates?.[0]
 
     if (!candidate) {
       logLLMRequestError({
@@ -144,8 +150,8 @@ export const enhanceFidelityTask = task({
       throw new Error('Generation blocked by safety filters')
     }
 
-    const parts = candidate.content?.parts
-    if (!parts || parts.length === 0) {
+    const parts = candidate.content?.parts ?? []
+    if (parts.length === 0) {
       logLLMRequestError({
         provider: 'gemini',
         model,
@@ -157,11 +163,11 @@ export const enhanceFidelityTask = task({
       throw new Error('No content parts returned')
     }
 
-    // Find image in response
-    const imagePart = parts.find((p: any) => p.inline_data || p.inlineData)
+    const hasInlineImage = (part: GeminiContentPart) => Boolean(readGeminiImageData(part))
+    const imagePart = parts.find(hasInlineImage)
     if (!imagePart) {
-      const textPart = parts.find((p: any) => p.text)
-      if (textPart) {
+      const textPart = parts.find(part => part.text)
+      if (textPart?.text) {
         const errorMsg = `Gemini returned text instead of image: ${textPart.text.substring(0, 100)}...`
         logLLMRequestError({
           provider: 'gemini',
@@ -184,8 +190,18 @@ export const enhanceFidelityTask = task({
       throw new Error('No image found in Gemini response')
     }
 
-    const inlineData = imagePart.inline_data || imagePart.inlineData
-    const enhancedImageBase64 = inlineData.data
+    const enhancedImageBase64 = readGeminiImageData(imagePart)
+    if (!enhancedImageBase64) {
+      logLLMRequestError({
+        provider: 'gemini',
+        model,
+        prompt: finalPrompt,
+        error: 'No image found in Gemini response',
+        input: geminiPayload,
+        output: data,
+      })
+      throw new Error('No image found in Gemini response')
+    }
 
     // Log successful completion
     logLLMRequestComplete({
@@ -225,10 +241,7 @@ export const enhanceFidelityTask = task({
     const enhancedUrl = blob.url
     logger.info('Enhanced image uploaded to Vercel Blob', { enhancedUrl })
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createSupabaseServiceClient()
 
     await metadata.set('progress', 90)
 

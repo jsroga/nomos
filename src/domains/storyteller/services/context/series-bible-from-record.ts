@@ -5,7 +5,7 @@ import {
   recordFromJson,
   stringArrayFromJson,
 } from '@/shared/data/json-guards'
-import type { SeriesBible, WorldRule } from '@/domains/storyteller/services/context/SeriesBible'
+import type { SeriesBible, WorldRule } from '@/domains/storyteller/services/context/series-bible'
 
 function worldRuleFromRecord(value: unknown): WorldRule | null {
   const row = recordFromJson(value)

@@ -312,7 +312,7 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
           )}
 
           {/* Inputs — collapsed by default on rejection to keep focus on the error */}
-          {entry.toolInput && !isRejected && (
+          {entry.toolInput != null && !isRejected && (
             <div className="text-xs text-muted-foreground/70 bg-muted/10 p-2 rounded border border-white/5">
               <span className="uppercase text-[9px] opacity-70 block mb-1 tracking-wider">
                 Input
@@ -326,7 +326,7 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
           )}
 
           {/* Result — only show full JSON when not a rejection (rejection already surfaced above) */}
-          {!isRejected && entry.toolResult && (
+          {!isRejected && entry.toolResult != null && (
             <div className="text-xs bg-black/40 p-2 rounded text-muted-foreground/80 border border-white/5">
               <span className="uppercase text-[9px] opacity-50 block mb-1 tracking-wider">
                 Result
@@ -373,7 +373,7 @@ const ActivityEntryItem: React.FC<{ entry: ActivityLogEntry }> = ({ entry }) => 
             </span>
             <span className="text-foreground/90 font-semibold">{entry.content}</span>
           </div>
-          {entry.details && (
+          {entry.details != null && (
             <div className="text-[10px] text-muted-foreground/60 italic pl-1 border-l-2 border-white/10 ml-1">
               {JSON.stringify(entry.details).slice(0, 150)}...
             </div>

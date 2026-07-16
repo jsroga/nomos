@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useMemo } from 'react'
-import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import type { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
 import {
   dedupeCastByName,
   mergeCastFromSource,
   readCastFromPlan,
-} from '@/domains/storyteller/core/formatting/StoryPlanFields'
+} from '@/domains/storyteller/core/formatting/story-plan-fields'
 import { recordArrayFromJson, recordFromJson, stringRecordFromJson } from '@/shared/data/json-guards'
 import {
   HYDRATION_BIBLE_CATEGORIES,

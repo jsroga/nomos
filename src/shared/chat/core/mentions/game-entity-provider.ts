@@ -8,6 +8,8 @@
 import { MentionProvider, MentionItem, ProjectContext } from './types'
 import { GameEntity } from '@/shared/data/queries/useGameEntities'
 import { MentionCategoryId } from '../constants/mention-types'
+import { GameEntityQueryParam } from '@/shared/data/constants/game-entities-wire'
+import { buildUrl } from '@/shared/data/url-builder'
 import {
   EntityApiQueryParam,
   GAME_ENTITY_FETCH_ERROR,
@@ -21,10 +23,12 @@ import {
  */
 async function fetchGameEntities(projectId: string, search?: string): Promise<GameEntity[]> {
   try {
-    const params = new URLSearchParams({ projectId })
-    if (search) params.append(EntityApiQueryParam.Search, search)
-
-    const response = await fetch(`/api/entities?${params.toString()}`)
+    const response = await fetch(
+      buildUrl('/api/entities', {
+        [GameEntityQueryParam.ProjectId]: projectId,
+        [EntityApiQueryParam.Search]: search,
+      })
+    )
     if (!response.ok) throw new Error(GAME_ENTITY_FETCH_ERROR)
 
     const data = await response.json()

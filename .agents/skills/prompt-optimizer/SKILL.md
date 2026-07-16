@@ -17,7 +17,7 @@ Blind edits that "feel better" are how prompts rot.
 ## This repo's prompt surface
 
 - Agent system prompts are large and structured (see
-  `src/domains/storyteller/agents/StorytellerAgent` — constraints, anti-slop,
+  `src/domains/storyteller/ai/agents/StorytellerAgent` — constraints, anti-slop,
   entity-link density, mandatory tool-usage, format contracts).
 - Prompts are managed via `src/prompts/*` (repository + registry); some are pushed
   to a hub (`npm run prompts:push`).

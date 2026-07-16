@@ -1,4 +1,4 @@
-import { BeatCard, CharacterState } from '@/domains/storyteller/core/types/StoryTypes'
+import { BeatCard, CharacterState } from '@/domains/storyteller/core/types/story-types'
 import {
   StoryPlan,
   WorldRule,
@@ -7,8 +7,8 @@ import {
   InspirationItem,
   KeyCharacter,
   EpisodePremise,
-} from '@/domains/storyteller/core/types/StoryPlanTypes'
-import { QuestionType, QuestionUrgency, QuestionStatus, ActionHistoryStatus, ActionType, QuestionMachineState } from '@/domains/storyteller/core/types/Enums'
+} from '@/domains/storyteller/core/types/story-plan-types'
+import { QuestionType, QuestionUrgency, QuestionStatus, ActionHistoryStatus, ActionType, QuestionMachineState } from '@/domains/storyteller/core/types/enums'
 import type { WireAgentAction, ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 
 // Re-export ActionType for convenience

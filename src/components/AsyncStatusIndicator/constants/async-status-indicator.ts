@@ -1,28 +1,28 @@
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 import { TriggerRunStatus } from '@/shared/data/constants/protocol'
 
-export enum AsyncStatusIndicatorLog {
-  FoundStuckOperations = '[AsyncStatusIndicator] Found',
-  RemovingStaleStoryAgent = '[AsyncStatusIndicator] Removing stale story-agent operation',
-  RemovingStaleWorldGen = '[AsyncStatusIndicator] Removing stale world-gen operation',
-  ErrorCheckingOperation = '[AsyncStatusIndicator] Error checking operation',
-  FailedParseMetadata = '[AsyncStatusIndicator] Failed to parse metadata for',
-  CheckingRetexture = '[AsyncStatusIndicator] Checking retexture',
-  TaskNotFound = '[AsyncStatusIndicator] Task',
-  TaskStatus = '[AsyncStatusIndicator] Task',
-  UpdatedCompleted = '[AsyncStatusIndicator] Updated',
-  UpdatedFailed = '[AsyncStatusIndicator] Updated',
-  NoMetadata3d = '[AsyncStatusIndicator] No metadata for 3D op',
-  NoRunId3d = '[AsyncStatusIndicator] No runId for 3D op',
-  Checking3d = '[AsyncStatusIndicator] Checking 3D operation',
-  ThreeDNotFound = '[AsyncStatusIndicator] 3D task',
-  ThreeDStatus = '[AsyncStatusIndicator] 3D task',
-  ErrorChecking3d = '[AsyncStatusIndicator] Error checking 3D operation:',
-  NoMetadataPortrait = '[AsyncStatusIndicator] No metadata for portrait op',
-  CheckingPortrait = '[AsyncStatusIndicator] Checking portrait operation',
-  PortraitNotFound = '[AsyncStatusIndicator] Portrait task',
-  ErrorCheckingPortrait = '[AsyncStatusIndicator] Error checking portrait operation:',
-}
+export const AsyncStatusIndicatorLog = {
+  FoundStuckOperations: '[AsyncStatusIndicator] Found',
+  RemovingStaleStoryAgent: '[AsyncStatusIndicator] Removing stale story-agent operation',
+  RemovingStaleWorldGen: '[AsyncStatusIndicator] Removing stale world-gen operation',
+  ErrorCheckingOperation: '[AsyncStatusIndicator] Error checking operation',
+  FailedParseMetadata: '[AsyncStatusIndicator] Failed to parse metadata for',
+  CheckingRetexture: '[AsyncStatusIndicator] Checking retexture',
+  TaskNotFound: '[AsyncStatusIndicator] Task',
+  TaskStatus: '[AsyncStatusIndicator] Task',
+  UpdatedCompleted: '[AsyncStatusIndicator] Updated',
+  UpdatedFailed: '[AsyncStatusIndicator] Updated',
+  NoMetadata3d: '[AsyncStatusIndicator] No metadata for 3D op',
+  NoRunId3d: '[AsyncStatusIndicator] No runId for 3D op',
+  Checking3d: '[AsyncStatusIndicator] Checking 3D operation',
+  ThreeDNotFound: '[AsyncStatusIndicator] 3D task',
+  ThreeDStatus: '[AsyncStatusIndicator] 3D task',
+  ErrorChecking3d: '[AsyncStatusIndicator] Error checking 3D operation:',
+  NoMetadataPortrait: '[AsyncStatusIndicator] No metadata for portrait op',
+  CheckingPortrait: '[AsyncStatusIndicator] Checking portrait operation',
+  PortraitNotFound: '[AsyncStatusIndicator] Portrait task',
+  ErrorCheckingPortrait: '[AsyncStatusIndicator] Error checking portrait operation:',
+} as const
 
 export const ASYNC_STATUS_EMPTY_METADATA = '{}'
 

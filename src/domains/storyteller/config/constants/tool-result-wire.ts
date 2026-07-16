@@ -1,4 +1,4 @@
-import { BeatDraftWorkflowStatus } from '@/domains/storyteller/agents/constants/workflow-tool'
+import { BeatDraftWorkflowStatus } from '@/domains/storyteller/ai/constants/workflow-tool'
 import { StorytellerDefaultTitle } from '@/domains/storyteller/core/storyteller-page-wire'
 
 export enum ToolResultOutcomeKind {

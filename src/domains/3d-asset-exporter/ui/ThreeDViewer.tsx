@@ -1,70 +1,52 @@
 'use client'
 
-import React, { Suspense, useState, useEffect } from 'react'
+import React, { Suspense, useState, useEffect, type ReactNode } from 'react'
+import { Canvas, type ThreeEvent } from '@react-three/fiber'
+import { buildUrl } from '@/shared/data/url-builder'
+import { ApiRoutePath } from '@/shared/data/constants/protocol'
+import {
+  OrbitControls,
+  useGLTF,
+  Center,
+  Environment,
+  Bounds,
+  useBounds,
+  Html,
+} from '@react-three/drei'
 import { Loader2, AlertCircle, ExternalLink } from 'lucide-react'
 import {
   THREE_D_VIEWER_ERROR_LOG,
   THREE_D_VIEWER_LOAD_ERROR,
-  THREE_JS_LOAD_ERROR_LOG,
 } from '@/domains/3d-asset-exporter/constants/three-d-viewer-messages'
-import { getErrorMessage } from '@/shared/errors/error-utils'
-
-// Lazy load Three.js components to avoid SSR issues
-let Canvas: any = null
-let OrbitControls: any = null
-let useGLTF: any = null
-let Center: any = null
-let Environment: any = null
-let useBounds: any = null
-let Bounds: any = null
-let Html: any = null
 
 interface ThreeDViewerProps {
   modelUrl: string
 }
 
-// Proxy external URLs to avoid CORS issues
 const getProxiedUrl = (url: string): string => {
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    return `/api/proxy-model?url=${encodeURIComponent(url)}`
+    return buildUrl(ApiRoutePath.ProxyModel, { url })
   }
   return url
 }
 
-// Loading spinner shown inside the 3D canvas
-const CanvasLoader: React.FC = () => {
-  if (!Html) return null
-
-  return (
-    <Html center>
-      <div className="flex flex-col items-center gap-2">
-        <Loader2 className="animate-spin text-white" size={32} />
-        <span className="text-white text-sm">Loading 3D model...</span>
-      </div>
-    </Html>
-  )
-}
+const CanvasLoader: React.FC = () => (
+  <Html center>
+    <div className="flex flex-col items-center gap-2">
+      <Loader2 className="animate-spin text-white" size={32} />
+      <span className="text-white text-sm">Loading 3D model...</span>
+    </div>
+  </Html>
+)
 
 const ModelLoader: React.FC<{ url: string; onLoaded?: () => void }> = ({ url, onLoaded }) => {
   const proxiedUrl = getProxiedUrl(url)
+  const { scene } = useGLTF(proxiedUrl)
+  const clonedScene = React.useMemo(() => scene.clone(), [scene])
 
-  // Hooks must be called unconditionally
-  const gltf = useGLTF?.(proxiedUrl)
-  const scene = gltf?.scene
-
-  // Clone the scene to avoid issues with reuse
-  const clonedScene = React.useMemo(() => (scene ? scene.clone() : null), [scene])
-
-  // Call onLoaded when model is ready
   useEffect(() => {
-    if (scene && onLoaded) {
-      onLoaded()
-    }
-  }, [scene, onLoaded])
-
-  if (!useGLTF || !Center || !clonedScene) {
-    return null
-  }
+    onLoaded?.()
+  }, [onLoaded])
 
   return (
     <Center>
@@ -73,27 +55,18 @@ const ModelLoader: React.FC<{ url: string; onLoaded?: () => void }> = ({ url, on
   )
 }
 
-// Component to auto-fit camera to model bounds
-const FitToView: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  if (!Bounds || !useBounds) return <>{children}</>
+const FitToView: React.FC<{ children: ReactNode }> = ({ children }) => (
+  <Bounds fit clip observe margin={1.5}>
+    <SelectToZoom>{children}</SelectToZoom>
+  </Bounds>
+)
 
-  return (
-    <Bounds fit clip observe margin={1.5}>
-      <SelectToZoom>{children}</SelectToZoom>
-    </Bounds>
-  )
-}
-
-// Helper to zoom on click (optional)
-const SelectToZoom: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Call hook unconditionally if possible, or ensure parent only renders this when hook is available
-  const bounds = useBounds?.()
-
-  if (!useBounds || !bounds) return <>{children}</>
+const SelectToZoom: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const bounds = useBounds()
 
   return (
     <group
-      onClick={(e: any) => {
+      onClick={(e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation()
         bounds.refresh().fit()
       }}
@@ -104,51 +77,16 @@ const SelectToZoom: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 }
 
 export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
-  const [isLibsLoaded, setIsLibsLoaded] = useState(false)
   const [, setIsModelLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
 
-  useEffect(() => {
-    const loadThree = async () => {
-      try {
-        const [fiberModule, dreiModule] = await Promise.all([
-          import('@react-three/fiber'),
-          import('@react-three/drei'),
-        ])
-
-        Canvas = fiberModule.Canvas
-        OrbitControls = dreiModule.OrbitControls
-        useGLTF = dreiModule.useGLTF
-        Center = dreiModule.Center
-        Environment = dreiModule.Environment
-        Bounds = dreiModule.Bounds
-        useBounds = dreiModule.useBounds
-        Html = dreiModule.Html
-
-        setIsLibsLoaded(true)
-      } catch (err: unknown) {
-        console.error(THREE_JS_LOAD_ERROR_LOG, err)
-        setHasError(true)
-        setErrorMessage(getErrorMessage(err) || THREE_D_VIEWER_LOAD_ERROR)
-      }
-    }
-
-    loadThree()
-  }, [])
-
-  // Reset model loaded state when URL changes
   useEffect(() => {
     setIsModelLoaded(false)
   }, [modelUrl])
 
-  // Cleanup GLTF cache when component unmounts or URL changes
   useEffect(() => {
     return () => {
-      if (useGLTF?.clear) {
-        const proxiedUrl = getProxiedUrl(modelUrl)
-        useGLTF.clear(proxiedUrl)
-      }
+      useGLTF.clear(getProxiedUrl(modelUrl))
     }
   }, [modelUrl])
 
@@ -157,7 +95,7 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
       <div className="w-full h-full bg-[#1a1a1a] flex flex-col items-center justify-center text-muted-foreground p-4">
         <AlertCircle size={32} className="mb-2 text-destructive" />
         <p className="text-sm mb-2">3D Viewer failed to load</p>
-        <p className="text-xs text-center mb-4">{errorMessage}</p>
+        <p className="text-xs text-center mb-4">{THREE_D_VIEWER_LOAD_ERROR}</p>
         <a
           href={modelUrl}
           target="_blank"
@@ -171,18 +109,10 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
     )
   }
 
-  if (!isLibsLoaded || !Canvas) {
-    return (
-      <div className="w-full h-full bg-[#1a1a1a] flex flex-col items-center justify-center">
-        <Loader2 className="animate-spin text-muted-foreground" size={32} />
-        <span className="text-muted-foreground text-sm mt-2">Loading viewer...</span>
-      </div>
-    )
-  }
-
   return (
     <div className="w-full h-full bg-[#1a1a1a] relative">
       <ErrorBoundary
+        onError={() => setHasError(true)}
         fallback={
           <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-4">
             <AlertCircle size={32} className="mb-2 text-destructive" />
@@ -201,19 +131,18 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
       >
         <Canvas
           shadows
-          dpr={[1, 1.5]} // Lower max DPR to reduce memory usage
+          dpr={[1, 1.5]}
           camera={{ position: [0, 0, 5], fov: 50 }}
           style={{ background: '#1a1a1a', width: '100%', height: '100%' }}
           resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }}
-          frameloop="always" // Keep rendering for auto-rotate
+          frameloop="always"
           gl={{
             antialias: true,
             alpha: false,
             powerPreference: 'high-performance',
             preserveDrawingBuffer: false,
           }}
-          onCreated={({ gl }: { gl: { domElement: HTMLCanvasElement } }) => {
-            // Handle context loss
+          onCreated={({ gl }) => {
             gl.domElement.addEventListener('webglcontextlost', (e: Event) => {
               e.preventDefault()
               console.warn('WebGL context lost')
@@ -223,22 +152,20 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
             })
           }}
         >
-          {/* Lighting */}
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
           <directionalLight position={[-10, -10, -5]} intensity={0.3} />
 
-          {/* Environment for reflections */}
-          <Suspense fallback={null}>{Environment && <Environment preset="city" />}</Suspense>
+          <Suspense fallback={null}>
+            <Environment preset="city" />
+          </Suspense>
 
-          {/* Model with auto-fit bounds */}
           <Suspense fallback={<CanvasLoader />}>
             <FitToView>
               <ModelLoader url={modelUrl} onLoaded={() => setIsModelLoaded(true)} />
             </FitToView>
           </Suspense>
 
-          {/* Controls - makeDefault triggers re-render on interaction */}
           <OrbitControls
             makeDefault
             autoRotate={false}
@@ -255,12 +182,11 @@ export const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ modelUrl }) => {
   )
 }
 
-// Simple error boundary
 class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode },
+  { children: React.ReactNode; fallback: React.ReactNode; onError?: () => void },
   { hasError: boolean }
 > {
-  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode; onError?: () => void }) {
     super(props)
     this.state = { hasError: false }
   }
@@ -271,6 +197,7 @@ class ErrorBoundary extends React.Component<
 
   componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
     console.error(THREE_D_VIEWER_ERROR_LOG, error, errorInfo)
+    this.props.onError?.()
   }
 
   render() {

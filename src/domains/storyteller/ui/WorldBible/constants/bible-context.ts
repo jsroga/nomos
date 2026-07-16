@@ -1,5 +1,5 @@
 import { HttpMethod } from '@/shared/data/constants/protocol'
-import { BibleLockAction } from '@/domains/storyteller/io/constants/bible-lock'
+import { BibleLockAction } from '@/domains/storyteller/core/io/constants/bible-lock'
 
 export { HttpMethod as BibleContextHttpMethod, BibleLockAction }
 

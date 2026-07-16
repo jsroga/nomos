@@ -1,8 +1,3 @@
-import {
-  ContentType,
-  HttpMethod,
-} from '@/shared/data/constants/protocol'
-
 export enum SettingsDialogTab {
   General = 'general',
   McpKeys = 'mcpkeys',
@@ -17,11 +12,6 @@ export enum SettingsStyleMode {
 export const SETTINGS_PROVIDER_PROBE_ENDPOINT = '/api/settings/providers/probe'
 export const SETTINGS_PROVIDERS_ENDPOINT = '/api/settings/providers'
 export const SETTINGS_API_KEYS_ENDPOINT = '/api/api-keys'
-
-export const SETTINGS_HTTP_POST = HttpMethod.Post
-export const SETTINGS_HTTP_PATCH = HttpMethod.Patch
-export const SETTINGS_HTTP_DELETE = HttpMethod.Delete
-export const SETTINGS_CONTENT_TYPE_JSON = ContentType.Json
 
 export const SETTINGS_TEST_REQUEST_FAILED = 'Test request failed'
 

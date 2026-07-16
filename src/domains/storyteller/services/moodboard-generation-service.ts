@@ -1,20 +1,29 @@
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { browserStorage } from '@/shared/data/browser-storage'
+import { waitForTriggerRun, TriggerRunPollFailedError } from '@/shared/data/polling/wait-for-trigger-run'
+import {
+  readString,
+  readNumber,
+  recordFromJson,
+  stringArrayFromJson,
+} from '@/shared/data/json-guards'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import {
+  fetchMoodboardRunStatus,
+  triggerMoodboardGeneration,
+} from '@/domains/storyteller/core/io/moodboard.api'
 import {
   MoodboardGenerationError,
   MoodboardGenerationLog,
-  MoodboardHttpMethod,
   MoodboardOperationDetail,
   MoodboardOperationLabel,
   MoodboardOperationStatus,
   MoodboardOperationType,
   MoodboardStorageKey,
-  MoodboardTriggerStage,
   MoodboardTriggerStatus,
 } from '@/domains/storyteller/services/constants/moodboard-generation-service'
 
-// Define local storage keys
 const DynamicLocalStorageKeys = {
   moodboardGen: (projectId: string, index?: number) =>
     `${MoodboardStorageKey.GenPrefix}${projectId}${index !== undefined ? `-${index}` : ''}`,
@@ -25,12 +34,49 @@ interface MoodboardGenRunState {
   projectId: string
   prompts: string[]
   startedAt: string
-  promptIndex?: number // Save index in state
+  promptIndex?: number
+}
+
+/** Parse a persisted run-state blob from browser storage without `as` casts. */
+function moodboardRunStateFromJson(raw: string): MoodboardGenRunState | null {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  const rec = recordFromJson(parsed)
+  const runId = readString(rec.runId)
+  if (!runId) return null
+  return {
+    runId,
+    projectId: readString(rec.projectId) ?? '',
+    prompts: stringArrayFromJson(rec.prompts),
+    startedAt: readString(rec.startedAt) ?? '',
+    promptIndex: readNumber(rec.promptIndex),
+  }
+}
+
+function formatMoodboardStatusDetail(
+  status: string | null | undefined,
+  metadata?: Record<string, unknown>
+): string {
+  let statusDetail = `Status: ${status ?? 'unknown'}`
+  const progressVal = typeof metadata?.progress === 'number' ? metadata.progress : 0
+  const stage = readString(metadata?.stage)
+  if (stage) {
+    const formattedStage = stage
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+    statusDetail = `${formattedStage} (${progressVal}%)`
+  } else {
+    statusDetail = `${statusDetail} (${progressVal}%)`
+  }
+  return statusDetail
 }
 
 export class MoodboardGenerationService {
-  private pollingIntervals: Map<string, NodeJS.Timeout> = new Map()
-
   /**
    * Generate moodboard using Trigger.dev background task
    */
@@ -38,13 +84,12 @@ export class MoodboardGenerationService {
     projectId: string,
     prompts: string[],
     styleReference: string | undefined,
-    providerConfig: any,
+    providerConfig: Record<string, unknown>,
     onComplete?: () => void,
-    promptIndex?: number // NEW: Optional prompt index for single generation
+    promptIndex?: number
   ): Promise<string | null> {
     console.log(`Starting moodboard generation via Trigger.dev for project ${projectId}`)
 
-    // Create a unique ID for this operation
     const opId = DynamicLocalStorageKeys.moodboardGen(projectId, promptIndex)
 
     useGlobalStatusStore.getState().addOperation({
@@ -59,153 +104,86 @@ export class MoodboardGenerationService {
     })
 
     try {
-      // Trigger the moodboard generation task
-      const triggerResponse = await fetch('/api/storyteller/moodboard/trigger', {
-        method: MoodboardHttpMethod.Post,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          prompts,
-          styleReference,
-          providerConfig,
-          promptIndex, // Pass it to the backend
-        }),
+      const { handleId, error } = await triggerMoodboardGeneration({
+        projectId,
+        prompts,
+        styleReference,
+        providerConfig,
+        promptIndex,
       })
 
-      const triggerData = await triggerResponse.json()
-
-      // The trigger route returns { success: true, handleId: "..." }
-      if (!triggerResponse.ok || !triggerData.handleId) {
-        throw new Error(triggerData.error || MoodboardGenerationError.TriggerFailed)
+      if (!handleId) {
+        throw new Error(error || MoodboardGenerationError.TriggerFailed)
       }
 
-      console.log(MoodboardGenerationLog.TaskTriggered, triggerData.handleId)
+      console.log(MoodboardGenerationLog.TaskTriggered, handleId)
 
-      // Save run state to localStorage for recovery
       const runState: MoodboardGenRunState = {
-        runId: triggerData.handleId,
+        runId: handleId,
         projectId,
         prompts,
         startedAt: new Date().toISOString(),
         promptIndex,
       }
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(opId, JSON.stringify(runState))
-      }
+      browserStorage.setObject(opId, runState)
+      void this.pollRun(runState, opId, onComplete)
 
-      // Start polling for status
-      this.startPolling(runState, opId, onComplete)
-
-      return triggerData.handleId
+      return handleId
     } catch (error) {
       console.error(MoodboardGenerationLog.GenerationError, error)
-      // Clean up status on error
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
     }
   }
 
-  /**
-   * Start adaptive polling for task status
-   */
-  private startPolling(runState: MoodboardGenRunState, opId: string, onComplete?: () => void) {
-    // Clear any existing polling for this run to avoid duplicates
-    if (this.pollingIntervals.has(runState.runId)) {
-      clearTimeout(this.pollingIntervals.get(runState.runId)!)
-    }
-
+  private async pollRun(
+    runState: MoodboardGenRunState,
+    opId: string,
+    onComplete?: () => void
+  ): Promise<void> {
     console.log(`📡 Starting moodboard status polling for run: ${runState.runId}`)
 
-    let consecutiveErrors = 0
-    let lastStatus = ''
+    try {
+      const result = await waitForTriggerRun(() => fetchMoodboardRunStatus(runState.runId), {
+        intervalMs: POLLING_INTERVALS.FAST,
+        maxPolls: 120,
+        onPoll: data => {
+          const metadata =
+            'metadata' in data && data.metadata && typeof data.metadata === 'object'
+              ? recordFromJson(data.metadata)
+              : undefined
+          useGlobalStatusStore.getState().updateOperation(opId, {
+            details: formatMoodboardStatusDetail(data.status, metadata),
+          })
+        },
+      })
 
-    const poll = async () => {
-      try {
-        const statusResponse = await fetch(
-          `/api/storyteller/moodboard/status?runId=${runState.runId}`
-        )
-        const statusData = await statusResponse.json()
-
-        if (statusResponse.status === 404) {
-          const elapsed = Date.now() - new Date(runState.startedAt).getTime()
-          if (elapsed < 30000) {
-            this.scheduleNextPoll(runState.runId, poll, 2000)
-            return
-          }
-          console.warn(MoodboardGenerationLog.RunNotFound)
-          this.clearRunState(runState, opId)
+      if (result.status === MoodboardTriggerStatus.Completed) {
+        const output = recordFromJson(result.output)
+        if (output.success === true) {
+          await this.handleCompletion(
+            runState,
+            { success: true, images: stringArrayFromJson(output.images) },
+            opId,
+            onComplete
+          )
           return
         }
-
-        consecutiveErrors = 0
-        const statusChanged = statusData.status !== lastStatus
-        lastStatus = statusData.status
-
-        // Extract detailed progress from metadata if available
-        let statusDetail = `Status: ${statusData.status}`
-        const progressVal =
-          typeof statusData.metadata?.progress === 'number' ? statusData.metadata.progress : 0
-        if (statusData.metadata) {
-          const { stage } = statusData.metadata
-          if (stage) {
-            // Format stage (e.g. waiting_diffusion -> Waiting Diffusion)
-            const formattedStage = stage
-              .split('_')
-              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-              .join(' ')
-            statusDetail = `${formattedStage} (${progressVal}%)`
-          } else {
-            statusDetail = `${statusDetail} (${progressVal}%)`
-          }
-        }
-
-        useGlobalStatusStore.getState().updateOperation(opId, {
-          details: statusDetail,
-        })
-
-        // Poll frequently enough so user sees progress (every 3s when running)
-        let nextInterval = statusChanged ? 2000 : POLLING_INTERVALS.FAST
-        if (statusData.metadata?.stage === MoodboardTriggerStage.WaitingDiffusion) {
-          nextInterval = 4000 // MJ diffusion poll; still show progress regularly
-        }
-
-        if (statusData.status === MoodboardTriggerStatus.Completed) {
-          console.log(MoodboardGenerationLog.Completed, statusData.output)
-          await this.handleCompletion(runState, statusData.output, opId, onComplete)
-          return
-        }
-
-        if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          console.error(MoodboardGenerationLog.Failed, statusData.error || statusData.status)
-          this.clearRunState(runState, opId)
-          return
-        }
-
-        this.scheduleNextPoll(runState.runId, poll, nextInterval)
-      } catch (error) {
-        console.error(MoodboardGenerationLog.PollingError, error)
-        consecutiveErrors++
-        const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
-        this.scheduleNextPoll(runState.runId, poll, backoffInterval)
       }
-    }
 
-    poll()
+      console.error(MoodboardGenerationLog.Failed, result.error || result.status)
+      this.clearRunState(runState, opId)
+    } catch (error) {
+      if (error instanceof TriggerRunPollFailedError) {
+        console.error(MoodboardGenerationLog.Failed, error.runError || error.status)
+      } else {
+        console.error(MoodboardGenerationLog.PollingError, error)
+      }
+      this.clearRunState(runState, opId)
+    }
   }
 
-  private scheduleNextPoll(runId: string, pollFn: () => Promise<void>, interval: number) {
-    const existingTimeout = this.pollingIntervals.get(runId)
-    if (existingTimeout) {
-      clearTimeout(existingTimeout)
-    }
-    const timeoutId = setTimeout(pollFn, interval)
-    this.pollingIntervals.set(runId, timeoutId)
-  }
-
-  /**
-   * Handle successful completion
-   */
   private async handleCompletion(
     runState: MoodboardGenRunState,
     output: { success: boolean; images: string[] },
@@ -213,10 +191,9 @@ export class MoodboardGenerationService {
     onComplete?: () => void
   ) {
     try {
-      if (output?.success) {
+      if (output.success) {
         console.log(MoodboardGenerationLog.GeneratedSuccessfully)
 
-        // Notify UI to refresh moodboard data
         if (typeof window !== 'undefined') {
           getStorytellerUiStore().notifyMoodboardComplete({
             projectId: runState.projectId,
@@ -225,9 +202,7 @@ export class MoodboardGenerationService {
           })
         }
 
-        if (onComplete) {
-          onComplete()
-        }
+        onComplete?.()
       }
     } catch (error) {
       console.error(MoodboardGenerationLog.CompletionError, error)
@@ -236,66 +211,39 @@ export class MoodboardGenerationService {
     }
   }
 
-  /**
-   * Clear run state and stop polling
-   */
-  private clearRunState(runState: MoodboardGenRunState, opId: string) {
-    // Stop polling (now uses timeouts instead of intervals)
-    const timeout = this.pollingIntervals.get(runState.runId)
-    if (timeout) {
-      clearTimeout(timeout)
-      this.pollingIntervals.delete(runState.runId)
-    }
-
-    // Clear localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(opId)
-    }
-
-    // Clear UI status
+  private clearRunState(_runState: MoodboardGenRunState, opId: string) {
+    browserStorage.remove(opId)
     useGlobalStatusStore.getState().removeOperation(opId)
   }
 
-  /**
-   * Resume any pending moodboard generation tasks from localStorage (call on app load or component mount)
-   */
   resumePendingGenerations(projectId: string, onComplete?: () => void) {
     if (typeof window === 'undefined') return
 
-    // Scan all local storage keys for this project's moodboard generations
     const prefix = MoodboardStorageKey.GenPrefix + projectId
 
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key && key.startsWith(prefix)) {
-        try {
-          const data = localStorage.getItem(key)
-          if (!data) continue
+    browserStorage.forEachPrefixed(prefix, (key, raw) => {
+      try {
+        const runState = moodboardRunStateFromJson(raw)
+        if (!runState?.runId) return
 
-          const runState: MoodboardGenRunState = JSON.parse(data)
-          if (runState.runId) {
-            console.log(MoodboardGenerationLog.ResumingPolling, runState.runId)
+        console.log(MoodboardGenerationLog.ResumingPolling, runState.runId)
 
-            // Re-add status indicators
-            useGlobalStatusStore.getState().addOperation({
-              id: key, // key is the opId logic now
-              type: MoodboardOperationType.StoryAgent,
-              label:
-                runState.promptIndex !== undefined
-                  ? MoodboardOperationLabel.RegeneratingResumed
-                  : MoodboardOperationLabel.GeneratingResumed,
-              details: `${MoodboardOperationDetail.ProjectPrefix}${projectId}`,
-              status: MoodboardOperationStatus.InProgress,
-            })
+        useGlobalStatusStore.getState().addOperation({
+          id: key,
+          type: MoodboardOperationType.StoryAgent,
+          label:
+            runState.promptIndex !== undefined
+              ? MoodboardOperationLabel.RegeneratingResumed
+              : MoodboardOperationLabel.GeneratingResumed,
+          details: `${MoodboardOperationDetail.ProjectPrefix}${projectId}`,
+          status: MoodboardOperationStatus.InProgress,
+        })
 
-            // Start polling
-            this.startPolling(runState, key, onComplete)
-          }
-        } catch (_e) {
-          console.warn(MoodboardGenerationLog.ParseStateFailed, key)
-        }
+        void this.pollRun(runState, key, onComplete)
+      } catch {
+        console.warn(MoodboardGenerationLog.ParseStateFailed, key)
       }
-    }
+    })
   }
 }
 

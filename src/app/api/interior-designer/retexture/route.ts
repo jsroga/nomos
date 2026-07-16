@@ -6,7 +6,7 @@ import {
   interiorRetextureRequestSchema,
   interiorRetextureResponseSchema,
   type InteriorRetextureResponse,
-} from '@/domains/interior-designer/io/interior-designer.dto'
+} from '@/domains/interior-designer/core/io/interior-designer.dto'
 import {
   withAuth,
   withRateLimit,

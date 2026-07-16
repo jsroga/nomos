@@ -5,6 +5,8 @@ import { Plus, Trash2, RefreshCw, ChevronDown, Check, Loader2, Edit2 } from 'luc
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import { cn } from '@/shared/data/utils'
+import { buildUrl } from '@/shared/data/url-builder'
+import { QueryParam } from '@/shared/data/constants/protocol'
 import {
   Dialog,
   DialogContent,
@@ -27,8 +29,9 @@ import {
   LOOP_SELECTOR_RESET_CONFIRM,
   LOOP_SELECTOR_RESET_DESCRIPTION,
   LOOP_SELECTOR_RESET_TITLE,
+  LOOP_SELECTOR_LOCALE_OPTIONS,
+  LOOP_SELECTOR_LOCALE_TAG,
   LoopSelectorConfirmVariant,
-  LoopSelectorLocale,
 } from '@/domains/loop-creator/constants/loop-selector'
 
 export interface PersistedGameLoop {
@@ -96,7 +99,7 @@ export function LoopSelector({
 
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/loop-creator/loops?projectId=${projectId}`)
+      const response = await fetch(buildUrl('/api/loop-creator/loops', { [QueryParam.ProjectId]: projectId }))
       if (response.ok) {
         const data = await response.json()
         setLoops(data)
@@ -184,7 +187,7 @@ export function LoopSelector({
 
     setIsDeleting(true)
     try {
-      const response = await fetch(`/api/loop-creator/loops?id=${loopId}`, {
+      const response = await fetch(buildUrl('/api/loop-creator/loops', { [QueryParam.Id]: loopId }), {
         method: LoopHttpMethod.Delete,
       })
 
@@ -221,12 +224,7 @@ export function LoopSelector({
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString(LoopSelectorLocale.Tag, {
-      month: LoopSelectorLocale.Month,
-      day: LoopSelectorLocale.Day,
-      hour: LoopSelectorLocale.Hour,
-      minute: LoopSelectorLocale.Minute,
-    })
+    return date.toLocaleDateString(LOOP_SELECTOR_LOCALE_TAG, LOOP_SELECTOR_LOCALE_OPTIONS)
   }
 
   return (

@@ -54,4 +54,9 @@ export enum MeshyResponseField {
   Status = 'status',
   Result = 'result',
   Output = 'output',
+  Message = 'message',
+}
+
+export enum Hyper3dResponseField {
+  SubscriptionKey = 'subscription_key',
 }

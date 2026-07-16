@@ -7,7 +7,7 @@ import { Users } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { DomainSidebar } from '@/components/DomainSidebar'
 import { isAdminUser } from '@/shared/auth/admin-users'
-import { USER_SELECTABLE_CHAT_MODELS } from '@/domains/storyteller/config/constants/ChatModelCatalog'
+import { USER_SELECTABLE_CHAT_MODELS } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import { recordFromJson } from '@/shared/data/json-guards'
 import type { StorytellerPageState } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 

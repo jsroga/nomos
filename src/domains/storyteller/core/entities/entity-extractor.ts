@@ -1,5 +1,5 @@
-import { EntityReference } from '@/domains/storyteller/core/entities/EntityReferences'
-import { createRefId } from '@/domains/storyteller/core/entities/ReferenceParser'
+import { EntityReference } from '@/domains/storyteller/core/entities/entity-references'
+import { createRefId } from '@/domains/storyteller/core/entities/reference-parser'
 import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
 import {
   ENTITY_GOALS_SEPARATOR,

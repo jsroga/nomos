@@ -24,7 +24,7 @@ import {
 import { EntityRegistryNote } from '@/domains/storyteller/services/constants/entity-registry-log'
 import { SqlResultColumn } from '@/shared/data/constants/protocol'
 import { readRowNumber, readRowString, sqlResultRows } from '@/shared/data/json-guards'
-import { EntityReference, EntityType } from './EntityRegistryService'
+import { EntityReference, EntityType } from './entity-registry-service'
 
 // Embedding model configuration (must match what's stored)
 // Using Voyage voyage-3 model which produces 1024-dimensional vectors
@@ -150,6 +150,22 @@ const DEFAULT_OPTIONS: Required<GraphRAGOptions> = {
   randomWalkSteps: 100,
   restartProbability: 0.15,
   includeRelationships: false,
+}
+
+/** Cross-type relationship inference keyed by `${sourceType}:${targetType}`. */
+const CROSS_TYPE_RELATIONSHIPS: Record<string, InferredRelationshipType> = {
+  [`${StoryEntityType.Character}:${StoryEntityType.Faction}`]: InferredRelationshipType.MemberOf,
+  [`${StoryEntityType.Faction}:${StoryEntityType.Character}`]: InferredRelationshipType.HasMember,
+  [`${StoryEntityType.Character}:${StoryEntityType.Place}`]: InferredRelationshipType.AssociatedWith,
+  [`${StoryEntityType.Character}:${StoryEntityType.Event}`]: InferredRelationshipType.InvolvedIn,
+  [`${StoryEntityType.Character}:${StoryEntityType.Item}`]: InferredRelationshipType.Uses,
+  [`${StoryEntityType.Faction}:${StoryEntityType.Item}`]: InferredRelationshipType.Owns,
+  [`${StoryEntityType.Faction}:${StoryEntityType.Place}`]: InferredRelationshipType.Controls,
+  [`${StoryEntityType.Event}:${StoryEntityType.Character}`]: InferredRelationshipType.Involves,
+  [`${StoryEntityType.Event}:${StoryEntityType.Place}`]: InferredRelationshipType.OccurredAt,
+  [`${StoryEntityType.Event}:${StoryEntityType.Item}`]: InferredRelationshipType.CausedBy,
+  [`${StoryEntityType.Event}:${StoryEntityType.Event}`]: InferredRelationshipType.Temporal,
+  [`${StoryEntityType.Item}:${StoryEntityType.Place}`]: InferredRelationshipType.LocatedIn,
 }
 
 type DbEntityRow = {
@@ -443,7 +459,10 @@ class EntityGraphService {
   ): Promise<EntityReference[]> {
     const scored = await this.findRelatedEntitiesWithScoring(seedIds, projectId, options)
     // Strip scoring fields for backward compatibility
-    return scored.map(({ relevance, hopDistance, discoveredVia, ...entity }) => entity)
+    return scored.map(
+      ({ relevance: _relevance, hopDistance: _hopDistance, discoveredVia: _discoveredVia, ...entity }) =>
+        entity
+    )
   }
 
   /**
@@ -667,45 +686,8 @@ class EntityGraphService {
       return InferredRelationshipType.Related
     }
 
-    // Cross-type relationships
-    if (sourceType === StoryEntityType.Character && targetType === StoryEntityType.Faction) {
-      return InferredRelationshipType.MemberOf
-    }
-    if (sourceType === StoryEntityType.Faction && targetType === StoryEntityType.Character) {
-      return InferredRelationshipType.HasMember
-    }
-    if (sourceType === StoryEntityType.Character && targetType === StoryEntityType.Place) {
-      return InferredRelationshipType.AssociatedWith
-    }
-    if (sourceType === StoryEntityType.Character && targetType === StoryEntityType.Event) {
-      return InferredRelationshipType.InvolvedIn
-    }
-    if (sourceType === StoryEntityType.Character && targetType === StoryEntityType.Item) {
-      return InferredRelationshipType.Uses
-    }
-    if (sourceType === StoryEntityType.Faction && targetType === StoryEntityType.Item) {
-      return InferredRelationshipType.Owns
-    }
-    if (sourceType === StoryEntityType.Faction && targetType === StoryEntityType.Place) {
-      return InferredRelationshipType.Controls
-    }
-    if (sourceType === StoryEntityType.Event && targetType === StoryEntityType.Character) {
-      return InferredRelationshipType.Involves
-    }
-    if (sourceType === StoryEntityType.Event && targetType === StoryEntityType.Place) {
-      return InferredRelationshipType.OccurredAt
-    }
-    if (sourceType === StoryEntityType.Event && targetType === StoryEntityType.Item) {
-      return InferredRelationshipType.CausedBy
-    }
-    if (sourceType === StoryEntityType.Event && targetType === StoryEntityType.Event) {
-      return InferredRelationshipType.Temporal
-    }
-    if (sourceType === StoryEntityType.Item && targetType === StoryEntityType.Place) {
-      return InferredRelationshipType.LocatedIn
-    }
-
-    return InferredRelationshipType.Related
+    // Cross-type relationships (table-driven)
+    return CROSS_TYPE_RELATIONSHIPS[`${sourceType}:${targetType}`] ?? InferredRelationshipType.Related
   }
 
   /**

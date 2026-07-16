@@ -401,7 +401,7 @@ export class StorytellerService {
 
     // Dynamic import to avoid a static service ↔ agents cycle.
     const { createStorytellerAgent } = await import(
-      '@/domains/storyteller/agents/StorytellerAgent/StorytellerAgent'
+      '@/domains/storyteller/ai/agents/StorytellerAgent/storyteller-agent'
     )
     const agent = await createStorytellerAgent()
 

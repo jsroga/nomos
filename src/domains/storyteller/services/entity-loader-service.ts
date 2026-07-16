@@ -1,7 +1,7 @@
-import { EntityReference } from '@/domains/storyteller/core/entities/EntityReferences'
+import { EntityReference } from '@/domains/storyteller/core/entities/entity-references'
 import { parseEntityType, entityMetadata } from '@/domains/storyteller/core/entities/entity-type-guards'
 import { readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
-import { ENTITY_FETCH_FAILED_MESSAGE } from '@/domains/storyteller/services/constants/entity-loader'
+import { resolveEntities } from '@/domains/storyteller/core/io/entities.api'
 
 function entityReferenceFromJson(value: unknown): EntityReference | null {
   const row = recordFromJson(value)
@@ -37,7 +37,7 @@ export class EntityLoader {
     string,
     {
       resolve: (value: EntityReference | null) => void
-      reject: (reason?: any) => void
+      reject: (reason?: unknown) => void
       projectId: string
       context?: string
     }
@@ -104,16 +104,14 @@ export class EntityLoader {
             }
           }
 
-          let url = `/api/entities/resolve?projectId=${projectId}&ids=${uniqueIds.join(',')}&enrichRelationships=true`
-          if (bestContext) {
-            url += `&context=${encodeURIComponent(bestContext)}`
-          }
-
-          const res = await fetch(url)
-
-          if (!res.ok) throw new Error(ENTITY_FETCH_FAILED_MESSAGE)
-
-          const data = recordFromJson(await res.json())
+          const data = recordFromJson(
+            await resolveEntities({
+              projectId,
+              ids: uniqueIds,
+              enrichRelationships: true,
+              context: bestContext || undefined,
+            })
+          )
           const entities = recordArrayFromJson(data.entities)
             .map(entityReferenceFromJson)
             .filter((entity): entity is EntityReference => entity !== null)

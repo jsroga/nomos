@@ -24,7 +24,9 @@ import {
   moodboardPrimaryStorageKey,
 } from './constants/world-bible-panel'
 
-import { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
+import { fetchStorytellerProjectOptional } from '@/domains/storyteller/core/io/storyteller.api'
+import { recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 // CharacterCreationDialog removed - Cast is managed via CharacterPanel sidebar
 
 import { BibleOverview } from '../WorldBible/BibleOverview'
@@ -224,12 +226,12 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
   const refetchMoodboardData = useCallback(async () => {
     if (!projectId) return
     try {
-      const response = await fetch(`/api/storyteller/projects/${projectId}`)
-      if (response.ok) {
-        const data = await response.json()
-        const bible = data.seriesBible || data.series_bible
-        if (bible?.moodImages && onUpdate) {
-          onUpdate({ moodImages: bible.moodImages })
+      const data = await fetchStorytellerProjectOptional(projectId)
+      if (data) {
+        const bible = recordFromJson(data.seriesBible ?? data.series_bible)
+        const moodImages = stringArrayFromJson(bible.moodImages)
+        if (moodImages.length > 0 && onUpdate) {
+          onUpdate({ moodImages })
         }
       }
     } catch (error) {
@@ -242,7 +244,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     refetchMoodboardData()
 
     // Resume any pending generations for this project
-    import('../../services/MoodboardGenerationService').then(({ moodboardGenerationService }) => {
+    import('@/domains/storyteller/services/moodboard-generation-service').then(({ moodboardGenerationService }) => {
       moodboardGenerationService.resumePendingGenerations(projectId, refetchMoodboardData)
     })
   }, [projectId, refetchMoodboardData, moodboardCompleteVersion])

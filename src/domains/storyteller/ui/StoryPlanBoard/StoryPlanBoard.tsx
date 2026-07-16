@@ -2,7 +2,7 @@ import {
   EpisodePremise,
   StoryPlan,
   StorySequence,
-} from '@/domains/storyteller/prompts/schemas/agent-schemas'
+} from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { recordFromJson, stringArrayFromJson } from '@/shared/data/deep-merge'
 
 import { EpisodePremiseField } from '@/domains/storyteller/ui/StoryPlanBoard/constants/episode-premise-fields'

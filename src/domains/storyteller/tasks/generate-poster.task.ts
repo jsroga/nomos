@@ -1,5 +1,5 @@
 import { task } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
 import { submitImagineTask, pollLegNextTask } from '@/shared/ai/legnext'
@@ -97,10 +97,7 @@ export const generatePoster = task({
     // Use relative path for frontend access
     const localPath = `posters/${filename}`
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createSupabaseServiceClient()
 
     const { error: dbError } = await supabase
       .from('episodes')

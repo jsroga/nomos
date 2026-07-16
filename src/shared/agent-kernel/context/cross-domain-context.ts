@@ -6,6 +6,7 @@
  */
 
 import { GameEntity } from '@/shared/data/queries/useGameEntities'
+import { buildUrl } from '@/shared/data/url-builder'
 import {
   CROSS_DOMAIN_ENTITIES_API_PATH,
   CrossDomainContextLog,
@@ -22,7 +23,7 @@ export async function buildCrossDomainContext(projectId: string): Promise<string
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${URL_HTTP_PREFIX}://localhost:${DEFAULT_DEV_PORT}`
     const response = await fetch(
-      `${baseUrl}${CROSS_DOMAIN_ENTITIES_API_PATH}?${QueryParam.ProjectId}=${projectId}`
+      buildUrl(`${baseUrl}${CROSS_DOMAIN_ENTITIES_API_PATH}`, { [QueryParam.ProjectId]: projectId })
     )
 
     if (!response.ok) {

@@ -32,12 +32,19 @@ export async function submitImagineTask(prompt: string, apiKey: string): Promise
   return data.job_id
 }
 
+export interface LegNextTaskOutput {
+  image_url?: string
+  image_urls?: string[]
+  error_messages?: string[]
+  [key: string]: unknown
+}
+
 export async function pollLegNextTask(
   jobId: string,
   apiKey: string,
   maxAttempts = 60,
   intervalMs = 2000
-): Promise<any> {
+): Promise<LegNextTaskOutput> {
   for (let i = 0; i < maxAttempts; i++) {
     const response = await fetch(`https://api.legnext.ai/api/v1/job/${jobId}`, {
       method: HttpMethod.Get,

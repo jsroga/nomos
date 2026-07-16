@@ -9,10 +9,11 @@ import {
 const clientCache = new Map<string, Replicate>()
 
 function getReplicateClient(apiKey: string): Replicate {
-  if (!clientCache.has(apiKey)) {
-    clientCache.set(apiKey, new Replicate({ auth: apiKey }))
-  }
-  return clientCache.get(apiKey)!
+  const cached = clientCache.get(apiKey)
+  if (cached) return cached
+  const client = new Replicate({ auth: apiKey })
+  clientCache.set(apiKey, client)
+  return client
 }
 
 // Schema for Replicate SAM-2 output
@@ -33,7 +34,7 @@ export class ReplicateClient {
   async segmentObject(
     image: string, // base64 or url
     _points: Array<{ x: number; y: number; label: number }> // We won't send these to the model, but we need them for filtering later
-  ): Promise<any> {
+  ): Promise<unknown> {
     // meta/sam-2 is an Automatic Mask Generator. It ignores points.
     // We just send the image.
     const input = {

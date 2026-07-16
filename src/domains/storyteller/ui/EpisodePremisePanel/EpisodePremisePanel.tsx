@@ -14,25 +14,21 @@ import {
   Trash2,
   Plus,
 } from 'lucide-react'
-import { EpisodePremise, StoryPlan, Faction, WorldRule } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { EpisodePremise, StoryPlan, Faction, WorldRule } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { Button } from '@/components/Button'
 import { Skeleton } from '@/components/Skeleton'
 import { StorytellerImage } from '../StorytellerImage'
 import { ImageVariantSelector } from '../ImageVariantSelector'
 import { ReferenceText } from '../ReferenceText'
 import { cn } from '@/shared/data/utils'
+import { saveEpisodePosterVariant } from '@/domains/storyteller/core/io/storyteller.api'
 import {
   EPISODE_PREMISE_LOG_NO_EPISODE,
-  EPISODE_PREMISE_LOG_RESPONSE_DATA,
-  EPISODE_PREMISE_LOG_RESPONSE_STATUS,
   EPISODE_PREMISE_LOG_SAVE_API,
   EPISODE_PREMISE_LOG_SAVE_ERROR,
-  EPISODE_PREMISE_LOG_SAVE_FAILED,
   EPISODE_PREMISE_LOG_SAVED,
   EPISODE_PREMISE_LOG_VARIANT_SELECT,
   EPISODE_PREMISE_PROJECTS_PATH_PREFIX,
-  EPISODE_PREMISE_SAVE_POSTER_PATH,
-  EpisodePremiseHttpMethod,
   EpisodePremiseUrlScheme,
 } from './constants/episode-premise-panel'
 
@@ -216,30 +212,16 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
     if (episodeId) {
       try {
         console.log(EPISODE_PREMISE_LOG_SAVE_API)
-        const res = await fetch(EPISODE_PREMISE_SAVE_POSTER_PATH, {
-          method: EpisodePremiseHttpMethod.Post,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            episodeId,
-            projectId,
-            croppedImageDataUrl: croppedDataUrl,
-            variantIndex,
-          }),
+        const { posterUrl } = await saveEpisodePosterVariant({
+          episodeId,
+          projectId,
+          croppedImageDataUrl: croppedDataUrl,
+          variantIndex,
         })
-
-        console.log(EPISODE_PREMISE_LOG_RESPONSE_STATUS, res.status)
-        if (res.ok) {
-          const data = await res.json()
-          console.log(EPISODE_PREMISE_LOG_RESPONSE_DATA, data)
-          if (data.posterUrl) {
-            setLocalPremise(prev => ({ ...prev, poster: data.posterUrl }))
-            // Update parent with the permanent URL
-            onUpdate({ ...localPremise, poster: data.posterUrl })
-            console.log(EPISODE_PREMISE_LOG_SAVED, data.posterUrl)
-          }
-        } else {
-          const err = await res.json()
-          console.error(EPISODE_PREMISE_LOG_SAVE_FAILED, err)
+        if (posterUrl) {
+          setLocalPremise(prev => ({ ...prev, poster: posterUrl }))
+          onUpdate({ ...localPremise, poster: posterUrl })
+          console.log(EPISODE_PREMISE_LOG_SAVED, posterUrl)
         }
       } catch (error) {
         console.error(EPISODE_PREMISE_LOG_SAVE_ERROR, error)

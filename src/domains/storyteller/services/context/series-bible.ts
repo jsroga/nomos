@@ -99,8 +99,8 @@ export interface SeriesBible {
   moodImages: string[]
 
   // Flexible fields for merged data
-  factions?: any[]
-  updatedFields?: Record<string, any>
+  factions?: Record<string, unknown>[]
+  updatedFields?: Record<string, unknown>
 }
 
 // Convert bible to prompt context

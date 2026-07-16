@@ -1,5 +1,5 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
 import { getErrorMessage } from '@/shared/errors/error-utils'
@@ -22,13 +22,25 @@ interface GenerateMoodboardPayload {
   }
 }
 
+interface LegNextPollResult {
+  status?: string
+  message?: string
+  output?: {
+    image_url?: string
+    image_urls?: string[]
+    error_messages?: string[]
+    [key: string]: unknown
+  }
+  [key: string]: unknown
+}
+
 // Poll LegNext API task for completion
 async function pollLegNextTask(
   jobId: string,
   apiKey: string,
   maxAttempts: number = 300,
   progressOffset: number = 30
-): Promise<any> {
+): Promise<LegNextPollResult> {
   let attempts = 0
 
   while (attempts < maxAttempts) {
@@ -363,10 +375,7 @@ export const generateMoodboard = task({
     await metadata.set('progress', 90)
 
     if (generatedFilenames.length > 0) {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const supabase = createSupabaseServiceClient()
 
       // Retry logic to handle concurrent updates
       const maxRetries = 3

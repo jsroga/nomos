@@ -5,7 +5,9 @@ import { verifyCharacterAccess, verifyProjectAccess } from '@/domains/storytelle
 import { eq, desc, and, sql } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
 import {
+  QueryParam,
   ApiRoutePath,
   AppModuleId,
   CharacterRole,
@@ -15,9 +17,10 @@ import {
   GameEntityKind,
   HttpMethod,
   HttpStatus,
-  QueryParam,
 } from '@/shared/data/constants/protocol'
 import { DEFAULT_BASE_URL } from '@/shared/data/constants/url'
+import { DB_COLUMN } from '@/shared/data/constants/db-tables'
+import { readRowString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
 
 /**
  * @openapi
@@ -483,14 +486,16 @@ export async function DELETE(req: NextRequest) {
     if (character) {
       try {
         const entitiesResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || DEFAULT_BASE_URL}${ApiRoutePath.Entities}?projectId=${character.projectId}&sourceDomain=${AppModuleId.Storyteller}`
+          buildUrl(`${process.env.NEXT_PUBLIC_BASE_URL || DEFAULT_BASE_URL}${ApiRoutePath.Entities}`, { [QueryParam.ProjectId]: character.projectId, sourceDomain: AppModuleId.Storyteller })
         )
-        const { entities } = await entitiesResponse.json()
-        const entity = entities?.find((e: any) => e.source_entity_id === id)
+        const entitiesPayload = recordFromJson(await entitiesResponse.json())
+        const entities = recordArrayFromJson(entitiesPayload.entities)
+        const entity = entities.find(row => readRowString(row, DB_COLUMN.SOURCE_ENTITY_ID) === id)
+        const entityId = entity ? readRowString(entity, DB_COLUMN.ID) : undefined
 
-        if (entity) {
+        if (entityId) {
           await fetch(
-            `${process.env.NEXT_PUBLIC_BASE_URL || DEFAULT_BASE_URL}${ApiRoutePath.Entities}/${entity.id}`,
+            joinUrlPath(`${process.env.NEXT_PUBLIC_BASE_URL || DEFAULT_BASE_URL}${ApiRoutePath.Entities}`, entityId),
             { method: HttpMethod.Delete }
           )
         }

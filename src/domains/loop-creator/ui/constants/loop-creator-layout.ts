@@ -59,6 +59,14 @@ export enum LoopSuggestionKind {
   RemoveAllNodes = 'REMOVE_ALL_NODES',
 }
 
+export enum LoopSuggestionEntitySuffix {
+  Single = 'single',
+}
+
+export enum LoopFlowNodeDataField {
+  Label = 'label',
+}
+
 export enum LoopLayoutAgentAction {
   AddMechanic = 'ADD_MECHANIC',
   AddConnection = 'ADD_CONNECTION',

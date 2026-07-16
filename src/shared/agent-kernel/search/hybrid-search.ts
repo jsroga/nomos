@@ -146,7 +146,7 @@ export class HybridSearchEngine {
     this.initialized = true
   }
 
-  private async loadAllScripts(workspace: any): Promise<ScriptArtifact[]> {
+  private async loadAllScripts(workspace: ReturnType<typeof getStorytellerWorkspace>): Promise<ScriptArtifact[]> {
     // This is a simplified version - in production, you'd iterate through all projects
     try {
       const stats = await workspace.getStats()
@@ -239,7 +239,7 @@ export class HybridSearchEngine {
       if (!bySource.has(source)) {
         bySource.set(source, [])
       }
-      bySource.get(source)!.push(result)
+      bySource.get(source)?.push(result)
       resultMap.set(result.id, result)
     }
 
@@ -254,11 +254,15 @@ export class HybridSearchEngine {
     return Array.from(rrfScores.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
-      .map(([id, score]) => ({
-        ...resultMap.get(id)!,
-        score,
-        source: HybridSearchMode.Hybrid,
-      }))
+      .flatMap(([id, score]) => {
+        const entry = resultMap.get(id)
+        if (!entry) return []
+        return [{
+          ...entry,
+          score,
+          source: HybridSearchMode.Hybrid,
+        }]
+      })
   }
 
   /**

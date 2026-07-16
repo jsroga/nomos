@@ -1,4 +1,4 @@
-import type { SeverityLevel } from '@/domains/storyteller/core/types/ConsistencyTypes'
+import type { SeverityLevel } from '@/domains/storyteller/core/types/consistency-types'
 
 export enum ConsistencyMessageAction {
   Kept = 'kept',

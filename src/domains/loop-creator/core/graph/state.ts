@@ -6,6 +6,7 @@
  */
 
 import { BaseMessage } from '@langchain/core/messages'
+import type { MarketAnalysisReport } from '@/domains/loop-creator/ai/agents/market-analyst/types'
 import {
   CANVAS_NODE_TYPE_GROUP,
   LOOP_CREATOR_PHASE_INITIAL,
@@ -224,7 +225,7 @@ export type LoopAgentActionType =
 
 export interface LoopAgentAction {
   type: LoopAgentActionType
-  payload: any
+  payload: Record<string, unknown>
   confidence?: number
   reasoning?: string
 }
@@ -270,7 +271,7 @@ export interface LoopCreatorState {
 
   // Analysis
   balanceAnalysis: BalanceAnalysis | null
-  marketAnalysis?: any // Market analysis report from market_analyst
+  marketAnalysis?: MarketAnalysisReport
 
   // Agent coordination
   pendingActions: LoopAgentAction[]
@@ -281,7 +282,7 @@ export interface LoopCreatorState {
   ragContext?: {
     gamePatterns: string[]
     similarGames: string[]
-    citations: any[]
+    citations: Record<string, unknown>[]
   }
 
   // Error handling
@@ -333,8 +334,8 @@ export function createInitialLoopState(
     gamePlatform?: string
     targetAudience?: string
     gameDescription?: string
-    existingNodes?: any[] // Canvas nodes from frontend
-    existingEdges?: any[] // Canvas edges from frontend
+    existingNodes?: Record<string, unknown>[]
+    existingEdges?: Record<string, unknown>[]
   }
 ): LoopCreatorState {
   const { HumanMessage } = require('@langchain/core/messages')

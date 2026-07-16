@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   interiorMaterialStatusResponseSchema,
   interiorTaskParamsSchema,
-} from '@/domains/interior-designer/io/interior-designer.dto'
+} from '@/domains/interior-designer/core/io/interior-designer.dto'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { getErrorMessage } from '@/shared/errors/error-utils'

@@ -6,7 +6,7 @@
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { tilesService, threeDService, portraitService } from '@/shared/data/generation/TilesService'
+import { tilesService, threeDService, portraitService } from '@/shared/data/generation/tiles-service'
 import { validateApiKey, getServiceContext } from '../../core/auth'
 
 // ============================================

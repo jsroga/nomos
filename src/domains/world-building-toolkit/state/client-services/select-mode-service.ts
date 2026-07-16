@@ -1,22 +1,29 @@
 import type { Tile } from '../../core/world-types'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { browserStorage } from '@/shared/data/browser-storage'
 import {
   ContentType,
-  DATA_URL_PNG_PREFIX,
   HtmlElementTag,
   CanvasContextType,
-  HttpHeaderName,
-  HttpMethod,
   ImageCrossOrigin,
   SegmentationProvider,
-  SelectModeApiRoute,
-  SelectModeCanvasFill,
   SelectModeErrorMessage,
   SelectModeLogLabel,
   SelectModeLogMessage,
-  SelectModePixelSample,
   UrlScheme,
 } from '../../constants/select-mode-service'
+import {
+  computePixelLayout,
+  computeRelativeBox,
+  computeTileRange,
+  computeWorldBoundsFromBox,
+} from './select-mode-segment-bounds'
+import {
+  buildContextCanvasBase64,
+  computeEffectiveTileSize,
+  detectTileResolution,
+} from './select-mode-segment-context'
+import { runSegmentationRequest } from './select-mode-segment-api'
 
 declare global {
   interface Window {
@@ -56,33 +63,17 @@ export class SelectModeService {
   private abortController: AbortController | null = null
 
   private getSegmentationProvider(): SegmentationProvider {
-    if (typeof window !== 'undefined') {
-      const provider = localStorage.getItem(LocalStorageKeys.AI_SEGMENTATION_PROVIDER)
-      if (provider === SegmentationProvider.Replicate) return SegmentationProvider.Replicate
-    }
+    const provider = browserStorage.getString(LocalStorageKeys.AI_SEGMENTATION_PROVIDER)
+    if (provider === SegmentationProvider.Replicate) return SegmentationProvider.Replicate
     return SegmentationProvider.Fal
   }
 
   private getFalApiKey(): string {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(LocalStorageKeys.AI_CONFIG_FAL)
-      if (saved) {
-        const config = JSON.parse(saved)
-        return config.apiKey
-      }
-    }
-    return ''
+    return browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_FAL)
   }
 
   private getReplicateApiKey(): string {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(LocalStorageKeys.AI_CONFIG_REPLICATE)
-      if (saved) {
-        const config = JSON.parse(saved)
-        return config.apiKey
-      }
-    }
-    return ''
+    return browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_REPLICATE)
   }
 
   private getSamParams(): {
@@ -90,18 +81,13 @@ export class SelectModeService {
     includeScores?: boolean
     includeBoxes?: boolean
   } {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(LocalStorageKeys.AI_CONFIG_FAL)
-      if (saved) {
-        const config = JSON.parse(saved)
-        return {
-          returnMultipleMasks: config.returnMultipleMasks,
-          includeScores: config.includeScores,
-          includeBoxes: config.includeBoxes,
-        }
-      }
+    const config = browserStorage.getJson(LocalStorageKeys.AI_CONFIG_FAL)
+    if (!config) return {}
+    return {
+      returnMultipleMasks: config.returnMultipleMasks === true,
+      includeScores: config.includeScores === true,
+      includeBoxes: config.includeBoxes === true,
     }
-    return {}
   }
 
   async segmentObject(
@@ -110,112 +96,26 @@ export class SelectModeService {
     projectId: string,
     textPrompt?: string
   ): Promise<SelectResult> {
-    // Abort previous request
     if (this.abortController) {
       this.abortController.abort()
     }
     this.abortController = new AbortController()
 
-    // 1. Calculate bounds from box with padding (in world coordinates)
-    const boxMinX = Math.min(box.x1, box.x2)
-    const boxMinY = Math.min(box.y1, box.y2)
-    const boxMaxX = Math.max(box.x1, box.x2)
-    const boxMaxY = Math.max(box.y1, box.y2)
+    const PADDING = 32
+    const worldBounds = computeWorldBoundsFromBox(box, PADDING)
+    const tileRange = computeTileRange(worldBounds, this.TILE_SIZE)
 
-    // Add minimal padding - just enough for edge context
-    const PADDING = 32 // Small padding to avoid cutting off edges
-    const minX = boxMinX - PADDING
-    const minY = boxMinY - PADDING
-    const maxX = boxMaxX + PADDING
-    const maxY = boxMaxY + PADDING
-
-    // World bounds (512 units per tile)
-    const worldBounds = {
-      x: Math.floor(minX),
-      y: Math.floor(minY),
-      width: Math.ceil(maxX - minX),
-      height: Math.ceil(maxY - minY),
-    }
-    // Ensure minimum size (smaller - just needs to contain selection)
-    worldBounds.width = Math.max(worldBounds.width, 128)
-    worldBounds.height = Math.max(worldBounds.height, 128)
-
-    // 2. Detect tile resolution by loading first available tile
-    const startTileX = Math.floor(worldBounds.x / this.TILE_SIZE)
-    const startTileY = Math.floor(worldBounds.y / this.TILE_SIZE)
-    const endTileX = Math.floor((worldBounds.x + worldBounds.width) / this.TILE_SIZE)
-    const endTileY = Math.floor((worldBounds.y + worldBounds.height) / this.TILE_SIZE)
-
-    // Find first tile to determine resolution
-    let tileResolution = this.TILE_SIZE // Default to 512
-    for (let tx = startTileX; tx <= endTileX && tileResolution === this.TILE_SIZE; tx++) {
-      for (let ty = startTileY; ty <= endTileY && tileResolution === this.TILE_SIZE; ty++) {
-        const tile = tiles[`${tx},${ty}`]
-        if (tile?.image_filename) {
-          try {
-            const pid = projectId || tile.project_id
-            const imgUrl = tile.image_filename.startsWith(UrlScheme.Http) ? tile.image_filename : `/projects/${pid}/${tile.image_filename}`
-            const img = await this.loadImage(imgUrl)
-            tileResolution = img.naturalWidth // Actual pixel size of tile
-            console.log(`[SelectModeService] Detected tile resolution: ${tileResolution}px`)
-          } catch (e) {
-            console.warn(SelectModeLogMessage.CouldNotDetectTileResolution)
-          }
-        }
-      }
-    }
-
-    // Scale factor: how many pixels per world unit
-    const scale = tileResolution / this.TILE_SIZE
-
-    // Pixel bounds (actual image dimensions) - Force alignment to integers AND multiples of 32
-    // Stricter alignment (32px) is safer for AI tensor operations to avoid stride/skew issues
-    let rawWidth = Math.round(worldBounds.width * scale)
-    let rawHeight = Math.round(worldBounds.height * scale)
-
-    // IMPORTANT: Limit max canvas size to prevent huge base64 payloads
-    // fal.ai and most APIs struggle with images > 4096px or > 5MB
-    const MAX_DIMENSION = 2048
-    let effectiveScale = scale
-
-    if (rawWidth > MAX_DIMENSION || rawHeight > MAX_DIMENSION) {
-      const downscaleFactor = Math.max(rawWidth, rawHeight) / MAX_DIMENSION
-      console.log(
-        `[SelectModeService] Canvas too large (${rawWidth}x${rawHeight}), downscaling by ${downscaleFactor.toFixed(2)}x`
-      )
-
-      effectiveScale = scale / downscaleFactor
-      rawWidth = Math.round(worldBounds.width * effectiveScale)
-      rawHeight = Math.round(worldBounds.height * effectiveScale)
-    }
-
-    // Ensure dimensions are multiples of 32
-    const alignedWidth = rawWidth + ((32 - (rawWidth % 32)) % 32)
-    const alignedHeight = rawHeight + ((32 - (rawHeight % 32)) % 32)
-
-    // Log canvas dimensions for debugging
-    console.log(SelectModeLogMessage.CanvasDimensions, {
-      rawWidth,
-      rawHeight,
-      alignedWidth,
-      alignedHeight,
-      tileResolution,
-      originalScale: scale,
-      effectiveScale,
+    const tileResolution = await detectTileResolution({
+      tileRange,
+      tiles,
+      projectId,
+      defaultTileSize: this.TILE_SIZE,
+      loadImage: url => this.loadImage(url),
     })
 
-    // Use effective scale for all subsequent calculations
-    const finalScale = effectiveScale
-
-    const pixelBounds = {
-      x: Math.round(worldBounds.x * finalScale),
-      y: Math.round(worldBounds.y * finalScale),
-      width: alignedWidth,
-      height: alignedHeight,
-    }
-
-    // Calculate effective tile size at this scale
-    const effectiveTileSize = Math.round(this.TILE_SIZE * finalScale)
+    const scale = tileResolution / this.TILE_SIZE
+    const { pixelBounds, finalScale } = computePixelLayout(worldBounds, scale)
+    const effectiveTileSize = computeEffectiveTileSize(this.TILE_SIZE, finalScale)
 
     console.log(
       `[SelectModeService] Scale: ${finalScale} (original: ${scale}), World bounds:`,
@@ -226,274 +126,40 @@ export class SelectModeService {
       effectiveTileSize
     )
 
-    // 3. Create Context Image at native resolution
-    const canvas = document.createElement(HtmlElementTag.Canvas)
-    canvas.width = pixelBounds.width
-    canvas.height = pixelBounds.height
-    const ctx = canvas.getContext(CanvasContextType.TwoD)
-    if (!ctx) throw new Error(SelectModeErrorMessage.FailedToCreateCanvas)
-
-    // Fill with gray (debug background)
-    ctx.fillStyle = SelectModeCanvasFill.DebugGray
-    ctx.fillRect(0, 0, pixelBounds.width, pixelBounds.height)
-
-    console.log(SelectModeLogMessage.CanvasCreated, {
-      width: canvas.width,
-      height: canvas.height,
-      pixelBounds,
-    })
-
-    const imagePromises: Promise<void>[] = []
-
-    for (let tx = startTileX; tx <= endTileX; tx++) {
-      for (let ty = startTileY; ty <= endTileY; ty++) {
-        const tileKey = `${tx},${ty}`
-        const tile = tiles[tileKey]
-
-        if (tile?.image_filename) {
-          const pid = projectId || tile.project_id
-          const imagePath = tile.image_filename.startsWith(UrlScheme.Http) ? tile.image_filename : `/projects/${pid}/${tile.image_filename}`
-
-          const promise = this.loadImage(imagePath)
-            .then(img => {
-              // Draw at effective scale (may be downscaled from native resolution)
-              const drawX = Math.round(tx * effectiveTileSize - pixelBounds.x)
-              const drawY = Math.round(ty * effectiveTileSize - pixelBounds.y)
-
-              console.log(`[SelectModeService] Drawing tile ${tileKey}:`, {
-                tx,
-                ty,
-                effectiveTileSize,
-                drawX,
-                drawY,
-                imageSize: { w: img.width, h: img.height },
-              })
-
-              // Draw the FULL source image scaled to effective tile size
-              // This ensures proper scaling regardless of the actual image resolution
-              ctx.drawImage(
-                img,
-                0,
-                0,
-                img.width,
-                img.height, // Source: full image
-                drawX,
-                drawY,
-                effectiveTileSize,
-                effectiveTileSize // Dest: scaled to effective size
-              )
-            })
-            .catch(err => {
-              console.error(
-                `[SelectModeService] Failed to load tile ${tileKey} from ${imagePath}`,
-                err
-              )
-            })
-          imagePromises.push(promise)
-        } else {
-          console.warn(`[SelectModeService] Tile ${tileKey} not found in store`)
-        }
-      }
-    }
-
-    await Promise.all(imagePromises)
-
-    // Verify canvas state before converting to base64
-    console.log(SelectModeLogMessage.CanvasStateBeforeToDataUrl, {
-      width: canvas.width,
-      height: canvas.height,
-      contextLost: ctx.isContextLost?.() ?? 'N/A',
-    })
-
-    // DEBUG: Sample pixels at multiple points to verify canvas content
-    // Gray [128,128,128,255] = no tile loaded, Black [0,0,0,0] = transparency issue
-    const samples = [
-      { name: SelectModePixelSample.TopLeft, x: 10, y: 10 },
-      { name: SelectModePixelSample.TopRight, x: canvas.width - 10, y: 10 },
-      { name: SelectModePixelSample.Center, x: Math.floor(canvas.width / 2), y: Math.floor(canvas.height / 2) },
-      { name: SelectModePixelSample.BottomLeft, x: 10, y: canvas.height - 10 },
-      { name: SelectModePixelSample.BottomRight, x: canvas.width - 10, y: canvas.height - 10 },
-    ]
-    const pixelSamples: Record<string, number[]> = {}
-    samples.forEach(s => {
-      const pixel = ctx.getImageData(s.x, s.y, 1, 1).data
-      pixelSamples[s.name] = Array.from(pixel)
-    })
-    console.log(SelectModeLogMessage.DebugCanvasPixelSamples, pixelSamples)
-
-    const base64Image = canvas.toDataURL(ContentType.Png)
-
-    // DEBUG: Store image in window for easy console access
-    // To view: type window.__DEBUG_CONTEXT_IMAGE__ in console, right-click result, open in new tab
-    window.__DEBUG_CONTEXT_IMAGE__ = base64Image
-    console.log(SelectModeLogMessage.DebugContextImageStored)
-    console.log(SelectModeLogMessage.DebugContextImageViewHint)
-
-    // Verify the base64 output is properly formed
-    const expectedPrefix = DATA_URL_PNG_PREFIX
-    const isValidPrefix = base64Image.startsWith(expectedPrefix)
-    const base64Data = base64Image.slice(expectedPrefix.length)
-    const isValidBase64Length = base64Data.length > 0 && base64Data.length % 4 === 0
-
-    console.log(SelectModeLogMessage.Base64Validation, {
-      totalLength: base64Image.length,
-      base64DataLength: base64Data.length,
-      isValidPrefix,
-      isValidBase64Length,
-      estimatedSizeMB: ((base64Data.length * 0.75) / 1024 / 1024).toFixed(2),
-      // Check for truncation by looking at end of base64
-      ending: base64Image.slice(-20),
-    })
-
-    if (!isValidPrefix || !isValidBase64Length) {
-      console.error(SelectModeLogMessage.Base64MalformedWarning)
-    }
-
-    // Store effective scale and world bounds for debugging context in logs below
-    console.log(SelectModeLogMessage.ImageDetails, {
-      width: canvas.width,
-      height: canvas.height,
+    const base64Image = await buildContextCanvasBase64({
+      tiles,
+      projectId,
+      tileRange,
       worldBounds,
       pixelBounds,
-      scale: finalScale,
-      dataUrlLength: base64Image.length,
-      hasDataPrefix: base64Image.startsWith(UrlScheme.Data),
+      effectiveTileSize,
+      loadImage: url => this.loadImage(url),
     })
 
-    // 3. Adjust box to be relative to the context image (in PIXEL coordinates)
-    // Use finalScale (which may be downscaled) for the box coordinates
-    const relativeBox: SelectBox = {
-      x1: (box.x1 - worldBounds.x) * finalScale,
-      y1: (box.y1 - worldBounds.y) * finalScale,
-      x2: (box.x2 - worldBounds.x) * finalScale,
-      y2: (box.y2 - worldBounds.y) * finalScale,
-    }
-
-    console.log(SelectModeLogMessage.BoxTransformation, {
-      originalBox: box,
-      worldBoundsOrigin: { x: worldBounds.x, y: worldBounds.y },
-      finalScale,
-      relativeBox,
-      boxSizeInPixels: {
-        width: Math.abs(relativeBox.x2 - relativeBox.x1),
-        height: Math.abs(relativeBox.y2 - relativeBox.y1),
-      },
-      canvasSize: { width: pixelBounds.width, height: pixelBounds.height },
-    })
-
-    console.log(SelectModeLogMessage.CallingApiWith, {
-      imageSize: { width: pixelBounds.width, height: pixelBounds.height },
-      box: relativeBox,
-      worldBounds,
-      scale: finalScale,
-    })
+    const relativeBox = computeRelativeBox(box, worldBounds, finalScale)
 
     let maskUrl = ''
     let apiResponse: unknown = null
 
-    const provider = this.getSegmentationProvider()
-    console.log(SelectModeLogMessage.UsingSegmentationProvider, provider)
-
-    // 4. Call appropriate segmentation API
     try {
-      if (provider === SegmentationProvider.Replicate) {
-        // Call Replicate SAM-2 API
-        const data = await fetch(SelectModeApiRoute.Segment, {
-          method: HttpMethod.Post,
-          headers: { [HttpHeaderName.ContentType]: ContentType.Json },
-          body: JSON.stringify({
-            image: base64Image,
-            points: [], // SAM-2 auto-generates masks, points are ignored
-            apiKey: this.getReplicateApiKey(),
-          }),
-          signal: this.abortController.signal,
-        }).then(res => res.json())
+      const segmentation = await runSegmentationRequest({
+        provider: this.getSegmentationProvider(),
+        base64Image,
+        relativeBox,
+        pixelBounds,
+        textPrompt,
+        replicateApiKey: this.getReplicateApiKey(),
+        falApiKey: this.getFalApiKey(),
+        samParams: this.getSamParams(),
+        signal: this.abortController.signal,
+        fetchMaskAsDataUrl: (url, width, height) => this.fetchMaskAsDataUrl(url, width, height),
+        resizeMask: (dataUrl, sourceWidth, sourceHeight, targetWidth, targetHeight) =>
+          this.resizeMask(dataUrl, sourceWidth, sourceHeight, targetWidth, targetHeight),
+      })
 
-        apiResponse = data
+      maskUrl = segmentation.maskUrl
+      apiResponse = segmentation.apiResponse
 
-        if (data.error) throw new Error(data.error)
-
-        // Replicate returns mask URLs - find the best mask for the selection box
-        if (data.output?.combined_mask) {
-          console.log(SelectModeLogMessage.GotCombinedMaskUrl, data.output.combined_mask)
-          // Fetch the mask image and convert to data URL (at pixel dimensions)
-          const fetchedMask = await this.fetchMaskAsDataUrl(
-            data.output.combined_mask,
-            pixelBounds.width,
-            pixelBounds.height
-          )
-          if (fetchedMask) maskUrl = fetchedMask
-        } else if (data.output?.individual_masks?.length > 0) {
-          // Find the mask that best covers the selection box
-          console.log(
-            SelectModeLogMessage.GotIndividualMasks,
-            data.output.individual_masks.length
-          )
-          // For now, use the first mask - could improve by finding best overlap
-          const fetchedMask = await this.fetchMaskAsDataUrl(
-            data.output.individual_masks[0],
-            pixelBounds.width,
-            pixelBounds.height
-          )
-          if (fetchedMask) maskUrl = fetchedMask
-        } else {
-          console.warn(SelectModeLogMessage.NoMasksInReplicateResponse)
-        }
-      } else {
-        // Call fal.ai SAM-3 API with bounding box
-        const data = await fetch(SelectModeApiRoute.FalSegment, {
-          method: HttpMethod.Post,
-          headers: { [HttpHeaderName.ContentType]: ContentType.Json },
-          body: JSON.stringify({
-            image: base64Image,
-            box: relativeBox,
-            apiKey: this.getFalApiKey(),
-            textPrompt: textPrompt,
-            samParams: this.getSamParams(),
-          }),
-          signal: this.abortController.signal,
-        }).then(res => res.json())
-
-        apiResponse = data
-
-        if (data.error) throw new Error(data.error)
-
-        // Fal.ai returns RLE-encoded masks
-        if (data.output?.rle) {
-          // Extract dimensions from API response - fal.ai includes width/height
-          // Ensure we use integers for mask dimensions to avoid ImageData errors
-          const maskWidth = data.output.width || Math.round(pixelBounds.width)
-          const maskHeight = data.output.height || Math.round(pixelBounds.height)
-
-          console.log(SelectModeLogMessage.RleDimensions, {
-            fromAPI: { width: data.output.width, height: data.output.height },
-            expected: { width: pixelBounds.width, height: pixelBounds.height },
-            using: { width: maskWidth, height: maskHeight },
-          })
-
-          const { rleToDataURL } = await import('../../core/rle')
-          const maskDataUrl = rleToDataURL(data.output.rle, maskWidth, maskHeight)
-
-          // If the mask dimensions don't match our expected pixel bounds, we need to resize
-          if (maskWidth !== pixelBounds.width || maskHeight !== pixelBounds.height) {
-            console.log(SelectModeLogMessage.ResizingMaskToPixelBounds)
-            const resizedMask = await this.resizeMask(
-              maskDataUrl,
-              maskWidth,
-              maskHeight,
-              pixelBounds.width,
-              pixelBounds.height
-            )
-            maskUrl = resizedMask
-          } else {
-            maskUrl = maskDataUrl
-          }
-        } else {
-          console.warn(SelectModeLogMessage.NoRleMaskInResponse)
-        }
-      }
-
-      // Return world bounds for canvas positioning
       return {
         imageUrl: maskUrl,
         bounds: {
@@ -505,7 +171,7 @@ export class SelectModeService {
         debugInfo: {
           contextImage: base64Image,
           box: relativeBox,
-          apiResponse: apiResponse,
+          apiResponse,
           maskUrl,
           scale: finalScale,
           worldBounds,
@@ -525,7 +191,7 @@ export class SelectModeService {
         debugInfo: {
           contextImage: base64Image,
           box: relativeBox,
-          apiResponse: apiResponse,
+          apiResponse,
           maskUrl,
           error: error instanceof Error ? error.message : String(error),
         },

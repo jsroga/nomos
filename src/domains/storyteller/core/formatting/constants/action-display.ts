@@ -1,5 +1,5 @@
 import { recordFromJson, readNumber, readString } from '@/shared/data/json-guards'
-import { ActionType } from '@/domains/storyteller/core/types/Enums'
+import { ActionType } from '@/domains/storyteller/core/types/enums'
 
 export const ACTION_ICON_COMMITTED = '✅'
 export const ACTION_ICON_EDIT = '✏️'

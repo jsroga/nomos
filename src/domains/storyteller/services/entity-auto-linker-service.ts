@@ -228,7 +228,8 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
     const sortedNames = Array.from(entityMap.keys()).sort((a, b) => b.length - a.length)
 
     for (const entityName of sortedNames) {
-      const entity = entityMap.get(entityName)!
+      const entity = entityMap.get(entityName)
+      if (!entity) continue
 
       // Create case-insensitive regex that matches whole words
       // Look for entity name NOT already in reference format

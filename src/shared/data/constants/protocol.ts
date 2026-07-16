@@ -305,7 +305,7 @@ export enum CrossDomainSuggestionCopy {
   LoopToStoryDescription = 'Create narrative scenarios that showcase this mechanic',
   LoopToLevelDescription = 'Create environments that leverage this mechanic',
   CharToMechanicsDescription = 'Create gameplay systems and abilities for this character',
-  CharToHomeDescription = "Design the character's living space in 3D",
+  CharToHomeDescription = 'Design the character\'s living space in 3D',
 }
 
 export enum GameEntityTag {
@@ -446,6 +446,7 @@ export enum GameEntityKind {
 
 export enum ApiRoutePath {
   Entities = '/api/entities',
+  ProxyModel = '/api/proxy-model',
 }
 
 export enum LoopCreatorHealthStatus {

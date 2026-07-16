@@ -44,7 +44,7 @@ Reject designs that use **6+ writer agents** in sequence — that averages voice
 ```bash
 # Current storyteller orchestration (likely to shrink/replace)
 rg -l 'createStep|Workflow' src/domains/storyteller/
-head -80 src/domains/storyteller/agents/orchestration/StoryWorkflow.ts
+head -80 src/domains/storyteller/ai/orchestration/StoryWorkflow.ts
 rg -n 'WORKFLOW_EVENTS|WorkflowContext' src/domains/storyteller/
 
 # App Mastra instance

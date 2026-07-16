@@ -9,6 +9,23 @@ import {
   ORTHOGRAPHIC_CAMERA_ZOOM_KEY,
 } from '@/domains/interior-designer/constants/camera-controller'
 import { useInteriorStore } from '@/domains/interior-designer'
+import { recordFromJson } from '@/shared/data/json-guards'
+
+interface OrbitControlsLike {
+  target: THREE.Vector3
+  update: () => void
+}
+
+function hasOrbitControls(controls: unknown): controls is OrbitControlsLike {
+  if (typeof controls !== 'object' || controls === null) return false
+  if (!(ORBIT_CONTROLS_TARGET_KEY in controls) || !(ORBIT_CONTROLS_UPDATE_KEY in controls)) {
+    return false
+  }
+  const record = recordFromJson(controls)
+  const target = record[ORBIT_CONTROLS_TARGET_KEY]
+  const update = record[ORBIT_CONTROLS_UPDATE_KEY]
+  return target instanceof THREE.Vector3 && typeof update === 'function'
+}
 
 // Disco Elysium style camera - user-configured position
 const DISCO_ELYSIUM_POSITION: [number, number, number] = [20.8, 13.1, 17.6]
@@ -33,10 +50,9 @@ export const CameraController: React.FC = () => {
       camera.updateProjectionMatrix()
 
       // Reset OrbitControls target if available
-      if (controls && ORBIT_CONTROLS_TARGET_KEY in controls && ORBIT_CONTROLS_UPDATE_KEY in controls) {
-        const orbitControls = controls as { target: THREE.Vector3; update: () => void }
-        orbitControls.target.set(...DISCO_ELYSIUM_TARGET)
-        orbitControls.update()
+      if (hasOrbitControls(controls)) {
+        controls.target.set(...DISCO_ELYSIUM_TARGET)
+        controls.update()
       }
 
       // Clear the reset request

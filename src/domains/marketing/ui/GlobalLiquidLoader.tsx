@@ -1,15 +1,9 @@
 'use client'
 
 import { LIQUID_GL_SCRIPTS_LOADED_LOG } from '@/domains/marketing/constants/liquid'
+import '@/domains/marketing/constants/liquid-globals'
 import { useEffect, useState } from 'react'
 import Script from 'next/script'
-
-// Extend Window interface for liquidGL
-declare global {
-  interface Window {
-    liquidGL: (options: any) => any
-  }
-}
 
 export function GlobalLiquidLoader() {
   const [scriptsLoaded, setScriptsLoaded] = useState({

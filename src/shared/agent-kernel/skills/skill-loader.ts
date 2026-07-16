@@ -19,7 +19,7 @@ import {
  * Skills are storyteller/narrative-specific, so they live inside that domain.
  * Single source of truth — referenced by mastra-instance and validate-skills.
  */
-export const SKILLS_DIR = 'src/domains/storyteller/prompts/skills'
+export const SKILLS_DIR = 'src/domains/storyteller/ai/prompts/skills'
 
 export { SkillEvalCaseSchema, SkillEvalsFileSchema } from './eval-schema'
 

@@ -5,6 +5,12 @@
 import { Node, Edge } from '@xyflow/react'
 import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
 import {
+  recordFromJson,
+  recordArrayFromJson,
+  readString,
+  readNumber,
+} from '@/shared/data/json-guards'
+import {
   parseRelationshipType,
   RELATIONSHIP_DEFAULT_TYPE,
   RELATIONSHIP_STYLES,
@@ -101,4 +107,73 @@ export interface RelationshipMatrixResponse {
     llmGrounded?: boolean
   }>
   centralCharacter?: string
+}
+
+type MatrixNode = RelationshipMatrixResponse['nodes'][number]
+type MatrixNodeMetadata = MatrixNode['metadata']
+type MatrixEdge = RelationshipMatrixResponse['edges'][number]
+
+function nodeMetadataFromJson(value: unknown): MatrixNodeMetadata {
+  const raw = recordFromJson(value)
+  const metadata: MatrixNodeMetadata = {}
+  // Preserve arbitrary extra keys (index signature is `unknown`).
+  for (const [key, entry] of Object.entries(raw)) {
+    metadata[key] = entry
+  }
+  const role = readString(raw.role)
+  if (role !== undefined) metadata.role = role
+  const archetype = readString(raw.archetype)
+  if (archetype !== undefined) metadata.archetype = archetype
+  const description = readString(raw.description)
+  if (description !== undefined) metadata.description = description
+
+  const rawMetrics = recordFromJson(raw.metrics)
+  const metrics: NonNullable<MatrixNodeMetadata['metrics']> = {}
+  const perceivedStakes = readNumber(rawMetrics.perceivedStakes)
+  if (perceivedStakes !== undefined) metrics.perceivedStakes = perceivedStakes
+  const transformation = readNumber(rawMetrics.transformation)
+  if (transformation !== undefined) metrics.transformation = transformation
+  metadata.metrics = metrics
+  return metadata
+}
+
+function nodeTypeFromJson(value: unknown): `${StoryEntityType}` {
+  const type = readString(value)
+  return Object.values(StoryEntityType).find(t => t === type) ?? StoryEntityType.Character
+}
+
+/** Parse the untyped relationships API payload without `as` casts. */
+export function relationshipMatrixFromJson(value: unknown): RelationshipMatrixResponse {
+  const root = recordFromJson(value)
+  const nodes: MatrixNode[] = recordArrayFromJson(root.nodes).map(raw => {
+    const node: MatrixNode = {
+      id: readString(raw.id) ?? '',
+      name: readString(raw.name) ?? '',
+      type: nodeTypeFromJson(raw.type),
+      metadata: nodeMetadataFromJson(raw.metadata),
+    }
+    const description = readString(raw.description)
+    if (description !== undefined) node.description = description
+    return node
+  })
+
+  const edges: MatrixEdge[] = recordArrayFromJson(root.edges).map(raw => {
+    const edge: MatrixEdge = {
+      source: readString(raw.source) ?? '',
+      target: readString(raw.target) ?? '',
+      weight: readNumber(raw.weight) ?? 0,
+      type: readString(raw.type) ?? '',
+    }
+    const label = readString(raw.label)
+    if (label !== undefined) edge.label = label
+    const evidence = readString(raw.evidence)
+    if (evidence !== undefined) edge.evidence = evidence
+    if (typeof raw.llmGrounded === 'boolean') edge.llmGrounded = raw.llmGrounded
+    return edge
+  })
+
+  const result: RelationshipMatrixResponse = { nodes, edges }
+  const centralCharacter = readString(root.centralCharacter)
+  if (centralCharacter !== undefined) result.centralCharacter = centralCharacter
+  return result
 }

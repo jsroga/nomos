@@ -8,8 +8,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
-import { applyCascadingFixes } from '@/domains/storyteller/core/editing/CascadeEditor'
-import type { ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
+import { applyCascadingFixes } from '@/domains/storyteller/core/editing/cascade-editor'
+import type { ConsistencyFix } from '@/domains/storyteller/core/types/consistency-types'
 import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'

@@ -1,9 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
-import { useWorldStore } from '@/domains/world-building-toolkit'
-import { AssetsPanel } from '@/domains/world-building-toolkit/ui/AssetsPanel'
-import { SettingsDialog } from '@/domains/world-building-toolkit/ui/SettingsDialog'
+import React, { useState, type ReactNode } from 'react'
 import { AssetUploadZone } from './AssetUploadZone'
 import { Plus, Palette, Package, Info, Eye, EyeOff } from 'lucide-react'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
@@ -11,7 +8,25 @@ import { DomainSidebar, SidebarSection, SidebarEmptyState } from '@/components/D
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 
-export const AssetExporterSidebar: React.FC = () => {
+export interface AssetExporterSidebarProps {
+  currentProject: { id: string } | null
+  assetCount: number
+  showAllAssetMasks: boolean
+  onToggleAssetMasks: () => void
+  onUploadComplete: () => void
+  assetsPanel: ReactNode
+  settingsDialog: ReactNode
+}
+
+export const AssetExporterSidebar: React.FC<AssetExporterSidebarProps> = ({
+  currentProject,
+  assetCount,
+  showAllAssetMasks,
+  onToggleAssetMasks,
+  onUploadComplete,
+  assetsPanel,
+  settingsDialog,
+}) => {
   const defaultMasterPrompt = ''
 
   const [masterPrompt, setMasterPrompt] = useState(() => {
@@ -21,14 +36,6 @@ export const AssetExporterSidebar: React.FC = () => {
     return defaultMasterPrompt
   })
 
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-
-  const currentProject = useWorldStore(state => state.currentProject)
-  const assets = useWorldStore(state => state.assets)
-  const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
-  const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
-
-  // Save master prompt to localStorage when it changes
   const handleMasterPromptChange = (value: string) => {
     setMasterPrompt(value)
     if (typeof window !== 'undefined') {
@@ -41,48 +48,46 @@ export const AssetExporterSidebar: React.FC = () => {
       <DomainSidebar header="Asset Exporter" storageKey="asset-exporter">
         {currentProject ? (
           <div className="space-y-6">
-            {/* Master Prompt */}
             <div id={TOUR_STEP_IDS.ASSET_MASTER_PROMPT}>
-            <SidebarSection
-              title="Master Prompt (Style)"
-              icon={<Palette size={12} />}
-              rightContent={
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info size={12} className="text-muted-foreground/60 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p className="max-w-[200px]">
-                      Define the overall art style that will be applied to all generated 3D assets
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              }
-            >
-              <textarea
-                value={masterPrompt}
-                onChange={e => handleMasterPromptChange(e.target.value)}
-                placeholder="Define the overall art style and aesthetic..."
-                className="w-full h-24 bg-background/50 border-2 border-border/60 rounded-md p-3 text-sm resize-none hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/30"
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                This style will be applied to generated assets
-              </p>
-            </SidebarSection>
+              <SidebarSection
+                title="Master Prompt (Style)"
+                icon={<Palette size={12} />}
+                rightContent={
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info size={12} className="text-muted-foreground/60 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p className="max-w-[200px]">
+                        Define the overall art style that will be applied to all generated 3D assets
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                }
+              >
+                <textarea
+                  value={masterPrompt}
+                  onChange={e => handleMasterPromptChange(e.target.value)}
+                  placeholder="Define the overall art style and aesthetic..."
+                  className="w-full h-24 bg-background/50 border-2 border-border/60 rounded-md p-3 text-sm resize-none hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/30"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  This style will be applied to generated assets
+                </p>
+              </SidebarSection>
             </div>
 
-            {/* Assets */}
             <SidebarSection
               separator
               title="Assets"
               icon={<Package size={12} />}
               rightContent={
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-muted-foreground">{assets.length}</span>
+                  <span className="text-xs font-mono text-muted-foreground">{assetCount}</span>
                   <button
                     onClick={e => {
                       e.stopPropagation()
-                      setShowAllAssetMasks(!showAllAssetMasks)
+                      onToggleAssetMasks()
                     }}
                     className="text-muted-foreground hover:text-foreground transition-colors"
                   >
@@ -91,21 +96,14 @@ export const AssetExporterSidebar: React.FC = () => {
                 </div>
               }
             >
-              {/* Upload Zone */}
               <div className="mb-4" id={TOUR_STEP_IDS.ASSET_UPLOAD_ZONE}>
                 <AssetUploadZone
                   projectId={currentProject.id}
-                  onUploadComplete={_assetIds => {
-                    // Refresh assets list after upload
-                    const fetchAssets = useWorldStore.getState().fetchAssets
-                    if (fetchAssets) {
-                      fetchAssets()
-                    }
-                  }}
+                  onUploadComplete={() => onUploadComplete()}
                 />
               </div>
 
-              <AssetsPanel showHelpText={false} />
+              {assetsPanel}
             </SidebarSection>
           </div>
         ) : (
@@ -115,7 +113,7 @@ export const AssetExporterSidebar: React.FC = () => {
           />
         )}
 
-        <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+        {settingsDialog}
       </DomainSidebar>
     </TooltipProvider>
   )

@@ -22,7 +22,7 @@
 
 Every module is a **vertical slice** with an identical internal skeleton and a single
 public entry point. Inside a slice, responsibilities are split across **five layers**
-that may only depend *downward*: `ui → state → io → core ← (server) services/agents/tasks`.
+that may only depend *downward*: `ui → state → core → services/ai/tasks` (`core/io/` holds client fetchers).
 **Server state lives in TanStack Query, never in Zustand.** Zustand holds *only*
 ephemeral client/UI state. All long-running work goes through **Trigger.dev tasks
 co-located with the module**, observed through **Trigger Realtime** (not hand-rolled
@@ -175,23 +175,22 @@ src/domains/<module>/
 │   ├─ use<Module>UiStore.ts           # ephemeral UI: selection, modes, panels
 │   └─ queries/                        # TanStack Query hooks (server state)
 │       ├─ use<Entity>.ts              # read
-│       └─ use<Entity>Mutation.ts      # write (calls io/, invalidates keys)
+│       └─ use<Entity>Mutation.ts      # write (calls core/io/, invalidates keys)
 │
-├─ io/                 # CLIENT→SERVER edge: typed fetchers, query keys, DTOs
-│   ├─ <module>.api.ts                 # fetch wrappers over /api/<module>/*
-│   ├─ <module>.keys.ts                # query-key factory
-│   └─ <module>.dto.ts                 # Zod request/response schemas (shared w/ routes)
-│
-├─ core/               # PURE domain logic. No React, no DB, no I/O. Unit-tested.
-│   ├─ <Concept>.ts                    # types, enums, reducers, merge/validate fns
+├─ core/               # Domain logic + client/server edge
+│   ├─ io/             # CLIENT→SERVER edge: typed fetchers, query keys, DTOs
+│   │   ├─ <module>.api.ts             # fetch wrappers over /api/<module>/*
+│   │   ├─ <module>.keys.ts            # query-key factory
+│   │   └─ <module>.dto.ts             # Zod request/response schemas (shared w/ routes)
+│   ├─ <Concept>.ts                    # types, enums, reducers, merge/validate fns (pure)
 │   └─ index.ts
 │
 ├─ services/           # SERVER-ONLY. DB access (Drizzle) + external APIs. Class or fn.
 │   └─ <Thing>Service.ts               # `import 'server-only'`
 │
-├─ agents/             # SERVER-ONLY. Mastra agents/tools/workflows (AI modules only)
-│   ├─ <Agent>/<Agent>.ts
-│   └─ tools/<tool>.ts                 # Zod-typed Mastra tools
+├─ ai/                 # SERVER-ONLY. Mastra layer: constants, tools, workflows
+│   ├─ agents/         # Mastra Agent classes + multi-file agent packages
+│   └─ tools/<tool>.ts # Zod-typed Mastra tools
 │
 ├─ tasks/              # Trigger.dev tasks OWNED by this module (schemaTask)
 │   └─ <task>.task.ts
@@ -203,9 +202,9 @@ src/domains/<module>/
 
 **Rules:**
 - **`index.ts` is the contract.** It re-exports the module's components, hooks, public types, and (type-only) task handles. Nothing else is importable from outside.
-- **`core/` is sacred.** If it imports `react`, `@/db`, `fetch`, or `Date.now()` directly, it's a bug. This is what makes the module testable offline (orchestration-rfc §5 generalized).
-- **`services/` and `agents/` and `tasks/` are server-only** (`import 'server-only'` at top; bundler-guarded).
-- **AI modules** (storyteller, chat, loop-creator…) use `agents/` + `prompts/`. **Asset modules** (world-building-toolkit, 3d-asset-exporter, interior-designer) skip them and lean on `tasks/`.
+- **`core/` is sacred (except `core/io/`).** Pure modules under `core/` must not import `react`, `@/db`, or `fetch`. Network clients live in `core/io/`. This is what makes the module testable offline (orchestration-rfc §5 generalized).
+- **`services/` and `ai/` and `tasks/` are server-only** (`import 'server-only'` at top; bundler-guarded).
+- **AI modules** (storyteller, chat, loop-creator…) use `ai/` + `prompts/`. **Asset modules** (world-building-toolkit, 3d-asset-exporter, interior-designer) skip them and lean on `tasks/`.
 - **Naming:** folders & components `PascalCase`; files matching a single export use that export's name; hooks `useX.ts`; tasks `<verb>.task.ts`; services `<Noun>Service.ts`; Zod schemas/DTOs `*.dto.ts`. **Kill the flat-vs-folder split** — pick folder-per-unit (storyteller's convention) everywhere.
 
 ### Worked example — reshaping `world-building-toolkit`
@@ -221,11 +220,11 @@ world-building-toolkit/
 │       ├─ useProjects.ts         # ← replaces store.projects/fetchAllProjects
 │       ├─ useAssets.ts           # ← replaces store.assets/fetchAssets
 │       └─ useTileMutation.ts     # ← replaces addTile/removeTile/acceptGeneration (calls io/)
-├─ io/
-│   ├─ tiles.api.ts               # POST /api/world/tiles … (NO direct supabase in browser)
-│   ├─ world.keys.ts
-│   └─ world.dto.ts
 ├─ core/
+│   ├─ io/
+│   │   ├─ tiles.api.ts               # POST /api/world/tiles … (NO direct supabase in browser)
+│   │   ├─ world.keys.ts
+│   │   └─ world.dto.ts
 │   ├─ TileGrid.ts                # neighbor math, RLE (was utils/rle.ts), pure
 │   └─ ContextAssembly.ts         # pure variant/strategy selection (was in store debug blob)
 ├─ services/
@@ -248,13 +247,13 @@ shared **`useJob`** hook on Trigger Realtime (§7).
 
 | Layer | May import | May NOT import | Responsibility |
 |-------|-----------|----------------|----------------|
-| `ui/` | `state/`, `core/` (types), `components/ui`, `shared/jobs` | `services/`, `db`, `io/` directly, another module | Render + dispatch. No fetch, no business rules. |
-| `state/` | `io/`, `core/`, `shared/data`, `shared/jobs` | `services/`, `db`, `react-dom` | Server-state caching (TanStack) + client-state (Zustand). Owns query keys + invalidation. |
-| `io/` | `core/` (DTOs), `shared/data` | `services/`, `db`, `react` | Typed HTTP edge. One fetcher, Zod-validated responses. |
-| `core/` | `core/`, `zod` | everything else | Pure logic: types, enums, reducers, merges, validators. |
-| `services/` | `db`, `shared/*`, external SDKs | `state/`, `ui/`, `io/`, React | Server-only persistence + external API calls. Returns `Result<T>`. |
-| `agents/` | `shared/agent-kernel`, `services/`, `prompts/`, `core/` | `ui/`, `state/` | Mastra agents/tools. |
-| `tasks/` | `services/`, `agents/`, `core/`, `shared/jobs` | `ui/`, `state/`, `io/` | Trigger.dev tasks; idempotent, retried, instrumented. |
+| `ui/` | `state/`, `core/` (types), `components/ui`, `shared/jobs` | `services/`, `db`, `core/io/` directly, another module | Render + dispatch. No fetch, no business rules. |
+| `state/` | `core/io/`, `core/`, `shared/data`, `shared/jobs` | `services/`, `db`, `react-dom` | Server-state caching (TanStack) + client-state (Zustand). Owns query keys + invalidation. |
+| `core/io/` | `core/` (DTOs), `shared/data` | `services/`, `db`, `react` | Typed HTTP edge. One fetcher, Zod-validated responses. |
+| `core/` (pure) | `core/`, `zod` | `react`, `@/db`, `fetch` | Pure logic: types, enums, reducers, merges, validators. |
+| `services/` | `db`, `shared/*`, external SDKs | `state/`, `ui/`, `core/io/`, React | Server-only persistence + external API calls. Returns `Result<T>`. |
+| `ai/` | `shared/agent-kernel`, `services/`, `prompts/`, `core/` | `ui/`, `state/` | Mastra agents/tools/workflows. Agent packages live in `ai/agents/` when layer folders exist at `ai/` root. |
+| `tasks/` | `services/`, `agents/`, `core/`, `shared/jobs` | `ui/`, `state/`, `core/io/` | Trigger.dev tasks; idempotent, retried, instrumented. |
 
 **The "no server-state-in-Zustand" rule is the highest-leverage single change.**
 It directly dissolves `useWorldStore`'s `projects/tiles/assets/pendingGenerations` and
@@ -283,7 +282,7 @@ Browser ──fetch──▶ /api/<module>/* ──requireAuth()──▶ Servic
 ### 6.3 Server state pattern (generalize `useEntities`)
 Every read is a TanStack hook with a key from the module's key factory:
 ```ts
-// io/world.keys.ts
+// core/io/world.keys.ts
 export const worldKeys = {
   all: ['world'] as const,
   tiles: (projectId: string) => [...worldKeys.all, 'tiles', projectId] as const,
@@ -293,7 +292,7 @@ export const worldKeys = {
 export const useTiles = (projectId: string) =>
   useQuery({ queryKey: worldKeys.tiles(projectId), queryFn: () => tilesApi.list(projectId) })
 ```
-Mutations call `io/` then `queryClient.invalidateQueries({ queryKey: worldKeys.tiles(id) })`.
+Mutations call `core/io/` then `queryClient.invalidateQueries({ queryKey: worldKeys.tiles(id) })`.
 This kills stale-data bugs without `cache:'no-store'`.
 
 ---

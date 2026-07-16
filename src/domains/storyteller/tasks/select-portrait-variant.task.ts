@@ -1,5 +1,5 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 
 interface SelectPortraitVariantPayload {
   projectId: string
@@ -77,10 +77,7 @@ export const selectPortraitVariant = task({
 
     // Update character in database with new portrait URL
     const localPath = `portraits/${filename}`
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createSupabaseServiceClient()
 
     const { error: dbError } = await supabase
       .from('characters')

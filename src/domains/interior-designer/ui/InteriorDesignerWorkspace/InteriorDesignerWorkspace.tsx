@@ -14,7 +14,6 @@ import { useInteriorStore } from '@/domains/interior-designer/state'
 import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { cn } from '@/shared/data/utils'
-import { useWorldStore } from '@/domains/world-building-toolkit'
 
 // Dynamic import with SSR disabled to avoid React reconciler issues with Three.js
 const InteriorCanvas = dynamic(
@@ -33,7 +32,7 @@ const InteriorCanvas = dynamic(
 )
 
 export function InteriorDesignerWorkspace() {
-  useProjectFromUrl()
+  const { currentProject } = useProjectFromUrl()
 
   const setExportRequested = useInteriorStore(state => state.setExportRequested)
   const saveDesign = useInteriorStore(state => state.saveDesign)
@@ -41,7 +40,6 @@ export function InteriorDesignerWorkspace() {
   const isSaving = useInteriorStore(state => state.isSaving)
   const setCameraResetRequested = useInteriorStore(state => state.setCameraResetRequested)
   const addObject = useInteriorStore(state => state.addObject)
-  const currentProject = useWorldStore(state => state.currentProject)
 
   const handleManualSave = async () => {
     if (currentProject?.id) {
@@ -142,7 +140,7 @@ export function InteriorDesignerWorkspace() {
               onClick={async () => {
                 const { walls, objects } = useInteriorStore.getState()
                 const zipBlob =
-                  await import('@/domains/interior-designer/core/UnityExporter').then(m =>
+                  await import('@/domains/interior-designer/core/unity-exporter').then(m =>
                     m.UnityExporter.createExportZip({ walls, objects })
                   )
 

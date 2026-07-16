@@ -1,7 +1,7 @@
 /** Project selection page copy and wire values. */
 
 export const PROJECT_SELECTION_SUBTITLES = [
-  "Play god. It's cheaper than therapy.",
+  'Play god. It\'s cheaper than therapy.',
   'Your reality is boring. Make a new one.',
   'Build a world before this one ends.',
   'No one will miss the old timeline.',

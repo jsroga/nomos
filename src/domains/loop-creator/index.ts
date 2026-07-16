@@ -2,7 +2,7 @@
  * Loop Creator public module API (client-safe).
  */
 
-export { LoopCreatorLayout } from './ui/LoopCreatorLayout'
+export { LoopCreatorLayout } from './ui/components/LoopCreatorLayout'
 export {
   createInitialLoopState,
   type LoopCreatorState,

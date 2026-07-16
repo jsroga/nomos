@@ -7,26 +7,27 @@
 
 import { logger } from '@trigger.dev/sdk/v3'
 import {
-  LLM_LOG_USER_ROLE,
-  LlmContentPartType,
   LlmLogEntryType,
   LlmLogFallback,
   LlmLogMessage,
   LlmLogSanitize,
   LlmLogSensitiveKeyFragment,
 } from '@/trigger/constants/llm-logger'
+import { isPlainObject } from '@/shared/data/json-guards'
+
+export { extractImageUrls, extractPrompt } from './llm-logger-extract'
 
 export interface LLMRequestLog {
   provider: 'openai' | 'gemini' | 'nano-banana' | 'anthropic' | 'stability' | 'midjourney' | 'meshy' | 'other'
   model?: string
   prompt?: string
-  messages?: Array<{ role: string; content: string | any }>
+  messages?: Array<{ role: string; content: string | unknown }>
   inputImageUrls?: string[]
   outputImageUrls?: string[]
-  input?: any
-  output?: any
+  input?: unknown
+  output?: unknown
   error?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export function logLLMRequest(logData: LLMRequestLog) {
@@ -52,8 +53,8 @@ export function logLLMRequest(logData: LLMRequestLog) {
     ...(messages && { messages }),
     ...(inputImageUrls && inputImageUrls.length > 0 && { inputImageUrls }),
     ...(outputImageUrls && outputImageUrls.length > 0 && { outputImageUrls }),
-    ...(input && { input: sanitizeForLogging(input) }),
-    ...(output && { output: sanitizeForLogging(output) }),
+    ...(input !== undefined && input !== null ? { input: sanitizeForLogging(input) } : {}),
+    ...(output !== undefined && output !== null ? { output: sanitizeForLogging(output) } : {}),
     ...(error && { error }),
     ...metadata,
   }
@@ -84,7 +85,7 @@ export function logLLMRequestStart(logData: Omit<LLMRequestLog, 'output' | 'erro
     ...(prompt && { prompt }),
     ...(messages && { messages }),
     ...(inputImageUrls && inputImageUrls.length > 0 && { inputImageUrls }),
-    ...(input && { input: sanitizeForLogging(input) }),
+    ...(input !== undefined && input !== null ? { input: sanitizeForLogging(input) } : {}),
     ...metadata,
   }
 
@@ -106,7 +107,7 @@ export function logLLMRequestComplete(logData: Omit<LLMRequestLog, 'error'>) {
     model: model || LlmLogFallback.UnknownModel,
     timestamp: new Date().toISOString(),
     ...(outputImageUrls && outputImageUrls.length > 0 && { outputImageUrls }),
-    ...(output && { output: sanitizeForLogging(output) }),
+    ...(output !== undefined && output !== null ? { output: sanitizeForLogging(output) } : {}),
     ...metadata,
   }
 
@@ -128,128 +129,58 @@ export function logLLMRequestError(logData: LLMRequestLog) {
     model: model || LlmLogFallback.UnknownModel,
     timestamp: new Date().toISOString(),
     error: error || LlmLogFallback.UnknownError,
-    ...(input && { input: sanitizeForLogging(input) }),
+    ...(input !== undefined && input !== null ? { input: sanitizeForLogging(input) } : {}),
     ...metadata,
   }
 
   logger.error(LlmLogMessage.RequestError, logEntry)
 }
 
-function sanitizeForLogging(data: any): any {
+function isSensitiveKey(key: string): boolean {
+  const lowerKey = key.toLowerCase()
+  return (
+    lowerKey.includes(LlmLogSensitiveKeyFragment.Key) ||
+    lowerKey.includes(LlmLogSensitiveKeyFragment.Secret) ||
+    lowerKey.includes(LlmLogSensitiveKeyFragment.Token)
+  )
+}
+
+function sanitizeStringForLogging(value: string): string {
+  if (value.length > 1000 && value.match(/^data:image/)) {
+    return LlmLogSanitize.Base64ImageTruncated
+  }
+
+  if (value.length > 5000) {
+    return value.substring(0, 500) + LlmLogSanitize.TruncatedSuffix
+  }
+
+  return value
+}
+
+function sanitizeObjectForLogging(data: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(data)) {
+    sanitized[key] = isSensitiveKey(key) ? LlmLogSanitize.Redacted : sanitizeForLogging(value)
+  }
+  return sanitized
+}
+
+function sanitizeForLogging(data: unknown): unknown {
   if (data === null || data === undefined) {
     return data
   }
 
-  if (typeof data === 'string' && data.length > 1000 && data.match(/^data:image/)) {
-    return LlmLogSanitize.Base64ImageTruncated
-  }
-
-  if (typeof data === 'string' && data.length > 5000) {
-    return data.substring(0, 500) + LlmLogSanitize.TruncatedSuffix
+  if (typeof data === 'string') {
+    return sanitizeStringForLogging(data)
   }
 
   if (Array.isArray(data)) {
     return data.map(item => sanitizeForLogging(item))
   }
 
-  if (typeof data === 'object') {
-    const sanitized: any = {}
-    for (const [key, value] of Object.entries(data)) {
-      if (
-        key.toLowerCase().includes(LlmLogSensitiveKeyFragment.Key) ||
-        key.toLowerCase().includes(LlmLogSensitiveKeyFragment.Secret) ||
-        key.toLowerCase().includes(LlmLogSensitiveKeyFragment.Token)
-      ) {
-        sanitized[key] = LlmLogSanitize.Redacted
-        continue
-      }
-
-      if (typeof value === 'object' && value !== null) {
-        sanitized[key] = sanitizeForLogging(value)
-      } else {
-        sanitized[key] = sanitizeForLogging(value)
-      }
-    }
-    return sanitized
+  if (isPlainObject(data)) {
+    return sanitizeObjectForLogging(data)
   }
 
   return data
-}
-
-export function extractImageUrls(data: any): string[] {
-  const urls: string[] = []
-
-  if (!data) return urls
-
-  if (data.data && Array.isArray(data.data)) {
-    for (const item of data.data) {
-      if (item.url) urls.push(item.url)
-      if (item.b64_json) urls.push(LlmLogSanitize.Base64Image)
-    }
-  }
-
-  if (data.candidates && Array.isArray(data.candidates)) {
-    for (const candidate of data.candidates) {
-      if (candidate.content?.parts) {
-        for (const part of candidate.content.parts) {
-          if (part.inline_data || part.inlineData) {
-            urls.push(LlmLogSanitize.Base64Image)
-          }
-        }
-      }
-    }
-  }
-
-  if (data.output) {
-    if (data.output.image_url) urls.push(data.output.image_url)
-    if (data.output.image_urls && Array.isArray(data.output.image_urls)) {
-      urls.push(...data.output.image_urls)
-    }
-  }
-
-  if (data.image_url) urls.push(data.image_url)
-  if (data.image_urls && Array.isArray(data.image_urls)) {
-    urls.push(...data.image_urls)
-  }
-
-  if (typeof data === 'object') {
-    for (const value of Object.values(data)) {
-      if (typeof value === 'object' && value !== null) {
-        urls.push(...extractImageUrls(value))
-      }
-    }
-  }
-
-  return [...new Set(urls)]
-}
-
-export function extractPrompt(data: any): string | undefined {
-  if (!data) return undefined
-
-  if (typeof data.prompt === 'string') return data.prompt
-  if (typeof data.text === 'string') return data.text
-
-  if (data.messages && Array.isArray(data.messages)) {
-    const userMessage = data.messages.find((m: any) => m.role === LLM_LOG_USER_ROLE)
-    if (userMessage?.content) {
-      if (typeof userMessage.content === 'string') {
-        return userMessage.content
-      }
-      if (Array.isArray(userMessage.content)) {
-        const textPart = userMessage.content.find((p: any) => p.type === LlmContentPartType.Text)
-        if (textPart?.text) return textPart.text
-      }
-    }
-  }
-
-  if (data.contents && Array.isArray(data.contents)) {
-    for (const content of data.contents) {
-      if (content.parts && Array.isArray(content.parts)) {
-        const textPart = content.parts.find((p: any) => p.text)
-        if (textPart?.text) return textPart.text
-      }
-    }
-  }
-
-  return undefined
 }

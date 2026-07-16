@@ -8,7 +8,7 @@ import {
   ButtonVariantKey,
 } from '@/components/Button/constants/button-styles'
 import { cn } from '@/shared/data/utils'
-import { ConsistencyCheckResult, Inconsistency, ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
+import { ConsistencyCheckResult, Inconsistency, ConsistencyFix } from '@/domains/storyteller/core/types/consistency-types'
 import { JSONDiffViewer } from '../JSONDiffViewer'
 import {
   CONSISTENCY_DEFAULT_SEVERITY_CLASS,

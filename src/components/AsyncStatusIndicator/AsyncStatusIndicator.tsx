@@ -5,6 +5,8 @@ import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { useGlobalStatusStore, type OperationType } from '@/shared/jobs/useGlobalStatusStore'
 import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
+import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
+import { QueryParam } from '@/shared/data/constants/protocol'
 import {
   TRIGGER_ACTIVE_STATUSES,
   TriggerTerminalStatus,
@@ -106,7 +108,7 @@ export const AsyncStatusIndicator: React.FC = () => {
 
       console.log(`${AsyncStatusIndicatorLog.CheckingRetexture} ${operation.id} with taskId ${taskId}`)
 
-      const res = await fetch(`/api/interior-designer/retexture/${taskId}`)
+      const res = await fetch(joinUrlPath('/api/interior-designer/retexture', taskId))
 
       if (!res.ok) {
         console.warn(`${AsyncStatusIndicatorLog.TaskNotFound} ${taskId} not found, marking as failed`)
@@ -173,7 +175,7 @@ export const AsyncStatusIndicator: React.FC = () => {
       console.log(`${AsyncStatusIndicatorLog.Checking3d} ${operation.id} with runId ${runId}`)
 
       try {
-        const res = await fetch(`/api/trigger-3d/status?runId=${runId}`)
+        const res = await fetch(buildUrl('/api/trigger-3d/status', { [QueryParam.RunId]: runId }))
 
         if (!res.ok) {
           if (res.status === HttpStatus.NOT_FOUND) {
@@ -221,7 +223,7 @@ export const AsyncStatusIndicator: React.FC = () => {
       console.log(`${AsyncStatusIndicatorLog.CheckingPortrait} ${operation.id} with taskId ${taskId}`)
 
       try {
-        const res = await fetch(`/api/storyteller/generate-portrait/status?taskId=${taskId}`)
+        const res = await fetch(buildUrl('/api/storyteller/generate-portrait/status', { taskId: taskId }))
 
         if (!res.ok) {
           if (res.status === HttpStatus.NOT_FOUND) {
@@ -335,7 +337,7 @@ export const AsyncStatusIndicator: React.FC = () => {
                                 ? metadata.prompt.substring(0, 40) + '...'
                                 : metadata.prompt
                           }
-                        } catch (e) {
+                        } catch {
                           // If JSON parsing fails, treat as plain text
                           statusText =
                             op.details.length > 40

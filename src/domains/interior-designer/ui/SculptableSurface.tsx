@@ -10,7 +10,7 @@
 
 import React, { useRef, useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import {
   useInteriorStore,
   Surface,
@@ -25,15 +25,16 @@ import {
   TERRAIN_MESH_NAME,
   TERRAIN_WALLS_MESH_NAME,
 } from '@/domains/interior-designer/constants/three-js'
+import type { SurfaceRenderConfig } from '@/domains/interior-designer/constants/surface-render-config'
 import { vec2 } from '@/domains/interior-designer/core/vec3'
 import { VoxelTerrainMesh } from './VoxelTerrainMesh'
 
 interface SculptableSurfaceProps {
   surface: Surface
-  config: any
+  config: SurfaceRenderConfig
   opacity: number
   isSelected: boolean
-  onClick?: (e: any) => void
+  onClick?: (e: ThreeEvent<MouseEvent>) => void
   textureMap: THREE.Texture | null
   geometry: { type: string; shape: THREE.Shape }
   isGenerating?: boolean
@@ -559,7 +560,7 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
 // Pulsing overlay component to indicate generation in progress
 const GeneratingOverlay: React.FC<{
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number } | null
-  config: any
+  config: SurfaceRenderConfig
 }> = ({ bounds, config }) => {
   const meshRef = useRef<THREE.Mesh>(null)
   const materialRef = useRef<THREE.MeshBasicMaterial>(null)

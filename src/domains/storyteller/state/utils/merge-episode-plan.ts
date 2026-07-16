@@ -3,8 +3,8 @@ import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-con
 import { StoryPlanMergeField } from '@/domains/storyteller/config/constants/bible-wire-fields'
 import { ToolResultPayloadField } from '@/domains/storyteller/config/constants/tool-result-wire'
 import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
-import { Phase, parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/Enums'
-import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import { Phase, parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/enums'
+import type { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import {
   BIBLE_CATEGORY_KEYS,
   EpisodePlanMergeField,

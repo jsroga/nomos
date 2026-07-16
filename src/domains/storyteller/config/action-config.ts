@@ -9,7 +9,7 @@
  */
 
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
-import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
+import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums'
 import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page-wire'
 import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import { deepMerge, recordFromJson, smartMergeArray } from '@/shared/data/deep-merge'
@@ -17,7 +17,7 @@ import {
   extractCastFromUpdates,
   normalizeCastInUpdates,
   readCastFromPlan,
-} from '@/domains/storyteller/core/formatting/StoryPlanFields'
+} from '@/domains/storyteller/core/formatting/story-plan-fields'
 import {
   EpisodePremiseFieldAlias,
   EpisodeRoadmapFieldAlias,

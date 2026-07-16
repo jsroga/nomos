@@ -239,7 +239,7 @@ sparkUsed: z.object({ moment: z.string(), mechanism: z.string(), disposition: z.
 **Conclusion:** no second chat and nothing to invent — port the StoryForge CLI onto our domain. Debug detail is a verbosity toggle on the *same* stream (D5: one shared Postgres store means REPL suspends interop with the web UI).
 
 ### ⬜ 🔴 Item 53. `scripts/storyteller-chat/` — terminal REPL (AgentController port)
-- **Files:** `scripts/storyteller-chat/{index.ts,tsconfig.json}` (+ `package.json` script `"storyteller:chat": "npx tsx scripts/storyteller-chat/index.ts"`); tsx resolves `@/` via the local tsconfig exactly like `evals/run.ts`. Imports **only** through sanctioned surfaces: `@/domains/storyteller/server` (agent factory), `@/domains/storyteller/io/mastra-runtime` (workflow ids), `@/shared/agent-kernel` (instance/storage — D5).
+- **Files:** `scripts/storyteller-chat/{index.ts,tsconfig.json}` (+ `package.json` script `"storyteller:chat": "npx tsx scripts/storyteller-chat/index.ts"`); tsx resolves `@/` via the local tsconfig exactly like `evals/run.ts`. Imports **only** through sanctioned surfaces: `@/domains/storyteller/server` (agent factory), `@/domains/storyteller/core/io/mastra-runtime` (workflow ids), `@/shared/agent-kernel` (instance/storage — D5).
 - **Wiring decisions:**
   - `agent`: the production chat adapter; `storage`: `getStorageInstance()` (Postgres — threads survive, suspends interop); `memory`: the adapter's Memory (required for forked subagents); `workspace`: repo-root scoped like production.
   - `modes` (instruction overlays on the same agent, StoryForge pattern): `develop` (no prose — bible/planning), `write` (delegates drafting to the workflow), `review` (critique existing beats).

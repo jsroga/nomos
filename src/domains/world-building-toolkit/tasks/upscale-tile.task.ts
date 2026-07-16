@@ -1,12 +1,18 @@
 import { task, logger, metadata, AbortTaskRunError } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
-import { storageService } from '@/shared/data/storage/StorageService'
-import { UPSCALE_PROMPTS, MASK_CONFIG, getCreativityPrompt } from '@/shared/data/server/prompts'
+import { storageService } from '@/shared/data/storage/storage-service'
+import { UPSCALE_PROMPTS, MASK_CONFIG } from '@/shared/data/server/prompts'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import {
+  readRowString,
+  recordFromJson,
+  stringArrayFromJson,
+} from '@/shared/data/json-guards'
 import {
   isReplicateModelId,
   parseReplicateImageOutput,
 } from '@/shared/ai/replicate-output'
+import { runGeminiPreUpscaleStep } from './upscale-tile-gemini-step'
 
 // Provider types
 type UpscaleProvider = 'midjourney' | 'replicate' | 'stability'
@@ -17,13 +23,34 @@ interface ProviderConfig {
   upscaleMode?: 'conservative' | 'creative'
 }
 
-// LegNext polling
+interface LegNextJobResponse {
+  status?: string
+  message?: string
+  output?: {
+    image_url?: string
+    error_messages?: string[]
+  }
+}
+
+function readLegNextJobResponse(value: unknown): LegNextJobResponse {
+  const record = recordFromJson(value)
+  const output = recordFromJson(record.output)
+  return {
+    status: readRowString(record, 'status'),
+    message: readRowString(record, 'message'),
+    output: {
+      image_url: readRowString(output, 'image_url'),
+      error_messages: stringArrayFromJson(output.error_messages),
+    },
+  }
+}
+
 async function pollLegNextTask(
   jobId: string,
   apiKey: string,
   maxAttempts: number = 300,
   progressOffset: number = 30
-): Promise<any> {
+): Promise<Record<string, unknown>> {
   let attempts = 0
 
   while (attempts < maxAttempts) {
@@ -48,7 +75,8 @@ async function pollLegNextTask(
         continue
       }
 
-      const data = await fetchResponse.json()
+      const raw = await fetchResponse.json()
+      const data = readLegNextJobResponse(raw)
       const status = data.status
 
       // Progress estimation (LegNext doesn't seem to return numeric progress, so we simulate)
@@ -67,9 +95,10 @@ async function pollLegNextTask(
           imageUrl: data.output?.image_url,
         })
         await metadata.set('progress', progressOffset + 65)
-        return data
+        return recordFromJson(raw)
       } else if (status === 'failed') {
-        const errorMsg = data.output?.error_messages?.join(', ') || data.message || 'Unknown error'
+        const errorMsg =
+          data.output?.error_messages?.join(', ') || data.message || 'Unknown error'
         logger.error('LegNext task failed', { error: errorMsg, fullData: data })
         throw new AbortTaskRunError(errorMsg)
       }
@@ -237,7 +266,9 @@ async function upscaleWithLegNext(
   logger.info('Waiting for upscale task', { upscaleJobId })
   const upscaleResult = await pollLegNextTask(upscaleJobId, apiKey, 300, 75)
 
-  const imageUrl = upscaleResult.output?.image_url || upscaleResult.output?.image_urls?.[0]
+  const upscaleOutput = recordFromJson(upscaleResult.output)
+  const imageUrls = stringArrayFromJson(upscaleOutput.image_urls)
+  const imageUrl = readRowString(upscaleOutput, 'image_url') ?? imageUrls[0]
 
   if (!imageUrl) {
     throw new Error('LegNext upscale result missing image_url')
@@ -463,65 +494,15 @@ export const upscaleTileTask = task({
 
     // Step 1: Optionally upscale with Gemini first
     if (!skipGeminiPreUpscale && geminiConfig?.apiKey) {
-      logger.info('Step 1: Upscaling with Gemini')
-      await metadata.set('stage', 'gemini_upscale')
-
-      const model = geminiConfig.model || 'gemini-3-pro-image-preview'
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiConfig.apiKey}`
-
-      // Build style reference hint
-      const styleRefHint = styleReferenceUrls?.length
-        ? ` Use these style references for visual guidance: ${styleReferenceUrls.join(', ')}.`
-        : ''
-      const creativityPrompt = getCreativityPrompt(creativity)
-      const finalPrompt = UPSCALE_PROMPTS.GEMINI_STEP1(prompt, creativityPrompt, styleRefHint)
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: finalPrompt },
-                {
-                  inline_data: {
-                    mime_type: 'image/png',
-                    data: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseModalities: ['TEXT', 'IMAGE'],
-          },
-        }),
+      const geminiResult = await runGeminiPreUpscaleStep({
+        imageBase64,
+        prompt,
+        creativity,
+        geminiConfig,
+        styleReferenceUrls,
       })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Gemini Step 1 failed: ${response.status} - ${errorText}`)
-      }
-
-      const data = await response.json()
-      const candidate = data.candidates?.[0]
-      if (!candidate) throw new Error('Gemini Step 1: No candidates returned')
-
-      const parts = candidate.content?.parts
-      const imagePart = parts?.find((p: any) => p.inline_data || p.inlineData)
-      if (!imagePart) {
-        throw new Error('Gemini Step 1: No image in response')
-      }
-
-      const inlineData = imagePart.inline_data || imagePart.inlineData
-      step1Image = inlineData.data
-      step1MimeType = inlineData.mime_type || inlineData.mimeType || 'image/png'
-      logger.info('Gemini Step 1 upscale completed', {
-        mimeType: step1MimeType,
-        imageLength: step1Image?.length,
-      })
-      await metadata.set('progress', 30)
+      step1Image = geminiResult.step1Image
+      step1MimeType = geminiResult.step1MimeType
     } else {
       logger.info('Skipping Gemini pre-upscale')
       await metadata.set('progress', 10)

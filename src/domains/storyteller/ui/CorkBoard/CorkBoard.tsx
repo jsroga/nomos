@@ -1,10 +1,10 @@
 import React, { useState, useEffect, memo } from 'react'
 import { BeatCard } from '../BeatCard'
-import { BeatCard as BeatData } from '@/domains/storyteller/core/types/StoryTypes'
+import { BeatCard as BeatData, beatCardFromJson } from '@/domains/storyteller/core/types/story-types'
 import { useParams } from 'next/navigation'
 import { Plus, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
-import { beatImageService } from '../../services/BeatImageService'
+import { beatImageService } from '@/domains/storyteller/services/beat-image-service'
 import { Message } from '../AgentLog'
 import { ImageLightbox } from '@/components/ImageLightbox'
 import { Button } from '@/components/Button'
@@ -24,7 +24,12 @@ import {
   CORK_BOARD_VISUAL_DIRECTOR_SENDER,
   CorkBoardUrlScheme,
 } from './constants/cork-board'
-import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
+import {
+  createEpisodeBeat,
+  deleteBeat,
+  fetchEpisodeBeatsList,
+  patchBeat,
+} from '@/domains/storyteller/core/io/storyteller.api'
 import {
   StorytellerConfirmVariant,
   StorytellerMessageType,
@@ -74,10 +79,15 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
 
   useEffect(() => {
     if (episodeId) {
-      fetch(`/api/storyteller/episodes/${episodeId}/beats`)
-        .then(res => res.json())
+      fetchEpisodeBeatsList(episodeId)
         .then(data => {
-          if (Array.isArray(data)) setBeats(data)
+          if (Array.isArray(data)) {
+            setBeats(
+              data
+                .map(row => beatCardFromJson(row))
+                .filter(beat => Boolean(beat.id))
+            )
+          }
         })
     }
   }, [episodeId])
@@ -105,22 +115,13 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
       sequence: beats.length + 1,
       content: '',
     }
-    const res = await fetch(`/api/storyteller/episodes/${episodeId}/beats`, {
-      method: HttpMethod.Post,
-      headers: { 'Content-Type': ContentType.Json },
-      body: JSON.stringify(newBeat),
-    })
-    const created = await res.json()
-    setBeats([...beats, created])
+    const created = await createEpisodeBeat(episodeId, newBeat)
+    setBeats([...beats, beatCardFromJson(created)])
   }
 
   const handleUpdate = async (id: string, updates: Partial<BeatData>) => {
     setBeats(beats.map(b => (b.id === id ? { ...b, ...updates } : b)))
-    await fetch(`/api/storyteller/beats/${id}`, {
-      method: HttpMethod.Patch,
-      headers: { 'Content-Type': ContentType.Json },
-      body: JSON.stringify(updates),
-    })
+    await patchBeat(id, updates)
   }
 
   const handleDelete = async (id: string) => {
@@ -133,7 +134,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
     })
     if (!confirmed) return
     setBeats(beats.filter(b => b.id !== id))
-    await fetch(`/api/storyteller/beats/${id}`, { method: HttpMethod.Delete })
+    await deleteBeat(id)
   }
 
   const onDragStart = (e: React.DragEvent, id: string) => {

@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import type { User } from '@supabase/supabase-js'
 import { TourAlertDialog, useTour } from '@/components/shell/Tour'
 import { getModuleConfigByUrl } from '@/shared/tours/module-tours'
 import { OnboardingState } from '@/shared/types/onboarding'
@@ -24,7 +25,7 @@ export function ModuleOnboardingController() {
   const [isOpen, setIsOpen] = useState(false)
   const [moduleConfig, setModuleConfig] =
     useState<ReturnType<typeof getModuleConfigByUrl>>(undefined)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
 
   // Load user and check onboarding status
   useEffect(() => {
@@ -114,13 +115,17 @@ export function ModuleOnboardingController() {
         if (res.ok) {
           const data = await res.json()
           // Update local user state to reflect changes without page reload
-          setUser((prev: any) => ({
-            ...prev,
-            user_metadata: {
-              ...prev.user_metadata,
-              onboarding: data.onboarding,
-            },
-          }))
+          setUser(prev =>
+            prev
+              ? {
+                  ...prev,
+                  user_metadata: {
+                    ...prev.user_metadata,
+                    onboarding: data.onboarding,
+                  },
+                }
+              : prev
+          )
         }
       } catch (error) {
         console.error(ModuleOnboardingLog.UpdateFailed, error)

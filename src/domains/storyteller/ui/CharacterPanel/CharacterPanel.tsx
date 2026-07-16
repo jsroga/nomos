@@ -12,7 +12,8 @@ import {
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
-import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { fetchStorytellerTimeline } from '@/domains/storyteller/core/io/storyteller.api'
+import { readString, recordFromJson, recordArrayFromJson, readNumber } from '@/shared/data/json-guards'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import {
   characterPortraitUrl,
@@ -20,7 +21,7 @@ import {
   readCharacterMetric,
   type StorytellerCharacter,
 } from '@/domains/storyteller/core/entities/character-wire'
-import type { CharacterMetrics } from '@/domains/storyteller/core/types/StoryTypes'
+import type { CharacterMetrics } from '@/domains/storyteller/core/types/story-types'
 import { CharacterDialogMode } from '@/domains/storyteller/ui/CharacterCreationDialog/constants/character-creation-dialog'
 import {
   CHARACTER_METRIC_CONFIG,
@@ -60,17 +61,20 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
   // Fetch character metric snapshots when selected beat changes
   useEffect(() => {
     if (selectedBeatId && episodeId) {
-      fetch(`/api/storyteller/timeline?episodeId=${episodeId}&beatId=${selectedBeatId}`)
-        .then(res => res.json())
+      fetchStorytellerTimeline(episodeId, selectedBeatId)
         .then(data => {
-          if (data.snapshots) {
+          const snapshots = recordArrayFromJson(data.snapshots)
+          if (snapshots.length > 0) {
             // Convert array to map by characterId
             const snapshotMap: Record<string, Partial<CharacterMetrics>> = {}
-            for (const snap of data.snapshots) {
+            for (const snapRow of snapshots) {
+              const snap = recordFromJson(snapRow)
               const getVal = (key: string, def: number) =>
-                snap[key] ?? snap[key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)] ?? def
-              snapshotMap[snap.characterId] = {
-                valence: snap.valence ?? snap.stress_level ?? snap.stressLevel ?? 0,
+                readNumber(snap[key]) ??
+                readNumber(snap[key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)]) ??
+                def
+              snapshotMap[readString(snap.characterId) ?? ''] = {
+                valence: readNumber(snap.valence ?? snap.stress_level ?? snap.stressLevel) ?? 0,
                 arousal: getVal(CharacterMetricKey.Arousal, 50),
                 autonomy: getVal(CharacterMetricKey.Autonomy, 60),
                 competence: getVal(CharacterMetricKey.Competence, 60),
@@ -80,10 +84,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
                 socialSafety: getVal(CharacterMetricKey.SocialSafety, 60),
                 moralAlignment: getVal(CharacterMetricKey.MoralAlignment, 70),
                 transformation:
-                  snap.transformationProgress ??
-                  snap.transformation ??
-                  snap.transformation_progress ??
-                  0,
+                  readNumber(
+                    snap.transformationProgress ?? snap.transformation ?? snap.transformation_progress
+                  ) ?? 0,
               }
             }
             setBeatSnapshots(snapshotMap)

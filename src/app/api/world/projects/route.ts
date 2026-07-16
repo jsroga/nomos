@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/shared/auth'
-import { createProjectRequestSchema } from '@/domains/world-building-toolkit/io/world.dto'
-import { worldProjectService } from '@/domains/world-building-toolkit/services/WorldDataService'
+import { createProjectRequestSchema } from '@/domains/world-building-toolkit/core/io/world.dto'
+import { worldProjectService } from '@/domains/world-building-toolkit/services/world-data-service'
 import { WORLD_QUERY_PARAM } from '@/domains/world-building-toolkit/constants/world-query-params'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 

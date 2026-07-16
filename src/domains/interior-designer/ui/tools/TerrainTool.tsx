@@ -4,7 +4,7 @@
 import React, { useRef, useState, useCallback } from 'react'
 import { TERRAIN_MESH_NAME } from '@/domains/interior-designer/constants/three-js'
 import { useInteriorStore } from '@/domains/interior-designer'
-import { useThree } from '@react-three/fiber'
+import { useThree, ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 
 const TERRAIN_SIZE = 64 // Must match TerrainMesh
@@ -111,7 +111,7 @@ export const TerrainTool: React.FC = () => {
   }, [getIntersection, setTerrainBrushPosition, isPainting, doPaint, terrainBrush.size])
 
   const handlePointerDown = useCallback(
-    (e: any) => {
+    (e: ThreeEvent<PointerEvent>) => {
       if (e.button !== 0) return // Only left click
 
       const point = getIntersection()

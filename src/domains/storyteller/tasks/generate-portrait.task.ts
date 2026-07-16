@@ -1,5 +1,5 @@
 import { task } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
 import { submitImagineTask, pollLegNextTask } from '@/shared/ai/legnext'
@@ -84,10 +84,7 @@ export const generatePortrait = task({
 
     // 5. Update character in database
     const localPath = `/projects/${projectId}/portraits/${filename}`
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createSupabaseServiceClient()
 
     const { error: dbError } = await supabase
       .from('characters')

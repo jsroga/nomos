@@ -45,7 +45,7 @@ Central orchestrator for plan-driven tasks:
 
 ## Extension Points
 
-* **StorytellerPlanner** — Hero's Journey templates (`domains/storyteller/agents/orchestration/`)
+* **StorytellerPlanner** — Hero's Journey templates (`domains/storyteller/ai/orchestration/`)
 * **Loop orchestrator** — imperative supervisor (`domains/loop-creator/core/graph/loop-orchestrator.ts`)
 
 ## Observability

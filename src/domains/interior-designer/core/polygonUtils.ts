@@ -30,8 +30,12 @@ export function findClosedPolygons(
     if (!adj.has(startKey)) adj.set(startKey, [])
     if (!adj.has(endKey)) adj.set(endKey, [])
 
-    adj.get(startKey)!.push(endKey)
-    adj.get(endKey)!.push(startKey)
+    const startNeighbors = adj.get(startKey)
+    const endNeighbors = adj.get(endKey)
+    if (startNeighbors && endNeighbors) {
+      startNeighbors.push(endKey)
+      endNeighbors.push(startKey)
+    }
   }
 
   // The new wall connects newWallStart -> newWallEnd
@@ -49,7 +53,8 @@ export function findClosedPolygons(
   visited.set(newEndKey, null)
 
   while (queue.length > 0) {
-    const current = queue.shift()!
+    const current = queue.shift()
+    if (current === undefined) break
 
     if (current === newStartKey && visited.size > 2) {
       // Found a path! Reconstruct it

@@ -36,4 +36,10 @@ export enum LlmContentPartType {
   Text = 'text',
 }
 
+export enum LlmResponseField {
+  B64Json = 'b64_json',
+  InlineData = 'inline_data',
+  InlineDataCamel = 'inlineData',
+}
+
 export const LLM_LOG_USER_ROLE = OpenAiChatRole.User

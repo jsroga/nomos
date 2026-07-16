@@ -10,8 +10,8 @@ export { InteriorDesignerWorkspace } from './ui'
 export { useInteriorStore } from './state'
 export { TERRAIN_QUALITY_RESOLUTION } from './core/interior-types'
 export type { TextureStyle } from './prompts'
-export { interiorDesignerApi } from './io/interior-designer.api'
-export type { InteriorDesign } from './io/interior-designer.dto'
+export { interiorDesignerApi } from './core/io/interior-designer.api'
+export type { InteriorDesign } from './core/io/interior-designer.dto'
 
 export {
   INTERIOR_DESIGNER_API_BASE_PATH,

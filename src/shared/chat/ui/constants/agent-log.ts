@@ -37,7 +37,7 @@ export enum AgentDisplayName {
   PlotArchitect = 'Plot Architect',
   CharacterExpert = 'Character Expert',
   StoryTracker = 'Story Tracker',
-  DevilsAdvocate = "Devil's Advocate",
+  DevilsAdvocate = 'Devil\'s Advocate',
   VisualDesigner = 'Visual Designer',
   Writer = 'Writer',
   You = 'You',

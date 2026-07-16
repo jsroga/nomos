@@ -1,4 +1,4 @@
-import { BibleSection } from '@/domains/storyteller/core/types/Enums'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import { EpisodePremiseField } from '@/domains/storyteller/ui/StoryPlanBoard/constants/episode-premise-fields'
 import { StorytellerLegacyPlanField } from '@/domains/storyteller/core/storyteller-page-wire'

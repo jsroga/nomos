@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/data/utils'
-import { ConsistencyChange } from '@/domains/storyteller/core/types/ConsistencyTypes'
+import { ConsistencyChange } from '@/domains/storyteller/core/types/consistency-types'
 import {
   JSON_VALUE_INDENT,
   JSON_VALUE_LIST_SEPARATOR,

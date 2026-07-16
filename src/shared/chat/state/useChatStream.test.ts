@@ -3,6 +3,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { Message, AgentAction, ApprovalActionStatus } from '../core/types'
+import { recordFromJson } from '@/shared/data/json-guards'
 
 // Mock implementation of updateActionStatus logic (extracted for unit testing)
 function updateActionStatusInMessages(
@@ -40,8 +41,8 @@ describe('useChatStream Unit Tests - Action Status Management', () => {
 
       const updated = updateActionStatusInMessages(messages, 1, 0, ApprovalActionStatus.EXECUTING)
 
-      expect(updated[1].actions![0].status).toBe(ApprovalActionStatus.EXECUTING)
-      expect(updated[1].actions![1].status).toBeUndefined()
+      expect(updated[1].actions?.[0]?.status).toBe(ApprovalActionStatus.EXECUTING)
+      expect(updated[1].actions?.[1]?.status).toBeUndefined()
     })
 
     it('should not mutate original messages array', () => {
@@ -56,8 +57,8 @@ describe('useChatStream Unit Tests - Action Status Management', () => {
 
       const updated = updateActionStatusInMessages(messages, 0, 0, ApprovalActionStatus.COMMITTED)
 
-      expect(messages[0].actions![0].status).toBeUndefined()
-      expect(updated[0].actions![0].status).toBe(ApprovalActionStatus.COMMITTED)
+      expect(messages[0].actions?.[0]?.status).toBeUndefined()
+      expect(updated[0].actions?.[0]?.status).toBe(ApprovalActionStatus.COMMITTED)
     })
 
     it('should handle non-existent message index gracefully', () => {
@@ -68,7 +69,7 @@ describe('useChatStream Unit Tests - Action Status Management', () => {
       const updated = updateActionStatusInMessages(messages, 99, 0, ApprovalActionStatus.COMMITTED)
 
       expect(updated.length).toBe(1)
-      expect(updated[0].actions![0].status).toBeUndefined()
+      expect(updated[0].actions?.[0]?.status).toBeUndefined()
     })
 
     it('should handle message without actions', () => {
@@ -96,7 +97,7 @@ describe('useChatStream Unit Tests - Action Status Management', () => {
       expect(updated[0].sender).toBe('PremiseArchitect')
       expect(updated[0].confidence).toBe(0.9)
       expect(updated[0].thinking).toBe('Some reasoning')
-      const payload = updated[0].actions![0].payload as { data: string }
+      const payload = recordFromJson(updated[0].actions?.[0]?.payload)
       expect(payload.data).toBe('important')
     })
   })
@@ -111,13 +112,13 @@ describe('useChatStream Unit Tests - Action Status Management', () => {
         },
       ]
 
-      expect(messages[0].actions![0].status).toBeUndefined()
+      expect(messages[0].actions?.[0]?.status).toBeUndefined()
 
       let updated = updateActionStatusInMessages(messages, 0, 0, ApprovalActionStatus.EXECUTING)
-      expect(updated[0].actions![0].status).toBe(ApprovalActionStatus.EXECUTING)
+      expect(updated[0].actions?.[0]?.status).toBe(ApprovalActionStatus.EXECUTING)
 
       updated = updateActionStatusInMessages(updated, 0, 0, ApprovalActionStatus.COMMITTED)
-      expect(updated[0].actions![0].status).toBe(ApprovalActionStatus.COMMITTED)
+      expect(updated[0].actions?.[0]?.status).toBe(ApprovalActionStatus.COMMITTED)
     })
 
     it('should support rejection: pending -> rejected', () => {
@@ -130,7 +131,7 @@ describe('useChatStream Unit Tests - Action Status Management', () => {
       ]
 
       const updated = updateActionStatusInMessages(messages, 0, 0, ApprovalActionStatus.REJECTED)
-      expect(updated[0].actions![0].status).toBe(ApprovalActionStatus.REJECTED)
+      expect(updated[0].actions?.[0]?.status).toBe(ApprovalActionStatus.REJECTED)
     })
 
     it('should support rollback: executing -> pending (on error)', () => {
@@ -143,7 +144,7 @@ describe('useChatStream Unit Tests - Action Status Management', () => {
       ]
 
       const updated = updateActionStatusInMessages(messages, 0, 0, ApprovalActionStatus.PENDING)
-      expect(updated[0].actions![0].status).toBe(ApprovalActionStatus.PENDING)
+      expect(updated[0].actions?.[0]?.status).toBe(ApprovalActionStatus.PENDING)
     })
   })
 
@@ -163,9 +164,9 @@ describe('useChatStream Unit Tests - Action Status Management', () => {
 
       const updated = updateActionStatusInMessages(messages, 0, 1, ApprovalActionStatus.COMMITTED)
 
-      expect(updated[0].actions![0].status).toBeUndefined()
-      expect(updated[0].actions![1].status).toBe(ApprovalActionStatus.COMMITTED)
-      expect(updated[0].actions![2].status).toBeUndefined()
+      expect(updated[0].actions?.[0]?.status).toBeUndefined()
+      expect(updated[0].actions?.[1]?.status).toBe(ApprovalActionStatus.COMMITTED)
+      expect(updated[0].actions?.[2]?.status).toBeUndefined()
     })
 
     it('should handle concurrent updates to different actions', () => {
@@ -184,8 +185,8 @@ describe('useChatStream Unit Tests - Action Status Management', () => {
       messages = updateActionStatusInMessages(messages, 0, 1, ApprovalActionStatus.COMMITTED)
       messages = updateActionStatusInMessages(messages, 0, 0, ApprovalActionStatus.COMMITTED)
 
-      expect(messages[0].actions![0].status).toBe(ApprovalActionStatus.COMMITTED)
-      expect(messages[0].actions![1].status).toBe(ApprovalActionStatus.COMMITTED)
+      expect(messages[0].actions?.[0]?.status).toBe(ApprovalActionStatus.COMMITTED)
+      expect(messages[0].actions?.[1]?.status).toBe(ApprovalActionStatus.COMMITTED)
     })
   })
 })

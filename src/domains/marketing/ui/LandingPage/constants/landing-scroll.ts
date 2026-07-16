@@ -13,21 +13,33 @@ export const LANDING_SCROLL_OVERLAY_RANGE = {
   opacityEnd: 0.75,
 }
 
-export const LANDING_HERO_SCROLL_SPRING = {
+export interface LandingHeroScrollSpring {
+  stiffness: number
+  damping: number
+}
+
+export interface LandingHeroMotionRange {
+  inputStart: number
+  inputEnd: number
+  outputStart: number
+  outputEnd: number
+}
+
+export const LANDING_HERO_SCROLL_SPRING: LandingHeroScrollSpring = {
   stiffness: 100,
   damping: 30,
-} as const
+}
 
-export const LANDING_HERO_Y_RANGE = {
+export const LANDING_HERO_Y_RANGE: LandingHeroMotionRange = {
   inputStart: 0,
   inputEnd: 0.2,
   outputStart: 0,
   outputEnd: -100,
-} as const
+}
 
-export const LANDING_HERO_OPACITY_RANGE = {
+export const LANDING_HERO_OPACITY_RANGE: LandingHeroMotionRange = {
   inputStart: 0,
   inputEnd: 0.15,
   outputStart: 1,
   outputEnd: 0,
-} as const
+}

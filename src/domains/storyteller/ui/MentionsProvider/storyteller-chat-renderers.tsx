@@ -11,9 +11,9 @@ import * as React from 'react'
 import type { ChatRenderers } from '@/shared/chat'
 import { ReferenceText } from '@/domains/storyteller/ui/ReferenceText'
 import { ConsistencyMessage } from '@/domains/storyteller/ui/ConsistencyMessage'
-import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
+import { hasReferences } from '@/domains/storyteller/core/entities/reference-parser'
 import { recordFromJson } from '@/shared/data/json-guards'
-import type { ConsistencyCheckResult } from '@/domains/storyteller/core/types/ConsistencyTypes'
+import type { ConsistencyCheckResult } from '@/domains/storyteller/core/types/consistency-types'
 
 /**
  * Narrow the platform's opaque consistency payload back to the domain type.

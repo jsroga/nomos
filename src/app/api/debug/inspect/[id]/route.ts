@@ -26,7 +26,9 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
             table_bible_content: project.seriesBibleTable?.content,
             table_plan_content: project.storyPlanTable?.content,
         })
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message, stack: error.stack })
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error)
+        const stack = error instanceof Error ? error.stack : undefined
+        return NextResponse.json({ error: message, stack })
     }
 }

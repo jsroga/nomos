@@ -48,3 +48,26 @@ export enum SurfacePropertiesStageLabel {
 }
 
 export const SURFACE_MATERIAL_OPERATION_ID_PREFIX = 'material-'
+
+export enum MaterialOperationMetaKey {
+  TaskId = 'taskId',
+  ModelUrl = 'modelUrl',
+  ThumbnailUrl = 'thumbnailUrl',
+  Progress = 'progress',
+  Stage = 'stage',
+  Error = 'error',
+  Prompt = 'prompt',
+  SurfaceId = 'surfaceId',
+  SurfaceBounds = 'surfaceBounds',
+}
+
+export enum SurfaceBoundsMetaKey {
+  CenterX = 'centerX',
+  CenterZ = 'centerZ',
+  Width = 'width',
+  Depth = 'depth',
+}
+
+export enum MeshyStoredConfigKey {
+  ApiKey = 'apiKey',
+}

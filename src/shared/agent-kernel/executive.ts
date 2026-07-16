@@ -29,7 +29,7 @@ export type CoPilotInteraction =
   | { type: CoPilotInteractionType.ProposePlan; payload: { planId: string; summary: string }; thought?: string }
   | {
     type: CoPilotInteractionType.ExecuteStep
-    payload: { stepId: string; tool: string; args?: any }
+    payload: { stepId: string; tool: string; args?: unknown }
     thought?: string
   }
   | { type: CoPilotInteractionType.Finish; payload: { result: string }; thought?: string }
@@ -45,15 +45,21 @@ function isCoPilotInteraction(value: unknown): value is CoPilotInteraction {
   )
 }
 
+/** Minimal structural view of the Mastra tools the executive orchestrates. */
+interface ExecutiveTool {
+  id: string
+  execute: (input: unknown) => Promise<unknown>
+}
+
 export interface ExecutiveConfig {
   modelName: string
-  planner: any // Mastra Tool instance
-  tools: any[] // Mastra Tool instances
+  planner: ExecutiveTool
+  tools: ExecutiveTool[]
   systemPromptKey?: string
 }
 export class ExecutiveAgent {
   private agent: Agent
-  private toolsMap: Record<string, any>
+  private toolsMap: Record<string, ExecutiveTool>
 
   protected constructor(config: ExecutiveConfig, instructions: string) {
     this.toolsMap = {

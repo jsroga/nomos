@@ -49,16 +49,20 @@ export async function GET(req: NextRequest) {
       const [loop] = await db.select().from(gameLoops).where(eq(gameLoops.id, loopId))
       return NextResponse.json(loop || null)
     } else {
-      // Check project access
-      if (!(await verifyProjectAccess(projectId!, session.user.id))) {
+      if (!projectId) {
+        return NextResponse.json(
+          { error: API_ERROR.LOOP_PROJECT_OR_LOOP_ID_REQUIRED },
+          { status: HttpStatus.BAD_REQUEST },
+        )
+      }
+      if (!(await verifyProjectAccess(projectId, session.user.id))) {
         return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.FORBIDDEN })
       }
 
-      // Fetch all loops for project
       const loops = await db
         .select()
         .from(gameLoops)
-        .where(eq(gameLoops.projectId, projectId!))
+        .where(eq(gameLoops.projectId, projectId))
         .orderBy(desc(gameLoops.updatedAt))
       return NextResponse.json(loops)
     }

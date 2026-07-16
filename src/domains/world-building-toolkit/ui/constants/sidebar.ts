@@ -41,6 +41,12 @@ export enum WorldGenSidebarError {
 export enum WorldGenSidebarToast {
   MasterPromptUpdated = 'Master Prompt updated from Storyteller Bible',
   FailedToFetchWorldInfo = 'Failed to fetch world info',
+  Upscaling = 'Upscaling...',
+  UpscaleQueued = 'Tile queued for upscaling!',
+  UpscaleFailed = 'Upscale failed',
+  EnhancingFidelity = 'Enhancing fidelity...',
+  FidelityQueued = 'Tile queued for fidelity enhancement!',
+  DeleteTileFailed = 'Failed to delete tile',
 }
 
 export enum WorldGenTileProvider {

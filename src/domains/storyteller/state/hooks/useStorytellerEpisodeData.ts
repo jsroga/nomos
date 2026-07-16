@@ -2,10 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
-import { recordArrayFromJson, recordFromJson, readNumber, readString } from '@/shared/data/json-guards'
+import {
+  recordArrayFromJson,
+  recordFromJson,
+  readString,
+  readNumber,
+  stringArrayFromJson,
+} from '@/shared/data/json-guards'
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
 import {
-  StorytellerHttpMethod,
   StorytellerLogMessage,
   StorytellerDefaultTitle,
   StorytellerBeatStatus,
@@ -20,7 +25,19 @@ import {
   shouldPreserveHydratedPlan,
 } from '@/domains/storyteller/state/utils/merge-episode-plan'
 import { storytellerCharacterFromRow } from '@/domains/storyteller/core/entities/character-wire'
-import type { BeatCard } from '@/domains/storyteller/core/types/StoryTypes'
+import {
+  createStorytellerCharacter,
+  deleteStorytellerCharacter,
+  fetchStorytellerCharacters,
+  updateStorytellerCharacter,
+} from '@/domains/storyteller/core/io/character.api'
+import {
+  fetchStorytellerPlan,
+  fetchStorytellerProjectOptional,
+  fetchStorytellerTimeline,
+  patchStorytellerEpisode,
+} from '@/domains/storyteller/core/io/storyteller.api'
+import type { BeatCard } from '@/domains/storyteller/core/types/story-types'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 
 function beatStatusFromWire(value: string | undefined): NonNullable<BeatCard['status']> {
@@ -59,10 +76,7 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
 
     cachedFetch(
       `characters:${projectId}`,
-      async () => {
-        const res = await fetch(`/api/storyteller/characters?projectId=${projectId}`)
-        return res.json()
-      },
+      () => fetchStorytellerCharacters(projectId),
       {
         ttlMs: 60_000,
         validate: (value): value is unknown[] => Array.isArray(value),
@@ -94,12 +108,13 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
       import('@/domains/storyteller').then(({ moodboardGenerationService }) =>
         moodboardGenerationService.resumePendingGenerations(projectId, async () => {
           try {
-            const response = await fetch(`/api/storyteller/projects/${projectId}`)
-            if (response.ok) {
-              const data = await response.json()
-              const bible = data.seriesBible || data.series_bible
-              if (bible?.moodImages) {
-                setStoryPlan(prev => (prev ? { ...prev, moodImages: bible.moodImages } : prev))
+            const data = await fetchStorytellerProjectOptional(projectId)
+            if (data) {
+              const bible = recordFromJson(data.seriesBible ?? data.series_bible)
+              if (Array.isArray(bible.moodImages)) {
+                setStoryPlan(prev =>
+                  prev ? { ...prev, moodImages: stringArrayFromJson(bible.moodImages) } : prev
+                )
               }
             }
           } catch (error) {
@@ -113,10 +128,9 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
   // Fetch beats for selected episode
   useEffect(() => {
     if (currentEpisodeId) {
-      fetch(`/api/storyteller/timeline?episodeId=${currentEpisodeId}`)
-        .then(res => res.json())
+      fetchStorytellerTimeline(currentEpisodeId)
         .then(data => {
-          const beats = recordArrayFromJson(recordFromJson(data).beats)
+          const beats = recordArrayFromJson(data.beats)
           if (beats.length > 0) {
             setBeats(
               beats.map(beat => {
@@ -156,8 +170,7 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
 
     if (currentEpisodeId) {
       setIsFetchingPlan(true)
-      fetch(`/api/storyteller/plan?episodeId=${currentEpisodeId}`)
-        .then(res => res.json())
+      fetchStorytellerPlan(currentEpisodeId)
         .then(data => {
           const planRecord = recordFromJson(data)
           const mergedPlan = buildMergedEpisodePlan(planRecord, currentProject)
@@ -203,13 +216,8 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
   const handleCreateCharacter = async (char: Record<string, unknown>) => {
     if (!currentProject?.id) return
     try {
-      const res = await fetch('/api/storyteller/characters', {
-        method: StorytellerHttpMethod.Post,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...char, projectId: currentProject.id }),
-      })
-      const newChar = await res.json()
-      const newCharId = readString(recordFromJson(newChar).id)
+      const newChar = await createStorytellerCharacter({ ...char, projectId: currentProject.id })
+      const newCharId = readString(newChar.id)
       if (newCharId) {
         clearFetchCache(`characters:${currentProject.id}`)
         const normalized = storytellerCharacterFromRow(newChar)
@@ -224,13 +232,8 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
 
   const handleUpdateCharacter = async (id: string, updates: Record<string, unknown>) => {
     try {
-      const res = await fetch('/api/storyteller/characters', {
-        method: StorytellerHttpMethod.Patch,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...updates }),
-      })
-      const updated = await res.json()
-      const updatedId = readString(recordFromJson(updated).id)
+      const updated = await updateStorytellerCharacter({ id, ...updates })
+      const updatedId = readString(updated.id)
       if (updatedId) {
         const normalized = storytellerCharacterFromRow(updated)
         setCharacters(prev =>
@@ -245,10 +248,8 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
   const handleDeleteCharacter = async (id: string) => {
     try {
       setIsDeletingCharacter(true)
-      const res = await fetch(`/api/storyteller/characters?id=${id}`, {
-        method: StorytellerHttpMethod.Delete,
-      })
-      if (res.ok) {
+      const ok = await deleteStorytellerCharacter(id)
+      if (ok) {
         if (currentProject?.id) clearFetchCache(`characters:${currentProject.id}`)
         setCharacters(prev => prev.filter(c => c.id !== id))
         setCharacterWebVersion(prev => prev + 1)
@@ -278,13 +279,9 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
 
       if (currentEpisodeId) {
         try {
-          await fetch(`/api/storyteller/episodes/${currentEpisodeId}`, {
-            method: StorytellerHttpMethod.Patch,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              premise: detail,
-              title: detail.title,
-            }),
+          await patchStorytellerEpisode(currentEpisodeId, {
+            premise: detail,
+            title: detail.title,
           })
         } catch (err) {
           console.error(StorytellerLogMessage.FailedPersistPremise, err)

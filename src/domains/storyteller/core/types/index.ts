@@ -1,6 +1,6 @@
 // Core types barrel - storyteller domain types
-export * from './ActionTypes';
-export * from './StoryTypes';
-export * from './StoryPlanTypes';
-export * from './ConsistencyTypes';
-export * from './Enums';
+export * from './action-types'
+export * from './story-types'
+export * from './story-plan-types'
+export * from './consistency-types'
+export * from './enums'

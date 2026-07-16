@@ -5,12 +5,12 @@
 
 import { AIMessage } from '@langchain/core/messages'
 import { LoopCreatorState, NextAgent } from './state'
-import { supervisorAgent } from '../../agents/supervisor'
-import { loopPlannerAgent } from '../../agents/loop-planner'
-import { mechanicsDesignerAgent } from '../../agents/mechanics-designer'
-import { balanceAnalystAgent } from '../../agents/balance-analyst'
-import { progressionArchitectAgent } from '../../agents/progression-architect'
-import { marketAnalystAgent } from '../../agents/market-analyst-wrapper'
+import { supervisorAgent } from '../../ai/agents/supervisor'
+import { loopPlannerAgent } from '../../ai/agents/loop-planner'
+import { mechanicsDesignerAgent } from '../../ai/agents/mechanics-designer'
+import { balanceAnalystAgent } from '../../ai/agents/balance-analyst'
+import { progressionArchitectAgent } from '../../ai/agents/progression-architect'
+import { marketAnalystAgent } from '../../ai/agents/market-analyst-wrapper'
 import { nextAgentFromAgentNode, type AgentNode, isRegisteredAgent } from './agent-nodes'
 import { LoopAgentNode } from '@/domains/loop-creator/constants/agent-nodes'
 import {

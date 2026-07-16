@@ -28,17 +28,16 @@ import {
   TextSegment,
   stripReferences,
   PREFIX_TO_TYPE,
-} from '@/domains/storyteller/core/entities/ReferenceParser'
+} from '@/domains/storyteller/core/entities/reference-parser'
 import {
   EntityReference,
   EntityRelationship,
   EntityType,
-} from '@/domains/storyteller/core/entities/EntityReferences'
+} from '@/domains/storyteller/core/entities/entity-references'
 import {
   DOM_EVENT_KEYDOWN,
   ENTITY_COLORS,
   ENTITY_ICONS,
-  HttpMethod,
   REFERENCE_TEXT_DEFAULT_COLOR,
   REFERENCE_TEXT_DEFAULT_ENTITY_TYPE,
   REFERENCE_TEXT_DEFAULT_ICON,
@@ -54,6 +53,7 @@ import {
   StoryEntityType,
   StorytellerTextSeparator,
 } from './constants/reference-text-display'
+import { markEntityReferenced } from '@/domains/storyteller/core/io/entities.api'
 import { Users, Loader2 } from 'lucide-react'
 
 export type { EntityReference, EntityRelationship, EntityType }
@@ -592,9 +592,7 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
   const handleEntityClick = (refId: string, entity: EntityReference | null) => {
     // Mark as referenced via API (fire and forget)
     if (projectId) {
-      fetch(`/api/entities/mark-referenced?projectId=${projectId}&id=${refId}`, {
-        method: HttpMethod.Post,
-      }).catch(() => { })
+      void markEntityReferenced(projectId, refId).catch(() => {})
     }
     onEntityClick?.(refId, entity)
   }

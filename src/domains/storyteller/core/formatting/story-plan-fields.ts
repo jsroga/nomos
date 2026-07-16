@@ -2,7 +2,7 @@
  * Canonical story-plan field helpers (cast / keyCharacters aliasing).
  */
 
-import { smartMergeArray } from '@/domains/storyteller/core/editing/DeepMerge'
+import { smartMergeArray } from '@/domains/storyteller/core/editing/deep-merge'
 import {
   CAST_FIELD_ALIASES,
   CastEntryField,

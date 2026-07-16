@@ -13,7 +13,7 @@ import {
 } from './constants/agent'
 
 // Initialize Memory with Postgres persistence
-const connectionString = process.env.DATABASE_URL!
+const connectionString = process.env.DATABASE_URL ?? ''
 const store = new PostgresStore({
   id: MCP_POSTGRES_STORE_ID,
   connectionString,

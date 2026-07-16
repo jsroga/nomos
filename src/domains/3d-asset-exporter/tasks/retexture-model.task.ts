@@ -1,6 +1,6 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { MeshyClient } from '@/shared/ai/meshy'
-import { storageService } from '@/shared/data/storage/StorageService'
+import { storageService } from '@/shared/data/storage/storage-service'
 import { v4 as uuidv4 } from 'uuid'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { getErrorMessage } from '@/shared/errors/error-utils'

@@ -4,7 +4,7 @@ Agent-facing summary: `.cursor/rules/eslint-boundaries.mdc` (always applied in C
 
 ## 1. Barrel guard (outsiders → domain)
 
-External code (`src/**` excluding `src/domains/<MODULE>/**`) may import `@/domains/<MODULE>` barrel only — not deep paths (except allowed `*/io/*` seams).
+External code (`src/**` excluding `src/domains/<MODULE>/**`) may import `@/domains/<MODULE>` barrel only — not deep paths (except allowed `*/core/io/*` seams).
 
 Defined in `eslint.config.js` → `DOMAIN_BARREL_GUARD_PATTERNS`.
 

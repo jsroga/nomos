@@ -12,7 +12,7 @@
 import {
   RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
   VERDICT_STEP_ID,
-} from '@/domains/storyteller/io/mastra-runtime'
+} from '@/domains/storyteller/core/io/mastra-runtime'
 import {
   mapToolResultToAction,
   detectLoadingSection,
@@ -213,7 +213,7 @@ async function autoLinkActionPayload(
   const linkedPayload = { ...actionPayload }
   try {
     const { entityAutoLinker } = await import(
-      '@/domains/storyteller/services/EntityAutoLinkerService'
+      '@/domains/storyteller/services/entity-auto-linker-service'
     )
 
     // Auto-link text fields in the payload
@@ -447,7 +447,7 @@ export async function finalizeStream(session: StreamSession): Promise<void> {
   if (session.projectId && session.fullText.length > 0) {
     try {
       const { entityAutoLinker } = await import(
-        '@/domains/storyteller/services/EntityAutoLinkerService'
+        '@/domains/storyteller/services/entity-auto-linker-service'
       )
       finalText = await entityAutoLinker.autoLink(session.fullText, session.projectId)
     } catch (err) {

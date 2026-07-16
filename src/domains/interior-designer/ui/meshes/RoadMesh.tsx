@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import React, { useMemo, useRef, useEffect, useCallback } from 'react'
+import { ThreeEvent } from '@react-three/fiber'
 import { CATMULL_ROM_CURVE_TYPE } from '@/domains/interior-designer/constants/three-js'
 import { useInteriorStore, Surface } from '@/domains/interior-designer'
 import { getCachedTexture } from '@/domains/interior-designer/core/textureCache'
@@ -16,7 +17,7 @@ interface RoadMeshProps {
     opacity?: number
   }
   isSelected: boolean
-  onClick: (e: any) => void
+  onClick: (e: ThreeEvent<MouseEvent>) => void
   opacity?: number
   isGenerating?: boolean
 }

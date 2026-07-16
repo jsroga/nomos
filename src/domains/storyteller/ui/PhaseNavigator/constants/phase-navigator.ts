@@ -1,6 +1,6 @@
 /** Phase navigator UI wire values. */
 
-import { Phase } from '@/domains/storyteller/core/types/Enums'
+import { Phase } from '@/domains/storyteller/core/types/enums'
 
 export { Phase as PhaseNavigatorPhase }
 

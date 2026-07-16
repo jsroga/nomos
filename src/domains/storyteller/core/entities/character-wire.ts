@@ -1,5 +1,5 @@
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
-import type { CharacterMetrics } from '@/domains/storyteller/core/types/StoryTypes'
+import type { CharacterMetrics } from '@/domains/storyteller/core/types/story-types'
 
 /** UI / API character shape (camelCase; normalized at boundaries). */
 export interface StorytellerCharacter {

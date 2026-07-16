@@ -4,6 +4,16 @@ import { Button } from '@/components/Button'
 import { Slider } from '@/components/Slider'
 import { X, Wand2, Loader2 } from 'lucide-react'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { browserStorage } from '@/shared/data/browser-storage'
+import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { waitForTriggerRun, TriggerRunPollAbortedError } from '@/shared/data/polling/wait-for-trigger-run'
+import {
+  fetchCharacterMetrics,
+  fetchCharacterPortraitRunStatus,
+  saveCharacterPortraitVariant,
+  startCharacterPortraitGeneration,
+} from '@/domains/storyteller/core/io/character.api'
+import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { ImageVariantSelector } from '../ImageVariantSelector'
 import { StorytellerImage } from '../StorytellerImage'
 import {
@@ -11,16 +21,13 @@ import {
   CHARACTER_DIALOG_ERROR_GENERATE_METRICS,
   CHARACTER_DIALOG_ERROR_GENERATE_PORTRAIT,
   CHARACTER_DIALOG_ERROR_NO_HANDLE,
-  CHARACTER_DIALOG_ERROR_PORTRAIT_FAILED,
   CHARACTER_DIALOG_ERROR_SAVE_CHARACTER,
   CHARACTER_DIALOG_ERROR_SAVE_VARIANT,
   CHARACTER_DIALOG_LOG_INIT,
   CHARACTER_DIALOG_LOG_POLL_CANCELLED,
   CHARACTER_DIALOG_LOG_VARIANT_SAVED,
   CHARACTER_DIALOG_NEW_ID,
-  CharacterDialogHttpMethod,
   CharacterDialogMode,
-  CharacterDialogTriggerStatus,
 } from './constants/character-creation-dialog'
 
 interface InitialCharacterData {
@@ -231,68 +238,57 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     generationIdsRef.current[targetCharId] = (generationIdsRef.current[targetCharId] || 0) + 1
     const currentGenId = generationIdsRef.current[targetCharId]
 
+    if (!projectId) {
+      updateGenState(targetCharId, { isGenerating: false })
+      return
+    }
+
     try {
-      // Get LegNext API key from localStorage
-      let apiKey = ''
-      const savedLegNext = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
-      if (savedLegNext) {
-        const legnextConfig = JSON.parse(savedLegNext)
-        apiKey = legnextConfig.apiKey || ''
-      }
-
-      const res = await fetch('/api/storyteller/generate-portrait', {
-        method: CharacterDialogHttpMethod.Post,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: description || `A portrait of ${name}, ${gender}`,
-          projectId: projectId,
-          apiKey: apiKey,
-        }),
+      const apiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+      const { handleId } = await startCharacterPortraitGeneration({
+        prompt: description || `A portrait of ${name}, ${gender}`,
+        projectId,
+        apiKey,
       })
-      const data = await res.json()
 
-      if (!data.handleId) {
-        console.error(CHARACTER_DIALOG_ERROR_NO_HANDLE, data)
+      if (!handleId) {
+        console.error(CHARACTER_DIALOG_ERROR_NO_HANDLE)
         updateGenState(targetCharId, { isGenerating: false })
         return
       }
 
-      // Poll for completion
-      const maxAttempts = 60 // 5 minutes (5s * 60)
-      for (let i = 0; i < maxAttempts; i++) {
-        await new Promise(r => setTimeout(r, 5000)) // Poll every 5s
-
-        if (currentGenId !== generationIdsRef.current[targetCharId]) {
-          console.log(CHARACTER_DIALOG_LOG_POLL_CANCELLED, targetCharId)
-          break
-        }
-
-        const statusRes = await fetch(
-          `/api/storyteller/generate-portrait/status?runId=${data.handleId}`
-        )
-        const statusData = await statusRes.json()
-
-        if (statusData.status === CharacterDialogTriggerStatus.Completed) {
-          if (statusData.output?.imageUrl) {
-            const newUrl = statusData.output.imageUrl
-            updateGenState(targetCharId, {
-              isGenerating: false,
-              gridImageUrl: newUrl,
-              needsVariantPick: true,
-              portraitUrlOverride: newUrl
-            })
-          } else {
-            updateGenState(targetCharId, { isGenerating: false })
+      const run = await waitForTriggerRun(
+        async () => {
+          const status = await fetchCharacterPortraitRunStatus(handleId)
+          return {
+            status: status.status,
+            output: status.imageUrl ? { imageUrl: status.imageUrl } : {},
+            error: status.error,
           }
-          break
-        } else if (statusData.status === CharacterDialogTriggerStatus.Failed || statusData.error) {
-          console.error(CHARACTER_DIALOG_ERROR_PORTRAIT_FAILED, statusData.error)
-          updateGenState(targetCharId, { isGenerating: false })
-          break
+        },
+        {
+          intervalMs: POLLING_INTERVALS.DEFAULT,
+          maxPolls: 60,
+          shouldAbort: () => currentGenId !== generationIdsRef.current[targetCharId],
         }
-        // Continue polling if PENDING, EXECUTING, etc.
+      )
+
+      const imageUrl = readString(recordFromJson(run.output).imageUrl)
+      if (imageUrl) {
+        updateGenState(targetCharId, {
+          isGenerating: false,
+          gridImageUrl: imageUrl,
+          needsVariantPick: true,
+          portraitUrlOverride: imageUrl,
+        })
+      } else {
+        updateGenState(targetCharId, { isGenerating: false })
       }
     } catch (error) {
+      if (error instanceof TriggerRunPollAbortedError) {
+        console.log(CHARACTER_DIALOG_LOG_POLL_CANCELLED, targetCharId)
+        return
+      }
       console.error(CHARACTER_DIALOG_ERROR_GENERATE_PORTRAIT, error)
       updateGenState(targetCharId, { isGenerating: false })
     }
@@ -302,15 +298,8 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     if (!description) return
     setIsGeneratingMetrics(true)
     try {
-      const res = await fetch('/api/storyteller/generate-metrics', {
-        method: CharacterDialogHttpMethod.Post,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description }),
-      })
-      const data = await res.json()
-      if (data.metrics) {
-        setMetrics(prev => ({ ...prev, ...data.metrics }))
-      }
+      const metrics = await fetchCharacterMetrics(description)
+      setMetrics(prev => ({ ...prev, ...metrics }))
     } catch (error) {
       console.error(CHARACTER_DIALOG_ERROR_GENERATE_METRICS, error)
     } finally {
@@ -328,23 +317,16 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     // Save to server
     if (initialData?.id && projectId) {
       try {
-        const res = await fetch('/api/storyteller/save-portrait-variant', {
-          method: CharacterDialogHttpMethod.Post,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            characterId: initialData.id,
-            projectId,
-            croppedImageDataUrl: croppedDataUrl,
-            variantIndex,
-          }),
+        const { portraitUrl: savedUrl } = await saveCharacterPortraitVariant({
+          characterId: initialData.id,
+          projectId,
+          croppedImageDataUrl: croppedDataUrl,
+          variantIndex,
         })
 
-        if (res.ok) {
-          const data = await res.json()
-          if (data.portraitUrl) {
-            console.log(CHARACTER_DIALOG_LOG_VARIANT_SAVED, data.portraitUrl)
-            setPortraitUrl(data.portraitUrl)
-          }
+        if (savedUrl) {
+          console.log(CHARACTER_DIALOG_LOG_VARIANT_SAVED, savedUrl)
+          setPortraitUrl(savedUrl)
         }
       } catch (error) {
         console.error(CHARACTER_DIALOG_ERROR_SAVE_VARIANT, error)

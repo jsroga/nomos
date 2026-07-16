@@ -27,7 +27,7 @@ One `AgentController` for the storyteller chat, adopted **behind a flag**
 | Controller | `id: 'storyteller-chat'`, storage = the EXISTING `getStorageInstance()` Postgres store | Never a second store/instance (AGENTS.md invariant). |
 | Session | `createSession({ resourceId: userId, tags: { projectId } })` per user/project; thread per conversation | Tags scope thread restore per project; multi-user isolation is per-session by design. |
 | Agent source | Same definitions as PLAN-V2 1.1: `buildChatAdapterPrompt`, `resolveRoleModel('chat')`, the 10 tools | One prompt/model/tool source — no drift. |
-| Registration | Controller module lives in `src/domains/storyteller/agents/controller/` (server-guard per Phase 2), registered via the `io/mastra-runtime` seam | shared/ never imports domains. |
+| Registration | Controller module lives in `src/domains/storyteller/ai/controller/` (server-guard per Phase 2), registered via the `io/mastra-runtime` seam | shared/ never imports domains. |
 
 ### Modes — mutations-only plan-first
 

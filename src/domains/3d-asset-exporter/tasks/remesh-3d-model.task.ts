@@ -1,6 +1,11 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { recordFromJson } from '@/shared/data/json-guards'
+import {
+  MeshyTaskStatusValue,
+  parseMeshyTaskResult,
+  type MeshyTaskResult,
+} from './constants/meshy-task-types'
 
 export const remesh3DModelTask = task({
   id: 'remesh-3d-model',
@@ -12,7 +17,6 @@ export const remesh3DModelTask = task({
     assetId: string
     meshyTaskId: string // From original generation
     apiKey: string
-    // User settings
     topology: 'quad' | 'triangle'
     targetPolycount: number
     resizeHeight?: number
@@ -21,12 +25,9 @@ export const remesh3DModelTask = task({
 
     logger.info(`Remeshing 3D model for asset ${assetId}, original task: ${meshyTaskId}`)
 
-    // Initialize progress metadata
     await metadata.set('progress', 0)
     await metadata.set('meshy_task_id', meshyTaskId)
 
-    // Step 1: Create remesh task
-    // POST https://api.meshy.ai/openapi/v1/remesh
     const remeshBody: Record<string, unknown> = {
       input_task_id: meshyTaskId,
       target_formats: ['glb', 'fbx', 'obj', 'usdz'],
@@ -35,7 +36,6 @@ export const remesh3DModelTask = task({
       origin_at: 'bottom',
     }
 
-    // Only include resize_height if provided
     if (resizeHeight && resizeHeight > 0) {
       remeshBody.resize_height = resizeHeight
     }
@@ -56,30 +56,34 @@ export const remesh3DModelTask = task({
       logger.error('Remesh API error:', { status: createResponse.status, body: errText })
       let errMessage = createResponse.statusText
       try {
-        const errJson = JSON.parse(errText)
-        errMessage = errJson.message || errJson.error || errMessage
+        const errJson = recordFromJson(JSON.parse(errText))
+        errMessage =
+          (typeof errJson.message === 'string' ? errJson.message : undefined) ??
+          (typeof errJson.error === 'string' ? errJson.error : undefined) ??
+          errMessage
       } catch {
         // Ignore JSON parse errors, use status text
       }
       throw new Error(`Meshy Remesh API error: ${errMessage}`)
     }
 
-    const { result: remeshTaskId } = await createResponse.json()
-    logger.info(`Meshy remesh task created: ${remeshTaskId}`)
+    const createJson = recordFromJson(await createResponse.json())
+    const remeshTaskId = createJson.result
+    if (typeof remeshTaskId !== 'string') {
+      throw new Error('Meshy remesh API did not return a task id')
+    }
 
-    // Store remesh task ID in metadata
+    logger.info(`Meshy remesh task created: ${remeshTaskId}`)
     await metadata.set('remesh_task_id', remeshTaskId)
 
-    // Step 2: Poll for completion - 30 minute timeout with 15s intervals
-    let status = 'PENDING'
-    let result: any = null
-    const maxAttempts = 120 // 30 minutes (120 attempts × 15 seconds)
+    let status: string = MeshyTaskStatusValue.Pending
+    let result: MeshyTaskResult | null = null
+    const maxAttempts = 120
     let attempts = 0
 
     while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 15000)) // 15 seconds
+      await new Promise(resolve => setTimeout(resolve, 15000))
 
-      // GET https://api.meshy.ai/openapi/v1/remesh/{id}
       const statusResponse = await fetch(`https://api.meshy.ai/openapi/v1/remesh/${remeshTaskId}`, {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -91,11 +95,11 @@ export const remesh3DModelTask = task({
         throw new Error('Failed to check remesh task status')
       }
 
-      result = await statusResponse.json()
+      result = parseMeshyTaskResult(await statusResponse.json())
       status = result.status
       attempts++
 
-      const progress = result.progress || 0
+      const progress = result.progress ?? 0
       await metadata.set('progress', progress)
 
       logger.info(
@@ -103,21 +107,13 @@ export const remesh3DModelTask = task({
         { result }
       )
 
-      // SUCCESS - RETURN IMMEDIATELY
-      if (status === 'SUCCEEDED') {
+      if (status === MeshyTaskStatusValue.Succeeded) {
         logger.info('Meshy remesh SUCCEEDED - returning result immediately', { result })
 
         const remeshedModelUrl = result.model_urls?.glb
 
-        // Update DB with remeshed model
         try {
-          const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-          )
-
-          // Get current metadata
-          const { data: asset } = await supabase
+          const { data: asset } = await supabaseAdmin
             .from('assets')
             .select('metadata')
             .eq('id', assetId)
@@ -125,8 +121,7 @@ export const remesh3DModelTask = task({
 
           const currentMetadata = recordFromJson(asset?.metadata)
 
-          // Update with remesh result
-          await supabase
+          await supabaseAdmin
             .from('assets')
             .update({
               metadata: {
@@ -148,15 +143,13 @@ export const remesh3DModelTask = task({
         }
       }
 
-      // FAILED - throw immediately
-      if (status === 'FAILED') {
-        throw new Error(`Meshy remesh failed: ${result.task_error?.message || 'Unknown error'}`)
+      if (status === MeshyTaskStatusValue.Failed) {
+        throw new Error(`Meshy remesh failed: ${result.task_error?.message ?? 'Unknown error'}`)
       }
     }
 
-    // Timeout
     throw new Error(
-      `Meshy remesh timed out after 30 minutes. Last status: ${status}, Progress: ${result?.progress || 0}%`
+      `Meshy remesh timed out after 30 minutes. Last status: ${status}, Progress: ${result?.progress ?? 0}%`
     )
   },
 })

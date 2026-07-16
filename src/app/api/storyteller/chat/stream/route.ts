@@ -2,15 +2,15 @@
 // `@/domains/storyteller` barrel — that barrel also re-exports client UI
 // components (e.g. CorkBoard), which pulls client-only hooks into this
 // server Route Handler's build graph and breaks compilation.
-import { createStorytellerAgent } from '@/domains/storyteller/agents'
-import { normalizeMastraTraceId } from '@/domains/storyteller/agents/tracing'
+import { createStorytellerAgent } from '@/domains/storyteller/ai'
+import { normalizeMastraTraceId } from '@/domains/storyteller/ai/tracing'
 import {
   buildStorytellerRequestContext,
-} from '@/domains/storyteller/io/mastra-runtime'
-import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/constants/ChatModelCatalog'
+} from '@/domains/storyteller/core/io/mastra-runtime'
+import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import { BibleSection } from '@/domains/storyteller/core'
 import { type DetectedSection } from '@/domains/storyteller/config/tool-result-mapper'
-import { assembleStorytellerContext } from '@/domains/storyteller/services/ContextAssemblyService'
+import { assembleStorytellerContext } from '@/domains/storyteller/services/context-assembly-service'
 import { recordError } from '@/shared/observability/observability'
 import {
   MASTRA_CHUNK,
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     // Security: Require authentication
     const { requireAuth } = await import('@/shared/auth/auth')
     const { verifyProjectAccess, verifyEpisodeAccess } = await import(
-      '@/domains/storyteller/services/AccessVerificationService'
+      '@/domains/storyteller/services/access-verification-service'
     )
 
     const { session } = await requireAuth()

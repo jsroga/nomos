@@ -18,7 +18,8 @@ import {
   SRC_ROOT_FILES_ALLOWED,
   SRC_TOP_LEVEL_ALLOWED,
   SRC_TOP_LEVEL_FORBIDDEN,
-} from './src-topology'
+} from '../../scripts/structure-gates/src-topology'
+import { findNonTestFilesInTestDirs } from '../../scripts/structure-gates/test-folder-rules'
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..')
 const SRC_DIR = path.join(REPO_ROOT, 'src')
@@ -174,6 +175,16 @@ describe('src/components structure', () => {
         problems.push(`missing shell/${child}/${child}.tsx`)
     }
     expect(problems, problems.join('; ')).toEqual([])
+  })
+})
+
+describe('__tests__ folder purity', () => {
+  it('contains only *.test.ts / *.test.tsx files under src/', () => {
+    const offenders = findNonTestFilesInTestDirs(SRC_DIR)
+    expect(
+      offenders,
+      `__tests__ folders must only contain test files — move helpers to scripts/: ${offenders.join(', ')}`,
+    ).toEqual([])
   })
 })
 

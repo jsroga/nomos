@@ -1,4 +1,4 @@
-import type { EntityType } from './ReferenceParser'
+import type { EntityType } from './reference-parser'
 import { STORY_ENTITY_TYPES } from './constants/entity-types'
 
 export function parseEntityType(value: unknown): EntityType | undefined {

@@ -61,3 +61,6 @@ export const isActiveTaskStatus = (status: string): boolean =>
 
 export const isSuccessTaskStatus = (status: string): boolean =>
   SUCCESS_STATUSES.some(successStatus => successStatus === status)
+
+export const isFailedTaskStatus = (status: string): boolean =>
+  FAILED_STATUSES.some(failedStatus => failedStatus === status)

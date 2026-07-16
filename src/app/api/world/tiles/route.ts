@@ -4,8 +4,8 @@ import {
   deleteTileRequestSchema,
   listTilesQuerySchema,
   upsertTileRequestSchema,
-} from '@/domains/world-building-toolkit/io/world.dto'
-import { worldTileService } from '@/domains/world-building-toolkit/services/WorldDataService'
+} from '@/domains/world-building-toolkit/core/io/world.dto'
+import { worldTileService } from '@/domains/world-building-toolkit/services/world-data-service'
 import { WORLD_QUERY_PARAM } from '@/domains/world-building-toolkit/constants/world-query-params'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 

@@ -1,13 +1,13 @@
 /** CharacterWeb graph UI wire values. */
 
 import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
-import { GRAPH_NODE_TYPES } from '@/domains/storyteller/io/constants/relationships-api'
+import { GRAPH_NODE_TYPES } from '@/domains/storyteller/core/io/constants/relationships-api'
 import {
   RELATIONSHIP_DEFAULT_TYPE,
   RelationshipStrokeStyle,
 } from '@/domains/storyteller/ui/CharacterWeb/constants/relationship-web-styles'
 import { StorytellerRelationshipType } from '@/domains/storyteller/services/constants/relationship-enricher'
-import { RelationshipsApiError } from '@/domains/storyteller/io/constants/relationships-api'
+import { RelationshipsApiError } from '@/domains/storyteller/core/io/constants/relationships-api'
 
 export { GRAPH_NODE_TYPES as CHARACTER_WEB_LAYOUT_TYPES }
 export { RELATIONSHIP_DEFAULT_TYPE as CHARACTER_WEB_DEFAULT_RELATIONSHIP }

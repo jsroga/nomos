@@ -234,7 +234,8 @@ export class AIGateway {
       }
     }
 
-    return lastResult!
+    if (!lastResult) throw new Error(AI_GATEWAY_ALL_PROVIDERS_FAILED)
+    return lastResult
   }
 
   // =============================================================================

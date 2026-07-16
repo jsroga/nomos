@@ -1,7 +1,7 @@
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import type { WireAgentAction } from '@/shared/agent-kernel/action-wire'
 import { recordFromJson } from '@/shared/data/json-guards'
-import { isActionType } from '@/domains/storyteller/core/types/Enums'
+import { isActionType } from '@/domains/storyteller/core/types/enums'
 import {
   ACTION_DISPLAY_BY_TYPE,
   ACTION_DISPLAY_FALLBACK,

@@ -16,7 +16,6 @@ export enum SurfaceMaterialColor {
   Mars = '#9f3528',
   Sand = '#fcd34d',
   Rock = '#57534e',
-  Wall = '#9ca3af',
   WallTool = '#a8a29e',
   White = 'white',
   Highlight = '#ffffff',
@@ -92,7 +91,7 @@ export const SURFACE_RENDER_CONFIG: Record<SurfaceType, SurfaceRenderConfig> = {
     verticalOffset: 0.01,
   },
   [SurfaceTypeValue.Wall]: {
-    color: SurfaceMaterialColor.Wall,
+    color: SurfaceMaterialColor.Pavement,
     metalness: 0.1,
     roughness: 0.6,
     depth: 0.2,

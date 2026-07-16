@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
+import { QueryParam, ApiRoutePath } from '@/shared/data/constants/protocol'
 import {
   Box,
   Loader2,
@@ -141,7 +143,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
   // Save metadata via API (auto-merges with existing)
   const saveMetadata = async (newMetadata: Partial<GenerationMetadata>) => {
     try {
-      const response = await fetch(`/api/assets/${assetId}`, {
+      const response = await fetch(joinUrlPath('/api/assets', assetId), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ metadata: newMetadata }),
@@ -160,7 +162,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
     metadata?: Partial<GenerationMetadata>
   }) => {
     try {
-      const response = await fetch(`/api/assets/${assetId}`, {
+      const response = await fetch(joinUrlPath('/api/assets', assetId), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
@@ -177,7 +179,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
   useEffect(() => {
     const loadAssetData = async () => {
       try {
-        const response = await fetch(`/api/assets/${assetId}`)
+        const response = await fetch(joinUrlPath('/api/assets', assetId))
         if (!response.ok) {
           console.error('Failed to load asset:', response.status)
           return
@@ -416,7 +418,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
 
     const checkStatus = async () => {
       try {
-        const response = await fetch(`/api/trigger-3d/status?runId=${currentRunId}`)
+        const response = await fetch(buildUrl('/api/trigger-3d/status', { [QueryParam.RunId]: currentRunId }))
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -521,7 +523,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
 
     const checkRemeshStatus = async () => {
       try {
-        const response = await fetch(`/api/trigger-3d/status?runId=${remeshRunId}`)
+        const response = await fetch(buildUrl('/api/trigger-3d/status', { [QueryParam.RunId]: remeshRunId }))
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -575,7 +577,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
 
     const checkUploadStatus = async () => {
       try {
-        const response = await fetch(`/api/trigger-3d/status?runId=${uploadRunId}`)
+        const response = await fetch(buildUrl('/api/trigger-3d/status', { [QueryParam.RunId]: uploadRunId }))
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -693,7 +695,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ assetId, imageUrl, ini
 
   const getProxiedUrl = (url: string): string => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      return `/api/proxy-model?url=${encodeURIComponent(url)}`
+      return buildUrl(ApiRoutePath.ProxyModel, { url })
     }
     return url
   }

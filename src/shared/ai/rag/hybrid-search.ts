@@ -139,7 +139,8 @@ export class HybridSearchEngine {
       const keywordRank = keywordRanks.get(id) ?? null
       const combinedScore = calculateRRF(vectorRank, keywordRank, searchConfig)
 
-      const data = contentMap.get(id)!
+      const data = contentMap.get(id)
+      if (!data) continue
 
       results.push({
         id,

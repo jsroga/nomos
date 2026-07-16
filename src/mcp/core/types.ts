@@ -37,7 +37,7 @@ export type ToolHandler = (
   args: Record<string, unknown>,
   context: MCPServiceContext,
   langsmith: LangSmithContext
-) => Promise<any>
+) => Promise<unknown>
 
 // ============================================
 // DOMAIN MODULE

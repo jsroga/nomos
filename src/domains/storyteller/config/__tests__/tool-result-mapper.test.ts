@@ -12,7 +12,7 @@ import {
   getActionDedupeKey,
   mapToolResultToAction,
 } from '../tool-result-mapper'
-import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
+import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums'
 
 describe('detectLoadingSection', () => {
   it('detects a bible section from update_world_bible args', () => {

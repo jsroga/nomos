@@ -1,6 +1,8 @@
 'use client'
 
+import '@/domains/marketing/constants/liquid-globals'
 import { LIQUID_GL_INIT_FAILED_LOG } from '@/domains/marketing/constants/liquid'
+import type { LiquidGLLens } from '@/domains/marketing/constants/liquid-globals'
 import { useEffect, useRef, useState } from 'react'
 
 interface LiquidProps {
@@ -18,14 +20,6 @@ interface LiquidProps {
   frost?: number
   text?: string | null
   snapshot?: string | HTMLElement | null
-}
-
-declare global {
-  interface Window {
-    liquidGL: (options: any) => any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    __liquidGLRenderer__: any
-  }
 }
 
 export function Liquid({
@@ -50,7 +44,7 @@ export function Liquid({
     setId(`liquid-${Math.random().toString(36).slice(2, 11)}`)
   }, [])
 
-  const lensRef = useRef<any>(null)
+  const lensRef = useRef<LiquidGLLens | null>(null)
 
   useEffect(() => {
     if (!id) return // Wait for ID to be set
@@ -65,7 +59,6 @@ export function Liquid({
     const initLiquid = () => {
       const elementExists = document.getElementById(id)
 
-      // @ts-expect-error - liquidGL and html2canvas are dynamically loaded globals
       if (window.liquidGL && window.html2canvas && elementExists) {
         // Add safety delay to allow background/layout to stabilize
         timer = setTimeout(() => {

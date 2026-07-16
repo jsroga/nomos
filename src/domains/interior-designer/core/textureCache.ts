@@ -31,7 +31,8 @@ export const getCachedTexture = (
 
   // Check cache first
   if (textureCache.has(url)) {
-    const texture = textureCache.get(url)!
+    const texture = textureCache.get(url)
+    if (!texture) return null
     // Apply options if provided (in case they differ)
     if (options) {
       if (options.wrapS !== undefined) texture.wrapS = options.wrapS

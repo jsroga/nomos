@@ -1,12 +1,12 @@
 ---
 description: Mastra v1 agent/tool/memory patterns — imports, createTool signature, structuredOutput, model strings, single Mastra instance
-globs: "**/agents/**,**/mastra/**,**/domains/**/agents/**,**/agent-core/**"
+globs: "**/ai/**,**/mastra/**,**/domains/**/ai/**,**/agent-core/**"
 alwaysApply: false
 ---
 
 # Mastra v1 patterns (distilled from AGENTS.md)
 
-This repo uses **Mastra v1** (`@mastra/core@^1.x`). Mirror patterns in `src/domains/storyteller/agents/*` and `src/shared/agent-kernel/mastra/*`.
+This repo uses **Mastra v1** (`@mastra/core@^1.x`). Mirror patterns in `src/domains/storyteller/ai/*` and `src/shared/agent-kernel/mastra/*`.
 
 ## Imports — use sub-paths, never the package root
 

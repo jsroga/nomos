@@ -3,10 +3,15 @@
 import { useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import type { StorySequence } from '@/domains/storyteller'
-import { Phase, type PhaseId } from '@/domains/storyteller/core/types/Enums'
+import { Phase, type PhaseId } from '@/domains/storyteller/core/types/enums'
+import { readString } from '@/shared/data/json-guards'
+import {
+  saveStorytellerPlan,
+  patchStorytellerPlan,
+  createStorytellerEpisode,
+} from '@/domains/storyteller/core/io/storyteller.api'
 import {
   StorytellerTab,
-  StorytellerHttpMethod,
   StorytellerMessageRole,
   StorytellerMessageType,
   StorytellerLogMessage,
@@ -52,13 +57,9 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore, chat: ChatSl
     async (phase: PhaseId) => {
       if (!currentEpisodeId) return
       try {
-        await fetch('/api/storyteller/plan', {
-          method: StorytellerHttpMethod.Post,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            episodeId: currentEpisodeId,
-            currentPhase: phase,
-          }),
+        await saveStorytellerPlan({
+          episodeId: currentEpisodeId,
+          currentPhase: phase,
         })
       } catch (error) {
         console.error(StorytellerLogMessage.FailedSavePhase, error)
@@ -82,16 +83,12 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore, chat: ChatSl
 
     try {
       // Save approved plan to database with approved flag AND phase change
-      await fetch('/api/storyteller/plan', {
-        method: StorytellerHttpMethod.Post,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: currentProject.id,
-          episodeId: currentEpisodeId,
-          storyPlan,
-          approved: true,
-          currentPhase: Phase.BREAKING,
-        }),
+      await saveStorytellerPlan({
+        projectId: currentProject.id,
+        episodeId: currentEpisodeId,
+        storyPlan,
+        approved: true,
+        currentPhase: Phase.BREAKING,
       })
 
       setIsPlanApproved(true)
@@ -129,14 +126,10 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore, chat: ChatSl
       // Persist to database
       if (currentEpisodeId) {
         try {
-          await fetch('/api/storyteller/plan', {
-            method: StorytellerHttpMethod.Patch,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              episodeId: currentEpisodeId,
-              sequenceId,
-              updates,
-            }),
+          await patchStorytellerPlan({
+            episodeId: currentEpisodeId,
+            sequenceId,
+            updates,
           })
         } catch (error) {
           console.error(StorytellerLogMessage.FailedSaveSequenceUpdate, error)
@@ -152,23 +145,19 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore, chat: ChatSl
     try {
       setIsSending(true)
       // 1. Create the episode
-      const res = await fetch('/api/storyteller/episodes', {
-        method: StorytellerHttpMethod.Post,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: currentProject.id,
-          title: StorytellerEpisodeSeed.FirstTitle,
-          sequence: 1,
-        }),
+      const newEpisode = await createStorytellerEpisode({
+        projectId: currentProject.id,
+        title: StorytellerEpisodeSeed.FirstTitle,
+        sequence: 1,
       })
-      const newEpisode = await res.json()
 
-      if (newEpisode?.id) {
+      const episodeId = readString(newEpisode.id)
+      if (episodeId) {
         // 2. Select it (Update URL and state)
         const params = new URLSearchParams(searchParams?.toString() || '')
-        params.set(StorytellerQueryParam.EpisodeId, newEpisode.id)
+        params.set(StorytellerQueryParam.EpisodeId, episodeId)
         router.push(`?${params.toString()}`)
-        setCurrentEpisodeId(newEpisode.id)
+        setCurrentEpisodeId(episodeId)
 
         // Use a small timeout to ensure the state update is processed
         setTimeout(() => {

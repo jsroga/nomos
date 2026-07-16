@@ -10,8 +10,8 @@ import {
   useStorytellerActions,
   useStorytellerHydration,
 } from '@/domains/storyteller'
-import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
-import { Phase, type PhaseId } from '@/domains/storyteller/core/types/Enums'
+import type { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
+import { Phase, type PhaseId } from '@/domains/storyteller/core/types/enums'
 import {
   StorytellerTab,
   StorytellerBibleTab,
@@ -19,7 +19,7 @@ import {
   StorytellerUnknownLabel,
   StorytellerQueryParam,
 } from '@/domains/storyteller/core/storyteller-page-wire'
-import type { BeatCard as Beat } from '@/domains/storyteller/core/types/StoryTypes'
+import type { BeatCard as Beat } from '@/domains/storyteller/core/types/story-types'
 import type { StorytellerCharacter } from '@/domains/storyteller/core/entities/character-wire'
 import { readString, stringRecordFromJson } from '@/shared/data/json-guards'
 import type { ProjectLike } from '@/domains/storyteller/state/queries/useStorytellerActions'

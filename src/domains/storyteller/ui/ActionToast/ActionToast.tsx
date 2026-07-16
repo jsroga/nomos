@@ -3,12 +3,12 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
-import type { ActionHistoryEntry } from '@/domains/storyteller/core/types/ActionTypes'
+import type { ActionHistoryEntry } from '@/domains/storyteller/core/types/action-types'
 import type { WireAgentAction } from '@/shared/agent-kernel/action-wire'
-import { ActionType } from '@/domains/storyteller/core/types/Enums'
+import { ActionType } from '@/domains/storyteller/core/types/enums'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { recordFromJson } from '@/shared/data/json-guards'
-import { formatActionForDisplay } from '@/domains/storyteller/core/formatting/ActionFormatters'
+import { formatActionForDisplay } from '@/domains/storyteller/core/formatting/action-formatters'
 import {
   ACTION_TOAST_ACTION_PAYLOAD,
   ACTION_TOAST_MANAGE_BEAT,

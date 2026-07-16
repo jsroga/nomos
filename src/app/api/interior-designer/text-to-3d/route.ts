@@ -4,7 +4,7 @@ import {
   interiorTextTo3DRequestSchema,
   interiorTextTo3DResponseSchema,
   type InteriorTextTo3DResponse,
-} from '@/domains/interior-designer/io/interior-designer.dto'
+} from '@/domains/interior-designer/core/io/interior-designer.dto'
 import type { textTo3DTask } from '@/trigger'
 import {
   withAuth,

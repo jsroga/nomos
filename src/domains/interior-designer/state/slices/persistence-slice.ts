@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
-import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
-import { interiorSceneDataSchema, type InteriorSceneData } from '@/domains/interior-designer/io'
+import { interiorDesignerApi } from '@/domains/interior-designer/core/io/interior-designer.api'
+import { interiorSceneDataSchema, type InteriorSceneData } from '@/domains/interior-designer/core/io'
 import { vec3 } from '@/domains/interior-designer/core/vec3'
 import type { SceneObject } from '../../core/interior-types'
 import type { InteriorState } from '../interior-state'

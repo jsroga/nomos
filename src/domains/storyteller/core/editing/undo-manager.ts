@@ -5,8 +5,8 @@
  * Allows users to revert auto-applied fixes.
  */
 
-import { UndoAction, AppliedFix, ConsistencyFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
-import { revertFix } from '@/domains/storyteller/core/editing/CascadeEditor'
+import { UndoAction, AppliedFix, ConsistencyFix } from '@/domains/storyteller/core/types/consistency-types'
+import { revertFix } from '@/domains/storyteller/core/editing/cascade-editor'
 import {
   UndoActionType,
   UNDO_MANAGER_NO_ACTIONS_LOG,

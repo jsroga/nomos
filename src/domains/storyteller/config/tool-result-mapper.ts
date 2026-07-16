@@ -12,8 +12,8 @@
  * `__tests__/tool-result-mapper.test.ts`.
  */
 
-import { ActionType, BibleSection } from '@/domains/storyteller/core/types/Enums'
-import { RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID } from '@/domains/storyteller/agents/workflows/beat-draft-contract'
+import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums'
+import { RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
 import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page-wire'
 import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import {
@@ -128,6 +128,54 @@ export function getActionDedupeKey(
  * Map a parsed tool result to a UI outcome (action, info, or none).
  * Pure: all I/O is left to the caller.
  */
+interface ResolvedBeatAction {
+  actionType: ActionType
+  payload: Record<string, unknown>
+  requiresApproval: boolean
+}
+
+/** Resolve a manage-beat tool result into a beat action (create/update/delete/…). */
+function resolveManageBeatAction(parsedRecord: Record<string, unknown>): ResolvedBeatAction | null {
+  if (!isRecord(parsedRecord.beat)) return null
+  const beat = parsedRecord.beat
+  const operation = stringField(parsedRecord, ToolResultPayloadField.Message)?.toLowerCase() ?? ''
+  const beatActions: Record<
+    string,
+    { type: ActionType; payload: Record<string, unknown>; approval: boolean }
+  > = {
+    [ManageBeatOperationToken.Created]: {
+      type: ActionType.CREATE_BEAT,
+      payload: beat,
+      approval: true,
+    },
+    [ManageBeatOperationToken.Updated]: {
+      type: ActionType.UPDATE_BEAT,
+      payload: { beatId: beat.id, updates: beat },
+      approval: true,
+    },
+    [ManageBeatOperationToken.Deleted]: {
+      type: ActionType.DELETE_BEAT,
+      payload: { beatId: parsedRecord.deletedId ?? beat.id },
+      approval: false,
+    },
+    [ManageBeatOperationToken.Approved]: {
+      type: ActionType.UPDATE_BEAT,
+      payload: { beatId: beat.id, updates: { status: parsedRecord.status } },
+      approval: false,
+    },
+    [ManageBeatOperationToken.Locked]: {
+      type: ActionType.UPDATE_BEAT,
+      payload: { beatId: beat.id, updates: { status: parsedRecord.status } },
+      approval: false,
+    },
+  }
+
+  const matchedAction = Object.entries(beatActions).find(([key]) => operation.includes(key))
+  if (!matchedAction) return null
+  const [, config] = matchedAction
+  return { actionType: config.type, payload: config.payload, requiresApproval: config.approval }
+}
+
 export function mapToolResultToAction(args: {
   toolName: string
   parsed: unknown
@@ -172,47 +220,12 @@ export function mapToolResultToAction(args: {
         requiresApproval = processedAction.requiresApproval
         detectedSection = processedAction.section
       }
-    } else if (toolName === MANAGE_BEAT_TOOL_ID && isRecord(parsedRecord.beat)) {
-      const beat = parsedRecord.beat
-      const operation =
-        stringField(parsedRecord, ToolResultPayloadField.Message)?.toLowerCase() ?? ''
-      const beatActions: Record<
-        string,
-        { type: ActionType; payload: Record<string, unknown>; approval: boolean }
-      > = {
-        [ManageBeatOperationToken.Created]: {
-          type: ActionType.CREATE_BEAT,
-          payload: beat,
-          approval: true,
-        },
-        [ManageBeatOperationToken.Updated]: {
-          type: ActionType.UPDATE_BEAT,
-          payload: { beatId: beat.id, updates: beat },
-          approval: true,
-        },
-        [ManageBeatOperationToken.Deleted]: {
-          type: ActionType.DELETE_BEAT,
-          payload: { beatId: parsedRecord.deletedId ?? beat.id },
-          approval: false,
-        },
-        [ManageBeatOperationToken.Approved]: {
-          type: ActionType.UPDATE_BEAT,
-          payload: { beatId: beat.id, updates: { status: parsedRecord.status } },
-          approval: false,
-        },
-        [ManageBeatOperationToken.Locked]: {
-          type: ActionType.UPDATE_BEAT,
-          payload: { beatId: beat.id, updates: { status: parsedRecord.status } },
-          approval: false,
-        },
-      }
-
-      const matchedAction = Object.entries(beatActions).find(([key]) => operation.includes(key))
-      if (matchedAction) {
-        const [, config] = matchedAction
-        actionType = config.type
-        actionPayload = config.payload
-        requiresApproval = config.approval
+    } else if (toolName === MANAGE_BEAT_TOOL_ID) {
+      const beatAction = parsedRecord ? resolveManageBeatAction(parsedRecord) : null
+      if (beatAction) {
+        actionType = beatAction.actionType
+        actionPayload = beatAction.payload
+        requiresApproval = beatAction.requiresApproval
         detectedSection = ToolResultDetectedSection.Beats
       }
     }

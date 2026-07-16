@@ -7,8 +7,8 @@ import {
   StorytellerTab,
   StorytellerThreadId,
 } from '@/domains/storyteller/core/storyteller-page-wire'
-import { Phase } from '@/domains/storyteller/core/types/Enums'
-import { ChatSenderName } from '@/domains/storyteller/io/constants/chat-route'
+import { Phase } from '@/domains/storyteller/core/types/enums'
+import { ChatSenderName } from '@/domains/storyteller/core/io/constants/chat-route'
 import { ChatFrameType } from '@/shared/chat/core/protocol'
 import { ChatMessageRole } from '@/shared/chat/core/constants/chat-messages'
 import { OpenAiChatRole } from '@/shared/data/constants/protocol'

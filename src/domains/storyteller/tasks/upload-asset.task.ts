@@ -1,6 +1,6 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import { promises as fs } from 'fs'
 import { join } from 'path'
 
@@ -69,10 +69,7 @@ export const uploadAssetTask = task({
     // Step 3: Update database with the Vercel Blob URL
     await metadata.set('stage', 'updating_database')
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createSupabaseServiceClient()
 
     const { error } = await supabase
       .from('assets')

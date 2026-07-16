@@ -4,7 +4,7 @@ import {
   interiorMaterialRequestSchema,
   interiorMaterialResponseSchema,
   type InteriorMaterialResponse,
-} from '@/domains/interior-designer/io/interior-designer.dto'
+} from '@/domains/interior-designer/core/io/interior-designer.dto'
 import type { surfaceMaterialTask } from '@/trigger'
 import {
   withAuth,

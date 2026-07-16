@@ -4,7 +4,7 @@ import {
   interiorTexturesRequestSchema,
   interiorTexturesResponseSchema,
   type InteriorTexturesResponse,
-} from '@/domains/interior-designer/io/interior-designer.dto'
+} from '@/domains/interior-designer/core/io/interior-designer.dto'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 

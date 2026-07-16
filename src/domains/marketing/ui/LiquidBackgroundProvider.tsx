@@ -1,9 +1,10 @@
 'use client'
 
 import { TURBULENT_BG_CANVAS_ID } from '@/domains/marketing/constants/liquid'
+import '@/domains/marketing/constants/liquid-globals'
 import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { LiquidProvider } from '../state/LiquidContext'
+import { LiquidProvider } from '../state/liquid-context'
 
 const TurbulentBackground = dynamic(
   () => import('./TurbulentBackground').then(mod => mod.TurbulentBackground),

@@ -64,10 +64,10 @@ describe('Request Context (AsyncLocalStorage)', () => {
       await Promise.all([
         requestContext.run(context1, async () => {
           await new Promise(r => setTimeout(r, 10)) // Simulate async work
-          results.push(requestContext.getStore()!.userId)
+          const store = requestContext.getStore(); if (store) results.push(store.userId)
         }),
         requestContext.run(context2, async () => {
-          results.push(requestContext.getStore()!.userId)
+          const store = requestContext.getStore(); if (store) results.push(store.userId)
         }),
       ])
 

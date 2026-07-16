@@ -205,8 +205,9 @@ export function TourProvider({
 
   // Listener for auto-advance events
   useEffect(() => {
-    if (currentStep >= 0 && steps[currentStep]?.advanceEvent) {
-      const eventName = steps[currentStep].advanceEvent!
+    const activeStep = steps[currentStep]
+    if (currentStep >= 0 && activeStep?.advanceEvent) {
+      const eventName = activeStep.advanceEvent
       const handler = () => {
         nextStep()
       }

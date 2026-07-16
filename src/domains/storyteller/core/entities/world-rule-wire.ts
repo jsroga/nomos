@@ -1,5 +1,5 @@
 import { readString, recordFromJson } from '@/shared/data/json-guards'
-import type { WorldRule } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import type { WorldRule } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 
 export enum WorldRuleCategory {
   PHYSICS = 'Physics',

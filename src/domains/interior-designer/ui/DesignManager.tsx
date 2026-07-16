@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { interiorDesignerApi } from '@/domains/interior-designer/io/interior-designer.api'
-import type { InteriorDesign } from '@/domains/interior-designer/io/interior-designer.dto'
+import { interiorDesignerApi } from '@/domains/interior-designer/core/io/interior-designer.api'
+import type { InteriorDesign } from '@/domains/interior-designer/core/io/interior-designer.dto'
 import { DesignManagerCopy } from '@/domains/interior-designer/constants/design-manager-copy'
 import { useInteriorStore } from '@/domains/interior-designer'
-import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
 import { Button } from '@/components/Button'
 import { ButtonVariantKey } from '@/components/Button/constants/button-styles'
 import { CONFIRM_DIALOG_CANCEL_LABEL } from '@/components/ConfirmDialog/constants/confirm-dialog-copy'
@@ -21,7 +21,7 @@ import {
 } from '@/components/Dialog'
 
 export const DesignManager: React.FC = () => {
-  const currentProject = useWorldStore(state => state.currentProject)
+  const { currentProject } = useProjectFromUrl()
   const currentDesignId = useInteriorStore(state => state.currentDesignId)
   const currentDesignName = useInteriorStore(state => state.currentDesignName)
   const loadDesign = useInteriorStore(state => state.loadDesign)
@@ -34,7 +34,7 @@ export const DesignManager: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false)
-  const [newSceneName, setNewSceneName] = useState<string>(DesignManagerCopy.NewSceneDefault)
+  const [newSceneName, setNewSceneName] = useState<string>(DesignManagerCopy.NewScene)
   const [editingDesignId, setEditingDesignId] = useState<string | null>(null)
 
   // Define fetchDesigns BEFORE using it in useEffect
@@ -82,7 +82,7 @@ export const DesignManager: React.FC = () => {
       await useInteriorStore.getState().saveDesign(currentProject.id)
     }
     setEditingDesignId(null)
-    setNewSceneName(DesignManagerCopy.NewSceneDefault)
+    setNewSceneName(DesignManagerCopy.NewScene)
     setIsNameDialogOpen(true)
   }
 

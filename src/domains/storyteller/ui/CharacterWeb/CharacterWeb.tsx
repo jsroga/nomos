@@ -40,9 +40,9 @@ import {
   readRelationshipEdgeLlmGrounded,
   RELATIONSHIP_STYLES,
   RelationshipMatrixResponse,
+  relationshipMatrixFromJson,
 } from './types'
 import {
-  CharacterWebApiError,
   CHARACTER_WEB_DEFAULT_ENTITY_TYPE,
   CHARACTER_WEB_DEFAULT_RELATIONSHIP,
   CHARACTER_WEB_LAYOUT_TYPES,
@@ -57,6 +57,7 @@ import {
   CharacterWebUiCopy,
 } from './constants/character-web'
 import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
+import { fetchStorytellerRelationships } from '@/domains/storyteller/core/io/storyteller.api'
 import { RelationshipStrokeStyle } from './constants/relationship-web-styles'
 
 // Register custom node types
@@ -110,8 +111,12 @@ function applyForceLayout(
   const grouped = new Map<string, CharacterWebNode[]>()
   for (const node of nodes) {
     const t = node.data.type || CHARACTER_WEB_DEFAULT_ENTITY_TYPE
-    if (!grouped.has(t)) grouped.set(t, [])
-    grouped.get(t)!.push(node)
+    let bucket = grouped.get(t)
+    if (!bucket) {
+      bucket = []
+      grouped.set(t, bucket)
+    }
+    bucket.push(node)
   }
   const typeOrder = Array.from(new Set([...CHARACTER_WEB_LAYOUT_TYPES, ...grouped.keys()]))
 
@@ -341,16 +346,21 @@ export function CharacterWeb({
   const [error, setError] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
-  React.useRef<any>(null)
   const layoutCacheRef = useRef<Map<string, CharacterWebNode[]>>(new Map())
 
   const adjacencyByNodeId = useMemo(() => {
     const adjacency = new Map<string, Set<string>>()
+    const bucketFor = (id: string): Set<string> => {
+      let set = adjacency.get(id)
+      if (!set) {
+        set = new Set()
+        adjacency.set(id, set)
+      }
+      return set
+    }
     for (const edge of edges) {
-      if (!adjacency.has(edge.source)) adjacency.set(edge.source, new Set())
-      if (!adjacency.has(edge.target)) adjacency.set(edge.target, new Set())
-      adjacency.get(edge.source)!.add(edge.target)
-      adjacency.get(edge.target)!.add(edge.source)
+      bucketFor(edge.source).add(edge.target)
+      bucketFor(edge.target).add(edge.source)
     }
     return adjacency
   }, [edges])
@@ -415,13 +425,7 @@ export function CharacterWeb({
     const startedAt = typeof performance !== 'undefined' ? performance.now() : 0
 
     try {
-      const response = await fetch(`/api/storyteller/relationships?projectId=${projectId}`)
-
-      if (!response.ok) {
-        throw new Error(CharacterWebApiError.FetchFailed)
-      }
-
-      const data: RelationshipMatrixResponse = await response.json()
+      const data = relationshipMatrixFromJson(await fetchStorytellerRelationships(projectId))
 
       // Convert to React Flow format
       const { nodes: flowNodes, edges: flowEdges } = convertToFlowData(data)

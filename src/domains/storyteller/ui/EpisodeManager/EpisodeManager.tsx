@@ -26,10 +26,15 @@ import {
   EPISODE_MANAGER_UNTITLED,
   episodeDeleteDescription,
 } from './constants/episode-manager'
-import { ContentType } from '@/shared/data/constants/protocol'
+import {
+  createStorytellerEpisode,
+  deleteStorytellerEpisode,
+  fetchStorytellerEpisodes,
+  patchStorytellerEpisode,
+} from '@/domains/storyteller/core/io/storyteller.api'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 import {
   StorytellerConfirmVariant,
-  StorytellerHttpMethod,
   StorytellerQueryParam,
   StorytellerBibleQuery,
 } from '@/domains/storyteller/core/storyteller-page-wire'
@@ -96,11 +101,7 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
     // Optimistic update
     setEpisodes(episodes.map(ep => (ep.id === id ? { ...ep, title: newTitle } : ep)))
 
-    await fetch(`/api/storyteller/episodes/${id}`, {
-      method: StorytellerHttpMethod.Patch,
-      headers: { 'Content-Type': ContentType.Json },
-      body: JSON.stringify({ title: newTitle }),
-    })
+    await patchStorytellerEpisode(id, { title: newTitle })
   }
 
   const handleDelete = async (id: string, title: string) => {
@@ -129,11 +130,9 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
     }
 
     try {
-      const res = await fetch(`/api/storyteller/episodes/${id}`, {
-        method: StorytellerHttpMethod.Delete,
-      })
+      const ok = await deleteStorytellerEpisode(id)
 
-      if (!res.ok) throw new Error(EPISODE_MANAGER_DELETE_FAILED)
+      if (!ok) throw new Error(EPISODE_MANAGER_DELETE_FAILED)
 
       clearFetchCache(`episodes:${projectId}`)
     } catch (err) {
@@ -152,10 +151,7 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
 
     cachedFetch(
       `episodes:${projectId}`,
-      async () => {
-        const res = await fetch(`/api/storyteller/episodes?projectId=${projectId}`)
-        return res.json()
-      },
+      () => fetchStorytellerEpisodes(projectId),
       {
         ttlMs: 60_000,
         validate: (value): value is unknown[] => Array.isArray(value),
@@ -164,7 +160,16 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
       .then(data => {
         if (!isMounted) return
         if (Array.isArray(data)) {
-          setEpisodes(data)
+          setEpisodes(
+            data.map(row => {
+              const ep = recordFromJson(row)
+              return {
+                id: readString(ep.id) ?? '',
+                title: readString(ep.title) ?? EPISODE_MANAGER_UNTITLED,
+                sequence: typeof ep.sequence === 'number' ? ep.sequence : 0,
+              }
+            })
+          )
         } else {
           console.error(EPISODE_MANAGER_FETCH_FAILED_LOG, data)
           setEpisodes([])
@@ -192,20 +197,23 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
   const handleCreateEpisode = async () => {
     if (!newEpisodeTitle.trim()) return
 
-    const res = await fetch('/api/storyteller/episodes', {
-      method: StorytellerHttpMethod.Post,
-      headers: { 'Content-Type': ContentType.Json },
-      body: JSON.stringify({
-        projectId,
-        title: newEpisodeTitle.trim(),
-        sequence: episodes.length + 1,
-      }),
+    const newEpisode = await createStorytellerEpisode({
+      projectId,
+      title: newEpisodeTitle.trim(),
+      sequence: episodes.length + 1,
     })
-    const newEpisode = await res.json()
-    // Clear cache so future fetches get updated data
-    clearFetchCache(`episodes:${projectId}`)
-    setEpisodes([...episodes, newEpisode])
-    setIsCreateDialogOpen(false)
+    if (readString(newEpisode.id)) {
+      clearFetchCache(`episodes:${projectId}`)
+      setEpisodes([
+        ...episodes,
+        {
+          id: readString(newEpisode.id) ?? '',
+          title: readString(newEpisode.title) ?? newEpisodeTitle.trim(),
+          sequence: episodes.length + 1,
+        },
+      ])
+      setIsCreateDialogOpen(false)
+    }
   }
 
   return (

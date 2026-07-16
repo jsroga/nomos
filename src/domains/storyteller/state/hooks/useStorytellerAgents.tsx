@@ -2,9 +2,9 @@
 
 import { useCallback, useMemo, type ComponentType } from 'react'
 import type { AgentQuestion as ChatAgentQuestion } from '@/shared/chat/core/types'
-import type { AgentQuestion as StorytellerAgentQuestion } from '@/domains/storyteller/core/types/ActionTypes'
-import { QuestionType, QuestionUrgency } from '@/domains/storyteller/core/types/Enums'
-import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import type { AgentQuestion as StorytellerAgentQuestion } from '@/domains/storyteller/core/types/action-types'
+import { QuestionType, QuestionUrgency } from '@/domains/storyteller/core/types/enums'
+import type { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
 import { toError } from '@/shared/errors/error-utils'
 import { recordFromJson, readNumber } from '@/shared/data/json-guards'
@@ -13,7 +13,6 @@ import { type Message } from '@/shared/chat'
 import { QuestionCard } from '@/domains/storyteller/ui/StorytellerLayout/storyteller-dynamic-imports'
 import {
   StorytellerLogMessage,
-  StorytellerHttpMethod,
   StorytellerMessageRole,
   StorytellerMessageType,
   StorytellerPremiseSection,
@@ -27,15 +26,19 @@ import {
   StorytellerQueryParam,
   StorytellerBibleQuery,
 } from '@/domains/storyteller/core/storyteller-page-wire'
-import { Phase } from '@/domains/storyteller/core/types/Enums'
+import { postStorytellerChatStream } from '@/domains/storyteller/core/io/chat.api'
+import { Phase } from '@/domains/storyteller/core/types/enums'
 import { MoodboardFieldAlias } from '@/domains/storyteller/config/constants/bible-wire-fields'
+import {
+  patchStorytellerEpisode,
+  patchStorytellerProject,
+} from '@/domains/storyteller/core/io/storyteller.api'
 import {
   StorytellerAgentTriggerPrompt,
   StorytellerToastId,
 } from '@/domains/storyteller/state/constants/agent-trigger-prompts'
 import { DomExceptionName } from '@/shared/chat/core/constants/chat-stream'
 import { QuestionUrgency as ChatQuestionUrgency } from '@/shared/chat/core/constants/chat-messages'
-import { ContentType } from '@/shared/data/constants/protocol'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 import type { useStorytellerChat } from './useStorytellerChat'
 
@@ -164,10 +167,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       abortControllerRef.current = new AbortController()
 
       try {
-        const res = await fetch('/api/storyteller/chat/stream', {
-          method: StorytellerHttpMethod.Post,
-          headers: { 'Content-Type': ContentType.Json },
-          body: JSON.stringify(payload),
+        const res = await postStorytellerChatStream(payload, {
           signal: abortControllerRef.current.signal,
         })
         // Continue with current round count since we're resuming
@@ -229,10 +229,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       abortControllerRef.current = new AbortController()
 
       try {
-        const res = await fetch('/api/storyteller/chat/stream', {
-          method: StorytellerHttpMethod.Post,
-          headers: { 'Content-Type': ContentType.Json },
-          body: JSON.stringify(payload),
+        const res = await postStorytellerChatStream(payload, {
           signal: abortControllerRef.current.signal,
         })
         await processStream(res, abortControllerRef.current.signal)
@@ -278,13 +275,10 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
 
   const handleSaveProjectPrompt = useCallback(
     async (prompt: string) => {
+      if (!currentProject?.id) return
       try {
-        const res = await fetch(`/api/storyteller/projects/${currentProject?.id}`, {
-          method: StorytellerHttpMethod.Patch,
-          headers: { 'Content-Type': ContentType.Json },
-          body: JSON.stringify({ masterPrompt: prompt }),
-        })
-        if (res.ok && currentProject) {
+        await patchStorytellerProject(currentProject.id, { masterPrompt: prompt })
+        if (currentProject) {
           useWorldStore.getState().setCurrentProject({
             ...currentProject,
             master_prompt: prompt,
@@ -302,12 +296,8 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       if (!currentEpisodeId) return
 
       try {
-        await fetch(`/api/storyteller/episodes/${currentEpisodeId}`, {
-          method: StorytellerHttpMethod.Patch,
-          headers: { 'Content-Type': ContentType.Json },
-          body: JSON.stringify({
-            episode_prompt: prompt,
-          }),
+        await patchStorytellerEpisode(currentEpisodeId, {
+          episode_prompt: prompt,
         })
 
         // Dismiss toast if this was from a suggestion
@@ -356,13 +346,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
               moodImages: newMoodImages,
             },
           })
-          await fetch(`/api/storyteller/projects/${latestProject.id}`, {
-            method: StorytellerHttpMethod.Patch,
-            headers: { 'Content-Type': ContentType.Json },
-            body: JSON.stringify({
-              seriesBible: { moodImages: newMoodImages },
-              storyPlan: { moodImages: newMoodImages },
-            }),
+          await patchStorytellerProject(latestProject.id, {
+            seriesBible: { moodImages: newMoodImages },
+            storyPlan: { moodImages: newMoodImages },
           })
         } else {
           // Full replace path
@@ -375,10 +361,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
           if (!currentEpisodeId) {
             setStoryPlan(prev => applyUpdatesToStoryPlan(prev, updates))
           }
-          await fetch(`/api/storyteller/projects/${latestProject.id}`, {
-            method: StorytellerHttpMethod.Patch,
-            headers: { 'Content-Type': ContentType.Json },
-            body: JSON.stringify({ series_bible: newBible, story_plan: newBible }),
+          await patchStorytellerProject(latestProject.id, {
+            series_bible: newBible,
+            story_plan: newBible,
           })
         }
       } catch (e) {
@@ -396,7 +381,7 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
       setStoryPlan(prev =>
         prev
           ? { ...prev, ...updates }
-          : (applyUpdatesToStoryPlan(null, updates) as StoryPlan)
+          : applyUpdatesToStoryPlan<StoryPlan>(null, updates)
       )
 
       if (!currentProject?.id) return
@@ -407,10 +392,9 @@ Please acknowledge this answer and MOVE FORWARD with the story. Propose the next
         series_bible: mergedBible,
       })
 
-      await fetch(`/api/storyteller/projects/${currentProject.id}`, {
-        method: StorytellerHttpMethod.Patch,
-        headers: { 'Content-Type': ContentType.Json },
-        body: JSON.stringify({ series_bible: mergedBible, story_plan: mergedBible }),
+      await patchStorytellerProject(currentProject.id, {
+        series_bible: mergedBible,
+        story_plan: mergedBible,
       })
     } catch (e) {
       console.error(StorytellerLogMessage.FailedSaveBible, e)

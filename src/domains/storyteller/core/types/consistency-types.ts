@@ -88,12 +88,12 @@ export interface AppliedFix extends ConsistencyFix {
 export interface StoryContext {
   projectId: string
   episodeId?: string
-  characters: any[]
-  beats: any[]
-  episodes?: any[]
-  seriesBible?: any
-  worldRules?: any[]
-  recentChanges?: any[]
+  characters: Record<string, unknown>[]
+  beats: Record<string, unknown>[]
+  episodes?: Record<string, unknown>[]
+  seriesBible?: Record<string, unknown>
+  worldRules?: Record<string, unknown>[]
+  recentChanges?: Record<string, unknown>[]
 }
 
 /**
@@ -115,7 +115,7 @@ export interface ConsistencyCheckRequest {
   episodeId?: string
   trigger: {
     type: 'action' | 'manual' | 'approval'
-    action?: any
+    action?: unknown
     context: StoryContext
   }
 }

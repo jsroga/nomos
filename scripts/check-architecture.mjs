@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Pre-commit architecture gate — delegates to colocated structure tests.
- * Rules live in src/__tests__/src-topology.ts and domain-conformance.ts.
+ * Rules live in scripts/structure-gates/src-topology.ts and domain-conformance.ts.
  */
 import { spawnSync } from 'node:child_process'
 

@@ -1,7 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
-import { getChatModelOption, isKnownChatModel } from '@/domains/storyteller/config/constants/ChatModelCatalog'
+import { getChatModelOption, isKnownChatModel } from '@/domains/storyteller/config/constants/chat-model-catalog'
 
 /**
  * Effort levels for dynamic model selection

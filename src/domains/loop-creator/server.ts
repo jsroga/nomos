@@ -10,4 +10,4 @@ export {
   streamMarketAnalysis,
   type MarketAnalysisReport,
   type LoopAnalysisInput,
-} from './agents/market-analyst'
+} from './ai/agents/market-analyst'

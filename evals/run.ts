@@ -81,7 +81,7 @@ async function loadScorers() {
   // Deterministic domain scorers (beat-plan gate, critic discipline) live in
   // the storyteller domain — shared/ cannot import domains, so the union
   // happens here in the runner.
-  const { STORYTELLER_EVAL_SCORERS } = await import('@/domains/storyteller/agents')
+  const { STORYTELLER_EVAL_SCORERS } = await import('@/domains/storyteller/ai')
   return [...ALL_SCORERS, ...STORYTELLER_EVAL_SCORERS]
 }
 

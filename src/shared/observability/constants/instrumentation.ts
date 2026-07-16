@@ -8,13 +8,13 @@ export enum MastraSerializationEnv {
   MaxTotalChars = 'MASTRA_SERIALIZATION_MAX_TOTAL_CHARS',
 }
 
-export enum MastraSerializationLimit {
-  MaxAttrChars = '100000',
-  MaxDepth = '20',
-  MaxKeys = '500',
-  MaxArrayItems = '500',
-  MaxTotalChars = '1000000',
-}
+export const MastraSerializationLimit = {
+  MaxAttrChars: '100000',
+  MaxDepth: '20',
+  MaxKeys: '500',
+  MaxArrayItems: '500',
+  MaxTotalChars: '1000000',
+} as const
 
 export enum InstrumentationLog {
   MastraConfigured = '✅ Mastra serialization limits configured via env (no truncation)',

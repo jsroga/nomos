@@ -1,6 +1,6 @@
 /** Series bible prompt assembly wire copy and template tokens. */
 
-import { ListSeparator } from '@/domains/storyteller/agents/constants/agent-identity'
+import { ListSeparator } from '@/domains/storyteller/ai/constants/agent-identity'
 import {
   StorytellerDefaultTitle,
   StorytellerTextSeparator,
@@ -61,10 +61,12 @@ export enum SeriesBibleArcField {
   EndTransform = '" and ',
 }
 
-export enum SeriesBibleLinkStripReplacement {
-  BracketRef = '$1',
-  MarkdownLink = '$1',
-}
+// Const map (not enum): both replacements are the same regex backreference,
+// which an enum can't express (duplicate member values).
+export const SeriesBibleLinkStripReplacement = {
+  BracketRef: '$1',
+  MarkdownLink: '$1',
+} as const
 
 export const SERIES_BIBLE_LIST_SEPARATOR = ListSeparator.CommaSpace
 export const SERIES_BIBLE_MOTIF_SEPARATOR = StorytellerTextSeparator.CommaSpace

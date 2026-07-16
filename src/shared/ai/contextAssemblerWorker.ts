@@ -40,6 +40,7 @@ interface WorkerInput {
   variant?: 'canonicalFullContext' | 'smartSeamContext'
 }
 
+const CANVAS_2D_UNAVAILABLE = 'Failed to acquire 2D canvas context'
 const NEUTRAL_FILL_RGB = { r: 128, g: 128, b: 128 }
 const NEUTRAL_FILL_TOLERANCE = 2
 
@@ -142,7 +143,8 @@ async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
   // Image canvas
   // ------------------------------------------------------------------
   const canvas = new OffscreenCanvas(size, size)
-  const ctx = canvas.getContext('2d')!
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error(CANVAS_2D_UNAVAILABLE)
 
   ctx.fillStyle = '#808080'
   ctx.fillRect(0, 0, size, size)
@@ -282,7 +284,8 @@ async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
   // Mask canvas
   // ------------------------------------------------------------------
   const maskCanvas = new OffscreenCanvas(size, size)
-  const maskCtx = maskCanvas.getContext('2d')!
+  const maskCtx = maskCanvas.getContext('2d')
+  if (!maskCtx) throw new Error(CANVAS_2D_UNAVAILABLE)
   const imageData = ctx.getImageData(0, 0, size, size)
   const maskImageData = maskCtx.createImageData(size, size)
   const source = imageData.data

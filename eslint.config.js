@@ -25,14 +25,14 @@ const DOMAIN_MODULES = [
 
 const DOMAIN_BARREL_GUARD_PATTERNS = [
   {
-    group: ['@/domains/storyteller/*', '!@/domains/storyteller/io/*'],
+    group: ['@/domains/storyteller/*', '!@/domains/storyteller/core/io/*'],
     message:
-      'Import from "@/domains/storyteller" instead of storyteller internals. Only io/ is allowed for deep imports.',
+      'Import from "@/domains/storyteller" instead of storyteller internals. Only core/io/ is allowed for deep imports.',
   },
   {
-    group: ['@/domains/interior-designer/*', '!@/domains/interior-designer/io/*'],
+    group: ['@/domains/interior-designer/*', '!@/domains/interior-designer/core/io/*'],
     message:
-      'Import from "@/domains/interior-designer" instead of interior-designer internals. Only io/ is allowed for deep imports.',
+      'Import from "@/domains/interior-designer" instead of interior-designer internals. Only core/io/ is allowed for deep imports.',
   },
   {
     group: ['@/domains/world-building-toolkit/*'],
@@ -266,6 +266,7 @@ module.exports = [
       ],
       complexity: ['warn', { max: codeMetricsLimits.complexity.warn }],
       'local/complexity-strict': ['error', { max: codeMetricsLimits.complexity.error }],
+      'local/no-repeated-array-filter': 'error',
       '@typescript-eslint/no-require-imports': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
@@ -401,6 +402,55 @@ module.exports = [
               message: 'shared/ MAY NOT import app routes — dependency inversion required.',
             },
           ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      'src/domains/**/ui/**/*.{ts,tsx}',
+      'src/domains/**/state/**/*.{ts,tsx}',
+      'src/domains/**/services/**/*.{ts,tsx}',
+      'src/components/**/*.{ts,tsx}',
+      'src/shared/**/ui/**/*.{ts,tsx}',
+      'src/shared/**/state/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'localStorage',
+          message: 'Use browserStorage from @/shared/data/browser-storage instead of localStorage.',
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      'src/domains/storyteller/ui/**/*.{ts,tsx}',
+      'src/domains/storyteller/state/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-globals': [
+        'warn',
+        {
+          name: 'fetch',
+          message:
+            'Use domain core/io/*.api.ts helpers (fetchJsonRecord) or TanStack Query — not raw fetch in ui/state.',
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/shared/data/url-builder.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'warn',
+        {
+          name: 'encodeURIComponent',
+          message:
+            'Use encodePathSegment / buildUrl / appendQueryParams from @/shared/data/url-builder instead of raw encodeURIComponent.',
         },
       ],
     },

@@ -15,7 +15,7 @@ import React from 'react'
 import { cn } from '@/shared/data/utils'
 import { Sparkles, LayoutGrid, PenTool, Check, Lock, ChevronRight, Loader2 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
-import type { PhaseId } from '@/domains/storyteller/core/types/Enums'
+import type { PhaseId } from '@/domains/storyteller/core/types/enums'
 import {
   PhaseNavigatorActiveStyle,
   PhaseNavigatorColor,

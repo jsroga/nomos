@@ -24,7 +24,7 @@ Examples:
 
 ```bash
 npm run test:unit
-npx vitest run src/domains/storyteller/agents/tools/__tests__/storytelling.test.ts
+npx vitest run src/domains/storyteller/ai/tools/__tests__/storytelling.test.ts
 npx vitest run src/domains/loop-creator
 ```
 
@@ -104,7 +104,7 @@ across runs without a full eval sweep.
 
 - **Studio:** `npm run mastra:dev` — manual agent + tool smoke (stub executes in Studio; full side effects need the app).
 - **Domain e2e:** `src/domains/storyteller/**/__tests__/*.e2e.test.ts` — excluded from default `test:unit`; run explicitly when DB/keys are available.
-- **workflow-full tier:** `src/domains/storyteller/agents/workflows/__tests__/beat-draft-workflow.e2e.test.ts` — the beat-draft pipeline with real agents + DB (cheap role models). Needs `DATABASE_URL`, an LLM key, and `WORKFLOW_E2E_PROJECT_ID`/`WORKFLOW_E2E_EPISODE_ID` pointing at a scratch project. Asserts a persisted beat and that live critics quote a planted cliché without rewriting.
+- **workflow-full tier:** `src/domains/storyteller/ai/workflows/__tests__/beat-draft-workflow.e2e.test.ts` — the beat-draft pipeline with real agents + DB (cheap role models). Needs `DATABASE_URL`, an LLM key, and `WORKFLOW_E2E_PROJECT_ID`/`WORKFLOW_E2E_EPISODE_ID` pointing at a scratch project. Asserts a persisted beat and that live critics quote a planted cliché without rewriting.
 
 ## What to add tests for
 

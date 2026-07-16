@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { textureService } from '@/domains/interior-designer/services/TextureService'
+import { textureService } from '@/domains/interior-designer/services/texture-service'
 import {
   interiorTextureRequestSchema,
   interiorTextureResponseSchema,
   type InteriorTextureResponse,
-} from '@/domains/interior-designer/io/interior-designer.dto'
+} from '@/domains/interior-designer/core/io/interior-designer.dto'
 import { DEFAULT_TEXTURE_STYLE } from '@/domains/interior-designer/constants/texture-defaults'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'

@@ -1,5 +1,5 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseServiceClient } from './constants/generate-tile-persist'
 
 export const selectMjVariantTask = task({
   id: 'select-mj-variant',
@@ -59,10 +59,7 @@ export const selectMjVariantTask = task({
     await metadata.set('stage', 'updating_db')
 
     // Update DB
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createSupabaseServiceClient()
     await supabase.from('tiles').update({ image_filename: filename }).eq('id', tileId)
 
     await metadata.set('progress', 100)

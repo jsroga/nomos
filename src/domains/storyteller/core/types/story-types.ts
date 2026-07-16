@@ -1,4 +1,11 @@
-import type { PhaseId } from './Enums'
+import type { PhaseId } from './enums'
+import { BeatStatus } from './enums'
+import {
+  recordFromJson,
+  readString,
+  readNumber,
+  stringArrayFromJson,
+} from '@/shared/data/json-guards'
 
 export interface Setup {
   id: string
@@ -16,13 +23,44 @@ export interface BeatCard {
   visualHook?: string
   imagePrompt?: string
   imageUrl?: string
-  mazurElements?: any
+  mazurElements?: Record<string, unknown>
   charactersInvolved?: string[]
   content?: string
   status?: 'proposed' | 'approved' | 'rejected'
   emotionalShifts?: Record<string, unknown>
   causalDependencies?: string[]
   setupsPayoffs?: Record<string, unknown>
+}
+
+const BEAT_CARD_STATUSES = [
+  `${BeatStatus.PROPOSED}`,
+  `${BeatStatus.APPROVED}`,
+  `${BeatStatus.REJECTED}`,
+] as const
+
+/** Parse an untyped API/DB row into a BeatCard without `as` casts. */
+export function beatCardFromJson(value: unknown): BeatCard {
+  const row = recordFromJson(value)
+  const status = readString(row.status)
+  return {
+    id: readString(row.id) ?? '',
+    sequence: readNumber(row.sequence) ?? 0,
+    logline: readString(row.logline) ?? '',
+    beatType: readString(row.beatType) ?? '',
+    visualHook: readString(row.visualHook),
+    imagePrompt: readString(row.imagePrompt),
+    imageUrl: readString(row.imageUrl),
+    mazurElements: row.mazurElements === undefined ? undefined : recordFromJson(row.mazurElements),
+    charactersInvolved:
+      row.charactersInvolved === undefined ? undefined : stringArrayFromJson(row.charactersInvolved),
+    content: readString(row.content),
+    status: BEAT_CARD_STATUSES.find(s => s === status),
+    emotionalShifts:
+      row.emotionalShifts === undefined ? undefined : recordFromJson(row.emotionalShifts),
+    causalDependencies:
+      row.causalDependencies === undefined ? undefined : stringArrayFromJson(row.causalDependencies),
+    setupsPayoffs: row.setupsPayoffs === undefined ? undefined : recordFromJson(row.setupsPayoffs),
+  }
 }
 
 export interface CharacterMetrics {
@@ -75,7 +113,7 @@ export interface CharacterState {
   actualMotivation?: string
   knowledgeState?: string[]
   metrics?: CharacterMetrics
-  metricsHistory?: any[]
+  metricsHistory?: Record<string, unknown>[]
   // New Psychologist props
   psychometrics?: Big5Traits
   needs?: CharacterNeeds
@@ -83,8 +121,8 @@ export interface CharacterState {
 }
 
 export interface SeriesBible {
-  worldRules?: any[]
-  [key: string]: any
+  worldRules?: Record<string, unknown>[]
+  [key: string]: unknown
 }
 
 export interface WritersRoomState {
@@ -97,7 +135,7 @@ export interface WritersRoomState {
   script?: string
   scriptVersion?: number
   seriesBible?: SeriesBible
-  episodePremise?: any
+  episodePremise?: Record<string, unknown>
   unresolvedSetups: Setup[]
   currentPhase: PhaseId
 }

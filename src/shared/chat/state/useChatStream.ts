@@ -354,7 +354,7 @@ export function useChatStream({
           thinkingAgent,
           streamingTokens: '',
         })
-      } catch (e) {
+      } catch {
         // quota or serialization error - silently ignore
       }
     }, delay)
@@ -1035,7 +1035,7 @@ export function useChatStream({
                   // Call onComplete callback
                   onComplete?.()
                 }
-              } catch (e) {
+              } catch {
                 // ignore parse error
               }
             }
@@ -1054,7 +1054,7 @@ export function useChatStream({
                 onAction(data)
               }
             }
-          } catch (e) {
+          } catch {
             // Not JSON
           }
 

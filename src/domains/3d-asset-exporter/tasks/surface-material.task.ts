@@ -1,6 +1,10 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
-import { storageService } from '@/shared/data/storage/StorageService'
+import { storageService } from '@/shared/data/storage/storage-service'
 import { v4 as uuidv4 } from 'uuid'
+import {
+  parseMeshyTaskResult,
+  type MeshyTaskResult,
+} from './constants/meshy-task-types'
 
 const MESHY_BASE_URL = 'https://api.meshy.ai/openapi/v2/text-to-3d'
 
@@ -177,7 +181,7 @@ async function pollMeshyTask(
   taskId: string,
   apiKey: string,
   stage: 'preview' | 'refine'
-): Promise<any> {
+): Promise<MeshyTaskResult> {
   const maxAttempts = 180 // 30 minutes (10s interval)
   let attempts = 0
 
@@ -196,7 +200,7 @@ async function pollMeshyTask(
       continue
     }
 
-    const result = await response.json()
+    const result = parseMeshyTaskResult(await response.json())
     const progress = result.progress || 0
 
     // Update metadata with progress

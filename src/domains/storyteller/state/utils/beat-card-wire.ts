@@ -1,5 +1,5 @@
 import { recordFromJson, readNumber, readString } from '@/shared/data/json-guards'
-import type { BeatCard } from '@/domains/storyteller/core/types/StoryTypes'
+import type { BeatCard } from '@/domains/storyteller/core/types/story-types'
 import {
   StorytellerBeatStatus,
   StorytellerBeatTypeDefault,

@@ -3,10 +3,16 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { AgentLog } from './AgentLog'
 import { ChatInput } from './ChatInput'
-import { Message, AgentConfigMap, AgentQuestion, ThinkingMessagesConfig } from '../core/types'
+import {
+  Message,
+  AgentConfigMap,
+  AgentQuestion,
+  ThinkingMessagesConfig,
+  type AgentAction,
+} from '../core/types'
 import { Button } from '@/components/Button'
 import { Activity, FlaskConical, Loader2 } from 'lucide-react'
-import { MentionProvider, ProjectContext } from '../core/mentions/types'
+import { MentionProvider, ProjectContext, type MentionItem } from '../core/mentions/types'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import {
   BrowserStorageEventName,
@@ -39,7 +45,7 @@ interface ChatInterfaceProps {
   children?: React.ReactNode // Extra UI to render inside (like toasts)
   headerContent?: React.ReactNode // Title/Controls
   /** Legacy: Direct mention items (backwards compatible) */
-  mentions?: any[]
+  mentions?: MentionItem[]
   /** New: Mention providers for domain-specific entities */
   mentionProviders?: MentionProvider[]
   /** New: Project context for mention providers */
@@ -67,7 +73,7 @@ interface ChatInterfaceProps {
 
   // Custom renderers
   ActionComponent?: React.ComponentType<{
-    action: any
+    action: AgentAction
     agentName: string
     messageIndex: number
     actionIndex: number

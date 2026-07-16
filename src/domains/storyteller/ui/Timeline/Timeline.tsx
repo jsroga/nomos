@@ -8,7 +8,9 @@ import {
   ButtonVariantKey,
 } from '@/components/Button/constants/button-styles'
 
-import { QuestionSession } from '@/domains/storyteller/core/types/ActionTypes'
+import { QuestionSession } from '@/domains/storyteller/core/types/action-types'
+import { fetchStorytellerTimeline } from '@/domains/storyteller/core/io/storyteller.api'
+import { recordArrayFromJson, readString, readNumber } from '@/shared/data/json-guards'
 import {
   TIMELINE_BEAT_COLORS,
   TIMELINE_FETCH_SNAPSHOTS_FAILED_LOG,
@@ -113,10 +115,18 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
   // Fetch character snapshots for selected beat
   useEffect(() => {
     if (selectedBeatId && episodeId) {
-      fetch(`/api/storyteller/timeline?episodeId=${episodeId}&beatId=${selectedBeatId}`)
-        .then(res => res.json())
+      fetchStorytellerTimeline(episodeId, selectedBeatId)
         .then(data => {
-          if (data.snapshots) setSnapshots(data.snapshots)
+          const snapshots: CharacterSnapshot[] = recordArrayFromJson(data.snapshots).map(row => ({
+            characterId: readString(row.characterId) ?? '',
+            characterName: readString(row.characterName) ?? '',
+            stressLevel: readNumber(row.stressLevel) ?? 0,
+            emotionalState: readString(row.emotionalState) ?? '',
+            transformationProgress: readNumber(row.transformationProgress) ?? 0,
+          }))
+          if (snapshots.length > 0) {
+            setSnapshots(snapshots)
+          }
         })
         .catch(err => console.error(TIMELINE_FETCH_SNAPSHOTS_FAILED_LOG, err))
     } else {

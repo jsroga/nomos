@@ -60,7 +60,7 @@ const storytellerIds: Array<[string, string]> = [
   ['self_critique', 'LLM quality critique against GRRM/Gilligan standards.'],
   ['consult_psychologist', 'Delegate to the Psychologist council agent.'],
   ['consult_consequence_tracker', 'Delegate to the Consequence Tracker council agent.'],
-  ['consult_devils_advocate', "Delegate to the Devil's Advocate council agent."],
+  ['consult_devils_advocate', 'Delegate to the Devil\'s Advocate council agent.'],
   ['consult_gardener', 'Delegate to the Gardener council agent.'],
   ['consult_premise_architect', 'Delegate to the Premise Architect council agent.'],
   ['consult_consistency', 'Delegate to the Consistency judge agent.'],

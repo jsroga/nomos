@@ -2,8 +2,13 @@ import { useMemo } from 'react'
 import { create } from 'zustand'
 import type { User } from '@supabase/supabase-js'
 import { useAuthStore } from '@/shared/auth/useAuthStore'
-import { ContentType } from '@/shared/data/constants/protocol'
-import { worldApi } from '../io/world.api'
+import { worldApi } from '../core/io/world.api'
+import {
+  acceptTileUpscale,
+  deleteProjectImage,
+  fetchStorytellerProject,
+  saveProjectImage,
+} from '../core/io/world-data.api'
 import {
   type Asset,
   type Project,
@@ -14,12 +19,6 @@ import {
   toLegacyTile,
 } from '../core/world-types'
 import {
-  FetchCache,
-  FetchCacheControl,
-  FetchRequestHeader,
-  HttpMethod,
-  WorldDataApiRoute,
-  WorldDataStoreError,
   WorldDataStoreLog,
   WORLD_DATA_STORE_KEYS,
 } from './constants/world-data-store'
@@ -31,6 +30,7 @@ import {
   type SelectBox,
   type WorldUiState,
 } from './useWorldUiStore'
+import { omitRecordKey } from './utils/omit-record-key'
 
 export type { Asset, Project, Tile, SelectBox, PendingUpscale, PendingGeneration, PendingFidelity }
 
@@ -71,27 +71,7 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
 
   loadProject: async (projectId: string) => {
     try {
-      const response = await fetch(`${WorldDataApiRoute.StorytellerProject}${projectId}`, {
-        cache: FetchCache.NoStore,
-        headers: { [FetchRequestHeader.CacheControl]: FetchCacheControl.NoCache },
-      })
-      if (!response.ok) {
-        console.error(WorldDataStoreLog.ApiErrorLoadingProject, response.statusText)
-        return
-      }
-
-      const projectData = await response.json()
-      const project = toLegacyProject({
-        id: projectData.id,
-        name: projectData.name,
-        userId: projectData.userId ?? projectData.user_id,
-        masterPrompt: projectData.masterPrompt ?? projectData.master_prompt ?? '',
-        seriesBible: projectData.seriesBible ?? projectData.series_bible ?? {},
-        storyPlan: projectData.storyPlan ?? projectData.story_plan ?? {},
-        stylePreset: projectData.stylePreset ?? projectData.style_preset ?? null,
-        description: projectData.description,
-        createdAt: projectData.createdAt ?? projectData.created_at,
-      })
+      const project = toLegacyProject(await fetchStorytellerProject(projectId))
 
       const tiles = await worldApi.tiles.list(projectId)
       set({ currentProject: project, tiles: tilesToMap(tiles) })
@@ -147,20 +127,11 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
 
     const filename = `${x}_${y}_${Date.now()}.png`
 
-    const response = await fetch(WorldDataApiRoute.SaveImage, {
-      method: HttpMethod.Post,
-      headers: { [FetchRequestHeader.ContentType]: ContentType.Json },
-      body: JSON.stringify({
-        projectId: currentProject.id,
-        filename,
-        imageData,
-      }),
+    await saveProjectImage({
+      projectId: currentProject.id,
+      filename,
+      imageData,
     })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || WorldDataStoreError.FailedToSaveImage)
-    }
 
     const tile = await worldApi.tiles.upsert({
       projectId: currentProject.id,
@@ -187,24 +158,18 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
 
     if (tile.image_filename) {
       try {
-        await fetch(WorldDataApiRoute.DeleteImage, {
-          method: HttpMethod.Post,
-          headers: { [FetchRequestHeader.ContentType]: ContentType.Json },
-          body: JSON.stringify({
-            projectId: currentProject.id,
-            filename: tile.image_filename,
-          }),
+        await deleteProjectImage({
+          projectId: currentProject.id,
+          filename: tile.image_filename,
         })
       } catch (err) {
         console.warn(WorldDataStoreLog.FailedToDeleteImageFile, err)
       }
     }
 
-    set(state => {
-      const newTiles = { ...state.tiles }
-      delete newTiles[tileKey]
-      return { tiles: newTiles }
-    })
+    set(state => ({
+      tiles: omitRecordKey(state.tiles, tileKey),
+    }))
     useWorldUiStore.getState().clearSelection()
   },
 
@@ -243,20 +208,12 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
     if (!currentProject || !pending) return
 
     const tileKey = `${x},${y}`
-    const response = await fetch(WorldDataApiRoute.AcceptUpscale, {
-      method: HttpMethod.Post,
-      headers: { [FetchRequestHeader.ContentType]: ContentType.Json },
-      body: JSON.stringify({
-        projectId: currentProject.id,
-        x,
-        y,
-        upscaledUrl: pending.upscaledUrl,
-      }),
+    const { filename } = await acceptTileUpscale({
+      projectId: currentProject.id,
+      x,
+      y,
+      upscaledUrl: pending.upscaledUrl,
     })
-
-    if (!response.ok) throw new Error(WorldDataStoreError.FailedToAcceptUpscale)
-
-    const { filename } = await response.json()
     set(state => ({
       tiles: {
         ...state.tiles,

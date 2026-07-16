@@ -4,7 +4,7 @@
  * Handles AI-powered script editing operations similar to how Cursor edits code.
  */
 
-import { createStorytellerAgent } from '@/domains/storyteller/agents'
+import { createStorytellerAgent } from '@/domains/storyteller/ai'
 import {
   SCRIPT_CONDENSE_INSTRUCTION,
   SCRIPT_EDIT_PROMPT_LABEL,

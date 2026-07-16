@@ -11,7 +11,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react'
-import type { CharacterMetrics } from '@/domains/storyteller/core/types/StoryTypes'
+import type { CharacterMetrics } from '@/domains/storyteller/core/types/story-types'
 import {
   StorytellerConfirmCopy,
   StorytellerConfirmVariant,

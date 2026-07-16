@@ -18,7 +18,7 @@ import {
   StorytellerAnswerSeparator,
   StorytellerDefaultTitle,
 } from '@/domains/storyteller/core/storyteller-page-wire'
-import { Phase, parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/Enums'
+import { Phase, parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/enums'
 import {
   BIBLE_CATEGORY_KEYS,
   ContextAssemblyFallback,
@@ -230,7 +230,7 @@ function slugId(prefix: string, id: string | undefined, name: string): string {
 /** Safe RAG service wrapper — never throws; returns '' on failure. */
 async function getRAGContext(projectId: string, query: string): Promise<string> {
   try {
-    const { ragService } = await import('@/domains/storyteller/services/RagService')
+    const { ragService } = await import('@/domains/storyteller/services/rag-service')
     const ragResults = await ragService.assembleAgentContext(projectId, ChatSenderAlias.Showrunner, query)
 
     let ragContext = ''
@@ -276,7 +276,7 @@ export async function assembleStorytellerContext(
         .from(storyPlans)
         .where(eq(storyPlans.projectId, projectId))
         .then(r => r[0]),
-      import('./StorytellerCrudService').then(async m => {
+      import('./storyteller-crud-service').then(async m => {
         const [charsReq, beatsReq] = await Promise.all([
           m.storytellerService
             .listCharacters({ projectId }, { userId })

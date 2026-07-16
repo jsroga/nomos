@@ -31,7 +31,7 @@ export class FalClient {
     box: { x1: number; y1: number; x2: number; y2: number }, // pixel coordinates
     textPrompt?: string, // optional text prompt like "car", "person", etc.
     params?: SamParams // optional SAM parameters
-  ): Promise<any> {
+  ): Promise<unknown> {
     const boxPrompt: BoxPrompt = {
       x_min: Math.floor(Math.min(box.x1, box.x2)),
       y_min: Math.floor(Math.min(box.y1, box.y2)),

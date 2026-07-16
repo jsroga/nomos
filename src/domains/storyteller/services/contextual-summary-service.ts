@@ -11,8 +11,8 @@
 
 import { openai } from '@ai-sdk/openai'
 import { generateText } from 'ai'
-import { entityGraphService } from './EntityGraphService'
-import { relationshipEnricher } from './RelationshipEnricherService'
+import { entityGraphService } from './entity-graph-service'
+import { relationshipEnricher } from './relationship-enricher-service'
 import { parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
 import {
   CONTEXTUAL_SUMMARY_GENERATION_FAILED_LOG,

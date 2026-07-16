@@ -2,13 +2,13 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { cn } from '@/shared/data/utils'
-import { AgentAction, AgentQuestion } from '@/domains/storyteller/core/types/ActionTypes'
+import { AgentAction, AgentQuestion } from '@/domains/storyteller/core/types/action-types'
 import { ActionCommitted, ActionSuggestion } from '../ActionToast'
-import { ActionHistoryStatus } from '@/domains/storyteller/core/types/Enums'
+import { ActionHistoryStatus } from '@/domains/storyteller/core/types/enums'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { QuestionCard } from '../QuestionCard'
 import { ReferenceText } from '../ReferenceText'
-import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
+import { hasReferences } from '@/domains/storyteller/core/entities/reference-parser'
 import {
   AGENT_LOG_DEFAULT_COLOR,
   AGENT_LOG_SCROLL_BEHAVIOR,

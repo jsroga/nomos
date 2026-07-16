@@ -11,7 +11,7 @@ import type {
   WorldAsset,
   WorldProject,
   WorldTile,
-} from '../io/world.dto'
+} from '../core/io/world.dto'
 
 function mapProject(row: typeof projects.$inferSelect): WorldProject {
   return {

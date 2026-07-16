@@ -1,22 +1,27 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ActionHistoryEntry, StreamAgentAction } from '@/domains/storyteller/core/types/ActionTypes'
-import { BibleSection, type PhaseId } from '@/domains/storyteller/core/types/Enums'
+import { ActionHistoryEntry, StreamAgentAction } from '@/domains/storyteller/core/types/action-types'
+import { BibleSection, type PhaseId } from '@/domains/storyteller/core/types/enums'
 import {
   getSectionForActionType,
   applyUpdatesToStoryPlan,
 } from '@/domains/storyteller/config/action-config'
-import type { StoryPlan } from '@/domains/storyteller/prompts/schemas/agent-schemas'
+import type { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import type { StorytellerCharacter } from '@/domains/storyteller/core/entities/character-wire'
+import { storytellerCharacterFromRow } from '@/domains/storyteller/core/entities/character-wire'
+import {
+  fetchStorytellerTimeline,
+  postStorytellerAction,
+} from '@/domains/storyteller/core/io/storyteller.api'
+import { fetchStorytellerCharacters } from '@/domains/storyteller/core/io/character.api'
 import { beatCardFromWireRow } from '@/domains/storyteller/state/utils/beat-card-wire'
-import { recordArrayFromJson } from '@/shared/data/json-guards'
+import { recordArrayFromJson, recordFromJson as jsonRecordFromJson, readString } from '@/shared/data/json-guards'
 import { recordFromJson, stringRecordFromJson } from '@/shared/data/deep-merge'
 import {
   StorytellerActionExtraResultType,
   StorytellerActionResultType,
   StorytellerActionType,
-  StorytellerActionsHttpMethod,
   StorytellerActionsLog,
   StorytellerActionsStorageKeyPrefix,
   StorytellerActionsUpdatePrefix,
@@ -111,8 +116,7 @@ export function useStorytellerActions({
   const refreshBeats = useCallback(async (episodeId: string) => {
     console.log(StorytellerActionsLog.RefreshBeatsCalled, episodeId)
     try {
-      const beatsRes = await fetch(`/api/storyteller/timeline?episodeId=${episodeId}`)
-      const beatsData = await beatsRes.json()
+      const beatsData = await fetchStorytellerTimeline(episodeId)
       const rawBeats = recordArrayFromJson(beatsData.beats)
       if (rawBeats.length > 0) {
         const mappedBeats = rawBeats
@@ -132,31 +136,28 @@ export function useStorytellerActions({
 
       const episodeId = episodeIdRef.current
       try {
-        const res = await fetch('/api/storyteller/actions', {
-          method: StorytellerActionsHttpMethod.Post,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action,
-            projectId: currentProject.id,
-            episodeId: episodeId,
-          }),
+        const data = await postStorytellerAction({
+          action,
+          projectId: currentProject.id,
+          episodeId: episodeId,
         })
-
-        const data = await res.json()
-        if (data.success) {
+        const result = jsonRecordFromJson(data.result)
+        if (data.success === true) {
+          const resultType = readString(result.type)
           if (
-            data.result?.type === StorytellerActionResultType.BEAT_CREATED ||
-            data.result?.type === StorytellerActionResultType.BEAT_UPDATED ||
-            data.result?.type === StorytellerActionResultType.BEAT_DELETED ||
+            resultType === StorytellerActionResultType.BEAT_CREATED ||
+            resultType === StorytellerActionResultType.BEAT_UPDATED ||
+            resultType === StorytellerActionResultType.BEAT_DELETED ||
             action.type === StorytellerActionType.CREATE_BEAT
           ) {
             // Beat refresh handled by caller via refreshBeats
           } else if (
-            data.result?.type === StorytellerActionResultType.BIBLE_UPDATED ||
-            data.result?.type === StorytellerActionExtraResultType.WorldRuleAdded
+            resultType === StorytellerActionResultType.BIBLE_UPDATED ||
+            resultType === StorytellerActionExtraResultType.WorldRuleAdded
           ) {
-            if (data.result.seriesBible) {
-              const bible = data.result.seriesBible
+            const seriesBible = jsonRecordFromJson(result.seriesBible)
+            if (Object.keys(seriesBible).length > 0) {
+              const bible = seriesBible
               console.log(
                 StorytellerActionsLog.BibleUpdatedApplying,
                 Object.keys(bible)
@@ -193,28 +194,14 @@ export function useStorytellerActions({
                 })
               }
 
-              if (data.result.characters_synced && currentProject?.id) {
+              if (result.characters_synced === true && currentProject?.id) {
                 console.log(StorytellerActionsLog.CharactersSyncedRefetch)
-                fetch(`/api/storyteller/characters?projectId=${currentProject.id}`)
-                  .then(res => res.json())
+                fetchStorytellerCharacters(currentProject.id)
                   .then(charData => {
                     if (Array.isArray(charData)) {
-                      const mapped = charData.map(c => ({
-                        ...c,
-                        stress: c.stressLevel ?? c.stress_level ?? 30,
-                        trust: c.trustLevel ?? c.trust_level ?? 50,
-                        power: c.powerLevel ?? c.power_level ?? 30,
-                        morality: c.moralityLevel ?? c.morality_level ?? 50,
-                        hope: c.hopeLevel ?? c.hope_level ?? 60,
-                        isolation: c.isolationLevel ?? c.isolation_level ?? 20,
-                        transformation:
-                          c.transformationProgress ??
-                          c.transformation_progress ??
-                          c.arcStatus?.transformation ??
-                          0,
-                        id: c.id || c.characterId,
-                        role: c.role || '',
-                      }))
+                      const mapped = charData
+                        .map(row => storytellerCharacterFromRow(row))
+                        .filter((character): character is StorytellerCharacter => character !== null)
                       setCharacters(mapped)
                     }
                   })
@@ -259,16 +246,20 @@ export function useStorytellerActions({
                 series_bible: mergedBible,
               })
             }
-          } else if (data.result?.type === StorytellerActionResultType.SCRIPT_UPDATED) {
-            if (data.result.script) {
-              setScript(data.result.script)
-            } else if (data.result.seriesBible?.script) {
-              setScript(data.result.seriesBible.script)
+          } else if (resultType === StorytellerActionResultType.SCRIPT_UPDATED) {
+            const script = readString(result.script)
+            if (script) {
+              setScript(script)
+            } else {
+              const seriesBible = jsonRecordFromJson(result.seriesBible)
+              const bibleScript = readString(seriesBible.script)
+              if (bibleScript) setScript(bibleScript)
             }
-          } else if (data.result?.type === StorytellerActionResultType.EPISODE_UPDATED) {
+          } else if (resultType === StorytellerActionResultType.EPISODE_UPDATED) {
             console.log(StorytellerActionsLog.EpisodeUpdatedApplying)
-            if (data.result.storyPlan) {
-              const planUpdate = recordFromJson(data.result.storyPlan)
+            const storyPlanUpdate = jsonRecordFromJson(result.storyPlan)
+            if (Object.keys(storyPlanUpdate).length > 0) {
+              const planUpdate = storyPlanUpdate
               setStoryPlan(prev =>
                 Object.assign({}, prev, planUpdate, {
                   premise: planUpdate.premise || recordFromJson(prev).premise,

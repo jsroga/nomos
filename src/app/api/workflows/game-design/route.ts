@@ -3,7 +3,7 @@ import { z } from 'zod'
 import {
   createGameLoopWorkflow,
   GameLoopWorkflow,
-} from '@/domains/game-design/agents/game-loop-workflow'
+} from '@/domains/game-design/ai/workflows/game-loop-workflow'
 import { requireAuth, checkRateLimit } from '@/shared/data/api-utils'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { getErrorMessage } from '@/shared/errors/error-utils'

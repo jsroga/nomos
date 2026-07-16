@@ -232,7 +232,7 @@ export async function safeFetch(url: string, options?: RequestInit): Promise<Res
 /**
  * Redact sensitive data from objects before logging
  */
-export function redactSensitive(obj: any, depth = 0): any {
+export function redactSensitive(obj: unknown, depth = 0): unknown {
   if (depth > 10) return SecureLogRedaction.MaxDepth
   if (obj === null || obj === undefined) return obj
   if (typeof obj !== 'object') return obj
@@ -241,7 +241,7 @@ export function redactSensitive(obj: any, depth = 0): any {
     return obj.map(item => redactSensitive(item, depth + 1))
   }
 
-  const redacted: any = {}
+  const redacted: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(obj)) {
     const lowerKey = key.toLowerCase()
     if (SENSITIVE_LOG_KEYS.some(sensitive => lowerKey.includes(sensitive))) {
@@ -260,16 +260,16 @@ export function redactSensitive(obj: any, depth = 0): any {
  * Secure logger that automatically redacts sensitive data
  */
 export const secureLog = {
-  info: (message: string, data?: any) => {
+  info: (message: string, data?: unknown) => {
     console.log(message, data ? redactSensitive(data) : '')
   },
-  warn: (message: string, data?: any) => {
+  warn: (message: string, data?: unknown) => {
     console.warn(message, data ? redactSensitive(data) : '')
   },
-  error: (message: string, data?: any) => {
+  error: (message: string, data?: unknown) => {
     console.error(message, data ? redactSensitive(data) : '')
   },
-  debug: (message: string, data?: any) => {
+  debug: (message: string, data?: unknown) => {
     if (process.env.NODE_ENV === NodeEnv.Development) {
       console.debug(message, data ? redactSensitive(data) : '')
     }

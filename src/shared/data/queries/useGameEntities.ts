@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
 import {
   DomAbortErrorName,
   GameEntityClientLog,
@@ -86,13 +87,14 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
       setError(null)
 
       try {
-        const params = new URLSearchParams()
-        if (projectId) params.append(GameEntityQueryParam.ProjectId, projectId)
-        if (entityType) params.append(GameEntityQueryParam.EntityType, entityType)
-        if (sourceDomain) params.append(GameEntityQueryParam.SourceDomain, sourceDomain)
-        if (search) params.append(GameEntityQueryParam.Search, search)
-
-        const response = await fetch(`/api/entities?${params.toString()}`, {
+        const response = await fetch(
+          buildUrl('/api/entities', {
+            [GameEntityQueryParam.ProjectId]: projectId,
+            [GameEntityQueryParam.EntityType]: entityType,
+            [GameEntityQueryParam.SourceDomain]: sourceDomain,
+            [GameEntityQueryParam.Search]: search,
+          }),
+          {
           signal: abortControllerRef.current.signal,
         })
 
@@ -179,7 +181,7 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
       setError(null)
 
       try {
-        const response = await fetch(`/api/entities/${entityId}`, {
+        const response = await fetch(joinUrlPath('/api/entities', entityId), {
           method: HttpMethod.Patch,
           headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify(updates),
@@ -212,7 +214,7 @@ export function useGameEntities(options: UseGameEntitiesOptions = {}) {
     setError(null)
 
     try {
-      const response = await fetch(`/api/entities/${entityId}`, {
+      const response = await fetch(joinUrlPath('/api/entities', entityId), {
         method: HttpMethod.Delete,
       })
 

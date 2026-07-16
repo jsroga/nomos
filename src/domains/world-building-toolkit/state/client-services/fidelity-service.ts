@@ -2,20 +2,23 @@ import { useWorldStore } from '../useWorldStore'
 import type { Tile } from '../../core/world-types'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
-import { POLLING_INTERVALS, ACTIVE_TASK_STATUSES } from '@/shared/data/constants/polling'
+import { browserStorage } from '@/shared/data/browser-storage'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { POLLING_INTERVALS, isActiveTaskStatus } from '@/shared/data/constants/polling'
 import { TILE_COORD_SEPARATOR } from '../../ui/constants/tile-stage-labels'
 import {
+  fetchFidelityRunStatus,
+  triggerFidelityEnhancement,
+} from '../../core/io/world-gen-trigger.api'
+import { fetchUrlAsBase64 } from '../../core/io/world-data.api'
+import {
   AsyncOperationStatus,
-  ContentType,
   DynamicLocalStoragePrefix,
-  FidelityApiRoute,
   FidelityOperationDetailSuffix,
   FidelityOperationIdPrefix,
   FidelityOperationLabel,
   FidelityServiceError,
   FidelityServiceLog,
-  HttpMethod,
-  HttpRequestHeader,
   OperationTypeId,
   TileProgressStage,
   TriggerTerminalStatus,
@@ -80,45 +83,24 @@ export class FidelityService {
         imageUrl = `/projects/${tile.project_id}/${tile.image_filename}`
       }
 
-      const response = await fetch(imageUrl)
-      if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`)
-      const blob = await response.blob()
-
-      const base64 = await new Promise<string>(resolve => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          if (typeof reader.result !== 'string') return
-          resolve(reader.result.split(',')[1])
-        }
-        reader.readAsDataURL(blob)
-      })
+      const base64 = await fetchUrlAsBase64(imageUrl)
 
       console.log(FidelityServiceLog.TriggeringTask)
 
-      const triggerResponse = await fetch(FidelityApiRoute.Trigger, {
-        method: HttpMethod.Post,
-        headers: { [HttpRequestHeader.ContentType]: ContentType.Json },
-        body: JSON.stringify({
-          tileId: tile.id,
-          projectId: tile.project_id,
-          imageBase64: base64,
-          stylePrompt,
-          creativity,
-          ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
-        }),
+      const { runId } = await triggerFidelityEnhancement({
+        tileId: tile.id,
+        projectId: tile.project_id,
+        imageBase64: base64,
+        stylePrompt,
+        creativity,
+        ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
       })
 
-      const triggerData = await triggerResponse.json()
-
-      if (!triggerResponse.ok || !triggerData.runId) {
-        throw new Error(triggerData.error || FidelityServiceError.FailedToTriggerTask)
-      }
-
-      console.log(FidelityServiceLog.TaskTriggered, triggerData.runId)
+      console.log(FidelityServiceLog.TaskTriggered, runId)
 
       // 3. Save run state to localStorage for recovery
       const runState: FidelityRunState = {
-        runId: triggerData.runId,
+        runId,
         tileId: tile.id,
         tileX: tile.x,
         tileY: tile.y,
@@ -126,14 +108,12 @@ export class FidelityService {
         startedAt: new Date().toISOString(),
       }
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(DynamicLocalStorageKeys.fidelityRun(tile.id), JSON.stringify(runState))
-      }
+      browserStorage.setObject(DynamicLocalStorageKeys.fidelityRun(tile.id), runState)
 
       // 4. Start polling for status
       this.startPolling(runState, opId)
 
-      return triggerData.runId
+      return runId
     } catch (error) {
       console.error(FidelityServiceLog.EnhancementError, error)
       // Clean up status on error
@@ -160,10 +140,9 @@ export class FidelityService {
 
     const poll = async () => {
       try {
-        const statusResponse = await fetch(`${FidelityApiRoute.Status}?runId=${runState.runId}`)
-        const statusData = await statusResponse.json()
+        const statusData = await fetchFidelityRunStatus(runState.runId)
 
-        if (statusResponse.status === 404) {
+        if (statusData.statusCode === 404) {
           consecutiveErrors++
           if (consecutiveErrors > 5) {
             console.warn(FidelityServiceLog.RunNotFoundAfterRetries)
@@ -178,8 +157,12 @@ export class FidelityService {
         }
 
         consecutiveErrors = 0
-        const progress = statusData.metadata?.progress || 0
-        const stage = statusData.metadata?.stage || TileProgressStage.Unknown
+        const progress =
+          typeof statusData.metadata?.progress === 'number' ? statusData.metadata.progress : 0
+        const stage =
+          (typeof statusData.metadata?.stage === 'string'
+            ? statusData.metadata.stage
+            : null) ?? TileProgressStage.Unknown
 
         if (progress === lastProgress) {
           stableProgressCount++
@@ -198,8 +181,10 @@ export class FidelityService {
           return
         }
 
-        if (!ACTIVE_TASK_STATUSES.includes(statusData.status)) {
-          const errorMsg = statusData.error || `${FidelityServiceError.EnhancementFailed} (${statusData.status})`
+        if (!statusData.status || !isActiveTaskStatus(statusData.status)) {
+          const errorMsg =
+            (typeof statusData.error === 'string' ? statusData.error : null) ||
+            `${FidelityServiceError.EnhancementFailed} (${statusData.status ?? 'unknown'})`
           console.error(FidelityServiceLog.EnhancementFailed, errorMsg)
           useWorldStore.getState().setTileError(runState.tileX, runState.tileY, errorMsg)
           this.clearRunState(runState, opId)
@@ -241,41 +226,34 @@ export class FidelityService {
    */
   private async handleCompletion(
     runState: FidelityRunState,
-    output: {
-      success: boolean
-      filename: string
-      enhancedUrl: string
-      enhancedBase64: string
-      originalUrl: string
-      pendingReview?: boolean
-    },
+    output: Record<string, unknown> | undefined,
     opId: string
   ) {
+    const out = recordFromJson(output)
     try {
+      const pendingReview = out.pendingReview === true
+      const enhancedUrl = readString(out.enhancedUrl)
+      const originalUrl = readString(out.originalUrl) ?? ''
+
       // Check if fidelity enhancement requires user review (new flow)
-      if (output?.pendingReview && output?.enhancedUrl) {
+      if (pendingReview && enhancedUrl) {
         console.log(FidelityServiceLog.CompletedWithSupabaseUrl, {
-          enhancedUrl: output.enhancedUrl,
-          originalUrl: output.originalUrl,
+          enhancedUrl,
+          originalUrl,
         })
 
-        // Images are now stored in Supabase Storage - use URL directly
-        const enhancedUrl = output.enhancedUrl
-
-        // For original, prefer local existing tile (if any)
         const tiles = useWorldStore.getState().tiles
         const existingTile = tiles[`${runState.tileX}${TILE_COORD_SEPARATOR}${runState.tileY}`]
-        const originalUrl = existingTile?.image_filename
+        const resolvedOriginalUrl = existingTile?.image_filename
           ? (existingTile.image_filename.startsWith(UrlScheme.Http)
               ? existingTile.image_filename
               : `/projects/${runState.projectId}/${existingTile.image_filename}`)
-          : output.originalUrl || ''
+          : originalUrl
 
-        // Store pending fidelity in store
         useWorldStore.getState().setPendingFidelity(runState.tileX, runState.tileY, {
           newUrl: enhancedUrl,
-          newBase64: output.enhancedBase64, // Still keep for acceptFidelity
-          originalUrl,
+          newBase64: readString(out.enhancedBase64) ?? '',
+          originalUrl: resolvedOriginalUrl,
         })
 
         // Update global status to show review is needed
@@ -291,7 +269,7 @@ export class FidelityService {
             tileX: runState.tileX,
             tileY: runState.tileY,
             newUrl: enhancedUrl,
-            originalUrl,
+            originalUrl: resolvedOriginalUrl,
           })
         }
 
@@ -300,7 +278,8 @@ export class FidelityService {
       }
 
       // Legacy flow - direct update (shouldn't happen anymore)
-      if (output?.success && output?.filename) {
+      const filename = readString(out.filename)
+      if (out.success === true && filename) {
         const { tiles } = useWorldStore.getState()
         const tileKey = `${runState.tileX}${TILE_COORD_SEPARATOR}${runState.tileY}`
 
@@ -308,12 +287,12 @@ export class FidelityService {
           useWorldStore.setState({
             tiles: {
               ...tiles,
-              [tileKey]: { ...tiles[tileKey], image_filename: output.filename },
+              [tileKey]: { ...tiles[tileKey], image_filename: filename },
             },
           })
         }
 
-        console.log(FidelityServiceLog.TileUpdatedWithEnhancedImage, output.filename)
+        console.log(FidelityServiceLog.TileUpdatedWithEnhancedImage, filename)
       }
     } catch (error) {
       console.error(FidelityServiceLog.ErrorUpdatingTileAfterCompletion, error)
@@ -333,10 +312,7 @@ export class FidelityService {
       this.pollingIntervals.delete(runState.runId)
     }
 
-    // Clear localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(DynamicLocalStorageKeys.fidelityRun(runState.tileId))
-    }
+    browserStorage.remove(DynamicLocalStorageKeys.fidelityRun(runState.tileId))
 
     // Clear UI status
     useWorldStore.getState().removeEnhancingTile(runState.tileX, runState.tileY)
@@ -347,55 +323,45 @@ export class FidelityService {
    * Resume any pending fidelity enhancement tasks from localStorage (call on app load)
    */
   resumePendingEnhancements() {
-    if (typeof window === 'undefined') return
+    browserStorage.forEachPrefixed(DynamicLocalStoragePrefix.FidelityRun, (key, raw) => {
+      try {
+        const runState: FidelityRunState = JSON.parse(raw)
+        if (runState.runId) {
+          console.log(FidelityServiceLog.ResumingPolling, runState.runId)
 
-    // Find all fidelity run keys in localStorage
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key?.startsWith(DynamicLocalStoragePrefix.FidelityRun)) {
-        try {
-          const runState: FidelityRunState = JSON.parse(localStorage.getItem(key) || '')
-          if (runState.runId) {
-            console.log(FidelityServiceLog.ResumingPolling, runState.runId)
+          useWorldStore.getState().addEnhancingTile(runState.tileX, runState.tileY)
+          const opId = `${FidelityOperationIdPrefix.Fidelity}${runState.tileX}-${runState.tileY}`
+          useGlobalStatusStore.getState().addOperation({
+            id: opId,
+            type: OperationTypeId.WorldGen,
+            label: FidelityOperationLabel.EnhancingFidelityResumed,
+            details: `(${runState.tileX}, ${runState.tileY})`,
+            status: AsyncOperationStatus.InProgress,
+          })
 
-            // Re-add status indicators
-            useWorldStore.getState().addEnhancingTile(runState.tileX, runState.tileY)
-            const opId = `${FidelityOperationIdPrefix.Fidelity}${runState.tileX}-${runState.tileY}`
-            useGlobalStatusStore.getState().addOperation({
-              id: opId,
-              type: OperationTypeId.WorldGen,
-              label: FidelityOperationLabel.EnhancingFidelityResumed,
-              details: `(${runState.tileX}, ${runState.tileY})`,
-              status: AsyncOperationStatus.InProgress,
-            })
-
-            // Start polling
-            this.startPolling(runState, opId)
-          }
-        } catch (_e) {
-          console.warn(FidelityServiceLog.FailedToParseRunState, key)
-          localStorage.removeItem(key)
+          this.startPolling(runState, opId)
         }
+      } catch {
+        console.warn(FidelityServiceLog.FailedToParseRunState, key)
+        browserStorage.remove(key)
       }
-    }
+    })
   }
 
   /**
    * Stop an in-progress fidelity enhancement
    */
   stopEnhancement(tileId: string) {
-    if (typeof window === 'undefined') return
-
     const key = DynamicLocalStorageKeys.fidelityRun(tileId)
-    const data = localStorage.getItem(key)
+    const data = browserStorage.getString(key)
     if (data) {
       try {
         const runState: FidelityRunState = JSON.parse(data)
         const opId = `${FidelityOperationIdPrefix.Fidelity}${runState.tileX}-${runState.tileY}`
         this.clearRunState(runState, opId)
         console.log(FidelityServiceLog.StoppedForTile, tileId)
-      } catch (_e) {
-        localStorage.removeItem(key)
+      } catch {
+        browserStorage.remove(key)
       }
     }
   }

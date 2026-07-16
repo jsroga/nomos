@@ -7,6 +7,7 @@ import {
   StorytellerEmptyState,
 } from '@/domains/storyteller'
 import { StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
+import { editStorytellerScript } from '@/domains/storyteller/core/io/storyteller.api'
 import { Network } from 'lucide-react'
 import {
   ScriptEditor,
@@ -179,14 +180,7 @@ export function StorytellerCenterPanel(props: StorytellerPageState) {
                       onChange={setScript}
                       onRegenerateSelection={async (selection, instruction) => {
                         try {
-                          const res = await fetch('/api/storyteller/script/edit', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ selection, instruction }),
-                          })
-                          const data = await res.json()
-                          if (data.error) throw new Error(data.error)
-                          return data.result
+                          return await editStorytellerScript({ selection, instruction })
                         } catch (e) {
                           console.error('Regeneration failed:', e)
                           return selection

@@ -7,11 +7,11 @@ import { requireAuth } from '@/shared/auth/auth'
 import { db } from '@/db/client'
 import {
   parseCreateStorytellerEpisodeRequest,
-} from '@/domains/storyteller/io/storyteller.api'
+} from '@/domains/storyteller/core/io/storyteller.api'
 import {
   storytellerEpisodesQuerySchema,
   storytellerEpisodesResponseSchema,
-} from '@/domains/storyteller/io/storyteller.dto'
+} from '@/domains/storyteller/core/io/storyteller.dto'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { AuthBypassValue, HttpHeader, QueryParam } from '@/shared/data/constants/protocol'

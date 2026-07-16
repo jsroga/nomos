@@ -1,4 +1,4 @@
-import { QuestionUrgency } from '@/domains/storyteller/core/types/Enums'
+import { QuestionUrgency } from '@/domains/storyteller/core/types/enums'
 
 export const QUESTION_URGENCY_BORDER_CLASS: Record<QuestionUrgency, string> = {
   [QuestionUrgency.BLOCKING]: 'border-red-500/50 bg-red-500/5',

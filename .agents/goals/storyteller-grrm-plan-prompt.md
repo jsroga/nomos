@@ -61,7 +61,7 @@ Spot-check (do not skip):
 
 ```bash
 find src/domains/storyteller/agents -name '*.ts' | sort
-grep -rc 'createTool' src/domains/storyteller/agents/tools/ 2>/dev/null | grep -v ':0$'
+grep -rc 'createTool' src/domains/storyteller/ai/tools/ 2>/dev/null | grep -v ':0$'
 find src/domains/storyteller -name '*Agent*.ts' | sort
 grep -rn 'agents/council\|agents/judges\|orchestration' src/domains/storyteller/ | head -40
 wc -l src/app/api/storyteller/chat/stream/route.ts
@@ -107,7 +107,7 @@ Use your judgment on ordering and granularity, but **every section below must ap
 Plan how storyteller uses **latest Mastra v1 workflow features**, not legacy graph sprawl:
 
 - Primary workflow(s): e.g. **beat-draft workflow** (plan → draft → parallel critics → **suspend at human verdict** → revise)
-- Where **`createStep`**, **parallel steps**, **suspend/resume**, and **workflow state** live (paths under `src/domains/storyteller/agents/`)
+- Where **`createStep`**, **parallel steps**, **suspend/resume**, and **workflow state** live (paths under `src/domains/storyteller/ai/`)
 - How **chat/SSE route** invokes the workflow (thin adapter — no frame-order changes)
 - How **HITL** maps to StoryForge’s editorial verdict (Studio / `ActionApprovalModal` / API — pick one coherent story)
 - Retire or shrink: `WritersRoomGraph`, multi-hop council orchestration, 57-tool workflow sprawl

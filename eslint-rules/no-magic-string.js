@@ -33,6 +33,7 @@ const ALLOWED_FILE_PATTERNS = [
   /-scorer\.ts$/,
   // Domain prompt folders: prompt-builder text is the artifact.
   /[/\\]domains[/\\][^/\\]+[/\\]prompts[/\\]/,
+  /[/\\]domains[/\\][^/\\]+[/\\]ai[/\\]prompts[/\\]/,
   // Domain agent modules: system prompts, LangChain instructions, workflows.
   // (tools/ is a subset — kept as a separate comment for discoverability.)
   /[/\\]domains[/\\][^/\\]+[/\\]agents[/\\]/,

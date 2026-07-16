@@ -1,20 +1,21 @@
 import JSZip from 'jszip'
 import { InteriorState } from '../state/useInteriorStore'
-import { UnityYAML } from './UnityYAML'
+import { UnityYAML } from './unity-yaml'
 import * as THREE from 'three'
+import { buildUrl } from '@/shared/data/url-builder'
+import { ApiRoutePath, UrlScheme } from '@/shared/data/constants/protocol'
 import {
   JsZipOutputType,
   ThreeEulerOrder,
   UNITY_DATA_URL_PREFIX,
   UNITY_DEFAULT_MODEL_EXTENSION,
   UNITY_EXPORT_README,
-  UNITY_PRIMITIVE_MODEL_URLS,
   UnityAssetExtension,
   UnityExportFile,
   UnityExportFolder,
   UnityModelFilePrefix,
+  isUnityPrimitiveModelUrl,
 } from '@/domains/interior-designer/constants/unity-export'
-import { UrlScheme } from '@/shared/data/constants/protocol'
 
 // ------------------------------------------------------------------
 // HELPERS
@@ -23,14 +24,14 @@ import { UrlScheme } from '@/shared/data/constants/protocol'
 async function fetchAsset(url: string, useProxy: boolean = true): Promise<Blob | null> {
   if (!url) return null
   if (url.startsWith(UNITY_DATA_URL_PREFIX)) return null
-  if ((UNITY_PRIMITIVE_MODEL_URLS as readonly string[]).includes(url)) return null
+  if (isUnityPrimitiveModelUrl(url)) return null
 
   let fetchUrl = url
   if (
     useProxy &&
     (url.startsWith(UrlScheme.Http) || url.startsWith(UrlScheme.Https))
   ) {
-    fetchUrl = `/api/proxy-model?url=${encodeURIComponent(url)}`
+    fetchUrl = buildUrl(ApiRoutePath.ProxyModel, { url })
   }
 
   try {
@@ -78,7 +79,7 @@ export const UnityExporter = {
     const modelGuids = new Map<string, string>()
 
     for (const o of state.objects) {
-      if (o.modelUrl && !(UNITY_PRIMITIVE_MODEL_URLS as readonly string[]).includes(o.modelUrl)) {
+      if (o.modelUrl && !isUnityPrimitiveModelUrl(o.modelUrl)) {
         if (!modelGuids.has(o.modelUrl)) {
           const blob = await fetchAsset(o.modelUrl)
           if (blob) {

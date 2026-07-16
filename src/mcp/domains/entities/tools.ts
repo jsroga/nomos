@@ -6,7 +6,7 @@
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { entitiesService } from '@/shared/data/EntitiesService'
+import { entitiesService } from '@/shared/data/entities-service'
 import { validateApiKey, getServiceContext } from '../../core/auth'
 
 // ============================================

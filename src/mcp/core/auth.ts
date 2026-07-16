@@ -147,8 +147,8 @@ export async function getServiceContext(
   return {
     userId: authResult.userId,
     supabase,
-    apiKeyId: authResult.keyId!,
-    apiKeyName: authResult.keyName!,
+    apiKeyId: authResult.keyId ?? '',
+    apiKeyName: authResult.keyName ?? '',
     scopes: authResult.scopes || [],
   }
 }

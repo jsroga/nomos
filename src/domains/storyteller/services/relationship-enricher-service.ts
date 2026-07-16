@@ -21,8 +21,8 @@ import {
 import { InferredRelationshipType } from '@/domains/storyteller/services/constants/entity-graph-wire'
 import { recordFromJson } from '@/shared/data/deep-merge'
 import { StorytellerAnswerSeparator, StorytellerTextSeparator } from '@/domains/storyteller/core/storyteller-page-wire'
-import { EntityType } from './EntityRegistryService'
-import { entityGraphService } from './EntityGraphService'
+import { EntityType } from './entity-registry-service'
+import { entityGraphService } from './entity-graph-service'
 
 // ==========================================
 // TYPES

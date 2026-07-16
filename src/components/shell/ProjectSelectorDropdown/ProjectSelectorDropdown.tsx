@@ -64,7 +64,7 @@ export function ProjectSelectorDropdown() {
   try {
     const context = useLiquid()
     liquidOptions = context.liquidOptions
-  } catch (e) {
+  } catch {
     // Fallback if not in LiquidProvider
     console.warn(PROJECT_SELECTOR_LIQUID_WARN)
   }

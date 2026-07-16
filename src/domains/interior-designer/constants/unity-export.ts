@@ -46,6 +46,10 @@ export const UNITY_REMOTE_URL_SCHEMES = [HTTP_URL_PREFIX, UrlScheme.Https] as co
 export const UNITY_DATA_URL_PREFIX = DATA_URL_PREFIX
 export const UNITY_DEFAULT_MODEL_EXTENSION = UnityAssetExtension.Glb
 
+export function isUnityPrimitiveModelUrl(url: string): boolean {
+  return UNITY_PRIMITIVE_MODEL_URLS.some(primitiveUrl => primitiveUrl === url)
+}
+
 export const UNITY_EXPORT_README = `
 Interior Designer Project Export
 --------------------------------

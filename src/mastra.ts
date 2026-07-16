@@ -7,6 +7,6 @@
  * runtime registry, which the Studio entry consumes when constructing the
  * instance. Without it, Studio falls back to the marked stub agents.
  */
-import '@/domains/storyteller/io/mastra-runtime'
+import '@/domains/storyteller/core/io/mastra-runtime'
 
 export { mastra } from './shared/agent-kernel/mastra'

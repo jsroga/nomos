@@ -8,15 +8,16 @@ import {
   getSectionForActionType,
   type QuestionSession,
 } from '@/domains/storyteller'
-import { parsePhaseId, BibleSection } from '@/domains/storyteller/core/types/Enums'
+import { parsePhaseId, BibleSection } from '@/domains/storyteller/core/types/enums'
 import { useChatStream, type Message } from '@/shared/chat'
-import { DEFAULT_CHAT_MODEL, getChatModelOption } from '@/domains/storyteller/config/constants/ChatModelCatalog'
+import { DEFAULT_CHAT_MODEL, getChatModelOption } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { clearFetchCache } from '@/shared/data/fetch-cache'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { storytellerCharacterFromRow } from '@/domains/storyteller/core/entities/character-wire'
+import { fetchStorytellerCharacters } from '@/domains/storyteller/core/io/character.api'
 import { useStoryActionRenderer } from '@/domains/storyteller/ui/StorytellerLayout/StoryActionRenderer'
 import {
   AsyncOperationStatus,
@@ -255,6 +256,11 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
           prev.map(p => p.question.question.toLowerCase().trim())
         )
         if (!existingQuestionTexts.has(questionSession.question.question.toLowerCase().trim())) {
+          // NOTE: the chat-stream callback delivers the shared `AgentQuestion`
+          // shape (no agentName/questionType, string options), which is a
+          // structural subset of the storyteller `QuestionSession`. Reconciling
+          // the two shapes belongs to the chat-platformization workstream; until
+          // then this cast bridges the seam. Do not "fix" without unifying types.
           return [
             ...prev,
             {
@@ -308,26 +314,12 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
             })
           } else {
             // Fallback: trigger refetch
-            fetch(`/api/storyteller/characters?projectId=${currentProject.id}`)
-              .then(res => res.json())
+            fetchStorytellerCharacters(currentProject.id)
               .then(data => {
                 if (Array.isArray(data)) {
-                  const mapped = data.map((c: any) => ({
-                    ...c,
-                    stress: c.stressLevel ?? c.stress_level ?? 30,
-                    trust: c.trustLevel ?? c.trust_level ?? 50,
-                    power: c.powerLevel ?? c.power_level ?? 30,
-                    morality: c.moralityLevel ?? c.morality_level ?? 50,
-                    hope: c.hopeLevel ?? c.hope_level ?? 60,
-                    isolation: c.isolationLevel ?? c.isolation_level ?? 20,
-                    transformation:
-                      c.transformationProgress ??
-                      c.transformation_progress ??
-                      c.arcStatus?.transformation ??
-                      0,
-                    id: c.id || c.characterId,
-                    role: c.role || '',
-                  }))
+                  const mapped = data
+                    .map(row => storytellerCharacterFromRow(row))
+                    .filter((character): character is NonNullable<typeof character> => character !== null)
                   setCharacters(mapped)
                 }
               })

@@ -56,7 +56,7 @@ async function pollForCompletion(
 }
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, {}: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
     const body = await request.json()
     const { imageUrl, imageBase64, prompt, apiKey, styleReferenceUrls } = body
 

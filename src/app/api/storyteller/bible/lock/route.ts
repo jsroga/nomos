@@ -11,7 +11,7 @@ import { readString, recordFromJson } from '@/shared/data/json-guards'
 import {
   storytellerBibleLockQuerySchema,
   storytellerBibleLockResponseSchema,
-} from '@/domains/storyteller/io/storyteller.dto'
+} from '@/domains/storyteller/core/io/storyteller.dto'
 import { isCentralUser } from '@/shared/auth/bible-permissions'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
@@ -19,7 +19,7 @@ import { QueryParam, SupabaseColumn, SupabaseTable } from '@/shared/data/constan
 import {
   BibleLockAction,
   BIBLE_LOCK_ACTION_INVALID,
-} from '@/domains/storyteller/io/constants/bible-lock'
+} from '@/domains/storyteller/core/io/constants/bible-lock'
 
 function parseBibleLockAction(value: unknown): BibleLockAction | undefined {
   const action = readString(value)

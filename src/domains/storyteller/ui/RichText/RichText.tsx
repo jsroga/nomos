@@ -16,10 +16,10 @@
 
 import React, { useMemo } from 'react'
 import { ReferenceText, type EntityReference } from '../ReferenceText'
-import { hasReferences } from '@/domains/storyteller/core/entities/ReferenceParser'
+import { hasReferences } from '@/domains/storyteller/core/entities/reference-parser'
 import { cn } from '@/shared/data/utils'
 import { useBible } from '../WorldBible/BibleContext'
-import { extractEntitiesFromPlan } from '@/domains/storyteller/core/entities/EntityExtractor'
+import { extractEntitiesFromPlan } from '@/domains/storyteller/core/entities/entity-extractor'
 import {
   RICH_TEXT_EMPTY_PLACEHOLDER,
   RichTextContainerTag,

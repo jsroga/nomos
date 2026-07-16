@@ -5,13 +5,29 @@
  * Handles updates to characters, beats, world rules, and episodes.
  */
 
-import { ConsistencyFix, CascadeResult, AppliedFix } from '@/domains/storyteller/core/types/ConsistencyTypes'
-import { set } from 'lodash'
 import {
-  CascadeEditorError,
-  CascadeEditorHttpMethod,
-  CascadeElementType,
-} from '@/domains/storyteller/core/constants/cascade-editor'
+  ConsistencyFix,
+  ConsistencyChange,
+  CascadeResult,
+  AppliedFix,
+} from '@/domains/storyteller/core/types/consistency-types'
+import { recordArrayFromJson, recordFromJson, readString } from '@/shared/data/json-guards'
+import {
+  fetchStorytellerBible,
+  fetchStorytellerEpisode,
+  fetchStorytellerPlan,
+  fetchStorytellerTimeline,
+  patchBeat,
+  patchStorytellerEpisode,
+  saveStorytellerBible,
+  saveStorytellerPlan,
+} from '@/domains/storyteller/core/io/storyteller.api'
+import {
+  fetchStorytellerCharacter,
+  patchStorytellerCharacter,
+} from '@/domains/storyteller/core/io/character.api'
+import { set } from 'lodash'
+import { CascadeElementType } from '@/domains/storyteller/core/constants/cascade-editor'
 
 /**
  * Apply cascading fixes to story elements
@@ -52,9 +68,6 @@ export async function applyCascadingFixes(
   }
 }
 
-/**
- * Apply a single fix to a story element
- */
 async function applyFix(fix: ConsistencyFix, projectId: string, episodeId?: string): Promise<void> {
   const { targetElement, changes } = fix
 
@@ -84,171 +97,86 @@ async function applyFix(fix: ConsistencyFix, projectId: string, episodeId?: stri
   }
 }
 
-/**
- * Update a character with consistency fixes
- */
 async function updateCharacter(
   characterId: string,
-  changes: any[],
+  changes: ConsistencyChange[],
   _projectId: string
 ): Promise<void> {
-  // Fetch current character
-  const response = await fetch(`/api/storyteller/characters/${characterId}`)
-  if (!response.ok) throw new Error(CascadeEditorError.FailedFetchCharacter)
-
-  const character = await response.json()
-
-  // Apply changes
+  const character = await fetchStorytellerCharacter(characterId)
   const updated = applyChangesToObject(character, changes)
-
-  // Save updated character
-  const saveResponse = await fetch(`/api/storyteller/characters/${characterId}`, {
-    method: CascadeEditorHttpMethod.Patch,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updated),
-  })
-
-  if (!saveResponse.ok) throw new Error(CascadeEditorError.FailedSaveCharacter)
+  await patchStorytellerCharacter(characterId, updated)
 }
 
-/**
- * Update a beat with consistency fixes
- */
 async function updateBeat(
   beatId: string,
-  changes: any[],
+  changes: ConsistencyChange[],
   _projectId: string,
   episodeId?: string
 ): Promise<void> {
-  if (!episodeId) throw new Error(CascadeEditorError.EpisodeIdRequiredForBeat)
+  if (!episodeId) throw new Error('Episode ID required for beat updates')
 
-  // Fetch current beat
-  const response = await fetch(`/api/storyteller/timeline?episodeId=${episodeId}`)
-  if (!response.ok) throw new Error(CascadeEditorError.FailedFetchBeats)
-
-  const { beats } = await response.json()
-  const beat = beats.find((b: any) => b.id === beatId)
+  const timeline = await fetchStorytellerTimeline(episodeId)
+  const beats = recordArrayFromJson(timeline.beats)
+  const beat = beats.find(row => readString(recordFromJson(row).id) === beatId)
 
   if (!beat) throw new Error(`Beat ${beatId} not found`)
 
-  // Apply changes
-  const updated = applyChangesToObject(beat, changes)
-
-  // Save updated beat
-  const saveResponse = await fetch(`/api/storyteller/timeline/${beatId}`, {
-    method: CascadeEditorHttpMethod.Patch,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updated),
-  })
-
-  if (!saveResponse.ok) throw new Error(CascadeEditorError.FailedSaveBeat)
+  const updated = applyChangesToObject(recordFromJson(beat), changes)
+  await patchBeat(beatId, updated)
 }
 
-/**
- * Update an episode with consistency fixes
- */
-async function updateEpisode(episodeId: string, changes: any[], _projectId: string): Promise<void> {
-  // Fetch current episode
-  const response = await fetch(`/api/storyteller/episodes/${episodeId}`)
-  if (!response.ok) throw new Error(CascadeEditorError.FailedFetchEpisode)
-
-  const episode = await response.json()
-
-  // Apply changes
-  const updated = applyChangesToObject(episode, changes)
-
-  // Save updated episode
-  const saveResponse = await fetch(`/api/storyteller/episodes/${episodeId}`, {
-    method: CascadeEditorHttpMethod.Patch,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updated),
-  })
-
-  if (!saveResponse.ok) throw new Error(CascadeEditorError.FailedSaveEpisode)
+async function updateEpisode(
+  episodeId: string,
+  changes: ConsistencyChange[],
+  _projectId: string
+): Promise<void> {
+  const episode = await fetchStorytellerEpisode(episodeId)
+  const updated = applyChangesToObject(recordFromJson(episode), changes)
+  await patchStorytellerEpisode(episodeId, updated)
 }
 
-/**
- * Update world rules with consistency fixes
- */
-async function updateWorldRules(changes: any[], projectId: string): Promise<void> {
-  // Fetch current series bible
-  const response = await fetch(`/api/storyteller/bible?projectId=${projectId}`)
-  if (!response.ok) throw new Error(CascadeEditorError.FailedFetchSeriesBible)
-
-  const bible = await response.json()
-
-  // Apply changes to world rules
+async function updateWorldRules(changes: ConsistencyChange[], projectId: string): Promise<void> {
+  const response = await fetchStorytellerBible(projectId)
+  const bible = recordFromJson(response.bible ?? response.seriesBible ?? response)
   const updated = applyChangesToObject(bible, changes)
-
-  // Save updated bible
-  const saveResponse = await fetch('/api/storyteller/bible', {
-    method: CascadeEditorHttpMethod.Put,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ projectId, bible: updated }),
-  })
-
-  if (!saveResponse.ok) throw new Error(CascadeEditorError.FailedSaveWorldRules)
+  await saveStorytellerBible({ projectId, bible: updated })
 }
 
-/**
- * Update episode premise with consistency fixes
- */
-async function updatePremise(changes: any[], _projectId: string, episodeId?: string): Promise<void> {
-  if (!episodeId) throw new Error(CascadeEditorError.EpisodeIdRequiredForPremise)
+async function updatePremise(
+  changes: ConsistencyChange[],
+  _projectId: string,
+  episodeId?: string
+): Promise<void> {
+  if (!episodeId) throw new Error('Episode ID required for premise updates')
 
-  // Fetch current plan
-  const response = await fetch(`/api/storyteller/plan?episodeId=${episodeId}`)
-  if (!response.ok) throw new Error(CascadeEditorError.FailedFetchPlan)
-
-  const plan = await response.json()
-
-  // Apply changes
+  const plan = await fetchStorytellerPlan(episodeId)
   const updated = applyChangesToObject(plan, changes)
-
-  // Save updated plan
-  const saveResponse = await fetch('/api/storyteller/plan', {
-    method: CascadeEditorHttpMethod.Post,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      episodeId,
-      ...updated,
-    }),
-  })
-
-  if (!saveResponse.ok) throw new Error(CascadeEditorError.FailedSavePremise)
+  await saveStorytellerPlan({ episodeId, ...updated })
 }
 
-/**
- * Apply changes to an object using JSON paths
- */
-function applyChangesToObject(obj: any, changes: any[]): any {
-  const result = JSON.parse(JSON.stringify(obj)) // Deep clone
+function applyChangesToObject(
+  obj: Record<string, unknown>,
+  changes: ConsistencyChange[]
+): Record<string, unknown> {
+  const result = structuredClone(obj)
 
   for (const change of changes) {
-    const { path, after } = change
-
-    // Use lodash set to handle nested paths
-    set(result, path, after)
+    set(result, change.path, change.after)
   }
 
   return result
 }
 
-/**
- * Revert a fix (for undo functionality)
- */
 export async function revertFix(
   fix: AppliedFix,
   projectId: string,
   episodeId?: string
 ): Promise<void> {
-  // Create reverse changes (swap before and after)
   const reverseChanges = fix.changes.map(change => ({
     ...change,
     after: change.before,
     before: change.after,
   }))
 
-  // Apply reverse changes
   await applyFix({ ...fix, changes: reverseChanges }, projectId, episodeId)
 }

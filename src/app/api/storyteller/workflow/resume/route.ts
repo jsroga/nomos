@@ -4,7 +4,7 @@ import { getMastraInstance } from '@/shared/agent-kernel'
 import {
   BEAT_DRAFT_WORKFLOW_ID,
   VERDICT_STEP_ID,
-} from '@/domains/storyteller/io/mastra-runtime'
+} from '@/domains/storyteller/core/io/mastra-runtime'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { MastraWorkflowStatus, QueryParam } from '@/shared/data/constants/protocol'

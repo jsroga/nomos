@@ -10,12 +10,16 @@
 
 import 'server-only'
 import { randomUUID } from 'node:crypto'
-import { ConsistencyCheckKind, ConsistencyService, type ContinuityIssue } from './ConsistencyService'
+import {
+  ConsistencyCheckKind,
+  runConsistencyCheck as runServiceConsistencyCheck,
+  type ContinuityIssue,
+} from './consistency-service'
 import type {
   ConsistencyCheckResult,
   ConsistencyType,
   Inconsistency,
-} from '@/domains/storyteller/core/types/ConsistencyTypes'
+} from '@/domains/storyteller/core/types/consistency-types'
 import {
   AffectedElementKind,
   ConsistencyCheckAdapterCopy,
@@ -60,7 +64,7 @@ export async function runConsistencyCheck(
   context: ConsistencyCheckContext,
   _triggerAction?: unknown
 ): Promise<ConsistencyCheckResult> {
-  const result = await ConsistencyService.runConsistencyCheck({
+  const result = await runServiceConsistencyCheck({
     projectId: context.projectId,
     episodeId: context.episodeId,
     beatIds: context.beatIds,

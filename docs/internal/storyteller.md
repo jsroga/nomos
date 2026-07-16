@@ -29,7 +29,7 @@ graph TD
 ```
 
 ### Agent Structure
-Agents are located in `src/domains/storyteller/agents/`.
+Agents are located in `src/domains/storyteller/ai/`.
 *   **Character Psychology**: Manages character creation, metrics, and relationships.
 *   **Writer**: Handles scene writing and screenplay formatting.
 *   **Plot Architect**: Structures beats and story arcs.

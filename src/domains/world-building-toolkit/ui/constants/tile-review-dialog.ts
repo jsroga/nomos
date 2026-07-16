@@ -3,6 +3,8 @@ import { WorldGenReviewType } from './world-gen-page'
 
 export { DomEventType, KeyboardKey, WorldGenReviewType }
 
+export type TileReviewType = WorldGenReviewType
+
 export enum TileReviewDomEvent {
   MouseMove = 'mousemove',
   MouseUp = 'mouseup',

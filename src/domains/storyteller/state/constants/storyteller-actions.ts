@@ -1,7 +1,7 @@
 /** Storyteller actions hook wire values. */
 
 import { StorytellerActionPrefix } from '@/domains/storyteller/core/storyteller-page-wire'
-import { ActionType } from '@/domains/storyteller/core/types/Enums'
+import { ActionType } from '@/domains/storyteller/core/types/enums'
 import { ActionApiResultType, HttpMethod } from '@/shared/data/constants/protocol'
 
 export { ActionApiResultType as StorytellerActionResultType }

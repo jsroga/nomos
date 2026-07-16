@@ -21,7 +21,7 @@ const MentionsContext = createContext<MentionsContextValue | null>(null)
 
 import type { StorytellerCharacter } from '@/domains/storyteller/core/entities/character-wire'
 
-import type { BeatCard } from '@/domains/storyteller/core/types/StoryTypes'
+import type { BeatCard } from '@/domains/storyteller/core/types/story-types'
 
 interface MentionsProviderProps {
   projectId: string

@@ -35,10 +35,10 @@ export interface ActivityLogEntry {
   agent?: string
   content?: string
   toolName?: string
-  toolInput?: any
-  toolResult?: any
+  toolInput?: unknown
+  toolResult?: unknown
   timestamp: number
-  details?: any
+  details?: unknown
 }
 
 // Message types
@@ -66,11 +66,11 @@ export interface Message {
     thinking?: string
     thinkingEntries?: ThinkingEntry[]
     hasThinking?: boolean
-    citations?: any[]
-    [key: string]: any
+    citations?: unknown[]
+    [key: string]: unknown
   }
   /** Array of citations if grounded in sources */
-  citations?: any[]
+  citations?: unknown[]
 }
 
 // Agent Configuration
@@ -111,7 +111,7 @@ export type StreamEventType =
 
 export interface StreamEvent {
   type: StreamEventType
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface QuestionSession {

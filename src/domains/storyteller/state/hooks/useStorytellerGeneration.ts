@@ -2,10 +2,11 @@
 
 import { useEffect, useCallback, useRef } from 'react'
 import { ActionHistoryStatus, ActionType } from '@/domains/storyteller'
-import type { BeatCard as Beat } from '@/domains/storyteller/core/types/StoryTypes'
+import type { BeatCard as Beat } from '@/domains/storyteller/core/types/story-types'
 import { resolveEpisodeId } from '@/domains/storyteller/state/utils/episode-route'
-import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { readString, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { UrlScheme } from '@/shared/data/constants/protocol'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
@@ -13,7 +14,6 @@ import {
   StorytellerGenerationAlert,
   StorytellerGenerationFailLabel,
   StorytellerGenerationLog,
-  StorytellerHttpMethod,
   StorytellerLogMessage,
   StorytellerPosterThemeFallback,
   StorytellerPosterType,
@@ -26,7 +26,10 @@ import {
 import {
   PosterPersistField,
 } from '@/domains/storyteller/services/constants/poster-generation-service'
-import { UrlScheme } from '@/shared/data/constants/protocol'
+import {
+  patchStorytellerEpisode,
+  fetchStorytellerProjectOptional,
+} from '@/domains/storyteller/core/io/storyteller.api'
 import { BrowserStorageEventName } from '@/shared/chat/ui/constants/chat-interface'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 
@@ -51,11 +54,12 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
   useEffect(() => {
     // Only run if we have a project ID and haven't resumed for this project yet
     if (currentProject?.id && lastResumedProjectId.current !== currentProject.id) {
-      lastResumedProjectId.current = currentProject.id
+      const projectId = currentProject.id
+      lastResumedProjectId.current = projectId
 
       import('@/domains/storyteller').then(({ posterGenerationService }) =>
         posterGenerationService.resumePendingGenerations(
-          currentProject!.id,
+          projectId,
           async (url, episodeId, type) => {
             if (episodeId === currentEpisodeId) {
               if (type === StorytellerPosterType.Poster) {
@@ -72,11 +76,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
                 type === StorytellerPosterType.Poster
                   ? { [PosterPersistField.PosterUrl]: url }
                   : { [PosterPersistField.StoryboardUrl]: url }
-              await fetch(`/api/storyteller/episodes/${episodeId}`, {
-                method: StorytellerHttpMethod.Patch,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-              })
+              await patchStorytellerEpisode(episodeId, payload)
             } catch (e) {
               console.error(StorytellerLogMessage.FailedSaveResumedGeneration, e)
             }
@@ -133,10 +133,8 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
 
             if (episodeId) {
               try {
-                await fetch(`/api/storyteller/episodes/${episodeId}`, {
-                  method: StorytellerHttpMethod.Patch,
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ [PosterPersistField.StoryboardUrl]: url }),
+                await patchStorytellerEpisode(episodeId, {
+                  [PosterPersistField.StoryboardUrl]: url,
                 })
               } catch (e) {
                 console.error(StorytellerLogMessage.FailedSaveStoryboardUrl, e)
@@ -205,10 +203,8 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
 
             if (episodeId) {
               try {
-                await fetch(`/api/storyteller/episodes/${episodeId}`, {
-                  method: StorytellerHttpMethod.Patch,
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ [PosterPersistField.PosterUrl]: url }),
+                await patchStorytellerEpisode(episodeId, {
+                  [PosterPersistField.PosterUrl]: url,
                 })
               } catch (e) {
                 console.error(StorytellerLogMessage.FailedSavePosterUrl, e)
@@ -263,12 +259,13 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       await moodboardGenerationService.generate(projectId, [], undefined, {}, async () => {
         // Refetch project data when generation completes
         try {
-          const response = await fetch(`/api/storyteller/projects/${projectId}`)
-          if (response.ok) {
-            const data = await response.json()
-            const bible = data.seriesBible || data.series_bible
-            if (bible?.moodImages) {
-              setStoryPlan(prev => (prev ? { ...prev, moodImages: bible.moodImages } : prev))
+          const data = await fetchStorytellerProjectOptional(projectId)
+          if (data) {
+            const bible = recordFromJson(data.seriesBible ?? data.series_bible)
+            if (Array.isArray(bible.moodImages)) {
+              setStoryPlan(prev =>
+                prev ? { ...prev, moodImages: stringArrayFromJson(bible.moodImages) } : prev
+              )
               // Also update the store - get fresh reference from store
               const latestProject = useWorldStore.getState().currentProject
               if (latestProject) {
@@ -358,12 +355,13 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       }
 
       try {
-        const response = await fetch(`/api/storyteller/projects/${detail.projectId}`)
-        if (response.ok) {
-          const data = await response.json()
-          const bible = data.seriesBible || data.series_bible
-          if (bible?.moodImages) {
-            setStoryPlan(prev => (prev ? { ...prev, moodImages: bible.moodImages } : prev))
+        const data = await fetchStorytellerProjectOptional(detail.projectId)
+        if (data) {
+          const bible = recordFromJson(data.seriesBible ?? data.series_bible)
+          if (Array.isArray(bible.moodImages)) {
+            setStoryPlan(prev =>
+              prev ? { ...prev, moodImages: stringArrayFromJson(bible.moodImages) } : prev
+            )
           }
         }
       } catch (error) {

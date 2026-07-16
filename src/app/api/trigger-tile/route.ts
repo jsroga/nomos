@@ -30,7 +30,7 @@ export const dynamic = 'force-dynamic'
  * Trigger tile generation task
  */
 export const POST = withRateLimit(
-  withAuth<any>(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const payload = await request.json()
 
     if (

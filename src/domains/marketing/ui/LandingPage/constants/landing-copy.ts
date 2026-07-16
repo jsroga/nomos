@@ -1,4 +1,4 @@
-export const LANDING_SUBTITLES = [
+export const LANDING_SUBTITLES: readonly string[] = [
   'Play god. It’s cheaper than therapy.',
   'Your reality is boring. Make a new one.',
   'Build a world before this one ends.',
@@ -9,7 +9,7 @@ export const LANDING_SUBTITLES = [
   'The void is waiting for your input.',
   'Create something that outlives you.',
   'Sanity is optional here.',
-] as const
+]
 
 export enum LandingNavItem {
   Systems = 'SYSTEMS',
@@ -17,11 +17,11 @@ export enum LandingNavItem {
   Api = 'API',
 }
 
-export const LANDING_NAV_ITEMS = [
+export const LANDING_NAV_ITEMS: readonly LandingNavItem[] = [
   LandingNavItem.Systems,
   LandingNavItem.Docs,
   LandingNavItem.Api,
-] as const
+]
 
 export enum LandingExternalUrl {
   DocsReadme = 'https://github.com/jsroga/kurvitza#readme',

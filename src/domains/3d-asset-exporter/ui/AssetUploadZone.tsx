@@ -185,8 +185,10 @@ export const AssetUploadZone: React.FC<AssetUploadZoneProps> = ({
 
   const clearCompleted = () => {
     const completedAssetIds = files
-      .filter(f => f.status === AssetUploadStatus.Success && f.assetId)
-      .map(f => f.assetId!)
+      .filter((f): f is typeof f & { assetId: string } =>
+        f.status === AssetUploadStatus.Success && f.assetId !== undefined,
+      )
+      .map(f => f.assetId)
 
     if (onUploadComplete && completedAssetIds.length > 0) {
       onUploadComplete(completedAssetIds)

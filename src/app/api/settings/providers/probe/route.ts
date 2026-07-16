@@ -16,8 +16,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Agent } from '@mastra/core/agent'
 import { z } from 'zod'
 import { requireAuth, withRateLimit } from '@/shared/data/api-utils'
-import { CHAT_MODELS } from '@/domains/storyteller/config/constants/ChatModelCatalog'
-import { resolveStorytellerModel } from '@/domains/storyteller/config/constants/ModelConfig'
+import { CHAT_MODELS } from '@/domains/storyteller/config/constants/chat-model-catalog'
+import { resolveStorytellerModel } from '@/domains/storyteller/config/constants/model-config'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 // Node.js Runtime required for Mastra core dependencies

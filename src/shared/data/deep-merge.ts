@@ -5,6 +5,8 @@
  * - `deepMerge` / `smartMergeArray` — nested arrays merge by id/name/rule/title when present.
  */
 
+import { produce } from 'immer'
+
 import { isPlainObject, recordFromJson } from './json-guards'
 import { DEEP_MERGE_IDENTIFIER_KEYS } from '@/shared/data/constants/deep-merge'
 
@@ -61,46 +63,42 @@ export function deepMergeRecords(
   if (!source) return target
   if (!target) return { ...source }
 
-  const result = { ...target }
+  return produce(target, draft => {
+    for (const [key, sourceValue] of Object.entries(source)) {
+      if (sourceValue === null || sourceValue === undefined) continue
 
-  for (const [key, sourceValue] of Object.entries(source)) {
-    if (sourceValue === null || sourceValue === undefined) continue
+      const targetValue = draft[key]
 
-    const targetValue = result[key]
-
-    if (Array.isArray(sourceValue)) {
-      result[key] = sourceValue
-    } else if (isPlainObject(sourceValue) && isPlainObject(targetValue)) {
-      result[key] = deepMergeRecords(targetValue, sourceValue)
-    } else {
-      result[key] = sourceValue
+      if (Array.isArray(sourceValue)) {
+        draft[key] = sourceValue
+      } else if (isPlainObject(sourceValue) && isPlainObject(targetValue)) {
+        draft[key] = deepMergeRecords(recordFromJson(targetValue), recordFromJson(sourceValue))
+      } else {
+        draft[key] = sourceValue
+      }
     }
-  }
-
-  return result
+  })
 }
 
 function mergeWithSmartArrays(
   target: Record<string, unknown>,
   source: Record<string, unknown>
 ): Record<string, unknown> {
-  const result = { ...target }
+  return produce(target, draft => {
+    for (const [key, sourceVal] of Object.entries(source)) {
+      if (sourceVal === undefined || sourceVal === null) continue
 
-  for (const [key, sourceVal] of Object.entries(source)) {
-    if (sourceVal === undefined || sourceVal === null) continue
+      const targetVal = draft[key]
 
-    const targetVal = result[key]
-
-    if (Array.isArray(sourceVal) && Array.isArray(targetVal)) {
-      result[key] = smartMergeArray(targetVal, sourceVal)
-    } else if (isPlainObject(sourceVal) && isPlainObject(targetVal)) {
-      result[key] = mergeWithSmartArrays(targetVal, sourceVal)
-    } else {
-      result[key] = sourceVal
+      if (Array.isArray(sourceVal) && Array.isArray(targetVal)) {
+        draft[key] = smartMergeArray(targetVal, sourceVal)
+      } else if (isPlainObject(sourceVal) && isPlainObject(targetVal)) {
+        draft[key] = mergeWithSmartArrays(recordFromJson(targetVal), recordFromJson(sourceVal))
+      } else {
+        draft[key] = sourceVal
+      }
     }
-  }
-
-  return result
+  })
 }
 
 export function deepMerge<T extends object>(target: T, source: Partial<T>): T

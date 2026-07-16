@@ -14,7 +14,7 @@ import {
   MessageGroupType,
 } from '@/shared/chat/ui/constants/agent-log'
 import { ChatMessageRole } from '@/shared/chat/core/constants/chat-messages'
-import { QuestionUrgency } from '@/domains/storyteller/core/types/Enums'
+import { QuestionUrgency } from '@/domains/storyteller/core/types/enums'
 
 export {
   AGENT_LOG_DEFAULT_COLOR,

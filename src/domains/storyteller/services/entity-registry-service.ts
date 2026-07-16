@@ -26,11 +26,11 @@ import {
 } from '@/domains/storyteller/core/entities/entity-type-guards'
 
 // Re-export types from reference-parser for convenience
-export { ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/ReferenceParser'
+export { ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/reference-parser'
 
-export type { EntityType } from '@/domains/storyteller/core/entities/ReferenceParser'
+export type { EntityType } from '@/domains/storyteller/core/entities/reference-parser'
 
-import { EntityType, ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/ReferenceParser'
+import { EntityType, ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/reference-parser'
 import {
   EntityRegistryLog,
   EntityRegistryNote,
@@ -165,7 +165,7 @@ class EntityRegistryService {
     if (!this.projectCaches.has(input.projectId)) {
       this.projectCaches.set(input.projectId, new Set())
     }
-    this.projectCaches.get(input.projectId)!.add(refId)
+    this.projectCaches.get(input.projectId)?.add(refId)
 
     // Persist to DB (async, non-blocking)
     this.persistEntity(entity).catch(err => {
@@ -206,7 +206,7 @@ class EntityRegistryService {
     if (!this.projectCaches.has(input.projectId)) {
       this.projectCaches.set(input.projectId, new Set())
     }
-    this.projectCaches.get(input.projectId)!.add(refId)
+    this.projectCaches.get(input.projectId)?.add(refId)
 
     // Persist to DB (async, non-blocking)
     this.persistEntity(entity).catch(err => {
@@ -398,7 +398,7 @@ class EntityRegistryService {
         if (!this.projectCaches.has(projectId)) {
           this.projectCaches.set(projectId, new Set())
         }
-        this.projectCaches.get(projectId)!.add(entity.id)
+        this.projectCaches.get(projectId)?.add(entity.id)
       }
 
       return entities
@@ -478,7 +478,7 @@ class EntityRegistryService {
   async syncFromSource(
     projectId: string,
     type: EntityType,
-    entities: Array<{ id: string; name: string; description?: string;[key: string]: any }>
+    entities: Array<{ id: string; name: string; description?: string;[key: string]: unknown }>
   ): Promise<void> {
     for (const entity of entities) {
       const existing = await this.findByNameAndType(projectId, entity.name, type)
@@ -545,7 +545,7 @@ class EntityRegistryService {
    */
   private async generateEmbedding(entity: EntityReference): Promise<void> {
     try {
-      const { entityGraphService } = await import('./EntityGraphService')
+      const { entityGraphService } = await import('./entity-graph-service')
 
       // Build embedding content from entity name, type, description, and key metadata
       const metaParts: string[] = []
