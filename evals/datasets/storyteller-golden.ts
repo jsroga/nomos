@@ -73,18 +73,20 @@ Kael did not look at the parchment. He watched her left hand — the one that tr
     },
   },
   {
-    id: 'magic-mid-01',
+    // Replaces the deleted stasis exemplar `magic-mid-01` (PLAN-V2 5.5a): the
+    // same prompt now resolves with an irreversible act instead of a meaningful
+    // pause, so "competent magic" no longer rewards inaction dressed as drama.
+    id: 'magic-motion-01',
     input: {
       message: 'Two siblings argue about selling the family farm',
       phase: 'writing',
     },
-    referenceOutput: `"You always do this," Mara said, not looking up from the ledger.
-"Do what?"
-"Make it sound like the land is the only thing that ever mattered."
-The wind rattled the screen door. Neither of them moved to fix it.`,
+    referenceOutput: `"You always do this," Mara said, and slid the deed across the ledger to his side of the table.
+"Sign it, or don't. I already called the buyer."
+Tomas looked at the pen a long moment. Then he tore the deed down the middle and fed both halves to the stove.`,
     metadata: {
       category: 'magic',
-      description: 'Competent scene with some specificity',
+      description: 'Specific voices resolving on an irreversible act, not a held pause',
       scorers: ['magic'],
     },
   },
@@ -344,6 +346,56 @@ The wind rattled the screen door. Neither of them moved to fix it.`,
       category: 'prose-craft',
       description: 'Wall-to-wall stock phrases — should score low',
       scorers: ['prose-craft'],
+    },
+  },
+
+  // --- STORY-MOTION (stasis) — PLAN-V2 5.5b: the 5.4 scorer had no golden
+  // coverage. One action-forward exemplar (high) and two stasis exemplars whose
+  // static endings must hard-zero regardless of prose polish. ---
+  {
+    id: 'story-motion-strong-01',
+    input: {
+      message: 'A courier decides whether to deliver a sealed order',
+      phase: 'writing',
+    },
+    referenceOutput: `The courier weighed the sealed order, then held its corner to the lamp until the wax ran and the paper caught.
+"Tell the general it never arrived," she said, and carried the ash out into the rain.
+By the next morning the garrison had marched the other way.`,
+    metadata: {
+      category: 'magic',
+      description: 'Irreversible act (order burned) resolving on visible motion (garrison marches) — should score high',
+      scorers: ['story-motion'],
+    },
+  },
+  {
+    id: 'story-motion-stasis-01',
+    input: {
+      message: 'Two siblings argue about selling the family farm',
+      phase: 'writing',
+    },
+    referenceOutput: `"You always do this," Mara said, not looking up from the ledger.
+"Do what?"
+"Make it sound like the land is the only thing that ever mattered."
+The wind rattled the screen door. Neither of them moved to fix it.`,
+    metadata: {
+      category: 'magic',
+      description: 'Writerly but nothing changes; ends on the textbook stasis line — must hard-zero',
+      scorers: ['story-motion'],
+    },
+  },
+  {
+    id: 'story-motion-stasis-02',
+    input: {
+      message: 'A man receives news he has been dreading',
+      phase: 'writing',
+    },
+    referenceOutput: `He read the letter twice, then set it face-down on the table.
+Outside, the streetlight buzzed and steadied.
+There was nothing left to say that the silence had not already said better, so he let the silence say it.`,
+    metadata: {
+      category: 'magic',
+      description: 'Inaction dressed as drama; final beat is reflection, not change — must hard-zero',
+      scorers: ['story-motion'],
     },
   },
 ]

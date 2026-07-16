@@ -357,6 +357,15 @@ module.exports = [
     },
   },
   {
+    // Eval golden datasets: the prompts, reference prose, and descriptions ARE
+    // the artifact (same class as test fixtures and `-scorer.ts` `.describe()`
+    // text). Row ids/categories read as data, not runtime wire values.
+    files: ['evals/datasets/**/*.{ts,tsx}'],
+    rules: {
+      'local/no-magic-string': 'off',
+    },
+  },
+  {
     files: ['src/**/*.{ts,tsx}'],
     ignores: [
       'src/domains/**',
