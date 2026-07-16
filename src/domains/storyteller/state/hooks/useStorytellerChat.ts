@@ -14,7 +14,12 @@ import { DEFAULT_CHAT_MODEL, getChatModelOption } from '@/domains/storyteller/co
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { clearFetchCache } from '@/shared/data/fetch-cache'
-import { recordFromJson, readString } from '@/shared/data/json-guards'
+import {
+  recordFromJson,
+  readString,
+  readNumber,
+  stringArrayFromJson,
+} from '@/shared/data/json-guards'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { storytellerCharacterFromRow } from '@/domains/storyteller/core/entities/character-wire'
 import { fetchStorytellerCharacters } from '@/domains/storyteller/core/io/character.api'
@@ -37,6 +42,20 @@ import {
   StorytellerThreadId,
 } from '@/domains/storyteller/state/constants/storyteller-chat'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
+
+/** Map a chat message to the OpenAI-style role/content/name shape sent to the model. */
+function serializeChatMessage(m: Message) {
+  return {
+    role:
+      m.type === ChatMessageRole.Human || m.sender === StorytellerMessageRole.User
+        ? OpenAiChatRole.User
+        : OpenAiChatRole.Assistant,
+    content: m.content,
+    name: m.sender,
+  }
+}
+
+type SerializedChatMessage = ReturnType<typeof serializeChatMessage>
 
 export function useStorytellerChat(core: StorytellerWorkspaceCore) {
   const {
@@ -168,6 +187,9 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
                       return rest
                     })
                     // Add to history
+                    // NOTE: entries pushed here use a legacy {type,payload} shape
+                    // that diverges from ActionHistoryEntry; the `any` bridges that
+                    // gap. Reconciling the shape is a separate bug-fix.
                     setActionHistory((prevHistory: any) => [
                       {
                         id: `${Date.now()}`,
@@ -389,24 +411,19 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
     [messages, syncActionStatus, executeAction]
   )
 
-  const serializedMessagesRef = useRef<{ src: Message[]; mapped: any[] } | null>(null)
+  const serializedMessagesRef = useRef<{ src: Message[]; mapped: SerializedChatMessage[] } | null>(
+    null
+  )
 
   const getSerializedMessages = useCallback((msgs: Message[]) => {
     const cached = serializedMessagesRef.current
     if (cached && cached.src === msgs) return cached.mapped
-    const mapped = msgs.map(m => ({
-      role:
-        m.type === ChatMessageRole.Human || m.sender === StorytellerMessageRole.User
-          ? OpenAiChatRole.User
-          : OpenAiChatRole.Assistant,
-      content: m.content,
-      name: m.sender,
-    }))
+    const mapped = msgs.map(serializeChatMessage)
     serializedMessagesRef.current = { src: msgs, mapped }
     return mapped
   }, [])
 
-  const seriesBibleRef = useRef<any>(null)
+  const seriesBibleRef = useRef<Record<string, unknown> | null>(null)
   const seriesBibleKeyRef = useRef<string | undefined>(undefined)
 
   const getSeriesBible = useCallback(() => {
@@ -475,16 +492,16 @@ export function useStorytellerChat(core: StorytellerWorkspaceCore) {
       const serializedMessages = getSerializedMessages(messages)
       const seriesBible = getSeriesBible()
 
-      const charactersSummary = characters.map((c: any) => ({
+      const charactersSummary = characters.map(c => ({
         characterId: c.id,
         name: c.name,
-        currentGoals: c.psychology?.goals || c.currentGoals || [],
-        fears: c.psychology?.fears || c.fears || [],
-        selfDelusion: c.psychology?.selfDelusion || c.selfDelusion || '',
-        actualMotivation: c.psychology?.actualMotivation || c.actualMotivation || '',
+        currentGoals: stringArrayFromJson(c.psychology?.goals),
+        fears: stringArrayFromJson(c.psychology?.fears),
+        selfDelusion: readString(c.psychology?.selfDelusion) ?? '',
+        actualMotivation: readString(c.psychology?.actualMotivation) ?? '',
         transformationProgress: c.transformation || 0,
-        knowledgeState: c.knowledgeState || [],
-        stressLevel: c.stress || c.stressLevel || 30,
+        knowledgeState: stringArrayFromJson(c.psychology?.knowledgeState),
+        stressLevel: readNumber(c.psychology?.stress) ?? 30,
       }))
 
       await sendMessage('/api/storyteller/chat/stream', {

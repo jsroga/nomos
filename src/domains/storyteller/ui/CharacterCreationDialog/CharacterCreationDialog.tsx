@@ -43,7 +43,7 @@ interface InitialCharacterData {
   motivation?: string
   fatalFlaw?: string
   secrets?: string
-  psychology?: Record<string, any>
+  psychology?: Record<string, unknown>
   // Metrics
   valence?: number
   arousal?: number
@@ -59,8 +59,8 @@ interface InitialCharacterData {
 interface CharacterCreationDialogProps {
   isOpen: boolean
   onClose: () => void
-  onCreate: (character: any) => void | Promise<void>
-  onUpdate?: (characterId: string, updates: any) => void | Promise<void> // For editing
+  onCreate: (character: Record<string, unknown>) => void | Promise<void>
+  onUpdate?: (characterId: string, updates: Record<string, unknown>) => void | Promise<void> // For editing
   projectId?: string // Optional: for project-scoped style references
   initialData?: InitialCharacterData // Optional: for pre-filling from key player or editing
   mode?: CharacterDialogMode
@@ -156,10 +156,10 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
       if (initialData.voiceSignature) setVoiceSignature(initialData.voiceSignature)
       // Load psychology-stored fields
       const psych = initialData.psychology || {}
-      setArchetype(initialData.archetype || psych.archetype || '')
-      setMotivation(initialData.motivation || psych.actualMotivation || '')
-      setFatalFlaw(initialData.fatalFlaw || psych.fatalFlaw || '')
-      setSecrets(initialData.secrets || psych.secrets || '')
+      setArchetype(initialData.archetype || readString(psych.archetype) || '')
+      setMotivation(initialData.motivation || readString(psych.actualMotivation) || '')
+      setFatalFlaw(initialData.fatalFlaw || readString(psych.fatalFlaw) || '')
+      setSecrets(initialData.secrets || readString(psych.secrets) || '')
 
       // Removed problematic cross-character state wiping logic
 
