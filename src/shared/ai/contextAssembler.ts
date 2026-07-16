@@ -181,6 +181,90 @@ function assembleViaWorker(
 // Main-thread fallback (preserved verbatim for reliability)
 // ---------------------------------------------------------------------------
 
+const TILE_SIZE = 512
+const CONTEXT_SIZE = 256
+
+type NeighborCorner = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
+type NeighborEdge = 'top' | 'bottom' | 'left' | 'right'
+type NeighborDirection = 'up' | 'down' | 'left' | 'right'
+interface ScaledCrop {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+function getScaledCornerCrop(img: HTMLImageElement, corner: NeighborCorner): ScaledCrop {
+  const ratio = CONTEXT_SIZE / TILE_SIZE
+  const { width: w, height: h } = img
+  switch (corner) {
+    case 'topLeft':
+      return { x: 0, y: 0, w: w * ratio, h: h * ratio }
+    case 'topRight':
+      return { x: w * (1 - ratio), y: 0, w: w * ratio, h: h * ratio }
+    case 'bottomLeft':
+      return { x: 0, y: h * (1 - ratio), w: w * ratio, h: h * ratio }
+    case 'bottomRight':
+      return { x: w * (1 - ratio), y: h * (1 - ratio), w: w * ratio, h: h * ratio }
+  }
+}
+
+function getScaledEdgeCrop(img: HTMLImageElement, edge: NeighborEdge): ScaledCrop {
+  const ratio = CONTEXT_SIZE / TILE_SIZE
+  const { width: w, height: h } = img
+  switch (edge) {
+    case 'top':
+      return { x: 0, y: 0, w, h: h * ratio }
+    case 'bottom':
+      return { x: 0, y: h * (1 - ratio), w, h: h * ratio }
+    case 'left':
+      return { x: 0, y: 0, w: w * ratio, h }
+    case 'right':
+      return { x: w * (1 - ratio), y: 0, w: w * ratio, h }
+  }
+}
+
+type SeamNeighbor = TileContext['neighbors']['up']
+type DrawSmartCorner = (
+  neighbor: SeamNeighbor,
+  edge: NeighborEdge,
+  sourceHalf: 'start' | 'end',
+  destX: number,
+  destY: number
+) => Promise<void>
+
+/**
+ * Fill the diagonal corners of a seam from the priority edges when the true
+ * corner tile is absent (smartSeamContext only). Extracted from the main
+ * assembler so its two mode branches don't inflate that function's complexity.
+ */
+async function applySmartSeamCorners(params: {
+  mode: ContextFramingStrategy['mode']
+  draw: DrawSmartCorner
+  corners: Record<NeighborCorner, SeamNeighbor>
+  edges: Record<NeighborDirection, SeamNeighbor>
+  targetX: number
+  targetY: number
+}): Promise<void> {
+  const { mode, draw, corners, edges, targetX, targetY } = params
+  const farX = targetX + TILE_SIZE
+  const farY = targetY + TILE_SIZE
+
+  if (mode === 'horizontal_priority') {
+    if (!corners.topLeft?.imageUrl) await draw(edges.left, 'right', 'start', 0, 0)
+    if (!corners.bottomLeft?.imageUrl) await draw(edges.left, 'right', 'end', 0, farY)
+    if (!corners.topRight?.imageUrl) await draw(edges.right, 'left', 'start', farX, 0)
+    if (!corners.bottomRight?.imageUrl) await draw(edges.right, 'left', 'end', farX, farY)
+  }
+
+  if (mode === 'vertical_priority') {
+    if (!corners.topLeft?.imageUrl) await draw(edges.up, 'bottom', 'start', 0, 0)
+    if (!corners.topRight?.imageUrl) await draw(edges.up, 'bottom', 'end', farX, 0)
+    if (!corners.bottomLeft?.imageUrl) await draw(edges.down, 'top', 'start', 0, farY)
+    if (!corners.bottomRight?.imageUrl) await draw(edges.down, 'top', 'end', farX, farY)
+  }
+}
+
 async function assembleOnMainThread(
   context: TileContext,
   size: number,
@@ -195,8 +279,6 @@ async function assembleOnMainThread(
   ctx.fillStyle = '#808080'
   ctx.fillRect(0, 0, size, size)
 
-  const TILE_SIZE = 512
-  const CONTEXT_SIZE = 256
   const TARGET_X = (size - TILE_SIZE) / 2
   const TARGET_Y = (size - TILE_SIZE) / 2
 
@@ -212,28 +294,6 @@ async function assembleOnMainThread(
       img.onerror = reject
       img.src = src
     })
-
-  const getScaledCornerCrop = (img: HTMLImageElement, corner: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight') => {
-    const ratio = CONTEXT_SIZE / TILE_SIZE
-    const { width: w, height: h } = img
-    switch (corner) {
-      case 'topLeft': return { x: 0, y: 0, w: w * ratio, h: h * ratio }
-      case 'topRight': return { x: w * (1 - ratio), y: 0, w: w * ratio, h: h * ratio }
-      case 'bottomLeft': return { x: 0, y: h * (1 - ratio), w: w * ratio, h: h * ratio }
-      case 'bottomRight': return { x: w * (1 - ratio), y: h * (1 - ratio), w: w * ratio, h: h * ratio }
-    }
-  }
-
-  const getScaledEdgeCrop = (img: HTMLImageElement, edge: 'top' | 'bottom' | 'left' | 'right') => {
-    const ratio = CONTEXT_SIZE / TILE_SIZE
-    const { width: w, height: h } = img
-    switch (edge) {
-      case 'top': return { x: 0, y: 0, w, h: h * ratio }
-      case 'bottom': return { x: 0, y: h * (1 - ratio), w, h: h * ratio }
-      case 'left': return { x: 0, y: 0, w: w * ratio, h }
-      case 'right': return { x: w * (1 - ratio), y: 0, w: w * ratio, h }
-    }
-  }
 
   const { up, down, left, right, topLeft, topRight, bottomLeft, bottomRight } = context.neighbors
   let directNeighborCount = 0
@@ -314,43 +374,14 @@ async function assembleOnMainThread(
     } catch {}
   }
 
-  if (strategy.mode === 'horizontal_priority') {
-    if (!topLeft?.imageUrl) await drawSmartCornerFromEdge(left, 'right', 'start', 0, 0)
-    if (!bottomLeft?.imageUrl) {
-      await drawSmartCornerFromEdge(left, 'right', 'end', 0, TARGET_Y + TILE_SIZE)
-    }
-    if (!topRight?.imageUrl) {
-      await drawSmartCornerFromEdge(right, 'left', 'start', TARGET_X + TILE_SIZE, 0)
-    }
-    if (!bottomRight?.imageUrl) {
-      await drawSmartCornerFromEdge(
-        right,
-        'left',
-        'end',
-        TARGET_X + TILE_SIZE,
-        TARGET_Y + TILE_SIZE
-      )
-    }
-  }
-
-  if (strategy.mode === 'vertical_priority') {
-    if (!topLeft?.imageUrl) await drawSmartCornerFromEdge(up, 'bottom', 'start', 0, 0)
-    if (!topRight?.imageUrl) {
-      await drawSmartCornerFromEdge(up, 'bottom', 'end', TARGET_X + TILE_SIZE, 0)
-    }
-    if (!bottomLeft?.imageUrl) {
-      await drawSmartCornerFromEdge(down, 'top', 'start', 0, TARGET_Y + TILE_SIZE)
-    }
-    if (!bottomRight?.imageUrl) {
-      await drawSmartCornerFromEdge(
-        down,
-        'top',
-        'end',
-        TARGET_X + TILE_SIZE,
-        TARGET_Y + TILE_SIZE
-      )
-    }
-  }
+  await applySmartSeamCorners({
+    mode: strategy.mode,
+    draw: drawSmartCornerFromEdge,
+    corners: { topLeft, topRight, bottomLeft, bottomRight },
+    edges: { up, down, left, right },
+    targetX: TARGET_X,
+    targetY: TARGET_Y,
+  })
 
   // In masked flows the center should stay visually neutral; the mask defines the edit area.
   ctx.fillStyle = '#808080'
