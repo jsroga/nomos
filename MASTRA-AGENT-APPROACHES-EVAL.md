@@ -154,3 +154,25 @@
 ---
 
 *Prereqs we already satisfy: Postgres store, memory‑backed threads, judge models, SSE frame contract, native Observability. New infra only if we choose Redis (durable multi‑process) or Inngest (prod retries).*
+
+---
+
+## 8. Long‑running mechanism ownership (decision needed before any default‑on)
+
+We now have **three** long‑running mechanisms in the tree, all flagged off:
+
+| Mechanism | Gates | Flag | Owns |
+|---|---|---|---|
+| **Workflow suspend/resume** (`beat-draft-workflow`) | the **editorial verdict** (approve/reject a draft) | — (always on inside the pipeline) | *a decision inside one run* |
+| **AgentController** (Phase 4) | **tools + modes** (plan‑first: reads free, mutations need an approved plan) | `STORYTELLER_CONTROLLER=1` | *what the agent may do next* |
+| **Durable + goals** (this work) | **loop continuation** (keep drafting until the objective is judged done) | `STORYTELLER_AUTONOMOUS=1` | *when the whole run is finished* |
+
+**They compose cleanly** because they gate **different** things (a run's decision vs. the agent's capabilities vs. the loop's termination). The risk is only if two of them try to own the **same** gate.
+
+**Recommended ownership (proposed):**
+- **Editorial verdict → stays the workflow suspend.** It is a decision *inside* a durable run; the beat‑draft workflow already models it and the resume route works. Do **not** move it onto AgentController tool‑approval or a durable `requireToolApproval` — that would double‑gate the same decision.
+- **Plan‑first mutation gate → AgentController.** It is the only mechanism that hides mutating tools until a plan is approved. Keep it for interactive chat.
+- **Autonomous termination → durable goals.** Only for the *autonomous* (non‑interactive) drafting flow; the goal judge decides "done", the workflow still owns each draft's verdict *when `autoApprove` is off*. For the autonomous loop, `autoApprove: true` on the beat‑draft workflow (batch mode) so the **goal judge**, not a human, is the loop's stopping authority.
+
+**Net rule:** one gate, one owner — *verdict = workflow*, *capability = controller*, *termination = goal*. Ship them independently; never stack two on the verdict.
+
