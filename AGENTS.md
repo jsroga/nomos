@@ -28,15 +28,16 @@ The dark-factory execute loop has three interchangeable runners that share the *
 |---------|----------|
 | Mastra instance | `src/mastra.ts` (Studio CLI canonical export), `src/shared/agent-kernel/MastraInstance.ts` (app) |
 | CLI shim | `src/mastra/index.ts` — 2-line re-export of `src/mastra.ts`; exists only because `mastra dev/build` resolves `src/mastra/index.ts`. Keep both; do not add code here. |
+| File-based prompts | `src/mastra/agents/<agent-id>/instructions.md` — static base prompts (Mastra convention), loaded by code-based agents via `loadAgentInstructions` |
 | Agents | `src/domains/*/ai/agents/` (implementations) inside `src/domains/*/ai/` (Mastra layer — server-only; see `docs/unified/ARCHITECTURE.md` §4; enforced via `import '@/shared/data/server-guard'`, NOT the `server-only` package; pure schema modules allowlisted) |
 | Agent registration | `src/shared/agent-kernel/mastra/runtime-registry.ts` (domains register at import via `core/io/mastra-runtime.ts`; shared never imports domains) |
 | AgentController | `@mastra/core/agent-controller` — sessions, modes, plan→build gate (see "Plan-first agents" below) |
 | Tools | `src/domains/*/ai/tools`, `src/shared/agent-kernel/mastra/tools/` (bundler-safe Studio stubs) |
 | Models | `src/shared/agent-kernel/models.ts` (kernel/judging), domain `config/ModelConfig.ts` (`resolveRoleModel` role slots) |
 | Memory | `@mastra/memory` + `PostgresStore` via shared storage |
-| Observability | `@mastra/observability`, `src/shared/observability/observability.ts` |
+| Observability | `@mastra/observability` registry (`create-mastra`) + `tracingOptions`; real spans via `src/shared/observability/mastra-tracing.ts` (`withMastraSpan`); `observability.ts` = sanitizers only |
 | Evals / scorers | `@mastra/core/evals` `createScorer`, `src/shared/agent-kernel/scorers/` + domain deterministic scorers unioned in `evals/run.ts` |
-| Prompts | `src/shared/agent-kernel/prompts/` (repository + core prompts), domain `prompts/` |
+| Prompts | `src/shared/agent-kernel/prompts/` (repository + core prompts), domain `prompts/`; **static agent prompts** → `src/mastra/agents/<id>/instructions.md` (file-based, via `loadAgentInstructions`) |
 
 ## Tool pattern
 
@@ -54,9 +55,13 @@ Delegate business logic to `src/services/*` when it exists. Tool `id` is snake_c
 
 ## Agent pattern
 
-Register through the central Mastra instance so storage, workspace, and tracing are shared. Wrap runs in `withSpan` where the domain already does. Bound memory (`lastMessages: 10` or similar).
+Register through the central Mastra instance so storage, workspace, and tracing are shared. Bound memory (`lastMessages: 10` or similar). Models and instructions are usually **dynamic** — `model: () => resolveRoleModel(role)` (role matrix + picker override) and `instructions: () => buildPrompt(runtimeInputs)`; keep them functions, don't flatten to statics.
 
 Subagents → `agents` config (`agent-<key>` tools). Mastra workflows ≠ Fabro workflows (`.fabro/workflows/execute/`).
+
+**Observability (into Mastra, not custom):** agent/workflow spans emit through the native `Observability` registry (`create-mastra`) + `tracingOptions: { traceId, parentSpanId }` on `agent.generate/stream`. Wrap a named operation span with **`withMastraSpan`** (`@/shared/observability/mastra-tracing`) — a real `getOrCreateSpan` + `executeWithContext` span; pass its `spanId` as the generate `parentSpanId` to nest explicitly. The old `withSpan` no-op shim is gone; `shared/observability/observability.ts` keeps only the sanitizers.
+
+**File-based prompts (hybrid, static agents only):** an agent whose base prompt is **static** puts it in `src/mastra/agents/<agent-id>/instructions.md` (Mastra convention — editable in Studio / by non-engineers) and loads it via `loadAgentInstructions(agentId)` (`@/shared/agent-kernel/mastra`); code appends the dynamic parts. `next.config` `outputFileTracingIncludes` ships the `.md` with the build. Used by the critics + Muse. Agents with **runtime-injected** prompts (chat adapter, author) stay code-based. See `MASTRA-AGENT-APPROACHES-EVAL.md`.
 
 ## Plan-first agents (AgentController)
 
@@ -71,6 +76,17 @@ Mastra supports forcing an agent to **plan before it builds** — natively, no c
 When to use **workflow suspend/resume instead**: approvals that must survive restarts and arrive out-of-band (e.g. the beat-draft editorial verdict) belong in a Mastra **workflow** `suspendSchema`/`resumeSchema` step — durable snapshot in Postgres, resumable from any surface. Controller modes gate *what the agent may do next*; workflow suspend gates *a specific decision inside a run*. They compose.
 
 Docs: `mastra.ai/docs/agent-controller/{overview,session,modes,tool-approvals}.md`, `mastra.ai/docs/workflows/{suspend-and-resume,human-in-the-loop}.md`. The pinned local types are authoritative: `node_modules/@mastra/core/dist/agent-controller/types.d.ts`.
+
+## Long-running & autonomous (durable + goals)
+
+For a loop that keeps working toward an objective (not one request/response):
+
+- **Goals** — `Agent` config `goal: { judge: () => resolveRoleModel('critic'), maxRuns, prompt }` + `agent.setObjective(objective, { threadId, resourceId })`. A standing thread-scoped objective is judged after each iteration by the judge model until satisfied or the budget is spent. Needs storage + a memory-backed thread (both already registered). Emits `goal` stream chunks (`GoalEvaluationPayload`).
+- **Durable agents** — `createDurableAgent({ agent })` (`@mastra/core/agent/durable`) runs the loop inside a workflow with reconnect (`observe(runId)`). In-process cache for dev; `RedisServerCache` for multi-process. Its `fullStream` is the same chunk format as `agent.stream()`.
+- **Storyteller reference:** `ai/agents/AutonomousAuthor` + `startAutonomousEpisodeDraft` (`core/io/mastra-runtime`), flagged `STORYTELLER_AUTONOMOUS=1`, mapped to the frozen SSE frames.
+- **One gate, one owner** (three long-running mechanisms coexist): *editorial verdict = workflow suspend · capability/plan-first = AgentController · loop termination = goal*. Never stack two on the same gate. See `MASTRA-AGENT-APPROACHES-EVAL.md` §8.
+
+Docs: `mastra.ai/docs/long-running-agents/{durable-agents,goals}.md`.
 
 ## Don't
 

@@ -124,7 +124,7 @@ src/
 │   ├─ jobs/                 # useJob hook, Job types, Trigger Realtime client
 │   ├─ data/                 # api-utils, queries, EntitiesService, utils
 │   ├─ auth/                 # requireAuth, getUserSession
-│   ├─ observability/        # withSpan, Langfuse/OTEL wiring
+│   ├─ observability/        # Mastra AI tracing: withMastraSpan (real spans) + sanitizers (Langfuse dropped)
 │   └─ errors/               # AppError, error→HTTP/SSE mappers, useErrorStore
 ├─ components/ui/            # Radix + CVA design system (shared primitives) — unchanged
 ├─ db/                       # Drizzle: single schema source of truth + client
