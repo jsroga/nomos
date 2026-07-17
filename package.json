@@ -140,7 +140,7 @@
     "eval:dashboard": "npx tsx evals/report/generate.ts && open evals/reports/latest.html",
     "test:unit": "vitest run",
     "test:e2e": "npx tsx scripts/run-e2e.ts",
-    "lint": "eslint .",
+    "lint": "node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js .",
     "lint:fix": "eslint . --fix",
     "lint:file": "eslint --max-warnings 0",
     "qualitygate:file": "node scripts/qualitygate.mjs file",
