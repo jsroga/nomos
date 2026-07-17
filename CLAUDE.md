@@ -125,7 +125,7 @@ npm run qualitygate:tsc -- --changed
 
 ```bash
 npm run typecheck          # full tsc + qualitygate:metrics
-npm run lint
+npm run lint               # eslint . — 8 GB heap (was OOMing without it); src is error-clean
 npm run test:unit
 ```
 
