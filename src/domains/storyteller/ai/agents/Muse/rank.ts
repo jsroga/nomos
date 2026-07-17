@@ -1,6 +1,7 @@
 import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import { loadAgentInstructions } from '@/shared/agent-kernel/mastra/load-agent-instructions'
 import type { WildIdea } from './wild-idea-schema'
 import {
   IDEA_VERDICT,
@@ -27,20 +28,12 @@ const RANKER_ROLE: Parameters<typeof resolveRoleModel>[0] = 'planner'
 const RANKER_DESCRIPTION =
   'Scores wild ideas against canon: surprise, story motion, fit, cost. Keeps the few that make the story lurch forward.'
 
-const RANKER_INSTRUCTIONS = `You judge story ideas coldly, with evidence.
-
-Scoring discipline:
-- storyMotion is the king criterion: does the idea force an IRREVERSIBLE state change that named characters must respond to? Mood scores 0.
-- surprise measures non-obviousness relative to the brief — not weirdness for its own sake.
-- fit is judged against the canon you are given: an idea that contradicts established facts scores low UNLESS the contradiction is the point and playable.
-- cost: someone pays a real price. Free victories score 0.
-- Reject generously. Keeping a mediocre idea costs more than losing a good one — the pipeline runs again next beat.`
-
+// Base prompt lives in src/mastra/agents/muse-ranker/instructions.md (editable, fully static).
 export const museRankerAgent = new Agent({
   id: RANKER_ID,
   name: RANKER_NAME,
   description: RANKER_DESCRIPTION,
-  instructions: RANKER_INSTRUCTIONS,
+  instructions: loadAgentInstructions(RANKER_ID),
   model: () => resolveRoleModel(RANKER_ROLE),
 })
 

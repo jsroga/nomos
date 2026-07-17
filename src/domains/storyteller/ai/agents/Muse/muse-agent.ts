@@ -1,6 +1,7 @@
 import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import { loadAgentInstructions } from '@/shared/agent-kernel/mastra/load-agent-instructions'
 
 /**
  * The Muse (PLAN-V2 5.2) — stateless, BLANK-CONTEXT wildcard agent.
@@ -21,20 +22,11 @@ const MUSE_ROLE: Parameters<typeof resolveRoleModel>[0] = 'muse'
 const MUSE_DESCRIPTION =
   'Blank-context wildcard ideas under dealt entropy constraints — surprising, concrete, story-moving. Ranked and filtered downstream.'
 
-const MUSE_INSTRUCTIONS = `You generate WILD but CONCRETE story ideas under hard constraints.
-
-Rules:
-- Every idea is an ACTION: a named character DOES something irreversible, on screen. Never a mood, a theme, an atmosphere, or a "realization".
-- Satisfy EVERY dealt constraint (object, countdown, venue property, required turn) through the action itself — not through description around it.
-- Build THROUGH the given craft mechanism's shape. Never reference, name, or imitate any existing show, scene, or franchise.
-- Surprise comes from collision: connect the constraint cards in the least obvious way that still forces consequences.
-- No hedging, no options-within-options, no "perhaps". Commit.
-- Big words are not action. "Everything changes" is not action. A signature, a theft, a mistranslation, a locked door, a swallowed key — those are actions.`
-
+// Base prompt lives in src/mastra/agents/muse/instructions.md (editable, fully static).
 export const museAgent = new Agent({
   id: MUSE_ID,
   name: MUSE_NAME,
   description: MUSE_DESCRIPTION,
-  instructions: MUSE_INSTRUCTIONS,
+  instructions: loadAgentInstructions(MUSE_ID),
   model: () => resolveRoleModel(MUSE_ROLE),
 })
