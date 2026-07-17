@@ -1,4 +1,5 @@
 import { HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { fetchJson } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
 
@@ -9,16 +10,6 @@ const SAVE_VARIANT_ROUTE = '/api/storyteller/save-portrait-variant'
 const CHARACTERS_ROUTE = '/api/storyteller/characters'
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
-
-async function fetchJson(input: RequestInfo | URL, init?: RequestInit): Promise<unknown> {
-  const response = await fetch(input, init)
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`)
-  }
-
-  return response.json()
-}
 
 export async function startCharacterPortraitGeneration(input: {
   prompt: string

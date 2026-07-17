@@ -1,7 +1,7 @@
 import { recordArrayFromJson } from '@/shared/data/json-guards'
 import type { TwitterTrendResult } from './twitter-trends'
 import { analyzeSentiment } from './twitter-trends-sentiment'
-import { buildUrl } from '@/shared/data/url-builder';
+import { buildUrl } from '@/shared/data/url-builder'
 
 export async function fetchLiveTwitterTrends(
   topic: string,
@@ -58,49 +58,105 @@ export async function fetchLiveTwitterTrends(
   ]
 }
 
+const TOPIC_ALIAS_KEYS: Array<{ keywords: string[]; databaseKey: string }> = [
+  { keywords: ['cs', 'counter'], databaseKey: 'counter_strike' },
+  { keywords: ['vampire', 'survivor'], databaseKey: 'vampire_survivors' },
+  { keywords: ['disco', 'narrative', 'rpg'], databaseKey: 'narrative_rpg' },
+]
+
+function topicMatchesKey(topicLower: string, key: string): boolean {
+  return topicLower.includes(key) || key.includes(topicLower)
+}
+
+function trendsForDatabaseKey(
+  gamingTrendsDatabase: Record<string, TwitterTrendResult[]>,
+  databaseKey: string,
+): TwitterTrendResult[] {
+  return gamingTrendsDatabase[databaseKey] ?? []
+}
+
+function collectDatabaseMatches(
+  topicLower: string,
+  gamingTrendsDatabase: Record<string, TwitterTrendResult[]>,
+): TwitterTrendResult[] {
+  const results: TwitterTrendResult[] = []
+  for (const [key, trends] of Object.entries(gamingTrendsDatabase)) {
+    if (topicMatchesKey(topicLower, key)) {
+      results.push(...trends)
+    }
+  }
+  return results
+}
+
+function collectAliasMatches(
+  topicLower: string,
+  gamingTrendsDatabase: Record<string, TwitterTrendResult[]>,
+): TwitterTrendResult[] {
+  const results: TwitterTrendResult[] = []
+  for (const alias of TOPIC_ALIAS_KEYS) {
+    if (alias.keywords.some(keyword => topicLower.includes(keyword))) {
+      results.push(...trendsForDatabaseKey(gamingTrendsDatabase, alias.databaseKey))
+    }
+  }
+  return results
+}
+
+function isEmergingTrendRelevant(topicLower: string, trend: TwitterTrendResult): boolean {
+  const trendLower = trend.topic.toLowerCase()
+  const trendHead = trendLower.split(' ')[0]
+  if (trendLower.includes(topicLower) || topicLower.includes(trendHead)) {
+    return true
+  }
+  return trend.relatedGames.some(game => topicLower.includes(game.toLowerCase().split(' ')[0]))
+}
+
+function collectEmergingMatches(
+  topicLower: string,
+  includeEmerging: boolean,
+  emergingTrends: TwitterTrendResult[],
+  existingCount: number,
+): TwitterTrendResult[] {
+  if (!includeEmerging) {
+    return []
+  }
+
+  const results = emergingTrends.filter(trend => isEmergingTrendRelevant(topicLower, trend))
+  if (existingCount + results.length < 3) {
+    results.push(...emergingTrends.filter(trend => trend.isRising).slice(0, 2))
+  }
+  return results
+}
+
+function collectFallbackTrends(
+  gamingTrendsDatabase: Record<string, TwitterTrendResult[]>,
+  emergingTrends: TwitterTrendResult[],
+): TwitterTrendResult[] {
+  return [
+    ...trendsForDatabaseKey(gamingTrendsDatabase, 'general'),
+    ...emergingTrends.slice(0, 2),
+  ]
+}
+
 export function collectTwitterTrendResults(
   topicLower: string,
   includeEmerging: boolean,
   gamingTrendsDatabase: Record<string, TwitterTrendResult[]>,
   emergingTrends: TwitterTrendResult[],
 ): TwitterTrendResult[] {
-  const results: TwitterTrendResult[] = []
-
-  for (const [key, trends] of Object.entries(gamingTrendsDatabase)) {
-    if (topicLower.includes(key) || key.includes(topicLower)) {
-      results.push(...trends)
-    }
-  }
-
-  if (topicLower.includes('cs') || topicLower.includes('counter')) {
-    results.push(...(gamingTrendsDatabase.counter_strike || []))
-  }
-  if (topicLower.includes('vampire') || topicLower.includes('survivor')) {
-    results.push(...(gamingTrendsDatabase.vampire_survivors || []))
-  }
-  if (topicLower.includes('disco') || topicLower.includes('narrative') || topicLower.includes('rpg')) {
-    results.push(...(gamingTrendsDatabase.narrative_rpg || []))
-  }
-
-  if (includeEmerging) {
-    const relevantEmerging = emergingTrends.filter(trend => {
-      const trendLower = trend.topic.toLowerCase()
-      return (
-        trendLower.includes(topicLower) ||
-        topicLower.includes(trendLower.split(' ')[0]) ||
-        trend.relatedGames.some(game => topicLower.includes(game.toLowerCase().split(' ')[0]))
-      )
-    })
-    results.push(...relevantEmerging)
-
-    if (results.length < 3) {
-      results.push(...emergingTrends.filter(trend => trend.isRising).slice(0, 2))
-    }
-  }
+  const databaseAndAlias = [
+    ...collectDatabaseMatches(topicLower, gamingTrendsDatabase),
+    ...collectAliasMatches(topicLower, gamingTrendsDatabase),
+  ]
+  const emerging = collectEmergingMatches(
+    topicLower,
+    includeEmerging,
+    emergingTrends,
+    databaseAndAlias.length,
+  )
+  const results = [...databaseAndAlias, ...emerging]
 
   if (results.length === 0) {
-    results.push(...(gamingTrendsDatabase.general || []))
-    results.push(...emergingTrends.slice(0, 2))
+    return collectFallbackTrends(gamingTrendsDatabase, emergingTrends)
   }
 
   return results

@@ -20,16 +20,15 @@ import {
   type ControllerFrameIntent,
 } from '@/domains/storyteller/ai/controller/controller-sse-wire'
 import { ChatFrameType } from '@/shared/chat/core/protocol'
+import { emitFrame, type SseWriter } from './stream-wire'
 import {
-  emitFrame,
-  emitStartFrame,
-  emitTokenFrame,
-  emitThinkingFrame,
-  emitStepStatusFrame,
-  emitFatalStreamError,
   STREAM_ROUTE_TEXT,
-  type SseWriter,
-} from './stream-wire'
+  emitFatalStreamError,
+  emitStartFrame,
+  emitStepStatusFrame,
+  emitThinkingFrame,
+  emitTokenFrame,
+} from './stream-route-wire'
 
 /** Session tag key scoping threads to a project (ADR §Topology). */
 const PROJECT_TAG = 'projectId'

@@ -4,7 +4,12 @@ import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
-import { POLLING_INTERVALS, isActiveTaskStatus } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { createTriggerRunStatusFetch } from '@/shared/data/polling/trigger-run-status-fetcher'
+import {
+  waitForTriggerRun,
+  TriggerRunPollFailedError,
+} from '@/shared/data/polling/wait-for-trigger-run'
 import { TILE_COORD_SEPARATOR } from '../../ui/constants/tile-stage-labels'
 import {
   fetchFidelityRunStatus,
@@ -27,6 +32,9 @@ import {
 } from '../../constants/fidelity-service'
 import { getWorldUiStore } from '../useWorldUiStore'
 
+const TRIGGER_RUN_NOT_FOUND_STATUS = 'NOT_FOUND'
+const UNKNOWN_STATUS_LABEL = 'unknown'
+
 interface FidelityRunState {
   runId: string
   tileId: string
@@ -37,17 +45,10 @@ interface FidelityRunState {
 }
 
 export class FidelityService {
-  private pollingIntervals: Map<string, NodeJS.Timeout> = new Map()
-
   /**
-   * Cleanup all polling intervals - call on unmount to prevent memory leaks
+   * Cleanup hook retained for API compatibility (polling is promise-based).
    */
-  cleanup() {
-    for (const [, timeout] of this.pollingIntervals) {
-      clearTimeout(timeout)
-    }
-    this.pollingIntervals.clear()
-  }
+  cleanup() {}
 
   /**
    * Enhance tile fidelity using Gemini with a style prompt
@@ -111,7 +112,7 @@ export class FidelityService {
       browserStorage.setObject(DynamicLocalStorageKeys.fidelityRun(tile.id), runState)
 
       // 4. Start polling for status
-      this.startPolling(runState, opId)
+      void this.pollRun(runState, opId)
 
       return runId
     } catch (error) {
@@ -130,95 +131,42 @@ export class FidelityService {
     }
   }
 
-  /**
-   * Start adaptive polling for task status
-   */
-  private startPolling(runState: FidelityRunState, opId: string) {
-    let consecutiveErrors = 0
-    let lastProgress = 0
-    let stableProgressCount = 0
-
-    const poll = async () => {
-      try {
-        const statusData = await fetchFidelityRunStatus(runState.runId)
-
-        if (statusData.statusCode === 404) {
-          consecutiveErrors++
-          if (consecutiveErrors > 5) {
-            console.warn(FidelityServiceLog.RunNotFoundAfterRetries)
-            useWorldStore
-              .getState()
-              .setTileError(runState.tileX, runState.tileY, FidelityServiceError.TaskNotFound)
-            this.clearRunState(runState, opId)
-            return
-          }
-          this.scheduleNextPoll(runState.runId, poll, 2000)
-          return
+  private async pollRun(runState: FidelityRunState, opId: string) {
+    try {
+      const result = await waitForTriggerRun(
+        createTriggerRunStatusFetch(fetchFidelityRunStatus, runState.runId),
+        {
+          intervalMs: POLLING_INTERVALS.DEFAULT,
+          maxPolls: 120,
+          onPoll: data => {
+            const metadata = recordFromJson(data.metadata)
+            const progress = typeof metadata.progress === 'number' ? metadata.progress : 0
+            const stage = readString(metadata.stage) ?? TileProgressStage.Unknown
+            useGlobalStatusStore.getState().updateOperation(opId, {
+              details: `(${runState.tileX}, ${runState.tileY}) ${stage} ${progress}%`,
+            })
+          },
         }
+      )
 
-        consecutiveErrors = 0
-        const progress =
-          typeof statusData.metadata?.progress === 'number' ? statusData.metadata.progress : 0
-        const stage =
-          (typeof statusData.metadata?.stage === 'string'
-            ? statusData.metadata.stage
-            : null) ?? TileProgressStage.Unknown
-
-        if (progress === lastProgress) {
-          stableProgressCount++
-        } else {
-          stableProgressCount = 0
-          lastProgress = progress
-        }
-
-        useGlobalStatusStore.getState().updateOperation(opId, {
-          details: `(${runState.tileX}, ${runState.tileY}) ${stage} ${progress}%`,
-        })
-
-        if (statusData.status === TriggerTerminalStatus.Completed) {
-          console.log(FidelityServiceLog.EnhancementCompleted, statusData.output)
-          await this.handleCompletion(runState, statusData.output, opId)
-          return
-        }
-
-        if (!statusData.status || !isActiveTaskStatus(statusData.status)) {
-          const errorMsg =
-            (typeof statusData.error === 'string' ? statusData.error : null) ||
-            `${FidelityServiceError.EnhancementFailed} (${statusData.status ?? 'unknown'})`
-          console.error(FidelityServiceLog.EnhancementFailed, errorMsg)
-          useWorldStore.getState().setTileError(runState.tileX, runState.tileY, errorMsg)
-          this.clearRunState(runState, opId)
-          return
-        }
-
-        let nextInterval: number = POLLING_INTERVALS.DEFAULT
-        if (stableProgressCount === 0) {
-          nextInterval = 2000
-        } else if (stableProgressCount < 3) {
-          nextInterval = POLLING_INTERVALS.DEFAULT
-        } else {
-          nextInterval = POLLING_INTERVALS.SLOW
-        }
-
-        this.scheduleNextPoll(runState.runId, poll, nextInterval)
-      } catch (error) {
-        console.error(FidelityServiceLog.StatusPollingError, error)
-        consecutiveErrors++
-        const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
-        this.scheduleNextPoll(runState.runId, poll, backoffInterval)
+      if (result.status === TriggerTerminalStatus.Completed) {
+        console.log(FidelityServiceLog.EnhancementCompleted, result.output)
+        await this.handleCompletion(runState, result.output, opId)
       }
+    } catch (error) {
+      if (error instanceof TriggerRunPollFailedError) {
+        const errorMsg =
+          (typeof error.runError === 'string' ? error.runError : null) ||
+          (error.status === TRIGGER_RUN_NOT_FOUND_STATUS
+            ? FidelityServiceError.TaskNotFound
+            : `${FidelityServiceError.EnhancementFailed} (${error.status ?? UNKNOWN_STATUS_LABEL})`)
+        console.error(FidelityServiceLog.EnhancementFailed, errorMsg)
+        useWorldStore.getState().setTileError(runState.tileX, runState.tileY, errorMsg)
+      } else {
+        console.error(FidelityServiceLog.StatusPollingError, error)
+      }
+      this.clearRunState(runState, opId)
     }
-
-    poll()
-  }
-
-  private scheduleNextPoll(runId: string, pollFn: () => Promise<void>, interval: number) {
-    const existingTimeout = this.pollingIntervals.get(runId)
-    if (existingTimeout) {
-      clearTimeout(existingTimeout)
-    }
-    const timeoutId = setTimeout(pollFn, interval)
-    this.pollingIntervals.set(runId, timeoutId)
   }
 
   /**
@@ -305,13 +253,6 @@ export class FidelityService {
    * Clear run state and stop polling
    */
   private clearRunState(runState: FidelityRunState, opId: string) {
-    // Stop polling (now uses timeouts instead of intervals)
-    const timeout = this.pollingIntervals.get(runState.runId)
-    if (timeout) {
-      clearTimeout(timeout)
-      this.pollingIntervals.delete(runState.runId)
-    }
-
     browserStorage.remove(DynamicLocalStorageKeys.fidelityRun(runState.tileId))
 
     // Clear UI status
@@ -339,7 +280,7 @@ export class FidelityService {
             status: AsyncOperationStatus.InProgress,
           })
 
-          this.startPolling(runState, opId)
+          void this.pollRun(runState, opId)
         }
       } catch {
         console.warn(FidelityServiceLog.FailedToParseRunState, key)

@@ -19,3 +19,5 @@ export const BIBLE_INSPIRATION_MOVIE_KEYWORDS = [
 
 export const BIBLE_INSPIRATION_GAME_YEAR_PATTERN = /\(\d{4}\).*game/i
 export const BIBLE_INSPIRATION_MOVIE_YEAR_PATTERN = /\(\d{4}\)$/
+
+export const BIBLE_INSPIRATION_TITLE_SEPARATOR = ', '

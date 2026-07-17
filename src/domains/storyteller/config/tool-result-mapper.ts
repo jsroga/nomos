@@ -13,23 +13,27 @@
  */
 
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums'
-import { RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
-import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page-wire'
 import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import {
   BIBLE_SECTION_UPDATE_KEYS,
   PREMISE_SECTION_UPDATE_KEYS,
 } from './constants/bible-wire-fields'
 import {
-  BEAT_DRAFT_COMPLETED_STATUS,
-  BEAT_PIPELINE_COMPLETED_MESSAGE,
   ManageBeatOperationToken,
   MANAGE_BEAT_UNTITLED_LABEL,
   ToolResultDetectedSection,
   ToolResultOutcomeKind,
   ToolResultPayloadField,
 } from './constants/tool-result-wire'
-import { processToolResultToAction, getActionTypeForSection } from './action-config'
+import { getActionTypeForSection } from './action-config'
+import {
+  isRecord,
+  MANAGE_BEAT_TOOL_ID,
+  resolveBeatDraftCompleted,
+  resolveManageBeatSuccessAction,
+  resolveWorldBibleSuccessAction,
+  UPDATE_WORLD_BIBLE_TOOL_ID,
+} from './map-tool-result-handlers'
 
 export type DetectedSection = BibleSection | ToolResultDetectedSection
 
@@ -46,10 +50,6 @@ export type ToolResultOutcome =
     }
   | { kind: ToolResultOutcomeKind.None }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
 function stringField(source: Record<string, unknown> | undefined, key: string): string | undefined {
   const value = source?.[key]
   return typeof value === 'string' ? value : undefined
@@ -59,9 +59,6 @@ function stringField(source: Record<string, unknown> | undefined, key: string): 
 const SECTION_KEYS = BIBLE_SECTION_UPDATE_KEYS
 
 const PREMISE_SECTIONS = PREMISE_SECTION_UPDATE_KEYS
-
-const UPDATE_WORLD_BIBLE_TOOL_ID = StorytellerChatTool.UpdateWorldBible
-const MANAGE_BEAT_TOOL_ID = StorytellerChatTool.ManageBeat
 
 /**
  * Determine which bible section a tool call is loading, for the UI shimmer.
@@ -176,6 +173,57 @@ function resolveManageBeatAction(parsedRecord: Record<string, unknown>): Resolve
   return { actionType: config.type, payload: config.payload, requiresApproval: config.approval }
 }
 
+function resolveSuccessfulToolAction(args: {
+  toolName: string
+  parsedRecord: Record<string, unknown>
+  episodeId?: string | null
+}): {
+  actionType: string
+  actionPayload: Record<string, unknown>
+  requiresApproval: boolean
+  detectedSection: DetectedSection
+} | null {
+  if (args.toolName === UPDATE_WORLD_BIBLE_TOOL_ID) {
+    return resolveWorldBibleSuccessAction({
+      parsedRecord: args.parsedRecord,
+      episodeId: args.episodeId,
+    })
+  }
+
+  if (args.toolName === MANAGE_BEAT_TOOL_ID) {
+    return resolveManageBeatSuccessAction(args.parsedRecord, resolveManageBeatAction)
+  }
+
+  return null
+}
+
+function resolveSectionFallbackAction(args: {
+  toolName: string
+  isSectionUpdate: boolean
+  detectedSection: DetectedSection
+  parsedRecord: Record<string, unknown> | undefined
+}): {
+  actionType: string
+  actionPayload: Record<string, unknown>
+  requiresApproval: boolean
+} | null {
+  if (
+    args.isSectionUpdate &&
+    args.toolName === UPDATE_WORLD_BIBLE_TOOL_ID &&
+    args.detectedSection !== ToolResultDetectedSection.Beats
+  ) {
+    return {
+      actionType: getActionTypeForSection(args.detectedSection),
+      actionPayload: isRecord(args.parsedRecord?.updatedFields)
+        ? args.parsedRecord.updatedFields
+        : (args.parsedRecord ?? {}),
+      requiresApproval: true,
+    }
+  }
+
+  return null
+}
+
 export function mapToolResultToAction(args: {
   toolName: string
   parsed: unknown
@@ -191,59 +239,37 @@ export function mapToolResultToAction(args: {
   let requiresApproval = false
   let detectedSection: DetectedSection = currentSection
 
-  // Completed beat-draft runs surface as info (the SUSPENDED case is handled
-  // by the route directly — it emits the questions/awaiting_input frames).
-  if (
-    toolName === RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID &&
-    parsedRecord &&
-    parsedRecord[ToolResultPayloadField.Status] === BEAT_DRAFT_COMPLETED_STATUS
-  ) {
-    return {
-      kind: ToolResultOutcomeKind.Info,
-      message:
-        stringField(parsedRecord, ToolResultPayloadField.Message) ?? BEAT_PIPELINE_COMPLETED_MESSAGE,
-      data: parsedRecord[ToolResultPayloadField.Output] ?? null,
-    }
+  if (parsedRecord) {
+    const beatDraftOutcome = resolveBeatDraftCompleted(toolName, parsedRecord)
+    if (beatDraftOutcome) return beatDraftOutcome
   }
 
   if (parsedRecord?.[ToolResultPayloadField.Success]) {
-    if (toolName === UPDATE_WORLD_BIBLE_TOOL_ID) {
-      const fields = isRecord(parsedRecord.updatedFields)
-        ? parsedRecord.updatedFields
-        : Array.isArray(parsedRecord.updatedFields)
-          ? { ...parsedRecord.updatedFields }
-          : {}
-      const processedAction = processToolResultToAction(toolName, fields, args.episodeId)
-      if (processedAction) {
-        actionType = processedAction.actionType
-        actionPayload = processedAction.payload
-        requiresApproval = processedAction.requiresApproval
-        detectedSection = processedAction.section
-      }
-    } else if (toolName === MANAGE_BEAT_TOOL_ID) {
-      const beatAction = parsedRecord ? resolveManageBeatAction(parsedRecord) : null
-      if (beatAction) {
-        actionType = beatAction.actionType
-        actionPayload = beatAction.payload
-        requiresApproval = beatAction.requiresApproval
-        detectedSection = ToolResultDetectedSection.Beats
-      }
+    const successAction = resolveSuccessfulToolAction({
+      toolName,
+      parsedRecord,
+      episodeId: args.episodeId,
+    })
+    if (successAction) {
+      actionType = successAction.actionType
+      actionPayload = successAction.actionPayload
+      requiresApproval = successAction.requiresApproval
+      detectedSection = successAction.detectedSection
     }
   }
 
-  // FALLBACK: detected section update but no action mapped → generic section action
-  // ('beats' is excluded by narrowing — the fallback only applies to bible sections)
-  if (
-    !actionType &&
-    isSectionUpdate &&
-    toolName === UPDATE_WORLD_BIBLE_TOOL_ID &&
-    detectedSection !== ToolResultDetectedSection.Beats
-  ) {
-    actionType = getActionTypeForSection(detectedSection)
-    actionPayload = isRecord(parsedRecord?.updatedFields)
-      ? parsedRecord.updatedFields
-      : (parsedRecord ?? {})
-    requiresApproval = true
+  if (!actionType) {
+    const fallbackAction = resolveSectionFallbackAction({
+      toolName,
+      isSectionUpdate,
+      detectedSection,
+      parsedRecord,
+    })
+    if (fallbackAction) {
+      actionType = fallbackAction.actionType
+      actionPayload = fallbackAction.actionPayload
+      requiresApproval = fallbackAction.requiresApproval
+    }
   }
 
   if (!actionType) return { kind: ToolResultOutcomeKind.None }

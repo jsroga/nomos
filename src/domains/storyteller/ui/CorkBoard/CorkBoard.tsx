@@ -1,272 +1,56 @@
-import React, { useState, useEffect, memo } from 'react'
-import { BeatCard } from '../BeatCard'
-import { BeatCard as BeatData, beatCardFromJson } from '@/domains/storyteller/core/types/story-types'
-import { useParams } from 'next/navigation'
-import { Plus, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'
-import { useConfirmDialog } from '@/components/ConfirmDialog'
-import { beatImageService } from '@/domains/storyteller/services/beat-image-service'
-import { Message } from '../AgentLog'
+import React, { memo } from 'react'
+import { BeatCard as BeatData } from '@/domains/storyteller/core/types/story-types'
+import { Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'
+import type { Message } from '@/shared/chat'
 import { ImageLightbox } from '@/components/ImageLightbox'
-import { Button } from '@/components/Button'
-import {
-  CORK_BOARD_DELETE_CANCEL,
-  CORK_BOARD_DELETE_CONFIRM,
-  CORK_BOARD_DELETE_DESCRIPTION,
-  CORK_BOARD_DELETE_TITLE,
-  CORK_BOARD_DRAG_EFFECT_MOVE,
-  CORK_BOARD_GENERATE_BEATS_PROMPT,
-  CORK_BOARD_NEW_BEAT_LOGLINE,
-  CORK_BOARD_NEW_BEAT_TYPE,
-  CORK_BOARD_STORYBOARD_FAILED_LOG,
-  CORK_BOARD_COUNT_PLACEHOLDER,
-  CORK_BOARD_STORYBOARD_STARTED_CONTENT,
-  CORK_BOARD_UNKNOWN_PROJECT,
-  CORK_BOARD_VISUAL_DIRECTOR_SENDER,
-  CorkBoardUrlScheme,
-} from './constants/cork-board'
-import {
-  createEpisodeBeat,
-  deleteBeat,
-  fetchEpisodeBeatsList,
-  patchBeat,
-} from '@/domains/storyteller/core/io/storyteller.api'
-import {
-  StorytellerConfirmVariant,
-  StorytellerMessageType,
-} from '@/domains/storyteller/core/storyteller-page-wire'
+import { CorkBoardStoryboardSection } from './CorkBoardStoryboardSection'
+import { CorkBoardBeatGrid } from './CorkBoardBeatGrid'
+import { useCorkBoardState } from './useCorkBoardState'
 
 interface CorkBoardProps {
   beats: BeatData[]
   episodeId?: string
   onAddMessage?: (message: Message) => void
   onSendMessage?: (message: string) => void
-
-  // Combined Storyboard (Gemini)
   storyboardUrl?: string | null
   isGeneratingCombined?: boolean
   onGenerateCombined?: () => void
-
   projectId?: string
 }
 
-// Memoize the entire CorkBoard to prevent re-renders from parent state changes
 export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   beats: initialBeats,
   episodeId,
   onAddMessage,
   onSendMessage,
-
   storyboardUrl,
   isGeneratingCombined,
   onGenerateCombined,
   projectId: propProjectId,
 }) {
-  const [beats, setBeats] = useState<BeatData[]>(initialBeats)
-  const [draggedId, setDraggedId] = useState<string | null>(null)
-  const [isGeneratingBeats, setIsGeneratingBeats] = useState(false)
-  const [expandedBeatId, setExpandedBeatId] = useState<string | null>(null)
-  const { confirm, ConfirmDialogComponent } = useConfirmDialog()
-  const params = useParams<{ projectId: string }>()
-  const projectId = propProjectId || params.projectId || CORK_BOARD_UNKNOWN_PROJECT
-
-  // ... (previous useEffects and handlers remain same until render) ...
-
-  // CRITICAL: Sync internal state when parent prop changes
-  useEffect(() => {
-    // console.log('📋 CorkBoard: beats prop changed, syncing state. Count:', initialBeats?.length)
-    setBeats(initialBeats || [])
-  }, [initialBeats])
-
-  useEffect(() => {
-    if (episodeId) {
-      fetchEpisodeBeatsList(episodeId)
-        .then(data => {
-          if (Array.isArray(data)) {
-            setBeats(
-              data
-                .map(row => beatCardFromJson(row))
-                .filter(beat => Boolean(beat.id))
-            )
-          }
-        })
-    }
-  }, [episodeId])
-
-  const expandedBeatIndex = beats.findIndex(b => b.id === expandedBeatId)
-  const expandedBeat = expandedBeatIndex !== -1 ? beats[expandedBeatIndex] : null
-
-  const handleNext = () => {
-    if (expandedBeatIndex !== -1 && expandedBeatIndex < beats.length - 1) {
-      setExpandedBeatId(beats[expandedBeatIndex + 1].id)
-    }
-  }
-
-  const handlePrev = () => {
-    if (expandedBeatIndex > 0) {
-      setExpandedBeatId(beats[expandedBeatIndex - 1].id)
-    }
-  }
-
-  const handleCreate = async () => {
-    if (!episodeId) return
-    const newBeat = {
-      logline: CORK_BOARD_NEW_BEAT_LOGLINE,
-      beatType: CORK_BOARD_NEW_BEAT_TYPE,
-      sequence: beats.length + 1,
-      content: '',
-    }
-    const created = await createEpisodeBeat(episodeId, newBeat)
-    setBeats([...beats, beatCardFromJson(created)])
-  }
-
-  const handleUpdate = async (id: string, updates: Partial<BeatData>) => {
-    setBeats(beats.map(b => (b.id === id ? { ...b, ...updates } : b)))
-    await patchBeat(id, updates)
-  }
-
-  const handleDelete = async (id: string) => {
-    const confirmed = await confirm({
-      title: CORK_BOARD_DELETE_TITLE,
-      description: CORK_BOARD_DELETE_DESCRIPTION,
-      confirmLabel: CORK_BOARD_DELETE_CONFIRM,
-      cancelLabel: CORK_BOARD_DELETE_CANCEL,
-      variant: StorytellerConfirmVariant.Destructive,
-    })
-    if (!confirmed) return
-    setBeats(beats.filter(b => b.id !== id))
-    await deleteBeat(id)
-  }
-
-  const onDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedId(id)
-    e.dataTransfer.effectAllowed = CORK_BOARD_DRAG_EFFECT_MOVE
-  }
-
-  const onDragOver = (e: React.DragEvent, id: string) => {
-    e.preventDefault()
-    if (!draggedId || draggedId === id) return
-  }
-
-  const onDrop = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault()
-    if (!draggedId || draggedId === targetId) return
-    const draggedIndex = beats.findIndex(b => b.id === draggedId)
-    const targetIndex = beats.findIndex(b => b.id === targetId)
-    if (draggedIndex === -1 || targetIndex === -1) return
-    const newBeats = [...beats]
-    const [removed] = newBeats.splice(draggedIndex, 1)
-    newBeats.splice(targetIndex, 0, removed)
-    const updatedBeats = newBeats.map((b, idx) => ({ ...b, sequence: idx + 1 }))
-    setBeats(updatedBeats)
-    setDraggedId(null)
-  }
-
-  const handleGenerateBeats = async () => {
-    if (!projectId) return
-
-    // When no beats exist, ask the agent to generate 8-12 beats
-    if (beats.length === 0) {
-      if (onSendMessage) {
-        onSendMessage(CORK_BOARD_GENERATE_BEATS_PROMPT)
-      }
-      return
-    }
-
-    // When beats exist, generate images for them
-    setIsGeneratingBeats(true)
-    if (onAddMessage) {
-      onAddMessage({
-        sender: CORK_BOARD_VISUAL_DIRECTOR_SENDER,
-        content: CORK_BOARD_STORYBOARD_STARTED_CONTENT.replace(
-          CORK_BOARD_COUNT_PLACEHOLDER,
-          String(beats.length)
-        ),
-        type: StorytellerMessageType.Ai,
-      })
-    }
-    try {
-      for (const beat of beats) {
-        await beatImageService.generateImageForBeat(projectId, beat, (id, updates) => {
-          setBeats(prev => prev.map(b => (b.id === id ? { ...b, ...updates } : b)))
-        })
-      }
-    } catch (e) {
-      console.error(CORK_BOARD_STORYBOARD_FAILED_LOG, e)
-    } finally {
-      setIsGeneratingBeats(false)
-    }
-  }
-
-  const getUrl = (url: string | null) => {
-    if (!url) return ''
-    if (url.startsWith(CorkBoardUrlScheme.Http) || url.startsWith('/')) return url
-    if (url.startsWith('projects/')) return `/${url}`
-    return `/projects/${projectId}/${url}`
-  }
+  const board = useCorkBoardState({
+    initialBeats,
+    episodeId,
+    onAddMessage,
+    onSendMessage,
+    propProjectId,
+  })
 
   return (
     <div className="space-y-4 pb-20">
-      <div className="grid grid-cols-1 gap-4 mb-6">
-        {/* SECTION 2: COMBINED STORYBOARD (Gemini) */}
-        <div className="bg-card border border-border rounded-md p-4 flex flex-col">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h3 className="font-mono text-[11px] font-medium uppercase tracking-widest text-foreground flex items-center gap-2">
-                <ImageIcon className="w-3.5 h-3.5 text-primary" />
-                Combined Storyboard
-              </h3>
-              <p className="text-[10px] text-muted-foreground mt-1">Gemini Visual Summary</p>
-            </div>
-            {onGenerateCombined && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onGenerateCombined}
-                disabled={isGeneratingCombined || beats.length === 0}
-                className="gap-2 rounded-md"
-              >
-                {isGeneratingCombined ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Sparkles className="w-3 h-3" />
-                )}
-                {isGeneratingCombined ? 'Planning...' : storyboardUrl ? 'Regenerate' : 'Generate'}
-              </Button>
-            )}
-          </div>
-
-          <div className="flex-1 min-h-[200px] flex items-center justify-center bg-muted/30 rounded-md border border-border relative overflow-hidden group">
-            {isGeneratingCombined ? (
-              <div className="text-center space-y-2">
-                <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" />
-                <p className="text-xs text-muted-foreground">Synthesizing Scenes...</p>
-              </div>
-            ) : storyboardUrl ? (
-              <div
-                onClick={() => setExpandedBeatId('storyboard_view')}
-                className="cursor-zoom-in w-full h-full"
-              >
-                <img
-                  src={getUrl(storyboardUrl)}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  alt="Combined Storyboard"
-                />
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground text-xs p-4">
-                No storyboard generated.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Lightboxes */}
+      <CorkBoardStoryboardSection
+        storyboardUrl={storyboardUrl}
+        isGeneratingCombined={isGeneratingCombined}
+        onGenerateCombined={onGenerateCombined}
+        beatCount={board.beats.length}
+        onExpandStoryboard={() => board.setExpandedBeatId('storyboard_view')}
+        getUrl={board.getUrl}
+      />
 
       <ImageLightbox
-        isOpen={expandedBeatId === 'storyboard_view'}
-        onClose={() => setExpandedBeatId(null)}
-        imageSrc={getUrl(storyboardUrl || '')}
+        isOpen={board.expandedBeatId === 'storyboard_view'}
+        onClose={() => board.setExpandedBeatId(null)}
+        imageSrc={board.getUrl(storyboardUrl || '')}
         imageAlt="Combined Storyboard"
         hasNext={false}
         hasPrev={false}
@@ -277,66 +61,52 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
           Beat Board
         </h3>
         <button
-          onClick={handleGenerateBeats}
-          disabled={isGeneratingBeats}
+          onClick={board.handleGenerateBeats}
+          disabled={board.isGeneratingBeats}
           className="flex items-center gap-2 px-3 py-1.5 bg-muted border border-border text-foreground hover:bg-primary/10 hover:border-primary/30 rounded-md text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isGeneratingBeats ? (
+          {board.isGeneratingBeats ? (
             <Loader2 size={12} className="animate-spin" />
-          ) : beats.length === 0 ? (
+          ) : board.beats.length === 0 ? (
             <Sparkles size={12} />
           ) : (
             <ImageIcon size={12} />
           )}
-          {isGeneratingBeats
+          {board.isGeneratingBeats
             ? 'Generating…'
-            : beats.length === 0
+            : board.beats.length === 0
               ? 'Generate Beats'
               : 'Generate Images'}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {beats
-          .sort((a, b) => a.sequence - b.sequence)
-          .map(beat => (
-            <BeatCard
-              key={beat.id}
-              beat={beat}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              onDragStart={onDragStart}
-              onDragOver={onDragOver}
-              onDrop={onDrop}
-              onExpand={setExpandedBeatId}
-              onSendMessage={onSendMessage}
-              projectId={projectId}
-            />
-          ))}
-
-        {/* Add New Card Placeholder */}
-        <button
-          type="button"
-          onClick={handleCreate}
-          className="min-h-[120px] border-2 border-dashed border-border rounded-md flex flex-col items-center justify-center hover:bg-muted/30 hover:border-primary/40 cursor-pointer transition-colors group text-left"
-        >
-          <div className="w-10 h-10 rounded-md bg-muted border border-border flex items-center justify-center mb-2 group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors">
-            <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-          </div>
-          <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground group-hover:text-foreground">Add Beat</span>
-        </button>
-        {ConfirmDialogComponent}
-      </div>
+      <CorkBoardBeatGrid
+        beats={board.beats}
+        projectId={board.projectId}
+        onUpdate={board.handleUpdate}
+        onDelete={board.handleDelete}
+        onDragStart={board.onDragStart}
+        onDragOver={board.onDragOver}
+        onDrop={board.onDrop}
+        onExpand={board.setExpandedBeatId}
+        onSendMessage={onSendMessage}
+        onCreate={board.handleCreate}
+        confirmDialog={board.ConfirmDialogComponent}
+      />
 
       <ImageLightbox
-        isOpen={!!expandedBeatId && expandedBeatId !== 'poster_view'}
-        onClose={() => setExpandedBeatId(null)}
-        imageSrc={expandedBeat?.imageUrl ? `/projects/${projectId}/${expandedBeat.imageUrl}` : ''}
-        imageAlt={expandedBeat?.imagePrompt || expandedBeat?.logline || undefined}
-        onNext={handleNext}
-        onPrev={handlePrev}
-        hasNext={expandedBeatIndex < beats.length - 1}
-        hasPrev={expandedBeatIndex > 0}
+        isOpen={!!board.expandedBeatId && board.expandedBeatId !== 'poster_view'}
+        onClose={() => board.setExpandedBeatId(null)}
+        imageSrc={
+          board.expandedBeat?.imageUrl
+            ? `/projects/${board.projectId}/${board.expandedBeat.imageUrl}`
+            : ''
+        }
+        imageAlt={board.expandedBeat?.imagePrompt || board.expandedBeat?.logline || undefined}
+        onNext={board.handleNextBeat}
+        onPrev={board.handlePrevBeat}
+        hasNext={board.expandedBeatIndex < board.beats.length - 1}
+        hasPrev={board.expandedBeatIndex > 0}
       />
     </div>
   )

@@ -1,9 +1,11 @@
 /**
  * SSE wire module for the storyteller chat stream route: frame vocabulary
- * (enum) + frame emission handlers, extracted from route.ts `start()`
- * (complexity gate). Every emitted frame is BYTE-IDENTICAL to the previous
- * inline code. The SSE wire contract is frozen; change shapes only with the
- * sse-wire-contract skill.
+ * (enum) + Mastra chunk handlers + session state. Thin route constants and
+ * shared frame emitters live in `stream-route-wire.ts`; controller event mapping
+ * lives in `domains/storyteller/ai/controller/controller-sse-wire.ts`.
+ *
+ * Every emitted frame is BYTE-IDENTICAL to the previous inline code. The SSE
+ * wire contract is frozen; change shapes only with the sse-wire-contract skill.
  *
  * PLAN-V2 3.2 relocates `ChatStreamFrameType` to `shared/chat/core/protocol.ts`
  * so route and useChatStream import the same contract.
@@ -480,92 +482,3 @@ export async function finalizeStream(session: StreamSession): Promise<void> {
 
   session.writer.close()
 }
-
-// ==========================================
-// ROUTE-FACING EMITTERS + HTTP TEXT
-// (route.ts is not a wire-exempt file — its literals live here)
-// ==========================================
-
-/** `{ type: 'start', traceId }` */
-export function emitStartFrame(writer: SseWriter, traceId: string): void {
-  emitFrame(writer, { type: ChatFrameType.Start, traceId })
-}
-
-/** `{ type: 'token', token }` */
-export function emitTokenFrame(writer: SseWriter, token: string): void {
-  emitFrame(writer, { type: ChatFrameType.Token, token })
-}
-
-/** `{ type: 'thinking', thinking, agent: 'Storyteller' }` */
-export function emitThinkingFrame(writer: SseWriter, thinking: string): void {
-  emitFrame(writer, { type: ChatFrameType.Thinking, thinking, agent: 'Storyteller' })
-}
-
-/** Section shimmer start frame with the `Generating <section>...` message. */
-export function emitSectionLoadingStart(writer: SseWriter, section: DetectedSection): void {
-  emitFrame(writer, {
-    type: ChatFrameType.SectionLoading,
-    section,
-    loading: true,
-    message: `Generating ${section}...`,
-  })
-  console.log(`[Stream] Emitted section_loading: ${section} = true`)
-}
-
-/** step-start frame — has always rendered as 'Step: Processing'; byte-identical. */
-export function emitStepStatusFrame(writer: SseWriter): void {
-  emitFrame(writer, {
-    type: ChatFrameType.AgentStatus,
-    agent: 'Storyteller',
-    status: 'thinking',
-    message: 'Step: Processing',
-  })
-}
-
-/** Outer-catch fatal error frame (`{ type: 'error', message }`), then close. */
-export function emitFatalStreamError(writer: SseWriter, error: unknown): void {
-  console.error('Stream processing error:', error)
-  emitFrame(writer, {
-    type: ChatFrameType.Error,
-    message: error instanceof Error ? error.message : 'Stream failed',
-  })
-  writer.close()
-}
-
-/**
- * Mastra fullStream chunk discriminants the route handles (values are
- * @mastra/core/stream `ChunkType` members). A const map — not an enum —
- * because string enums are nominal in TS and `chunk.type === EnumMember`
- * would not narrow the official union; literal-typed properties do.
- */
-export const MASTRA_CHUNK = {
-  error: 'error',
-  textDelta: 'text-delta',
-  reasoningDelta: 'reasoning-delta',
-  toolCall: 'tool-call',
-  toolResult: 'tool-result',
-  stepStart: 'step-start',
-} as const
-
-/** Non-frame route literals (HTTP header values, API error texts, log prefixes). */
-export const STREAM_ROUTE_TEXT = {
-  traceIdHeader: 'x-trace-id',
-  toolChoiceAuto: 'auto',
-  contentTypeJson: 'application/json',
-  contentTypeEventStream: 'text/event-stream',
-  cacheControlNoCache: 'no-cache',
-  connectionKeepAlive: 'keep-alive',
-  errUnauthorized: 'Unauthorized',
-  errInvalidMessage: 'Invalid message parameter',
-  errMessageTooLong: 'Message too long (max 10000 characters)',
-  errProjectAccess: 'Project not found or access denied',
-  errEpisodeAccess: 'Episode not found or access denied',
-  errStreamingFailed: 'Streaming failed',
-  logContextAssemblyError: '[Stream] Context assembly error:',
-  logEnqueueFailed: '[Stream] Enqueue failed, stream likely closed',
-  logCloseFailed: '[Stream] Close failed, already closed',
-  logChunkError: 'Stream chunk error:',
-  logStreamingError: 'Streaming error:',
-  errorCategorySystem: 'SYSTEM',
-  agentStoryteller: 'Storyteller',
-} as const

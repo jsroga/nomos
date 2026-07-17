@@ -1,27 +1,15 @@
 import type { Wall } from './interior-types'
 
-/**
- * Find closed polygon when a new wall completes a shape.
- * Only returns a polygon if the new wall actually closes a loop.
- */
-export function findClosedPolygons(
-  walls: Wall[],
-  newWallStart: [number, number, number],
-  newWallEnd: [number, number, number]
-): [number, number, number][] | null {
-  // We need at least 2 existing walls + the new wall to form a closed polygon (3 walls minimum)
-  if (walls.length < 2) return null
+function pointKey(x: number, z: number): string {
+  return `${x.toFixed(2)},${z.toFixed(2)}`
+}
 
-  const pointKey = (x: number, z: number): string => `${x.toFixed(2)},${z.toFixed(2)}`
-  const parseKey = (key: string): [number, number] => {
-    const [x, z] = key.split(',').map(Number)
-    return [x, z]
-  }
+function parseKey(key: string): [number, number] {
+  const [x, z] = key.split(',').map(Number)
+  return [x, z]
+}
 
-  const newStartKey = pointKey(newWallStart[0], newWallStart[2])
-  const newEndKey = pointKey(newWallEnd[0], newWallEnd[2])
-
-  // Build adjacency map from EXISTING walls only (not including new wall)
+function buildWallAdjacency(walls: Wall[]): Map<string, string[]> {
   const adj = new Map<string, string[]>()
   for (const wall of walls) {
     const startKey = pointKey(wall.start[0], wall.start[2])
@@ -37,27 +25,23 @@ export function findClosedPolygons(
       endNeighbors.push(startKey)
     }
   }
+  return adj
+}
 
-  // The new wall connects newWallStart -> newWallEnd
-  // For a closed polygon: there must be a path from newWallEnd to newWallStart
-  // through existing walls
-
-  // Check if both endpoints of the new wall connect to existing walls
-  if (!adj.has(newStartKey) || !adj.has(newEndKey)) {
-    return null
-  }
-
-  // BFS to find shortest path from newEndKey back to newStartKey through existing walls
-  const visited = new Map<string, string | null>() // Maps node to parent
-  const queue: string[] = [newEndKey]
-  visited.set(newEndKey, null)
+function findClosingPath(
+  adj: Map<string, string[]>,
+  startKey: string,
+  endKey: string,
+): [number, number, number][] | null {
+  const visited = new Map<string, string | null>()
+  const queue: string[] = [endKey]
+  visited.set(endKey, null)
 
   while (queue.length > 0) {
     const current = queue.shift()
     if (current === undefined) break
 
-    if (current === newStartKey && visited.size > 2) {
-      // Found a path! Reconstruct it
+    if (current === startKey && visited.size > 2) {
       const path: string[] = []
       let node: string | null = current
       while (node !== null) {
@@ -65,7 +49,6 @@ export function findClosedPolygons(
         node = visited.get(node) ?? null
       }
 
-      // Convert to 3D points
       const polygon: [number, number, number][] = path.map(key => {
         const [x, z] = parseKey(key)
         return [x, 0, z]
@@ -86,4 +69,26 @@ export function findClosedPolygons(
   }
 
   return null
+}
+
+/**
+ * Find closed polygon when a new wall completes a shape.
+ * Only returns a polygon if the new wall actually closes a loop.
+ */
+export function findClosedPolygons(
+  walls: Wall[],
+  newWallStart: [number, number, number],
+  newWallEnd: [number, number, number],
+): [number, number, number][] | null {
+  if (walls.length < 2) return null
+
+  const newStartKey = pointKey(newWallStart[0], newWallStart[2])
+  const newEndKey = pointKey(newWallEnd[0], newWallEnd[2])
+  const adj = buildWallAdjacency(walls)
+
+  if (!adj.has(newStartKey) || !adj.has(newEndKey)) {
+    return null
+  }
+
+  return findClosingPath(adj, newStartKey, newEndKey)
 }

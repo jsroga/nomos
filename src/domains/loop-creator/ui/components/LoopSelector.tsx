@@ -3,21 +3,16 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Plus, Trash2, RefreshCw, ChevronDown, Check, Loader2, Edit2 } from 'lucide-react'
 import { Button } from '@/components/Button'
-import { Input } from '@/components/Input'
 import { cn } from '@/shared/data/utils'
-import { buildUrl } from '@/shared/data/url-builder'
-import { QueryParam } from '@/shared/data/constants/protocol'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/Dialog'
 import { ScrollArea } from '@/components/ScrollArea'
+import { LoopSelectorNameDialog } from '@/domains/loop-creator/ui/components/LoopSelectorNameDialog'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
-import { LoopHttpMethod } from '@/domains/loop-creator/constants/loop-http'
+import {
+  deleteLoop,
+  listProjectLoops,
+  type PersistedGameLoop,
+  updateLoop,
+} from '@/domains/loop-creator/core/io/loops.api'
 import {
   LOOP_SELECTOR_DEFAULT_NAME,
   LOOP_SELECTOR_DELETE_CANCEL,
@@ -33,17 +28,6 @@ import {
   LOOP_SELECTOR_LOCALE_TAG,
   LoopSelectorConfirmVariant,
 } from '@/domains/loop-creator/constants/loop-selector'
-
-export interface PersistedGameLoop {
-  id: string
-  name: string
-  nodes: unknown[]
-  edges: unknown[]
-  metadata: unknown
-  analysis: unknown
-  createdAt: string
-  updatedAt: string
-}
 
 interface LoopSelectorProps {
   projectId: string
@@ -99,11 +83,7 @@ export function LoopSelector({
 
     setIsLoading(true)
     try {
-      const response = await fetch(buildUrl('/api/loop-creator/loops', { [QueryParam.ProjectId]: projectId }))
-      if (response.ok) {
-        const data = await response.json()
-        setLoops(data)
-      }
+      setLoops(await listProjectLoops(projectId))
     } catch (error) {
       console.error(LOOP_SELECTOR_FETCH_FAILED_LOG, error)
     } finally {
@@ -141,15 +121,8 @@ export function LoopSelector({
     setIsCreating(true)
     try {
       if (editingLoopId) {
-        // Renaming existing loop
-        const response = await fetch('/api/loop-creator/loops', {
-          method: LoopHttpMethod.Patch,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingLoopId, name: loopName.trim() }),
-        })
-        if (response.ok) {
-          await fetchLoops()
-        }
+        await updateLoop({ id: editingLoopId, name: loopName.trim() })
+        await fetchLoops()
       } else {
         // Creating new loop with game concept
         const newLoop = await onCreateLoop(loopName.trim(), gameConcept.trim())
@@ -187,17 +160,12 @@ export function LoopSelector({
 
     setIsDeleting(true)
     try {
-      const response = await fetch(buildUrl('/api/loop-creator/loops', { [QueryParam.Id]: loopId }), {
-        method: LoopHttpMethod.Delete,
-      })
-
-      if (response.ok) {
-        setLoops(prev => prev.filter(l => l.id !== loopId))
-        if (currentLoopId === loopId) {
-          // Switch to first available loop or clear
-          const remaining = loops.filter(l => l.id !== loopId)
-          onLoopChange(remaining[0] || null)
-        }
+      await deleteLoop(loopId)
+      setLoops(prev => prev.filter(l => l.id !== loopId))
+      if (currentLoopId === loopId) {
+        // Switch to first available loop or clear
+        const remaining = loops.filter(l => l.id !== loopId)
+        onLoopChange(remaining[0] || null)
       }
     } catch (error) {
       console.error(LOOP_SELECTOR_DELETE_FAILED_LOG, error)
@@ -345,69 +313,17 @@ export function LoopSelector({
       {/* Click outside to close */}
       {isOpen && <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />}
 
-      {/* Name Dialog (Create / Rename) */}
-      <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>{editingLoopId ? 'Rename Loop' : 'Create New Game Loop'}</DialogTitle>
-            <DialogDescription>
-              {editingLoopId
-                ? 'Enter a new name for this game loop.'
-                : 'Describe your game concept and the AI will start designing immediately.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Loop Name</label>
-              <Input
-                value={loopName}
-                onChange={e => setLoopName(e.target.value)}
-                placeholder="e.g., Disco Elysium RPG, Roguelike Deckbuilder..."
-                autoFocus
-              />
-            </div>
-
-            {/* Game concept - only for new loops */}
-            {!editingLoopId && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Game Concept <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={gameConcept}
-                  onChange={e => setGameConcept(e.target.value)}
-                  placeholder="Describe your game idea... e.g., A narrative RPG like Disco Elysium set in a cyberpunk world, focusing on dialogue and skill checks..."
-                  className="w-full min-h-[100px] px-3 py-2 text-sm bg-background border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && e.metaKey) handleSaveLoop()
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Tip: Include genre, inspiration games, and unique mechanics. Press Cmd+Enter to
-                  create.
-                </p>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNameDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveLoop}
-              disabled={!loopName.trim() || (!editingLoopId && !gameConcept.trim()) || isCreating}
-            >
-              {isCreating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : editingLoopId ? (
-                'Save'
-              ) : (
-                'Create & Generate'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LoopSelectorNameDialog
+        open={isNameDialogOpen}
+        onOpenChange={setIsNameDialogOpen}
+        editingLoopId={editingLoopId}
+        loopName={loopName}
+        onLoopNameChange={setLoopName}
+        gameConcept={gameConcept}
+        onGameConceptChange={setGameConcept}
+        isCreating={isCreating}
+        onSave={handleSaveLoop}
+      />
 
       {ConfirmDialogComponent}
     </div>

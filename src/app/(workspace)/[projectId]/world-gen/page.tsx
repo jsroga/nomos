@@ -10,7 +10,7 @@ import {
   TileReviewDialog,
   type TileReviewType,
 } from '@/domains/world-building-toolkit'
-import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
+import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { useWorldUiStore } from '@/domains/world-building-toolkit/state/useWorldUiStore'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import {

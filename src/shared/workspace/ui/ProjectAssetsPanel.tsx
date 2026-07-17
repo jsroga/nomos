@@ -13,13 +13,17 @@ import {
 } from '@/components/Dialog'
 import { getSupabaseClient } from '@/shared/data/storage/supabaseClient'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
-import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import toast from 'react-hot-toast'
 import {
+  deleteProjectAssetImage,
   resolveProjectAssetUrl,
   type WorkspaceAsset,
 } from '@/shared/workspace/io/project-assets-api'
 import { useProjectAssets } from '@/shared/workspace/hooks/useProjectAssets'
+
+const ASSET_DELETED_TOAST = 'Asset deleted'
+const DELETE_ASSET_ERROR_LOG = 'Error deleting asset:'
+const DELETE_ASSET_FAILED_TOAST = 'Failed to delete asset'
 
 interface ProjectAssetsPanelProps {
   projectId: string
@@ -52,20 +56,13 @@ export const ProjectAssetsPanel: React.FC<ProjectAssetsPanelProps> = ({
       const { error } = await supabase.from(DB_TABLE.ASSETS).delete().eq(DB_COLUMN.ID, assetToDelete.id)
       if (error) throw error
 
-      await fetch('/api/delete-image', {
-        method: HttpMethod.Post,
-        headers: { 'Content-Type': ContentType.Json },
-        body: JSON.stringify({
-          projectId,
-          filename: `assets/${assetToDelete.filename}`,
-        }),
-      })
+      await deleteProjectAssetImage(projectId, assetToDelete.filename)
 
       await refetch()
-      toast.success('Asset deleted')
+      toast.success(ASSET_DELETED_TOAST)
     } catch (error: unknown) {
-      console.error('Error deleting asset:', error)
-      toast.error('Failed to delete asset')
+      console.error(DELETE_ASSET_ERROR_LOG, error)
+      toast.error(DELETE_ASSET_FAILED_TOAST)
     } finally {
       setIsDeleting(false)
       setDeleteDialogOpen(false)

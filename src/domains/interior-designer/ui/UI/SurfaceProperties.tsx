@@ -4,17 +4,19 @@ import React, { useState, useEffect } from 'react'
 import { interiorDesignerApi } from '@/domains/interior-designer/core/io/interior-designer.api'
 import { useInteriorStore, TextureStyle } from '@/domains/interior-designer'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
-import { isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/constants/polling'
+import { browserStorage } from '@/shared/data/browser-storage'
+import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import {
   AsyncOperationStatus,
   isActiveOperationStatus,
   isTerminalOperationStatus,
 } from '@/shared/jobs/constants/async-operation-status'
-import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
+import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
+import { pollInteriorTriggerRun } from '@/domains/interior-designer/state/utils/poll-interior-trigger-run'
 import { DEFAULT_TEXTURE_STYLE } from '@/domains/interior-designer/constants/texture-defaults'
 import { SurfaceTypeValue } from '@/domains/interior-designer/constants/terrain-defaults'
 import { InteriorDefaultProjectId } from '@/domains/interior-designer/constants/interior-api-defaults'
@@ -24,7 +26,6 @@ import {
   MaterialGenerationOperationType,
   MaterialGenerationStage,
   MaterialOperationMetaKey,
-  MeshyStoredConfigKey,
   SurfaceBoundsMetaKey,
   SurfacePropertiesError,
   SurfacePropertiesLog,
@@ -40,8 +41,8 @@ import {
 } from './surface-properties-sections'
 import {
   SurfaceMaterialGenerationSection,
-  SurfacePreviewSections,
 } from './surface-material-generation-section'
+import { SurfacePreviewSections } from './surface-preview-sections'
 
 type MaterialMode = MaterialGenerationMode.TwoD | MaterialGenerationMode.ThreeD
 
@@ -118,44 +119,56 @@ export const SurfaceProperties: React.FC = () => {
       setStyle(DEFAULT_TEXTURE_STYLE)
       setScale(selectedSurface.textureScale || 0.5)
     }
-  }, [selectedSurface?.id])
+  }, [selectedSurface])
 
   useEffect(() => {
     if (!currentOperation || !operationId) return
     if (isTerminalOperationStatus(currentOperation.status)) return
 
-    const checkStatus = async () => {
-      const taskId = operationMetaRef.current?.[MaterialOperationMetaKey.TaskId]
-      if (typeof taskId !== 'string') return
+    const taskId = operationMetaRef.current?.[MaterialOperationMetaKey.TaskId]
+    if (typeof taskId !== 'string') return
 
-      try {
-        const data = await interiorDesignerApi.material.getStatus(taskId)
-        const progress = data.metadata?.progress || 0
-        const stage = data.metadata?.stage || MaterialGenerationStage.Processing
+    let aborted = false
+    void pollInteriorTriggerRun(
+      () => interiorDesignerApi.material.getStatus(taskId),
+      {
+        shouldAbort: () => {
+          if (aborted) return true
+          const latestOp = useGlobalStatusStore.getState().operations.find(op => op.id === operationId)
+          return !latestOp || isTerminalOperationStatus(latestOp.status)
+        },
+        onPoll: data => {
+          const metadata = recordFromJson(data.metadata)
+          const progress =
+            typeof metadata.progress === 'number' ? metadata.progress : 0
+          const stage =
+            readString(metadata.stage) ?? MaterialGenerationStage.Processing
 
-        updateOperation(operationId, {
-          details: JSON.stringify({
-            ...operationMetaRef.current,
-            progress,
-            stage,
-          }),
-        })
-
-        if (isSuccessTaskStatus(data.status)) {
-          const output = data.output
-          if (output?.success && output?.modelUrl) {
+          updateOperation(operationId, {
+            details: JSON.stringify({
+              ...operationMetaRef.current,
+              progress,
+              stage,
+            }),
+          })
+        },
+        onCompleted: async data => {
+          const output = recordFromJson(data.output)
+          const modelUrl = readString(output.modelUrl)
+          if (output.success === true && modelUrl) {
             updateOperation(operationId, {
               status: AsyncOperationStatus.Completed,
               details: JSON.stringify({
                 ...operationMetaRef.current,
                 progress: 100,
                 stage: MaterialGenerationStage.Completed,
-                modelUrl: output.modelUrl,
-                thumbnailUrl: output.thumbnailUrl,
+                modelUrl,
+                thumbnailUrl: readString(output.thumbnailUrl),
               }),
             })
           }
-        } else if (!isActiveTaskStatus(data.status)) {
+        },
+        onFailed: async data => {
           updateOperation(operationId, {
             status: AsyncOperationStatus.Failed,
             details: JSON.stringify({
@@ -163,17 +176,17 @@ export const SurfaceProperties: React.FC = () => {
               error: data.error || SurfacePropertiesError.GenerationFailed,
             }),
           })
-        }
-      } catch (err) {
-        console.error(SurfacePropertiesLog.PollError, err)
-      }
+        },
+      },
+      { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
+    ).catch(err => {
+      console.error(SurfacePropertiesLog.PollError, err)
+    })
+
+    return () => {
+      aborted = true
     }
-
-    const pollInterval = setInterval(checkStatus, 5000)
-    checkStatus()
-
-    return () => clearInterval(pollInterval)
-  }, [operationId, currentOperation?.status, updateOperation])
+  }, [operationId, currentOperation, updateOperation])
 
   if (!selectedSurface) return null
 
@@ -185,7 +198,7 @@ export const SurfaceProperties: React.FC = () => {
     setPreviewUrl(null)
 
     try {
-      const apiKey = localStorage.getItem(LocalStorageKeys.STABILITY_API_KEY_LEGACY)
+      const apiKey = browserStorage.getString(LocalStorageKeys.STABILITY_API_KEY_LEGACY)
       if (!apiKey) {
         toast.error(SurfacePropertiesToast.StabilityApiKeyRequired)
         setIsGenerating(false)
@@ -228,16 +241,7 @@ export const SurfaceProperties: React.FC = () => {
     setError(null)
 
     try {
-      let apiKey = ''
-      try {
-        const savedMeshy = localStorage.getItem(LocalStorageKeys.AI_CONFIG_MESHY)
-        if (savedMeshy) {
-          const config = recordFromJson(JSON.parse(savedMeshy))
-          apiKey = readString(config[MeshyStoredConfigKey.ApiKey]) ?? ''
-        }
-      } catch (err) {
-        console.warn(SurfacePropertiesLog.MeshyApiKeyReadFailed, err)
-      }
+      const apiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_MESHY)
 
       if (!apiKey) {
         toast.error(SurfacePropertiesToast.MeshyApiKeyRequired)

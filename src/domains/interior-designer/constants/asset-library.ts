@@ -13,6 +13,11 @@ export enum PrimitiveAssetId {
   Door = 'door',
 }
 
+export enum DemoAssetId {
+  Building = 'building',
+  Tree = 'tree',
+}
+
 export enum PrimitiveAssetLabel {
   Cube = 'Cube',
   Sphere = 'Sphere',

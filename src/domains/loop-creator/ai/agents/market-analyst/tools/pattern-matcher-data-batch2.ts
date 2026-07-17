@@ -1,0 +1,255 @@
+import type { DesignPatternDefinition } from './pattern-matcher-analysis'
+
+interface DesignPattern extends DesignPatternDefinition {
+  coreElements: string[]
+}
+
+export const DESIGN_PATTERNS_BATCH2: DesignPattern[] = [
+  {
+    name: 'Tension-Release Cycle',
+    category: 'engagement',
+    description: 'Building pressure followed by satisfying resolution creates emotional engagement',
+    coreElements: [
+      'Tension builds over time',
+      'Stakes increase',
+      'Release point clearly defined',
+      'Cathartic resolution',
+    ],
+    indicators: [
+      { term: 'wave', weight: 4 },
+      { term: 'boss', weight: 4 },
+      { term: 'escalat', weight: 3 },
+      { term: 'survive', weight: 3 },
+      { term: 'timer', weight: 3 },
+      { term: 'pressure', weight: 3 },
+      { term: 'climax', weight: 2 },
+    ],
+    antiPatterns: [
+      'Constant high tension (exhausting)',
+      'No stakes (boring)',
+      'Anticlimactic resolution',
+    ],
+    examples: [
+      {
+        game: 'Vampire Survivors',
+        implementation: 'Enemies escalate → 30 min Death arrives → Survive or die',
+      },
+      {
+        game: 'Resident Evil 4',
+        implementation: 'Resource scarcity builds → Boss fight → Item cache reward',
+      },
+    ],
+    implementationGuide: [
+      'Create natural peaks and valleys in intensity',
+      'Make stakes clear and meaningful',
+      'Resolution should be proportional to tension',
+      'Allow recovery periods',
+    ],
+    strengths: ['Emotional investment', 'Memorable moments', 'Natural pacing'],
+    risks: ['Exhausting if unrelenting', 'Anticlimactic if mistuned', 'Difficulty balance'],
+    compatibility: ['Session Boundaries', 'Skill Expression', 'Boss Encounters'],
+  },
+
+  // === FEEDBACK PATTERNS ===
+  {
+    name: 'Dopamine Rhythm',
+    category: 'feedback',
+    description:
+      'Constant micro-rewards at predictable intervals creating addictive feedback loops',
+    coreElements: [
+      'Frequent small rewards',
+      'Visual/audio feedback',
+      'Predictable timing',
+      'Anticipation building',
+    ],
+    indicators: [
+      { term: 'xp', weight: 4 },
+      { term: 'gem', weight: 4 },
+      { term: 'collect', weight: 3 },
+      { term: 'drop', weight: 3 },
+      { term: 'pickup', weight: 3 },
+      { term: 'constant', weight: 3 },
+      { term: 'frequent', weight: 3 },
+    ],
+    antiPatterns: ['Rewards too rare', 'No feedback on collection', 'Random timing'],
+    examples: [
+      {
+        game: 'Vampire Survivors',
+        implementation: 'XP gems every second → Level up every 30s → Evolution every 5min',
+      },
+      {
+        game: 'Diablo',
+        implementation: 'Gold drops constantly → Items drop regularly → Legendaries occasionally',
+      },
+    ],
+    implementationGuide: [
+      'Aim for reward every 5-10 seconds minimum',
+      'Layer different reward frequencies',
+      'Audio cues should be satisfying but not annoying',
+      'Visual feedback should be clear and juicy',
+    ],
+    strengths: ['Highly addictive', 'Flow state inducing', 'Hard to stop playing'],
+    risks: ['Can feel mindless', 'May not appeal to all players', 'Addiction concerns'],
+    compatibility: ['Core Loop Trinity', 'Power Fantasy', 'Collection Loop'],
+  },
+  {
+    name: 'Skill Expression',
+    category: 'feedback',
+    description: 'Mechanics that visibly reward player skill, creating mastery motivation',
+    coreElements: [
+      'High skill ceiling',
+      'Visible skill difference',
+      'Mastery feels earned',
+      'Practice rewarded',
+    ],
+    indicators: [
+      { term: 'skill', weight: 4 },
+      { term: 'master', weight: 3 },
+      { term: 'difficult', weight: 2 },
+      { term: 'precision', weight: 3 },
+      { term: 'timing', weight: 3 },
+      { term: 'dodge', weight: 3 },
+      { term: 'reflex', weight: 3 },
+    ],
+    antiPatterns: ['Skill doesn\'t matter', 'RNG dominates outcomes', 'Low ceiling'],
+    examples: [
+      {
+        game: 'Celeste',
+        implementation: 'Perfect movement → Faster times → Style points from advanced techniques',
+      },
+      {
+        game: 'Hollow Knight',
+        implementation: 'Boss patterns learned → Clean kills → Radiant difficulty',
+      },
+    ],
+    implementationGuide: [
+      'Ensure skilled play is noticeably better',
+      'Create opportunities for style/optimization',
+      'Provide optional challenges for mastery',
+      'Replay systems to showcase skill',
+    ],
+    strengths: ['Long-term engagement', 'Competitive potential', 'Speedrun/content creator appeal'],
+    risks: ['High skill floor alienates casuals', 'Frustration', 'Community elitism'],
+    compatibility: ['Tension-Release', 'Competitive Structure', 'Difficulty Options'],
+  },
+
+  // === PLAYER EXPERIENCE PATTERNS ===
+  {
+    name: 'Collection/Unlock Loop',
+    category: 'player_experience',
+    description: 'Discovering and unlocking new content drives exploration and completionism',
+    coreElements: [
+      'Clear unlock conditions',
+      'Content revelation',
+      'Collection tracking',
+      'Completionist goals',
+    ],
+    indicators: [
+      { term: 'unlock', weight: 4 },
+      { term: 'collect', weight: 4 },
+      { term: 'achievement', weight: 3 },
+      { term: 'discover', weight: 3 },
+      { term: 'secret', weight: 3 },
+      { term: 'character', weight: 2 },
+      { term: 'weapon', weight: 2 },
+    ],
+    antiPatterns: ['Nothing to unlock', 'Unlocks are meaningless', 'Too easy to complete'],
+    examples: [
+      {
+        game: 'Enter the Gungeon',
+        implementation: '200+ guns to find → NPCs to rescue → Secrets in every run',
+      },
+      { game: 'Smash Bros', implementation: 'Character roster to unlock → Stages → Collectibles' },
+    ],
+    implementationGuide: [
+      'Front-load exciting unlocks, taper to rarities',
+      'Track progress visibly',
+      'Make unlocks change gameplay, not just cosmetics',
+      'Include long-tail content for completionists',
+    ],
+    strengths: ['Long-term motivation', 'Content revelation pacing', 'Completionist appeal'],
+    risks: ['Grind perception', 'FOMO', 'Content exhaustion'],
+    compatibility: ['Roguelike Persistence', 'Nested Loops', 'Power Fantasy'],
+  },
+  {
+    name: 'Build Diversity',
+    category: 'player_experience',
+    description: 'Multiple viable playstyles allowing player expression and replayability',
+    coreElements: [
+      'Distinct playstyles possible',
+      'No single optimal build',
+      'Character/loadout variety',
+      'Adaptation required',
+    ],
+    indicators: [
+      { term: 'build', weight: 4 },
+      { term: 'class', weight: 3 },
+      { term: 'playstyle', weight: 4 },
+      { term: 'loadout', weight: 3 },
+      { term: 'character', weight: 2 },
+      { term: 'variety', weight: 3 },
+      { term: 'different', weight: 2 },
+    ],
+    antiPatterns: ['One best build', 'Characters feel same', 'Forced adaptation'],
+    examples: [
+      {
+        game: 'Slay the Spire',
+        implementation: '4 characters × multiple deck archetypes × relic combinations',
+      },
+      {
+        game: 'Path of Exile',
+        implementation:
+          'Infinite skill tree combinations → Class identity → League-specific builds',
+      },
+    ],
+    implementationGuide: [
+      'Design each option to feel meaningfully different',
+      'Balance through variety, not homogenization',
+      'Enable player-discovered builds',
+      'Content should support multiple approaches',
+    ],
+    strengths: ['Replayability', 'Player expression', 'Community theorycrafting'],
+    risks: ['Balance maintenance', 'Information overload', 'Trap builds'],
+    compatibility: ['Synergy Building', 'Skill Expression', 'Roguelike Persistence'],
+  },
+  {
+    name: 'Session Boundaries',
+    category: 'player_experience',
+    description: 'Clear start/end points enabling portable play and natural stopping',
+    coreElements: [
+      'Defined session length',
+      'Natural endpoints',
+      'Progress saved meaningfully',
+      'Easy to resume',
+    ],
+    indicators: [
+      { term: 'run', weight: 4 },
+      { term: 'session', weight: 4 },
+      { term: 'round', weight: 3 },
+      { term: 'match', weight: 3 },
+      { term: 'minute', weight: 2 },
+      { term: 'quick', weight: 2 },
+      { term: 'portable', weight: 2 },
+    ],
+    antiPatterns: ['No good stopping points', 'Progress lost on exit', 'Indefinite sessions'],
+    examples: [
+      {
+        game: 'Slay the Spire',
+        implementation: '45-60 min runs → Clear floor checkpoints → Can exit mid-run',
+      },
+      {
+        game: 'Into the Breach',
+        implementation: '30 min campaigns → Turn-based allows any-time exit',
+      },
+    ],
+    implementationGuide: [
+      'Design for your target session length',
+      'Create natural pause points within sessions',
+      'Save state should be robust',
+      'Return context should be clear',
+    ],
+    strengths: ['Portable play', 'Lower commitment', 'Easier to pick up'],
+    risks: ['May feel disconnected', 'Narrative challenges', 'Mobile-centric'],
+    compatibility: ['Nested Loop Architecture', 'Roguelike Persistence', 'Quick Sessions'],
+  },
+]

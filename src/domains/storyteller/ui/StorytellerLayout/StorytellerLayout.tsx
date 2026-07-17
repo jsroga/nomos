@@ -4,6 +4,6 @@ import { useStorytellerPage } from '@/domains/storyteller/state/hooks/useStoryte
 import { StorytellerWorkspace } from './StorytellerWorkspace'
 
 export function StorytellerLayout() {
-  const workspace = useStorytellerPage()
-  return <StorytellerWorkspace {...workspace} />
+  const slices = useStorytellerPage()
+  return <StorytellerWorkspace {...slices} />
 }

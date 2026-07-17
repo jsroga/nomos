@@ -16,17 +16,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
-import { DOM_EVENT_KEYDOWN } from '@/domains/interior-designer/constants/keyboard'
-import {
-  INTERACTION_MODE_OBJECT,
-  INTERACTION_MODE_SCATTER,
-  INTERACTION_MODE_SELECT,
-  INTERACTION_MODE_SURFACE,
-  INTERACTION_MODE_TERRAIN,
-  INTERACTION_MODE_WALL,
-  InteriorObjectModel,
-  InteriorSurfacePreset,
-} from '@/domains/interior-designer/constants/interaction-modes'
+import { useToolbarKeyboardShortcuts } from './use-toolbar-keyboard-shortcuts'
 
 interface ToolButtonProps {
   icon: React.ReactNode
@@ -54,72 +44,11 @@ export const Toolbar: React.FC = () => {
   const undo = useInteriorStore.temporal.getState().undo
   const redo = useInteriorStore.temporal.getState().redo
   const setCameraResetRequested = useInteriorStore(state => state.setCameraResetRequested)
-
-  // Removed duplicates
-
   const activeSurfaceType = useInteriorStore(state => state.activeSurfaceType)
   const setActiveSurfaceType = useInteriorStore(state => state.setActiveSurfaceType)
   const setIsCurved = useInteriorStore(state => state.setIsCurved)
-  const setActiveModelUrl = useInteriorStore(state => state.setActiveModelUrl)
 
-  // Keyboard Shortcuts
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-
-      switch (e.key.toLowerCase()) {
-        case 'v':
-          setMode(INTERACTION_MODE_SELECT)
-          break
-        case 'w':
-          if (e.shiftKey) {
-            setMode(INTERACTION_MODE_OBJECT)
-            setActiveModelUrl(InteriorObjectModel.Window)
-          } else {
-            setMode(INTERACTION_MODE_WALL)
-          }
-          break
-        case 'd':
-          setMode(INTERACTION_MODE_OBJECT)
-          setActiveModelUrl(InteriorObjectModel.Door)
-          break
-        case 'g':
-          setMode(INTERACTION_MODE_SURFACE)
-          setActiveSurfaceType(InteriorSurfacePreset.Grass)
-          break
-
-        case 'r':
-          setMode(INTERACTION_MODE_SURFACE)
-          setActiveSurfaceType(InteriorSurfacePreset.Road)
-          setIsCurved(true)
-          break
-        case 'o':
-          setMode(INTERACTION_MODE_OBJECT)
-          break
-        case 's':
-          setMode(INTERACTION_MODE_SCATTER)
-          break
-        case 't':
-          setMode(INTERACTION_MODE_TERRAIN)
-          break
-        case 'z':
-          if ((e.ctrlKey || e.metaKey) && !e.shiftKey) undo()
-          break
-        case 'y':
-          if (e.ctrlKey || e.metaKey) redo()
-          break
-      }
-
-      // Handle Shift+Z for Redo standard
-      if (e.key.toLowerCase() === 'z' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
-        redo()
-      }
-    }
-
-    window.addEventListener(DOM_EVENT_KEYDOWN, handleKeyDown)
-    return () => window.removeEventListener(DOM_EVENT_KEYDOWN, handleKeyDown)
-  }, [setMode, setActiveSurfaceType, setIsCurved, undo, redo, setActiveModelUrl])
+  useToolbarKeyboardShortcuts()
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -279,7 +208,6 @@ export const Toolbar: React.FC = () => {
         </Tooltip>
 
         <div className="w-8 h-px bg-border/50 my-1" />
-
       </div>
     </TooltipProvider>
   )

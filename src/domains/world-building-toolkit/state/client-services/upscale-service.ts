@@ -3,7 +3,12 @@ import type { Tile } from '../../core/world-types'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { LocalStorageKeys, DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { POLLING_INTERVALS, isActiveTaskStatus } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { createTriggerRunStatusFetch } from '@/shared/data/polling/trigger-run-status-fetcher'
+import {
+  waitForTriggerRun,
+  TriggerRunPollFailedError,
+} from '@/shared/data/polling/wait-for-trigger-run'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 import {
   fetchUpscaleRunStatus,
@@ -32,6 +37,9 @@ import {
 } from '../../constants/upscale-service'
 import { getWorldUiStore } from '../useWorldUiStore'
 
+const TRIGGER_RUN_NOT_FOUND_STATUS = 'NOT_FOUND'
+const UNKNOWN_STATUS_LABEL = 'unknown'
+
 interface UpscaleRunState {
   runId: string
   tileId: string
@@ -52,17 +60,10 @@ interface MjGridStoragePayload {
 }
 
 export class UpscaleService {
-  private pollingIntervals: Map<string, NodeJS.Timeout> = new Map()
-
   /**
-   * Cleanup all polling intervals - call on unmount to prevent memory leaks
+   * Cleanup hook retained for API compatibility (polling is promise-based).
    */
-  cleanup() {
-    for (const [, timeout] of this.pollingIntervals) {
-      clearTimeout(timeout)
-    }
-    this.pollingIntervals.clear()
-  }
+  cleanup() {}
 
   /**
    * Start upscaling a tile using Trigger.dev background task
@@ -132,7 +133,7 @@ export class UpscaleService {
       browserStorage.setObject(DynamicLocalStorageKeys.upscaleRun(tile.id), runState)
 
       // 4. Start polling for status
-      this.startPolling(runState, opId)
+      void this.pollRun(runState, opId)
 
       return runId
     } catch (error) {
@@ -149,102 +150,42 @@ export class UpscaleService {
     }
   }
 
-  /**
-   * Start adaptive polling for task status
-   * Uses shorter intervals during active processing, longer intervals when idle
-   */
-  private startPolling(runState: UpscaleRunState, opId: string) {
-    let consecutiveErrors = 0
-    let lastProgress = 0
-    let stableProgressCount = 0
-
-    const poll = async () => {
-      try {
-        const statusData = await fetchUpscaleRunStatus(runState.runId)
-
-        if (statusData.statusCode === 404) {
-          consecutiveErrors++
-          if (consecutiveErrors > 5) {
-            console.warn(UpscaleServiceLog.RunNotFoundAfterRetries)
-            useWorldStore.getState().setTileError(runState.tileX, runState.tileY, UpscaleServiceError.TaskNotFound)
-            this.clearRunState(runState, opId)
-            return
-          }
-          this.scheduleNextPoll(runState.runId, poll, 2000)
-          return
+  private async pollRun(runState: UpscaleRunState, opId: string) {
+    try {
+      const result = await waitForTriggerRun(
+        createTriggerRunStatusFetch(fetchUpscaleRunStatus, runState.runId),
+        {
+          intervalMs: POLLING_INTERVALS.DEFAULT,
+          maxPolls: 120,
+          onPoll: data => {
+            const metadata = recordFromJson(data.metadata)
+            const progress = typeof metadata.progress === 'number' ? metadata.progress : 0
+            const stage = readString(metadata.stage) ?? TileProgressStage.Unknown
+            useGlobalStatusStore.getState().updateOperation(opId, {
+              details: `(${runState.tileX}, ${runState.tileY}) ${stage} ${progress}%`,
+            })
+          },
         }
+      )
 
-        consecutiveErrors = 0
-        const progress =
-          typeof statusData.metadata?.progress === 'number' ? statusData.metadata.progress : 0
-        const stage =
-          (typeof statusData.metadata?.stage === 'string'
-            ? statusData.metadata.stage
-            : null) ?? TileProgressStage.Unknown
-
-        // Track progress changes for adaptive polling
-        if (progress === lastProgress) {
-          stableProgressCount++
-        } else {
-          stableProgressCount = 0
-          lastProgress = progress
-        }
-
-        // Update global status with progress
-        useGlobalStatusStore.getState().updateOperation(opId, {
-          details: `(${runState.tileX}, ${runState.tileY}) ${stage} ${progress}%`,
-        })
-
-        // Check if completed
-        if (statusData.status === TriggerTerminalStatus.Completed) {
-          console.log(UpscaleServiceLog.UpscaleCompleted, statusData.output)
-          await this.handleCompletion(runState, statusData.output, opId)
-          return
-        }
-
-        // Check if failed
-        if (!statusData.status || !isActiveTaskStatus(statusData.status)) {
-          const errorMsg =
-            (typeof statusData.error === 'string' ? statusData.error : null) ||
-            `${UpscaleServiceError.UpscaleFailed} (${statusData.status ?? 'unknown'})`
-          console.error(UpscaleServiceLog.UpscaleFailed, errorMsg)
-          useWorldStore.getState().setTileError(runState.tileX, runState.tileY, errorMsg)
-          this.clearRunState(runState, opId)
-          return
-        }
-
-        // Adaptive polling interval
-        let nextInterval: number = POLLING_INTERVALS.DEFAULT
-        if (stableProgressCount === 0) {
-          nextInterval = 2000
-        } else if (stableProgressCount < 3) {
-          nextInterval = POLLING_INTERVALS.DEFAULT
-        } else {
-          nextInterval = POLLING_INTERVALS.SLOW
-        }
-
-        this.scheduleNextPoll(runState.runId, poll, nextInterval)
-      } catch (error) {
-        console.error(UpscaleServiceLog.StatusPollingError, error)
-        consecutiveErrors++
-        const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
-        this.scheduleNextPoll(runState.runId, poll, backoffInterval)
+      if (result.status === TriggerTerminalStatus.Completed) {
+        console.log(UpscaleServiceLog.UpscaleCompleted, result.output)
+        await this.handleCompletion(runState, result.output, opId)
       }
+    } catch (error) {
+      if (error instanceof TriggerRunPollFailedError) {
+        const errorMsg =
+          (typeof error.runError === 'string' ? error.runError : null) ||
+          (error.status === TRIGGER_RUN_NOT_FOUND_STATUS
+            ? UpscaleServiceError.TaskNotFound
+            : `${UpscaleServiceError.UpscaleFailed} (${error.status ?? UNKNOWN_STATUS_LABEL})`)
+        console.error(UpscaleServiceLog.UpscaleFailed, errorMsg)
+        useWorldStore.getState().setTileError(runState.tileX, runState.tileY, errorMsg)
+      } else {
+        console.error(UpscaleServiceLog.StatusPollingError, error)
+      }
+      this.clearRunState(runState, opId)
     }
-
-    poll()
-  }
-
-  /**
-   * Schedule next poll with cleanup tracking
-   */
-  private scheduleNextPoll(runId: string, pollFn: () => Promise<void>, interval: number) {
-    const existingTimeout = this.pollingIntervals.get(runId)
-    if (existingTimeout) {
-      clearTimeout(existingTimeout)
-    }
-    const timeoutId = setTimeout(pollFn, interval)
-    this.pollingIntervals.set(runId, timeoutId)
   }
 
   /**
@@ -257,106 +198,9 @@ export class UpscaleService {
   ) {
     const out = recordFromJson(output)
     try {
-      const upscaledUrl = readString(out.upscaledUrl)
-      if (out.pendingReview === true && upscaledUrl) {
-        console.log(UpscaleServiceLog.CompletedWithSupabaseUrls, {
-          upscaledUrl,
-          originalUrl: readString(out.originalUrl),
-          filename: readString(out.filename),
-        })
-
-        const tiles = useWorldStore.getState().tiles
-        const existingTile = tiles[`${runState.tileX},${runState.tileY}`]
-        const originalUrl = existingTile?.image_filename
-          ? (existingTile.image_filename.startsWith(UrlScheme.Http)
-              ? existingTile.image_filename
-              : `/projects/${runState.projectId}/${existingTile.image_filename}`)
-          : (readString(out.originalUrl) ?? '')
-
-        useWorldStore
-          .getState()
-          .setPendingUpscale(runState.tileX, runState.tileY, upscaledUrl, originalUrl)
-
-        // Update global status to show review is needed
-        useGlobalStatusStore.getState().updateOperation(opId, {
-          status: AsyncOperationStatus.Completed,
-          details: `(${runState.tileX}, ${runState.tileY})${UpscaleOperationDetailSuffix.ReviewUpscale}`,
-        })
-
-        // Notify UI to show review dialog
-        if (typeof window !== 'undefined') {
-          getWorldUiStore().enqueueReviewRequest({
-            type: WorldGenReviewType.Upscale,
-            tileX: runState.tileX,
-            tileY: runState.tileY,
-            newUrl: upscaledUrl,
-            originalUrl,
-          })
-        }
-
-        this.clearRunState(runState, opId)
-        return
-      }
-
-      // Check if MJ returned a grid requiring variant selection
-      if (out.requiresVariantSelection === true) {
-        console.log(UpscaleServiceLog.MjGridReceived, out)
-
-        browserStorage.setObject(DynamicLocalStorageKeys.mjGrid(runState.tileId), {
-          gridImageUrl: readString(out.gridImageUrl),
-          taskId: readString(out.taskId),
-          buttons: out.buttons,
-          tileId: readString(out.tileId),
-          projectId: readString(out.projectId),
-          runState,
-        })
-
-        // Update global status to show variant selection is needed
-        useGlobalStatusStore.getState().updateOperation(opId, {
-          status: AsyncOperationStatus.Completed,
-          details: `(${runState.tileX}, ${runState.tileY})${UpscaleOperationDetailSuffix.SelectVariant}`,
-        })
-
-        // Don't clear run state - keep it for variant selection
-        // But stop polling
-        const interval = this.pollingIntervals.get(runState.runId)
-        if (interval) {
-          clearInterval(interval)
-          this.pollingIntervals.delete(runState.runId)
-        }
-
-        // Notify UI to show variant picker
-        const gridImageUrl = readString(out.gridImageUrl)
-        const taskId = readString(out.taskId)
-        if (typeof window !== 'undefined' && gridImageUrl && taskId) {
-          getWorldUiStore().notifyMjGridReady({
-            tileId: runState.tileId,
-            tileX: runState.tileX,
-            tileY: runState.tileY,
-            gridImageUrl,
-            buttons: Array.isArray(out.buttons) ? out.buttons : [],
-            taskId,
-          })
-        }
-        return
-      }
-
-      const filename = readString(out.filename)
-      if (out.success === true && filename) {
-        const { tiles } = useWorldStore.getState()
-        const tileKey = `${runState.tileX},${runState.tileY}`
-
-        if (tiles[tileKey]) {
-          useWorldStore.setState({
-            tiles: {
-              ...tiles,
-              [tileKey]: { ...tiles[tileKey], image_filename: filename },
-            },
-          })
-        }
-
-        console.log(UpscaleServiceLog.TileUpdatedWithUpscaledImage, filename)
-      }
+      if (this.tryHandlePendingReview(runState, out, opId)) return
+      if (this.tryHandleVariantSelection(runState, out, opId)) return
+      this.applyDirectUpscaleResult(runState, out)
     } catch (error) {
       console.error(UpscaleServiceLog.ErrorUpdatingTileAfterCompletion, error)
     } finally {
@@ -364,17 +208,112 @@ export class UpscaleService {
     }
   }
 
+  private tryHandlePendingReview(
+    runState: UpscaleRunState,
+    out: Record<string, unknown>,
+    opId: string
+  ): boolean {
+    const upscaledUrl = readString(out.upscaledUrl)
+    if (out.pendingReview !== true || !upscaledUrl) return false
+
+    console.log(UpscaleServiceLog.CompletedWithSupabaseUrls, {
+      upscaledUrl,
+      originalUrl: readString(out.originalUrl),
+      filename: readString(out.filename),
+    })
+
+    const tiles = useWorldStore.getState().tiles
+    const existingTile = tiles[`${runState.tileX},${runState.tileY}`]
+    const originalUrl = existingTile?.image_filename
+      ? (existingTile.image_filename.startsWith(UrlScheme.Http)
+          ? existingTile.image_filename
+          : `/projects/${runState.projectId}/${existingTile.image_filename}`)
+      : (readString(out.originalUrl) ?? '')
+
+    useWorldStore
+      .getState()
+      .setPendingUpscale(runState.tileX, runState.tileY, upscaledUrl, originalUrl)
+
+    useGlobalStatusStore.getState().updateOperation(opId, {
+      status: AsyncOperationStatus.Completed,
+      details: `(${runState.tileX}, ${runState.tileY})${UpscaleOperationDetailSuffix.ReviewUpscale}`,
+    })
+
+    if (typeof window !== 'undefined') {
+      getWorldUiStore().enqueueReviewRequest({
+        type: WorldGenReviewType.Upscale,
+        tileX: runState.tileX,
+        tileY: runState.tileY,
+        newUrl: upscaledUrl,
+        originalUrl,
+      })
+    }
+
+    this.clearRunState(runState, opId)
+    return true
+  }
+
+  private tryHandleVariantSelection(
+    runState: UpscaleRunState,
+    out: Record<string, unknown>,
+    opId: string
+  ): boolean {
+    if (out.requiresVariantSelection !== true) return false
+
+    console.log(UpscaleServiceLog.MjGridReceived, out)
+
+    browserStorage.setObject(DynamicLocalStorageKeys.mjGrid(runState.tileId), {
+      gridImageUrl: readString(out.gridImageUrl),
+      taskId: readString(out.taskId),
+      buttons: out.buttons,
+      tileId: readString(out.tileId),
+      projectId: readString(out.projectId),
+      runState,
+    })
+
+    useGlobalStatusStore.getState().updateOperation(opId, {
+      status: AsyncOperationStatus.Completed,
+      details: `(${runState.tileX}, ${runState.tileY})${UpscaleOperationDetailSuffix.SelectVariant}`,
+    })
+
+    const gridImageUrl = readString(out.gridImageUrl)
+    const taskId = readString(out.taskId)
+    if (typeof window !== 'undefined' && gridImageUrl && taskId) {
+      getWorldUiStore().notifyMjGridReady({
+        tileId: runState.tileId,
+        tileX: runState.tileX,
+        tileY: runState.tileY,
+        gridImageUrl,
+        buttons: Array.isArray(out.buttons) ? out.buttons : [],
+        taskId,
+      })
+    }
+    return true
+  }
+
+  private applyDirectUpscaleResult(runState: UpscaleRunState, out: Record<string, unknown>): void {
+    const filename = readString(out.filename)
+    if (out.success !== true || !filename) return
+
+    const { tiles } = useWorldStore.getState()
+    const tileKey = `${runState.tileX},${runState.tileY}`
+
+    if (tiles[tileKey]) {
+      useWorldStore.setState({
+        tiles: {
+          ...tiles,
+          [tileKey]: { ...tiles[tileKey], image_filename: filename },
+        },
+      })
+    }
+
+    console.log(UpscaleServiceLog.TileUpdatedWithUpscaledImage, filename)
+  }
+
   /**
    * Clear run state and stop polling
    */
   private clearRunState(runState: UpscaleRunState, opId: string) {
-    // Stop polling (now uses timeouts instead of intervals)
-    const timeout = this.pollingIntervals.get(runState.runId)
-    if (timeout) {
-      clearTimeout(timeout)
-      this.pollingIntervals.delete(runState.runId)
-    }
-
     browserStorage.remove(DynamicLocalStorageKeys.upscaleRun(runState.tileId))
 
     // Clear UI status
@@ -402,7 +341,7 @@ export class UpscaleService {
             status: AsyncOperationStatus.InProgress,
           })
 
-          this.startPolling(runState, opId)
+          void this.pollRun(runState, opId)
         }
       } catch {
         console.warn(UpscaleServiceLog.FailedToParseRunState, key)
@@ -490,7 +429,7 @@ export class UpscaleService {
       browserStorage.remove(DynamicLocalStorageKeys.mjGrid(tileId))
 
       // Start polling
-      this.startPolling(runState, opId)
+      void this.pollRun(runState, opId)
 
       return runId
     } catch (error) {

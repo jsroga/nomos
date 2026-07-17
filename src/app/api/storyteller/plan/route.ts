@@ -4,13 +4,10 @@ import { db } from '@/db/client'
 import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
-import {
-  episodeStoryPlanResponse,
-  storyPlanRecordFromJson,
-} from '@/domains/storyteller/core/entities/story-plan-wire'
-import { recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+import { episodeStoryPlanResponse } from '@/domains/storyteller/core/entities/story-plan-wire'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam } from '@/shared/data/constants/protocol'
+import { patchStoryPlanSequence } from './plan-patch-helpers'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -144,80 +141,7 @@ export async function PATCH(req: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
-    const body = await req.json()
-    const { episodeId, projectId, sequenceId, updates } = body
-
-    if (!sequenceId || !updates) {
-      return NextResponse.json({ error: API_ERROR.SEQUENCE_ID_AND_UPDATES_REQUIRED }, { status: 400 })
-    }
-
-    let existingPlan = storyPlanRecordFromJson(null)
-
-    if (episodeId) {
-      if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {
-        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
-      }
-
-      const [episode] = await db
-        .select({ storyPlan: episodes.storyPlan })
-        .from(episodes)
-        .where(eq(episodes.id, episodeId))
-        .limit(1)
-      existingPlan = storyPlanRecordFromJson(episode?.storyPlan)
-    } else if (projectId) {
-      if (!(await verifyProjectAccess(projectId, session.user.id))) {
-        return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
-      }
-
-      const [plan] = await db
-        .select()
-        .from(storyPlans)
-        .where(eq(storyPlans.projectId, projectId))
-        .limit(1)
-
-      existingPlan = storyPlanRecordFromJson(plan?.content)
-
-      if (Object.keys(existingPlan).length === 0) {
-        const [project] = await db
-          .select({ storyPlan: projects.storyPlan })
-          .from(projects)
-          .where(eq(projects.id, projectId))
-          .limit(1)
-        existingPlan = storyPlanRecordFromJson(project?.storyPlan)
-      }
-    }
-
-    const sequences = recordArrayFromJson(existingPlan.sequences)
-    if (sequences.length === 0) {
-      return NextResponse.json({ error: API_ERROR.NO_EXISTING_PLAN }, { status: 404 })
-    }
-
-    const updatedSequences = sequences.map(seq => {
-      const seqId = seq.id
-      if (seqId === sequenceId || String(seqId) === String(sequenceId)) {
-        return { ...seq, ...recordFromJson(updates) }
-      }
-      return seq
-    })
-
-    const updatedPlan = { ...existingPlan, sequences: updatedSequences }
-
-    if (episodeId) {
-      await db
-        .update(episodes)
-        .set({ storyPlan: updatedPlan, updatedAt: new Date() })
-        .where(eq(episodes.id, episodeId))
-    } else if (projectId) {
-      await db
-        .insert(storyPlans)
-        .values({ projectId, content: updatedPlan, updatedAt: new Date() })
-        .onConflictDoUpdate({
-          target: storyPlans.projectId,
-          set: { content: updatedPlan, updatedAt: new Date() },
-        })
-    }
-
-    return NextResponse.json({ success: true, storyPlan: updatedPlan })
+    return patchStoryPlanSequence(req, session.user.id)
   } catch (error) {
     console.error(API_LOG_PREFIX.ERROR_UPDATING_SEQUENCE, error)
     return NextResponse.json({ error: API_ERROR.FAILED_UPDATE_SEQUENCE }, { status: 500 })

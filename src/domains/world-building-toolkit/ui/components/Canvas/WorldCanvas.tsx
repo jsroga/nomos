@@ -1,23 +1,18 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
-import { Tile } from './Tile'
 import { RepaintCanvas } from './RepaintCanvas'
 import { selectModeService } from '@/domains/world-building-toolkit/state/client-services/select-mode-service'
-import { Sparkles, X, ArrowRight } from 'lucide-react'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { useTour } from '@/components/shell/Tour'
-import { TILE_COORD_SEPARATOR } from '@/domains/world-building-toolkit/ui/constants/tile-stage-labels'
 import {
   WORLD_CANVAS_API_CALLING_STATUS,
-  WORLD_CANVAS_APPLY_REPAINT_FAILED_LOG,
-  WORLD_CANVAS_ORIGIN_TILE_COORD,
   WORLD_CANVAS_SEGMENTATION_FAILED_LOG,
   WorldCanvasDomEvent,
-  WorldCanvasDomTag,
-  WorldCanvasKey,
 } from './constants/world-canvas'
-
-const TILE_SIZE = 512
+import { useWorldCanvasKeyboard } from './useWorldCanvasKeyboard'
+import { renderWorldCanvasTiles } from './world-canvas-tiles'
+import { WorldCanvasAssetOverlays } from './WorldCanvasAssetOverlays'
+import { WorldCanvasPromptPopover } from './WorldCanvasPromptPopover'
 
 export const WorldCanvas: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -309,77 +304,7 @@ export const WorldCanvas: React.FC = () => {
     }
   }, [viewport, setViewport, isRepaintMode])
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = async (e: KeyboardEvent) => {
-      // Ignore shortcuts if typing in an input or textarea
-      const target = e.target
-      if (
-        target instanceof HTMLElement &&
-        (target.tagName === WorldCanvasDomTag.Input ||
-          target.tagName === WorldCanvasDomTag.Textarea ||
-          target.isContentEditable)
-      ) {
-        return
-      }
-
-      // P - Enter paint mode
-      if ((e.key === 'P' || e.key === 'p') && !isRepaintMode && !isSelectMode) {
-        e.preventDefault()
-        setRepaintMode(true)
-      }
-
-      // S - Enter select mode
-      if ((e.key === 'S' || e.key === 's') && !isSelectMode && !isRepaintMode) {
-        e.preventDefault()
-        setSelectMode(true)
-      }
-
-      // ESC - Exit modes
-      if (e.key === WorldCanvasKey.Escape) {
-        e.preventDefault()
-        if (repaintResult) {
-          setRepaintResult(null)
-          clearRepaintStrokes()
-          setDebugInfo(null)
-        }
-        if (isRepaintMode) {
-          setRepaintMode(false)
-          clearRepaintStrokes()
-          setDebugInfo(null)
-        }
-        if (isSelectMode) {
-          // If mask exists, clear mask. If no mask, exit mode.
-          if (selectedMask) {
-            setSelectedMask(null)
-          } else {
-            setSelectMode(false)
-            clearSelectBox()
-          }
-        }
-      }
-
-      // Enter - Apply repaint
-      if (e.key === WorldCanvasKey.Enter && repaintResult) {
-        e.preventDefault()
-        try {
-          const { repaintService } =
-            await import('@/domains/world-building-toolkit/state/client-services/repaint-service')
-          await repaintService.applyRepaint(repaintResult)
-          setRepaintResult(null)
-          clearRepaintStrokes()
-          setDebugInfo(null)
-        } catch (error) {
-          console.error(WORLD_CANVAS_APPLY_REPAINT_FAILED_LOG, error)
-        }
-      }
-    }
-
-    window.addEventListener(WorldCanvasDomEvent.KeyDown, handleKeyDown)
-    return () => {
-      window.removeEventListener(WorldCanvasDomEvent.KeyDown, handleKeyDown)
-    }
-  }, [
+  useWorldCanvasKeyboard({
     isRepaintMode,
     isSelectMode,
     repaintResult,
@@ -391,75 +316,26 @@ export const WorldCanvas: React.FC = () => {
     setDebugInfo,
     clearSelectBox,
     setSelectedMask,
-  ])
+  })
 
-  // Render Visible Tiles Logic (Optimization)
-  // For now, render known tiles + immediate neighbors of known tiles
-  const renderTiles = () => {
-    const renderedTiles: React.ReactNode[] = []
-    const knownCoords = new Set(Object.keys(tiles))
-
-    // Add known tiles
-    Object.values(tiles).forEach(tile => {
-      renderedTiles.push(
-        <Tile key={`${tile.x}${TILE_COORD_SEPARATOR}${tile.y}`} x={tile.x} y={tile.y} size={TILE_SIZE} />
-      )
-    })
-
-    // Add empty neighbor placeholders for potential generation
-    // This logic can be refined to only show placeholders near viewport or existing tiles
-    const potentialNeighbors = new Set<string>()
-    Object.values(tiles).forEach(tile => {
-      ;[
-        [0, 1],
-        [0, -1],
-        [1, 0],
-        [-1, 0],
-      ].forEach(([dx, dy]) => {
-        const key = `${tile.x + dx}${TILE_COORD_SEPARATOR}${tile.y + dy}`
-        if (!knownCoords.has(key)) {
-          potentialNeighbors.add(key)
+  const previewBox =
+    drawingBoxStart && drawingBoxEnd
+      ? {
+          x: Math.min(drawingBoxStart.x, drawingBoxEnd.x),
+          y: Math.min(drawingBoxStart.y, drawingBoxEnd.y),
+          width: Math.abs(drawingBoxEnd.x - drawingBoxStart.x),
+          height: Math.abs(drawingBoxEnd.y - drawingBoxStart.y),
         }
-      })
-    })
+      : null
 
-    // If no tiles exist, show 0,0
-    if (Object.keys(tiles).length === 0) {
-      potentialNeighbors.add(WORLD_CANVAS_ORIGIN_TILE_COORD)
-    }
-
-    potentialNeighbors.forEach(key => {
-      const [x, y] = key.split(TILE_COORD_SEPARATOR).map(Number)
-      renderedTiles.push(<Tile key={`empty-${x},${y}`} x={x} y={y} size={TILE_SIZE} />)
-    })
-
-    return renderedTiles
-  }
-
-  // Calculate preview box dimensions for rendering
-  const getPreviewBox = () => {
-    if (!drawingBoxStart || !drawingBoxEnd) return null
-    return {
-      x: Math.min(drawingBoxStart.x, drawingBoxEnd.x),
-      y: Math.min(drawingBoxStart.y, drawingBoxEnd.y),
-      width: Math.abs(drawingBoxEnd.x - drawingBoxStart.x),
-      height: Math.abs(drawingBoxEnd.y - drawingBoxStart.y),
-    }
-  }
-
-  // Calculate finalized box dimensions for rendering
-  const getFinalizedBox = () => {
-    if (!selectBox) return null
-    return {
-      x: Math.min(selectBox.x1, selectBox.x2),
-      y: Math.min(selectBox.y1, selectBox.y2),
-      width: Math.abs(selectBox.x2 - selectBox.x1),
-      height: Math.abs(selectBox.y2 - selectBox.y1),
-    }
-  }
-
-  const previewBox = getPreviewBox()
-  const finalizedBox = getFinalizedBox()
+  const finalizedBox = selectBox
+    ? {
+        x: Math.min(selectBox.x1, selectBox.x2),
+        y: Math.min(selectBox.y1, selectBox.y2),
+        width: Math.abs(selectBox.x2 - selectBox.x1),
+        height: Math.abs(selectBox.y2 - selectBox.y1),
+      }
+    : null
 
   return (
     <div
@@ -484,7 +360,7 @@ export const WorldCanvas: React.FC = () => {
           top: '50%',
         }}
       >
-        {renderTiles()}
+        {renderWorldCanvasTiles(tiles)}
 
         {/* Select Mode Overlay */}
         {isSelectMode && (
@@ -535,103 +411,14 @@ export const WorldCanvas: React.FC = () => {
         )}
 
         {/* Asset Overlays - shown when previewing or showAllAssetMasks */}
-        {currentProject &&
-          assets.map((asset, index) => {
-            const isPreview = previewAssetId === asset.id
-            const shouldShow = isPreview || showAllAssetMasks
-
-            if (!shouldShow || !asset.metadata?.bounds) return null
-
-            const bounds = asset.metadata.bounds
-
-            // Cycle through bright colors for each asset
-            const colors = [
-              {
-                border: '#3B82F6',
-                glow: 'rgba(59, 130, 246, 0.6)',
-                filter: 'hue-rotate(200deg) saturate(2) brightness(1.4)',
-              }, // Blue
-              {
-                border: '#10B981',
-                glow: 'rgba(16, 185, 129, 0.6)',
-                filter: 'hue-rotate(140deg) saturate(2) brightness(1.4)',
-              }, // Green
-              {
-                border: '#F59E0B',
-                glow: 'rgba(245, 158, 11, 0.6)',
-                filter: 'hue-rotate(30deg) saturate(2) brightness(1.4)',
-              }, // Orange
-              {
-                border: '#EC4899',
-                glow: 'rgba(236, 72, 153, 0.6)',
-                filter: 'hue-rotate(320deg) saturate(2) brightness(1.4)',
-              }, // Pink
-              {
-                border: '#8B5CF6',
-                glow: 'rgba(139, 92, 246, 0.6)',
-                filter: 'hue-rotate(260deg) saturate(2) brightness(1.4)',
-              }, // Purple
-              {
-                border: '#06B6D4',
-                glow: 'rgba(6, 182, 212, 0.6)',
-                filter: 'hue-rotate(180deg) saturate(2) brightness(1.4)',
-              }, // Cyan
-            ]
-            const color = colors[index % colors.length]
-
-            return (
-              <div
-                key={asset.id}
-                className={`absolute pointer-events-none transition-all ${isPreview ? 'z-20' : 'z-5'
-                  }`}
-                style={{
-                  left: bounds.x,
-                  top: bounds.y,
-                  width: bounds.width,
-                  height: bounds.height,
-                }}
-              >
-                {/* Bright colored overlay behind the image */}
-                <div
-                  className="absolute inset-0 rounded-sm"
-                  style={{
-                    backgroundColor: color.glow,
-                    mixBlendMode: 'screen',
-                  }}
-                />
-                <img
-                  src={asset.image_filename.startsWith('http') ? asset.image_filename : `/projects/${currentProject.id}/assets/${asset.image_filename}`}
-                  alt="Asset"
-                  className="w-full h-full relative"
-                  style={{
-                    filter: isPreview
-                      ? `brightness(1.5) contrast(1.1) drop-shadow(0 0 12px ${color.border})`
-                      : `brightness(1.3) contrast(1.05) drop-shadow(0 0 6px ${color.border})`,
-                    objectFit: 'fill',
-                  }}
-                />
-                {/* Bright border */}
-                <div
-                  className="absolute inset-0 rounded-sm"
-                  style={{
-                    border: `3px solid ${color.border}`,
-                    boxShadow: isPreview
-                      ? `0 0 20px ${color.glow}, inset 0 0 10px ${color.glow}`
-                      : `0 0 10px ${color.glow}`,
-                  }}
-                />
-                {/* Label */}
-                {isPreview && (
-                  <div
-                    className="absolute -top-6 left-0 text-xs font-bold px-2 py-0.5 rounded"
-                    style={{ backgroundColor: color.border, color: 'white' }}
-                  >
-                    PREVIEW
-                  </div>
-                )}
-              </div>
-            )
-          })}
+        {currentProject && (
+          <WorldCanvasAssetOverlays
+            projectId={currentProject.id}
+            assets={assets}
+            previewAssetId={previewAssetId}
+            showAllAssetMasks={showAllAssetMasks}
+          />
+        )}
       </div>
 
       {/* UI Overlay for Scale */}
@@ -641,60 +428,15 @@ export const WorldCanvas: React.FC = () => {
 
       <RepaintCanvas />
 
-      {/* Prompt Popover - appears after drawing a box */}
-      {showPromptPopover && (
-        <div
-          className="fixed z-50 animate-in fade-in-0 zoom-in-95 duration-150"
-          style={{
-            left: Math.min(popoverPosition.x + 8, window.innerWidth - 320),
-            top: Math.min(popoverPosition.y + 8, window.innerHeight - 120),
-          }}
-        >
-          <div className="bg-card border border-border rounded-xl shadow-2xl p-3 w-72">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">What do you want to select?</span>
-              <button onClick={handlePromptCancel} className="ml-auto p-1 hover:bg-muted rounded">
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            </div>
-
-            <div className="flex gap-2">
-              <input
-                ref={promptInputRef}
-                type="text"
-                value={selectTextPrompt}
-                onChange={e => setSelectTextPrompt(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handlePromptConfirm()
-                  } else if (e.key === 'Escape') {
-                    handlePromptCancel()
-                  }
-                }}
-                onMouseDown={e => e.stopPropagation()}
-                placeholder="e.g., car, person, tree..."
-                className="flex-1 bg-background border border-input rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground"
-              />
-              <button
-                onClick={e => {
-                  e.stopPropagation()
-                  handlePromptConfirm()
-                }}
-                onMouseDown={e => e.stopPropagation()}
-                className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 flex items-center gap-1"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-[10px] text-muted-foreground mt-2">
-              Press Enter to segment • Esc to cancel • Leave empty for auto-detect
-            </p>
-          </div>
-        </div>
-      )}
+      <WorldCanvasPromptPopover
+        show={showPromptPopover}
+        position={popoverPosition}
+        selectTextPrompt={selectTextPrompt}
+        promptInputRef={promptInputRef}
+        onPromptChange={setSelectTextPrompt}
+        onConfirm={handlePromptConfirm}
+        onCancel={handlePromptCancel}
+      />
     </div>
   )
 }

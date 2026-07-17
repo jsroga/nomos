@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Node, Edge } from '@xyflow/react'
 import { LoopAutoSaveMessage, LoopAutoSaveStatus } from '@/domains/loop-creator/constants/auto-save'
-import { LoopHttpMethod } from '@/domains/loop-creator/constants/loop-http'
+import { updateLoop } from '@/domains/loop-creator/core/io/loops.api'
 
 interface UseAutoSaveOptions {
   loopId: string | null
@@ -43,22 +43,13 @@ export function useAutoSave({
     try {
       setSaveStatus(prev => ({ ...prev, status: LoopAutoSaveStatus.Saving, error: null }))
 
-      const response = await fetch('/api/loop-creator/loops', {
-        method: LoopHttpMethod.Patch,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: loopId,
-          nodes,
-          edges,
-          metadata,
-          analysis,
-        }),
+      await updateLoop({
+        id: loopId,
+        nodes,
+        edges,
+        metadata,
+        analysis,
       })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || LoopAutoSaveMessage.FailedToSave)
-      }
 
       setSaveStatus({
         status: LoopAutoSaveStatus.Saved,

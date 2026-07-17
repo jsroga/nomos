@@ -3,7 +3,7 @@ import { interiorDesignerApi } from '@/domains/interior-designer/core/io/interio
 import type { InteriorDesign } from '@/domains/interior-designer/core/io/interior-designer.dto'
 import { DesignManagerCopy } from '@/domains/interior-designer/constants/design-manager-copy'
 import { useInteriorStore } from '@/domains/interior-designer'
-import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
+import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { Button } from '@/components/Button'
 import { ButtonVariantKey } from '@/components/Button/constants/button-styles'
 import { CONFIRM_DIALOG_CANCEL_LABEL } from '@/components/ConfirmDialog/constants/confirm-dialog-copy'

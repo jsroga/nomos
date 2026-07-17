@@ -3,7 +3,7 @@
 import React from 'react'
 import { Check, X, Eye, Loader2 } from 'lucide-react'
 import { Button } from '@/components/Button'
-import { PendingAction } from './bible-context'
+import type { PendingAction } from '../utils/bible-context-types'
 
 interface SectionPendingOverlayProps {
   pendingAction: PendingAction

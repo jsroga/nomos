@@ -1,4 +1,5 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordArrayFromJson, recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
 
@@ -46,15 +47,6 @@ export interface ProjectStyleSettings {
   name?: string
   styleReferenceUrls?: string[]
   stylePreset?: string | null
-}
-
-async function fetchJsonRecord(url: string, init?: RequestInit): Promise<Record<string, unknown>> {
-  const response = await fetch(url, init)
-  const data = recordFromJson(await response.json().catch(() => ({})))
-  if (!response.ok) {
-    throw new Error(readString(data.error) ?? `Request failed (${response.status})`)
-  }
-  return data
 }
 
 function parseProviderStatus(value: unknown): ProviderStatus {

@@ -5,11 +5,18 @@
  * Shows current section, completion status, and estimated time.
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import { cn } from '@/shared/data/utils'
-import { Check, Loader2, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { Clock, ChevronDown, ChevronUp } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SectionProgressStatus } from '@/shared/chat/ui/constants/section-progress'
+import {
+  sectionIndicatorClass,
+  sectionLabelClass,
+  SectionStatusIcon,
+  subSectionLabelClass,
+  SubSectionStatusIcon,
+} from '@/shared/chat/ui/SectionProgressIndicators'
 
 export interface ProgressSection {
   id: string
@@ -96,35 +103,14 @@ const SectionItem: React.FC<{
 
       <div className="flex items-start gap-3 py-1">
         {/* Status indicator */}
-        <div
-          className={cn(
-            'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5',
-            section.status === SectionProgressStatus.Completed && 'bg-emerald-500/20 text-emerald-500',
-            section.status === SectionProgressStatus.InProgress && 'bg-blue-500/20 text-blue-500',
-            section.status === SectionProgressStatus.Pending && 'bg-muted text-muted-foreground',
-            section.status === SectionProgressStatus.Error && 'bg-red-500/20 text-red-500'
-          )}
-        >
-          {section.status === SectionProgressStatus.Completed && <Check className="w-3.5 h-3.5" />}
-          {section.status === SectionProgressStatus.InProgress && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          {section.status === SectionProgressStatus.Pending && <span className="text-xs font-medium">{index + 1}</span>}
-          {section.status === SectionProgressStatus.Error && <span className="text-xs">!</span>}
+        <div className={sectionIndicatorClass(section.status)}>
+          <SectionStatusIcon status={section.status} index={index} />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                'text-sm font-medium',
-                section.status === SectionProgressStatus.Completed && 'text-foreground',
-                section.status === SectionProgressStatus.InProgress && 'text-blue-500',
-                section.status === SectionProgressStatus.Pending && 'text-muted-foreground',
-                section.status === SectionProgressStatus.Error && 'text-red-500'
-              )}
-            >
-              {section.label}
-            </span>
+            <span className={sectionLabelClass(section.status)}>{section.label}</span>
 
             {duration && <span className="text-xs text-muted-foreground">{duration}</span>}
           </div>
@@ -138,20 +124,8 @@ const SectionItem: React.FC<{
             <div className="ml-2 mt-2 space-y-1 border-l-2 border-border/50 pl-3">
               {section.subSections.map((sub, _i) => (
                 <div key={sub.id} className="flex items-center gap-2 text-xs">
-                  {sub.status === SectionProgressStatus.Completed && <Check className="w-3 h-3 text-emerald-500" />}
-                  {sub.status === SectionProgressStatus.InProgress && (
-                    <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
-                  )}
-                  {sub.status === SectionProgressStatus.Pending && <div className="w-3 h-3 rounded-full bg-muted" />}
-                  <span
-                    className={cn(
-                      sub.status === SectionProgressStatus.Completed && 'text-foreground',
-                      sub.status === SectionProgressStatus.InProgress && 'text-blue-500',
-                      sub.status === SectionProgressStatus.Pending && 'text-muted-foreground'
-                    )}
-                  >
-                    {sub.label}
-                  </span>
+                  <SubSectionStatusIcon status={sub.status} />
+                  <span className={subSectionLabelClass(sub.status)}>{sub.label}</span>
                 </div>
               ))}
             </div>
@@ -174,20 +148,15 @@ export const SectionProgress: React.FC<SectionProgressProps> = ({
   className,
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
-  const [estimatedTime, setEstimatedTime] = useState<number | null>(null)
 
-  // Calculate completion percentage
+  const estimatedTime = useMemo(() => {
+    if (!showEstimatedTime) return null
+    return calculateEstimatedTime(sections)
+  }, [sections, showEstimatedTime])
+
   const completed = sections.filter(s => s.status === SectionProgressStatus.Completed).length
   const total = sections.length
   const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
-
-  // Update estimated time
-  useEffect(() => {
-    if (showEstimatedTime) {
-      const est = calculateEstimatedTime(sections)
-      setEstimatedTime(est)
-    }
-  }, [sections, showEstimatedTime])
 
   const hasInProgress = sections.some(s => s.status === SectionProgressStatus.InProgress)
 

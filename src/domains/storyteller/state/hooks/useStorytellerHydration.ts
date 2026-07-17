@@ -8,6 +8,10 @@ import {
   mergeCastFromSource,
   readCastFromPlan,
 } from '@/domains/storyteller/core/formatting/story-plan-fields'
+import {
+  parseSeriesBibleRecord,
+  parseStoryPlanRecord,
+} from '@/domains/storyteller/core/io/project-jsonb'
 import { recordArrayFromJson, recordFromJson, stringRecordFromJson } from '@/shared/data/json-guards'
 import {
   HYDRATION_BIBLE_CATEGORIES,
@@ -79,23 +83,22 @@ export function useStorytellerHydration({
   useEffect(() => {
     if (!hydrationSignature || !currentProject?.id) return
 
-    const rawBible = currentProject.series_bible ?? {}
-    const rawStoryPlan = currentProject.story_plan ?? {}
-    const bible = recordFromJson(rawBible)
+    const bible = parseSeriesBibleRecord(currentProject.series_bible)
+    const rawStoryPlan = parseStoryPlanRecord(currentProject.story_plan)
     const nestedStoryPlan = recordFromJson(bible.storyPlan)
 
     console.log(StorytellerHydrationLog.Check, {
-      hasRawBible: Object.keys(rawBible).length > 0,
+      hasRawBible: Object.keys(bible).length > 0,
       hasRawStoryPlan: Object.keys(rawStoryPlan).length > 0,
       rawStoryPlanKeys: Object.keys(rawStoryPlan),
       rawStoryPlanWorldRules: recordArrayFromJson(rawStoryPlan.worldRules).length,
-      rawBibleKeys: Object.keys(rawBible),
+      rawBibleKeys: Object.keys(bible),
       rawBibleUpdatedFieldsWorldRules: recordArrayFromJson(
-        recordFromJson(rawBible.updatedFields).worldRules
+        recordFromJson(bible.updatedFields).worldRules
       ).length,
     })
 
-    if (Object.keys(rawBible).length === 0 && Object.keys(rawStoryPlan).length === 0) return
+    if (Object.keys(bible).length === 0 && Object.keys(rawStoryPlan).length === 0) return
 
     console.log(StorytellerHydrationLog.Hydrating)
 

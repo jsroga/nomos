@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildUrl, joinUrlPath, appendQueryParams, cloneSearchParams, buildPathWithSearchParams, buildQueryString, encodePathSegment } from '@/shared/data/url-builder';
+import { buildUrl, joinUrlPath, appendQueryParams, cloneSearchParams, buildPathWithSearchParams, buildQueryString, encodePathSegment } from '@/shared/data/url-builder'
 
 
 describe('url-builder', () => {

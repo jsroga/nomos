@@ -4,13 +4,6 @@
  * CharacterWeb Component
  *
  * Interactive graph visualization of character relationships using React Flow.
- * Shows characters and factions as nodes, relationships as edges.
- *
- * Features:
- * - Auto-layout using force-directed simulation
- * - Edge styling by relationship type
- * - Click to select and highlight related nodes
- * - Hover for relationship details
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -23,32 +16,19 @@ import {
   BackgroundVariant,
   useNodesState,
   useEdgesState,
-  MarkerType,
   Panel,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { cn } from '@/shared/data/utils'
 import { Loader2, RefreshCw } from 'lucide-react'
 import CharacterNode from './CharacterNode'
-import { ReferenceText } from '../ReferenceText'
 import {
-  CharacterWebNode,
   CharacterWebEdge,
+  CharacterWebNode,
   CharacterNodeData,
-  parseRelationshipType,
-  readRelationshipEdgeEvidence,
-  readRelationshipEdgeLlmGrounded,
-  RELATIONSHIP_STYLES,
-  RelationshipMatrixResponse,
   relationshipMatrixFromJson,
 } from './types'
 import {
-  CHARACTER_WEB_DEFAULT_ENTITY_TYPE,
-  CHARACTER_WEB_DEFAULT_RELATIONSHIP,
-  CHARACTER_WEB_LAYOUT_TYPES,
-  CHARACTER_WEB_LEGEND_ITEMS,
-  CHARACTER_WEB_STROKE_DASH_BY_STYLE,
-  CharacterWebEdgeStyle,
   CharacterWebLog,
   CharacterWebMinimapColor,
   CharacterWebNodeType,
@@ -58,9 +38,20 @@ import {
 } from './constants/character-web'
 import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
 import { fetchStorytellerRelationships } from '@/domains/storyteller/core/io/storyteller.api'
-import { RelationshipStrokeStyle } from './constants/relationship-web-styles'
+import {
+  applyForceLayout,
+  buildLayoutCacheKey,
+  cloneNodes,
+  convertToFlowData,
+  getAdaptiveIterationCount,
+} from './character-web-layout'
+import {
+  decorateCharacterWebEdges,
+  decorateCharacterWebNodes,
+} from './character-web-decorations'
+import { NodeDetailsPanel } from './NodeDetailsPanel'
+import { EdgeDetailsPanel } from './EdgeDetailsPanel'
 
-// Register custom node types
 const nodeTypes = {
   [CharacterWebNodeType.CharacterNode]: CharacterNode,
 }
@@ -68,268 +59,12 @@ const nodeTypes = {
 const PERF_DEBUG = process.env.NEXT_PUBLIC_PERF_DEBUG === '1'
 
 export interface CharacterWebProps {
-  /** Project ID to fetch relationships for */
   projectId: string
-  /** Callback when a node is clicked */
   onNodeClick?: (nodeId: string, nodeData: CharacterNodeData) => void
-  /** Entity ID to focus/highlight on mount or when changed */
   focusEntityId?: string | null
-  /** Additional className */
   className?: string
-  /** Whether to show the minimap */
   showMinimap?: boolean
-  /** Whether to show the legend */
   showLegend?: boolean
-}
-
-/**
- * Apply force-directed layout with proper spacing
- *
- * Uses a spring-electric model:
- * - All nodes repel each other (electric force)
- * - Connected nodes attract (spring force, proportional to edge weight)
- * - Central node is pinned near center
- * - Groups entities by type for visual clustering
- */
-function applyForceLayout(
-  nodes: CharacterWebNode[],
-  edges: CharacterWebEdge[],
-  iterations: number,
-  width: number = 2000,
-  height: number = 1600
-): CharacterWebNode[] {
-  if (nodes.length === 0) return nodes
-  if (nodes.length === 1) {
-    return [{ ...nodes[0], position: { x: width / 2, y: height / 2 } }]
-  }
-
-  const positions = new Map<string, { x: number; y: number; vx: number; vy: number }>()
-  const centerX = width / 2
-  const centerY = height / 2
-
-  // Initial placement: radial by type for natural clustering
-  const grouped = new Map<string, CharacterWebNode[]>()
-  for (const node of nodes) {
-    const t = node.data.type || CHARACTER_WEB_DEFAULT_ENTITY_TYPE
-    let bucket = grouped.get(t)
-    if (!bucket) {
-      bucket = []
-      grouped.set(t, bucket)
-    }
-    bucket.push(node)
-  }
-  const typeOrder = Array.from(new Set([...CHARACTER_WEB_LAYOUT_TYPES, ...grouped.keys()]))
-
-  const baseRadius = Math.min(width, height) * 0.3
-
-  for (const [typeIdx, type] of typeOrder.entries()) {
-    const group = grouped.get(type) || []
-    // Each type gets a sector of the circle
-    const sectorAngle = (2 * Math.PI * typeIdx) / Math.max(typeOrder.length, 1)
-
-    group.forEach((node, i) => {
-      const spread = (Math.PI * 0.6) / Math.max(group.length, 1)
-      const angle = sectorAngle + (i - group.length / 2) * spread
-      const r = baseRadius + (i % 2) * 100 // Alternate radii for spacing
-
-      positions.set(node.id, {
-        x: centerX + r * Math.cos(angle),
-        y: centerY + r * Math.sin(angle),
-        vx: 0,
-        vy: 0,
-      })
-    })
-  }
-
-  // Force simulation parameters
-  const repulsion = 50000 // Strong repulsion to keep nodes apart
-  const springStrength = 0.008 // Gentle attraction along edges
-  const damping = 0.92 // Velocity damping
-  const minDist = 200 // Minimum distance between nodes
-  const centerGravity = 0.001 // Pull toward center
-
-  for (let iter = 0; iter < iterations; iter++) {
-    const cooling = 1 - iter / iterations // Gradually reduce forces
-
-    // Repulsion: all pairs
-    for (let i = 0; i < nodes.length; i++) {
-      const posA = positions.get(nodes[i].id)
-      if (!posA) continue
-      for (let j = i + 1; j < nodes.length; j++) {
-        const posB = positions.get(nodes[j].id)
-        if (!posB) continue
-
-        let dx = posA.x - posB.x
-        let dy = posA.y - posB.y
-        let dist = Math.sqrt(dx * dx + dy * dy)
-
-        if (dist < 1) {
-          dx = Math.random() - 0.5
-          dy = Math.random() - 0.5
-          dist = 1
-        }
-
-        // Stronger repulsion when close
-        const force = (repulsion * cooling) / (dist * dist)
-        const fx = (dx / dist) * force
-        const fy = (dy / dist) * force
-
-        posA.vx += fx
-        posA.vy += fy
-        posB.vx -= fx
-        posB.vy -= fy
-      }
-    }
-
-    // Attraction: connected pairs
-    for (const edge of edges) {
-      const posSource = positions.get(edge.source)
-      const posTarget = positions.get(edge.target)
-      if (!posSource || !posTarget) continue
-
-      const dx = posTarget.x - posSource.x
-      const dy = posTarget.y - posSource.y
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1
-
-      // Spring force - stronger edges = closer together, but enforce minimum distance
-      const weight = edge.data?.strength || 0.5
-      const idealDist = minDist + (1 - weight) * 300 // High similarity = closer
-      const displacement = dist - idealDist
-      const force = displacement * springStrength * weight * cooling
-
-      const fx = (dx / dist) * force
-      const fy = (dy / dist) * force
-
-      posSource.vx += fx
-      posSource.vy += fy
-      posTarget.vx -= fx
-      posTarget.vy -= fy
-    }
-
-    // Center gravity
-    for (const node of nodes) {
-      const pos = positions.get(node.id)
-      if (!pos) continue
-      pos.vx += (centerX - pos.x) * centerGravity
-      pos.vy += (centerY - pos.y) * centerGravity
-    }
-
-    // Apply velocities with damping
-    for (const node of nodes) {
-      const pos = positions.get(node.id)
-      if (!pos) continue
-      pos.vx *= damping
-      pos.vy *= damping
-      pos.x += pos.vx
-      pos.y += pos.vy
-
-      // Soft bounds
-      pos.x = Math.max(100, Math.min(width - 100, pos.x))
-      pos.y = Math.max(100, Math.min(height - 100, pos.y))
-    }
-  }
-
-  return nodes.map(node => ({
-    ...node,
-    position: {
-      x: positions.get(node.id)?.x || centerX,
-      y: positions.get(node.id)?.y || centerY,
-    },
-  }))
-}
-
-const getAdaptiveIterationCount = (nodeCount: number): number => {
-  if (nodeCount <= 25) return 120
-  if (nodeCount <= 50) return 90
-  if (nodeCount <= 90) return 60
-  return 40
-}
-
-const buildLayoutCacheKey = (data: RelationshipMatrixResponse): string => {
-  const nodePart = data.nodes
-    .map(n => `${n.id}:${n.type}:${n.name}`)
-    .sort()
-    .join('|')
-  const edgePart = data.edges
-    .map(e => `${e.source}->${e.target}:${e.type}:${e.weight ?? 0}`)
-    .sort()
-    .join('|')
-  return `${nodePart}::${edgePart}`
-}
-
-const cloneNodes = (nodes: CharacterWebNode[]): CharacterWebNode[] =>
-  nodes.map(node => ({
-    ...node,
-    position: { ...node.position },
-    data: { ...node.data },
-    style: node.style ? { ...node.style } : node.style,
-  }))
-
-/**
- * Convert API response to React Flow nodes and edges
- */
-function convertToFlowData(data: RelationshipMatrixResponse): {
-  nodes: CharacterWebNode[]
-  edges: CharacterWebEdge[]
-} {
-  const nodes: CharacterWebNode[] = data.nodes.map((n, _index) => ({
-    id: n.id,
-    type: CharacterWebNodeType.CharacterNode,
-    position: { x: 0, y: 0 }, // Will be set by layout
-    data: {
-      name: n.name,
-      type: n.type,
-      role: n.metadata.role || n.metadata.archetype,
-      description: n.description || n.metadata.description || '',
-      stressLevel: n.metadata.metrics?.perceivedStakes,
-      transformationProgress: n.metadata.metrics?.transformation,
-      isCentral: n.id === data.centralCharacter || n.name === data.centralCharacter,
-    },
-  }))
-
-  const edges: CharacterWebEdge[] = data.edges.map((e, _index) => {
-    const relType = parseRelationshipType(e.type)
-    const style = RELATIONSHIP_STYLES[relType] || RELATIONSHIP_STYLES.related
-
-    // Scale stroke width by weight for visual weight
-    const scaledWidth = Math.max(1, style.strokeWidth * (e.weight || 0.5))
-
-    return {
-      id: `e-${e.source}-${e.target}`,
-      source: e.source,
-      target: e.target,
-      animated: style.animated,
-      label: e.label || relType.replace(/_/g, ' '),
-      labelStyle: { fill: CharacterWebEdgeStyle.LabelFill, fontSize: 9, fontWeight: 500 },
-      labelBgStyle: { fill: CharacterWebEdgeStyle.LabelBgFill, fillOpacity: 0.8 },
-      labelBgPadding: [4, 2] satisfies [number, number],
-      style: {
-        stroke: style.color,
-        strokeWidth: scaledWidth,
-        strokeDasharray:
-          style.strokeStyle === RelationshipStrokeStyle.Dashed
-            ? CHARACTER_WEB_STROKE_DASH_BY_STYLE[RelationshipStrokeStyle.Dashed]
-            : style.strokeStyle === RelationshipStrokeStyle.Dotted
-              ? CHARACTER_WEB_STROKE_DASH_BY_STYLE[RelationshipStrokeStyle.Dotted]
-              : undefined,
-        opacity: Math.max(0.3, e.weight || 0.5),
-      },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: style.color,
-        width: 12,
-        height: 12,
-      },
-      data: {
-        relationshipType: relType,
-        strength: e.weight,
-        evidence: e.evidence,
-        llmGrounded: e.llmGrounded,
-      },
-    }
-  })
-
-  return { nodes, edges }
 }
 
 export function CharacterWeb({
@@ -373,7 +108,6 @@ export function CharacterWeb({
     return map
   }, [nodes])
 
-  // Persist selected node in URL
   const updateUrlWithNode = useCallback((nodeId: string | null) => {
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
@@ -385,7 +119,6 @@ export function CharacterWeb({
     window.history.replaceState({}, '', url.toString())
   }, [])
 
-  // Read initial node selection from URL
   useEffect(() => {
     if (typeof window === 'undefined' || nodes.length === 0) return
     const url = new URL(window.location.href)
@@ -398,17 +131,15 @@ export function CharacterWeb({
     }
   }, [nodes, selectedNodeId])
 
-  // Focus on entity when focusEntityId changes
   useEffect(() => {
     if (!focusEntityId || nodes.length === 0) return
 
-    // Find the node matching this entity ID
     const targetNode = nodes.find(
       n =>
         n.id === focusEntityId ||
         n.id.includes(focusEntityId) ||
         n.data.name?.toLowerCase().replace(/\s+/g, '-') ===
-        focusEntityId.split('-').slice(1).join('-')
+          focusEntityId.split('-').slice(1).join('-')
     )
 
     if (targetNode) {
@@ -418,7 +149,6 @@ export function CharacterWeb({
     }
   }, [focusEntityId, nodes, updateUrlWithNode])
 
-  // Fetch relationship data
   const fetchRelationships = useCallback(async () => {
     setIsLoading(true)
     setError(null)
@@ -426,10 +156,7 @@ export function CharacterWeb({
 
     try {
       const data = relationshipMatrixFromJson(await fetchStorytellerRelationships(projectId))
-
-      // Convert to React Flow format
       const { nodes: flowNodes, edges: flowEdges } = convertToFlowData(data)
-
       const layoutKey = buildLayoutCacheKey(data)
       const cachedLayout = layoutCacheRef.current.get(layoutKey)
       let layoutedNodes: CharacterWebNode[]
@@ -456,70 +183,30 @@ export function CharacterWeb({
     }
   }, [projectId, setNodes, setEdges])
 
-  // Initial load
   useEffect(() => {
     fetchRelationships()
   }, [fetchRelationships])
 
-  const decoratedNodes = useMemo(() => {
-    if (!selectedNodeId) return nodes
-    const connectedNodeIds = adjacencyByNodeId.get(selectedNodeId) ?? new Set<string>()
+  const decoratedNodes = useMemo(
+    () => decorateCharacterWebNodes(nodes, selectedNodeId, adjacencyByNodeId),
+    [adjacencyByNodeId, nodes, selectedNodeId]
+  )
 
-    return nodes.map(node => {
-      const isSelected = node.id === selectedNodeId
-      const isConnected = isSelected || connectedNodeIds.has(node.id)
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          isHighlighted: !isSelected && connectedNodeIds.has(node.id),
-          isSelected,
-        },
-        style: {
-          ...node.style,
-          opacity: isConnected ? 1 : 0.15,
-          transition: CharacterWebEdgeStyle.OpacityTransition,
-        },
-      }
-    })
-  }, [adjacencyByNodeId, nodes, selectedNodeId])
-
-  const decoratedEdges = useMemo(() => {
-    if (!selectedNodeId) {
-      return edges.map(edge => ({
-        ...edge,
-        style: {
-          ...edge.style,
-          opacity: Math.max(0.3, edge.data?.strength || 0.5),
-          transition: CharacterWebEdgeStyle.OpacityTransition,
-        },
-        labelStyle: { ...(edge.labelStyle ?? {}), opacity: 1 },
-      }))
-    }
-
-    return edges.map(edge => {
-      const isConnected = edge.source === selectedNodeId || edge.target === selectedNodeId
-      return {
-        ...edge,
-        style: {
-          ...edge.style,
-          opacity: isConnected ? 1 : 0.08,
-          transition: CharacterWebEdgeStyle.OpacityTransition,
-        },
-        labelStyle: {
-          ...(edge.labelStyle ?? {}),
-          opacity: isConnected ? 1 : 0,
-        },
-      }
-    })
-  }, [edges, selectedNodeId])
+  const decoratedEdges = useMemo(
+    () => decorateCharacterWebEdges(edges, selectedNodeId),
+    [edges, selectedNodeId]
+  )
 
   const selectedNode = useMemo(
     () => (selectedNodeId ? nodeById.get(selectedNodeId) ?? null : null),
     [nodeById, selectedNodeId]
   )
 
-  // Handle node click - toggle selection, highlight connections, persist in URL
+  const selectedEdge = useMemo(
+    () => (selectedEdgeId ? edges.find(edge => edge.id === selectedEdgeId) ?? null : null),
+    [edges, selectedEdgeId]
+  )
+
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node<CharacterNodeData>) => {
       const isDeselecting = selectedNodeId === node.id
@@ -533,7 +220,6 @@ export function CharacterWeb({
     [selectedNodeId, onNodeClick, updateUrlWithNode]
   )
 
-  // Handle edge click - show evidence panel
   const handleEdgeClick = useCallback(
     (_: React.MouseEvent, edge: CharacterWebEdge) => {
       setSelectedEdgeId(prev => (prev === edge.id ? null : edge.id))
@@ -543,23 +229,11 @@ export function CharacterWeb({
     [updateUrlWithNode]
   )
 
-  // Clear selection when clicking background
   const handlePaneClick = useCallback(() => {
     setSelectedNodeId(null)
     setSelectedEdgeId(null)
     updateUrlWithNode(null)
   }, [updateUrlWithNode])
-
-  // Legend items
-  useMemo(
-        () =>
-          CHARACTER_WEB_LEGEND_ITEMS.map(item => ({
-            type: item.type,
-            label: item.label,
-            color: RELATIONSHIP_STYLES[item.type].color,
-          })),
-        []
-      )
 
   if (isLoading) {
     return (
@@ -599,6 +273,9 @@ export function CharacterWeb({
       </div>
     )
   }
+
+  const sourceNode = selectedEdge ? nodeById.get(selectedEdge.source) : undefined
+  const targetNode = selectedEdge ? nodeById.get(selectedEdge.target) : undefined
 
   return (
     <div className={cn('h-full w-full', className)}>
@@ -645,7 +322,6 @@ export function CharacterWeb({
           />
         )}
 
-        {/* Refresh button */}
         <Panel position="top-left">
           <button
             onClick={fetchRelationships}
@@ -657,7 +333,6 @@ export function CharacterWeb({
         </Panel>
       </ReactFlow>
 
-      {/* Node Details Panel */}
       {selectedNode && !selectedEdgeId && (
         <NodeDetailsPanel
           projectId={projectId}
@@ -669,277 +344,14 @@ export function CharacterWeb({
         />
       )}
 
-      {/* Edge Evidence Panel */}
-      {selectedEdgeId && (() => {
-        const edge = edges.find(e => e.id === selectedEdgeId)
-        const sourceNode = edge ? nodes.find(n => n.id === edge.source) : null
-        const targetNode = edge ? nodes.find(n => n.id === edge.target) : null
-        return edge && sourceNode && targetNode ? (
-          <EdgeDetailsPanel
-            edge={edge}
-            sourceName={sourceNode.data.name}
-            targetName={targetNode.data.name}
-            onClose={() => setSelectedEdgeId(null)}
-          />
-        ) : null
-      })()}
-    </div>
-  )
-}
-
-function NodeDetailsPanel({
-  node,
-  onClose,
-  projectId,
-}: {
-  node: CharacterWebNode
-  onClose: () => void
-  projectId: string
-}) {
-  const data = node.data
-  const type = data.type || CHARACTER_WEB_DEFAULT_ENTITY_TYPE
-  const isCharacter = type === StoryEntityType.Character
-
-  // Helper to format relationship type labels
-  const getLabel = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')
-
-  return (
-    <div className="absolute top-[70px] right-4 w-72 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/80 rounded-lg shadow-2xl overflow-hidden z-10 animate-in fade-in slide-in-from-right-2 duration-200">
-      {/* Ultra-Compact Header */}
-      <div className="p-3 flex items-center gap-3 border-b border-zinc-800/50 bg-zinc-900/30">
-        <div className="flex-shrink-0 relative">
-          {data.avatarUrl ? (
-            <img
-              src={data.avatarUrl}
-              alt={data.name}
-              className="w-10 h-10 rounded-md object-cover border border-zinc-700/50 shadow-sm"
-            />
-          ) : (
-            <div
-              className={cn(
-                'w-10 h-10 rounded-md flex items-center justify-center border border-zinc-700/50 shadow-sm text-sm font-bold',
-                type === StoryEntityType.Character
-                  ? 'bg-purple-900/20 text-purple-200'
-                  : type === StoryEntityType.Faction
-                    ? 'bg-blue-900/20 text-blue-200'
-                    : type === StoryEntityType.Place
-                      ? 'bg-emerald-900/20 text-emerald-200'
-                      : 'bg-zinc-800/50 text-zinc-300'
-              )}
-            >
-              {data.name.charAt(0)}
-            </div>
-          )}
-
-          {/* Badge Overlay */}
-          <div
-            className={cn(
-              'absolute -bottom-1 -right-1 px-1 py-px rounded-[2px] text-[8px] uppercase font-bold tracking-wider leading-none shadow-sm border border-black/20',
-              type === StoryEntityType.Character
-                ? 'bg-purple-500/20 text-purple-300'
-                : 'bg-zinc-500/20 text-zinc-400'
-            )}
-          >
-            {getLabel(type).slice(0, 4)}
-          </div>
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-zinc-100 truncate pr-6 leading-tight">
-              {data.name}
-            </h3>
-            <button
-              onClick={onClose}
-              className="absolute top-2 right-2 text-zinc-600 hover:text-zinc-300 transition-colors p-1"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="flex items-baseline gap-2 mt-0.5">
-            {data.role ? (
-              <span className="text-[10px] text-zinc-400 truncate max-w-[140px]" title={data.role}>
-                {data.role}
-              </span>
-            ) : (
-              <span className="text-[10px] italic text-zinc-600">No Role</span>
-            )}
-            {data.isCentral && (
-              <span className="text-[8px] text-amber-500/80 font-bold ml-auto uppercase tracking-tighter">
-                ANCHOR
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Description & Metrics */}
-      <div className="p-3 space-y-3">
-        {data.description ? (
-          <div className="text-[10px] leading-relaxed text-zinc-400 line-clamp-3">
-            <ReferenceText
-              text={data.description}
-              projectId={projectId}
-              className="text-zinc-400"
-            />
-          </div>
-        ) : (
-          <div className="text-[10px] italic text-zinc-600">No description available.</div>
-        )}
-
-        {isCharacter &&
-          (data.stressLevel !== undefined || data.transformationProgress !== undefined) && (
-            <div className="space-y-2 pt-1">
-              {data.stressLevel !== undefined && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-zinc-500 uppercase tracking-wider w-8">
-                    Stress
-                  </span>
-                  <div className="flex-1 h-1 bg-zinc-800/50 rounded-full overflow-hidden">
-                    <div
-                      className={cn(
-                        'h-full rounded-full',
-                        data.stressLevel > 70
-                          ? 'bg-red-500/70'
-                          : data.stressLevel > 40
-                            ? 'bg-amber-500/70'
-                            : 'bg-emerald-500/70'
-                      )}
-                      style={{ width: `${data.stressLevel}%` }}
-                    />
-                  </div>
-                  <span className="text-[9px] font-mono text-zinc-400 w-6 text-right">
-                    {data.stressLevel}%
-                  </span>
-                </div>
-              )}
-
-              {data.transformationProgress !== undefined && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-zinc-500 uppercase tracking-wider w-8">Arc</span>
-                  <div className="flex-1 h-1 bg-zinc-800/50 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-purple-500/70 rounded-full"
-                      style={{ width: `${data.transformationProgress}%` }}
-                    />
-                  </div>
-                  <span className="text-[9px] font-mono text-zinc-400 w-6 text-right">
-                    {data.transformationProgress}%
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-      </div>
-    </div>
-  )
-}
-
-/**
- * Edge Evidence Panel
- *
- * Shows when a user clicks on an edge in the relationship graph.
- * Displays the relationship type, strength, provenance, and textual evidence.
- */
-function EdgeDetailsPanel({
-  edge,
-  sourceName,
-  targetName,
-  onClose,
-}: {
-  edge: CharacterWebEdge
-  sourceName: string
-  targetName: string
-  onClose: () => void
-}) {
-  const data = edge.data
-  const relType = data?.relationshipType || CHARACTER_WEB_DEFAULT_RELATIONSHIP
-  const strength = data?.strength ?? 0
-  const evidence = readRelationshipEdgeEvidence(data)
-  const llmGrounded = readRelationshipEdgeLlmGrounded(data)
-
-  const getLabel = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')
-
-  return (
-    <div className="absolute top-[70px] right-4 w-72 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/80 rounded-lg shadow-2xl overflow-hidden z-10 animate-in fade-in slide-in-from-right-2 duration-200">
-      {/* Header */}
-      <div className="p-3 flex items-start justify-between border-b border-zinc-800/50 bg-zinc-900/30">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] font-semibold text-zinc-100">{sourceName}</span>
-            <span className="text-[9px] text-zinc-500">→</span>
-            <span className="text-[10px] font-semibold text-zinc-100">{targetName}</span>
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700">
-              {getLabel(relType)}
-            </span>
-            {llmGrounded ? (
-              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-emerald-900/30 text-emerald-400 border border-emerald-800/50">
-                ✓ LLM Evidence
-              </span>
-            ) : (
-              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-zinc-800/50 text-zinc-500 border border-zinc-700/50">
-                Heuristic
-              </span>
-            )}
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-zinc-600 hover:text-zinc-300 transition-colors p-1 ml-2 flex-shrink-0"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Strength */}
-      <div className="px-3 pt-2.5 pb-1">
-        <div className="flex items-center gap-2">
-          <span className="text-[9px] text-zinc-500 uppercase tracking-wider w-12">Strength</span>
-          <div className="flex-1 h-1 bg-zinc-800/50 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-zinc-500 to-emerald-500"
-              style={{ width: `${Math.round(strength * 100)}%` }}
-            />
-          </div>
-          <span className="text-[9px] font-mono text-zinc-400 w-7 text-right">
-            {Math.round(strength * 100)}%
-          </span>
-        </div>
-      </div>
-
-      {/* Evidence */}
-      <div className="p-3 pt-1.5">
-        {evidence ? (
-          <div>
-            <span className="text-[9px] text-zinc-500 uppercase tracking-wider block mb-1">Evidence</span>
-            <blockquote className="text-[10px] leading-relaxed text-zinc-300 italic border-l-2 border-zinc-700 pl-2">
-              {evidence}
-            </blockquote>
-          </div>
-        ) : (
-          <div className="text-[10px] italic text-zinc-600">
-            No textual evidence — relationship inferred from embedding similarity or faction data.
-          </div>
-        )}
-      </div>
+      {selectedEdge && sourceNode && targetNode && (
+        <EdgeDetailsPanel
+          edge={selectedEdge}
+          sourceName={sourceNode.data.name}
+          targetName={targetNode.data.name}
+          onClose={() => setSelectedEdgeId(null)}
+        />
+      )}
     </div>
   )
 }

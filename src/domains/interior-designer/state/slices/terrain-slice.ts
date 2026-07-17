@@ -5,7 +5,6 @@ import {
 } from '@/domains/interior-designer/constants/interaction-modes'
 import { TerrainSliceLog } from '@/domains/interior-designer/constants/terrain-slice-log'
 import {
-  TerrainBrushTypeValue,
   TerrainMaterialTypeValue,
 } from '@/domains/interior-designer/constants/terrain-defaults'
 import type { InteriorState } from '../interior-state'
@@ -22,6 +21,7 @@ import {
   createDefaultTerrainMaterialPaint,
   createDefaultTerrainSettings,
 } from '../interior-store-constants'
+import { stampHeightmapBrush } from '../utils/update-heightmap-brush'
 
 export type TerrainSlice = Pick<
   InteriorState,
@@ -190,59 +190,17 @@ export const createTerrainSlice: StateCreator<InteriorState, [], [], TerrainSlic
     const gridZ = Math.floor((z + TERRAIN_WORLD_SIZE / 2) * (heightmapSize / TERRAIN_WORLD_SIZE))
     const gridRadius = Math.ceil(radius * (heightmapSize / TERRAIN_WORLD_SIZE))
 
-    for (let dz = -gridRadius; dz <= gridRadius; dz++) {
-      for (let dx = -gridRadius; dx <= gridRadius; dx++) {
-        const px = gridX + dx
-        const pz = gridZ + dz
-
-        if (px < 0 || px >= heightmapSize || pz < 0 || pz >= heightmapSize) continue
-
-        const dist = Math.sqrt(dx * dx + dz * dz)
-        if (dist > gridRadius) continue
-
-        const falloff = 1 - dist / gridRadius
-        const idx = pz * heightmapSize + px
-
-        switch (brushType) {
-          case TerrainBrushTypeValue.Raise:
-            heightmap[idx] += delta * falloff
-            break
-          case TerrainBrushTypeValue.Lower:
-            heightmap[idx] -= delta * falloff
-            break
-          case TerrainBrushTypeValue.Flatten: {
-            const centerIdx = gridZ * heightmapSize + gridX
-            const targetHeight = heightmap[centerIdx]
-            heightmap[idx] = heightmap[idx] + (targetHeight - heightmap[idx]) * falloff * 0.5
-            break
-          }
-          case TerrainBrushTypeValue.Smooth: {
-            let sum = 0
-            let count = 0
-            for (let sy = -1; sy <= 1; sy++) {
-              for (let sx = -1; sx <= 1; sx++) {
-                const nx = px + sx
-                const nz = pz + sy
-                if (nx >= 0 && nx < heightmapSize && nz >= 0 && nz < heightmapSize) {
-                  sum += heightmap[nz * heightmapSize + nx]
-                  count++
-                }
-              }
-            }
-            if (count > 0) {
-              heightmap[idx] = heightmap[idx] + (sum / count - heightmap[idx]) * falloff * 0.3
-            }
-            break
-          }
-        }
-
-        if (state.terrainBrush.pixelate) {
-          const stepSize = 5.0 / state.terrainBrush.fidelity
-          const snappedHeight = Math.round(heightmap[idx] / stepSize) * stepSize
-          heightmap[idx] = snappedHeight
-        }
-      }
-    }
+    stampHeightmapBrush({
+      heightmap,
+      heightmapSize,
+      gridX,
+      gridZ,
+      gridRadius,
+      delta,
+      brushType,
+      pixelate: state.terrainBrush.pixelate,
+      fidelity: state.terrainBrush.fidelity,
+    })
 
     set(state => ({
       terrainSettings: {

@@ -2,13 +2,6 @@
  * Entity Graph Service
  *
  * Provides graph-based traversal of entity relationships using embeddings.
- * Implements a GraphRAG pattern with random walk scoring:
- * 1. Initial vector search for relevant entities
- * 2. Build relationship graph from co-occurrence and semantic similarity
- * 3. Multi-hop traversal with relevance decay
- * 4. Random walk scoring for relationship discovery
- *
- * Uses pgvector for similarity search.
  */
 
 import { entityReferences } from '@/db'
@@ -16,470 +9,56 @@ import { db } from '@/db/client'
 import { eq, and, sql, inArray, desc } from 'drizzle-orm'
 import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
 import { entityMetadata, parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
+import { InferredRelationshipType } from '@/domains/storyteller/services/constants/entity-graph-wire'
 import { EntityGraphLog } from '@/domains/storyteller/services/constants/entity-graph-log'
-import {
-  InferredRelationshipType,
-  VectorStringError,
-} from '@/domains/storyteller/services/constants/entity-graph-wire'
-import { EntityRegistryNote } from '@/domains/storyteller/services/constants/entity-registry-log'
-import { SqlResultColumn } from '@/shared/data/constants/protocol'
-import { readRowNumber, readRowString, sqlResultRows } from '@/shared/data/json-guards'
 import { EntityReference, EntityType } from './entity-registry-service'
+import { EMBEDDING_DIMENSION, vectorSql } from './entity-graph-vector'
+import {
+  DEFAULT_GRAPH_RAG_OPTIONS,
+  extractRelationshipsFromText,
+  inferRelationshipType,
+  scoredEntityFromRow,
+  type GraphRAGOptions,
+  type ScoredEntity,
+} from './entity-graph-types'
+import {
+  buildProjectGraphEdges,
+  similarityFromSqlResult,
+  traverseRelatedEntities,
+} from './entity-graph-traversal'
 
-// Embedding model configuration (must match what's stored)
-// Using Voyage voyage-3 model which produces 1024-dimensional vectors
-const EMBEDDING_DIMENSION = 1024
+export type { GraphRAGOptions, ScoredEntity }
+export { EntityGraphService, extractRelationshipsFromText }
 
-/**
- * Convert a JS array to a pgvector-compatible string
- * Drizzle passes arrays as individual params which breaks vector casting
- *
- * Security: Only allows numeric values - prevents SQL injection
- * Performance: Validates dimension to catch mismatches early
- */
-function toVectorString(embedding: unknown): string {
-  if (embedding === null || embedding === undefined) {
-    throw new Error('toVectorString: embedding is null/undefined')
-  }
-
-  // If already a string (from DB), validate format
-  if (typeof embedding === 'string') {
-    if (!embedding.startsWith('[') || !embedding.endsWith(']')) {
-      throw new Error(VectorStringError.InvalidStringFormat)
-    }
-    return embedding
-  }
-
-  if (!Array.isArray(embedding)) {
-    throw new Error(VectorStringError.ExpectedArray)
-  }
-
-  if (embedding.length === 0) {
-    throw new Error(VectorStringError.EmptyEmbedding)
-  }
-
-  // Security: Validate every element is a finite number (prevents SQL injection)
-  for (let i = 0; i < embedding.length; i++) {
-    const val = embedding[i]
-    if (typeof val !== 'number' || !Number.isFinite(val)) {
-      throw new Error(`toVectorString: non-numeric value at index ${i}: ${typeof val}`)
-    }
-  }
-
-  // Performance: Check dimension matches expected
-  if (embedding.length !== EMBEDDING_DIMENSION) {
-    console.warn(
-      `[EntityGraph] Embedding dimension mismatch: got ${embedding.length}, expected ${EMBEDDING_DIMENSION}`
-    )
-  }
-
-  return `'[${embedding.join(',')}]'`
-}
-
-/**
- * Create a raw SQL fragment for vector comparison
- * Uses sql.raw() to embed the vector directly in SQL (avoiding param expansion)
- *
- * Security: toVectorString validates all values are finite numbers before embedding
- */
-function vectorSql(embedding: unknown) {
-  const vecStr = toVectorString(embedding)
-  return sql.raw(`${vecStr}::vector`)
-}
-
-// Decay factor per hop (e.g., 0.7 means each hop reduces relevance by 30%)
-const HOP_DECAY_FACTOR = 0.7
-
-// Minimum relevance score to include entity
-const MIN_RELEVANCE_THRESHOLD = 0.3
-
-interface GraphNode {
-  id: string
-  name: string
-  type: EntityType
-  similarity: number
-  depth: number
-  /** Computed relevance score (includes hop decay) */
-  relevance: number
-}
-
-interface GraphEdge {
-  from: string
-  to: string
-  weight: number
-  relationship: 'semantic' | 'co-occurrence' | 'explicit'
-}
-
-export interface EntityGraph {
-  nodes: Map<string, GraphNode>
-  edges: GraphEdge[]
-}
-
-/** Entity with relevance score for ranking */
-export interface ScoredEntity extends EntityReference {
-  /** Relevance score (0-1), decreases with hop distance */
-  relevance: number
-  /** Number of hops from seed entity */
-  hopDistance: number
-  /** Source entity that led to this discovery */
-  discoveredVia?: string
-}
-
-interface GraphRAGOptions {
-  /** Similarity threshold for including entities (0-1) */
-  threshold?: number
-  /** Maximum depth of graph traversal */
-  maxDepth?: number
-  /** Maximum number of results */
-  maxResults?: number
-  /** Types to include (undefined = all types) */
-  types?: EntityType[]
-  /** Number of random walk steps for scoring */
-  randomWalkSteps?: number
-  /** Probability of restarting walk from seed node */
-  restartProbability?: number
-  /** Include relationship info in results */
-  includeRelationships?: boolean
-}
-
-const DEFAULT_OPTIONS: Required<GraphRAGOptions> = {
-  threshold: 0.7,
-  maxDepth: 2,
-  maxResults: 20,
-  types: [],
-  randomWalkSteps: 100,
-  restartProbability: 0.15,
-  includeRelationships: false,
-}
-
-/** Cross-type relationship inference keyed by `${sourceType}:${targetType}`. */
-const CROSS_TYPE_RELATIONSHIPS: Record<string, InferredRelationshipType> = {
-  [`${StoryEntityType.Character}:${StoryEntityType.Faction}`]: InferredRelationshipType.MemberOf,
-  [`${StoryEntityType.Faction}:${StoryEntityType.Character}`]: InferredRelationshipType.HasMember,
-  [`${StoryEntityType.Character}:${StoryEntityType.Place}`]: InferredRelationshipType.AssociatedWith,
-  [`${StoryEntityType.Character}:${StoryEntityType.Event}`]: InferredRelationshipType.InvolvedIn,
-  [`${StoryEntityType.Character}:${StoryEntityType.Item}`]: InferredRelationshipType.Uses,
-  [`${StoryEntityType.Faction}:${StoryEntityType.Item}`]: InferredRelationshipType.Owns,
-  [`${StoryEntityType.Faction}:${StoryEntityType.Place}`]: InferredRelationshipType.Controls,
-  [`${StoryEntityType.Event}:${StoryEntityType.Character}`]: InferredRelationshipType.Involves,
-  [`${StoryEntityType.Event}:${StoryEntityType.Place}`]: InferredRelationshipType.OccurredAt,
-  [`${StoryEntityType.Event}:${StoryEntityType.Item}`]: InferredRelationshipType.CausedBy,
-  [`${StoryEntityType.Event}:${StoryEntityType.Event}`]: InferredRelationshipType.Temporal,
-  [`${StoryEntityType.Item}:${StoryEntityType.Place}`]: InferredRelationshipType.LocatedIn,
-}
-
-type DbEntityRow = {
-  id: string
-  name: string
-  type: string
-  description: string | null
-  metadata: unknown
-  projectId: string
-  sourceEntityId?: string | null
-  createdAt: Date | string
-  lastReferencedAt?: Date | string | null
-  embedding?: unknown
-}
-
-function scoredEntityFromRow(
-  row: DbEntityRow,
-  extras: Pick<ScoredEntity, 'relevance' | 'hopDistance'> & Partial<ScoredEntity>
-): ScoredEntity | null {
-  const type = parseEntityType(row.type)
-  if (!type) return null
-
-  return {
-    id: row.id,
-    name: row.name,
-    type,
-    description: row.description?.startsWith(EntityRegistryNote.AutoRegistered)
-      ? ''
-      : (row.description || ''),
-    metadata: entityMetadata(row.metadata),
-    projectId: row.projectId,
-    sourceEntityId: row.sourceEntityId || undefined,
-    createdAt: new Date(row.createdAt),
-    lastReferencedAt: new Date(row.lastReferencedAt || row.createdAt),
-    ...extras,
-  }
-}
-
-function similarityFromSqlResult(result: unknown): number {
-  const row = sqlResultRows(result)[0]
-  return readRowNumber(row ?? {}, SqlResultColumn.Similarity) ?? 0
-}
-
-/**
- * Entity Graph Service for relationship traversal with random walk scoring
- */
 class EntityGraphService {
-  /**
-   * Find related entities using multi-hop graph traversal with relevance scoring
-   *
-   * @param seedIds - Starting entity IDs (directly mentioned)
-   * @param projectId - Project to search within
-   * @param options - Graph traversal options
-   * @returns Array of scored entities ordered by relevance
-   */
   async findRelatedEntitiesWithScoring(
     seedIds: string[],
     projectId: string,
     options: GraphRAGOptions = {}
   ): Promise<ScoredEntity[]> {
-    const opts = { ...DEFAULT_OPTIONS, ...options }
-
-    if (seedIds.length === 0) {
-      return []
-    }
-
-    try {
-      // Track discovered entities with their scores
-      const discovered = new Map<string, ScoredEntity>()
-      const seedSet = new Set(seedIds)
-
-      // 1. Get seed entities - these have relevance 1.0 (directly mentioned)
-      const seedEntities = await db
-        .select()
-        .from(entityReferences)
-        .where(
-          and(eq(entityReferences.projectId, projectId), inArray(entityReferences.id, seedIds))
-        )
-
-      // Add seeds with max relevance
-      for (const seed of seedEntities) {
-        const scored = scoredEntityFromRow(seed, { relevance: 1.0, hopDistance: 0 })
-        if (scored) discovered.set(seed.id, scored)
-      }
-
-      // 2. Multi-hop traversal with decay
-      let currentHopEntities = seedEntities.filter(e => e.embedding)
-
-      for (let hop = 1; hop <= opts.maxDepth; hop++) {
-        const nextHopEntities: typeof seedEntities = []
-        const decayMultiplier = Math.pow(HOP_DECAY_FACTOR, hop)
-
-        for (const source of currentHopEntities) {
-          if (!source.embedding) continue
-
-          // Vector similarity search for this hop
-          const vecFragment = vectorSql(source.embedding)
-          const similar = await db
-            .select({
-              id: entityReferences.id,
-              name: entityReferences.name,
-              type: entityReferences.type,
-              description: entityReferences.description,
-              metadata: entityReferences.metadata,
-              projectId: entityReferences.projectId,
-              sourceEntityId: entityReferences.sourceEntityId,
-              createdAt: entityReferences.createdAt,
-              lastReferencedAt: entityReferences.lastReferencedAt,
-              embedding: entityReferences.embedding,
-              similarity: sql<number>`1 - (${entityReferences.embedding} <=> ${vecFragment})`,
-            })
-            .from(entityReferences)
-            .where(
-              and(
-                eq(entityReferences.projectId, projectId),
-                sql`${entityReferences.id} != ${source.id}`,
-                sql`${entityReferences.embedding} IS NOT NULL`,
-                opts.types.length > 0 ? inArray(entityReferences.type, opts.types) : sql`TRUE`
-              )
-            )
-            .orderBy(desc(sql`1 - (${entityReferences.embedding} <=> ${vecFragment})`))
-            .limit(Math.ceil(opts.maxResults / hop)) // Fewer results per hop as we go deeper
-
-          for (const entity of similar) {
-            // Skip if below threshold
-            if (entity.similarity < opts.threshold) continue
-
-            // Calculate relevance with hop decay
-            const relevance = entity.similarity * decayMultiplier
-
-            // Skip if below minimum relevance
-            if (relevance < MIN_RELEVANCE_THRESHOLD) continue
-
-            const existing = discovered.get(entity.id)
-
-            // Only add if not discovered or if this path has higher relevance
-            if (!existing || relevance > existing.relevance) {
-              const scored = scoredEntityFromRow(entity, {
-                relevance,
-                hopDistance: hop,
-                discoveredVia: source.id,
-              })
-              if (!scored) continue
-              discovered.set(entity.id, scored)
-
-              if (!seedSet.has(entity.id) && entity.embedding) {
-                nextHopEntities.push({
-                  id: entity.id,
-                  name: entity.name,
-                  type: entity.type,
-                  description: entity.description,
-                  metadata: entity.metadata,
-                  projectId: entity.projectId,
-                  sourceEntityId: entity.sourceEntityId,
-                  createdAt: entity.createdAt,
-                  lastReferencedAt: entity.lastReferencedAt,
-                  embedding: entity.embedding,
-                })
-              }
-            }
-          }
-        }
-
-        currentHopEntities = nextHopEntities
-
-        // Stop if no more entities to explore
-        if (currentHopEntities.length === 0) break
-      }
-
-      // 3. Apply random walk scoring for additional ranking boost
-      const results = Array.from(discovered.values())
-      if (opts.randomWalkSteps > 0 && results.length > 1) {
-        this.applyRandomWalkScoring(results, opts.randomWalkSteps, opts.restartProbability, seedSet)
-      }
-
-      // 4. Sort by relevance (highest first), then by hop distance (lower first)
-      results.sort((a, b) => {
-        if (Math.abs(a.relevance - b.relevance) > 0.01) {
-          return b.relevance - a.relevance
-        }
-        return a.hopDistance - b.hopDistance
-      })
-
-      return results.slice(0, opts.maxResults)
-    } catch (err) {
-      console.warn(EntityGraphLog.GraphTraversalFailed, err)
-      return []
-    }
+    return traverseRelatedEntities(seedIds, projectId, options)
   }
 
-  /**
-   * Apply random walk scoring to boost entities that are well-connected
-   * Simulates a random walk that occasionally restarts from seed nodes
-   */
-  private applyRandomWalkScoring(
-    entities: ScoredEntity[],
-    steps: number,
-    restartProb: number,
-    seedIds: Set<string>
-  ): void {
-    new Map(entities.map(e => [e.id, e]))
-    const visitCounts = new Map<string, number>()
-
-    // Initialize visit counts
-    for (const e of entities) {
-      visitCounts.set(e.id, 0)
-    }
-
-    // Get seed entities for restart
-    const seedEntities = entities.filter(e => seedIds.has(e.id))
-    if (seedEntities.length === 0) return
-
-    // Start from a deterministically-seeded entity (stable layout across renders)
-    // Hash the sorted seed IDs to pick a consistent starting point
-    const seedSorted = [...seedIds].sort()
-    const seedHash = seedSorted.reduce((h, id) => {
-      let v = h
-      for (let i = 0; i < id.length; i++) v = (Math.imul(31, v) + id.charCodeAt(i)) | 0
-      return v >>> 0
-    }, 0)
-    let current = seedEntities[seedHash % seedEntities.length]
-
-    // Deterministic pseudo-random walk (LCG seeded by project hash)
-    let lcgState = seedHash || 1
-    const lcgNext = () => {
-      lcgState = (Math.imul(1664525, lcgState) + 1013904223) >>> 0
-      return lcgState / 0x100000000
-    }
-
-    for (let step = 0; step < steps; step++) {
-      // Increment visit count
-      visitCounts.set(current.id, (visitCounts.get(current.id) || 0) + 1)
-
-      // Decide: restart or follow edge
-      if (lcgNext() < restartProb) {
-        // Restart from a deterministic seed position
-        current = seedEntities[Math.floor(lcgNext() * seedEntities.length)]
-      } else {
-        // Follow edge to a connected entity
-        // Connected = discovered via this entity OR same discoveredVia
-        const connected = entities.filter(
-          e =>
-            e.id !== current.id &&
-            (e.discoveredVia === current.id ||
-              (current.discoveredVia && e.discoveredVia === current.discoveredVia) ||
-              Math.abs(e.hopDistance - current.hopDistance) <= 1)
-        )
-
-        if (connected.length > 0) {
-          // Weighted deterministic selection based on relevance
-          const totalRelevance = connected.reduce((sum, e) => sum + e.relevance, 0)
-          let rand = lcgNext() * totalRelevance
-
-          for (const e of connected) {
-            rand -= e.relevance
-            if (rand <= 0) {
-              current = e
-              break
-            }
-          }
-        } else {
-          // No connections, restart from seed
-          current = seedEntities[Math.floor(Math.random() * seedEntities.length)]
-        }
-      }
-    }
-
-    // Apply visit count boost to relevance (normalized)
-    const maxVisits = Math.max(...visitCounts.values())
-    if (maxVisits > 0) {
-      for (const e of entities) {
-        const visits = visitCounts.get(e.id) || 0
-        const visitBoost = 0.1 * (visits / maxVisits) // Up to 10% boost
-        e.relevance = Math.min(1.0, e.relevance + visitBoost)
-      }
-    }
-  }
-
-  /**
-   * Find related entities using graph traversal (legacy method, uses new scoring internally)
-   *
-   * @param seedIds - Starting entity IDs
-   * @param projectId - Project to search within
-   * @param options - Graph traversal options
-   * @returns Array of related entities ordered by relevance
-   */
   async findRelatedEntities(
     seedIds: string[],
     projectId: string,
     options: GraphRAGOptions = {}
   ): Promise<EntityReference[]> {
     const scored = await this.findRelatedEntitiesWithScoring(seedIds, projectId, options)
-    // Strip scoring fields for backward compatibility
     return scored.map(
       ({ relevance: _relevance, hopDistance: _hopDistance, discoveredVia: _discoveredVia, ...entity }) =>
         entity
     )
   }
 
-  /**
-   * Build entity embeddings for a project
-   * Called when entities are registered or updated
-   */
   async buildEntityEmbedding(entityId: string, content: string): Promise<void> {
     try {
-      // Use the voyage embeddings or OpenAI embeddings
       const { getVoyageEmbeddings } =
         await import('@/shared/ai/embeddings/voyage-embeddings')
       const embeddings = getVoyageEmbeddings()
-
       const [embedding] = await embeddings.embedDocuments([content])
 
       if (embedding && embedding.length === EMBEDDING_DIMENSION) {
-        // Use raw SQL to set vector - Drizzle can't handle vector type natively
         const vecFragment = vectorSql(embedding)
         await db.execute(
           sql`UPDATE entity_references SET embedding = ${vecFragment}, last_referenced_at = NOW() WHERE id = ${entityId}`
@@ -490,22 +69,14 @@ class EntityGraphService {
     }
   }
 
-  /**
-   * Find entities by semantic query
-   *
-   * @param query - Natural language query
-   * @param projectId - Project to search within
-   * @param options - Search options
-   */
   async semanticSearch(
     query: string,
     projectId: string,
     options: GraphRAGOptions = {}
   ): Promise<EntityReference[]> {
-    const opts = { ...DEFAULT_OPTIONS, ...options }
+    const opts = { ...DEFAULT_GRAPH_RAG_OPTIONS, ...options }
 
     try {
-      // Get embedding for query
       const { getVoyageEmbeddings } =
         await import('@/shared/ai/embeddings/voyage-embeddings')
       const embeddings = getVoyageEmbeddings()
@@ -516,7 +87,6 @@ class EntityGraphService {
         return []
       }
 
-      // Vector similarity search
       const results = await db
         .select({
           id: entityReferences.id,
@@ -556,17 +126,11 @@ class EntityGraphService {
     }
   }
 
-  /**
-   * Get entity relationship strength based on co-occurrence
-   * Entities that are referenced together have higher relationship strength
-   */
   async getRelationshipStrength(
     entityA: string,
     entityB: string,
     _projectId: string
   ): Promise<number> {
-    // For now, use embedding similarity as relationship strength
-    // In future, could track co-occurrence in text
     try {
       const [a, b] = await Promise.all([
         db.select().from(entityReferences).where(eq(entityReferences.id, entityA)).limit(1),
@@ -575,7 +139,6 @@ class EntityGraphService {
 
       if (!a[0]?.embedding || !b[0]?.embedding) return 0
 
-      // Calculate cosine similarity
       const result = await db.execute(
         sql`SELECT 1 - (${vectorSql(a[0].embedding)} <=> ${vectorSql(b[0].embedding)}) as similarity`
       )
@@ -586,30 +149,22 @@ class EntityGraphService {
     }
   }
 
-  /**
-   * Get entities that are directly related to a given entity
-   * Returns entities connected by 1 hop with relationship info
-   */
   async getDirectRelationships(
     entityId: string,
     projectId: string,
     options: GraphRAGOptions = {}
   ): Promise<Array<ScoredEntity & { relationshipType: InferredRelationshipType }>> {
-    const opts = { ...DEFAULT_OPTIONS, ...options }
+    const opts = { ...DEFAULT_GRAPH_RAG_OPTIONS, ...options }
 
     try {
-      // Get the source entity
       const [sourceEntity] = await db
         .select()
         .from(entityReferences)
         .where(eq(entityReferences.id, entityId))
         .limit(1)
 
-      if (!sourceEntity || !sourceEntity.embedding) {
-        return []
-      }
+      if (!sourceEntity?.embedding) return []
 
-      // Find similar entities (1-hop relationships)
       const similar = await db
         .select({
           id: entityReferences.id,
@@ -637,7 +192,6 @@ class EntityGraphService {
         )
         .limit(opts.maxResults)
 
-      // Map to relationships with inferred type
       return similar
         .filter(e => e.similarity >= opts.threshold)
         .flatMap(entity => {
@@ -654,11 +208,7 @@ class EntityGraphService {
 
           return [{
             ...scored,
-            relationshipType: this.inferRelationshipType(
-              sourceType,
-              targetType,
-              entity.similarity
-            ),
+            relationshipType: inferRelationshipType(sourceType, targetType, entity.similarity),
           }]
         })
     } catch (err) {
@@ -667,37 +217,6 @@ class EntityGraphService {
     }
   }
 
-  /**
-   * Infer relationship type based on entity types and similarity
-   */
-  private inferRelationshipType(
-    sourceType: EntityType,
-    targetType: EntityType,
-    similarity: number
-  ): InferredRelationshipType {
-    // Same type relationships
-    if (sourceType === targetType) {
-      if (sourceType === StoryEntityType.Character) {
-        if (similarity > 0.9) return InferredRelationshipType.CloselyConnected
-        if (similarity > 0.8) return InferredRelationshipType.Associated
-        return InferredRelationshipType.Related
-      }
-      if (sourceType === StoryEntityType.Faction) return InferredRelationshipType.AlliedOrRival
-      return InferredRelationshipType.Related
-    }
-
-    // Cross-type relationships (table-driven)
-    return CROSS_TYPE_RELATIONSHIPS[`${sourceType}:${targetType}`] ?? InferredRelationshipType.Related
-  }
-
-  /**
-   * Build a complete relationship graph for a project
-   * Used for Character Web visualization
-   *
-   * Performance: Uses single SQL query for all pairwise similarities
-   * instead of O(n^2) individual queries
-   * Security: Entity limit prevents DOS via large projects
-   */
   async buildProjectGraph(
     projectId: string,
     options: { types?: EntityType[]; minStrength?: number } = {}
@@ -709,7 +228,6 @@ class EntityGraphService {
       options
 
     try {
-      // Get all entities of specified types (limit to 50 for performance)
       const entities = await db
         .select()
         .from(entityReferences)
@@ -720,7 +238,7 @@ class EntityGraphService {
             types.length > 0 ? inArray(entityReferences.type, types) : sql`TRUE`
           )
         )
-        .limit(50) // Performance: cap to prevent O(n^2) explosion
+        .limit(50)
 
       const nodes = entities.flatMap(e => {
         const type = parseEntityType(e.type)
@@ -733,85 +251,15 @@ class EntityGraphService {
         }]
       })
 
-      // Performance: Compute all pairwise similarities in a single SQL query
-      // Uses a self-join with cosine distance, much faster than N^2 individual queries
-      const edges: Array<{
-        source: string
-        target: string
-        weight: number
-        type: InferredRelationshipType
-      }> = []
-
-      if (entities.length > 1) {
-        try {
-          const entityIds = entities.map(e => e.id)
-          const result = await db.execute(sql`
-            SELECT 
-              a.id as source_id, 
-              b.id as target_id,
-              a.type as source_type,
-              b.type as target_type,
-              1 - (a.embedding <=> b.embedding) as similarity
-            FROM entity_references a
-            JOIN entity_references b ON a.id < b.id
-            WHERE a.project_id = ${projectId}
-              AND b.project_id = ${projectId}
-              AND a.embedding IS NOT NULL
-              AND b.embedding IS NOT NULL
-              AND a.id = ANY(${entityIds})
-              AND b.id = ANY(${entityIds})
-              AND 1 - (a.embedding <=> b.embedding) >= ${minStrength}
-            ORDER BY similarity DESC
-            LIMIT 200
-          `)
-
-          for (const row of sqlResultRows(result)) {
-            const sourceId = readRowString(row, SqlResultColumn.SourceId)
-            const targetId = readRowString(row, SqlResultColumn.TargetId)
-            const sourceType = parseEntityType(readRowString(row, SqlResultColumn.SourceType))
-            const targetType = parseEntityType(readRowString(row, SqlResultColumn.TargetType))
-            const weight = readRowNumber(row, SqlResultColumn.Similarity) ?? 0
-            if (!sourceId || !targetId || !sourceType || !targetType) continue
-
-            edges.push({
-              source: sourceId,
-              target: targetId,
-              weight,
-              type: this.inferRelationshipType(sourceType, targetType, weight),
-            })
-          }
-        } catch (queryErr) {
-          console.warn(EntityGraphLog.BatchSimilarityFailed, queryErr)
-          // Fallback: simple pairwise (limited to first 20 entities)
-          const limited = entities.slice(0, 20)
-          for (let i = 0; i < limited.length; i++) {
-            for (let j = i + 1; j < limited.length; j++) {
-              const a = limited[i]
-              const b = limited[j]
-              if (!a.embedding || !b.embedding) continue
-
-              try {
-                const result = await db.execute(
-                  sql`SELECT 1 - (${vectorSql(a.embedding)} <=> ${vectorSql(b.embedding)}) as similarity`
-                )
-                const similarity = similarityFromSqlResult(result)
-                const sourceType = parseEntityType(a.type)
-                const targetType = parseEntityType(b.type)
-                if (similarity >= minStrength && sourceType && targetType) {
-                  edges.push({
-                    source: a.id,
-                    target: b.id,
-                    weight: similarity,
-                    type: this.inferRelationshipType(sourceType, targetType, similarity),
-                  })
-                }
-              } catch {
-                /* skip pair on error */
-              }
-            }
-          }
+      const edges = await buildProjectGraphEdges(
+        projectId,
+        entities,
+        minStrength,
+        (sourceType, targetType, weight) => {
+          if (!sourceType || !targetType) return InferredRelationshipType.Related
+          return inferRelationshipType(sourceType, targetType, weight)
         }
-      }
+      )
 
       console.log(`[EntityGraph] Built graph: ${nodes.length} nodes, ${edges.length} edges`)
       return { nodes, edges }
@@ -821,85 +269,7 @@ class EntityGraphService {
     }
   }
 
-  /**
-   * Extract literal relationships from text based on regex patterns.
-   * Finds sentences matching "[A] owns/uses/caused [B]" and generates structured edges.
-   */
-  extractRelationshipsFromText(
-    text: string
-  ): Array<{
-    sourceId: string
-    targetId: string
-    type: InferredRelationshipType
-    evidence: string
-  }> {
-    const relationships: Array<{
-      sourceId: string
-      targetId: string
-      type: InferredRelationshipType
-      evidence: string
-    }> = []
-
-    // Split into sentences for context boundary
-    const sentences = text.split(/[.!?]+/)
-
-    // Pattern to match explicit verbs between two references
-    // E.g., "[Marcus][char-123] uses the [One Ring][item-456]"
-    const verbPatterns = [
-      { regex: /owns|possesses|has/i, type: InferredRelationshipType.Owns },
-      { regex: /uses|wields|utilizes/i, type: InferredRelationshipType.Uses },
-      { regex: /caused|created|triggered/i, type: InferredRelationshipType.CausedBy },
-      { regex: /happened at|took place at|occurred at/i, type: InferredRelationshipType.HappenedAt },
-      { regex: /located in|found in|hidden in/i, type: InferredRelationshipType.LocatedIn },
-      { regex: /before|after|during/i, type: InferredRelationshipType.Temporal },
-    ]
-
-    for (const sentence of sentences) {
-      // Find all references in the sentence
-      // A reference looks like [Name][id-123]
-      const refRegex = /\[([^\]]+)\]\[([a-z]+-[a-zA-Z0-9-]+)\]/g
-      let match
-      const refs: Array<{ name: string; id: string; index: number }> = []
-
-      while ((match = refRegex.exec(sentence)) !== null) {
-        refs.push({ name: match[1], id: match[2], index: match.index })
-      }
-
-      // Need at least 2 references to form a relationship
-      if (refs.length >= 2) {
-        for (let i = 0; i < refs.length - 1; i++) {
-          const source = refs[i]
-          const target = refs[i + 1]
-
-          // Get text between the two references
-          const textBetween = sentence.substring(
-            source.index + source.name.length + source.id.length + 4, // length of '[name][id]'
-            target.index
-          )
-
-          // Check if any verb pattern matches the text exactly between them
-          for (const pattern of verbPatterns) {
-            if (pattern.regex.test(textBetween)) {
-              relationships.push({
-                sourceId: source.id,
-                targetId: target.id,
-                type: pattern.type,
-                evidence: sentence.trim()
-              })
-              break // Only one relation per pair based on first match
-            }
-          }
-        }
-      }
-    }
-
-    return relationships
-  }
+  extractRelationshipsFromText = extractRelationshipsFromText
 }
 
-// Singleton instance
 export const entityGraphService = new EntityGraphService()
-
-// Export class and types for testing
-export { EntityGraphService }
-export type { GraphRAGOptions }

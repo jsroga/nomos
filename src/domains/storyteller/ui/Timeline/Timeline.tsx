@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, memo } from 'react'
+import React, { useState, useEffect, memo, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Play, Pause, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/Button'
 import {
@@ -11,6 +11,7 @@ import {
 import { QuestionSession } from '@/domains/storyteller/core/types/action-types'
 import { fetchStorytellerTimeline } from '@/domains/storyteller/core/io/storyteller.api'
 import { recordArrayFromJson, readString, readNumber } from '@/shared/data/json-guards'
+import { browserStorage } from '@/shared/data/browser-storage'
 import {
   TIMELINE_BEAT_COLORS,
   TIMELINE_FETCH_SNAPSHOTS_FAILED_LOG,
@@ -88,50 +89,50 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
   const [_snapshots, setSnapshots] = useState<CharacterSnapshot[]>([])
   const [hoveredBeat, setHoveredBeat] = useState<string | null>(null)
   const [isCollapsed, setIsCollapsed] = useState(() => {
-    // Initialize from localStorage
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(TimelineStorageKey.Collapsed)
-      return saved === TimelineStorageValue.True
-    }
-    return false
+    const saved = browserStorage.getString(TimelineStorageKey.Collapsed)
+    return saved === TimelineStorageValue.True
   })
 
   // Persist collapsed state to localStorage
   useEffect(() => {
-    localStorage.setItem(TimelineStorageKey.Collapsed, String(isCollapsed))
+    browserStorage.setString(TimelineStorageKey.Collapsed, String(isCollapsed))
   }, [isCollapsed])
 
   // Sort beats by sequence
-  const sortedBeats = [...beats].sort((a, b) => a.sequence - b.sequence)
+  const sortedBeats = useMemo(
+    () => [...beats].sort((a, b) => a.sequence - b.sequence),
+    [beats]
+  )
 
-  // Update current index when selectedBeatId changes
-  useEffect(() => {
-    if (selectedBeatId) {
-      const index = sortedBeats.findIndex(b => b.id === selectedBeatId)
-      if (index >= 0) setCurrentIndex(index)
-    }
+  const indexFromSelection = useMemo(() => {
+    if (!selectedBeatId) return null
+    const index = sortedBeats.findIndex(b => b.id === selectedBeatId)
+    return index >= 0 ? index : null
   }, [selectedBeatId, sortedBeats])
+
+  const resolvedIndex = indexFromSelection ?? currentIndex
 
   // Fetch character snapshots for selected beat
   useEffect(() => {
-    if (selectedBeatId && episodeId) {
-      fetchStorytellerTimeline(episodeId, selectedBeatId)
-        .then(data => {
-          const snapshots: CharacterSnapshot[] = recordArrayFromJson(data.snapshots).map(row => ({
-            characterId: readString(row.characterId) ?? '',
-            characterName: readString(row.characterName) ?? '',
-            stressLevel: readNumber(row.stressLevel) ?? 0,
-            emotionalState: readString(row.emotionalState) ?? '',
-            transformationProgress: readNumber(row.transformationProgress) ?? 0,
-          }))
-          if (snapshots.length > 0) {
-            setSnapshots(snapshots)
-          }
-        })
-        .catch(err => console.error(TIMELINE_FETCH_SNAPSHOTS_FAILED_LOG, err))
-    } else {
-      setSnapshots([])
+    if (!selectedBeatId || !episodeId) {
+      queueMicrotask(() => setSnapshots([]))
+      return
     }
+
+    fetchStorytellerTimeline(episodeId, selectedBeatId)
+      .then(data => {
+        const snapshots: CharacterSnapshot[] = recordArrayFromJson(data.snapshots).map(row => ({
+          characterId: readString(row.characterId) ?? '',
+          characterName: readString(row.characterName) ?? '',
+          stressLevel: readNumber(row.stressLevel) ?? 0,
+          emotionalState: readString(row.emotionalState) ?? '',
+          transformationProgress: readNumber(row.transformationProgress) ?? 0,
+        }))
+        if (snapshots.length > 0) {
+          setSnapshots(snapshots)
+        }
+      })
+      .catch(err => console.error(TIMELINE_FETCH_SNAPSHOTS_FAILED_LOG, err))
   }, [selectedBeatId, episodeId])
 
   // Auto-play functionality
@@ -153,16 +154,16 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
   }, [isPlaying, sortedBeats, onBeatSelect])
 
   const handlePrevious = () => {
-    if (currentIndex > 0) {
-      const newIndex = currentIndex - 1
+    if (resolvedIndex > 0) {
+      const newIndex = resolvedIndex - 1
       setCurrentIndex(newIndex)
       onBeatSelect(sortedBeats[newIndex].id)
     }
   }
 
   const handleNext = () => {
-    if (currentIndex < sortedBeats.length - 1) {
-      const newIndex = currentIndex + 1
+    if (resolvedIndex < sortedBeats.length - 1) {
+      const newIndex = resolvedIndex + 1
       setCurrentIndex(newIndex)
       onBeatSelect(sortedBeats[newIndex].id)
     }
@@ -183,7 +184,7 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
     )
   }
 
-  const currentBeat = sortedBeats[currentIndex]
+  const currentBeat = sortedBeats[resolvedIndex]
 
   return (
     <div
@@ -210,7 +211,7 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
                 variant={ButtonVariantKey.Ghost}
                 size={ButtonSizeKey.Sm}
                 onClick={handlePrevious}
-                disabled={currentIndex === 0}
+                disabled={resolvedIndex === 0}
                 className="h-7 w-7 p-0"
               >
                 <ChevronLeft size={16} />
@@ -227,7 +228,7 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
                 variant={ButtonVariantKey.Ghost}
                 size={ButtonSizeKey.Sm}
                 onClick={handleNext}
-                disabled={currentIndex >= sortedBeats.length - 1}
+                disabled={resolvedIndex >= sortedBeats.length - 1}
                 className="h-7 w-7 p-0"
               >
                 <ChevronRight size={16} />
@@ -237,7 +238,7 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
 
           <span className="text-xs text-muted-foreground ml-2">
             {sortedBeats.length > 0
-              ? `Beat ${currentIndex + 1} of ${sortedBeats.length}`
+              ? `Beat ${resolvedIndex + 1} of ${sortedBeats.length}`
               : 'No beats'}
           </span>
         </div>
@@ -271,7 +272,7 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
               style={{
                 width:
                   sortedBeats.length > 1
-                    ? `${(currentIndex / (sortedBeats.length - 1)) * 100}%`
+                    ? `${(resolvedIndex / (sortedBeats.length - 1)) * 100}%`
                     : '0%',
               }}
             />
@@ -285,7 +286,7 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
                   onMouseEnter={() => setHoveredBeat(beat.id)}
                   onMouseLeave={() => setHoveredBeat(null)}
                   className={`relative w-4 h-4 rounded-full transition-all duration-200 ${
-                    index === currentIndex
+                    index === resolvedIndex
                       ? 'scale-150 ring-2 ring-primary ring-offset-2 ring-offset-card'
                       : 'hover:scale-125'
                   } ${BEAT_COLORS[beat.beatType] || BEAT_COLORS.default}`}

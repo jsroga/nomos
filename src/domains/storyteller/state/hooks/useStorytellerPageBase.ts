@@ -2,28 +2,29 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter, useParams, usePathname } from 'next/navigation'
-import {
-  type QuestionSession,
-  useBibleState,
-  useEpisodeData,
-  useLoadingStates,
-  useStorytellerActions,
-  useStorytellerHydration,
-} from '@/domains/storyteller'
+import type { QuestionSession } from '@/domains/storyteller/core/types/action-types'
+import { useBibleState } from '@/domains/storyteller/state/queries/useBibleState'
+import { useEpisodeData } from '@/domains/storyteller/state/queries/useEpisodeData'
+import { useLoadingStates } from '@/domains/storyteller/state/hooks/useLoadingStates'
+import { useStorytellerActions } from '@/domains/storyteller/state/queries/useStorytellerActions'
+import { useStorytellerHydration } from '@/domains/storyteller/state/hooks/useStorytellerHydration'
 import type { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { Phase, type PhaseId } from '@/domains/storyteller/core/types/enums'
 import {
   StorytellerTab,
   StorytellerBibleTab,
-  StorytellerOverrideState,
-  StorytellerUnknownLabel,
   StorytellerQueryParam,
 } from '@/domains/storyteller/core/storyteller-page-wire'
+import { computeHasBible } from '@/domains/storyteller/state/utils/storyteller-has-bible'
 import type { BeatCard as Beat } from '@/domains/storyteller/core/types/story-types'
 import type { StorytellerCharacter } from '@/domains/storyteller/core/entities/character-wire'
-import { readString, stringRecordFromJson } from '@/shared/data/json-guards'
+import {
+  parseSeriesBibleRecord,
+  parseStoryPlanRecord,
+} from '@/domains/storyteller/core/io/project-jsonb'
+import { readString } from '@/shared/data/json-guards'
 import type { ProjectLike } from '@/domains/storyteller/state/queries/useStorytellerActions'
-import { useWorldStore } from '@/domains/storyteller/state/storyteller-world-seam'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 
@@ -34,17 +35,17 @@ export function useStorytellerPageBase() {
   const pathname = usePathname()
   const routeProjectId = readString(params?.projectId)
 
-  const currentProject = useWorldStore(state => state.currentProject)
-  const setCurrentProjectInStore = useWorldStore(state => state.setCurrentProject)
+  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
+  const setCurrentProjectInStore = useWorkspaceProjectStore(state => state.setCurrentProject)
   const setCurrentProjectForActions = useCallback(
     (project: ProjectLike) => {
-      const current = useWorldStore.getState().currentProject
+      const current = useWorkspaceProjectStore.getState().currentProject
       if (!current) return
       setCurrentProjectInStore({
         ...current,
         ...project,
-        series_bible: stringRecordFromJson(project.series_bible ?? current.series_bible),
-        story_plan: stringRecordFromJson(project.story_plan ?? current.story_plan),
+        series_bible: parseSeriesBibleRecord(project.series_bible ?? current.series_bible),
+        story_plan: parseStoryPlanRecord(project.story_plan ?? current.story_plan),
         master_prompt:
           typeof project.master_prompt === 'string'
             ? project.master_prompt
@@ -56,7 +57,7 @@ export function useStorytellerPageBase() {
   )
 
   const syncFactionsToWorldProject = useCallback((factions: unknown[]) => {
-    const latest = useWorldStore.getState().currentProject
+    const latest = useWorkspaceProjectStore.getState().currentProject
     if (!latest) return
     setCurrentProjectInStore({
       ...latest,
@@ -160,11 +161,14 @@ export function useStorytellerPageBase() {
       requestBibleTab(StorytellerBibleTab.Relationships)
       return
     }
-    setFocusEntityId(entityNavigation.refId)
-    if (currentEpisodeId) {
-      setActiveTab(StorytellerTab.Relationships)
-    }
-    clearEntityNavigation()
+    const refId = entityNavigation.refId
+    queueMicrotask(() => {
+      setFocusEntityId(refId)
+      if (currentEpisodeId) {
+        setActiveTab(StorytellerTab.Relationships)
+      }
+      clearEntityNavigation()
+    })
   }, [
     entityNavigation,
     isWorldBibleOpen,
@@ -182,30 +186,16 @@ export function useStorytellerPageBase() {
     }
     const newTab = phaseToTab[currentPhase] ?? StorytellerTab.Plan
     if (activeTab !== newTab) {
-      setActiveTab(newTab)
+      queueMicrotask(() => setActiveTab(newTab))
     }
   }, [currentPhase, activeTab])
 
   const loadingStates = useLoadingStates()
 
-  const hasBible = useMemo(() => {
-    if (overrideState === StorytellerOverrideState.NoBible) return false
-    if (
-      overrideState === StorytellerOverrideState.NoEpisodes ||
-      overrideState === StorytellerOverrideState.HasEpisodes
-    )
-      return true
-    return !!(
-      storyPlan?.worldDescription ||
-      (storyPlan?.genre &&
-        storyPlan.genre !== StorytellerUnknownLabel.Unknown &&
-        storyPlan.genre !== '') ||
-      (storyPlan?.tone &&
-        storyPlan.tone !== StorytellerUnknownLabel.Unknown &&
-        storyPlan.tone !== '') ||
-      (storyPlan?.themes && storyPlan.themes.length > 0)
-    )
-  }, [storyPlan, overrideState])
+  const hasBible = useMemo(
+    () => computeHasBible(storyPlan, overrideState),
+    [storyPlan, overrideState],
+  )
 
   const useEnhancedStreaming = true
 

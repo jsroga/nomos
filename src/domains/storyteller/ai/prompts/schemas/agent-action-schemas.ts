@@ -1,0 +1,55 @@
+/** Unified storyteller agent action union schema. */
+import { z } from 'zod'
+import * as bible from './action-bible-schemas'
+import * as character from './action-character-schemas'
+import * as beat from './action-beat-schemas'
+import * as script from './action-script-schemas'
+import * as merge from './action-merge-schemas'
+
+export const AgentActionSchema = z.discriminatedUnion('type', [
+  bible.UpdateSeriesBibleActionSchema,
+  bible.UpdateEpisodePremiseActionSchema,
+  bible.SetGenreToneActionSchema,
+  bible.AddThemeActionSchema,
+  bible.RemoveThemeActionSchema,
+  bible.CreateLocationActionSchema,
+  bible.UpdateLocationActionSchema,
+  bible.AddLoreEntryActionSchema,
+  bible.DefineMagicSystemActionSchema,
+  merge.UpdateWorldRulesActionSchema,
+  merge.UpdateFactionsActionSchema,
+  merge.UpdateInspirationsActionSchema,
+  merge.UpdateWorldDescriptionActionSchema,
+  merge.UpdateMoodSoundtrackActionSchema,
+  merge.UpdateSoundtracksActionSchema,
+  merge.UpdatePlotTwistsActionSchema,
+  merge.UpdateKeyCharactersActionSchema,
+  merge.UpdateEpisodeRoadmapActionSchema,
+  merge.UpdateSeasonStructureActionSchema,
+  merge.UpdateRoadmapSummaryActionSchema,
+  character.CreateCharacterActionSchema,
+  character.UpdateCharacterProfileActionSchema,
+  character.UpdateCharacterRelationshipActionSchema,
+  character.SetCharacterGoalActionSchema,
+  character.AddCharacterSecretActionSchema,
+  character.UpdateCharacterArcStatusActionSchema,
+  character.ArchiveCharacterActionSchema,
+  character.CastCharacterActionSchema,
+  beat.CreateBeatActionSchema,
+  beat.UpdateBeatContentActionSchema,
+  beat.UpdateBeatActionSchema,
+  beat.ReorderBeatActionSchema,
+  beat.DeleteBeatActionSchema,
+  beat.SplitBeatActionSchema,
+  beat.MergeBeatsActionSchema,
+  beat.LinkBeatsActionSchema,
+  beat.TagBeatActionSchema,
+  script.CreateSceneActionSchema,
+  script.UpdateSceneActionSchema,
+  script.UpdateDialogueActionSchema,
+  script.ReorderSceneActionSchema,
+  script.DeleteSceneActionSchema,
+  script.AddSceneNoteActionSchema,
+  script.SetSceneMoodActionSchema,
+  script.UpdateScriptContentActionSchema,
+])

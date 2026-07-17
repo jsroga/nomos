@@ -1,17 +1,19 @@
 /* eslint-disable react/no-unknown-property */
 'use client'
 
-import React, { Suspense, useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { ApiRoutePath } from '@/shared/data/constants/protocol'
 import { MODEL_ERROR_LOG } from '@/domains/interior-designer/constants/object-manager-messages'
-import { DATA_URL_PREFIX } from '@/domains/interior-designer/constants/three-js'
 import { useInteriorStore, SceneObject } from '@/domains/interior-designer'
 import { Box, useGLTF, Html } from '@react-three/drei'
 import { Loader2 } from 'lucide-react'
 import * as THREE from 'three'
-import { WindowMesh } from './meshes/WindowMesh'
-import { DoorMesh } from './meshes/DoorMesh'
-import { buildUrl } from '@/shared/data/url-builder';
+import { ObjectRendererContent } from './ObjectRendererContent'
+import {
+  computeAutoScale,
+  shouldApplyAutoScale,
+} from './utils/object-auto-scale'
+import { buildUrl } from '@/shared/data/url-builder'
 
 // Proxy external URLs to avoid CORS issues
 const getProxiedUrl = (url: string): string => {
@@ -115,18 +117,7 @@ const ObjectRenderer: React.FC<{
   opacity?: number
 }> = ({ obj, isSelected, onClick, opacity = 1 }) => {
   const updateObject = useInteriorStore(state => state.updateObject)
-
-  // Retexture Preview is now handled by updating obj.modelUrl directly in the store
-  // const pendingRetextureUrl = useInteriorStore(state => state.pendingRetextureUrl)
-  // const isRetexturing = useInteriorStore(state => state.isRetexturing)
-
-  // Determine effective URL
   const effectiveModelUrl = obj.modelUrl
-
-  const isExternalModel =
-    effectiveModelUrl.startsWith('http://') ||
-    effectiveModelUrl.startsWith('https://') ||
-    effectiveModelUrl.startsWith(DATA_URL_PREFIX)
 
   const handleLoaded = () => {
     if (obj.isLoading) {
@@ -135,27 +126,20 @@ const ObjectRenderer: React.FC<{
   }
 
   const handleDimensionsCalculated = (naturalSize: THREE.Vector3) => {
-    // If we have target dimensions, apply auto-scaling
-    if (obj.targetDimensions) {
-      const [targetX, targetY, targetZ] = obj.targetDimensions
+    if (!shouldApplyAutoScale(obj)) return
 
-      // Prevent division by zero
-      const scaleX = naturalSize.x > 0.01 ? targetX / naturalSize.x : 1
-      const scaleY = naturalSize.y > 0.01 ? targetY / naturalSize.y : 1
-      const scaleZ = naturalSize.z > 0.01 ? targetZ / naturalSize.z : 1
+    const newScale = computeAutoScale(naturalSize, obj.targetDimensions)
 
-      console.log(`[Auto-Scale] ${obj.id}`, {
-        natural: naturalSize,
-        target: obj.targetDimensions,
-        newScale: [scaleX, scaleY, scaleZ],
-      })
+    console.log(`[Auto-Scale] ${obj.id}`, {
+      natural: naturalSize,
+      target: obj.targetDimensions,
+      newScale,
+    })
 
-      // Apply new scale and clear targetDimensions to prevent re-loop
-      updateObject(obj.id, {
-        scale: [scaleX, scaleY, scaleZ],
-        targetDimensions: undefined,
-      })
-    }
+    updateObject(obj.id, {
+      scale: newScale,
+      targetDimensions: undefined,
+    })
   }
 
   return (
@@ -169,94 +153,17 @@ const ObjectRenderer: React.FC<{
         onClick()
       }}
     >
-      {/* Primitives */}
-      {effectiveModelUrl === 'cube' && (
-        <mesh position={[0, 0.5, 0]}>
-          <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial color={isSelected ? '#4f46e5' : '#f59e0b'} />
-        </mesh>
-      )}
-      {effectiveModelUrl === 'sphere' && (
-        <mesh position={[0, 0.5, 0]}>
-          <sphereGeometry args={[0.5, 32, 32]} />
-          <meshStandardMaterial color={isSelected ? '#4f46e5' : '#10b981'} />
-        </mesh>
-      )}
-      {effectiveModelUrl === 'cylinder' && (
-        <mesh position={[0, 0.5, 0]}>
-          <cylinderGeometry args={[0.5, 0.5, 1]} />
-          <meshStandardMaterial color={isSelected ? '#4f46e5' : '#ec4899'} />
-        </mesh>
-      )}
-      {effectiveModelUrl === 'cone' && (
-        <mesh position={[0, 0.5, 0]}>
-          <coneGeometry args={[0.5, 1]} />
-          <meshStandardMaterial color={isSelected ? '#4f46e5' : '#8b5cf6'} />
-        </mesh>
-      )}
-
-      {/* Demo Assets Placeholders */}
-      {effectiveModelUrl === 'building' && (
-        <group>
-          {/* Main Building Body */}
-          <Box args={[2, 4, 2]} position={[0, 2, 0]}>
-            <meshStandardMaterial color={isSelected ? '#4f46e5' : '#71717a'} />
-          </Box>
-          {/* Roof */}
-          <mesh position={[0, 4.5, 0]} rotation={[0, Math.PI / 4, 0]}>
-            <coneGeometry args={[1.5, 1, 4]} />
-            <meshStandardMaterial color="#3f3f46" />
-          </mesh>
-        </group>
-      )}
-      {effectiveModelUrl === 'tree' && (
-        <group>
-          {/* Trunk */}
-          <mesh position={[0, 0.5, 0]}>
-            <cylinderGeometry args={[0.2, 0.3, 1]} />
-            <meshStandardMaterial color="#78350f" />
-          </mesh>
-          {/* Leaves */}
-          <mesh position={[0, 1.5, 0]}>
-            <coneGeometry args={[1, 2]} />
-            <meshStandardMaterial color={isSelected ? '#4f46e5' : '#166534'} />
-          </mesh>
-          <mesh position={[0, 2.5, 0]}>
-            <coneGeometry args={[0.8, 1.5]} />
-            <meshStandardMaterial color={isSelected ? '#4f46e5' : '#166534'} />
-          </mesh>
-          <mesh position={[0, 2.5, 0]}>
-            <coneGeometry args={[0.8, 1.5]} />
-            <meshStandardMaterial color={isSelected ? '#4f46e5' : '#166534'} />
-          </mesh>
-        </group>
-      )}
-
-      {effectiveModelUrl === 'window' && (
-        <WindowMesh color={obj.color || '#7a6f5e'} isSelected={isSelected} opacity={opacity} />
-      )}
-      {effectiveModelUrl === 'door' && (
-        <DoorMesh color={obj.color || '#7a6f5e'} isSelected={isSelected} opacity={opacity} />
-      )}
-
-      {/* External GLB Models */}
-      {isExternalModel && (
-        <ModelErrorBoundary
-          fallback={
-            <Box args={[1, 1, 1]}>
-              <meshStandardMaterial color="#ef4444" />
-            </Box>
-          }
-        >
-          <Suspense fallback={<LoadingPlaceholder />}>
-            <GLBModel
-              url={effectiveModelUrl}
-              onLoaded={handleLoaded}
-              onDimensionsCalculated={handleDimensionsCalculated}
-            />
-          </Suspense>
-        </ModelErrorBoundary>
-      )}
+      <ObjectRendererContent
+        obj={obj}
+        effectiveModelUrl={effectiveModelUrl}
+        isSelected={isSelected}
+        opacity={opacity}
+        onLoaded={handleLoaded}
+        onDimensionsCalculated={handleDimensionsCalculated}
+        LoadingPlaceholder={LoadingPlaceholder}
+        GLBModel={GLBModel}
+        ModelErrorBoundary={ModelErrorBoundary}
+      />
     </group>
   )
 }

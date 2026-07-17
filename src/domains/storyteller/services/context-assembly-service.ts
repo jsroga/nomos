@@ -2,83 +2,42 @@
  * Storyteller context assembly.
  *
  * Fetches project/bible/story-plan/characters/beats + RAG, formats them into
- * the agent system context, and enforces the token budget. Extracted from the
- * chat stream route to keep that handler focused on orchestration.
+ * the agent system context, and enforces the token budget.
  */
 
 import { eq } from 'drizzle-orm'
 import { projects, storyPlans } from '@/db'
-import type { beats, characters } from '@/db'
 import { db } from '@/db/client'
 import { budgetContext, type RawContextParts } from '@/domains/storyteller/services/context/token-budget'
-import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
-import { EntityRefPrefix } from '@/domains/storyteller/core/entities/constants/reference-parser'
-import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
 import {
   StorytellerAnswerSeparator,
-  StorytellerDefaultTitle,
 } from '@/domains/storyteller/core/storyteller-page-wire'
-import { Phase, parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/enums'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/enums'
+import {
+  characterFromDbRow,
+  deriveProjectMeta,
+  flattenSeriesBible,
+  mergeCharactersFromPlanAndDb,
+  sortCharactersByRole,
+  storyPlanFromJson,
+  type BeatRow,
+} from './context-assembly-parsers'
+import {
+  buildProjectContextBlock,
+  buildSystemContextBlock,
+  formatBeatsBlock,
+  formatCharactersBlock,
+} from './context-assembly-formatters'
+
+export type { Character, StoryPlan } from './context-assembly-parsers'
+
 import {
   BIBLE_CATEGORY_KEYS,
   ContextAssemblyFallback,
   ContextAssemblyLog,
 } from '@/domains/storyteller/services/constants/context-assembly'
-import { BibleCategoryKey } from '@/shared/data/constants/protocol'
 import { ChatSenderAlias } from '@/shared/chat/core/constants/chat-messages'
-import {
-  namedRecordsFromJson,
-  recordArrayFromJson,
-  recordFromJson,
-  readString,
-} from '@/shared/data/json-guards'
-
-type CharacterRow = typeof characters.$inferSelect
-type BeatRow = typeof beats.$inferSelect
-
-export interface Character {
-  id: string
-  name: string
-  role?: string
-  description?: string
-  psychology?: Record<string, unknown>
-}
-
-interface WorldRuleRow {
-  id?: string
-  name?: string
-  category?: string
-  rule: string
-  consequence?: string
-}
-
-interface NamedEntityRow {
-  id?: string
-  name: string
-  description?: string
-}
-
-export interface StoryPlan {
-  cast?: Character[]
-  keyCharacters?: Character[]
-  premise?: Record<string, unknown>
-  episodePremise?: Record<string, unknown>
-  worldDescription?: string
-  genre?: string | string[]
-  tone?: string | string[]
-  centralTheme?: string
-  worldRules?: WorldRuleRow[]
-  factions?: Array<{ id?: string; name: string; ideology?: string; description?: string }>
-  items?: NamedEntityRow[]
-  events?: NamedEntityRow[]
-  inspirations?: {
-    movies?: Array<string | { title: string }>
-    books?: Array<string | { title: string }>
-    games?: Array<string | { title: string }>
-  }
-  sequences?: Array<{ name: string; description?: string }>
-  masterPrompt?: string
-}
 
 export interface AssembleContextParams {
   projectId?: string
@@ -86,148 +45,14 @@ export interface AssembleContextParams {
   message: string
   currentPhase?: PhaseId
   userId: string
-  /** Optional hook so callers can record context-load failures (e.g. Langfuse). */
   onError?: (err: unknown) => void
 }
 
 export interface AssembledContext {
-  /** Formatted, token-budgeted context prompt ('' when no project or on failure). */
   contextPrompt: string
-  /** Existing seriesBible snapshot, used for diff "before" state. */
   existingBibleData: Record<string, unknown>
 }
 
-const BIBLE_CATEGORY_SET = new Set<string>(BIBLE_CATEGORY_KEYS)
-
-const ROLE_PRIORITY: Record<string, number> = {
-  protagonist: 1,
-  hero: 1,
-  main: 1,
-  antagonist: 2,
-  villain: 2,
-  mentor: 3,
-  guide: 3,
-  supporting: 4,
-  side: 5,
-}
-
-function characterFromDbRow(row: CharacterRow): Character {
-  return {
-    id: row.id,
-    name: row.name,
-    role: row.role,
-    description: row.description ?? undefined,
-  }
-}
-
-function characterFromPlanRow(row: Record<string, unknown>): Character | null {
-  const name = readString(row.name)
-  if (!name) return null
-  return {
-    id: readString(row.id) ?? '',
-    name,
-    role: readString(row.role),
-    description: readString(row.description),
-    psychology: recordFromJson(row.psychology),
-  }
-}
-
-function charactersFromJson(value: unknown): Character[] {
-  return recordArrayFromJson(value).flatMap(row => {
-    const character = characterFromPlanRow(row)
-    return character ? [character] : []
-  })
-}
-
-function worldRulesFromJson(value: unknown): WorldRuleRow[] {
-  return recordArrayFromJson(value).flatMap(row => {
-    const rule = readString(row.rule)
-    if (!rule) return []
-    return [{
-      id: readString(row.id),
-      name: readString(row.name),
-      category: readString(row.category),
-      rule,
-      consequence: readString(row.consequence),
-    }]
-  })
-}
-
-function factionsFromJson(value: unknown): StoryPlan['factions'] {
-  return namedRecordsFromJson(value).map(row => ({
-    id: readString(row.id),
-    name: row.name,
-    ideology: readString(row.ideology),
-    description: readString(row.description),
-  }))
-}
-
-function namedEntitiesFromJson(value: unknown): NamedEntityRow[] {
-  return namedRecordsFromJson(value).map(row => ({
-    id: readString(row.id),
-    name: row.name,
-    description: readString(row.description),
-  }))
-}
-
-function inspirationTitle(item: unknown): string {
-  if (typeof item === 'string') return item
-  return readString(recordFromJson(item).title) ?? ContextAssemblyFallback.NoneLabel
-}
-
-function storyPlanFromJson(content: unknown): StoryPlan {
-  const r = recordFromJson(content)
-  const cast = charactersFromJson(r.cast)
-  const keyCharacters = charactersFromJson(r.keyCharacters)
-
-  return {
-    cast: cast.length > 0 ? cast : undefined,
-    keyCharacters: keyCharacters.length > 0 ? keyCharacters : undefined,
-    premise: recordFromJson(r.premise),
-    episodePremise: recordFromJson(r.episodePremise),
-    worldDescription: readString(r.worldDescription),
-    genre: Array.isArray(r.genre)
-      ? r.genre.filter((g): g is string => typeof g === 'string')
-      : readString(r.genre),
-    tone: Array.isArray(r.tone)
-      ? r.tone.filter((t): t is string => typeof t === 'string')
-      : readString(r.tone),
-    centralTheme: readString(r.centralTheme),
-    worldRules: worldRulesFromJson(r.worldRules),
-    factions: factionsFromJson(r.factions),
-    items: namedEntitiesFromJson(r.items),
-    events: namedEntitiesFromJson(r.events),
-    inspirations: {
-      movies: recordArrayFromJson(recordFromJson(r.inspirations).movies).map(inspirationTitle),
-      books: recordArrayFromJson(recordFromJson(r.inspirations).books).map(inspirationTitle),
-      games: recordArrayFromJson(recordFromJson(r.inspirations).games).map(inspirationTitle),
-    },
-    sequences: namedRecordsFromJson(r.sequences).map(row => ({
-      name: row.name,
-      description: readString(row.description),
-    })),
-    masterPrompt: readString(r.masterPrompt),
-  }
-}
-
-function flattenSeriesBible(rawBible: Record<string, unknown>): Record<string, unknown> {
-  const bible: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(rawBible)) {
-    if (BIBLE_CATEGORY_SET.has(key) && typeof value === 'object' && value !== null) {
-      Object.assign(bible, recordFromJson(value))
-    } else {
-      bible[key] = value
-    }
-  }
-  return bible
-}
-
-function slugId(prefix: string, id: string | undefined, name: string): string {
-  const suffix = id?.slice(0, 8) ?? name.toLowerCase().replace(/\s+/g, '-')
-  return `${prefix}-${suffix}`
-}
-
-/** Safe RAG service wrapper — never throws; returns '' on failure. */
 async function getRAGContext(projectId: string, query: string): Promise<string> {
   try {
     const { ragService } = await import('@/domains/storyteller/services/rag-service')
@@ -250,111 +75,88 @@ async function getRAGContext(projectId: string, query: string): Promise<string> 
   }
 }
 
-function formatFactionsBlock(factions: StoryPlan['factions']): string {
-  if (!factions || factions.length === 0) return ContextAssemblyFallback.None
-  return factions
-    .map(f => {
-      const factionId = slugId(EntityRefPrefix.Faction, f.id, f.name)
-      return `- [${f.name}][${factionId}]: ${f.ideology || f.description || ContextAssemblyFallback.NoDescription}`
-    })
-    .join('\n')
+async function loadContextSourceData(
+  projectId: string,
+  episodeId: string | undefined,
+  message: string,
+  userId: string
+) {
+  return Promise.all([
+    db.select().from(projects).where(eq(projects.id, projectId)).then(r => r[0]),
+    db.select().from(storyPlans).where(eq(storyPlans.projectId, projectId)).then(r => r[0]),
+    import('./storyteller-crud-service').then(async m => {
+      const [charsReq, beatsReq] = await Promise.all([
+        m.storytellerService
+          .listCharacters({ projectId }, { userId })
+          .catch((): { characters: Parameters<typeof characterFromDbRow>[0][] } => ({ characters: [] })),
+        episodeId
+          ? m.storytellerService
+              .listBeats({ episodeId }, { userId })
+              .catch((): { beats: BeatRow[] } => ({ beats: [] }))
+          : Promise.resolve({ beats: [] satisfies BeatRow[] }),
+      ])
+      return { characters: charsReq.characters, beats: beatsReq.beats }
+    }),
+    getRAGContext(projectId, message),
+  ])
 }
 
-function formatNamedRefBlock(rows: StoryPlan['items'], prefix: EntityRefPrefix): string {
-  if (!rows || rows.length === 0) return ContextAssemblyFallback.None
-  return rows
-    .map(x => {
-      const refId = slugId(prefix, x.id, x.name)
-      return `- [${x.name}][${refId}]: ${x.description || ContextAssemblyFallback.NoDescription}`
-    })
-    .join('\n')
-}
+function buildContextParts(params: {
+  projectId: string
+  episodeId?: string
+  phase: PhaseId
+  message: string
+  projectData: Awaited<ReturnType<typeof loadContextSourceData>>[0]
+  storyPlanData: Awaited<ReturnType<typeof loadContextSourceData>>[1]
+  serviceData: Awaited<ReturnType<typeof loadContextSourceData>>[2]
+  ragContext: string
+}): { contextPrompt: string; existingBibleData: Record<string, unknown> } {
+  const { projectId, episodeId, phase, message, projectData, storyPlanData, serviceData, ragContext } =
+    params
 
-function formatWorldRulesLinkedBlock(rules: StoryPlan['worldRules']): string {
-  if (!rules || rules.length === 0) return ContextAssemblyFallback.None
-  return rules
-    .map(r => {
-      const ruleId = slugId(EntityRefPrefix.Rule, r.id, r.name ?? r.category ?? StoryEntityType.Rule)
-      return `- [${r.name || r.category || ContextAssemblyFallback.RuleLabel}][${ruleId}]: ${r.rule || ContextAssemblyFallback.NoDescription}`
-    })
-    .join('\n')
-}
+  const rawBible = recordFromJson(projectData?.seriesBible)
+  const storyPlan = storyPlanFromJson(storyPlanData?.content)
+  const bible = flattenSeriesBible(rawBible, BIBLE_CATEGORY_KEYS)
 
-function formatWorldRulesPlainBlock(rules: StoryPlan['worldRules']): string {
-  if (!rules || rules.length === 0) return ContextAssemblyFallback.None
-  return rules
-    .map(
-      r =>
-        `- [${r.category || BibleCategoryKey.General}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
-    )
-    .join('\n')
-}
+  const masterPrompt =
+    projectData?.masterPrompt || readString(bible.masterPrompt) || storyPlan.masterPrompt || ''
 
-function formatInspirationsBlock(inspirations: StoryPlan['inspirations']): string {
-  if (!inspirations) return ContextAssemblyFallback.None
-  const sep = StorytellerAnswerSeparator.CommaSpace
-  const movies = inspirations.movies?.join(sep) || ContextAssemblyFallback.NoneLabel
-  const books = inspirations.books?.join(sep) || ContextAssemblyFallback.NoneLabel
-  const games = inspirations.games?.join(sep) || ContextAssemblyFallback.NoneLabel
-  return `Movies: ${movies} | Books: ${books} | Games: ${games}`
-}
+  const dbCharacters = serviceData.characters.map(characterFromDbRow)
+  const planCast = storyPlan.cast ?? storyPlan.keyCharacters ?? []
+  const characters = mergeCharactersFromPlanAndDb(dbCharacters, planCast)
+  const beats = serviceData.beats
 
-function formatSequencesBlock(sequences: StoryPlan['sequences']): string {
-  if (!sequences || sequences.length === 0) return ContextAssemblyFallback.None
-  return sequences.map((s, i) => `${i + 1}. ${s.name}: ${s.description || ''}`).join('\n')
-}
-
-function formatCharactersBlock(sortedChars: Character[]): string {
-  if (sortedChars.length === 0) return ''
-  const lines = sortedChars
-    .slice(0, 20)
-    .map(c => {
-      const charId = slugId(EntityRefPrefix.Character, c.id, c.name)
-      return `- [${c.name}][${charId}] (${c.role || '?'}): ${c.description || ContextAssemblyFallback.NoDescription}`
-    })
-    .join('\n')
-  return `=== CHARACTERS (${sortedChars.length}) ===\n${lines}`
-}
-
-function formatBeatsBlock(beats: BeatRow[]): string {
-  if (beats.length === 0) return ''
-  const lines = beats
-    .slice(-3)
-    .map(b => {
-      const beatId = slugId(EntityRefPrefix.Beat, b.id, String(b.sequence ?? '0'))
-      return `- [${b.logline || `Beat ${b.sequence}`}][${beatId}]`
-    })
-    .join('\n')
-  return `=== RECENT BEATS (${beats.length}) ===\n${lines}`
-}
-
-interface ProjectMeta {
-  genre: string
-  tone: string
-  theme: string
-  premise: Record<string, unknown>
-}
-
-function deriveProjectMeta(storyPlan: StoryPlan, bible: Record<string, unknown>): ProjectMeta {
-  const genre = Array.isArray(storyPlan.genre)
-    ? storyPlan.genre.join(StorytellerAnswerSeparator.CommaSpace)
-    : storyPlan.genre || readString(bible.genre) || ContextAssemblyFallback.NotSet
-  const tone = Array.isArray(storyPlan.tone)
-    ? storyPlan.tone.join(StorytellerAnswerSeparator.CommaSpace)
-    : storyPlan.tone || readString(bible.tone) || ContextAssemblyFallback.NotSet
-  const theme =
-    storyPlan.centralTheme || readString(bible.centralTheme) || ContextAssemblyFallback.NotSet
-  const premise =
-    storyPlan.premise ?? storyPlan.episodePremise ?? recordFromJson(bible.episodePremise)
-  return { genre, tone, theme, premise }
-}
-
-function sortCharactersByRole(characters: Character[]): Character[] {
-  return [...characters].sort((a, b) => {
-    const priorityA = ROLE_PRIORITY[(a.role || '').toLowerCase()] ?? 99
-    const priorityB = ROLE_PRIORITY[(b.role || '').toLowerCase()] ?? 99
-    return priorityA - priorityB
+  const systemCtx = buildSystemContextBlock({ projectId, episodeId, phase, masterPrompt })
+  const meta = deriveProjectMeta(
+    storyPlan,
+    bible,
+    ContextAssemblyFallback.NotSet,
+    StorytellerAnswerSeparator.CommaSpace
+  )
+  const projectCtx = buildProjectContextBlock({
+    projectName: projectData?.name,
+    meta,
+    storyPlan,
+    bible,
   })
+
+  const sortedChars = sortCharactersByRole(characters)
+  const rawParts: RawContextParts = {
+    systemPrompt: systemCtx,
+    projectContext: projectCtx,
+    characters: formatCharactersBlock(sortedChars),
+    beats: formatBeatsBlock(beats),
+    rag: ragContext || undefined,
+    userMessage: message,
+  }
+  const budgeted = budgetContext(rawParts)
+
+  if (budgeted.trimmed.length > 0) {
+    console.log(ContextAssemblyLog.TokenBudgetTrimmed, budgeted.trimmed)
+  }
+  console.log(`[Stream] Context tokens: ~${budgeted.totalTokens}`)
+
+  return { contextPrompt: budgeted.context, existingBibleData: rawBible }
 }
 
 export async function assembleStorytellerContext(
@@ -362,140 +164,33 @@ export async function assembleStorytellerContext(
 ): Promise<AssembledContext> {
   const { projectId, episodeId, message, currentPhase, userId, onError } = params
 
-  let contextPrompt = ''
-  let existingBibleData: Record<string, unknown> = {}
-
   if (!projectId) {
-    return { contextPrompt, existingBibleData }
+    return { contextPrompt: '', existingBibleData: {} }
   }
 
   const phase = parsePhaseId(currentPhase)
 
   try {
-    const [projectData, storyPlanData, serviceData, ragContext] = await Promise.all([
-      db
-        .select()
-        .from(projects)
-        .where(eq(projects.id, projectId))
-        .then(r => r[0]),
-      db
-        .select()
-        .from(storyPlans)
-        .where(eq(storyPlans.projectId, projectId))
-        .then(r => r[0]),
-      import('./storyteller-crud-service').then(async m => {
-        const [charsReq, beatsReq] = await Promise.all([
-          m.storytellerService
-            .listCharacters({ projectId }, { userId })
-            .catch((): { characters: CharacterRow[] } => ({ characters: [] })),
-          episodeId
-            ? m.storytellerService
-                .listBeats({ episodeId }, { userId })
-                .catch((): { beats: BeatRow[] } => ({ beats: [] }))
-            : Promise.resolve({ beats: [] satisfies BeatRow[] }),
-        ])
-        return { characters: charsReq.characters, beats: beatsReq.beats }
-      }),
-      getRAGContext(projectId, message),
-    ])
+    const [projectData, storyPlanData, serviceData, ragContext] = await loadContextSourceData(
+      projectId,
+      episodeId,
+      message,
+      userId
+    )
 
-    const rawBible = recordFromJson(projectData?.seriesBible)
-    const storyPlan = storyPlanFromJson(storyPlanData?.content)
-    const bible = flattenSeriesBible(rawBible)
-
-    const masterPrompt =
-      projectData?.masterPrompt || readString(bible.masterPrompt) || storyPlan.masterPrompt || ''
-
-    const dbCharacters = serviceData.characters.map(characterFromDbRow)
-    const planCast = storyPlan.cast ?? storyPlan.keyCharacters ?? []
-    const dbNames = new Set(dbCharacters.map(c => c.name.toLowerCase()))
-    const characters: Character[] = [
-      ...dbCharacters,
-      ...planCast.filter(c => c.name && !dbNames.has(c.name.toLowerCase())),
-    ]
-    const beats: BeatRow[] = serviceData.beats
-
-    const linkReqs = getEntityLinkRequirements()
-    const systemCtx = `=== IQ 200 CONTEXT ENGINEERING & ENTITY LINKS ===
-You are in a high-fidelity creative workspace. To maintain continuity and enable user interaction, you MUST use the following rules for entity references:
-1. ENTITY LINKS: Whenever you mention a Character, Faction, World Rule, Episode, Item, or Event, ALWAYS use the format: [Entity Name][entity-id].
-   Example: "[Marcus][char-123] challenged the [Council of Seven][faction-456] for the [One Ring][item-001]."
-2. REQUIRED MINIMUMS (in the prose only): The worldDescription narrative text (the paragraphs) MUST contain at least ${linkReqs.minItems} ITEM, ${linkReqs.minEvents} EVENT, and ${linkReqs.minRules} RULE links woven into the prose. Separate "Items:" / "Events:" / "Rules:" lists do NOT count—only [Name][item-id] etc. inside the worldDescription string. Weave entities into sentences; if below minimum, the tool will REJECT.
-3. CLICKABLE UI: These tags are rendered as clickable links and hover tooltips in the user's interface. Using them makes your intelligence visible and actionable.
-4. CONTEXT SYNTHESIS: Use the technical data below to weave a "connected" world. Don't just list facts; synthesize them into a brilliant narrative.
-5. IQ 200 REASONING: Your Council of Agents provides raw data; your job as Showrunner is to spot the "out of the box" connections they missed.
-
-=== SYSTEM CONTEXT ===
-projectId: ${projectId}
-${episodeId ? `episodeId: ${episodeId}` : ''}
-currentPhase: ${phase}
-IMPORTANT: When calling tools that require projectId, you MUST use: "${projectId}"
-${episodeId ? `When calling tools that require episodeId, you MUST use: "${episodeId}"` : ''}
-CURRENT STORY PHASE: ${phase}
-- ${Phase.PREMISE}: Concept planning, world building, episode premise.
-- ${Phase.BREAKING}: Plot structure, beat board organization.
-- ${Phase.WRITING}: Scripting and dialogue execution.
-⚠️ REFERENCE ONLY: Content below is for world/history consistency. When asked to GENERATE, create NEW content.
-${masterPrompt ? `\n=== MASTER PROMPT ===\n${masterPrompt}` : ''}
-`
-
-    const { genre, tone, theme, premise } = deriveProjectMeta(storyPlan, bible)
-
-    const projectCtx = `=== PROJECT ===
-Title: ${projectData?.name || StorytellerDefaultTitle.Untitled} | Genre: ${genre} | Tone: ${tone} | Theme: ${theme}
-
-=== EPISODE PREMISE ===
-${Object.keys(premise).length > 0 ? JSON.stringify(premise) : ContextAssemblyFallback.NoEpisodePremise}
-
-=== WORLD ===
-${storyPlan.worldDescription || readString(bible.worldDescription) || ContextAssemblyFallback.NoWorldDescription}
-
-=== WORLD RULES ===
-${formatWorldRulesPlainBlock(storyPlan.worldRules)}
-
-=== FACTIONS ===
-${formatFactionsBlock(storyPlan.factions)}
-
-=== ITEMS ===
-${formatNamedRefBlock(storyPlan.items, EntityRefPrefix.Item)}
-
-=== EVENTS ===
-${formatNamedRefBlock(storyPlan.events, EntityRefPrefix.Event)}
-
-=== WORLD RULES (linked) ===
-${formatWorldRulesLinkedBlock(storyPlan.worldRules)}
-
-=== INSPIRATIONS ===
-${formatInspirationsBlock(storyPlan.inspirations)}
-
-=== SEQUENCES ===
-${formatSequencesBlock(storyPlan.sequences)}`
-
-    const sortedChars = sortCharactersByRole(characters)
-    const charsCtx = formatCharactersBlock(sortedChars)
-    const beatsCtx = formatBeatsBlock(beats)
-
-    const rawParts: RawContextParts = {
-      systemPrompt: systemCtx,
-      projectContext: projectCtx,
-      characters: charsCtx,
-      beats: beatsCtx,
-      rag: ragContext || undefined,
-      userMessage: message,
-    }
-    const budgeted = budgetContext(rawParts)
-
-    if (budgeted.trimmed.length > 0) {
-      console.log(ContextAssemblyLog.TokenBudgetTrimmed, budgeted.trimmed)
-    }
-    console.log(`[Stream] Context tokens: ~${budgeted.totalTokens}`)
-
-    contextPrompt = budgeted.context
-    existingBibleData = rawBible
+    return buildContextParts({
+      projectId,
+      episodeId,
+      phase,
+      message,
+      projectData,
+      storyPlanData,
+      serviceData,
+      ragContext,
+    })
   } catch (err) {
     console.warn(ContextAssemblyLog.FailedToLoadContext, err)
     onError?.(err)
+    return { contextPrompt: '', existingBibleData: {} }
   }
-
-  return { contextPrompt, existingBibleData }
 }

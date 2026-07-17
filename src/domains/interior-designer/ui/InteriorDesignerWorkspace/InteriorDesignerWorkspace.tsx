@@ -11,7 +11,7 @@ import { DesignManager } from '@/domains/interior-designer/ui/DesignManager'
 import { InteriorRightSidebar } from '@/domains/interior-designer/ui/UI/InteriorRightSidebar'
 import { Toolbar } from '@/domains/interior-designer/ui/UI/Toolbar'
 import { useInteriorStore } from '@/domains/interior-designer/state'
-import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
+import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { cn } from '@/shared/data/utils'
 

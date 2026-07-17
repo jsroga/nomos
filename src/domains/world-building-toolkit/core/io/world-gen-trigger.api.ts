@@ -1,4 +1,5 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
 import { FidelityApiRoute } from '../../constants/fidelity-service'
@@ -7,15 +8,10 @@ import { UpscaleApiRoute } from '../../constants/upscale-service'
 import type { VariantSelectionAction } from '../../ui/constants/tile-review-dialog'
 
 const JSON_HEADERS = { 'Content-Type': ContentType.Json }
-
-async function fetchJsonRecord(url: string, init?: RequestInit): Promise<Record<string, unknown>> {
-  const response = await fetch(url, init)
-  const data = recordFromJson(await response.json().catch(() => ({})))
-  if (!response.ok) {
-    throw new Error(readString(data.error) ?? `Request failed (${response.status})`)
-  }
-  return data
-}
+const TRIGGER_FIDELITY_ERROR = 'Failed to trigger fidelity enhancement task'
+const TRIGGER_TILE_GENERATION_ERROR = 'Failed to trigger tile generation task'
+const TRIGGER_UPSCALE_ERROR = 'Failed to trigger upscale task'
+const TRIGGER_VARIANT_SELECTION_ERROR = 'Failed to trigger variant selection'
 
 export interface WorldGenTriggerStatusResult {
   statusCode: number
@@ -55,7 +51,7 @@ export async function triggerFidelityEnhancement(input: {
   })
   const runId = readString(data.runId)
   if (!runId) {
-    throw new Error(readString(data.error) ?? 'Failed to trigger fidelity enhancement task')
+    throw new Error(readString(data.error) ?? TRIGGER_FIDELITY_ERROR)
   }
   return { runId }
 }
@@ -80,7 +76,7 @@ export async function triggerTileGeneration(input: {
   })
   const runId = readString(data.runId)
   if (!runId) {
-    throw new Error(readString(data.error) ?? 'Failed to trigger tile generation task')
+    throw new Error(readString(data.error) ?? TRIGGER_TILE_GENERATION_ERROR)
   }
   return { runId }
 }
@@ -120,7 +116,7 @@ export async function triggerUpscale(input: {
   })
   const runId = readString(data.runId)
   if (!runId) {
-    throw new Error(readString(data.error) ?? 'Failed to trigger upscale task')
+    throw new Error(readString(data.error) ?? TRIGGER_UPSCALE_ERROR)
   }
   return { runId }
 }
@@ -142,7 +138,7 @@ export async function triggerUpscaleVariantSelection(input: {
   })
   const runId = readString(data.runId)
   if (!runId) {
-    throw new Error(readString(data.error) ?? 'Failed to trigger variant selection')
+    throw new Error(readString(data.error) ?? TRIGGER_VARIANT_SELECTION_ERROR)
   }
   return { runId }
 }

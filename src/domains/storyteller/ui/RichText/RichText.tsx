@@ -18,7 +18,7 @@ import React, { useMemo } from 'react'
 import { ReferenceText, type EntityReference } from '../ReferenceText'
 import { hasReferences } from '@/domains/storyteller/core/entities/reference-parser'
 import { cn } from '@/shared/data/utils'
-import { useBible } from '../WorldBible/BibleContext'
+import { useOptionalBible } from '../WorldBible'
 import { extractEntitiesFromPlan } from '@/domains/storyteller/core/entities/entity-extractor'
 import {
   RICH_TEXT_EMPTY_PLACEHOLDER,
@@ -62,7 +62,8 @@ export const RichText: React.FC<RichTextProps> = ({
 }) => {
   // Call all hooks unconditionally (before any early returns)
   const containsReferences = hasReferences(text ?? '')
-  const safeBible = useSafeBible()
+  const bibleContext = useOptionalBible()
+  const safeBible = bibleContext ?? { storyPlan: null }
   const navigateToEntity = useStorytellerUiStore(state => state.navigateToEntity)
   const initialEntities = useMemo(() => {
     if (!containsReferences || !safeBible.storyPlan || !projectId) return undefined
@@ -109,13 +110,4 @@ export const RichText: React.FC<RichTextProps> = ({
       initialEntities={initialEntities}
     />
   )
-}
-
-// Helper to safely use Bible context without throwing
-function useSafeBible() {
-  try {
-    return useBible()
-  } catch (_e) {
-    return { storyPlan: null }
-  }
 }

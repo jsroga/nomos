@@ -3,51 +3,9 @@ import { db } from '@/db/client'
 import { projects, storyPlans } from '@/db'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
-import { recordFromJson } from '@/shared/data/deep-merge'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { BibleCategoryKey, QueryParam, StoryPlanFieldKey } from '@/shared/data/constants/protocol'
-
-function pickPresent<K extends string>(
-  source: Record<string, unknown>,
-  keys: readonly K[]
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {}
-  for (const key of keys) {
-    const value = source[key]
-    if (value) out[key] = value
-  }
-  return out
-}
-
-const STORY_PLAN_OVERRIDE_KEYS = [
-  StoryPlanFieldKey.Genre,
-  StoryPlanFieldKey.Tone,
-  StoryPlanFieldKey.CentralTheme,
-  StoryPlanFieldKey.WorldDescription,
-  StoryPlanFieldKey.WorldRules,
-  StoryPlanFieldKey.Factions,
-  StoryPlanFieldKey.Inspirations,
-  StoryPlanFieldKey.KeyCharacters,
-  StoryPlanFieldKey.Sequences,
-  StoryPlanFieldKey.ExecutiveSummary,
-  StoryPlanFieldKey.Soundtracks,
-  StoryPlanFieldKey.PlotTwists,
-  StoryPlanFieldKey.StyleReference,
-] as const
-
-const KNOWN_BIBLE_CATEGORIES: readonly BibleCategoryKey[] = [
-  BibleCategoryKey.General,
-  BibleCategoryKey.Setting,
-  BibleCategoryKey.History,
-  BibleCategoryKey.Magic,
-  BibleCategoryKey.Factions,
-  BibleCategoryKey.Technology,
-  BibleCategoryKey.Culture,
-]
-
-function isBibleCategoryKey(value: string): value is BibleCategoryKey {
-  return KNOWN_BIBLE_CATEGORIES.some(category => category === value)
-}
+import { QueryParam } from '@/shared/data/constants/protocol'
+import { buildBibleResponse, parseBibleSources } from './bible-get-helpers'
 
 export async function GET(req: Request) {
   try {
@@ -84,34 +42,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: API_ERROR.FORBIDDEN }, { status: 403 })
     }
 
-    const seriesBible = recordFromJson(projectData.seriesBible)
-    const storyPlan = recordFromJson(storyPlanData?.content)
+    const sources = parseBibleSources(projectData, storyPlanData)
+    const response = buildBibleResponse(sources)
 
-    const flattenedBible: Record<string, unknown> = {}
-
-    for (const [key, value] of Object.entries(seriesBible)) {
-      if (isBibleCategoryKey(key) && typeof value === 'object' && value !== null) {
-        Object.assign(flattenedBible, value)
-      } else {
-        flattenedBible[key] = value
-      }
-    }
-
-    const storyPlanOverrides = pickPresent(storyPlan, STORY_PLAN_OVERRIDE_KEYS)
-    const bible = {
-      ...flattenedBible,
-      ...(projectData.masterPrompt ? { masterPrompt: projectData.masterPrompt } : {}),
-      ...storyPlanOverrides,
-      storyPlan,
-      userDecisions: seriesBible.userDecisions || storyPlan.userDecisions || {},
-    }
-
-    console.log(API_LOG_PREFIX.BIBLE_RETURNING_KEYS, Object.keys(bible))
+    console.log(API_LOG_PREFIX.BIBLE_RETURNING_KEYS, Object.keys(response.bible))
     console.log(
       API_LOG_PREFIX.BIBLE_WORLD_DESCRIPTION_PRESENT,
-      !!(storyPlanOverrides.worldDescription || flattenedBible.worldDescription)
+      !!(response.storyPlanOverrides.worldDescription || response.flattenedBible.worldDescription)
     )
-    return NextResponse.json({ bible, seriesBible, storyPlan })
+    return NextResponse.json({
+      bible: response.bible,
+      seriesBible: response.seriesBible,
+      storyPlan: response.storyPlan,
+    })
   } catch (error) {
     console.error(API_LOG_PREFIX.ERROR_FETCHING_BIBLE, error)
     return NextResponse.json({ error: API_ERROR.FAILED_FETCH_BIBLE }, { status: 500 })

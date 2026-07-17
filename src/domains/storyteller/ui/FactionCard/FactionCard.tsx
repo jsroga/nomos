@@ -3,9 +3,13 @@ import { Crown, Target, Zap, ShieldAlert } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { Faction } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
-import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { RichText } from '../RichText'
+import {
+  normalizeFactionGoals,
+  normalizeFactionRivals,
+  resolveFactionResources,
+} from './faction-card-helpers'
 
 interface FactionCardProps {
   faction: Faction
@@ -14,23 +18,9 @@ interface FactionCardProps {
 }
 
 export const FactionCard: React.FC<FactionCardProps> = ({ faction, projectId, className }) => {
-  const goals = Array.isArray(faction.goals)
-    ? faction.goals
-    : typeof faction.goals === 'string' && faction.goals
-      ? [faction.goals]
-      : []
-
-  // Resources can be "resources" or legacy "politicalForces"
-  const factionRecord = recordFromJson(faction)
-  const politicalForces = readString(factionRecord.politicalForces)
-  const resources = faction.resources || politicalForces || ''
-
-  // Normalize rivals to always be an array
-  const rivals = Array.isArray(faction.rivals)
-    ? faction.rivals
-    : typeof faction.rivals === 'string' && faction.rivals
-      ? [faction.rivals]
-      : []
+  const goals = normalizeFactionGoals(faction)
+  const rivals = normalizeFactionRivals(faction)
+  const { resources, politicalForces } = resolveFactionResources(faction)
 
   return (
     <TooltipProvider>

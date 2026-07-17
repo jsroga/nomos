@@ -4,6 +4,7 @@ import React, { useState, type ReactNode } from 'react'
 import { AssetUploadZone } from './AssetUploadZone'
 import { Plus, Palette, Package, Info, Eye, EyeOff } from 'lucide-react'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { browserStorage } from '@/shared/data/browser-storage'
 import { DomainSidebar, SidebarSection, SidebarEmptyState } from '@/components/DomainSidebar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
@@ -31,7 +32,7 @@ export const AssetExporterSidebar: React.FC<AssetExporterSidebarProps> = ({
 
   const [masterPrompt, setMasterPrompt] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(LocalStorageKeys.MASTER_PROMPT) || defaultMasterPrompt
+      return browserStorage.getString(LocalStorageKeys.MASTER_PROMPT) || defaultMasterPrompt
     }
     return defaultMasterPrompt
   })
@@ -39,7 +40,7 @@ export const AssetExporterSidebar: React.FC<AssetExporterSidebarProps> = ({
   const handleMasterPromptChange = (value: string) => {
     setMasterPrompt(value)
     if (typeof window !== 'undefined') {
-      localStorage.setItem(LocalStorageKeys.MASTER_PROMPT, value)
+      browserStorage.setString(LocalStorageKeys.MASTER_PROMPT, value)
     }
   }
 

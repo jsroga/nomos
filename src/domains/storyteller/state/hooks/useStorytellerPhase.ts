@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import type { StorySequence } from '@/domains/storyteller'
+import type { StorySequence } from '@/domains/storyteller/core/types/story-plan-types'
 import { Phase, type PhaseId } from '@/domains/storyteller/core/types/enums'
 import { readString } from '@/shared/data/json-guards'
 import {

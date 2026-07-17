@@ -1,17 +1,7 @@
 /**
  * RAG Service - Enhanced with Voyage AI and Hybrid Search
- *
- * Production-grade retrieval-augmented generation service featuring:
- * - Voyage AI embeddings (voyage-3) for superior retrieval
- * - Hybrid search combining vector + keyword matching
- * - Semantic chunking with overlap
- * - Citation tracking for grounded generation
  */
 
-import { documentEmbeddings } from '@/db'
-import { db } from '@/db/client'
-import { desc, sql } from 'drizzle-orm'
-import { v4 as uuidv4 } from 'uuid'
 import {
   getVoyageEmbeddings,
   VoyageEmbeddings,
@@ -24,57 +14,31 @@ import {
 import { getSemanticChunker, SemanticChunker } from '@/shared/ai/rag/semantic-chunker'
 import { getQueryExpander, QueryExpander } from '@/shared/ai/rag/query-expander'
 import { getReranker, Reranker } from '@/shared/ai/rag/reranker'
-import { entityMetadata } from '@/domains/storyteller/core/entities/entity-type-guards'
-import { readString } from '@/shared/data/json-guards'
 import { STORYTELLER_CONFIG } from '../config/storyteller-config'
-
 import {
-  RAG_CONTEXT_SEPARATOR,
   RagDocumentType,
   RagServiceLog,
-  RagUnknownValue,
 } from '@/domains/storyteller/services/constants/rag-document-type'
+import {
+  ingestChunkedDocument,
+  ingestSingleDocument,
+  shouldChunkDocumentType,
+  type RagIngestOptions,
+} from './rag-ingest-helpers'
+import {
+  convertSearchResultsToRagResults,
+  deduplicateSearchResults,
+  fallbackVectorSearch,
+  formatResultsWithCitations,
+} from './rag-retrieve-helpers'
+import type { CitationInfo, RagResult, RetrieveOptions } from './rag-types'
 
 export type DocumentType = `${RagDocumentType}`
+export type { CitationInfo, RagResult, RetrieveOptions }
 
-export interface RagResult {
-  id: string
-  content: string
-  metadata: Record<string, unknown>
-  similarity: number
-  citation?: CitationInfo
-}
-
-export interface CitationInfo {
-  id: string
-  marker: string // [1], [2], etc.
-  source: string // Document type
-  chunkId: string
-  confidence: number
-}
-
-export interface IngestOptions {
-  documentType: DocumentType
-  episodeId?: string
-  characterId?: string
-  beatId?: string
-  agentName?: string
-  chunkDocument?: boolean // Whether to chunk the document
-}
-
-// Simple in-memory cache for semantic queries
 const semanticCache = new Map<string, { results: RagResult[]; timestamp: number }>()
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
-
-// Citation tracking for current session
+const CACHE_TTL_MS = 5 * 60 * 1000
 const sessionCitations = new Map<string, CitationInfo[]>()
-
-export interface RetrieveOptions {
-  limit?: number
-  useQueryExpansion?: boolean
-  useReranking?: boolean
-  documentType?: DocumentType
-}
 
 export class RagService {
   private embeddings: VoyageEmbeddings
@@ -87,108 +51,22 @@ export class RagService {
     this.embeddings = getVoyageEmbeddings()
     this.searchEngine = getHybridSearchEngine()
     this.chunker = getSemanticChunker()
-    this.queryExpander = getQueryExpander({ useLLM: false }) // Fast heuristic by default
+    this.queryExpander = getQueryExpander({ useLLM: false })
     this.reranker = getReranker()
   }
 
-  /**
-   * Ingest a document with typed metadata
-   * Optionally chunks the document for better retrieval
-   */
-  async ingest(projectId: string, content: string, options: IngestOptions) {
-    // Determine if we should chunk
-    const shouldChunk = options.chunkDocument ?? this.shouldChunkByType(options.documentType)
+  async ingest(projectId: string, content: string, options: RagIngestOptions) {
+    const shouldChunk = options.chunkDocument ?? shouldChunkDocumentType(options.documentType)
 
     if (shouldChunk) {
-      await this.ingestWithChunking(projectId, content, options)
+      await ingestChunkedDocument(projectId, content, options, this.chunker, this.embeddings)
     } else {
-      await this.ingestSingle(projectId, content, options)
+      await ingestSingleDocument(projectId, content, options, this.embeddings)
     }
 
-    // Invalidate cache for this project
     this.invalidateCacheForProject(projectId)
   }
 
-  /**
-   * Determine if document type benefits from chunking
-   */
-  private shouldChunkByType(documentType: DocumentType): boolean {
-    // These types are typically short and should not be chunked
-    const noChunkTypes: DocumentType[] = [RagDocumentType.BeatDecision, RagDocumentType.UserFeedback]
-    return !noChunkTypes.includes(documentType)
-  }
-
-  /**
-   * Ingest with semantic chunking
-   */
-  private async ingestWithChunking(projectId: string, content: string, options: IngestOptions) {
-    const documentId = uuidv4()
-
-    // Chunk the document
-    const chunks = this.chunker.chunkDocument(content, {
-      documentId,
-      projectId,
-      documentType: options.documentType,
-    })
-
-    // Generate embeddings for all chunks in batch
-    const chunkContents = chunks.map(c => c.content)
-    const embeddings = await this.embeddings.embedDocuments(chunkContents)
-
-    // Store each chunk
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i]
-      const metadata = {
-        ...chunk.metadata,
-        documentType: options.documentType,
-        episodeId: options.episodeId,
-        characterId: options.characterId,
-        beatId: options.beatId,
-        agentName: options.agentName,
-        isChunk: true,
-        parentDocumentId: documentId,
-      }
-
-      await db.insert(documentEmbeddings).values({
-        id: chunk.id,
-        projectId,
-        content: chunk.content,
-        metadata,
-        embedding: embeddings[i],
-      })
-    }
-
-    console.log(`[RAG] Ingested ${chunks.length} chunks for document ${documentId}`)
-  }
-
-  /**
-   * Ingest single document without chunking
-   */
-  private async ingestSingle(projectId: string, content: string, options: IngestOptions) {
-    // Generate embedding
-    const embedding = await this.embeddings.embedQuery(content)
-
-    const metadata = {
-      documentType: options.documentType,
-      episodeId: options.episodeId,
-      characterId: options.characterId,
-      beatId: options.beatId,
-      agentName: options.agentName,
-      timestamp: Date.now(),
-      isChunk: false,
-    }
-
-    await db.insert(documentEmbeddings).values({
-      projectId,
-      content,
-      metadata,
-      embedding,
-    })
-  }
-
-  /**
-   * Store beat decision with reasoning for future reference
-   */
   async storeBeatDecision(
     projectId: string,
     beatLogline: string,
@@ -206,13 +84,10 @@ By: ${agentName}`
       documentType: RagDocumentType.BeatDecision,
       beatId,
       agentName,
-      chunkDocument: false, // Beat decisions should stay whole
+      chunkDocument: false,
     })
   }
 
-  /**
-   * Store character arc progression
-   */
   async storeCharacterArc(
     projectId: string,
     characterName: string,
@@ -230,9 +105,6 @@ Development: ${development}`
     })
   }
 
-  /**
-   * Store user feedback for learning
-   */
   async storeUserFeedback(projectId: string, feedback: string, context: string) {
     const content = `User Feedback: ${feedback}
 Context: ${context}`
@@ -243,14 +115,6 @@ Context: ${context}`
     })
   }
 
-  /**
-   * Retrieve with hybrid search (vector + keyword)
-   * Returns results with citation information
-   *
-   * Enhanced with:
-   * - Query expansion (optional) - breaks complex queries into sub-queries
-   * - Re-ranking (optional) - improves result ordering
-   */
   async retrieve(
     projectId: string,
     query: string,
@@ -263,7 +127,6 @@ Context: ${context}`
       documentType,
     } = options
 
-    // Check cache
     const cacheKey = `${projectId}:${query}:${limit}:${useQueryExpansion}:${useReranking}`
     const cached = semanticCache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
@@ -271,81 +134,20 @@ Context: ${context}`
     }
 
     try {
-      // Step 1: Query Expansion (optional)
-      let queries = [query]
-      if (useQueryExpansion) {
-        const expansion = await this.queryExpander.expand(query)
-        queries = expansion.expanded
-        if (STORYTELLER_CONFIG.debug.logRAGQueries) {
-          console.log(`[RAG] Expanded query: "${query}" -> ${queries.length} queries`)
-        }
-      }
+      const queries = await this.expandQueries(query, useQueryExpansion)
+      const allResults = await this.searchExpandedQueries(projectId, queries, documentType, limit, useReranking)
+      const uniqueResults = deduplicateSearchResults(allResults)
+      const finalResults = await this.finalizeSearchResults(query, uniqueResults, limit, useReranking)
+      const results = convertSearchResultsToRagResults(finalResults)
 
-      // Step 2: Retrieve for all expanded queries IN PARALLEL
-      const fetchLimit = useReranking ? limit * 2 : limit // Fetch more if reranking
-      const limitedQueries = queries.slice(0, 3) // Limit to 3 expanded queries
-
-      const searchPromises = limitedQueries.map(q =>
-        this.searchEngine.search(
-          projectId,
-          q,
-          documentType ? { documentTypes: [documentType] } : undefined,
-          { topK: fetchLimit }
-        )
-      )
-
-      const searchResultsArrays = await Promise.all(searchPromises)
-      const allResults: SearchResult[] = searchResultsArrays.flat()
-
-      // Deduplicate by ID
-      const uniqueResults = this.deduplicateResults(allResults)
-
-      // Step 3: Re-ranking (optional)
-      let finalResults: SearchResult[]
-      if (useReranking && uniqueResults.length > limit) {
-        const reranked = await this.reranker.rerank(query, uniqueResults)
-        finalResults = reranked.results.slice(0, limit)
-        if (STORYTELLER_CONFIG.debug.logRAGQueries) {
-          console.log(`[RAG] Reranked ${uniqueResults.length} -> ${finalResults.length} results`)
-        }
-      } else {
-        finalResults = uniqueResults.slice(0, limit)
-      }
-
-      // Convert to RagResult with citations
-      const results = this.convertToRagResults(finalResults)
-
-      // Cache results
       semanticCache.set(cacheKey, { results, timestamp: Date.now() })
-
       return results
     } catch (error) {
       console.warn(RagServiceLog.RetrievalFailed, error)
-      // Fallback to simple vector search
-      return this.fallbackVectorSearch(projectId, query, limit)
+      return fallbackVectorSearch(projectId, query, limit, q => this.embeddings.embedQuery(q))
     }
   }
 
-  /**
-   * Deduplicate search results by ID, keeping highest score
-   */
-  private deduplicateResults(results: SearchResult[]): SearchResult[] {
-    const byId = new Map<string, SearchResult>()
-
-    for (const result of results) {
-      const existing = byId.get(result.id)
-      if (!existing || result.combinedScore > existing.combinedScore) {
-        byId.set(result.id, result)
-      }
-    }
-
-    return Array.from(byId.values()).sort((a, b) => b.combinedScore - a.combinedScore)
-  }
-
-  /**
-   * Retrieve documents of a specific type using hybrid search
-   * Uses the enhanced retrieve method with query expansion and reranking
-   */
   async retrieveByType(
     projectId: string,
     documentType: DocumentType,
@@ -360,79 +162,7 @@ Context: ${context}`
     })
   }
 
-  /**
-   * Convert search results to RAG results with citations
-   */
-  private convertToRagResults(searchResults: SearchResult[]): RagResult[] {
-    return searchResults.map((result, index) => ({
-      id: result.id,
-      content: result.content,
-      metadata: result.metadata,
-      similarity: result.combinedScore,
-      citation: {
-        id: result.chunkId,
-        marker: `[${index + 1}]`,
-        source: String(result.metadata.documentType || RagUnknownValue.Unknown),
-        chunkId: result.chunkId,
-        confidence: result.combinedScore,
-      },
-    }))
-  }
-
-  /**
-   * Fallback to simple vector search if hybrid fails
-   */
-  private async fallbackVectorSearch(
-    projectId: string,
-    query: string,
-    limit: number
-  ): Promise<RagResult[]> {
-    try {
-      const queryEmbedding = await this.embeddings.embedQuery(query)
-      const similarity = sql<number>`1 - (${documentEmbeddings.embedding} <=> ${JSON.stringify(queryEmbedding)})`
-
-      const results = await db
-        .select({
-          id: documentEmbeddings.id,
-          content: documentEmbeddings.content,
-          metadata: documentEmbeddings.metadata,
-          similarity,
-        })
-        .from(documentEmbeddings)
-        .where(sql`${documentEmbeddings.projectId} = ${projectId}`)
-        .orderBy(desc(similarity))
-        .limit(limit)
-
-      return results.map((r, index) => {
-        const metadata = entityMetadata(r.metadata)
-        return {
-          id: r.id,
-          content: r.content,
-          metadata,
-          similarity: r.similarity,
-          citation: {
-            id: r.id,
-            marker: `[${index + 1}]`,
-            source: readString(metadata.documentType) ?? RagUnknownValue.Unknown,
-            chunkId: r.id,
-            confidence: r.similarity,
-          },
-        }
-      })
-    } catch (error) {
-      console.error(RagServiceLog.FallbackSearchFailed, error)
-      return []
-    }
-  }
-
-  /**
-   * Retrieve character history
-   */
-  async retrieveCharacterHistory(
-    projectId: string,
-    characterName: string,
-    limit = 10
-  ): Promise<RagResult[]> {
+  async retrieveCharacterHistory(projectId: string, characterName: string, limit = 10): Promise<RagResult[]> {
     return this.retrieveByType(
       projectId,
       RagDocumentType.CharacterArc,
@@ -441,32 +171,14 @@ Context: ${context}`
     )
   }
 
-  /**
-   * Retrieve past beat decisions for similar beats
-   */
-  async retrieveSimilarBeatDecisions(
-    projectId: string,
-    beatLogline: string,
-    limit = 5
-  ): Promise<RagResult[]> {
+  async retrieveSimilarBeatDecisions(projectId: string, beatLogline: string, limit = 5): Promise<RagResult[]> {
     return this.retrieveByType(projectId, RagDocumentType.BeatDecision, beatLogline, limit)
   }
 
-  /**
-   * Retrieve user feedback/preferences
-   */
-  async retrieveUserPreferences(
-    projectId: string,
-    context: string,
-    limit = 5
-  ): Promise<RagResult[]> {
+  async retrieveUserPreferences(projectId: string, context: string, limit = 5): Promise<RagResult[]> {
     return this.retrieveByType(projectId, RagDocumentType.UserFeedback, context, limit)
   }
 
-  /**
-   * Assemble context for an agent from multiple sources
-   * Returns both content and citation information
-   */
   async assembleAgentContext(
     projectId: string,
     _agentRole: string,
@@ -477,88 +189,106 @@ Context: ${context}`
     userPreferences: string
     citations: CitationInfo[]
   }> {
-    // Parallel retrieval for efficiency
     const [generalHistory, pastDecisions, userPrefs] = await Promise.all([
       this.retrieve(projectId, currentContext, { limit: 3 }),
       this.retrieveByType(projectId, RagDocumentType.BeatDecision, currentContext, 3),
       this.retrieveByType(projectId, RagDocumentType.UserFeedback, currentContext, 2),
     ])
 
-    // Collect all citations
-    const allCitations: CitationInfo[] = []
-    let citationIndex = 1
-
-    const formatWithCitations = (results: RagResult[]): string => {
-      if (results.length === 0) return ''
-
-      return results
-        .map(r => {
-          if (r.citation) {
-            r.citation.marker = `[${citationIndex}]`
-            allCitations.push(r.citation)
-            citationIndex++
-            return `${r.citation.marker} ${r.content}`
-          }
-          return r.content
-        })
-        .join(RAG_CONTEXT_SEPARATOR)
-    }
+    const historyFormatted = formatResultsWithCitations(generalHistory)
+    const decisionsFormatted = formatResultsWithCitations(pastDecisions)
+    const prefsFormatted = formatResultsWithCitations(userPrefs)
 
     return {
-      relevantHistory: formatWithCitations(generalHistory),
-      pastDecisions: formatWithCitations(pastDecisions),
-      userPreferences: formatWithCitations(userPrefs),
-      citations: allCitations,
+      relevantHistory: historyFormatted.text,
+      pastDecisions: decisionsFormatted.text,
+      userPreferences: prefsFormatted.text,
+      citations: [
+        ...historyFormatted.citations,
+        ...decisionsFormatted.citations,
+        ...prefsFormatted.citations,
+      ],
     }
   }
 
-  /**
-   * Start a citation tracking session
-   */
   startCitationSession(sessionId: string): void {
     sessionCitations.set(sessionId, [])
   }
 
-  /**
-   * Add citations to current session
-   */
   addSessionCitations(sessionId: string, citations: CitationInfo[]): void {
     const existing = sessionCitations.get(sessionId) || []
     sessionCitations.set(sessionId, [...existing, ...citations])
   }
 
-  /**
-   * Get all citations from a session
-   */
   getSessionCitations(sessionId: string): CitationInfo[] {
     return sessionCitations.get(sessionId) || []
   }
 
-  /**
-   * End citation session
-   */
   endCitationSession(sessionId: string): CitationInfo[] {
     const citations = sessionCitations.get(sessionId) || []
     sessionCitations.delete(sessionId)
     return citations
   }
 
-  /**
-   * Invalidate cache for a project
-   */
+  clearCache() {
+    semanticCache.clear()
+  }
+
+  private async expandQueries(query: string, useQueryExpansion: boolean): Promise<string[]> {
+    if (!useQueryExpansion) return [query]
+
+    const expansion = await this.queryExpander.expand(query)
+    if (STORYTELLER_CONFIG.debug.logRAGQueries) {
+      console.log(`[RAG] Expanded query: "${query}" -> ${expansion.expanded.length} queries`)
+    }
+    return expansion.expanded
+  }
+
+  private async searchExpandedQueries(
+    projectId: string,
+    queries: string[],
+    documentType: DocumentType | undefined,
+    limit: number,
+    useReranking: boolean
+  ): Promise<SearchResult[]> {
+    const fetchLimit = useReranking ? limit * 2 : limit
+    const limitedQueries = queries.slice(0, 3)
+
+    const searchPromises = limitedQueries.map(q =>
+      this.searchEngine.search(
+        projectId,
+        q,
+        documentType ? { documentTypes: [documentType] } : undefined,
+        { topK: fetchLimit }
+      )
+    )
+
+    const searchResultsArrays = await Promise.all(searchPromises)
+    return searchResultsArrays.flat()
+  }
+
+  private async finalizeSearchResults(
+    query: string,
+    uniqueResults: SearchResult[],
+    limit: number,
+    useReranking: boolean
+  ): Promise<SearchResult[]> {
+    if (useReranking && uniqueResults.length > limit) {
+      const reranked = await this.reranker.rerank(query, uniqueResults)
+      if (STORYTELLER_CONFIG.debug.logRAGQueries) {
+        console.log(`[RAG] Reranked ${uniqueResults.length} -> ${reranked.results.length} results`)
+      }
+      return reranked.results.slice(0, limit)
+    }
+    return uniqueResults.slice(0, limit)
+  }
+
   private invalidateCacheForProject(projectId: string) {
     for (const key of semanticCache.keys()) {
       if (key.startsWith(`${projectId}:`)) {
         semanticCache.delete(key)
       }
     }
-  }
-
-  /**
-   * Clear all cache
-   */
-  clearCache() {
-    semanticCache.clear()
   }
 }
 

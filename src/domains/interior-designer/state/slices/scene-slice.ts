@@ -1,32 +1,20 @@
 import type { StateCreator } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
-import * as THREE from 'three'
-import { vec3, vec3XZ } from '@/domains/interior-designer/core/vec3'
-import type { Floor, Surface } from '../../core/interior-types'
+import type { Floor } from '../../core/interior-types'
 import type { InteriorState } from '../interior-state'
-import {
-  GROUND_SURFACE_TYPES,
-  TERRAIN_WORLD_SIZE,
-  isPointInPolygon,
-} from '../interior-store-constants'
+import { GROUND_SURFACE_TYPES } from '../interior-store-constants'
 import { INTERACTION_MODE_SELECT } from '../../constants/interaction-modes'
 import {
-  SCENE_CURVE_TYPE_CATMULLROM,
-  SCENE_CURVED_FLOOR_ERROR,
-  SCENE_LOG_BASE_HEIGHT_LABEL,
-  SCENE_LOG_CLEARED_PREFIX,
-  SCENE_LOG_HAS_HEIGHTMAP,
-  SCENE_LOG_HAS_POINTS,
-  SCENE_LOG_HEIGHTMAP_CELLS_SUFFIX,
-  SCENE_LOG_HEIGHTMAP_SIZE,
-  SCENE_LOG_NOT_CLEARING_PREFIX,
   SCENE_LOG_POINTS_LABEL,
-  SCENE_LOG_POLYGON_BOUNDS,
   SCENE_LOG_REMOVE_SURFACE_PREFIX,
-  SCENE_LOG_TERRAIN_WORLD_SIZE,
   SCENE_LOG_TYPE_LABEL,
-  SCENE_SURFACE_TYPE_ROAD,
 } from '../../constants/scene-slice-log'
+import {
+  buildRoadSurfaceFromWalls,
+  partitionWallsBySelection,
+} from '../utils/scene-slice-combine-walls'
+import { buildCurvedFloorPoints } from '../utils/scene-slice-floor-from-surface'
+import { clearHeightmapForRemovedSurface } from '../utils/scene-slice-remove-heightmap'
 
 export type SceneSlice = Pick<
   InteriorState,
@@ -167,60 +155,7 @@ export const createSceneSlice: StateCreator<InteriorState, [], [], SceneSlice> =
         surface?.points?.length
       )
 
-      let newHeightmap = state.terrainSettings.heightmap
-      if (
-        surface &&
-        GROUND_SURFACE_TYPES.includes(surface.type) &&
-        surface.points &&
-        surface.points.length >= 3 &&
-        state.terrainSettings.heightmap
-      ) {
-        const heightmap = state.terrainSettings.heightmap
-        const heightmapSize = state.terrainSettings.heightmapSize
-        const baseHeight = state.terrainSettings.baseGroundHeight
-        const polygon: Array<[number, number]> = surface.points.map(p => [p[0], p[2]])
-
-        const minX = Math.min(...polygon.map(p => p[0]))
-        const maxX = Math.max(...polygon.map(p => p[0]))
-        const minZ = Math.min(...polygon.map(p => p[1]))
-        const maxZ = Math.max(...polygon.map(p => p[1]))
-        console.log(SCENE_LOG_POLYGON_BOUNDS, { minX, maxX, minZ, maxZ })
-        console.log(SCENE_LOG_HEIGHTMAP_SIZE, heightmapSize, SCENE_LOG_BASE_HEIGHT_LABEL, baseHeight)
-        console.log(SCENE_LOG_TERRAIN_WORLD_SIZE, TERRAIN_WORLD_SIZE)
-
-        newHeightmap = new Float32Array(heightmap)
-
-        let clearedCount = 0
-
-        for (let gridZ = 0; gridZ < heightmapSize; gridZ++) {
-          for (let gridX = 0; gridX < heightmapSize; gridX++) {
-            const worldX = (gridX / heightmapSize) * TERRAIN_WORLD_SIZE - TERRAIN_WORLD_SIZE / 2
-            const worldZ = (gridZ / heightmapSize) * TERRAIN_WORLD_SIZE - TERRAIN_WORLD_SIZE / 2
-
-            if (isPointInPolygon(worldX, worldZ, polygon)) {
-              newHeightmap[gridZ * heightmapSize + gridX] = baseHeight
-              clearedCount++
-            }
-          }
-        }
-
-        console.log(
-          SCENE_LOG_CLEARED_PREFIX,
-          clearedCount,
-          SCENE_LOG_HEIGHTMAP_CELLS_SUFFIX,
-          surface.id,
-          surface.type
-        )
-      } else {
-        console.log(
-          SCENE_LOG_NOT_CLEARING_PREFIX,
-          surface ? GROUND_SURFACE_TYPES.includes(surface.type) : false,
-          SCENE_LOG_HAS_POINTS,
-          surface?.points?.length,
-          SCENE_LOG_HAS_HEIGHTMAP,
-          !!state.terrainSettings.heightmap
-        )
-      }
+      const newHeightmap = clearHeightmapForRemovedSurface(surface, state.terrainSettings)
 
       const remainingSurfaces = state.surfaces.filter(s => s.id !== id)
       const hasGroundRemaining = remainingSurfaces.some(s => GROUND_SURFACE_TYPES.includes(s.type))
@@ -330,95 +265,12 @@ export const createSceneSlice: StateCreator<InteriorState, [], [], SceneSlice> =
       const { multiSelectedIds, walls } = state
       if (multiSelectedIds.length < 2) return {}
 
-      const selectedWalls = walls.filter(w => multiSelectedIds.includes(w.id))
-      if (selectedWalls.length < 2) return {}
-
-      const isSame = (p1: [number, number, number], p2: [number, number, number]) =>
-        Math.abs(p1[0] - p2[0]) < 0.2 && Math.abs(p1[2] - p2[2]) < 0.2
-
-      const segments = selectedWalls.map(w => ({
-        id: w.id,
-        p1: w.start,
-        p2: w.end,
-        used: false,
-      }))
-
-      const pointCounts = new Map<string, number>()
-      const coordKey = (p: number[]) => `${p[0].toFixed(2)},${p[2].toFixed(2)}`
-
-      segments.forEach(s => {
-        const k1 = coordKey(s.p1)
-        pointCounts.set(k1, (pointCounts.get(k1) || 0) + 1)
-        const k2 = coordKey(s.p2)
-        pointCounts.set(k2, (pointCounts.get(k2) || 0) + 1)
-      })
-
-      const startSeg =
-        segments.find(
-          s => pointCounts.get(coordKey(s.p1)) === 1 || pointCounts.get(coordKey(s.p2)) === 1
-        ) ?? segments[0]
-      if (!startSeg) return {}
-      let currentSeg = startSeg
-
-      const orderedPoints: [number, number, number][] = []
-
-      let currentPoint =
-        pointCounts.get(coordKey(currentSeg.p1)) === 1 ? currentSeg.p1 : currentSeg.p2
-      if (
-        pointCounts.get(coordKey(currentSeg.p1)) !== 1 &&
-        pointCounts.get(coordKey(currentSeg.p2)) !== 1
-      ) {
-        currentPoint = currentSeg.p1
-      }
-
-      orderedPoints.push(currentPoint)
-
-      let count = 0
-      while (count < segments.length) {
-        const otherEnd = isSame(currentSeg.p1, currentPoint) ? currentSeg.p2 : currentSeg.p1
-        orderedPoints.push(otherEnd)
-        currentSeg.used = true
-        count++
-
-        const nextSeg = segments.find(
-          s => !s.used && (isSame(s.p1, otherEnd) || isSame(s.p2, otherEnd))
-        )
-        if (!nextSeg) break
-
-        currentSeg = nextSeg
-        currentPoint = otherEnd
-      }
-
-      const uniquePoints: [number, number, number][] = []
-      if (orderedPoints.length > 0) uniquePoints.push(orderedPoints[0])
-      for (let i = 1; i < orderedPoints.length; i++) {
-        if (!isSame(orderedPoints[i], orderedPoints[i - 1])) {
-          uniquePoints.push(orderedPoints[i])
-        }
-      }
-
-      if (uniquePoints.length < 2) return {}
-
-      const newSurface: Surface = {
-        id: uuidv4(),
-        type: SCENE_SURFACE_TYPE_ROAD,
-        points: uniquePoints,
-        isPath: true,
-        curved: true,
-        width: selectedWalls[0].thickness || 0.5,
-        height: selectedWalls[0].height || 3,
-        isVertical: true,
-        roundness: options?.roundness ?? 0.2,
-        texture: selectedWalls[0].texture,
-        layerIndex: 10,
-        metalness: 0,
-        roughness: 0.8,
-      }
-
-      const newWalls = walls.filter(w => !multiSelectedIds.includes(w.id))
+      const { selectedWalls, remainingWalls } = partitionWallsBySelection(walls, multiSelectedIds)
+      const newSurface = buildRoadSurfaceFromWalls(selectedWalls, options?.roundness)
+      if (!newSurface) return {}
 
       return {
-        walls: newWalls,
+        walls: remainingWalls,
         surfaces: [...state.surfaces, newSurface],
         multiSelectedIds: [],
         selectedId: newSurface.id,
@@ -433,30 +285,7 @@ export const createSceneSlice: StateCreator<InteriorState, [], [], SceneSlice> =
         return {}
       }
 
-      let floorPoints = surface.points.map(p => vec3XZ(p[0], p[2]))
-
-      if (surface.curved && surface.points.length > 2) {
-        try {
-          const points = surface.points.map(p => new THREE.Vector3(p[0], 0, p[2]))
-
-          const first = points[0]
-          const last = points[points.length - 1]
-          const isClosed = first.distanceTo(last) < 0.2
-
-          const curvePoints = isClosed ? points.slice(0, -1) : points
-
-          const tension = surface.roundness ?? 0.5
-          const curve = new THREE.CatmullRomCurve3(curvePoints, isClosed, SCENE_CURVE_TYPE_CATMULLROM, tension)
-
-          const length = curve.getLength()
-          const steps = Math.max(20, Math.ceil(length * 5))
-          const spacedPoints = curve.getSpacedPoints(steps)
-
-          floorPoints = spacedPoints.map(p => vec3(p.x, 0, p.z))
-        } catch (e) {
-          console.error(SCENE_CURVED_FLOOR_ERROR, e)
-        }
-      }
+      const floorPoints = buildCurvedFloorPoints(surface)
 
       const floorId = uuidv4()
       const newFloor: Floor = {

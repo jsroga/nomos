@@ -7,6 +7,8 @@
  *
  * Falls back to the main-thread implementation if workers are not supported.
  */
+import { resolveContextFramingStrategy } from './contextAssembler-framing-strategy'
+import { applySmartSeamCorners } from './contextAssembler-smart-corners'
 import { TileContext } from './types'
 
 interface CropRect {
@@ -21,9 +23,6 @@ const NEUTRAL_FILL_TOLERANCE = 2
 
 type DirectNeighborKey = 'up' | 'down' | 'left' | 'right'
 
-const DIRECT_NEIGHBOR_KEYS: readonly DirectNeighborKey[] = ['up', 'down', 'left', 'right']
-const HORIZONTAL_NEIGHBOR_KEYS: readonly DirectNeighborKey[] = ['left', 'right']
-const VERTICAL_NEIGHBOR_KEYS: readonly DirectNeighborKey[] = ['up', 'down']
 const CANVAS_2D_UNAVAILABLE = 'Failed to acquire 2D canvas context'
 
 export type ContextImageVariant = 'canonicalFullContext' | 'smartSeamContext'
@@ -112,34 +111,7 @@ function getContextFramingStrategy(
   variant: ContextImageVariant,
   directNeighbors: Record<DirectNeighborKey, boolean>
 ): ContextFramingStrategy {
-  if (variant === 'canonicalFullContext') {
-    return {
-      mode: 'balanced',
-      weightedNeighbors: DIRECT_NEIGHBOR_KEYS.filter(key => directNeighbors[key]),
-    }
-  }
-
-  const hasHorizontal = directNeighbors.left || directNeighbors.right
-  const hasVertical = directNeighbors.up || directNeighbors.down
-
-  if (hasHorizontal && !hasVertical) {
-    return {
-      mode: 'horizontal_priority',
-      weightedNeighbors: HORIZONTAL_NEIGHBOR_KEYS.filter(key => directNeighbors[key]),
-    }
-  }
-
-  if (hasVertical && !hasHorizontal) {
-    return {
-      mode: 'vertical_priority',
-      weightedNeighbors: VERTICAL_NEIGHBOR_KEYS.filter(key => directNeighbors[key]),
-    }
-  }
-
-  return {
-    mode: 'balanced',
-    weightedNeighbors: DIRECT_NEIGHBOR_KEYS.filter(key => directNeighbors[key]),
-  }
+  return resolveContextFramingStrategy(variant, directNeighbors)
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +158,6 @@ const CONTEXT_SIZE = 256
 
 type NeighborCorner = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
 type NeighborEdge = 'top' | 'bottom' | 'left' | 'right'
-type NeighborDirection = 'up' | 'down' | 'left' | 'right'
 interface ScaledCrop {
   x: number
   y: number
@@ -221,47 +192,6 @@ function getScaledEdgeCrop(img: HTMLImageElement, edge: NeighborEdge): ScaledCro
       return { x: 0, y: 0, w: w * ratio, h }
     case 'right':
       return { x: w * (1 - ratio), y: 0, w: w * ratio, h }
-  }
-}
-
-type SeamNeighbor = TileContext['neighbors']['up']
-type DrawSmartCorner = (
-  neighbor: SeamNeighbor,
-  edge: NeighborEdge,
-  sourceHalf: 'start' | 'end',
-  destX: number,
-  destY: number
-) => Promise<void>
-
-/**
- * Fill the diagonal corners of a seam from the priority edges when the true
- * corner tile is absent (smartSeamContext only). Extracted from the main
- * assembler so its two mode branches don't inflate that function's complexity.
- */
-async function applySmartSeamCorners(params: {
-  mode: ContextFramingStrategy['mode']
-  draw: DrawSmartCorner
-  corners: Record<NeighborCorner, SeamNeighbor>
-  edges: Record<NeighborDirection, SeamNeighbor>
-  targetX: number
-  targetY: number
-}): Promise<void> {
-  const { mode, draw, corners, edges, targetX, targetY } = params
-  const farX = targetX + TILE_SIZE
-  const farY = targetY + TILE_SIZE
-
-  if (mode === 'horizontal_priority') {
-    if (!corners.topLeft?.imageUrl) await draw(edges.left, 'right', 'start', 0, 0)
-    if (!corners.bottomLeft?.imageUrl) await draw(edges.left, 'right', 'end', 0, farY)
-    if (!corners.topRight?.imageUrl) await draw(edges.right, 'left', 'start', farX, 0)
-    if (!corners.bottomRight?.imageUrl) await draw(edges.right, 'left', 'end', farX, farY)
-  }
-
-  if (mode === 'vertical_priority') {
-    if (!corners.topLeft?.imageUrl) await draw(edges.up, 'bottom', 'start', 0, 0)
-    if (!corners.topRight?.imageUrl) await draw(edges.up, 'bottom', 'end', farX, 0)
-    if (!corners.bottomLeft?.imageUrl) await draw(edges.down, 'top', 'start', 0, farY)
-    if (!corners.bottomRight?.imageUrl) await draw(edges.down, 'top', 'end', farX, farY)
   }
 }
 
@@ -381,6 +311,7 @@ async function assembleOnMainThread(
     edges: { up, down, left, right },
     targetX: TARGET_X,
     targetY: TARGET_Y,
+    tileSize: TILE_SIZE,
   })
 
   // In masked flows the center should stay visually neutral; the mask defines the edit area.

@@ -15,7 +15,8 @@ export function useStorytellerPage() {
   const phase = useStorytellerPhase(core, chat)
   const agents = useStorytellerAgents(core, chat)
 
-  return { ...core, ...chat, ...generation, ...episode, ...phase, ...agents }
+  return { core, chat, generation, episode, phase, agents }
 }
 
-export type StorytellerPageState = ReturnType<typeof useStorytellerPage>
+export type StorytellerPageSlices = ReturnType<typeof useStorytellerPage>
+export type StorytellerPageState = StorytellerPageSlices

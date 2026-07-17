@@ -8,7 +8,6 @@ export * from './url-builder'
 export * from './entities-service'
 export * from './generation/tiles-service'
 export * from './queries/useGameEntities'
-export * from './useProjectFromUrl'
 
 // ServiceContext/ServiceError/ServiceErrorCode and GameEntity are declared in
 // more than one of the modules above; EntitiesService is the canonical source,

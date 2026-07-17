@@ -89,6 +89,16 @@ export enum LoopLlmRole {
   Assistant = 'assistant',
 }
 
+export const LOOP_CREATOR_WELCOME_MESSAGE = `👋 Hello! I'm your Game Loop Design Assistant. I coordinate a team of specialists to help you create engaging game mechanics and loops.
+
+**My team includes:**
+- 🎯 **Loop Planner** - Designs overall loop structure
+- ⚙️ **Mechanics Designer** - Creates individual mechanics
+- ⚖️ **Balance Analyst** - Evaluates effort/reward balance
+- 📈 **Progression Architect** - Designs progression systems
+
+To get started, tell me about the game you're designing. What **genre** and **platform** are you targeting?`
+
 export enum LoopNodeTimescale {
   Custom = 'custom',
 }

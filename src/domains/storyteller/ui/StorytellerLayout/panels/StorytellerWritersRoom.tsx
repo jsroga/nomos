@@ -1,7 +1,8 @@
 'use client'
 
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
-import { MentionsChatInterface, MentionsProvider, STORYTELLER_AGENT_CONFIG } from '@/domains/storyteller'
+import { MentionsChatInterface, MentionsProvider } from '../../MentionsProvider'
+import { STORYTELLER_AGENT_CONFIG } from '@/domains/storyteller/config/constants/storyteller-agents'
 import { SmartQuickActions, StreamingTerminal, StreamingSectionsInline, ModelSelector } from '../writers-room-chat'
 import { Users } from 'lucide-react'
 import { Button } from '@/components/Button'
@@ -9,38 +10,43 @@ import { DomainSidebar } from '@/components/DomainSidebar'
 import { isAdminUser } from '@/shared/auth/admin-users'
 import { USER_SELECTABLE_CHAT_MODELS } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import { recordFromJson } from '@/shared/data/json-guards'
-import type { StorytellerPageState } from '@/domains/storyteller/state/hooks/useStorytellerPage'
+import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 
-export function StorytellerWritersRoom(props: StorytellerPageState) {
+export function StorytellerWritersRoom(props: StorytellerPageSlices) {
+  const { core, chat, agents } = props
   const {
     routeProjectId,
     characters,
     beats,
     storyPlan,
-    isActivityPanelOpen,
-    toggleActivityPanel,
     userEmail,
-    messages,
     currentProject,
+    currentPhase,
+    isActivityPanelOpen,
+  } = core
+  const {
+    messages,
     thinkingAgent,
     streamingTokens,
-    chatActiveOperations,
-    handleChatSendMessage,
     handleStopStream,
-    handleChatQuestionAnswer,
-    handleChatQuestionSkip,
     handleApproveAllActions,
     isSending,
     showThinking,
-    currentPhase,
     selectedModel,
     handleModelChange,
     MemoizedActionComponent,
-    StableQuestionComponent,
     isTokenStreaming,
     streamingSections,
     handleSendMessage,
-  } = props
+  } = chat
+  const {
+    toggleActivityPanel,
+    chatActiveOperations,
+    handleChatSendMessage,
+    handleChatQuestionAnswer,
+    handleChatQuestionSkip,
+    StableQuestionComponent,
+  } = agents
 
   return (
     <DomainSidebar

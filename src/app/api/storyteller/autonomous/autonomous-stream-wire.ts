@@ -14,14 +14,15 @@ import { startAutonomousEpisodeDraft } from '@/domains/storyteller/core/io/mastr
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 import { ChatFrameType } from '@/shared/chat/core/protocol'
 import { emitFrame, type SseWriter } from '../chat/stream/stream-wire'
-import { MASTRA_CHUNK, STREAM_ROUTE_TEXT } from '../chat/stream/stream-route-wire'
 import {
+  MASTRA_CHUNK,
+  STREAM_ROUTE_TEXT,
   emitFatalStreamError,
   emitStartFrame,
   emitStepStatusFrame,
   emitThinkingFrame,
   emitTokenFrame,
-} from '../chat/stream/stream-wire-route'
+} from '../chat/stream/stream-route-wire'
 
 /** Mastra stream chunk discriminant for the goals loop's per-iteration evaluation. */
 const GOAL_CHUNK_TYPE = 'goal'

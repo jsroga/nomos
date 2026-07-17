@@ -20,20 +20,11 @@ import {
 } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import type { MarketAnalysisReport } from '@/domains/loop-creator/server'
-import {
-  MarketTrendDirection,
-} from '@/domains/loop-creator/constants/market-analysis'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { buildMarketAnalysisReport } from './market-analysis-get-helpers'
 
 interface RouteParams {
   params: Promise<{ gameLoopId: string }>
-}
-
-function parseTrendDirection(value: unknown): MarketTrendDirection {
-  if (value === MarketTrendDirection.Rising || value === MarketTrendDirection.Stable || value === MarketTrendDirection.Declining) {
-    return value
-  }
-  return MarketTrendDirection.Stable
 }
 
 /**
@@ -44,8 +35,6 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   try {
     const { gameLoopId } = await params
 
-    // Use Drizzle query builder with eager loading (with: clause)
-    // This replaces 7 separate queries with 1 query using JOINs
     const analysis = await db.query.marketAnalyses.findFirst({
       where: eq(marketAnalyses.gameLoopId, gameLoopId),
       orderBy: marketAnalyses.createdAt,
@@ -60,7 +49,6 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     })
 
     if (!analysis) {
-      // Check if game loop exists
       const [gameLoop] = await db
         .select()
         .from(gameLoops)
@@ -74,72 +62,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ exists: false, analysis: null })
     }
 
-    // Reconstruct the report from eagerly loaded data
-    const report: MarketAnalysisReport = {
-      referenceScores: analysis.referenceScores
-        ? {
-            discoElysium: analysis.referenceScores.discoElysiumScore,
-            vampireSurvivors: analysis.referenceScores.vampireSurvivorsScore,
-            counterStrike: analysis.referenceScores.counterStrikeScore,
-          }
-        : { discoElysium: 0, vampireSurvivors: 0, counterStrike: 0 },
-
-      marketSize: analysis.marketSize
-        ? {
-            tam: analysis.marketSize.tam,
-            sam: analysis.marketSize.sam,
-            relevantSegment: analysis.marketSize.relevantSegment,
-            growthRate: analysis.marketSize.growthRate,
-            confidence: Number(analysis.marketSize.confidence),
-            sources: analysis.marketSize.sources || [],
-          }
-        : { tam: '', sam: '', relevantSegment: '', growthRate: '', confidence: 0, sources: [] },
-
-      audienceFit: analysis.audienceFit
-        ? {
-            targetDemographic: analysis.audienceFit.targetDemographic,
-            fitScore: analysis.audienceFit.fitScore,
-            strengths: analysis.audienceFit.strengths || [],
-            concerns: analysis.audienceFit.concerns || [],
-            recommendations: analysis.audienceFit.recommendations || [],
-          }
-        : { targetDemographic: '', fitScore: 0, strengths: [], concerns: [], recommendations: [] },
-
-      competitors: (analysis.competitors || []).map(c => ({
-        name: c.name,
-        genre: c.genre,
-        platform: c.platforms || [],
-        playerCount: c.playerCount || undefined,
-        similarityScore: c.similarityScore,
-        strengths: c.strengths || [],
-        weaknesses: c.weaknesses || [],
-        marketPosition: c.marketPosition || '',
-      })),
-
-      trends: (analysis.trends || []).map(t => ({
-        trend: t.trendName,
-        direction: parseTrendDirection(t.direction),
-        relevance: t.relevance,
-        description: t.description,
-        timeframe: t.timeframe || '',
-      })),
-
-      patterns: (analysis.patterns || []).map(p => ({
-        patternName: p.patternName,
-        matchScore: p.matchScore,
-        description: p.description,
-        examples: p.examples || [],
-        applicability: p.applicability || '',
-      })),
-
-      overallScore: analysis.overallScore,
-      recommendations: analysis.recommendations || [],
-      risks: analysis.risks || [],
-      opportunities: analysis.opportunities || [],
-      generatedAt: analysis.createdAt.toISOString(),
-      sourcesUsed: analysis.sourcesUsed || [],
-      confidence: Number(analysis.confidence),
-    }
+    const report = buildMarketAnalysisReport(analysis)
 
     return NextResponse.json({
       exists: true,

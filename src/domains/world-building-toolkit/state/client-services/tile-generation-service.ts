@@ -3,7 +3,12 @@ import type { Tile } from '../../core/world-types'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { POLLING_INTERVALS, isActiveTaskStatus } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { createTriggerRunStatusFetch } from '@/shared/data/polling/trigger-run-status-fetcher'
+import {
+  waitForTriggerRun,
+  TriggerRunPollFailedError,
+} from '@/shared/data/polling/wait-for-trigger-run'
 import { readString, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import type { ContextImageVariant } from '@/shared/ai/contextAssembler'
 import {
@@ -30,6 +35,9 @@ import {
 } from '../../constants/tile-generation-service'
 import { getWorldUiStore } from '../useWorldUiStore'
 
+const TRIGGER_RUN_NOT_FOUND_STATUS = 'NOT_FOUND'
+const UNKNOWN_STATUS_LABEL = 'unknown'
+
 interface TileGenRunState {
   runId: string
   projectId: string
@@ -46,17 +54,10 @@ export interface FollowUpContextPayload {
 }
 
 export class TileGenerationService {
-  private pollingIntervals: Map<string, NodeJS.Timeout> = new Map()
-
   /**
-   * Cleanup all polling intervals - call on unmount to prevent memory leaks
+   * Cleanup hook retained for API compatibility (polling is promise-based).
    */
-  cleanup() {
-    for (const [, timeout] of this.pollingIntervals) {
-      clearTimeout(timeout)
-    }
-    this.pollingIntervals.clear()
-  }
+  cleanup() {}
 
   /**
    * Generate a tile using Trigger.dev background task.
@@ -166,7 +167,7 @@ export class TileGenerationService {
       browserStorage.setObject(DynamicLocalStorageKeys.tileGen(x, y), runState)
 
       // Start polling for status
-      this.startPolling(runState, opId)
+      void this.pollRun(runState, opId)
 
       return runId
     } catch (error) {
@@ -183,142 +184,70 @@ export class TileGenerationService {
     }
   }
 
-  /**
-   * Start adaptive polling for task status
-   * Uses shorter intervals during active processing, longer intervals when idle
-   * This reduces API calls by ~60% compared to fixed 5s polling
-   */
-  private startPolling(runState: TileGenRunState, opId: string) {
-    let consecutiveErrors = 0
-    let lastProgress = 0
-    let stableProgressCount = 0
+  private async pollRun(runState: TileGenRunState, opId: string) {
     let variantSelectionDispatched = false
 
-    const poll = async () => {
-      try {
-        const statusData = await fetchTileGenerationRunStatus(runState.runId)
+    try {
+      const result = await waitForTriggerRun(
+        createTriggerRunStatusFetch(fetchTileGenerationRunStatus, runState.runId),
+        {
+          intervalMs: POLLING_INTERVALS.DEFAULT,
+          maxPolls: 120,
+          onPoll: data => {
+            const metadata = recordFromJson(data.metadata)
+            const progress = typeof metadata.progress === 'number' ? metadata.progress : 0
+            const stage = readString(metadata.stage) ?? TileProgressStage.Unknown
 
-        if (statusData.statusCode === 404) {
-          // Run not found - might be still initializing, retry a few times
-          consecutiveErrors++
-          if (consecutiveErrors > 5) {
-            console.warn(TileGenerationServiceLog.RunNotFoundAfterRetries)
-            useWorldStore.getState().setTileError(runState.x, runState.y, TileGenerationServiceError.TaskNotFound)
-            this.clearRunState(runState, opId)
-            return
-          }
-          this.scheduleNextPoll(runState.runId, poll, 2000)
-          return
-        }
-
-        consecutiveErrors = 0
-        const progress =
-          typeof statusData.metadata?.progress === 'number' ? statusData.metadata.progress : 0
-        const stage =
-          (typeof statusData.metadata?.stage === 'string'
-            ? statusData.metadata.stage
-            : null) ?? TileProgressStage.Unknown
-
-        // Track if progress is changing
-        if (progress === lastProgress) {
-          stableProgressCount++
-        } else {
-          stableProgressCount = 0
-          lastProgress = progress
-        }
-
-        // Update global status with progress
-        useGlobalStatusStore.getState().updateOperation(opId, {
-          details: `(${runState.x}, ${runState.y}) ${stage} ${progress}%`,
-        })
-
-        // Update per-tile progress overlay
-        useWorldStore.getState().setTileProgress(runState.x, runState.y, progress, stage)
-
-        // Detect variant selection waiting state
-        const metadata = recordFromJson(statusData.metadata)
-        const variantUrls = stringArrayFromJson(metadata.variantUrls)
-          .map(item => readString(item))
-          .filter((url): url is string => Boolean(url))
-        const waitTokenId = readString(metadata.waitTokenId)
-
-        if (
-          !variantSelectionDispatched &&
-          stage === TileProgressStage.WaitingVariantSelection &&
-          variantUrls.length > 0 &&
-          waitTokenId
-        ) {
-          variantSelectionDispatched = true
-          if (typeof window !== 'undefined') {
-            getWorldUiStore().enqueueReviewRequest({
-              type: WorldGenReviewType.Generation,
-              tileX: runState.x,
-              tileY: runState.y,
-              newUrl: variantUrls[0] ?? '',
-              variantUrls,
-              tokenId: waitTokenId,
+            useGlobalStatusStore.getState().updateOperation(opId, {
+              details: `(${runState.x}, ${runState.y}) ${stage} ${progress}%`,
             })
-          }
-        }
+            useWorldStore.getState().setTileProgress(runState.x, runState.y, progress, stage)
 
-        // Check if completed
-        if (statusData.status === TriggerTerminalStatus.Completed) {
-          console.log(TileGenerationServiceLog.GenerationCompleted, statusData.output)
-          await this.handleCompletion(runState, statusData.output, opId)
-          return
-        }
+            const variantUrls = stringArrayFromJson(metadata.variantUrls)
+              .map(item => readString(item))
+              .filter((url): url is string => Boolean(url))
+            const waitTokenId = readString(metadata.waitTokenId)
 
-        // Check if failed
-        if (!statusData.status || !isActiveTaskStatus(statusData.status)) {
-          const errorMsg =
-            (typeof statusData.error === 'string' ? statusData.error : null) ||
-            `${TileGenerationServiceError.GenerationFailed} (${statusData.status ?? 'unknown'})`
-          console.error(TileGenerationServiceLog.GenerationFailed, errorMsg)
-          useWorldStore.getState().setTileError(runState.x, runState.y, errorMsg)
-          this.clearRunState(runState, opId)
-          return
+            if (
+              !variantSelectionDispatched &&
+              stage === TileProgressStage.WaitingVariantSelection &&
+              variantUrls.length > 0 &&
+              waitTokenId
+            ) {
+              variantSelectionDispatched = true
+              if (typeof window !== 'undefined') {
+                getWorldUiStore().enqueueReviewRequest({
+                  type: WorldGenReviewType.Generation,
+                  tileX: runState.x,
+                  tileY: runState.y,
+                  newUrl: variantUrls[0] ?? '',
+                  variantUrls,
+                  tokenId: waitTokenId,
+                })
+              }
+            }
+          },
         }
+      )
 
-        // Adaptive polling interval:
-        // - 2s if progress is actively changing
-        // - 5s if progress is stable but task is active
-        // - 10s if progress has been stable for a while (likely waiting for external API)
-        let nextInterval: number = POLLING_INTERVALS.DEFAULT
-        if (stableProgressCount === 0) {
-          nextInterval = 2000 // Progress changing, poll faster
-        } else if (stableProgressCount < 3) {
-          nextInterval = POLLING_INTERVALS.DEFAULT // Normal polling
-        } else {
-          nextInterval = POLLING_INTERVALS.SLOW // Back off when stable
-        }
-
-        this.scheduleNextPoll(runState.runId, poll, nextInterval)
-      } catch (error) {
-        console.error(TileGenerationServiceLog.StatusPollingError, error)
-        consecutiveErrors++
-        // Back off on errors
-        const backoffInterval = Math.min(consecutiveErrors * 3000, 30000)
-        this.scheduleNextPoll(runState.runId, poll, backoffInterval)
+      if (result.status === TriggerTerminalStatus.Completed) {
+        console.log(TileGenerationServiceLog.GenerationCompleted, result.output)
+        await this.handleCompletion(runState, result.output, opId)
       }
+    } catch (error) {
+      if (error instanceof TriggerRunPollFailedError) {
+        const errorMsg =
+          (typeof error.runError === 'string' ? error.runError : null) ||
+          (error.status === TRIGGER_RUN_NOT_FOUND_STATUS
+            ? TileGenerationServiceError.TaskNotFound
+            : `${TileGenerationServiceError.GenerationFailed} (${error.status ?? UNKNOWN_STATUS_LABEL})`)
+        console.error(TileGenerationServiceLog.GenerationFailed, errorMsg)
+        useWorldStore.getState().setTileError(runState.x, runState.y, errorMsg)
+      } else {
+        console.error(TileGenerationServiceLog.StatusPollingError, error)
+      }
+      this.clearRunState(runState, opId)
     }
-
-    // Start first poll
-    poll()
-  }
-
-  /**
-   * Schedule next poll with cleanup tracking
-   */
-  private scheduleNextPoll(runId: string, pollFn: () => Promise<void>, interval: number) {
-    // Clear any existing timeout
-    const existingTimeout = this.pollingIntervals.get(runId)
-    if (existingTimeout) {
-      clearTimeout(existingTimeout)
-    }
-
-    // Schedule next poll
-    const timeoutId = setTimeout(pollFn, interval)
-    this.pollingIntervals.set(runId, timeoutId)
   }
 
   /**
@@ -418,13 +347,6 @@ export class TileGenerationService {
    * Clear run state and stop polling
    */
   private clearRunState(runState: TileGenRunState, opId: string) {
-    // Stop polling (now uses timeouts instead of intervals)
-    const timeout = this.pollingIntervals.get(runState.runId)
-    if (timeout) {
-      clearTimeout(timeout)
-      this.pollingIntervals.delete(runState.runId)
-    }
-
     browserStorage.remove(DynamicLocalStorageKeys.tileGen(runState.x, runState.y))
 
     // Clear UI status
@@ -453,7 +375,7 @@ export class TileGenerationService {
             status: AsyncOperationStatus.InProgress,
           })
 
-          this.startPolling(runState, opId)
+          void this.pollRun(runState, opId)
         }
       } catch {
         console.warn(TileGenerationServiceLog.FailedToParseRunState, key)

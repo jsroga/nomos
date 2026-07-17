@@ -35,3 +35,12 @@ export enum WorldBiblePanelUiCopy {
   ContentTab = 'Content',
   RelationshipsTab = 'Relationships',
 }
+
+export enum WorldBiblePanelLockButtonClass {
+  Base = 'gap-2 h-8 border transition-colors',
+  DisabledCursor = 'cursor-default opacity-70',
+  Locked = 'border-amber-500/50 text-amber-500',
+  Unlocked = 'border-muted-foreground/30 text-muted-foreground',
+  LockedHover = 'hover:bg-amber-500/10 hover:border-amber-500',
+  UnlockedHover = 'hover:bg-muted/50 hover:border-muted-foreground/50',
+}

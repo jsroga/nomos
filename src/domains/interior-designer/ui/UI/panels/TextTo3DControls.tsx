@@ -17,6 +17,7 @@ import {
 import { RETEXTURE_EMPTY_METADATA } from '@/domains/interior-designer/constants/retexture-slice-log'
 import { seedFromString } from '@/shared/data/seedFromString'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { browserStorage } from '@/shared/data/browser-storage'
 import { POLLING_INTERVALS, isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/constants/polling'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import {
@@ -25,6 +26,8 @@ import {
   isTerminalOperationStatus,
 } from '@/shared/jobs/constants/async-operation-status'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
+import { pollInteriorTriggerRun } from '@/domains/interior-designer/state/utils/poll-interior-trigger-run'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 
 interface TextTo3DControlsProps {
   objectId: string
@@ -98,7 +101,7 @@ export function TextTo3DControls({
     }
 
     cleanupStaleOperation()
-  }, [])
+  }, [currentOperation, operationId, updateOperation])
 
   React.useEffect(() => {
     if (!currentOperation) return
@@ -113,62 +116,67 @@ export function TextTo3DControls({
       `[TextTo3D] Starting polling for ${operationId} - status: ${currentOperation.status}`
     )
 
-    let pollInterval: NodeJS.Timeout
+    let taskId: string | null = null
+    let promptFromDetails: string | undefined
+    try {
+      const metadata = recordFromJson(JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA))
+      taskId = readString(metadata.taskId) ?? null
+      promptFromDetails = readString(metadata.prompt) ?? undefined
+    } catch (err) {
+      console.error(PropertiesPanelLog.OperationMetadataParseFailed, err)
+      return
+    }
+    if (!taskId) return
 
-    const checkStatus = async () => {
-      try {
-        const latestOp = useGlobalStatusStore
-          .getState()
-          .operations.find(op => op.id === operationId)
-        if (!latestOp || isTerminalOperationStatus(latestOp.status)) {
-          console.log(PropertiesPanelLog.TextTo3DPollSkipped)
-          return
-        }
-
-        let taskId: string | null = null
-        try {
-          const metadata = JSON.parse(currentOperation.details || RETEXTURE_EMPTY_METADATA)
-          taskId = metadata.taskId
-        } catch (err) {
-          console.error(PropertiesPanelLog.OperationMetadataParseFailed, err)
-          return
-        }
-
-        if (!taskId) return
-
-        const data = await interiorDesignerApi.textTo3D.getStatus(taskId)
-        console.log(`[TextTo3D] Poll result for ${operationId}:`, data.status)
-
-        if (isSuccessTaskStatus(data.status)) {
-          const output = data.output
-          if (output && output.success) {
+    const runId = taskId
+    let aborted = false
+    void pollInteriorTriggerRun(
+      () => interiorDesignerApi.textTo3D.getStatus(runId),
+      {
+        shouldAbort: () => {
+          if (aborted) return true
+          const latestOp = useGlobalStatusStore.getState().operations.find(op => op.id === operationId)
+          return !latestOp || isTerminalOperationStatus(latestOp.status)
+        },
+        onPoll: data => {
+          console.log(`[TextTo3D] Poll result for ${operationId}:`, data.status)
+        },
+        onCompleted: async data => {
+          const output = recordFromJson(data.output)
+          if (output.success === true) {
             updateOperation(operationId, {
               status: AsyncOperationStatus.Completed,
               details: JSON.stringify({
                 taskId,
-                modelUrl: output.modelUrl,
-                assetId: output.assetId,
-                thumbnailUrl: output.thumbnailUrl,
+                modelUrl: readString(output.modelUrl),
+                assetId: readString(output.assetId),
+                thumbnailUrl: readString(output.thumbnailUrl),
+                ...(promptFromDetails ? { prompt: promptFromDetails } : {}),
               }),
             })
             console.log(`[TextTo3D] Marked ${operationId} as completed`)
           }
-        } else if (!isActiveTaskStatus(data.status)) {
+        },
+        onFailed: async data => {
           console.error(PropertiesPanelLog.TextTo3DTaskFailed, data.status, data.error)
           updateOperation(operationId, {
             status: AsyncOperationStatus.Failed,
-            details: JSON.stringify({ taskId, error: data.error, failureStatus: data.status }),
+            details: JSON.stringify({
+              taskId,
+              error: data.error,
+              failureStatus: data.status,
+            }),
           })
-        }
-      } catch (err) {
-        console.error(PropertiesPanelLog.PollError, err)
-      }
-    }
+        },
+      },
+      { intervalMs: POLLING_INTERVALS.SLOW, maxPolls: 120 }
+    ).catch(err => {
+      console.error(PropertiesPanelLog.PollError, err)
+    })
 
-    pollInterval = setInterval(checkStatus, POLLING_INTERVALS.SLOW)
     return () => {
+      aborted = true
       console.log(`[TextTo3D] Clearing interval for ${operationId}`)
-      clearInterval(pollInterval)
     }
   }, [currentOperation, operationId, updateOperation])
 
@@ -191,21 +199,12 @@ export function TextTo3DControls({
     })
 
     try {
-      let apiKey = ''
-      try {
-        const savedMeshy = localStorage.getItem(LocalStorageKeys.AI_CONFIG_MESHY)
-        if (savedMeshy) {
-          const config = JSON.parse(savedMeshy)
-          apiKey = config.apiKey || ''
-        }
-      } catch (err) {
-        console.warn(PropertiesPanelLog.MeshyKeyReadFailed, err)
-      }
+      const apiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_MESHY)
 
       let masterPrompt = ''
       if (resolvedProjectId) {
         masterPrompt =
-          localStorage.getItem(`${LocalStorageKeys.MASTER_PROMPT}-${resolvedProjectId}`) || ''
+          browserStorage.getString(`${LocalStorageKeys.MASTER_PROMPT}-${resolvedProjectId}`) || ''
       }
 
       const seed = seedFromString(`${masterPrompt}|${prompt}`)

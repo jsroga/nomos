@@ -1,29 +1,15 @@
 'use client'
 
-import { HttpMethod } from '@/shared/data/constants/protocol'
+import { HttpMethod, ContentType } from '@/shared/data/constants/protocol'
+import { fetchJson } from '@/shared/data/fetch-json-record'
 
-export class ClientFetchError extends Error {
-  readonly status: number
+import {
+  ClientFetchError as SharedClientFetchError,
+  fetchJsonRecord,
+} from '@/shared/data/fetch-json-record'
 
-  constructor(message: string, status: number) {
-    super(message)
-    this.name = 'ClientFetchError'
-    this.status = status
-  }
-}
-
-export async function fetchJson(
-  input: RequestInfo | URL,
-  init?: RequestInit
-): Promise<unknown> {
-  const response = await fetch(input, init)
-
-  if (!response.ok) {
-    throw new ClientFetchError(`Request failed with status ${response.status}`, response.status)
-  }
-
-  return response.json()
-}
+export { fetchJson, fetchJsonRecord }
+export const ClientFetchError = SharedClientFetchError
 
 export async function postJson<TBody extends Record<string, unknown>>(
   url: string,
@@ -31,7 +17,7 @@ export async function postJson<TBody extends Record<string, unknown>>(
 ): Promise<unknown> {
   return fetchJson(url, {
     method: HttpMethod.Post,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': ContentType.Json },
     body: JSON.stringify(body),
   })
 }

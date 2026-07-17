@@ -1,11 +1,11 @@
 # src/ quality tracker
 
-Generated: 2026-07-14 13:27:10 · **1078 files** in `src/**`
+Generated: 2026-07-16 12:52:02 · **1243 files** in `src/**`
 
 | Metric | clean | errors | pending | exempt |
 |--------|------:|-------:|--------:|-------:|
-| TSC | 32 | 1 | 620 | 425 |
-| MagicStr | 653 | 0 | 0 | 425 |
+| TSC | 28 | 1 | 804 | 410 |
+| MagicStr | 815 | 18 | 0 | 410 |
 
 ## Fix loop (fast — ~5s per file)
 
@@ -25,7 +25,6 @@ State: `.local/quality-tracker-state.json`
 
 | File | TSC | MagicStr | Notes |
 |------|-----|----------|-------|
-| `src/__tests__/src-topology.ts` | pending | clean | — |
 | `src/__tests__/structure.test.ts` | pending | clean | — |
 | `src/app/(auth)/auth/callback/route.ts` | pending | clean | — |
 | `src/app/(auth)/auth/reset-password/page.tsx` | pending | clean | — |
@@ -46,10 +45,11 @@ State: `.local/quality-tracker-state.json`
 | `src/app/(workspace)/[projectId]/storyteller/layout.tsx` | pending | clean | — |
 | `src/app/(workspace)/[projectId]/storyteller/page.tsx` | pending | clean | — |
 | `src/app/(workspace)/[projectId]/world-gen/layout.tsx` | pending | clean | — |
-| `src/app/(workspace)/[projectId]/world-gen/page.tsx` | pending | clean | eslint 1 |
+| `src/app/(workspace)/[projectId]/world-gen/page.tsx` | pending | clean | — |
 | `src/app/(workspace)/layout.tsx` | pending | clean | — |
 | `src/app/(workspace)/projects/constants/project-selection-page.ts` | exempt | exempt | wire/schema |
 | `src/app/(workspace)/projects/page.tsx` | pending | clean | — |
+| `src/app/api/_lib/generate-3d-providers.ts` | pending | clean | — |
 | `src/app/api/admin/migrate/route.ts` | pending | clean | — |
 | `src/app/api/ai/fal-segment/route.ts` | pending | clean | — |
 | `src/app/api/ai/segment/route.ts` | pending | clean | — |
@@ -60,15 +60,16 @@ State: `.local/quality-tracker-state.json`
 | `src/app/api/auth/signin/route.ts` | pending | clean | — |
 | `src/app/api/auth/signup/route.ts` | pending | clean | — |
 | `src/app/api/complete-token/route.ts` | pending | clean | — |
-| `src/app/api/debug/inspect/[id]/route.ts` | pending | clean | eslint 1 |
+| `src/app/api/debug/inspect/[id]/route.ts` | pending | clean | — |
 | `src/app/api/delete-image/route.ts` | pending | clean | — |
 | `src/app/api/entities/[entityId]/route.ts` | pending | clean | — |
 | `src/app/api/entities/mark-referenced/route.ts` | pending | clean | — |
 | `src/app/api/entities/relationships/route.ts` | pending | clean | — |
-| `src/app/api/entities/resolve/route.ts` | pending | clean | eslint 1 |
+| `src/app/api/entities/resolve/_lib/entity-auto-register.ts` | pending | clean | — |
+| `src/app/api/entities/resolve/route.ts` | pending | clean | eslint 3 |
 | `src/app/api/entities/route.ts` | pending | clean | — |
-| `src/app/api/generate-3d/route.ts` | pending | clean | eslint 3 |
-| `src/app/api/interior-designer/designs/route.ts` | pending | clean | eslint 2 |
+| `src/app/api/generate-3d/route.ts` | pending | clean | — |
+| `src/app/api/interior-designer/designs/route.ts` | pending | clean | — |
 | `src/app/api/interior-designer/material/[taskId]/route.ts` | pending | clean | — |
 | `src/app/api/interior-designer/material/route.ts` | pending | clean | — |
 | `src/app/api/interior-designer/retexture/[runId]/route.ts` | pending | clean | — |
@@ -80,19 +81,35 @@ State: `.local/quality-tracker-state.json`
 | `src/app/api/library/route.ts` | pending | clean | — |
 | `src/app/api/llm-judge/route.ts` | pending | clean | — |
 | `src/app/api/loop-creator/chat/route.ts` | pending | clean | — |
-| `src/app/api/loop-creator/loops/route.ts` | pending | clean | eslint 2 |
+| `src/app/api/loop-creator/loops/route.ts` | pending | clean | — |
 | `src/app/api/loop-creator/market-analysis/[gameLoopId]/route.ts` | pending | clean | — |
 | `src/app/api/loop-creator/market-analysis/route.ts` | pending | clean | — |
 | `src/app/api/mcp/route.ts` | pending | clean | — |
-| `src/app/api/projects/[projectId]/onboarding/route.ts` | pending | clean | eslint 4 |
+| `src/app/api/projects/[projectId]/onboarding/route.ts` | pending | clean | — |
 | `src/app/api/proxy-model/route.ts` | pending | clean | — |
-| `src/app/api/repaint/route.ts` | pending | clean | eslint 3 |
+| `src/app/api/repaint/route.ts` | pending | clean | — |
 | `src/app/api/save-image/route.ts` | pending | clean | — |
 | `src/app/api/save-model/route.ts` | pending | clean | — |
 | `src/app/api/settings/models/route.ts` | pending | clean | — |
 | `src/app/api/settings/providers/probe/route.ts` | pending | clean | — |
 | `src/app/api/settings/providers/route.ts` | clean | clean | — |
-| `src/app/api/storyteller/actions/route.ts` | pending | clean | eslint 1 |
+| `src/app/api/storyteller/actions/_lib/action-handler-context.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/constants/action-request-wire.ts` | exempt | exempt | wire/schema |
+| `src/app/api/storyteller/actions/_lib/content-updates.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/dispatch-action.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/beat-handlers.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/character-handlers.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/default-handler.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/script-handlers.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/story-plan-partial-update-handler.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/sync-cast-characters.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/update-cast-handler.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/update-episode-premise-handler.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/update-episode-roadmap-handler.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/update-roadmap-summary-handler.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/handlers/update-series-bible-handler.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/_lib/read-payload-fields.ts` | pending | clean | — |
+| `src/app/api/storyteller/actions/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/beats/[beatId]/generate-image/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/beats/[beatId]/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/beats/generate-prompt/route.ts` | pending | clean | — |
@@ -100,9 +117,10 @@ State: `.local/quality-tracker-state.json`
 | `src/app/api/storyteller/bible/lock/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/bible/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/characters/[characterId]/route.ts` | pending | clean | — |
-| `src/app/api/storyteller/characters/route.ts` | pending | clean | eslint 1 |
+| `src/app/api/storyteller/characters/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/chat/answer/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/chat/route.ts` | pending | clean | — |
+| `src/app/api/storyteller/chat/stream/controller-stream-wire.ts` | exempt | exempt | wire/schema |
 | `src/app/api/storyteller/chat/stream/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/chat/stream/stream-wire.ts` | exempt | exempt | wire/schema |
 | `src/app/api/storyteller/consistency/apply/route.ts` | pending | clean | — |
@@ -117,12 +135,22 @@ State: `.local/quality-tracker-state.json`
 | `src/app/api/storyteller/generate-metrics/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/generate-portrait/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/generate-portrait/status/route.ts` | pending | clean | — |
+| `src/app/api/storyteller/moodboard/_lib/moodboard-trigger-prompts.ts` | pending | clean | — |
 | `src/app/api/storyteller/moodboard/status/route.ts` | pending | clean | — |
-| `src/app/api/storyteller/moodboard/trigger/route.ts` | pending | clean | eslint 1 |
+| `src/app/api/storyteller/moodboard/trigger/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/plan/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/projects/[id]/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/projects/route.ts` | pending | clean | — |
-| `src/app/api/storyteller/relationships/route.ts` | pending | clean | eslint 1 |
+| `src/app/api/storyteller/relationships/_lib/build-graph-nodes.ts` | pending | clean | — |
+| `src/app/api/storyteller/relationships/_lib/build-relationship-graph.ts` | pending | clean | — |
+| `src/app/api/storyteller/relationships/_lib/cached-edges.ts` | pending | clean | — |
+| `src/app/api/storyteller/relationships/_lib/centrality.ts` | pending | clean | — |
+| `src/app/api/storyteller/relationships/_lib/co-occurrence-edges.ts` | pending | clean | — |
+| `src/app/api/storyteller/relationships/_lib/embedding-similarity-edges.ts` | pending | clean | — |
+| `src/app/api/storyteller/relationships/_lib/faction-edges.ts` | pending | clean | — |
+| `src/app/api/storyteller/relationships/_lib/fetch-project-data.ts` | pending | clean | — |
+| `src/app/api/storyteller/relationships/_lib/graph-types.ts` | pending | clean | — |
+| `src/app/api/storyteller/relationships/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/save-episode-poster-variant/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/save-portrait-variant/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/script-review/route.ts` | pending | clean | — |
@@ -130,7 +158,11 @@ State: `.local/quality-tracker-state.json`
 | `src/app/api/storyteller/snapshots/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/timeline/route.ts` | pending | clean | — |
 | `src/app/api/storyteller/workflow/resume/route.ts` | pending | clean | — |
-| `src/app/api/storyteller/world-summary/route.ts` | pending | clean | eslint 1 |
+| `src/app/api/storyteller/world-summary/_lib/build-merged-bible.ts` | pending | clean | — |
+| `src/app/api/storyteller/world-summary/_lib/fetch-project-cast.ts` | pending | clean | — |
+| `src/app/api/storyteller/world-summary/_lib/generate-world-gen-prompt.ts` | pending | clean | — |
+| `src/app/api/storyteller/world-summary/_lib/world-summary-content.ts` | pending | clean | — |
+| `src/app/api/storyteller/world-summary/route.ts` | pending | clean | — |
 | `src/app/api/tiles/accept-upscale/route.ts` | pending | clean | — |
 | `src/app/api/tiles/upload/route.ts` | pending | clean | — |
 | `src/app/api/trigger-3d/remesh/route.ts` | pending | clean | — |
@@ -138,7 +170,7 @@ State: `.local/quality-tracker-state.json`
 | `src/app/api/trigger-3d/status/route.ts` | pending | clean | — |
 | `src/app/api/trigger-fidelity/route.ts` | pending | clean | — |
 | `src/app/api/trigger-fidelity/status/route.ts` | pending | clean | — |
-| `src/app/api/trigger-tile/route.ts` | pending | clean | eslint 1 |
+| `src/app/api/trigger-tile/route.ts` | pending | clean | — |
 | `src/app/api/trigger-tile/status/route.ts` | pending | clean | — |
 | `src/app/api/trigger-upload/route.ts` | pending | clean | — |
 | `src/app/api/trigger-upscale/route.ts` | pending | clean | — |
@@ -146,7 +178,7 @@ State: `.local/quality-tracker-state.json`
 | `src/app/api/trigger-upscale/status/route.ts` | pending | clean | — |
 | `src/app/api/trigger/token/route.ts` | pending | clean | — |
 | `src/app/api/upload-tile/route.ts` | pending | clean | — |
-| `src/app/api/upscale/midjourney/route.ts` | pending | clean | eslint 1 |
+| `src/app/api/upscale/midjourney/route.ts` | pending | clean | — |
 | `src/app/api/users/onboarding/route.ts` | pending | clean | — |
 | `src/app/api/waitlist/route.ts` | pending | clean | — |
 | `src/app/api/workflows/game-design/route.ts` | pending | clean | — |
@@ -159,7 +191,7 @@ State: `.local/quality-tracker-state.json`
 | `src/app/layout.tsx` | pending | clean | — |
 | `src/components/AlertDialog/AlertDialog.tsx` | pending | clean | — |
 | `src/components/AlertDialog/index.ts` | pending | clean | — |
-| `src/components/AsyncStatusIndicator/AsyncStatusIndicator.tsx` | pending | clean | eslint 1 |
+| `src/components/AsyncStatusIndicator/AsyncStatusIndicator.tsx` | pending | clean | — |
 | `src/components/AsyncStatusIndicator/constants/async-status-indicator.ts` | exempt | exempt | wire/schema |
 | `src/components/AsyncStatusIndicator/index.ts` | pending | clean | — |
 | `src/components/AuthProvider/AuthProvider.tsx` | pending | clean | — |
@@ -241,55 +273,63 @@ State: `.local/quality-tracker-state.json`
 | `src/components/shell/GlobalHeader/index.ts` | pending | clean | — |
 | `src/components/shell/GlobalSidebar/GlobalSidebar.tsx` | pending | clean | — |
 | `src/components/shell/GlobalSidebar/index.ts` | pending | clean | — |
-| `src/components/shell/ModuleOnboardingController/ModuleOnboardingController.tsx` | pending | clean | eslint 2 |
+| `src/components/shell/ModuleOnboardingController/ModuleOnboardingController.tsx` | pending | clean | — |
 | `src/components/shell/ModuleOnboardingController/constants/module-onboarding.ts` | exempt | exempt | wire/schema |
 | `src/components/shell/ModuleOnboardingController/index.ts` | pending | clean | — |
 | `src/components/shell/ProjectLoader/ProjectLoader.tsx` | pending | clean | — |
 | `src/components/shell/ProjectLoader/index.ts` | pending | clean | — |
-| `src/components/shell/ProjectSelectorDropdown/ProjectSelectorDropdown.tsx` | pending | clean | eslint 1 |
+| `src/components/shell/ProjectSelectorDropdown/ProjectSelectorDropdown.tsx` | pending | clean | — |
 | `src/components/shell/ProjectSelectorDropdown/constants/project-selector-dropdown.ts` | exempt | exempt | wire/schema |
 | `src/components/shell/ProjectSelectorDropdown/index.ts` | pending | clean | — |
 | `src/components/shell/ProjectTourWrapper/ProjectTourWrapper.tsx` | pending | clean | — |
 | `src/components/shell/ProjectTourWrapper/index.ts` | pending | clean | — |
-| `src/components/shell/Tour/Tour.tsx` | pending | clean | eslint 2 |
+| `src/components/shell/Tour/Tour.tsx` | pending | clean | eslint 1 |
 | `src/components/shell/Tour/index.ts` | pending | clean | — |
 | `src/components/shell/TroubleshootIndicator/TroubleshootIndicator.tsx` | pending | clean | — |
 | `src/components/shell/TroubleshootIndicator/index.ts` | pending | clean | — |
 | `src/components/shell/TroubleshootPanel/TroubleshootPanel.tsx` | clean | clean | — |
 | `src/components/shell/TroubleshootPanel/constants/troubleshoot-panel.ts` | exempt | exempt | wire/schema |
 | `src/components/shell/TroubleshootPanel/index.ts` | pending | clean | — |
-| `src/db/client.ts` | pending | clean | eslint 1 |
+| `src/db/client.ts` | pending | clean | — |
 | `src/db/index.ts` | pending | clean | — |
 | `src/db/schema.ts` | exempt | exempt | wire/schema |
 | `src/domains/3d-asset-exporter/constants/asset-exporter-keys.ts` | exempt | exempt | wire/schema |
 | `src/domains/3d-asset-exporter/constants/asset-upload.ts` | exempt | exempt | wire/schema |
 | `src/domains/3d-asset-exporter/constants/three-d-viewer-messages.ts` | exempt | exempt | wire/schema |
-| `src/domains/3d-asset-exporter/index.ts` | pending | clean | — |
 | `src/domains/3d-asset-exporter/core/io/asset-exporter.api.ts` | pending | clean | — |
 | `src/domains/3d-asset-exporter/core/io/asset-exporter.dto.ts` | pending | clean | — |
-| `src/domains/3d-asset-exporter/core/io/asset-exporter.keys.ts` | clean | clean | — |
+| `src/domains/3d-asset-exporter/core/io/asset-exporter.keys.ts` | pending | clean | — |
+| `src/domains/3d-asset-exporter/index.ts` | pending | clean | — |
 | `src/domains/3d-asset-exporter/state/index.ts` | pending | clean | — |
 | `src/domains/3d-asset-exporter/state/queries/index.ts` | pending | clean | — |
+| `src/domains/3d-asset-exporter/tasks/constants/meshy-generation-wire.ts` | exempt | exempt | wire/schema |
+| `src/domains/3d-asset-exporter/tasks/constants/meshy-task-types.ts` | exempt | exempt | wire/schema |
 | `src/domains/3d-asset-exporter/tasks/generate-3d-model.task.ts` | exempt | exempt | wire/schema |
+| `src/domains/3d-asset-exporter/tasks/lib/prepare-image-url.ts` | pending | clean | — |
+| `src/domains/3d-asset-exporter/tasks/lib/run-hyper3d-generation.ts` | pending | clean | — |
+| `src/domains/3d-asset-exporter/tasks/lib/run-meshy-image-to-3d.ts` | pending | clean | — |
 | `src/domains/3d-asset-exporter/tasks/remesh-3d-model.task.ts` | exempt | exempt | wire/schema |
 | `src/domains/3d-asset-exporter/tasks/retexture-model.task.ts` | exempt | exempt | wire/schema |
 | `src/domains/3d-asset-exporter/tasks/surface-material.task.ts` | exempt | exempt | wire/schema |
 | `src/domains/3d-asset-exporter/tasks/text-to-3d.task.ts` | exempt | exempt | wire/schema |
 | `src/domains/3d-asset-exporter/ui/AssetEditor.tsx` | pending | clean | — |
-| `src/domains/3d-asset-exporter/ui/AssetExporterSidebar.tsx` | pending | clean | eslint 3 |
-| `src/domains/3d-asset-exporter/ui/AssetUploadZone.tsx` | pending | clean | eslint 1 |
+| `src/domains/3d-asset-exporter/ui/AssetExporterSidebar.tsx` | pending | clean | — |
+| `src/domains/3d-asset-exporter/ui/AssetUploadZone.tsx` | pending | clean | — |
 | `src/domains/3d-asset-exporter/ui/ThreeDPanel.tsx` | pending | clean | — |
-| `src/domains/3d-asset-exporter/ui/ThreeDViewer.tsx` | clean | clean | eslint 9 |
-| `src/domains/__tests__/domain-conformance.ts` | pending | clean | — |
+| `src/domains/3d-asset-exporter/ui/ThreeDViewer.tsx` | clean | clean | — |
 | `src/domains/__tests__/domain-structure.test.ts` | pending | clean | — |
-| `src/domains/game-design/ai/GameDesignAgent.ts` | exempt | exempt | wire/schema |
-| `src/domains/game-design/ai/constants/memory.ts` | exempt | exempt | wire/schema |
-| `src/domains/game-design/ai/game-loop-workflow.ts` | exempt | exempt | wire/schema |
-| `src/domains/game-design/ai/agents/memory.ts` | exempt | exempt | wire/schema |
+| `src/domains/game-design/ai/agents/game-design-agent.ts` | pending | 24 viol | — |
+| `src/domains/game-design/ai/agents/memory.ts` | pending | clean | — |
 | `src/domains/game-design/ai/agents/pattern-wire.ts` | exempt | exempt | wire/schema |
-| `src/domains/game-design/ai/tools/v2/haute-game-tools.ts` | exempt | exempt | wire/schema; eslint 1 |
-| `src/domains/game-design/ai/tools/v2/logic-transformers.ts` | exempt | exempt | wire/schema; eslint 9 |
-| `src/domains/game-design/ai/tools/v2/loop-tools.ts` | exempt | exempt | wire/schema |
+| `src/domains/game-design/ai/constants/game-design-response.ts` | exempt | exempt | wire/schema |
+| `src/domains/game-design/ai/constants/game-design-tools.ts` | exempt | exempt | wire/schema |
+| `src/domains/game-design/ai/constants/invoke-game-design-tool.ts` | exempt | exempt | wire/schema |
+| `src/domains/game-design/ai/constants/loop-proposal.ts` | exempt | exempt | wire/schema |
+| `src/domains/game-design/ai/constants/memory.ts` | exempt | exempt | wire/schema |
+| `src/domains/game-design/ai/tools/v2/haute-game-tools.ts` | pending | 41 viol | — |
+| `src/domains/game-design/ai/tools/v2/logic-transformers.ts` | pending | 48 viol | — |
+| `src/domains/game-design/ai/tools/v2/loop-tools.ts` | pending | 11 viol | — |
+| `src/domains/game-design/ai/workflows/game-loop-workflow.ts` | pending | 35 viol | — |
 | `src/domains/game-design/core/schemas.ts` | exempt | exempt | wire/schema |
 | `src/domains/game-design/index.ts` | pending | clean | — |
 | `src/domains/interior-designer/constants/asset-library.ts` | exempt | exempt | wire/schema |
@@ -321,61 +361,70 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/interior-designer/constants/unity-export.ts` | exempt | exempt | wire/schema |
 | `src/domains/interior-designer/constants/unity-yaml.ts` | exempt | exempt | wire/schema |
 | `src/domains/interior-designer/constants/wall-tool-messages.ts` | exempt | exempt | wire/schema |
-| `src/domains/interior-designer/core/UnityExporter.ts` | pending | clean | eslint 2 |
-| `src/domains/interior-designer/core/UnityYAML.ts` | clean | clean | — |
 | `src/domains/interior-designer/core/index.ts` | pending | clean | — |
 | `src/domains/interior-designer/core/interior-types.ts` | pending | clean | — |
-| `src/domains/interior-designer/core/polygonUtils.ts` | pending | clean | eslint 3 |
-| `src/domains/interior-designer/core/scene-element-guards.ts` | pending | clean | — |
-| `src/domains/interior-designer/core/textureCache.ts` | pending | clean | eslint 1 |
-| `src/domains/interior-designer/core/vec3.ts` | pending | clean | — |
-| `src/domains/interior-designer/index.ts` | pending | clean | — |
-| `src/domains/interior-designer/interior-designer.config.ts` | pending | clean | — |
 | `src/domains/interior-designer/core/io/constants/query-keys.ts` | exempt | exempt | wire/schema |
 | `src/domains/interior-designer/core/io/index.ts` | pending | clean | — |
 | `src/domains/interior-designer/core/io/interior-designer.api.ts` | pending | clean | — |
-| `src/domains/interior-designer/core/io/interior-designer.dto.ts` | clean | clean | — |
+| `src/domains/interior-designer/core/io/interior-designer.dto.ts` | pending | clean | — |
 | `src/domains/interior-designer/core/io/interior-designer.keys.ts` | pending | clean | — |
+| `src/domains/interior-designer/core/polygonUtils.ts` | pending | clean | — |
+| `src/domains/interior-designer/core/scene-element-guards.ts` | pending | clean | — |
+| `src/domains/interior-designer/core/textureCache.ts` | pending | clean | — |
+| `src/domains/interior-designer/core/unity-exporter.ts` | pending | clean | — |
+| `src/domains/interior-designer/core/unity-yaml.ts` | pending | clean | — |
+| `src/domains/interior-designer/core/vec3.ts` | pending | clean | — |
+| `src/domains/interior-designer/index.ts` | pending | clean | — |
+| `src/domains/interior-designer/interior-designer.config.ts` | pending | clean | — |
 | `src/domains/interior-designer/prompts/index.ts` | exempt | exempt | wire/schema |
-| `src/domains/interior-designer/services/TextureService.ts` | pending | clean | — |
 | `src/domains/interior-designer/services/index.ts` | pending | clean | — |
+| `src/domains/interior-designer/services/texture-service.ts` | pending | clean | — |
 | `src/domains/interior-designer/state/index.ts` | pending | clean | — |
 | `src/domains/interior-designer/state/interior-state.ts` | pending | clean | — |
 | `src/domains/interior-designer/state/interior-store-constants.ts` | pending | clean | — |
 | `src/domains/interior-designer/state/queries/index.ts` | pending | clean | — |
 | `src/domains/interior-designer/state/slices/persistence-slice.ts` | pending | clean | — |
 | `src/domains/interior-designer/state/slices/retexture-slice.ts` | pending | clean | — |
-| `src/domains/interior-designer/state/slices/scene-slice.ts` | pending | clean | — |
+| `src/domains/interior-designer/state/slices/scene-slice.ts` | pending | clean | eslint 1 |
 | `src/domains/interior-designer/state/slices/terrain-slice.ts` | pending | clean | — |
 | `src/domains/interior-designer/state/slices/ui-slice.ts` | pending | clean | — |
 | `src/domains/interior-designer/state/useInteriorStore.ts` | clean | clean | — |
 | `src/domains/interior-designer/tasks/index.ts` | pending | clean | — |
-| `src/domains/interior-designer/ui/CameraController.tsx` | clean | clean | eslint 1 |
-| `src/domains/interior-designer/ui/DesignManager.tsx` | pending | clean | eslint 1 |
+| `src/domains/interior-designer/ui/CameraController.tsx` | clean | clean | — |
+| `src/domains/interior-designer/ui/DesignManager.tsx` | pending | clean | — |
 | `src/domains/interior-designer/ui/Exporter.tsx` | clean | clean | — |
 | `src/domains/interior-designer/ui/FloorManager.tsx` | pending | clean | — |
 | `src/domains/interior-designer/ui/InteriorCanvas.tsx` | pending | clean | — |
-| `src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx` | clean | clean | eslint 1 |
+| `src/domains/interior-designer/ui/InteriorDesignerWorkspace/InteriorDesignerWorkspace.tsx` | clean | clean | — |
 | `src/domains/interior-designer/ui/InteriorDesignerWorkspace/index.ts` | pending | clean | — |
 | `src/domains/interior-designer/ui/KeybindingManager.tsx` | pending | clean | — |
 | `src/domains/interior-designer/ui/ObjectManager.tsx` | clean | clean | — |
 | `src/domains/interior-designer/ui/RetextureExporter.tsx` | pending | clean | — |
-| `src/domains/interior-designer/ui/SculptableSurface.tsx` | pending | clean | eslint 3 |
-| `src/domains/interior-designer/ui/SurfaceManager.tsx` | pending | clean | eslint 1 |
+| `src/domains/interior-designer/ui/SculptableSurface.tsx` | pending | clean | — |
+| `src/domains/interior-designer/ui/SurfaceManager.tsx` | pending | clean | — |
 | `src/domains/interior-designer/ui/TransformManager.tsx` | pending | clean | — |
-| `src/domains/interior-designer/ui/UI/AssetLibrary.tsx` | pending | clean | eslint 3 |
+| `src/domains/interior-designer/ui/UI/AssetLibrary.tsx` | pending | clean | — |
 | `src/domains/interior-designer/ui/UI/InteriorRightSidebar.tsx` | pending | clean | — |
-| `src/domains/interior-designer/ui/UI/LayerPanel.tsx` | pending | clean | — |
-| `src/domains/interior-designer/ui/UI/PropertiesPanel.tsx` | pending | clean | eslint 8 |
-| `src/domains/interior-designer/ui/UI/SurfaceProperties.tsx` | pending | clean | eslint 2 |
+| `src/domains/interior-designer/ui/UI/LayerPanel.tsx` | pending | clean | eslint 3 |
+| `src/domains/interior-designer/ui/UI/PropertiesPanel.tsx` | pending | clean | — |
+| `src/domains/interior-designer/ui/UI/SurfaceProperties.tsx` | pending | clean | — |
 | `src/domains/interior-designer/ui/UI/TerrainEditorPanel.tsx` | pending | clean | — |
 | `src/domains/interior-designer/ui/UI/Toolbar.tsx` | pending | clean | — |
 | `src/domains/interior-designer/ui/UI/constants/surface-properties-presets.ts` | exempt | exempt | wire/schema |
+| `src/domains/interior-designer/ui/UI/panels/HeightScaleControl.tsx` | pending | clean | — |
+| `src/domains/interior-designer/ui/UI/panels/MultiSelectionPanel.tsx` | pending | clean | — |
+| `src/domains/interior-designer/ui/UI/panels/RetextureControls.tsx` | pending | clean | — |
+| `src/domains/interior-designer/ui/UI/panels/SelectedItemProperties.tsx` | pending | clean | — |
+| `src/domains/interior-designer/ui/UI/panels/SnapControls.tsx` | pending | clean | — |
+| `src/domains/interior-designer/ui/UI/panels/TextTo3DControls.tsx` | pending | clean | — |
+| `src/domains/interior-designer/ui/UI/surface-material-generation-section.tsx` | pending | clean | — |
+| `src/domains/interior-designer/ui/UI/surface-properties-sections.tsx` | pending | clean | — |
+| `src/domains/interior-designer/ui/UI/utils/properties-panel-type-guards.ts` | pending | clean | — |
 | `src/domains/interior-designer/ui/VoxelTerrainMesh.tsx` | pending | clean | — |
 | `src/domains/interior-designer/ui/WallManager.tsx` | clean | clean | — |
 | `src/domains/interior-designer/ui/index.ts` | pending | clean | — |
 | `src/domains/interior-designer/ui/meshes/DoorMesh.tsx` | 44 err | clean | — |
-| `src/domains/interior-designer/ui/meshes/RoadMesh.tsx` | clean | clean | eslint 1 |
+| `src/domains/interior-designer/ui/meshes/RoadMesh.tsx` | clean | clean | — |
 | `src/domains/interior-designer/ui/meshes/WindowMesh.tsx` | clean | clean | — |
 | `src/domains/interior-designer/ui/terrain/GlobalWaterPlane.tsx` | clean | clean | — |
 | `src/domains/interior-designer/ui/terrain/TerrainBrushPreview.tsx` | pending | clean | — |
@@ -383,16 +432,16 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/interior-designer/ui/tools/ObjectTool.tsx` | pending | clean | — |
 | `src/domains/interior-designer/ui/tools/ScatterTool.tsx` | clean | clean | — |
 | `src/domains/interior-designer/ui/tools/SurfaceTool.tsx` | pending | clean | — |
-| `src/domains/interior-designer/ui/tools/TerrainTool.tsx` | clean | clean | eslint 1 |
+| `src/domains/interior-designer/ui/tools/TerrainTool.tsx` | clean | clean | — |
 | `src/domains/interior-designer/ui/tools/WallTool.tsx` | pending | clean | — |
-| `src/domains/loop-creator/ai/agents/balance-analyst.ts` | exempt | exempt | wire/schema |
-| `src/domains/loop-creator/ai/agents/concept-evaluator.ts` | exempt | exempt | wire/schema |
-| `src/domains/loop-creator/ai/agents/loop-planner.ts` | exempt | exempt | wire/schema |
-| `src/domains/loop-creator/ai/agents/market-analyst-wrapper.ts` | exempt | exempt | wire/schema |
-| `src/domains/loop-creator/ai/agents/market-analyst/index.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/agents/balance-analyst.ts` | pending | 39 viol | — |
+| `src/domains/loop-creator/ai/agents/concept-evaluator.ts` | pending | 33 viol | — |
+| `src/domains/loop-creator/ai/agents/loop-planner.ts` | pending | 29 viol | — |
+| `src/domains/loop-creator/ai/agents/market-analyst-wrapper.ts` | pending | clean | — |
+| `src/domains/loop-creator/ai/agents/market-analyst/index.ts` | pending | 31 viol | — |
 | `src/domains/loop-creator/ai/agents/market-analyst/market-analysis-wire.ts` | exempt | exempt | wire/schema |
-| `src/domains/loop-creator/ai/agents/market-analyst/prompts.ts` | exempt | exempt | wire/schema |
-| `src/domains/loop-creator/ai/agents/market-analyst/tools-registry.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/agents/market-analyst/prompts.ts` | pending | 50 viol | — |
+| `src/domains/loop-creator/ai/agents/market-analyst/tools-registry.ts` | pending | clean | — |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/audience-analyzer.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/competitor-finder.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/game-database.ts` | exempt | exempt | wire/schema |
@@ -400,23 +449,33 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/market-size.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/mechanics-loops-schema.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/metrics-planner.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/agents/market-analyst/tools/pattern-matcher-analysis.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/pattern-matcher.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/agents/market-analyst/tools/reddit-pulse-query.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/reddit-pulse.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/agents/market-analyst/tools/report-generator-compose.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/report-generator.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/scorers/best-match.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/agents/market-analyst/tools/scorers/counter-strike-report.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/scorers/counter-strike.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/scorers/disco-elysium.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/agents/market-analyst/tools/scorers/vampire-survivors-report.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/scorers/vampire-survivors.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/steam-charts.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/steam-trending.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/structured-tool.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/trend-analyzer.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/agents/market-analyst/tools/twitter-trends-query.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/agents/market-analyst/tools/twitter-trends-sentiment.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/twitter-trends.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ai/agents/market-analyst/tools/web-search.ts` | exempt | exempt | wire/schema |
-| `src/domains/loop-creator/ai/agents/market-analyst/types.ts` | exempt | exempt | wire/schema |
-| `src/domains/loop-creator/ai/agents/mechanics-designer.ts` | exempt | exempt | wire/schema |
-| `src/domains/loop-creator/ai/agents/progression-architect.ts` | exempt | exempt | wire/schema |
-| `src/domains/loop-creator/ai/agents/supervisor.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/agents/market-analyst/types.ts` | pending | clean | — |
+| `src/domains/loop-creator/ai/agents/mechanics-designer.ts` | pending | 58 viol | — |
+| `src/domains/loop-creator/ai/agents/progression-architect.ts` | pending | 46 viol | — |
+| `src/domains/loop-creator/ai/agents/supervisor-routing.ts` | pending | 18 viol | — |
+| `src/domains/loop-creator/ai/agents/supervisor.ts` | pending | 12 viol | — |
+| `src/domains/loop-creator/ai/constants/loop-planner-canvas.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ai/constants/loop-planner-parse.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/constants/abort-error.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/constants/agent-nodes.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/constants/auto-save.ts` | exempt | exempt | wire/schema |
@@ -424,6 +483,7 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/loop-creator/constants/graph-state-defaults.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/constants/layout-messages.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/constants/loop-agent-actions.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/constants/loop-analysis-wire.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/constants/loop-http.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/constants/loop-node-defaults.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/constants/loop-orchestrator.ts` | exempt | exempt | wire/schema |
@@ -434,8 +494,8 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/loop-creator/core/graph/agent-nodes.ts` | pending | clean | — |
 | `src/domains/loop-creator/core/graph/loop-graph.ts` | pending | clean | — |
 | `src/domains/loop-creator/core/graph/loop-orchestrator.ts` | pending | clean | — |
-| `src/domains/loop-creator/core/graph/state.ts` | clean | clean | eslint 5 |
-| `src/domains/loop-creator/core/layout.ts` | pending | clean | — |
+| `src/domains/loop-creator/core/graph/state.ts` | clean | clean | — |
+| `src/domains/loop-creator/core/layout.ts` | pending | clean | eslint 1 |
 | `src/domains/loop-creator/core/loop-agent-action-wire.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/core/loop-node-wire.ts` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/core/mentions/constants/mention-catalog.ts` | exempt | exempt | wire/schema |
@@ -444,23 +504,41 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/loop-creator/core/mentions/providers.ts` | pending | clean | — |
 | `src/domains/loop-creator/index.ts` | pending | clean | — |
 | `src/domains/loop-creator/server.ts` | pending | clean | — |
+| `src/domains/loop-creator/state/hooks/useLoopCreatorLayout.ts` | pending | clean | — |
+| `src/domains/loop-creator/state/hooks/useMarketAnalysisPanel.ts` | pending | clean | — |
 | `src/domains/loop-creator/state/useAutoSave.ts` | pending | clean | — |
-| `src/domains/loop-creator/ui/CustomNodes.tsx` | pending | clean | — |
-| `src/domains/loop-creator/ui/LoopCreatorLayout.tsx` | pending | clean | eslint 12 |
-| `src/domains/loop-creator/ui/LoopEmptyState.tsx` | pending | clean | — |
-| `src/domains/loop-creator/ui/LoopSelector.tsx` | pending | clean | — |
-| `src/domains/loop-creator/ui/MarketAnalysisPanel.tsx` | pending | clean | eslint 1 |
-| `src/domains/loop-creator/ui/PropertiesPanel.tsx` | pending | clean | — |
-| `src/domains/loop-creator/ui/SuggestionPanel.tsx` | pending | clean | eslint 1 |
+| `src/domains/loop-creator/ui/components/LoopAnalysisDialog.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/LoopChatSidebar.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/LoopCreatorChrome.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/LoopCreatorLayout.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/LoopEmptyState.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/LoopFlowCanvas.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/LoopSelector.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/MarketAnalysisPanel.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/MarketAnalysisPanelBody.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/MarketAnalysisReportView.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/PropertiesPanel.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/SuggestionPanel.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/components/custom-nodes.tsx` | pending | clean | — |
+| `src/domains/loop-creator/ui/constants/loop-agent-config.tsx` | exempt | exempt | wire/schema |
 | `src/domains/loop-creator/ui/constants/loop-creator-layout.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ui/constants/market-analysis-score.ts` | exempt | exempt | wire/schema |
+| `src/domains/loop-creator/ui/types/loop-layout-wires.ts` | pending | clean | — |
+| `src/domains/loop-creator/ui/utils/create-canvas-node.ts` | pending | clean | — |
+| `src/domains/loop-creator/ui/utils/loop-agent-action-handler.ts` | pending | clean | — |
+| `src/domains/loop-creator/ui/utils/loop-import-json.ts` | pending | clean | — |
+| `src/domains/loop-creator/ui/utils/market-analysis-score-utils.ts` | pending | clean | — |
+| `src/domains/loop-creator/ui/utils/persisted-graph.ts` | pending | clean | — |
+| `src/domains/loop-creator/ui/utils/suggestion-graph.ts` | pending | clean | — |
+| `src/domains/loop-creator/ui/utils/tidy-nodes-layout.ts` | pending | clean | eslint 1 |
 | `src/domains/marketing/constants/legal-docs.ts` | exempt | exempt | wire/schema |
+| `src/domains/marketing/constants/liquid-globals.ts` | exempt | exempt | wire/schema |
 | `src/domains/marketing/constants/liquid.ts` | exempt | exempt | wire/schema |
 | `src/domains/marketing/constants/three-d-icon.ts` | exempt | exempt | wire/schema |
 | `src/domains/marketing/core/legal-docs.ts` | clean | clean | — |
 | `src/domains/marketing/index.ts` | pending | clean | — |
-| `src/domains/marketing/state/LiquidContext.tsx` | clean | clean | — |
-| `src/domains/marketing/ui/GlobalLiquidLoader.tsx` | clean | clean | eslint 2 |
-| `src/domains/marketing/ui/LandingPage/LandingPage.tsx` | pending | clean | — |
+| `src/domains/marketing/state/liquid-context.tsx` | pending | clean | — |
+| `src/domains/marketing/ui/GlobalLiquidLoader.tsx` | clean | clean | — |
 | `src/domains/marketing/ui/LandingPage/components/ApiMcpSection.tsx` | pending | clean | — |
 | `src/domains/marketing/ui/LandingPage/components/ArchitectingRealitySection.tsx` | pending | clean | — |
 | `src/domains/marketing/ui/LandingPage/components/BentoGrid.tsx` | pending | clean | — |
@@ -471,6 +549,7 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/marketing/ui/LandingPage/components/LandingFooter.tsx` | pending | clean | — |
 | `src/domains/marketing/ui/LandingPage/components/LandingHero.tsx` | pending | clean | — |
 | `src/domains/marketing/ui/LandingPage/components/LandingNav.tsx` | pending | clean | — |
+| `src/domains/marketing/ui/LandingPage/components/LandingPage.tsx` | pending | clean | — |
 | `src/domains/marketing/ui/LandingPage/components/ManifestoSection.tsx` | pending | clean | — |
 | `src/domains/marketing/ui/LandingPage/components/SystemsSection.tsx` | pending | clean | — |
 | `src/domains/marketing/ui/LandingPage/components/_legacy/BrutalCard.tsx` | pending | clean | — |
@@ -485,135 +564,132 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/marketing/ui/LandingPage/index.ts` | pending | clean | — |
 | `src/domains/marketing/ui/LandingPage/types.ts` | pending | clean | — |
 | `src/domains/marketing/ui/LegalMarkdownPage.tsx` | pending | clean | — |
-| `src/domains/marketing/ui/Liquid.tsx` | clean | clean | eslint 3 |
+| `src/domains/marketing/ui/Liquid.tsx` | clean | clean | — |
 | `src/domains/marketing/ui/LiquidBackgroundProvider.tsx` | clean | clean | — |
 | `src/domains/marketing/ui/ProPlanPromo.tsx` | pending | clean | — |
-| `src/domains/marketing/ui/ThreeDIcon.tsx` | pending | clean | eslint 7 |
+| `src/domains/marketing/ui/ThreeDIcon.tsx` | pending | clean | — |
+| `src/domains/marketing/ui/ThreeDIconCanvas.tsx` | pending | clean | — |
 | `src/domains/marketing/ui/ToolsIntegration.tsx` | pending | clean | — |
 | `src/domains/marketing/ui/TurbulentBackground.tsx` | clean | clean | — |
-| `src/domains/storyteller/ai/agents/BeatPlanner/BeatPlannerAgent.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/BeatPlanner/__tests__/beat-plan-quality.test.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/agents/BeatPlanner/__tests__/beat-plan-quality.test.ts` | pending | clean | — |
 | `src/domains/storyteller/ai/agents/BeatPlanner/beat-plan-concreteness-scorer.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/BeatPlanner/beat-plan-quality.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/agents/BeatPlanner/beat-plan-quality.ts` | pending | clean | — |
 | `src/domains/storyteller/ai/agents/BeatPlanner/beat-plan-schema.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/agents/BeatPlanner/beat-planner-agent.ts` | pending | clean | — |
 | `src/domains/storyteller/ai/agents/BeatPlanner/constants/beat-plan-quality.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/GrrmAuthor/GrrmAuthorAgent.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/Muse/MuseAgent.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/Muse/__tests__/brainstorm.test.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/Muse/brainstorm.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/Muse/rank.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/agents/GrrmAuthor/grrm-author-agent.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/Muse/__tests__/brainstorm.test.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/Muse/brainstorm.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/Muse/muse-agent.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/Muse/rank.ts` | pending | clean | — |
 | `src/domains/storyteller/ai/agents/Muse/ranked-idea-schema.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ai/agents/Muse/wild-idea-schema.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/StorytellerAgent/StorytellerAgent.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/StorytellerAgent/index.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/agents/StorytellerAgent/index.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/StorytellerAgent/storyteller-agent.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/critics/constants/critic-agents.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/agents/critics/continuity-critic.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/critics/critic-discipline-scorer.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/agents/critics/critic-rules.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/critics/critic-schema.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/agents/critics/index.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/critics/prose-critic.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/critics/run-critic.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/agents/critics/stakes-critic.ts` | pending | clean | — |
 | `src/domains/storyteller/ai/constants/agent-identity.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ai/constants/tracing.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ai/constants/workflow-tool.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/critics/ContinuityCritic.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/critics/ProseCritic.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/critics/StakesCritic.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/critics/constants/critic-agents.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/critics/critic-discipline-scorer.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/critics/critic-rules.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/critics/critic-schema.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/critics/index.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/agents/critics/run-critic.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/index.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/request-context.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/tools/beat-tools.ts` | exempt | exempt | wire/schema; eslint 2 |
-| `src/domains/storyteller/ai/tools/bible-tools.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/tools/character-tools.ts` | exempt | exempt | wire/schema; eslint 2 |
-| `src/domains/storyteller/ai/tools/episode-tools.ts` | exempt | exempt | wire/schema; eslint 2 |
-| `src/domains/storyteller/ai/tools/index.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/tools/workflow-tool.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/tracing.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/workflows/__tests__/beat-draft-workflow.e2e.test.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/workflows/__tests__/beat-draft-workflow.test.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/workflows/beat-draft-contract.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/workflows/beat-draft-workflow.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/controller/__tests__/controller-sse-wire.test.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/controller/__tests__/storyteller-controller.test.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/controller/controller-sse-wire.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/controller/storyteller-controller.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/index.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/prompts/beat-planner-prompt.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/prompts/chat-adapter-prompt.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/prompts/grrm-system-prompt.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/prompts/guardrails/anti-slop-phrases.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/prompts/schemas/agent-schemas.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/prompts/types.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/request-context.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/tools/beat-tools.ts` | pending | 31 viol | — |
+| `src/domains/storyteller/ai/tools/bible-tools.ts` | pending | 34 viol | — |
+| `src/domains/storyteller/ai/tools/character-tools.ts` | pending | 39 viol | — |
+| `src/domains/storyteller/ai/tools/episode-tools.ts` | pending | 28 viol | — |
+| `src/domains/storyteller/ai/tools/index.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/tools/workflow-tool.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/tracing.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/workflows/__tests__/beat-draft-workflow.e2e.test.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/workflows/__tests__/beat-draft-workflow.test.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/workflows/beat-draft-contract.ts` | pending | clean | — |
+| `src/domains/storyteller/ai/workflows/beat-draft-workflow.ts` | pending | clean | — |
 | `src/domains/storyteller/ai/workflows/constants/beat-draft-workflow.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ai/workflows/stateless-agents.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/ai/workflows/stateless-agents.ts` | pending | clean | — |
 | `src/domains/storyteller/config/__tests__/tool-result-mapper.test.ts` | pending | clean | — |
 | `src/domains/storyteller/config/action-config.ts` | pending | clean | — |
-| `src/domains/storyteller/config/constants/ChatModelCatalog.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/config/constants/ModelConfig.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/config/constants/bible-wire-fields.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/config/constants/chat-model-catalog.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/config/constants/model-config.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/config/constants/storyteller-agents.tsx` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/config/constants/storyteller-config-defaults.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/config/constants/tool-result-wire.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/config/storyteller-config.ts` | pending | clean | — |
-| `src/domains/storyteller/config/tool-result-mapper.ts` | pending | clean | eslint 1 |
+| `src/domains/storyteller/config/tool-result-mapper.ts` | pending | clean | — |
 | `src/domains/storyteller/core/constants/cascade-editor.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/core/editing/CascadeEditor.ts` | pending | clean | eslint 9 |
-| `src/domains/storyteller/core/editing/DeepMerge.ts` | pending | clean | — |
-| `src/domains/storyteller/core/editing/UndoManager.ts` | pending | clean | — |
+| `src/domains/storyteller/core/editing/cascade-editor.ts` | pending | clean | — |
 | `src/domains/storyteller/core/editing/constants/undo-manager.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/core/editing/index.ts` | pending | clean | eslint 3 |
-| `src/domains/storyteller/core/entities/EntityExtractor.ts` | pending | clean | — |
-| `src/domains/storyteller/core/entities/EntityReferences.ts` | pending | clean | — |
-| `src/domains/storyteller/core/entities/ReferenceParser.ts` | pending | clean | — |
+| `src/domains/storyteller/core/editing/deep-merge.ts` | pending | clean | — |
+| `src/domains/storyteller/core/editing/index.ts` | pending | clean | — |
+| `src/domains/storyteller/core/editing/undo-manager.ts` | pending | clean | — |
 | `src/domains/storyteller/core/entities/character-wire.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/core/entities/constants/entity-extractor-defaults.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/core/entities/constants/entity-types.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/core/entities/constants/reference-parser.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/core/entities/entity-extractor.ts` | pending | clean | — |
+| `src/domains/storyteller/core/entities/entity-references.ts` | pending | clean | — |
 | `src/domains/storyteller/core/entities/entity-type-guards.ts` | pending | clean | — |
 | `src/domains/storyteller/core/entities/index.ts` | pending | clean | — |
+| `src/domains/storyteller/core/entities/reference-parser.ts` | pending | clean | — |
 | `src/domains/storyteller/core/entities/story-plan-wire.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/core/entities/world-rule-wire.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/core/formatting/ActionFormatters.ts` | pending | clean | — |
-| `src/domains/storyteller/core/formatting/StoryPlanFields.ts` | pending | clean | — |
+| `src/domains/storyteller/core/formatting/action-formatters.ts` | pending | clean | — |
 | `src/domains/storyteller/core/formatting/constants/action-display.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/core/formatting/constants/story-plan-fields.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/core/formatting/index.ts` | pending | clean | eslint 2 |
-| `src/domains/storyteller/core/index.ts` | pending | clean | eslint 5 |
+| `src/domains/storyteller/core/formatting/index.ts` | pending | clean | — |
+| `src/domains/storyteller/core/formatting/story-plan-fields.ts` | pending | clean | — |
+| `src/domains/storyteller/core/index.ts` | pending | clean | — |
+| `src/domains/storyteller/core/io/beat-image.api.ts` | pending | clean | — |
+| `src/domains/storyteller/core/io/character.api.ts` | pending | clean | — |
+| `src/domains/storyteller/core/io/chat.api.ts` | pending | clean | — |
+| `src/domains/storyteller/core/io/constants/bible-lock.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/core/io/constants/chat-route.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/core/io/constants/query-keys.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/core/io/constants/relationships-api.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/core/io/entities.api.ts` | pending | clean | — |
+| `src/domains/storyteller/core/io/mastra-runtime.ts` | pending | clean | — |
+| `src/domains/storyteller/core/io/moodboard.api.ts` | pending | clean | — |
+| `src/domains/storyteller/core/io/poster.api.ts` | pending | clean | — |
+| `src/domains/storyteller/core/io/storyteller.api.ts` | pending | clean | — |
+| `src/domains/storyteller/core/io/storyteller.dto.ts` | pending | clean | — |
+| `src/domains/storyteller/core/io/storyteller.keys.ts` | pending | clean | — |
 | `src/domains/storyteller/core/muse/__tests__/entropy.test.ts` | pending | clean | — |
 | `src/domains/storyteller/core/muse/constants/action-heuristics.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/core/muse/constants/craft-contrast.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/core/muse/constants/entropy-cards.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/core/muse/entropy.ts` | pending | clean | — |
 | `src/domains/storyteller/core/storyteller-page-wire.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/core/types/ActionTypes.ts` | pending | clean | — |
-| `src/domains/storyteller/core/types/ConsistencyTypes.ts` | pending | clean | eslint 7 |
-| `src/domains/storyteller/core/types/Enums.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/core/types/StoryPlanTypes.ts` | pending | clean | — |
-| `src/domains/storyteller/core/types/StoryTypes.ts` | pending | clean | eslint 5 |
-| `src/domains/storyteller/core/types/index.ts` | pending | clean | eslint 5 |
-| `src/domains/storyteller/core/utils/index.ts` | pending | clean | eslint 1 |
+| `src/domains/storyteller/core/types/action-types.ts` | pending | clean | — |
+| `src/domains/storyteller/core/types/consistency-types.ts` | pending | clean | — |
+| `src/domains/storyteller/core/types/enums.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/core/types/index.ts` | pending | clean | — |
+| `src/domains/storyteller/core/types/story-plan-types.ts` | pending | clean | — |
+| `src/domains/storyteller/core/types/story-types.ts` | pending | clean | — |
+| `src/domains/storyteller/core/utils/index.ts` | pending | clean | — |
 | `src/domains/storyteller/core/utils/youtube-utils.ts` | pending | clean | — |
 | `src/domains/storyteller/index.ts` | pending | clean | — |
-| `src/domains/storyteller/core/io/constants/bible-lock.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/core/io/constants/chat-route.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/core/io/constants/query-keys.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/core/io/constants/relationships-api.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/core/io/mastra-runtime.ts` | pending | clean | — |
-| `src/domains/storyteller/core/io/storyteller.api.ts` | pending | clean | — |
-| `src/domains/storyteller/core/io/storyteller.dto.ts` | pending | clean | — |
-| `src/domains/storyteller/core/io/storyteller.keys.ts` | pending | clean | — |
-| `src/domains/storyteller/prompts/GrrmSystemPrompt.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/prompts/beat-planner-prompt.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/prompts/chat-adapter-prompt.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/prompts/guardrails/anti-slop-phrases.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/prompts/schemas/agent-schemas.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/prompts/types.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/server.ts` | pending | clean | — |
-| `src/domains/storyteller/services/AccessVerificationService.ts` | pending | clean | — |
-| `src/domains/storyteller/services/BeatImageService.ts` | pending | clean | — |
-| `src/domains/storyteller/services/ConsistencyCheckAdapter.ts` | pending | clean | — |
-| `src/domains/storyteller/services/ConsistencyService.ts` | pending | clean | eslint 1 |
-| `src/domains/storyteller/services/ContextAssemblyService.ts` | pending | clean | eslint 1 |
-| `src/domains/storyteller/services/ContextualSummaryService.ts` | pending | clean | — |
-| `src/domains/storyteller/services/EntityAutoLinkerService.ts` | pending | clean | eslint 2 |
-| `src/domains/storyteller/services/EntityGraphService.ts` | pending | clean | eslint 4 |
-| `src/domains/storyteller/services/EntityLoaderService.ts` | pending | clean | eslint 1 |
-| `src/domains/storyteller/services/EntityRegistryService.ts` | pending | clean | eslint 4 |
-| `src/domains/storyteller/services/MoodboardGenerationService.ts` | pending | clean | eslint 2 |
-| `src/domains/storyteller/services/PosterGenerationService.ts` | pending | clean | eslint 4 |
-| `src/domains/storyteller/services/RagService.ts` | pending | clean | — |
-| `src/domains/storyteller/services/ReferenceValidatorService.ts` | pending | clean | eslint 1 |
-| `src/domains/storyteller/services/RelationshipEnricherService.ts` | pending | clean | — |
-| `src/domains/storyteller/services/ScriptOperationsService.ts` | pending | clean | — |
-| `src/domains/storyteller/services/ScriptReviewService.ts` | pending | clean | — |
-| `src/domains/storyteller/services/StorytellerCrudService.ts` | pending | clean | — |
+| `src/domains/storyteller/services/access-verification-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/beat-image-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/consistency-check-adapter.ts` | pending | clean | — |
+| `src/domains/storyteller/services/consistency-service.ts` | pending | clean | — |
 | `src/domains/storyteller/services/consistency-types.ts` | pending | clean | — |
 | `src/domains/storyteller/services/constants/access-verification.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/services/constants/beat-image-service.ts` | exempt | exempt | wire/schema |
@@ -635,9 +711,23 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/storyteller/services/constants/series-bible-prompt.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/services/constants/storyteller-crud-service.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/services/constants/token-budget.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/services/context/SeriesBible.ts` | pending | clean | eslint 3 |
+| `src/domains/storyteller/services/context-assembly-service.ts` | pending | clean | — |
 | `src/domains/storyteller/services/context/series-bible-from-record.ts` | pending | clean | — |
+| `src/domains/storyteller/services/context/series-bible.ts` | pending | clean | — |
 | `src/domains/storyteller/services/context/token-budget.ts` | pending | clean | — |
+| `src/domains/storyteller/services/contextual-summary-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/entity-auto-linker-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/entity-graph-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/entity-loader-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/entity-registry-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/moodboard-generation-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/poster-generation-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/rag-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/reference-validator-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/relationship-enricher-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/script-operations-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/script-review-service.ts` | pending | clean | — |
+| `src/domains/storyteller/services/storyteller-crud-service.ts` | pending | clean | — |
 | `src/domains/storyteller/state/constants/agent-trigger-prompts.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/state/constants/bible-state.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/state/constants/hydration.ts` | exempt | exempt | wire/schema |
@@ -646,28 +736,29 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/storyteller/state/constants/storyteller-actions.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/state/constants/storyteller-chat.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/state/constants/storyteller-ui-store.ts` | exempt | exempt | wire/schema |
+| `src/domains/storyteller/state/hooks/useCharacterPortraitGeneration.ts` | pending | clean | — |
 | `src/domains/storyteller/state/hooks/useLoadingStates.ts` | pending | clean | — |
-| `src/domains/storyteller/state/hooks/useStorytellerAgents.tsx` | pending | clean | eslint 2 |
-| `src/domains/storyteller/state/hooks/useStorytellerChat.ts` | pending | clean | eslint 7 |
+| `src/domains/storyteller/state/hooks/useStorytellerAgents.tsx` | pending | clean | eslint 1 |
+| `src/domains/storyteller/state/hooks/useStorytellerChat.ts` | pending | clean | — |
 | `src/domains/storyteller/state/hooks/useStorytellerEpisodeData.ts` | pending | clean | — |
-| `src/domains/storyteller/state/hooks/useStorytellerGeneration.ts` | pending | clean | eslint 2 |
+| `src/domains/storyteller/state/hooks/useStorytellerGeneration.ts` | pending | clean | — |
 | `src/domains/storyteller/state/hooks/useStorytellerHydration.ts` | pending | clean | — |
 | `src/domains/storyteller/state/hooks/useStorytellerPage.ts` | pending | clean | — |
 | `src/domains/storyteller/state/hooks/useStorytellerPageBase.ts` | pending | clean | — |
 | `src/domains/storyteller/state/hooks/useStorytellerPhase.ts` | pending | clean | — |
-| `src/domains/storyteller/state/queries/useBibleLock.ts` | pending | clean | eslint 1 |
+| `src/domains/storyteller/state/queries/useBibleLock.ts` | pending | clean | — |
 | `src/domains/storyteller/state/queries/useBibleState.ts` | pending | clean | — |
 | `src/domains/storyteller/state/queries/useEntity.ts` | pending | clean | — |
 | `src/domains/storyteller/state/queries/useEpisodeData.ts` | pending | clean | — |
-| `src/domains/storyteller/state/queries/useEpisodes.ts` | pending | clean | eslint 2 |
-| `src/domains/storyteller/state/queries/useStorytellerActions.ts` | pending | clean | eslint 1 |
+| `src/domains/storyteller/state/queries/useEpisodes.ts` | pending | clean | — |
+| `src/domains/storyteller/state/queries/useStorytellerActions.ts` | pending | clean | — |
 | `src/domains/storyteller/state/storyteller-chat-seam.ts` | pending | clean | — |
 | `src/domains/storyteller/state/storyteller-world-seam.ts` | pending | clean | eslint 1 |
 | `src/domains/storyteller/state/useStorytellerUiStore.ts` | pending | clean | — |
 | `src/domains/storyteller/state/utils/beat-card-wire.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/state/utils/episode-route.ts` | pending | clean | — |
 | `src/domains/storyteller/state/utils/merge-episode-plan.ts` | pending | clean | — |
-| `src/domains/storyteller/storyteller.config.ts` | pending | clean | eslint 1 |
+| `src/domains/storyteller/storyteller.config.ts` | pending | clean | — |
 | `src/domains/storyteller/tasks/generate-combined-storyboard.task.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/tasks/generate-episode-poster.task.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/tasks/generate-moodboard.task.ts` | exempt | exempt | wire/schema |
@@ -696,7 +787,7 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/storyteller/ui/BeatCard/BeatCard.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/BeatCard/constants/beat-card.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ui/BeatCard/index.ts` | pending | clean | — |
-| `src/domains/storyteller/ui/CharacterCreationDialog/CharacterCreationDialog.tsx` | pending | clean | eslint 5 |
+| `src/domains/storyteller/ui/CharacterCreationDialog/CharacterCreationDialog.tsx` | pending | clean | eslint 2 |
 | `src/domains/storyteller/ui/CharacterCreationDialog/constants/character-creation-dialog.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ui/CharacterCreationDialog/index.ts` | pending | clean | — |
 | `src/domains/storyteller/ui/CharacterPanel/CharacterPanel.tsx` | pending | clean | — |
@@ -704,7 +795,7 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/storyteller/ui/CharacterPanel/index.ts` | pending | clean | — |
 | `src/domains/storyteller/ui/CharacterWeb/CharacterNode.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/CharacterWeb/CharacterNodeMetrics.tsx` | pending | clean | — |
-| `src/domains/storyteller/ui/CharacterWeb/CharacterWeb.tsx` | pending | clean | eslint 6 |
+| `src/domains/storyteller/ui/CharacterWeb/CharacterWeb.tsx` | pending | clean | eslint 2 |
 | `src/domains/storyteller/ui/CharacterWeb/constants/character-node.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ui/CharacterWeb/constants/character-web.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ui/CharacterWeb/constants/relationship-web-styles.ts` | exempt | exempt | wire/schema |
@@ -771,31 +862,50 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/storyteller/ui/StorytellerLayout/StoryActionRenderer.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/StorytellerLayout/StorytellerLayout.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/StorytellerLayout/StorytellerWorkspace.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/StorytellerLayout/components/StoryActionRenderer.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/StorytellerLayout/components/StorytellerLayout.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/StorytellerLayout/components/StorytellerWorkspace.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/StorytellerLayout/components/panels/StorytellerCenterPanel.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/StorytellerLayout/components/panels/StorytellerLeftSidebar.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/StorytellerLayout/components/panels/StorytellerPageModals.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/StorytellerLayout/components/panels/StorytellerWritersRoom.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/StorytellerLayout/components/storyteller-dynamic-imports.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/StorytellerLayout/index.ts` | pending | clean | — |
 | `src/domains/storyteller/ui/StorytellerLayout/panels/StorytellerCenterPanel.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/StorytellerLayout/panels/StorytellerLeftSidebar.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/StorytellerLayout/panels/StorytellerPageModals.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/StorytellerLayout/panels/StorytellerWritersRoom.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/StorytellerLayout/storyteller-dynamic-imports.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/StorytellerLayout/utils/writers-room-chat.ts` | pending | clean | — |
 | `src/domains/storyteller/ui/StorytellerLayout/writers-room-chat.ts` | pending | clean | — |
 | `src/domains/storyteller/ui/Timeline/Timeline.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/Timeline/constants/timeline.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ui/Timeline/index.ts` | pending | clean | — |
-| `src/domains/storyteller/ui/WorldBible/BibleContext.tsx` | pending | clean | eslint 4 |
+| `src/domains/storyteller/ui/WorldBible/BibleContext.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/WorldBible/BibleEvents.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/WorldBible/BibleFactions.tsx` | pending | clean | — |
-| `src/domains/storyteller/ui/WorldBible/BibleInspirations.tsx` | pending | clean | eslint 1 |
+| `src/domains/storyteller/ui/WorldBible/BibleInspirations.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/WorldBible/BibleItems.tsx` | pending | clean | — |
-| `src/domains/storyteller/ui/WorldBible/BibleOverview.tsx` | pending | clean | eslint 1 |
-| `src/domains/storyteller/ui/WorldBible/BibleRoadmap.tsx` | pending | clean | eslint 1 |
-| `src/domains/storyteller/ui/WorldBible/BibleSoundtracks.tsx` | pending | clean | eslint 1 |
-| `src/domains/storyteller/ui/WorldBible/BibleWorldLogic.tsx` | pending | clean | eslint 1 |
+| `src/domains/storyteller/ui/WorldBible/BibleOverview.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/BibleRoadmap.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/BibleSoundtracks.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/BibleWorldLogic.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/WorldBible/SectionPendingOverlay.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/components/BibleContext.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/components/BibleEvents.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/components/BibleFactions.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/components/BibleInspirations.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/components/BibleItems.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/components/BibleOverview.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/components/BibleRoadmap.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/components/BibleSoundtracks.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/components/BibleWorldLogic.tsx` | pending | clean | — |
+| `src/domains/storyteller/ui/WorldBible/components/SectionPendingOverlay.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/WorldBible/constants/bible-context.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ui/WorldBible/constants/bible-inspirations.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ui/WorldBible/constants/bible-overview.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ui/WorldBible/constants/bible-roadmap.ts` | exempt | exempt | wire/schema |
-| `src/domains/storyteller/ui/WorldBiblePanel/WorldBiblePanel.tsx` | pending | clean | eslint 1 |
+| `src/domains/storyteller/ui/WorldBiblePanel/WorldBiblePanel.tsx` | pending | clean | — |
 | `src/domains/storyteller/ui/WorldBiblePanel/constants/world-bible-panel.ts` | exempt | exempt | wire/schema |
 | `src/domains/storyteller/ui/WorldBiblePanel/index.ts` | pending | clean | — |
 | `src/domains/storyteller/ui/WorldRuleCard/WorldRuleCard.tsx` | pending | clean | — |
@@ -811,41 +921,74 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/world-building-toolkit/constants/upscale-service.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/constants/world-query-params.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/core/constants/rle.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/core/io/constants/query-keys.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/core/io/constants/world-dto-errors.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/core/io/repaint.api.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/core/io/select-mode.api.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/core/io/settings.api.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/core/io/world-data.api.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/core/io/world-gen-trigger.api.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/core/io/world.api.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/core/io/world.dto.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/core/io/world.keys.ts` | pending | clean | — |
 | `src/domains/world-building-toolkit/core/rle.ts` | pending | clean | — |
 | `src/domains/world-building-toolkit/core/upscale-provider-wire.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/core/world-types.ts` | pending | clean | — |
 | `src/domains/world-building-toolkit/index.ts` | pending | clean | — |
-| `src/domains/world-building-toolkit/core/io/constants/query-keys.ts` | exempt | exempt | wire/schema |
-| `src/domains/world-building-toolkit/core/io/world.api.ts` | pending | clean | — |
-| `src/domains/world-building-toolkit/core/io/world.dto.ts` | pending | clean | eslint 3 |
-| `src/domains/world-building-toolkit/core/io/world.keys.ts` | pending | clean | — |
-| `src/domains/world-building-toolkit/services/WorldDataService.ts` | pending | clean | — |
-| `src/domains/world-building-toolkit/state/client-services/FidelityService.ts` | pending | clean | — |
-| `src/domains/world-building-toolkit/state/client-services/RepaintService.ts` | pending | clean | eslint 1 |
-| `src/domains/world-building-toolkit/state/client-services/SelectModeService.ts` | pending | clean | eslint 2 |
-| `src/domains/world-building-toolkit/state/client-services/TileGenerationService.ts` | pending | clean | eslint 2 |
-| `src/domains/world-building-toolkit/state/client-services/UpscaleService.ts` | pending | clean | eslint 5 |
+| `src/domains/world-building-toolkit/services/world-data-service.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/state/client-services/fidelity-service.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/state/client-services/repaint-service.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/state/client-services/select-mode-segment-api.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/state/client-services/select-mode-segment-bounds.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/state/client-services/select-mode-segment-context.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/state/client-services/select-mode-service.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/state/client-services/tile-generation-service.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/state/client-services/upscale-service.ts` | pending | clean | — |
 | `src/domains/world-building-toolkit/state/constants/world-data-store.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/state/constants/world-ui-store.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/state/hooks/useWorldGenSidebar.ts` | pending | clean | — |
 | `src/domains/world-building-toolkit/state/queries/useWorldData.ts` | pending | clean | — |
-| `src/domains/world-building-toolkit/state/useWorldStore.ts` | pending | clean | eslint 1 |
-| `src/domains/world-building-toolkit/state/useWorldUiStore.ts` | pending | clean | eslint 14 |
+| `src/domains/world-building-toolkit/state/useWorldStore.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/state/useWorldUiStore.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/state/utils/omit-record-key.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/tasks/constants/generate-tile-gemini.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/tasks/constants/generate-tile-json-guards.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/tasks/constants/generate-tile-legnext-poll.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/tasks/constants/generate-tile-legnext.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/tasks/constants/generate-tile-openai.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/tasks/constants/generate-tile-persist.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/tasks/constants/generate-tile-providers.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/tasks/constants/generate-tile-stability.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/tasks/constants/generate-tile.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/tasks/constants/upscale-gemini-wire.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/tasks/enhance-fidelity.task.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/tasks/generate-tile.task.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/tasks/select-mj-variant.task.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/tasks/upscale-tile-gemini-step.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/tasks/upscale-tile-gemini-utils.ts` | pending | clean | — |
 | `src/domains/world-building-toolkit/tasks/upscale-tile.task.ts` | exempt | exempt | wire/schema |
-| `src/domains/world-building-toolkit/ui/AssetsPanel.tsx` | pending | clean | eslint 2 |
-| `src/domains/world-building-toolkit/ui/Canvas/RepaintCanvas.tsx` | pending | clean | — |
-| `src/domains/world-building-toolkit/ui/Canvas/Tile.tsx` | pending | clean | eslint 1 |
-| `src/domains/world-building-toolkit/ui/Canvas/WorldCanvas.tsx` | pending | clean | — |
-| `src/domains/world-building-toolkit/ui/Canvas/constants/world-canvas.ts` | exempt | exempt | wire/schema |
-| `src/domains/world-building-toolkit/ui/MjVariantPicker.tsx` | pending | clean | eslint 1 |
-| `src/domains/world-building-toolkit/ui/RepaintToolbar.tsx` | pending | clean | — |
-| `src/domains/world-building-toolkit/ui/SelectModeToolbar.tsx` | pending | clean | — |
-| `src/domains/world-building-toolkit/ui/SettingsDialog.tsx` | pending | clean | — |
-| `src/domains/world-building-toolkit/ui/Sidebar/Sidebar.tsx` | pending | clean | eslint 2 |
-| `src/domains/world-building-toolkit/ui/TileReviewDialog.tsx` | pending | clean | eslint 5 |
-| `src/domains/world-building-toolkit/ui/WorldGenToolbar.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/AssetsPanel.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Canvas/RepaintCanvas.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Canvas/Tile.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Canvas/TileProgressOverlay.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Canvas/WorldCanvas.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Canvas/constants/world-canvas.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/ui/components/Canvas/tile-view-utils.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Canvas/use-tile-view-state.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/MjVariantPicker.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/RepaintToolbar.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/SelectModeToolbar.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/SettingsDialog.tsx` | pending | clean | eslint 1 |
+| `src/domains/world-building-toolkit/ui/components/Sidebar/Sidebar.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Sidebar/SidebarAdvancedSettingsSection.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Sidebar/SidebarContent.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Sidebar/SidebarFidelitySection.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Sidebar/SidebarGenerationDebugPanel.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Sidebar/SidebarGenerationSection.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Sidebar/SidebarUpscaleSection.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/Sidebar/constants/sidebar-generation-debug.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/ui/components/TileReviewDialog.tsx` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/components/WorldGenToolbar.tsx` | pending | clean | — |
 | `src/domains/world-building-toolkit/ui/constants/assets-panel.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/ui/constants/mj-variant-picker.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/ui/constants/repaint-canvas.ts` | exempt | exempt | wire/schema |
@@ -854,11 +997,14 @@ State: `.local/quality-tracker-state.json`
 | `src/domains/world-building-toolkit/ui/constants/sidebar.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/ui/constants/tile-review-dialog.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/ui/constants/tile-stage-labels.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/ui/constants/tile-view-styles.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/ui/constants/world-gen-page.ts` | exempt | exempt | wire/schema |
 | `src/domains/world-building-toolkit/ui/constants/world-gen-toolbar.ts` | exempt | exempt | wire/schema |
+| `src/domains/world-building-toolkit/ui/hooks/useTileReviewDialog.ts` | pending | clean | — |
+| `src/domains/world-building-toolkit/ui/utils/tile-review-variant.ts` | pending | clean | — |
 | `src/domains/world-building-toolkit/world-building-toolkit.config.ts` | pending | clean | — |
 | `src/mastra/index.ts` | pending | clean | — |
-| `src/mcp/agent.ts` | pending | clean | eslint 1 |
+| `src/mcp/agent.ts` | pending | clean | — |
 | `src/mcp/constants/agent.ts` | exempt | exempt | wire/schema |
 | `src/mcp/constants/auth.ts` | exempt | exempt | wire/schema |
 | `src/mcp/constants/env.ts` | exempt | exempt | wire/schema |
@@ -866,11 +1012,11 @@ State: `.local/quality-tracker-state.json`
 | `src/mcp/constants/resources.ts` | exempt | exempt | wire/schema |
 | `src/mcp/constants/server.ts` | exempt | exempt | wire/schema |
 | `src/mcp/constants/stdio.ts` | exempt | exempt | wire/schema |
-| `src/mcp/core/auth.ts` | pending | clean | eslint 2 |
+| `src/mcp/core/auth.ts` | pending | clean | — |
 | `src/mcp/core/constants/request-context.ts` | exempt | exempt | wire/schema |
-| `src/mcp/core/request-context.test.ts` | pending | clean | eslint 2 |
+| `src/mcp/core/request-context.test.ts` | pending | clean | — |
 | `src/mcp/core/request-context.ts` | pending | clean | — |
-| `src/mcp/core/types.ts` | pending | clean | eslint 1 |
+| `src/mcp/core/types.ts` | pending | clean | — |
 | `src/mcp/domains/entities/tools.ts` | exempt | exempt | wire/schema |
 | `src/mcp/domains/generation/tools.ts` | exempt | exempt | wire/schema |
 | `src/mcp/domains/storyteller/tools.ts` | exempt | exempt | wire/schema |
@@ -879,7 +1025,6 @@ State: `.local/quality-tracker-state.json`
 | `src/mcp/resources/index.ts` | pending | clean | — |
 | `src/mcp/server.ts` | pending | clean | — |
 | `src/mcp/stdio.ts` | pending | clean | — |
-| `src/shared/agent-kernel/MastraInstance.ts` | pending | clean | — |
 | `src/shared/agent-kernel/action-wire.ts` | exempt | exempt | wire/schema |
 | `src/shared/agent-kernel/agents/agent-response.ts` | pending | clean | — |
 | `src/shared/agent-kernel/constants/agent-memory.ts` | exempt | exempt | wire/schema |
@@ -892,10 +1037,11 @@ State: `.local/quality-tracker-state.json`
 | `src/shared/agent-kernel/constants/planner-tool.ts` | exempt | exempt | wire/schema |
 | `src/shared/agent-kernel/constants/runtime-registry.ts` | exempt | exempt | wire/schema |
 | `src/shared/agent-kernel/constants/skill-loader.ts` | exempt | exempt | wire/schema |
-| `src/shared/agent-kernel/context/cross-domain-context.ts` | pending | clean | eslint 1 |
+| `src/shared/agent-kernel/context/cross-domain-context.ts` | pending | clean | — |
 | `src/shared/agent-kernel/cursor-runner.ts` | pending | clean | — |
-| `src/shared/agent-kernel/executive.ts` | pending | clean | eslint 4 |
-| `src/shared/agent-kernel/index.ts` | pending | clean | eslint 2 |
+| `src/shared/agent-kernel/executive.ts` | pending | clean | — |
+| `src/shared/agent-kernel/index.ts` | pending | clean | — |
+| `src/shared/agent-kernel/mastra-instance.ts` | pending | clean | — |
 | `src/shared/agent-kernel/mastra/agents/constants/registry.ts` | exempt | exempt | wire/schema |
 | `src/shared/agent-kernel/mastra/create-mastra.ts` | pending | clean | — |
 | `src/shared/agent-kernel/mastra/index.ts` | pending | clean | — |
@@ -922,13 +1068,12 @@ State: `.local/quality-tracker-state.json`
 | `src/shared/agent-kernel/scorers/shared.ts` | pending | clean | — |
 | `src/shared/agent-kernel/scorers/stakes-cost-scorer.ts` | exempt | exempt | wire/schema |
 | `src/shared/agent-kernel/scorers/story-motion-scorer.ts` | exempt | exempt | wire/schema |
-| `src/shared/agent-kernel/search/hybrid-search.ts` | pending | clean | eslint 3 |
+| `src/shared/agent-kernel/search/hybrid-search.ts` | pending | clean | — |
 | `src/shared/agent-kernel/search/index.ts` | pending | clean | — |
 | `src/shared/agent-kernel/skills/eval-schema.ts` | exempt | exempt | wire/schema |
 | `src/shared/agent-kernel/skills/index.ts` | pending | clean | — |
 | `src/shared/agent-kernel/skills/skill-loader.ts` | pending | clean | — |
 | `src/shared/agent-kernel/workflows/constants/human-loop-workflow.ts` | exempt | exempt | wire/schema |
-| `src/shared/agent-kernel/workflows/human-loop-workflow.ts` | pending | clean | eslint 1 |
 | `src/shared/agent-kernel/workflows/schema.ts` | pending | clean | — |
 | `src/shared/agent-kernel/workspace/constants/storyteller-workspace.ts` | exempt | exempt | wire/schema |
 | `src/shared/agent-kernel/workspace/index.ts` | pending | clean | — |
@@ -948,18 +1093,19 @@ State: `.local/quality-tracker-state.json`
 | `src/shared/ai/contextAssembler.ts` | exempt | exempt | wire/schema |
 | `src/shared/ai/contextAssemblerWorker.ts` | exempt | exempt | wire/schema |
 | `src/shared/ai/embeddings/voyage-embeddings.ts` | pending | clean | — |
-| `src/shared/ai/fal.ts` | pending | clean | eslint 1 |
-| `src/shared/ai/gateway/gateway.ts` | pending | clean | eslint 1 |
+| `src/shared/ai/fal.ts` | pending | clean | — |
+| `src/shared/ai/gateway/gateway.ts` | pending | clean | — |
 | `src/shared/ai/gateway/types.ts` | pending | clean | — |
+| `src/shared/ai/gemini-response-guards.ts` | pending | clean | — |
 | `src/shared/ai/index.ts` | pending | clean | — |
-| `src/shared/ai/legnext.ts` | pending | clean | eslint 1 |
+| `src/shared/ai/legnext.ts` | pending | clean | — |
 | `src/shared/ai/meshy.ts` | pending | clean | — |
 | `src/shared/ai/rag/hybrid-search.ts` | exempt | exempt | wire/schema; eslint 1 |
 | `src/shared/ai/rag/query-expander.ts` | exempt | exempt | wire/schema |
 | `src/shared/ai/rag/reranker.ts` | exempt | exempt | wire/schema |
 | `src/shared/ai/rag/semantic-chunker.ts` | exempt | exempt | wire/schema |
 | `src/shared/ai/replicate-output.ts` | pending | clean | — |
-| `src/shared/ai/replicate.ts` | pending | clean | eslint 2 |
+| `src/shared/ai/replicate.ts` | pending | clean | — |
 | `src/shared/ai/types.ts` | pending | clean | eslint 1 |
 | `src/shared/auth/admin-users.tsx` | pending | clean | — |
 | `src/shared/auth/auth.ts` | pending | clean | — |
@@ -972,9 +1118,10 @@ State: `.local/quality-tracker-state.json`
 | `src/shared/auth/constants/security.ts` | exempt | exempt | wire/schema |
 | `src/shared/auth/constants/supabase-admin.ts` | exempt | exempt | wire/schema |
 | `src/shared/auth/index.ts` | pending | clean | — |
-| `src/shared/auth/security.ts` | pending | clean | eslint 7 |
+| `src/shared/auth/security.ts` | pending | clean | — |
 | `src/shared/auth/supabase-admin.ts` | pending | clean | — |
 | `src/shared/auth/supabase-route-client.ts` | pending | clean | — |
+| `src/shared/auth/supabase-service.ts` | pending | clean | — |
 | `src/shared/auth/useAuthStore.ts` | pending | clean | — |
 | `src/shared/auth/validation.ts` | pending | clean | — |
 | `src/shared/chat/core/constants/chat-messages.ts` | exempt | exempt | wire/schema |
@@ -988,19 +1135,19 @@ State: `.local/quality-tracker-state.json`
 | `src/shared/chat/core/mentions/types.ts` | pending | clean | — |
 | `src/shared/chat/core/protocol.ts` | pending | clean | — |
 | `src/shared/chat/core/renderers.tsx` | pending | clean | — |
-| `src/shared/chat/core/types.ts` | pending | clean | eslint 7 |
+| `src/shared/chat/core/types.ts` | pending | clean | — |
 | `src/shared/chat/index.ts` | pending | clean | — |
 | `src/shared/chat/state/constants/use-chat-stream-log.ts` | exempt | exempt | wire/schema |
-| `src/shared/chat/state/useChatStream.test.ts` | pending | clean | eslint 17 |
-| `src/shared/chat/state/useChatStream.ts` | pending | clean | eslint 5 |
+| `src/shared/chat/state/useChatStream.test.ts` | pending | clean | — |
+| `src/shared/chat/state/useChatStream.ts` | pending | clean | — |
 | `src/shared/chat/ui/AgentLog.tsx` | pending | clean | eslint 3 |
 | `src/shared/chat/ui/ChatInput.tsx` | pending | clean | — |
-| `src/shared/chat/ui/ChatInterface.tsx` | pending | clean | eslint 2 |
+| `src/shared/chat/ui/ChatInterface.tsx` | pending | clean | — |
 | `src/shared/chat/ui/CitationDisplay.tsx` | pending | clean | — |
 | `src/shared/chat/ui/MentionChip.tsx` | pending | clean | — |
 | `src/shared/chat/ui/ModelSelector.tsx` | pending | clean | — |
 | `src/shared/chat/ui/QuickActions.tsx` | pending | clean | — |
-| `src/shared/chat/ui/SectionProgress.tsx` | pending | clean | eslint 2 |
+| `src/shared/chat/ui/SectionProgress.tsx` | pending | clean | — |
 | `src/shared/chat/ui/StreamingSectionsInline.tsx` | pending | clean | — |
 | `src/shared/chat/ui/StreamingTerminal.tsx` | pending | clean | — |
 | `src/shared/chat/ui/constants/agent-log.ts` | exempt | exempt | wire/schema |
@@ -1013,9 +1160,11 @@ State: `.local/quality-tracker-state.json`
 | `src/shared/chat/ui/constants/section-progress.ts` | exempt | exempt | wire/schema |
 | `src/shared/chat/ui/constants/streaming-terminal.ts` | exempt | exempt | wire/schema |
 | `src/shared/chat/ui/index.ts` | pending | clean | — |
-| `src/shared/data/EntitiesService.ts` | pending | clean | — |
+| `src/shared/data/__tests__/url-builder.test.ts` | pending | clean | — |
 | `src/shared/data/api-utils.ts` | pending | clean | — |
+| `src/shared/data/browser-storage.ts` | pending | clean | — |
 | `src/shared/data/chat-persistence.ts` | pending | clean | — |
+| `src/shared/data/client-fetch.ts` | pending | clean | — |
 | `src/shared/data/constants/api-errors.ts` | exempt | exempt | wire/schema |
 | `src/shared/data/constants/chat-persistence.ts` | exempt | exempt | wire/schema |
 | `src/shared/data/constants/db-tables.ts` | exempt | exempt | wire/schema |
@@ -1040,12 +1189,19 @@ State: `.local/quality-tracker-state.json`
 | `src/shared/data/constants/worldPromptIdeas.ts` | exempt | exempt | wire/schema |
 | `src/shared/data/count-occurrences.ts` | pending | clean | — |
 | `src/shared/data/deep-merge.ts` | pending | clean | — |
+| `src/shared/data/entities-service.ts` | pending | clean | — |
 | `src/shared/data/fetch-cache.ts` | pending | clean | — |
+| `src/shared/data/fetch-json-record.ts` | pending | clean | — |
 | `src/shared/data/form-data-guards.ts` | pending | clean | — |
-| `src/shared/data/generation/TilesService.ts` | pending | clean | eslint 2 |
 | `src/shared/data/generation/constants/tiles-service.ts` | exempt | exempt | wire/schema |
+| `src/shared/data/generation/tiles-service.ts` | pending | clean | — |
 | `src/shared/data/index.ts` | pending | clean | — |
 | `src/shared/data/json-guards.ts` | pending | clean | — |
+| `src/shared/data/polling/__tests__/wait-for-trigger-run.test.ts` | pending | clean | — |
+| `src/shared/data/polling/trigger-run-polling.ts` | pending | clean | — |
+| `src/shared/data/polling/trigger-run-query.ts` | pending | clean | — |
+| `src/shared/data/polling/trigger-run-status-fetcher.ts` | pending | clean | — |
+| `src/shared/data/polling/wait-for-trigger-run.ts` | pending | clean | — |
 | `src/shared/data/queries/useGameEntities.ts` | pending | clean | — |
 | `src/shared/data/react-query.tsx` | pending | clean | — |
 | `src/shared/data/seedFromString.ts` | pending | clean | — |
@@ -1054,13 +1210,14 @@ State: `.local/quality-tracker-state.json`
 | `src/shared/data/server/constants/image-service.ts` | exempt | exempt | wire/schema |
 | `src/shared/data/server/image-service.ts` | pending | clean | — |
 | `src/shared/data/server/prompts.ts` | pending | clean | — |
-| `src/shared/data/storage/StorageService.ts` | pending | clean | — |
 | `src/shared/data/storage/constants/storage-service.ts` | exempt | exempt | wire/schema |
 | `src/shared/data/storage/database.types.ts` | pending | clean | — |
 | `src/shared/data/storage/index.ts` | pending | clean | — |
+| `src/shared/data/storage/storage-service.ts` | pending | clean | — |
 | `src/shared/data/storage/supabase.ts` | pending | clean | — |
 | `src/shared/data/storage/supabaseClient.ts` | pending | clean | — |
 | `src/shared/data/trace-session.ts` | pending | clean | — |
+| `src/shared/data/url-builder.ts` | pending | clean | — |
 | `src/shared/data/url.ts` | pending | clean | — |
 | `src/shared/data/useProjectFromUrl.ts` | pending | clean | eslint 1 |
 | `src/shared/data/utils.ts` | pending | clean | — |
@@ -1078,6 +1235,7 @@ State: `.local/quality-tracker-state.json`
 | `src/shared/observability/constants/trace-sanitize.ts` | exempt | exempt | wire/schema |
 | `src/shared/observability/index.ts` | pending | clean | — |
 | `src/shared/observability/observability.ts` | pending | clean | — |
+| `src/shared/three/constants/buffer-geometry-attribute.ts` | exempt | exempt | wire/schema |
 | `src/shared/tours/asset-exporter-tour.tsx` | pending | clean | — |
 | `src/shared/tours/constants/tour-positions.ts` | exempt | exempt | wire/schema |
 | `src/shared/tours/constants/tour-step-ids.ts` | exempt | exempt | wire/schema |
@@ -1095,6 +1253,12 @@ State: `.local/quality-tracker-state.json`
 | `src/shared/types/index.ts` | pending | clean | — |
 | `src/shared/types/onboarding.ts` | pending | clean | — |
 | `src/shared/types/three-jsx.d.ts` | exempt | exempt | wire/schema |
+| `src/shared/workspace/constants/asset-upload.ts` | exempt | exempt | wire/schema |
+| `src/shared/workspace/hooks/useProjectAssets.ts` | pending | clean | — |
+| `src/shared/workspace/index.ts` | pending | clean | — |
+| `src/shared/workspace/io/project-assets-api.ts` | pending | clean | — |
+| `src/shared/workspace/ui/ProjectAssetUploadZone.tsx` | pending | clean | — |
+| `src/shared/workspace/ui/ProjectAssetsPanel.tsx` | pending | clean | — |
 | `src/trigger/constants/cursor-execute.ts` | exempt | exempt | wire/schema |
 | `src/trigger/constants/legnext-upload-paint.ts` | exempt | exempt | wire/schema |
 | `src/trigger/constants/llm-logger.ts` | exempt | exempt | wire/schema |
@@ -1102,4 +1266,5 @@ State: `.local/quality-tracker-state.json`
 | `src/trigger/index.ts` | pending | clean | — |
 | `src/trigger/providers/follow-up-provider.ts` | pending | clean | — |
 | `src/trigger/providers/legnext-upload-paint.ts` | pending | clean | — |
-| `src/trigger/utils/llm-logger.ts` | pending | clean | eslint 13 |
+| `src/trigger/utils/llm-logger-extract.ts` | pending | clean | — |
+| `src/trigger/utils/llm-logger.ts` | pending | clean | — |

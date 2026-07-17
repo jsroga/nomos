@@ -65,7 +65,7 @@ export function changedTsFiles() {
       `${git.stdout ?? ''}\n${untracked.stdout ?? ''}`
         .split('\n')
         .map((f) => f.trim())
-        .filter((f) => /\.(ts|tsx)$/.test(f)),
+        .filter((f) => /\.(ts|tsx)$/.test(f) && existsSync(f)),
     ),
   ]
 }

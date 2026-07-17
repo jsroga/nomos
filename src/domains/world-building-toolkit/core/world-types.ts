@@ -1,28 +1,11 @@
 import type { WorldAsset, WorldProject, WorldTile } from './io/world.dto'
 import { readNumber, recordFromJson } from '@/shared/data/json-guards'
+import type { Tile } from '@/shared/data/world-tile'
+import type { WorkspaceProject } from '@/shared/workspace/types'
 
-/** Legacy snake_case tile shape used by existing UI code */
-export type Tile = {
-  id: string
-  project_id: string
-  x: number
-  y: number
-  tile_prompt: string | null
-  image_filename: string | null
-  created_at: string
-}
+export type { Tile } from '@/shared/data/world-tile'
 
-export type Project = {
-  id: string
-  name: string
-  user_id?: string
-  master_prompt: string
-  series_bible: Record<string, unknown>
-  story_plan: Record<string, unknown>
-  stylePreset?: string | null
-  description?: string | null
-  created_at?: string
-}
+export type Project = WorkspaceProject
 
 export type Asset = {
   id: string

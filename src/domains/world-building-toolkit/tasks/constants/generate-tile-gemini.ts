@@ -1,7 +1,6 @@
 import { logger } from '@trigger.dev/sdk/v3'
 import { GENERATION_PROMPTS } from '@/shared/data/server/prompts'
 import {
-  logLLMRequestComplete,
   logLLMRequestError,
   logLLMRequestStart,
 } from '@/trigger/utils/llm-logger'
@@ -12,7 +11,6 @@ import {
   CENTER_CROP_OFFSET,
   CONTEXT_CANVAS_SIZE,
   GEMINI_DEFAULT_MODEL,
-  GeminiFinishReason,
   TILE_CROP_SIZE,
 } from './generate-tile'
 import {
@@ -20,6 +18,7 @@ import {
   readGeminiImageData,
   type GeminiContentPart,
 } from './generate-tile-json-guards'
+import { extractGeminiImageData } from './generate-tile-gemini-response'
 
 interface GeminiInlineDataPart {
   inline_data: { mime_type: string; data: string }
@@ -145,14 +144,6 @@ async function resizeGeminiFirstTileOutput(imageData: string): Promise<string> {
   return resized.toString('base64')
 }
 
-function findGeminiImagePart(parts: GeminiContentPart[]): GeminiContentPart | undefined {
-  return parts.find(part => readGeminiImageData(part) !== undefined)
-}
-
-function findGeminiTextPart(parts: GeminiContentPart[]): GeminiContentPart | undefined {
-  return parts.find(part => typeof part.text === 'string' && part.text.length > 0)
-}
-
 async function processGeminiImagePart(
   imagePart: GeminiContentPart,
   isFirstTile: boolean,
@@ -226,81 +217,9 @@ export async function generateWithGemini(
     }
 
     const data = parseGeminiResponse(await response.json())
-    const candidate = data.candidates?.[0]
-
-    if (!candidate) {
-      logLLMRequestError({
-        provider: 'gemini',
-        model,
-        prompt: finalPrompt,
-        error: 'No candidates returned from Gemini',
-        input: payload,
-        output: data,
-      })
-      throw new Error('No candidates returned from Gemini')
-    }
-
-    if (candidate.finishReason === GeminiFinishReason.Safety) {
-      logLLMRequestError({
-        provider: 'gemini',
-        model,
-        prompt: finalPrompt,
-        error: 'Generation blocked by safety filters',
-        input: payload,
-        output: data,
-      })
-      throw new Error('Generation blocked by safety filters')
-    }
-
-    const parts = candidate.content?.parts ?? []
-    if (parts.length === 0) {
-      logLLMRequestError({
-        provider: 'gemini',
-        model,
-        prompt: finalPrompt,
-        error: 'No content parts returned',
-        input: payload,
-        output: data,
-      })
-      throw new Error('No content parts returned')
-    }
-
-    const imagePart = findGeminiImagePart(parts)
-    if (imagePart) {
-      const imageData = await processGeminiImagePart(imagePart, isFirstTile, contextImageBase64)
-      logLLMRequestComplete({
-        provider: 'gemini',
-        model,
-        prompt: finalPrompt,
-        outputImageUrls: ['[Base64 Image Data]'],
-        output: { finishReason: candidate.finishReason, hasImage: true },
-      })
-      return imageData
-    }
-
-    const textPart = findGeminiTextPart(parts)
-    if (textPart?.text) {
-      const errorMsg = `Gemini returned text instead of image: ${textPart.text.substring(0, 100)}...`
-      logLLMRequestError({
-        provider: 'gemini',
-        model,
-        prompt: finalPrompt,
-        error: errorMsg,
-        input: payload,
-        output: data,
-      })
-      throw new Error(errorMsg)
-    }
-
-    logLLMRequestError({
-      provider: 'gemini',
-      model,
-      prompt: finalPrompt,
-      error: 'No image found in Gemini response',
-      input: payload,
-      output: data,
-    })
-    throw new Error('No image found in Gemini response')
+    return extractGeminiImageData(data, { model, prompt: finalPrompt, payload }, imagePart =>
+      processGeminiImagePart(imagePart, isFirstTile, contextImageBase64)
+    )
   } catch (error) {
     if (error instanceof Error && !error.message.includes('Gemini API error')) {
       logLLMRequestError({

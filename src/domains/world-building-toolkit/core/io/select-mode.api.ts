@@ -1,5 +1,6 @@
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
-import { recordFromJson, readString } from '@/shared/data/json-guards'
+import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
+import { readString } from '@/shared/data/json-guards'
 import {
   HttpHeaderName,
   SelectModeApiRoute,
@@ -13,13 +14,12 @@ async function postSegmentation(
   body: Record<string, unknown>,
   signal: AbortSignal
 ): Promise<Record<string, unknown>> {
-  const response = await fetch(route, {
+  const data = await fetchJsonRecord(route, {
     method: HttpMethod.Post,
     headers: JSON_HEADERS,
     body: JSON.stringify(body),
     signal,
   })
-  const data = recordFromJson(await response.json().catch(() => ({})))
   const error = readString(data.error)
   if (error) {
     throw new Error(error)

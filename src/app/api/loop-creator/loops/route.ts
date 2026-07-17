@@ -2,22 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { gameLoops } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
-import { requireAuth, checkRateLimit } from '@/shared/data/api-utils'
+import { checkRateLimit, requireAuth } from '@/shared/data/api-utils'
 import { verifyGameLoopAccess, verifyProjectAccess } from '@/domains/storyteller/server'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
-  ApiRoutePath,
-  AppModuleId,
-  ContentType,
-  CrossDomainSuggestionCopy,
-  CrossDomainSuggestionType,
-  GameEntityKind,
-  GameEntityTag,
-  HttpMethod,
   HttpStatus,
   QueryParam,
 } from '@/shared/data/constants/protocol'
-import { DEFAULT_BASE_URL } from '@/shared/data/constants/url'
+import {
+  buildLoopCrossDomainSuggestions,
+  createGameLoopRecord,
+  createLoopGameEntity,
+} from './loops-post-helpers'
 
 /**
  * GET - Fetch game loops
@@ -83,7 +79,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
     }
 
-    // Rate limit: 10 loop creations per minute
     const { allowed } = checkRateLimit(`loop-create:${session.user.id}`, {
       maxRequests: 10,
       windowMs: 60000,
@@ -102,86 +97,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: API_ERROR.LOOP_PROJECT_AND_NAME_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
     }
 
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.FORBIDDEN })
-    }
+    const loopResult = await createGameLoopRecord({
+      projectId,
+      userId: session.user.id,
+      name,
+      nodes,
+      edges,
+      metadata,
+      analysis,
+    })
+    if (loopResult instanceof NextResponse) return loopResult
 
-    const [newLoop] = await db
-      .insert(gameLoops)
-      .values({
-        projectId,
-        userId: session.user.id,
-        name,
-        nodes: nodes || [],
-        edges: edges || [],
-        metadata: metadata || null,
-        analysis: analysis || null,
-      })
-      .returning()
-
-    console.log(`✅ Game loop created: ${name} (${newLoop.id})`)
-
-    // Create game entity for cross-domain visibility
-    let entityId: string | null = null
-    try {
-      const entityResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || DEFAULT_BASE_URL}${ApiRoutePath.Entities}`,
-        {
-          method: HttpMethod.Post,
-          headers: { 'Content-Type': ContentType.Json },
-          body: JSON.stringify({
-            projectId,
-            userId: session.user.id,
-            entityType: GameEntityKind.Mechanic,
-            name,
-            description: metadata?.description || `Game loop: ${name}`,
-            sourceDomain: AppModuleId.LoopCreator,
-            sourceEntityId: newLoop.id,
-            metadata: {
-              loopType: metadata?.type,
-              ...metadata,
-            },
-            tags: [metadata?.type || GameEntityTag.GameLoop].filter(Boolean),
-          }),
-        }
-      )
-
-      if (entityResponse.ok) {
-        const { entity } = await entityResponse.json()
-        entityId = entity?.id
-      }
-    } catch (error) {
-      console.error(API_LOG_PREFIX.LOOP_ENTITY_CREATE_FAILED, error)
-    }
-
-    // Generate cross-domain suggestions
-    const suggestions = [
-      {
-        id: `loop-to-story-${newLoop.id}`,
-        type: CrossDomainSuggestionType.CrossDomain,
-        title: `Write a story featuring ${name}`,
-        description: CrossDomainSuggestionCopy.LoopToStoryDescription,
-        targetDomain: AppModuleId.Storyteller,
-        targetRoute: `/${projectId}/storyteller`,
-        autoMessage: `Write a scene that demonstrates the @${name} mechanic in action. Make it feel exciting and impactful.`,
-        priority: 5,
-        entityId: entityId || newLoop.id,
-      },
-      {
-        id: `loop-to-level-${newLoop.id}`,
-        type: CrossDomainSuggestionType.CrossDomain,
-        title: `Design a level for ${name}`,
-        description: CrossDomainSuggestionCopy.LoopToLevelDescription,
-        targetDomain: AppModuleId.InteriorDesigner,
-        targetRoute: `/${projectId}/interior-design`,
-        priority: 4,
-        entityId: entityId || newLoop.id,
-      },
-    ]
+    const entityId = await createLoopGameEntity({
+      projectId,
+      userId: session.user.id,
+      name,
+      loopId: loopResult.id,
+      metadata,
+    })
 
     return NextResponse.json({
-      ...newLoop,
-      _suggestions: suggestions,
+      ...loopResult,
+      _suggestions: buildLoopCrossDomainSuggestions({
+        loopId: loopResult.id,
+        projectId,
+        name,
+        entityId,
+      }),
     })
   } catch (error) {
     console.error(API_LOG_PREFIX.FAILED_CREATE_GAME_LOOP, error)

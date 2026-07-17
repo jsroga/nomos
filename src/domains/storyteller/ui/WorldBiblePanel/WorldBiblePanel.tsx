@@ -1,13 +1,10 @@
-import { Save, Edit2, X, Lock, Unlock, Shield, Loader2, Network, BookOpen } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
-import { Button } from '@/components/Button'
-import { cn } from '@/shared/data/utils'
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-
-// Lazy load CharacterWeb since it's a heavy component
-const CharacterWeb = lazy(() => import('../CharacterWeb').then(m => ({ default: m.CharacterWeb })))
+import { WorldBiblePanelBody } from './WorldBiblePanelBody'
+import { WorldBiblePanelHeader } from './WorldBiblePanelHeader'
+import { WorldBiblePanelLoading } from './WorldBiblePanelLoading'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { browserStorage } from '@/shared/data/browser-storage'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { isCentralUser, canEditBible } from '@/shared/auth/bible-permissions'
 import {
@@ -19,7 +16,6 @@ import {
   StorytellerBibleUrlParam,
   StorytellerLogMessage,
   WorldBiblePanelProviderModel,
-  WorldBiblePanelUiCopy,
   moodboardGenOperationPrefix,
   moodboardPrimaryStorageKey,
 } from './constants/world-bible-panel'
@@ -29,48 +25,21 @@ import { fetchStorytellerProjectOptional } from '@/domains/storyteller/core/io/s
 import { recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 // CharacterCreationDialog removed - Cast is managed via CharacterPanel sidebar
 
-import { BibleOverview } from '../WorldBible/BibleOverview'
-import { BibleSoundtracks } from '../WorldBible/BibleSoundtracks'
-import { BibleInspirations } from '../WorldBible/BibleInspirations'
-import { BibleWorldLogic } from '../WorldBible/BibleWorldLogic'
-import { BibleItems } from '../WorldBible/BibleItems'
-import { BibleEvents } from '../WorldBible/BibleEvents'
-import { BibleFactions } from '../WorldBible/BibleFactions'
-// BibleCharacters (Key Players) removed - Cast is managed via CharacterPanel sidebar
-import { BibleRoadmap } from '../WorldBible/BibleRoadmap'
-import { BibleProvider, useBible } from '../WorldBible/BibleContext'
+import { BibleProvider, useBible } from '../WorldBible'
 
 // Helper to get provider config from localStorage
 const getProviderConfig = () => {
   const provider =
-    localStorage.getItem(MoodboardStorageKey.Provider) || MoodboardProvider.Midjourney
+    browserStorage.getString(MoodboardStorageKey.Provider) || MoodboardProvider.Midjourney
 
-  // Get Gemini API key (for Nano Banana)
-  const geminiConfigStr = localStorage.getItem(LocalStorageKeys.AI_CONFIG_GEMINI)
-  let geminiKey = ''
-  try {
-    if (geminiConfigStr) {
-      const parsed = JSON.parse(geminiConfigStr)
-      geminiKey = parsed.apiKey || ''
-    }
-  } catch {
-    geminiKey = geminiConfigStr || ''
-  }
-
-  // Get LegNext key (for Midjourney)
-  const legnextConfigStr = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
-  let legnextKey = ''
-  try {
-    legnextKey = legnextConfigStr ? JSON.parse(legnextConfigStr).apiKey : ''
-  } catch {
-    legnextKey = legnextConfigStr || ''
-  }
+  const geminiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_GEMINI)
+  const legnextKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
 
   if (provider === MoodboardProvider.Nanobanana) {
     return {
       provider: MoodboardProvider.Nanobanana,
       apiKey: geminiKey,
-      modelId: localStorage.getItem(MoodboardModelStorageKey) || MoodboardDefaultModelId,
+      modelId: browserStorage.getString(MoodboardModelStorageKey) || MoodboardDefaultModelId,
     }
   }
 
@@ -82,7 +51,7 @@ const getProviderConfig = () => {
   }
 }
 
-import { PendingAction } from '../WorldBible/BibleContext'
+import { PendingAction } from '../WorldBible'
 
 /** BibleProvider requires a full StoryPlan; fill required keys when given a partial. */
 const EMPTY_STORY_PLAN: StoryPlan = {
@@ -251,47 +220,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
 
   // Shimmer State - check after all hooks
   if (isLoading) {
-    return (
-      <div className="h-full flex flex-col relative animate-pulse">
-        {/* Header Shimmer */}
-        <div
-          className="bg-background/80 border-b border-border/40 h-[60px] flex items-center justify-between rounded-lg"
-          style={{
-            marginLeft: -25,
-            marginRight: -25,
-            paddingLeft: 25,
-            paddingRight: 25,
-          }}
-        >
-          <div className="h-7 w-32 bg-muted/40 rounded"></div>
-          <div className="flex gap-2">
-            <div className="h-8 w-8 bg-muted/40 rounded"></div>
-            <div className="h-8 w-16 bg-muted/40 rounded"></div>
-          </div>
-        </div>
-
-        {/* Content Shimmer */}
-        <div className="flex-1 overflow-y-auto pr-2 pt-6 space-y-8">
-          {/* Overview Section */}
-          <div className="space-y-4">
-            <div className="h-6 w-40 bg-muted/40 rounded"></div>
-            <div className="grid grid-cols-4 gap-4 h-48">
-              <div className="col-span-1 bg-muted/20 rounded-lg"></div>
-              <div className="col-span-3 bg-muted/10 rounded-lg"></div>
-            </div>
-          </div>
-          {/* Other sections */}
-          <div className="space-y-4">
-            <div className="h-6 w-32 bg-muted/40 rounded"></div>
-            <div className="h-32 bg-muted/10 rounded-lg"></div>
-          </div>
-          <div className="space-y-4">
-            <div className="h-6 w-32 bg-muted/40 rounded"></div>
-            <div className="h-32 bg-muted/10 rounded-lg"></div>
-          </div>
-        </div>
-      </div>
-    )
+    return <WorldBiblePanelLoading />
   }
 
   // Save primary image selection
@@ -300,215 +229,41 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     setPrimaryImageIndex(newIndex)
     if (typeof window !== 'undefined' && projectId) {
       if (newIndex !== null)
-        localStorage.setItem(moodboardPrimaryStorageKey(projectId), newIndex.toString())
-      else localStorage.removeItem(moodboardPrimaryStorageKey(projectId))
+        browserStorage.setString(moodboardPrimaryStorageKey(projectId), newIndex.toString())
+      else browserStorage.remove(moodboardPrimaryStorageKey(projectId))
       notifyMoodboardPrimaryChanged()
     }
   }
 
   return (
     <div className="h-full min-h-0 relative flex flex-col">
-      <div
-        className="bg-background/80 backdrop-blur-xl border-b border-border/40 h-[60px] flex items-center justify-between rounded-lg"
-        style={{
-          marginLeft: -25,
-          marginRight: -25,
-          paddingLeft: 25,
-          paddingRight: 25,
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold font-syne text-primary">{WorldBiblePanelUiCopy.StorybibleTitle}</h2>
+      <WorldBiblePanelHeader
+        activeTab={activeTab}
+        onSwitchTab={switchTab}
+        isUserCentralUser={isUserCentralUser}
+        isBibleLocked={isBibleLocked}
+        lockedBy={lockedBy}
+        lockedAt={lockedAt}
+        isLockLoading={isLockLoading}
+        onToggleLock={toggleLock}
+        effectiveReadOnly={effectiveReadOnly}
+        canUserEditBible={canUserEditBible}
+        isEditing={isEditing}
+        onStartEditing={() => setIsEditing(true)}
+        onCancelEdit={cancelEdit}
+        onSavePlan={savePlan}
+        hasOnUpdate={Boolean(onUpdate)}
+      />
 
-          {/* Tab buttons */}
-          <div className="flex gap-1 p-1 bg-muted/30 rounded-lg">
-            <button
-              onClick={() => switchTab(StorytellerBibleTab.Content)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                activeTab === StorytellerBibleTab.Content
-                  ? 'bg-primary/20 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              )}
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              {WorldBiblePanelUiCopy.ContentTab}
-            </button>
-            <button
-              onClick={() => switchTab(StorytellerBibleTab.Relationships)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                activeTab === StorytellerBibleTab.Relationships
-                  ? 'bg-purple-500/20 text-purple-400'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              )}
-            >
-              <Network className="w-3.5 h-3.5" />
-              {WorldBiblePanelUiCopy.RelationshipsTab}
-            </button>
-          </div>
-        </div>
-        <div className="flex gap-2 items-center">
-          <TooltipProvider delayDuration={100}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={isUserCentralUser ? toggleLock : undefined}
-                  disabled={isLockLoading || !isUserCentralUser}
-                  className={cn(
-                    'gap-2 h-8 border transition-colors',
-                    isBibleLocked
-                      ? 'border-amber-500/50 text-amber-500'
-                      : 'border-muted-foreground/30 text-muted-foreground',
-                    isUserCentralUser &&
-                    isBibleLocked &&
-                    'hover:bg-amber-500/10 hover:border-amber-500',
-                    isUserCentralUser &&
-                    !isBibleLocked &&
-                    'hover:bg-muted/50 hover:border-muted-foreground/50',
-                    !isUserCentralUser && 'cursor-default opacity-70'
-                  )}
-                >
-                  {isLockLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : isBibleLocked ? (
-                    <Lock className="w-4 h-4" />
-                  ) : (
-                    <Unlock className="w-4 h-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[250px]">
-                <p className="text-sm font-medium">
-                  {isBibleLocked ? '🔒 Storybible is locked' : '🔓 Storybible is unlocked'}
-                </p>
-                {isBibleLocked && lockedBy && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Locked by <span className="font-medium text-amber-400">{lockedBy}</span>
-                  </p>
-                )}
-                {isBibleLocked && lockedAt && (
-                  <p className="text-xs text-muted-foreground">
-                    {lockedAt.toLocaleDateString()} at{' '}
-                    {lockedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                )}
-                {isUserCentralUser && (
-                  <p className="text-xs text-amber-400 mt-2">
-                    Click to {isBibleLocked ? 'unlock' : 'lock'}
-                  </p>
-                )}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          {!effectiveReadOnly &&
-            onUpdate &&
-            canUserEditBible &&
-            !isEditing &&
-            activeTab === StorytellerBibleTab.Content && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-                className="gap-2 h-8 border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:border-muted-foreground/50 transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                <span className="text-xs">Edit</span>
-              </Button>
-            )}
-
-          {!effectiveReadOnly && onUpdate && canUserEditBible && isEditing && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={cancelEdit}
-                className="gap-2 h-8 border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 hover:border-muted-foreground/50 transition-colors"
-              >
-                <X className="w-4 h-4" />
-                <span className="text-xs">Cancel</span>
-              </Button>
-              <Button
-                onClick={savePlan}
-                size="sm"
-                className="gap-2 h-8 border border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500 transition-colors bg-transparent"
-              >
-                <Save className="w-4 h-4" />
-                <span className="text-xs">Save</span>
-              </Button>
-            </>
-          )}
-
-          {isBibleLocked && !canUserEditBible && !isUserCentralUser && (
-            <TooltipProvider delayDuration={100}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-muted/20 border border-amber-500/30 rounded-md cursor-help">
-                    <Shield className="w-3.5 h-3.5 text-amber-500" />
-                    <span className="text-xs text-amber-500 font-medium tracking-tight">
-                      Read Only
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs font-medium tracking-tight">
-                    🔒 Storybible is locked (Admin Only)
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-      </div>
-
-      {activeTab === StorytellerBibleTab.Content ? (
-        <div className="flex-1 min-h-0 overflow-y-auto pr-2 pt-6">
-          <div className="space-y-8 pb-20">
-            <BibleOverview
-              primaryImageIndex={primaryImageIndex}
-              onSetPrimaryImage={handleSetPrimaryImage}
-              onRefetchMoodboardData={refetchMoodboardData}
-            />
-
-            <BibleSoundtracks />
-
-            <BibleInspirations />
-
-            <BibleWorldLogic />
-
-            <BibleItems />
-
-            <BibleEvents />
-
-            <BibleFactions />
-
-            <BibleRoadmap />
-          </div>
-        </div>
-      ) : (
-        <div className="flex-1 min-h-0 overflow-hidden pt-4">
-          <Suspense
-            fallback={
-              <div className="flex-1 flex items-center justify-center h-full">
-                <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
-              </div>
-            }
-          >
-            <CharacterWeb
-              projectId={projectId || ''}
-              className="h-full"
-              focusEntityId={focusEntityId}
-              onNodeClick={(nodeId, nodeData) => {
-                console.log('Character web node clicked:', nodeId, nodeData?.name)
-                setFocusEntityId(null) // Clear focus after manual click
-              }}
-            />
-          </Suspense>
-        </div>
-      )}
+      <WorldBiblePanelBody
+        activeTab={activeTab}
+        projectId={projectId}
+        primaryImageIndex={primaryImageIndex}
+        onSetPrimaryImage={handleSetPrimaryImage}
+        onRefetchMoodboardData={refetchMoodboardData}
+        focusEntityId={focusEntityId}
+        onClearFocusEntity={() => setFocusEntityId(null)}
+      />
     </div>
   )
 }

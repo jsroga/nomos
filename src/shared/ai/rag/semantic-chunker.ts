@@ -8,7 +8,14 @@
  * - Citation-ready chunk IDs
  */
 
-import { v4 as uuidv4 } from 'uuid'
+import {
+  assignTotalChunkCounts,
+  createSingleChunk,
+  estimateTokens,
+  finalizeRemainingChunk,
+  pushSegmentChunk,
+  startNextSegmentWithOverlap,
+} from './semantic-chunker-segments'
 
 export interface ChunkConfig {
   maxChunkSize: number // Target chunk size in tokens (approximate)
@@ -52,84 +59,6 @@ const DEFAULT_CONFIG: ChunkConfig = {
   overlapSize: 50,
   minChunkSize: 100,
   preserveStructure: true,
-}
-
-// Approximate tokens per character (English text average)
-const CHARS_PER_TOKEN = 4
-
-/**
- * Estimate token count from text
- */
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / CHARS_PER_TOKEN)
-}
-
-/**
- * Extract headings from text
- */
-function extractHeadings(text: string): string[] {
-  const headings: string[] = []
-
-  // Markdown headings
-  const mdHeadings = text.match(/^#{1,6}\s+(.+)$/gm)
-  if (mdHeadings) {
-    headings.push(...mdHeadings.map(h => h.replace(/^#+\s+/, '').trim()))
-  }
-
-  // Bold text at start of line (often used as headings)
-  const boldHeadings = text.match(/^\*\*(.+?)\*\*/gm)
-  if (boldHeadings) {
-    headings.push(...boldHeadings.map(h => h.replace(/\*\*/g, '').trim()))
-  }
-
-  return [...new Set(headings)] // Deduplicate
-}
-
-/**
- * Extract named entities (characters, locations, etc.)
- */
-function extractEntities(text: string): string[] {
-  const entities: string[] = []
-
-  // Capitalized words that might be names (simple heuristic)
-  const capitalizedPattern = /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g
-  const matches = text.match(capitalizedPattern)
-
-  if (matches) {
-    // Filter out common words and keep unique
-    const commonWords = new Set([
-      'The',
-      'This',
-      'That',
-      'These',
-      'Those',
-      'There',
-      'Here',
-      'What',
-      'When',
-      'Where',
-      'Who',
-      'Why',
-      'How',
-      'And',
-      'But',
-      'Or',
-      'If',
-      'Then',
-      'So',
-      'Because',
-      'Chapter',
-      'Section',
-      'Part',
-      'Episode',
-      'Scene',
-    ])
-
-    const filtered = matches.filter(m => !commonWords.has(m) && m.length > 2)
-    entities.push(...new Set(filtered))
-  }
-
-  return entities.slice(0, 20) // Limit to 20 entities
 }
 
 /**
@@ -182,42 +111,19 @@ export class SemanticChunker {
     const config = this.getConfigForType(metadata.documentType)
     const chunks: DocumentChunk[] = []
 
-    // Handle empty or very short content
     if (!content || content.trim().length === 0) {
       return []
     }
 
     const totalTokens = estimateTokens(content)
-
-    // If content fits in one chunk, return as single chunk
     if (totalTokens <= config.maxChunkSize) {
-      return [
-        {
-          id: uuidv4(),
-          content: content.trim(),
-          metadata: {
-            ...metadata,
-            chunkIndex: 0,
-            totalChunks: 1,
-            headings: extractHeadings(content),
-            entities: extractEntities(content),
-            charStart: 0,
-            charEnd: content.length,
-            timestamp: new Date(),
-          },
-        },
-      ]
+      return createSingleChunk(content, metadata)
     }
 
-    // Split into paragraphs first if preserving structure
-    let segments: string[]
-    if (config.preserveStructure) {
-      segments = splitAtParagraphs(content)
-    } else {
-      segments = splitAtSentences(content)
-    }
+    const segments = config.preserveStructure
+      ? splitAtParagraphs(content)
+      : splitAtSentences(content)
 
-    // Build chunks from segments
     let currentChunk = ''
     let currentStart = 0
     let charPosition = 0
@@ -226,85 +132,30 @@ export class SemanticChunker {
       const segmentTokens = estimateTokens(segment)
       const currentTokens = estimateTokens(currentChunk)
 
-      // If adding this segment exceeds max size, finalize current chunk
       if (currentTokens + segmentTokens > config.maxChunkSize && currentChunk.length > 0) {
-        // Only add if meets minimum size
-        if (currentTokens >= config.minChunkSize || chunks.length === 0) {
-          chunks.push({
-            id: uuidv4(),
-            content: currentChunk.trim(),
-            metadata: {
-              ...metadata,
-              chunkIndex: chunks.length,
-              totalChunks: 0, // Will update later
-              headings: extractHeadings(currentChunk),
-              entities: extractEntities(currentChunk),
-              charStart: currentStart,
-              charEnd: charPosition,
-              timestamp: new Date(),
-            },
-          })
-        }
+        pushSegmentChunk(chunks, currentChunk, metadata, currentStart, charPosition, config.minChunkSize)
 
-        // Start new chunk with overlap
-        if (config.overlapSize > 0) {
-          // Get last N characters for overlap
-          const overlapChars = config.overlapSize * CHARS_PER_TOKEN
-          currentChunk = currentChunk.slice(-overlapChars) + '\n\n' + segment
-          currentStart = charPosition - overlapChars
-        } else {
-          currentChunk = segment
-          currentStart = charPosition
-        }
+        const next = startNextSegmentWithOverlap(currentChunk, segment, config, charPosition)
+        currentChunk = next.nextChunk
+        currentStart = next.nextStart
+      } else if (currentChunk.length > 0) {
+        currentChunk += '\n\n' + segment
       } else {
-        // Add segment to current chunk
-        if (currentChunk.length > 0) {
-          currentChunk += '\n\n' + segment
-        } else {
-          currentChunk = segment
-        }
+        currentChunk = segment
       }
 
-      charPosition += segment.length + 2 // +2 for \n\n
+      charPosition += segment.length + 2
     }
 
-    // Add final chunk
-    if (currentChunk.trim().length > 0) {
-      const currentTokens = estimateTokens(currentChunk)
-      if (currentTokens >= config.minChunkSize || chunks.length === 0) {
-        chunks.push({
-          id: uuidv4(),
-          content: currentChunk.trim(),
-          metadata: {
-            ...metadata,
-            chunkIndex: chunks.length,
-            totalChunks: 0,
-            headings: extractHeadings(currentChunk),
-            entities: extractEntities(currentChunk),
-            charStart: currentStart,
-            charEnd: content.length,
-            timestamp: new Date(),
-          },
-        })
-      } else if (chunks.length > 0) {
-        // Merge with previous chunk if too small
-        const lastChunk = chunks[chunks.length - 1]
-        lastChunk.content += '\n\n' + currentChunk.trim()
-        lastChunk.metadata.charEnd = content.length
-        lastChunk.metadata.headings = [
-          ...lastChunk.metadata.headings,
-          ...extractHeadings(currentChunk),
-        ]
-        lastChunk.metadata.entities = [
-          ...new Set([...lastChunk.metadata.entities, ...extractEntities(currentChunk)]),
-        ]
-      }
-    }
-
-    // Update total chunks count
-    for (const chunk of chunks) {
-      chunk.metadata.totalChunks = chunks.length
-    }
+    finalizeRemainingChunk(
+      chunks,
+      currentChunk,
+      metadata,
+      currentStart,
+      content.length,
+      config.minChunkSize
+    )
+    assignTotalChunkCounts(chunks)
 
     return chunks
   }

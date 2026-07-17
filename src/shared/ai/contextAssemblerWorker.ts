@@ -11,6 +11,9 @@
  *       | { id, error }                            (failure)
  */
 
+import { resolveContextFramingStrategy } from './contextAssembler-framing-strategy'
+import { buildEditableRegionMask } from './contextAssembler-mask'
+
 interface NeighborUrls {
   up?: string
   down?: string
@@ -41,8 +44,6 @@ interface WorkerInput {
 }
 
 const CANVAS_2D_UNAVAILABLE = 'Failed to acquire 2D canvas context'
-const NEUTRAL_FILL_RGB = { r: 128, g: 128, b: 128 }
-const NEUTRAL_FILL_TOLERANCE = 2
 
 interface WorkerOutputSuccess {
   id: number
@@ -119,25 +120,7 @@ async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
     left: !!bitmaps.left,
     right: !!bitmaps.right,
   }
-  const hasHorizontal = directNeighbors.left || directNeighbors.right
-  const hasVertical = directNeighbors.up || directNeighbors.down
-  const strategy =
-    variant === 'smartSeamContext' && hasHorizontal && !hasVertical
-      ? {
-          mode: 'horizontal_priority' as const,
-          weightedNeighbors: (['left', 'right'] as const).filter(key => directNeighbors[key]),
-        }
-      : variant === 'smartSeamContext' && hasVertical && !hasHorizontal
-        ? {
-            mode: 'vertical_priority' as const,
-            weightedNeighbors: (['up', 'down'] as const).filter(key => directNeighbors[key]),
-          }
-        : {
-            mode: 'balanced' as const,
-            weightedNeighbors: (['up', 'down', 'left', 'right'] as const).filter(
-              key => directNeighbors[key]
-            ),
-          }
+  const strategy = resolveContextFramingStrategy(variant, directNeighbors)
 
   // ------------------------------------------------------------------
   // Image canvas
@@ -261,39 +244,7 @@ async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
   ctx.fillRect(TARGET_X, TARGET_Y, TILE_SIZE, TILE_SIZE)
 
   const imageBlob = await canvas.convertToBlob({ type: 'image/png' })
-
-  // ------------------------------------------------------------------
-  // Mask canvas
-  // ------------------------------------------------------------------
-  const maskCanvas = new OffscreenCanvas(size, size)
-  const maskCtx = maskCanvas.getContext('2d')
-  if (!maskCtx) throw new Error(CANVAS_2D_UNAVAILABLE)
-  const imageData = ctx.getImageData(0, 0, size, size)
-  const maskImageData = maskCtx.createImageData(size, size)
-  const source = imageData.data
-  const target = maskImageData.data
-
-  for (let i = 0; i < source.length; i += 4) {
-    const r = source[i]
-    const g = source[i + 1]
-    const b = source[i + 2]
-    const a = source[i + 3]
-    const isNeutralEditableRegion =
-      a > 0 &&
-      Math.abs(r - NEUTRAL_FILL_RGB.r) <= NEUTRAL_FILL_TOLERANCE &&
-      Math.abs(g - NEUTRAL_FILL_RGB.g) <= NEUTRAL_FILL_TOLERANCE &&
-      Math.abs(b - NEUTRAL_FILL_RGB.b) <= NEUTRAL_FILL_TOLERANCE
-
-    const value = isNeutralEditableRegion ? 255 : 0
-    target[i] = value
-    target[i + 1] = value
-    target[i + 2] = value
-    target[i + 3] = 255
-  }
-
-  maskCtx.putImageData(maskImageData, 0, 0)
-
-  const maskBlob = await maskCanvas.convertToBlob({ type: 'image/png' })
+  const maskBlob = await buildEditableRegionMask(canvas, size)
 
   // Free ImageBitmap memory
   Object.values(bitmaps).forEach(bmp => bmp?.close())

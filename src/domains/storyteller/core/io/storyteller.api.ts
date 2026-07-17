@@ -285,8 +285,8 @@ export async function saveStorytellerBible(input: {
   }
 }
 
+import { fetchWorldGenSummary } from '@/shared/data/io/world-summary.api'
+
 export async function fetchStorytellerWorldSummary(projectId: string): Promise<Record<string, unknown>> {
-  return recordFromJson(
-    await fetchJson(buildUrl('/api/storyteller/world-summary', { [QueryParam.ProjectId]: projectId }))
-  )
+  return fetchWorldGenSummary(projectId)
 }

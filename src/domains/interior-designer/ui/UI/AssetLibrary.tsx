@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useInteriorStore } from '@/domains/interior-designer'
-import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
+import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { ProjectAssetUploadZone, ProjectAssetsPanel } from '@/shared/workspace'
 import { Box, Circle, Cylinder, Cone, LayoutGrid, DoorOpen } from 'lucide-react'
 import { cn } from '@/shared/data/utils'

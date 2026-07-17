@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useCallback, useRef } from 'react'
-import { ActionHistoryStatus, ActionType } from '@/domains/storyteller'
+import { ActionHistoryStatus, ActionType } from '@/domains/storyteller/core/types/enums'
 import type { BeatCard as Beat } from '@/domains/storyteller/core/types/story-types'
 import { resolveEpisodeId } from '@/domains/storyteller/state/utils/episode-route'
+import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import { readString, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { browserStorage } from '@/shared/data/browser-storage'
 import { UrlScheme } from '@/shared/data/constants/protocol'
-import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   StorytellerGenerationAgentName,
@@ -57,7 +59,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       const projectId = currentProject.id
       lastResumedProjectId.current = projectId
 
-      import('@/domains/storyteller').then(({ posterGenerationService }) =>
+      import('@/domains/storyteller/services/poster-generation-service').then(({ posterGenerationService }) =>
         posterGenerationService.resumePendingGenerations(
           projectId,
           async (url, episodeId, type) => {
@@ -84,7 +86,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
         )
       )
     }
-  }, [currentProject?.id, currentEpisodeId])
+  }, [currentProject?.id, currentEpisodeId, setIsGeneratingPoster, setIsGeneratingStoryboard, setStoryPlan])
 
   // Storyboard Trigger (Gemini)
   const handleStoryboardTrigger = useCallback(
@@ -97,12 +99,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
 
       setIsGeneratingStoryboard(true)
 
-      // Read Gemini API key from localStorage (legacy client-side config)
-      let geminiApiKey: string | undefined
-      try {
-        const geminiConfig = localStorage.getItem(LocalStorageKeys.AI_CONFIG_GEMINI)
-        if (geminiConfig) geminiApiKey = JSON.parse(geminiConfig).apiKey
-      } catch { /* ignore */ }
+      const geminiApiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_GEMINI) || undefined
 
       if (!geminiApiKey) {
         alert(StorytellerGenerationAlert.GeminiApiKeyMissing)
@@ -120,7 +117,9 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
           imagePrompt: b.imagePrompt,
         }))
 
-        const { posterGenerationService } = await import('@/domains/storyteller')
+        const { posterGenerationService } = await import(
+          '@/domains/storyteller/services/poster-generation-service'
+        )
         await posterGenerationService.generateStoryboard(
           currentProject.id,
           episodeId,
@@ -147,7 +146,15 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
         setIsGeneratingStoryboard(false)
       }
     },
-    [currentProject?.id, currentEpisodeId, isGeneratingStoryboard, beats, storyPlan]
+    [
+      currentProject?.id,
+      currentEpisodeId,
+      isGeneratingStoryboard,
+      beats,
+      storyPlan,
+      setIsGeneratingStoryboard,
+      setStoryPlan,
+    ]
   )
 
   // Poster Trigger (Midjourney via Comet)
@@ -161,19 +168,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
 
       setIsGeneratingPoster(true)
 
-      // Retrieve LegNext API key from local storage
-      let apiKey = ''
-      try {
-        if (typeof window !== 'undefined') {
-          const stored = localStorage.getItem(LocalStorageKeys.AI_CONFIG_LEGNEXT)
-          if (stored) {
-            const parsed = JSON.parse(stored)
-            apiKey = parsed.apiKey || ''
-          }
-        }
-      } catch (e) {
-        console.warn(StorytellerGenerationLog.LegNextConfigParseFailed, e)
-      }
+      const apiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
 
       try {
         const premise = recordFromJson(recordFromJson(storyPlan).premise)
@@ -191,7 +186,9 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
           ...prev,
         ])
 
-        const { posterGenerationService: posterSvc } = await import('@/domains/storyteller')
+        const { posterGenerationService: posterSvc } = await import(
+          '@/domains/storyteller/services/poster-generation-service'
+        )
         await posterSvc.generatePoster(
           currentProject.id,
           episodeId,
@@ -245,7 +242,15 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
         ])
       }
     },
-    [currentProject?.id, currentEpisodeId, isGeneratingPoster, storyPlan]
+    [
+      currentProject?.id,
+      currentEpisodeId,
+      isGeneratingPoster,
+      storyPlan,
+      setActionHistory,
+      setIsGeneratingPoster,
+      setStoryPlan,
+    ]
   )
 
   // Moodboard Generation Trigger
@@ -255,25 +260,28 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
 
       if (!projectId) return
 
-      const { moodboardGenerationService } = await import('@/domains/storyteller')
+      const { moodboardGenerationService } = await import(
+        '@/domains/storyteller/services/moodboard-generation-service'
+      )
       await moodboardGenerationService.generate(projectId, [], undefined, {}, async () => {
         // Refetch project data when generation completes
         try {
           const data = await fetchStorytellerProjectOptional(projectId)
           if (data) {
-            const bible = recordFromJson(data.seriesBible ?? data.series_bible)
-            if (Array.isArray(bible.moodImages)) {
+            const bible = parseSeriesBibleRecord(data.seriesBible ?? data.series_bible)
+            const moodImages = stringArrayFromJson(bible.moodImages)
+            if (moodImages.length > 0) {
               setStoryPlan(prev =>
-                prev ? { ...prev, moodImages: stringArrayFromJson(bible.moodImages) } : prev
+                prev ? { ...prev, moodImages } : prev
               )
               // Also update the store - get fresh reference from store
-              const latestProject = useWorldStore.getState().currentProject
+              const latestProject = useWorkspaceProjectStore.getState().currentProject
               if (latestProject) {
-                useWorldStore.getState().setCurrentProject({
+                useWorkspaceProjectStore.getState().setCurrentProject({
                   ...latestProject,
                   series_bible: {
-                    ...(latestProject.series_bible ?? {}),
-                    moodImages: bible.moodImages,
+                    ...parseSeriesBibleRecord(latestProject.series_bible),
+                    moodImages,
                   },
                 })
               }
@@ -284,13 +292,13 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
         }
       })
     },
-    [currentProject?.id]
+    [currentProject?.id, setStoryPlan]
   )
 
   // Update primary moodboard background
   const updatePrimaryMoodboard = useCallback(() => {
     if (!currentProject?.id) return
-    const savedPrimary = localStorage.getItem(moodboardPrimaryStorageKey(currentProject.id))
+    const savedPrimary = browserStorage.getString(moodboardPrimaryStorageKey(currentProject.id))
     const primaryIdx = savedPrimary !== null ? parseInt(savedPrimary) : null
     if (primaryIdx !== null && storyPlan?.moodImages?.[primaryIdx]) {
       const img = storyPlan.moodImages[primaryIdx]
@@ -357,10 +365,11 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       try {
         const data = await fetchStorytellerProjectOptional(detail.projectId)
         if (data) {
-          const bible = recordFromJson(data.seriesBible ?? data.series_bible)
-          if (Array.isArray(bible.moodImages)) {
+          const bible = parseSeriesBibleRecord(data.seriesBible ?? data.series_bible)
+          const moodImages = stringArrayFromJson(bible.moodImages)
+          if (moodImages.length > 0) {
             setStoryPlan(prev =>
-              prev ? { ...prev, moodImages: stringArrayFromJson(bible.moodImages) } : prev
+              prev ? { ...prev, moodImages } : prev
             )
           }
         }

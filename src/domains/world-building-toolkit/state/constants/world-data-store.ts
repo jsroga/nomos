@@ -41,6 +41,8 @@ export enum WorldDataStoreLog {
 export enum WorldDataStoreError {
   FailedToSaveImage = 'Failed to save image',
   FailedToAcceptUpscale = 'Failed to accept upscale',
+  InvalidDataUrl = 'Invalid data URL',
+  FileReaderError = 'FileReader error',
 }
 
 export enum WorldDataApiRoute {

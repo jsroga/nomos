@@ -1,10 +1,6 @@
 import React, { useState } from 'react'
-import { Trash2, Edit2, Check, X, GripVertical, Sparkles, ImageIcon } from 'lucide-react'
-import { Button } from '@/components/Button'
+import { GripVertical } from 'lucide-react'
 import { Textarea } from '@/components/Textarea'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
-import { Skeleton } from '@/components/Skeleton'
-import { cn } from '@/shared/data/utils'
 import {
   BEAT_STATUS_BADGE_CLASS,
   BEAT_STATUS_DEFAULT_BADGE,
@@ -14,15 +10,16 @@ import {
   isBeatCardStatus,
   isBeatCardType,
 } from './constants/beat-card'
+import { BeatCardActions } from './BeatCardActions'
+import { BeatCardImageSection } from './BeatCardImageSection'
 
 interface Beat {
   id: string
   logline: string
-  type?: string // Optional - use beatType if type not present
+  type?: string
   sequence: number
   content?: string
   beatType?: string
-  // Union matches core StoryTypes.BeatCard so CorkBoard's handler is assignable
   status?: 'proposed' | 'approved' | 'rejected'
   imageUrl?: string
   imagePrompt?: string
@@ -40,6 +37,20 @@ interface BeatCardProps {
   projectId: string
 }
 
+const getTypeColor = (type: string) => {
+  if (isBeatCardType(type)) {
+    return BEAT_TYPE_BORDER_CLASS[type]
+  }
+  return BEAT_TYPE_BORDER_CLASS[BeatCardType.Default]
+}
+
+const getStatusBadge = (status?: string) => {
+  if (status && isBeatCardStatus(status)) {
+    return BEAT_STATUS_BADGE_CLASS[status]
+  }
+  return BEAT_STATUS_DEFAULT_BADGE
+}
+
 export const BeatCard: React.FC<BeatCardProps> = ({
   beat,
   onUpdate,
@@ -55,38 +66,26 @@ export const BeatCard: React.FC<BeatCardProps> = ({
   const [editState, setEditState] = useState(beat)
   const [isGenerating, setIsGenerating] = useState<BeatGenerationMode | null>(null)
 
-  const handleGenerateContent = () => {
-    if (!onSendMessage) return
-    setIsGenerating(BeatGenerationMode.Content)
-    const message = `Write detailed scene content for beat #${beat.sequence} "${beat.logline}". Include visual descriptions, dialogue, and subtext. Beat type: ${beat.beatType || beat.type}.`
-    onSendMessage(message)
-    // Reset after a short delay (chat will handle actual completion)
-    setTimeout(() => setIsGenerating(null), 2000)
-  }
-
-  const handleGenerateImage = () => {
-    if (!onSendMessage) return
-    setIsGenerating(BeatGenerationMode.Image)
-    const message = `Generate a storyboard image for beat #${beat.sequence} "${beat.logline}". Create a cinematic visual that captures the mood and action.`
-    onSendMessage(message)
-    setTimeout(() => setIsGenerating(null), 2000)
-  }
-
   const beatType = beat.beatType || beat.type || BeatCardType.Default
 
-  const getTypeColor = (type: string) => {
-    if (isBeatCardType(type)) {
-      return BEAT_TYPE_BORDER_CLASS[type]
-    }
-    return BEAT_TYPE_BORDER_CLASS[BeatCardType.Default]
+  const triggerGeneration = (mode: BeatGenerationMode, message: string) => {
+    if (!onSendMessage) return
+    setIsGenerating(mode)
+    onSendMessage(message)
+    setTimeout(() => setIsGenerating(null), 2000)
   }
 
-  const getStatusBadge = (status?: string) => {
-    if (status && isBeatCardStatus(status)) {
-      return BEAT_STATUS_BADGE_CLASS[status]
-    }
-    return BEAT_STATUS_DEFAULT_BADGE
-  }
+  const handleGenerateContent = () =>
+    triggerGeneration(
+      BeatGenerationMode.Content,
+      `Write detailed scene content for beat #${beat.sequence} "${beat.logline}". Include visual descriptions, dialogue, and subtext. Beat type: ${beat.beatType || beat.type}.`
+    )
+
+  const handleGenerateImage = () =>
+    triggerGeneration(
+      BeatGenerationMode.Image,
+      `Generate a storyboard image for beat #${beat.sequence} "${beat.logline}". Create a cinematic visual that captures the mood and action.`
+    )
 
   const handleSave = () => {
     onUpdate(beat.id, {
@@ -158,136 +157,30 @@ export const BeatCard: React.FC<BeatCardProps> = ({
         </p>
       )}
 
-      {(beat.imageUrl || beat.imagePrompt) && !isEditing && (
-        <div
-          className="mt-3 w-full aspect-video rounded-md overflow-hidden border border-border relative group/image cursor-zoom-in"
-          onClick={() => beat.imageUrl && onExpand?.(beat.id)}
-        >
-          {beat.imageUrl ? (
-            <img
-              src={`/projects/${projectId}/${beat.imageUrl}`}
-              alt={beat.imagePrompt || 'Beat storyboard'}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover/image:scale-[1.02]"
-            />
-          ) : (
-            <div className="w-full h-full relative">
-              <Skeleton className="w-full h-full absolute inset-0 rounded-none" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="font-mono text-[10px] text-muted-foreground animate-pulse">
-                  Generating…
-                </span>
-              </div>
-            </div>
-          )}
-          {beat.imagePrompt && beat.imageUrl && (
-            <div className="absolute inset-0 bg-black/80 p-2 font-mono text-[10px] text-white opacity-0 group-hover/image:opacity-100 transition-opacity overflow-y-auto">
-              {beat.imagePrompt}
-            </div>
-          )}
-        </div>
+      {!isEditing && (
+        <BeatCardImageSection
+          imageUrl={beat.imageUrl}
+          imagePrompt={beat.imagePrompt}
+          projectId={projectId}
+          beatId={beat.id}
+          onExpand={onExpand}
+        />
       )}
 
       <div className="mt-3 flex justify-between items-center pt-3 border-t border-border">
         <div className="flex gap-1" aria-hidden>
           <div className="w-4 h-4 rounded-md bg-muted border border-border" />
         </div>
-        <div className={cn('flex gap-0.5', !isEditing && 'opacity-70 group-hover:opacity-100 transition-opacity')}>
-          {isEditing ? (
-            <>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 rounded-md text-emerald-400 hover:bg-emerald-500/10"
-                onClick={handleSave}
-              >
-                <Check size={12} />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:bg-muted"
-                onClick={() => setIsEditing(false)}
-              >
-                <X size={12} />
-              </Button>
-            </>
-          ) : (
-            <TooltipProvider delayDuration={200}>
-              {onSendMessage && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className={cn(
-                        'h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10',
-                        isGenerating === BeatGenerationMode.Content && 'animate-pulse text-primary'
-                      )}
-                      onClick={handleGenerateContent}
-                      disabled={isGenerating !== null}
-                    >
-                      <Sparkles size={12} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs rounded-md">
-                    Generate scene content
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              {onSendMessage && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className={cn(
-                        'h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-cyan-400 hover:bg-cyan-500/10',
-                        isGenerating === BeatGenerationMode.Image && 'animate-pulse text-cyan-400'
-                      )}
-                      onClick={handleGenerateImage}
-                      disabled={isGenerating !== null}
-                    >
-                      <ImageIcon size={12} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs rounded-md">
-                    Generate storyboard image
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    <Edit2 size={12} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs rounded-md">
-                  Edit beat
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => onDelete(beat.id)}
-                  >
-                    <Trash2 size={12} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs rounded-md">
-                  Delete beat
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
+        <BeatCardActions
+          isEditing={isEditing}
+          isGenerating={isGenerating}
+          onSave={handleSave}
+          onCancelEdit={() => setIsEditing(false)}
+          onStartEdit={() => setIsEditing(true)}
+          onDelete={() => onDelete(beat.id)}
+          onGenerateContent={onSendMessage ? handleGenerateContent : undefined}
+          onGenerateImage={onSendMessage ? handleGenerateImage : undefined}
+        />
       </div>
     </div>
   )

@@ -1,22 +1,14 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { fetchJson, fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
 import type { TriggerRunStatusPayload } from '@/shared/data/polling/wait-for-trigger-run'
 
 const MOODBOARD_TRIGGER_ROUTE = '/api/storyteller/moodboard/trigger'
 const MOODBOARD_STATUS_ROUTE = '/api/storyteller/moodboard/status'
+const SETTINGS_PROVIDERS_ENDPOINT = '/api/settings/providers'
 
 const JSON_HEADERS = { 'Content-Type': ContentType.Json }
-
-async function fetchJson(input: RequestInfo | URL, init?: RequestInit): Promise<unknown> {
-  const response = await fetch(input, init)
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`)
-  }
-
-  return response.json()
-}
 
 export async function triggerMoodboardGeneration(input: {
   projectId: string
@@ -48,4 +40,10 @@ export async function fetchMoodboardRunStatus(
     error: data.error,
     metadata: recordFromJson(data.metadata),
   }
+}
+
+export async function fetchLegnextServerConfigured(): Promise<boolean> {
+  const data = await fetchJsonRecord(SETTINGS_PROVIDERS_ENDPOINT)
+  const providers = recordFromJson(data.providers)
+  return providers.legnext === true
 }

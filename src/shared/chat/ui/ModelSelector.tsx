@@ -23,8 +23,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/DropdownMenu'
 import { cn } from '@/shared/data/utils'
+import { fetchProviderStatus } from '../core/io/chat-ui.api'
 
-const PROVIDERS_ENDPOINT = '/api/settings/providers'
 const LOG_PROVIDER_STATUS_FAILED = '[ModelSelector] failed to load provider status:'
 
 /** Structural picker-item shape — tenants map their catalogs onto this. */
@@ -61,8 +61,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
 
   React.useEffect(() => {
     let cancelled = false
-    fetch(PROVIDERS_ENDPOINT)
-      .then(res => res.json())
+    fetchProviderStatus()
       .then((data: ProvidersResponse) => {
         if (!cancelled) setProviders(data.providers ?? {})
       })

@@ -1,9 +1,28 @@
 import { Agent } from '@mastra/core/agent'
 import { createTool } from '@mastra/core/tools'
 import type { DynamicStructuredTool } from '@langchain/core/tools'
+import {
+  MARKET_ANALYSIS_NO_STRUCTURED_REPORT,
+  MarketAnalysisStreamEvent,
+} from '@/domains/loop-creator/constants/market-analysis'
+import {
+  MarketAnalysisFailurePrefix,
+  MarketAnalysisProgressMessage,
+  MarketAnalysisUserPromptPart,
+  MarketAnalystAgentId,
+  MarketAnalystAgentName,
+  MarketAnalystModel,
+  MARKET_ANALYST_AGENT_INSTRUCTIONS,
+  MarketAnalystPromptPlaceholder,
+  MastraMessageRole,
+  MarketAnalysisErrorMessage,
+} from '../../constants/market-analyst-agent-wire'
 import { LoopAnalysisInput, MarketAnalysisReport } from './types'
-import { marketAnalysisReportFromJson } from './market-analysis-wire'
 import { MARKET_ANALYST_SYSTEM_PROMPT, buildLoopContext, SCORING_CRITERIA_PLACEHOLDER } from './prompts'
+import {
+  extractReportFromAgentMessages,
+  extractReportFromText,
+} from './market-analysis-run'
 import { marketAnalystTools } from './tools-registry'
 
 function langChainToolToMastra(tool: DynamicStructuredTool) {
@@ -27,13 +46,46 @@ export function createMarketAnalystAgent() {
   )
 
   return new Agent({
-    id: 'market-analyst',
-    name: 'Market Analyst',
-    instructions:
-      'Perform comprehensive market research on game loops. Use tools to gather data, score archetypes, and produce a structured report.',
-    model: 'openai/gpt-4o',
+    id: MarketAnalystAgentId.Id,
+    name: MarketAnalystAgentName.Name,
+    instructions: MARKET_ANALYST_AGENT_INSTRUCTIONS,
+    model: MarketAnalystModel.Default,
     tools,
   })
+}
+
+function buildMarketAnalysisPrompt(input: LoopAnalysisInput): string {
+  const loopContext = buildLoopContext({
+    mechanics: input.mechanics,
+    connections: input.connections,
+    loops: input.loops,
+    gameGenre: input.gameGenre,
+    gamePlatform: input.gamePlatform,
+    targetAudience: input.targetAudience,
+    gameDescription: input.gameDescription,
+  })
+
+  return MARKET_ANALYST_SYSTEM_PROMPT.replace(
+    MarketAnalystPromptPlaceholder.ScoringCriteria,
+    SCORING_CRITERIA_PLACEHOLDER,
+  ).replace(MarketAnalystPromptPlaceholder.LoopContext, loopContext)
+}
+
+function buildMarketAnalysisUserMessage(input: LoopAnalysisInput): string {
+  return (
+    MarketAnalysisUserPromptPart.Intro +
+    `The genre is "${input.gameGenre}", platform is "${input.gamePlatform}", ` +
+    `and target audience is "${input.targetAudience}". ` +
+    MarketAnalysisUserPromptPart.ToolsSuffix
+  )
+}
+
+function collectAssistantMessages(
+  agentMessages: Array<{ role: string; content: unknown }>,
+): string[] {
+  return agentMessages
+    .filter(msg => msg.role === MastraMessageRole.Assistant)
+    .map(msg => (typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)))
 }
 
 /**
@@ -50,78 +102,36 @@ export async function runMarketAnalysis(
   const messages: string[] = []
 
   try {
-    onProgress?.('Starting market analysis...')
-    messages.push('Starting market analysis')
-
-    const loopContext = buildLoopContext({
-      mechanics: input.mechanics,
-      connections: input.connections,
-      loops: input.loops,
-      gameGenre: input.gameGenre,
-      gamePlatform: input.gamePlatform,
-      targetAudience: input.targetAudience,
-      gameDescription: input.gameDescription,
-    })
-
-    const systemPrompt = MARKET_ANALYST_SYSTEM_PROMPT.replace(
-      '{{SCORING_CRITERIA}}',
-      SCORING_CRITERIA_PLACEHOLDER,
-    ).replace('{{LOOP_CONTEXT}}', loopContext)
+    onProgress?.(MarketAnalysisProgressMessage.StartingUi)
+    messages.push(MarketAnalysisProgressMessage.StartingLog)
 
     const agent = createMarketAnalystAgent()
-
-    onProgress?.('Researching market data...')
+    onProgress?.(MarketAnalysisProgressMessage.Researching)
 
     const result = await agent.generate(
       [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content:
-            'Conduct a comprehensive market analysis for this game loop design. ' +
-            `The genre is "${input.gameGenre}", platform is "${input.gamePlatform}", ` +
-            `and target audience is "${input.targetAudience}". ` +
-            'Use all available tools to gather data, then generate a complete report.',
-        },
+        { role: MastraMessageRole.System, content: buildMarketAnalysisPrompt(input) },
+        { role: MastraMessageRole.User, content: buildMarketAnalysisUserMessage(input) },
       ],
       { maxSteps: 25 },
     )
 
     const agentMessages = result.response?.messages || []
-    let report: MarketAnalysisReport | null = null
+    messages.push(...collectAssistantMessages(agentMessages))
 
-    for (const msg of agentMessages) {
-      if (msg.role !== 'assistant') continue
-      const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
-      messages.push(content)
+    const report =
+      extractReportFromAgentMessages(agentMessages) ?? extractReportFromText(result.text)
 
-      const reportMatch = content.match(/```json\s*([\s\S]*?)\s*```/)
-      if (reportMatch) {
-        try {
-          report = marketAnalysisReportFromJson(reportMatch[1])
-        } catch {
-          /* try next message */
-        }
-      }
-    }
-
-    if (!report && result.text) {
-      const reportMatch = result.text.match(/```json\s*([\s\S]*?)\s*```/)
-      if (reportMatch) {
-        try {
-          report = marketAnalysisReportFromJson(reportMatch[1])
-        } catch {
-          /* no structured report */
-        }
-      }
-    }
-
-    onProgress?.(report ? 'Market analysis complete.' : 'Analysis finished without structured report.')
+    onProgress?.(
+      report
+        ? MarketAnalysisProgressMessage.Complete
+        : MarketAnalysisProgressMessage.NoStructuredReport,
+    )
 
     return { report, messages }
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-    onProgress?.(`Analysis failed: ${errorMsg}`)
+    const errorMsg = error instanceof Error ? error.message : MarketAnalysisErrorMessage.Unknown
+    onProgress?.(`${MarketAnalysisFailurePrefix.AnalysisFailed}${errorMsg}`)
     return { report: null, messages, error: errorMsg }
   }
 }
@@ -134,40 +144,47 @@ export type { LoopAnalysisInput, MarketAnalysisReport, MarketAnalystState } from
  * Stream market analysis with progress updates (Mastra agent).
  */
 export async function* streamMarketAnalysis(input: LoopAnalysisInput): AsyncGenerator<{
-  type: 'progress' | 'tool_call' | 'tool_result' | 'message' | 'report' | 'error'
+  type: MarketAnalysisStreamEvent
   content: string | MarketAnalysisReport
 }> {
   try {
-    yield { type: 'progress', content: 'Initializing market analysis...' }
+    yield {
+      type: MarketAnalysisStreamEvent.Progress,
+      content: MarketAnalysisProgressMessage.Initializing,
+    }
 
-    const { report, messages, error } = await runMarketAnalysis(input, message => {
-      if (message.includes('Researching') || message.includes('Starting')) {
-        /* surfaced via final progress */
-      }
-    })
+    const { report, messages, error } = await runMarketAnalysis(input)
 
-    yield { type: 'progress', content: 'Researching market data...' }
+    yield {
+      type: MarketAnalysisStreamEvent.Progress,
+      content: MarketAnalysisProgressMessage.Researching,
+    }
 
     if (error) {
-      yield { type: 'error', content: error }
+      yield { type: MarketAnalysisStreamEvent.Error, content: error }
       return
     }
 
     for (const msg of messages) {
-      yield { type: 'message', content: msg }
+      yield { type: MarketAnalysisStreamEvent.Message, content: msg }
     }
 
     if (report) {
-      yield { type: 'report', content: report }
-      yield { type: 'progress', content: 'Market analysis complete.' }
+      yield { type: MarketAnalysisStreamEvent.Report, content: report }
+      yield {
+        type: MarketAnalysisStreamEvent.Progress,
+        content: MarketAnalysisProgressMessage.Complete,
+      }
     } else {
-      yield { type: 'progress', content: 'Analysis completed but no structured report was generated.' }
+      yield {
+        type: MarketAnalysisStreamEvent.Progress,
+        content: MARKET_ANALYSIS_NO_STRUCTURED_REPORT,
+      }
     }
   } catch (error) {
     yield {
-      type: 'error',
-      content: error instanceof Error ? error.message : 'Unknown error',
+      type: MarketAnalysisStreamEvent.Error,
+      content: error instanceof Error ? error.message : MarketAnalysisErrorMessage.Unknown,
     }
   }
 }
-

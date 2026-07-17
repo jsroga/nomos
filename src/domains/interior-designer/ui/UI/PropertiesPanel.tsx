@@ -11,7 +11,7 @@ import { SelectedItemProperties } from '@/domains/interior-designer/ui/UI/panels
 import { SnapControls } from '@/domains/interior-designer/ui/UI/panels/SnapControls'
 import { SurfaceProperties } from '@/domains/interior-designer/ui/UI/SurfaceProperties'
 import { TerrainEditorPanel } from '@/domains/interior-designer/ui/UI/TerrainEditorPanel'
-import { useProjectFromUrl } from '@/shared/data/useProjectFromUrl'
+import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 
 export const PropertiesPanel: React.FC = () => {
   const { projectId } = useProjectFromUrl()

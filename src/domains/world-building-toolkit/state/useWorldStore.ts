@@ -21,6 +21,7 @@ import {
 import {
   WorldDataStoreLog,
   WORLD_DATA_STORE_KEYS,
+  WorldDataStoreKey,
 } from './constants/world-data-store'
 import {
   useWorldUiStore,
@@ -31,6 +32,10 @@ import {
   type WorldUiState,
 } from './useWorldUiStore'
 import { omitRecordKey } from './utils/omit-record-key'
+import {
+  onWorkspaceProjectMutation,
+  useWorkspaceProjectStore,
+} from '@/shared/workspace/workspace-project-store'
 
 export type { Asset, Project, Tile, SelectBox, PendingUpscale, PendingGeneration, PendingFidelity }
 
@@ -75,6 +80,7 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
 
       const tiles = await worldApi.tiles.list(projectId)
       set({ currentProject: project, tiles: tilesToMap(tiles) })
+      mirrorProjectToWorkspace(project)
     } catch (err) {
       console.error(WorldDataStoreLog.FailedToLoadProjectViaApi, err)
     }
@@ -106,10 +112,15 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
   deleteProject: async (projectId: string) => {
     try {
       await worldApi.projects.delete(projectId)
-      set(state => ({
-        projects: state.projects.filter(p => p.id !== projectId),
-        currentProject: state.currentProject?.id === projectId ? null : state.currentProject,
-      }))
+      set(state => {
+        const nextProject =
+          state.currentProject?.id === projectId ? null : state.currentProject
+        mirrorProjectToWorkspace(nextProject)
+        return {
+          projects: state.projects.filter(p => p.id !== projectId),
+          currentProject: nextProject,
+        }
+      })
     } catch (error) {
       console.error(WorldDataStoreLog.ErrorDeletingProject, error)
     }
@@ -117,6 +128,7 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
 
   switchProject: async (projectId: string) => {
     set({ currentProject: null, tiles: {} })
+    mirrorProjectToWorkspace(null)
     useWorldUiStore.getState().clearSelection()
     await get().loadProject(projectId)
   },
@@ -200,7 +212,10 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
       console.error(WorldDataStoreLog.ErrorFetchingAssets, error)
     }
   },
-  setCurrentProject: project => set({ currentProject: project }),
+  setCurrentProject: project => {
+    set({ currentProject: project })
+    mirrorProjectToWorkspace(project)
+  },
 
   acceptUpscale: async (x, y) => {
     const { currentProject } = get()
@@ -274,6 +289,19 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
   },
 }))
 
+let isMirroringFromWorkspace = false
+
+function mirrorProjectToWorkspace(project: Project | null) {
+  if (isMirroringFromWorkspace) return
+  useWorkspaceProjectStore.getState().syncCurrentProjectSilent(project)
+}
+
+onWorkspaceProjectMutation(project => {
+  isMirroringFromWorkspace = true
+  useWorldDataStore.setState({ currentProject: project })
+  isMirroringFromWorkspace = false
+})
+
 export type WorldState = WorldDataState & WorldUiState
 
 function getCombinedState(): WorldState {
@@ -310,6 +338,9 @@ useWorldStore.setState = (partial: Partial<WorldState>) => {
 
   if (Object.keys(dataPartial).length > 0) {
     useWorldDataStore.setState(dataPartial)
+    if (WorldDataStoreKey.CurrentProject in dataPartial) {
+      mirrorProjectToWorkspace(dataPartial.currentProject ?? null)
+    }
   }
   if (Object.keys(uiPartial).length > 0) {
     useWorldUiStore.setState(uiPartial)

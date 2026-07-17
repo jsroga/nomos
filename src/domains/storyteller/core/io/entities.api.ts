@@ -1,14 +1,15 @@
-import { HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { HttpMethod, QueryParam, BooleanQueryValue } from '@/shared/data/constants/protocol'
+import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { buildUrl } from '@/shared/data/url-builder'
-import { recordFromJson } from '@/shared/data/json-guards'
 
 const MARK_REFERENCED_ROUTE = '/api/entities/mark-referenced'
 const RESOLVE_ROUTE = '/api/entities/resolve'
 
 export async function markEntityReferenced(projectId: string, entityId: string): Promise<void> {
-  await fetch(buildUrl(MARK_REFERENCED_ROUTE, { [QueryParam.ProjectId]: projectId, [QueryParam.Id]: entityId }), {
-    method: HttpMethod.Post,
-  })
+  await fetchJsonRecord(
+    buildUrl(MARK_REFERENCED_ROUTE, { [QueryParam.ProjectId]: projectId, [QueryParam.Id]: entityId }),
+    { method: HttpMethod.Post }
+  )
 }
 
 export async function resolveEntities(input: {
@@ -17,19 +18,14 @@ export async function resolveEntities(input: {
   enrichRelationships?: boolean
   context?: string
 }): Promise<Record<string, unknown>> {
-  const response = await fetch(
+  return fetchJsonRecord(
     buildUrl(RESOLVE_ROUTE, {
       [QueryParam.ProjectId]: input.projectId,
       [QueryParam.Ids]: input.ids.join(','),
-      ...(input.enrichRelationships ? { [QueryParam.EnrichRelationships]: 'true' } : {}),
+      ...(input.enrichRelationships
+        ? { [QueryParam.EnrichRelationships]: BooleanQueryValue.True }
+        : {}),
       ...(input.context ? { [QueryParam.Context]: input.context } : {}),
     })
   )
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`)
-  }
-
-  const json: unknown = await response.json()
-  return recordFromJson(json)
 }

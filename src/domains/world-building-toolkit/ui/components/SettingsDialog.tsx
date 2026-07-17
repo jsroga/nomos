@@ -1,19 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import {
-  X,
-  Settings,
-  Image as ImageIcon,
-  Key,
-  Info,
-  Check,
-} from 'lucide-react'
+import { X, Settings, Image as ImageIcon, Key } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { ScrollArea } from '@/components/ScrollArea'
-import { cn } from '@/shared/data/utils'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { STYLE_PRESETS } from '@/shared/data/constants/style-presets'
 import { TESTABLE_LLM_PROVIDERS } from '@/shared/data/constants/llm-providers'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import {
@@ -39,6 +30,9 @@ import {
   SettingsDialogTab,
   SettingsStyleMode,
 } from '@/domains/world-building-toolkit/constants/settings-dialog'
+import { SettingsDialogGeneralTab } from './SettingsDialogGeneralTab'
+import { SettingsDialogMcpKeysTab } from './SettingsDialogMcpKeysTab'
+import { SettingsDialogProjectSettingsTab } from './SettingsDialogProjectSettingsTab'
 
 interface SettingsDialogProps {
   isOpen: boolean
@@ -48,94 +42,26 @@ interface SettingsDialogProps {
 
 type Tab = SettingsDialogTab
 
-const ConnectionDot = ({ connected, label }: { connected: boolean; label: string }) => (
-  <div className="flex items-center gap-2 text-xs bg-muted/30 p-2 rounded border border-border w-full">
-    <div
-      className={cn(
-        'w-2 h-2 rounded-full shrink-0',
-        connected ? 'bg-green-500' : 'bg-red-500'
-      )}
-    />
-    <span className="text-muted-foreground">
-      {label}
-    </span>
-    {connected && <Check className="w-3 h-3 text-green-500 ml-auto shrink-0" />}
-  </div>
-)
-
-interface ProviderTestRowProps {
-  connected: boolean
-  label: string
-  result?: ProviderTestResult
-  testing: boolean
-  onTest: () => void
-}
-
-/**
- * Provider row with live status — no key / key untested / verified (latency)
- * / failed. Test fires ONE tiny generation through the same model-resolution
- * path production uses (POST /api/settings/providers/test).
- */
-const TestableProviderRow = ({
-  connected,
-  label,
-  result,
-  testing,
-  onTest,
-}: ProviderTestRowProps) => (
-  <div className="flex items-center gap-2 text-xs bg-muted/30 p-2 rounded border border-border w-full">
-    <div
-      className={cn(
-        'w-2 h-2 rounded-full shrink-0',
-        !connected
-          ? 'bg-red-500'
-          : result
-            ? result.ok
-              ? 'bg-green-500'
-              : 'bg-red-500'
-            : 'bg-yellow-500'
-      )}
-    />
-    <span className="text-muted-foreground">{label}</span>
-    <span className="ml-auto flex items-center gap-2 shrink-0">
-      {result?.ok && (
-        <span className="text-green-500" title={result.model}>
-          {result.latencyMs}ms
-        </span>
-      )}
-      {result && !result.ok && (
-        <span className="text-red-400 max-w-36 truncate" title={result.error}>
-          {result.error}
-        </span>
-      )}
-      {!result && connected && <span className="text-yellow-500/80">untested</span>}
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-6 px-2 text-[10px]"
-        disabled={!connected || testing}
-        onClick={onTest}
-      >
-        {testing ? 'Testing…' : 'Test'}
-      </Button>
-    </span>
-  </div>
-)
-
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose, projectId }) => {
   const loadProject = useWorldStore(state => state.loadProject)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
   const [activeTab, setActiveTab] = useState<Tab>(SettingsDialogTab.General)
-
-  // General tab state
   const [providers, setProviders] = useState<ProviderStatus | null>(null)
   const [loadingProviders, setLoadingProviders] = useState(false)
-
-  // Live provider tests (PLAN-V2 1.4)
   const [providerTests, setProviderTests] = useState<Record<string, ProviderTestResult>>({})
   const [testingProvider, setTestingProvider] = useState<string | null>(null)
+  const [projectData, setProjectData] = useState<ProjectStyleSettings | null>(null)
+  const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
+  const [newStyleUrl, setNewStyleUrl] = useState<string>('')
+  const [styleMode, setStyleMode] = useState<SettingsStyleMode>(SettingsStyleMode.Custom)
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+  const [mcpKeys, setMcpKeys] = useState<McpApiKey[]>([])
+  const [isLoadingMcpKeys, setIsLoadingMcpKeys] = useState(false)
+  const [newMcpKeyName, setNewMcpKeyName] = useState('')
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null)
+  const [isCreatingKey, setIsCreatingKey] = useState(false)
 
   const runProviderTest = async (providerKey: string): Promise<void> => {
     setTestingProvider(providerKey)
@@ -152,7 +78,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     }
   }
 
-  // Sequential on purpose — provider rate limits, and our own 5/min limiter.
   const runAllProviderTests = async (): Promise<void> => {
     if (!providers) return
     for (const { key } of TESTABLE_LLM_PROVIDERS) {
@@ -161,13 +86,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
       }
     }
   }
-
-  // Project Settings state
-  const [projectData, setProjectData] = useState<ProjectStyleSettings | null>(null)
-  const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
-  const [newStyleUrl, setNewStyleUrl] = useState<string>('')
-  const [styleMode, setStyleMode] = useState<SettingsStyleMode>(SettingsStyleMode.Custom)
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
 
   const saveStyleSettings = async (
     mode: SettingsStyleMode,
@@ -192,60 +110,48 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     }
   }
 
-  // MCP API Keys state
-  const [mcpKeys, setMcpKeys] = useState<McpApiKey[]>([])
-  const [isLoadingMcpKeys, setIsLoadingMcpKeys] = useState(false)
-  const [newMcpKeyName, setNewMcpKeyName] = useState('')
-  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null)
-  const [isCreatingKey, setIsCreatingKey] = useState(false)
-
   useEffect(() => {
-    if (isOpen) {
-      // Fetch provider status
-      setLoadingProviders(true)
-      settingsApi
-        .fetchProviders()
-        .then(setProviders)
-        .catch(err => console.error(SETTINGS_LOAD_PROVIDERS_FAILED_LOG, err))
-        .finally(() => setLoadingProviders(false))
+    if (!isOpen) return
 
-      // Load project settings if projectId provided
-      if (projectId) {
-        settingsApi
-          .fetchProject(projectId)
-          .then(data => {
-            setProjectData(data)
-            setStyleReferenceUrls(data.styleReferenceUrls || [])
-            if (data.stylePreset) {
-              setStyleMode(SettingsStyleMode.Preset)
-              setSelectedPreset(data.stylePreset)
-            } else {
-              setStyleMode(SettingsStyleMode.Custom)
-              setSelectedPreset(null)
-            }
-          })
-          .catch(err => console.error(SETTINGS_LOAD_PROJECT_FAILED_LOG, err))
-      }
+    setLoadingProviders(true)
+    settingsApi
+      .fetchProviders()
+      .then(setProviders)
+      .catch(err => console.error(SETTINGS_LOAD_PROVIDERS_FAILED_LOG, err))
+      .finally(() => setLoadingProviders(false))
 
-      // Load MCP API keys
-      setIsLoadingMcpKeys(true)
+    if (projectId) {
       settingsApi
-        .fetchMcpKeys()
-        .then(setMcpKeys)
-        .catch(err => console.error(SETTINGS_LOAD_MCP_KEYS_FAILED_LOG, err))
-        .finally(() => setIsLoadingMcpKeys(false))
+        .fetchProject(projectId)
+        .then(data => {
+          setProjectData(data)
+          setStyleReferenceUrls(data.styleReferenceUrls || [])
+          if (data.stylePreset) {
+            setStyleMode(SettingsStyleMode.Preset)
+            setSelectedPreset(data.stylePreset)
+          } else {
+            setStyleMode(SettingsStyleMode.Custom)
+            setSelectedPreset(null)
+          }
+        })
+        .catch(err => console.error(SETTINGS_LOAD_PROJECT_FAILED_LOG, err))
     }
+
+    setIsLoadingMcpKeys(true)
+    settingsApi
+      .fetchMcpKeys()
+      .then(setMcpKeys)
+      .catch(err => console.error(SETTINGS_LOAD_MCP_KEYS_FAILED_LOG, err))
+      .finally(() => setIsLoadingMcpKeys(false))
   }, [isOpen, projectId])
 
   const handleSave = async () => {
-    // If user is on Custom mode, persist the current URL list (including empty) on explicit Save
     if (styleMode === SettingsStyleMode.Custom) {
       await saveStyleSettings(SettingsStyleMode.Custom, null, styleReferenceUrls)
     }
     onClose()
   }
 
-  // MCP Key Management
   const handleCreateMcpKey = async () => {
     if (!newMcpKeyName.trim()) {
       toast.error(SETTINGS_MCP_KEY_NAME_REQUIRED)
@@ -293,7 +199,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           <X className="w-4 h-4" />
         </button>
 
-        {/* Sidebar */}
         <div className="w-[200px] bg-zinc-900/30 border-r border-zinc-900 flex flex-col p-4">
           <h2 className="text-lg font-bold mb-6 px-2">Settings</h2>
           <nav className="space-y-2 flex-1">
@@ -326,356 +231,56 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           </nav>
         </div>
 
-        {/* Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
           <ScrollArea className="flex-1 p-6">
             <div className="max-w-2xl mx-auto space-y-8 pb-20">
-              {/* General Tab */}
               {activeTab === SettingsDialogTab.General && (
-                <div className="space-y-6">
-                  {/* Provider Connection Status */}
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Provider Status</h3>
-                    <div className="p-4 rounded-lg bg-zinc-900/20 border border-zinc-900 space-y-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Info className="w-4 h-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">
-                          API keys are managed via environment variables. See <code className="text-xs">.env.local</code> for configuration.
-                        </p>
-                      </div>
-
-                      {loadingProviders ? (
-                        <div className="text-xs text-muted-foreground py-4 text-center">Loading provider status...</div>
-                      ) : providers ? (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
-                                LLM Providers
-                              </h5>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-[10px]"
-                                disabled={testingProvider !== null}
-                                onClick={() => void runAllProviderTests()}
-                              >
-                                Test all
-                              </Button>
-                            </div>
-                            {TESTABLE_LLM_PROVIDERS.map(({ key, label }) => (
-                              <TestableProviderRow
-                                key={key}
-                                connected={providers[key]}
-                                label={label}
-                                result={providerTests[key]}
-                                testing={testingProvider === key}
-                                onTest={() => void runProviderTest(key)}
-                              />
-                            ))}
-                          </div>
-
-                          <div className="space-y-2">
-                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
-                              Image Generation
-                            </h5>
-                            <ConnectionDot connected={providers.legnext} label="LegNext / Midjourney" />
-                            <ConnectionDot connected={providers.google} label="Gemini Imagen" />
-                          </div>
-
-                          <div className="space-y-2">
-                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
-                              Upscaling
-                            </h5>
-                            <ConnectionDot connected={providers.stability} label="Stability AI" />
-                            <ConnectionDot connected={providers.replicate} label="Replicate" />
-                          </div>
-
-                          <div className="space-y-2">
-                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
-                              3D Generation
-                            </h5>
-                            <ConnectionDot connected={providers.hyper3d} label="Hyper3D" />
-                            <ConnectionDot connected={providers.meshy} label="Meshy" />
-                          </div>
-
-                          <div className="space-y-2">
-                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
-                              Tools
-                            </h5>
-                            <ConnectionDot connected={providers.fal} label="Fal.ai" />
-                            <ConnectionDot connected={providers.voyage} label="Voyage AI" />
-                          </div>
-
-                          <div className="space-y-2">
-                            <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
-                              Observability
-                            </h5>
-                            <ConnectionDot connected={providers.langsmith} label="LangSmith" />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-muted-foreground py-4 text-center">Failed to load provider status</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Generation Info */}
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Generation</h3>
-                    <div className="p-4 rounded-lg bg-zinc-900/20 border border-zinc-900 space-y-2">
-                      <p className="text-xs text-muted-foreground">
-                        First tile uses <span className="text-zinc-300 font-mono">Midjourney</span>, follow-up tiles use <span className="text-zinc-300 font-mono">Nano Banana</span>. Providers and API keys are managed via environment variables on the server.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <SettingsDialogGeneralTab
+                  providers={providers}
+                  loadingProviders={loadingProviders}
+                  providerTests={providerTests}
+                  testingProvider={testingProvider}
+                  onRunProviderTest={runProviderTest}
+                  onRunAllProviderTests={runAllProviderTests}
+                />
               )}
 
-              {/* MCP Keys Tab */}
               {activeTab === SettingsDialogTab.McpKeys && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">MCP API Keys</h3>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Generate keys for external MCP clients (Cursor, Claude Desktop, etc.)
-                    </p>
-
-                    <div className="p-4 rounded-lg bg-card border border-primary/30 space-y-4">
-                      {/* Create new key */}
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={newMcpKeyName}
-                          onChange={e => setNewMcpKeyName(e.target.value)}
-                          placeholder="Key name (e.g., My Cursor)"
-                          className="flex-1 p-2 rounded-md border border-input bg-background text-sm"
-                          onKeyDown={e => e.key === 'Enter' && handleCreateMcpKey()}
-                        />
-                        <Button size="sm" onClick={handleCreateMcpKey} disabled={isCreatingKey}>
-                          {isCreatingKey ? 'Creating...' : '+ Create'}
-                        </Button>
-                      </div>
-
-                      {/* Newly created key (show once) */}
-                      {newlyCreatedKey && (
-                        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md space-y-2">
-                          <div className="flex items-center gap-2 text-amber-500 text-xs font-medium">
-                            <Info className="w-3 h-3" />
-                            Save this key now — it won&apos;t be shown again!
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <code className="flex-1 p-2 bg-black/30 rounded text-xs font-mono truncate">
-                              {newlyCreatedKey}
-                            </code>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => copyToClipboard(newlyCreatedKey)}
-                            >
-                              Copy
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Existing keys list */}
-                      {isLoadingMcpKeys ? (
-                        <div className="text-xs text-muted-foreground">Loading keys...</div>
-                      ) : mcpKeys.filter(k => !k.revoked_at).length > 0 ? (
-                        <div className="space-y-2">
-                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Your Keys
-                          </div>
-                          {mcpKeys
-                            .filter(k => !k.revoked_at)
-                            .map(key => (
-                              <div
-                                key={key.id}
-                                className="flex items-center justify-between p-2 bg-muted/30 rounded-md border border-border"
-                              >
-                                <div>
-                                  <div className="text-sm font-medium">{key.name}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Created {new Date(key.created_at).toLocaleDateString()}
-                                  </div>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                                  onClick={() => handleRevokeMcpKey(key.id)}
-                                >
-                                  Revoke
-                                </Button>
-                              </div>
-                            ))}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-muted-foreground">
-                          No keys yet. Create one above.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <SettingsDialogMcpKeysTab
+                  mcpKeys={mcpKeys}
+                  isLoadingMcpKeys={isLoadingMcpKeys}
+                  newMcpKeyName={newMcpKeyName}
+                  newlyCreatedKey={newlyCreatedKey}
+                  isCreatingKey={isCreatingKey}
+                  onNewMcpKeyNameChange={setNewMcpKeyName}
+                  onCreateMcpKey={() => void handleCreateMcpKey()}
+                  onRevokeMcpKey={keyId => void handleRevokeMcpKey(keyId)}
+                  onCopyToClipboard={copyToClipboard}
+                />
               )}
 
-              {/* Project Settings Tab */}
               {activeTab === SettingsDialogTab.ProjectSettings && projectId && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Project Settings</h3>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Configure project-specific settings for{' '}
-                      <strong>{projectData?.name || 'this project'}</strong>
-                    </p>
-
-                    <div className="space-y-6">
-                      {/* Style Reference Section */}
-                      <div>
-                        <h4 className="text-sm font-semibold mb-3">
-                          Style References
-                        </h4>
-                        <p className="text-xs text-muted-foreground mb-4">
-                          Choose a predefined style preset or provide your own Midjourney style
-                          reference URLs (--sref parameter). Applied to all image generation.
-                        </p>
-
-                        {/* Mode Toggle */}
-                        <div className="flex gap-1 p-1 bg-muted/40 rounded-lg mb-4 w-fit">
-                          <button
-                            onClick={() => setStyleMode(SettingsStyleMode.Custom)}
-                            className={cn(
-                              'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                              styleMode === SettingsStyleMode.Custom
-                                ? 'bg-background shadow-sm text-foreground'
-                                : 'text-muted-foreground hover:text-foreground'
-                            )}
-                          >
-                            Custom URLs
-                          </button>
-                          <button
-                            onClick={() => setStyleMode(SettingsStyleMode.Preset)}
-                            className={cn(
-                              'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                              styleMode === SettingsStyleMode.Preset
-                                ? 'bg-background shadow-sm text-foreground'
-                                : 'text-muted-foreground hover:text-foreground'
-                            )}
-                          >
-                            Presets
-                          </button>
-                        </div>
-
-                        {/* Preset Mode */}
-                        {styleMode === SettingsStyleMode.Preset && (
-                          <div className="grid grid-cols-2 gap-2">
-                            {STYLE_PRESETS.map(preset => (
-                              <button
-                                key={preset.id}
-                                onClick={() => {
-                                  const newPreset = selectedPreset === preset.id ? null : preset.id
-                                  setSelectedPreset(newPreset)
-                                  saveStyleSettings(SettingsStyleMode.Preset, newPreset, [])
-                                }}
-                                className={cn(
-                                  'flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left',
-                                  selectedPreset === preset.id
-                                    ? 'border-primary bg-primary/5 shadow-sm'
-                                    : 'border-border hover:border-muted-foreground/30 bg-muted/20'
-                                )}
-                              >
-                                <div
-                                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0"
-                                  style={{ backgroundColor: preset.color + '25' }}
-                                >
-                                  {preset.emoji}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="text-sm font-medium">{preset.name}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {preset.description}
-                                  </div>
-                                </div>
-                                {selectedPreset === preset.id && (
-                                  <Check className="w-4 h-4 text-primary shrink-0" />
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Custom Mode */}
-                        {styleMode === SettingsStyleMode.Custom && (
-                          <div>
-                            {/* Current URLs */}
-                            {styleReferenceUrls.length > 0 && (
-                              <div className="space-y-2 mb-4">
-                                {styleReferenceUrls.map((url, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex items-center gap-2 p-2 bg-muted/30 rounded-md border border-border"
-                                  >
-                                    <span className="text-xs flex-1 truncate font-mono">
-                                      {url}
-                                    </span>
-                                    <button
-                                      onClick={() => {
-                                        const updated = styleReferenceUrls.filter((_, i) => i !== index)
-                                        setStyleReferenceUrls(updated)
-                                        saveStyleSettings(SettingsStyleMode.Custom, null, updated)
-                                      }}
-                                      className="text-destructive hover:text-destructive/80 text-xs px-2 py-1"
-                                    >
-                                      Remove
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Add New URL */}
-                            <div className="flex gap-2">
-                              <input
-                                type="url"
-                                value={newStyleUrl}
-                                onChange={e => setNewStyleUrl(e.target.value)}
-                                placeholder="https://s.mj.run/..."
-                                className="flex-1 p-2 rounded-md border border-input bg-background text-sm"
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  if (newStyleUrl && newStyleUrl.startsWith('http')) {
-                                    const updated = [...styleReferenceUrls, newStyleUrl]
-                                    setStyleReferenceUrls(updated)
-                                    setNewStyleUrl('')
-                                    saveStyleSettings(SettingsStyleMode.Custom, null, updated)
-                                  }
-                                }}
-                                disabled={!newStyleUrl || !newStyleUrl.startsWith('http')}
-                              >
-                                Add URL
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                    </div>
-                  </div>
-                </div>
+                <SettingsDialogProjectSettingsTab
+                  projectData={projectData}
+                  styleReferenceUrls={styleReferenceUrls}
+                  newStyleUrl={newStyleUrl}
+                  styleMode={styleMode}
+                  selectedPreset={selectedPreset}
+                  onStyleModeChange={setStyleMode}
+                  onSelectedPresetChange={setSelectedPreset}
+                  onStyleReferenceUrlsChange={setStyleReferenceUrls}
+                  onNewStyleUrlChange={setNewStyleUrl}
+                  onSaveStyleSettings={saveStyleSettings}
+                />
               )}
             </div>
           </ScrollArea>
 
-          {/* Footer */}
           <div className="p-4 border-t border-border bg-card flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+            <Button onClick={() => void handleSave()}>Save Changes</Button>
           </div>
         </div>
       </div>

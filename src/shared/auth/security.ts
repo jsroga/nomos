@@ -11,9 +11,7 @@
 import path from 'path'
 import {
   ALLOWED_EXTERNAL_DOMAINS,
-  BlockedHost,
   FsDirectory,
-  HostSuffix,
   NodeEnv,
   PathTraversalToken,
   SecureLogRedaction,
@@ -21,8 +19,13 @@ import {
   SENSITIVE_LOG_KEYS,
   SsrfBlockReason,
   SsrfErrorPrefix,
-  UrlProtocolWithColon,
 } from '@/shared/auth/constants/security'
+import {
+  isAllowedProtocol,
+  isCloudMetadataHostname,
+  isLocalHostname,
+  privateIpv4BlockReason,
+} from '@/shared/auth/ssrf-host-checks'
 
 // ============================================
 // PATH TRAVERSAL PROTECTION
@@ -130,59 +133,25 @@ export function isAllowedUrl(url: string): { allowed: boolean; reason?: string }
   try {
     const parsed = new URL(url)
 
-    // Only allow http/https
-    if (
-      parsed.protocol !== UrlProtocolWithColon.Http &&
-      parsed.protocol !== UrlProtocolWithColon.Https
-    ) {
+    if (!isAllowedProtocol(parsed.protocol)) {
       return { allowed: false, reason: SsrfBlockReason.InvalidProtocol }
     }
 
-    // Block local/private IPs
     const hostname = parsed.hostname.toLowerCase()
 
-    // Block localhost
-    if (
-      hostname === BlockedHost.Localhost ||
-      hostname === BlockedHost.LoopbackV4 ||
-      hostname === BlockedHost.LoopbackV6 ||
-      hostname === BlockedHost.Unspecified
-    ) {
+    if (isLocalHostname(hostname)) {
       return { allowed: false, reason: SsrfBlockReason.LocalhostBlocked }
     }
 
-    // Block private IP ranges
-    const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/
-    if (ipv4Pattern.test(hostname)) {
-      const octets = hostname.split('.').map(Number)
-      // 10.x.x.x
-      if (octets[0] === 10) {
-        return { allowed: false, reason: SsrfBlockReason.PrivateIpBlocked }
-      }
-      // 172.16.x.x - 172.31.x.x
-      if (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) {
-        return { allowed: false, reason: SsrfBlockReason.PrivateIpBlocked }
-      }
-      // 192.168.x.x
-      if (octets[0] === 192 && octets[1] === 168) {
-        return { allowed: false, reason: SsrfBlockReason.PrivateIpBlocked }
-      }
-      // 169.254.x.x (link-local)
-      if (octets[0] === 169 && octets[1] === 254) {
-        return { allowed: false, reason: SsrfBlockReason.LinkLocalBlocked }
-      }
+    const privateBlock = privateIpv4BlockReason(hostname)
+    if (privateBlock) {
+      return { allowed: false, reason: privateBlock }
     }
 
-    // Block metadata endpoints (cloud provider SSRF targets)
-    if (
-      hostname === BlockedHost.AwsMetadata ||
-      hostname === BlockedHost.GoogleMetadata ||
-      hostname.endsWith(HostSuffix.Internal)
-    ) {
+    if (isCloudMetadataHostname(hostname)) {
       return { allowed: false, reason: SsrfBlockReason.CloudMetadataBlocked }
     }
 
-    // Check against whitelist
     const isWhitelisted = ALLOWED_EXTERNAL_DOMAINS.some(
       domain => hostname === domain || hostname.endsWith('.' + domain)
     )

@@ -1,11 +1,9 @@
 'use client'
 
 import React from 'react'
-import { Move, RotateCw, Maximize } from 'lucide-react'
 import { Button } from '@/components/Button'
-import { SidebarInput, SidebarSection, SidebarSliderRow } from '@/components/DomainSidebar'
+import { SidebarInput, SidebarSliderRow } from '@/components/DomainSidebar'
 import { useInteriorStore } from '@/domains/interior-designer'
-import type { InteractionMode } from '@/domains/interior-designer/core/interior-types'
 import {
   isObject,
   isWall,
@@ -15,14 +13,13 @@ import {
   DEFAULT_FRAME_COLOR,
   OBJECT_COLOR_PRESETS,
 } from '@/domains/interior-designer/constants/mesh-colors'
-import { HeightScaleControl } from './HeightScaleControl'
 import { RetextureControls } from './RetextureControls'
-import { SnapControls } from './SnapControls'
 import { TextTo3DControls } from './TextTo3DControls'
+import { SelectedItemTransformControls } from './SelectedItemTransformControls'
 
 interface SelectedItemPropertiesProps {
   selectedItem: SelectedInteriorItem
-  mode: InteractionMode
+  mode: import('@/domains/interior-designer/core/interior-types').InteractionMode
   projectId: string
   onDelete: () => void
 }
@@ -35,9 +32,6 @@ export function SelectedItemProperties({
   const updateWall = useInteriorStore(state => state.updateWall)
   const updateFloor = useInteriorStore(state => state.updateFloor)
   const updateObject = useInteriorStore(state => state.updateObject)
-  const transformMode = useInteriorStore(state => state.transformMode)
-  const setTransformMode = useInteriorStore(state => state.setTransformMode)
-
   const itemId = selectedItem.id
 
   return (
@@ -49,79 +43,31 @@ export function SelectedItemProperties({
         </span>
       </div>
 
-      <div className="space-y-2">
-        <SidebarInput
-          type="text"
-          value={isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''}
-          placeholder="#ffffff or url"
-          onChange={e => {
-            const val = e.target.value
-            if (isWall(selectedItem)) updateWall(itemId, { texture: val })
-            else if (isObject(selectedItem)) updateObject(itemId, { modelUrl: val })
-            else updateFloor(itemId, { texture: val })
-          }}
-        />
-      </div>
+      <SelectedItemTextureField
+        selectedItem={selectedItem}
+        itemId={itemId}
+        updateWall={updateWall}
+        updateFloor={updateFloor}
+        updateObject={updateObject}
+      />
 
       {isWall(selectedItem) && (
-        <div className="space-y-2">
-          <SidebarSliderRow
-            label="Height"
-            value={selectedItem.height}
-            min={0.5}
-            max={10}
-            step={0.1}
-            onChange={val => updateWall(itemId, { height: val })}
-            formatValue={val => `${val.toFixed(1)}m`}
-          />
-        </div>
+        <SidebarSliderRow
+          label="Height"
+          value={selectedItem.height}
+          min={0.5}
+          max={10}
+          step={0.1}
+          onChange={val => updateWall(itemId, { height: val })}
+          formatValue={val => `${val.toFixed(1)}m`}
+        />
       )}
 
       {isObject(selectedItem) && (
-        <SidebarSection title="Transform" separator={false}>
-          <SnapControls />
-
-          <div className="flex gap-1 p-1 bg-muted/30 rounded-lg">
-            <Button
-              variant={transformMode === 'translate' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setTransformMode('translate')}
-              title="Move (G)"
-              className="flex-1 text-[10px] font-mono uppercase tracking-widest h-8"
-            >
-              <Move size={12} className="mr-1.5" />
-              Move
-            </Button>
-            <Button
-              variant={transformMode === 'rotate' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setTransformMode('rotate')}
-              title="Rotate (R)"
-              className="flex-1 text-[10px] font-mono uppercase tracking-widest h-8"
-            >
-              <RotateCw size={12} className="mr-1.5" />
-              Rotate
-            </Button>
-            <Button
-              variant={transformMode === 'scale' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setTransformMode('scale')}
-              title="Scale (S)"
-              className="flex-1 text-[10px] font-mono uppercase tracking-widest h-8"
-            >
-              <Maximize size={12} className="mr-1.5" />
-              Scale
-            </Button>
-          </div>
-
-          {transformMode === 'scale' && (
-            <HeightScaleControl
-              objectId={selectedItem.id}
-              currentScale={selectedItem.scale}
-              onScaleChange={newScale => updateObject(selectedItem.id, { scale: newScale })}
-            />
-          )}
-        </SidebarSection>
+        <SelectedItemTransformControls
+          selectedItem={selectedItem}
+          updateObject={updateObject}
+        />
       )}
 
       {isObject(selectedItem) &&
@@ -154,6 +100,36 @@ export function SelectedItemProperties({
       >
         Delete Object
       </Button>
+    </div>
+  )
+}
+
+function SelectedItemTextureField({
+  selectedItem,
+  itemId,
+  updateWall,
+  updateFloor,
+  updateObject,
+}: {
+  selectedItem: SelectedInteriorItem
+  itemId: string
+  updateWall: (id: string, patch: { texture?: string }) => void
+  updateFloor: (id: string, patch: { texture?: string }) => void
+  updateObject: (id: string, patch: { modelUrl?: string }) => void
+}) {
+  return (
+    <div className="space-y-2">
+      <SidebarInput
+        type="text"
+        value={isObject(selectedItem) ? selectedItem.modelUrl : selectedItem.texture || ''}
+        placeholder="#ffffff or url"
+        onChange={e => {
+          const val = e.target.value
+          if (isWall(selectedItem)) updateWall(itemId, { texture: val })
+          else if (isObject(selectedItem)) updateObject(itemId, { modelUrl: val })
+          else updateFloor(itemId, { texture: val })
+        }}
+      />
     </div>
   )
 }

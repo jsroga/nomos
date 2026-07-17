@@ -1,3 +1,5 @@
 export { ProjectAssetUploadZone } from './ui/ProjectAssetUploadZone'
 export { ProjectAssetsPanel } from './ui/ProjectAssetsPanel'
 export { useProjectAssets } from './hooks/useProjectAssets'
+export type { WorkspaceProject } from './types'
+export { useWorkspaceProjectStore, onWorkspaceProjectMutation } from './workspace-project-store'

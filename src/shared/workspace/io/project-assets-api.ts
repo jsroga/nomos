@@ -1,8 +1,11 @@
 import { z } from 'zod'
 import { ContentType, FetchCache, HttpMethod, QueryParam, UrlScheme } from '@/shared/data/constants/protocol'
-import { buildUrl } from '@/shared/data/url-builder';
+import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
+import { buildUrl } from '@/shared/data/url-builder'
 
 export const WORKSPACE_ASSETS_API_PATH = '/api/world/assets'
+const DELETE_IMAGE_API_PATH = '/api/delete-image'
+const FETCH_PROJECT_ASSETS_ERROR = 'Failed to fetch project assets'
 
 const dateLikeSchema = z.union([z.string(), z.date()]).transform(value => {
   if (value instanceof Date) return value.toISOString()
@@ -42,9 +45,20 @@ export async function listProjectAssets(projectId: string): Promise<WorkspaceAss
   })
   const json: unknown = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error('Failed to fetch project assets')
+    throw new Error(FETCH_PROJECT_ASSETS_ERROR)
   }
   return workspaceAssetListSchema.parse(json)
+}
+
+export async function deleteProjectAssetImage(projectId: string, filename: string): Promise<void> {
+  await fetchJsonRecord(DELETE_IMAGE_API_PATH, {
+    method: HttpMethod.Post,
+    headers: { 'Content-Type': ContentType.Json },
+    body: JSON.stringify({
+      projectId,
+      filename: `assets/${filename}`,
+    }),
+  })
 }
 
 export function resolveProjectAssetUrl(

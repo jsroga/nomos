@@ -110,5 +110,6 @@ export const AGENT_LOG_DEFAULT_COLOR = 'text-muted-foreground'
 export const AGENT_LOG_SCROLL_BEHAVIOR = 'smooth'
 export const AGENT_LOG_COPY_FAILED = 'Failed to copy:'
 export const AGENT_LOG_FALLBACK_AGENT = ChatMessageSender.Unknown
+export const MARKDOWN_CODE_BLOCK_LANGUAGE_PREFIX = 'language-'
 
 export { ChatMessageRole, ChatSenderAlias, ActivityLogEntryType, AgentStatusKind }

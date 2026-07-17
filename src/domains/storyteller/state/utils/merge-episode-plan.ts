@@ -9,9 +9,9 @@ import {
   BIBLE_CATEGORY_KEYS,
   EpisodePlanMergeField,
   HYDRATION_CATEGORY_KEYS,
-  HYDRATION_PLAN_FIELDS,
   SCRIPT_WRITING_PHASE_MIN_LENGTH,
 } from '@/domains/storyteller/state/constants/merge-episode-plan'
+import { hydratePlanFromBibleSources } from '@/domains/storyteller/state/utils/hydrate-plan-from-bible'
 import { projectHasStoredPlan } from '@/domains/storyteller/state/utils/episode-route'
 
 function firstNonEmptyArray(...candidates: unknown[]) {
@@ -177,40 +177,7 @@ export function buildManualHydratedPlan(
 ): StoryPlan | null {
   const rawBible = recordFromJson(currentProject?.series_bible)
   const rawStoryPlan = recordFromJson(currentProject?.story_plan)
-  const rawBibleUpdated = recordFromJson(rawBible[ToolResultPayloadField.UpdatedFields])
-
-  const initialPlan: Record<string, unknown> = { ...rawStoryPlan }
-
-  for (const cat of HYDRATION_CATEGORY_KEYS) {
-    const catData = recordFromJson(rawBible[cat])
-    if (Object.keys(catData).length > 0) {
-      Object.assign(initialPlan, catData)
-    }
-  }
-
-  for (const field of HYDRATION_PLAN_FIELDS) {
-    const current = initialPlan[field]
-    if (
-      current === undefined ||
-      current === null ||
-      (Array.isArray(current) && current.length === 0)
-    ) {
-      if (rawStoryPlan[field] !== undefined && rawStoryPlan[field] !== null) {
-        initialPlan[field] = rawStoryPlan[field]
-      } else if (rawBibleUpdated[field] !== undefined) {
-        initialPlan[field] = rawBibleUpdated[field]
-      } else if (rawBible[field] !== undefined) {
-        initialPlan[field] = rawBible[field]
-      }
-    }
-  }
-
-  if (
-    recordArrayFromJson(rawBibleUpdated[CastFieldAlias.Characters]).length > 0 &&
-    recordArrayFromJson(initialPlan[CastFieldAlias.KeyCharacters]).length === 0
-  ) {
-    initialPlan[CastFieldAlias.KeyCharacters] = rawBibleUpdated[CastFieldAlias.Characters]
-  }
+  const initialPlan = hydratePlanFromBibleSources(rawBible, rawStoryPlan)
 
   return Object.keys(initialPlan).length > 0
     ? applyUpdatesToStoryPlan<StoryPlan>(null, initialPlan)

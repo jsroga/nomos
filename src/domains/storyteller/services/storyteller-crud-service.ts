@@ -26,6 +26,11 @@ import {
   StorytellerCrudListSeparator,
   StorytellerCharacterRole,
 } from '@/domains/storyteller/services/constants/storyteller-crud-service'
+import { buildCharacterDbUpdates } from '@/domains/storyteller/services/character-update-fields'
+import {
+  updateCharacterSchema,
+  type UpdateCharacterInput,
+} from '@/domains/storyteller/services/storyteller-character-schema'
 
 // ============================================
 // SCHEMAS
@@ -57,25 +62,6 @@ export const createCharacterSchema = z.object({
   voiceSignature: z.string().optional(),
 })
 
-export const updateCharacterSchema = z.object({
-  name: z.string().min(1).optional(),
-  role: z.enum(STORYTELLER_CHARACTER_ROLE_VALUES).optional(),
-  gender: z.string().optional(),
-  characterPrompt: z.string().optional(),
-  description: z.string().optional(),
-  portraitUrl: z.string().url().optional(),
-  stress: z.number().min(0).max(100).optional(),
-  trust: z.number().min(0).max(100).optional(),
-  power: z.number().min(0).max(100).optional(),
-  morality: z.number().min(0).max(100).optional(),
-  hope: z.number().min(0).max(100).optional(),
-  isolation: z.number().min(0).max(100).optional(),
-  transformation: z.number().min(0).max(100).optional(),
-  mbti: z.string().optional(),
-  voiceSignature: z.string().optional(),
-  psychology: z.string().optional(),
-})
-
 export const listEpisodesSchema = z.object({
   projectId: z.string().uuid(),
 })
@@ -97,7 +83,8 @@ export const chatMessageSchema = z.object({
 
 export type ListCharactersInput = z.infer<typeof listCharactersSchema>
 export type CreateCharacterInput = z.infer<typeof createCharacterSchema>
-export type UpdateCharacterInput = z.infer<typeof updateCharacterSchema>
+export type { UpdateCharacterInput } from '@/domains/storyteller/services/storyteller-character-schema'
+export { updateCharacterSchema } from '@/domains/storyteller/services/storyteller-character-schema'
 export type ListEpisodesInput = z.infer<typeof listEpisodesSchema>
 export type ListBeatsInput = z.infer<typeof listBeatsSchema>
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>
@@ -248,26 +235,7 @@ export class StorytellerService {
       )
     }
 
-    const dbUpdates: Record<string, unknown> = {}
-
-    if (validated.name !== undefined) dbUpdates.name = validated.name
-    if (validated.role !== undefined) dbUpdates.role = validated.role
-    if (validated.gender !== undefined) dbUpdates.gender = validated.gender
-    if (validated.characterPrompt !== undefined)
-      dbUpdates.characterPrompt = validated.characterPrompt
-    if (validated.description !== undefined) dbUpdates.description = validated.description
-    if (validated.portraitUrl !== undefined) dbUpdates.portraitUrl = validated.portraitUrl
-    if (validated.mbti !== undefined) dbUpdates.mbti = validated.mbti
-    if (validated.voiceSignature !== undefined) dbUpdates.voiceSignature = validated.voiceSignature
-    if (validated.psychology !== undefined) dbUpdates.psychology = validated.psychology
-    if (validated.stress !== undefined) dbUpdates.stressLevel = validated.stress
-    if (validated.trust !== undefined) dbUpdates.trustLevel = validated.trust
-    if (validated.power !== undefined) dbUpdates.powerLevel = validated.power
-    if (validated.morality !== undefined) dbUpdates.moralityLevel = validated.morality
-    if (validated.hope !== undefined) dbUpdates.hopeLevel = validated.hope
-    if (validated.isolation !== undefined) dbUpdates.isolationLevel = validated.isolation
-    if (validated.transformation !== undefined)
-      dbUpdates.transformationProgress = validated.transformation
+    const dbUpdates = buildCharacterDbUpdates(validated)
 
     const [updatedCharacter] = await db
       .update(characters)

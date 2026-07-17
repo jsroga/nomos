@@ -105,7 +105,8 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
   useEffect(() => {
     const projectId = currentProject?.id
     if (projectId) {
-      import('@/domains/storyteller').then(({ moodboardGenerationService }) =>
+      import('@/domains/storyteller/services/moodboard-generation-service').then(
+        ({ moodboardGenerationService }) =>
         moodboardGenerationService.resumePendingGenerations(projectId, async () => {
           try {
             const data = await fetchStorytellerProjectOptional(projectId)

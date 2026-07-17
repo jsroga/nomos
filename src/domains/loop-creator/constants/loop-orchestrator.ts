@@ -29,6 +29,7 @@ export const LOOP_AGENT_DISPLAY_NAMES: Record<LoopAgentNode, LoopAgentDisplayNam
 export enum LangChainMessageWire {
   GetType = '_getType',
   Ai = 'ai',
+  Human = 'human',
 }
 
 export enum LoopOrchestratorLog {

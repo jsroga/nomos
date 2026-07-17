@@ -8,6 +8,7 @@ export interface TriggerRunStatusPayload {
   status?: string | null
   output?: Record<string, unknown>
   error?: unknown
+  metadata?: Record<string, unknown>
 }
 
 /** Default max poll count at 5s intervals — 60 × 5s = 5 minutes. */

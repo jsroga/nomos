@@ -1,24 +1,17 @@
 import { ContentType, FetchCache, HttpMethod } from '@/shared/data/constants/protocol'
+import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { joinUrlPath } from '@/shared/data/url-builder'
 import {
   FetchCacheControl,
   FetchRequestHeader,
   WorldDataApiRoute,
+  WorldDataStoreError,
 } from '../../state/constants/world-data-store'
 import { WorldGenSidebarApiRoute } from '../../ui/constants/sidebar'
 import { worldProjectSchema, type WorldProject } from './world.dto'
 
 const JSON_HEADERS = { 'Content-Type': ContentType.Json }
-
-async function fetchJsonRecord(url: string, init?: RequestInit): Promise<Record<string, unknown>> {
-  const response = await fetch(url, init)
-  const data = recordFromJson(await response.json().catch(() => ({})))
-  if (!response.ok) {
-    throw new Error(readString(data.error) ?? `Request failed (${response.status})`)
-  }
-  return data
-}
 
 export async function fetchStorytellerProject(projectId: string): Promise<WorldProject> {
   const data = await fetchJsonRecord(joinUrlPath(WorldDataApiRoute.StorytellerProject, projectId), {
@@ -64,7 +57,7 @@ export async function acceptTileUpscale(input: {
   })
   const filename = readString(data.filename)
   if (!filename) {
-    throw new Error('Failed to accept upscale')
+    throw new Error(WorldDataStoreError.FailedToAcceptUpscale)
   }
   return { filename }
 }
@@ -125,17 +118,17 @@ export async function fetchUrlAsBase64(url: string): Promise<string> {
     const reader = new FileReader()
     reader.onloadend = () => {
       if (typeof reader.result !== 'string') {
-        reject(new Error('Invalid data URL'))
+        reject(new Error(WorldDataStoreError.InvalidDataUrl))
         return
       }
       const commaIndex = reader.result.indexOf(',')
       if (commaIndex === -1) {
-        reject(new Error('Invalid data URL'))
+        reject(new Error(WorldDataStoreError.InvalidDataUrl))
         return
       }
       resolve(reader.result.slice(commaIndex + 1))
     }
-    reader.onerror = () => reject(new Error('FileReader error'))
+    reader.onerror = () => reject(new Error(WorldDataStoreError.FileReaderError))
     reader.readAsDataURL(blob)
   })
 }

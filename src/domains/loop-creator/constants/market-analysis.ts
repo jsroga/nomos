@@ -56,3 +56,6 @@ export enum MarketViabilityScoreEmoji {
 
 export const MARKET_ANALYSIS_COMPLETE_REASONING =
   'Market analysis completed successfully'
+
+export const MARKET_ANALYSIS_NO_STRUCTURED_REPORT =
+  'Analysis completed but no structured report was generated.'

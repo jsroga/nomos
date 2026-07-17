@@ -1,10 +1,8 @@
 'use client'
 
-import { cn } from '@/shared/data/utils'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
-import { CharacterPanel } from '@/domains/storyteller'
-import { Lock, BookOpen, Users, AlertCircle, Scroll, FileText } from 'lucide-react'
-import { Button } from '@/components/Button'
+import { CharacterPanel } from '../../CharacterPanel'
+import { Users, AlertCircle, Scroll, FileText } from 'lucide-react'
 import {
   DomainSidebar,
   SidebarSection,
@@ -12,9 +10,11 @@ import {
   SidebarHeader,
 } from '@/components/DomainSidebar'
 import { EpisodeManager, MasterPromptEditor } from '../storyteller-dynamic-imports'
-import type { StorytellerPageState } from '@/domains/storyteller/state/hooks/useStorytellerPage'
+import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
+import { StorybibleToggleButton } from './StorybibleToggleButton'
 
-export function StorytellerLeftSidebar(props: StorytellerPageState) {
+export function StorytellerLeftSidebar(props: StorytellerPageSlices) {
+  const { core, chat, episode, agents } = props
   const {
     searchParams,
     router,
@@ -22,7 +22,6 @@ export function StorytellerLeftSidebar(props: StorytellerPageState) {
     isWorldBibleOpen,
     isBibleLocked,
     bibleLockedBy,
-    isSending,
     toggleBible,
     characters,
     selectedBeatId,
@@ -31,54 +30,29 @@ export function StorytellerLeftSidebar(props: StorytellerPageState) {
     setCurrentEpisodeId,
     setCurrentEpisodeTitle,
     currentEpisode,
+  } = core
+  const { isSending } = chat
+  const {
     isFetchingCharacters,
     isDeletingCharacter,
     handleCreateCharacter,
     handleUpdateCharacter,
     handleDeleteCharacter,
-    handleSaveProjectPrompt,
-    handleSaveEpisodePrompt,
-  } = props
+  } = episode
+  const { handleSaveProjectPrompt, handleSaveEpisodePrompt } = agents
 
   return (
     <DomainSidebar
           header={
             <div className="flex items-center gap-3 group cursor-default">
               <SidebarHeader>Storyteller</SidebarHeader>
-              <Button
-                variant={isWorldBibleOpen ? 'default' : 'outline'}
-                size="sm"
-                onClick={toggleBible}
-                disabled={isSending}
-                className={cn(
-                  'h-7 px-3 gap-1.5 text-[10px] font-bold border transition-colors duration-150 rounded-md uppercase tracking-widest active:scale-[0.98]',
-                  isWorldBibleOpen
-                    ? isBibleLocked
-                      ? 'bg-red-500/15 text-red-400 border-red-500/40 hover:bg-red-500/25'
-                      : 'bg-amber-500/15 text-amber-400 border-amber-500/40 hover:bg-amber-500/25'
-                    : isBibleLocked
-                      ? 'bg-transparent text-red-400/70 border-red-500/30 hover:bg-red-500/10 hover:text-red-400'
-                      : 'bg-transparent text-muted-foreground border-border hover:bg-muted/50 hover:text-foreground',
-                  isSending && 'opacity-50 cursor-not-allowed'
-                )}
-                title={
-                  isSending
-                    ? 'Storybible unavailable while agents are working'
-                    : isBibleLocked
-                      ? `Storybible Locked by ${bibleLockedBy || 'Admin'} - ${isWorldBibleOpen ? 'Close' : 'Open'} (Read-Only)`
-                      : isWorldBibleOpen
-                        ? 'Close Storybible'
-                        : 'Open Storybible'
-                }
-                id={TOUR_STEP_IDS.STORYTELLER_BIBLE}
-              >
-                {isBibleLocked ? (
-                  <Lock className="w-3.5 h-3.5" />
-                ) : (
-                  <BookOpen className="w-3.5 h-3.5" />
-                )}
-                <span>{isWorldBibleOpen ? 'BIBLE · OPEN' : 'STORYBIBLE'}</span>
-              </Button>
+              <StorybibleToggleButton
+                isWorldBibleOpen={isWorldBibleOpen}
+                isBibleLocked={isBibleLocked}
+                bibleLockedBy={bibleLockedBy}
+                isSending={isSending}
+                onToggle={toggleBible}
+              />
             </div>
           }
           storageKey="storyteller"

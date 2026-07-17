@@ -19,6 +19,9 @@ import {
 } from '@/domains/storyteller/ui/MentionsProvider/constants/mention-catalog'
 import { entityMentionItems } from '@/domains/storyteller/ui/MentionsProvider/mention-entity-items'
 import { sectionMentionItems } from '@/domains/storyteller/ui/MentionsProvider/mention-section-items'
+import { buildStorytellerProjectContext } from '@/domains/storyteller/ui/MentionsProvider/build-storyteller-project-context'
+
+export { buildStorytellerProjectContext }
 
 function entityIconForType(type: string): string {
   for (const [entityType, icon] of Object.entries(ENTITY_TYPE_ICONS)) {
@@ -113,38 +116,4 @@ export function getStorytellerMentionProviders(): MentionProvider[] {
     storytellerSectionProvider,
     entityRegistryProvider,
   ]
-}
-
-export function buildStorytellerProjectContext(data: {
-  projectId: string
-  characters?: ProjectContext['characters']
-  episodes?: ProjectContext['episodes']
-  beats?: ProjectContext['beats']
-  seriesBible?: ProjectContext['seriesBible'] & {
-    factions?: ProjectContext['factions']
-    storyPlan?: {
-      factions?: ProjectContext['factions']
-      worldRules?: ProjectContext['seriesBible'] extends { worldRules?: infer W } ? W : never
-      inspirations?: ProjectContext['seriesBible'] extends { inspirations?: infer I } ? I : never
-      soundtracks?: ProjectContext['seriesBible'] extends { soundtracks?: infer S } ? S : never
-      plotTwists?: ProjectContext['seriesBible'] extends { plotTwists?: infer P } ? P : never
-    }
-  }
-}): ProjectContext {
-  const storyPlan = data.seriesBible?.storyPlan
-  const factions = data.seriesBible?.factions || storyPlan?.factions || []
-
-  return {
-    projectId: data.projectId,
-    characters: data.characters,
-    episodes: data.episodes,
-    beats: data.beats,
-    factions,
-    seriesBible: {
-      worldRules: data.seriesBible?.worldRules || storyPlan?.worldRules || [],
-      inspirations: data.seriesBible?.inspirations || storyPlan?.inspirations,
-      soundtracks: data.seriesBible?.soundtracks || storyPlan?.soundtracks || [],
-      plotTwists: data.seriesBible?.plotTwists || storyPlan?.plotTwists || [],
-    },
-  }
 }

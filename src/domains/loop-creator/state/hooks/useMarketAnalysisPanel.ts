@@ -5,8 +5,6 @@ import { Node, Edge } from '@xyflow/react'
 import { MarketAnalysisReport } from '../../ai/agents/market-analyst/types'
 import { LoopAbortErrorName } from '@/domains/loop-creator/constants/abort-error'
 import { CANVAS_NODE_TYPE_GROUP } from '@/domains/loop-creator/constants/graph-state-defaults'
-import { LoopHttpMethod } from '@/domains/loop-creator/constants/loop-http'
-import { joinUrlPath } from '@/shared/data/url-builder'
 import {
   LOOP_GROUP_LABEL_UNNAMED,
   LOOP_NODE_LABEL_UNNAMED,
@@ -27,6 +25,12 @@ import {
   nodeLabel,
   nodeTypeField,
 } from '@/domains/loop-creator/core/loop-node-wire'
+import {
+  deleteSavedMarketAnalysis,
+  fetchSavedMarketAnalysis,
+  saveMarketAnalysis,
+  startMarketAnalysis,
+} from '../../core/io/market-analysis.api'
 
 interface UseMarketAnalysisPanelParams {
   isOpen: boolean
@@ -52,35 +56,46 @@ function buildMarketAnalysisPayload(
   edges: Edge[],
   gameContext: UseMarketAnalysisPanelParams['gameContext'],
 ) {
-  const mechanics = nodes
-    .filter(node => node.type !== CANVAS_NODE_TYPE_GROUP)
-    .map(node => ({
-      id: node.id,
-      name: nodeLabel(node, LOOP_NODE_LABEL_UNNAMED),
-      type: nodeTypeField(node, LOOP_NODE_TYPE_DEFAULT),
-      description: nodeDescription(node),
-    }))
+  const partitionedNodes = nodes.reduce<{
+    mechanics: Array<{ id: string; name: string; type: string; description: string }>
+    loops: Array<{ id: string; name: string; type: string; description: string }>
+  }>(
+    (accumulator, node) => {
+      const labeledNode = {
+        id: node.id,
+        name: nodeLabel(
+          node,
+          node.type === CANVAS_NODE_TYPE_GROUP ? LOOP_GROUP_LABEL_UNNAMED : LOOP_NODE_LABEL_UNNAMED
+        ),
+        description: nodeDescription(node),
+      }
 
-  const connections = edges.map(edge => ({
-    id: edge.id,
-    source: edge.source,
-    target: edge.target,
-    label: edgeLabel(edge),
-  }))
+      if (node.type === CANVAS_NODE_TYPE_GROUP) {
+        accumulator.loops.push({
+          ...labeledNode,
+          type: groupTimescale(node),
+        })
+      } else {
+        accumulator.mechanics.push({
+          ...labeledNode,
+          type: nodeTypeField(node, LOOP_NODE_TYPE_DEFAULT),
+        })
+      }
 
-  const loops = nodes
-    .filter(node => node.type === CANVAS_NODE_TYPE_GROUP)
-    .map(node => ({
-      id: node.id,
-      name: nodeLabel(node, LOOP_GROUP_LABEL_UNNAMED),
-      type: groupTimescale(node),
-      description: nodeDescription(node),
-    }))
+      return accumulator
+    },
+    { mechanics: [], loops: [] },
+  )
 
   return {
-    mechanics,
-    connections,
-    loops,
+    mechanics: partitionedNodes.mechanics,
+    connections: edges.map(edge => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      label: edgeLabel(edge),
+    })),
+    loops: partitionedNodes.loops,
     gameGenre: gameContext.gameGenre || LoopGameGenreDefault.Indie,
     gamePlatform: gameContext.gamePlatform || LoopGamePlatformDefault.Pc,
     targetAudience: gameContext.targetAudience || LoopGameAudienceDefault.Core,
@@ -160,12 +175,13 @@ export function useMarketAnalysisPanel({
     setError(null)
 
     try {
-      const response = await fetch(joinUrlPath('/api/loop-creator/market-analysis', gameLoopId))
-      const data = await response.json()
-
-      if (response.ok && data.exists && data.analysis) {
+      const data = await fetchSavedMarketAnalysis(gameLoopId)
+      if (data.exists && data.analysis) {
         setReport(data.analysis)
-        setSavedAt(new Date(data.metadata.createdAt))
+        const createdAt = data.metadata?.createdAt
+        if (typeof createdAt === 'string' || createdAt instanceof Date) {
+          setSavedAt(new Date(createdAt))
+        }
         setHasUnsavedChanges(false)
       }
     } catch {
@@ -198,16 +214,10 @@ export function useMarketAnalysisPanel({
     try {
       abortControllerRef.current = new AbortController()
 
-      const response = await fetch('/api/loop-creator/market-analysis', {
-        method: LoopHttpMethod.Post,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildMarketAnalysisPayload(nodes, edges, gameContext)),
-        signal: abortControllerRef.current.signal,
-      })
-
-      if (!response.ok) {
-        throw new Error(`Analysis failed: ${response.statusText}`)
-      }
+      const response = await startMarketAnalysis(
+        buildMarketAnalysisPayload(nodes, edges, gameContext),
+        abortControllerRef.current.signal
+      )
 
       const reader = response.body?.getReader()
       if (!reader) throw new Error(MarketAnalysisErrorMessage.NoResponseBody)
@@ -237,19 +247,12 @@ export function useMarketAnalysisPanel({
     setError(null)
 
     try {
-      const response = await fetch(joinUrlPath('/api/loop-creator/market-analysis', gameLoopId), {
-        method: LoopHttpMethod.Post,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(report),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || MarketAnalysisErrorMessage.FailedToSave)
+      const data = await saveMarketAnalysis(gameLoopId, report)
+      const createdAt = data.createdAt
+      if (typeof createdAt !== 'string' && !(createdAt instanceof Date)) {
+        throw new Error(MarketAnalysisErrorMessage.FailedToSave)
       }
-
-      setSavedAt(new Date(data.createdAt))
+      setSavedAt(new Date(createdAt))
       setHasUnsavedChanges(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : MarketAnalysisErrorMessage.FailedToSave)
@@ -261,9 +264,7 @@ export function useMarketAnalysisPanel({
   const regenerateAnalysis = useCallback(async () => {
     if (gameLoopId) {
       try {
-        await fetch(joinUrlPath('/api/loop-creator/market-analysis', gameLoopId), {
-          method: LoopHttpMethod.Delete,
-        })
+        await deleteSavedMarketAnalysis(gameLoopId)
       } catch {
         // Ignore delete errors
       }

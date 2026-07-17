@@ -1,50 +1,40 @@
 /**
  * Entity Registry Service (SERVER-ONLY)
- *
- * Manages entity references for smart context assembly and UI rendering.
- * Entities are referenced in LLM output using MD-style links: [Display Name][entity-type-uuid]
- *
- * Features:
- * - In-memory LRU cache for fast lookups
- * - DB sync for persistence
- * - Reference extraction from text
- * - Integration with GraphRAG for relationship traversal
- *
- * NOTE: This module uses database access and should only be imported server-side.
- * For client-side usage, use the API endpoints:
- * - GET /api/entities/resolve
- * - POST /api/entities/mark-referenced
  */
 
 import { entityReferences } from '@/db'
 import { db } from '@/db/client'
 import { eq, and, inArray } from 'drizzle-orm'
-import { v4 as uuidv4 } from 'uuid'
 import {
   parseEntityType,
   entityMetadata,
 } from '@/domains/storyteller/core/entities/entity-type-guards'
-
-// Re-export types from reference-parser for convenience
-export { ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/reference-parser'
-
-export type { EntityType } from '@/domains/storyteller/core/entities/reference-parser'
-
-import { EntityType, ENTITY_PREFIXES, PREFIX_TO_TYPE } from '@/domains/storyteller/core/entities/reference-parser'
 import {
   EntityRegistryLog,
   EntityRegistryNote,
 } from '@/domains/storyteller/services/constants/entity-registry-log'
-import { StringSeparator } from '@/shared/data/constants/protocol'
+import { LRUCache } from './entity-registry-lru-cache'
+import { generateEntityEmbedding } from './entity-registry-embedding'
+import {
+  generateReferenceId,
+  getEntityTypeFromId,
+  REFERENCE_PATTERN,
+  ENTITY_PREFIXES,
+  PREFIX_TO_TYPE,
+  type EntityType,
+} from './entity-registry-reference-id'
+
+export { ENTITY_PREFIXES, PREFIX_TO_TYPE, REFERENCE_PATTERN, getEntityTypeFromId, generateReferenceId }
+export type { EntityType }
 
 export interface EntityReference {
-  id: string // e.g., "char-a1b2c3d4"
+  id: string
   type: EntityType
-  name: string // Display name
-  description: string // For tooltip
-  metadata: Record<string, unknown> // Full entity data
+  name: string
+  description: string
+  metadata: Record<string, unknown>
   projectId: string
-  sourceEntityId?: string // Link to original table
+  sourceEntityId?: string
   createdAt: Date
   lastReferencedAt: Date
 }
@@ -58,90 +48,10 @@ export interface RegisterEntityInput {
   sourceEntityId?: string
 }
 
-// LRU Cache implementation
-class LRUCache<K, V> {
-  private cache = new Map<K, V>()
-  private maxSize: number
-
-  constructor(maxSize: number = 1000) {
-    this.maxSize = maxSize
-  }
-
-  get(key: K): V | undefined {
-    const value = this.cache.get(key)
-    if (value !== undefined) {
-      // Move to end (most recently used)
-      this.cache.delete(key)
-      this.cache.set(key, value)
-    }
-    return value
-  }
-
-  set(key: K, value: V): void {
-    if (this.cache.has(key)) {
-      this.cache.delete(key)
-    } else if (this.cache.size >= this.maxSize) {
-      // Delete oldest (first item)
-      const firstKey = this.cache.keys().next().value
-      if (firstKey !== undefined) {
-        this.cache.delete(firstKey)
-      }
-    }
-    this.cache.set(key, value)
-  }
-
-  has(key: K): boolean {
-    return this.cache.has(key)
-  }
-
-  delete(key: K): boolean {
-    return this.cache.delete(key)
-  }
-
-  clear(): void {
-    this.cache.clear()
-  }
-
-  values(): IterableIterator<V> {
-    return this.cache.values()
-  }
-
-  entries(): IterableIterator<[K, V]> {
-    return this.cache.entries()
-  }
-}
-
-/**
- * Reference pattern for parsing entity references from text
- * Matches: [Display Name][entity-type-uuid]
- * Groups: [1] = Display Name, [2] = Full ID (e.g., char-abc123)
- */
-export const REFERENCE_PATTERN = /\[([^\]]+)\]\[([a-z]+-[a-zA-Z0-9-]+)\]/g
-
-/**
- * Extract entity type from reference ID
- */
-export function getEntityTypeFromId(refId: string): EntityType | null {
-  const prefix = refId.split('-')[0]
-  return PREFIX_TO_TYPE[prefix] || null
-}
-
-/**
- * Generate a reference ID for an entity
- */
-export function generateReferenceId(type: EntityType): string {
-  const prefix = ENTITY_PREFIXES[type]
-  const shortUuid = uuidv4().split('-')[0] // Use first segment for brevity
-  return `${prefix}-${shortUuid}`
-}
-
 class EntityRegistryService {
   private cache = new LRUCache<string, EntityReference>(1000)
-  private projectCaches = new Map<string, Set<string>>() // projectId -> Set of refIds
+  private projectCaches = new Map<string, Set<string>>()
 
-  /**
-   * Register a new entity and return its reference ID
-   */
   async register(input: RegisterEntityInput): Promise<string> {
     const refId = generateReferenceId(input.type)
     const now = new Date()
@@ -158,16 +68,7 @@ class EntityRegistryService {
       lastReferencedAt: now,
     }
 
-    // Add to cache
-    this.cache.set(refId, entity)
-
-    // Track by project
-    if (!this.projectCaches.has(input.projectId)) {
-      this.projectCaches.set(input.projectId, new Set())
-    }
-    this.projectCaches.get(input.projectId)?.add(refId)
-
-    // Persist to DB (async, non-blocking)
+    this.cacheEntity(entity, input.projectId)
     this.persistEntity(entity).catch(err => {
       console.warn(EntityRegistryLog.PersistFailed, err)
     })
@@ -175,10 +76,6 @@ class EntityRegistryService {
     return refId
   }
 
-  /**
-   * Register an entity with an explicit ID (for auto-linking)
-   * This allows us to register entities with predictable IDs like "faction-the-mood-wardens"
-   */
   async registerWithId(refId: string, input: Omit<RegisterEntityInput, 'type'>): Promise<string> {
     const type = getEntityTypeFromId(refId)
     if (!type) {
@@ -186,7 +83,6 @@ class EntityRegistryService {
     }
 
     const now = new Date()
-
     const entity: EntityReference = {
       id: refId,
       type,
@@ -199,16 +95,7 @@ class EntityRegistryService {
       lastReferencedAt: now,
     }
 
-    // Add to cache
-    this.cache.set(refId, entity)
-
-    // Track by project
-    if (!this.projectCaches.has(input.projectId)) {
-      this.projectCaches.set(input.projectId, new Set())
-    }
-    this.projectCaches.get(input.projectId)?.add(refId)
-
-    // Persist to DB (async, non-blocking)
+    this.cacheEntity(entity, input.projectId)
     this.persistEntity(entity).catch(err => {
       console.warn(EntityRegistryLog.PersistFailed, err)
     })
@@ -217,27 +104,17 @@ class EntityRegistryService {
     return refId
   }
 
-  /**
-   * Register an entity if it doesn't exist, or return existing ID
-   */
   async registerIfNotExists(input: RegisterEntityInput): Promise<string> {
-    // Check if entity with same name and type exists in project
     const existing = await this.findByNameAndType(input.projectId, input.name, input.type)
-    if (existing) {
-      return existing.id
-    }
+    if (existing) return existing.id
     return this.register(input)
   }
 
-  /**
-   * Find entity by name and type in a project
-   */
   async findByNameAndType(
     projectId: string,
     name: string,
     type: EntityType
   ): Promise<EntityReference | null> {
-    // Check cache first
     const projectRefs = this.projectCaches.get(projectId)
     if (projectRefs) {
       for (const refId of projectRefs) {
@@ -248,7 +125,6 @@ class EntityRegistryService {
       }
     }
 
-    // Check DB
     try {
       const [dbEntity] = await db
         .select()
@@ -276,17 +152,10 @@ class EntityRegistryService {
     return null
   }
 
-  /**
-   * Resolve a reference ID to its full entity
-   */
   async resolve(refId: string): Promise<EntityReference | null> {
-    // Check cache first
     const cached = this.cache.get(refId)
-    if (cached) {
-      return cached
-    }
+    if (cached) return cached
 
-    // Check DB
     try {
       const [dbEntity] = await db
         .select()
@@ -308,14 +177,10 @@ class EntityRegistryService {
     return null
   }
 
-  /**
-   * Resolve multiple reference IDs at once
-   */
   async resolveMany(refIds: string[]): Promise<Map<string, EntityReference>> {
     const result = new Map<string, EntityReference>()
     const missingIds: string[] = []
 
-    // Check cache first
     for (const refId of refIds) {
       const cached = this.cache.get(refId)
       if (cached) {
@@ -325,7 +190,6 @@ class EntityRegistryService {
       }
     }
 
-    // Fetch missing from DB
     if (missingIds.length > 0) {
       try {
         const dbEntities = await db
@@ -347,25 +211,10 @@ class EntityRegistryService {
     return result
   }
 
-  /**
-   * Extract all entity reference IDs from text
-   * Returns array of reference IDs (e.g., ["char-abc123", "place-def456"])
-   */
   extractReferences(text: string): string[] {
-    const refs: string[] = []
-    const pattern = new RegExp(REFERENCE_PATTERN.source, 'g')
-    let match
-
-    while ((match = pattern.exec(text)) !== null) {
-      refs.push(match[2]) // match[2] is the reference ID
-    }
-
-    return [...new Set(refs)] // Deduplicate
+    return [...new Set(this.extractReferencesWithNames(text).map(r => r.refId))]
   }
 
-  /**
-   * Extract reference IDs with their display names
-   */
   extractReferencesWithNames(text: string): Array<{ name: string; refId: string }> {
     const refs: Array<{ name: string; refId: string }> = []
     const pattern = new RegExp(REFERENCE_PATTERN.source, 'g')
@@ -378,9 +227,6 @@ class EntityRegistryService {
     return refs
   }
 
-  /**
-   * Get all entities for a project
-   */
   async getProjectEntities(projectId: string): Promise<EntityReference[]> {
     try {
       const dbEntities = await db
@@ -392,13 +238,8 @@ class EntityRegistryService {
         .map(e => this.dbToEntity(e))
         .filter((entity): entity is EntityReference => entity !== null)
 
-      // Update cache
       for (const entity of entities) {
-        this.cache.set(entity.id, entity)
-        if (!this.projectCaches.has(projectId)) {
-          this.projectCaches.set(projectId, new Set())
-        }
-        this.projectCaches.get(projectId)?.add(entity.id)
+        this.cacheEntity(entity, projectId)
       }
 
       return entities
@@ -408,9 +249,6 @@ class EntityRegistryService {
     }
   }
 
-  /**
-   * Get entities by type for a project
-   */
   async getEntitiesByType(projectId: string, type: EntityType): Promise<EntityReference[]> {
     try {
       const dbEntities = await db
@@ -427,21 +265,14 @@ class EntityRegistryService {
     }
   }
 
-  /**
-   * Update last referenced timestamp
-   */
   async markReferenced(refId: string): Promise<void> {
     const entity = this.cache.get(refId)
     if (entity) {
       entity.lastReferencedAt = new Date()
     }
 
-    // Only attempt DB update if refId is a valid UUID
-    // Some components pass short IDs (e.g., 'rule-afc7dfc0') which crash PostgreSQL
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(refId)
-    if (!isUuid) {
-      return
-    }
+    if (!isUuid) return
 
     try {
       await db
@@ -453,13 +284,9 @@ class EntityRegistryService {
     }
   }
 
-  /**
-   * Delete an entity reference
-   */
   async delete(refId: string): Promise<void> {
     this.cache.delete(refId)
 
-    // Remove from project cache
     for (const [_projectId, refs] of this.projectCaches) {
       refs.delete(refId)
     }
@@ -471,14 +298,10 @@ class EntityRegistryService {
     }
   }
 
-  /**
-   * Sync all cached entities from a specific source (e.g., characters table)
-   * This is called when loading a project to pre-populate the registry
-   */
   async syncFromSource(
     projectId: string,
     type: EntityType,
-    entities: Array<{ id: string; name: string; description?: string;[key: string]: unknown }>
+    entities: Array<{ id: string; name: string; description?: string; [key: string]: unknown }>
   ): Promise<void> {
     for (const entity of entities) {
       const existing = await this.findByNameAndType(projectId, entity.name, type)
@@ -495,9 +318,6 @@ class EntityRegistryService {
     }
   }
 
-  /**
-   * Clear cache for a project
-   */
   clearProjectCache(projectId: string): void {
     const refs = this.projectCaches.get(projectId)
     if (refs) {
@@ -508,7 +328,13 @@ class EntityRegistryService {
     }
   }
 
-  // Private helpers
+  private cacheEntity(entity: EntityReference, projectId: string): void {
+    this.cache.set(entity.id, entity)
+    if (!this.projectCaches.has(projectId)) {
+      this.projectCaches.set(projectId, new Set())
+    }
+    this.projectCaches.get(projectId)?.add(entity.id)
+  }
 
   private async persistEntity(entity: EntityReference): Promise<void> {
     await db
@@ -534,47 +360,9 @@ class EntityRegistryService {
         },
       })
 
-    // Auto-generate Voyage embedding (async, non-blocking)
-    this.generateEmbedding(entity).catch(err => {
+    generateEntityEmbedding(entity).catch(err => {
       console.warn(`[EntityRegistry] Embedding generation failed for ${entity.id}:`, err)
     })
-  }
-
-  /**
-   * Generate Voyage embedding for an entity and store it
-   */
-  private async generateEmbedding(entity: EntityReference): Promise<void> {
-    try {
-      const { entityGraphService } = await import('./entity-graph-service')
-
-      // Build embedding content from entity name, type, description, and key metadata
-      const metaParts: string[] = []
-      const meta = entity.metadata || {}
-
-      if (typeof meta.role === 'string') metaParts.push(`Role: ${meta.role}`)
-      if (typeof meta.archetype === 'string') metaParts.push(`Archetype: ${meta.archetype}`)
-      if (typeof meta.motivation === 'string') metaParts.push(`Motivation: ${meta.motivation}`)
-      if (typeof meta.ideology === 'string') metaParts.push(`Ideology: ${meta.ideology}`)
-      if (typeof meta.description === 'string') metaParts.push(meta.description)
-      if (typeof meta.powerStructure === 'string') metaParts.push(meta.powerStructure)
-      if (meta.goals && Array.isArray(meta.goals)) metaParts.push(`Goals: ${meta.goals.join(StringSeparator.CommaSpace)}`)
-
-      const embeddingContent = [
-        `${entity.type}: ${entity.name}`,
-        entity.description || '',
-        ...metaParts,
-      ]
-        .filter(Boolean)
-        .join(StringSeparator.DotSpace)
-
-      if (embeddingContent.length < 5) return // Skip if too little content
-
-      await entityGraphService.buildEntityEmbedding(entity.id, embeddingContent)
-      console.log(`🧠 [EntityRegistry] Generated embedding for ${entity.id}`)
-    } catch (err) {
-      // Non-critical - embeddings enhance search but aren't required
-      console.warn(`[EntityRegistry] Embedding failed for ${entity.id}:`, err)
-    }
   }
 
   private dbToEntity(dbEntity: typeof entityReferences.$inferSelect): EntityReference | null {
@@ -603,8 +391,5 @@ class EntityRegistryService {
   }
 }
 
-// Singleton instance
 export const entityRegistry = new EntityRegistryService()
-
-// Export class for testing
 export { EntityRegistryService }
