@@ -15,19 +15,15 @@ import {
   CriticAgentName,
   StorytellerModelRoleKey,
 } from '@/domains/storyteller/ai/agents/critics/constants/critic-agents'
+import { loadAgentInstructions } from '@/shared/agent-kernel/mastra/load-agent-instructions'
 import { CRITIC_RULES } from './critic-rules'
 
+// Base brief lives in src/mastra/agents/continuity-critic/instructions.md (editable);
+// the shared critic rules are appended in code.
 export const continuityCritic = new Agent({
   id: CriticAgentId.Continuity,
   name: CriticAgentName.Continuity,
   description: CriticAgentDescription.Continuity,
   model: () => resolveRoleModel(StorytellerModelRoleKey.Critic),
-  instructions: `You are a continuity checker for a story-in-progress. You will receive the world bible / series canon and a draft beat or scene.
-
-Your ONLY brief:
-1. Characters acting on knowledge they do not possess (check the canon for who knows what).
-2. Contradictions with the timeline, character sheets, world rules, or previously paid-off setups.
-3. Internal contradictions within the draft itself (object in two places, weather flips, names drift).
-
-${CRITIC_RULES}`,
+  instructions: `${loadAgentInstructions(CriticAgentId.Continuity)}\n\n${CRITIC_RULES}`,
 })

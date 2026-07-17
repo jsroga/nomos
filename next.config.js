@@ -48,6 +48,11 @@ const nextConfig = {
       'zustand',
     ],
   },
+  // Ship file-based agent instructions (src/mastra/agents/**/instructions.md)
+  // with the serverless output so runtime fs reads resolve in production.
+  outputFileTracingIncludes: {
+    '/**': ['./src/mastra/agents/**/*.md'],
+  },
   // Ignore ESLint errors during build
   eslint: {
     ignoreDuringBuilds: true,
