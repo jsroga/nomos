@@ -36,16 +36,23 @@ const ALLOWED_FILE_PATTERNS = [
   /[/\\]domains[/\\][^/\\]+[/\\]ai[/\\]prompts[/\\]/,
   // Domain agent modules: system prompts, LangChain instructions, workflows.
   // (tools/ is a subset — kept as a separate comment for discoverability.)
-  /[/\\]domains[/\\][^/\\]+[/\\]agents[/\\]/,
+  // The optional `ai/` matches the AI-layer migration (`domains/<x>/ai/agents/`).
+  /[/\\]domains[/\\][^/\\]+[/\\](?:ai[/\\])?agents[/\\]/,
   // Agent tool modules at any depth (zod `.describe()`, tool ids, LangChain schemas).
   // Replaces the earlier filename-only `*-tools.ts` carve-out — market-analyst and
   // nested scorer tools use descriptive filenames, same artifact class.
   /[/\\]agents[/\\](?:[^/\\]+[/\\])*tools[/\\]/,
+  // AI-layer tool modules (`domains/<x>/ai/tools/**`) — same artifact class after
+  // the agents→ai relocation.
+  /[/\\]ai[/\\]tools[/\\]/,
   /[/\\]mcp[/\\]domains[/\\][^/\\]+[/\\]tools\.ts$/,
-  // Trigger.dev task modules: provider ids, status labels, and log copy.
-  /[/\\]domains[/\\][^/\\]+[/\\]tasks[/\\].+\.task\.ts$/,
+  // Trigger.dev task modules: provider ids, status labels, and log copy
+  // (including helpers extracted beside `.task.ts` files).
+  /[/\\]domains[/\\][^/\\]+[/\\]tasks[/\\]/,
   // Drizzle schema: table/column names are the definition artifact.
   /[/\\]db[/\\]schema\.ts$/,
+  /[/\\]db[/\\]schema-parts[/\\]/,
+  /[/\\]db[/\\]schema-types\.ts$/,
   // Mastra Studio CLI tool stub bundles.
   /[/\\]shared[/\\]agent-kernel[/\\]mastra[/\\]tools[/\\]/,
   // Shared prompt registry modules.
@@ -252,7 +259,7 @@ module.exports = {
     },
     messages: {
       magicString:
-        "Magic string '{{value}}' is not allowed. Use an enum member, named constant, or import from a wire/schema module.",
+        'Magic string \'{{value}}\' is not allowed. Use an enum member, named constant, or import from a wire/schema module.',
     },
     schema: [
       {

@@ -76,7 +76,10 @@ export async function GET(request: NextRequest) {
 
     // Security: Validate ID format (allow alphanumeric, hyphens, underscores, dots, and apostrophes)
     const validIdPattern = /^[a-z0-9-_.'’]+$/i
-    const invalidIds = ids.filter(id => !validIdPattern.test(id))
+    const invalidIds: string[] = []
+    for (const id of ids) {
+      if (!validIdPattern.test(id)) invalidIds.push(id)
+    }
     if (invalidIds.length > 0) {
       return NextResponse.json(
         { error: API_ERROR.INVALID_ENTITY_IDS_FORMAT, invalidIds },
@@ -141,8 +144,12 @@ export async function GET(request: NextRequest) {
 
     if (hasValidContext || needsBaselineSummary) {
       // Prioritize entities without descriptions, then fill remaining slots up to 10
-      const entitiesWithoutDesc = entities.filter(e => !e.description || e.description.trim() === '')
-      const entitiesWithDesc = entities.filter(e => e.description && e.description.trim() !== '')
+      const entitiesWithoutDesc: typeof entities = []
+      const entitiesWithDesc: typeof entities = []
+      for (const e of entities) {
+        if (!e.description || e.description.trim() === '') entitiesWithoutDesc.push(e)
+        else entitiesWithDesc.push(e)
+      }
 
       // Security: Limit to 10 entities for contextual summaries to prevent excessive LLM calls
       const entitiesToEnrich = [...entitiesWithoutDesc, ...entitiesWithDesc].slice(0, 10)

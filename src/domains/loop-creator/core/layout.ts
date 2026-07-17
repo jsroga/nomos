@@ -63,8 +63,12 @@ function findLoopOrder(nodeIds: string[], edges: Edge[]): string[] {
 }
 
 export const autoLayoutNodes = (nodes: Node[], edges: Edge[]): Node[] => {
-  const groups = nodes.filter(n => n.type === CANVAS_NODE_TYPE_GROUP)
-  const children = nodes.filter(n => n.type !== CANVAS_NODE_TYPE_GROUP)
+  const groups: typeof nodes = []
+  const children: typeof nodes = []
+  for (const n of nodes) {
+    if (n.type === CANVAS_NODE_TYPE_GROUP) groups.push(n)
+    else children.push(n)
+  }
 
   // Sort groups by timescale order
   const sortedGroups = [...groups].sort((a, b) => {

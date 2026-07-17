@@ -194,29 +194,22 @@ export const trendAnalyzerTool = createLoopStructuredTool({
         .sort((a, b) => b.relevance - a.relevance)
         .slice(0, 8)
 
-      // Categorize trends
-      const opportunities = relevantTrends
-        .filter(t => t.direction === 'rising')
-        .map(t => ({
-          trend: t.trend,
-          description: t.description,
-          relevance: t.relevance,
-        }))
-
-      const risks = relevantTrends
-        .filter(
-          t =>
-            t.direction === 'declining' ||
-            (t.direction === 'stable' && t.description.includes('saturat'))
-        )
-        .map(t => ({
-          trend: t.trend,
-          description: t.description,
-        }))
-
-      const stable = relevantTrends.filter(
-        t => t.direction === 'stable' && !t.description.includes('saturat')
-      )
+      // Categorize trends in a single pass (opportunity / risk / stable).
+      const opportunities: Array<{ trend: string; description: string; relevance: number }> = []
+      const risks: Array<{ trend: string; description: string }> = []
+      const stable: typeof relevantTrends = []
+      for (const t of relevantTrends) {
+        if (t.direction === 'rising') {
+          opportunities.push({ trend: t.trend, description: t.description, relevance: t.relevance })
+        } else if (
+          t.direction === 'declining' ||
+          (t.direction === 'stable' && t.description.includes('saturat'))
+        ) {
+          risks.push({ trend: t.trend, description: t.description })
+        } else if (t.direction === 'stable' && !t.description.includes('saturat')) {
+          stable.push(t)
+        }
+      }
 
       // Generate insights
       const insights: string[] = []

@@ -12,8 +12,12 @@ const START_Y = 100
 export function tidyNodesLayout(nodesToLayout: Node[], edgesToLayout: Edge[]): Node[] {
   if (nodesToLayout.length === 0) return nodesToLayout
 
-  const groups = nodesToLayout.filter(n => n.type === LoopFlowNodeType.Group)
-  const regularNodes = nodesToLayout.filter(n => n.type !== LoopFlowNodeType.Group)
+  const groups: typeof nodesToLayout = []
+  const regularNodes: typeof nodesToLayout = []
+  for (const n of nodesToLayout) {
+    if (n.type === LoopFlowNodeType.Group) groups.push(n)
+    else regularNodes.push(n)
+  }
 
   if (regularNodes.length === 0) return nodesToLayout
 
