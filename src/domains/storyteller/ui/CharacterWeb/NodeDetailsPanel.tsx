@@ -15,12 +15,12 @@ function formatEntityLabel(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, ' ')
 }
 
-function entityBadgeClass(type: StoryEntityType): string {
+function entityBadgeClass(type: `${StoryEntityType}`): string {
   if (type === StoryEntityType.Character) return 'bg-purple-500/20 text-purple-300'
   return 'bg-zinc-500/20 text-zinc-400'
 }
 
-function entityAvatarClass(type: StoryEntityType): string {
+function entityAvatarClass(type: `${StoryEntityType}`): string {
   if (type === StoryEntityType.Character) return 'bg-purple-900/20 text-purple-200'
   if (type === StoryEntityType.Faction) return 'bg-blue-900/20 text-blue-200'
   if (type === StoryEntityType.Place) return 'bg-emerald-900/20 text-emerald-200'

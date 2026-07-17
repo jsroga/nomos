@@ -20,7 +20,7 @@ import { LoopNodeType } from '@/domains/loop-creator/constants/custom-nodes'
 import { CANVAS_NODE_TYPE_GROUP } from '@/domains/loop-creator/constants/graph-state-defaults'
 import { LoopAutoSaveStatus } from '@/domains/loop-creator/constants/auto-save'
 import { LoopSelector } from './LoopSelector'
-import type { PersistedGameLoop } from './LoopSelector'
+import type { PersistedGameLoop } from '@/domains/loop-creator/core/io/loops.api'
 import { LoopAnalysisDialog } from './LoopAnalysisDialog'
 import {
   readLoopMetadataName,

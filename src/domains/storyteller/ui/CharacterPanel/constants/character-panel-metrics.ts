@@ -11,7 +11,6 @@ import {
   Users,
   Zap,
 } from 'lucide-react'
-import type { CharacterMetrics } from '@/domains/storyteller/core/types/story-types'
 import {
   StorytellerConfirmCopy,
   StorytellerConfirmVariant,
@@ -90,7 +89,7 @@ export enum CharacterPanelConfirmCopy {
 export const CHARACTER_PANEL_LOG_FETCH_FAILED = 'Failed to fetch character snapshots:'
 
 export interface CharacterMetricConfig {
-  key: keyof CharacterMetrics
+  key: CharacterMetricKey
   label: string
   icon: LucideIcon
   color: string

@@ -227,7 +227,7 @@ export function applyForceLayout(
   }))
 }
 
-function strokeDashForStyle(strokeStyle: RelationshipStrokeStyle): string | undefined {
+function strokeDashForStyle(strokeStyle: `${RelationshipStrokeStyle}` | string): string | undefined {
   if (strokeStyle === RelationshipStrokeStyle.Dashed) {
     return CHARACTER_WEB_STROKE_DASH_BY_STYLE[RelationshipStrokeStyle.Dashed]
   }

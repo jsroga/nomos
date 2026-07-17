@@ -20,10 +20,10 @@ export const CharacterMetricGrid: React.FC<CharacterMetricGridProps> = ({ charac
       const { value, displayPercentage, displayValue } = getMetricDisplayValues(
         character,
         metric.key,
-        metric.isValence
+        metric.isValence ?? false
       )
       const isHighRisk = isMetricHighRisk(metric.key, value)
-      const barColor = getMetricBarColor(isHighRisk, metric.isValence, value, displayPercentage)
+      const barColor = getMetricBarColor(isHighRisk, metric.isValence ?? false, value, displayPercentage)
 
       return (
         <div key={metric.key} className="space-y-0.5">

@@ -9,13 +9,7 @@ import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam, TriggerRunStatus } from '@/shared/data/constants/protocol'
-
-enum GameLoopType {
-  Core = 'core',
-  Meta = 'meta',
-  Social = 'social',
-  Monetization = 'monetization',
-}
+import { GameLoopTypeInput } from '@/domains/game-design/ai/constants/game-loop-workflow-wire'
 
 enum TargetAudience {
   Casual = 'casual',
@@ -31,12 +25,12 @@ const CreateLoopRequestSchema = z.object({
   genre: z.string().min(1),
   loopType: z
     .enum([
-      GameLoopType.Core,
-      GameLoopType.Meta,
-      GameLoopType.Social,
-      GameLoopType.Monetization,
+      GameLoopTypeInput.Core,
+      GameLoopTypeInput.Meta,
+      GameLoopTypeInput.Social,
+      GameLoopTypeInput.Monetization,
     ])
-    .default(GameLoopType.Core),
+    .default(GameLoopTypeInput.Core),
   targetAudience: z
     .enum([TargetAudience.Casual, TargetAudience.Midcore, TargetAudience.Hardcore])
     .default(TargetAudience.Midcore),
