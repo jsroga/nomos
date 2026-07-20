@@ -9,7 +9,7 @@ Status of the Mastra migration across modules (storyteller set the convention), 
 | Area | Status |
 |---|---|
 | **storyteller** | ✅ Full Mastra + conventions (central instance, `ai/` layer, role matrix, tools, workflows, file-based prompts, observability, controller/durable/goals) |
-| **game-design** | ◐ **Partial** — Mastra `createTool` + `createWorkflow` + 1 `Agent`, but **not registered centrally**, hardcoded model string, still LangChain for embeddings |
+| **game-design** | ✅ **On convention** — Mastra `createTool` + `createWorkflow` + `Agent`, **now registered centrally** (`core/io/mastra-runtime.ts`), dynamic `model` callback; LangChain kept only for the domain pattern-RAG index (documented exception) |
 | **loop-creator** | ❌ **LangChain** multi-agent supervisor — not migrated at all |
 | **interior-designer / 3d-asset-exporter / world-building-toolkit** | — **N/A** — no agents; Trigger.dev tasks (correct, don't force Mastra) |
 | **marketing** | — empty (no AI yet) |
@@ -36,25 +36,25 @@ What "on Mastra, our way" means (see `AGENTS.md`):
 
 ## 2. Module-by-module status + plan
 
-### game-design — ◐ Partial (closest to convention)
+### game-design — ✅ On convention (central registration done)
 
-**Has:** Mastra `createTool` (~13 tools), a Mastra `createWorkflow` (`game-loop-workflow`) with steps, one `new Agent`. Invoked from `POST /api/workflows/game-design`.
+**Has:** Mastra `createTool` (~13 tools), a Mastra `createWorkflow` (`game-loop-workflow`) with steps, one `new Agent`, **now registered on the central instance**. Invoked from `POST /api/workflows/game-design`.
 
-**Gaps vs convention:**
-- ❌ **Not registered centrally** — no `core/io/mastra-runtime.ts`, no `registerMastraModule`. The workflow is constructed ad-hoc per request, so it doesn't share the central instance's storage/observability/tracing.
-- ❌ **Hardcoded model** — `game-design-agent.ts` uses `model: modelString`, not `resolveRoleModel`. No role matrix / picker.
-- ❌ Still imports **LangChain** (`ChatOpenAI`, `OpenAIEmbeddings`) for embeddings/RAG.
-- ❌ No `withMastraSpan` observability.
+**Done (2026-07-20 — keys-free wiring):**
+- ✅ **Central registration** — `domains/game-design/core/io/mastra-runtime.ts` builds a sync agent + workflow graph and calls `registerMastraModule({ agents: { gameDesign }, workflows: { [GAME_LOOP_WORKFLOW_ID] } })`. Side-effect-imported by `src/mastra.ts` (Studio) and the game-design route (production ordering, before any `getMastraInstance()` via `withMastraSpan`). The agent + workflow now appear in Studio and share the instance's storage/observability/tracing.
+- ✅ **Sync-constructible agent** — `GameDesignAgent.createSync()` + dynamic `instructions: () => resolveGameDesignInstructions()` and `model: () => resolveGameDesignModel()` callbacks defer prompt/model resolution to run time, so construction needs no keys/DB. `create()` kept as a backward-compatible async delegate. `mastraAgent` getter exposes the inner `Agent` for registration.
+- ✅ `resolveGameDesignModel()` single source (dynamic `model` callback now — convention #3) · ✅ `withMastraSpan` observability · ✅ workflow module singleton.
+- ✅ **Structure fix** — moved `ai/config/model-config.ts` → `config/model-config.ts` (`config/` is not an allowed `ai/` subfolder; matches storyteller's `domains/<x>/config/`). Cleared the `domain-structure` violation.
 
-**Progress:** ✅ `resolveGameDesignModel()` single source · ✅ `withMastraSpan` observability · ✅ workflow already a module singleton (`workflowInstance`).
+**Registration parity (storyteller precedent):** the REGISTERED `gameDesign` agent is **memoryless** (sync, same instructions/model/tools). The per-request production path (`createGameLoopWorkflow` in the route) additionally wires the domain `GameDesignMemory` pattern index. This is the same split storyteller uses (registered chat adapter memoryless; per-request agent carries Memory).
 
-**Remaining (the real work — precise blockers found 2026-07-20):**
-1. **Agent is an async-constructed class wrapper.** `GameDesignAgent.create()` is `async` (loads prompts via the repository) and exposes **class methods** (`agent.designLoop(...)`) that the workflow steps call directly. The central registry (`registerMastraModule`) wants **sync `Agent` objects** (`new Agent({ instructions: () => …, model: () => … })`). → restructure to a sync Mastra `Agent` + move `designLoop` logic into a step/service.
-2. **Own store.** `createGameDesignMemory` builds its **own `new PgVector({…})`** per request. Decide: consolidate onto the shared store/memory (the "one store" invariant) vs. keep a domain-specific vector index as an explicit, documented exception.
-3. Then add `core/io/mastra-runtime.ts` → `registerMastraModule({ agents, workflows })` (side-effect import like storyteller); route calls the registered workflow.
-4. Optionally replace LangChain embeddings with the shared RAG path.
+**Documented exception — domain PgVector.** `createGameDesignMemory` keeps its **own `PgVector`** as a game-design *pattern RAG index*, not agent memory — an explicit, documented exception to the "one store" rule (the invariant is one Mastra `PostgresStore`/memory, not "no domain vector indices"). Not on the module-load path, so it needs no keys to register.
 
-> This is a genuine multi-day refactor (async→sync agent + store consolidation + step rewrites), best done as its own keys-tested session — not bundled into an unrelated pass.
+**Optional remaining (not blocking convention):**
+- Replace LangChain (`OpenAIEmbeddings`) in `GameDesignMemory` with the shared RAG embedding path.
+- Route could invoke the registered workflow graph directly instead of its memoryed wrapper — kept as-is to preserve the pattern-RAG behavior.
+
+> Live-run verification (Studio shows `gameDesign` + `game-loop-workflow`; a real design loop) is the operator step — needs `DATABASE_URL` + an LLM key. The compile/wiring is done (TSC 0 · ESLint 0 · domain-structure green for game-design).
 
 ### loop-creator — ❌ LangChain (biggest gap)
 
@@ -177,6 +177,6 @@ STORYTELLER_PROJECT_ID=... STORYTELLER_EPISODE_ID=... \
 
 1. ✅ **MCP build fix** — done (`src/mcp/tsconfig.json`; 0 errors).
 2. ✅ **Terminal scripts** — done (`storyteller:repl` interactive + `storyteller:orchestrate` one-shot).
-3. ◐ **game-design → convention** — model-config + observability + workflow-singleton done; **central registration remaining** (async→sync agent + own-store consolidation + step rewrites — a focused, keys-tested session).
+3. ✅ **game-design → convention** — done: central registration (`core/io/mastra-runtime.ts` + `registerMastraModule`), sync agent (`createSync` + dynamic `instructions`/`model`), structure fix (`config/model-config.ts`). Live-run is the operator step (keys).
 4. ⬜ **loop-creator → Mastra** — large, its own migration (LangChain supervisor + 8 agents → Mastra; flag + A/B).
 5. — asset domains: leave on Trigger.dev.

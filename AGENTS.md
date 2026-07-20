@@ -30,11 +30,11 @@ The dark-factory execute loop has three interchangeable runners that share the *
 | CLI shim | `src/mastra/index.ts` — 2-line re-export of `src/mastra.ts`; exists only because `mastra dev/build` resolves `src/mastra/index.ts`. Keep both; do not add code here. |
 | File-based prompts | `src/mastra/agents/<agent-id>/instructions.md` — static base prompts (Mastra convention), loaded by code-based agents via `loadAgentInstructions` |
 | Agents | `src/domains/*/ai/agents/` (implementations) inside `src/domains/*/ai/` (Mastra layer — server-only; see `docs/unified/ARCHITECTURE.md` §4; enforced via `import '@/shared/data/server-guard'`, NOT the `server-only` package; pure schema modules allowlisted) |
-| Agent registration | `src/shared/agent-kernel/mastra/runtime-registry.ts` (domains register at import via `core/io/mastra-runtime.ts`; shared never imports domains) |
+| Agent registration | `src/shared/agent-kernel/mastra/runtime-registry.ts` (domains register at import via `core/io/mastra-runtime.ts`; shared never imports domains). Registered domains: **storyteller**, **game-design** (side-effect-imported by `src/mastra.ts` + each domain's API route so registration precedes the first `getMastraInstance()`) |
 | AgentController | `@mastra/core/agent-controller` — sessions, modes, plan→build gate (see "Plan-first agents" below) |
 | Tools | `src/domains/*/ai/tools`, `src/shared/agent-kernel/mastra/tools/` (bundler-safe Studio stubs) |
 | Models | `src/shared/agent-kernel/models.ts` (kernel/judging), domain `config/ModelConfig.ts` (`resolveRoleModel` role slots) |
-| Memory | `@mastra/memory` + `PostgresStore` via shared storage |
+| Memory | `@mastra/memory` + `PostgresStore` via shared storage. One Mastra `PostgresStore`/memory only. **Documented exception:** game-design's `GameDesignMemory` keeps its own `PgVector` **pattern-RAG index** (not agent memory) — a domain vector index is allowed; a second Mastra store/instance is not |
 | Observability | `@mastra/observability` registry (`create-mastra`) + `tracingOptions`; real spans via `src/shared/observability/mastra-tracing.ts` (`withMastraSpan`); `observability.ts` = sanitizers only |
 | Evals / scorers | `@mastra/core/evals` `createScorer`, `src/shared/agent-kernel/scorers/` + domain deterministic scorers unioned in `evals/run.ts` |
 | Prompts | `src/shared/agent-kernel/prompts/` (repository + core prompts), domain `prompts/`; **static agent prompts** → `src/mastra/agents/<id>/instructions.md` (file-based, via `loadAgentInstructions`) |

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+// Side-effect: register the game-design agent + workflow on the central Mastra
+// instance before any request triggers `getMastraInstance()` (via withMastraSpan).
+import '@/domains/game-design/core/io/mastra-runtime'
 import {
   createGameLoopWorkflow,
   GameLoopWorkflow,
@@ -10,7 +13,7 @@ import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam, TriggerRunStatus } from '@/shared/data/constants/protocol'
 import { GameLoopTypeInput } from '@/domains/game-design/ai/constants/game-loop-workflow-wire'
-import { resolveGameDesignModel } from '@/domains/game-design/ai/config/model-config'
+import { resolveGameDesignModel } from '@/domains/game-design/config/model-config'
 
 enum TargetAudience {
   Casual = 'casual',

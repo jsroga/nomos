@@ -2,7 +2,7 @@ import { Agent } from '@mastra/core/agent'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { registerCorePrompts, registerGameDesignPrompts } from '@/shared/agent-kernel/prompts/registry'
 import { withMastraSpan } from '@/shared/observability/mastra-tracing'
-import { resolveGameDesignModel } from '@/domains/game-design/ai/config/model-config'
+import { resolveGameDesignModel } from '@/domains/game-design/config/model-config'
 import { v4 as uuidv4 } from 'uuid'
 
 import {
@@ -40,57 +40,7 @@ import { getErrorMessage } from '@/shared/errors/error-utils'
 
 export type { GameDesignResponse } from '../constants/game-design-response'
 
-interface GameDesignAgentConfig {
-  modelName?: string
-  memory?: GameDesignMemory
-  persistence?: GameDesignPlanPersistence
-}
-
-export interface GameDesignContext {
-  projectId: string
-  existingLoops?: GameLoop[]
-  existingMechanics?: GameMechanic[]
-  genre?: string
-  targetAudience?: 'casual' | 'midcore' | 'hardcore'
-  theme?: string
-  userMessage?: string
-  gameDescription?: string
-  platform?: string
-  recentMessages?: { role: 'user' | 'assistant'; content: string }[]
-}
-
-export class GameDesignAgent {
-  private agent: Agent
-  private toolsMap: Record<string, GameDesignTool>
-  private memory?: GameDesignMemory
-
-  private constructor(config: GameDesignAgentConfig, instructions: string) {
-    const allTools = createGameDesignToolList()
-
-    this.toolsMap = allTools.reduce<Record<string, GameDesignTool>>((acc, tool) => {
-      acc[tool.id] = tool
-      return acc
-    }, {})
-    this.memory = config.memory
-
-    this.agent = new Agent({
-      id: GameDesignAgentId.GameDesignAgent,
-      name: GameDesignAgentLabel.GameDesignAgent,
-      instructions,
-      model: resolveGameDesignModel(config.modelName),
-      tools: this.toolsMap,
-    })
-  }
-
-  static async create(config: GameDesignAgentConfig = {}): Promise<GameDesignAgent> {
-    registerCorePrompts()
-    registerGameDesignPrompts()
-
-    let instructions: string
-    try {
-      instructions = await promptRepository.getPrompt(GameDesignSystemPromptId.GameDesignSystem)
-    } catch {
-      instructions = `You are a senior game designer combining the philosophies of:
+const GAME_DESIGN_FALLBACK_INSTRUCTIONS = `You are a senior game designer combining the philosophies of:
 - **Klei** (Don't Starve, ONI): Elegant systems with emergent complexity
 - **CD Projekt Red** (Witcher, Cyberpunk): Deep narrative with moral grey areas
 - **Kojima** (Death Stranding, MGS): Connection and meaningful mundane
@@ -116,9 +66,83 @@ When given a task:
 5. Make routine actions feel meaningful
 
 The ultimate test: "Would players tell stories about what happened to them?"`
-    }
 
-    return new GameDesignAgent(config, instructions)
+/**
+ * Resolve the game-design system prompt (registry → fallback). Used as the
+ * Agent's dynamic `instructions` callback so construction stays synchronous
+ * (prompt load is deferred to first generate), which is what lets the agent be
+ * registered on the central Mastra instance at module-load time without keys.
+ */
+export async function resolveGameDesignInstructions(): Promise<string> {
+  registerCorePrompts()
+  registerGameDesignPrompts()
+  try {
+    return await promptRepository.getPrompt(GameDesignSystemPromptId.GameDesignSystem)
+  } catch {
+    return GAME_DESIGN_FALLBACK_INSTRUCTIONS
+  }
+}
+
+interface GameDesignAgentConfig {
+  modelName?: string
+  memory?: GameDesignMemory
+  persistence?: GameDesignPlanPersistence
+}
+
+export interface GameDesignContext {
+  projectId: string
+  existingLoops?: GameLoop[]
+  existingMechanics?: GameMechanic[]
+  genre?: string
+  targetAudience?: 'casual' | 'midcore' | 'hardcore'
+  theme?: string
+  userMessage?: string
+  gameDescription?: string
+  platform?: string
+  recentMessages?: { role: 'user' | 'assistant'; content: string }[]
+}
+
+export class GameDesignAgent {
+  private agent: Agent
+  private toolsMap: Record<string, GameDesignTool>
+  private memory?: GameDesignMemory
+
+  private constructor(config: GameDesignAgentConfig) {
+    const allTools = createGameDesignToolList()
+
+    this.toolsMap = allTools.reduce<Record<string, GameDesignTool>>((acc, tool) => {
+      acc[tool.id] = tool
+      return acc
+    }, {})
+    this.memory = config.memory
+
+    this.agent = new Agent({
+      id: GameDesignAgentId.GameDesignAgent,
+      name: GameDesignAgentLabel.GameDesignAgent,
+      instructions: () => resolveGameDesignInstructions(),
+      model: () => resolveGameDesignModel(config.modelName),
+      tools: this.toolsMap,
+    })
+  }
+
+  /**
+   * Synchronous construction — the dynamic `instructions`/`model` callbacks
+   * defer prompt + model resolution to run time, so no `await` (and no keys)
+   * are needed to build the agent. This is what allows central registration at
+   * module-load time (see `core/io/mastra-runtime.ts`).
+   */
+  static createSync(config: GameDesignAgentConfig = {}): GameDesignAgent {
+    return new GameDesignAgent(config)
+  }
+
+  /** Backward-compatible async factory. Kept for existing call sites. */
+  static async create(config: GameDesignAgentConfig = {}): Promise<GameDesignAgent> {
+    return GameDesignAgent.createSync(config)
+  }
+
+  /** The underlying Mastra `Agent` — the object registered on the central instance. */
+  get mastraAgent(): Agent {
+    return this.agent
   }
 
   async run(goal: string, context: string, traceId?: string): Promise<string> {
