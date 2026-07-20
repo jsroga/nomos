@@ -7,9 +7,9 @@
  * - Creating high-level loop architecture
  */
 
-import { ChatOpenAI } from '@langchain/openai'
-import { resolveLoopCreatorModel } from '../../config/model-config'
-import { AIMessage, SystemMessage } from '@langchain/core/messages'
+import { AIMessage } from '@langchain/core/messages'
+import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import { LoopCreatorState, LoopAgentAction } from '../../core/graph/state'
 import { buildCanvasActionsFromLoops } from '../constants/loop-planner-canvas'
 import { parseLoopPlannerResponse } from '../constants/loop-planner-parse'
@@ -201,14 +201,6 @@ export async function loopPlannerAgent(
 ): Promise<Partial<LoopCreatorState>> {
   console.log('[LoopPlanner] Starting...')
 
-  const model = new ChatOpenAI({
-    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
-    temperature: state.modelConfig?.temperature ?? 0.5,
-    modelKwargs: {
-      response_format: { type: 'json_object' },
-    },
-  })
-
   // Get the task from the last human message or use default
   const lastHumanMsg = [...state.messages].reverse().find(m => m._getType() === 'human')
   const task = lastHumanMsg
@@ -222,15 +214,16 @@ export async function loopPlannerAgent(
 
   const systemPrompt = buildContext(state).replace('{{TASK}}', task)
 
-  const messages = [new SystemMessage(systemPrompt), ...state.messages.slice(-5)]
-
   console.log('[LoopPlanner] Calling LLM...')
-  const response = await model.invoke(messages)
+  const content = await runLoopCreatorCompletion({
+    agentId: LoopCreatorMastraAgentId.LoopPlanner,
+    systemPrompt,
+    history: state.messages.slice(-5),
+    temperature: state.modelConfig?.temperature ?? 0.5,
+    modelOverride: state.modelConfig?.model,
+    jsonMode: true,
+  })
   console.log('[LoopPlanner] LLM response received')
-
-  const content =
-    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
-
   console.log('[LoopPlanner] Response length:', content.length)
 
   const parsed = parseLoopPlannerResponse(content)

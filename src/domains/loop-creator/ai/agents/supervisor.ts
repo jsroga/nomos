@@ -8,9 +8,8 @@
  * - Managing workflow progression
  */
 
-import { ChatOpenAI } from '@langchain/openai'
-import { resolveLoopCreatorModel } from '../../config/model-config'
-import { SystemMessage } from '@langchain/core/messages'
+import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import { LoopCreatorState, NextAgent, LoopCreatorPhase } from '../../core/graph/state'
 import {
   buildSupervisorStateUpdate,
@@ -182,11 +181,6 @@ function parseResponse(content: string): SupervisorResponse {
  * Main supervisor agent function
  */
 export async function supervisorAgent(state: LoopCreatorState): Promise<Partial<LoopCreatorState>> {
-  const model = new ChatOpenAI({
-    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
-    temperature: state.modelConfig?.temperature ?? 0.3,
-  })
-
   const comingFromSpecialist = isComingFromSupervisorSpecialist(state.lastAgent)
   const systemPrompt = await buildSupervisorSystemPrompt(
     SUPERVISOR_SYSTEM_PROMPT,
@@ -194,10 +188,13 @@ export async function supervisorAgent(state: LoopCreatorState): Promise<Partial<
     comingFromSpecialist,
   )
 
-  const messages = [new SystemMessage(systemPrompt), ...state.messages.slice(-10)]
-  const response = await model.invoke(messages)
-  const content =
-    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+  const content = await runLoopCreatorCompletion({
+    agentId: LoopCreatorMastraAgentId.Supervisor,
+    systemPrompt,
+    history: state.messages.slice(-10),
+    temperature: state.modelConfig?.temperature ?? 0.3,
+    modelOverride: state.modelConfig?.model,
+  })
 
   const parsed = parseResponse(content)
 

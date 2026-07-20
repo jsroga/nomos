@@ -7,10 +7,10 @@
  * - Examples from reference games
  */
 
-import { ChatOpenAI } from '@langchain/openai'
-import { AIMessage, SystemMessage } from '@langchain/core/messages'
+import { AIMessage } from '@langchain/core/messages'
 import { LoopCreatorState } from '../../core/graph/state'
-import { resolveLoopCreatorModel } from '../../config/model-config'
+import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import {
   buildMechanicsDesignerContext,
   MechanicsDesignerAgentName,
@@ -33,29 +33,24 @@ export async function mechanicsDesignerAgent(
 ): Promise<Partial<LoopCreatorState>> {
   console.log(MechanicsDesignerLog.Starting)
 
-  const model = new ChatOpenAI({
-    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
-    temperature: state.modelConfig?.temperature ?? 0.5,
-  })
-
   const task = resolveMechanicsDesignerTask(state)
   const systemPrompt = buildMechanicsDesignerContext(state).replace(
     MechanicsDesignerPromptPlaceholder.Task,
     task,
   )
 
-  const messages = [new SystemMessage(systemPrompt), ...state.messages.slice(-5)]
-
   console.log(MechanicsDesignerLog.Task, task.slice(0, 100))
   console.log(MechanicsDesignerLog.CallingLlm)
 
-  const response = await model.invoke(messages)
+  const content = await runLoopCreatorCompletion({
+    agentId: LoopCreatorMastraAgentId.MechanicsDesigner,
+    systemPrompt,
+    history: state.messages.slice(-5),
+    temperature: state.modelConfig?.temperature ?? 0.5,
+    modelOverride: state.modelConfig?.model,
+  })
 
   console.log(MechanicsDesignerLog.LlmResponseReceived)
-
-  const content =
-    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
-
   console.log(MechanicsDesignerLog.ResponseLength, content.length)
 
   const parsed = parseMechanicsDesignerResponse(content)

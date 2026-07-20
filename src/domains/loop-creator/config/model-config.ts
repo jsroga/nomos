@@ -14,8 +14,21 @@ import '@/shared/data/server-guard'
 
 const LOOP_CREATOR_MODEL_ENV = 'LOOP_CREATOR_MODEL'
 const LOOP_CREATOR_DEFAULT_MODEL = 'gpt-4o'
+const OPENAI_PROVIDER_PREFIX = 'openai/'
+const PROVIDER_SEPARATOR = '/'
 
 /** Resolve the loop-creator default model: `override` → env → `gpt-4o`. */
 export function resolveLoopCreatorModel(override?: string): string {
   return override || process.env[LOOP_CREATOR_MODEL_ENV] || LOOP_CREATOR_DEFAULT_MODEL
+}
+
+/**
+ * Same resolution, normalized to the Mastra `provider/model` form for the
+ * flagged Mastra agents (`LOOP_CREATOR_MASTRA=1`). A bare name is assumed to be
+ * an OpenAI model; an id that already carries a `provider/` prefix is passed
+ * through.
+ */
+export function resolveLoopCreatorMastraModel(override?: string): string {
+  const base = resolveLoopCreatorModel(override)
+  return base.includes(PROVIDER_SEPARATOR) ? base : `${OPENAI_PROVIDER_PREFIX}${base}`
 }

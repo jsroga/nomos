@@ -7,6 +7,10 @@
  */
 
 import { NextRequest } from 'next/server'
+// Side-effect: register the loop-creator Mastra agents on the central instance
+// before any request triggers getMastraInstance() (via withMastraSpan on the
+// flagged LOOP_CREATOR_MASTRA path).
+import '@/domains/loop-creator/core/io/mastra-runtime'
 import { requireAuth } from '@/shared/auth/auth'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { streamLoopCreator } from '@/domains/loop-creator/server'

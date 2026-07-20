@@ -9,5 +9,6 @@
  */
 import '@/domains/storyteller/core/io/mastra-runtime'
 import '@/domains/game-design/core/io/mastra-runtime'
+import '@/domains/loop-creator/core/io/mastra-runtime'
 
 export { mastra } from './shared/agent-kernel/mastra'

@@ -5,8 +5,8 @@
  * match the user's requested game concept.
  */
 
-import { ChatOpenAI } from '@langchain/openai'
-import { resolveLoopCreatorModel } from '../../config/model-config'
+import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import { z } from 'zod'
 import { LoopCreatorState } from '../../core/graph/state'
 
@@ -153,11 +153,6 @@ function formatMechanics(state: LoopCreatorState): string {
 export async function evaluateConceptAlignment(
   state: LoopCreatorState
 ): Promise<ConceptEvaluation> {
-  const model = new ChatOpenAI({
-    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
-    temperature: 0.2, // Lower temperature for more consistent evaluation
-  })
-
   const referenceGame = extractReferenceGame(state.gameDescription || '')
 
   const prompt = CONCEPT_EVALUATOR_PROMPT.replace(
@@ -168,13 +163,13 @@ export async function evaluateConceptAlignment(
     .replace('{{GENRE}}', state.gameGenre || 'Unknown')
     .replace('{{MECHANICS}}', formatMechanics(state))
 
-  const response = await model.invoke([
-    { role: 'system', content: prompt },
-    { role: 'user', content: 'Evaluate the concept alignment and provide your assessment.' },
-  ])
-
-  const content =
-    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+  const content = await runLoopCreatorCompletion({
+    agentId: LoopCreatorMastraAgentId.ConceptEvaluator,
+    systemPrompt: prompt,
+    userPrompt: 'Evaluate the concept alignment and provide your assessment.',
+    temperature: 0.2, // Lower temperature for more consistent evaluation
+    modelOverride: state.modelConfig?.model,
+  })
 
   // Parse JSON from response
   const jsonMatch = content.match(/\{[\s\S]*\}/)

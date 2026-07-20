@@ -8,9 +8,9 @@
  * - Providing balance recommendations
  */
 
-import { ChatOpenAI } from '@langchain/openai'
-import { AIMessage, SystemMessage } from '@langchain/core/messages'
-import { resolveLoopCreatorModel } from '../../config/model-config'
+import { AIMessage } from '@langchain/core/messages'
+import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import {
   readNumber,
   readRowString,
@@ -206,11 +206,6 @@ export async function balanceAnalystAgent(
     }
   }
 
-  const model = new ChatOpenAI({
-    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
-    temperature: state.modelConfig?.temperature ?? 0.3,
-  })
-
   // Get the task
   const lastHumanMsg = [...state.messages].reverse().find(m => m._getType() === 'human')
   const task = lastHumanMsg
@@ -221,11 +216,13 @@ export async function balanceAnalystAgent(
 
   const systemPrompt = buildContext(state).replace('{{TASK}}', task)
 
-  const messages = [new SystemMessage(systemPrompt), ...state.messages.slice(-5)]
-
-  const response = await model.invoke(messages)
-  const content =
-    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+  const content = await runLoopCreatorCompletion({
+    agentId: LoopCreatorMastraAgentId.BalanceAnalyst,
+    systemPrompt,
+    history: state.messages.slice(-5),
+    temperature: state.modelConfig?.temperature ?? 0.3,
+    modelOverride: state.modelConfig?.model,
+  })
 
   const parsed = parseResponse(content)
 

@@ -8,9 +8,9 @@
  * - Connecting progression to core loops
  */
 
-import { ChatOpenAI } from '@langchain/openai'
-import { resolveLoopCreatorModel } from '../../config/model-config'
-import { AIMessage, SystemMessage } from '@langchain/core/messages'
+import { AIMessage } from '@langchain/core/messages'
+import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import {
   readNumber,
   readRowString,
@@ -222,11 +222,6 @@ function parseResponse(content: string): ProgressionArchitectResponse {
 export async function progressionArchitectAgent(
   state: LoopCreatorState
 ): Promise<Partial<LoopCreatorState>> {
-  const model = new ChatOpenAI({
-    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
-    temperature: state.modelConfig?.temperature ?? 0.5,
-  })
-
   // Get the task
   const lastHumanMsg = [...state.messages].reverse().find(m => m._getType() === 'human')
   const task = lastHumanMsg
@@ -237,11 +232,13 @@ export async function progressionArchitectAgent(
 
   const systemPrompt = buildContext(state).replace('{{TASK}}', task)
 
-  const messages = [new SystemMessage(systemPrompt), ...state.messages.slice(-5)]
-
-  const response = await model.invoke(messages)
-  const content =
-    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+  const content = await runLoopCreatorCompletion({
+    agentId: LoopCreatorMastraAgentId.ProgressionArchitect,
+    systemPrompt,
+    history: state.messages.slice(-5),
+    temperature: state.modelConfig?.temperature ?? 0.5,
+    modelOverride: state.modelConfig?.model,
+  })
 
   const parsed = parseResponse(content)
 

@@ -10,7 +10,7 @@ Status of the Mastra migration across modules (storyteller set the convention), 
 |---|---|
 | **storyteller** | ✅ Full Mastra + conventions (central instance, `ai/` layer, role matrix, tools, workflows, file-based prompts, observability, controller/durable/goals) |
 | **game-design** | ✅ **On convention** — Mastra `createTool` + `createWorkflow` + `Agent`, **now registered centrally** (`core/io/mastra-runtime.ts`), dynamic `model` callback; LangChain kept only for the domain pattern-RAG index (documented exception) |
-| **loop-creator** | ❌ **LangChain/LangGraph** multi-agent supervisor — migration started (model seam centralized: `resolveLoopCreatorModel`); orchestration rewrite remains (~1 week, its own keys-tested session) |
+| **loop-creator** | ◐ **6 specialists on Mastra** (flagged `LOOP_CREATOR_MASTRA=1`, registered like storyteller) — orchestration already Mastra-native; LangChain default kept byte-identical until a keys-on A/B. market-analyst ReAct + ~60 tools remain LangChain |
 | **interior-designer / 3d-asset-exporter / world-building-toolkit** | — **N/A** — no agents; Trigger.dev tasks (correct, don't force Mastra) |
 | **marketing** | — empty (no AI yet) |
 | **MCP** | ✅ **Fixed** — `mcp:build` now on `src/mcp/tsconfig.json` (0 errors); runs via `tsx` (`mcp:start`) |
@@ -62,17 +62,19 @@ What "on Mastra, our way" means (see `AGENTS.md`):
 
 **Gaps:** the framework itself (LangChain/LangGraph, not Mastra), no central registration, no Mastra tools/workflows/observability.
 
-**Done (2026-07-20 — keys-free step 1):**
-- ✅ **Model centralized** — `config/model-config.ts` `resolveLoopCreatorModel(override?)` (`override` → `LOOP_CREATOR_MODEL` env → `gpt-4o`, bare LangChain name). Threaded through all 6 `ChatOpenAI` sites (supervisor, balance-analyst, concept-evaluator, loop-planner, progression-architect, mechanics-designer), replacing the hardcoded `'gpt-4o'` defaults; removed the dead `MechanicsDesignerDefaultModel` enum. Behavior-preserving (same default), adds an env override, and is the single seam every later Mastra port swaps to a role-matrix model. TSC 0 · ESLint 0.
+**Done (2026-07-20 — steps 1 & 2, keys-free, flagged like storyteller):**
+- ✅ **Orchestration is already Mastra-native** — `core/graph/loop-orchestrator.ts` is an imperative supervisor loop (`streamLoopCreator`), no LangGraph `StateGraph`. The remaining LangChain surface was the specialists' single LLM call.
+- ✅ **Model centralized** — `config/model-config.ts` `resolveLoopCreatorModel(override?)` (LangChain path) + `resolveLoopCreatorMastraModel(override?)` (`openai/…` for Mastra). Removed the dead `MechanicsDesignerDefaultModel` enum.
+- ✅ **6 specialists on Mastra (flagged)** — `ai/agents/mastra/loop-creator-mastra-agents.ts` registers 6 `new Agent({ id, name, model: () => resolveLoopCreatorMastraModel(), instructions })` (supervisor, loop-planner, mechanics-designer, balance-analyst, progression-architect, concept-evaluator), matching the storyteller convention. `loop-creator-completion.ts` is one unified seam: `LOOP_CREATOR_MASTRA=1` routes each specialist's LLM call through `agent.generate` (per-call `instructions` override = the built system prompt; history flattened; `withMastraSpan` observability), else the **byte-identical** LangChain path (zero regression on the default). loop-planner's JSON-mode is preserved on both branches.
+- ✅ **Central registration** — `core/io/mastra-runtime.ts` → `registerMastraModule({ agents })`; side-effect-imported by `src/mastra.ts` (Studio) + the loop-creator chat route (production ordering). Agents now show in Studio.
+- ✅ TSC 0 · ESLint 0 errors · domain-structure green for loop-creator.
 
-**Remaining (large, ~1 week — its own migration):**
-1. **Port the LangGraph orchestrator → a Mastra workflow** (`createWorkflow` with a routing step) or an **AgentController** with modes per specialist; each specialist becomes a Mastra `Agent` (dynamic `model: () => resolveLoopCreatorModel()`), replacing `ChatOpenAI.invoke` + regex-JSON with `agent.generate` + structured output, and the `nextAgent` state channel with workflow control flow.
-2. Convert the LangChain "tools"/message plumbing → `createTool` + structured output.
-3. Register via `core/io/mastra-runtime.ts` (side-effect import like storyteller/game-design).
-4. Keep it behind a flag and A/B against the LangGraph path before switching.
-5. The `market-analyst` web-search tools (Tavily/Twitter/Reddit) become `createTool`s.
+**Remaining:**
+1. **Live A/B** — flip `LOOP_CREATOR_MASTRA=1` with keys and compare specialist output vs the LangChain default; once at parity, make Mastra the default and retire the LangChain branch. (Operator step — needs keys.)
+2. **market-analyst ReAct** — the separate tool-using sub-agent (`ai/agents/market-analyst/` + ~60 tool files, `runMarketAnalysis`) is still LangChain; port to a Mastra agent + `createTool`s (Tavily/Twitter/Reddit/Steam). Its own sub-migration.
+3. Optionally replace the flattened-history text with structured Mastra messages once the AI-SDK ModelMessage version skew (Mastra v5 vs `ai` v3 provider-utils) is resolved.
 
-> This is the one module where "convention" means a real framework migration, not just wiring — it rewrites a **working** LangGraph feature, so it needs keys + a live A/B, not a blind bulk port. Scope it as its own keys-tested session. Step 1 (model seam) is the safe, done prerequisite.
+> The specialist layer now runs on Mastra exactly like storyteller (registered agents, dynamic model, `agent.generate`, spans) — behind a flag so the working feature can't regress until a keys-on A/B confirms parity. market-analyst's ReAct + tools is the remaining LangChain island.
 
 ### interior-designer / 3d-asset-exporter / world-building-toolkit — N/A (leave as-is)
 
@@ -181,5 +183,5 @@ STORYTELLER_PROJECT_ID=... STORYTELLER_EPISODE_ID=... \
 1. ✅ **MCP build fix** — done (`src/mcp/tsconfig.json`; 0 errors).
 2. ✅ **Terminal scripts** — done (`storyteller:repl` interactive + `storyteller:orchestrate` one-shot).
 3. ✅ **game-design → convention** — done: central registration (`core/io/mastra-runtime.ts` + `registerMastraModule`), sync agent (`createSync` + dynamic `instructions`/`model`), structure fix (`config/model-config.ts`). Live-run is the operator step (keys).
-4. ◐ **loop-creator → Mastra** — step 1 done (model seam `resolveLoopCreatorModel` centralized); orchestration rewrite remains (LangGraph + 8 agents → Mastra workflow/AgentController; flag + A/B; keys-tested).
+4. ◐ **loop-creator → Mastra** — 6 specialists now run on registered Mastra agents behind `LOOP_CREATOR_MASTRA=1` (orchestration was already Mastra-native); remaining: keys-on A/B to make it default + port the market-analyst ReAct sub-agent.
 5. — asset domains: leave on Trigger.dev.
