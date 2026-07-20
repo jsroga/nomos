@@ -134,7 +134,7 @@
     "dev:webpack": "next dev -p 4000",
     "mastra:dev": "env -u ANTHROPIC_BASE_URL mastra dev -e .env.local",
     "mastra:build": "mastra build",
-    "mcp:build": "tsc src/mcp/stdio.ts --outDir dist/mcp --esModuleInterop --module nodenext --moduleResolution nodenext",
+    "mcp:build": "tsc -p src/mcp/tsconfig.json",
     "dev:turbo": "next dev --turbo -p 4000",
     "eval": "npx tsx evals/run.ts",
     "eval:dashboard": "npx tsx evals/report/generate.ts && open evals/reports/latest.html",
