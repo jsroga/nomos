@@ -332,7 +332,7 @@ module.exports = [
     },
   },
   {
-    files: ['eslint.config.js', 'scripts/**/*.{mjs,cjs,js}'],
+    files: ['eslint.config.js', 'scripts/**/*.{ts,mjs,cjs,js}'],
     rules: {
       'local/no-magic-string': 'off',
       'max-lines': 'off',
