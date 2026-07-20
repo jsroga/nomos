@@ -13,8 +13,8 @@ Status of the Mastra migration across modules (storyteller set the convention), 
 | **loop-creator** | ❌ **LangChain** multi-agent supervisor — not migrated at all |
 | **interior-designer / 3d-asset-exporter / world-building-toolkit** | — **N/A** — no agents; Trigger.dev tasks (correct, don't force Mastra) |
 | **marketing** | — empty (no AI yet) |
-| **MCP** | ◐ Runs via `tsx` (`mcp:start`); **`mcp:build` broken** (bare `tsc`, ignores tsconfig → `@/` aliases unresolved) |
-| **Terminal orchestration test** | Studio (`mastra:dev`) works today; no standalone script yet — one is sketched below |
+| **MCP** | ✅ **Fixed** — `mcp:build` now on `src/mcp/tsconfig.json` (0 errors); runs via `tsx` (`mcp:start`) |
+| **Terminal orchestration test** | ✅ **Built** — `npm run storyteller:repl` (interactive) + `npm run storyteller:orchestrate` (one-shot); Studio (`mastra:dev`) also works |
 
 ---
 
@@ -46,11 +46,15 @@ What "on Mastra, our way" means (see `AGENTS.md`):
 - ❌ Still imports **LangChain** (`ChatOpenAI`, `OpenAIEmbeddings`) for embeddings/RAG.
 - ❌ No `withMastraSpan` observability.
 
-**Plan (medium effort, ~1–2 days):**
-1. Add `domains/game-design/ai/config/model-config.ts` with a small role set (or reuse a shared resolver) → swap `modelString` for `resolveRoleModel`.
-2. Add `core/io/mastra-runtime.ts`: `registerMastraModule({ agents: { gameDesignAgent }, workflows: { gameLoopWorkflow } })`; import it for the side-effect (like storyteller). Route calls the registered workflow instead of constructing one.
-3. Replace LangChain embeddings with the shared `@/shared/ai/rag` path (already Mastra/`PgVector`-based) — or leave embeddings as an explicit exception.
-4. Wrap the agent op in `withMastraSpan`.
+**Progress:** ✅ `resolveGameDesignModel()` single source · ✅ `withMastraSpan` observability · ✅ workflow already a module singleton (`workflowInstance`).
+
+**Remaining (the real work — precise blockers found 2026-07-20):**
+1. **Agent is an async-constructed class wrapper.** `GameDesignAgent.create()` is `async` (loads prompts via the repository) and exposes **class methods** (`agent.designLoop(...)`) that the workflow steps call directly. The central registry (`registerMastraModule`) wants **sync `Agent` objects** (`new Agent({ instructions: () => …, model: () => … })`). → restructure to a sync Mastra `Agent` + move `designLoop` logic into a step/service.
+2. **Own store.** `createGameDesignMemory` builds its **own `new PgVector({…})`** per request. Decide: consolidate onto the shared store/memory (the "one store" invariant) vs. keep a domain-specific vector index as an explicit, documented exception.
+3. Then add `core/io/mastra-runtime.ts` → `registerMastraModule({ agents, workflows })` (side-effect import like storyteller); route calls the registered workflow.
+4. Optionally replace LangChain embeddings with the shared RAG path.
+
+> This is a genuine multi-day refactor (async→sync agent + store consolidation + step rewrites), best done as its own keys-tested session — not bundled into an unrelated pass.
 
 ### loop-creator — ❌ LangChain (biggest gap)
 
@@ -116,9 +120,19 @@ WORKFLOW_E2E_PROJECT_ID=... WORKFLOW_E2E_EPISODE_ID=... \
 ```
 Runs plan → draft → critics → revise with `autoApprove` and asserts a beat persists. Closest thing to a "does the whole pipeline work" check.
 
-### C. A simple terminal script (recommended to add — the missing piece)
+### C. Interactive REPL — **built** (`npm run storyteller:repl`)
 
-There's **no standalone REPL yet** (PLAN-V2 4.4 was never built). A ~40-line one-shot `tsx` script closes that gap:
+`scripts/storyteller-repl.ts` — a nice-terminal-UI interactive chat (ANSI + readline, no
+new deps, no args). Picks a project/episode interactively, streams the **same** chat
+orchestration the web uses (`assembleContext → createStorytellerAgent → agent.stream`,
+with live token/thinking/tool-call rendering), and a `/beat <brief>` command runs the
+beat-draft workflow with the **editorial-verdict HITL** (approve / revise / kill) — the
+exact loop the end-user works on. `npm run storyteller:repl` (needs keys + a project).
+
+### C′. One-shot script (`npm run storyteller:orchestrate`)
+
+`scripts/storyteller-orchestrate.ts` — non-interactive: runs one beat-draft (autoApprove)
+and prints the final draft + critiques. The original ~40-line sketch:
 
 ```ts
 // scripts/storyteller-orchestrate.ts   — run: npx tsx scripts/storyteller-orchestrate.ts "<brief>"
@@ -161,8 +175,8 @@ STORYTELLER_PROJECT_ID=... STORYTELLER_EPISODE_ID=... \
 
 ## Recommended order
 
-1. **MCP build fix** (small, unblocks the Phase-7 gate) →
-2. **Terminal script** (small, gives you a fast orchestration probe) →
-3. **game-design → convention** (medium, it's already half-Mastra) →
-4. **loop-creator → Mastra** (large, its own migration — flag + A/B) →
-5. asset domains: leave on Trigger.dev.
+1. ✅ **MCP build fix** — done (`src/mcp/tsconfig.json`; 0 errors).
+2. ✅ **Terminal scripts** — done (`storyteller:repl` interactive + `storyteller:orchestrate` one-shot).
+3. ◐ **game-design → convention** — model-config + observability + workflow-singleton done; **central registration remaining** (async→sync agent + own-store consolidation + step rewrites — a focused, keys-tested session).
+4. ⬜ **loop-creator → Mastra** — large, its own migration (LangChain supervisor + 8 agents → Mastra; flag + A/B).
+5. — asset domains: leave on Trigger.dev.
