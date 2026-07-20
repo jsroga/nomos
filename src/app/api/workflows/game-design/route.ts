@@ -10,6 +10,7 @@ import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam, TriggerRunStatus } from '@/shared/data/constants/protocol'
 import { GameLoopTypeInput } from '@/domains/game-design/ai/constants/game-loop-workflow-wire'
+import { resolveGameDesignModel } from '@/domains/game-design/ai/config/model-config'
 
 enum TargetAudience {
   Casual = 'casual',
@@ -17,7 +18,6 @@ enum TargetAudience {
   Hardcore = 'hardcore',
 }
 
-const GAME_DESIGN_DEFAULT_MODEL = 'openai:gpt-4o'
 
 // Request schemas
 const CreateLoopRequestSchema = z.object({
@@ -51,7 +51,7 @@ let workflowInstance: GameLoopWorkflow | null = null
 async function getWorkflow(): Promise<{ workflow: GameLoopWorkflow }> {
   if (!workflowInstance) {
     const created = await createGameLoopWorkflow({
-      modelName: process.env.GAME_DESIGN_MODEL || GAME_DESIGN_DEFAULT_MODEL,
+      modelName: resolveGameDesignModel(),
       connectionString: process.env.DATABASE_URL,
     })
     workflowInstance = created.workflow

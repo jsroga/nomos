@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { registerCorePrompts, registerGameDesignPrompts } from '@/shared/agent-kernel/prompts/registry'
 import { withMastraSpan } from '@/shared/observability/mastra-tracing'
+import { resolveGameDesignModel } from '@/domains/game-design/ai/config/model-config'
 import { v4 as uuidv4 } from 'uuid'
 
 import {
@@ -24,8 +25,6 @@ import {
   GameDesignAgentId,
   GameDesignAgentLabel,
   GameDesignAgentSpan,
-  GameDesignDefaultModel,
-  GameDesignModelSeparator,
   GameDesignStreamToolChoice,
   GameDesignSystemPromptId,
 } from '../constants/agent-identity'
@@ -74,16 +73,11 @@ export class GameDesignAgent {
     }, {})
     this.memory = config.memory
 
-    const modelString = (config.modelName || GameDesignDefaultModel.OpenAiGpt4o).replace(
-      GameDesignModelSeparator.Colon,
-      GameDesignModelSeparator.Slash
-    )
-
     this.agent = new Agent({
       id: GameDesignAgentId.GameDesignAgent,
       name: GameDesignAgentLabel.GameDesignAgent,
       instructions,
-      model: modelString,
+      model: resolveGameDesignModel(config.modelName),
       tools: this.toolsMap,
     })
   }
