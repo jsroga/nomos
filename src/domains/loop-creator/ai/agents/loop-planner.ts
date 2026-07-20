@@ -8,6 +8,7 @@
  */
 
 import { ChatOpenAI } from '@langchain/openai'
+import { resolveLoopCreatorModel } from '../../config/model-config'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
 import { LoopCreatorState, LoopAgentAction } from '../../core/graph/state'
 import { buildCanvasActionsFromLoops } from '../constants/loop-planner-canvas'
@@ -201,7 +202,7 @@ export async function loopPlannerAgent(
   console.log('[LoopPlanner] Starting...')
 
   const model = new ChatOpenAI({
-    modelName: state.modelConfig?.model || 'gpt-4o',
+    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
     temperature: state.modelConfig?.temperature ?? 0.5,
     modelKwargs: {
       response_format: { type: 'json_object' },

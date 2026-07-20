@@ -9,6 +9,7 @@
  */
 
 import { ChatOpenAI } from '@langchain/openai'
+import { resolveLoopCreatorModel } from '../../config/model-config'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
 import {
   readNumber,
@@ -222,7 +223,7 @@ export async function progressionArchitectAgent(
   state: LoopCreatorState
 ): Promise<Partial<LoopCreatorState>> {
   const model = new ChatOpenAI({
-    modelName: state.modelConfig?.model || 'gpt-4o',
+    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
     temperature: state.modelConfig?.temperature ?? 0.5,
   })
 

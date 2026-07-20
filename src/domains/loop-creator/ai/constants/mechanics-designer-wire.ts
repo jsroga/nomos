@@ -211,10 +211,6 @@ export enum MechanicsDesignerDefaultLabel {
   UnnamedMechanic = 'Unnamed Mechanic',
 }
 
-export enum MechanicsDesignerDefaultModel {
-  Gpt4o = 'gpt-4o',
-}
-
 export enum MechanicsDesignerDefaultTask {
   DesignGameMechanics = 'Design game mechanics',
   DesignCoreMechanics = 'Design core game mechanics based on the game context',

@@ -10,6 +10,7 @@
 
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
+import { resolveLoopCreatorModel } from '../../config/model-config'
 import {
   readNumber,
   readRowString,
@@ -206,7 +207,7 @@ export async function balanceAnalystAgent(
   }
 
   const model = new ChatOpenAI({
-    modelName: state.modelConfig?.model || 'gpt-4o',
+    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
     temperature: state.modelConfig?.temperature ?? 0.3,
   })
 

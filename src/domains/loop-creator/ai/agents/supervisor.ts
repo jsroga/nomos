@@ -9,6 +9,7 @@
  */
 
 import { ChatOpenAI } from '@langchain/openai'
+import { resolveLoopCreatorModel } from '../../config/model-config'
 import { SystemMessage } from '@langchain/core/messages'
 import { LoopCreatorState, NextAgent, LoopCreatorPhase } from '../../core/graph/state'
 import {
@@ -182,7 +183,7 @@ function parseResponse(content: string): SupervisorResponse {
  */
 export async function supervisorAgent(state: LoopCreatorState): Promise<Partial<LoopCreatorState>> {
   const model = new ChatOpenAI({
-    modelName: state.modelConfig?.model || 'gpt-4o',
+    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
     temperature: state.modelConfig?.temperature ?? 0.3,
   })
 

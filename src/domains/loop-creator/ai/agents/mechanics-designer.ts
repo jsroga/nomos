@@ -10,10 +10,10 @@
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage, SystemMessage } from '@langchain/core/messages'
 import { LoopCreatorState } from '../../core/graph/state'
+import { resolveLoopCreatorModel } from '../../config/model-config'
 import {
   buildMechanicsDesignerContext,
   MechanicsDesignerAgentName,
-  MechanicsDesignerDefaultModel,
   MechanicsDesignerLog,
   MechanicsDesignerPromptPlaceholder,
   MECHANICS_DESIGNER_NEXT_AGENT,
@@ -34,7 +34,7 @@ export async function mechanicsDesignerAgent(
   console.log(MechanicsDesignerLog.Starting)
 
   const model = new ChatOpenAI({
-    modelName: state.modelConfig?.model || MechanicsDesignerDefaultModel.Gpt4o,
+    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
     temperature: state.modelConfig?.temperature ?? 0.5,
   })
 

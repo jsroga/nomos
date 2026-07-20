@@ -6,6 +6,7 @@
  */
 
 import { ChatOpenAI } from '@langchain/openai'
+import { resolveLoopCreatorModel } from '../../config/model-config'
 import { z } from 'zod'
 import { LoopCreatorState } from '../../core/graph/state'
 
@@ -153,7 +154,7 @@ export async function evaluateConceptAlignment(
   state: LoopCreatorState
 ): Promise<ConceptEvaluation> {
   const model = new ChatOpenAI({
-    modelName: state.modelConfig?.model || 'gpt-4o',
+    modelName: resolveLoopCreatorModel(state.modelConfig?.model),
     temperature: 0.2, // Lower temperature for more consistent evaluation
   })
 
