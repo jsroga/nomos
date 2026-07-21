@@ -7,13 +7,18 @@
 
 import '@/shared/data/server-guard'
 import { toOpenRouterModel } from '@/shared/agent-kernel/models'
+import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
 
 const GAME_DESIGN_MODEL_ENV = 'GAME_DESIGN_MODEL'
+const GAME_DESIGN_ROLE = 'game-design'
 
 /**
  * Resolve the game-design model, routed through the OpenRouter gateway (single
- * OPENROUTER_API_KEY): `override` → `GAME_DESIGN_MODEL` env → `openrouter/auto-beta`.
+ * OPENROUTER_API_KEY): `override` (per-request) → admin panel setting →
+ * `GAME_DESIGN_MODEL` env → `openrouter/auto-beta`.
  */
 export function resolveGameDesignModel(override?: string): string {
-  return toOpenRouterModel(override || process.env[GAME_DESIGN_MODEL_ENV])
+  return toOpenRouterModel(
+    override || getConfiguredModel(GAME_DESIGN_ROLE) || process.env[GAME_DESIGN_MODEL_ENV]
+  )
 }

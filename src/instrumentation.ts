@@ -53,6 +53,15 @@ export async function register() {
   } catch (err) {
     console.error(InstrumentationLog.OtelFailed, err)
   }
+
+  // Warm the admin-configurable model settings cache so the model resolvers
+  // (resolveRoleModel, resolveGameDesignModel, …) see per-role overrides.
+  try {
+    const { loadModelSettings } = await import('@/shared/agent-kernel/model-settings')
+    await loadModelSettings()
+  } catch (err) {
+    console.warn(InstrumentationLog.ModelSettingsWarmFailed, err)
+  }
 }
 
 export const onRequestError = Sentry.captureRequestError

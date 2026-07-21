@@ -25,6 +25,10 @@ import {
   resolveRoleModel,
   resolveStorytellerModel,
 } from '@/domains/storyteller/config/constants/model-config'
+import {
+  __resetModelSettingsCache,
+  __setModelSettingForTest,
+} from '@/shared/agent-kernel/model-settings'
 
 const MODEL_ENV_VARS = [
   'GAME_DESIGN_MODEL',
@@ -40,9 +44,10 @@ const MODEL_ENV_VARS = [
   'STORYTELLER_PREMISE_MODEL',
 ]
 
-// Deterministic defaults regardless of the developer's shell env.
+// Deterministic defaults regardless of the developer's shell env / DB settings.
 beforeEach(() => {
   for (const name of MODEL_ENV_VARS) Reflect.deleteProperty(process.env, name)
+  __resetModelSettingsCache()
 })
 
 describe('toOpenRouterModelId (direct OpenRouter clients)', () => {
@@ -115,5 +120,29 @@ describe('openRouterClientConfig', () => {
   it('points LangChain/AI-SDK clients at the OpenRouter endpoint', () => {
     expect(openRouterClientConfig().baseURL).toBe(OPENROUTER_BASE_URL)
     expect(OPENROUTER_BASE_URL).toContain('openrouter.ai')
+  })
+})
+
+describe('admin model settings override the resolvers', () => {
+  it('a per-slot setting wins over the auto default', () => {
+    __setModelSettingForTest('game-design', 'openai/gpt-5.6-luna')
+    expect(resolveGameDesignModel()).toBe('openrouter/openai/gpt-5.6-luna')
+    // other slots stay on the default
+    expect(resolveRoleModel('chat')).toBe(OPENROUTER_AUTO_GATEWAY)
+  })
+
+  it('the default slot applies to any unset role', () => {
+    __setModelSettingForTest('default', 'openai/gpt-5.6-luna')
+    expect(resolveRoleModel('chat')).toBe('openrouter/openai/gpt-5.6-luna')
+    expect(resolveGameDesignModel()).toBe('openrouter/openai/gpt-5.6-luna')
+    expect(toMastraJudgingModel()).toBe('openrouter/openai/gpt-5.6-luna')
+    expect(resolveLoopCreatorMastraModel()).toBe('openrouter/openai/gpt-5.6-luna')
+  })
+
+  it('a specific slot overrides the default slot', () => {
+    __setModelSettingForTest('default', 'openai/gpt-4o-mini')
+    __setModelSettingForTest('author', 'anthropic/claude-opus-4.8')
+    expect(resolveRoleModel('author')).toBe('openrouter/anthropic/claude-opus-4.8')
+    expect(resolveRoleModel('chat')).toBe('openrouter/openai/gpt-4o-mini')
   })
 })

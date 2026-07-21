@@ -11,16 +11,22 @@
 
 import '@/shared/data/server-guard'
 import { toOpenRouterModel, toOpenRouterModelId } from '@/shared/agent-kernel/models'
+import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
 
 const LOOP_CREATOR_MODEL_ENV = 'LOOP_CREATOR_MODEL'
+const LOOP_CREATOR_ROLE = 'loop-creator'
+
+function loopCreatorModelId(override?: string): string | undefined {
+  return override || getConfiguredModel(LOOP_CREATOR_ROLE) || process.env[LOOP_CREATOR_MODEL_ENV]
+}
 
 /**
  * OpenRouter model id for the LangChain `ChatOpenAI` path (client already points
- * at OpenRouter's endpoint): `override` → env → `openrouter/auto-beta`. NOT the
- * Mastra gateway string.
+ * at OpenRouter's endpoint): `override` → admin panel → env → `openrouter/auto-beta`.
+ * NOT the Mastra gateway string.
  */
 export function resolveLoopCreatorModel(override?: string): string {
-  return toOpenRouterModelId(override || process.env[LOOP_CREATOR_MODEL_ENV])
+  return toOpenRouterModelId(loopCreatorModelId(override))
 }
 
 /**
@@ -28,5 +34,5 @@ export function resolveLoopCreatorModel(override?: string): string {
  * market-analyst), routed through the OpenRouter gateway.
  */
 export function resolveLoopCreatorMastraModel(override?: string): string {
-  return toOpenRouterModel(override || process.env[LOOP_CREATOR_MODEL_ENV])
+  return toOpenRouterModel(loopCreatorModelId(override))
 }

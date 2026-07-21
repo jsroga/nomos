@@ -3,6 +3,7 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
 import { getChatModelOption, isKnownChatModel } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import { OPENROUTER_AUTO_GATEWAY, toOpenRouterModel } from '@/shared/agent-kernel/models'
+import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
 
 /**
  * Effort levels for dynamic model selection
@@ -440,10 +441,10 @@ export function resolveRoleModel(
   overrideId?: string
 ): StorytellerMastraModel {
   const validatedOverride = overrideId && isKnownChatModel(overrideId) ? overrideId : undefined
-  // Single-key OpenRouter: default to the auto router; a user picker choice or
-  // operator env override (STORYTELLER_<ROLE>_MODEL) is routed through the same
-  // gateway. The per-role matrix below still supplies temperature/topP/rationale.
-  const explicit = validatedOverride ?? roleEnvOverride(role)
+  // Single-key OpenRouter: per-request picker → admin panel setting → operator
+  // env override (STORYTELLER_<ROLE>_MODEL) → auto router. All routed through the
+  // same gateway. The per-role matrix still supplies temperature/topP/rationale.
+  const explicit = validatedOverride ?? getConfiguredModel(role) ?? roleEnvOverride(role)
   return explicit ? resolveStorytellerModel(explicit) : OPENROUTER_AUTO_GATEWAY
 }
 

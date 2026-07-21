@@ -21,6 +21,7 @@ export enum InstrumentationLog {
   MastraConfigureFailed = '⚠️ Could not configure Mastra serialization limits:',
   OtelRegistered = '✅ OpenTelemetry Registered in',
   OtelFailed = '❌ Failed to register OpenTelemetry:',
+  ModelSettingsWarmFailed = '⚠️ Could not warm model settings cache:',
 }
 
 export enum OtelEnv {

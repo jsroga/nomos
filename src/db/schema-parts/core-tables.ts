@@ -328,3 +328,12 @@ export const gameLoops = pgTable('game_loops', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
+
+// Admin-configurable per-role model routing (OpenRouter ids). One row per slot;
+// writes gated by the admin API (isAdminUser). See shared/agent-kernel/model-settings.
+export const modelSettings = pgTable('model_settings', {
+  role: text('role').primaryKey(),
+  model: text('model').notNull(),
+  updatedBy: uuid('updated_by'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
