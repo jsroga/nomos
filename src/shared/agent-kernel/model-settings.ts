@@ -14,12 +14,28 @@ import { MODEL_SETTING_DEFAULT_ROLE } from './constants/model-settings'
 
 const cache = new Map<string, string>()
 let loaded = false
+let warmStarted = false
+
+/**
+ * Lazily warm the cache once, in a Node server process only. NOT in unit tests
+ * (VITEST) and never eagerly (importing the DB layer into Edge bundles is what
+ * broke `instrumentation.ts` — pg needs node:util/types). Fire-and-forget:
+ * the first resolver call may miss the cache and fall back to auto-beta; the
+ * next one sees the loaded settings.
+ */
+function maybeWarm(): void {
+  if (warmStarted || loaded) return
+  if (!process.env.DATABASE_URL || process.env.VITEST) return
+  warmStarted = true
+  void loadModelSettings().catch(() => {})
+}
 
 /**
  * Configured OpenRouter model id for a slot, falling back to the `default` slot.
  * Returns undefined when nothing is configured (resolver then uses env/default).
  */
 export function getConfiguredModel(role: string): string | undefined {
+  maybeWarm()
   return cache.get(role) ?? cache.get(MODEL_SETTING_DEFAULT_ROLE)
 }
 
@@ -75,6 +91,7 @@ export async function clearModelSetting(role: string): Promise<void> {
 export function __resetModelSettingsCache(): void {
   cache.clear()
   loaded = false
+  warmStarted = false
 }
 
 /** Test-only: seed a slot in the cache without hitting the DB. */

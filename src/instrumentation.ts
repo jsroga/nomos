@@ -54,14 +54,9 @@ export async function register() {
     console.error(InstrumentationLog.OtelFailed, err)
   }
 
-  // Warm the admin-configurable model settings cache so the model resolvers
-  // (resolveRoleModel, resolveGameDesignModel, …) see per-role overrides.
-  try {
-    const { loadModelSettings } = await import('@/shared/agent-kernel/model-settings')
-    await loadModelSettings()
-  } catch (err) {
-    console.warn(InstrumentationLog.ModelSettingsWarmFailed, err)
-  }
+  // NOTE: the admin model-settings cache is NOT warmed here — importing it pulls
+  // `pg` into the Edge instrumentation bundle (it uses Node's `util/types`). It
+  // self-warms lazily in Node on the first resolver call (see model-settings.ts).
 }
 
 export const onRequestError = Sentry.captureRequestError
