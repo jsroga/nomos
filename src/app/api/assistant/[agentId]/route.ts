@@ -12,9 +12,12 @@
 import { handleChatStream } from '@mastra/ai-sdk'
 import { createUIMessageStreamResponse } from 'ai'
 import { getMastraInstance } from '@/shared/agent-kernel/mastra-instance'
-// Side-effect: ensure the storyteller agents (chat adapter + critics) are
-// registered before the first getMastraInstance().
+// Side-effect: register every domain's agents before the first
+// getMastraInstance(), so any registered agent id (storyteller chat adapter,
+// gameDesign, loopCreatorSupervisor, marketAnalyst, …) is reachable here.
 import '@/domains/storyteller/core/io/mastra-runtime'
+import '@/domains/game-design/core/io/mastra-runtime'
+import '@/domains/loop-creator/core/io/mastra-runtime'
 
 export const maxDuration = 30
 

@@ -8,14 +8,25 @@
 
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { useChatRuntime, AssistantChatTransport } from '@assistant-ui/react-ai-sdk'
+import { getCanvasModuleAgentId } from '@/shared/canvas/module-registry'
 import { AssistantThread } from './AssistantThread'
 
 const DEFAULT_AGENT_ID = 'storyteller'
 const ASSISTANT_API_BASE = '/api/assistant/'
 
-export function AssistantChat({ agentId = DEFAULT_AGENT_ID }: { agentId?: string }) {
+interface AssistantChatProps {
+  /** Explicit Mastra agent id (reachable via /api/assistant/<agentId>). */
+  agentId?: string
+  /** Canvas module key — resolves to the module's chatAgentId from the registry. */
+  moduleKey?: string
+}
+
+export function AssistantChat({ agentId, moduleKey }: AssistantChatProps) {
+  const resolvedAgentId =
+    agentId ?? (moduleKey ? getCanvasModuleAgentId(moduleKey) : undefined) ?? DEFAULT_AGENT_ID
+
   const runtime = useChatRuntime({
-    transport: new AssistantChatTransport({ api: `${ASSISTANT_API_BASE}${agentId}` }),
+    transport: new AssistantChatTransport({ api: `${ASSISTANT_API_BASE}${resolvedAgentId}` }),
   })
 
   return (
