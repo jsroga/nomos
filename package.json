@@ -139,6 +139,7 @@
     "storyteller:repl": "npx tsx scripts/storyteller-repl.ts",
     "dev:turbo": "next dev --turbo -p 4000",
     "eval": "npx tsx evals/run.ts",
+    "eval:ideas": "npx tsx evals/run.ts --dataset=idea-diversity",
     "eval:dashboard": "npx tsx evals/report/generate.ts && open evals/reports/latest.html",
     "test:unit": "vitest run",
     "test:e2e": "npx tsx scripts/run-e2e.ts",

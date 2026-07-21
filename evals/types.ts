@@ -16,6 +16,23 @@ export interface DatasetConfig {
   examples: EvaluationExample[]
 }
 
+/**
+ * The minimal example shape `evals/run.ts` consumes for any dataset: an input
+ * record + a reference output to score, plus per-example scorer scoping. Both
+ * the storyteller golden set and the idea-diversity dataset conform to this.
+ */
+export interface RunnableEvalExample {
+  id: string
+  input: Record<string, unknown>
+  referenceOutput: string
+  metadata: {
+    category: string
+    description?: string
+    /** When set, only these scorer ids run for this example. */
+    scorers?: readonly string[]
+  }
+}
+
 export interface StorytellerEvalInput {
   message: string
   projectId?: string
@@ -46,6 +63,8 @@ export interface VariantReport {
   config: Record<string, unknown>
   overallMetrics: ScenarioMetrics
   scenarioMetrics: Record<string, ScenarioMetrics>
+  /** Per-scorer average across the run — dataset-agnostic summary. */
+  scorerAverages?: Record<string, number>
   exampleLogs?: ExampleLog[]
 }
 

@@ -1,0 +1,30 @@
+{
+  "diversePool": [
+    "A cartographer maps a city that redraws itself every midnight.",
+    "Rival chefs duel using recipes that rewrite customers memories.",
+    "A lighthouse keeper trades storm warnings for forbidden star charts.",
+    "Underground postal workers smuggle truths inside undeliverable letters.",
+    "A museum night guard catalogs artifacts that refuse to stay in frames.",
+    "Two chess prodigies discover the board predicts real wars one move early.",
+    "A ferry only appears for passengers who have forgotten their own names.",
+    "Beekeepers harvest rumors from hives that buzz in human languages.",
+    "An archivist must delete tomorrow headlines to keep yesterday stable.",
+    "Street musicians tune instruments that open doors to parallel alleys.",
+    "A park ranger tags animals that migrate between video-game save states.",
+    "Clockmakers repair timepieces that steal hours from their owners sleep."
+  ],
+  "repetitiveBase": "A hero finds a mysterious artifact that grants power but corrupts them",
+  "repetitiveEchoSuffix": " slightly more.",
+  "defaultPrompt": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
+  "template": "In a world where {noun} control {domain}, a {role} must {verb} the last {macguffin}.",
+  "templateSlots": [
+    { "noun": "corps", "domain": "weather", "role": "pilot", "verb": "steal", "macguffin": "seed" },
+    { "noun": "corps", "domain": "weather", "role": "pilot", "verb": "steal", "macguffin": "core" },
+    { "noun": "guilds", "domain": "dreams", "role": "thief", "verb": "protect", "macguffin": "relic" },
+    { "noun": "guilds", "domain": "dreams", "role": "thief", "verb": "protect", "macguffin": "key" },
+    { "noun": "AIs", "domain": "markets", "role": "trader", "verb": "sabotage", "macguffin": "ledger" },
+    { "noun": "AIs", "domain": "markets", "role": "trader", "verb": "sabotage", "macguffin": "token" },
+    { "noun": "cults", "domain": "tides", "role": "sailor", "verb": "recover", "macguffin": "compass" },
+    { "noun": "cults", "domain": "tides", "role": "sailor", "verb": "recover", "macguffin": "map" }
+  ]
+}

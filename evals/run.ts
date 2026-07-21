@@ -13,14 +13,20 @@
 import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 import * as path from 'path'
-import { STORYTELLER_GOLDEN_DATASET, type StorytellerGoldenExample } from './datasets/storyteller-golden'
+import { inputRecord } from '@/shared/agent-kernel/scorers/shared'
 import type {
   ExampleLog,
   MultiVariantReport,
+  RunnableEvalExample,
   ScenarioMetrics,
   ScorerRunResult,
   VariantReport,
 } from './types'
+
+const DEFAULT_DATASET = 'storyteller'
+const IDEA_DATASET = 'idea-diversity'
+const DEFAULT_OUTPUT_FILE = 'latest.json'
+const IDEA_OUTPUT_FILE = 'idea-diversity-latest.json'
 
 function loadEnv() {
   const envPath = path.resolve(process.cwd(), '.env.local')
@@ -42,6 +48,11 @@ function parseArgs(totalExamples: number) {
   return { samples, scorerFilter }
 }
 
+function parseDataset(): string {
+  const arg = process.argv.slice(2).find(a => a.startsWith('--dataset='))?.split('=')[1]
+  return arg ?? DEFAULT_DATASET
+}
+
 function sampleArray<T>(array: T[], size: number): T[] {
   const shuffled = [...array].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, Math.min(size, array.length))
@@ -54,7 +65,7 @@ function generateRunId(): string {
   return `eval_${timestamp}_${random}`
 }
 
-function scorersForExample(example: StorytellerGoldenExample, selected: readonly RunnableScorer[]) {
+function scorersForExample(example: RunnableEvalExample, selected: readonly RunnableScorer[]) {
   const allowed = example.metadata.scorers
   if (!allowed?.length) return [...selected]
   return selected.filter(s => allowed.some(id => id === s.id))
@@ -77,15 +88,52 @@ function buildScenarioMetrics(results: ScorerRunResult[]): ScenarioMetrics {
 }
 
 async function loadScorers() {
-  const { ALL_SCORERS } = await import('@/shared/agent-kernel/scorers')
+  const { ALL_SCORERS, IDEA_DIVERSITY_SCORERS } = await import('@/shared/agent-kernel/scorers')
   // Deterministic domain scorers (beat-plan gate, critic discipline) live in
   // the storyteller domain — shared/ cannot import domains, so the union
-  // happens here in the runner.
+  // happens here in the runner. Idea-diversity scorers ride along; the
+  // per-example `scorers` filter scopes each to its dataset.
   const { STORYTELLER_EVAL_SCORERS } = await import('@/domains/storyteller/ai')
-  return [...ALL_SCORERS, ...STORYTELLER_EVAL_SCORERS]
+  return [...ALL_SCORERS, ...STORYTELLER_EVAL_SCORERS, ...IDEA_DIVERSITY_SCORERS]
 }
 
 type RunnableScorer = Awaited<ReturnType<typeof loadScorers>>[number]
+
+/** Load a dataset's examples (as run-agnostic `RunnableEvalExample`s). */
+async function loadDataset(dataset: string): Promise<RunnableEvalExample[]> {
+  if (dataset === IDEA_DATASET) {
+    const { IDEA_DIVERSITY_DATASET } = await import('./datasets/idea-diversity-golden')
+    return IDEA_DIVERSITY_DATASET.examples
+  }
+  const { STORYTELLER_GOLDEN_DATASET } = await import('./datasets/storyteller-golden')
+  return STORYTELLER_GOLDEN_DATASET.examples.map(example => ({
+    id: example.id,
+    input: inputRecord(example.input),
+    referenceOutput: example.referenceOutput,
+    metadata: {
+      category: example.metadata.category,
+      description: example.metadata.description,
+      scorers: example.metadata.scorers,
+    },
+  }))
+}
+
+function scorerAverages(results: ScorerRunResult[]): Record<string, number> {
+  const sums = new Map<string, { total: number; count: number }>()
+  for (const result of results) {
+    for (const [id, score] of Object.entries(result.scores)) {
+      const acc = sums.get(id) ?? { total: 0, count: 0 }
+      acc.total += score
+      acc.count += 1
+      sums.set(id, acc)
+    }
+  }
+  const averages: Record<string, number> = {}
+  for (const [id, { total, count }] of sums) {
+    averages[id] = count === 0 ? 0 : total / count
+  }
+  return averages
+}
 
 async function runEval(): Promise<MultiVariantReport> {
   loadEnv()
@@ -97,7 +145,8 @@ async function runEval(): Promise<MultiVariantReport> {
   const judgingModel = process.env.JUDGING_MODEL || 'openai:gpt-4o (default)'
   console.log(`   Judge model: ${judgingModel}`)
 
-  const allExamples = STORYTELLER_GOLDEN_DATASET.examples
+  const dataset = parseDataset()
+  const allExamples = await loadDataset(dataset)
   const { samples, scorerFilter } = parseArgs(allExamples.length)
   const globalScorers = scorerFilter
     ? ALL_SCORERS.filter(s => scorerFilter.includes(s.id))
@@ -105,7 +154,7 @@ async function runEval(): Promise<MultiVariantReport> {
 
   if (globalScorers.length === 0) {
     throw new Error(
-      'No scorers selected. Available: magic, consistency, hallucination, persona-fidelity, prose-craft, stakes-cost, story-motion, beat-plan-concreteness, critic-discipline'
+      'No scorers selected. Available: magic, consistency, hallucination, persona-fidelity, prose-craft, stakes-cost, story-motion, beat-plan-concreteness, critic-discipline, idea-uniqueness, idea-diversity-judge'
     )
   }
 
@@ -113,8 +162,8 @@ async function runEval(): Promise<MultiVariantReport> {
   const results: ScorerRunResult[] = []
 
   console.log('\n🧪 Mastra Eval Runner')
-  console.log(`   Examples: ${examples.length}`)
-  console.log(`   Scorers: ${globalScorers.map(s => s.id).join(', ')}\n`)
+  console.log(`   Dataset: ${dataset}`)
+  console.log(`   Examples: ${examples.length}\n`)
 
   for (const example of examples) {
     const start = Date.now()
@@ -170,16 +219,19 @@ async function runEval(): Promise<MultiVariantReport> {
     scenario: String(r.metadata?.scenario ?? 'general'),
     input: String(r.input.message ?? JSON.stringify(r.input)),
     output: r.output,
-    score: r.scores.magic ?? 0,
+    score: average(Object.values(r.scores)),
     reasoning: r.reasoning,
     context: r.metadata,
   }))
 
+  const averages = scorerAverages(results)
+
   const variant: VariantReport = {
     name: 'baseline',
-    config: { scorers: globalScorers.map(s => s.id), samples },
+    config: { scorers: globalScorers.map(s => s.id), samples, dataset },
     overallMetrics,
     scenarioMetrics,
+    scorerAverages: averages,
     exampleLogs,
   }
 
@@ -195,13 +247,17 @@ async function runEval(): Promise<MultiVariantReport> {
     fs.mkdirSync(resultsDir, { recursive: true })
   }
 
-  const outPath = path.join(resultsDir, 'latest.json')
+  const outPath = path.join(
+    resultsDir,
+    dataset === IDEA_DATASET ? IDEA_OUTPUT_FILE : DEFAULT_OUTPUT_FILE
+  )
   fs.writeFileSync(outPath, JSON.stringify(report, null, 2))
 
   console.log(`\n📊 Results saved to ${outPath}`)
-  console.log(
-    `   magic=${(overallMetrics.magicScore * 100).toFixed(0)}% consistency=${(overallMetrics.consistency * 100).toFixed(0)}% hallucination=${(overallMetrics.hallucination * 100).toFixed(0)}% persona=${(overallMetrics.personaFidelity * 100).toFixed(0)}%`
-  )
+  const averageSummary = Object.entries(averages)
+    .map(([id, value]) => `${id}=${(value * 100).toFixed(0)}%`)
+    .join(' ')
+  console.log(`   ${averageSummary}`)
 
   return report
 }
