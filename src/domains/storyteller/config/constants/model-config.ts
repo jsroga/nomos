@@ -164,7 +164,9 @@ export function resolveStorytellerModel(modelName: string): StorytellerMastraMod
       apiKey,
     }
   }
-  return toOpenRouterGatewayId(modelName)
+  // Catalog entries may map to a different OpenRouter id (e.g. GLM: internal
+  // `zai-coding-plan:glm-5.2` → `z-ai/glm-5.2`); otherwise route the id as-is.
+  return toOpenRouterGatewayId(option?.openRouterId ?? modelName)
 }
 
 /**

@@ -3,9 +3,9 @@
  * Storyteller Writers Room chat header.
  *
  * Internal id convention is `provider:model` (e.g. `zai-coding-plan:glm-5.2`).
- * `ModelConfig.resolveStorytellerModel` converts these to Mastra's
- * `provider/model` string form, or to an explicit `{ url, id, apiKey }` object
- * for providers that need a custom endpoint (e.g. Z.AI Coding Plan).
+ * `ModelConfig.resolveStorytellerModel` routes these through the OpenRouter
+ * gateway (`openrouter/…`) on the single OPENROUTER_API_KEY — using an entry's
+ * `openRouterId` when the OpenRouter id differs (GLM → `z-ai/glm-5.2`).
  *
  * `providerKey` must match a key returned by `/api/settings/providers` so the
  * picker can grey out models whose API key is not configured.
@@ -22,7 +22,13 @@ export interface ChatModelOption {
   providerKey: string
   /** Env var that must be set for this model to be usable. */
   envVar: string
-  /** When set, resolveStorytellerModel returns a `{ url, id, apiKey }` object. */
+  /**
+   * OpenRouter model id when it differs from the internal `provider:model` id
+   * (e.g. internal `zai-coding-plan:glm-5.2` → OpenRouter `z-ai/glm-5.2`).
+   * `resolveStorytellerModel` routes it as `openrouter/<openRouterId>`.
+   */
+  openRouterId?: string
+  /** When set, resolveStorytellerModel returns a `{ url, id, apiKey }` object (legacy escape hatch). */
   endpointUrl?: string
   /** Optional one-line description for the picker. */
   description?: string
@@ -66,20 +72,20 @@ export const CHAT_MODELS: ChatModelOption[] = [
   {
     id: 'zai-coding-plan:glm-5.2',
     label: 'GLM 5.2',
-    provider: 'Z.AI (Coding Plan)',
-    providerKey: 'zhipu',
-    envVar: 'ZHIPU_API_KEY',
-    endpointUrl: 'https://api.z.ai/api/coding/paas/v4',
-    description: 'Zhipu GLM 5.2 via the Coding Plan endpoint — author choice.',
+    provider: 'Z.AI (via OpenRouter)',
+    providerKey: 'openrouter',
+    envVar: 'OPENROUTER_API_KEY',
+    openRouterId: 'z-ai/glm-5.2',
+    description: 'Zhipu GLM 5.2 via OpenRouter — author choice, single key.',
     userSelectable: true,
   },
   {
     id: 'moonshotai:kimi-k2.7-code',
     label: 'Kimi 2.7',
-    provider: 'Moonshot',
-    providerKey: 'moonshot',
-    envVar: 'MOONSHOT_API_KEY',
-    description: 'Moonshot Kimi K2.7 Code — default author.',
+    provider: 'Moonshot (via OpenRouter)',
+    providerKey: 'openrouter',
+    envVar: 'OPENROUTER_API_KEY',
+    description: 'Moonshot Kimi K2.7 Code via OpenRouter — default author, single key.',
     userSelectable: true,
   },
 ]
