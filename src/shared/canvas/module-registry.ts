@@ -30,3 +30,8 @@ export function getCanvasModule(key: string): CanvasModuleDef | undefined {
 export function getCanvasModuleAgentId(key: string): string | undefined {
   return registry.get(key)?.chatAgentId
 }
+
+/** Custom chat endpoint for a module (crew orchestration), if it overrides the default. */
+export function getCanvasModuleChatApiPath(key: string): string | undefined {
+  return registry.get(key)?.chatApiPath
+}

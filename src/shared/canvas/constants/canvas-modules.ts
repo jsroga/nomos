@@ -14,6 +14,12 @@ export interface CanvasModuleDef {
   description: string
   /** Mastra agent id for this module's assistant-ui chat, if any. */
   chatAgentId?: string
+  /**
+   * Custom assistant-ui chat endpoint. Overrides the default
+   * `/api/assistant/<chatAgentId>` — used when the module streams an
+   * orchestration rather than a single agent (e.g. the loop-creator crew).
+   */
+  chatApiPath?: string
   /** Admin model slot (model_settings role) the module's agent resolves. */
   modelRole?: string
   /** Default enabled state (overridable via admin module_settings). */
@@ -26,6 +32,8 @@ export const CANVAS_MODULES: readonly CanvasModuleDef[] = [
     label: 'Loop Creator',
     description: 'Game-loop design canvas (React Flow) — supervisor + specialist crew.',
     chatAgentId: 'loopCreatorSupervisor',
+    // Full crew orchestration (streamLoopCreator), not the single supervisor agent.
+    chatApiPath: '/api/loop-creator/assistant',
     modelRole: 'loop-creator',
     enabledByDefault: true,
   },

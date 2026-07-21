@@ -16,7 +16,7 @@ export type { LoopChatSidebarProps } from './loop-chat-sidebar-types'
  * (Track B2). The old streaming props remain on the interface for callers but
  * are no longer consumed here.
  */
-export function LoopChatSidebar({ chatTourId }: LoopChatSidebarProps) {
+export function LoopChatSidebar({ chatTourId, projectId }: LoopChatSidebarProps) {
   return (
     <DomainSidebar
       header={null}
@@ -28,7 +28,7 @@ export function LoopChatSidebar({ chatTourId }: LoopChatSidebarProps) {
     >
       <div className="flex h-full flex-col" id={chatTourId}>
         <div className="flex-1 overflow-hidden">
-          <AssistantChat moduleKey="loop-creator" />
+          <AssistantChat moduleKey="loop-creator" body={{ projectId }} />
         </div>
       </div>
     </DomainSidebar>
