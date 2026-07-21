@@ -1,34 +1,32 @@
 /**
- * Loop-creator model resolution — single source of truth for the default model
- * used by the LangGraph specialist agents (supervisor, balance-analyst,
- * concept-evaluator, loop-planner, progression-architect, mechanics-designer).
+ * Loop-creator model resolution — single source of truth for the specialist
+ * agents (supervisor, balance-analyst, concept-evaluator, loop-planner,
+ * progression-architect, mechanics-designer) + the market-analyst.
  *
- * Order: explicit `override` (per-request `state.modelConfig.model`) →
- * `LOOP_CREATOR_MODEL` env → default. Returns a bare LangChain model name
- * (`gpt-4o`), NOT the Mastra `provider/model` form — these agents still run on
- * `@langchain/openai` `ChatOpenAI`. First convention step toward the eventual
- * Mastra port; centralizes the model string that was hardcoded in each agent.
+ * Everything routes through the OpenRouter gateway (single OPENROUTER_API_KEY):
+ * `override` (per-request `state.modelConfig.model`) → `LOOP_CREATOR_MODEL` env
+ * → `openrouter/auto-beta`. The LangChain (`ChatOpenAI`) fallback path talks to
+ * OpenRouter's OpenAI-compatible endpoint (see `openRouterClientConfig`).
  */
 
 import '@/shared/data/server-guard'
+import { OPENROUTER_AUTO_MODEL, toOpenRouterModel } from '@/shared/agent-kernel/models'
 
 const LOOP_CREATOR_MODEL_ENV = 'LOOP_CREATOR_MODEL'
-const LOOP_CREATOR_DEFAULT_MODEL = 'gpt-4o'
-const OPENAI_PROVIDER_PREFIX = 'openai/'
-const PROVIDER_SEPARATOR = '/'
 
-/** Resolve the loop-creator default model: `override` → env → `gpt-4o`. */
+/**
+ * Model id for the LangChain `ChatOpenAI` path (talks to OpenRouter directly):
+ * `override` → env → `openrouter/auto-beta`. Not gateway-prefixed — the client
+ * is already pointed at OpenRouter's endpoint.
+ */
 export function resolveLoopCreatorModel(override?: string): string {
-  return override || process.env[LOOP_CREATOR_MODEL_ENV] || LOOP_CREATOR_DEFAULT_MODEL
+  return override || process.env[LOOP_CREATOR_MODEL_ENV] || OPENROUTER_AUTO_MODEL
 }
 
 /**
- * Same resolution, normalized to the Mastra `provider/model` form for the
- * flagged Mastra agents (`LOOP_CREATOR_MASTRA=1`). A bare name is assumed to be
- * an OpenAI model; an id that already carries a `provider/` prefix is passed
- * through.
+ * Model string for the Mastra agents (`LOOP_CREATOR_MASTRA=1` specialists +
+ * market-analyst), routed through the OpenRouter gateway.
  */
 export function resolveLoopCreatorMastraModel(override?: string): string {
-  const base = resolveLoopCreatorModel(override)
-  return base.includes(PROVIDER_SEPARATOR) ? base : `${OPENAI_PROVIDER_PREFIX}${base}`
+  return toOpenRouterModel(override || process.env[LOOP_CREATOR_MODEL_ENV])
 }

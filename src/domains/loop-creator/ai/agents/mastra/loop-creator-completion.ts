@@ -17,6 +17,7 @@ import { ChatOpenAI } from '@langchain/openai'
 import { SystemMessage, HumanMessage, type BaseMessage } from '@langchain/core/messages'
 import { v4 as uuidv4 } from 'uuid'
 import { withMastraSpan } from '@/shared/observability/mastra-tracing'
+import { openRouterClientConfig } from '@/shared/agent-kernel/models'
 import { resolveLoopCreatorModel } from '../../../config/model-config'
 import {
   LoopCreatorMastraAgentId,
@@ -122,9 +123,12 @@ export async function runLoopCreatorMastraCompletion(
 async function runLoopCreatorLangChainCompletion(
   params: LoopCreatorCompletionParams
 ): Promise<string> {
+  const openRouter = openRouterClientConfig()
   const model = new ChatOpenAI({
-    modelName: resolveLoopCreatorModel(params.modelOverride),
+    model: resolveLoopCreatorModel(params.modelOverride),
     temperature: params.temperature,
+    apiKey: openRouter.apiKey,
+    configuration: { baseURL: openRouter.baseURL },
     ...(params.jsonMode ? { modelKwargs: { response_format: { type: JSON_OBJECT_FORMAT } } } : {}),
   })
 

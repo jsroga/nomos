@@ -11,6 +11,7 @@
  */
 
 import { ChatOpenAI } from '@langchain/openai'
+import { OPENROUTER_AUTO_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
 
 // ============================================
 // TYPES
@@ -288,9 +289,12 @@ export async function expandQueryLLM(
   }
 
   try {
+    const openRouter = openRouterClientConfig()
     const model = new ChatOpenAI({
-      modelName: 'gpt-4o-mini',
+      model: OPENROUTER_AUTO_MODEL,
       temperature: 0,
+      apiKey: openRouter.apiKey,
+      configuration: { baseURL: openRouter.baseURL },
     })
 
     const prompt = EXPANSION_PROMPT.replace('{query}', query)

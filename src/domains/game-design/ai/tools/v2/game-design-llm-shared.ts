@@ -1,23 +1,28 @@
 import { ChatOpenAI } from '@langchain/openai'
+import { OPENROUTER_AUTO_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
 import {
-  GameDesignLlmModel,
   GameDesignLlmRole,
   GameDesignLlmTemperature,
   GameDesignToolCopy,
 } from '../../constants/game-design-tool-wire'
 
-export function createHauteGameModel() {
+/** ChatOpenAI pointed at OpenRouter (single OPENROUTER_API_KEY), default openrouter/auto-beta. */
+function createOpenRouterChat(temperature: number): ChatOpenAI {
+  const openRouter = openRouterClientConfig()
   return new ChatOpenAI({
-    modelName: GameDesignLlmModel.Gpt4o,
-    temperature: GameDesignLlmTemperature.Creative,
+    model: OPENROUTER_AUTO_MODEL,
+    temperature,
+    apiKey: openRouter.apiKey,
+    configuration: { baseURL: openRouter.baseURL },
   })
 }
 
+export function createHauteGameModel() {
+  return createOpenRouterChat(GameDesignLlmTemperature.Creative)
+}
+
 export function createLogicToolModel() {
-  return new ChatOpenAI({
-    modelName: GameDesignLlmModel.Gpt4o,
-    temperature: GameDesignLlmTemperature.Analytical,
-  })
+  return createOpenRouterChat(GameDesignLlmTemperature.Analytical)
 }
 
 export function extractJsonFromLlmContent(content: string): unknown {

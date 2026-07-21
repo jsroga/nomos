@@ -1,11 +1,11 @@
-import { MODELS } from '@/shared/agent-kernel/models'
+import { MODELS, toOpenRouterModel } from '@/shared/agent-kernel/models'
 import { isPlainObject } from '@/shared/data/json-guards'
 import { ScorerOutputField } from '@/shared/agent-kernel/scorers/constants/shared'
 
 export function toMastraJudgingModel(): string {
   // Read at call time so evals/run.ts can load .env.local before scorer modules import.
-  const model = process.env.JUDGING_MODEL || MODELS.judging.primary
-  return model.replace(':', '/')
+  // Routed through the OpenRouter gateway (single OPENROUTER_API_KEY); default openrouter/auto-beta.
+  return toOpenRouterModel(process.env.JUDGING_MODEL || MODELS.judging.primary)
 }
 
 export function normalizeScore(score: number): number {

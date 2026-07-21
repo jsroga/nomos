@@ -2,6 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
 import { getChatModelOption, isKnownChatModel } from '@/domains/storyteller/config/constants/chat-model-catalog'
+import { OPENROUTER_AUTO_MODEL, toOpenRouterModel } from '@/shared/agent-kernel/models'
 
 /**
  * Effort levels for dynamic model selection
@@ -86,7 +87,7 @@ export function getAgentModel(modelName: string = 'openai:gpt-4o') {
  * Use this to switch the entire Council of Agents at once.
  */
 export const GLOBAL_AGENT_MODEL =
-  process.env.NEXT_PUBLIC_DEFAULT_AGENT_MODEL || 'openai:gpt-4o-mini'
+  process.env.NEXT_PUBLIC_DEFAULT_AGENT_MODEL || OPENROUTER_AUTO_MODEL
 
 /**
  * Model fallback configuration for resilience
@@ -94,11 +95,7 @@ export const GLOBAL_AGENT_MODEL =
  *
  * If primary model fails, automatically falls back to next in chain
  */
-export const MODEL_FALLBACKS = [
-  { model: 'openai/gpt-4o', maxRetries: 3 },
-  { model: 'anthropic/claude-sonnet-5', maxRetries: 2 },
-  { model: 'google/gemini-2.5-flash', maxRetries: 2 },
-]
+export const MODEL_FALLBACKS = [{ model: OPENROUTER_AUTO_MODEL, maxRetries: 3 }]
 
 /**
  * Get model string for Mastra's unified API format
@@ -145,8 +142,15 @@ function mastraGatewayModelIdFromCatalog(catalogId: string): MastraGatewayModelI
  * Z.AI Coding Plan's `glm-5.2`, which is not yet in Mastra's bundled
  * provider-registry.json). The apiKey is read from the catalog entry's env var.
  */
+function toOpenRouterGatewayId(modelName: string): MastraGatewayModelId {
+  const routed = toOpenRouterModel(modelName)
+  return isMastraGatewayModelId(routed) ? routed : OPENROUTER_AUTO_MODEL
+}
+
 export function resolveStorytellerModel(modelName: string): StorytellerMastraModel {
   const option = getChatModelOption(modelName)
+  // Custom-endpoint catalog entries (e.g. GLM via Z.AI Coding Plan) keep their
+  // own url + key — the documented exception to the single-OpenRouter-key rule.
   if (option?.endpointUrl) {
     const apiKey = process.env[option.envVar]
     if (!apiKey) {
@@ -160,7 +164,7 @@ export function resolveStorytellerModel(modelName: string): StorytellerMastraMod
       apiKey,
     }
   }
-  return mastraGatewayModelIdFromCatalog(modelName)
+  return toOpenRouterGatewayId(modelName)
 }
 
 /**
@@ -206,7 +210,7 @@ export interface AgentModelConfig {
  */
 export const AGENT_RUNTIME_DEFAULTS = {
   /** Default model when an agent is created without an explicit one. */
-  model: 'openai:gpt-4o',
+  model: OPENROUTER_AUTO_MODEL,
   /** Max tool-call iterations per generate() for multi-step agents. */
   maxSteps: 10,
   /** Fallback sampling when no per-agent matrix entry exists. */
@@ -434,8 +438,10 @@ export function resolveRoleModel(
   overrideId?: string
 ): StorytellerMastraModel {
   const validatedOverride = overrideId && isKnownChatModel(overrideId) ? overrideId : undefined
-  const id =
-    validatedOverride ?? roleEnvOverride(role) ?? AGENT_MODEL_MATRIX[role]?.model ?? GLOBAL_AGENT_MODEL
-  return resolveStorytellerModel(id)
+  // Single-key OpenRouter: default to the auto router; a user picker choice or
+  // operator env override (STORYTELLER_<ROLE>_MODEL) is routed through the same
+  // gateway. The per-role matrix below still supplies temperature/topP/rationale.
+  const explicit = validatedOverride ?? roleEnvOverride(role)
+  return explicit ? resolveStorytellerModel(explicit) : OPENROUTER_AUTO_MODEL
 }
 

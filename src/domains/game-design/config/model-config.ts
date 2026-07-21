@@ -6,18 +6,14 @@
  */
 
 import '@/shared/data/server-guard'
-import {
-  GameDesignDefaultModel,
-  GameDesignModelSeparator,
-} from '@/domains/game-design/ai/constants/agent-identity'
+import { toOpenRouterModel } from '@/shared/agent-kernel/models'
 
 const GAME_DESIGN_MODEL_ENV = 'GAME_DESIGN_MODEL'
 
 /**
- * Resolve the game-design model id: `override` → `GAME_DESIGN_MODEL` env →
- * default, normalized `provider:model` → `provider/model`. Idempotent.
+ * Resolve the game-design model, routed through the OpenRouter gateway (single
+ * OPENROUTER_API_KEY): `override` → `GAME_DESIGN_MODEL` env → `openrouter/auto-beta`.
  */
 export function resolveGameDesignModel(override?: string): string {
-  const raw = override || process.env[GAME_DESIGN_MODEL_ENV] || GameDesignDefaultModel.OpenAiGpt4o
-  return raw.replace(GameDesignModelSeparator.Colon, GameDesignModelSeparator.Slash)
+  return toOpenRouterModel(override || process.env[GAME_DESIGN_MODEL_ENV])
 }

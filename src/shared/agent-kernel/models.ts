@@ -10,32 +10,70 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
 
 // =============================================================================
+// OPENROUTER GATEWAY — one key to rule them all
+// =============================================================================
+//
+// Everything routes through the OpenRouter gateway so a single
+// OPENROUTER_API_KEY serves every provider (no per-provider keys). The default
+// model is OpenRouter's auto router (`openrouter/auto-beta`); operators can pin
+// a specific model per env override (e.g. STORYTELLER_AUTHOR_MODEL=
+// openrouter/moonshotai/kimi-k2), which is routed through the same gateway.
+//
+// NOTE: this is the single knob. If Mastra's model router needs the gateway
+// double-prefixed (`openrouter/openrouter/auto-beta`), change ONLY this
+// constant — every resolver funnels through `toOpenRouterModel`.
+
+export const OPENROUTER_AUTO_MODEL = 'openrouter/auto-beta'
+/** OpenAI-compatible endpoint for LangChain / AI-SDK clients that can't take a Mastra gateway string. */
+export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
+const OPENROUTER_GATEWAY_PREFIX = 'openrouter/'
+const PROVIDER_COLON = ':'
+const PROVIDER_SLASH = '/'
+
+/**
+ * Route any model id through the OpenRouter gateway. Accepts `provider:model`,
+ * `provider/model`, or an already-gatewayed `openrouter/…` id; empty/undefined
+ * → `openrouter/auto-beta`. Idempotent.
+ */
+export function toOpenRouterModel(id?: string): string {
+  const trimmed = id?.trim()
+  if (!trimmed) return OPENROUTER_AUTO_MODEL
+  if (trimmed.startsWith(OPENROUTER_GATEWAY_PREFIX)) return trimmed
+  return `${OPENROUTER_GATEWAY_PREFIX}${trimmed.replace(PROVIDER_COLON, PROVIDER_SLASH)}`
+}
+
+/** Config for LangChain `ChatOpenAI` / AI-SDK `createOpenAI` pointed at OpenRouter. */
+export function openRouterClientConfig(): { apiKey: string | undefined; baseURL: string } {
+  return { apiKey: process.env.OPENROUTER_API_KEY, baseURL: OPENROUTER_BASE_URL }
+}
+
+// =============================================================================
 // MODEL REGISTRY - All models defined in one place
 // =============================================================================
 
 export const MODELS = {
   // === GENERATION MODELS (for creating content) ===
   generation: {
-    primary: process.env.GENERATION_MODEL || 'openai:gpt-4o',
-    fast: process.env.GENERATION_MODEL_FAST || 'openai:gpt-4o-mini',
-    creative: process.env.GENERATION_MODEL_CREATIVE || 'openai:gpt-4o',
+    primary: process.env.GENERATION_MODEL || OPENROUTER_AUTO_MODEL,
+    fast: process.env.GENERATION_MODEL_FAST || OPENROUTER_AUTO_MODEL,
+    creative: process.env.GENERATION_MODEL_CREATIVE || OPENROUTER_AUTO_MODEL,
   },
 
   // === JUDGING MODELS (for evaluation - independent layer) ===
   judging: {
-    primary: process.env.JUDGING_MODEL || 'openai:gpt-4o',
-    fallback: process.env.JUDGING_MODEL_FALLBACK || 'openai:gpt-4o-mini',
+    primary: process.env.JUDGING_MODEL || OPENROUTER_AUTO_MODEL,
+    fallback: process.env.JUDGING_MODEL_FALLBACK || OPENROUTER_AUTO_MODEL,
     // Low temperature for consistent judging
     temperature: 0.1,
   },
 
   // === PLANNING MODELS (for reasoning/planning) ===
   planning: {
-    primary: process.env.PLANNING_MODEL || 'openai:gpt-4o',
-    reasoning: process.env.PLANNING_MODEL_REASONING || 'openai:o1-preview',
+    primary: process.env.PLANNING_MODEL || OPENROUTER_AUTO_MODEL,
+    reasoning: process.env.PLANNING_MODEL_REASONING || OPENROUTER_AUTO_MODEL,
   },
 
-  // === EMBEDDING MODELS ===
+  // === EMBEDDING MODELS (OpenRouter has no unified embeddings gateway → own key) ===
   embedding: {
     primary: process.env.EMBEDDING_MODEL || 'openai:text-embedding-3-small',
   },

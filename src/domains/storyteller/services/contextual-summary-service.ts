@@ -9,7 +9,8 @@
  * her relationships discovered via graph traversal.
  */
 
-import { openai } from '@ai-sdk/openai'
+import { createOpenAI } from '@ai-sdk/openai'
+import { OPENROUTER_AUTO_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
 import { generateText } from 'ai'
 import { entityGraphService } from './entity-graph-service'
 import { relationshipEnricher } from './relationship-enricher-service'
@@ -17,7 +18,6 @@ import { parseEntityType } from '@/domains/storyteller/core/entities/entity-type
 import {
   CONTEXTUAL_SUMMARY_GENERATION_FAILED_LOG,
   CONTEXTUAL_SUMMARY_GRAPHRAG_FAILED_LOG,
-  CONTEXTUAL_SUMMARY_MODEL,
   CONTEXTUAL_SUMMARY_NO_DESCRIPTION,
   RELATIONSHIP_JOIN_SEPARATOR,
 } from '@/domains/storyteller/services/constants/contextual-summary'
@@ -223,8 +223,10 @@ export async function generateContextualSummary(
       safeRequest.projectId
     )
 
+    const openRouter = openRouterClientConfig()
+    const openrouter = createOpenAI({ apiKey: openRouter.apiKey, baseURL: openRouter.baseURL })
     const { text } = await generateText({
-      model: openai(CONTEXTUAL_SUMMARY_MODEL),
+      model: openrouter(OPENROUTER_AUTO_MODEL),
       system: `You are a story assistant that provides brief, contextual descriptions of story elements.
 Given an entity, its relationships, and the sentence where it appears, explain the entity's relevance in that specific context.
 
