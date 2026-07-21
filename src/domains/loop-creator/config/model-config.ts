@@ -10,17 +10,17 @@
  */
 
 import '@/shared/data/server-guard'
-import { OPENROUTER_AUTO_MODEL, toOpenRouterModel } from '@/shared/agent-kernel/models'
+import { toOpenRouterModel, toOpenRouterModelId } from '@/shared/agent-kernel/models'
 
 const LOOP_CREATOR_MODEL_ENV = 'LOOP_CREATOR_MODEL'
 
 /**
- * Model id for the LangChain `ChatOpenAI` path (talks to OpenRouter directly):
- * `override` → env → `openrouter/auto-beta`. Not gateway-prefixed — the client
- * is already pointed at OpenRouter's endpoint.
+ * OpenRouter model id for the LangChain `ChatOpenAI` path (client already points
+ * at OpenRouter's endpoint): `override` → env → `openrouter/auto-beta`. NOT the
+ * Mastra gateway string.
  */
 export function resolveLoopCreatorModel(override?: string): string {
-  return override || process.env[LOOP_CREATOR_MODEL_ENV] || OPENROUTER_AUTO_MODEL
+  return toOpenRouterModelId(override || process.env[LOOP_CREATOR_MODEL_ENV])
 }
 
 /**

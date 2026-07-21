@@ -2,7 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
 import { getChatModelOption, isKnownChatModel } from '@/domains/storyteller/config/constants/chat-model-catalog'
-import { OPENROUTER_AUTO_MODEL, toOpenRouterModel } from '@/shared/agent-kernel/models'
+import { OPENROUTER_AUTO_GATEWAY, toOpenRouterModel } from '@/shared/agent-kernel/models'
 
 /**
  * Effort levels for dynamic model selection
@@ -87,7 +87,7 @@ export function getAgentModel(modelName: string = 'openai:gpt-4o') {
  * Use this to switch the entire Council of Agents at once.
  */
 export const GLOBAL_AGENT_MODEL =
-  process.env.NEXT_PUBLIC_DEFAULT_AGENT_MODEL || OPENROUTER_AUTO_MODEL
+  process.env.NEXT_PUBLIC_DEFAULT_AGENT_MODEL || OPENROUTER_AUTO_GATEWAY
 
 /**
  * Model fallback configuration for resilience
@@ -95,7 +95,7 @@ export const GLOBAL_AGENT_MODEL =
  *
  * If primary model fails, automatically falls back to next in chain
  */
-export const MODEL_FALLBACKS = [{ model: OPENROUTER_AUTO_MODEL, maxRetries: 3 }]
+export const MODEL_FALLBACKS = [{ model: OPENROUTER_AUTO_GATEWAY, maxRetries: 3 }]
 
 /**
  * Get model string for Mastra's unified API format
@@ -144,7 +144,7 @@ function mastraGatewayModelIdFromCatalog(catalogId: string): MastraGatewayModelI
  */
 function toOpenRouterGatewayId(modelName: string): MastraGatewayModelId {
   const routed = toOpenRouterModel(modelName)
-  return isMastraGatewayModelId(routed) ? routed : OPENROUTER_AUTO_MODEL
+  return isMastraGatewayModelId(routed) ? routed : OPENROUTER_AUTO_GATEWAY
 }
 
 export function resolveStorytellerModel(modelName: string): StorytellerMastraModel {
@@ -212,7 +212,7 @@ export interface AgentModelConfig {
  */
 export const AGENT_RUNTIME_DEFAULTS = {
   /** Default model when an agent is created without an explicit one. */
-  model: OPENROUTER_AUTO_MODEL,
+  model: OPENROUTER_AUTO_GATEWAY,
   /** Max tool-call iterations per generate() for multi-step agents. */
   maxSteps: 10,
   /** Fallback sampling when no per-agent matrix entry exists. */
@@ -444,6 +444,6 @@ export function resolveRoleModel(
   // operator env override (STORYTELLER_<ROLE>_MODEL) is routed through the same
   // gateway. The per-role matrix below still supplies temperature/topP/rationale.
   const explicit = validatedOverride ?? roleEnvOverride(role)
-  return explicit ? resolveStorytellerModel(explicit) : OPENROUTER_AUTO_MODEL
+  return explicit ? resolveStorytellerModel(explicit) : OPENROUTER_AUTO_GATEWAY
 }
 

@@ -23,23 +23,45 @@ import { google } from '@ai-sdk/google'
 // double-prefixed (`openrouter/openrouter/auto-beta`), change ONLY this
 // constant — every resolver funnels through `toOpenRouterModel`.
 
+/**
+ * OpenRouter MODEL ID (provider/model form) for the auto router — what
+ * OpenRouter's API expects, and what direct OpenAI-compatible clients (LangChain
+ * ChatOpenAI / AI-SDK createOpenAI pointed at OpenRouter) pass as `model`.
+ */
 export const OPENROUTER_AUTO_MODEL = 'openrouter/auto-beta'
-/** OpenAI-compatible endpoint for LangChain / AI-SDK clients that can't take a Mastra gateway string. */
+/** Mastra model-router gateway string for the auto router (double-prefixed). */
+export const OPENROUTER_AUTO_GATEWAY = 'openrouter/openrouter/auto-beta'
+/** OpenAI-compatible endpoint for LangChain / AI-SDK clients. */
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 const OPENROUTER_GATEWAY_PREFIX = 'openrouter/'
+const OPENROUTER_PROVIDER = 'openrouter'
 const PROVIDER_COLON = ':'
 const PROVIDER_SLASH = '/'
 
 /**
- * Route any model id through the OpenRouter gateway. Accepts `provider:model`,
- * `provider/model`, or an already-gatewayed `openrouter/…` id; empty/undefined
- * → `openrouter/auto-beta`. Idempotent.
+ * Normalize to an OpenRouter MODEL ID (`provider/model`): `provider:model` →
+ * `provider/model`; empty → the auto router. For direct OpenAI-compatible
+ * clients already pointed at OpenRouter's endpoint.
  */
-export function toOpenRouterModel(id?: string): string {
+export function toOpenRouterModelId(id?: string): string {
   const trimmed = id?.trim()
   if (!trimmed) return OPENROUTER_AUTO_MODEL
-  if (trimmed.startsWith(OPENROUTER_GATEWAY_PREFIX)) return trimmed
-  return `${OPENROUTER_GATEWAY_PREFIX}${trimmed.replace(PROVIDER_COLON, PROVIDER_SLASH)}`
+  return trimmed.replace(PROVIDER_COLON, PROVIDER_SLASH)
+}
+
+/**
+ * Mastra model-router gateway string: `openrouter/<openrouter-model-id>`. The
+ * auto router's OpenRouter id is itself `openrouter/auto-beta`, so its Mastra
+ * string is `openrouter/openrouter/auto-beta` (verified against the live API —
+ * a single `openrouter/auto-beta` yields "Invalid URL"). Accepts `provider:model`,
+ * an OpenRouter model id, or an already-gatewayed 3-segment `openrouter/x/y` id.
+ */
+export function toOpenRouterModel(id?: string): string {
+  const modelId = toOpenRouterModelId(id)
+  const segments = modelId.split(PROVIDER_SLASH)
+  // Already a Mastra gateway string (openrouter/<provider>/<model>) — leave it.
+  if (segments[0] === OPENROUTER_PROVIDER && segments.length >= 3) return modelId
+  return `${OPENROUTER_GATEWAY_PREFIX}${modelId}`
 }
 
 /** Config for LangChain `ChatOpenAI` / AI-SDK `createOpenAI` pointed at OpenRouter. */

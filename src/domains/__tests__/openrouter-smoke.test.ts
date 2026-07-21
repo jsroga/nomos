@@ -12,6 +12,7 @@ import { describe, it, expect } from 'vitest'
 import { Agent } from '@mastra/core/agent'
 import {
   OPENROUTER_AUTO_MODEL,
+  OPENROUTER_AUTO_GATEWAY,
   openRouterClientConfig,
 } from '@/shared/agent-kernel/models'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
@@ -30,16 +31,19 @@ if (optedIn && !hasKey) {
 
 smoke('OpenRouter live smoke (needs OPENROUTER_API_KEY)', () => {
   it(
-    'a Mastra Agent on openrouter/auto-beta returns text',
+    'a Mastra Agent on the auto gateway string returns text',
     async () => {
+      // Mastra gateway needs the double-prefixed form; a bare openrouter/auto-beta
+      // yields "Invalid URL" (see OPENROUTER_AUTO_GATEWAY doc).
       const agent = new Agent({
         id: 'openrouter-smoke-auto',
         name: 'OpenRouter Smoke (auto)',
         instructions: 'You reply with a single short word.',
-        model: OPENROUTER_AUTO_MODEL,
+        model: OPENROUTER_AUTO_GATEWAY,
       })
       const response = await agent.generate('Reply with the word: pong')
       expect(response.text.trim().length).toBeGreaterThan(0)
+      expect(OPENROUTER_AUTO_MODEL).toBe('openrouter/auto-beta')
     },
     TIMEOUT_MS
   )

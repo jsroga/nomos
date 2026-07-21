@@ -9,7 +9,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   toOpenRouterModel,
+  toOpenRouterModelId,
   OPENROUTER_AUTO_MODEL,
+  OPENROUTER_AUTO_GATEWAY,
   OPENROUTER_BASE_URL,
   openRouterClientConfig,
 } from '@/shared/agent-kernel/models'
@@ -43,34 +45,52 @@ beforeEach(() => {
   for (const name of MODEL_ENV_VARS) Reflect.deleteProperty(process.env, name)
 })
 
-describe('toOpenRouterModel', () => {
-  it('defaults empty/undefined to openrouter/auto-beta', () => {
+describe('toOpenRouterModelId (direct OpenRouter clients)', () => {
+  it('defaults empty/undefined to the auto router id', () => {
     expect(OPENROUTER_AUTO_MODEL).toBe('openrouter/auto-beta')
-    expect(toOpenRouterModel()).toBe('openrouter/auto-beta')
-    expect(toOpenRouterModel('')).toBe('openrouter/auto-beta')
-    expect(toOpenRouterModel('   ')).toBe('openrouter/auto-beta')
+    expect(toOpenRouterModelId()).toBe('openrouter/auto-beta')
+    expect(toOpenRouterModelId('')).toBe('openrouter/auto-beta')
+  })
+  it('normalizes provider:model to provider/model (no gateway prefix)', () => {
+    expect(toOpenRouterModelId('openai:gpt-4o')).toBe('openai/gpt-4o')
+    expect(toOpenRouterModelId('openai/gpt-5.6-luna')).toBe('openai/gpt-5.6-luna')
+  })
+})
+
+describe('toOpenRouterModel (Mastra gateway string)', () => {
+  it('defaults to the double-prefixed auto gateway string', () => {
+    // Verified live: single `openrouter/auto-beta` → "Invalid URL"; the router
+    // needs gateway=openrouter + model=openrouter/auto-beta.
+    expect(OPENROUTER_AUTO_GATEWAY).toBe('openrouter/openrouter/auto-beta')
+    expect(toOpenRouterModel()).toBe(OPENROUTER_AUTO_GATEWAY)
+    expect(toOpenRouterModel('')).toBe(OPENROUTER_AUTO_GATEWAY)
+    expect(toOpenRouterModel(OPENROUTER_AUTO_MODEL)).toBe(OPENROUTER_AUTO_GATEWAY)
   })
 
   it('gateways provider:model and provider/model ids', () => {
     expect(toOpenRouterModel('openai:gpt-4o')).toBe('openrouter/openai/gpt-4o')
     expect(toOpenRouterModel('anthropic/claude-sonnet-5')).toBe('openrouter/anthropic/claude-sonnet-5')
     expect(toOpenRouterModel('z-ai/glm-5.2')).toBe('openrouter/z-ai/glm-5.2')
+    expect(toOpenRouterModel('openai/gpt-5.6-luna')).toBe('openrouter/openai/gpt-5.6-luna')
   })
 
-  it('is idempotent on already-gatewayed ids', () => {
+  it('leaves an already-gatewayed 3-segment id untouched', () => {
     expect(toOpenRouterModel('openrouter/z-ai/glm-5.2')).toBe('openrouter/z-ai/glm-5.2')
-    expect(toOpenRouterModel(OPENROUTER_AUTO_MODEL)).toBe(OPENROUTER_AUTO_MODEL)
+    expect(toOpenRouterModel('openrouter/openai/gpt-4o')).toBe('openrouter/openai/gpt-4o')
   })
 })
 
 describe('every model resolver routes through OpenRouter', () => {
-  it('domain resolvers default to openrouter/auto-beta', () => {
-    expect(resolveGameDesignModel()).toBe(OPENROUTER_AUTO_MODEL)
-    expect(resolveLoopCreatorMastraModel()).toBe(OPENROUTER_AUTO_MODEL)
+  it('Mastra resolvers default to the auto gateway string', () => {
+    expect(resolveGameDesignModel()).toBe(OPENROUTER_AUTO_GATEWAY)
+    expect(resolveLoopCreatorMastraModel()).toBe(OPENROUTER_AUTO_GATEWAY)
+    expect(toMastraJudgingModel()).toBe(OPENROUTER_AUTO_GATEWAY)
+    expect(resolveRoleModel('chat')).toBe(OPENROUTER_AUTO_GATEWAY)
+    expect(resolveRoleModel('author')).toBe(OPENROUTER_AUTO_GATEWAY)
+  })
+
+  it('the LangChain direct-client resolver returns the OpenRouter model id', () => {
     expect(resolveLoopCreatorModel()).toBe(OPENROUTER_AUTO_MODEL)
-    expect(toMastraJudgingModel()).toBe(OPENROUTER_AUTO_MODEL)
-    expect(resolveRoleModel('chat')).toBe(OPENROUTER_AUTO_MODEL)
-    expect(resolveRoleModel('author')).toBe(OPENROUTER_AUTO_MODEL)
   })
 
   it('env overrides are routed through the gateway (single key)', () => {
@@ -78,7 +98,7 @@ describe('every model resolver routes through OpenRouter', () => {
     expect(resolveGameDesignModel()).toBe('openrouter/openai/gpt-4o')
     process.env.JUDGING_MODEL = 'anthropic/claude-sonnet-4.5'
     expect(toMastraJudgingModel()).toBe('openrouter/anthropic/claude-sonnet-4.5')
-    process.env.STORYTELLER_AUTHOR_MODEL = 'openrouter/moonshotai/kimi-k2'
+    process.env.STORYTELLER_AUTHOR_MODEL = 'moonshotai/kimi-k2'
     expect(resolveRoleModel('author')).toBe('openrouter/moonshotai/kimi-k2')
   })
 
