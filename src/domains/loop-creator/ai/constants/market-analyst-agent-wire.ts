@@ -38,10 +38,6 @@ export enum MarketAnalysisProgressMessage {
   Initializing = 'Initializing market analysis...',
 }
 
-export enum MarketAnalystModel {
-  Default = 'openai/gpt-4o',
-}
-
 export enum MarketAnalysisErrorMessage {
   Unknown = 'Unknown error',
 }

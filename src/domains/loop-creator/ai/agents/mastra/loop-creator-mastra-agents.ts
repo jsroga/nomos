@@ -14,6 +14,7 @@
 import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { resolveLoopCreatorMastraModel } from '../../../config/model-config'
+import { marketAnalystAgent } from '../market-analyst'
 
 export enum LoopCreatorMastraAgentId {
   Supervisor = 'loop-creator-supervisor',
@@ -97,7 +98,11 @@ export const loopCreatorMastraAgentById: Record<LoopCreatorMastraAgentId, Agent>
   [LoopCreatorMastraAgentId.ConceptEvaluator]: loopCreatorConceptEvaluatorAgent,
 }
 
-/** Agents registered on the central Mastra instance (Studio parity). */
+/**
+ * Agents registered on the central Mastra instance (Studio parity). The
+ * supervisor-crew agents back the flagged (`LOOP_CREATOR_MASTRA=1`) specialist
+ * path; the market analyst is an always-Mastra ReAct agent (native tools).
+ */
 export const loopCreatorRuntimeAgents: Record<string, Agent> = {
   loopCreatorSupervisor: loopCreatorSupervisorAgent,
   loopCreatorLoopPlanner: loopCreatorLoopPlannerAgent,
@@ -105,4 +110,5 @@ export const loopCreatorRuntimeAgents: Record<string, Agent> = {
   loopCreatorBalanceAnalyst: loopCreatorBalanceAnalystAgent,
   loopCreatorProgressionArchitect: loopCreatorProgressionArchitectAgent,
   loopCreatorConceptEvaluator: loopCreatorConceptEvaluatorAgent,
+  marketAnalyst: marketAnalystAgent,
 }

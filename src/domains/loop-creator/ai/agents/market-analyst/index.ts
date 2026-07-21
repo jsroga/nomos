@@ -1,6 +1,5 @@
 import { Agent } from '@mastra/core/agent'
-import { createTool } from '@mastra/core/tools'
-import type { DynamicStructuredTool } from '@langchain/core/tools'
+import { resolveLoopCreatorMastraModel } from '../../../config/model-config'
 import {
   MARKET_ANALYSIS_NO_STRUCTURED_REPORT,
   MarketAnalysisStreamEvent,
@@ -11,7 +10,6 @@ import {
   MarketAnalysisUserPromptPart,
   MarketAnalystAgentId,
   MarketAnalystAgentName,
-  MarketAnalystModel,
   MARKET_ANALYST_AGENT_INSTRUCTIONS,
   MarketAnalystPromptPlaceholder,
   MastraMessageRole,
@@ -25,34 +23,25 @@ import {
 } from './market-analysis-run'
 import { marketAnalystTools } from './tools-registry'
 
-function langChainToolToMastra(tool: DynamicStructuredTool) {
-  return createTool({
-    id: tool.name,
-    description: tool.description,
-    inputSchema: tool.schema,
-    execute: async inputData => {
-      const result = await tool.invoke(inputData)
-      return typeof result === 'string' ? { output: result } : result
-    },
-  })
-}
-
 /**
- * Create the market analyst as a Mastra agent (no LangGraph).
+ * Create the market analyst as a Mastra agent. Tools are native Mastra tools
+ * (built by `createLoopStructuredTool`); the model is the shared loop-creator
+ * resolver (dynamic, env-overridable) per the storyteller convention.
  */
 export function createMarketAnalystAgent() {
-  const tools = Object.fromEntries(
-    marketAnalystTools.map(tool => [tool.name, langChainToolToMastra(tool)]),
-  )
+  const tools = Object.fromEntries(marketAnalystTools.map(tool => [tool.id, tool]))
 
   return new Agent({
     id: MarketAnalystAgentId.Id,
     name: MarketAnalystAgentName.Name,
     instructions: MARKET_ANALYST_AGENT_INSTRUCTIONS,
-    model: MarketAnalystModel.Default,
+    model: () => resolveLoopCreatorMastraModel(),
     tools,
   })
 }
+
+/** Singleton registered on the central instance (see `core/io/mastra-runtime.ts`). */
+export const marketAnalystAgent = createMarketAnalystAgent()
 
 function buildMarketAnalysisPrompt(input: LoopAnalysisInput): string {
   const loopContext = buildLoopContext({
@@ -105,7 +94,7 @@ export async function runMarketAnalysis(
     onProgress?.(MarketAnalysisProgressMessage.StartingUi)
     messages.push(MarketAnalysisProgressMessage.StartingLog)
 
-    const agent = createMarketAnalystAgent()
+    const agent = marketAnalystAgent
     onProgress?.(MarketAnalysisProgressMessage.Researching)
 
     const result = await agent.generate(
@@ -138,7 +127,7 @@ export async function runMarketAnalysis(
 
 // Re-export tools for tests
 export { marketAnalystTools } from './tools-registry'
-export type { LoopAnalysisInput, MarketAnalysisReport, MarketAnalystState } from './types'
+export type { LoopAnalysisInput, MarketAnalysisReport } from './types'
 
 /**
  * Stream market analysis with progress updates (Mastra agent).

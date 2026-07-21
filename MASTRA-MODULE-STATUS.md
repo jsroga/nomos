@@ -10,7 +10,7 @@ Status of the Mastra migration across modules (storyteller set the convention), 
 |---|---|
 | **storyteller** | ✅ Full Mastra + conventions (central instance, `ai/` layer, role matrix, tools, workflows, file-based prompts, observability, controller/durable/goals) |
 | **game-design** | ✅ **On convention** — Mastra `createTool` + `createWorkflow` + `Agent`, **now registered centrally** (`core/io/mastra-runtime.ts`), dynamic `model` callback; LangChain kept only for the domain pattern-RAG index (documented exception) |
-| **loop-creator** | ◐ **6 specialists on Mastra** (flagged `LOOP_CREATOR_MASTRA=1`, registered like storyteller) — orchestration already Mastra-native; LangChain default kept byte-identical until a keys-on A/B. market-analyst ReAct + ~60 tools remain LangChain |
+| **loop-creator** | ◐ **On Mastra** — 6 specialists (flagged `LOOP_CREATOR_MASTRA=1`, registered) + market-analyst ReAct (native tools, registered, always-on); orchestration already Mastra-native. Only remaining LangChain is the flag-off fallback branch, retired after a keys-on A/B |
 | **interior-designer / 3d-asset-exporter / world-building-toolkit** | — **N/A** — no agents; Trigger.dev tasks (correct, don't force Mastra) |
 | **marketing** | — empty (no AI yet) |
 | **MCP** | ✅ **Fixed** — `mcp:build` now on `src/mcp/tsconfig.json` (0 errors); runs via `tsx` (`mcp:start`) |
@@ -69,12 +69,13 @@ What "on Mastra, our way" means (see `AGENTS.md`):
 - ✅ **Central registration** — `core/io/mastra-runtime.ts` → `registerMastraModule({ agents })`; side-effect-imported by `src/mastra.ts` (Studio) + the loop-creator chat route (production ordering). Agents now show in Studio.
 - ✅ TSC 0 · ESLint 0 errors · domain-structure green for loop-creator.
 
+- ✅ **market-analyst fully on Mastra (2026-07-21)** — was already a Mastra `Agent` (`agent.generate` ReAct, `maxSteps: 25`) but its tools were LangChain `DynamicStructuredTool`s adapted at runtime. Converted the **single bridge** `tools/structured-tool.ts` to emit a native Mastra `createTool` — migrating all 18 tools at once with zero per-file change and the exact same `{ output }` result shape. Dropped the `langChainToolToMastra` runtime adapter; dynamic `model: () => resolveLoopCreatorMastraModel()`; singleton `marketAnalystAgent` registered centrally. No LangChain left in the market-analyst.
+
 **Remaining:**
 1. **Live A/B** — flip `LOOP_CREATOR_MASTRA=1` with keys and compare specialist output vs the LangChain default; once at parity, make Mastra the default and retire the LangChain branch. (Operator step — needs keys.)
-2. **market-analyst ReAct** — the separate tool-using sub-agent (`ai/agents/market-analyst/` + ~60 tool files, `runMarketAnalysis`) is still LangChain; port to a Mastra agent + `createTool`s (Tavily/Twitter/Reddit/Steam). Its own sub-migration.
-3. Optionally replace the flattened-history text with structured Mastra messages once the AI-SDK ModelMessage version skew (Mastra v5 vs `ai` v3 provider-utils) is resolved.
+2. Optionally replace the flattened-history text with structured Mastra messages once the AI-SDK ModelMessage version skew (Mastra v5 vs `ai` v3 provider-utils) is resolved.
 
-> The specialist layer now runs on Mastra exactly like storyteller (registered agents, dynamic model, `agent.generate`, spans) — behind a flag so the working feature can't regress until a keys-on A/B confirms parity. market-analyst's ReAct + tools is the remaining LangChain island.
+> Both layers now run on Mastra like storyteller — the supervisor crew (6 specialists, flagged, registered) and the market-analyst ReAct (native tools, registered, always-on). The only LangChain still imported by loop-creator is the flag-off fallback branch in `loop-creator-completion.ts`, retired once the A/B confirms parity. The remaining loop-creator LangChain message types (`AIMessage` in state/orchestrator) are DTOs, not an LLM framework.
 
 ### interior-designer / 3d-asset-exporter / world-building-toolkit — N/A (leave as-is)
 
@@ -183,5 +184,5 @@ STORYTELLER_PROJECT_ID=... STORYTELLER_EPISODE_ID=... \
 1. ✅ **MCP build fix** — done (`src/mcp/tsconfig.json`; 0 errors).
 2. ✅ **Terminal scripts** — done (`storyteller:repl` interactive + `storyteller:orchestrate` one-shot).
 3. ✅ **game-design → convention** — done: central registration (`core/io/mastra-runtime.ts` + `registerMastraModule`), sync agent (`createSync` + dynamic `instructions`/`model`), structure fix (`config/model-config.ts`). Live-run is the operator step (keys).
-4. ◐ **loop-creator → Mastra** — 6 specialists now run on registered Mastra agents behind `LOOP_CREATOR_MASTRA=1` (orchestration was already Mastra-native); remaining: keys-on A/B to make it default + port the market-analyst ReAct sub-agent.
+4. ◐ **loop-creator → Mastra** — 6 specialists on registered Mastra agents (flagged `LOOP_CREATOR_MASTRA=1`) + market-analyst fully migrated (native `createTool`s, registered); orchestration was already Mastra-native. Remaining: keys-on A/B to make the specialist path default and retire the LangChain fallback.
 5. — asset domains: leave on Trigger.dev.
