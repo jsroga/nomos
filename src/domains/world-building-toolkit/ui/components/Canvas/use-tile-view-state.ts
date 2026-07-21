@@ -1,4 +1,5 @@
 import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { TILE_COORD_SEPARATOR } from '@/domains/world-building-toolkit/ui/constants/tile-stage-labels'
 
 function tileCoordKey(x: number, y: number): string {
@@ -10,7 +11,7 @@ export function useTileViewState(x: number, y: number) {
 
   const tile = useWorldStore(state => state.tiles[key])
   const selectedTiles = useWorldStore(state => state.selectedTiles)
-  const currentProject = useWorldStore(state => state.currentProject)
+  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
   const generatingTiles = useWorldStore(state => state.generatingTiles)
   const upscalingTiles = useWorldStore(state => state.upscalingTiles)
   const repaintingTiles = useWorldStore(state => state.repaintingTiles)

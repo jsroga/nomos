@@ -1,166 +1,32 @@
+import { z } from 'zod'
+import metricDatabaseBatch1Json from '../data/metric-database-batch1.json'
 import type { MetricDefinition } from './metrics-planner-types'
 
-export const METRIC_DATABASE_BATCH1: MetricDefinition[] = [
-  // === ENGAGEMENT METRICS ===
-  {
-    name: 'Core Loop Completion Rate',
-    category: 'loop_health',
-    description: 'Percentage of players who complete at least one full core loop cycle',
-    formula: 'players_completed_loop / players_started * 100',
-    importance: 'critical',
-    benchmarks: {
-      poor: '<50%',
-      average: '50-70%',
-      good: '70-85%',
-      excellent: '>85%',
-    },
-    applicableGenres: ['roguelike', 'survivors-like', 'action', 'all'],
-    measurementTiming: 'First session',
-    exampleFromGame: {
-      game: 'Vampire Survivors',
-      value: '92%',
-      insight: 'Auto-attack removes friction - nearly everyone completes their first loop',
-    },
-  },
-  {
-    name: 'Session Length',
-    category: 'engagement',
-    description: 'Average time spent per play session',
-    formula: 'total_playtime / session_count',
-    importance: 'critical',
-    benchmarks: {
-      poor: '<10 min',
-      average: '15-25 min',
-      good: '30-45 min',
-      excellent: '>60 min',
-    },
-    applicableGenres: ['roguelike', 'action', 'rpg', 'strategy'],
-    measurementTiming: 'Weekly average',
-    exampleFromGame: {
-      game: 'Hades',
-      value: '35 minutes',
-      insight: 'Matches their run length - players finish what they start',
-    },
-  },
-  {
-    name: 'Sessions Per Day',
-    category: 'engagement',
-    description: 'Number of play sessions per active user per day',
-    formula: 'daily_sessions / daily_active_users',
-    importance: 'important',
-    benchmarks: {
-      poor: '<1.2',
-      average: '1.5-2',
-      good: '2-3',
-      excellent: '>3',
-    },
-    applicableGenres: ['mobile', 'casual', 'survivors-like'],
-    measurementTiming: 'Daily',
-    exampleFromGame: {
-      game: 'Vampire Survivors',
-      value: '2.8',
-      insight: 'One more run mentality - short sessions encourage multiple plays',
-    },
-  },
-  {
-    name: 'Time to First Win',
-    category: 'loop_health',
-    description: 'Average time until player achieves their first significant victory',
-    importance: 'critical',
-    benchmarks: {
-      poor: '>3 hours',
-      average: '1-2 hours',
-      good: '30-60 min',
-      excellent: '<30 min',
-    },
-    applicableGenres: ['roguelike', 'action', 'survivors-like'],
-    measurementTiming: 'First week',
-    exampleFromGame: {
-      game: 'Slay the Spire',
-      value: '2-3 hours',
-      insight: 'Acceptable because each loss teaches meaningful lessons',
-    },
-  },
+const metricExampleSchema = z.object({
+  game: z.string(),
+  value: z.string(),
+  insight: z.string(),
+})
 
-  // === RETENTION METRICS ===
-  {
-    name: 'Day 1 Retention (D1)',
-    category: 'retention',
-    description: 'Percentage of new users who return the next day',
-    formula: 'users_day_1 / new_users_day_0 * 100',
-    importance: 'critical',
-    benchmarks: {
-      poor: '<30%',
-      average: '35-45%',
-      good: '45-55%',
-      excellent: '>55%',
-    },
-    applicableGenres: ['all'],
-    measurementTiming: 'Day after first session',
-    exampleFromGame: {
-      game: 'Balatro',
-      value: '62%',
-      insight: 'Poker familiarity + discovery hooks drive exceptional D1',
-    },
-  },
-  {
-    name: 'Day 7 Retention (D7)',
-    category: 'retention',
-    description: 'Percentage of new users still playing after one week',
-    formula: 'users_day_7 / new_users_day_0 * 100',
-    importance: 'critical',
-    benchmarks: {
-      poor: '<10%',
-      average: '15-20%',
-      good: '20-30%',
-      excellent: '>30%',
-    },
-    applicableGenres: ['all'],
-    measurementTiming: 'Week after first session',
-    exampleFromGame: {
-      game: 'Hades',
-      value: '38%',
-      insight: 'Story hooks and relationship progression drive long-term return',
-    },
-  },
-  {
-    name: 'Day 30 Retention (D30)',
-    category: 'retention',
-    description: 'Percentage of new users still playing after one month',
-    formula: 'users_day_30 / new_users_day_0 * 100',
-    importance: 'important',
-    benchmarks: {
-      poor: '<5%',
-      average: '8-12%',
-      good: '12-18%',
-      excellent: '>18%',
-    },
-    applicableGenres: ['all'],
-    measurementTiming: 'Month after first session',
-    exampleFromGame: {
-      game: 'Dead Cells',
-      value: '15%',
-      insight: 'Meta-progression and DLC keeps long-term engagement',
-    },
-  },
-  {
-    name: 'Churn Point',
-    category: 'retention',
-    description: 'The point where most players stop playing',
-    importance: 'critical',
-    benchmarks: {
-      poor: 'Before completing tutorial',
-      average: 'After 3-5 sessions',
-      good: 'After unlocking all content',
-      excellent: 'Natural completion, return for updates',
-    },
-    applicableGenres: ['all'],
-    measurementTiming: 'Cohort analysis',
-    exampleFromGame: {
-      game: 'Cult of the Lamb',
-      value: 'After ~20 hours',
-      insight: 'Split focus between combat and management causes earlier churn',
-    },
-  },
+const metricDefinitionSchema = z.object({
+  name: z.string(),
+  category: z.enum(['engagement', 'retention', 'monetization', 'virality', 'quality', 'loop_health']),
+  description: z.string(),
+  formula: z.string().optional(),
+  importance: z.enum(['critical', 'important', 'nice_to_have']),
+  benchmarks: z.object({
+    poor: z.string(),
+    average: z.string(),
+    good: z.string(),
+    excellent: z.string(),
+  }),
+  applicableGenres: z.array(z.string()),
+  measurementTiming: z.string(),
+  exampleFromGame: metricExampleSchema.optional(),
+})
 
-]
+function parseMetricDatabaseBatch1(data: unknown): MetricDefinition[] {
+  return z.array(metricDefinitionSchema).parse(data)
+}
+
+export const METRIC_DATABASE_BATCH1 = parseMetricDatabaseBatch1(metricDatabaseBatch1Json)

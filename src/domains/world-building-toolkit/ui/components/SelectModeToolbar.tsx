@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { Button } from '@/components/Button'
 import { Loader2, Save, Square, Check } from 'lucide-react'
 import { getSupabaseClient } from '@/shared/data/storage/supabaseClient'
@@ -17,7 +18,7 @@ export const SelectModeToolbar: React.FC = () => {
   const clearSelectBox = useWorldStore(state => state.clearSelectBox)
   const selectedMask = useWorldStore(state => state.selectedMask)
   const setSelectedMask = useWorldStore(state => state.setSelectedMask)
-  const currentProject = useWorldStore(state => state.currentProject)
+  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
   const isSegmenting = useWorldStore(state => state.isSegmenting)
   const setSelectTextPrompt = useWorldStore(state => state.setSelectTextPrompt)
   const addAsset = useWorldStore(state => state.addAsset)

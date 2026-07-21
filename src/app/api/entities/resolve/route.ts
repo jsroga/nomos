@@ -16,171 +16,31 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import {
-  contextualSummaryService,
-  entityRegistry,
-  relationshipEnricher,
-} from '@/domains/storyteller/server'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { HttpStatus } from '@/shared/data/constants/protocol'
 import {
-  BooleanQueryValue,
-  HttpStatus,
-  QueryParam,
-} from '@/shared/data/constants/protocol'
-import { tryAutoRegisterEntity } from './_lib/entity-auto-register'
+  applyContextualSummaries,
+  enrichEntitiesWithRelationships,
+  resolveEntitiesWithAutoRegister,
+} from './_lib/entity-resolve-enrichment'
+import { parseEntityResolveQuery } from './_lib/entity-resolve-query'
 
 export async function GET(request: NextRequest) {
   try {
-    // Security: Require authentication
-    const { requireAuth } = await import('@/shared/auth/auth')
-    const { verifyProjectAccess } = await import('@/domains/storyteller/server')
-
-    const { session } = await requireAuth()
-    if (!session) {
-      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
+    const parsed = await parseEntityResolveQuery(request)
+    if (!parsed.ok) {
+      return parsed.response
     }
 
-    const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get(QueryParam.ProjectId)
-    const idsParam = searchParams.get(QueryParam.Ids)
-    const enrichRelationships =
-      searchParams.get(QueryParam.EnrichRelationships) === BooleanQueryValue.True
-    const context = searchParams.get(QueryParam.Context)
+    const { projectId, ids, enrichRelationships, context } = parsed.query
 
-    if (!projectId) {
-      return NextResponse.json(
-        { error: API_ERROR.MISSING_PROJECT_ID },
-        { status: HttpStatus.BAD_REQUEST }
-      )
-    }
+    let entities = await resolveEntitiesWithAutoRegister(ids, projectId, context)
 
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
-      return NextResponse.json(
-        { error: API_ERROR.PROJECT_ACCESS_DENIED },
-        { status: HttpStatus.FORBIDDEN }
-      )
-    }
-
-    if (!idsParam) {
-      return NextResponse.json(
-        { error: API_ERROR.MISSING_IDS_PARAMETER },
-        { status: HttpStatus.BAD_REQUEST }
-      )
-    }
-
-    // Security: Limit number of IDs to prevent abuse
-    const ids = idsParam
-      .split(',')
-      .filter(id => id.trim())
-      .slice(0, 50) // Max 50 entities per request
-
-    // Security: Validate ID format (allow alphanumeric, hyphens, underscores, dots, and apostrophes)
-    const validIdPattern = /^[a-z0-9-_.'’]+$/i
-    const invalidIds: string[] = []
-    for (const id of ids) {
-      if (!validIdPattern.test(id)) invalidIds.push(id)
-    }
-    if (invalidIds.length > 0) {
-      return NextResponse.json(
-        { error: API_ERROR.INVALID_ENTITY_IDS_FORMAT, invalidIds },
-        { status: HttpStatus.BAD_REQUEST }
-      )
-    }
-
-    if (ids.length === 0) {
-      return NextResponse.json({ entities: [] })
-    }
-
-    // First try to resolve from registry
-    let resolved = await entityRegistry.resolveMany(ids)
-
-    // Find unresolved IDs and try to auto-register them
-    const unresolvedIds = ids.filter(id => !resolved.has(id))
-
-    if (unresolvedIds.length > 0) {
-      console.log(
-        `[Entity Resolution] Attempting to auto-register ${unresolvedIds.length} unresolved entities`
-      )
-      // Try to auto-register from project data
-      const autoRegisterPromises = unresolvedIds.map(id =>
-        tryAutoRegisterEntity(id, projectId, context)
-      )
-      await Promise.all(autoRegisterPromises)
-
-      // Re-resolve after auto-registration
-      resolved = await entityRegistry.resolveMany(ids)
-    }
-
-    let entities = Array.from(resolved.values())
-
-    // Optionally enrich with relationship data
     if (enrichRelationships) {
-      const enrichedEntities = await Promise.all(
-        entities.map(async entity => {
-          const enriched = await relationshipEnricher.enrichEntity(
-            entity.id,
-            entity.type,
-            entity.name,
-            projectId,
-            entity.description
-          )
-
-          return {
-            ...entity,
-            relationships: enriched.relationships,
-            relationshipSummary: enriched.relationshipSummary,
-          }
-        })
-      )
-      entities = enrichedEntities
+      entities = await enrichEntitiesWithRelationships(entities, projectId)
     }
 
-    // Generate AI contextual summaries
-    // Security: Limit context length to prevent abuse (max 1000 chars)
-    const safeContext = context ? context.slice(0, 1000) : ''
-
-    const hasValidContext = safeContext.length > 10
-    const needsBaselineSummary = entities.some(e => !e.description || e.description.trim() === '')
-
-    if (hasValidContext || needsBaselineSummary) {
-      // Prioritize entities without descriptions, then fill remaining slots up to 10
-      const entitiesWithoutDesc: typeof entities = []
-      const entitiesWithDesc: typeof entities = []
-      for (const e of entities) {
-        if (!e.description || e.description.trim() === '') entitiesWithoutDesc.push(e)
-        else entitiesWithDesc.push(e)
-      }
-
-      // Security: Limit to 10 entities for contextual summaries to prevent excessive LLM calls
-      const entitiesToEnrich = [...entitiesWithoutDesc, ...entitiesWithDesc].slice(0, 10)
-      const enrichedIds = new Set(entitiesToEnrich.map(e => e.id))
-      const remainingEntities = entities.filter(e => !enrichedIds.has(e.id))
-
-      const contextualEntities = await Promise.all(
-        entitiesToEnrich.map(async entity => {
-          try {
-            const { contextualSummary, cacheHit } = await contextualSummaryService.generate({
-              entityId: entity.id,
-              entityName: entity.name,
-              entityType: entity.type,
-              entityDescription: entity.description || '',
-              surroundingText: safeContext,
-              projectId,
-            })
-
-            return {
-              ...entity,
-              contextualSummary,
-              contextualSummaryCacheHit: cacheHit,
-            }
-          } catch (err) {
-            console.warn(`[Entity Resolution] Contextual summary failed for ${entity.id}:`, err)
-            return entity
-          }
-        })
-      )
-      entities = [...contextualEntities, ...remainingEntities]
-    }
+    entities = await applyContextualSummaries(entities, projectId, context)
 
     return NextResponse.json({ entities })
   } catch (error) {

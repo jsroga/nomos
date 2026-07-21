@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { Hand, Square, Paintbrush, Upload, Loader2 } from 'lucide-react'
 import { cn } from '@/shared/data/utils'
 import { Button } from '@/components/Button'
@@ -51,7 +52,7 @@ export const WorldGenToolbar: React.FC = () => {
   const setSelectMode = useWorldStore(state => state.setSelectMode)
   const isRepaintMode = useWorldStore(state => state.isRepaintMode)
   const setRepaintMode = useWorldStore(state => state.setRepaintMode)
-  const currentProject = useWorldStore(state => state.currentProject)
+  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
   const selectedTile = useWorldStore(state => state.selectedTile)
   const tiles = useWorldStore(state => state.tiles)
 

@@ -3,17 +3,10 @@ import { FetchCache, HttpMethod } from '@/shared/data/constants/protocol'
 export { FetchCache, HttpMethod }
 
 export enum WorldDataStoreKey {
-  User = 'user',
-  CurrentProject = 'currentProject',
-  Projects = 'projects',
   Tiles = 'tiles',
   Assets = 'assets',
-  SetUser = 'setUser',
-  LoadProject = 'loadProject',
-  FetchAllProjects = 'fetchAllProjects',
-  CreateProject = 'createProject',
-  DeleteProject = 'deleteProject',
-  SwitchProject = 'switchProject',
+  LoadTilesForProject = 'loadTilesForProject',
+  ClearTiles = 'clearTiles',
   AddTile = 'addTile',
   RemoveTile = 'removeTile',
   GetTile = 'getTile',
@@ -22,7 +15,6 @@ export enum WorldDataStoreKey {
   UpdateAsset = 'updateAsset',
   RemoveAsset = 'removeAsset',
   FetchAssets = 'fetchAssets',
-  SetCurrentProject = 'setCurrentProject',
   AcceptUpscale = 'acceptUpscale',
   AcceptGeneration = 'acceptGeneration',
   AcceptFidelity = 'acceptFidelity',
@@ -31,9 +23,6 @@ export enum WorldDataStoreKey {
 export enum WorldDataStoreLog {
   ApiErrorLoadingProject = 'API error loading project:',
   FailedToLoadProjectViaApi = 'Failed to load project via API:',
-  ErrorFetchingProjects = 'Error fetching projects:',
-  ErrorCreatingProject = 'Error creating project:',
-  ErrorDeletingProject = 'Error deleting project:',
   FailedToDeleteImageFile = 'Failed to delete image file:',
   ErrorFetchingAssets = 'Error fetching assets:',
 }

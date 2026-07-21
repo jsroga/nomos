@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useWorldStore } from '@/domains/world-building-toolkit'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
+import { useAuthStore } from '@/shared/auth/useAuthStore'
 import { ChevronDown, Plus, FolderOpen, Check } from 'lucide-react'
 import { Button } from '@/components/Button'
 import {
@@ -23,7 +23,6 @@ import {
 import { Input } from '@/components/Input'
 import { Textarea } from '@/components/Textarea'
 import { Liquid, useLiquid } from '@/domains/marketing'
-import { DB_TABLE } from '@/shared/data/constants/db-tables'
 import {
   AppRouteSegment,
   DefaultWorkspaceModule,
@@ -33,41 +32,27 @@ import {
   PROJECT_SELECTOR_CREATE_LABEL,
   PROJECT_SELECTOR_DIALOG_TITLE,
   PROJECT_SELECTOR_EMPTY_LABEL,
-  PROJECT_SELECTOR_LIQUID_WARN,
-  PROJECT_SELECTOR_LOAD_ERROR,
   PROJECT_SELECTOR_NAME_LABEL,
   PROJECT_SELECTOR_NAME_PLACEHOLDER,
   PROJECT_SELECTOR_NO_PROJECTS,
   PROJECT_SELECTOR_PROMPT_LABEL,
   PROJECT_SELECTOR_PROMPT_PLACEHOLDER,
-  ProjectsDbOrder,
-  ProjectsDbSelect,
 } from '@/components/shell/ProjectSelectorDropdown/constants/project-selector-dropdown'
 
 export function ProjectSelectorDropdown() {
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = createClientComponentClient()
 
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectPrompt, setNewProjectPrompt] = useState('')
 
-  const currentProject = useWorldStore(state => state.currentProject)
-  const createProject = useWorldStore(state => state.createProject)
-  const user = useWorldStore(state => state.user)
-
-
-  // Safe access to liquid context in case it's not wrapped (though we wrapped it in layout)
-  let liquidOptions = {}
-  try {
-    const context = useLiquid()
-    liquidOptions = context.liquidOptions
-  } catch {
-    // Fallback if not in LiquidProvider
-    console.warn(PROJECT_SELECTOR_LIQUID_WARN)
-  }
+  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
+  const projects = useWorkspaceProjectStore(state => state.projects)
+  const fetchAllProjects = useWorkspaceProjectStore(state => state.fetchAllProjects)
+  const createProject = useWorkspaceProjectStore(state => state.createProject)
+  const user = useAuthStore(state => state.user)
+  const { liquidOptions } = useLiquid()
 
   // Extract current module from pathname (e.g., /project-id/storyteller -> storyteller)
   // Pathname: /:projectId/:module...
@@ -95,24 +80,11 @@ export function ProjectSelectorDropdown() {
     return `/${nextProjectId}/${module}`
   }
 
-  // Define loadProjects BEFORE using it in useEffect
-  const loadProjects = useCallback(async () => {
-    const { data, error } = await supabase
-      .from(DB_TABLE.PROJECTS)
-      .select(ProjectsDbSelect.IdName)
-      .order(ProjectsDbOrder.CreatedAtDesc, { ascending: false })
-
-    if (error) {
-      console.error(PROJECT_SELECTOR_LOAD_ERROR, error)
-    }
-    if (data) setProjects(data)
-  }, [supabase])
-
   useEffect(() => {
     if (user) {
-      loadProjects()
+      void fetchAllProjects()
     }
-  }, [user, loadProjects])
+  }, [user, fetchAllProjects])
 
   const handleProjectChange = (projectId: string) => {
     router.push(getNextUrl(projectId))
@@ -125,7 +97,6 @@ export function ProjectSelectorDropdown() {
       setIsCreating(false)
       setNewProjectName('')
       setNewProjectPrompt('')
-      await loadProjects()
       // Navigate to the new project with bible open
       router.push(`/${id}/${DefaultWorkspaceModule.Storyteller}?${PROJECT_SELECTOR_BIBLE_QUERY}`)
     }

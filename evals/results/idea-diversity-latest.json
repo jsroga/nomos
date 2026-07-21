@@ -1,0 +1,115 @@
+{
+  "id": "eval_2026-07-21_08-32-34-886_tdx9",
+  "timestamp": "2026-07-21T08:32:34.887Z",
+  "variants": [
+    {
+      "name": "baseline",
+      "config": {
+        "scorers": [
+          "magic",
+          "consistency",
+          "hallucination",
+          "persona-fidelity",
+          "prose-craft",
+          "stakes-cost",
+          "story-motion",
+          "beat-plan-concreteness",
+          "critic-discipline",
+          "idea-uniqueness",
+          "idea-diversity-judge"
+        ],
+        "samples": 4,
+        "dataset": "idea-diversity"
+      },
+      "overallMetrics": {
+        "magicScore": 0,
+        "consistency": 0,
+        "hallucination": 0,
+        "personaFidelity": 0,
+        "latencyMs": 55.75
+      },
+      "scenarioMetrics": {
+        "idea-diversity": {
+          "magicScore": 0,
+          "consistency": 0,
+          "hallucination": 0,
+          "personaFidelity": 0,
+          "latencyMs": 55.75
+        }
+      },
+      "scorerAverages": {
+        "idea-uniqueness": 0.421701813179099,
+        "idea-diversity-judge": 0
+      },
+      "exampleLogs": [
+        {
+          "id": "idea-seeded-sampler",
+          "scenario": "idea-diversity",
+          "input": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
+          "output": "Street musicians tune instruments that open doors to parallel alleys.\nA lighthouse keeper trades storm warnings for forbidden star charts.\nUnderground postal workers smuggle truths inside undeliverable letters.\nA ferry only appears for passengers who have forgotten their own names.\nStreet musicians tune instruments that open doors to parallel alleys.\nUnderground postal workers smuggle truths inside undeliverable letters.\nA ferry only appears for passengers who have forgotten their own names.\nStreet musicians tune instruments that open doors to parallel alleys.",
+          "score": 0.22482118326282474,
+          "reasoning": {
+            "idea-uniqueness": "Idea uniqueness overall 45: 4/8 unique after normalize; exactDup=50%; nearDup=50%; lexDiv=48%",
+            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-4o\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
+          },
+          "context": {
+            "latencyMs": 192,
+            "category": "idea-diversity",
+            "scenario": "idea-diversity"
+          }
+        },
+        {
+          "id": "idea-repetitive-echo",
+          "scenario": "idea-diversity",
+          "input": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
+          "output": "A hero finds a mysterious artifact that grants power but corrupts them.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.",
+          "score": 0.049350484640440104,
+          "reasoning": {
+            "idea-uniqueness": "Idea uniqueness overall 10: 2/8 unique after normalize; exactDup=75%; nearDup=88%; lexDiv=12%",
+            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-4o\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
+          },
+          "context": {
+            "latencyMs": 10,
+            "category": "idea-diversity",
+            "scenario": "idea-diversity"
+          }
+        },
+        {
+          "id": "idea-diverse-brainstormer",
+          "scenario": "idea-diversity",
+          "input": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
+          "output": "A cartographer maps a city that redraws itself every midnight.\nA park ranger tags animals that migrate between video-game save states.\nRival chefs duel using recipes that rewrite customers memories.\nClockmakers repair timepieces that steal hours from their owners sleep.\nA lighthouse keeper trades storm warnings for forbidden star charts.\nA ferry only appears for passengers who have forgotten their own names.\nUnderground postal workers smuggle truths inside undeliverable letters.\nAn archivist must delete tomorrow headlines to keep yesterday stable.",
+          "score": 0.4109289169845915,
+          "reasoning": {
+            "idea-uniqueness": "Idea uniqueness overall 82: 8/8 unique after normalize; exactDup=0%; nearDup=0%; lexDiv=89%",
+            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-4o\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
+          },
+          "context": {
+            "latencyMs": 11,
+            "category": "idea-diversity",
+            "scenario": "idea-diversity"
+          }
+        },
+        {
+          "id": "idea-template-filler",
+          "scenario": "idea-diversity",
+          "input": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
+          "output": "In a world where corps control weather, a pilot must steal the last seed.\nIn a world where corps control weather, a pilot must steal the last core.\nIn a world where guilds control dreams, a thief must protect the last relic.\nIn a world where guilds control dreams, a thief must protect the last key.\nIn a world where AIs control markets, a trader must sabotage the last ledger.\nIn a world where AIs control markets, a trader must sabotage the last token.\nIn a world where cults control tides, a sailor must recover the last compass.\nIn a world where cults control tides, a sailor must recover the last map.",
+          "score": 0.15830304147034158,
+          "reasoning": {
+            "idea-uniqueness": "Idea uniqueness overall 32: 8/8 unique after normalize; exactDup=0%; nearDup=50%; lexDiv=29%",
+            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-4o\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
+          },
+          "context": {
+            "latencyMs": 10,
+            "category": "idea-diversity",
+            "scenario": "idea-diversity"
+          }
+        }
+      ]
+    }
+  ],
+  "scenarios": [
+    "idea-diversity"
+  ]
+}

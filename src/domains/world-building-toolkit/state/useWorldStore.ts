@@ -1,12 +1,10 @@
 import { useMemo } from 'react'
 import { create } from 'zustand'
-import type { User } from '@supabase/supabase-js'
-import { useAuthStore } from '@/shared/auth/useAuthStore'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { worldApi } from '../core/io/world.api'
 import {
   acceptTileUpscale,
   deleteProjectImage,
-  fetchStorytellerProject,
   saveProjectImage,
 } from '../core/io/world-data.api'
 import {
@@ -15,13 +13,11 @@ import {
   type Tile,
   tilesToMap,
   toLegacyAsset,
-  toLegacyProject,
   toLegacyTile,
 } from '../core/world-types'
 import {
   WorldDataStoreLog,
   WORLD_DATA_STORE_KEYS,
-  WorldDataStoreKey,
 } from './constants/world-data-store'
 import {
   useWorldUiStore,
@@ -32,25 +28,18 @@ import {
   type WorldUiState,
 } from './useWorldUiStore'
 import { omitRecordKey } from './utils/omit-record-key'
-import {
-  onWorkspaceProjectMutation,
-  useWorkspaceProjectStore,
-} from '@/shared/workspace/workspace-project-store'
 
 export type { Asset, Project, Tile, SelectBox, PendingUpscale, PendingGeneration, PendingFidelity }
 
+function getCurrentProject(): Project | null {
+  return useWorkspaceProjectStore.getState().currentProject
+}
+
 interface WorldDataState {
-  user: User | null
-  currentProject: Project | null
-  projects: Project[]
   tiles: Record<string, Tile>
   assets: Asset[]
-  setUser: (user: User | null) => void
-  loadProject: (projectId: string) => Promise<void>
-  fetchAllProjects: () => Promise<void>
-  createProject: (name: string, prompt: string) => Promise<string | null>
-  deleteProject: (projectId: string) => Promise<void>
-  switchProject: (projectId: string) => Promise<void>
+  loadTilesForProject: (projectId: string) => Promise<void>
+  clearTiles: () => void
   addTile: (x: number, y: number, prompt: string, imageData: string) => Promise<void>
   removeTile: (x: number, y: number) => Promise<void>
   getTile: (x: number, y: number) => Tile | undefined
@@ -59,82 +48,31 @@ interface WorldDataState {
   updateAsset: (id: string, updates: Partial<Asset>) => void
   removeAsset: (id: string) => void
   fetchAssets: () => Promise<void>
-  setCurrentProject: (project: Project) => void
   acceptUpscale: (x: number, y: number) => Promise<void>
   acceptGeneration: (x: number, y: number, acceptedUrl?: string) => Promise<void>
   acceptFidelity: (x: number, y: number) => Promise<void>
 }
 
 export const useWorldDataStore = create<WorldDataState>((set, get) => ({
-  user: null,
-  currentProject: null,
-  projects: [],
   tiles: {},
   assets: [],
 
-  setUser: user => set({ user }),
-
-  loadProject: async (projectId: string) => {
+  loadTilesForProject: async (projectId: string) => {
     try {
-      const project = toLegacyProject(await fetchStorytellerProject(projectId))
-
       const tiles = await worldApi.tiles.list(projectId)
-      set({ currentProject: project, tiles: tilesToMap(tiles) })
-      mirrorProjectToWorkspace(project)
+      set({ tiles: tilesToMap(tiles) })
     } catch (err) {
       console.error(WorldDataStoreLog.FailedToLoadProjectViaApi, err)
     }
   },
 
-  fetchAllProjects: async () => {
-    try {
-      const projects = await worldApi.projects.list()
-      set({ projects: projects.map(toLegacyProject) })
-    } catch (error) {
-      console.error(WorldDataStoreLog.ErrorFetchingProjects, error)
-    }
-  },
-
-  createProject: async (name: string, prompt: string) => {
-    const { user } = useAuthStore.getState()
-    if (!user) return null
-
-    try {
-      const created = await worldApi.projects.create({ name, masterPrompt: prompt })
-      await get().switchProject(created.id)
-      return created.id
-    } catch (error) {
-      console.error(WorldDataStoreLog.ErrorCreatingProject, error)
-      return null
-    }
-  },
-
-  deleteProject: async (projectId: string) => {
-    try {
-      await worldApi.projects.delete(projectId)
-      set(state => {
-        const nextProject =
-          state.currentProject?.id === projectId ? null : state.currentProject
-        mirrorProjectToWorkspace(nextProject)
-        return {
-          projects: state.projects.filter(p => p.id !== projectId),
-          currentProject: nextProject,
-        }
-      })
-    } catch (error) {
-      console.error(WorldDataStoreLog.ErrorDeletingProject, error)
-    }
-  },
-
-  switchProject: async (projectId: string) => {
-    set({ currentProject: null, tiles: {} })
-    mirrorProjectToWorkspace(null)
+  clearTiles: () => {
+    set({ tiles: {}, assets: [] })
     useWorldUiStore.getState().clearSelection()
-    await get().loadProject(projectId)
   },
 
   addTile: async (x: number, y: number, prompt: string, imageData: string) => {
-    const { currentProject } = get()
+    const currentProject = getCurrentProject()
     if (!currentProject) return
 
     const filename = `${x}_${y}_${Date.now()}.png`
@@ -159,7 +97,8 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
   },
 
   removeTile: async (x: number, y: number) => {
-    const { currentProject, tiles } = get()
+    const currentProject = getCurrentProject()
+    const { tiles } = get()
     if (!currentProject) return
 
     const tileKey = `${x},${y}`
@@ -202,7 +141,7 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
     }
   },
   fetchAssets: async () => {
-    const { currentProject } = get()
+    const currentProject = getCurrentProject()
     if (!currentProject) return
 
     try {
@@ -212,13 +151,9 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
       console.error(WorldDataStoreLog.ErrorFetchingAssets, error)
     }
   },
-  setCurrentProject: project => {
-    set({ currentProject: project })
-    mirrorProjectToWorkspace(project)
-  },
 
   acceptUpscale: async (x, y) => {
-    const { currentProject } = get()
+    const currentProject = getCurrentProject()
     const pending = useWorldUiStore.getState().getPendingUpscale(x, y)
     if (!currentProject || !pending) return
 
@@ -239,7 +174,7 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
   },
 
   acceptGeneration: async (x, y, acceptedUrl) => {
-    const { currentProject } = get()
+    const currentProject = getCurrentProject()
     const pending = useWorldUiStore.getState().getPendingGeneration(x, y)
     if (!currentProject || !pending) return
 
@@ -264,7 +199,7 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
   },
 
   acceptFidelity: async (x, y) => {
-    const { currentProject } = get()
+    const currentProject = getCurrentProject()
     const pending = useWorldUiStore.getState().getPendingFidelity(x, y)
     if (!currentProject || !pending) return
 
@@ -288,19 +223,6 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
     useWorldUiStore.getState().rejectFidelity(x, y)
   },
 }))
-
-let isMirroringFromWorkspace = false
-
-function mirrorProjectToWorkspace(project: Project | null) {
-  if (isMirroringFromWorkspace) return
-  useWorkspaceProjectStore.getState().syncCurrentProjectSilent(project)
-}
-
-onWorkspaceProjectMutation(project => {
-  isMirroringFromWorkspace = true
-  useWorldDataStore.setState({ currentProject: project })
-  isMirroringFromWorkspace = false
-})
 
 export type WorldState = WorldDataState & WorldUiState
 
@@ -338,9 +260,6 @@ useWorldStore.setState = (partial: Partial<WorldState>) => {
 
   if (Object.keys(dataPartial).length > 0) {
     useWorldDataStore.setState(dataPartial)
-    if (WorldDataStoreKey.CurrentProject in dataPartial) {
-      mirrorProjectToWorkspace(dataPartial.currentProject ?? null)
-    }
   }
   if (Object.keys(uiPartial).length > 0) {
     useWorldUiStore.setState(uiPartial)

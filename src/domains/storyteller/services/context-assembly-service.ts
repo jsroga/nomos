@@ -13,9 +13,11 @@ import {
   StorytellerAnswerSeparator,
 } from '@/domains/storyteller/core/storyteller-page-wire'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import { parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/enums'
 import {
   characterFromDbRow,
+  charactersFromJson,
   deriveProjectMeta,
   flattenSeriesBible,
   mergeCharactersFromPlanAndDb,
@@ -114,15 +116,22 @@ function buildContextParts(params: {
   const { projectId, episodeId, phase, message, projectData, storyPlanData, serviceData, ragContext } =
     params
 
-  const rawBible = recordFromJson(projectData?.seriesBible)
+  const rawBible = parseSeriesBibleRecord(projectData?.seriesBible)
   const storyPlan = storyPlanFromJson(storyPlanData?.content)
   const bible = flattenSeriesBible(rawBible, BIBLE_CATEGORY_KEYS)
 
   const masterPrompt =
-    projectData?.masterPrompt || readString(bible.masterPrompt) || storyPlan.masterPrompt || ''
+    projectData?.masterPrompt ||
+    readString(bible.masterPrompt) ||
+    readString(recordFromJson(storyPlan).masterPrompt) ||
+    ''
 
   const dbCharacters = serviceData.characters.map(characterFromDbRow)
-  const planCast = storyPlan.cast ?? storyPlan.keyCharacters ?? []
+  const planRecord = recordFromJson(storyPlan)
+  const planCast =
+    charactersFromJson(planRecord.cast).length > 0
+      ? charactersFromJson(planRecord.cast)
+      : charactersFromJson(planRecord.keyCharacters)
   const characters = mergeCharactersFromPlanAndDb(dbCharacters, planCast)
   const beats = serviceData.beats
 

@@ -1,216 +1,36 @@
+import { z } from 'zod'
+import competitorDbBatch2Json from '../data/competitor-db-batch2.json'
 import type { DetailedCompetitor } from './competitor-finder-types'
 
-export const COMPETITOR_DB_BATCH2: DetailedCompetitor[] = [
-  {
-    name: 'Dead Cells',
-    genre: 'metroidvania roguelike',
-    platform: ['PC', 'Console', 'Mobile'],
-    playerCount: '10M+ owners',
-    similarityScore: 0,
-    strengths: ['Fluid combat', 'Constant updates', 'Great game feel', 'Accessibility options'],
-    weaknesses: ['Difficulty spikes', 'Some weapon imbalance', 'Story is optional'],
-    marketPosition: 'Long-running roguelike success',
+const detailedCompetitorSchema = z.object({
+  name: z.string(),
+  genre: z.string(),
+  platform: z.array(z.string()),
+  playerCount: z.string().optional(),
+  similarityScore: z.number(),
+  strengths: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  marketPosition: z.string(),
+  revenue: z.string().optional(),
+  pricePoint: z.string(),
+  monetization: z.array(z.string()),
+  launchYear: z.number(),
+  coreLoopDuration: z.string(),
+  sessionLoopDuration: z.string(),
+  metaLoopDescription: z.string(),
+  successFactors: z.array(z.string()),
+  innovationPoints: z.array(z.string()),
+  targetEmotions: z.array(z.string()),
+  marketShare: z.string().optional(),
+  growthTrajectory: z.enum(['explosive', 'steady', 'declining', 'stable']),
+  communitySize: z.string(),
+  updateFrequency: z.string(),
+  designLessons: z.array(z.string()),
+  avoidMistakes: z.array(z.string()),
+})
 
-    revenue: '$80M+ lifetime',
-    pricePoint: '$24.99',
-    monetization: ['Premium', 'Multiple paid DLCs'],
-    launchYear: 2018,
+function parseCompetitorDbBatch2(data: unknown): DetailedCompetitor[] {
+  return z.array(detailedCompetitorSchema).parse(data)
+}
 
-    coreLoopDuration: '30 seconds - kill enemies → collect cells → find better weapons',
-    sessionLoopDuration: '20-45 minutes - progress through biomes → fight bosses → unlock paths',
-    metaLoopDescription: 'Permanent unlocks from cells - new weapons, abilities, quality of life',
-
-    successFactors: [
-      '6+ years of consistent updates and DLC',
-      'Combat feels responsive and impactful',
-      'Multiple viable builds and routes',
-      'Assist mode brought in accessibility audience',
-    ],
-    innovationPoints: [
-      'Roguelike-metroidvania hybrid that works',
-      'Fluid combat in a procedural environment',
-      'Long-term live service for premium game',
-    ],
-    targetEmotions: ['Skill mastery', 'Speed and flow', 'Exploration satisfaction'],
-
-    marketShare: '20% action roguelikes',
-    growthTrajectory: 'stable',
-    communitySize: 'Dedicated fanbase, still growing',
-    updateFrequency: 'DLC every 6-12 months',
-
-    designLessons: [
-      'Game feel trumps content volume',
-      'Long-term support builds loyalty and revenue',
-      'Accessibility options expand audience significantly',
-      'DLC can extend a games life by years',
-    ],
-    avoidMistakes: [
-      'Dont ship with bad game feel - its unfixable',
-      'Avoid difficulty walls without options',
-    ],
-  },
-  {
-    name: 'Disco Elysium',
-    genre: 'narrative RPG',
-    platform: ['PC', 'Console'],
-    playerCount: '2M+ owners',
-    similarityScore: 0,
-    strengths: [
-      'Unprecedented writing quality',
-      'Unique skill system',
-      'No combat innovation',
-      'Memorable characters',
-    ],
-    weaknesses: ['Niche appeal', 'Slow pacing', 'Studio drama affecting sequel'],
-    marketPosition: 'Narrative RPG benchmark',
-
-    revenue: '$30M+ lifetime',
-    pricePoint: '$39.99',
-    monetization: ['Premium', 'Final Cut free upgrade'],
-    launchYear: 2019,
-
-    coreLoopDuration: '5-10 minutes - explore → dialogue choices → skill checks → story branches',
-    sessionLoopDuration: '2-4 hours - investigate case → develop character → uncover mysteries',
-    metaLoopDescription:
-      'Character build defines experience - replays reveal completely different content',
-
-    successFactors: [
-      'Writing quality unmatched in games',
-      'Skills as inner voices - unique and memorable',
-      'No combat freed resources for narrative',
-      'Political/philosophical depth resonated',
-    ],
-    innovationPoints: [
-      'Removed combat entirely - pure narrative RPG',
-      'Skills are personalities that speak to you',
-      'Failure is often more interesting than success',
-    ],
-    targetEmotions: [
-      'Intellectual engagement',
-      'Philosophical reflection',
-      'Character empathy',
-      'Mystery intrigue',
-    ],
-
-    marketShare: 'Created narrative RPG revival',
-    growthTrajectory: 'stable',
-    communitySize: 'Dedicated cult following',
-    updateFrequency: 'Complete game',
-
-    designLessons: [
-      'Removing systems can be innovation',
-      'Writing is the cheapest AAA-quality element',
-      'Niche appeal can still be commercially viable',
-      'Let players role-play - dont force moral paths',
-    ],
-    avoidMistakes: [
-      'Dont add systems because competitors have them',
-      'Avoid moralizing - let players draw conclusions',
-    ],
-  },
-  {
-    name: 'Counter-Strike 2',
-    genre: 'competitive tactical FPS',
-    platform: ['PC'],
-    playerCount: '35M+ monthly active',
-    similarityScore: 0,
-    strengths: [
-      '25-year legacy',
-      'Perfect competitive balance',
-      'Esports ecosystem',
-      'Skin economy',
-    ],
-    weaknesses: ['High skill floor', 'Toxic community potential', 'Cheating challenges'],
-    marketPosition: 'Competitive FPS king',
-
-    revenue: '$1B+ annually (skins + esports)',
-    pricePoint: 'Free-to-play',
-    monetization: ['Cosmetics', 'Battle pass', 'Skin marketplace'],
-    launchYear: 2023,
-
-    coreLoopDuration: '2-3 minutes - round start → buy phase → tactical execution → round end',
-    sessionLoopDuration: '30-45 minutes - match of rounds → economy management → team coordination',
-    metaLoopDescription:
-      'Rank climbing + skin collection - ELO progression and cosmetic acquisition',
-
-    successFactors: [
-      'Gunplay unchanged for 25 years - proven',
-      'Economy system adds strategic layer',
-      'Skin economy created player investment',
-      'Esports legitimized competitive scene',
-    ],
-    innovationPoints: [
-      'Pioneered round-based economy in FPS',
-      'User-generated skin marketplace',
-      'Sustained competitive scene for decades',
-    ],
-    targetEmotions: ['Competitive mastery', 'Team triumph', 'Clutch moments', 'Collection pride'],
-
-    marketShare: '50% tactical shooter market',
-    growthTrajectory: 'stable',
-    communitySize: 'Largest competitive FPS community',
-    updateFrequency: 'Continuous live service',
-
-    designLessons: [
-      'If core gameplay works, dont change it',
-      'Economy systems add depth without complexity',
-      'Cosmetics can be primary monetization',
-      'Esports as marketing investment pays off',
-    ],
-    avoidMistakes: ['Dont change what isnt broken', 'Anti-cheat is never "done"'],
-  },
-  {
-    name: 'Risk of Rain 2',
-    genre: 'co-op roguelike shooter',
-    platform: ['PC', 'Console'],
-    playerCount: '8M+ owners',
-    similarityScore: 0,
-    strengths: [
-      'Co-op excellence',
-      'Item stacking insanity',
-      '3D transition success',
-      'Character variety',
-    ],
-    weaknesses: ['Performance at scale', 'Solo less engaging', 'New player overwhelm'],
-    marketPosition: 'Co-op roguelike leader',
-
-    revenue: '$60M+ lifetime',
-    pricePoint: '$24.99',
-    monetization: ['Premium', 'DLC expansions'],
-    launchYear: 2020,
-
-    coreLoopDuration: '3-5 minutes - clear stage → find teleporter → collect items → escape',
-    sessionLoopDuration:
-      '30-90 minutes - escalating difficulty → item accumulation → optional objectives',
-    metaLoopDescription: 'Character + item unlocks - complete challenges to expand options',
-
-    successFactors: [
-      'Item stacking creates insane power fantasy',
-      '3D transition from 2D original succeeded',
-      'Co-op makes chaos manageable and social',
-      'Time pressure creates tension',
-    ],
-    innovationPoints: [
-      'Difficulty scales with time - creates urgency',
-      'Items stack multiplicatively - intentionally broken',
-      '2D to 3D genre transition done right',
-    ],
-    targetEmotions: ['Co-op camaraderie', 'Power accumulation', 'Chaotic fun', 'Discovery'],
-
-    marketShare: '35% co-op roguelikes',
-    growthTrajectory: 'stable',
-    communitySize: 'Active modding, regular player events',
-    updateFrequency: 'Complete with DLC',
-
-    designLessons: [
-      'Co-op changes everything - design for it',
-      'Let power scale infinitely - its fun',
-      'Time pressure creates natural session limits',
-      '2D to 3D can work with careful design',
-    ],
-    avoidMistakes: [
-      'Dont balance for solo when designing co-op',
-      'Performance issues kill co-op experiences',
-    ],
-  },
-]
+export const COMPETITOR_DB_BATCH2 = parseCompetitorDbBatch2(competitorDbBatch2Json)

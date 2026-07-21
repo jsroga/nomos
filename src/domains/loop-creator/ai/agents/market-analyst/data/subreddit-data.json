@@ -1,0 +1,161 @@
+{
+  "r/gaming": {
+    "subreddit": "r/gaming",
+    "subscribers": 38000000,
+    "activeUsers": 45000,
+    "hotTopics": [
+      "Game Pass value",
+      "AAA fatigue",
+      "Nostalgia posts",
+      "Indie gems"
+    ],
+    "dominantSentiment": "mixed",
+    "trendingGames": [
+      "Elden Ring DLC",
+      "Balatro",
+      "Helldivers 2"
+    ],
+    "commonComplaints": [
+      "microtransactions",
+      "live service fatigue",
+      "remake oversaturation"
+    ],
+    "praisedFeatures": [
+      "single-player campaigns",
+      "mod support",
+      "fair pricing"
+    ]
+  },
+  "r/gamedev": {
+    "subreddit": "r/gamedev",
+    "subscribers": 1500000,
+    "activeUsers": 8500,
+    "hotTopics": [
+      "Marketing strategies",
+      "Steam algorithm",
+      "Burnout",
+      "Publisher vs solo"
+    ],
+    "dominantSentiment": "mixed",
+    "trendingGames": [
+      "Success stories",
+      "Post-mortems",
+      "Wishlists data"
+    ],
+    "commonComplaints": [
+      "visibility challenges",
+      "review bombing",
+      "clone fatigue"
+    ],
+    "praisedFeatures": [
+      "unique mechanics",
+      "strong hooks",
+      "community building"
+    ]
+  },
+  "r/IndieGaming": {
+    "subreddit": "r/IndieGaming",
+    "subscribers": 450000,
+    "activeUsers": 2500,
+    "hotTopics": [
+      "Hidden gems",
+      "Demo feedback",
+      "Marketing tips",
+      "Wishlist threads"
+    ],
+    "dominantSentiment": "positive",
+    "trendingGames": [
+      "Balatro",
+      "Content Warning",
+      "Pizza Tower"
+    ],
+    "commonComplaints": [
+      "oversaturation",
+      "pricing debates",
+      "early access quality"
+    ],
+    "praisedFeatures": [
+      "innovation",
+      "passion projects",
+      "fair pricing"
+    ]
+  },
+  "r/roguelikes": {
+    "subreddit": "r/roguelikes",
+    "subscribers": 185000,
+    "activeUsers": 1200,
+    "hotTopics": [
+      "Traditional vs roguelite debate",
+      "Permadeath discussion",
+      "Procedural generation"
+    ],
+    "dominantSentiment": "positive",
+    "trendingGames": [
+      "Balatro",
+      "Caves of Qud",
+      "Jupiter Hell",
+      "Cogmind"
+    ],
+    "commonComplaints": [
+      "roguelite misuse of term",
+      "RNG complaints",
+      "difficulty spikes"
+    ],
+    "praisedFeatures": [
+      "emergent gameplay",
+      "high replayability",
+      "meaningful progression"
+    ]
+  },
+  "r/pcgaming": {
+    "subreddit": "r/pcgaming",
+    "subscribers": 3200000,
+    "activeUsers": 15000,
+    "hotTopics": [
+      "Performance optimization",
+      "Steam vs Epic",
+      "Hardware requirements"
+    ],
+    "dominantSentiment": "mixed",
+    "trendingGames": [
+      "CS2",
+      "Elden Ring",
+      "Helldivers 2"
+    ],
+    "commonComplaints": [
+      "poor ports",
+      "always-online",
+      "kernel anti-cheat"
+    ],
+    "praisedFeatures": [
+      "modding",
+      "ultrawide support",
+      "high fps"
+    ]
+  },
+  "r/Games": {
+    "subreddit": "r/Games",
+    "subscribers": 3800000,
+    "activeUsers": 12000,
+    "hotTopics": [
+      "Industry news",
+      "Review discussions",
+      "Studio acquisitions"
+    ],
+    "dominantSentiment": "mixed",
+    "trendingGames": [
+      "Major releases",
+      "Award winners",
+      "Controversial titles"
+    ],
+    "commonComplaints": [
+      "hype cycles",
+      "crunch culture",
+      "monetization"
+    ],
+    "praisedFeatures": [
+      "quality journalism",
+      "consumer advocacy"
+    ]
+  }
+}

@@ -22,7 +22,8 @@ import {
 
 import { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { fetchStorytellerProjectOptional } from '@/domains/storyteller/core/io/storyteller.api'
-import { recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
+import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
+import { stringArrayFromJson } from '@/shared/data/json-guards'
 // CharacterCreationDialog removed - Cast is managed via CharacterPanel sidebar
 
 import { BibleProvider, useBible } from '../WorldBible'
@@ -197,7 +198,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     try {
       const data = await fetchStorytellerProjectOptional(projectId)
       if (data) {
-        const bible = recordFromJson(data.seriesBible ?? data.series_bible)
+        const bible = parseSeriesBibleRecord(data.seriesBible ?? data.series_bible)
         const moodImages = stringArrayFromJson(bible.moodImages)
         if (moodImages.length > 0 && onUpdate) {
           onUpdate({ moodImages })

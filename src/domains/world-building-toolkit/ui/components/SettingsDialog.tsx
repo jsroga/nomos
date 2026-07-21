@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ScrollArea'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { TESTABLE_LLM_PROVIDERS } from '@/shared/data/constants/llm-providers'
-import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import {
   settingsApi,
   type McpApiKey,
@@ -43,7 +43,7 @@ interface SettingsDialogProps {
 type Tab = SettingsDialogTab
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose, projectId }) => {
-  const loadProject = useWorldStore(state => state.loadProject)
+  const loadWorkspaceProject = useWorkspaceProjectStore(state => state.loadProject)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -103,7 +103,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
         body.style_reference_urls = urls
       }
       await settingsApi.patchProjectStyle(projectId, body)
-      await loadProject(projectId)
+      await loadWorkspaceProject(projectId)
     } catch (error) {
       console.error(SETTINGS_SAVE_PROJECT_FAILED_LOG, error)
       toast.error(SETTINGS_SAVE_PROJECT_FAILED_TOAST)

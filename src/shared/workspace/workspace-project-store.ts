@@ -1,46 +1,88 @@
 'use client'
 
 import { create } from 'zustand'
+import { useAuthStore } from '@/shared/auth/useAuthStore'
+import { WorkspaceProjectsLog } from './constants/workspace-projects'
+import {
+  createWorkspaceProject,
+  deleteWorkspaceProject,
+  fetchWorkspaceProjects,
+} from './io/projects.api'
+import { fetchWorkspaceProject } from './io/project-session.api'
 import type { WorkspaceProject } from './types'
 
-type WorkspaceProjectMutationListener = (project: WorkspaceProject | null) => void
-
-const mutationListeners = new Set<WorkspaceProjectMutationListener>()
-
-export function onWorkspaceProjectMutation(listener: WorkspaceProjectMutationListener) {
-  mutationListeners.add(listener)
-  return () => {
-    mutationListeners.delete(listener)
-  }
-}
-
-function notifyWorkspaceProjectMutation(project: WorkspaceProject | null) {
-  for (const listener of mutationListeners) {
-    listener(project)
-  }
-}
+const WORKSPACE_PROJECT_LOAD_FAILED = 'Failed to load workspace project:'
 
 interface WorkspaceProjectState {
+  projects: WorkspaceProject[]
   currentProject: WorkspaceProject | null
   setCurrentProject: (project: WorkspaceProject) => void
   clearCurrentProject: () => void
-  syncCurrentProjectSilent: (project: WorkspaceProject | null) => void
+  fetchAllProjects: () => Promise<void>
+  createProject: (name: string, masterPrompt: string) => Promise<string | null>
+  deleteProject: (projectId: string) => Promise<void>
+  loadProject: (projectId: string) => Promise<WorkspaceProject | null>
 }
 
-export const useWorkspaceProjectStore = create<WorkspaceProjectState>(set => ({
+export const useWorkspaceProjectStore = create<WorkspaceProjectState>((set, get) => ({
+  projects: [],
   currentProject: null,
 
   setCurrentProject: project => {
     set({ currentProject: project })
-    notifyWorkspaceProjectMutation(project)
   },
 
   clearCurrentProject: () => {
     set({ currentProject: null })
-    notifyWorkspaceProjectMutation(null)
   },
 
-  syncCurrentProjectSilent: project => {
-    set({ currentProject: project })
+  fetchAllProjects: async () => {
+    try {
+      const projects = await fetchWorkspaceProjects()
+      set({ projects })
+    } catch (error) {
+      console.error(WorkspaceProjectsLog.ErrorFetchingProjects, error)
+    }
+  },
+
+  createProject: async (name: string, masterPrompt: string) => {
+    const { user } = useAuthStore.getState()
+    if (!user) return null
+
+    try {
+      const created = await createWorkspaceProject({ name, masterPrompt })
+      set(state => ({ projects: [created, ...state.projects] }))
+      await get().loadProject(created.id)
+      return created.id
+    } catch (error) {
+      console.error(WorkspaceProjectsLog.ErrorCreatingProject, error)
+      return null
+    }
+  },
+
+  deleteProject: async (projectId: string) => {
+    try {
+      await deleteWorkspaceProject(projectId)
+      set(state => ({
+        projects: state.projects.filter(project => project.id !== projectId),
+      }))
+      if (get().currentProject?.id === projectId) {
+        get().clearCurrentProject()
+      }
+    } catch (error) {
+      console.error(WorkspaceProjectsLog.ErrorDeletingProject, error)
+    }
+  },
+
+  loadProject: async projectId => {
+    try {
+      const project = await fetchWorkspaceProject(projectId)
+      set({ currentProject: project })
+      return project
+    } catch (err) {
+      console.error(WORKSPACE_PROJECT_LOAD_FAILED, err)
+      set({ currentProject: null })
+      return null
+    }
   },
 }))

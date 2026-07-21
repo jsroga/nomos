@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React from 'react'
 import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
 import { Map, Box, LogOut, BookOpen, Home, Repeat } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useAuthStore } from '@/shared/auth/useAuthStore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/Avatar'
 import { GlowEffect } from '@/components/GlowEffect'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
@@ -17,22 +17,9 @@ export const GlobalSidebar = () => {
   const params = useParams()
   const projectId = readString(params?.projectId)
   const supabase = createClientComponentClient()
-  const user = useWorldStore(state => state.user)
-  const setUser = useWorldStore(state => state.setUser)
+  const user = useAuthStore(state => state.user)
 
   const isActive = (path: string) => pathname?.startsWith(path)
-
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUser(session.user)
-      }
-    }
-    getUser()
-  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

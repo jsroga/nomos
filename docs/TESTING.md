@@ -9,6 +9,7 @@
 | **Unit** | `npm run test:unit` | `src/**/__tests__/**` (colocated) | Yes (vitest) |
 | **E2E** | `npm run test:e2e [scenario]` | Playwright via `scripts/run-e2e.ts` | No (local / scheduled) |
 | **Eval** | `npm run eval [-- --samples=5]` | `evals/` (Mastra scorers) | No |
+| **Idea diversity (offline)** | `npm run eval:ideas` / vitest `evals/idea-diversity` | Fixture agents × models + uniqueness judge | Yes (unit) |
 
 There is **no top-level `tests/` folder**. Legacy `tests/integration/` was removed; coverage lives next to the code it exercises.
 

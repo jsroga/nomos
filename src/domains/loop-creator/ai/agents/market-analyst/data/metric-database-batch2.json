@@ -1,0 +1,256 @@
+[
+  {
+    "name": "Loop Friction Score",
+    "category": "loop_health",
+    "description": "Measure of how much resistance players face completing loops",
+    "formula": "average_inputs_per_loop_cycle / minimum_possible_inputs",
+    "importance": "critical",
+    "benchmarks": {
+      "poor": ">3x minimum",
+      "average": "2-3x minimum",
+      "good": "1.5-2x minimum",
+      "excellent": "<1.5x minimum"
+    },
+    "applicableGenres": [
+      "survivors-like",
+      "idle",
+      "casual"
+    ],
+    "measurementTiming": "Design time + post-launch telemetry",
+    "exampleFromGame": {
+      "game": "Vampire Survivors",
+      "value": "1.1x (just movement)",
+      "insight": "Removing attack input dropped friction to near-zero"
+    }
+  },
+  {
+    "name": "Reward Frequency",
+    "category": "loop_health",
+    "description": "How often players receive positive feedback/rewards",
+    "formula": "rewards_given / session_time_minutes",
+    "importance": "critical",
+    "benchmarks": {
+      "poor": "<1 per minute",
+      "average": "1-2 per minute",
+      "good": "3-5 per minute",
+      "excellent": ">5 per minute"
+    },
+    "applicableGenres": [
+      "survivors-like",
+      "action",
+      "roguelike"
+    ],
+    "measurementTiming": "Continuous measurement",
+    "exampleFromGame": {
+      "game": "Vampire Survivors",
+      "value": "6-10 per minute",
+      "insight": "Constant XP gems + level ups create dopamine rhythm"
+    }
+  },
+  {
+    "name": "Meta-Loop Engagement",
+    "category": "loop_health",
+    "description": "Percentage of players engaging with progression systems between sessions",
+    "formula": "players_accessing_meta_features / total_players * 100",
+    "importance": "important",
+    "benchmarks": {
+      "poor": "<20%",
+      "average": "30-50%",
+      "good": "50-70%",
+      "excellent": ">70%"
+    },
+    "applicableGenres": [
+      "roguelike",
+      "rpg",
+      "gacha"
+    ],
+    "measurementTiming": "Per session",
+    "exampleFromGame": {
+      "game": "Hades",
+      "value": "85%",
+      "insight": "Story progression in hub makes meta-loop mandatory and enjoyable"
+    }
+  },
+  {
+    "name": "Build Diversity Index",
+    "category": "loop_health",
+    "description": "Variety of player builds/strategies used",
+    "formula": "unique_builds_used / total_builds_possible",
+    "importance": "important",
+    "benchmarks": {
+      "poor": "<10%",
+      "average": "20-40%",
+      "good": "40-60%",
+      "excellent": ">60%"
+    },
+    "applicableGenres": [
+      "roguelike",
+      "deck-builder",
+      "rpg"
+    ],
+    "measurementTiming": "Weekly aggregate",
+    "exampleFromGame": {
+      "game": "Slay the Spire",
+      "value": "55%",
+      "insight": "Forced adaptation to encounters creates natural build variety"
+    }
+  },
+  {
+    "name": "Conversion Rate",
+    "category": "monetization",
+    "description": "Percentage of players who make any purchase",
+    "formula": "paying_users / total_users * 100",
+    "importance": "critical",
+    "benchmarks": {
+      "poor": "<2%",
+      "average": "2-5%",
+      "good": "5-10%",
+      "excellent": ">10%"
+    },
+    "applicableGenres": [
+      "f2p",
+      "mobile",
+      "gacha"
+    ],
+    "measurementTiming": "Lifetime",
+    "exampleFromGame": {
+      "game": "Genshin Impact",
+      "value": "5-7%",
+      "insight": "Gacha + FOMO creates strong conversion despite low rate"
+    }
+  },
+  {
+    "name": "ARPDAU (Average Revenue Per Daily Active User)",
+    "category": "monetization",
+    "description": "Daily revenue divided by daily active users",
+    "formula": "daily_revenue / daily_active_users",
+    "importance": "critical",
+    "benchmarks": {
+      "poor": "<$0.05",
+      "average": "$0.05-0.15",
+      "good": "$0.15-0.30",
+      "excellent": ">$0.30"
+    },
+    "applicableGenres": [
+      "f2p",
+      "mobile"
+    ],
+    "measurementTiming": "Daily",
+    "exampleFromGame": {
+      "game": "Clash Royale",
+      "value": "$0.25",
+      "insight": "Competitive + collection drives high spending"
+    }
+  },
+  {
+    "name": "LTV (Lifetime Value)",
+    "category": "monetization",
+    "description": "Total revenue expected from average player",
+    "formula": "total_revenue / total_players",
+    "importance": "critical",
+    "benchmarks": {
+      "poor": "<$1",
+      "average": "$1-5",
+      "good": "$5-20",
+      "excellent": ">$20"
+    },
+    "applicableGenres": [
+      "all"
+    ],
+    "measurementTiming": "Cohort-based projection",
+    "exampleFromGame": {
+      "game": "Vampire Survivors",
+      "value": "$3-4",
+      "insight": "Low price but near-100% conversion makes LTV reliable"
+    }
+  },
+  {
+    "name": "K-Factor",
+    "category": "virality",
+    "description": "Viral coefficient - how many new users each user brings",
+    "formula": "invites_sent * conversion_rate",
+    "importance": "important",
+    "benchmarks": {
+      "poor": "<0.2",
+      "average": "0.2-0.5",
+      "good": "0.5-0.8",
+      "excellent": ">1.0 (viral growth)"
+    },
+    "applicableGenres": [
+      "social",
+      "competitive",
+      "co-op"
+    ],
+    "measurementTiming": "Monthly",
+    "exampleFromGame": {
+      "game": "Among Us",
+      "value": ">2.0 at peak",
+      "insight": "Social deduction + streaming created explosive virality"
+    }
+  },
+  {
+    "name": "Content Creator Coverage",
+    "category": "virality",
+    "description": "Number of content creators covering the game",
+    "importance": "important",
+    "benchmarks": {
+      "poor": "<10 videos/streams",
+      "average": "50-200 videos",
+      "good": "500-2000 videos",
+      "excellent": ">5000 videos"
+    },
+    "applicableGenres": [
+      "all"
+    ],
+    "measurementTiming": "Monthly",
+    "exampleFromGame": {
+      "game": "Balatro",
+      "value": ">10,000 YouTube videos in first month",
+      "insight": "Big number moments + poker familiarity drove creator interest"
+    }
+  },
+  {
+    "name": "Review Score",
+    "category": "quality",
+    "description": "Aggregate review score from players",
+    "importance": "important",
+    "benchmarks": {
+      "poor": "<70%",
+      "average": "70-80%",
+      "good": "80-90%",
+      "excellent": ">90%"
+    },
+    "applicableGenres": [
+      "all"
+    ],
+    "measurementTiming": "Ongoing",
+    "exampleFromGame": {
+      "game": "Hades",
+      "value": "93% (Overwhelmingly Positive)",
+      "insight": "Polish + narrative + gameplay alignment creates universal praise"
+    }
+  },
+  {
+    "name": "Completion Rate",
+    "category": "quality",
+    "description": "Percentage of players who \"beat\" the game",
+    "importance": "nice_to_have",
+    "benchmarks": {
+      "poor": "<5%",
+      "average": "10-20%",
+      "good": "20-40%",
+      "excellent": ">40%"
+    },
+    "applicableGenres": [
+      "narrative",
+      "action",
+      "roguelike"
+    ],
+    "measurementTiming": "Lifetime",
+    "exampleFromGame": {
+      "game": "Celeste",
+      "value": "28%",
+      "insight": "Assist mode significantly increased completion rate"
+    }
+  }
+]

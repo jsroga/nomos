@@ -7,6 +7,6 @@
       "@/evals/*": ["./evals/*"]
     }
   },
-  "include": ["./**/*.ts", "./**/*.tsx"],
+  "include": ["./**/*.ts", "./**/*.tsx", "./**/*.json"],
   "exclude": ["node_modules"]
 }

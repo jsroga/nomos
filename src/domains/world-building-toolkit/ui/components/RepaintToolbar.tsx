@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { Paintbrush, Eraser, Check, X, Loader2 } from 'lucide-react'
 import { Slider } from '@/components/Slider'
 import { repaintService } from '@/domains/world-building-toolkit/state/client-services/repaint-service'
@@ -25,7 +26,7 @@ export const RepaintToolbar: React.FC = () => {
   const repaintResult = useWorldStore(state => state.repaintResult)
   const repaintPrompt = useWorldStore(state => state.repaintPrompt)
   const setRepaintPrompt = useWorldStore(state => state.setRepaintPrompt)
-  const currentProject = useWorldStore(state => state.currentProject)
+  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])

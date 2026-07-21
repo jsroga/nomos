@@ -37,6 +37,7 @@ import {
   fetchStorytellerTimeline,
   patchStorytellerEpisode,
 } from '@/domains/storyteller/core/io/storyteller.api'
+import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import type { BeatCard } from '@/domains/storyteller/core/types/story-types'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 
@@ -111,7 +112,7 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
           try {
             const data = await fetchStorytellerProjectOptional(projectId)
             if (data) {
-              const bible = recordFromJson(data.seriesBible ?? data.series_bible)
+              const bible = parseSeriesBibleRecord(data.seriesBible ?? data.series_bible)
               if (Array.isArray(bible.moodImages)) {
                 setStoryPlan(prev =>
                   prev ? { ...prev, moodImages: stringArrayFromJson(bible.moodImages) } : prev

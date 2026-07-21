@@ -85,7 +85,7 @@ export function useStorytellerHydration({
 
     const bible = parseSeriesBibleRecord(currentProject.series_bible)
     const rawStoryPlan = parseStoryPlanRecord(currentProject.story_plan)
-    const nestedStoryPlan = recordFromJson(bible.storyPlan)
+    const nestedStoryPlan = parseStoryPlanRecord(bible.storyPlan)
 
     console.log(StorytellerHydrationLog.Check, {
       hasRawBible: Object.keys(bible).length > 0,

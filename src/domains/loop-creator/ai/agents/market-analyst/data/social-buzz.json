@@ -1,0 +1,70 @@
+[
+  {
+    "topic": "Extraction Shooters",
+    "buzzScore": 85,
+    "sources": [
+      "Twitter",
+      "Reddit",
+      "YouTube"
+    ],
+    "sentiment": "positive",
+    "timeframe": "last 30 days",
+    "keyInfluencers": [
+      "Gaming streamers",
+      "Tarkov community",
+      "Survival game fans"
+    ],
+    "viralPotential": "high"
+  },
+  {
+    "topic": "Indie Success Stories",
+    "buzzScore": 72,
+    "sources": [
+      "Reddit",
+      "Twitter",
+      "Discord"
+    ],
+    "sentiment": "positive",
+    "timeframe": "last 7 days",
+    "keyInfluencers": [
+      "Game developers",
+      "Indie enthusiasts",
+      "Steam curators"
+    ],
+    "viralPotential": "medium"
+  },
+  {
+    "topic": "Game Pass Impact",
+    "buzzScore": 68,
+    "sources": [
+      "Twitter",
+      "Reddit",
+      "Gaming press"
+    ],
+    "sentiment": "mixed",
+    "timeframe": "last 14 days",
+    "keyInfluencers": [
+      "Industry analysts",
+      "Console players",
+      "PC gamers"
+    ],
+    "viralPotential": "medium"
+  },
+  {
+    "topic": "AI in Game Dev",
+    "buzzScore": 65,
+    "sources": [
+      "Twitter",
+      "Reddit/gamedev",
+      "GDC"
+    ],
+    "sentiment": "mixed",
+    "timeframe": "last 30 days",
+    "keyInfluencers": [
+      "Game developers",
+      "Tech press",
+      "Artists"
+    ],
+    "viralPotential": "medium"
+  }
+]

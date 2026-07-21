@@ -19,7 +19,10 @@ export function useProjectFromUrl() {
   const projectId = Array.isArray(rawProjectId) ? rawProjectId[0] : rawProjectId
 
   const currentProject = useWorkspaceProjectStore(state => state.currentProject)
-  const loadProject = useWorldStore(state => state.loadProject)
+  const loadWorkspaceProject = useWorkspaceProjectStore(state => state.loadProject)
+  const clearCurrentProject = useWorkspaceProjectStore(state => state.clearCurrentProject)
+  const loadTilesForProject = useWorldStore(state => state.loadTilesForProject)
+  const clearTiles = useWorldStore(state => state.clearTiles)
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,10 +44,12 @@ export function useProjectFromUrl() {
       setError(null)
       loadedProjectIdRef.current = projectId // Mark as loading
 
-      loadProject(projectId)
-        .then(() => {
-          // Check if project was actually loaded
-          const loadedProject = useWorkspaceProjectStore.getState().currentProject
+      loadWorkspaceProject(projectId)
+        .then(async loadedProject => {
+          if (loadedProject) {
+            await loadTilesForProject(projectId)
+          }
+
           console.log(ProjectLoaderLog.LoadComplete, !!loadedProject)
           if (!loadedProject) {
             // Project doesn't exist - redirect to base path
@@ -65,11 +70,20 @@ export function useProjectFromUrl() {
         })
         .finally(() => setIsLoading(false))
     } else if (!projectId && currentProject) {
-      // Clear project if no projectId in URL
-      useWorldStore.setState({ currentProject: null, tiles: {} })
+      clearCurrentProject()
+      clearTiles()
       loadedProjectIdRef.current = null
     }
-  }, [projectId, currentProject?.id, loadProject, router, pathname])
+  }, [
+    projectId,
+    currentProject?.id,
+    loadWorkspaceProject,
+    loadTilesForProject,
+    clearCurrentProject,
+    clearTiles,
+    router,
+    pathname,
+  ])
 
   return {
     projectId,

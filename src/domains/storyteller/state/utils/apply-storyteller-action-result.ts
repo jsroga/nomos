@@ -4,6 +4,7 @@ import type { StorytellerCharacter } from '@/domains/storyteller/core/entities/c
 import { storytellerCharacterFromRow } from '@/domains/storyteller/core/entities/character-wire'
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
 import { fetchStorytellerCharacters } from '@/domains/storyteller/core/io/character.api'
+import { parseSeriesBibleRecord, parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import { recordFromJson, stringRecordFromJson } from '@/shared/data/deep-merge'
 import { readString } from '@/shared/data/json-guards'
 import { recordFromJson as jsonRecordFromJson } from '@/shared/data/json-guards'
@@ -73,7 +74,7 @@ function applyBibleUpdatedResult(ctx: ApplyActionResultContext): void {
   })
 
   if (ctx.action.type === StorytellerActionType.UPDATE_EPISODE_ROADMAP && seriesBible.storyPlan) {
-    const plan = recordFromJson(seriesBible.storyPlan)
+    const plan = parseStoryPlanRecord(seriesBible.storyPlan)
     ctx.setStoryPlan(prev => {
       const prevRecord = recordFromJson(prev)
       return Object.assign({}, prev, {
@@ -125,7 +126,7 @@ function applySeriesBibleUpdate(ctx: ApplyActionResultContext): void {
   })
 
   const mergedBible = {
-    ...recordFromJson(ctx.currentProject.series_bible),
+    ...parseSeriesBibleRecord(ctx.currentProject.series_bible),
     ...payloadFields,
   }
   ctx.setCurrentProject({

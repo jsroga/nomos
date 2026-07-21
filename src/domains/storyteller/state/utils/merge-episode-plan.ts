@@ -1,4 +1,8 @@
 import { recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+import {
+  parseSeriesBibleRecord,
+  parseStoryPlanRecord,
+} from '@/domains/storyteller/core/io/project-jsonb'
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
 import { StoryPlanMergeField } from '@/domains/storyteller/config/constants/bible-wire-fields'
 import { ToolResultPayloadField } from '@/domains/storyteller/config/constants/tool-result-wire'
@@ -46,8 +50,8 @@ export function buildMergedEpisodePlan(
   currentProject: { id?: string; series_bible?: unknown; story_plan?: unknown } | null | undefined,
 ): StoryPlan | null {
   const planContext = {
-    series_bible: recordFromJson(currentProject?.series_bible),
-    story_plan: recordFromJson(currentProject?.story_plan),
+    series_bible: parseSeriesBibleRecord(currentProject?.series_bible),
+    story_plan: parseStoryPlanRecord(currentProject?.story_plan),
   }
   const { hasSeriesBible: hasProjectBible, hasStoryPlan: hasProjectPlan } =
     projectHasStoredPlan(planContext)
@@ -56,8 +60,8 @@ export function buildMergedEpisodePlan(
     return null
   }
 
-  const bible = unpackBibleCategories(recordFromJson(currentProject?.series_bible))
-  const seasonPlan = recordFromJson(currentProject?.story_plan)
+  const bible = unpackBibleCategories(parseSeriesBibleRecord(currentProject?.series_bible))
+  const seasonPlan = parseStoryPlanRecord(currentProject?.story_plan)
   const episodePlan = recordFromJson(data[EpisodePlanMergeField.StoryPlan])
   const seasonRoadmap = recordFromJson(seasonPlan[EpisodePlanMergeField.EpisodeRoadmap])
   const bibleUpdated = recordFromJson(bible[ToolResultPayloadField.UpdatedFields])
@@ -119,8 +123,8 @@ export function buildMergedEpisodePlan(
 export function buildFallbackBiblePlan(
   currentProject: { series_bible?: unknown; story_plan?: unknown } | null | undefined,
 ): StoryPlan | null {
-  const rawBible = recordFromJson(currentProject?.series_bible)
-  const rawStoryPlan = recordFromJson(currentProject?.story_plan)
+  const rawBible = parseSeriesBibleRecord(currentProject?.series_bible)
+  const rawStoryPlan = parseStoryPlanRecord(currentProject?.story_plan)
   const rawBibleUpdated = recordFromJson(rawBible[ToolResultPayloadField.UpdatedFields])
 
   if (Object.keys(rawBible).length === 0 && Object.keys(rawStoryPlan).length === 0) {
@@ -175,8 +179,8 @@ export function buildFallbackBiblePlan(
 export function buildManualHydratedPlan(
   currentProject: { series_bible?: unknown; story_plan?: unknown } | null | undefined,
 ): StoryPlan | null {
-  const rawBible = recordFromJson(currentProject?.series_bible)
-  const rawStoryPlan = recordFromJson(currentProject?.story_plan)
+  const rawBible = parseSeriesBibleRecord(currentProject?.series_bible)
+  const rawStoryPlan = parseStoryPlanRecord(currentProject?.story_plan)
   const initialPlan = hydratePlanFromBibleSources(rawBible, rawStoryPlan)
 
   return Object.keys(initialPlan).length > 0

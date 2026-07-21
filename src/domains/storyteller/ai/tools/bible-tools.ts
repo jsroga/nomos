@@ -13,7 +13,8 @@ import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { countOccurrences } from '@/shared/data/count-occurrences'
-import { deepMergeRecords, recordFromJson } from '@/shared/data/deep-merge'
+import { deepMergeRecords } from '@/shared/data/deep-merge'
+import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import {
   STORYTELLER_PROJECT_ID,
   STORYTELLER_EPISODE_ID,
@@ -186,7 +187,7 @@ export const updateWorldBibleTool = createTool({
         }
       }
 
-      const currentStoryPlan = recordFromJson(project.storyPlan)
+      const currentStoryPlan = parseStoryPlanRecord(project.storyPlan)
       const updates: Record<string, unknown> = {}
       const updatedFields: string[] = []
 
@@ -264,7 +265,7 @@ export const readWorldBibleTool = createTool({
         }
       }
 
-      const storyPlan = recordFromJson(project.storyPlan)
+      const storyPlan = parseStoryPlanRecord(project.storyPlan)
 
       const requested = new Set<string>(sections)
       const shouldInclude = (section: string) => requested.has('all') || requested.has(section)

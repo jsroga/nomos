@@ -10,6 +10,7 @@
  */
 
 import { namedRecordsFromJson, readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+import { parseStoryPlanRecord, parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import {
   AutoLinkerEntityType,
   EntityAutoLinkerArticlePrefix,
@@ -277,7 +278,7 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
     if (!project) return text
 
     // Fetch story plan content separately if needed (avoids heavy join)
-    let storyPlan = recordFromJson(project.storyPlan)
+    let storyPlan = parseStoryPlanRecord(project.storyPlan)
 
     // If no legacy storyPlan, check the table
     if (Object.keys(storyPlan).length === 0) {
@@ -285,11 +286,11 @@ export async function autoLinkEntities(text: string, projectId: string): Promise
         where: eq(storyPlans.projectId, projectId),
       })
       if (sp?.content) {
-        storyPlan = recordFromJson(sp.content)
+        storyPlan = parseStoryPlanRecord(sp.content)
       }
     }
 
-    const seriesBible = recordFromJson(project.seriesBible)
+    const seriesBible = parseSeriesBibleRecord(project.seriesBible)
 
     // Fetch characters from the characters table
     const projectCharacters = await db.query.characters.findMany({

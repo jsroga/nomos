@@ -16,8 +16,8 @@ export default defineConfig({
       DOTENV_CONFIG_PATH: '.env.local',
     },
     alias: {
-      '@': path.resolve(__dirname, './src'),
       '@/evals': path.resolve(__dirname, './evals'),
+      '@': path.resolve(__dirname, './src'),
     },
   },
 })

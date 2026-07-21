@@ -1,4 +1,6 @@
 import type { beats, characters } from '@/db'
+import type { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
+import { parseStoryPlanJson } from '@/domains/storyteller/core/io/project-jsonb'
 import {
   namedRecordsFromJson,
   recordArrayFromJson,
@@ -6,6 +8,8 @@ import {
   readString,
 } from '@/shared/data/json-guards'
 import { ContextAssemblyFallback } from '@/domains/storyteller/services/constants/context-assembly'
+
+export type { StoryPlan }
 
 type CharacterRow = typeof characters.$inferSelect
 
@@ -25,32 +29,17 @@ interface WorldRuleRow {
   consequence?: string
 }
 
+interface FactionRow {
+  id?: string
+  name: string
+  ideology?: string
+  description?: string
+}
+
 interface NamedEntityRow {
   id?: string
   name: string
   description?: string
-}
-
-export interface StoryPlan {
-  cast?: Character[]
-  keyCharacters?: Character[]
-  premise?: Record<string, unknown>
-  episodePremise?: Record<string, unknown>
-  worldDescription?: string
-  genre?: string | string[]
-  tone?: string | string[]
-  centralTheme?: string
-  worldRules?: WorldRuleRow[]
-  factions?: Array<{ id?: string; name: string; ideology?: string; description?: string }>
-  items?: NamedEntityRow[]
-  events?: NamedEntityRow[]
-  inspirations?: {
-    movies?: Array<string | { title: string }>
-    books?: Array<string | { title: string }>
-    games?: Array<string | { title: string }>
-  }
-  sequences?: Array<{ name: string; description?: string }>
-  masterPrompt?: string
 }
 
 export type BeatRow = typeof beats.$inferSelect
@@ -76,14 +65,14 @@ function characterFromPlanRow(row: Record<string, unknown>): Character | null {
   }
 }
 
-function charactersFromJson(value: unknown): Character[] {
+export function charactersFromJson(value: unknown): Character[] {
   return recordArrayFromJson(value).flatMap(row => {
     const character = characterFromPlanRow(row)
     return character ? [character] : []
   })
 }
 
-function worldRulesFromJson(value: unknown): StoryPlan['worldRules'] {
+function worldRulesFromJson(value: unknown): WorldRuleRow[] {
   return recordArrayFromJson(value).flatMap(row => {
     const rule = readString(row.rule)
     if (!rule) return []
@@ -97,7 +86,7 @@ function worldRulesFromJson(value: unknown): StoryPlan['worldRules'] {
   })
 }
 
-function factionsFromJson(value: unknown): StoryPlan['factions'] {
+function factionsFromJson(value: unknown): FactionRow[] {
   return namedRecordsFromJson(value).map(row => ({
     id: readString(row.id),
     name: row.name,
@@ -118,7 +107,10 @@ function inspirationTitle(item: unknown): string {
   if (typeof item === 'string') return item
   return readString(recordFromJson(item).title) ?? ContextAssemblyFallback.NoneLabel
 }
-export function storyPlanFromJson(content: unknown): StoryPlan {
+export function storyPlanFromJson(content: unknown): Record<string, unknown> {
+  const parsed = parseStoryPlanJson(content)
+  if (parsed) return { ...parsed }
+
   const r = recordFromJson(content)
   const cast = charactersFromJson(r.cast)
   const keyCharacters = charactersFromJson(r.keyCharacters)
@@ -187,17 +179,28 @@ export interface ProjectMeta {
   premise: Record<string, unknown>
 }
 
-export function deriveProjectMeta(storyPlan: StoryPlan, bible: Record<string, unknown>, notSetLabel: string, commaSep: string): ProjectMeta {
-  const genre = Array.isArray(storyPlan.genre)
-    ? storyPlan.genre.join(commaSep)
-    : storyPlan.genre || readString(bible.genre) || notSetLabel
-  const tone = Array.isArray(storyPlan.tone)
-    ? storyPlan.tone.join(commaSep)
-    : storyPlan.tone || readString(bible.tone) || notSetLabel
+export function deriveProjectMeta(
+  storyPlan: Record<string, unknown>,
+  bible: Record<string, unknown>,
+  notSetLabel: string,
+  commaSep: string,
+): ProjectMeta {
+  const genreValue = storyPlan.genre
+  const genre = Array.isArray(genreValue)
+    ? genreValue.filter((value): value is string => typeof value === 'string').join(commaSep)
+    : readString(genreValue) || readString(bible.genre) || notSetLabel
+  const toneValue = storyPlan.tone
+  const tone = Array.isArray(toneValue)
+    ? toneValue.filter((value): value is string => typeof value === 'string').join(commaSep)
+    : readString(toneValue) || readString(bible.tone) || notSetLabel
   const theme =
-    storyPlan.centralTheme || readString(bible.centralTheme) || notSetLabel
+    readString(storyPlan.centralQuestion) ||
+    readString(storyPlan.centralTheme) ||
+    readString(bible.centralTheme) ||
+    readString(bible.centralQuestion) ||
+    notSetLabel
   const premise =
-    storyPlan.premise ?? storyPlan.episodePremise ?? recordFromJson(bible.episodePremise)
+    recordFromJson(storyPlan.premise ?? storyPlan.episodePremise ?? bible.episodePremise)
   return { genre, tone, theme, premise }
 }
 

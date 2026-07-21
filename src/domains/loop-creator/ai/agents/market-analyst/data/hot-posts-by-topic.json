@@ -1,0 +1,212 @@
+{
+  "roguelike": [
+    {
+      "title": "Balatro is proof that roguelikes can innovate without combat",
+      "subreddit": "r/roguelikes",
+      "upvotes": 4500,
+      "commentCount": 380,
+      "sentiment": "positive",
+      "url": "https://reddit.com/r/roguelikes/...",
+      "flair": "Discussion",
+      "topComments": [
+        "The poker mechanics create such satisfying synergies",
+        "This is what innovation looks like. Not another Hades clone.",
+        "Meta-progression done right - unlocks feel meaningful"
+      ],
+      "mentionedGames": [
+        "Balatro",
+        "Slay the Spire",
+        "Luck be a Landlord"
+      ],
+      "age": "2 days"
+    },
+    {
+      "title": "Why do roguelites keep abandoning the \"fail forward\" philosophy?",
+      "subreddit": "r/gamedev",
+      "upvotes": 890,
+      "commentCount": 156,
+      "sentiment": "discussion",
+      "url": "https://reddit.com/r/gamedev/...",
+      "flair": "Design",
+      "topComments": [
+        "Players want to feel progress even in death",
+        "The meta-progression treadmill is exhausting",
+        "Hades struck the perfect balance IMO"
+      ],
+      "mentionedGames": [
+        "Hades",
+        "Dead Cells",
+        "Returnal"
+      ],
+      "age": "5 days"
+    }
+  ],
+  "extraction": [
+    {
+      "title": "Extraction shooters are filling the void left by battle royale",
+      "subreddit": "r/pcgaming",
+      "upvotes": 3200,
+      "commentCount": 420,
+      "sentiment": "positive",
+      "url": "https://reddit.com/r/pcgaming/...",
+      "flair": "Discussion",
+      "topComments": [
+        "The risk/reward of extraction hits different than BR",
+        "Finally games respect my time - short raids, meaningful loot",
+        "Tarkov created a monster. Everyone wants in now."
+      ],
+      "mentionedGames": [
+        "Escape from Tarkov",
+        "Dark and Darker",
+        "Hunt: Showdown",
+        "Gray Zone Warfare"
+      ],
+      "age": "1 day"
+    },
+    {
+      "title": "Dark and Darker shows fantasy extraction can work",
+      "subreddit": "r/Games",
+      "upvotes": 2800,
+      "commentCount": 310,
+      "sentiment": "positive",
+      "url": "https://reddit.com/r/Games/...",
+      "flair": "News",
+      "topComments": [
+        "The dungeon crawling aspect adds so much tension",
+        "Class system is genuinely interesting for the genre",
+        "Hope they fix the legal issues, game deserves to succeed"
+      ],
+      "mentionedGames": [
+        "Dark and Darker",
+        "Escape from Tarkov",
+        "Dungeonborne"
+      ],
+      "age": "3 days"
+    }
+  ],
+  "narrative": [
+    {
+      "title": "BG3 has permanently raised expectations for CRPG writing",
+      "subreddit": "r/Games",
+      "upvotes": 8900,
+      "commentCount": 920,
+      "sentiment": "positive",
+      "url": "https://reddit.com/r/Games/...",
+      "flair": "Discussion",
+      "topComments": [
+        "Every choice feeling meaningful is the new standard",
+        "Companion relationships in BG3 are unmatched",
+        "Can we please get more games that let you fail interestingly?"
+      ],
+      "mentionedGames": [
+        "Baldur's Gate 3",
+        "Disco Elysium",
+        "Divinity: Original Sin 2"
+      ],
+      "age": "1 week"
+    },
+    {
+      "title": "Disco Elysium remains the gold standard for dialogue systems",
+      "subreddit": "r/gamedev",
+      "upvotes": 2100,
+      "commentCount": 280,
+      "sentiment": "positive",
+      "url": "https://reddit.com/r/gamedev/...",
+      "flair": "Discussion",
+      "topComments": [
+        "Skills as characters talking to you was genius",
+        "The failure states are more interesting than successes",
+        "No other game has matched this internal monologue system"
+      ],
+      "mentionedGames": [
+        "Disco Elysium",
+        "Planescape: Torment",
+        "Pentiment"
+      ],
+      "age": "2 weeks"
+    }
+  ],
+  "competitive": [
+    {
+      "title": "CS2 tick rate changes actually fixing the game",
+      "subreddit": "r/pcgaming",
+      "upvotes": 5600,
+      "commentCount": 780,
+      "sentiment": "mixed",
+      "url": "https://reddit.com/r/pcgaming/...",
+      "flair": "News",
+      "topComments": [
+        "Movement feels so much better now",
+        "Still needs better anti-cheat",
+        "Premier ranking is actually meaningful now"
+      ],
+      "mentionedGames": [
+        "Counter-Strike 2",
+        "Valorant",
+        "CS:GO"
+      ],
+      "age": "4 days"
+    }
+  ],
+  "survivors": [
+    {
+      "title": "The survivors-like market is getting saturated fast",
+      "subreddit": "r/IndieGaming",
+      "upvotes": 1200,
+      "commentCount": 190,
+      "sentiment": "mixed",
+      "url": "https://reddit.com/r/IndieGaming/...",
+      "flair": "Discussion",
+      "topComments": [
+        "Balatro and Halls of Torment proved differentiation works",
+        "Pure clones are dying, innovation survives",
+        "Deep Rock Survivor shows IP + genre mashup is the way"
+      ],
+      "mentionedGames": [
+        "Vampire Survivors",
+        "Balatro",
+        "Halls of Torment",
+        "Deep Rock Galactic: Survivor"
+      ],
+      "age": "6 days"
+    }
+  ],
+  "indie": [
+    {
+      "title": "Steam Next Fest is now essential for indie visibility",
+      "subreddit": "r/gamedev",
+      "upvotes": 3400,
+      "commentCount": 450,
+      "sentiment": "discussion",
+      "url": "https://reddit.com/r/gamedev/...",
+      "flair": "Marketing",
+      "topComments": [
+        "Demo conversion rates are real - 10-20% is achievable",
+        "Wishlists from NextFest last for years",
+        "The preparation is brutal but worth it"
+      ],
+      "mentionedGames": [],
+      "age": "1 week"
+    },
+    {
+      "title": "Content Warning hit 1M sales with zero marketing budget",
+      "subreddit": "r/IndieGaming",
+      "upvotes": 4800,
+      "commentCount": 380,
+      "sentiment": "positive",
+      "url": "https://reddit.com/r/IndieGaming/...",
+      "flair": "Success Story",
+      "topComments": [
+        "Streamability is the new marketing",
+        "The $8 price point was genius",
+        "Co-op + chaos = virality"
+      ],
+      "mentionedGames": [
+        "Content Warning",
+        "Lethal Company",
+        "Phasmophobia"
+      ],
+      "age": "2 weeks"
+    }
+  ]
+}

@@ -1,0 +1,379 @@
+[
+  {
+    "name": "Core Loop Trinity",
+    "category": "loop_structure",
+    "description": "The fundamental Challenge → Action → Reward cycle that creates satisfying moment-to-moment gameplay",
+    "coreElements": [
+      "Clear challenge presented",
+      "Player takes action",
+      "Immediate feedback/reward",
+      "Loop resets"
+    ],
+    "indicators": [
+      {
+        "term": "challenge",
+        "weight": 3
+      },
+      {
+        "term": "action",
+        "weight": 2
+      },
+      {
+        "term": "reward",
+        "weight": 3
+      },
+      {
+        "term": "feedback",
+        "weight": 3
+      },
+      {
+        "term": "loop",
+        "weight": 2
+      },
+      {
+        "term": "cycle",
+        "weight": 2
+      }
+    ],
+    "antiPatterns": [
+      "No clear challenge",
+      "Delayed feedback",
+      "Unclear rewards",
+      "Broken loop transitions"
+    ],
+    "examples": [
+      {
+        "game": "Vampire Survivors",
+        "implementation": "Kill enemies (challenge) → Auto-attack (action) → XP gems (reward) → Level up (reset)"
+      },
+      {
+        "game": "Candy Crush",
+        "implementation": "Match goal (challenge) → Swap candies (action) → Clear animation (reward) → Next level (reset)"
+      }
+    ],
+    "implementationGuide": [
+      "Ensure each challenge is immediately readable",
+      "Keep action-to-feedback time under 500ms",
+      "Make rewards visually and audibly satisfying",
+      "Create clear moment where loop resets"
+    ],
+    "strengths": [
+      "Universal engagement",
+      "Easy to understand",
+      "Highly replayable"
+    ],
+    "risks": [
+      "Can feel repetitive without variety",
+      "May become mindless without depth"
+    ],
+    "compatibility": [
+      "Power Fantasy",
+      "Collection Loop",
+      "Synergy Building"
+    ]
+  },
+  {
+    "name": "Nested Loop Architecture",
+    "category": "loop_structure",
+    "description": "Multiple loops operating at different timescales (moment/session/meta) creating layered engagement",
+    "coreElements": [
+      "Core loop (seconds)",
+      "Session loop (minutes)",
+      "Meta loop (hours/days)",
+      "Cross-loop rewards"
+    ],
+    "indicators": [
+      {
+        "term": "meta",
+        "weight": 4
+      },
+      {
+        "term": "session",
+        "weight": 3
+      },
+      {
+        "term": "run",
+        "weight": 3
+      },
+      {
+        "term": "permanent",
+        "weight": 4
+      },
+      {
+        "term": "unlock",
+        "weight": 3
+      },
+      {
+        "term": "progression",
+        "weight": 3
+      }
+    ],
+    "antiPatterns": [
+      "Loops don't connect",
+      "Meta-loop invalidates core loop",
+      "No reason to return"
+    ],
+    "examples": [
+      {
+        "game": "Hades",
+        "implementation": "Combat rooms (core) → Full escape attempt (session) → Story + permanent upgrades (meta)"
+      },
+      {
+        "game": "Dead Cells",
+        "implementation": "Enemy encounters (core) → Full run (session) → Cells + blueprints (meta)"
+      }
+    ],
+    "implementationGuide": [
+      "Each loop should feel complete on its own",
+      "Higher loops should enhance, not replace, lower loops",
+      "Meta rewards should affect core loop feel, not just numbers",
+      "Session boundaries should feel natural, not forced"
+    ],
+    "strengths": [
+      "Long-term engagement",
+      "Multiple satisfaction points",
+      "Reason to return"
+    ],
+    "risks": [
+      "Complex to balance",
+      "Meta can overshadow core",
+      "Overwhelming for new players"
+    ],
+    "compatibility": [
+      "Roguelike Persistence",
+      "Skill Expression",
+      "Collection Loop"
+    ]
+  },
+  {
+    "name": "Power Fantasy Escalation",
+    "category": "progression",
+    "description": "Player becomes increasingly powerful throughout a session, creating satisfying growth curves",
+    "coreElements": [
+      "Starting weak",
+      "Visible power growth",
+      "Peak power moment",
+      "Optional reset"
+    ],
+    "indicators": [
+      {
+        "term": "power",
+        "weight": 3
+      },
+      {
+        "term": "upgrade",
+        "weight": 4
+      },
+      {
+        "term": "evolution",
+        "weight": 4
+      },
+      {
+        "term": "level",
+        "weight": 2
+      },
+      {
+        "term": "scale",
+        "weight": 3
+      },
+      {
+        "term": "stronger",
+        "weight": 2
+      },
+      {
+        "term": "overpowered",
+        "weight": 3
+      }
+    ],
+    "antiPatterns": [
+      "Power plateaus too early",
+      "Enemies scale equally",
+      "No visible power difference"
+    ],
+    "examples": [
+      {
+        "game": "Vampire Survivors",
+        "implementation": "Start with 1 weapon → evolve to 6+ weapons → screen-filling destruction"
+      },
+      {
+        "game": "Risk of Rain 2",
+        "implementation": "Weak start → item stacking → god-mode with 50+ items"
+      }
+    ],
+    "implementationGuide": [
+      "Let players feel noticeably stronger every few minutes",
+      "Create \"wow\" moments where power becomes ridiculous",
+      "Visual clarity should grow with power",
+      "Audio should escalate with power"
+    ],
+    "strengths": [
+      "Highly satisfying",
+      "Clear feedback",
+      "Streamable moments"
+    ],
+    "risks": [
+      "Difficulty balancing",
+      "Early game may feel weak",
+      "End-game may feel trivial"
+    ],
+    "compatibility": [
+      "Synergy Building",
+      "Core Loop Trinity",
+      "Session Boundaries"
+    ]
+  },
+  {
+    "name": "Roguelike Persistence",
+    "category": "progression",
+    "description": "Permanent unlocks that persist between runs, giving meaning to every failure",
+    "coreElements": [
+      "Runs end (death/completion)",
+      "Currency/XP carries over",
+      "Unlock new content",
+      "Runs become easier/different"
+    ],
+    "indicators": [
+      {
+        "term": "permanent",
+        "weight": 4
+      },
+      {
+        "term": "unlock",
+        "weight": 4
+      },
+      {
+        "term": "persistent",
+        "weight": 4
+      },
+      {
+        "term": "meta",
+        "weight": 3
+      },
+      {
+        "term": "death",
+        "weight": 2
+      },
+      {
+        "term": "run",
+        "weight": 3
+      },
+      {
+        "term": "attempt",
+        "weight": 2
+      }
+    ],
+    "antiPatterns": [
+      "Nothing carries over",
+      "Unlocks don't matter",
+      "Grinding required"
+    ],
+    "examples": [
+      {
+        "game": "Hades",
+        "implementation": "Darkness crystals → Mirror upgrades → Fundamentally change playstyle"
+      },
+      {
+        "game": "Slay the Spire",
+        "implementation": "Complete runs → Unlock new cards → Expand deck possibilities"
+      }
+    ],
+    "implementationGuide": [
+      "Every run should unlock something meaningful",
+      "Early unlocks should change gameplay, not just boost numbers",
+      "Show progress toward next unlock during runs",
+      "Make \"just one more run\" compelling"
+    ],
+    "strengths": [
+      "Reduces frustration",
+      "Long-term goals",
+      "Encourages experimentation"
+    ],
+    "risks": [
+      "Can trivialize difficulty",
+      "Grind perception",
+      "New content dilutes pools"
+    ],
+    "compatibility": [
+      "Nested Loop Architecture",
+      "Build Diversity",
+      "Collection Loop"
+    ]
+  },
+  {
+    "name": "Synergy Building",
+    "category": "engagement",
+    "description": "Combining elements creates emergent, powerful combinations that reward experimentation",
+    "coreElements": [
+      "Individual elements have clear effects",
+      "Combinations multiply effects",
+      "Discovery is rewarding",
+      "Broken combos intentional"
+    ],
+    "indicators": [
+      {
+        "term": "synergy",
+        "weight": 5
+      },
+      {
+        "term": "combo",
+        "weight": 4
+      },
+      {
+        "term": "combine",
+        "weight": 3
+      },
+      {
+        "term": "build",
+        "weight": 3
+      },
+      {
+        "term": "multiply",
+        "weight": 3
+      },
+      {
+        "term": "stack",
+        "weight": 3
+      },
+      {
+        "term": "interact",
+        "weight": 2
+      }
+    ],
+    "antiPatterns": [
+      "Items don't combine",
+      "Linear scaling only",
+      "One optimal build"
+    ],
+    "examples": [
+      {
+        "game": "Balatro",
+        "implementation": "Jokers multiply each other → Millions in score from single hand"
+      },
+      {
+        "game": "Slay the Spire",
+        "implementation": "Strength + heavy blade + vulnerable → Massive single hits"
+      }
+    ],
+    "implementationGuide": [
+      "Design elements with combination in mind",
+      "Let some combos be intentionally overpowered",
+      "Make discovering synergies feel like player skill",
+      "Maintain build diversity - no single best combo"
+    ],
+    "strengths": [
+      "Depth without complexity",
+      "Experimentation rewarded",
+      "Streamable discoveries"
+    ],
+    "risks": [
+      "Balance nightmares",
+      "Information overload",
+      "Trap builds"
+    ],
+    "compatibility": [
+      "Power Fantasy",
+      "Build Diversity",
+      "Core Loop Trinity"
+    ]
+  }
+]

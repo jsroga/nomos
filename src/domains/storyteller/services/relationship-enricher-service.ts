@@ -20,6 +20,7 @@ import {
 } from '@/domains/storyteller/services/constants/relationship-enricher'
 import { InferredRelationshipType } from '@/domains/storyteller/services/constants/entity-graph-wire'
 import { recordFromJson } from '@/shared/data/deep-merge'
+import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import { StorytellerAnswerSeparator, StorytellerTextSeparator } from '@/domains/storyteller/core/storyteller-page-wire'
 import { EntityType } from './entity-registry-service'
 import { entityGraphService } from './entity-graph-service'
@@ -129,7 +130,7 @@ class RelationshipEnricherService {
         return this.createBasicEnriched(entityId, entityType, entityName, baseDescription)
       }
 
-      const storyPlan = recordFromJson(project.storyPlan)
+      const storyPlan = parseStoryPlanRecord(project.storyPlan)
       // `cast` is not a projects column — legacy rows may still carry it under
       // an untyped key, so read it through a record view and validate.
       const cast = parseJsonArray(recordFromJson(project).cast, characterDataSchema)

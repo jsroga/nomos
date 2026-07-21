@@ -1,4 +1,5 @@
 import { useWorldStore } from '../useWorldStore'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import type { Tile } from '../../core/world-types'
 import { TILE_COORD_SEPARATOR } from '../../ui/constants/tile-stage-labels'
 import { postRepaint } from '../../core/io/repaint.api'
@@ -41,7 +42,8 @@ export class RepaintService {
   async applyRepaint(result: RepaintResult): Promise<void> {
     console.log(RepaintServiceLog.ApplyingRepaint, result.bounds)
 
-    const { addTile, tiles, currentProject } = useWorldStore.getState()
+    const { addTile, tiles } = useWorldStore.getState()
+    const currentProject = useWorkspaceProjectStore.getState().currentProject
     if (!currentProject) throw new Error(RepaintServiceError.NoProjectSelected)
 
     const { minTileX, maxTileX, minTileY, maxTileY } = getTileRangeForBounds(
@@ -115,7 +117,7 @@ export class RepaintService {
     prompt?: string,
     styleReferenceUrls?: string[]
   ): Promise<RepaintResult> {
-    const { currentProject } = useWorldStore.getState()
+    const currentProject = useWorkspaceProjectStore.getState().currentProject
     if (!currentProject) throw new Error(RepaintServiceError.NoProjectSelected)
 
     console.log(RepaintServiceLog.UsingStyleReferences, styleReferenceUrls)

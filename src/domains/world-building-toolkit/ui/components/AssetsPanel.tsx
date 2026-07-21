@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { getSupabaseClient } from '@/shared/data/storage/supabaseClient'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 import { UrlScheme } from '@/shared/data/constants/protocol'
@@ -23,7 +24,7 @@ interface AssetsPanelProps {
 }
 
 export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true, onSelectAsset }) => {
-  const currentProject = useWorldStore(state => state.currentProject)
+  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
   const assets = useWorldStore(state => state.assets)
   const removeAsset = useWorldStore(state => state.removeAsset)
   const previewAssetId = useWorldStore(state => state.previewAssetId)

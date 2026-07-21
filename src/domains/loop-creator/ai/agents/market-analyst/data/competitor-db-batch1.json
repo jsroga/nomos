@@ -1,0 +1,254 @@
+[
+  {
+    "name": "Vampire Survivors",
+    "genre": "survivors-like",
+    "platform": [
+      "PC",
+      "Mobile",
+      "Console"
+    ],
+    "playerCount": "10M+ owners",
+    "similarityScore": 0,
+    "strengths": [
+      "One-button gameplay",
+      "Instant dopamine hits",
+      "$3 price point",
+      "Content drip strategy"
+    ],
+    "weaknesses": [
+      "30min ceiling per run",
+      "Limited strategic depth",
+      "Copycat vulnerability"
+    ],
+    "marketPosition": "Genre creator & market leader",
+    "revenue": "$30M+ lifetime",
+    "pricePoint": "$2.99-$4.99",
+    "monetization": [
+      "Premium",
+      "DLC expansions"
+    ],
+    "launchYear": 2022,
+    "coreLoopDuration": "30 seconds - kill enemies → collect gems → level up → choose upgrade",
+    "sessionLoopDuration": "15-30 minutes - survive waves → unlock new character/weapon → retry",
+    "metaLoopDescription": "Unlock progression - each run unlocks new content for future runs",
+    "successFactors": [
+      "Removed all friction - no aiming, no complex controls",
+      "Constant reward feedback every 5-10 seconds",
+      "Low price removes purchase hesitation",
+      "Streamable - viewers can follow along easily"
+    ],
+    "innovationPoints": [
+      "Inverted bullet-hell - player IS the bullet hell",
+      "Auto-attack removed skill floor entirely",
+      "Build synergies emerge from simple choices"
+    ],
+    "targetEmotions": [
+      "Power fantasy",
+      "Flow state",
+      "Discovery joy",
+      "Achievement"
+    ],
+    "marketShare": "60% of survivors-like genre",
+    "growthTrajectory": "stable",
+    "communitySize": "500K+ Discord, active modding",
+    "updateFrequency": "Major update every 2-3 months",
+    "designLessons": [
+      "Simplify input to maximize accessibility",
+      "Constant small rewards > rare big rewards",
+      "Content unlocks create \"one more run\" loop",
+      "Price low, sell volume"
+    ],
+    "avoidMistakes": [
+      "Dont add complexity to chase hardcore players",
+      "Avoid long runs that prevent quick sessions"
+    ]
+  },
+  {
+    "name": "Hades",
+    "genre": "action-roguelike",
+    "platform": [
+      "PC",
+      "Console",
+      "Mobile"
+    ],
+    "playerCount": "5M+ owners",
+    "similarityScore": 0,
+    "strengths": [
+      "Narrative-roguelike fusion",
+      "AAA indie polish",
+      "Character relationships",
+      "Combat feel"
+    ],
+    "weaknesses": [
+      "High production cost",
+      "2-year dev cycle",
+      "Difficult to replicate quality"
+    ],
+    "marketPosition": "Premium narrative roguelike benchmark",
+    "revenue": "$100M+ lifetime",
+    "pricePoint": "$24.99",
+    "monetization": [
+      "Premium only"
+    ],
+    "launchYear": 2020,
+    "coreLoopDuration": "2-3 minutes - clear room → choose boon → manage resources",
+    "sessionLoopDuration": "20-45 minutes - full run attempt → story progression → unlock permanent upgrades",
+    "metaLoopDescription": "Story unfolds through death - each death advances relationships and narrative",
+    "successFactors": [
+      "Death IS the story mechanic - failure feels purposeful",
+      "Every NPC remembers your actions between runs",
+      "Boon combinations create emergent builds",
+      "Voice acting for everything creates immersion"
+    ],
+    "innovationPoints": [
+      "Roguelike that makes death feel good narratively",
+      "Relationship system persists across runs",
+      "Early Access built community before launch"
+    ],
+    "targetEmotions": [
+      "Mastery",
+      "Narrative curiosity",
+      "Character attachment",
+      "Stylish combat"
+    ],
+    "marketShare": "25% of premium action roguelikes",
+    "growthTrajectory": "stable",
+    "communitySize": "300K+ Discord",
+    "updateFrequency": "Complete game, sequel in development",
+    "designLessons": [
+      "Narrative can justify roguelike structure",
+      "Polish > content volume for premium pricing",
+      "Every system should reinforce the core fantasy",
+      "Early Access builds superfans"
+    ],
+    "avoidMistakes": [
+      "Dont launch without narrative justification for loops",
+      "Voice acting is expensive - budget carefully"
+    ]
+  },
+  {
+    "name": "Slay the Spire",
+    "genre": "deck-builder roguelike",
+    "platform": [
+      "PC",
+      "Console",
+      "Mobile"
+    ],
+    "playerCount": "4M+ owners",
+    "similarityScore": 0,
+    "strengths": [
+      "Infinite replayability",
+      "Modding ecosystem",
+      "Streaming appeal",
+      "Strategic depth"
+    ],
+    "weaknesses": [
+      "Steep learning curve",
+      "Analysis paralysis risk",
+      "Visual simplicity"
+    ],
+    "marketPosition": "Genre-defining deck roguelike",
+    "revenue": "$60M+ lifetime",
+    "pricePoint": "$24.99",
+    "monetization": [
+      "Premium",
+      "No DLC model"
+    ],
+    "launchYear": 2019,
+    "coreLoopDuration": "1-2 minutes - draw cards → play cards → resolve combat → choose reward",
+    "sessionLoopDuration": "45-90 minutes - climb spire → adapt deck to encounters → boss fights",
+    "metaLoopDescription": "Ascension climbing - beat game to unlock harder modifiers, master each character",
+    "successFactors": [
+      "Perfect information - no hidden RNG in combat",
+      "Every card choice matters to final build",
+      "Relics create unique run identities",
+      "Mods extended lifespan by years"
+    ],
+    "innovationPoints": [
+      "Combined two genres (CCG + roguelike) perfectly",
+      "Removed deck-builder acquisition phase tedium",
+      "Maps give strategic route planning"
+    ],
+    "targetEmotions": [
+      "Intellectual satisfaction",
+      "Optimization pleasure",
+      "Strategic mastery"
+    ],
+    "marketShare": "40% of deck roguelikes",
+    "growthTrajectory": "stable",
+    "communitySize": "Huge modding community, active speedrun scene",
+    "updateFrequency": "Complete game, spiritual successors (Balatro)",
+    "designLessons": [
+      "Genre fusion can create new categories",
+      "Let players see all information to feel smart",
+      "Modding support = infinite content",
+      "Characters should play fundamentally differently"
+    ],
+    "avoidMistakes": [
+      "Dont hide information players need to make decisions",
+      "Avoid power creep in card additions"
+    ]
+  },
+  {
+    "name": "Balatro",
+    "genre": "poker roguelike",
+    "platform": [
+      "PC",
+      "Console",
+      "Mobile"
+    ],
+    "playerCount": "2.5M+ owners (6 months)",
+    "similarityScore": 0,
+    "strengths": [
+      "Fresh concept",
+      "Deep scoring system",
+      "Universal poker familiarity",
+      "Viral appeal"
+    ],
+    "weaknesses": [
+      "Niche theme initially",
+      "Math-heavy",
+      "Gambling imagery concerns"
+    ],
+    "marketPosition": "Breakout 2024 indie hit",
+    "revenue": "$50M+ in 6 months",
+    "pricePoint": "$14.99",
+    "monetization": [
+      "Premium only"
+    ],
+    "launchYear": 2024,
+    "coreLoopDuration": "30 seconds - play poker hand → apply joker modifiers → score points → buy upgrades",
+    "sessionLoopDuration": "30-60 minutes - beat blinds → acquire jokers → scale into absurd numbers",
+    "metaLoopDescription": "Unlock new jokers, decks, and modifiers by completing challenges",
+    "successFactors": [
+      "Leveraged universal poker knowledge - zero tutorial needed",
+      "Big numbers are inherently satisfying",
+      "Joker synergies create \"broken\" combos intentionally",
+      "Perfect for content creators - dramatic big hands"
+    ],
+    "innovationPoints": [
+      "Made poker single-player and strategic",
+      "Scoring system creates exponential growth",
+      "Familiar game with completely new depth"
+    ],
+    "targetEmotions": [
+      "Eureka moments",
+      "Number go up satisfaction",
+      "Combo discovery"
+    ],
+    "marketShare": "Created new micro-genre",
+    "growthTrajectory": "explosive",
+    "communitySize": "Rapidly growing, meme culture",
+    "updateFrequency": "Active development, frequent patches",
+    "designLessons": [
+      "Use familiar systems (poker) to reduce onboarding",
+      "Let players feel clever by finding combos",
+      "Exponential scaling is inherently satisfying",
+      "Embrace \"broken\" interactions - they create moments"
+    ],
+    "avoidMistakes": [
+      "Dont balance away the fun - broken combos are the point",
+      "Avoid overcomplicating familiar base mechanics"
+    ]
+  }
+]

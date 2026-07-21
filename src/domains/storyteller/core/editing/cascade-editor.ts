@@ -12,6 +12,7 @@ import {
   AppliedFix,
 } from '@/domains/storyteller/core/types/consistency-types'
 import { recordArrayFromJson, recordFromJson, readString } from '@/shared/data/json-guards'
+import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import {
   fetchStorytellerBible,
   fetchStorytellerEpisode,
@@ -140,7 +141,7 @@ async function updateEpisode(
 
 async function updateWorldRules(changes: ConsistencyChange[], projectId: string): Promise<void> {
   const response = await fetchStorytellerBible(projectId)
-  const bible = recordFromJson(response.bible ?? response.seriesBible ?? response)
+  const bible = parseSeriesBibleRecord(response.bible ?? response.seriesBible ?? response)
   const updated = applyChangesToObject(bible, changes)
   await saveStorytellerBible({ projectId, bible: updated })
 }

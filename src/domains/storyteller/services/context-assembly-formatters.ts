@@ -9,7 +9,13 @@ import { Phase, type PhaseId } from '@/domains/storyteller/core/types/enums'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { ContextAssemblyFallback } from '@/domains/storyteller/services/constants/context-assembly'
 import { BibleCategoryKey } from '@/shared/data/constants/protocol'
-import type { Character, ProjectMeta, StoryPlan } from './context-assembly-parsers'
+import {
+  namedRecordsFromJson,
+  readString,
+  recordArrayFromJson,
+  recordFromJson,
+} from '@/shared/data/json-guards'
+import type { Character, ProjectMeta } from './context-assembly-parsers'
 
 type BeatRow = typeof beats.$inferSelect
 
@@ -18,9 +24,91 @@ function slugId(prefix: string, id: string | undefined, name: string): string {
   return `${prefix}-${suffix}`
 }
 
-export function formatFactionsBlock(factions: StoryPlan['factions']): string {
-  if (!factions || factions.length === 0) return ContextAssemblyFallback.None
-  return factions
+interface ParsedWorldRule {
+  id?: string
+  category: string
+  rule: string
+  consequence: string
+}
+
+interface ParsedFaction {
+  id?: string
+  name: string
+  ideology: string
+  description: string
+}
+
+interface ParsedNamedEntity {
+  id?: string
+  name: string
+  description: string
+}
+
+interface ParsedSequence {
+  name: string
+  description: string
+}
+
+function factionsFromUnknown(value: unknown): ParsedFaction[] {
+  return namedRecordsFromJson(value).map(row => ({
+    id: readString(row.id),
+    name: row.name,
+    ideology: readString(row.ideology) ?? '',
+    description: readString(row.description) ?? '',
+    goals: [],
+    resources: '',
+  }))
+}
+
+function namedEntitiesFromUnknown(value: unknown): ParsedNamedEntity[] {
+  return namedRecordsFromJson(value).map(row => ({
+    id: readString(row.id),
+    name: row.name,
+    description: readString(row.description) ?? '',
+  }))
+}
+
+function worldRulesFromUnknown(value: unknown): ParsedWorldRule[] {
+  return recordArrayFromJson(value).flatMap(row => {
+    const rule = readString(row.rule)
+    if (!rule) return []
+    return [{
+      id: readString(row.id),
+      category: readString(row.category) ?? BibleCategoryKey.General,
+      rule,
+      consequence: readString(row.consequence) ?? '',
+    }]
+  })
+}
+
+function sequencesFromUnknown(value: unknown): ParsedSequence[] {
+  return namedRecordsFromJson(value).map(row => ({
+    name: row.name,
+    description: readString(row.description) ?? '',
+  }))
+}
+
+function inspirationsFromUnknown(value: unknown): {
+  movies: string[]
+  books: string[]
+  games: string[]
+} {
+  const inspirations = recordFromJson(value)
+  const titleFromItem = (item: unknown): string => {
+    if (typeof item === 'string') return item
+    return readString(recordFromJson(item).title) ?? ContextAssemblyFallback.NoneLabel
+  }
+  return {
+    movies: recordArrayFromJson(inspirations.movies).map(titleFromItem),
+    books: recordArrayFromJson(inspirations.books).map(titleFromItem),
+    games: recordArrayFromJson(inspirations.games).map(titleFromItem),
+  }
+}
+
+export function formatFactionsBlock(factions: unknown): string {
+  const rows = factionsFromUnknown(factions)
+  if (rows.length === 0) return ContextAssemblyFallback.None
+  return rows
     .map(f => {
       const factionId = slugId(EntityRefPrefix.Faction, f.id, f.name)
       return `- [${f.name}][${factionId}]: ${f.ideology || f.description || ContextAssemblyFallback.NoDescription}`
@@ -28,9 +116,10 @@ export function formatFactionsBlock(factions: StoryPlan['factions']): string {
     .join('\n')
 }
 
-export function formatNamedRefBlock(rows: StoryPlan['items'], prefix: EntityRefPrefix): string {
-  if (!rows || rows.length === 0) return ContextAssemblyFallback.None
-  return rows
+export function formatNamedRefBlock(rows: unknown, prefix: EntityRefPrefix): string {
+  const parsedRows = namedEntitiesFromUnknown(rows)
+  if (parsedRows.length === 0) return ContextAssemblyFallback.None
+  return parsedRows
     .map(x => {
       const refId = slugId(prefix, x.id, x.name)
       return `- [${x.name}][${refId}]: ${x.description || ContextAssemblyFallback.NoDescription}`
@@ -38,19 +127,25 @@ export function formatNamedRefBlock(rows: StoryPlan['items'], prefix: EntityRefP
     .join('\n')
 }
 
-export function formatWorldRulesLinkedBlock(rules: StoryPlan['worldRules']): string {
-  if (!rules || rules.length === 0) return ContextAssemblyFallback.None
-  return rules
+export function formatWorldRulesLinkedBlock(rules: unknown): string {
+  const parsedRules = worldRulesFromUnknown(rules)
+  if (parsedRules.length === 0) return ContextAssemblyFallback.None
+  return parsedRules
     .map(r => {
-      const ruleId = slugId(EntityRefPrefix.Rule, r.id, r.name ?? r.category ?? StoryEntityType.Rule)
-      return `- [${r.name || r.category || ContextAssemblyFallback.RuleLabel}][${ruleId}]: ${r.rule || ContextAssemblyFallback.NoDescription}`
+      const ruleId = slugId(
+        EntityRefPrefix.Rule,
+        r.id,
+        r.category || StoryEntityType.Rule,
+      )
+      return `- [${r.category || ContextAssemblyFallback.RuleLabel}][${ruleId}]: ${r.rule || ContextAssemblyFallback.NoDescription}`
     })
     .join('\n')
 }
 
-export function formatWorldRulesPlainBlock(rules: StoryPlan['worldRules']): string {
-  if (!rules || rules.length === 0) return ContextAssemblyFallback.None
-  return rules
+export function formatWorldRulesPlainBlock(rules: unknown): string {
+  const parsedRules = worldRulesFromUnknown(rules)
+  if (parsedRules.length === 0) return ContextAssemblyFallback.None
+  return parsedRules
     .map(
       r =>
         `- [${r.category || BibleCategoryKey.General}] ${r.rule}${r.consequence ? ` → ${r.consequence}` : ''}`
@@ -58,18 +153,20 @@ export function formatWorldRulesPlainBlock(rules: StoryPlan['worldRules']): stri
     .join('\n')
 }
 
-export function formatInspirationsBlock(inspirations: StoryPlan['inspirations']): string {
-  if (!inspirations) return ContextAssemblyFallback.None
+export function formatInspirationsBlock(inspirations: unknown): string {
+  if (inspirations === null || inspirations === undefined) return ContextAssemblyFallback.None
+  const parsed = inspirationsFromUnknown(inspirations)
   const sep = StorytellerAnswerSeparator.CommaSpace
-  const movies = inspirations.movies?.join(sep) || ContextAssemblyFallback.NoneLabel
-  const books = inspirations.books?.join(sep) || ContextAssemblyFallback.NoneLabel
-  const games = inspirations.games?.join(sep) || ContextAssemblyFallback.NoneLabel
+  const movies = parsed.movies.join(sep) || ContextAssemblyFallback.NoneLabel
+  const books = parsed.books.join(sep) || ContextAssemblyFallback.NoneLabel
+  const games = parsed.games.join(sep) || ContextAssemblyFallback.NoneLabel
   return `Movies: ${movies} | Books: ${books} | Games: ${games}`
 }
 
-export function formatSequencesBlock(sequences: StoryPlan['sequences']): string {
-  if (!sequences || sequences.length === 0) return ContextAssemblyFallback.None
-  return sequences.map((s, i) => `${i + 1}. ${s.name}: ${s.description || ''}`).join('\n')
+export function formatSequencesBlock(sequences: unknown): string {
+  const parsedSequences = sequencesFromUnknown(sequences)
+  if (parsedSequences.length === 0) return ContextAssemblyFallback.None
+  return parsedSequences.map((s, i) => `${i + 1}. ${s.name}: ${s.description || ''}`).join('\n')
 }
 
 export function formatCharactersBlock(sortedChars: Character[]): string {
@@ -132,7 +229,7 @@ ${masterPrompt ? `\n=== MASTER PROMPT ===\n${masterPrompt}` : ''}
 export function buildProjectContextBlock(params: {
   projectName: string | undefined
   meta: ProjectMeta
-  storyPlan: StoryPlan
+  storyPlan: Record<string, unknown>
   bible: Record<string, unknown>
 }): string {
   const { projectName, meta, storyPlan, bible } = params
@@ -145,7 +242,7 @@ Title: ${projectName || StorytellerDefaultTitle.Untitled} | Genre: ${genre} | To
 ${Object.keys(premise).length > 0 ? JSON.stringify(premise) : ContextAssemblyFallback.NoEpisodePremise}
 
 === WORLD ===
-${storyPlan.worldDescription || readString(bible.worldDescription) || ContextAssemblyFallback.NoWorldDescription}
+${readString(storyPlan.worldDescription) || readString(bible.worldDescription) || ContextAssemblyFallback.NoWorldDescription}
 
 === WORLD RULES ===
 ${formatWorldRulesPlainBlock(storyPlan.worldRules)}
@@ -168,5 +265,3 @@ ${formatInspirationsBlock(storyPlan.inspirations)}
 === SEQUENCES ===
 ${formatSequencesBlock(storyPlan.sequences)}`
 }
-
-import { readString } from '@/shared/data/json-guards'

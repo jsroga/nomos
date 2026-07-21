@@ -220,38 +220,3 @@ export interface MarketAnalysisReport {
   sourcesUsed: string[]
   confidence: number // 0-1 overall confidence
 }
-
-/**
- * Agent state for tracking research progress
- */
-export interface MarketAnalystState {
-  // Research progress flags
-  hasSearchedWeb: boolean
-  hasSteamData: boolean
-  hasGameDbData: boolean
-  hasPatternMatches: boolean
-  hasReferenceScores: boolean
-  hasMarketSize: boolean
-  hasAudienceAnalysis: boolean
-  hasCompetitorData: boolean
-  hasTrendData: boolean
-  hasGeneratedReport: boolean
-
-  // Collected data
-  webResults: WebSearchResult[]
-  steamData: SteamChartsData[]
-  gameDbEntries: GameDatabaseEntry[]
-  patternMatches: PatternMatch[]
-  referenceScores: Partial<ReferenceGameScores>
-  marketSize: MarketSizeData | null
-  audienceFit: AudienceFitData | null
-  competitors: CompetitorData[]
-  trends: TrendData[]
-
-  // Final report
-  report: MarketAnalysisReport | null
-
-  // Iteration tracking
-  iterationCount: number
-  maxIterations: number
-}

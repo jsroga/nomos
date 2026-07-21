@@ -1,0 +1,123 @@
+[
+  {
+    "genre": "Roguelike/Roguelite",
+    "totalPlayers": 180000,
+    "topGames": [
+      "Hades",
+      "Vampire Survivors",
+      "Slay the Spire",
+      "Dead Cells",
+      "Balatro"
+    ],
+    "growthRate": "+23% YoY",
+    "marketShare": 4.5,
+    "trending": true,
+    "recentReleases": [
+      "Balatro",
+      "Halls of Torment",
+      "Balatro DLC"
+    ]
+  },
+  {
+    "genre": "Competitive FPS",
+    "totalPlayers": 2500000,
+    "topGames": [
+      "Counter-Strike 2",
+      "Valorant",
+      "Apex Legends",
+      "Overwatch 2"
+    ],
+    "growthRate": "+5% YoY",
+    "marketShare": 18.2,
+    "trending": false,
+    "recentReleases": [
+      "The Finals",
+      "XDefiant"
+    ]
+  },
+  {
+    "genre": "Extraction Shooter",
+    "totalPlayers": 250000,
+    "topGames": [
+      "Escape from Tarkov",
+      "Dark and Darker",
+      "Hunt: Showdown",
+      "The Cycle: Frontier"
+    ],
+    "growthRate": "+47% YoY",
+    "marketShare": 2.8,
+    "trending": true,
+    "recentReleases": [
+      "Arena Breakout: Infinite",
+      "Gray Zone Warfare"
+    ]
+  },
+  {
+    "genre": "Narrative RPG/CRPG",
+    "totalPlayers": 180000,
+    "topGames": [
+      "Baldur's Gate 3",
+      "Disco Elysium",
+      "Pathfinder",
+      "Pillars of Eternity"
+    ],
+    "growthRate": "+15% YoY",
+    "marketShare": 3.2,
+    "trending": true,
+    "recentReleases": [
+      "Baldur's Gate 3 Mods",
+      "Solasta Updates"
+    ]
+  },
+  {
+    "genre": "Survivors-like",
+    "totalPlayers": 95000,
+    "topGames": [
+      "Vampire Survivors",
+      "Balatro",
+      "Halls of Torment",
+      "20 Minutes Till Dawn"
+    ],
+    "growthRate": "+35% YoY",
+    "marketShare": 1.5,
+    "trending": true,
+    "recentReleases": [
+      "Deep Rock Galactic: Survivor",
+      "Soulstone Survivors"
+    ]
+  },
+  {
+    "genre": "Cozy/Farming Sim",
+    "totalPlayers": 120000,
+    "topGames": [
+      "Stardew Valley",
+      "Spiritfarer",
+      "My Time at Sandrock",
+      "Sun Haven"
+    ],
+    "growthRate": "+28% YoY",
+    "marketShare": 2.1,
+    "trending": true,
+    "recentReleases": [
+      "Fields of Mistria",
+      "Coral Island 1.0"
+    ]
+  },
+  {
+    "genre": "Horror Co-op",
+    "totalPlayers": 150000,
+    "topGames": [
+      "Lethal Company",
+      "Phasmophobia",
+      "Content Warning",
+      "Devour"
+    ],
+    "growthRate": "+65% YoY",
+    "marketShare": 1.8,
+    "trending": true,
+    "recentReleases": [
+      "Content Warning",
+      "Buckshot Roulette"
+    ]
+  }
+]

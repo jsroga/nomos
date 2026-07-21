@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { SettingsDialog } from '@/domains/world-building-toolkit/ui/components/SettingsDialog'
@@ -12,7 +12,7 @@ import { TroubleshootIndicator } from '@/components/shell/TroubleshootIndicator'
 import { LiquidBackgroundProvider } from '@/domains/marketing'
 
 export function GlobalHeader() {
-  const currentProject = useWorldStore(state => state.currentProject)
+  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   return (

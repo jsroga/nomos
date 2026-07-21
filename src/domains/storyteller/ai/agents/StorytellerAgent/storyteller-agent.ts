@@ -1,8 +1,7 @@
 /**
  * StorytellerAgent - Mastra Implementation
  *
- * Core agent for story writing, extending ExecutiveAgent with
- * specialized storyteller tools and prompts.
+ * Core Mastra agent for story writing with specialized storyteller tools and prompts.
  *
  * Uses Mastra Memory for multi-turn conversation context.
  * See: https://mastra.ai/docs/agents/agent-memory

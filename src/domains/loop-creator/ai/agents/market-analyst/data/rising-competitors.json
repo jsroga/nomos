@@ -1,0 +1,81 @@
+[
+  {
+    "game": "Balatro",
+    "genre": [
+      "Roguelike",
+      "Deckbuilder",
+      "Poker"
+    ],
+    "momentumScore": 95,
+    "reason": "Genre innovation through unexpected mashup (poker + roguelike)",
+    "lessonsToLearn": [
+      "Simple concept, deep execution",
+      "$15 price point worked perfectly",
+      "Memeable mechanics drive discovery"
+    ],
+    "differentiators": [
+      "No combat",
+      "Poker framework",
+      "Maximalist visual style"
+    ]
+  },
+  {
+    "game": "Lethal Company",
+    "genre": [
+      "Horror",
+      "Co-op",
+      "Social"
+    ],
+    "momentumScore": 88,
+    "reason": "Streamability + emergent chaos = viral growth",
+    "lessonsToLearn": [
+      "Built for streaming from day 1",
+      "Solo dev proved small teams can win",
+      "$10 price removed friction"
+    ],
+    "differentiators": [
+      "Lo-fi aesthetic",
+      "Emergent horror",
+      "Budget price"
+    ]
+  },
+  {
+    "game": "Content Warning",
+    "genre": [
+      "Horror",
+      "Co-op",
+      "Content Creation"
+    ],
+    "momentumScore": 85,
+    "reason": "Content-creation as gameplay loop",
+    "lessonsToLearn": [
+      "Meta-commentary on streaming culture",
+      "$8 price point enabled impulse buys",
+      "Viral clips are built-in marketing"
+    ],
+    "differentiators": [
+      "Players make content",
+      "Self-referential design",
+      "Extreme budget price"
+    ]
+  },
+  {
+    "game": "Gray Zone Warfare",
+    "genre": [
+      "Extraction Shooter",
+      "Military Sim"
+    ],
+    "momentumScore": 75,
+    "reason": "Tarkov-like with AAA polish",
+    "lessonsToLearn": [
+      "Genre is hungry for alternatives",
+      "Early access momentum is critical",
+      "Military sim audience is underserved"
+    ],
+    "differentiators": [
+      "Unreal Engine 5 visuals",
+      "Larger scale",
+      "PvE focus options"
+    ]
+  }
+]

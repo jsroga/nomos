@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { upscaleService } from '@/domains/world-building-toolkit/state/client-services/upscale-service'
 import { settingsApi } from '@/domains/world-building-toolkit/core/io/settings.api'
 import { uploadTileBase64 } from '@/domains/world-building-toolkit/core/io/world-data.api'
@@ -28,7 +29,7 @@ import { generateSingleWorldTile } from './generate-single-world-tile'
 export function useWorldGenSidebar() {
   const defaultMasterPrompt = ''
 
-  const currentProject = useWorldStore(state => state.currentProject)
+  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
   const assets = useWorldStore(state => state.assets)
   const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
   const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
