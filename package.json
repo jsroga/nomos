@@ -140,6 +140,7 @@
     "dev:turbo": "next dev --turbo -p 4000",
     "eval": "npx tsx evals/run.ts",
     "eval:ideas": "npx tsx evals/run.ts --dataset=idea-diversity",
+    "test:smoke:openrouter": "RUN_OPENROUTER_SMOKE=1 npx vitest run src/domains/__tests__/openrouter-smoke.test.ts",
     "eval:dashboard": "npx tsx evals/report/generate.ts && open evals/reports/latest.html",
     "test:unit": "vitest run",
     "test:e2e": "npx tsx scripts/run-e2e.ts",
