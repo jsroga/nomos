@@ -1,5 +1,12 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// Reporter ids / output path (Track A3 admin Tests dashboard reads the JSON).
+const REPORTER_HTML = 'html'
+const REPORTER_JSON = 'json'
+const REPORTER_LIST = 'list'
+const JSON_OUTPUT_FILE = 'test-results/results.json'
+const HTML_OUTPUT_FOLDER = 'playwright-report'
+
 /**
  * Playwright Configuration for Swiss Army Knife E2E Tests
  */
@@ -23,8 +30,12 @@ export default defineConfig({
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
 
-  // Reporter
-  reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
+  // Reporter — HTML for humans, JSON for the admin Tests dashboard (Track A3).
+  reporter: [
+    [REPORTER_HTML, { outputFolder: HTML_OUTPUT_FOLDER }],
+    [REPORTER_JSON, { outputFile: JSON_OUTPUT_FILE }],
+    [REPORTER_LIST],
+  ],
 
   // Shared settings for all projects
   use: {

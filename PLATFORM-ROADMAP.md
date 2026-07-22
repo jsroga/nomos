@@ -59,7 +59,7 @@ Bootstrap: `npx shadcn@latest init` then `npx shadcn@latest add sidebar-01 dashb
 - `/api/admin/modules` GET/PUT (admin-gated) + a `getModuleConfig(moduleKey)` cache (mirror `model-settings`).
 - UI: TanStack data-table of modules (loop-creator, world-building, storyteller-corkboard, character-web…) with enable toggles + per-module model slot + canvas placement (dnd-kit).
 
-**A3 — Tests / Playwright dashboard** ⬜ (future)
+**A3 — Tests / Playwright dashboard** ◐ built (json reporter -> test-results/results.json; /api/admin/tests reads+parses it; /admin/tests KPI cards + per-spec table; parser unit-tested. UI-triggered runs + trend charts still todo)
 - Playwright already present (`@playwright/test`, `scripts/run-e2e.ts`). Add the **JSON reporter** (`--reporter=json,html`) writing `test-results/results.json`.
 - `/api/admin/tests` reads the latest JSON (+ history) → shadcn data-table + Tremor pass/fail trend charts.
 - Trigger runs from the UI via a server action that spawns `npm run test:e2e` (guard behind admin + a queue); stream logs to the panel.

@@ -30,7 +30,7 @@ export const FIRST_PARTY_ADMIN_PLUGINS: readonly AdminPlugin[] = [
     label: 'Tests',
     mount: AdminPluginMount.AdminSection,
     path: `${ADMIN_BASE}/tests`,
-    ready: false,
+    ready: true,
     order: 2,
   },
   {
