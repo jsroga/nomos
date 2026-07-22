@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
 import { getCanvasModules } from '@/shared/canvas/module-registry'
+import { loadModuleSettings, isModuleEnabled } from '@/shared/canvas/module-settings'
 
 const ASSISTANT_PAGE_TITLE = 'Assistant (preview)'
 const ASSISTANT_ROUTE = '/assistant'
@@ -23,7 +24,9 @@ interface AssistantPageProps {
  */
 export default async function AssistantPreviewPage({ searchParams }: AssistantPageProps) {
   const { module: selectedKey } = await searchParams
-  const modules = getCanvasModules().filter(m => m.chatAgentId)
+  // Respect the admin module_settings enable toggles (Track A2 → C).
+  await loadModuleSettings()
+  const modules = getCanvasModules().filter(m => m.chatAgentId && isModuleEnabled(m.key))
   const active = modules.find(m => m.key === selectedKey) ?? modules[0]
 
   return (
