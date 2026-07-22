@@ -32,7 +32,7 @@ import {
   patchStorytellerEpisode,
   fetchStorytellerProjectOptional,
 } from '@/domains/storyteller/core/io/storyteller.api'
-import { BrowserStorageEventName } from '@/shared/chat/ui/constants/chat-interface'
+import { BrowserStorageEventName } from '@/shared/chat/core/constants/chat-interface'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 
 export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {

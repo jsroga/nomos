@@ -7,7 +7,7 @@ import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
   CHAT_EVAL_FAILED_ERROR,
   LlmJudgeRole,
-} from '@/shared/chat/ui/constants/chat-interface'
+} from '@/shared/chat/core/constants/chat-interface'
 
 interface ConversationMessage {
   role: LlmJudgeRole

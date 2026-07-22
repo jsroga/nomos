@@ -1,6 +1,6 @@
 /** Agent trigger prompts for useStorytellerAgents. */
 
-import { SmartQuickActionPrompt } from '@/shared/chat/ui/constants/quick-actions'
+import { SmartQuickActionPrompt } from '@/shared/chat/core/constants/quick-actions'
 
 // const map (not an enum): GenerateEpisodePremiseUser references another enum,
 // which a string enum member may not do (prefer-literal-enum-member).
