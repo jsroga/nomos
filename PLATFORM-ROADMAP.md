@@ -54,7 +54,7 @@ Bootstrap: `npx shadcn@latest init` then `npx shadcn@latest add sidebar-01 dashb
 - Move `ModelSettingsAdmin` into `/admin` as a section; delete the standalone `/admin/models` route.
 - Add a free-text OpenRouter id field (beyond the curated list) + a "test this model" button (calls the smoke path server-side).
 
-**A2 — Modules section** ⬜ (enables canvas module setup — Track C)
+**A2 — Modules section** ◐ built (module_settings table+RLS migration, getModuleConfig cache, /api/admin/modules GET/PUT, ModuleSettingsAdmin UI at /admin/modules; dnd-kit placement is a text slot for now; MIGRATION NOT YET APPLIED to hosted DB)
 - `module_settings` table (Supabase): `{ module_key, enabled, config jsonb, canvas_slot, updated_by, updated_at }` + RLS (authenticated read, admin write).
 - `/api/admin/modules` GET/PUT (admin-gated) + a `getModuleConfig(moduleKey)` cache (mirror `model-settings`).
 - UI: TanStack data-table of modules (loop-creator, world-building, storyteller-corkboard, character-web…) with enable toggles + per-module model slot + canvas placement (dnd-kit).

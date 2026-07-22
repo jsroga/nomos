@@ -337,3 +337,12 @@ export const modelSettings = pgTable('model_settings', {
   updatedBy: uuid('updated_by'),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
+
+export const moduleSettings = pgTable('module_settings', {
+  moduleKey: text('module_key').primaryKey(),
+  enabled: boolean('enabled').default(true).notNull(),
+  canvasSlot: text('canvas_slot'),
+  config: jsonb('config').notNull().default({}),
+  updatedBy: uuid('updated_by'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})

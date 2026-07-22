@@ -11,7 +11,7 @@ const ADMIN_BASE = '/admin'
 
 export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   { key: 'models', label: 'Models', href: ADMIN_BASE, ready: true },
-  { key: 'modules', label: 'Modules', href: `${ADMIN_BASE}/modules`, ready: false },
+  { key: 'modules', label: 'Modules', href: `${ADMIN_BASE}/modules`, ready: true },
   { key: 'tests', label: 'Tests', href: `${ADMIN_BASE}/tests`, ready: false },
   { key: 'plugins', label: 'Plugins', href: `${ADMIN_BASE}/plugins`, ready: false },
 ]
