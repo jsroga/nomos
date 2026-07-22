@@ -3,11 +3,13 @@
  */
 
 import '@/shared/data/server-guard'
+import { z } from 'zod'
 import { createTool } from '@mastra/core/tools'
 import { beats } from '@/db/schema'
 import { db } from '@/db/client'
 import { eq, and, type SQL } from 'drizzle-orm'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import type { RequestContext } from '@mastra/core/di'
 import {
   STORYTELLER_EPISODE_ID,
   requestContextString,
@@ -69,23 +71,48 @@ async function dispatchBeatOperation(
   }
 }
 
+type ManageBeatInput = z.infer<typeof ManageBeatInputSchema>
+
+async function executeManageBeat(
+  inputData: ManageBeatInput,
+  context: { requestContext?: RequestContext }
+) {
+  const { operation, beatId, sequence, data } = inputData
+  const episodeId =
+    requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
+
+  try {
+    return await dispatchBeatOperation(operation, beatId, episodeId, sequence, data)
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error) }
+  }
+}
+
+const MANAGE_BEAT_DESCRIPTION =
+  'Create, update, delete, or get a story beat. CREATE/UPDATE REQUIRE actionTaken, consequence, storyStateChange (Law of Motion: every beat must move action forward).'
+
 export const manageBeatTool = createTool({
   id: BEAT_TOOL_ID,
-  description:
-    'Create, update, delete, or get a story beat. CREATE/UPDATE REQUIRE actionTaken, consequence, storyStateChange (Law of Motion: every beat must move action forward).',
+  description: MANAGE_BEAT_DESCRIPTION,
   inputSchema: ManageBeatInputSchema,
   outputSchema: ManageBeatOutputSchema,
-  execute: async (inputData, context) => {
-    const { operation, beatId, sequence, data } = inputData
-    const episodeId =
-      requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
+  execute: executeManageBeat,
+})
 
-    try {
-      return await dispatchBeatOperation(operation, beatId, episodeId, sequence, data)
-    } catch (error) {
-      return { success: false, error: getErrorMessage(error) }
-    }
-  },
+/**
+ * Approval-gated variant (same tool id/contract) used only by the assistant-ui
+ * chat adapter: destructive `delete` calls suspend for user approval (rendered
+ * by AssistantToolFallback's Approve/Deny), everything else runs directly. The
+ * shared `manageBeatTool` above stays un-gated so the legacy chat path — which
+ * can't resume a Mastra approval — is unaffected.
+ */
+export const manageBeatApprovalTool = createTool({
+  id: BEAT_TOOL_ID,
+  description: MANAGE_BEAT_DESCRIPTION,
+  inputSchema: ManageBeatInputSchema,
+  outputSchema: ManageBeatOutputSchema,
+  requireApproval: input => input.operation === ManageToolOperation.Delete,
+  execute: executeManageBeat,
 })
 
 export const listBeatsTool = createTool({

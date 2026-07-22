@@ -23,7 +23,10 @@ import { beatDraftWorkflow } from '@/domains/storyteller/ai/workflows/beat-draft
 // Tools come from their CONCRETE modules, never the tools barrel — the barrel
 // side-effect-imports this file (registration ordering), so importing it here
 // would create a cycle.
-import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/ai/tools/beat-tools'
+import {
+  manageBeatApprovalTool,
+  listBeatsTool,
+} from '@/domains/storyteller/ai/tools/beat-tools'
 import {
   manageCharacterTool,
   listCharactersTool,
@@ -67,7 +70,7 @@ const chatAdapterAgent = new Agent({
   instructions: () => buildChatAdapterPrompt(getEntityLinkRequirements()),
   model: () => resolveRoleModel(CHAT_ROLE),
   tools: {
-    [manageBeatTool.id]: manageBeatTool,
+    [manageBeatApprovalTool.id]: manageBeatApprovalTool,
     [listBeatsTool.id]: listBeatsTool,
     [manageCharacterTool.id]: manageCharacterTool,
     [listCharactersTool.id]: listCharactersTool,
