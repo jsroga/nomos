@@ -70,13 +70,32 @@ function AssistantMessage() {
 
 const MESSAGE_COMPONENTS = { UserMessage, AssistantMessage }
 
-export function AssistantThread() {
+interface AssistantThreadProps {
+  /** Starter prompts shown in the empty state (quick-action parity). */
+  suggestions?: readonly string[]
+}
+
+export function AssistantThread({ suggestions = [] }: AssistantThreadProps) {
   return (
     <ThreadPrimitive.Root className="flex h-full flex-col">
       <ThreadPrimitive.Viewport className="relative flex-1 space-y-3 overflow-y-auto p-4">
         <ThreadPrimitive.Empty>
-          <div className="flex h-full items-center justify-center text-sm opacity-50">
-            {EMPTY_HINT}
+          <div className="flex h-full flex-col items-center justify-center gap-3 p-4 text-sm">
+            <span className="opacity-50">{EMPTY_HINT}</span>
+            {suggestions.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-2">
+                {suggestions.map(prompt => (
+                  <ThreadPrimitive.Suggestion
+                    key={prompt}
+                    prompt={prompt}
+                    autoSend
+                    className="rounded-full border border-black/15 px-3 py-1 text-xs opacity-80 hover:opacity-100 dark:border-white/15"
+                  >
+                    {prompt}
+                  </ThreadPrimitive.Suggestion>
+                ))}
+              </div>
+            )}
           </div>
         </ThreadPrimitive.Empty>
 

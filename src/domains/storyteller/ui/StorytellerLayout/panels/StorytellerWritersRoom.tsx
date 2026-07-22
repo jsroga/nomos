@@ -3,6 +3,7 @@
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { DomainSidebar } from '@/components/DomainSidebar'
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
+import { WRITERS_ROOM_SUGGESTIONS } from '@/domains/storyteller/config/constants/writers-room'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 
 /**
@@ -20,7 +21,7 @@ export function StorytellerWritersRoom(_props: StorytellerPageSlices) {
   return (
     <DomainSidebar header={null} position="right" storageKey="writers-room" defaultWidth={384} rawContent>
       <div className="flex h-full flex-col" id={TOUR_STEP_IDS.STORYTELLER_CHAT}>
-        <AssistantChat agentId="storyteller" />
+        <AssistantChat agentId="storyteller" suggestions={WRITERS_ROOM_SUGGESTIONS} />
       </div>
     </DomainSidebar>
   )

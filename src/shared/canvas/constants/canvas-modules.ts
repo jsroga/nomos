@@ -22,6 +22,8 @@ export interface CanvasModuleDef {
   chatApiPath?: string
   /** Admin model slot (model_settings role) the module's agent resolves. */
   modelRole?: string
+  /** Starter prompts for the module's assistant-ui chat (quick actions). */
+  chatSuggestions?: readonly string[]
   /** Default enabled state (overridable via admin module_settings). */
   enabledByDefault: boolean
 }
@@ -35,6 +37,11 @@ export const CANVAS_MODULES: readonly CanvasModuleDef[] = [
     // Full crew orchestration (streamLoopCreator), not the single supervisor agent.
     chatApiPath: '/api/loop-creator/assistant',
     modelRole: 'loop-creator',
+    chatSuggestions: [
+      'Design a core gameplay loop for this game.',
+      'Analyze the balance of my current loops.',
+      'Suggest a progression system.',
+    ],
     enabledByDefault: true,
   },
   {

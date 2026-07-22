@@ -22,11 +22,11 @@ Status: ✅ done · ◐ partial (compiles, needs live verify / feature re-home) 
 | Text streaming + markdown | ✅ | `AssistantThread` (react-markdown + gfm). |
 | Reasoning / thinking | ◐ | Reasoning message-part rendered; the old "StreamingTerminal" token view is dropped. |
 | Stop / regenerate / copy | ✅ | Composer `Cancel`/`Send`, ActionBar `Reload`/`Copy`. |
-| **Model picker** (per-request override) | ⬜ | Pass `selectedModel` through `AssistantChatTransport` body → `/api/assistant` → agent model override. Models are otherwise admin-configured. |
+| **Model picker** (per-request override) | ▲ superseded | Models are now admin-configured (`model_settings` / `getConfiguredModel`); `handleChatStream` has no clean per-request model override. Revisit only if per-thread model choice is wanted. |
 | **Mentions** (`@entity`) | ◐ | Converter `toMentionCategories` (✅ unit-tested) + `useAssistantMentions` hook (loads providers → `unstable_useMentionAdapter`). Remaining: wire the `@`-trigger popover into the Thread composer + plumb providers/projectContext from consumers. |
 | **Action approvals** (`onApproveAllActions`, `ActionComponent`) | ◐ | `AssistantToolFallback` renders Approve/Deny on `status.type === 'requires-action'` → Mastra native `respondToApproval` resume. Needs a Mastra tool to opt into `requireApproval` + live verify. |
 | **HITL agent questions** | ⬜ | assistant-ui `humanTool` / `hitl` (a client tool the agent invokes to ask the user); today `onQuestionAnswer/Skip` + `QuestionComponent`. |
-| Quick actions / suggestions | ⬜ | `ThreadPrimitive.Suggestion` + composer, driven by `SmartQuickActions` phase logic. |
+| Quick actions / suggestions | ◐ | `ThreadPrimitive.Suggestion` starter prompts in the empty state — per-module (`CanvasModuleDef.chatSuggestions`, loop-creator) or per-surface (`AssistantChat suggestions`, writers-room). Phase-adaptive `SmartQuickActions` logic not ported. |
 | Streaming sections / delegation / agent-log | ◐ | Tool-call activity (name · args · result) now rendered in the Thread via `AssistantToolFallback` (tools.Fallback). Dedicated section/delegation parts still todo. |
 | Citations | ⬜ | Source message-part component. |
 | Persistence (thread history) | ⬜ | assistant-ui `ThreadHistoryAdapter` → `src/shared/data/chat-persistence.ts`. |

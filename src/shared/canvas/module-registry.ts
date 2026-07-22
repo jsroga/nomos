@@ -35,3 +35,8 @@ export function getCanvasModuleAgentId(key: string): string | undefined {
 export function getCanvasModuleChatApiPath(key: string): string | undefined {
   return registry.get(key)?.chatApiPath
 }
+
+/** Starter prompts (quick actions) for a module's chat. */
+export function getCanvasModuleSuggestions(key: string): readonly string[] {
+  return registry.get(key)?.chatSuggestions ?? []
+}

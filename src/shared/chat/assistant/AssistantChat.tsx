@@ -11,6 +11,7 @@ import { useChatRuntime, AssistantChatTransport } from '@assistant-ui/react-ai-s
 import {
   getCanvasModuleAgentId,
   getCanvasModuleChatApiPath,
+  getCanvasModuleSuggestions,
 } from '@/shared/canvas/module-registry'
 import { AssistantThread } from './AssistantThread'
 
@@ -20,10 +21,12 @@ const ASSISTANT_API_BASE = '/api/assistant/'
 interface AssistantChatProps {
   /** Explicit Mastra agent id (reachable via /api/assistant/<agentId>). */
   agentId?: string
-  /** Canvas module key — resolves the module's chatApiPath / chatAgentId from the registry. */
+  /** Canvas module key — resolves the module's chatApiPath / chatAgentId / suggestions from the registry. */
   moduleKey?: string
   /** Extra request body forwarded to the endpoint (e.g. { projectId }). */
   body?: Record<string, unknown>
+  /** Starter prompts; falls back to the module's suggestions. */
+  suggestions?: readonly string[]
 }
 
 function resolveApi(agentId?: string, moduleKey?: string): string {
@@ -34,14 +37,16 @@ function resolveApi(agentId?: string, moduleKey?: string): string {
   return `${ASSISTANT_API_BASE}${resolvedAgentId}`
 }
 
-export function AssistantChat({ agentId, moduleKey, body }: AssistantChatProps) {
+export function AssistantChat({ agentId, moduleKey, body, suggestions }: AssistantChatProps) {
   const runtime = useChatRuntime({
     transport: new AssistantChatTransport({ api: resolveApi(agentId, moduleKey), body }),
   })
+  const resolvedSuggestions =
+    suggestions ?? (moduleKey ? getCanvasModuleSuggestions(moduleKey) : [])
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <AssistantThread />
+      <AssistantThread suggestions={resolvedSuggestions} />
     </AssistantRuntimeProvider>
   )
 }
