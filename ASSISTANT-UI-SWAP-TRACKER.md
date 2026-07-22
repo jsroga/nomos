@@ -28,7 +28,7 @@ Status: ✅ done · ◐ partial (compiles, needs live verify / feature re-home) 
 | **HITL agent questions** | ⬜ | assistant-ui `humanTool` / `hitl` (a client tool the agent invokes to ask the user); today `onQuestionAnswer/Skip` + `QuestionComponent`. |
 | Quick actions / suggestions | ◐ | `ThreadPrimitive.Suggestion` starter prompts in the empty state — per-module (`CanvasModuleDef.chatSuggestions`, loop-creator) or per-surface (`AssistantChat suggestions`, writers-room). Phase-adaptive `SmartQuickActions` logic not ported. |
 | Streaming sections / delegation / agent-log | ◐ | Tool-call activity (name · args · result) now rendered in the Thread via `AssistantToolFallback` (tools.Fallback). Dedicated section/delegation parts still todo. |
-| Citations | ⬜ | Source message-part component. |
+| Citations | ◐ | `SourceCitation` (Source message-part) renders url/title links in the Thread. Fires only when an agent emits AI-SDK source parts (web-search etc.) — storyteller/loop agents don't today. |
 | Persistence (thread history) | ⬜ | assistant-ui `ThreadHistoryAdapter` → `src/shared/data/chat-persistence.ts`. |
 
 ## Loop-creator crew (orchestration via assistant-ui)

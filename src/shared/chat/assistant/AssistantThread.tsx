@@ -13,6 +13,7 @@ import {
   ActionBarPrimitive,
   type TextMessagePartComponent,
   type ReasoningMessagePartComponent,
+  type SourceMessagePartComponent,
 } from '@assistant-ui/react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -36,9 +37,21 @@ const ReasoningText: ReasoningMessagePartComponent = ({ text }) => (
   </div>
 )
 
+const SourceCitation: SourceMessagePartComponent = ({ url, title }) => (
+  <a
+    href={url}
+    target="_blank"
+    rel="noreferrer"
+    className="mr-2 inline-block rounded border border-black/10 px-1.5 py-0.5 text-xs opacity-70 hover:opacity-100 dark:border-white/10"
+  >
+    {title ?? url}
+  </a>
+)
+
 const PART_COMPONENTS = {
   Text: MarkdownText,
   Reasoning: ReasoningText,
+  Source: SourceCitation,
   tools: { Fallback: AssistantToolFallback },
 }
 
