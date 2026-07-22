@@ -65,7 +65,7 @@ Bootstrap: `npx shadcn@latest init` then `npx shadcn@latest add sidebar-01 dashb
 - Trigger runs from the UI via a server action that spawns `npm run test:e2e` (guard behind admin + a queue); stream logs to the panel.
 - Consider **Monocart reporter** (free) for richer HTML, embeddable via iframe.
 
-**A4 — Plugins** ⬜ (future)
+**A4 — Plugins** ◐ built (AdminPlugin manifest + registry seeded from first-party catalog; dashboard nav is plugin-driven; /admin/plugins lists the registry. canvas-node/chat-tool mounts typed, no consumers yet)
 - Plugin manifest contract: `{ id, name, mount: 'admin-section' | 'canvas-node' | 'chat-tool', component, configSchema }`.
 - A registry (`src/shared/admin/plugins/registry.ts`) that the dashboard + canvas read; plugins register at import (mirror `registerMastraModule`). This is what makes the admin "easy to connect built-in plugins."
 - First-party plugins: Playwright dashboard (A3), model-settings (A1), module-setup (A2) — each authored as a plugin so the pattern is proven.

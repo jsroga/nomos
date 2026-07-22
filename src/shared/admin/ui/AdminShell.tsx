@@ -1,17 +1,14 @@
 import Link from 'next/link'
-import {
-  ADMIN_NAV_ITEMS,
-  ADMIN_TITLE,
-  ADMIN_SUBTITLE,
-  ADMIN_SOON_LABEL,
-} from '@/shared/admin/constants/admin-nav'
+import { getAdminSections } from '@/shared/admin/plugins/registry'
+import { ADMIN_TITLE, ADMIN_SUBTITLE, ADMIN_SOON_LABEL } from '@/shared/admin/constants/admin-nav'
 
 /**
- * Admin dashboard shell (Track A0): a fixed left nav (Models · Modules · Tests ·
- * Plugins) + a scrollable content area. Rendered inside the admin-gated layout,
- * so it never mounts for non-admins.
+ * Admin dashboard shell (Track A0/A4): a fixed left nav built from the admin
+ * plugin registry (`admin-section` plugins) + a scrollable content area.
+ * Rendered inside the admin-gated layout, so it never mounts for non-admins.
  */
 export function AdminShell({ children }: { children: React.ReactNode }) {
+  const sections = getAdminSections()
   return (
     <div className="flex h-full w-full">
       <aside className="flex w-56 shrink-0 flex-col border-r border-black/10 bg-card/30 p-4 dark:border-white/10">
@@ -20,21 +17,21 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <div className="text-xs opacity-60">{ADMIN_SUBTITLE}</div>
         </div>
         <nav className="flex flex-col gap-1">
-          {ADMIN_NAV_ITEMS.map(item =>
-            item.ready ? (
+          {sections.map(section =>
+            section.ready && section.path ? (
               <Link
-                key={item.key}
-                href={item.href}
+                key={section.id}
+                href={section.path}
                 className="rounded-md px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10"
               >
-                {item.label}
+                {section.label}
               </Link>
             ) : (
               <span
-                key={item.key}
+                key={section.id}
                 className="flex items-center justify-between rounded-md px-3 py-2 text-sm opacity-40"
               >
-                {item.label}
+                {section.label}
                 <span className="text-[10px] uppercase tracking-wide">{ADMIN_SOON_LABEL}</span>
               </span>
             )
