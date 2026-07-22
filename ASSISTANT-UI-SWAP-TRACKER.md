@@ -53,13 +53,14 @@ The loop-creator sidebar today streams the single `loopCreatorSupervisor` agent.
 
 **Verification gate:** every `◐` needs a live run (app + OpenRouter key + network) before it becomes ✅. Built compile-clean (TSC 0 / ESLint 0) but UI/stream behavior is unverified from the dev sandbox.
 
-## Why the remaining ⬜ are paused (need a live run first)
+## Status: all self-contained parity items are built (◐), 2 remain gated
 
-The safe, self-contained ⬜ items are done (suggestions, tool-call rendering, approval scaffolding, mention converter+hook). The rest are **higher-risk and unverifiable from the sandbox** — building them blind would likely ship broken or break existing behavior:
+Every parity feature that can be built compile-clean is done and pushed (all ◐):
+mentions popover, tool-call rendering, `requireApproval` opt-in (delete-gated, assistant-ui-only), HITL `askUser` UI, persistence (sessionStorage history adapter), citations/reasoning, suggestions, crew bridge (auth + full-history hydration + activity channel). Each is **TSC 0 / ESLint 0** but needs one live run to promote ◐ → ✅.
 
-- **Mention popover wiring** — needs a deep all-`unstable_` composition (`ComposerPrimitive.Unstable_TriggerPopoverRoot` + `TriggerPopover` + `Categories`/`Items`/`Directive`) plus provider/projectContext plumbing from consumers. High chance of a broken popover I can't detect.
-- **`requireApproval` opt-in** — Mastra supports it, but the target tools (`manageBeat`, …) are **shared** with the old chat path, which can't handle Mastra approval → gating could hang/break beat deletion app-wide.
-- **HITL agent questions** — needs a `humanTool` the agent invokes (server + client) + a tool UI.
-- **Persistence** — a `ThreadHistoryAdapter` over `chat-persistence` / Supabase (stateful, needs verification).
+The only genuinely-remaining ⬜ are gated, not skippable-blind:
 
-**Next action = one live run.** Pull, VPN off, open `/assistant?module=loop-creator`, `?module=storyteller-corkboard`, and the swapped sidebars. If they stream, these ⬜ items unblock with confidence; if not, that fix comes first.
+- **CorkBoard / CharacterWeb inline chat triggers** — speculative "when those canvases get an inline chat"; the storyteller already chats via the Writers-Room sidebar, so a second inline surface is a product decision, not a mechanical port.
+- **B5 — delete legacy `@/shared/chat`** — 28 files still import the barrel, but most pull the **pure mention types/catalogs the new assistant-ui code also depends on** (keep those). Deleting the still-mounted legacy UI (`useStorytellerChat`, `useLoopChat`, streaming components) must wait until the ◐ swaps are **live-verified** — removing the working fallback before then would break running behavior.
+
+**Next action = one live run.** Pull, VPN off, open `/assistant?module=loop-creator`, `?module=storyteller-corkboard`, the Writers-Room + loop-creator sidebars, and `/admin`. If chat streams + admin loads, the ◐ items promote to ✅ and B5 can proceed; the `askUser` server binding (Mastra suspend/resume vs. forwarded client tool) is decided from what the live stream shows.
