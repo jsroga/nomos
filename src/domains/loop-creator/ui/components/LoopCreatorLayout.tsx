@@ -25,7 +25,7 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
             analysis={layout.analysis}
             nodeCount={layout.nodes.length}
             edgeCount={layout.edges.length}
-            groundingScore={layout.groundingScore}
+            groundingScore={null}
             saveStatus={layout.saveStatus}
             showCreateLoopDialog={layout.showCreateLoopDialog}
             loopSelectorTourId={layout.tourIds.LOOP_SELECTOR}
@@ -69,24 +69,9 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
 
         <LoopChatSidebar
           projectId={projectId}
-          currentLoopId={layout.currentLoopId}
-          userEmail={layout.userEmail}
-          isActivityPanelOpen={layout.isActivityPanelOpen}
-          onActivityToggle={() => layout.setIsActivityPanelOpen(!layout.isActivityPanelOpen)}
-          messages={layout.messages}
-          onSendMessage={layout.handleSendMessage}
-          isSending={layout.isSending}
-          onStopStream={layout.stopStream}
-          thinkingAgent={layout.thinkingAgent}
-          streamingTokens={layout.streamingTokens}
-          isTokenStreaming={layout.isTokenStreaming}
-          activeAgents={layout.activeAgents}
-          streamingSections={layout.streamingSections}
           mentionProviders={layout.mentionProviders}
           projectContext={layout.projectContextForMentions}
-          onCreateLoopFromEmptyState={layout.handleCreateLoopFromEmptyState}
           chatTourId={layout.tourIds.LOOP_CHAT}
-          quickActionsTourId={layout.tourIds.LOOP_QUICK_ACTIONS}
         />
       </div>
 

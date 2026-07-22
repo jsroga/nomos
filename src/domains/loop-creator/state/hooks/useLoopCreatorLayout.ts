@@ -30,15 +30,6 @@ export function useLoopCreatorLayout(projectId: string) {
     showCreateLoopDialog: core.showCreateLoopDialog,
     userEmail: core.userEmail,
     saveStatus: persistence.saveStatus,
-    groundingScore: chat.groundingScore,
-    isActivityPanelOpen: core.isActivityPanelOpen,
-    messages: chat.messages,
-    isSending: chat.isSending,
-    thinkingAgent: chat.thinkingAgent,
-    streamingTokens: chat.streamingTokens,
-    isTokenStreaming: chat.isTokenStreaming,
-    activeAgents: chat.activeAgents,
-    streamingSections: chat.streamingSections,
     mentionProviders: chat.mentionProviders,
     projectContextForMentions: chat.projectContextForMentions,
     tourIds: tour.tourIds,
@@ -63,8 +54,6 @@ export function useLoopCreatorLayout(projectId: string) {
     onImportJson: graph.onImportJson,
     onConnect: graph.onConnect,
     handleTidyUp: graph.handleTidyUp,
-    handleSendMessage: chat.handleSendMessage,
-    stopStream: chat.stopStream,
   }
 }
 
