@@ -17,6 +17,7 @@ import {
 } from '@/shared/canvas/module-registry'
 import type { MentionProvider, ProjectContext } from '@/shared/chat/core/mentions/types'
 import { AssistantThread } from './AssistantThread'
+import { AskUserToolUI } from './AssistantHumanTool'
 import { useAssistantMentions } from './useAssistantMentions'
 
 const DEFAULT_AGENT_ID = 'storyteller'
@@ -77,6 +78,7 @@ export function AssistantChat({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
+      <AskUserToolUI />
       <AssistantThread
         suggestions={resolvedSuggestions}
         mentions={mentionsEnabled ? mentions : undefined}
