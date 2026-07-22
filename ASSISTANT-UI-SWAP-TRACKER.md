@@ -39,8 +39,8 @@ The loop-creator sidebar today streams the single `loopCreatorSupervisor` agent.
 |---|---|
 | Crew bridge route (`/api/loop-creator/assistant`) running `streamLoopCreator` as an AI-SDK UI-message stream | ◐ built (forwards Message events as text) |
 | `CanvasModuleDef.chatApiPath` override so `AssistantChat` targets the crew route + `body:{projectId}` | ◐ wired |
-| Build `LoopCreatorState` from `{ messages, projectId, loopId }` (fetch loops/context) | ⬜ (best-effort minimal today — latest user turn only, no DB hydration) |
-| Map crew `StreamEvent`s → tool/data parts (agent activity, sections) | ⬜ |
+| Build `LoopCreatorState` from `{ messages, projectId, loopId }` (fetch loops/context) | ◐ | Auth + project-access enforced; full conversation hydrated from the assistant-ui `messages` history (not just the last turn); optional `context` (canvas nodes/edges + game meta) seeds the graph when the client sends it. |
+| Map crew `StreamEvent`s → tool/data parts (agent activity, sections) | ◐ | Crew activity (which specialist is working `▸`, actions `↳`) streamed on the **reasoning channel** (already rendered by `AssistantThread`); specialist replies on the text channel. Richer tool/data parts still todo. |
 
 ## Cleanup (Track B5)
 
