@@ -45,12 +45,12 @@ Bootstrap: `npx shadcn@latest init` then `npx shadcn@latest add sidebar-01 dashb
 
 ### Phases
 
-**A0 — Dashboard shell** ⬜
+**A0 — Dashboard shell** ◐ built (own design-system shell, not shadcn init; admin-gated layout + Models·Modules·Tests·Plugins nav)
 - `npx shadcn init` + add the sidebar/dashboard blocks under `src/components/ui/` (admin-only surface; don't disturb `@/components/*` design system).
 - `src/app/(workspace)/admin/layout.tsx` — server-side admin gate (`createServerComponentClient` + `isAdminUser`) wrapping a shadcn sidebar shell. One gate for all `/admin/*`.
 - Nav sections: Models · Modules · Tests · Plugins.
 
-**A1 — Models section** ⬜ (fold in existing work)
+**A1 — Models section** ◐ built (ModelSettingsAdmin mounted at /admin root; free-text OpenRouter id + test-model button still todo)
 - Move `ModelSettingsAdmin` into `/admin` as a section; delete the standalone `/admin/models` route.
 - Add a free-text OpenRouter id field (beyond the curated list) + a "test this model" button (calls the smoke path server-side).
 
