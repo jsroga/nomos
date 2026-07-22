@@ -52,3 +52,14 @@ The loop-creator sidebar today streams the single `loopCreatorSupervisor` agent.
 ---
 
 **Verification gate:** every `◐` needs a live run (app + OpenRouter key + network) before it becomes ✅. Built compile-clean (TSC 0 / ESLint 0) but UI/stream behavior is unverified from the dev sandbox.
+
+## Why the remaining ⬜ are paused (need a live run first)
+
+The safe, self-contained ⬜ items are done (suggestions, tool-call rendering, approval scaffolding, mention converter+hook). The rest are **higher-risk and unverifiable from the sandbox** — building them blind would likely ship broken or break existing behavior:
+
+- **Mention popover wiring** — needs a deep all-`unstable_` composition (`ComposerPrimitive.Unstable_TriggerPopoverRoot` + `TriggerPopover` + `Categories`/`Items`/`Directive`) plus provider/projectContext plumbing from consumers. High chance of a broken popover I can't detect.
+- **`requireApproval` opt-in** — Mastra supports it, but the target tools (`manageBeat`, …) are **shared** with the old chat path, which can't handle Mastra approval → gating could hang/break beat deletion app-wide.
+- **HITL agent questions** — needs a `humanTool` the agent invokes (server + client) + a tool UI.
+- **Persistence** — a `ThreadHistoryAdapter` over `chat-persistence` / Supabase (stateful, needs verification).
+
+**Next action = one live run.** Pull, VPN off, open `/assistant?module=loop-creator`, `?module=storyteller-corkboard`, and the swapped sidebars. If they stream, these ⬜ items unblock with confidence; if not, that fix comes first.
