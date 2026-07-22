@@ -39,11 +39,6 @@ export const CharacterWeb = dynamic<CharacterWebProps>(
   { ssr: false, loading: () => loadingSpinner }
 )
 
-export const ActionApprovalModal = dynamic(
-  () => import('../ActionApprovalModal').then(m => m.ActionApprovalModal),
-  { ssr: false }
-)
-
 export const ActionCommitted = dynamic(
   () => import('../ActionToast/ActionCommitted').then(m => m.ActionCommitted),
   { ssr: false }

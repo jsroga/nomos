@@ -5,7 +5,6 @@
  */
 
 // Client-facing components (ui/)
-export * from './ui/ActionApprovalModal'
 export * from './ui/ActionToast'
 export * from './ui/CharacterPanel'
 export * from './ui/CharacterWeb'

@@ -16,10 +16,8 @@
 import { useCallback, useRef, useState } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction, FormEvent } from 'react'
 import type { Message } from '@/shared/chat/core/types'
-import type { WireAgentAction, ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 
 type LoadingSections = Record<string, { loading: boolean; message?: string }>
-type ActionLocation = { messageIndex: number; actionIndex: number }
 
 export interface StorytellerChatSlice {
   messages: Message[]
@@ -37,16 +35,6 @@ export interface StorytellerChatSlice {
   ) => Promise<void>
   roundCount: number
   abortControllerRef: MutableRefObject<AbortController | null>
-  syncActionStatus: (
-    action: WireAgentAction,
-    status: ApprovalActionStatus,
-    location?: ActionLocation
-  ) => void
-  updateActionStatus: (
-    messageIndex: number,
-    actionIndex: number,
-    status: ApprovalActionStatus
-  ) => void
 }
 
 export function useStorytellerChat(): StorytellerChatSlice {
@@ -64,14 +52,6 @@ export function useStorytellerChat(): StorytellerChatSlice {
     // Inert: no legacy stream to process.
   }, [])
 
-  const syncActionStatus = useCallback(() => {
-    // Inert: action approval moves to the assistant-ui tool path.
-  }, [])
-
-  const updateActionStatus = useCallback(() => {
-    // Inert: action approval moves to the assistant-ui tool path.
-  }, [])
-
   return {
     messages,
     setMessages,
@@ -83,7 +63,5 @@ export function useStorytellerChat(): StorytellerChatSlice {
     processStream,
     roundCount: 0,
     abortControllerRef,
-    syncActionStatus,
-    updateActionStatus,
   }
 }

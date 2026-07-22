@@ -1,25 +1,12 @@
 'use client'
 
-import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
-import { Timeline, ActionApprovalModal } from '../storyteller-dynamic-imports'
+import { Timeline } from '../storyteller-dynamic-imports'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
-import { createStorytellerActionApprovalHandlers } from './useStorytellerActionApproval'
 
 export function StorytellerPageModals(props: StorytellerPageSlices) {
-  const { core, chat, phase } = props
-  const {
-    currentEpisodeId,
-    beats,
-    setSelectedBeatId,
-    selectedBeatId,
-    pendingQuestions,
-    reviewModalAction,
-    setReviewModalAction,
-  } = core
-  const { messages } = chat
+  const { core, phase } = props
+  const { currentEpisodeId, beats, setSelectedBeatId, selectedBeatId, pendingQuestions } = core
   const { PhaseBackConfirmDialog } = phase
-
-  const { approve, reject } = createStorytellerActionApprovalHandlers(props)
 
   return (
     <>
@@ -38,21 +25,6 @@ export function StorytellerPageModals(props: StorytellerPageSlices) {
       />
 
       {PhaseBackConfirmDialog}
-
-      {reviewModalAction && (
-        <ActionApprovalModal
-          action={reviewModalAction.action}
-          agentName={reviewModalAction.agentName}
-          isOpen={!!reviewModalAction}
-          isProcessing={
-            messages[reviewModalAction.messageIndex]?.actions?.[reviewModalAction.actionIndex]
-              ?.status === ApprovalActionStatus.EXECUTING
-          }
-          onClose={() => setReviewModalAction(null)}
-          onApprove={() => approve(reviewModalAction)}
-          onReject={() => reject(reviewModalAction)}
-        />
-      )}
     </>
   )
 }

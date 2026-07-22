@@ -16,8 +16,9 @@ import {
 import { StorytellerRelationshipType } from '@/domains/storyteller/services/constants/relationship-enricher'
 import { StorytellerTextSeparator } from '@/domains/storyteller/core/storyteller-page-wire'
 import { HttpMethod } from '@/shared/data/constants/protocol'
-import { DOM_EVENT_KEYDOWN } from '@/domains/storyteller/ui/ActionApprovalModal/constants/action-approval-display'
 import { RichTextContainerTag } from '@/domains/storyteller/ui/RichText/constants/rich-text'
+
+const DOM_EVENT_KEYDOWN = 'keydown'
 
 export enum ReferenceTextKeyboardKey {
   Alt = 'Alt',
