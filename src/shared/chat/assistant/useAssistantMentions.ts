@@ -16,10 +16,12 @@ import type {
 } from '@/shared/chat/core/mentions/types'
 import { toMentionCategories } from './mention-categories'
 
+export type AssistantMentionBundle = ReturnType<typeof unstable_useMentionAdapter>
+
 export function useAssistantMentions(
   providers: readonly MentionProvider[],
   projectContext: ProjectContext
-) {
+): AssistantMentionBundle {
   const [items, setItems] = useState<MentionItem[]>([])
 
   useEffect(() => {

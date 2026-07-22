@@ -23,7 +23,7 @@ Status: ✅ done · ◐ partial (compiles, needs live verify / feature re-home) 
 | Reasoning / thinking | ◐ | Reasoning message-part rendered; the old "StreamingTerminal" token view is dropped. |
 | Stop / regenerate / copy | ✅ | Composer `Cancel`/`Send`, ActionBar `Reload`/`Copy`. |
 | **Model picker** (per-request override) | ▲ superseded | Models are now admin-configured (`model_settings` / `getConfiguredModel`); `handleChatStream` has no clean per-request model override. Revisit only if per-thread model choice is wanted. |
-| **Mentions** (`@entity`) | ◐ | Converter `toMentionCategories` (✅ unit-tested) + `useAssistantMentions` hook (loads providers → `unstable_useMentionAdapter`). Remaining: wire the `@`-trigger popover into the Thread composer + plumb providers/projectContext from consumers. |
+| **Mentions** (`@entity`) | ◐ | Full popover wired: `Unstable_TriggerPopover` + converter + `useAssistantMentions`; writers-room & loop-creator pass their providers. Needs live verify that `@` triggers+inserts. |
 | **Action approvals** (`onApproveAllActions`, `ActionComponent`) | ◐ | `AssistantToolFallback` renders Approve/Deny on `status.type === 'requires-action'` → Mastra native `respondToApproval` resume. Needs a Mastra tool to opt into `requireApproval` + live verify. |
 | **HITL agent questions** | ⬜ | assistant-ui `humanTool` / `hitl` (a client tool the agent invokes to ask the user); today `onQuestionAnswer/Skip` + `QuestionComponent`. |
 | Quick actions / suggestions | ◐ | `ThreadPrimitive.Suggestion` starter prompts in the empty state — per-module (`CanvasModuleDef.chatSuggestions`, loop-creator) or per-surface (`AssistantChat suggestions`, writers-room). Phase-adaptive `SmartQuickActions` logic not ported. |
