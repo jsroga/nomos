@@ -23,7 +23,7 @@ Status: ✅ done · ◐ partial (compiles, needs live verify / feature re-home) 
 | Reasoning / thinking | ◐ | Reasoning message-part rendered; the old "StreamingTerminal" token view is dropped. |
 | Stop / regenerate / copy | ✅ | Composer `Cancel`/`Send`, ActionBar `Reload`/`Copy`. |
 | **Model picker** (per-request override) | ⬜ | Pass `selectedModel` through `AssistantChatTransport` body → `/api/assistant` → agent model override. Models are otherwise admin-configured. |
-| **Mentions** (`@entity`) | ⬜ | `unstable_useMentionAdapter` fed by the existing `getGameEntityProvider` / storyteller+loop mention providers. |
+| **Mentions** (`@entity`) | ◐ | Converter `toMentionCategories` (✅ unit-tested) + `useAssistantMentions` hook (loads providers → `unstable_useMentionAdapter`). Remaining: wire the `@`-trigger popover into the Thread composer + plumb providers/projectContext from consumers. |
 | **HITL agent questions** | ⬜ | assistant-ui `hitl` / `humanTool` + a tool UI; today handled by `onQuestionAnswer/Skip` + `QuestionComponent`. |
 | **Action approvals** (`onApproveAllActions`, `ActionComponent`) | ⬜ | Beat-draft verdict etc. → assistant-ui tool approval UI (`makeAssistantToolUI`). |
 | Quick actions / suggestions | ⬜ | `ThreadPrimitive.Suggestion` + composer, driven by `SmartQuickActions` phase logic. |
