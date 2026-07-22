@@ -24,10 +24,10 @@ Status: ✅ done · ◐ partial (compiles, needs live verify / feature re-home) 
 | Stop / regenerate / copy | ✅ | Composer `Cancel`/`Send`, ActionBar `Reload`/`Copy`. |
 | **Model picker** (per-request override) | ⬜ | Pass `selectedModel` through `AssistantChatTransport` body → `/api/assistant` → agent model override. Models are otherwise admin-configured. |
 | **Mentions** (`@entity`) | ◐ | Converter `toMentionCategories` (✅ unit-tested) + `useAssistantMentions` hook (loads providers → `unstable_useMentionAdapter`). Remaining: wire the `@`-trigger popover into the Thread composer + plumb providers/projectContext from consumers. |
-| **HITL agent questions** | ⬜ | assistant-ui `hitl` / `humanTool` + a tool UI; today handled by `onQuestionAnswer/Skip` + `QuestionComponent`. |
-| **Action approvals** (`onApproveAllActions`, `ActionComponent`) | ⬜ | Beat-draft verdict etc. → assistant-ui tool approval UI (`makeAssistantToolUI`). |
+| **Action approvals** (`onApproveAllActions`, `ActionComponent`) | ◐ | `AssistantToolFallback` renders Approve/Deny on `status.type === 'requires-action'` → Mastra native `respondToApproval` resume. Needs a Mastra tool to opt into `requireApproval` + live verify. |
+| **HITL agent questions** | ⬜ | assistant-ui `humanTool` / `hitl` (a client tool the agent invokes to ask the user); today `onQuestionAnswer/Skip` + `QuestionComponent`. |
 | Quick actions / suggestions | ⬜ | `ThreadPrimitive.Suggestion` + composer, driven by `SmartQuickActions` phase logic. |
-| Streaming sections / delegation / agent-log | ⬜ | Tool/data message-part components. |
+| Streaming sections / delegation / agent-log | ◐ | Tool-call activity (name · args · result) now rendered in the Thread via `AssistantToolFallback` (tools.Fallback). Dedicated section/delegation parts still todo. |
 | Citations | ⬜ | Source message-part component. |
 | Persistence (thread history) | ⬜ | assistant-ui `ThreadHistoryAdapter` → `src/shared/data/chat-persistence.ts`. |
 

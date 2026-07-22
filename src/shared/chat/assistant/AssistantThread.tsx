@@ -16,6 +16,7 @@ import {
 } from '@assistant-ui/react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { AssistantToolFallback } from './AssistantToolFallback'
 
 const SEND_LABEL = 'Send'
 const STOP_LABEL = 'Stop'
@@ -35,7 +36,11 @@ const ReasoningText: ReasoningMessagePartComponent = ({ text }) => (
   </div>
 )
 
-const PART_COMPONENTS = { Text: MarkdownText, Reasoning: ReasoningText }
+const PART_COMPONENTS = {
+  Text: MarkdownText,
+  Reasoning: ReasoningText,
+  tools: { Fallback: AssistantToolFallback },
+}
 
 function UserMessage() {
   return (
