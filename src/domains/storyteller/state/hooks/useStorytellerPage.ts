@@ -9,7 +9,7 @@ import { useStorytellerAgents } from './useStorytellerAgents'
 
 export function useStorytellerPage() {
   const core = useStorytellerPageBase()
-  const chat = useStorytellerChat(core)
+  const chat = useStorytellerChat()
   const generation = useStorytellerGeneration(core)
   const episode = useStorytellerEpisodeData(core)
   const phase = useStorytellerPhase(core, chat)

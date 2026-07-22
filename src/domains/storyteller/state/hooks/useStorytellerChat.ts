@@ -1,295 +1,89 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useChatStream, type Message } from '@/shared/chat'
-import { DEFAULT_CHAT_MODEL, getChatModelOption } from '@/domains/storyteller/config/constants/chat-model-catalog'
-import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
-import { browserStorage } from '@/shared/data/browser-storage'
-import { useStoryActionRenderer } from '@/domains/storyteller/ui/StorytellerLayout/StoryActionRenderer'
-import {
-  ChatMessageRole,
-  STORYTELLER_CHAT_WELCOME_MESSAGE,
-  StorytellerChatLog,
-  StorytellerMessageRole,
-  StorytellerMessageType,
-  StorytellerStreamMode,
-  StorytellerThreadId,
-} from '@/domains/storyteller/state/constants/storyteller-chat'
-import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
-import { serializeChatMessage, type SerializedChatMessage } from '@/domains/storyteller/state/utils/storyteller-chat-serialize'
-import { appendUniqueQuestionSession } from '@/domains/storyteller/state/utils/storyteller-chat-question'
-import { handleStorytellerStreamingUpdate } from '@/domains/storyteller/state/utils/storyteller-chat-stream-update'
-import { runStorytellerStreamAction } from '@/domains/storyteller/state/utils/storyteller-chat-stream-action'
-import {
-  buildCharactersSummary,
-  resolveEffectivePhase,
-} from '@/domains/storyteller/state/utils/storyteller-chat-send-helpers'
+/**
+ * Storyteller chat state — legacy-chat removal.
+ *
+ * The storyteller workspace now chats through the assistant-ui Writers Room
+ * (`AssistantChat` → the Mastra `storyteller` agent), which drives the world
+ * bible / beats via its own server-side tools. The old `useChatStream` engine
+ * that this hook wrapped has been deleted; what remains is the minimal state the
+ * surrounding page hooks/panels still read (message list, sending flags, section
+ * loading). The programmatic send / stream entry points are inert stubs — the
+ * agentic side-effects they used to drive (action approval, questions, phase
+ * progression) are being re-homed on the assistant-ui tool path.
+ */
 
-export function useStorytellerChat(core: StorytellerWorkspaceCore) {
-  const {
-    currentProject,
-    currentEpisodeId,
-    userEmail,
-    isActivityPanelOpen,
-    isWorldBibleOpen,
-    activeTab,
-    currentPhase,
-    characters,
-    setCharacters,
-    storyPlan,
-    storyDecisions,
-    input,
-    setInput,
-    setPendingQuestions,
-    setCurrentPhase,
-    setActionHistory,
-    setReviewModalAction,
-    setSectionPendingActions,
-    executeAction,
-    getActionSection,
-    undoStack,
-    setUndoStack,
-    setStoryPlan,
-    useEnhancedStreaming,
-    setGeneratingSection,
-  } = core
+import { useCallback, useRef, useState } from 'react'
+import type { Dispatch, MutableRefObject, SetStateAction, FormEvent } from 'react'
+import type { Message } from '@/shared/chat/core/types'
+import type { WireAgentAction, ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 
-  const {
-    messages,
-    setMessages,
-    isSending,
-    setIsSending,
-    thinkingAgent,
-    stopStream: handleStopStream,
-    sendMessage,
-    processStream,
-    streamingTokens,
-    streamingSections,
-    isTokenStreaming,
-    isAwaitingInput,
-    setIsAwaitingInput,
-    abortControllerRef,
-    updateActionStatus,
-    updateActionStatusById,
-    syncActionStatus,
-    loadingSections,
-    setLoadingSections,
-  } = useChatStream({
-    resumeUrl: '/api/storyteller/workflow/resume',
-    verboseUiEnabled: isActivityPanelOpen,
-    persistKey: currentProject?.id
-      ? `storyteller-${currentProject.id}-${currentEpisodeId || StorytellerThreadId.General}`
-      : undefined,
-    projectId: currentProject?.id,
-    episodeId: currentEpisodeId || undefined,
-    userId: userEmail || undefined,
-    initialMessages: [
-      {
-        sender: StorytellerMessageRole.Showrunner,
-        content: STORYTELLER_CHAT_WELCOME_MESSAGE,
-        type: StorytellerMessageType.Ai,
-      },
-    ],
-    onAction: async action => {
-      runStorytellerStreamAction(
-        {
-          executeAction,
-          syncActionStatus,
-          setActionHistory,
-          setSectionPendingActions,
-          setReviewModalAction,
-        },
-        action
-      )
-    },
-    onQuestion: questionSession => {
-      setPendingQuestions(prev => appendUniqueQuestionSession(prev, questionSession))
-    },
-    onStreamingUpdate: data => {
-      handleStorytellerStreamingUpdate(
-        {
-          currentProjectId: currentProject?.id,
-          setCharacters,
-          setCurrentPhase,
-        },
-        data
-      )
-    },
-    onComplete: () => {
-      setGeneratingSection(null)
-      setLoadingSections({})
-    },
-  })
+type LoadingSections = Record<string, { loading: boolean; message?: string }>
+type ActionLocation = { messageIndex: number; actionIndex: number }
 
-  const showThinking = !!thinkingAgent
-  const roundCount = 0
+export interface StorytellerChatSlice {
+  messages: Message[]
+  setMessages: Dispatch<SetStateAction<Message[]>>
+  isSending: boolean
+  setIsSending: Dispatch<SetStateAction<boolean>>
+  setIsAwaitingInput: Dispatch<SetStateAction<boolean>>
+  handleSendMessage: (e?: FormEvent, msgOverride?: string, section?: string) => Promise<void>
+  loadingSections: LoadingSections
+  processStream: (
+    res: Response,
+    signal: AbortSignal,
+    initialRoundCount?: number,
+    pendingActionsRef?: MutableRefObject<number>
+  ) => Promise<void>
+  roundCount: number
+  abortControllerRef: MutableRefObject<AbortController | null>
+  syncActionStatus: (
+    action: WireAgentAction,
+    status: ApprovalActionStatus,
+    location?: ActionLocation
+  ) => void
+  updateActionStatus: (
+    messageIndex: number,
+    actionIndex: number,
+    status: ApprovalActionStatus
+  ) => void
+}
 
-  const MemoizedActionComponent = useStoryActionRenderer({
-    storyPlan,
-    undoStack,
-    setUndoStack,
-    setStoryPlan,
-    setCharacters,
-    setActionHistory,
-    setReviewModalAction,
-    setSectionPendingActions,
-    syncActionStatus,
-    executeAction,
-    getActionSection,
-  })
+export function useStorytellerChat(): StorytellerChatSlice {
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isSending, setIsSending] = useState(false)
+  const [, setIsAwaitingInput] = useState(false)
+  const [loadingSections] = useState<LoadingSections>({})
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  const handleApproveAllActions = useCallback(
-    async (messageIndex: number) => {
-      const msg = messages[messageIndex]
-      if (!msg || !msg.actions) return
-
-      for (let i = 0; i < msg.actions.length; i++) {
-        const action = msg.actions[i]
-        if (action.status !== ApprovalActionStatus.COMMITTED && action.status !== ApprovalActionStatus.REJECTED) {
-          syncActionStatus(action, ApprovalActionStatus.EXECUTING, { messageIndex, actionIndex: i })
-          try {
-            await executeAction(action)
-            syncActionStatus(action, ApprovalActionStatus.COMMITTED, { messageIndex, actionIndex: i })
-          } catch (e) {
-            console.error(`Failed to approve all: action ${i} failed`, e)
-            syncActionStatus(action, ApprovalActionStatus.PENDING, { messageIndex, actionIndex: i })
-          }
-        }
-      }
-    },
-    [messages, syncActionStatus, executeAction]
-  )
-
-  const serializedMessagesRef = useRef<{ src: Message[]; mapped: SerializedChatMessage[] } | null>(
-    null
-  )
-
-  const getSerializedMessages = useCallback((msgs: Message[]) => {
-    const cached = serializedMessagesRef.current
-    if (cached && cached.src === msgs) return cached.mapped
-    const mapped = msgs.map(serializeChatMessage)
-    serializedMessagesRef.current = { src: msgs, mapped }
-    return mapped
+  const handleSendMessage = useCallback(async () => {
+    // Inert: sending now happens through the assistant-ui Writers Room.
   }, [])
 
-  const seriesBibleRef = useRef<Record<string, unknown> | null>(null)
-  const seriesBibleKeyRef = useRef<string | undefined>(undefined)
+  const processStream = useCallback(async () => {
+    // Inert: no legacy stream to process.
+  }, [])
 
-  const getSeriesBible = useCallback(() => {
-    const key = currentProject?.id
-    if (key === seriesBibleKeyRef.current && seriesBibleRef.current) {
-      return seriesBibleRef.current
-    }
-    const bible = {
-      ...(currentProject?.series_bible ?? {}),
-      masterPrompt: currentProject?.master_prompt ?? '',
-      userDecisions: storyDecisions,
-    }
-    seriesBibleRef.current = bible
-    seriesBibleKeyRef.current = key
-    return bible
-  }, [currentProject?.id, currentProject?.series_bible, currentProject?.master_prompt, storyDecisions])
+  const syncActionStatus = useCallback(() => {
+    // Inert: action approval moves to the assistant-ui tool path.
+  }, [])
 
-  const [selectedModel, setSelectedModel] = useState(() => {
-    const stored = browserStorage.getString(LocalStorageKeys.STORYTELLER_CHAT_MODEL)
-    if (stored && getChatModelOption(stored)) return stored
-    return DEFAULT_CHAT_MODEL
-  })
-  useEffect(() => {
-    browserStorage.setString(LocalStorageKeys.STORYTELLER_CHAT_MODEL, selectedModel)
-  }, [selectedModel])
-  const handleModelChange = useCallback((modelId: string) => setSelectedModel(modelId), [])
-
-  const handleSendMessage = useCallback(
-    async (e?: React.FormEvent, msgOverride?: string, section?: string) => {
-      e?.preventDefault()
-      const content = msgOverride || input
-
-      if (!content.trim()) return
-
-      if (isSending) {
-        console.warn(StorytellerChatLog.BlockedSend)
-        return
-      }
-
-      if (section) {
-        setLoadingSections(prev => ({
-          ...prev,
-          [section]: { loading: true, message: StorytellerChatLog.Generating },
-        }))
-      }
-
-      setInput('')
-      setMessages(prev => [...prev, { sender: StorytellerMessageRole.User, content, type: ChatMessageRole.Human }])
-
-      const effectivePhase = resolveEffectivePhase(currentPhase, isWorldBibleOpen, activeTab)
-      const serializedMessages = getSerializedMessages(messages)
-      const seriesBible = getSeriesBible()
-
-      await sendMessage('/api/storyteller/chat/stream', {
-        message: content,
-        messages: serializedMessages,
-        projectId: currentProject?.id,
-        threadId: currentEpisodeId || StorytellerThreadId.General,
-        episodeId: currentEpisodeId,
-        currentPhase: effectivePhase,
-        seriesBible,
-        characters: buildCharactersSummary(characters),
-        streamMode: useEnhancedStreaming ? StorytellerStreamMode.Events : StorytellerStreamMode.Nodes,
-        modelName: selectedModel,
-      })
-    },
-    [
-      input,
-      messages,
-      currentProject?.id,
-      currentEpisodeId,
-      currentPhase,
-      characters,
-      sendMessage,
-      isWorldBibleOpen,
-      activeTab,
-      useEnhancedStreaming,
-      isSending,
-      setLoadingSections,
-      setInput,
-      setMessages,
-      getSerializedMessages,
-      getSeriesBible,
-      selectedModel,
-    ]
-  )
+  const updateActionStatus = useCallback(() => {
+    // Inert: action approval moves to the assistant-ui tool path.
+  }, [])
 
   return {
     messages,
     setMessages,
     isSending,
     setIsSending,
-    thinkingAgent,
-    handleStopStream,
-    sendMessage,
-    processStream,
-    streamingTokens,
-    streamingSections,
-    isTokenStreaming,
-    isAwaitingInput,
     setIsAwaitingInput,
-    abortControllerRef,
-    updateActionStatus,
-    updateActionStatusById,
-    syncActionStatus,
-    loadingSections,
-    setLoadingSections,
-    showThinking,
-    roundCount,
-    MemoizedActionComponent,
-    handleApproveAllActions,
-    getSerializedMessages,
-    getSeriesBible,
-    selectedModel,
-    setSelectedModel,
-    handleModelChange,
     handleSendMessage,
+    loadingSections,
+    processStream,
+    roundCount: 0,
+    abortControllerRef,
+    syncActionStatus,
+    updateActionStatus,
   }
 }
