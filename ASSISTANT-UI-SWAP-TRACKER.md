@@ -29,7 +29,7 @@ Status: ✅ done · ◐ partial (compiles, needs live verify / feature re-home) 
 | Quick actions / suggestions | ◐ | `ThreadPrimitive.Suggestion` starter prompts in the empty state — per-module (`CanvasModuleDef.chatSuggestions`, loop-creator) or per-surface (`AssistantChat suggestions`, writers-room). Phase-adaptive `SmartQuickActions` logic not ported. |
 | Streaming sections / delegation / agent-log | ◐ | Tool-call activity (name · args · result) now rendered in the Thread via `AssistantToolFallback` (tools.Fallback). Dedicated section/delegation parts still todo. |
 | Citations | ◐ | `SourceCitation` (Source message-part) renders url/title links in the Thread. Fires only when an agent emits AI-SDK source parts (web-search etc.) — storyteller/loop agents don't today. |
-| Persistence (thread history) | ⬜ | assistant-ui `ThreadHistoryAdapter` → `src/shared/data/chat-persistence.ts`. |
+| Persistence (thread history) | ◐ | `createSessionThreadHistoryAdapter` (sessionStorage-backed `ThreadHistoryAdapter`, `withFormat` path for `useChatRuntime`) wired via `AssistantChat persistKey`; writers-room + loop-creator pass a per-project key. Swap the read/write helpers for Supabase to persist across devices. Needs live verify of reload restore. |
 
 ## Loop-creator crew (orchestration via assistant-ui)
 

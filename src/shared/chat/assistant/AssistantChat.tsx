@@ -6,8 +6,10 @@
  * `body` (e.g. projectId) is forwarded to the endpoint on every request.
  */
 
+import { useMemo } from 'react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { useChatRuntime, AssistantChatTransport } from '@assistant-ui/react-ai-sdk'
+import { createSessionThreadHistoryAdapter } from './thread-history-adapter'
 import {
   getCanvasModuleAgentId,
   getCanvasModuleChatApiPath,
@@ -35,6 +37,8 @@ interface AssistantChatProps {
   mentionProviders?: readonly MentionProvider[]
   /** Project context passed to mention providers. */
   mentionProjectContext?: ProjectContext
+  /** When set, the thread is persisted (sessionStorage) under this key across reloads. */
+  persistKey?: string
 }
 
 function resolveApi(agentId?: string, moduleKey?: string): string {
@@ -52,9 +56,15 @@ export function AssistantChat({
   suggestions,
   mentionProviders,
   mentionProjectContext,
+  persistKey,
 }: AssistantChatProps) {
+  const history = useMemo(
+    () => (persistKey ? createSessionThreadHistoryAdapter(persistKey) : undefined),
+    [persistKey]
+  )
   const runtime = useChatRuntime({
     transport: new AssistantChatTransport({ api: resolveApi(agentId, moduleKey), body }),
+    adapters: history ? { history } : undefined,
   })
   const resolvedSuggestions =
     suggestions ?? (moduleKey ? getCanvasModuleSuggestions(moduleKey) : [])

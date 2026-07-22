@@ -55,6 +55,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
           suggestions={WRITERS_ROOM_SUGGESTIONS}
           mentionProviders={mentionProviders}
           mentionProjectContext={mentionProjectContext}
+          persistKey={`writers-room-${projectId}`}
         />
       </div>
     </DomainSidebar>

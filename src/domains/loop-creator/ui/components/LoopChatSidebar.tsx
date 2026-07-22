@@ -38,6 +38,7 @@ export function LoopChatSidebar({
             body={{ projectId }}
             mentionProviders={mentionProviders}
             mentionProjectContext={projectContext}
+            persistKey={`loop-creator-${projectId}`}
           />
         </div>
       </div>
