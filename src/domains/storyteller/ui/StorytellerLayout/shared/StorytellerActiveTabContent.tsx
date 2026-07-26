@@ -11,7 +11,7 @@ import {
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 
 export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = props => {
-  const { core, chat, episode, phase, generation, agents } = props
+  const { core, episode, phase, generation, agents } = props
   const {
     activeTab,
     storyPlan,

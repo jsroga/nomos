@@ -31,7 +31,7 @@ import type { useStorytellerChat } from './useStorytellerChat'
 
 type ChatSlice = ReturnType<typeof useStorytellerChat>
 
-export function useStorytellerPhase(core: StorytellerWorkspaceCore, chat: ChatSlice) {
+export function useStorytellerPhase(core: StorytellerWorkspaceCore) {
   const {
     currentEpisodeId,
     currentPhase,
@@ -45,9 +45,9 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore, chat: ChatSl
     currentProject,
     setCurrentEpisodeId,
     beats,
+    isSending,
+    setIsSending,
   } = core
-
-  const { setMessages, isSending, setIsSending, handleSendMessage } = chat
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -94,15 +94,6 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore, chat: ChatSl
       setIsPlanApproved(true)
       setCurrentPhase(Phase.BREAKING)
       setActiveTab(StorytellerTab.Board)
-
-      setMessages(prev => [
-        ...prev,
-        {
-          sender: StorytellerMessageRole.System,
-          content: StorytellerPlanApprovalMessage.ApprovedBreaking,
-          type: StorytellerMessageType.Ai,
-        },
-      ])
     } catch (error) {
       console.error(StorytellerLogMessage.FailedSavePlan, error)
     }
@@ -158,34 +149,19 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore, chat: ChatSl
         params.set(StorytellerQueryParam.EpisodeId, episodeId)
         router.push(`?${params.toString()}`)
         setCurrentEpisodeId(episodeId)
-
-        // Use a small timeout to ensure the state update is processed
-        setTimeout(() => {
-          handleSendMessage(
-            undefined,
-            StorytellerUserPrompt.DraftFirstEpisode
-          )
-        }, 100)
       }
+      setIsSending(false)
     } catch (error) {
       console.error(StorytellerLogMessage.FailedDraftFirstEpisode, error)
       setIsSending(false)
     }
-  }, [currentProject?.id, isSending, handleSendMessage, searchParams, router])
+  }, [currentProject?.id, isSending, setIsSending, searchParams, router, setCurrentEpisodeId])
 
   const handleGenerateBible = useCallback(() => {
     const params = new URLSearchParams(searchParams?.toString() || '')
     params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Open)
     router.push(`?${params.toString()}`)
-
-    // Give it a tiny bit of time for the panel to open before sending message
-    setTimeout(() => {
-      handleSendMessage(
-        undefined,
-        StorytellerUserPrompt.BuildSeriesFoundation
-      )
-    }, 100)
-  }, [searchParams, router, handleSendMessage])
+  }, [searchParams, router])
 
   // Phase Navigation Handlers
   const PHASE_ORDER: PhaseId[] = [Phase.PREMISE, Phase.BREAKING, Phase.WRITING, Phase.COMPLETE]

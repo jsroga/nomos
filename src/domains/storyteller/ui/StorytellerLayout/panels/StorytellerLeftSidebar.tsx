@@ -14,7 +14,7 @@ import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/us
 import { StorybibleToggleButton } from './StorybibleToggleButton'
 
 export function StorytellerLeftSidebar(props: StorytellerPageSlices) {
-  const { core, chat, episode, agents } = props
+  const { core, episode, agents } = props
   const {
     searchParams,
     router,
@@ -31,7 +31,7 @@ export function StorytellerLeftSidebar(props: StorytellerPageSlices) {
     setCurrentEpisodeTitle,
     currentEpisode,
   } = core
-  const { isSending } = chat
+  const { isSending } = core
   const {
     isFetchingCharacters,
     isDeletingCharacter,

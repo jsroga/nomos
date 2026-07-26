@@ -15,19 +15,14 @@ import {
 } from '@/domains/storyteller/core/io/storyteller.api'
 import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
-import type { useStorytellerChat } from './useStorytellerChat'
-
-type ChatSlice = ReturnType<typeof useStorytellerChat>
-
-export function useStorytellerAgentBible(core: StorytellerWorkspaceCore, chat: ChatSlice) {
+export function useStorytellerAgentBible(core: StorytellerWorkspaceCore) {
   const {
     currentProject,
     currentEpisodeId,
     setStoryPlan,
     handleDismissToast,
+    setIsSending,
   } = core
-
-  const { setIsSending } = chat
 
   const handleSaveProjectPrompt = useCallback(
     async (prompt: string) => {

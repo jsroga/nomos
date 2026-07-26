@@ -12,7 +12,7 @@ import { StorytellerEpisodeHeader } from './StorytellerEpisodeHeader'
 import { StorytellerActiveTabContent } from './StorytellerActiveTabContent'
 
 export function StorytellerCenterPanel(props: StorytellerPageSlices) {
-  const { core, chat, phase, agents } = props
+  const { core, phase, agents } = props
   const {
     primaryMoodboardUrl,
     currentProject,
@@ -30,16 +30,12 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
     searchParams,
     router,
     selectEpisode,
+    isSending,
+    loadingSections,
   } = core
-  const { isSending, loadingSections } = chat
   const { handleDraftFirstEpisode, handleGenerateBible, handlePreviousPhase, handlePhaseChange } =
     phase
-  const {
-    worldBiblePanelStoryPlan,
-    handleUpdateGlobalBible,
-    handleBibleSendMessage,
-    closeWorldBiblePanel,
-  } = agents
+  const { worldBiblePanelStoryPlan, handleUpdateGlobalBible, closeWorldBiblePanel } = agents
 
   const openBible = () => {
     const params = cloneSearchParams(searchParams)
@@ -95,7 +91,6 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
             storyPlan={worldBiblePanelStoryPlan}
             projectId={currentProject?.id || ''}
             onUpdate={handleUpdateGlobalBible}
-            onSendMessage={handleBibleSendMessage}
             isReadOnly={isSending}
             isLoading={isFetchingPlan}
             loadingSections={loadingSections}

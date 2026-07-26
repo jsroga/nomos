@@ -105,6 +105,12 @@ export function useStorytellerPageBase() {
   const [isActivityPanelOpen, setIsActivityPanelOpen] = useState(false)
   const [storyDecisions, setStoryDecisions] = useState<Record<string, string>>({})
   const [input, setInput] = useState('')
+  // Generic busy indicator for real workspace operations (bible save, phase
+  // change / approve). Formerly sourced from the legacy chat stream.
+  const [isSending, setIsSending] = useState(false)
+  const [loadingSections, setLoadingSections] = useState<
+    Record<string, { loading: boolean; message?: string }>
+  >({})
   const [pendingQuestions, setPendingQuestions] = useState<QuestionSession[]>([])
   const [answeredQuestions, setAnsweredQuestions] = useState<
     { question: string; answer: string }[]
@@ -203,6 +209,10 @@ export function useStorytellerPageBase() {
   const removeOperation = useGlobalStatusStore(state => state.removeOperation)
 
   return {
+    isSending,
+    setIsSending,
+    loadingSections,
+    setLoadingSections,
     searchParams,
     params,
     router,
