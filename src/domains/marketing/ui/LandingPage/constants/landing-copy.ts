@@ -1,3 +1,5 @@
+import { LandingHeroAbVariant } from '@/domains/marketing/constants/hero-ab'
+
 export const LANDING_SUBTITLES: readonly string[] = [
   'Play god. It’s cheaper than therapy.',
   'Your reality is boring. Make a new one.',
@@ -39,10 +41,26 @@ export enum LandingSectionId {
 
 export const LANDING_BRAND_ACCENT = '#5c7cfa'
 
-export enum LandingHeadlineLine {
-  Build = 'BUILD',
-  Worlds = 'WORLDS',
-  Bleed = 'THAT BLEED',
+export type LandingHeroHeadlineLines = {
+  readonly line1: string
+  readonly line2: string
+  readonly line3: string
+}
+
+export const LANDING_HERO_HEADLINES: Record<
+  LandingHeroAbVariant,
+  LandingHeroHeadlineLines
+> = {
+  [LandingHeroAbVariant.A]: {
+    line1: 'SHIP',
+    line2: 'GAMES',
+    line3: 'NOT BUSYWORK',
+  },
+  [LandingHeroAbVariant.B]: {
+    line1: 'BUILD',
+    line2: 'FASTER',
+    line3: 'SHIP BETTER',
+  },
 }
 
 export enum LandingHeroCopy {

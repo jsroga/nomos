@@ -86,8 +86,8 @@ Landing hero contract: **server-rendered** Syne headline in first HTML (`Landing
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| Three woff2 on `/` (Inter + Mono + Syne) | Root layout applied all `next/font` variables + `font-sans` / `font-mono` | Marketing: **Syne only** on root body. Inter + JetBrains Mono only in `(workspace)` / `(auth)` layouts |
-| Late LCP after FCP | `display: swap` swaps webfont into LCP candidate | Syne: `display: 'optional'`, `preload: true`, `adjustFontFallback: true` |
+| Three woff2 on `/` (Inter + Mono + Syne) | Root layout applied all `next/font` variables + `font-sans` / `font-mono` | Root: Syne only. Marketing layout adds JetBrains Mono (`font-mono` / default `h1–h6`). Inter only in `(workspace)` / `(auth)` |
+| Late LCP after FCP / missing Syne | `display: optional` drops the webfont if it misses ~100ms | Syne: `display: 'swap'`, `preload: true`, `adjustFontFallback: true` |
 
 ### 6. Main-thread / TBT from marketing providers
 

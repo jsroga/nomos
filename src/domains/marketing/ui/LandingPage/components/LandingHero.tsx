@@ -1,17 +1,22 @@
 import Link from 'next/link'
+import { LandingHeroAbVariant } from '@/domains/marketing/constants/hero-ab'
 import { LandingExternalUrl, LandingHeroCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
 import { LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 import { HeadlineVariant } from '@/domains/marketing/ui/LandingPage/components/HeadlineVariant'
 
+type LandingHeroProps = {
+  readonly headlineVariant?: LandingHeroAbVariant
+}
+
 /** Server-rendered hero — LCP text in the first HTML response (no icon package). */
-export function LandingHero() {
+export function LandingHero({ headlineVariant = LandingHeroAbVariant.A }: LandingHeroProps) {
   return (
     <section
       className={`${LANDING_SECTION_PANEL_CLASS} min-h-[85vh] flex flex-col items-center justify-center px-6 pt-20 pb-8`}
     >
       <div className="text-center max-w-5xl mx-auto mb-12">
         <div className="mb-6">
-          <HeadlineVariant />
+          <HeadlineVariant variant={headlineVariant} />
         </div>
 
         <div className="flex flex-col gap-1 text-base md:text-lg text-white/70 max-w-2xl mx-auto leading-snug tracking-tight">

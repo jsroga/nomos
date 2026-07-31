@@ -75,6 +75,17 @@ npm run audit:cwv -- --url http://localhost:3000/
 
 UI lives in `src/shared/debug/`. Unset both flags → overlays hidden.
 
+## Landing A/B (hero headline)
+
+Sticky cookie `lp_hero` (`a` | `b`) assigned in `src/middleware.ts` on `/`. Split via env (0–100); missing → 50/50; one side set → other is remainder; both set but not summing to 100 → normalized.
+
+| Env | Effect |
+|---|---|
+| `LANDING_HERO_AB_A_PCT` | Share for variant A (`SHIP / GAMES / NOT BUSYWORK`) |
+| `LANDING_HERO_AB_B_PCT` | Share for variant B (`BUILD / FASTER / SHIP BETTER`) |
+
+Copy lives in `LANDING_HERO_HEADLINES` (`src/domains/marketing/ui/LandingPage/constants/landing-copy.ts`).
+
 ## Feature flags
 
 Opt-in flags are named `FF_<NAME>` and turn on with the exact value `true`; anything else is off. Server code reads them via `isFeatureEnabled(FeatureFlag.X)` from `@/shared/data/constants/feature-flags`. Client code must reference `process.env.NEXT_PUBLIC_FF_*` as a literal so Next can inline it — the helper does not work in the browser bundle.

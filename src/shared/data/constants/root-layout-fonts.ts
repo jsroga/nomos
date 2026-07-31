@@ -24,8 +24,7 @@ export const jetbrainsMono = JetBrains_Mono({
 export const syne = Syne({
   subsets: ['latin'],
   variable: '--font-syne',
-  // Avoid late LCP when the webfont swaps in after fallback paint.
-  display: 'optional',
+  display: 'swap',
   preload: true,
   adjustFontFallback: true,
 })
