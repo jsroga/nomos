@@ -28,10 +28,11 @@ let requestCount = 0
 let windowStart = Date.now()
 
 function parseVoyageModel(value: unknown): VoyageModelId {
-  const raw = typeof value === 'string' ? value : null
+  const raw = typeof value === 'string' ? value : process.env.EMBEDDING_MODEL
   if (!raw) return VOYAGE_DEFAULT_MODEL
+  const normalized = raw.includes(':') && !raw.includes('/') ? raw.replace(':', '/') : raw
   for (const model of VOYAGE_MODEL_VALUES) {
-    if (model === raw) return model
+    if (model === normalized) return model
   }
   return VOYAGE_DEFAULT_MODEL
 }
@@ -67,7 +68,7 @@ async function waitForRateLimit(): Promise<void> {
 
   if (requestCount >= VOYAGE_RATE_LIMIT_RPM) {
     const waitTime = VOYAGE_RATE_LIMIT_WINDOW_MS - (now - windowStart) + 100
-    console.log(`[Voyage] Rate limit reached, waiting ${waitTime}ms`)
+    console.log(`[Embeddings] Rate limit reached, waiting ${waitTime}ms`)
     await new Promise(resolve => setTimeout(resolve, waitTime))
     windowStart = Date.now()
     requestCount = 0

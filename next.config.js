@@ -8,12 +8,13 @@ const {
   DEV_INDICATOR_POSITION,
   SSR_SELF_GLOBAL,
   PRODUCTION_NODE_ENV,
+  ANALYZE_ENV_ENABLED,
   REMOVE_CONSOLE_EXCLUDE,
   SENTRY_ORG,
   SENTRY_PROJECT,
 } = require('./next.config.constants')
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === '1',
+  enabled: process.env.ANALYZE === ANALYZE_ENV_ENABLED,
 })
 
 const nextConfig = {

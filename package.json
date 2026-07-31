@@ -186,6 +186,6 @@
     "trigger:deploy": "OTEL_TRACES_EXPORTER=none npx trigger.dev@latest deploy --env prod",
     "audit:cwv": "node scripts/audit-cwv.mjs",
     "marketing:glb-lite": "node scripts/marketing-glb-lite.mjs",
-    "analyze": "ANALYZE=1 next build --webpack"
+    "analyze": "ANALYZE=true next build --webpack"
   }
 }

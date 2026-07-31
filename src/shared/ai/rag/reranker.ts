@@ -13,6 +13,7 @@ import {
   RerankerLog,
   RerankerProviderId,
 } from '@/shared/ai/constants/reranker'
+import { OPENROUTER_BASE_URL } from '@/shared/agent-kernel/models'
 
 // ============================================
 // TYPES
@@ -133,15 +134,15 @@ const cohereRerankResponseSchema = z.object({
 })
 
 /**
- * Cohere API-based reranking
- * Requires COHERE_API_KEY environment variable
+ * Cohere rerank via OpenRouter (`POST /api/v1/rerank`).
+ * Requires OPENROUTER_API_KEY; falls back to heuristic when missing.
  */
 async function rerankCohere(
   query: string,
   results: SearchResult[],
   config: RerankerConfig
 ): Promise<SearchResult[]> {
-  const apiKey = process.env.COHERE_API_KEY
+  const apiKey = process.env.OPENROUTER_API_KEY
 
   if (!apiKey) {
     console.warn(RerankerLog.CohereKeyMissing)
@@ -149,7 +150,7 @@ async function rerankCohere(
   }
 
   try {
-    const response = await fetch('https://api.cohere.ai/v1/rerank', {
+    const response = await fetch(`${OPENROUTER_BASE_URL}/rerank`, {
       method: HttpMethod.Post,
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -160,12 +161,11 @@ async function rerankCohere(
         documents: results.map(r => r.content),
         model: config.cohereModel,
         top_n: config.rerankedTopK,
-        return_documents: false,
       }),
     })
 
     if (!response.ok) {
-      throw new Error(`Cohere API error: ${response.status}`)
+      throw new Error(`OpenRouter rerank error: ${response.status}`)
     }
 
     const data = cohereRerankResponseSchema.parse(await response.json())

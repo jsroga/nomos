@@ -24,7 +24,7 @@ export enum MastraObservabilityEnv {
 export const MASTRA_OBSERVABILITY_CONFIG_NAME = 'default'
 
 /** Truthy marker for the boolean-ish env switches above. */
-export const MASTRA_OBSERVABILITY_ENV_ENABLED = '1'
+export const MASTRA_OBSERVABILITY_ENV_ENABLED = 'true'
 
 /**
  * Console/file logs stay at PinoLogger's level; only `info`+ is persisted so

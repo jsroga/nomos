@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { VectorStringError } from '@/domains/storyteller/services/constants/entity-graph-wire'
 
-export const EMBEDDING_DIMENSION = 1024
+export const EMBEDDING_DIMENSION = 1536
 export const HOP_DECAY_FACTOR = 0.7
 export const MIN_RELEVANCE_THRESHOLD = 0.3
 

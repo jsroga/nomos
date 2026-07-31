@@ -56,20 +56,20 @@ Two systems (not correlated today):
 Config: `src/shared/agent-kernel/mastra/observability-config.ts`. Spans in app code: `withMastraSpan()` from `@/shared/observability/mastra-tracing`.
 
 ```bash
-MASTRA_TRACE_CONSOLE=1
+MASTRA_TRACE_CONSOLE=true
 MASTRA_TRACE_SAMPLE_RATIO=0.1
 MASTRA_PLATFORM_ACCESS_TOKEN=
 npm run mastra:dev   # Traces tab
 ```
 
-`MODEL_CHUNK` spans dropped by default (`MASTRA_TRACE_MODEL_CHUNKS=1` to keep).
+`MODEL_CHUNK` spans dropped by default (`MASTRA_TRACE_MODEL_CHUNKS=true` to keep).
 
 ## Perf debug (opt-in)
 
 ```bash
 NEXT_PUBLIC_FF_CWV_HUD=true      # live Core Web Vitals overlay (attribution) — restart dev
 NEXT_PUBLIC_FF_PERF_DEBUG=true   # React Scan re-render overlay (+ enables CWV HUD too)
-npm run analyze                  # ANALYZE=1 webpack bundle report
+npm run analyze                  # ANALYZE=true webpack bundle report
 npm run audit:cwv -- --url http://localhost:3000/
 ```
 
@@ -102,13 +102,13 @@ Every model resolves through the OpenRouter gateway on `OPENROUTER_API_KEY`. Def
 | Loop creator | `LOOP_CREATOR_MODEL` | `domains/loop-creator/config/model-config.ts` |
 | Generation | `GENERATION_MODEL`, `GENERATION_MODEL_FAST`, `GENERATION_MODEL_CREATIVE` | `models.ts` |
 | Planning | `PLANNING_MODEL`, `PLANNING_MODEL_REASONING` | `models.ts` |
+| Embeddings | `EMBEDDING_MODEL` (default `openai/text-embedding-3-small`) | OpenRouter `/embeddings` |
 | Eval judges | `JUDGING_MODEL`, `JUDGING_MODEL_FALLBACK` | `models.ts` |
-| Embeddings | `EMBEDDING_MODEL` (default `openai:text-embedding-3-small`) | `models.ts` |
 | Writers-room picker default | `NEXT_PUBLIC_DEFAULT_AGENT_MODEL` | `domains/storyteller/config/constants/model-config.ts` |
 
 Overrides are read at call time, not module load, so dotenv scripts and per-environment rollbacks work regardless of import order. `GET /api/settings/models` prints the resolved role→model table with provenance.
 
-The writers-room picker offers Kimi 2.7 (`moonshotai/kimi-k2.7-code`) and GLM 5.2 (`z-ai/glm-5.2`); both route through the same key, so no per-provider keys are required. Remaining direct-provider exceptions: Voyage for RAG embeddings, and OpenAI for the moodboard, `generate-metrics`, and interior-texture endpoints.
+The writers-room picker offers Kimi 2.7 (`moonshotai/kimi-k2.7-code`) and GLM 5.2 (`z-ai/glm-5.2`); both route through the same key, so no per-provider keys are required. RAG embeddings and Cohere rerank also use `OPENROUTER_API_KEY`. Remaining direct-provider exceptions: OpenAI for the moodboard, `generate-metrics`, and interior-texture endpoints.
 
 ## Mastra / agents
 

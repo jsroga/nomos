@@ -111,7 +111,7 @@ sequenceDiagram
 | Jobs | Trigger.dev | Image / 3D / long work |
 | DB / Auth | Supabase | Postgres + pgvector + Auth |
 | LLM gateway | OpenRouter (primary) | Agents / scorers |
-| Embeddings | Voyage (optional) | RAG |
+| Embeddings | OpenRouter | RAG (`/embeddings`; optional Cohere rerank) |
 | Images | Gemini / Grok / Stability / LegNext | Tiles & media |
 | 3D | Meshy / Hyper3D / … | Asset exporter tasks |
 | Observability | Mastra store + Sentry/OTel | AI spans vs HTTP |

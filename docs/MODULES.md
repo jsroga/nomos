@@ -38,7 +38,7 @@ R3F sculpt/paint/place. UI stores for scene vs high-frequency terrain; persisten
 
 ## Marketing
 
-Public landing (`/`), CWV-sensitive Three.js icons (viewport-gated, lite GLBs via `npm run marketing:glb-lite`). Perf debug: `NEXT_PUBLIC_PERF_DEBUG=1` — [DEVELOPMENT.md](./DEVELOPMENT.md).
+Public landing (`/`), CWV-sensitive Three.js icons (viewport-gated, lite GLBs via `npm run marketing:glb-lite`). Perf debug: `NEXT_PUBLIC_FF_PERF_DEBUG=true` — [DEVELOPMENT.md](./DEVELOPMENT.md).
 
 ## Shared platform pieces (not domains)
 

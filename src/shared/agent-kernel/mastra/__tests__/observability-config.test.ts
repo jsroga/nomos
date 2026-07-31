@@ -28,7 +28,7 @@ describe('planObservability', () => {
   it('adds the console exporter behind an explicit flag', () => {
     const plan = planObservability({
       hasStorage: false,
-      env: { [MastraObservabilityEnv.ConsoleExporter]: '1' },
+      env: { [MastraObservabilityEnv.ConsoleExporter]: 'true' },
     })
     expect(plan.exporterNames).toEqual(['ConsoleExporter'])
   })
@@ -40,7 +40,7 @@ describe('planObservability', () => {
     expect(
       planObservability({
         hasStorage: true,
-        env: { [MastraObservabilityEnv.ModelChunkSpans]: '1' },
+        env: { [MastraObservabilityEnv.ModelChunkSpans]: 'true' },
       }).excludeSpanTypes
     ).toEqual([])
   })

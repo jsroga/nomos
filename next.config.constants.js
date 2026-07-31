@@ -72,6 +72,7 @@ const REMOVE_CONSOLE_EXCLUDE = [CONSOLE_ERROR, CONSOLE_WARN]
 const DEV_INDICATOR_POSITION = 'bottom-right'
 const SSR_SELF_GLOBAL = 'globalThis'
 const PRODUCTION_NODE_ENV = 'production'
+const ANALYZE_ENV_ENABLED = 'true'
 const SENTRY_ORG = 'kurvitza'
 const SENTRY_PROJECT = 'sentry-coquelicot-basket'
 
@@ -84,6 +85,7 @@ module.exports = {
   DEV_INDICATOR_POSITION,
   SSR_SELF_GLOBAL,
   PRODUCTION_NODE_ENV,
+  ANALYZE_ENV_ENABLED,
   REMOVE_CONSOLE_EXCLUDE,
   SENTRY_ORG,
   SENTRY_PROJECT,

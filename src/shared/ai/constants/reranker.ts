@@ -5,11 +5,12 @@ export enum RerankerProviderId {
 }
 
 export enum CohereRerankModel {
-  EnglishV3 = 'rerank-english-v3.0',
+  /** OpenRouter model id for Cohere Rerank v3.5 */
+  EnglishV3 = 'cohere/rerank-v3.5',
 }
 
 export enum RerankerLog {
-  CohereKeyMissing = 'COHERE_API_KEY not set, falling back to heuristic reranking',
-  CohereFailed = 'Cohere reranking failed, falling back to heuristic:',
+  CohereKeyMissing = 'OPENROUTER_API_KEY not set, falling back to heuristic reranking',
+  CohereFailed = 'OpenRouter reranking failed, falling back to heuristic:',
   CrossEncoderNotImplemented = 'Cross-encoder reranking not yet implemented, using heuristic',
 }

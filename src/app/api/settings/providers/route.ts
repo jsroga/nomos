@@ -19,7 +19,7 @@ export async function GET() {
       hyper3d: !!process.env.HYPER3D_API_KEY,
       meshy: !!process.env.MESHY_API_KEY,
       fal: !!process.env.FAL_KEY,
-      voyage: !!process.env.VOYAGE_API_KEY,
+      voyage: !!process.env.OPENROUTER_API_KEY,
     },
   })
 }

@@ -48,7 +48,7 @@ export function createMockEmbeddings(count: number): number[][] {
 function logSkipReason(apiKey: string | undefined, isEnabled: boolean): void {
   if (Date.now() < rateLimitUntil) {
     console.warn(
-      `[Voyage] Circuit breaker active. Skipping API call (cooldown expires in ${Math.ceil((rateLimitUntil - Date.now()) / 1000)}s).`
+      `[Embeddings] Circuit breaker active. Skipping API call (cooldown expires in ${Math.ceil((rateLimitUntil - Date.now()) / 1000)}s).`
     )
     return
   }
@@ -94,9 +94,14 @@ async function handleRateLimitResponse(
   }
 
   console.warn(
-    `[Voyage] Rate limited, retrying after ${retryAfterSec}s (attempt ${retryCount + 1}/3)`
+    `[Embeddings] Rate limited, retrying after ${retryAfterSec}s (attempt ${retryCount + 1}/3)`
   )
   return retryAfterDelay(texts, config, retryCount, retryAfterSec * 1000, waitForRateLimit)
+}
+
+function resolveEmbeddingModel(model: string | undefined): string {
+  const raw = (model || process.env.EMBEDDING_MODEL || VOYAGE_DEFAULT_MODEL).trim()
+  return raw.includes(':') && !raw.includes('/') ? raw.replace(':', '/') : raw
 }
 
 export async function callVoyageAPI(
@@ -105,7 +110,7 @@ export async function callVoyageAPI(
   retryCount: number,
   waitForRateLimit: () => Promise<void>
 ): Promise<number[][]> {
-  const apiKey = process.env.VOYAGE_API_KEY
+  const apiKey = process.env.OPENROUTER_API_KEY
   const isEnabled = isFeatureEnabled(FeatureFlag.VoyageEmbeddings)
 
   if (shouldSkipVoyageCall(apiKey, isEnabled)) {
@@ -114,8 +119,8 @@ export async function callVoyageAPI(
 
   await waitForRateLimit()
 
-  const model = config.model || VOYAGE_DEFAULT_MODEL
-  const inputType = config.inputType || VoyageInputType.Document
+  const model = resolveEmbeddingModel(config.model)
+  const dimensions = config.outputDimension ?? VOYAGE_EMBEDDING_DIMENSIONS
 
   try {
     const response = await fetch(VOYAGE_API_URL, {
@@ -127,9 +132,7 @@ export async function callVoyageAPI(
       body: JSON.stringify({
         model,
         input: texts,
-        input_type: inputType,
-        truncation: config.truncation ?? true,
-        ...(config.outputDimension && { output_dimension: config.outputDimension }),
+        dimensions,
       }),
     })
 
@@ -146,11 +149,11 @@ export async function callVoyageAPI(
 
       if (response.status >= 500 && retryCount < VOYAGE_MAX_RETRIES) {
         const backoff = Math.pow(2, retryCount) * 1000
-        console.warn(`[Voyage] Server error, retrying in ${backoff}ms`)
+        console.warn(`[Embeddings] Server error, retrying in ${backoff}ms`)
         return retryAfterDelay(texts, config, retryCount, backoff, waitForRateLimit)
       }
 
-      throw new Error(`Voyage API error (${response.status}): ${errorText}`)
+      throw new Error(`OpenRouter embeddings error (${response.status}): ${errorText}`)
     }
 
     const data: VoyageAPIResponse = await response.json()
@@ -163,7 +166,7 @@ export async function callVoyageAPI(
       error.message.includes(VOYAGE_NETWORK_ERROR_TOKEN)
     ) {
       const backoff = Math.pow(2, retryCount) * 1000
-      console.warn(`[Voyage] Network error, retrying in ${backoff}ms`)
+      console.warn(`[Embeddings] Network error, retrying in ${backoff}ms`)
       return retryAfterDelay(texts, config, retryCount, backoff, waitForRateLimit)
     }
     throw error

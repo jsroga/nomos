@@ -130,9 +130,9 @@ export const MODELS = {
     reasoning: process.env.PLANNING_MODEL_REASONING || TEXT_GEN_PRIMARY_MODEL,
   },
 
-  // === EMBEDDING MODELS (OpenRouter has no unified embeddings gateway → own key) ===
+  // === EMBEDDING MODELS (OpenRouter `/embeddings` — same OPENROUTER_API_KEY) ===
   embedding: {
-    primary: process.env.EMBEDDING_MODEL || 'openai:text-embedding-3-small',
+    primary: process.env.EMBEDDING_MODEL || 'openai/text-embedding-3-small',
   },
 } as const
 
