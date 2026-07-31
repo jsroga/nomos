@@ -1,7 +1,8 @@
 /**
  * OpenRouter routing UTs — pure, no network, always run in `npm run test:unit`.
  * Verify every model resolver funnels through the OpenRouter gateway on the
- * single OPENROUTER_API_KEY and defaults to `openrouter/auto-beta`.
+ * single OPENROUTER_API_KEY and defaults to TEXT_GEN_PRIMARY_MODEL (Kimi).
+ * Anthropic text ids remap to Kimi (enforceTextGenModelPolicy).
  *
  * Live verification (real OpenRouter call) is in `openrouter.e2e.test.ts`.
  */
@@ -13,6 +14,8 @@ import {
   OPENROUTER_AUTO_MODEL,
   OPENROUTER_AUTO_GATEWAY,
   OPENROUTER_BASE_URL,
+  TEXT_GEN_PRIMARY_MODEL,
+  TEXT_GEN_SHORT_IMPACT_MODEL,
   openRouterClientConfig,
 } from '@/shared/agent-kernel/models'
 import { resolveGameDesignModel } from '@/domains/game-design/config/model-config'
@@ -51,37 +54,39 @@ beforeEach(() => {
 })
 
 describe('toOpenRouterModelId (direct OpenRouter clients)', () => {
-  it('defaults empty/undefined to the auto router id', () => {
-    expect(OPENROUTER_AUTO_MODEL).toBe('openrouter/auto-beta')
-    expect(toOpenRouterModelId()).toBe('openrouter/auto-beta')
-    expect(toOpenRouterModelId('')).toBe('openrouter/auto-beta')
+  it('defaults empty/undefined to the primary text model id', () => {
+    expect(OPENROUTER_AUTO_MODEL).toBe(TEXT_GEN_PRIMARY_MODEL)
+    expect(toOpenRouterModelId()).toBe(TEXT_GEN_PRIMARY_MODEL)
+    expect(toOpenRouterModelId('')).toBe(TEXT_GEN_PRIMARY_MODEL)
   })
   it('normalizes provider:model to provider/model (no gateway prefix)', () => {
-    expect(toOpenRouterModelId('openai:gpt-4o')).toBe('openai/gpt-4o')
+    expect(toOpenRouterModelId('openai:gpt-5.6-luna')).toBe('openai/gpt-5.6-luna')
     expect(toOpenRouterModelId('openai/gpt-5.6-luna')).toBe('openai/gpt-5.6-luna')
+  })
+  it('remaps Anthropic text ids to the primary model', () => {
+    expect(toOpenRouterModelId('anthropic/claude-sonnet-5')).toBe(TEXT_GEN_PRIMARY_MODEL)
   })
 })
 
 describe('toOpenRouterModel (Mastra gateway string)', () => {
-  it('defaults to the double-prefixed auto gateway string', () => {
-    // Verified live: single `openrouter/auto-beta` → "Invalid URL"; the router
-    // needs gateway=openrouter + model=openrouter/auto-beta.
-    expect(OPENROUTER_AUTO_GATEWAY).toBe('openrouter/openrouter/auto-beta')
+  it('defaults to openrouter/<primary>', () => {
+    expect(OPENROUTER_AUTO_GATEWAY).toBe(`openrouter/${TEXT_GEN_PRIMARY_MODEL}`)
     expect(toOpenRouterModel()).toBe(OPENROUTER_AUTO_GATEWAY)
     expect(toOpenRouterModel('')).toBe(OPENROUTER_AUTO_GATEWAY)
     expect(toOpenRouterModel(OPENROUTER_AUTO_MODEL)).toBe(OPENROUTER_AUTO_GATEWAY)
   })
 
   it('gateways provider:model and provider/model ids', () => {
-    expect(toOpenRouterModel('openai:gpt-4o')).toBe('openrouter/openai/gpt-4o')
-    expect(toOpenRouterModel('anthropic/claude-sonnet-5')).toBe('openrouter/anthropic/claude-sonnet-5')
+    expect(toOpenRouterModel('openai:gpt-5.6-luna')).toBe('openrouter/openai/gpt-5.6-luna')
     expect(toOpenRouterModel('z-ai/glm-5.2')).toBe('openrouter/z-ai/glm-5.2')
     expect(toOpenRouterModel('openai/gpt-5.6-luna')).toBe('openrouter/openai/gpt-5.6-luna')
   })
 
-  it('leaves an already-gatewayed 3-segment id untouched', () => {
+  it('leaves an already-gatewayed 3-segment id untouched when non-Anthropic', () => {
     expect(toOpenRouterModel('openrouter/z-ai/glm-5.2')).toBe('openrouter/z-ai/glm-5.2')
-    expect(toOpenRouterModel('openrouter/openai/gpt-4o')).toBe('openrouter/openai/gpt-4o')
+    expect(toOpenRouterModel('openrouter/openai/gpt-5.6-luna')).toBe(
+      'openrouter/openai/gpt-5.6-luna',
+    )
   })
 })
 
@@ -89,7 +94,7 @@ describe('every model resolver routes through OpenRouter', () => {
   it('Mastra resolvers default to the auto gateway string', () => {
     expect(resolveGameDesignModel()).toBe(OPENROUTER_AUTO_GATEWAY)
     expect(resolveLoopCreatorMastraModel()).toBe(OPENROUTER_AUTO_GATEWAY)
-    expect(toMastraJudgingModel()).toBe(OPENROUTER_AUTO_GATEWAY)
+    expect(toMastraJudgingModel()).toBe(`openrouter/${TEXT_GEN_SHORT_IMPACT_MODEL}`)
     expect(resolveRoleModel('chat')).toBe(OPENROUTER_AUTO_GATEWAY)
     expect(resolveRoleModel('author')).toBe(OPENROUTER_AUTO_GATEWAY)
   })
@@ -99,10 +104,10 @@ describe('every model resolver routes through OpenRouter', () => {
   })
 
   it('env overrides are routed through the gateway (single key)', () => {
-    process.env.GAME_DESIGN_MODEL = 'openai:gpt-4o'
-    expect(resolveGameDesignModel()).toBe('openrouter/openai/gpt-4o')
-    process.env.JUDGING_MODEL = 'anthropic/claude-sonnet-4.5'
-    expect(toMastraJudgingModel()).toBe('openrouter/anthropic/claude-sonnet-4.5')
+    process.env.GAME_DESIGN_MODEL = 'openai:gpt-5.6-luna'
+    expect(resolveGameDesignModel()).toBe('openrouter/openai/gpt-5.6-luna')
+    process.env.JUDGING_MODEL = 'openai/gpt-5.6-sol'
+    expect(toMastraJudgingModel()).toBe('openrouter/openai/gpt-5.6-sol')
     process.env.STORYTELLER_AUTHOR_MODEL = 'moonshotai/kimi-k2'
     expect(resolveRoleModel('author')).toBe('openrouter/moonshotai/kimi-k2')
   })
@@ -140,9 +145,9 @@ describe('admin model settings override the resolvers', () => {
   })
 
   it('a specific slot overrides the default slot', () => {
-    __setModelSettingForTest('default', 'openai/gpt-4o-mini')
-    __setModelSettingForTest('author', 'anthropic/claude-opus-4.8')
-    expect(resolveRoleModel('author')).toBe('openrouter/anthropic/claude-opus-4.8')
-    expect(resolveRoleModel('chat')).toBe('openrouter/openai/gpt-4o-mini')
+    __setModelSettingForTest('default', 'openai/gpt-5.6-luna')
+    __setModelSettingForTest('author', 'moonshotai/kimi-k2.7-code')
+    expect(resolveRoleModel('author')).toBe('openrouter/moonshotai/kimi-k2.7-code')
+    expect(resolveRoleModel('chat')).toBe('openrouter/openai/gpt-5.6-luna')
   })
 })

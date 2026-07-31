@@ -16,8 +16,6 @@ import { StorybibleToggleButton } from './StorybibleToggleButton'
 export function StorytellerLeftSidebar(props: StorytellerPageSlices) {
   const { core, episode, agents } = props
   const {
-    searchParams,
-    router,
     currentProject,
     isWorldBibleOpen,
     isBibleLocked,
@@ -27,7 +25,7 @@ export function StorytellerLeftSidebar(props: StorytellerPageSlices) {
     selectedBeatId,
     currentEpisodeId,
     currentEpisodeTitle,
-    setCurrentEpisodeId,
+    selectEpisode,
     setCurrentEpisodeTitle,
     currentEpisode,
   } = core
@@ -94,13 +92,7 @@ export function StorytellerLeftSidebar(props: StorytellerPageSlices) {
                       projectId={currentProject.id}
                       currentEpisodeId={currentEpisodeId}
                       currentEpisodeTitle={currentEpisodeTitle}
-                      onEpisodeChange={id => {
-                        // Optimistic update
-                        setCurrentEpisodeId(id)
-                        const params = new URLSearchParams(searchParams?.toString() || '')
-                        params.set('episodeId', id)
-                        router.push(`?${params.toString()}`)
-                      }}
+                      onEpisodeChange={selectEpisode}
                       onEpisodeTitleChange={title => setCurrentEpisodeTitle(title)}
                     />
                     {isSending && (

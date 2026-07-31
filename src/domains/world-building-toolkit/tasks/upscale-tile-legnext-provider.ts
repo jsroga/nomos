@@ -6,13 +6,14 @@ import {
   recordFromJson,
   stringArrayFromJson,
 } from '@/shared/data/json-guards'
+import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { pollLegNextTask } from './upscale-tile-legnext-poll'
 
 export async function upscaleWithLegNext(
   imageBase64: string,
   _prompt: string,
   apiKey: string,
-  mimeType: string = 'image/png',
+  mimeType: string = ContentType.Png,
   styleReferenceUrls?: string[],
   creativity: number = 0.3
 ): Promise<{ id: string; imageUrl: string }> {
@@ -72,10 +73,10 @@ export async function upscaleWithLegNext(
   logger.info('Submitting upload_paint with payload:', uploadPaintPayload)
 
   const uploadPaintResponse = await fetch('https://api.legnext.ai/api/v1/upload-paint', {
-    method: 'POST',
+    method: HttpMethod.Post,
     headers: {
       'x-api-key': apiKey,
-      'Content-Type': 'application/json',
+      'Content-Type': ContentType.Json,
     },
     body: JSON.stringify(uploadPaintPayload),
   })
@@ -116,10 +117,10 @@ export async function upscaleWithLegNext(
   logger.info('Submitting upscale with payload:', upscalePayload)
 
   const upscaleResponse = await fetch('https://api.legnext.ai/api/v1/upscale', {
-    method: 'POST',
+    method: HttpMethod.Post,
     headers: {
       'x-api-key': apiKey,
-      'Content-Type': 'application/json',
+      'Content-Type': ContentType.Json,
     },
     body: JSON.stringify(upscalePayload),
   })

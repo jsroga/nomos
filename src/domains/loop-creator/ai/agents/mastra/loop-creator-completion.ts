@@ -1,7 +1,7 @@
 /**
  * Flagged Mastra completion path for the loop-creator specialists.
  *
- * `LOOP_CREATOR_MASTRA=1` routes each specialist's single LLM call through the
+ * `FF_LOOP_CREATOR_MASTRA=true` routes each specialist's single LLM call through the
  * registered Mastra `Agent` (`agent.generate`) instead of LangChain
  * `ChatOpenAI.invoke`, wrapped in a real `withMastraSpan`. The default (flag
  * off) path is left untouched in each specialist so the working feature cannot
@@ -18,14 +18,13 @@ import { SystemMessage, HumanMessage, type BaseMessage } from '@langchain/core/m
 import { v4 as uuidv4 } from 'uuid'
 import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import { openRouterClientConfig } from '@/shared/agent-kernel/models'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 import { resolveLoopCreatorModel } from '../../../config/model-config'
 import {
   LoopCreatorMastraAgentId,
   loopCreatorMastraAgentById,
 } from './loop-creator-mastra-agents'
 
-const LOOP_CREATOR_MASTRA_ENV = 'LOOP_CREATOR_MASTRA'
-const LOOP_CREATOR_MASTRA_ON = '1'
 const COMPLETION_SPAN_PREFIX = 'loop-creator.completion.'
 const FALLBACK_USER_PROMPT = 'Proceed.'
 const HISTORY_HEADER = 'Recent conversation:'
@@ -37,7 +36,7 @@ const JSON_ONLY_DIRECTIVE = 'Respond ONLY with a single valid JSON object, no pr
 
 /** Whether the flagged Mastra path is active. */
 export function isLoopCreatorMastraEnabled(): boolean {
-  return process.env[LOOP_CREATOR_MASTRA_ENV] === LOOP_CREATOR_MASTRA_ON
+  return isFeatureEnabled(FeatureFlag.LoopCreatorMastra)
 }
 
 function roleLabel(message: BaseMessage): string {
@@ -142,7 +141,7 @@ async function runLoopCreatorLangChainCompletion(
 
 /**
  * Unified specialist completion seam: routes to the Mastra `Agent`
- * (`LOOP_CREATOR_MASTRA=1`) or the default LangChain path. Returns the raw text;
+ * (`FF_LOOP_CREATOR_MASTRA=true`) or the default LangChain path. Returns the raw text;
  * callers regex-parse JSON out of it in both cases.
  */
 export async function runLoopCreatorCompletion(

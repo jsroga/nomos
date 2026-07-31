@@ -2,7 +2,11 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
-    "incremental": false
+    "incremental": false,
+    "paths": {
+      "@/*": ["../*"],
+      "@/evals/*": ["../../evals/*"]
+    }
   },
   "include": ["**/*.ts"],
   "exclude": ["**/*.test.ts"]

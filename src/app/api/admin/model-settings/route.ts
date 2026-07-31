@@ -22,7 +22,7 @@ import {
   MODEL_SETTING_ROLES,
   MODEL_SETTING_ROLE_IDS,
   OPENROUTER_MODEL_OPTIONS,
-  OPENROUTER_MODEL_OPTION_IDS,
+  isOpenRouterModelId,
 } from '@/shared/agent-kernel/constants/model-settings'
 
 const HTTP_UNAUTHORIZED = 401
@@ -76,12 +76,15 @@ export async function PUT(request: NextRequest) {
   if (!role || !MODEL_SETTING_ROLE_IDS.includes(role)) {
     return NextResponse.json({ error: ERR_INVALID_ROLE }, { status: HTTP_BAD_REQUEST })
   }
-  if (!model || !OPENROUTER_MODEL_OPTION_IDS.includes(model)) {
+  // Shape-checked, not list-checked — the curated options are a convenience and
+  // OpenRouter's catalog moves faster than this repo.
+  if (!model || !isOpenRouterModelId(model)) {
     return NextResponse.json({ error: ERR_INVALID_MODEL }, { status: HTTP_BAD_REQUEST })
   }
 
-  await setModelSetting(role, model, userId ?? undefined)
-  return NextResponse.json({ ok: true, role, model })
+  const normalized = model.trim()
+  await setModelSetting(role, normalized, userId ?? undefined)
+  return NextResponse.json({ ok: true, role, model: normalized })
 }
 
 export async function DELETE(request: NextRequest) {

@@ -1,4 +1,5 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { ContentType } from '@/shared/data/constants/protocol'
 import { UPSCALE_PROMPTS } from '@/shared/data/server/prompts'
 
 async function upscaleWithStabilityConservative(
@@ -87,7 +88,7 @@ export async function upscaleWithStability(
     byteNumbers[i] = byteCharacters.charCodeAt(i)
   }
   const byteArray = new Uint8Array(byteNumbers)
-  const blob = new Blob([byteArray], { type: 'image/png' })
+  const blob = new Blob([byteArray], { type: ContentType.Png })
 
   const formData = new FormData()
   formData.append('image', blob, 'input.png')
@@ -101,7 +102,7 @@ export async function upscaleWithStability(
   const submitResponse = await axios.post(upscaleUrl, formData, {
     headers: {
       authorization: `Bearer ${apiKey}`,
-      accept: 'application/json',
+      accept: ContentType.Json,
     },
     validateStatus: () => true,
   })

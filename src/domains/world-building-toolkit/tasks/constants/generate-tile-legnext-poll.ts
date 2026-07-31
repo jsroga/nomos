@@ -1,6 +1,7 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { LegNextJobStatus } from './generate-tile'
+import { LegNextJobStatus } from '@/shared/ai/constants/legnext'
+import { HttpMethod } from '@/shared/data/constants/protocol'
 import { parseLegNextJob, readLegNextImageUrl, type LegNextJobResult } from './generate-tile-json-guards'
 
 type PollOutcome =
@@ -21,7 +22,7 @@ async function pollLegNextOnce(
   attempts: number
 ): Promise<PollOutcome> {
   const fetchResponse = await fetch(`https://api.legnext.ai/api/v1/job/${jobId}`, {
-    method: 'GET',
+    method: HttpMethod.Get,
     headers: { 'x-api-key': apiKey },
   })
 

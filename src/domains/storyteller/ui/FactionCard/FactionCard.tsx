@@ -40,7 +40,7 @@ export const FactionCard: React.FC<FactionCardProps> = ({ faction, projectId, cl
                     <ShieldAlert className="w-4 h-4 text-red-400/40 group-hover:text-red-400/80" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="p-4 max-w-xs bg-popover border-border/40">
+                <TooltipContent side="top" className="p-4 max-w-xs">
                   <div className="space-y-3">
                     {faction.weaknesses && (
                       <div className="space-y-1">

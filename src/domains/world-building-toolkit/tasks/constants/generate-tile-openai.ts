@@ -5,6 +5,8 @@ import {
   logLLMRequestStart,
 } from '@/trigger/utils/llm-logger'
 import type { AiProviderConfig } from '@/shared/ai/ai-provider-config'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+import { BufferEncoding, ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { imageService } from '@/shared/data/server/image-service'
 import {
   CENTER_CROP_OFFSET,
@@ -19,15 +21,15 @@ async function createOpenAiEditFormData(
   finalPrompt: string
 ): Promise<FormData> {
   const formData = new FormData()
-  const imageBuffer = Buffer.from(contextImageBase64, 'base64')
-  const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
+  const imageBuffer = Buffer.from(contextImageBase64, BufferEncoding.Base64)
+  const imageBlob = new Blob([imageBuffer], { type: ContentType.Png })
   formData.append('image', imageBlob, 'image.png')
 
   const { mask } = await imageService.assembleContext(
     { targetX: 0, targetY: 0, neighbors: {}, allTiles: {} },
     1024
   )
-  formData.append('mask', new Blob([new Uint8Array(mask)], { type: 'image/png' }), 'mask.png')
+  formData.append('mask', new Blob([new Uint8Array(mask)], { type: ContentType.Png }), 'mask.png')
   formData.append('prompt', finalPrompt)
   formData.append('n', '1')
   formData.append('size', '1024x1024')
@@ -55,7 +57,7 @@ async function generateOpenAiFirstTile(
   }
 
   logLLMRequestStart({
-    provider: 'openai',
+    provider: ImageGenProvider.OpenAi,
     model,
     prompt: finalPrompt,
     inputImageUrls: styleReferenceUrls,
@@ -65,9 +67,9 @@ async function generateOpenAiFirstTile(
 
   try {
     const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
+      method: HttpMethod.Post,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': ContentType.Json,
         Authorization: `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify(payload),
@@ -76,7 +78,7 @@ async function generateOpenAiFirstTile(
     if (!response.ok) {
       const errorText = await response.text()
       logLLMRequestError({
-        provider: 'openai',
+        provider: ImageGenProvider.OpenAi,
         model,
         prompt: finalPrompt,
         error: `HTTP ${response.status}: ${errorText}`,
@@ -88,7 +90,7 @@ async function generateOpenAiFirstTile(
     const b64 = readOpenAiB64Json(await response.json())
     if (!b64) {
       logLLMRequestError({
-        provider: 'openai',
+        provider: ImageGenProvider.OpenAi,
         model,
         prompt: finalPrompt,
         error: 'No image data in OpenAI response',
@@ -98,7 +100,7 @@ async function generateOpenAiFirstTile(
     }
 
     logLLMRequestComplete({
-      provider: 'openai',
+      provider: ImageGenProvider.OpenAi,
       model,
       prompt: finalPrompt,
       outputImageUrls: ['[Base64 Image Data]'],
@@ -108,7 +110,7 @@ async function generateOpenAiFirstTile(
   } catch (error) {
     if (error instanceof Error && !error.message.includes('OpenAI API error')) {
       logLLMRequestError({
-        provider: 'openai',
+        provider: ImageGenProvider.OpenAi,
         model,
         prompt: finalPrompt,
         error: error.message,
@@ -128,7 +130,7 @@ async function generateOpenAiFollowUpTile(
   const formData = await createOpenAiEditFormData(contextImageBase64, finalPrompt)
 
   logLLMRequestStart({
-    provider: 'openai',
+    provider: ImageGenProvider.OpenAi,
     model: OPENAI_EDIT_MODEL,
     prompt: finalPrompt,
     inputImageUrls: ['[Context Image Base64]'],
@@ -138,7 +140,7 @@ async function generateOpenAiFollowUpTile(
 
   try {
     const response = await fetch('https://api.openai.com/v1/images/edits', {
-      method: 'POST',
+      method: HttpMethod.Post,
       headers: { Authorization: `Bearer ${config.apiKey}` },
       body: formData,
     })
@@ -146,7 +148,7 @@ async function generateOpenAiFollowUpTile(
     if (!response.ok) {
       const errorText = await response.text()
       logLLMRequestError({
-        provider: 'openai',
+        provider: ImageGenProvider.OpenAi,
         model: OPENAI_EDIT_MODEL,
         prompt: finalPrompt,
         error: `HTTP ${response.status}: ${errorText}`,
@@ -158,7 +160,7 @@ async function generateOpenAiFollowUpTile(
     const b64 = readOpenAiB64Json(await response.json())
     if (!b64) {
       logLLMRequestError({
-        provider: 'openai',
+        provider: ImageGenProvider.OpenAi,
         model: OPENAI_EDIT_MODEL,
         prompt: finalPrompt,
         error: 'No image data in OpenAI response',
@@ -167,7 +169,7 @@ async function generateOpenAiFollowUpTile(
       throw new Error('No image data in OpenAI response')
     }
 
-    const croppedBuffer = await imageService.crop(Buffer.from(b64, 'base64'), {
+    const croppedBuffer = await imageService.crop(Buffer.from(b64, BufferEncoding.Base64), {
       x: CENTER_CROP_OFFSET,
       y: CENTER_CROP_OFFSET,
       width: TILE_CROP_SIZE,
@@ -175,17 +177,17 @@ async function generateOpenAiFollowUpTile(
     })
 
     logLLMRequestComplete({
-      provider: 'openai',
+      provider: ImageGenProvider.OpenAi,
       model: OPENAI_EDIT_MODEL,
       prompt: finalPrompt,
       outputImageUrls: ['[Base64 Image Data]'],
       output: { hasImage: true },
     })
-    return croppedBuffer.toString('base64')
+    return croppedBuffer.toString(BufferEncoding.Base64)
   } catch (error) {
     if (error instanceof Error && !error.message.includes('OpenAI Edit API error')) {
       logLLMRequestError({
-        provider: 'openai',
+        provider: ImageGenProvider.OpenAi,
         model: OPENAI_EDIT_MODEL,
         prompt: finalPrompt,
         error: error.message,

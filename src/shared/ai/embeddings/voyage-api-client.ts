@@ -9,12 +9,12 @@ import {
   VOYAGE_LOG_RATE_LIMIT_CIRCUIT,
   VOYAGE_MAX_RETRIES,
   VOYAGE_MODEL_VALUES,
-  VoyageEnvFlag,
   VoyageHttpHeader,
   VoyageInputType,
   VOYAGE_NETWORK_ERROR_TOKEN,
 } from '@/shared/ai/constants/voyage-embeddings'
 import { ContentType, HttpAuthScheme, HttpMethod } from '@/shared/data/constants/protocol'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 
 export type VoyageModelId = (typeof VOYAGE_MODEL_VALUES)[number]
 
@@ -106,7 +106,7 @@ export async function callVoyageAPI(
   waitForRateLimit: () => Promise<void>
 ): Promise<number[][]> {
   const apiKey = process.env.VOYAGE_API_KEY
-  const isEnabled = process.env.VOYAGE_ENABLED !== VoyageEnvFlag.Disabled
+  const isEnabled = isFeatureEnabled(FeatureFlag.VoyageEmbeddings)
 
   if (shouldSkipVoyageCall(apiKey, isEnabled)) {
     return createMockEmbeddings(texts.length)

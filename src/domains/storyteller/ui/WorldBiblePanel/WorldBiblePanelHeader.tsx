@@ -160,22 +160,22 @@ function LockTooltipContent({
 >) {
   return (
     <>
-      <p className="text-sm font-medium">
+      <p className="text-sm font-medium text-white">
         {isBibleLocked ? '🔒 Storybible is locked' : '🔓 Storybible is unlocked'}
       </p>
       {isBibleLocked && lockedBy && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Locked by <span className="font-medium text-amber-400">{lockedBy}</span>
+        <p className="text-xs text-zinc-300 mt-1">
+          Locked by <span className="font-medium text-amber-300">{lockedBy}</span>
         </p>
       )}
       {isBibleLocked && lockedAt && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-zinc-300">
           {lockedAt.toLocaleDateString()} at{' '}
           {lockedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </p>
       )}
       {isUserCentralUser && (
-        <p className="text-xs text-amber-400 mt-2">Click to {isBibleLocked ? 'unlock' : 'lock'}</p>
+        <p className="text-xs text-amber-300 mt-2">Click to {isBibleLocked ? 'unlock' : 'lock'}</p>
       )}
     </>
   )

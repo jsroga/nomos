@@ -1,5 +1,5 @@
 ---
-description: src/domains/<module> vertical-slice topology invariants and dependency rule from docs/unified/ARCHITECTURE.md
+description: src/domains/<module> vertical-slice topology invariants and dependency rule from docs/ARCHITECTURE.md
 globs: "**/src/domains/**"
 alwaysApply: true
 ---
@@ -52,7 +52,7 @@ When `constants/`, `tools/`, `workflows/`, or `prompts/` sit beside Mastra agent
 - Flag any step crossing a dependency-rule boundary as a risk in `PLAN.md`.
 - Run `node scripts/fabro-verify.mjs` — it scopes to the module and ignores out-of-scope errors.
 
-Governing doc: `docs/unified/ARCHITECTURE.md`.
+Governing doc: `docs/ARCHITECTURE.md`.
 
 ## App routes (thin shell only)
 

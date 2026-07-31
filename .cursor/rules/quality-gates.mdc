@@ -10,14 +10,17 @@ Run these before claiming a task is done. Failures must be fixed, not bypassed.
 
 ## Never bypass gates (binding)
 
-**Strictly prohibited without explicit user approval:**
+**IMPORTANT — never disable rules on your own if not allowed.** See also `no-gate-bypass.mdc`.
+
+**Strictly prohibited without explicit user approval in this chat:**
 
 - File-level or block-level `eslint-disable` / `eslint-disable-next-line` for quality rules (`local/no-magic-string`, `local/max-lines-strict`, `local/complexity-strict`, `@typescript-eslint/no-explicit-any`, `@typescript-eslint/consistent-type-assertions`, `no-restricted-imports`, etc.)
+- Adding or widening `eslint.config.js` overrides that set rules `'off'` (including “just for e2e / vitest / next.config”)
 - `@ts-nocheck`, `@ts-ignore`, or `@ts-expect-error` to silence gate failures
 - Skipping `qualitygate:file` / `qualitygate:changed` because a file is “legacy” or “too big”
 - Comments like “wave-0 extraction” to excuse disabled lint
 
-**When a gate fails:** split the file, extract enums/helpers, fix types — do not disable the rule. If a disable is genuinely unavoidable (extremely rare), stop and ask the user first.
+**When a gate fails:** split the file, extract enums/helpers, fix types — do not disable the rule. If a disable is genuinely unavoidable (extremely rare), **stop and ask the user first** — do not apply it and then report.
 
 **Never run full-repo `tsc --noEmit` during agent work** — it is slow and OOM-prone. Use `qualitygate:file`, `qualitygate:changed`, `qualitygate:tsc` only. Full `npm run typecheck` + `npm run lint` are end-of-task only unless the user asks.
 
@@ -74,11 +77,11 @@ npm run qualitygate:metrics # line/complexity only (without tsc)
 
 ## Baseline / ratchets
 
-Typecheck and ESLint warnings are ratcheted — never increase the baseline count. See `docs/quality-improvement-spec.md`. `.local/` is for ad-hoc tooling (gitignored); don't add throwaway plumbing under `src/lib`.
+Typecheck and ESLint warnings are ratcheted — never increase the baseline count. See `docs/DEVELOPMENT.md`. `.local/` is for ad-hoc tooling (gitignored); don't add throwaway plumbing under `src/lib`.
 
 ## Order of operations (agent tasks)
 
-1. Implement (use skills: `/refactor`, `/write-tests`, `/review`).
+1. Implement (use skills: `/review`, `/commit`, `/typecheck-scoped` as needed).
 2. Every 5 todos: `npm run qualitygate:changed` or `npm run qualitygate:capture` → fix via backlog → continue.
 3. Last todo: `npm run typecheck`, `npm run lint`, `npm run test:unit`.
 4. If `PLAN.md` exists and handoff is commit-ready: `node scripts/fabro-verify.mjs`.

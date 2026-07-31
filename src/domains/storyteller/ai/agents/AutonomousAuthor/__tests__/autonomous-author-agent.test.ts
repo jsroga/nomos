@@ -24,12 +24,12 @@ describe('autonomous author agent (goals + durable)', () => {
       else process.env[STORYTELLER_AUTONOMOUS_ENV] = prev
     })
 
-    it('is off unless STORYTELLER_AUTONOMOUS=1', () => {
+    it('is off unless FF_STORYTELLER_AUTONOMOUS=true', () => {
       Reflect.deleteProperty(process.env, STORYTELLER_AUTONOMOUS_ENV)
       expect(isStorytellerAutonomousEnabled()).toBe(false)
-      process.env[STORYTELLER_AUTONOMOUS_ENV] = 'true'
-      expect(isStorytellerAutonomousEnabled()).toBe(false)
       process.env[STORYTELLER_AUTONOMOUS_ENV] = '1'
+      expect(isStorytellerAutonomousEnabled()).toBe(false)
+      process.env[STORYTELLER_AUTONOMOUS_ENV] = 'true'
       expect(isStorytellerAutonomousEnabled()).toBe(true)
     })
   })

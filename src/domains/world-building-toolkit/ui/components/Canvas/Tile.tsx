@@ -17,7 +17,7 @@ interface TileProps {
   size: number
 }
 
-export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
+export const Tile: React.FC<TileProps> = React.memo(function Tile({ x, y, size }) {
   const {
     tile,
     currentProject,
@@ -104,4 +104,4 @@ export const Tile: React.FC<TileProps> = ({ x, y, size }) => {
       </div>
     </div>
   )
-}
+})

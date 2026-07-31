@@ -1,3 +1,10 @@
+import {
+  ContentType,
+  GoogleModelId,
+  HttpMethod,
+} from '@/shared/data/constants/protocol'
+import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
+
 export const UpscaleGeminiStage = {
   GeminiUpscale: 'gemini_upscale',
 } as const
@@ -21,14 +28,14 @@ export const UpscaleGeminiErrorMessage = {
   RequestFailed: 'Gemini Step 1 failed',
 } as const
 
-export const UpscaleGeminiDefaultModel = 'gemini-3-pro-image-preview'
-export const UpscaleGeminiDefaultMimeType = 'image/png'
+export const UpscaleGeminiDefaultModel = GoogleModelId.Gemini3ProImagePreview
+export const UpscaleGeminiDefaultMimeType = ContentType.Png
 export const UpscaleGeminiApiBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/models'
 export const UpscaleGeminiGenerateContentAction = 'generateContent'
-export const UpscaleGeminiHttpContentType = 'application/json'
-export const UpscaleGeminiHttpMethod = 'POST'
-export const UpscaleGeminiResponseModalityText = 'TEXT'
-export const UpscaleGeminiResponseModalityImage = 'IMAGE'
+export const UpscaleGeminiHttpContentType = ContentType.Json
+export const UpscaleGeminiHttpMethod = HttpMethod.Post
+export const UpscaleGeminiResponseModalityText = GeminiResponseModality.Text
+export const UpscaleGeminiResponseModalityImage = GeminiResponseModality.Image
 export const UpscaleGeminiInlineFieldMimeType = 'mime_type'
 export const UpscaleGeminiInlineFieldMimeTypeAlt = 'mimeType'
 export const UpscaleGeminiInlineFieldData = 'data'

@@ -30,7 +30,7 @@ Delegate business logic to `src/services/*` when it exists.
 ## Agents
 
 - No `format` on agents — use `structuredOutput`.
-- Model strings: `'openai/gpt-4o-mini'`, `'anthropic/claude-…'` (`provider/model`).
+- Model strings: `'openai/gpt-5.6-luna'`, `'anthropic/claude-…'` (`provider/model`). Fast tier = Luna / Gemini Flash via OpenRouter (`TEXT_GEN_FAST_MODEL`).
 - Register through the central Mastra instance so storage, workspace, and tracing are shared.
 - Wrap runs in `withSpan` where the domain already does.
 - Bound memory (`lastMessages: 10` or similar).

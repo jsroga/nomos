@@ -10,6 +10,7 @@ interface StorytellerEpisodeHeaderProps {
   currentEpisodeTitle?: string | null
   currentEpisodeId: string
   currentPhase: PhaseId
+  viewPhase: PhaseId
   isSending: boolean
   handlePreviousPhase: () => void
   handlePhaseChange: (phase: PhaseId) => void
@@ -21,6 +22,7 @@ export const StorytellerEpisodeHeader: React.FC<StorytellerEpisodeHeaderProps> =
   currentEpisodeTitle,
   currentEpisodeId,
   currentPhase,
+  viewPhase,
   isSending,
   handlePreviousPhase,
   handlePhaseChange,
@@ -34,7 +36,8 @@ export const StorytellerEpisodeHeader: React.FC<StorytellerEpisodeHeaderProps> =
       </h1>
 
       <PhaseNavigatorCompact
-        currentPhase={currentPhase}
+        currentPhase={viewPhase}
+        progressPhase={currentPhase}
         isWorking={isSending}
         onGoBack={handlePreviousPhase}
         onPhaseChange={handlePhaseChange}

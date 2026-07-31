@@ -3,10 +3,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, FolderOpen, Loader2, LogOut, Trash2 } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { Button } from '@/components/Button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/Avatar'
-import { BleedingText } from '@/components/BleedingText'
 import { useProjectSelection } from '../hooks/useProjectSelection'
 
 export function ProjectSelectionLayout() {
@@ -63,7 +61,7 @@ export function ProjectSelectionLayout() {
         </div>
 
         <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6 md:h-[80vh]">
-          <div className="w-full md:w-1/3 flex flex-col bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+          <div className="w-full md:w-1/3 flex flex-col bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl">
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-bold tracking-tight text-white/90">Projects</h1>
@@ -137,52 +135,28 @@ export function ProjectSelectionLayout() {
           </div>
 
           <div className="w-full md:w-2/3 flex items-center justify-center">
-            <div className="w-full h-full p-8 md:p-12 flex flex-col justify-center items-center text-center bg-[#0000005c] rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl">
+            <div className="w-full h-full p-8 md:p-12 flex flex-col justify-center items-center text-center bg-black/55 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md">
               <div className="max-w-md w-full space-y-8">
-                <div className="space-y-4 flex flex-col items-center relative group">
+                <div className="space-y-4 flex flex-col items-center">
                   <div className="mb-8 relative z-10 flex flex-col items-center gap-2">
                     <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tight font-syne leading-[0.9]">
                       Getting Started
                     </h2>
-                    <div className="h-6">
-                      {subtitle && (
-                        <BleedingText
-                          text={subtitle}
-                          className="text-sm font-mono tracking-wide uppercase"
-                          textColor="text-red-500/90"
-                          particleColor="text-red-500"
-                        />
-                      )}
-                    </div>
+                    {subtitle ? (
+                      <p className="text-sm font-mono tracking-wide uppercase text-red-500/90">
+                        {subtitle}
+                      </p>
+                    ) : null}
                     <div className="w-32 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4" />
                   </div>
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]" />
                 </div>
 
                 <form onSubmit={handleCreateProject} className="space-y-6 w-full">
                   <div className="space-y-2 relative group w-full">
                     <div className="relative">
-                      <motion.div
-                        className="absolute inset-0 -z-20 rounded-xl opacity-20 blur-2xl"
-                        style={{
-                          background: 'linear-gradient(45deg, #4f46e5, #3b82f6, #8b5cf6, #4f46e5)',
-                          backgroundSize: '400% 400%',
-                        }}
-                        animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-                        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                      />
-                      <motion.div
-                        className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-30 group-focus-within:opacity-75 blur-md transition-all duration-500"
-                        style={{ backgroundSize: '200% 200%' }}
-                        animate={{
-                          backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-                          scale: [0.98, 1.02, 0.98],
-                        }}
-                        transition={{
-                          duration: 4,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                        }}
+                      <div
+                        aria-hidden
+                        className="absolute inset-0 -z-10 rounded-xl opacity-25 blur-xl bg-gradient-to-r from-indigo-600/40 via-blue-500/30 to-violet-600/40 group-focus-within:opacity-40 transition-opacity"
                       />
                       <input
                         type="text"
@@ -194,27 +168,9 @@ export function ProjectSelectionLayout() {
                     </div>
                   </div>
                   <div className="relative group">
-                    <motion.div
-                      className="absolute inset-0 -z-20 rounded-xl opacity-20 blur-xl"
-                      style={{
-                        background: 'linear-gradient(45deg, #4f46e5, #3b82f6, #8b5cf6, #4f46e5)',
-                        backgroundSize: '400% 400%',
-                      }}
-                      animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-                      transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-                    />
-                    <motion.div
-                      className="absolute inset-0 -z-10 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 blur-lg transition-all duration-300"
-                      style={{ backgroundSize: '200% 200%' }}
-                      animate={{
-                        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-                        scale: [0.95, 1.05, 0.95],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                      }}
+                    <div
+                      aria-hidden
+                      className="absolute inset-0 -z-10 rounded-xl opacity-0 group-hover:opacity-40 blur-lg transition-opacity bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"
                     />
                     <Button
                       type="submit"

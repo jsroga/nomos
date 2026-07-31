@@ -1,5 +1,5 @@
 /**
- * Loop-creator Mastra agents — the flagged (`LOOP_CREATOR_MASTRA=1`) Mastra-native
+ * Loop-creator Mastra agents — the flagged (`FF_LOOP_CREATOR_MASTRA=true`) Mastra-native
  * equivalents of the LangChain specialist functions, matching the storyteller
  * convention: plain `new Agent({ id, name, model: () => resolve…, instructions })`
  * registered on the central instance (see `core/io/mastra-runtime.ts`).
@@ -100,7 +100,7 @@ export const loopCreatorMastraAgentById: Record<LoopCreatorMastraAgentId, Agent>
 
 /**
  * Agents registered on the central Mastra instance (Studio parity). The
- * supervisor-crew agents back the flagged (`LOOP_CREATOR_MASTRA=1`) specialist
+ * supervisor-crew agents back the flagged (`FF_LOOP_CREATOR_MASTRA=true`) specialist
  * path; the market analyst is an always-Mastra ReAct agent (native tools).
  */
 export const loopCreatorRuntimeAgents: Record<string, Agent> = {

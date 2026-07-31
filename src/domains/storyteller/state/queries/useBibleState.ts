@@ -61,6 +61,7 @@ export function useBibleState(projectId: string | undefined) {
   }, [isWorldBibleOpen, searchParams, router])
 
   const closeBible = useCallback(() => {
+    setOptimisticBibleOpen(false)
     const params = new URLSearchParams(searchParams?.toString() || '')
     params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Off)
     router.push(`?${params.toString()}`)

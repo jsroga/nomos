@@ -24,14 +24,14 @@ import {
   LoopCreatorHealthStatus,
   LoopCreatorServiceId,
   LoopCreatorStreamEventType,
-  NextRuntime,
   SseAccelBuffering,
   SseCacheControl,
   SseHeader,
 } from '@/shared/data/constants/protocol'
 
 export const maxDuration = 120
-export const runtime = NextRuntime.NodeJs
+// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (same exception as storyteller chat/stream)
+export const runtime = 'nodejs'
 
 interface CanvasNode {
   id: string

@@ -48,7 +48,7 @@ npm run qualitygate:tsc -- --all-slices
 1. Never claim "typecheck passed" after bare `tsc --noEmit` on full repo — use `qualitygate:file` or scoped commands
 2. **Touched files** must pass code metrics (400/800 lines, complexity 15/25) before handoff
 3. **>5 gate failures:** `npm run qualitygate:capture` → `.local/quality-backlog.md` → fix **one** item → `qualitygate:backlog -- done <id>` → rescan every **5** fixes (not every edit)
-4. **Never add file-level `eslint-disable`** for quality rules without explicit user approval
+4. **IMPORTANT AS FUCK — never disable rules on your own if not allowed.** No `eslint-disable`, no new/widened `eslint.config.js` `'off'` override, no `@ts-nocheck`. Gate red? Fix it or **stop and ask** — see `.cursor/rules/no-gate-bypass.mdc`
 5. If a slice OOMs, report slice name and use `--files` on touched paths
 6. Before commit / execute handoff: `node scripts/fabro-verify.mjs`
 7. Per-file tracker: `npm run qualitygate:tracker -- --file <path>` (not full refresh each loop)

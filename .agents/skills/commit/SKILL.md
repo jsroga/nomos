@@ -22,7 +22,24 @@ Run these in parallel and read the output before doing anything:
 
 Never run `git add -A` or `git commit -a` blindly. Look at what changed first.
 
-## Step 2 — Decide what belongs in the commit
+## Step 2 — Preflight gates (required when the user asked to commit)
+
+**Before** staging for commit, run and wait for success:
+
+```bash
+npm run precommit
+```
+
+(`scripts/pre-commit.mjs` → architecture, docs, staged typecheck/eslint, **`test:unit`**, **`build`**.)
+
+If anything fails: fix it, re-run `npm run precommit`, only then continue. Do **not** use `--no-verify`.
+Husky will re-run the same script on `git commit` as a safety net.
+
+**IMPORTANT AS FUCK — never disable rules on your own if not allowed.** Commit pressure is not
+approval to `eslint-disable`, widen an `eslint.config.js` override, or add `@ts-nocheck`. Fix the
+violation, or **stop and ask** — `.cursor/rules/no-gate-bypass.mdc`.
+
+## Step 3 — Decide what belongs in the commit
 
 - Group related changes into a single logical commit. If the diff clearly
   contains two unrelated changes, prefer two commits.
@@ -31,7 +48,7 @@ Never run `git add -A` or `git commit -a` blindly. Look at what changed first.
   cruft. If such a file is modified, warn the user and leave it unstaged.
 - Respect `.gitignore`; do not force-add ignored files.
 
-## Step 3 — Write the message (Conventional Commits)
+## Step 4 — Write the message (Conventional Commits)
 
 Format:
 
@@ -59,7 +76,21 @@ refactor(chat): extract context builder from stream route
 Choose the type from the *nature* of the change: `feat` = new capability,
 `fix` = bug fix, `refactor` = behavior-preserving restructure, `docs` = docs only.
 
-## Step 4 — Stage and commit
+### No AI attribution — ever
+
+The message ends with the body. Do **not** append any of these:
+
+```
+Co-Authored-By: Claude <noreply@anthropic.com>
+Co-authored-by: Cursor Agent <...>
+🤖 Generated with Cursor / Claude Code
+```
+
+No `Co-Authored-By` trailer naming a model, agent, or IDE. No "generated with"
+footer, no tool emoji, no `Assisted-by:`. A human co-author the user names is the
+only trailer allowed. The commit records the change, not who typed it.
+
+## Step 5 — Stage and commit
 
 Stage the specific files that belong in this commit (by path), then commit using
 a HEREDOC so the message formats correctly:
@@ -74,7 +105,7 @@ EOF
 )"
 ```
 
-## Step 5 — Verify
+## Step 6 — Verify
 
 - Run `git status` and `git log --oneline -1` to confirm the commit landed.
 - If a pre-commit hook modified files or failed:
@@ -90,7 +121,9 @@ EOF
 - Never run destructive commands (`push --force`, `reset --hard`) unless the user
   explicitly asks.
 - Never push unless the user explicitly asks.
-- Never skip hooks unless the user explicitly asks.
+- Never skip hooks unless the user explicitly asks (`--no-verify` is blocked by
+  `.cursor/hooks/guard-commit.sh` for agent shell commits).
+- When the user asks to commit: run `npm run precommit` first (build + unit tests).
 - Do not create empty commits.
 
 ## Splitting into multiple commits

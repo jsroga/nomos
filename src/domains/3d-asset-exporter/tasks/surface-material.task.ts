@@ -1,5 +1,6 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { storageService } from '@/shared/data/storage/storage-service'
+import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import {
   parseMeshyTaskResult,
@@ -40,10 +41,10 @@ export const surfaceMaterialTask = task({
     // STAGE 1: Create Preview Task (mesh generation)
     // ============================================
     const previewResponse = await fetch(MESHY_BASE_URL, {
-      method: 'POST',
+      method: HttpMethod.Post,
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        'Content-Type': ContentType.Json,
       },
       body: JSON.stringify({
         mode: 'preview',
@@ -87,10 +88,10 @@ export const surfaceMaterialTask = task({
     await metadata.set('stage', 'refine')
 
     const refineResponse = await fetch(MESHY_BASE_URL, {
-      method: 'POST',
+      method: HttpMethod.Post,
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        'Content-Type': ContentType.Json,
       },
       body: JSON.stringify({
         mode: 'refine',

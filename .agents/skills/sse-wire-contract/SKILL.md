@@ -11,7 +11,7 @@ Extra context:
 
 > {{user_input}}
 
-**Governing docs:** `docs/orchestration-rfc.md` (invariants I1–I4), `docs/unified/SPEC.md`, `src/domains/chat/` consumer (`useChatStream.ts`).
+**Governing docs:** `docs/STORYTELLER.md`, `docs/ARCHITECTURE.md`, `src/domains/chat/` consumer (`useChatStream.ts`).
 
 ## Step 1 — Know the surface
 
@@ -33,7 +33,7 @@ rg -n "type:\s*['\"]|StreamChunk|event:" src/app/api/storyteller/chat/stream/rou
 rg -n "type:" src/domains/chat/state/useChatStream.ts | head -30
 ```
 
-Read `docs/orchestration-rfc.md` for suspend/resume + `closeOnSuspend` expectations if HITL changes.
+Read `docs/STORYTELLER.md` for suspend/resume + AgentController expectations if HITL changes.
 
 ## Step 2 — Inventory event types (before/after)
 
@@ -80,7 +80,7 @@ Requires app + auth (see e2e config):
 # Unit: chat stream reducer if touched
 npm run test:unit -- src/domains/chat
 
-# E2E smoke (needs dev server + env — see docs/TESTING.md)
+# E2E smoke (needs dev server + env — see docs/DEVELOPMENT.md)
 npm run test:e2e smoke
 ```
 

@@ -1,4 +1,4 @@
-import { HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { fetchJson } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
@@ -9,7 +9,7 @@ const METRICS_ROUTE = '/api/storyteller/generate-metrics'
 const SAVE_VARIANT_ROUTE = '/api/storyteller/save-portrait-variant'
 const CHARACTERS_ROUTE = '/api/storyteller/characters'
 
-const JSON_HEADERS = { 'Content-Type': 'application/json' }
+const JSON_HEADERS = { 'Content-Type': ContentType.Json }
 
 export async function startCharacterPortraitGeneration(input: {
   prompt: string
@@ -18,7 +18,7 @@ export async function startCharacterPortraitGeneration(input: {
 }): Promise<{ handleId: string | null }> {
   const data = recordFromJson(await fetchJson(PORTRAIT_ROUTE, {
     method: HttpMethod.Post,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': ContentType.Json },
     body: JSON.stringify(input),
   }))
   return { handleId: readString(data.handleId) ?? null }
@@ -41,7 +41,7 @@ export async function fetchCharacterPortraitRunStatus(runId: string): Promise<{
 export async function fetchCharacterMetrics(description: string): Promise<Record<string, unknown>> {
   const data = recordFromJson(await fetchJson(METRICS_ROUTE, {
     method: HttpMethod.Post,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': ContentType.Json },
     body: JSON.stringify({ description }),
   }))
   return recordFromJson(data.metrics)
@@ -55,7 +55,7 @@ export async function saveCharacterPortraitVariant(input: {
 }): Promise<{ portraitUrl: string | null }> {
   const data = recordFromJson(await fetchJson(SAVE_VARIANT_ROUTE, {
     method: HttpMethod.Post,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': ContentType.Json },
     body: JSON.stringify(input),
   }))
   return { portraitUrl: readString(data.portraitUrl) ?? null }

@@ -105,23 +105,21 @@ and `orchestration/StorytellerPlanner.ts` — left the tree non-compiling while 
 ## Fabro skills — use them
 
 Project skills live in **`.agents/skills/`** (Fabro resolves via `.fabro/skills` symlink) and are available via the **`use_skill`**
-tool (also slash syntax like `/refactor`). **Call `use_skill` at the start** when a
-task matches — do not reinvent procedures from memory.
+tool (also slash syntax like `/commit`). **Call `use_skill` at the start** when a
+task matches — do not reinvent procedures from memory. Catalog: `.agents/skills/README.md`.
 
 | When | Skill name |
 | --- | --- |
-| Reshape agents/orchestration/workflows | `agent-sprawl-audit` then `mastra-workflow` |
+| Mastra workflows / orchestration | `mastra-workflow` |
 | Touch storyteller SSE / chat stream route | `sse-wire-contract` |
-| Change evals / golden dataset / scorers | `storyteller-eval-golden`; craft rubrics → `craft-scorer-author` |
-| Clean up or extend storyteller E2E | `e2e-storyteller-audit` |
-| Layer moves, extracting modules | `refactor` |
-| New/changed tests | `write-tests` |
-| Drizzle/schema/API boundaries | `services-audit` |
-| Trigger.dev tasks | `trigger-dev` |
+| Trigger.dev tasks | `trigger-dev` (or Trigger SDK skills) |
 | Supabase/RLS concerns | `supabase` |
-| shadcn/Radix UI work | `shadcn` |
+| shadcn/Radix UI work | `shadcn` + `component-audit` |
+| Accessibility / WCAG | `accessibility-audit` |
 | Pre-commit hygiene | `commit` |
-| Stuck on failures | `debug` |
+| PR body | `pr-description` |
+| Code / security review | `review` |
+| Scoped typecheck / fabro-verify | `typecheck-scoped` |
 
 If `UX.md` is absent (backend-only increment), skip `component-audit` and
 `accessibility-audit` unless you touch UI.
@@ -137,6 +135,8 @@ If `UX.md` is absent (backend-only increment), skip `component-audit` and
 
 **Do not read** `.local/findings/scope.md` — Scope is for Clarify only.
 
+{% include "partials/session-tracking.md" %}
+
 {% include "partials/session-scratch.md" %}
 
 {% include "partials/quality-backlog.md" %}
@@ -150,7 +150,7 @@ feature code into `src/app/`.
 When `STRUCTURE.md` exists or the plan is a catalog/folder cleanup (`domains-catalog`
 or `src-root`):
 
-1. Call `use_skill` **`refactor`** before bulk moves.
+1. Follow `.cursor/rules/refactor-discipline.mdc` before bulk moves (no `/refactor` skill).
 2. **Order:** (a) create target dirs + barrels/re-export shims, (b) `git mv` per move map,
    (c) fix imports inside moved trees, (d) fix **all external referrers** (`src/app`,
    `src/domains`, `src/shared`, `src/db`, `src/hooks`, `tests/`) using `grep -rn`.
@@ -246,7 +246,7 @@ client in the module).
 
 ## Rules
 
-- Place every change in the correct layer per `docs/unified/ARCHITECTURE.md`.
+- Place every change in the correct layer per `docs/ARCHITECTURE.md`.
 - **Asset modules** (`interior-designer`, etc.): prioritize `ui/` + `state/queries/` +
   `io/` + `tasks/`; no `agents/` unless the plan explicitly adds AI surfaces.
   Replace browser Supabase writes and `localStorage` job recovery with API + `useJob`.

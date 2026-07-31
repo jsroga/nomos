@@ -1,0 +1,13 @@
+msg="$1"
+tmp="$msg.noattr"
+
+# Cursor's attribution layer appends `Co-authored-by: Cursor <cursoragent@cursor.com>`
+# via --trailer, outside the message the author wrote. Drop AI attribution here.
+grep -viE '^co-authored-by:[[:space:]]*(cursor|claude|codex|copilot|gpt|openai|anthropic)' "$msg" |
+  grep -viE '^[[:space:]]*(🤖[[:space:]]*)?generated with[[:space:]]*\[?(cursor|claude)' >"$tmp"
+
+if [ -s "$tmp" ]; then
+  mv "$tmp" "$msg"
+else
+  rm -f "$tmp"
+fi

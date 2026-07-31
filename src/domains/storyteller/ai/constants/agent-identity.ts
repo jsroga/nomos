@@ -31,6 +31,7 @@ export enum AgentModelRole {
   Author = 'author',
   Chat = 'chat',
   Planner = 'planner',
+  Muse = 'muse',
   Auto = 'auto',
 }
 

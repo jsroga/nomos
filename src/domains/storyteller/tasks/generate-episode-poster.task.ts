@@ -3,13 +3,22 @@ import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import {
+  BufferEncoding,
+  ContentType,
+  FsDirectory,
+  GoogleModelId,
+  HttpMethod,
+} from '@/shared/data/constants/protocol'
+import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 
 interface GenerateEpisodePosterPayload {
   episodeId: string
   projectId: string
   prompt: string
   providerConfig: {
-    provider: 'nanobanana'
+    provider: typeof ImageGenProvider.NanoBanana
     apiKey: string
     modelId?: string
   }
@@ -31,7 +40,7 @@ export const generateEpisodePoster = task({
     try {
       // 1. Generate Image (Gemini / Nano Banana)
       await metadata.set('stage', 'generating_image')
-      const targetModel = 'gemini-3-pro-image-preview'
+      const targetModel = GoogleModelId.Gemini3ProImagePreview
 
       // Enhance prompt for Poster style
       // "Movie poster style, cinematic composition, title card, dramatic lighting, high resolution."
@@ -42,8 +51,8 @@ export const generateEpisodePoster = task({
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: HttpMethod.Post,
+          headers: { 'Content-Type': ContentType.Json },
           body: JSON.stringify({
             contents: [
               {
@@ -51,9 +60,7 @@ export const generateEpisodePoster = task({
               },
             ],
             generationConfig: {
-              responseModalities: ['TEXT', 'IMAGE'],
-              // Aspect ratio for poster? Gemini 2.0 Flash supports aspect ratio in prompt or config?
-              // For now, prompt instruction "vertical aspect ratio" is best effort.
+              responseModalities: [GeminiResponseModality.Text, GeminiResponseModality.Image],
             },
           }),
         }
@@ -90,13 +97,18 @@ export const generateEpisodePoster = task({
       await metadata.set('progress', 50)
 
       const filename = `episode_poster_${episodeId}_${Date.now()}.png`
-      const projectDir = path.join(process.cwd(), 'public', 'projects', projectId)
+      const projectDir = path.join(
+        process.cwd(),
+        FsDirectory.Public,
+        FsDirectory.Projects,
+        projectId,
+      )
 
       if (!fs.existsSync(projectDir)) {
         fs.mkdirSync(projectDir, { recursive: true })
       }
 
-      const buffer = Buffer.from(imageBase64, 'base64')
+      const buffer = Buffer.from(imageBase64, BufferEncoding.Base64)
       fs.writeFileSync(path.join(projectDir, filename), buffer)
       logger.info('Image saved to disk', { filename })
 

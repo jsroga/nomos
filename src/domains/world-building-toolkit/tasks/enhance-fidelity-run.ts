@@ -6,6 +6,15 @@ import {
   logLLMRequestError,
 } from '@/trigger/utils/llm-logger'
 import {
+  BufferEncoding,
+  BlobAccess,
+  ContentType,
+  GoogleModelId,
+  HttpMethod,
+} from '@/shared/data/constants/protocol'
+import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+import {
   parseGeminiResponse,
   readGeminiImageData,
 } from './constants/generate-tile-json-guards'
@@ -45,7 +54,7 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
   await metadata.set('stage', 'enhancing')
   await metadata.set('progress', 30)
 
-  const model = geminiConfig.model || 'gemini-3-pro-image-preview'
+  const model = geminiConfig.model || GoogleModelId.Gemini3ProImagePreview
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiConfig.apiKey}`
 
   const styleRefHint = styleReferenceUrls?.length
@@ -62,7 +71,7 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
           { text: finalPrompt },
           {
             inline_data: {
-              mime_type: 'image/png',
+              mime_type: ContentType.Png,
               data: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
             },
           },
@@ -70,7 +79,7 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
       },
     ],
     generationConfig: {
-      responseModalities: ['TEXT', 'IMAGE'],
+      responseModalities: [GeminiResponseModality.Text, GeminiResponseModality.Image],
     },
   }
 
@@ -80,7 +89,7 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
   })
 
   logLLMRequestStart({
-    provider: 'gemini',
+    provider: ImageGenProvider.Gemini,
     model,
     prompt: finalPrompt,
     inputImageUrls: ['[Input Image Base64]'],
@@ -92,8 +101,8 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
   })
 
   const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: HttpMethod.Post,
+    headers: { 'Content-Type': ContentType.Json },
     body: JSON.stringify(geminiPayload),
   })
 
@@ -101,7 +110,7 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
     const errorText = await response.text()
     logger.error('Gemini API error', { status: response.status, errorText })
     logLLMRequestError({
-      provider: 'gemini',
+      provider: ImageGenProvider.Gemini,
       model,
       prompt: finalPrompt,
       error: `HTTP ${response.status}: ${errorText}`,
@@ -140,11 +149,11 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
     throw new Error('BLOB_READ_WRITE_TOKEN not configured')
   }
 
-  const buffer = Buffer.from(enhancedImageBase64, 'base64')
+  const buffer = Buffer.from(enhancedImageBase64, BufferEncoding.Base64)
   const blob = await put(filename, buffer, {
-    access: 'public',
+    access: BlobAccess.Public,
     token: process.env.BLOB_READ_WRITE_TOKEN,
-    contentType: 'image/png',
+    contentType: ContentType.Png,
   })
 
   const enhancedUrl = blob.url

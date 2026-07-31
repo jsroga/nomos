@@ -86,7 +86,7 @@ function loadEnv(): void {
 
 function hasLlmKey(): boolean {
   return Boolean(
-    process.env.MOONSHOT_API_KEY ||
+    process.env.OPENROUTER_API_KEY ||
       process.env.ANTHROPIC_API_KEY ||
       process.env.OPENAI_API_KEY
   )
@@ -251,7 +251,7 @@ function banner(sel: Selection): void {
 async function main(): Promise<void> {
   loadEnv()
   if (!process.env.DATABASE_URL || !hasLlmKey()) {
-    write(paint(c.red, 'storyteller-repl: needs DATABASE_URL + an LLM key (MOONSHOT/ANTHROPIC/OPENAI).\n'))
+    write(paint(c.red, 'storyteller-repl: needs DATABASE_URL + an LLM key (OPENROUTER/ANTHROPIC/OPENAI).\n'))
     process.exit(1)
   }
 

@@ -1,4 +1,4 @@
-import { useCallback, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react'
 import {
   StoryPlan,
   WorldRule,
@@ -216,28 +216,57 @@ export function useBiblePlanMutations(setLocalPlan: SetLocalPlan) {
     [setLocalPlan]
   )
 
-  return {
-    updateWorldRule,
-    addWorldRule,
-    removeWorldRule,
-    updateFaction,
-    addFaction,
-    removeFaction,
-    updateKeyCharacter,
-    addKeyCharacter,
-    removeKeyCharacter,
-    updateSequence,
-    addSequence,
-    removeSequence,
-    updatePlotTwist,
-    addPlotTwist,
-    removePlotTwist,
-    updateInspiration,
-    updateItem,
-    addItem,
-    removeItem,
-    updateEvent,
-    addEvent,
-    removeEvent,
-  }
+  return useMemo(
+    () => ({
+      updateWorldRule,
+      addWorldRule,
+      removeWorldRule,
+      updateFaction,
+      addFaction,
+      removeFaction,
+      updateKeyCharacter,
+      addKeyCharacter,
+      removeKeyCharacter,
+      updateSequence,
+      addSequence,
+      removeSequence,
+      updatePlotTwist,
+      addPlotTwist,
+      removePlotTwist,
+      updateInspiration,
+      updateItem,
+      addItem,
+      removeItem,
+      updateEvent,
+      addEvent,
+      removeEvent,
+    }),
+    [
+      updateWorldRule,
+      addWorldRule,
+      removeWorldRule,
+      updateFaction,
+      addFaction,
+      removeFaction,
+      updateKeyCharacter,
+      addKeyCharacter,
+      removeKeyCharacter,
+      updateSequence,
+      addSequence,
+      removeSequence,
+      updatePlotTwist,
+      addPlotTwist,
+      removePlotTwist,
+      updateInspiration,
+      updateItem,
+      addItem,
+      removeItem,
+      updateEvent,
+      addEvent,
+      removeEvent,
+    ]
+  )
 }
+
+export type BiblePlanMutations = ReturnType<typeof useBiblePlanMutations>
+

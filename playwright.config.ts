@@ -7,6 +7,14 @@ const REPORTER_LIST = 'list'
 const JSON_OUTPUT_FILE = 'test-results/results.json'
 const HTML_OUTPUT_FOLDER = 'playwright-report'
 
+const TRACE_MODE = 'on-first-retry'
+const SCREENSHOT_MODE = 'only-on-failure'
+const VIDEO_MODE = 'retain-on-failure'
+const BYPASS_AUTH_HEADER_VALUE = 'true'
+const PROJECT_CHROMIUM = 'chromium'
+const DEVICE_DESKTOP_CHROME = 'Desktop Chrome'
+const DEV_SERVER_COMMAND = 'npm run dev'
+
 /**
  * Playwright Configuration for Swiss Army Knife E2E Tests
  */
@@ -40,28 +48,28 @@ export default defineConfig({
   // Shared settings for all projects
   use: {
     // Base URL
-    baseURL: process.env.BASE_URL || 'http://localhost:4000',
+    baseURL: process.env.BASE_URL || 'http://localhost:3000',
 
     // Collect trace when retrying the failed test
-    trace: 'on-first-retry',
+    trace: TRACE_MODE,
 
     // Screenshot on failure
-    screenshot: 'only-on-failure',
+    screenshot: SCREENSHOT_MODE,
 
     // Video on failure
-    video: 'retain-on-failure',
+    video: VIDEO_MODE,
 
     // Bypass auth in development for E2E tests
     extraHTTPHeaders: {
-      'x-bypass-auth': 'true',
+      'x-bypass-auth': BYPASS_AUTH_HEADER_VALUE,
     },
   },
 
   // Configure projects for major browsers
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: PROJECT_CHROMIUM,
+      use: { ...devices[DEVICE_DESKTOP_CHROME] },
     },
 
     // Uncomment for cross-browser testing
@@ -77,8 +85,8 @@ export default defineConfig({
 
   // Run your local dev server before starting the tests
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:4000',
+    command: DEV_SERVER_COMMAND,
+    url: 'http://localhost:3000',
     reuseExistingServer: true, // Always reuse if already running
     timeout: 120 * 1000, // 2 minutes to start dev server
   },

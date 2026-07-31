@@ -5,6 +5,8 @@ import {
   logLLMRequestStart,
 } from '@/trigger/utils/llm-logger'
 import type { AiProviderConfig } from '@/shared/ai/ai-provider-config'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+import { BufferEncoding, ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { imageService } from '@/shared/data/server/image-service'
 import {
   CENTER_CROP_OFFSET,
@@ -25,14 +27,14 @@ async function createStabilityInpaintFormData(
     { targetX: 0, targetY: 0, neighbors: {}, allTiles: {} },
     1024
   )
-  const maskBase64 = mask.toString('base64')
+  const maskBase64 = mask.toString(BufferEncoding.Base64)
   const formData = new FormData()
 
-  const imageBuffer = Buffer.from(contextImageBase64, 'base64')
-  formData.append('init_image', new Blob([imageBuffer], { type: 'image/png' }), 'image.png')
+  const imageBuffer = Buffer.from(contextImageBase64, BufferEncoding.Base64)
+  formData.append('init_image', new Blob([imageBuffer], { type: ContentType.Png }), 'image.png')
   formData.append(
     'mask_image',
-    new Blob([Buffer.from(maskBase64, 'base64')], { type: 'image/png' }),
+    new Blob([Buffer.from(maskBase64, BufferEncoding.Base64)], { type: ContentType.Png }),
     'mask.png'
   )
   formData.append('text_prompts[0][text]', finalPrompt)
@@ -65,7 +67,7 @@ async function generateStabilityFirstTile(
   }
 
   logLLMRequestStart({
-    provider: 'stability',
+    provider: ImageGenProvider.Stability,
     model,
     prompt: finalPrompt,
     inputImageUrls: styleReferenceUrls,
@@ -77,11 +79,11 @@ async function generateStabilityFirstTile(
     const response = await fetch(
       'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image',
       {
-        method: 'POST',
+        method: HttpMethod.Post,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': ContentType.Json,
           Authorization: `Bearer ${config.apiKey}`,
-          Accept: 'application/json',
+          Accept: ContentType.Json,
         },
         body: JSON.stringify(payload),
       }
@@ -90,7 +92,7 @@ async function generateStabilityFirstTile(
     if (!response.ok) {
       const errorText = await response.text()
       logLLMRequestError({
-        provider: 'stability',
+        provider: ImageGenProvider.Stability,
         model,
         prompt: finalPrompt,
         error: `HTTP ${response.status}: ${errorText}`,
@@ -102,7 +104,7 @@ async function generateStabilityFirstTile(
     const base64 = readStabilityBase64(await response.json())
     if (!base64) {
       logLLMRequestError({
-        provider: 'stability',
+        provider: ImageGenProvider.Stability,
         model,
         prompt: finalPrompt,
         error: 'No image data in Stability response',
@@ -112,7 +114,7 @@ async function generateStabilityFirstTile(
     }
 
     logLLMRequestComplete({
-      provider: 'stability',
+      provider: ImageGenProvider.Stability,
       model,
       prompt: finalPrompt,
       outputImageUrls: ['[Base64 Image Data]'],
@@ -122,7 +124,7 @@ async function generateStabilityFirstTile(
   } catch (error) {
     if (error instanceof Error && !error.message.includes('Stability API error')) {
       logLLMRequestError({
-        provider: 'stability',
+        provider: ImageGenProvider.Stability,
         model,
         prompt: finalPrompt,
         error: error.message,
@@ -143,7 +145,7 @@ async function generateStabilityFollowUpTile(
   const formData = await createStabilityInpaintFormData(contextImageBase64, finalPrompt)
 
   logLLMRequestStart({
-    provider: 'stability',
+    provider: ImageGenProvider.Stability,
     model,
     prompt: finalPrompt,
     inputImageUrls: ['[Context Image Base64]'],
@@ -155,10 +157,10 @@ async function generateStabilityFollowUpTile(
     const response = await fetch(
       'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image/masking',
       {
-        method: 'POST',
+        method: HttpMethod.Post,
         headers: {
           Authorization: `Bearer ${config.apiKey}`,
-          Accept: 'application/json',
+          Accept: ContentType.Json,
         },
         body: formData,
       }
@@ -167,7 +169,7 @@ async function generateStabilityFollowUpTile(
     if (!response.ok) {
       const errorText = await response.text()
       logLLMRequestError({
-        provider: 'stability',
+        provider: ImageGenProvider.Stability,
         model,
         prompt: finalPrompt,
         error: `HTTP ${response.status}: ${errorText}`,
@@ -179,7 +181,7 @@ async function generateStabilityFollowUpTile(
     const base64 = readStabilityBase64(await response.json())
     if (!base64) {
       logLLMRequestError({
-        provider: 'stability',
+        provider: ImageGenProvider.Stability,
         model,
         prompt: finalPrompt,
         error: 'No image data in Stability response',
@@ -188,7 +190,7 @@ async function generateStabilityFollowUpTile(
       throw new Error('No image data in Stability response')
     }
 
-    const croppedBuffer = await imageService.crop(Buffer.from(base64, 'base64'), {
+    const croppedBuffer = await imageService.crop(Buffer.from(base64, BufferEncoding.Base64), {
       x: CENTER_CROP_OFFSET,
       y: CENTER_CROP_OFFSET,
       width: TILE_CROP_SIZE,
@@ -196,17 +198,17 @@ async function generateStabilityFollowUpTile(
     })
 
     logLLMRequestComplete({
-      provider: 'stability',
+      provider: ImageGenProvider.Stability,
       model,
       prompt: finalPrompt,
       outputImageUrls: ['[Base64 Image Data]'],
       output: { hasImage: true },
     })
-    return croppedBuffer.toString('base64')
+    return croppedBuffer.toString(BufferEncoding.Base64)
   } catch (error) {
     if (error instanceof Error && !error.message.includes('Stability Inpaint API error')) {
       logLLMRequestError({
-        provider: 'stability',
+        provider: ImageGenProvider.Stability,
         model,
         prompt: finalPrompt,
         error: error.message,

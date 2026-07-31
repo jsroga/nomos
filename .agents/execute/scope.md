@@ -10,7 +10,7 @@ prioritize P0/P1, or suggest "minimum first increment". Facts and questions only
 
 **Repo:** `game-building-kit` — Next.js 15.5 + React 19 app on port **4000**, Mastra v1
 agents, Trigger.dev v4 background jobs, Drizzle 0.45 + Postgres, Supabase auth,
-Vitest 4, Playwright e2e. Architecture: `docs/unified/ARCHITECTURE.md`.
+Vitest 4, Playwright e2e. Architecture: `docs/ARCHITECTURE.md`.
 
 **Nine product modules** under `src/domains/` (each has a public `index.ts` barrel):
 
@@ -129,6 +129,8 @@ git status --short
 
 If `find` returns nothing for a single-module run, report that — do not substitute
 another module.
+
+{% include "partials/session-tracking.md" %}
 
 {% include "partials/session-scratch.md" %}
 

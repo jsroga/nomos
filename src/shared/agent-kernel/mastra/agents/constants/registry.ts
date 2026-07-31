@@ -1,5 +1,6 @@
 import { Agent } from '@mastra/core/agent'
 import { storytellerStudioTools, gameDesignStudioTools } from '../../tools/bundles'
+import { createInheritedAgentMemory } from '../../studio-memory'
 
 const DEFAULT_MODEL = 'anthropic/claude-sonnet-5'
 
@@ -14,11 +15,11 @@ const CRITIC_STUDIO_RULES = `Rules:
  *
  * The real agents (real prompts via the domain prompt builders, real
  * role-slot models via `resolveRoleModel`, real tools) arrive through the
- * runtime registry: `src/mastra.ts` imports the storyteller registration
- * module, and `mastra/index.ts` merges registered agents OVER these stubs
- * (same key wins). Every entry below therefore only renders in Studio when
- * the domain registration failed to load — treat drift here as cosmetic,
- * never edit instructions here expecting production effect.
+ * runtime registry: `src/mastra/index.ts` side-effect-imports domain
+ * registration, and `shared/.../mastra/index.ts` merges registered agents
+ * OVER these stubs (same key wins). Every entry below therefore only renders
+ * in Studio when the domain registration failed to load — treat drift here as
+ * cosmetic, never edit instructions here expecting production effect.
  *
  * Bundler-safe by construction: tool stubs only, no domain imports (the
  * reason this file exists at all).
@@ -31,6 +32,7 @@ export const studioAgents: Record<string, Agent> = {
       'You are the storyteller chat adapter: converse, keep the world bible current via tools, and delegate creative beat drafting to the beat-draft workflow. Concise, concrete, grounded in established canon.',
     model: DEFAULT_MODEL,
     tools: storytellerStudioTools,
+    memory: createInheritedAgentMemory(),
   }),
 
   gameDesign: new Agent({
@@ -40,6 +42,7 @@ export const studioAgents: Record<string, Agent> = {
       'You design game loops, mechanics, and progression systems. Propose structured, testable designs and explain trade-offs clearly.',
     model: DEFAULT_MODEL,
     tools: gameDesignStudioTools,
+    memory: createInheritedAgentMemory(),
   }),
 
   worldBuilding: new Agent({
@@ -51,6 +54,7 @@ export const studioAgents: Record<string, Agent> = {
     tools: {
       ...storytellerStudioTools,
     },
+    memory: createInheritedAgentMemory(),
   }),
 
   grrmAuthor: new Agent({
@@ -60,6 +64,7 @@ export const studioAgents: Record<string, Agent> = {
       'You are the solo creative mind: plan → draft → revise with craft mechanics, never committee averaging. Output script-format beats (slugline + action + dialogue with subtext). Every beat must move action forward (Law of Motion: actionTaken, consequence, storyStateChange).',
     model: DEFAULT_MODEL,
     tools: storytellerStudioTools,
+    memory: createInheritedAgentMemory(),
   }),
 
   beatPlanner: new Agent({
@@ -72,6 +77,7 @@ export const studioAgents: Record<string, Agent> = {
       list_beats: storytellerStudioTools.list_beats,
       manage_beat: storytellerStudioTools.manage_beat,
     },
+    memory: createInheritedAgentMemory(),
   }),
 
   continuityCritic: new Agent({
@@ -81,6 +87,7 @@ export const studioAgents: Record<string, Agent> = {
 
 ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
+    memory: createInheritedAgentMemory(),
   }),
 
   proseCritic: new Agent({
@@ -90,6 +97,7 @@ ${CRITIC_STUDIO_RULES}`,
 
 ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
+    memory: createInheritedAgentMemory(),
   }),
 
   stakesCritic: new Agent({
@@ -99,5 +107,6 @@ ${CRITIC_STUDIO_RULES}`,
 
 ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
+    memory: createInheritedAgentMemory(),
   }),
 }

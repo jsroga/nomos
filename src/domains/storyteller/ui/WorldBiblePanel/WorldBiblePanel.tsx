@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { WorldBiblePanelBody } from './WorldBiblePanelBody'
 import { WorldBiblePanelHeader } from './WorldBiblePanelHeader'
@@ -36,9 +36,9 @@ const getProviderConfig = () => {
   const geminiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_GEMINI)
   const legnextKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
 
-  if (provider === MoodboardProvider.Nanobanana) {
+  if (provider === MoodboardProvider.NanoBanana) {
     return {
-      provider: MoodboardProvider.Nanobanana,
+      provider: MoodboardProvider.NanoBanana,
       apiKey: geminiKey,
       modelId: browserStorage.getString(MoodboardModelStorageKey) || MoodboardDefaultModelId,
     }
@@ -90,10 +90,15 @@ const WorldBiblePanel: React.FC<WorldBiblePanelProps> = props => {
       ? window.location.pathname.split('/')[1]
       : '')
 
+  const storyPlan = useMemo(
+    () => ({ ...EMPTY_STORY_PLAN, ...props.storyPlan }),
+    [props.storyPlan]
+  )
+
   return (
     <BibleProvider
       {...props}
-      storyPlan={{ ...EMPTY_STORY_PLAN, ...props.storyPlan }}
+      storyPlan={storyPlan}
       projectId={projectId}
       getProviderConfig={getProviderConfig}
       loadingSections={props.loadingSections}

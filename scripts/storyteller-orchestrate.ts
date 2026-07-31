@@ -32,7 +32,7 @@ const DEFAULT_BRIEF =
 
 function hasLlmKey(): boolean {
   return Boolean(
-    process.env.MOONSHOT_API_KEY ||
+    process.env.OPENROUTER_API_KEY ||
       process.env.ANTHROPIC_API_KEY ||
       process.env.OPENAI_API_KEY ||
       process.env.JUDGING_MODEL

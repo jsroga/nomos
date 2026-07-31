@@ -1,0 +1,41 @@
+---
+description: Agent-authored plans, audits, trackers, and findings live in .local/ — never at repo root or in random folders
+alwaysApply: true
+---
+
+# Agent artifacts (`.md` placement)
+
+Work product **for the agent** goes in `.local/` (gitignored). Work product **for the repo** goes in `docs/`. There is no third option.
+
+## Where a new `.md` may land
+
+| Location | Contents |
+|---|---|
+| `.local/sessions/<date>_<id>_<slug>/` | Multi-request session: `REQUESTS` `TODOS` `PLAN` `MEMORY` `STATUS` — see `session-tracking.mdc` |
+| `.local/tmp/<id>/` | Throwaway recon, scratch output |
+| `.local/quality-backlog.md` | Gate failures (`npm run qualitygate:capture`) |
+| `.local/findings/` | Scope inventories, audits, migration notes, eval writeups |
+| `docs/` | **Flat allowlist only** (6 files in `scripts/structure-gates/docs-allowlist.mjs`) — no subfolders |
+| `.agents/` `.cursor/` `.claude/` `.fabro/` | Prompts, rules, skills, subagent configs |
+| `src/**` | Only shipped assets: `instructions.md`, `SKILL.md`, legal pages |
+| Repo root | `README.md`, `AGENTS.md`, `CLAUDE.md` only |
+
+## Forbidden
+
+- New `.md` at repo root — `PLAN-*.md`, `*-TRACKER.md`, `*-AUDIT.md`, `*-STATUS.md`, `*-EVAL.md`, `*-ROADMAP.md`.
+- Dropping an audit or plan next to the code it describes (`scripts/USAGE-AUDIT.md`, `src/domains/<x>/NOTES.md`).
+- Committing Fabro stage artifacts (`CLARIFY.md`, `DECISIONS.md`, `PLAN.md`, `STRUCTURE.md`, `RETRO.md`) — they are run-local.
+
+**Before writing any `.md`, ask: will a human read this next month?** No → `.local/`. Yes → `docs/`.
+
+## Extend `docs/`, don't grow it
+
+A new file in `docs/` is the **last** resort. Search first — `docs/README.md` indexes the six docs (`ARCHITECTURE`, `MODULES`, `STORYTELLER`, `DEVELOPMENT`, `MCP_API`). Agent/Mastra topics: root `AGENTS.md`.
+
+1. Find the doc that already owns the topic and add a section to it.
+2. Do **not** add a 7th file or `docs/internal/` / `docs/adr/` / etc. — expand an allowlisted file or update the allowlist + tests intentionally.
+3. Never park a per-change writeup (`FOO-MIGRATION.md`, `BAR-FIX-NOTES.md`) in `docs/` — that is `.local/findings/`.
+
+Config files are not documentation: `.env*.example`, `*.config.*`, and `package.json` get one trailing clause per line saying what the value does. Tutorials, option matrices, and worked examples go in `docs/` with the config pointing at them.
+
+Enforced by `scripts/check-agent-artifacts.mjs` (pre-commit) and `.cursor/hooks/guard-agent-artifacts.sh` (on edit).

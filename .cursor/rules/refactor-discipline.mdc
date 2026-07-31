@@ -12,7 +12,7 @@ alwaysApply: true
 
 - **Forbidden:** `node <<'SCRIPT'`, `node -e`, or ad-hoc `.mjs` that **reads and rewrites** files under `src/`.
 - **Allowed:** `npm run lint:file`, `npm run qualitygate:file`, `npm run qualitygate:changed`, `npm run qualitygate:capture`, `npm run qualitygate:backlog`, `npm run qualitygate:metrics`, `node scripts/fabro-verify.mjs`, repo scripts in `scripts/` invoked as documented.
-- Scratch + **quality backlog**: `.local/tmp/` (inventory, `rg` output) · `.local/quality-backlog.md` (cached gate failures) — never commit, never write into `src/`.
+- Scratch + **quality backlog** + **multi-request sessions**: `.local/tmp/` · `.local/quality-backlog.md` · `.local/sessions/YYYY-MM-DD_<id>_<slug>/` — never commit, never write into `src/`. See `session-tracking.mdc`.
 
 ## Incremental extract loop
 
@@ -46,4 +46,6 @@ Fix the violation; do not disable ESLint, skip verify, or bypass with bulk scrip
 
 ## Never disable quality gates
 
-File-wide or broad `eslint-disable` for lint/metrics rules is **forbidden** unless the user explicitly approves in chat. Same for `@ts-nocheck` and gate-skipping comments. See `.cursor/rules/quality-gates.mdc` § “Never bypass gates”.
+**IMPORTANT — never disable rules on your own if not allowed.**
+
+File-wide or broad `eslint-disable`, and **new/widened `eslint.config.js` rule-offs**, are **forbidden** unless the user explicitly approves in chat. Same for `@ts-nocheck` and gate-skipping comments. See `.cursor/rules/no-gate-bypass.mdc` and `quality-gates.mdc`.

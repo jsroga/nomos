@@ -1,8 +1,20 @@
 import { createOpenAI } from '@ai-sdk/openai'
-import { createAnthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
-import { getChatModelOption, isKnownChatModel } from '@/domains/storyteller/config/constants/chat-model-catalog'
-import { OPENROUTER_AUTO_GATEWAY, toOpenRouterModel } from '@/shared/agent-kernel/models'
+import {
+  DEFAULT_CHAT_MODEL,
+  getChatModelOption,
+  isKnownChatModel,
+} from '@/domains/storyteller/config/constants/chat-model-catalog'
+import {
+  OPENROUTER_AUTO_GATEWAY,
+  OPENROUTER_BASE_URL,
+  TEXT_GEN_FAST_MODEL,
+  TEXT_GEN_PRIMARY_MODEL,
+  TEXT_GEN_SHORT_IMPACT_MODEL,
+  enforceTextGenModelPolicy,
+  toOpenRouterModel,
+  toOpenRouterModelId,
+} from '@/shared/agent-kernel/models'
 import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
 
 /**
@@ -13,14 +25,14 @@ export type ModelEffort = 'low' | 'medium' | 'high'
 
 /**
  * Model configurations by effort level
- * - low: Fast, cost-effective (gpt-4o-mini)
- * - medium: Balanced (gpt-4o) - DEFAULT for testing
- * - high: Maximum capability (claude-4.5-sonnet)
+ * - low: Fastest (GPT-5.6 Luna)
+ * - medium: Short / high-impact (GPT-5.6 Sol)
+ * - high: Primary long-form (Kimi latest)
  */
 export const MODEL_BY_EFFORT: Record<ModelEffort, string> = {
-  low: 'openai:gpt-4o-mini',
-  medium: 'openai:gpt-4o-mini',
-  high: 'anthropic:claude-sonnet-5',
+  low: TEXT_GEN_FAST_MODEL.replace('/', ':'),
+  medium: TEXT_GEN_SHORT_IMPACT_MODEL.replace('/', ':'),
+  high: TEXT_GEN_PRIMARY_MODEL.replace('/', ':'),
 }
 
 /**
@@ -38,49 +50,55 @@ export function getModelByEffort(effort: ModelEffort = 'medium'): string {
  * NOTE: Using specificationVersion 'v1' for AI SDK v4 compatibility.
  * When upgrading to AI SDK v5, change to 'v2'.
  *
- * @param modelName - Model identifier (e.g., 'openai:gpt-4o') or effort level ('low', 'medium', 'high')
+ * @param modelName - Model identifier (e.g., 'openai:gpt-5.6-luna') or effort level ('low', 'medium', 'high')
  */
-export function getAgentModel(modelName: string = 'openai:gpt-4o') {
+export function getAgentModel(modelName: string = TEXT_GEN_PRIMARY_MODEL) {
   // Support effort-based selection
   if (modelName === 'low' || modelName === 'medium' || modelName === 'high') {
     modelName = getModelByEffort(modelName)
   }
+  const enforced = enforceTextGenModelPolicy(modelName.replace(':', '/'))
+  const colonForm = enforced.includes('/') ? enforced.replace('/', ':') : enforced
   // AI SDK v4 requires specificationVersion 'v1'
   const specVersion = 'v1'
 
-  // 1. Handle OpenAI
-  if (modelName.startsWith('openai:')) {
-    const modelId = modelName.replace('openai:', '')
+  // 1. Handle OpenAI (GPT-5.6 Sol etc.) via OpenRouter when available
+  if (colonForm.startsWith('openai:')) {
+    const modelId = process.env.OPENROUTER_API_KEY
+      ? colonForm.replace(':', '/')
+      : colonForm.replace('openai:', '')
     const openai = createOpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
+      baseURL: process.env.OPENROUTER_API_KEY ? OPENROUTER_BASE_URL : undefined,
     })
     const model = openai(modelId)
-      Object.assign(model, { specificationVersion: specVersion })
+    Object.assign(model, { specificationVersion: specVersion })
     return model
   }
 
-  // 2. Handle Anthropic
-  if (modelName.startsWith('anthropic:')) {
-    const modelId = modelName.replace('anthropic:', '')
-    const anthropic = createAnthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+  // 2. Handle Moonshot / Kimi via OpenRouter
+  if (colonForm.startsWith('moonshotai:')) {
+    const modelId = colonForm.replace('moonshotai:', 'moonshotai/')
+    const openai = createOpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: OPENROUTER_BASE_URL,
     })
-    const model = anthropic(modelId)
-      Object.assign(model, { specificationVersion: specVersion })
+    const model = openai(modelId)
+    Object.assign(model, { specificationVersion: specVersion })
     return model
   }
 
   // 3. Handle Google (Gemini)
-  if (modelName.startsWith('google:')) {
-    const modelId = modelName.replace('google:', '')
+  if (colonForm.startsWith('google:')) {
+    const modelId = colonForm.replace('google:', '')
     const model = google(modelId)
-      Object.assign(model, { specificationVersion: specVersion })
+    Object.assign(model, { specificationVersion: specVersion })
     return model
   }
 
   // Default to a raw string or the model name if it doesn't match a provider
   // This allows Mastra's internal provider lookups to work if configured
-  return modelName
+  return colonForm
 }
 
 /**
@@ -100,7 +118,7 @@ export const MODEL_FALLBACKS = [{ model: OPENROUTER_AUTO_GATEWAY, maxRetries: 3 
 
 /**
  * Get model string for Mastra's unified API format
- * Converts 'openai:gpt-4o' to 'openai/gpt-4o'
+ * Converts 'openai:gpt-5.6-luna' to 'openai/gpt-5.6-luna'
  */
 export function toMastraModelString(modelName: string): string {
   return modelName.replace(':', '/')
@@ -194,8 +212,8 @@ export function inferEffortFromContext(context: {
 // =============================================================================
 // AGENT-MODEL ASSIGNMENT MATRIX
 // Maps each agent role to its optimal model, temperature, and token limits.
-// 2026 pricing: gpt-4o-mini $0.15/$0.60, Gemini Flash $0.30/$2.50,
-// gpt-4o $2.50/$10.00, GPT-5.2 $1.75/$14.00, Claude Sonnet 4.5 $3.00/$15.00
+// 2026 pricing: GPT-5.6 Luna (fast), Gemini Flash, GPT-5.2, Claude Sonnet —
+// prefer OpenRouter ids; fast glue roles use TEXT_GEN_FAST_MODEL (Luna).
 // =============================================================================
 
 export interface AgentModelConfig {
@@ -238,26 +256,26 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
     rationale: 'Causality tracking needs logic but also narrative awareness. Temp 0.45 avoids clinical tone while staying rigorous.',
   },
   'consequence-scoring': {
-    model: 'openai:gpt-4o-mini',
+    model: DEFAULT_CHAT_MODEL,
     temperature: 0.3,
     topP: 0.9,
     maxOutputTokens: 2000,
     rationale:
-      'Quality scoring needs nuanced judgment. Escalate from mini for scoreQuality() calls.',
+      'Follows the Writers Room user picker (same catalog as author).',
   },
   'quality-gate': {
-    model: 'openai:gpt-4o-mini',
+    model: DEFAULT_CHAT_MODEL,
     temperature: 0.1,
     topP: 0.9,
     maxOutputTokens: 1000,
-    rationale: 'Mazur scoring is structured evaluation. Consistency > creativity.',
+    rationale: 'Follows the Writers Room user picker (same catalog as author).',
   },
   'creative-director': {
-    model: 'openai:gpt-4o-mini',
+    model: DEFAULT_CHAT_MODEL,
     temperature: 0.5,
     topP: 0.9,
     maxOutputTokens: 2000,
-    rationale: 'Advisory review = analysis + suggestions, not prose generation.',
+    rationale: 'Follows the Writers Room user picker (same catalog as author).',
   },
 
   // === TIER 2: FAST CREATIVE (drafts, critique, non-critical writing) ===
@@ -278,11 +296,11 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
       'Standard scene writing. Temp 0.72 narrows quality band — still creative but less prone to purple prose.',
   },
   autocomplete: {
-    model: 'openai:gpt-4o-mini',
+    model: 'openai:gpt-5.6-luna',
     temperature: 0.4,
     topP: 0.9,
     maxOutputTokens: 200,
-    rationale: 'Ghost-text completions must be FAST (<500ms). Mini is fastest. Short output.',
+    rationale: 'Ghost-text completions must be FAST (<500ms). Luna via OpenRouter. Short output.',
   },
 
   // === TIER 3: FULL CREATIVE POWER (important scenes, orchestration) ===
@@ -358,12 +376,12 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
       'Narrow diagnose-only critics with quoted evidence. Cheap model is fine — critics are not the quality bottleneck (StoryForge finding).',
   },
   muse: {
-    model: 'openai:gpt-4o-mini',
+    model: DEFAULT_CHAT_MODEL,
     temperature: 1.0,
     topP: 0.98,
     maxOutputTokens: 1500,
     rationale:
-      'Blank-context wildcard ideas. The randomness comes from code-side entropy injection (D4), not model sampling — cheap and fast is the point.',
+      'Blank-context wildcard ideas — model follows the Writers Room user picker (same as author). Entropy is code-side (D4).',
   },
   premise: {
     model: 'anthropic:claude-opus-4-8',
@@ -446,5 +464,22 @@ export function resolveRoleModel(
   // same gateway. The per-role matrix still supplies temperature/topP/rationale.
   const explicit = validatedOverride ?? getConfiguredModel(role) ?? roleEnvOverride(role)
   return explicit ? resolveStorytellerModel(explicit) : OPENROUTER_AUTO_GATEWAY
+}
+
+/**
+ * OpenRouter model id for paths that should track the Writers Room user picker
+ * (author catalog) but talk to OpenAI-compatible clients (string `model` only).
+ * Order: request override → admin author/default → STORYTELLER_AUTHOR_MODEL →
+ * {@link DEFAULT_CHAT_MODEL}.
+ */
+export function resolveUserPickerOpenRouterModelId(overrideId?: string): string {
+  const validatedOverride = overrideId && isKnownChatModel(overrideId) ? overrideId : undefined
+  const catalogOrOpenRouterId =
+    validatedOverride ??
+    getConfiguredModel('author') ??
+    process.env.STORYTELLER_AUTHOR_MODEL ??
+    DEFAULT_CHAT_MODEL
+  const option = getChatModelOption(catalogOrOpenRouterId)
+  return toOpenRouterModelId(option?.openRouterId ?? catalogOrOpenRouterId)
 }
 

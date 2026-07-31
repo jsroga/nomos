@@ -47,7 +47,7 @@ flowchart TB
   agents --> adapters
   prompts -->|"workflow.fabro @ path"| workflow
 
-  subgraph skills_block["skills (23)"]
+  subgraph skills_block["skills (17)"]
     skills_root[".agents/skills/<name>/SKILL.md"]
   end
 
@@ -55,9 +55,9 @@ flowchart TB
   session --> skills_block
 
   subgraph skill_discovery["Skill discovery"]
-    fabro_sk[".fabro/skills → symlink"]
-    cursor_sk[".cursor/skills/ → symlink"]
-    claude_sk[".claude/skills/ → symlink"]
+    fabro_sk[".fabro/skills → .agents/skills"]
+    cursor_sk[".cursor/skills → .agents/skills"]
+    claude_sk[".claude/skills → .agents/skills"]
     fabro_home["~/.fabro/skills/ · local copy"]
   end
 
@@ -86,8 +86,10 @@ flowchart TB
 | --- | --- |
 | `goals/` | Session entry — paste or `Read` a goal; not Fabro stages |
 | `execute/` | Fabro workflow stage prompts (scope → retro) |
-| `execute/partials/` | Snippets included by execute prompts (`architecture.md`, `configuration-diagram.md`, `session-scratch.md`) |
-| `skills/` | Shared `SKILL.md` catalog — **skills (23)** in diagram, not every name |
+| `execute/partials/` | Snippets included by execute prompts (`architecture.md`, `configuration-diagram.md`, `session-scratch.md`, `session-tracking.md`) |
+| `templates/session/` | Starters copied into `.local/sessions/YYYY-MM-DD_<id>_<slug>/` for multi-request work |
+| `skills/` | Shared `SKILL.md` catalog — **skills (17)**; see `skills/README.md` + `skills/SKILLS-AUDIT.md` |
+| `.local/sessions/…` | **Mandatory** multi-request plans/todos/memory — see `session-tracking` partial |
 | `.local/tmp/{session-id}/` | Optional gitignored scratch (scripts, inventories) — see `session-scratch` partial |
 | `.local/findings/` | Scope stage output (`scope.md`) — Clarify input only |
 
@@ -96,7 +98,7 @@ flowchart TB
 | Runner | Stage prompts | Skills |
 | --- | --- | --- |
 | **Fabro** | `workflow.fabro` → `@../../../.agents/execute/<stage>.md` | `.fabro/skills` symlink; local server: `~/.fabro/skills/` copy |
-| **Cursor** | `.cursor/agents/*` → `Read` execute prompt | `.cursor/skills/<name>/` symlink |
-| **Claude Code** | `.claude/agents/*` → `Read` execute prompt | `.claude/skills/<name>/` symlink |
+| **Cursor** | `.cursor/agents/*` → `Read` execute prompt | `.cursor/skills` → `.agents/skills` |
+| **Claude Code** | `.claude/agents/*` → `Read` execute prompt | `.claude/skills` → `.agents/skills` |
 
 See also [README.md](README.md) and [.fabro/workflows/execute/README.md](../.fabro/workflows/execute/README.md).

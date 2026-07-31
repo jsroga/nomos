@@ -103,7 +103,7 @@ Shared config: `scripts/code-metrics-limits.cjs`. Enforced in ESLint **and** typ
 | File lines | 400 | 800 |
 | Cyclomatic complexity | 15 | 25 |
 
-Do not `eslint-disable` to bypass. **File-level or broad disables are forbidden without explicit user approval in chat** — fix by splitting files, enums, and types. Ask before any exception.
+**IMPORTANT — never disable rules on your own if not allowed.** Do not `eslint-disable` and do not add `eslint.config.js` `'off'` overrides to bypass. **Forbidden without explicit user approval in chat** — fix by splitting files, enums, and types. Ask before any exception.
 
 ## When fixing lint in existing files
 

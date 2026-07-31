@@ -50,7 +50,7 @@
           "score": 0.22482118326282474,
           "reasoning": {
             "idea-uniqueness": "Idea uniqueness overall 45: 4/8 unique after normalize; exactDup=50%; nearDup=50%; lexDiv=48%",
-            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-4o\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
+            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-5.6-luna\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
           },
           "context": {
             "latencyMs": 192,
@@ -66,7 +66,7 @@
           "score": 0.049350484640440104,
           "reasoning": {
             "idea-uniqueness": "Idea uniqueness overall 10: 2/8 unique after normalize; exactDup=75%; nearDup=88%; lexDiv=12%",
-            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-4o\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
+            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-5.6-luna\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
           },
           "context": {
             "latencyMs": 10,
@@ -82,7 +82,7 @@
           "score": 0.4109289169845915,
           "reasoning": {
             "idea-uniqueness": "Idea uniqueness overall 82: 8/8 unique after normalize; exactDup=0%; nearDup=0%; lexDiv=89%",
-            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-4o\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
+            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-5.6-luna\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
           },
           "context": {
             "latencyMs": 11,
@@ -98,7 +98,7 @@
           "score": 0.15830304147034158,
           "reasoning": {
             "idea-uniqueness": "Idea uniqueness overall 32: 8/8 unique after normalize; exactDup=0%; nearDup=50%; lexDiv=29%",
-            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-4o\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
+            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-5.6-luna\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
           },
           "context": {
             "latencyMs": 10,

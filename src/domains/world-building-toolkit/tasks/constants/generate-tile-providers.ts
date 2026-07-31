@@ -1,6 +1,7 @@
 import type { AiProviderConfig } from '@/shared/ai/ai-provider-config'
 import { GenerateTileProvider } from './generate-tile'
 import { generateWithGemini } from './generate-tile-gemini'
+import { generateWithGrok } from './generate-tile-grok'
 import { generateWithOpenAI } from './generate-tile-openai'
 import { generateWithStability } from './generate-tile-stability'
 import { generateWithLegNext } from './generate-tile-legnext'
@@ -18,6 +19,15 @@ export async function generateTileImage(
     case GenerateTileProvider.Gemini:
     case GenerateTileProvider.NanoBanana:
       return generateWithGemini(
+        prompt,
+        providerConfig,
+        isFirstTile,
+        styleReferenceUrls,
+        contextImageBase64,
+        styleContext
+      )
+    case GenerateTileProvider.Grok:
+      return generateWithGrok(
         prompt,
         providerConfig,
         isFirstTile,

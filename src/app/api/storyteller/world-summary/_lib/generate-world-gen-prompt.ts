@@ -1,9 +1,9 @@
 import { createOpenAI } from '@ai-sdk/openai'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateText } from 'ai'
 import type { SeriesBible } from '@/domains/storyteller/services/context/series-bible'
 import { API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { GoogleModel, OpenAiModel } from '@/shared/data/constants/protocol'
+import { openRouterClientConfig } from '@/shared/agent-kernel/models'
+import { resolveUserPickerOpenRouterModelId } from '@/domains/storyteller/config/constants/model-config'
 import { buildContextSnippet } from './world-summary-content'
 
 const WORLD_GEN_SYSTEM_PROMPT = `You are a visual art director writing style descriptions for isometric tilemap generation.
@@ -18,11 +18,10 @@ Rules:
 - Output ONLY the style sentences, nothing else.`
 
 function resolveWorldGenModel() {
-  const googleKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
-  if (googleKey) {
-    return createGoogleGenerativeAI({ apiKey: googleKey })(GoogleModel.Gemini20Flash)
-  }
-  return createOpenAI({ apiKey: process.env.OPENAI_API_KEY })(OpenAiModel.Gpt4oMini)
+  const openRouter = openRouterClientConfig()
+  return createOpenAI({ apiKey: openRouter.apiKey, baseURL: openRouter.baseURL })(
+    resolveUserPickerOpenRouterModelId()
+  )
 }
 
 function cleanGeneratedPrompt(text: string): string {

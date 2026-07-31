@@ -41,3 +41,4 @@ Canonical detail: `.agents/execute/partials/quality-backlog.md` (included in Imp
 - `qualitygate:file` after every single-line edit.
 - Re-running full `npm run lint` / `typecheck` in a tight loop.
 - Fixing without recording failures in `.local/quality-backlog.md`.
+- Re-counting / re-aggregating gate failures when the log already named files and lines — see `fix-from-gate-output.mdc`.

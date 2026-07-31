@@ -2,10 +2,13 @@
 
 import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { JobType } from '@/shared/types/enums'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 
-export enum AiUpscaleProvider {
-  Midjourney = 'midjourney',
-}
+export const AiUpscaleProvider = {
+  Midjourney: ImageGenProvider.Midjourney,
+} as const
+
+export type AiUpscaleProvider = (typeof AiUpscaleProvider)[keyof typeof AiUpscaleProvider]
 
 export enum TriggerRunResultStatus {
   Triggered = 'triggered',

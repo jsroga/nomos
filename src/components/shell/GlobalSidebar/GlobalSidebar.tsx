@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
 import { Map, Box, LogOut, BookOpen, Home, Repeat } from 'lucide-react'
@@ -108,8 +107,8 @@ export const GlobalSidebar = () => {
               <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
             </Avatar>
 
-            <div className="absolute left-full bottom-0 ml-2 bg-popover border border-border p-2 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[80] pointer-events-none group-hover:pointer-events-auto">
-              <p className="text-xs font-medium mb-1">{user.email}</p>
+            <div className="absolute left-full bottom-0 ml-2 bg-zinc-700 text-white border border-zinc-600/80 p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[80] pointer-events-none group-hover:pointer-events-auto">
+              <p className="text-xs font-medium mb-1 text-white">{user.email}</p>
             </div>
           </div>
         )}

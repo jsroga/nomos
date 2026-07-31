@@ -33,13 +33,15 @@ touch a dependency-rule boundary or an invariant as a risk.
 
 Plan Author **discovers the codebase independently** via spot-checks below.
 
+{% include "partials/session-tracking.md" %}
+
 {% include "partials/session-scratch.md" %}
 
 ## What you know about this project
 
 ### Architecture invariants (must honor in every plan item)
 
-From `docs/unified/ARCHITECTURE.md` + `docs/unified/SPEC.md`:
+From `docs/ARCHITECTURE.md` + `docs/MODULES.md`:
 
 - **One public barrel:** `src/domains/<module>/index.ts` — only legal external import.
 - **Layer dependency:** `ui → state → io → core`; server: `services/`, `agents/`, `tasks/`.
@@ -48,7 +50,7 @@ From `docs/unified/ARCHITECTURE.md` + `docs/unified/SPEC.md`:
 - **No `z.any()`** at tool/workflow/API boundaries (ST-8).
 - **One Drizzle schema:** `src/db/schema.ts` — module `db/schema.ts` is duplication (D-1).
 - **Long work = Trigger.dev v4 task** + Realtime/`useJob` — never `localStorage` scans in `services/`.
-- **SSE storyteller chat** is a **published wire contract** (`docs/orchestration-rfc.md`) —
+- **SSE storyteller chat** is a **published wire contract** (`docs/STORYTELLER.md`) —
   plan must flag any route/frame-order change as high risk.
 - **camelCase** above SQL boundary; map only in Drizzle layer.
 - **File size targets:** ~400 LOC components, ~300 LOC routes.
@@ -58,7 +60,7 @@ From `docs/unified/ARCHITECTURE.md` + `docs/unified/SPEC.md`:
 - `@mastra/core/agent`, `/tools`, `/mastra` — not package root.
 - `createTool`: `execute: async (inputData, context) =>` — two separate params.
 - `structuredOutput` — never `format` on agents.
-- Model strings: `'openai/gpt-4o-mini'`, `'anthropic/claude-…'` (`provider/model`).
+- Model strings: `'openai/gpt-5.6-luna'`, `'anthropic/claude-…'` (`provider/model`). Fast tier = Luna / Gemini Flash via OpenRouter (`TEXT_GEN_FAST_MODEL`).
 - **`RequestContext`** — not `RuntimeContext` (legacy).
 - Single Mastra instance: `src/shared/agent-kernel/MastraInstance.ts`.
 - Model gateway: `src/shared/agent-kernel/models.ts` — but storyteller also has
@@ -122,7 +124,7 @@ grep -rn 'ModelConfig\|ChatModelCatalog' "src/domains/$MOD/" 2>/dev/null | head 
 
 For **storyteller**, also read (skim headers + exports only if huge):
 - `src/app/api/storyteller/chat/stream/route.ts` — note frame/event types (do not redesign)
-- `docs/orchestration-rfc.md` if present — cite invariant IDs
+- `docs/STORYTELLER.md` — AgentController + SSE / HITL notes
 - Any `.local/storyforge/` or goal-file reference architecture — map to concrete paths
 
 Correct any assumption from `CLARIFY.md` if spot-checks contradict it; note corrections in the plan.

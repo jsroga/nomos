@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import type { LegacyFeature } from '@/domains/marketing/ui/LandingPage/constants/landing-features-legacy'
+import { LANDING_ABSOLUTE_OVERLAY_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 
 export function BrutalCard({
   feature,
@@ -26,7 +27,7 @@ export function BrutalCard({
         className={`relative h-full border border-white/10 rounded-xl overflow-hidden backdrop-blur-sm group-hover:bg-white/[0.04] transition-colors duration-500 ${className ? '' : 'bg-white/[0.02]'}`}
       >
         <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          className={LANDING_ABSOLUTE_OVERLAY_CLASS}
           style={{
             backgroundImage: `radial-gradient(${feature.accent || '#5c7cfa'} 1px, transparent 1px)`,
             backgroundSize: '16px 16px',

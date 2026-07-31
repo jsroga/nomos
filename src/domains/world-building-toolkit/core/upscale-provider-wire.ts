@@ -1,10 +1,13 @@
 import { readString } from '@/shared/data/json-guards'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 
-export enum UpscaleProvider {
-  Midjourney = 'midjourney',
-  Replicate = 'replicate',
-  Stability = 'stability',
-}
+export const UpscaleProvider = {
+  Midjourney: ImageGenProvider.Midjourney,
+  Replicate: ImageGenProvider.Replicate,
+  Stability: ImageGenProvider.Stability,
+} as const
+
+export type UpscaleProvider = (typeof UpscaleProvider)[keyof typeof UpscaleProvider]
 
 const UPSCALE_PROVIDER_VALUES = new Set<string>(Object.values(UpscaleProvider))
 

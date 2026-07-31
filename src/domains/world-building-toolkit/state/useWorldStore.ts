@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
 import { create } from 'zustand'
+import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/with-selector'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { worldApi } from '../core/io/world.api'
 import {
@@ -233,13 +233,34 @@ function getCombinedState(): WorldState {
   }
 }
 
+function subscribeWorldStore(onStoreChange: () => void) {
+  const unsubData = useWorldDataStore.subscribe(onStoreChange)
+  const unsubUi = useWorldUiStore.subscribe(onStoreChange)
+  return () => {
+    unsubData()
+    unsubUi()
+  }
+}
+
+function selectFullWorldState(state: WorldState): WorldState {
+  return state
+}
+
+/**
+ * Combined world data + UI store. Selectors must be used — bare
+ * `useWorldDataStore()` / `useWorldUiStore()` subscriptions were causing
+ * every consumer to re-render on any field change (pan, poll, progress).
+ */
 export function useWorldStore(): WorldState
 export function useWorldStore<T>(selector: (state: WorldState) => T): T
-export function useWorldStore<T>(selector?: (state: WorldState) => T) {
-  const data = useWorldDataStore()
-  const ui = useWorldUiStore()
-  const combined = useMemo(() => ({ ...data, ...ui }), [data, ui])
-  return selector ? selector(combined) : combined
+export function useWorldStore<T>(selector?: (state: WorldState) => T): T | WorldState {
+  return useSyncExternalStoreWithSelector(
+    subscribeWorldStore,
+    getCombinedState,
+    getCombinedState,
+    selector ?? selectFullWorldState,
+    Object.is
+  )
 }
 
 useWorldStore.getState = getCombinedState
@@ -267,14 +288,11 @@ useWorldStore.setState = (partial: Partial<WorldState>) => {
 }
 
 useWorldStore.subscribe = (listener: (state: WorldState, prevState: WorldState) => void) => {
-  const unsubData = useWorldDataStore.subscribe(() => {
-    listener(getCombinedState(), getCombinedState())
+  let prev = getCombinedState()
+  return subscribeWorldStore(() => {
+    const next = getCombinedState()
+    const previous = prev
+    prev = next
+    listener(next, previous)
   })
-  const unsubUi = useWorldUiStore.subscribe(() => {
-    listener(getCombinedState(), getCombinedState())
-  })
-  return () => {
-    unsubData()
-    unsubUi()
-  }
 }

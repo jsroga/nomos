@@ -19,7 +19,7 @@ const ideaJudgeSchema = z.object({
   uniqueness: z.number(),
   randomness: z.number(),
   overall: z.number(),
-  critique: z.string().optional(),
+  critique: z.string(),
 })
 
 const JUDGE_INSTRUCTIONS = [

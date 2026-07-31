@@ -5,6 +5,8 @@ import {
   recordFromJson,
   stringArrayFromJson,
 } from '@/shared/data/json-guards'
+import { HttpMethod } from '@/shared/data/constants/protocol'
+import { LegNextJobStatus } from '@/shared/ai/constants/legnext'
 
 interface LegNextJobResponse {
   status?: string
@@ -29,9 +31,9 @@ function readLegNextJobResponse(value: unknown): LegNextJobResponse {
 }
 
 function estimateLegNextProgress(status: string | undefined, attempts: number): number {
-  if (status === 'completed') return 100
-  if (status === 'processing') return 50 + (attempts % 40)
-  if (status === 'pending') return 10
+  if (status === LegNextJobStatus.Completed) return 100
+  if (status === LegNextJobStatus.Processing) return 50 + (attempts % 40)
+  if (status === LegNextJobStatus.Pending) return 10
   return 0
 }
 
@@ -49,7 +51,7 @@ async function handleLegNextPollResponse(
   await metadata.set('progress', scaledProgress)
   logger.info(`Polling job ${jobId}: Status = ${status}`, { attempt: attempts, scaledProgress })
 
-  if (status === 'completed') {
+  if (status === LegNextJobStatus.Completed) {
     logger.info('LegNext task completed successfully', {
       imageUrl: data.output?.image_url,
     })
@@ -57,7 +59,7 @@ async function handleLegNextPollResponse(
     return recordFromJson(raw)
   }
 
-  if (status === 'failed') {
+  if (status === LegNextJobStatus.Failed) {
     const errorMsg =
       data.output?.error_messages?.join(', ') || data.message || 'Unknown error'
     logger.error('LegNext task failed', { error: errorMsg, fullData: data })
@@ -80,7 +82,7 @@ export async function pollLegNextTask(
 
     try {
       const fetchResponse = await fetch(`https://api.legnext.ai/api/v1/job/${jobId}`, {
-        method: 'GET',
+        method: HttpMethod.Get,
         headers: {
           'x-api-key': apiKey,
         },

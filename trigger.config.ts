@@ -1,11 +1,19 @@
 import { defineConfig } from '@trigger.dev/sdk/v3'
 import { syncEnvVars } from '@trigger.dev/build/extensions/core'
 import { config } from 'dotenv'
+import {
+  TRIGGER_DIRS,
+  TRIGGER_PROJECT_REF,
+  TriggerBuildExternal,
+  TriggerEnvFile,
+  TriggerLogLevel,
+  TriggerRuntime,
+} from './trigger.config.constants'
 
 export default defineConfig({
-  project: 'proj_wkorovfruzqhizygormk', // world-building-kit project
-  runtime: 'node',
-  logLevel: 'log',
+  project: TRIGGER_PROJECT_REF, // world-building-kit project
+  runtime: TriggerRuntime.Node,
+  logLevel: TriggerLogLevel.Log,
   maxDuration: 300, // 5 minutes max for tasks
   retries: {
     enabledInDev: true,
@@ -17,12 +25,19 @@ export default defineConfig({
       randomize: true,
     },
   },
-  dirs: ['./src/trigger'],
+  dirs: [...TRIGGER_DIRS],
   build: {
-    external: ['drizzle-orm'],
+    // @cursor/sdk ships bun:sqlite + vendor paths that esbuild cannot bundle.
+    // cursor-execute lives in src/trigger-dark-factory/ (opt-in) for that reason.
+    external: [
+      TriggerBuildExternal.DrizzleOrm,
+      TriggerBuildExternal.CursorSdk,
+      TriggerBuildExternal.BunSqlite,
+      TriggerBuildExternal.NodeSqlite,
+    ],
     extensions: [
       syncEnvVars(async () => {
-        const result = config({ path: '.env.local' })
+        const result = config({ path: TriggerEnvFile.Local })
         if (!result.parsed) return []
         return Object.entries(result.parsed).map(([name, value]) => ({ name, value }))
       }),

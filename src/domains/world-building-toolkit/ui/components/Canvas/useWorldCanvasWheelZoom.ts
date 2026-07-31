@@ -6,16 +6,15 @@ const MIN_SCALE = 0.1
 const MAX_SCALE = 5
 const SCALE_SENSITIVITY = 0.001
 
+/** Reads viewport from getState inside the handler so pan/zoom don't rebind the listener. */
 export function useWorldCanvasWheelZoom(containerRef: RefObject<HTMLDivElement | null>): void {
-  const viewport = useWorldStore(state => state.viewport)
-  const setViewport = useWorldStore(state => state.setViewport)
-  const isRepaintMode = useWorldStore(state => state.isRepaintMode)
-
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
     const handleWheel = (e: WheelEvent) => {
+      const { viewport, setViewport, isRepaintMode } = useWorldStore.getState()
+
       if (isRepaintMode) {
         e.preventDefault()
         return
@@ -46,5 +45,5 @@ export function useWorldCanvasWheelZoom(containerRef: RefObject<HTMLDivElement |
     return () => {
       container.removeEventListener(WorldCanvasDomEvent.Wheel, handleWheel)
     }
-  }, [containerRef, viewport, setViewport, isRepaintMode])
+  }, [containerRef])
 }

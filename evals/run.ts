@@ -6,8 +6,8 @@
  *   npm run eval -- --samples=5
  *   npm run eval -- --scorers=magic
  *
- * LLM scorers use JUDGING_MODEL from .env.local (default openai:gpt-4o).
- * Example: JUDGING_MODEL=anthropic:claude-sonnet-4-20250514
+ * LLM scorers use JUDGING_MODEL from .env.local (default openai/gpt-5.6-sol).
+ * Example: JUDGING_MODEL=openai/gpt-5.6-luna
  */
 
 import * as dotenv from 'dotenv'
@@ -142,7 +142,7 @@ async function runEval(): Promise<MultiVariantReport> {
   registerCorePrompts()
 
   const ALL_SCORERS = await loadScorers()
-  const judgingModel = process.env.JUDGING_MODEL || 'openai:gpt-4o (default)'
+  const judgingModel = process.env.JUDGING_MODEL || 'openai/gpt-5.6-sol (default)'
   console.log(`   Judge model: ${judgingModel}`)
 
   const dataset = parseDataset()

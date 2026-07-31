@@ -1,5 +1,5 @@
 /**
- * Autonomous durable-draft SSE stream (flagged: STORYTELLER_AUTONOMOUS=1).
+ * Autonomous durable-draft SSE stream (flagged: FF_STORYTELLER_AUTONOMOUS=true).
  *
  * Starts the durable goals loop (`startAutonomousEpisodeDraft`) and maps its
  * fullStream — the same Mastra chunk format as `agent.stream()` — to the frozen

@@ -2,30 +2,34 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { OpenAiChatRole, OpenAiModel, OpenAiResponseFormat } from '@/shared/data/constants/protocol'
+import { OpenAiChatRole, OpenAiResponseFormat } from '@/shared/data/constants/protocol'
+import { openRouterClientConfig } from '@/shared/agent-kernel/models'
+import { resolveUserPickerOpenRouterModelId } from '@/domains/storyteller/config/constants/model-config'
 
-function getOpenAIClient() {
-  const apiKey = process.env.OPENAI_API_KEY
+function getOpenRouterClient() {
+  const { apiKey, baseURL } = openRouterClientConfig()
   if (!apiKey) return null
-  return new OpenAI({ apiKey })
+  return new OpenAI({ apiKey, baseURL })
 }
 
 export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest) => {
   try {
-    const openai = getOpenAIClient()
+    const openai = getOpenRouterClient()
     if (!openai) {
-      return NextResponse.json({ error: API_ERROR.OPENAI_API_KEY_NOT_CONFIGURED }, { status: 500 })
+      return NextResponse.json({ error: API_ERROR.OPENROUTER_API_KEY_NOT_CONFIGURED_SERVER }, { status: 500 })
     }
 
     const body = await req.json()
-    const { description } = body
+    const { description, modelName } = body
 
     if (!description) {
       return NextResponse.json({ error: API_ERROR.DESCRIPTION_REQUIRED }, { status: 400 })
     }
 
     const completion = await openai.chat.completions.create({
-      model: OpenAiModel.Gpt4o,
+      model: resolveUserPickerOpenRouterModelId(
+        typeof modelName === 'string' ? modelName : undefined
+      ),
       messages: [
         {
           role: OpenAiChatRole.System,

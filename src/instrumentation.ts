@@ -5,7 +5,7 @@ import {
   MastraSerializationLimit,
   OTEL_DEFAULT_SERVICE_NAME,
   OtelEnv,
-} from '@/shared/observability/constants/instrumentation'
+} from '@/shared/observability/instrumentation-wire'
 import { NextRuntime } from '@/shared/data/constants/protocol'
 
 const sentryOptions = {

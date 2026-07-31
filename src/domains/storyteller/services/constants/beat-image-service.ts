@@ -1,8 +1,12 @@
 /** Beat image generation client service wire values. */
 
-export enum BeatImageProvider {
-  NanoBanana = 'nanobanana',
-}
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+
+export const BeatImageProvider = {
+  NanoBanana: ImageGenProvider.NanoBanana,
+} as const
+
+export type BeatImageProvider = (typeof BeatImageProvider)[keyof typeof BeatImageProvider]
 
 export const BEAT_IMAGE_MODEL_STORAGE_KEY = 'NANO_BANANA_MODEL_ID'
 export const BEAT_IMAGE_DEFAULT_MODEL_ID = 'flu-pro'

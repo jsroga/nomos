@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-import { createMastra } from './create-mastra'
+import { createMastra, createPostgresStore } from './create-mastra'
 import { studioAgents } from './agents/constants/registry'
 import { studioMcpServers } from './mcp/studio-servers'
 import { consumeMastraRegistrations } from './runtime-registry'
@@ -12,16 +12,18 @@ dotenv.config({ path: ENV_LOCAL_PATH, override: true })
 dotenv.config({ override: true })
 
 // Real domain agents/workflows arrive via the runtime registry (the Studio
-// CLI entry `src/mastra.ts` side-effect-imports the storyteller registration
-// module before this file runs). Registered agents OVERRIDE same-id stubs;
+// CLI entry `src/mastra/index.ts` side-effect-imports domain registration
+// modules before this file runs). Registered agents OVERRIDE same-id stubs;
 // stubs without a registered counterpart stay visible as clearly-marked
 // Studio-only fallbacks (PLAN-V2 1.1 — no more hardcoded placeholder drift).
 const { agents: registeredAgents, workflows: registeredWorkflows } = consumeMastraRegistrations()
 const agents = { ...studioAgents, ...registeredAgents }
 const workflows = Object.keys(registeredWorkflows).length > 0 ? registeredWorkflows : undefined
 
+// Studio must share the same Postgres storage path as production — `storage: null`
+// forced the in-memory fallback warning and left Memory/observability disconnected.
 export const mastra = createMastra(agents, {
-  storage: null,
+  storage: createPostgresStore(),
   mcpServers: studioMcpServers,
   ...(workflows ? { workflows } : {}),
 })

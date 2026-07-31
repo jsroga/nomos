@@ -1,13 +1,14 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { BufferEncoding, ContentType } from '@/shared/data/constants/protocol'
+import { UpscaleProvider } from '../core/upscale-provider-wire'
 import { runGeminiPreUpscaleStep } from './upscale-tile-gemini-step'
 import {
   upscaleWithLegNext,
   upscaleWithReplicate,
   upscaleWithStability,
   type ProviderConfig,
-  type UpscaleProvider,
 } from './upscale-tile-providers'
 
 export const upscaleTileTask = task({
@@ -57,7 +58,7 @@ export const upscaleTileTask = task({
     await metadata.set('stage', 'initializing')
 
     let step1Image = imageBase64
-    let step1MimeType = 'image/png'
+    let step1MimeType: string = ContentType.Png
 
     if (!skipGeminiPreUpscale && geminiConfig?.apiKey) {
       const geminiResult = await runGeminiPreUpscaleStep({
@@ -97,21 +98,21 @@ export const upscaleTileTask = task({
       throw new Error('BLOB_READ_WRITE_TOKEN not configured')
     }
 
-    const upscaledBuffer = Buffer.from(imageData, 'base64')
+    const upscaledBuffer = Buffer.from(imageData, BufferEncoding.Base64)
     const upscaledBlob = await put(`upscales/${projectId}/${upscaledFilename}`, upscaledBuffer, {
       access: 'public',
       token: process.env.BLOB_READ_WRITE_TOKEN,
-      contentType: 'image/png',
+      contentType: ContentType.Png,
     })
 
     const originalData = imageBase64.replace(/^data:image\/\w+;base64,/, '')
-    const originalBuffer = Buffer.from(originalData, 'base64')
+    const originalBuffer = Buffer.from(originalData, BufferEncoding.Base64)
     let originalUrl: string
     try {
       const originalBlob = await put(`upscales/${projectId}/${originalFilename}`, originalBuffer, {
         access: 'public',
         token: process.env.BLOB_READ_WRITE_TOKEN,
-        contentType: 'image/png',
+        contentType: ContentType.Png,
       })
       originalUrl = originalBlob.url
     } catch (e) {
@@ -164,9 +165,9 @@ async function runProviderUpscale(params: {
   } = params
 
   switch (provider) {
-    case 'midjourney': {
+    case UpscaleProvider.Midjourney: {
       const sharp = (await import('sharp')).default
-      const buffer = Buffer.from(step1Image, 'base64')
+      const buffer = Buffer.from(step1Image, BufferEncoding.Base64)
       const meta = await sharp(buffer).metadata()
 
       let resizedImage = step1Image
@@ -175,7 +176,7 @@ async function runProviderUpscale(params: {
         const resizedBuffer = await sharp(buffer)
           .resize(512, 512, { fit: 'fill' })
           .toBuffer()
-        resizedImage = resizedBuffer.toString('base64')
+        resizedImage = resizedBuffer.toString(BufferEncoding.Base64)
       }
 
       const legNextResult = await upscaleWithLegNext(
@@ -194,7 +195,7 @@ async function runProviderUpscale(params: {
       return { finalImageUrl: legNextResult.imageUrl, finalImageBase64: null }
     }
 
-    case 'replicate': {
+    case UpscaleProvider.Replicate: {
       if (!providerConfig.model) {
         throw new Error('Replicate model is required')
       }
@@ -210,7 +211,7 @@ async function runProviderUpscale(params: {
       return { finalImageUrl: null, finalImageBase64: replicateResult.data }
     }
 
-    case 'stability': {
+    case UpscaleProvider.Stability: {
       const base64 = await upscaleWithStability(
         step1Image,
         providerConfig.apiKey,
@@ -228,7 +229,7 @@ async function resolveUpscaledImageData(result: ProviderUpscaleResult): Promise<
   if (result.finalImageUrl) {
     const response = await fetch(result.finalImageUrl)
     const arrayBuffer = await response.arrayBuffer()
-    return Buffer.from(arrayBuffer).toString('base64')
+    return Buffer.from(arrayBuffer).toString(BufferEncoding.Base64)
   }
 
   if (result.finalImageBase64) {

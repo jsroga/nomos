@@ -118,9 +118,13 @@ export const SettingsDialogGeneralTab: React.FC<SettingsDialogGeneralTabProps> =
       <h3 className="text-lg font-medium mb-4">Generation</h3>
       <div className="p-4 rounded-lg bg-zinc-900/20 border border-zinc-900 space-y-2">
         <p className="text-xs text-muted-foreground">
-          First tile uses <span className="text-zinc-300 font-mono">Midjourney</span>, follow-up
-          tiles use <span className="text-zinc-300 font-mono">Nano Banana</span>. Providers and API
-          keys are managed via environment variables on the server.
+          First tile picks <span className="text-zinc-300 font-mono">grok</span> (OpenRouter), then{' '}
+          <span className="text-zinc-300 font-mono">gemini</span>, with{' '}
+          <span className="text-zinc-300 font-mono">midjourney</span> as last resort. Follow-up tiles
+          use <span className="text-zinc-300 font-mono">FOLLOW_UP_IMAGE_PROVIDER</span> (
+          <span className="text-zinc-300 font-mono">grok</span>,{' '}
+          <span className="text-zinc-300 font-mono">nano-banana</span>, or{' '}
+          <span className="text-zinc-300 font-mono">legnext-upload-paint</span>).
         </p>
       </div>
     </div>

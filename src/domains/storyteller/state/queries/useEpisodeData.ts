@@ -8,6 +8,7 @@ import { useEpisode, useEpisodes } from '@/domains/storyteller/state/queries/use
 import {
   StorytellerOverrideState,
   StorytellerQueryParam,
+  StorytellerBibleQuery,
 } from '@/domains/storyteller/core/storyteller-page-wire'
 
 interface EpisodeBasic {
@@ -70,6 +71,8 @@ export function useEpisodeData(projectId: string | undefined) {
       setCurrentEpisodeId(id)
       const params = new URLSearchParams(searchParams?.toString() || '')
       params.set(StorytellerQueryParam.EpisodeId, id)
+      // Rule: opening an episode always leaves the bible
+      params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Off)
       router.push(`?${params.toString()}`)
     },
     [searchParams, router]

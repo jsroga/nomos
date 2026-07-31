@@ -3,7 +3,15 @@ import { StringSeparator } from '@/shared/data/constants/protocol'
 
 export enum LegNextJobStatus {
   Completed = 'completed',
+  Processing = 'processing',
+  Pending = 'pending',
   Failed = 'failed',
+}
+
+export enum LegNextModelId {
+  Diffusion = 'legnext-diffusion',
+  UploadPaint = 'legnext-upload-paint',
+  Upscale = 'legnext-upscale',
 }
 
 export enum LegNextErrorMessage {

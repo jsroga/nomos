@@ -53,4 +53,4 @@ Optional when `PLAN.md` exists: `node scripts/fabro-verify.mjs`. **No E2E** unle
 - Running verify after every todo.
 - Re-scanning without updating `.local/quality-backlog.md`.
 - Bulk `node -e` transforms instead of incremental extract + backlog.
-- **File-level `eslint-disable`** or `@ts-nocheck` to silence gate failures (forbidden without user approval).
+- **IMPORTANT — never disable rules on your own if not allowed.** No `eslint-disable`, no `eslint.config.js` `'off'` sprawl, no `@ts-nocheck` to silence gate failures (ask first — `no-gate-bypass.mdc`).

@@ -232,6 +232,7 @@ export enum EnvVarName {
   MeshyApiKey = 'MESHY_API_KEY',
   Hyper3dApiKey = 'HYPER3D_API_KEY',
   GoogleApiKey = 'GOOGLE_API_KEY',
+  OpenRouterApiKey = 'OPENROUTER_API_KEY',
 }
 
 export enum MeshyArtStyle {
@@ -244,6 +245,8 @@ export enum MeshyTopology {
 
 export enum GoogleModelId {
   Gemini3ProImagePreview = 'gemini-3-pro-image-preview',
+  Gemini20FlashPreviewImageGeneration = 'gemini-2.0-flash-preview-image-generation',
+  Gemini20Flash = 'gemini-2.0-flash',
 }
 
 export enum FsDirectory {
@@ -256,11 +259,12 @@ export enum OpenAiResponseFormat {
   JsonObject = 'json_object',
 }
 
+/** Fast text model id for OpenRouter OpenAI-compatible clients (`provider/model`). */
 export enum OpenAiModel {
-  Gpt4o = 'gpt-4o',
-  Gpt4oMini = 'gpt-4o-mini',
+  Gpt56Luna = 'openai/gpt-5.6-luna',
 }
 
+/** @deprecated Use {@link GoogleModelId.Gemini20Flash} */
 export enum GoogleModel {
   Gemini20Flash = 'gemini-2.0-flash',
 }

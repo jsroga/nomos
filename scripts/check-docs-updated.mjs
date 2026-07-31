@@ -9,17 +9,17 @@ const REPO_ROOT = process.cwd()
 
 const DOC_HINTS = {
   newDomain:
-    'Add or update module docs under docs/internal/ and note the module in docs/README.md.',
+    'Add or update the module in docs/MODULES.md and note it in docs/README.md.',
   newDomainFolder:
-    'Update docs/unified/ARCHITECTURE.md or docs/unified/SPEC.md if this folder is part of the target blueprint.',
+    'Update docs/ARCHITECTURE.md (module blueprint) if this folder is part of the target layout.',
   srcTopology:
     'Update docs/ARCHITECTURE.md § `src/` topology to match the new layout.',
   shared:
-    'Update docs/ARCHITECTURE.md / docs/unified/ARCHITECTURE.md §3 for shared/ changes.',
+    'Update docs/ARCHITECTURE.md for shared/ topology changes.',
   dependencies:
     'Update docs/ARCHITECTURE.md (Third-Party Services) or docs/MCP_API.md when dependencies change.',
   eslint:
-    'Update docs/unified/ARCHITECTURE.md or domain-structure rules when import/barrel policy changes.',
+    'Update docs/ARCHITECTURE.md or domain-structure rules when import/barrel policy changes.',
 }
 
 const WORKING_TREE = process.argv.includes('--working-tree')
@@ -256,8 +256,8 @@ function main() {
   }
   console.error(
     WORKING_TREE
-      ? '\nUpdate at least one file under docs/ (e.g. docs/ARCHITECTURE.md, docs/unified/ARCHITECTURE.md, docs/README.md).\n'
-      : '\nStage at least one file under docs/ (e.g. docs/ARCHITECTURE.md, docs/unified/ARCHITECTURE.md, docs/README.md).\n',
+      ? '\nUpdate at least one file under docs/ (e.g. docs/ARCHITECTURE.md, docs/MODULES.md, docs/README.md).\n'
+      : '\nStage at least one file under docs/ (e.g. docs/ARCHITECTURE.md, docs/MODULES.md, docs/README.md).\n',
   )
   process.exit(1)
 }

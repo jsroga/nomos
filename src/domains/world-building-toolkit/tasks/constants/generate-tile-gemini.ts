@@ -5,6 +5,8 @@ import {
   logLLMRequestStart,
 } from '@/trigger/utils/llm-logger'
 import type { AiProviderConfig } from '@/shared/ai/ai-provider-config'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+import { BufferEncoding, ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { imageService } from '@/shared/data/server/image-service'
 import sharp from 'sharp'
 import {
@@ -47,8 +49,8 @@ async function fetchStyleImageParts(styleReferenceUrls: string[]): Promise<Gemin
       const resp = await fetch(url)
       if (!resp.ok) continue
       const arrayBuffer = await resp.arrayBuffer()
-      const base64 = Buffer.from(arrayBuffer).toString('base64')
-      const contentType = resp.headers.get('content-type') ?? 'image/png'
+      const base64 = Buffer.from(arrayBuffer).toString(BufferEncoding.Base64)
+      const contentType = resp.headers.get('content-type') ?? ContentType.Png
       parts.push({ inline_data: { mime_type: contentType, data: base64 } })
     } catch {
       // skip unreachable URLs
@@ -91,7 +93,7 @@ function buildGeminiPayload(
         {
           parts: [
             { text: finalPrompt },
-            { inline_data: { mime_type: 'image/png', data: contextImageBase64 } },
+            { inline_data: { mime_type: ContentType.Png, data: contextImageBase64 } },
             ...styleImageParts,
           ],
         },
@@ -107,7 +109,7 @@ function buildGeminiPayload(
 }
 
 async function resizeGeminiFollowUpOutput(imageData: string): Promise<string> {
-  let imgBuffer = Buffer.from(imageData, 'base64')
+  let imgBuffer = Buffer.from(imageData, BufferEncoding.Base64)
   const meta = await sharp(imgBuffer).metadata()
   const w = meta.width ?? 0
   const h = meta.height ?? 0
@@ -127,11 +129,11 @@ async function resizeGeminiFollowUpOutput(imageData: string): Promise<string> {
       height: TILE_CROP_SIZE,
     })
   )
-  return imgBuffer.toString('base64')
+  return imgBuffer.toString(BufferEncoding.Base64)
 }
 
 async function resizeGeminiFirstTileOutput(imageData: string): Promise<string> {
-  const imgBuffer = Buffer.from(imageData, 'base64')
+  const imgBuffer = Buffer.from(imageData, BufferEncoding.Base64)
   const meta = await sharp(imgBuffer).metadata()
   const w = meta.width ?? 0
   const h = meta.height ?? 0
@@ -141,7 +143,7 @@ async function resizeGeminiFirstTileOutput(imageData: string): Promise<string> {
   }
   logger.info('Resizing Gemini output to 512x512', { from: `${w}x${h}` })
   const resized = await sharp(imgBuffer).resize(TILE_CROP_SIZE, TILE_CROP_SIZE, { fit: 'cover' }).png().toBuffer()
-  return resized.toString('base64')
+  return resized.toString(BufferEncoding.Base64)
 }
 
 async function processGeminiImagePart(
@@ -189,7 +191,7 @@ export async function generateWithGemini(
   }
 
   logLLMRequestStart({
-    provider: 'gemini',
+    provider: ImageGenProvider.Gemini,
     model,
     prompt: finalPrompt,
     inputImageUrls: styleReferenceUrls,
@@ -199,15 +201,15 @@ export async function generateWithGemini(
 
   try {
     const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: HttpMethod.Post,
+      headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify(payload),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
       logLLMRequestError({
-        provider: 'gemini',
+        provider: ImageGenProvider.Gemini,
         model,
         prompt: finalPrompt,
         error: `HTTP ${response.status}: ${errorText}`,
@@ -223,7 +225,7 @@ export async function generateWithGemini(
   } catch (error) {
     if (error instanceof Error && !error.message.includes('Gemini API error')) {
       logLLMRequestError({
-        provider: 'gemini',
+        provider: ImageGenProvider.Gemini,
         model,
         prompt: finalPrompt,
         error: error.message,

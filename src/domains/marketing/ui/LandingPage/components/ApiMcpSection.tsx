@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion'
 import { LandingApiMcpCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
+import { LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 import { ApiIntegrationTab } from '@/domains/marketing/ui/LandingPage/types'
 
 type ApiMcpSectionProps = {
@@ -11,7 +12,7 @@ type ApiMcpSectionProps = {
 
 export function ApiMcpSection({ activeTab, onTabChange }: ApiMcpSectionProps) {
   return (
-    <section className="py-24 relative">
+    <section className={LANDING_SECTION_PANEL_CLASS}>
       <div className="absolute left-[50%] top-0 bottom-0 w-px bg-white/5 hidden lg:block" />
 
       <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 items-center">

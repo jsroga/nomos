@@ -84,8 +84,16 @@ export function useStorytellerPageBase() {
     hasEpisodes,
     firstEpisodeId,
     overrideState,
-    selectEpisode,
+    selectEpisode: selectEpisodeRaw,
   } = useEpisodeData(currentProject?.id)
+
+  const selectEpisode = useCallback(
+    (id: string) => {
+      setOptimisticBibleOpen(false)
+      selectEpisodeRaw(id)
+    },
+    [selectEpisodeRaw, setOptimisticBibleOpen]
+  )
 
   const [selectedBeatId, setSelectedBeatId] = useState<string | null>(null)
   const [characters, setCharacters] = useState<StorytellerCharacter[]>([])
@@ -93,6 +101,8 @@ export function useStorytellerPageBase() {
   const [script, setScript] = useState<string>('')
   const [isScriptLoading, setIsScriptLoading] = useState(false)
   const [currentPhase, setCurrentPhase] = useState<PhaseId>(Phase.PREMISE)
+  /** UI-selected phase (may be behind progress when revisiting). */
+  const [viewPhase, setViewPhase] = useState<PhaseId>(Phase.PREMISE)
   const [activeTab, setActiveTab] = useState<string>(StorytellerTab.Plan)
   const [focusEntityId, setFocusEntityId] = useState<string | null>(null)
   const [storyPlan, setStoryPlan] = useState<StoryPlan | null>(null)
@@ -190,11 +200,11 @@ export function useStorytellerPageBase() {
       [Phase.WRITING]: StorytellerTab.Script,
       [Phase.COMPLETE]: StorytellerTab.Script,
     }
-    const newTab = phaseToTab[currentPhase] ?? StorytellerTab.Plan
-    if (activeTab !== newTab) {
+    const newTab = phaseToTab[viewPhase] ?? StorytellerTab.Plan
+    if (activeTab !== newTab && activeTab !== StorytellerTab.Relationships) {
       queueMicrotask(() => setActiveTab(newTab))
     }
-  }, [currentPhase, activeTab])
+  }, [viewPhase, activeTab])
 
   const loadingStates = useLoadingStates()
 
@@ -248,6 +258,8 @@ export function useStorytellerPageBase() {
     setIsScriptLoading,
     currentPhase,
     setCurrentPhase,
+    viewPhase,
+    setViewPhase,
     activeTab,
     setActiveTab,
     focusEntityId,

@@ -1,73 +1,18 @@
-'use client'
-
-import { motion } from 'framer-motion'
-import { useState } from 'react'
-import { ProPlanPromo } from '../../ProPlanPromo'
-import { ToolsIntegration } from '../../ToolsIntegration'
-import { TurbulentBackground } from '../../TurbulentBackground'
-import { ArchitectingRealitySection } from './ArchitectingRealitySection'
-import { FeatureLightbox } from './FeatureLightbox'
-import { LandingFooter } from './LandingFooter'
+import {
+  MARKETING_BG_PLACEHOLDER_CLASS,
+} from '@/domains/marketing/constants/viewport-3d'
+import { LandingClientMount } from './LandingClientMount'
 import { LandingHero } from './LandingHero'
-import { LandingNav } from './LandingNav'
-import { ManifestoSection } from './ManifestoSection'
-import { SystemsSection } from './SystemsSection'
-import { useLandingScroll } from '../hooks/useLandingScroll'
-import { ApiIntegrationTab, type SelectedFeature } from '../types'
+import { LandingNavStatic } from './LandingNavStatic'
 
-export function LandingPage({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
-  const { containerRef, heroY, heroOpacity, bgOverlayOpacity } = useLandingScroll()
-  const [selectedFeature, setSelectedFeature] = useState<SelectedFeature | null>(null)
-  const [activeTab, setActiveTab] = useState<ApiIntegrationTab>(ApiIntegrationTab.Rest)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
+/** Server shell: hero + static nav in first HTML; heavy client work after scroll. */
+export function LandingPage() {
   return (
-    <TurbulentBackground
-      zoom={0.05}
-      rotation={3.5}
-      speed={0.3}
-      morphSpeed={0.15}
-      saturation={0.2}
-      brightness={1.1}
-      contrast={1.4}
-      hue={0.9}
-    >
-      <div
-        ref={containerRef}
-        className="relative w-full min-h-screen text-white selection:bg-primary/30 overflow-x-hidden"
-      >
-        <motion.div
-          style={{ opacity: bgOverlayOpacity }}
-          className="fixed inset-0 bg-black pointer-events-none z-0"
-        />
-
-        <FeatureLightbox selectedFeature={selectedFeature} onClose={() => setSelectedFeature(null)} />
-
-        <LandingNav
-          isLoggedIn={isLoggedIn}
-          mobileMenuOpen={mobileMenuOpen}
-          onMobileMenuOpen={() => setMobileMenuOpen(true)}
-          onMobileMenuClose={() => setMobileMenuOpen(false)}
-        />
-
-        <LandingHero isLoggedIn={isLoggedIn} heroY={heroY} heroOpacity={heroOpacity} />
-
-        <ToolsIntegration />
-
-        <SystemsSection
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onSelectFeature={setSelectedFeature}
-        />
-
-        <ProPlanPromo />
-
-        <ArchitectingRealitySection />
-
-        <ManifestoSection />
-
-        <LandingFooter />
-      </div>
-    </TurbulentBackground>
+    <div className="relative w-full min-h-screen text-white selection:bg-primary/30 overflow-x-hidden">
+      <div className={MARKETING_BG_PLACEHOLDER_CLASS} aria-hidden />
+      <LandingNavStatic />
+      <LandingHero />
+      <LandingClientMount />
+    </div>
   )
 }

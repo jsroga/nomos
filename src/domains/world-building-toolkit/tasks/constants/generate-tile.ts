@@ -1,5 +1,9 @@
 import type { TileContext } from '@/shared/ai/types'
 import type { ContextImageVariant } from '@/shared/ai/contextAssembler'
+import { GoogleModelId } from '@/shared/data/constants/protocol'
+import { GeminiFinishReason } from '@/shared/data/constants/repaint-gemini'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+import { LegNextJobStatus, LegNextModelId } from '@/shared/ai/constants/legnext'
 
 export type TileNeighborsPayload = TileContext['neighbors']
 
@@ -32,32 +36,32 @@ export interface GenerateTileResult {
   pendingReview: boolean
 }
 
-export enum GenerateTileProvider {
-  Gemini = 'gemini',
-  NanoBanana = 'nano-banana',
-  OpenAi = 'openai',
-  Stability = 'stability',
-  Midjourney = 'midjourney',
-  LegnextUploadPaint = 'legnext-upload-paint',
-}
+/**
+ * Tile-task provider wire. Values alias shared enums via const map
+ * (TS forbids enum members referencing other enums).
+ */
+export const GenerateTileProvider = {
+  Gemini: ImageGenProvider.Gemini,
+  NanoBanana: ImageGenProvider.NanoBanana,
+  OpenAi: ImageGenProvider.OpenAi,
+  Stability: ImageGenProvider.Stability,
+  Midjourney: ImageGenProvider.Midjourney,
+  LegnextUploadPaint: LegNextModelId.UploadPaint,
+  Grok: ImageGenProvider.Grok,
+} as const
 
-export enum GeminiFinishReason {
-  Safety = 'SAFETY',
-}
+export type GenerateTileProvider =
+  (typeof GenerateTileProvider)[keyof typeof GenerateTileProvider]
 
-export enum LegNextJobStatus {
-  Completed = 'completed',
-  Processing = 'processing',
-  Pending = 'pending',
-  Failed = 'failed',
-}
+export { GeminiFinishReason }
+export { LegNextJobStatus }
 
 export enum VariantSelectionAction {
   Accept = 'accept',
   Upscale = 'upscale',
 }
 
-export const GEMINI_DEFAULT_MODEL = 'gemini-3-pro-image-preview'
+export const GEMINI_DEFAULT_MODEL = GoogleModelId.Gemini3ProImagePreview
 export const OPENAI_DEFAULT_MODEL = 'dall-e-3'
 export const OPENAI_EDIT_MODEL = 'dall-e-2'
 export const STABILITY_DEFAULT_MODEL = 'stable-diffusion-xl-1024-v1-0'

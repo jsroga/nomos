@@ -6,7 +6,6 @@
  */
 
 import { createOpenAI } from '@ai-sdk/openai'
-import { createAnthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
 
 // =============================================================================
@@ -14,47 +13,83 @@ import { google } from '@ai-sdk/google'
 // =============================================================================
 //
 // Everything routes through the OpenRouter gateway so a single
-// OPENROUTER_API_KEY serves every provider (no per-provider keys). The default
-// model is OpenRouter's auto router (`openrouter/auto-beta`); operators can pin
-// a specific model per env override (e.g. STORYTELLER_AUTHOR_MODEL=
-// openrouter/moonshotai/kimi-k2), which is routed through the same gateway.
+// OPENROUTER_API_KEY serves every provider (no per-provider keys).
 //
-// NOTE: this is the single knob. If Mastra's model router needs the gateway
-// double-prefixed (`openrouter/openrouter/auto-beta`), change ONLY this
-// constant — every resolver funnels through `toOpenRouterModel`.
+// Text generation policy (2026-07-28):
+ // - Preferred default: latest Kimi (`moonshotai/kimi-k3`)
+ // - Short / high-impact bursts: GPT-5.6 Sol (`openai/gpt-5.6-sol`)
+ // - Anthropic Claude is NEVER used for text generation (remapped to Kimi)
+//
+// NOTE: if Mastra's model router needs a gateway double-prefix for a special
+// router id, change ONLY the constants below — every resolver funnels through
+// `toOpenRouterModel`.
+
+/** Preferred default for long-form / general text generation (Kimi latest). */
+export const TEXT_GEN_PRIMARY_MODEL = 'moonshotai/kimi-k3'
+/** Short but impactful text (hooks, critics, blurbs). */
+export const TEXT_GEN_SHORT_IMPACT_MODEL = 'openai/gpt-5.6-sol'
+/** Fastest responses (autocomplete, glue, low-effort). */
+export const TEXT_GEN_FAST_MODEL = 'openai/gpt-5.6-luna'
 
 /**
- * OpenRouter MODEL ID (provider/model form) for the auto router — what
- * OpenRouter's API expects, and what direct OpenAI-compatible clients (LangChain
- * ChatOpenAI / AI-SDK createOpenAI pointed at OpenRouter) pass as `model`.
+ * OpenRouter MODEL ID for the app default — what OpenRouter's API expects, and
+ * what direct OpenAI-compatible clients pass as `model`.
  */
-export const OPENROUTER_AUTO_MODEL = 'openrouter/auto-beta'
-/** Mastra model-router gateway string for the auto router (double-prefixed). */
-export const OPENROUTER_AUTO_GATEWAY = 'openrouter/openrouter/auto-beta'
+export const OPENROUTER_AUTO_MODEL = TEXT_GEN_PRIMARY_MODEL
+/** Mastra model-router gateway string for the default text model. */
+export const OPENROUTER_AUTO_GATEWAY = `openrouter/${TEXT_GEN_PRIMARY_MODEL}`
 /** OpenAI-compatible endpoint for LangChain / AI-SDK clients. */
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 const OPENROUTER_GATEWAY_PREFIX = 'openrouter/'
 const OPENROUTER_PROVIDER = 'openrouter'
+const ANTHROPIC_PROVIDER = 'anthropic'
 const PROVIDER_COLON = ':'
 const PROVIDER_SLASH = '/'
 
+function stripOpenRouterGatewayPrefix(modelId: string): string {
+  const segments = modelId.split(PROVIDER_SLASH)
+  if (segments[0] === OPENROUTER_PROVIDER && segments.length >= 3) {
+    return segments.slice(1).join(PROVIDER_SLASH)
+  }
+  return modelId
+}
+
+/** True when the id targets Anthropic Claude (any form). */
+export function isAnthropicTextModelId(id: string): boolean {
+  const normalized = stripOpenRouterGatewayPrefix(id.trim().replace(PROVIDER_COLON, PROVIDER_SLASH))
+  return (
+    normalized === ANTHROPIC_PROVIDER ||
+    normalized.startsWith(`${ANTHROPIC_PROVIDER}${PROVIDER_SLASH}`)
+  )
+}
+
+/**
+ * Enforce the no-Anthropic text-gen policy. Remaps Claude ids to Kimi latest.
+ */
+export function enforceTextGenModelPolicy(id: string): string {
+  if (!isAnthropicTextModelId(id)) return id
+  console.warn(
+    `[models] Anthropic text models are disabled; remapping "${id}" → "${TEXT_GEN_PRIMARY_MODEL}"`
+  )
+  return TEXT_GEN_PRIMARY_MODEL
+}
+
 /**
  * Normalize to an OpenRouter MODEL ID (`provider/model`): `provider:model` →
- * `provider/model`; empty → the auto router. For direct OpenAI-compatible
- * clients already pointed at OpenRouter's endpoint.
+ * `provider/model`; empty → Kimi latest. Anthropic ids remap to Kimi.
  */
 export function toOpenRouterModelId(id?: string): string {
   const trimmed = id?.trim()
   if (!trimmed) return OPENROUTER_AUTO_MODEL
-  return trimmed.replace(PROVIDER_COLON, PROVIDER_SLASH)
+  const normalized = stripOpenRouterGatewayPrefix(trimmed.replace(PROVIDER_COLON, PROVIDER_SLASH))
+  return enforceTextGenModelPolicy(normalized)
 }
 
+
 /**
- * Mastra model-router gateway string: `openrouter/<openrouter-model-id>`. The
- * auto router's OpenRouter id is itself `openrouter/auto-beta`, so its Mastra
- * string is `openrouter/openrouter/auto-beta` (verified against the live API —
- * a single `openrouter/auto-beta` yields "Invalid URL"). Accepts `provider:model`,
- * an OpenRouter model id, or an already-gatewayed 3-segment `openrouter/x/y` id.
+ * Mastra model-router gateway string: `openrouter/<openrouter-model-id>`.
+ * Accepts `provider:model`, an OpenRouter model id, or an already-gatewayed
+ * 3-segment `openrouter/x/y` id. Anthropic ids remap to Kimi before gatewaying.
  */
 export function toOpenRouterModel(id?: string): string {
   const modelId = toOpenRouterModelId(id)
@@ -76,23 +111,23 @@ export function openRouterClientConfig(): { apiKey: string | undefined; baseURL:
 export const MODELS = {
   // === GENERATION MODELS (for creating content) ===
   generation: {
-    primary: process.env.GENERATION_MODEL || OPENROUTER_AUTO_MODEL,
-    fast: process.env.GENERATION_MODEL_FAST || OPENROUTER_AUTO_MODEL,
-    creative: process.env.GENERATION_MODEL_CREATIVE || OPENROUTER_AUTO_MODEL,
+    primary: process.env.GENERATION_MODEL || TEXT_GEN_PRIMARY_MODEL,
+    fast: process.env.GENERATION_MODEL_FAST || TEXT_GEN_FAST_MODEL,
+    creative: process.env.GENERATION_MODEL_CREATIVE || TEXT_GEN_PRIMARY_MODEL,
   },
 
   // === JUDGING MODELS (for evaluation - independent layer) ===
   judging: {
-    primary: process.env.JUDGING_MODEL || OPENROUTER_AUTO_MODEL,
-    fallback: process.env.JUDGING_MODEL_FALLBACK || OPENROUTER_AUTO_MODEL,
+    primary: process.env.JUDGING_MODEL || TEXT_GEN_SHORT_IMPACT_MODEL,
+    fallback: process.env.JUDGING_MODEL_FALLBACK || TEXT_GEN_PRIMARY_MODEL,
     // Low temperature for consistent judging
     temperature: 0.1,
   },
 
   // === PLANNING MODELS (for reasoning/planning) ===
   planning: {
-    primary: process.env.PLANNING_MODEL || OPENROUTER_AUTO_MODEL,
-    reasoning: process.env.PLANNING_MODEL_REASONING || OPENROUTER_AUTO_MODEL,
+    primary: process.env.PLANNING_MODEL || TEXT_GEN_PRIMARY_MODEL,
+    reasoning: process.env.PLANNING_MODEL_REASONING || TEXT_GEN_PRIMARY_MODEL,
   },
 
   // === EMBEDDING MODELS (OpenRouter has no unified embeddings gateway → own key) ===
@@ -125,29 +160,46 @@ export const IMPROVEMENT_LOOP = {
  * Does NOT set specificationVersion - uses native AI SDK behavior
  */
 export function createPureModel(modelName: string) {
-  // OpenAI
-  if (modelName.startsWith('openai:')) {
-    const modelId = modelName.replace('openai:', '')
-    const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const enforced = enforceTextGenModelPolicy(modelName.replace(PROVIDER_COLON, PROVIDER_SLASH))
+  const colonForm = enforced.includes(PROVIDER_SLASH)
+    ? enforced.replace(PROVIDER_SLASH, PROVIDER_COLON)
+    : enforced
+
+  // OpenAI (Luna / Sol / …) — prefer OpenRouter when only that key is set
+  if (colonForm.startsWith('openai:')) {
+    const useOpenRouter = Boolean(process.env.OPENROUTER_API_KEY)
+    const modelId = useOpenRouter
+      ? colonForm.replace(PROVIDER_COLON, PROVIDER_SLASH)
+      : colonForm.replace('openai:', '')
+    const openai = createOpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
+      baseURL: useOpenRouter ? OPENROUTER_BASE_URL : undefined,
+    })
     return openai(modelId)
   }
 
-  // Anthropic
-  if (modelName.startsWith('anthropic:')) {
-    const modelId = modelName.replace('anthropic:', '')
-    const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    return anthropic(modelId)
+  // Moonshot / Kimi via OpenRouter
+  if (colonForm.startsWith('moonshotai:')) {
+    const modelId = colonForm.replace('moonshotai:', 'moonshotai/')
+    const openai = createOpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: OPENROUTER_BASE_URL,
+    })
+    return openai(modelId)
   }
 
   // Google
-  if (modelName.startsWith('google:')) {
-    const modelId = modelName.replace('google:', '')
+  if (colonForm.startsWith('google:')) {
+    const modelId = colonForm.replace('google:', '')
     return google(modelId)
   }
 
-  // Default fallback
-  const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  return openai('gpt-4o')
+  // Default: Kimi latest via OpenRouter
+  const openai = createOpenAI({
+    apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENROUTER_API_KEY ? OPENROUTER_BASE_URL : undefined,
+  })
+  return openai(TEXT_GEN_PRIMARY_MODEL)
 }
 
 // =============================================================================

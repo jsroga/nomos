@@ -1,10 +1,15 @@
 /** Cascade editor wire values. */
 
-export enum CascadeEditorHttpMethod {
-  Patch = 'PATCH',
-  Post = 'POST',
-  Put = 'PUT',
-}
+import { HttpMethod } from '@/shared/data/constants/protocol'
+
+export const CascadeEditorHttpMethod = {
+  Patch: HttpMethod.Patch,
+  Post: HttpMethod.Post,
+  Put: HttpMethod.Put,
+} as const
+
+export type CascadeEditorHttpMethod =
+  (typeof CascadeEditorHttpMethod)[keyof typeof CascadeEditorHttpMethod]
 
 export enum CascadeElementType {
   Character = 'character',

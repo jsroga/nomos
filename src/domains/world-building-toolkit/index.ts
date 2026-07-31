@@ -39,7 +39,7 @@ export type { TileReviewType } from './ui/components/TileReviewDialog'
 export { AssetsPanel } from './ui/components/AssetsPanel'
 export { SettingsDialog } from './ui/components/SettingsDialog'
 export { MjVariantPicker } from './ui/components/MjVariantPicker'
-export { WorldGenLayout } from './ui/WorldGenLayout'
+export { WorldGenLayout } from './ui/components/WorldGenLayout'
 
 export { upscaleService } from './state/client-services/upscale-service'
 export { tileGenerationService } from './state/client-services/tile-generation-service'

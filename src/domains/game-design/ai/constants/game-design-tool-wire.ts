@@ -1,5 +1,5 @@
 export enum GameDesignLlmModel {
-  Gpt4o = 'gpt-4o',
+  Gpt56Luna = 'openai/gpt-5.6-luna',
 }
 
 export enum GameDesignLlmRole {

@@ -1,5 +1,5 @@
 /**
- * Locks target repo layout from docs/ARCHITECTURE.md and docs/unified/ARCHITECTURE.md §3–§4.
+ * Locks target repo layout from docs/ARCHITECTURE.md (src topology + module blueprint).
  *
  *  - src/ top-level: 7 folders + mastra.ts + mastra/ CLI shim + __tests__
  *  - src/app: route groups + api only
@@ -10,7 +10,9 @@
 import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
+import { findDocsCatalogViolations } from '../../scripts/structure-gates/docs-catalog'
 import {
+  DOCS_ALLOWED_FILES,
   SHARED_TOP_LEVEL_FORBIDDEN,
   SHARED_TOP_LEVEL_LEGACY,
   SHARED_TOP_LEVEL_TARGET,
@@ -75,7 +77,7 @@ describe('src/ topology (docs/ARCHITECTURE.md § target)', () => {
   })
 })
 
-describe('src/shared topology (docs/unified/ARCHITECTURE.md §3)', () => {
+describe('src/shared topology (docs/ARCHITECTURE.md)', () => {
   const sharedDir = path.join(SRC_DIR, 'shared')
 
   it('children are target folders or documented legacy migration folders', () => {
@@ -100,17 +102,17 @@ describe('src/shared topology (docs/unified/ARCHITECTURE.md §3)', () => {
   })
 })
 
-describe('src/mastra CLI shim', () => {
+describe('src/mastra Studio entry', () => {
   const mastraDir = path.join(SRC_DIR, 'mastra')
 
-  it('contains only index.ts (canonical entry is src/mastra.ts)', () => {
+  it('contains only index.ts, agents/, and optional public/', () => {
     if (!fs.existsSync(mastraDir)) return
     const entries = fs.readdirSync(mastraDir)
-    const allowed = new Set(['index.ts', 'public'])
+    const allowed = new Set(['index.ts', 'agents', 'public'])
     const unexpected = entries.filter(e => !allowed.has(e))
     expect(
       unexpected,
-      `src/mastra/ must be CLI shim only (index.ts, optional public/): ${entries.join(', ')}`,
+      `src/mastra/ allowed: index.ts, agents/, public/ — found: ${entries.join(', ')}`,
     ).toEqual([])
   })
 })
@@ -135,8 +137,17 @@ describe('src/app structure', () => {
     const walk = (dir: string) => {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         if (!entry.isDirectory()) continue
-        if (FORBIDDEN_APP_NAMES.includes(entry.name)) offenders.push(path.relative(REPO_ROOT, path.join(dir, entry.name)))
-        walk(path.join(dir, entry.name))
+        const full = path.join(dir, entry.name)
+        const rel = path.relative(REPO_ROOT, full)
+        // Admin Tests dashboard routes are product surfaces, not stray test trees.
+        const isAdminTestsRoute =
+          entry.name === 'tests' &&
+          (rel.includes(`${path.sep}admin${path.sep}tests`) ||
+            rel.endsWith(`${path.sep}admin${path.sep}tests`))
+        if (FORBIDDEN_APP_NAMES.includes(entry.name) && !isAdminTestsRoute) {
+          offenders.push(rel)
+        }
+        walk(full)
       }
     }
     walk(APP_DIR)
@@ -207,5 +218,21 @@ describe('single-home invariants', () => {
   it('docs and evals each have exactly one home (repo root)', () => {
     expect(fs.existsSync(path.join(REPO_ROOT, 'docs')), 'root docs/ missing').toBe(true)
     expect(fs.existsSync(path.join(REPO_ROOT, 'evals')), 'root evals/ missing').toBe(true)
+  })
+})
+
+describe('docs/ flat catalog (no trash)', () => {
+  const docsDir = path.join(REPO_ROOT, 'docs')
+
+  it('contains only the six allowlisted markdown files (no subfolders)', () => {
+    const violations = findDocsCatalogViolations(docsDir)
+    expect(
+      violations,
+      violations.map((v) => `${v.path}: ${v.reason}`).join('\n'),
+    ).toEqual([])
+  })
+
+  it('allowlist matches docs/README catalog size', () => {
+    expect(DOCS_ALLOWED_FILES.size).toBe(6)
   })
 })

@@ -33,4 +33,4 @@ Judge: `OPENAI_API_KEY` or `JUDGING_MODEL` in `.env.local` (Mastra LLM-as-judge 
 
 ## Interpreting results
 
-Read `evals/results/latest.json`. A change is an improvement only if scores go up **without** regressing any single scorer below baseline. Use `/llm-eval` skill for eval design and `/prompt-optimizer` for eval-gated prompt iteration. See `docs/TESTING.md` and `docs/internal/hypothesis-evaluation-guide.md`.
+Read `evals/results/latest.json`. A change is an improvement only if scores go up **without** regressing any single scorer below baseline. See `docs/DEVELOPMENT.md`.

@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
 import { logger } from '@trigger.dev/sdk/v3'
+import { BufferEncoding, ContentType } from '@/shared/data/constants/protocol'
 import { imageService } from '@/shared/data/server/image-service'
 import type { GenerateTilePayload, TileNeighborsPayload } from './generate-tile'
 import { CONTEXT_CANONICAL_VARIANT } from './generate-tile'
@@ -38,7 +39,7 @@ export async function assembleServerContextImage(
     },
     1024
   )
-  return image.toString('base64')
+  return image.toString(BufferEncoding.Base64)
 }
 
 export function requireBlobToken(): string {
@@ -57,11 +58,11 @@ export async function uploadTileToBlob(
 ): Promise<{ filename: string; newUrl: string }> {
   const filename = `tiles/${projectId}/${x}_${y}_${Date.now()}.png`
   const base64Data = generatedImageBase64.replace(/^data:image\/\w+;base64,/, '')
-  const buffer = Buffer.from(base64Data, 'base64')
+  const buffer = Buffer.from(base64Data, BufferEncoding.Base64)
   const blob = await put(filename, buffer, {
     access: 'public',
     token: requireBlobToken(),
-    contentType: 'image/png',
+    contentType: ContentType.Png,
   })
   logger.info('Image uploaded to Vercel Blob', { newUrl: blob.url })
   return { filename, newUrl: blob.url }

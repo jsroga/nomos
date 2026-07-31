@@ -2,18 +2,18 @@
 
 import { motion } from 'framer-motion'
 import { Plus } from 'lucide-react'
-import dynamic from 'next/dynamic'
+import { MarketingIconType } from '@/domains/marketing/constants/three-d-icon'
+import { ViewportGatedThreeDIcon } from '@/domains/marketing/ui/ViewportGatedThreeDIcon'
 import { LANDING_BRAND_ACCENT } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
+import {
+  LANDING_ABSOLUTE_OVERLAY_CLASS,
+  LANDING_SECTION_PANEL_CLASS,
+} from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 import { LandingArchitectingCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
-
-const ThreeDIcon = dynamic(() => import('../../ThreeDIcon').then(mod => mod.ThreeDIcon), {
-  ssr: false,
-  loading: () => <div className="w-full h-full bg-white/5 animate-pulse rounded-full" />,
-})
 
 export function ArchitectingRealitySection() {
   return (
-    <section className="py-32 lg:py-48 px-6 relative overflow-hidden">
+    <section className={`${LANDING_SECTION_PANEL_CLASS} px-6`}>
       <div className="max-w-7xl mx-auto mb-20 text-center">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <span className="text-[10px] font-mono text-primary tracking-[0.3em] uppercase mb-6 block">
@@ -34,9 +34,9 @@ export function ArchitectingRealitySection() {
           transition={{ duration: 0.8 }}
           className="hidden lg:block lg:w-1/2 relative h-[800px] -ml-20"
         >
-          <div className="absolute inset-0 flex items-center justify-center">
-            <ThreeDIcon
-              type="STR_TST"
+          <div className={`${LANDING_ABSOLUTE_OVERLAY_CLASS} flex items-center justify-center`}>
+            <ViewportGatedThreeDIcon
+              type={MarketingIconType.StrTst}
               color={LANDING_BRAND_ACCENT}
               size={700}
               density={150}

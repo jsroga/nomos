@@ -25,4 +25,6 @@ export enum DomMouseEvent {
 
 export const LIQUID_DISTORTION_FONT_SIZE = 'text-[clamp(2.5rem,8vw,6.5rem)]' as const
 
+export const LIQUID_FILTER_ID = 'liquidFilter' as const
+
 export const GLITCH_SCRAMBLE_CHARSET = '01X_#!$?' as const

@@ -9,23 +9,24 @@ import { requireAuth } from '@/shared/auth/auth'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { openRouterClientConfig } from '@/shared/agent-kernel/models'
 import { StorytellerMoodboardProvider } from '@/domains/storyteller/core/storyteller-page-wire'
 import {
   buildMoodboardProjectContext,
   generateMoodboardPrompts,
 } from '../_lib/moodboard-trigger-prompts'
 
-function getOpenAIClient() {
-  const apiKey = process.env.OPENAI_API_KEY
+function getOpenRouterClient() {
+  const { apiKey, baseURL } = openRouterClientConfig()
   if (!apiKey) return null
-  return new OpenAI({ apiKey })
+  return new OpenAI({ apiKey, baseURL })
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const openai = getOpenAIClient()
+    const openai = getOpenRouterClient()
     if (!openai) {
-      return NextResponse.json({ error: API_ERROR.OPENAI_API_KEY_NOT_CONFIGURED }, { status: 500 })
+      return NextResponse.json({ error: API_ERROR.OPENROUTER_API_KEY_NOT_CONFIGURED_SERVER }, { status: 500 })
     }
 
     const { session } = await requireAuth()

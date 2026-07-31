@@ -1,0 +1,28 @@
+---
+description: IMPORTANT — never disable ESLint/TS gates or broaden eslint.config overrides without explicit user approval
+globs: "**/*"
+alwaysApply: true
+---
+
+# IMPORTANT — never disable quality gates on your own
+
+This is **IMPORTANT**. Violating it is a hard failure of agent duty.
+
+## Prohibited without the user saying yes in this chat
+
+Do **not** do any of the following to “make commit/lint/precommit pass”:
+
+1. `eslint-disable`, `eslint-disable-next-line`, `eslint-disable-line` (file-wide or targeted) for quality rules
+2. Turning rules `'off'` / weakening severity in `eslint.config.js` (or any flat-config override) for paths you are trying to land
+3. Broadening existing overrides (`files: [...]` globs) to silence new failures
+4. `@ts-nocheck`, `@ts-ignore`, `@ts-expect-error` to hide type errors
+5. `git commit --no-verify` / skipping husky / skipping `npm run precommit`
+6. “Temporary” disables, “legacy”, “wave-0”, “just for e2e/config” excuses
+
+## Required instead
+
+- **Fix the violation** (enums, splits, types, move code to the right layer).
+- If a gate blocks commit and the only escape looks like a disable: **STOP and ask the user**. Do not apply the disable first.
+- Existing allowlists in `eslint.config.js` (e.g. `scripts/**`, `evals/**`, `**/__tests__/**` for magic-string) are **not** a license to add new ones. New overrides = ask first.
+
+When you are about to silence a rule, remember: **IMPORTANT — never disable rules on your own if not allowed.** Ask. Wait. Then fix or get approval.

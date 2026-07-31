@@ -1,33 +1,65 @@
 import { TileTriggerProvider } from '@/shared/data/constants/trigger-tile-route'
-import { AuthBypassFlag } from '@/shared/data/constants/protocol'
+import { EnvVarName } from '@/shared/data/constants/protocol'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+import { LegNextModelId } from '@/shared/ai/constants/legnext'
 
-export type FollowUpImageProvider = `${TileTriggerProvider.LegnextUploadPaint}` | `${TileTriggerProvider.NanoBanana}`
 export type TileAIProvider =
-  | 'gemini'
-  | 'nano-banana'
-  | 'openai'
-  | 'stability'
-  | 'midjourney'
-  | 'legnext-upload-paint'
+  | typeof ImageGenProvider.Gemini
+  | typeof ImageGenProvider.NanoBanana
+  | typeof ImageGenProvider.OpenAi
+  | typeof ImageGenProvider.Stability
+  | typeof ImageGenProvider.Midjourney
+  | typeof ImageGenProvider.Grok
+  | typeof LegNextModelId.UploadPaint
+
+export type FollowUpImageProvider =
+  | typeof TileTriggerProvider.LegnextUploadPaint
+  | typeof TileTriggerProvider.NanoBanana
+  | typeof TileTriggerProvider.Grok
+
+/** Short alias some envs use for LegNext follow-up paint. */
+const FOLLOW_UP_ALIAS_MIDJOURNEY = ImageGenProvider.Midjourney
+const FOLLOW_UP_ALIAS_LEGNEXT = 'legnext'
+
+interface FollowUpProviderEnv {
+  FOLLOW_UP_IMAGE_PROVIDER?: string
+  OPENROUTER_API_KEY?: string
+}
+
+function readFollowUpProviderEnv(env?: FollowUpProviderEnv): FollowUpProviderEnv {
+  if (env) return env
+  // Read keys explicitly — Next's ProcessEnv augmentation is not assignable to this slice.
+  return {
+    FOLLOW_UP_IMAGE_PROVIDER: process.env.FOLLOW_UP_IMAGE_PROVIDER,
+    OPENROUTER_API_KEY: process.env[EnvVarName.OpenRouterApiKey],
+  }
+}
 
 export function resolveFollowUpImageProviderFromEnv(
-  env: NodeJS.ProcessEnv = process.env
+  env?: FollowUpProviderEnv
 ): FollowUpImageProvider {
-  const configuredProvider = env.FOLLOW_UP_IMAGE_PROVIDER?.trim().toLowerCase()
+  const source = readFollowUpProviderEnv(env)
+  const configuredProvider = source.FOLLOW_UP_IMAGE_PROVIDER?.trim().toLowerCase()
+
+  if (configuredProvider === TileTriggerProvider.Grok) {
+    return TileTriggerProvider.Grok
+  }
 
   if (
     configuredProvider === TileTriggerProvider.LegnextUploadPaint ||
-    configuredProvider === TileTriggerProvider.NanoBanana
+    configuredProvider === FOLLOW_UP_ALIAS_MIDJOURNEY ||
+    configuredProvider === FOLLOW_UP_ALIAS_LEGNEXT
   ) {
-    return configuredProvider
+    return TileTriggerProvider.LegnextUploadPaint
   }
 
-  // Legacy fallback for existing deployments.
-  const useLegnextForFollowUp =
-    env.USE_LEGNEXT_FOR_FOLLOWUP === AuthBypassFlag.True &&
-    env.USE_NANO_BANANA_FOR_FOLLOWUP !== AuthBypassFlag.True
+  if (configuredProvider === TileTriggerProvider.NanoBanana) {
+    return TileTriggerProvider.NanoBanana
+  }
 
-  return useLegnextForFollowUp
-    ? TileTriggerProvider.LegnextUploadPaint
+  // Unconfigured: prefer the OpenRouter gateway, then Gemini. LegNext/Midjourney
+  // is opt-in only — its tile endpoint (upload_paint) is whitelist-gated.
+  return source.OPENROUTER_API_KEY?.trim()
+    ? TileTriggerProvider.Grok
     : TileTriggerProvider.NanoBanana
 }

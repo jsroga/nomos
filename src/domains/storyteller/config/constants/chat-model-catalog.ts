@@ -43,12 +43,12 @@ export interface ChatModelOption {
 
 export const CHAT_MODELS: ChatModelOption[] = [
   {
-    id: 'openai:gpt-4o-mini',
-    label: 'GPT-4o mini',
+    id: 'openai:gpt-5.6-luna',
+    label: 'GPT-5.6 Luna',
     provider: 'OpenAI',
     providerKey: 'openai',
-    envVar: 'OPENAI_API_KEY',
-    description: 'Fast and cheap — internal glue/autocomplete tier.',
+    envVar: 'OPENROUTER_API_KEY',
+    description: 'Fast OpenRouter tier — internal glue/autocomplete.',
     userSelectable: false,
   },
   {

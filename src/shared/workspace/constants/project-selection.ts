@@ -23,7 +23,3 @@ export const PROJECT_SELECTION_DELETE_CANCEL = 'Cancel'
 
 export { PROJECT_SELECTOR_BIBLE_QUERY } from '@/components/shell/ProjectSelectorDropdown/constants/project-selector-dropdown'
 
-export enum ProjectSelectionLiquidGlobal {
-  Renderer = '__liquidGLRenderer__',
-  UploadTexture = '_uploadTexture',
-}

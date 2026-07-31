@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { X, Trash2, AlertTriangle, Clock, FileCode } from 'lucide-react'
-import { Liquid } from '@/domains/marketing'
 import { useErrorStore, CapturedError } from '@/shared/errors/useErrorStore'
 import { cn } from '@/shared/data/utils'
 import { Button } from '@/components/Button'
@@ -121,8 +120,8 @@ export const TroubleshootPanel: React.FC = () => {
           isPanelOpen ? 'translate-x-0' : 'translate-x-full'
         )}
       >
-        <Liquid className="h-full w-full rounded-l-2xl border-l border-white/20">
-          <div className="flex flex-col h-full bg-background/30 backdrop-blur-xl">
+        <div className="h-full w-full rounded-l-2xl border-l border-white/20 bg-background/80 backdrop-blur-xl">
+          <div className="flex flex-col h-full">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
               <div className="flex items-center gap-2">
@@ -171,7 +170,7 @@ export const TroubleshootPanel: React.FC = () => {
               </div>
             </ScrollArea>
           </div>
-        </Liquid>
+        </div>
       </div>
     </>
   )

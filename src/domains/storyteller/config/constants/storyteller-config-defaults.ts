@@ -11,16 +11,6 @@ export enum GuardrailSeverity {
   Info = 'info',
 }
 
-export enum StorytellerPromptEnvironment {
-  Production = 'production',
-  Staging = 'staging',
-  Dev = 'dev',
-}
-
-export enum StorytellerPromptHubOwner {
-  Tilemap = 'tilemap',
-}
-
 export enum StorytellerPromptId {
   Supervisor = 'storyteller-supervisor',
   PlotArchitect = 'storyteller-plot-architect',
@@ -44,12 +34,6 @@ export enum StorytellerPromptId {
   SectionKeyCharacters = 'storyteller-section-key-characters',
   SectionSoundtracks = 'storyteller-section-soundtracks',
 }
-
-export const STORYTELLER_PROMPT_ENVIRONMENTS: StorytellerPromptEnvironment[] = [
-  StorytellerPromptEnvironment.Production,
-  StorytellerPromptEnvironment.Staging,
-  StorytellerPromptEnvironment.Dev,
-]
 
 export const PROMPT_IDS = {
   supervisor: StorytellerPromptId.Supervisor,

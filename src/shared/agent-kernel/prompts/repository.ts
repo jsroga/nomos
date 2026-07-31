@@ -1,4 +1,5 @@
 import { IPromptRepository, PromptDefinition, PromptVariables } from './types'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 
 export class PromptRepository implements IPromptRepository {
   private localRegistry: Map<string, PromptDefinition> = new Map()
@@ -42,4 +43,4 @@ export class PromptRepository implements IPromptRepository {
 }
 
 // Singleton Instance
-export const promptRepository = new PromptRepository(process.env.ENABLE_REMOTE_PROMPTS === 'true')
+export const promptRepository = new PromptRepository(isFeatureEnabled(FeatureFlag.RemotePrompts))

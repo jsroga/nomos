@@ -14,9 +14,13 @@
 
 **Configuration diagram** (goals entry, stage agents, skills aggregate): [.agents/CONFIGURATION.md](../../../.agents/CONFIGURATION.md).
 
+**Multi-request sessions (mandatory when applicable):** `.local/sessions/YYYY-MM-DD_<id>_<slug>/` — see `.agents/execute/partials/session-tracking.md` and `.agents/templates/session/`.
+
 Agents may optionally use **`.local/tmp/{session-id}/`** for throwaway recon artifacts (gitignored) — see `.agents/execute/partials/session-scratch.md`.
 
 **Quality backlog (many gate failures):** `.local/quality-backlog.md` via `npm run qualitygate:capture` — fix one-by-one, rescan every **5** steps — see `.agents/execute/partials/quality-backlog.md` (included in Implement).
+
+**Mastra edits:** before handover run `npm run mastra:smoke` (Cursor stop hook does this when Mastra paths were edited).
 
 | Stage | Prompt (`.agents/execute/`) | Cursor adapter | Claude adapter | Artifact |
 | --- | --- | --- | --- | --- |

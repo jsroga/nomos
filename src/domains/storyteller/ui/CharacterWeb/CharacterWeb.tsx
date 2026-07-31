@@ -51,12 +51,13 @@ import {
 } from './character-web-decorations'
 import { NodeDetailsPanel } from './NodeDetailsPanel'
 import { EdgeDetailsPanel } from './EdgeDetailsPanel'
+import { isPerfDebugEnabled } from '@/shared/debug/constants/perf-debug'
 
 const nodeTypes = {
   [CharacterWebNodeType.CharacterNode]: CharacterNode,
 }
 
-const PERF_DEBUG = process.env.NEXT_PUBLIC_PERF_DEBUG === '1'
+const PERF_DEBUG = isPerfDebugEnabled()
 
 export interface CharacterWebProps {
   projectId: string

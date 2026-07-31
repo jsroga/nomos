@@ -14,11 +14,17 @@ import {
   LlmLogSensitiveKeyFragment,
 } from '@/trigger/constants/llm-logger'
 import { isPlainObject } from '@/shared/data/json-guards'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 
 export { extractImageUrls, extractPrompt } from './llm-logger-extract'
 
 export interface LLMRequestLog {
-  provider: 'openai' | 'gemini' | 'nano-banana' | 'anthropic' | 'stability' | 'midjourney' | 'meshy' | 'other'
+  provider:
+    | ImageGenProvider
+    | 'openai'
+    | 'anthropic'
+    | 'meshy'
+    | 'other'
   model?: string
   prompt?: string
   messages?: Array<{ role: string; content: string | unknown }>

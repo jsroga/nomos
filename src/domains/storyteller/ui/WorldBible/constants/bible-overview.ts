@@ -1,6 +1,10 @@
-export enum MoodboardProvider {
-  Midjourney = 'midjourney',
-}
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+
+export const MoodboardProvider = {
+  Midjourney: ImageGenProvider.Midjourney,
+} as const
+
+export type MoodboardProvider = (typeof MoodboardProvider)[keyof typeof MoodboardProvider]
 
 export enum BibleOverviewToast {
   UnknownProvider = 'provider',

@@ -16,9 +16,11 @@ export const API_ERROR = {
   FAILED_FETCH_ENTITIES: 'Failed to fetch entities',
   FAILED_CREATE_ENTITY: 'Failed to create entity',
   GOOGLE_API_KEY_NOT_CONFIGURED_SERVER: 'GOOGLE_API_KEY not configured on server',
+  OPENROUTER_API_KEY_NOT_CONFIGURED_SERVER:
+    'OPENROUTER_API_KEY not configured on server (required for FOLLOW_UP_IMAGE_PROVIDER=grok)',
   MISSING_REPAINT_FIELDS: 'Missing required fields: projectId, base64Image, maskBase64',
   NO_AI_PROVIDER_CONFIGURED:
-    'No AI provider configured (LEGNEXT_API_KEY or GOOGLE_API_KEY required)',
+    'No AI provider configured (LEGNEXT_API_KEY, GOOGLE_API_KEY, or OPENROUTER_API_KEY required)',
   MISSING_TILE_TRIGGER_FIELDS: 'Missing required fields: projectId, x, y, prompt',
   NO_CANDIDATES_GEMINI: 'No candidates returned from Gemini',
   GENERATION_BLOCKED_SAFETY: 'Generation blocked by safety filters',

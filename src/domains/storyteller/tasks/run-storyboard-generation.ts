@@ -3,19 +3,28 @@ import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import {
+  BufferEncoding,
+  ContentType,
+  FsDirectory,
+  GoogleModelId,
+  HttpMethod,
+} from '@/shared/data/constants/protocol'
+import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 
 interface GenerateStoryboardPayload {
   beatId: string
   projectId: string
   prompt: string
   providerConfig: {
-    provider: 'nanobanana'
+    provider: typeof ImageGenProvider.NanoBanana
     apiKey: string
     modelId?: string
   }
 }
 
-const DEFAULT_STORYBOARD_MODEL = 'gemini-2.0-flash-preview-image-generation'
+const DEFAULT_STORYBOARD_MODEL = GoogleModelId.Gemini20FlashPreviewImageGeneration
 
 function extractGeminiImageBase64(data: {
   candidates?: Array<{ content?: { parts?: Array<{ inline_data?: { data?: string }; inlineData?: { data?: string } }> } }>
@@ -50,11 +59,13 @@ export async function runStoryboardGeneration(payload: GenerateStoryboardPayload
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`,
     {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: HttpMethod.Post,
+      headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify({
         contents: [{ parts: [{ text: enhancedPrompt }] }],
-        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+        generationConfig: {
+          responseModalities: [GeminiResponseModality.Text, GeminiResponseModality.Image],
+        },
       }),
     },
   )
@@ -75,12 +86,20 @@ export async function runStoryboardGeneration(payload: GenerateStoryboardPayload
   await metadata.set('progress', 50)
 
   const filename = `beat_${beatId}_${Date.now()}.png`
-  const projectDir = path.join(process.cwd(), 'public', 'projects', projectId)
+  const projectDir = path.join(
+    process.cwd(),
+    FsDirectory.Public,
+    FsDirectory.Projects,
+    projectId,
+  )
   if (!fs.existsSync(projectDir)) {
     fs.mkdirSync(projectDir, { recursive: true })
   }
 
-  fs.writeFileSync(path.join(projectDir, filename), Buffer.from(imageBase64, 'base64'))
+  fs.writeFileSync(
+    path.join(projectDir, filename),
+    Buffer.from(imageBase64, BufferEncoding.Base64),
+  )
   logger.info('Image saved to disk', { filename })
 
   await metadata.set('stage', 'updating_database')

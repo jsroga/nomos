@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Pre-commit architecture gate — delegates to colocated structure tests.
- * Rules live in scripts/structure-gates/src-topology.ts and domain-conformance.ts.
+ * Rules live in scripts/structure-gates/ (src topology, domain blueprint, docs catalog).
  */
 import { spawnSync } from 'node:child_process'
 
@@ -21,7 +21,8 @@ function main() {
     console.error(
       '\ncheck-architecture: FAILED\n' +
         'Run: npm run test:unit -- src/__tests__/structure.test.ts src/domains/__tests__/domain-structure.test.ts\n' +
-        'Governing docs: docs/ARCHITECTURE.md, docs/unified/ARCHITECTURE.md\n',
+        'Governing docs: docs/ARCHITECTURE.md, docs/MODULES.md\n' +
+        'docs/ catalog: scripts/structure-gates/docs-allowlist.mjs (flat 6 files)\n',
     )
     process.exit(result.status ?? 1)
   }

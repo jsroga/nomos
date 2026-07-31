@@ -22,6 +22,7 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
     hasEpisodes,
     firstEpisodeId,
     currentPhase,
+    viewPhase,
     activeTab,
     setActiveTab,
     isWorldBibleOpen,
@@ -64,6 +65,7 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
             currentEpisodeTitle={currentEpisodeTitle}
             currentEpisodeId={currentEpisodeId}
             currentPhase={currentPhase}
+            viewPhase={viewPhase}
             isSending={isSending}
             handlePreviousPhase={handlePreviousPhase}
             handlePhaseChange={handlePhaseChange}

@@ -25,6 +25,7 @@ function main() {
   console.log('pre-commit: running quality gates…')
 
   run('architecture layout', 'node', ['scripts/check-architecture.mjs'])
+  run('agent artifacts', 'node', ['scripts/check-agent-artifacts.mjs'])
   run('docs sync', 'node', ['scripts/check-docs-updated.mjs'])
   run('typecheck (staged)', 'node', ['scripts/pre-commit-typecheck.mjs'])
   run('eslint (staged)', 'node', ['scripts/pre-commit-lint.mjs'])

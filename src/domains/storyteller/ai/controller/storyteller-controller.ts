@@ -5,7 +5,7 @@
  * `submit_plan` and physically cannot mutate (allowlist, not prompt begging).
  * A mutating request forces `submit_plan`; approval flips the session to
  * `build` (native plan→build via `transitionsTo`), where the full mutating CRUD
- * + beat-draft workflow are visible. See docs/adr/agent-controller-chat.md.
+ * + beat-draft workflow are visible. See docs/STORYTELLER.md.
  *
  * Pure config factory — the backing agent + Postgres store are injected by the
  * `core/io/mastra-runtime` seam (this module never touches the Mastra instance
@@ -14,6 +14,7 @@
 
 import '@/shared/data/server-guard'
 import type { AgentControllerConfig, AgentControllerMode } from '@mastra/core/agent-controller'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 import { readWorldBibleTool, checkContinuityTool } from '@/domains/storyteller/ai/tools/bible-tools'
 import { listBeatsTool } from '@/domains/storyteller/ai/tools/beat-tools'
 import { listCharactersTool } from '@/domains/storyteller/ai/tools/character-tools'
@@ -21,13 +22,11 @@ import { listEpisodesTool } from '@/domains/storyteller/ai/tools/episode-tools'
 
 export const STORYTELLER_CONTROLLER_ID = 'storyteller-chat'
 
-/** Env flag (`STORYTELLER_CONTROLLER=1`) that routes chat through the controller. */
-const CONTROLLER_FLAG_ENABLED = '1'
-export const STORYTELLER_CONTROLLER_ENV = 'STORYTELLER_CONTROLLER'
+export const STORYTELLER_CONTROLLER_ENV = FeatureFlag.StorytellerController
 
 /** True when the flagged controller path should replace the legacy `StorytellerAgent.stream()`. */
 export function isStorytellerControllerEnabled(): boolean {
-  return process.env[STORYTELLER_CONTROLLER_ENV] === CONTROLLER_FLAG_ENABLED
+  return isFeatureEnabled(FeatureFlag.StorytellerController)
 }
 
 /** Plan-first modes — reads answer in `chat`; mutations require an approved plan → `build`. */
@@ -43,6 +42,7 @@ const SUBMIT_PLAN_TOOL_NAME = 'submit_plan'
 type ControllerConfig = AgentControllerConfig
 type ControllerAgent = NonNullable<ControllerConfig['agent']>
 type ControllerStorage = NonNullable<ControllerConfig['storage']>
+type ControllerWorkspace = NonNullable<ControllerConfig['workspace']>
 
 /**
  * Read-only tools visible in `chat` mode. Mutating tools (`update_world_bible`,
@@ -58,6 +58,40 @@ const CHAT_MODE_TOOLS: string[] = [
   SUBMIT_PLAN_TOOL_NAME,
 ]
 
+/**
+ * Told to the model while in `chat`.
+ *
+ * Without this the allowlist is silent: the shared system prompt still names
+ * `manage_character` / `update_world_bible` / `manage_beat`, the model cannot
+ * see them, and it concludes the app is misconfigured — answering "that tool
+ * isn't available" instead of submitting a plan. The allowlist enforces the
+ * invariant; this explains it.
+ */
+const CHAT_MODE_INSTRUCTIONS = `You are in PLAN mode. You can read freely, but you cannot change anything yet.
+
+Any instruction in your system prompt that names a mutating tool
+(update_world_bible, manage_beat, manage_character, manage_episode,
+run_beat_draft_workflow) does not apply right now — those tools are
+deliberately withheld in this mode. Their absence is expected, NOT a
+misconfiguration, and you must never report it to the user as a broken tool, a
+missing integration, or a reason the request cannot be done.
+
+When the user asks for ANY change, call \`submit_plan\` describing what you
+would do. The user approves or rejects it. On approval you are moved to BUILD
+mode with the mutating tools available, and you carry the plan out then. On
+rejection you stay here and revise.
+
+Answer read-only questions directly — never make the user approve a plan just
+to be told something.`
+
+/** Told to the model once an approved plan has moved the session into `build`. */
+const BUILD_MODE_INSTRUCTIONS = `You are in BUILD mode: the user approved your plan and the mutating tools are
+now available. Carry out the approved plan.
+
+Stay within what was approved. If you discover the work needs to go
+meaningfully beyond that plan, say so and submit a new plan rather than
+silently widening the change.`
+
 /** The plan-first mode set — pure (no agent/storage), so it is unit-testable in isolation. */
 export function buildStorytellerControllerModes(): AgentControllerMode[] {
   return [
@@ -65,24 +99,37 @@ export function buildStorytellerControllerModes(): AgentControllerMode[] {
       id: StorytellerControllerMode.Chat,
       transitionsTo: StorytellerControllerMode.Build,
       availableTools: CHAT_MODE_TOOLS,
+      instructions: CHAT_MODE_INSTRUCTIONS,
       metadata: { default: true },
     },
     {
       id: StorytellerControllerMode.Build,
       // No `availableTools` → all tools visible: full mutating CRUD + workflow.
+      instructions: BUILD_MODE_INSTRUCTIONS,
     },
   ]
 }
 
-/** Build the storyteller chat controller config from the injected agent + store. */
+/**
+ * Build the storyteller chat controller config from the injected agent, store
+ * and workspace.
+ *
+ * `workspace` is required by `Session` itself (`new Session` throws
+ * "A session requires a valid workspace instance"), not merely by the
+ * file-editing tools — omitting it makes `controller.createSession()` throw
+ * before a single token streams. It is injected rather than constructed here so
+ * this module stays a pure config factory with no filesystem imports.
+ */
 export function buildStorytellerControllerConfig(deps: {
   agent: ControllerAgent
   storage: ControllerStorage
+  workspace: ControllerWorkspace
 }): ControllerConfig {
   return {
     id: STORYTELLER_CONTROLLER_ID,
     agent: deps.agent,
     storage: deps.storage,
+    workspace: deps.workspace,
     defaultModeId: StorytellerControllerMode.Chat,
     modes: buildStorytellerControllerModes(),
   }

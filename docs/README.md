@@ -1,43 +1,25 @@
-# Documentation Index
+# Documentation
 
-> World Building Kit — internal and public docs. **Last reviewed:** 2026-07-06.
+> World Building Kit — **exactly six** markdown files, flat under `docs/` (no subfolders).  
+> Enforced by `src/__tests__/structure.test.ts` + `scripts/check-agent-artifacts.mjs`  
+> (allowlist: `scripts/structure-gates/docs-allowlist.mjs`).
 
-## Start here
+| Doc | Purpose |
+|-----|---------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | System topology + module blueprint |
+| [MODULES.md](./MODULES.md) | Domain map |
+| [STORYTELLER.md](./STORYTELLER.md) | Writers’ room + AgentController |
+| [DEVELOPMENT.md](./DEVELOPMENT.md) | Tests, evals, observability, quality gates, perf debug |
+| [MCP_API.md](./MCP_API.md) | MCP tools / auth for integrators |
+| [README.md](./README.md) | This index |
 
-| Doc | Audience | Purpose |
-|-----|----------|---------|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Everyone | System context, containers, data flow, core patterns |
-| [unified/ARCHITECTURE.md](./unified/ARCHITECTURE.md) | Contributors | Target module blueprint (vertical slices) |
-| [unified/SPEC.md](./unified/SPEC.md) | Contributors | Migration plan toward the unified architecture |
-| [TESTING.md](./TESTING.md) | Contributors | Unit, e2e, and eval test tiers |
-| [orchestration-rfc.md](./orchestration-rfc.md) | Storyteller | Hexagonal orchestration core (draft) |
-| [quality-improvement-spec.md](./quality-improvement-spec.md) | Maintainers | Quality gates and ratchet strategy |
-| [MCP_API.md](./MCP_API.md) | Integrators | MCP tools, resources, auth |
+## Also at repo root
 
-## Module internals (`docs/internal/`)
+| File | Purpose |
+|------|---------|
+| [AGENTS.md](../AGENTS.md) | Mastra v1 agent development |
+| [CLAUDE.md](../CLAUDE.md) | Daily commands, Trigger, env |
 
-| Module | Doc |
-|--------|-----|
-| Storyteller | [internal/storyteller.md](./internal/storyteller.md) |
-| Loop Creator | [internal/loop-creator.md](./internal/loop-creator.md) |
-| Agents (overview) | [internal/agents/index.md](./internal/agents/index.md) |
-| Agent architecture | [internal/agents/architecture.md](./internal/agents/architecture.md) |
-| Agent kernel | [internal/agents/agent-core.md](./internal/agents/agent-core.md) |
-| E2E (Playwright) | [internal/testing/e2e.md](./internal/testing/e2e.md) |
-| Evaluation | [evaluation/README.md](./evaluation/README.md) |
+## Local agent scratch (gitignored)
 
-## In-app docs
-
-Markdown lives in this `docs/` folder (single source of truth). The site serves it at `/docs` via Next.js routes under `src/app/documentation/` (rewritten from `/docs` URLs). Internal docs require `INTERNAL_DOCS_SECRET` (see `.env.local.example`).
-
-## Agent development
-
-See also repo root [AGENTS.md](../AGENTS.md) (Mastra v1) and [CLAUDE.md](../CLAUDE.md) (dev commands, Trigger.dev, eval).
-
-## Mastra Studio
-
-```bash
-npm run mastra:dev   # http://localhost:4111 — requires .env.local with ANTHROPIC_API_KEY
-```
-
-Studio entry: `src/shared/agent-kernel/mastra/index.ts`. Production agents live under `src/domains/*/agents/`; Studio uses a bundler-safe tool catalog in `src/shared/agent-kernel/mastra/tools/`.
+`.local/sessions/` · `.local/quality-backlog.md` · `.local/tmp/` — see ARCHITECTURE § Agent local workspace.

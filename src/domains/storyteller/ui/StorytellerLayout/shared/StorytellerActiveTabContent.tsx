@@ -27,16 +27,12 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
     setScript,
     isScriptLoading,
     focusEntityId,
+    isSending,
   } = core
-  const { isSending, setMessages, handleSendMessage } = chat
   const { isFetchingCharacters, updateEpisodePremise, characterWebVersion } = episode
   const { handleApprovePlan } = phase
   const { handlePosterTrigger, handleStoryboardTrigger } = generation
-  const {
-    generateEpisodePremise,
-    generateEpisodePremiseSection,
-    handleCharacterWebNodeClick,
-  } = agents
+  const { handleCharacterWebNodeClick } = agents
 
   return (
     <div className="flex-1 relative overflow-hidden">
@@ -46,10 +42,8 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
           globalBible={currentProject?.series_bible ?? {}}
           onApprove={handleApprovePlan}
           onUpdatePremise={updateEpisodePremise}
-          onGeneratePremise={generateEpisodePremise}
           onGeneratePoster={episodeId => void handlePosterTrigger(episodeId)}
           onGenerateStoryboard={episodeId => void handleStoryboardTrigger(episodeId)}
-          onGeneratePremiseSection={generateEpisodePremiseSection}
           isGenerating={isSending}
           isGeneratingPoster={isGeneratingPoster}
           isGeneratingStoryboard={isGeneratingStoryboard}
@@ -66,18 +60,6 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
             <CorkBoard
               beats={beats}
               episodeId={currentEpisodeId || undefined}
-              onAddMessage={msg =>
-                setMessages(prev => [
-                  ...prev,
-                  {
-                    sender: msg.sender,
-                    name: msg.name,
-                    content: msg.content,
-                    type: msg.type,
-                  },
-                ])
-              }
-              onSendMessage={msg => handleSendMessage(undefined, msg)}
               storyboardUrl={storyPlan?.storyboardUrl}
               isGeneratingCombined={isGeneratingStoryboard}
               onGenerateCombined={handleStoryboardTrigger}

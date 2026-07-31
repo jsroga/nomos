@@ -115,8 +115,9 @@ const GLOBAL_LEGACY_RESTRICTED_PATTERNS = [
     message: 'Import from domain agents or "@/shared/agent-kernel/workflows" instead of @/workflows.',
   },
   {
-    group: ['@/mastra/*', '@/mastra'],
-    message: 'Import from "@/shared/agent-kernel/mastra" instead of @/mastra.',
+    group: ['@/mastra', '@/mastra/index', '@/mastra/index.ts'],
+    message:
+      'Do not import the Studio Mastra entry. Import file-based agents from "@/mastra/agents/<id>/…" or helpers from "@/shared/agent-kernel/mastra".',
   },
   {
     group: ['@/evaluation/*', '@/evaluation'],
@@ -178,6 +179,14 @@ module.exports = [
         process: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
+        AbortController: 'readonly',
+        fetch: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        Buffer: 'readonly',
       },
     },
   },

@@ -6,7 +6,7 @@ import { readNumber, readString, recordFromJson } from '@/shared/data/json-guard
 
 const magicAnalyzeSchema = z.object({
   overallMagic: z.number(),
-  critique: z.string().optional(),
+  critique: z.string(),
 })
 
 export const magicScorer = createScorer({

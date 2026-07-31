@@ -1,4 +1,4 @@
-import React, { useState, type RefObject } from 'react'
+import React, { useRef, useState, type RefObject } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { selectModeService } from '@/domains/world-building-toolkit/state/client-services/select-mode-service'
@@ -85,7 +85,7 @@ export function useWorldCanvasInteractions(
   containerRef: RefObject<HTMLDivElement | null>
 ): WorldCanvasInteractions {
   const [isDragging, setIsDragging] = useState(false)
-  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 })
+  const lastMousePosRef = useRef({ x: 0, y: 0 })
   const [drawingBoxStart, setDrawingBoxStart] = useState<WorldPoint | null>(null)
   const [drawingBoxEnd, setDrawingBoxEnd] = useState<WorldPoint | null>(null)
   const [showPromptPopover, setShowPromptPopover] = useState(false)
@@ -93,29 +93,20 @@ export function useWorldCanvasInteractions(
   const [pendingBox, setPendingBox] = useState<PendingBox | null>(null)
   const promptInputRef = React.useRef<HTMLInputElement>(null)
 
-  const viewport = useWorldStore(state => state.viewport)
-  const setViewport = useWorldStore(state => state.setViewport)
-  const tiles = useWorldStore(state => state.tiles)
-  const isRepaintMode = useWorldStore(state => state.isRepaintMode)
-  const isSelectMode = useWorldStore(state => state.isSelectMode)
+  // UI-facing flags; handlers use getState() for viewport to avoid pan re-renders.
   const selectBox = useWorldStore(state => state.selectBox)
-  const setSelectBox = useWorldStore(state => state.setSelectBox)
-  const isDrawingBox = useWorldStore(state => state.isDrawingBox)
-  const setDrawingBox = useWorldStore(state => state.setDrawingBox)
-  const setSelectedMask = useWorldStore(state => state.setSelectedMask)
-  const setSegmenting = useWorldStore(state => state.setSegmenting)
-  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
-  const setSelectedTile = useWorldStore(state => state.setSelectedTile)
   const selectTextPrompt = useWorldStore(state => state.selectTextPrompt)
   const setSelectTextPrompt = useWorldStore(state => state.setSelectTextPrompt)
+  const currentProject = useWorkspaceProjectStore(state => state.currentProject)
 
   const triggerSegmentation = async (box: PendingBox) => {
     if (!currentProject) return
 
-    const textPrompt = useWorldStore.getState().selectTextPrompt
+    const { selectTextPrompt: textPrompt, tiles, setSegmenting, setSelectedMask, setSelectDebugInfo } =
+      useWorldStore.getState()
 
     setSegmenting(true)
-    useWorldStore.getState().setSelectDebugInfo({
+    setSelectDebugInfo({
       box,
       apiResponse: { status: WORLD_CANVAS_API_CALLING_STATUS, textPrompt },
     })
@@ -130,11 +121,11 @@ export function useWorldCanvasInteractions(
       setSelectedMask(result)
 
       if (result.debugInfo) {
-        useWorldStore.getState().setSelectDebugInfo(result.debugInfo)
+        setSelectDebugInfo(result.debugInfo)
       }
     } catch (error: unknown) {
       console.error(WORLD_CANVAS_SEGMENTATION_FAILED_LOG, error)
-      useWorldStore.getState().setSelectDebugInfo({
+      setSelectDebugInfo({
         box,
         apiResponse: { error: getErrorMessage(error) || String(error) },
       })
@@ -144,7 +135,16 @@ export function useWorldCanvasInteractions(
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (isSelectMode && e.button === 0) {
+    const {
+      viewport,
+      isSelectMode: selectMode,
+      isRepaintMode: repaintMode,
+      setDrawingBox,
+      setSelectBox,
+      setSelectedMask,
+    } = useWorldStore.getState()
+
+    if (selectMode && e.button === 0) {
       if (showPromptPopover) {
         setShowPromptPopover(false)
         setPendingBox(null)
@@ -159,26 +159,30 @@ export function useWorldCanvasInteractions(
       return
     }
 
-    if (isRepaintMode) {
+    if (repaintMode) {
       return
     }
 
     if (e.button === 0) {
       setIsDragging(true)
-      setLastMousePos({ x: e.clientX, y: e.clientY })
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY }
     }
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isSelectMode && isDrawingBox && drawingBoxStart) {
+    const { viewport, setViewport, isSelectMode: selectMode, isDrawingBox: drawing } =
+      useWorldStore.getState()
+
+    if (selectMode && drawing && drawingBoxStart) {
       const worldPos = screenToWorld(containerRef, e.clientX, e.clientY, viewport)
       setDrawingBoxEnd(worldPos)
       return
     }
 
     if (isDragging) {
-      const dx = e.clientX - lastMousePos.x
-      const dy = e.clientY - lastMousePos.y
+      const last = lastMousePosRef.current
+      const dx = e.clientX - last.x
+      const dy = e.clientY - last.y
 
       setViewport({
         ...viewport,
@@ -186,12 +190,20 @@ export function useWorldCanvasInteractions(
         y: viewport.y + dy,
       })
 
-      setLastMousePos({ x: e.clientX, y: e.clientY })
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY }
     }
   }
 
   const finalizeBoxDrawing = () => {
-    if (!isSelectMode || !isDrawingBox || !drawingBoxStart || !drawingBoxEnd) {
+    const {
+      viewport,
+      isSelectMode: selectMode,
+      isDrawingBox: drawing,
+      setSelectBox,
+      setDrawingBox,
+    } = useWorldStore.getState()
+
+    if (!selectMode || !drawing || !drawingBoxStart || !drawingBoxEnd) {
       return false
     }
 
@@ -238,7 +250,8 @@ export function useWorldCanvasInteractions(
   }
 
   const handleMouseLeave = () => {
-    if (isDrawingBox) {
+    const { isDrawingBox: drawing, setDrawingBox } = useWorldStore.getState()
+    if (drawing) {
       setDrawingBoxStart(null)
       setDrawingBoxEnd(null)
       setDrawingBox(false)
@@ -247,11 +260,11 @@ export function useWorldCanvasInteractions(
   }
 
   const handleClick = (_e: React.MouseEvent) => {
-    if (isSelectMode) {
+    if (useWorldStore.getState().isSelectMode) {
       return
     }
 
-    setSelectedTile(null)
+    useWorldStore.getState().setSelectedTile(null)
   }
 
   const handlePromptConfirm = () => {
@@ -265,7 +278,7 @@ export function useWorldCanvasInteractions(
   const handlePromptCancel = () => {
     setShowPromptPopover(false)
     setPendingBox(null)
-    setSelectBox(null)
+    useWorldStore.getState().setSelectBox(null)
     setSelectTextPrompt('')
   }
 

@@ -41,7 +41,7 @@ flowchart TB
   agents --> adapters
   prompts -->|"workflow.fabro @ path"| workflow
 
-  subgraph skills_block["skills (23)"]
+  subgraph skills_block["skills (17)"]
     skills_root[".agents/skills/<name>/SKILL.md"]
   end
 
@@ -49,9 +49,9 @@ flowchart TB
   session --> skills_block
 
   subgraph skill_discovery["Skill discovery"]
-    fabro_sk[".fabro/skills → symlink"]
-    cursor_sk[".cursor/skills/ → symlink"]
-    claude_sk[".claude/skills/ → symlink"]
+    fabro_sk[".fabro/skills → .agents/skills"]
+    cursor_sk[".cursor/skills → .agents/skills"]
+    claude_sk[".claude/skills → .agents/skills"]
     fabro_home["~/.fabro/skills/ · local copy"]
   end
 

@@ -7,41 +7,33 @@ import {
   logLLMRequestComplete,
   logLLMRequestError,
 } from '@/trigger/utils/llm-logger'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+import { LegNextJobStatus, LegNextModelId } from '@/shared/ai/constants/legnext'
+import {
+  BufferEncoding,
+  ContentType,
+  FsDirectory,
+  GoogleModelId,
+  HttpMethod,
+} from '@/shared/data/constants/protocol'
+import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
 import {
   MOODBOARD_BASE64_LABEL,
   MOODBOARD_COMMA_JOIN,
-  MOODBOARD_CONTENT_TYPE_JSON,
-  MOODBOARD_DEFAULT_GEMINI_MODEL,
-  MOODBOARD_ENCODING_BASE64,
   MOODBOARD_GEMINI_NO_IMAGE,
-  MOODBOARD_HTTP_GET,
-  MOODBOARD_HTTP_POST,
   MOODBOARD_IMAGE_GEN_FAILED,
   MOODBOARD_INLINE_DATA_KEY,
   MOODBOARD_LEGNEXT_NO_IMAGE,
   MOODBOARD_LEGNEXT_NO_JOB,
   MOODBOARD_LEGNEXT_NOT_FOUND,
-  MOODBOARD_LEGNEXT_STATUS_COMPLETED,
-  MOODBOARD_LEGNEXT_STATUS_FAILED,
-  MOODBOARD_LEGNEXT_STATUS_PENDING,
-  MOODBOARD_LEGNEXT_STATUS_PROCESSING,
   MOODBOARD_LEGNEXT_TIMEOUT,
-  MOODBOARD_LLM_MODEL_DIFFUSION,
-  MOODBOARD_LLM_PROVIDER_GEMINI,
-  MOODBOARD_LLM_PROVIDER_MIDJOURNEY,
   MOODBOARD_LLM_TASK,
   MOODBOARD_METADATA_DIFFUSION_JOB_ID,
   MOODBOARD_METADATA_PROGRESS,
   MOODBOARD_METADATA_STAGE,
   MOODBOARD_NOT_FOUND_FRAGMENT,
   MOODBOARD_POLL_CONTINUE,
-  MOODBOARD_PROJECTS_DIR,
   MOODBOARD_PROMPT_SUFFIX,
-  MOODBOARD_PROVIDER_MIDJOURNEY,
-  MOODBOARD_PROVIDER_NANOBANANA,
-  MOODBOARD_PUBLIC_DIR,
-  MOODBOARD_RESPONSE_MODALITY_IMAGE,
-  MOODBOARD_RESPONSE_MODALITY_TEXT,
   MOODBOARD_STAGE_DOWNLOADING,
   MOODBOARD_STAGE_SAVING,
   MOODBOARD_STAGE_SUBMITTING,
@@ -55,7 +47,7 @@ export interface GenerateMoodboardPayload {
   styleReference?: string
   replaceIndex?: number
   providerConfig: {
-    provider: 'nanobanana' | 'midjourney'
+    provider: typeof ImageGenProvider.NanoBanana | typeof ImageGenProvider.Midjourney
     apiKey: string
     modelId?: string
     styleReferenceUrls?: string[]
@@ -82,15 +74,15 @@ function collectStyleReferences(
 }
 
 function estimateLegNextProgress(status: string | undefined, attempts: number): number {
-  if (status === MOODBOARD_LEGNEXT_STATUS_COMPLETED) return 100
-  if (status === MOODBOARD_LEGNEXT_STATUS_PROCESSING) return 50 + (attempts % 40)
-  if (status === MOODBOARD_LEGNEXT_STATUS_PENDING) return 10
+  if (status === LegNextJobStatus.Completed) return 100
+  if (status === LegNextJobStatus.Processing) return 50 + (attempts % 40)
+  if (status === LegNextJobStatus.Pending) return 10
   return 0
 }
 
 async function fetchLegNextJob(jobId: string, apiKey: string): Promise<LegNextPollResult | null> {
   const fetchResponse = await fetch(`https://api.legnext.ai/api/v1/job/${jobId}`, {
-    method: MOODBOARD_HTTP_GET,
+    method: HttpMethod.Get,
     headers: { 'x-api-key': apiKey },
   })
   if (fetchResponse.status === 404) throw new Error(MOODBOARD_LEGNEXT_NOT_FOUND)
@@ -104,8 +96,8 @@ async function fetchLegNextJob(jobId: string, apiKey: string): Promise<LegNextPo
 async function handleLegNextPollResult(
   data: LegNextPollResult,
 ): Promise<LegNextPollResult | typeof MOODBOARD_POLL_CONTINUE> {
-  if (data.status === MOODBOARD_LEGNEXT_STATUS_COMPLETED) return data
-  if (data.status === MOODBOARD_LEGNEXT_STATUS_FAILED) {
+  if (data.status === LegNextJobStatus.Completed) return data
+  if (data.status === LegNextJobStatus.Failed) {
     const errorMsg =
       data.output?.error_messages?.join(MOODBOARD_COMMA_JOIN) ||
       data.message ||
@@ -157,7 +149,7 @@ async function downloadImageAsBase64(imageUrl: string): Promise<string | null> {
   await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_DOWNLOADING)
   const imgRes = await fetch(imageUrl)
   if (!imgRes.ok) return null
-  return Buffer.from(await imgRes.arrayBuffer()).toString(MOODBOARD_ENCODING_BASE64)
+  return Buffer.from(await imgRes.arrayBuffer()).toString(BufferEncoding.Base64)
 }
 
 async function generateMidjourneyImage(
@@ -169,8 +161,8 @@ async function generateMidjourneyImage(
   const fullPrompt = buildMidjourneyPrompt(`${prompt}${MOODBOARD_PROMPT_SUFFIX}`, allStyleRefs)
   const diffusionPayload = { text: fullPrompt }
   logLLMRequestStart({
-    provider: MOODBOARD_LLM_PROVIDER_MIDJOURNEY,
-    model: MOODBOARD_LLM_MODEL_DIFFUSION,
+    provider: ImageGenProvider.Midjourney,
+    model: LegNextModelId.Diffusion,
     prompt: fullPrompt,
     inputImageUrls: allStyleRefs.length > 0 ? allStyleRefs : undefined,
     input: diffusionPayload,
@@ -178,14 +170,14 @@ async function generateMidjourneyImage(
   })
   await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_SUBMITTING)
   const diffusionResponse = await fetch('https://api.legnext.ai/api/v1/diffusion', {
-    method: MOODBOARD_HTTP_POST,
-    headers: { 'x-api-key': apiKey, 'Content-Type': MOODBOARD_CONTENT_TYPE_JSON },
+    method: HttpMethod.Post,
+    headers: { 'x-api-key': apiKey, 'Content-Type': ContentType.Json },
     body: JSON.stringify(diffusionPayload),
   })
   if (!diffusionResponse.ok) {
     logLLMRequestError({
-      provider: MOODBOARD_LLM_PROVIDER_MIDJOURNEY,
-      model: MOODBOARD_LLM_MODEL_DIFFUSION,
+      provider: ImageGenProvider.Midjourney,
+      model: LegNextModelId.Diffusion,
       prompt: fullPrompt,
       error: `HTTP ${diffusionResponse.status}: ${await diffusionResponse.text()}`,
       input: diffusionPayload,
@@ -196,8 +188,8 @@ async function generateMidjourneyImage(
   const jobId = diffusionData.job_id
   if (!jobId) {
     logLLMRequestError({
-      provider: MOODBOARD_LLM_PROVIDER_MIDJOURNEY,
-      model: MOODBOARD_LLM_MODEL_DIFFUSION,
+      provider: ImageGenProvider.Midjourney,
+      model: LegNextModelId.Diffusion,
       prompt: fullPrompt,
       error: MOODBOARD_LEGNEXT_NO_JOB,
       input: diffusionPayload,
@@ -211,8 +203,8 @@ async function generateMidjourneyImage(
   const imageUrl = result.output?.image_urls?.[0] || result.output?.image_url
   if (!imageUrl) {
     logLLMRequestError({
-      provider: MOODBOARD_LLM_PROVIDER_MIDJOURNEY,
-      model: MOODBOARD_LLM_MODEL_DIFFUSION,
+      provider: ImageGenProvider.Midjourney,
+      model: LegNextModelId.Diffusion,
       prompt: fullPrompt,
       error: MOODBOARD_LEGNEXT_NO_IMAGE,
       input: diffusionPayload,
@@ -221,8 +213,8 @@ async function generateMidjourneyImage(
     return null
   }
   logLLMRequestComplete({
-    provider: MOODBOARD_LLM_PROVIDER_MIDJOURNEY,
-    model: MOODBOARD_LLM_MODEL_DIFFUSION,
+    provider: ImageGenProvider.Midjourney,
+    model: LegNextModelId.Diffusion,
     prompt: fullPrompt,
     outputImageUrls: [imageUrl],
     output: result.output,
@@ -254,33 +246,33 @@ async function generateNanoBananaImage(
   allStyleRefs: string[],
   promptIndex: number,
 ): Promise<string | null> {
-  const targetModel = modelId || MOODBOARD_DEFAULT_GEMINI_MODEL
+  const targetModel = modelId || GoogleModelId.Gemini20FlashPreviewImageGeneration
   const enhancedPrompt = `${prompt}${MOODBOARD_PROMPT_SUFFIX}`
   const payload = {
     contents: [{ parts: [{ text: enhancedPrompt }] }],
     generationConfig: {
-      responseModalities: [MOODBOARD_RESPONSE_MODALITY_TEXT, MOODBOARD_RESPONSE_MODALITY_IMAGE],
+      responseModalities: [GeminiResponseModality.Text, GeminiResponseModality.Image],
     },
   }
   logLLMRequestStart({
-    provider: MOODBOARD_LLM_PROVIDER_GEMINI,
+    provider: ImageGenProvider.Gemini,
     model: targetModel,
     prompt: enhancedPrompt,
     inputImageUrls: allStyleRefs.length > 0 ? allStyleRefs : undefined,
     input: payload,
-    metadata: { task: MOODBOARD_LLM_TASK, promptIndex, provider: MOODBOARD_PROVIDER_NANOBANANA },
+    metadata: { task: MOODBOARD_LLM_TASK, promptIndex, provider: ImageGenProvider.NanoBanana },
   })
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`,
     {
-      method: MOODBOARD_HTTP_POST,
-      headers: { 'Content-Type': MOODBOARD_CONTENT_TYPE_JSON },
+      method: HttpMethod.Post,
+      headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify(payload),
     },
   )
   if (!response.ok) {
     logLLMRequestError({
-      provider: MOODBOARD_LLM_PROVIDER_GEMINI,
+      provider: ImageGenProvider.Gemini,
       model: targetModel,
       prompt: enhancedPrompt,
       error: `HTTP ${response.status}: ${await response.text()}`,
@@ -292,7 +284,7 @@ async function generateNanoBananaImage(
   const imageBase64 = extractGeminiImageBase64(data)
   if (!imageBase64) {
     logLLMRequestError({
-      provider: MOODBOARD_LLM_PROVIDER_GEMINI,
+      provider: ImageGenProvider.Gemini,
       model: targetModel,
       prompt: enhancedPrompt,
       error: MOODBOARD_GEMINI_NO_IMAGE,
@@ -302,7 +294,7 @@ async function generateNanoBananaImage(
     return null
   }
   logLLMRequestComplete({
-    provider: MOODBOARD_LLM_PROVIDER_GEMINI,
+    provider: ImageGenProvider.Gemini,
     model: targetModel,
     prompt: enhancedPrompt,
     outputImageUrls: [MOODBOARD_BASE64_LABEL],
@@ -319,10 +311,10 @@ async function generateMoodboardImage(
   allStyleRefs: string[],
   promptIndex: number,
 ): Promise<string | null> {
-  if (provider === MOODBOARD_PROVIDER_MIDJOURNEY) {
+  if (provider === ImageGenProvider.Midjourney) {
     return generateMidjourneyImage(prompt, apiKey, allStyleRefs, promptIndex)
   }
-  if (provider === MOODBOARD_PROVIDER_NANOBANANA) {
+  if (provider === ImageGenProvider.NanoBanana) {
     return generateNanoBananaImage(prompt, apiKey, modelId, allStyleRefs, promptIndex)
   }
   return null
@@ -330,11 +322,16 @@ async function generateMoodboardImage(
 
 function saveMoodboardImage(projectId: string, imageBase64: string): string {
   const filename = `mood_${Date.now()}_${Math.random().toString(36).substring(7)}.png`
-  const projectDir = path.join(process.cwd(), MOODBOARD_PUBLIC_DIR, MOODBOARD_PROJECTS_DIR, projectId)
+  const projectDir = path.join(
+    process.cwd(),
+    FsDirectory.Public,
+    FsDirectory.Projects,
+    projectId,
+  )
   if (!fs.existsSync(projectDir)) fs.mkdirSync(projectDir, { recursive: true })
   fs.writeFileSync(
     path.join(projectDir, filename),
-    Buffer.from(imageBase64, MOODBOARD_ENCODING_BASE64),
+    Buffer.from(imageBase64, BufferEncoding.Base64),
   )
   return filename
 }

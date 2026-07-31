@@ -8,9 +8,6 @@ export enum AppRouteSegment {
   App = 'app',
 }
 
-export const PROJECT_SELECTOR_LIQUID_WARN =
-  'ProjectSelectorDropdown used outside LiquidProvider' as const
-
 export const PROJECT_SELECTOR_EMPTY_LABEL = 'Select Project' as const
 
 export const PROJECT_SELECTOR_NO_PROJECTS = 'No projects yet' as const

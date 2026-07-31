@@ -1,1 +1,0 @@
-../../../.agents/skills/typecheck-scoped/SKILL.md

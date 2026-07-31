@@ -1,11 +1,10 @@
 ## Target architecture — folder structure & layering (MUST follow)
 
 This project has a canonical target architecture that every module converges on.
-The authoritative source is **`docs/unified/ARCHITECTURE.md`** (companion:
-`docs/unified/SPEC.md`, `docs/orchestration-rfc.md`,
-`docs/quality-improvement-spec.md`). **Read `docs/unified/ARCHITECTURE.md` before
-proposing or placing any new code.** The summary below is the contract; the doc
-is the detail.
+The authoritative source is **`docs/ARCHITECTURE.md`** (companions:
+`docs/MODULES.md`, `docs/STORYTELLER.md`, `docs/DEVELOPMENT.md`). **Read
+`docs/ARCHITECTURE.md` before proposing or placing any new code.** The summary
+below is the contract; the doc is the detail.
 
 > Note: this is the *target state*. Existing modules (e.g. `storyteller`) are
 > mid-migration, so current code may not fully match. New code you add MUST follow
@@ -20,7 +19,8 @@ Trigger.dev · Vercel. You change *how* they're used, never *whether*.
 src/
 ├─ domains/<module>/     # vertical slices — the unit of ownership
 ├─ shared/               # cross-module building blocks (imported by 2+ modules)
-│   ├─ agent-kernel/  jobs/  data/  auth/  observability/  errors/
+│   ├─ admin/ agent-kernel/ auth/ canvas/ chat/ data/ debug/ errors/ jobs/ observability/
+│   └─ (+ legacy: ai/ three/ tours/ types/ workspace/) — allowlist in scripts/structure-gates/src-topology.ts
 ├─ components/ui/        # Radix + CVA + tailwind-merge design system (shared primitives)
 ├─ db/                   # Drizzle: single schema source of truth + client
 ├─ trigger/              # thin re-export registry only
@@ -97,7 +97,7 @@ src/domains/<module>/
 10. **Size limits.** Components < ~400 LOC, routes < ~300 LOC; split god components.
 
 When deciding *where* a change goes, map it to the layer above and place it there.
-If unsure, consult `docs/unified/ARCHITECTURE.md` §3–§5 and §12 rather than guessing.
+If unsure, consult `docs/ARCHITECTURE.md` and `docs/MODULES.md` rather than guessing.
 
 ### App routes — thin shell only (common agent failure)
 

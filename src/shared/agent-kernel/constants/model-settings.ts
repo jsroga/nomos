@@ -43,16 +43,33 @@ export const OPENROUTER_MODEL_OPTIONS: OpenRouterModelOption[] = [
   { id: 'openai/gpt-5.6-luna', label: 'GPT-5.6 Luna — fast thinking' },
   { id: 'openai/gpt-5.6-luna-pro', label: 'GPT-5.6 Luna Pro' },
   { id: 'openai/gpt-5.4', label: 'GPT-5.4' },
-  { id: 'openai/gpt-4o', label: 'GPT-4o' },
-  { id: 'openai/gpt-4o-mini', label: 'GPT-4o mini — cheap/fast' },
+  { id: 'google/gemini-3.5-flash', label: 'Gemini 3.5 Flash — cheap/fast' },
   { id: 'anthropic/claude-opus-4.8', label: 'Claude Opus 4.8' },
   { id: 'anthropic/claude-sonnet-5', label: 'Claude Sonnet 5' },
   { id: 'anthropic/claude-haiku-4.5', label: 'Claude Haiku 4.5 — cheap' },
   { id: 'moonshotai/kimi-k2.7-code', label: 'Kimi K2.7 Code' },
   { id: 'z-ai/glm-5.2', label: 'GLM 5.2' },
-  { id: 'google/gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
   { id: 'deepseek/deepseek-v4-pro', label: 'DeepSeek V4 Pro' },
   { id: 'x-ai/grok-4.5', label: 'Grok 4.5' },
 ]
 
 export const OPENROUTER_MODEL_OPTION_IDS: readonly string[] = OPENROUTER_MODEL_OPTIONS.map(o => o.id)
+
+/**
+ * `provider/model` (or gatewayed `openrouter/provider/model`), the only shape
+ * `toOpenRouterModel` can route. The curated list above is a convenience, not a
+ * whitelist — admins may paste any id OpenRouter serves, so the write path
+ * validates shape rather than membership.
+ */
+const OPENROUTER_MODEL_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*(?:\/[a-zA-Z0-9._:-]+){1,2}$/
+
+export const OPENROUTER_MODEL_ID_MAX_LENGTH = 120
+
+export function isOpenRouterModelId(value: string): boolean {
+  const trimmed = value.trim()
+  return (
+    trimmed.length > 0 &&
+    trimmed.length <= OPENROUTER_MODEL_ID_MAX_LENGTH &&
+    OPENROUTER_MODEL_ID_PATTERN.test(trimmed)
+  )
+}

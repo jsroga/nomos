@@ -34,10 +34,10 @@ const BibleContext = createContext<BibleContextType | undefined>(undefined)
 function useBiblePlanSync(
   storyPlan: StoryPlan,
   isEditing: boolean,
-  localPlan: Partial<StoryPlan>,
   setLocalPlan: React.Dispatch<React.SetStateAction<Partial<StoryPlan>>>
 ) {
   const lastSavedPlan = React.useRef<string | null>(null)
+  const localPlanRef = React.useRef<Partial<StoryPlan> | null>(null)
 
   useEffect(() => {
     if (isEditing) return
@@ -53,10 +53,18 @@ function useBiblePlanSync(
       }
     }
 
-    if (JSON.stringify(localPlan) !== planStr) {
-      setLocalPlan(storyPlan)
+    // Compare against last applied parent plan, not live localPlan (avoids
+    // re-stringify of local + effect loops when localPlan is in deps).
+    if (localPlanRef.current === storyPlan) return
+    const prevStr = localPlanRef.current ? JSON.stringify(localPlanRef.current) : null
+    if (prevStr === planStr) {
+      localPlanRef.current = storyPlan
+      return
     }
-  }, [storyPlan, isEditing, localPlan, setLocalPlan])
+
+    localPlanRef.current = storyPlan
+    setLocalPlan(storyPlan)
+  }, [storyPlan, isEditing, setLocalPlan])
 
   return lastSavedPlan
 }
@@ -149,7 +157,7 @@ export const BibleProvider: React.FC<{
   const { isLocked, setIsLocked, lockedBy, setLockedBy, lockedAt, setLockedAt } =
     useBibleLockStatus(projectId)
   const userEmail = useBibleUserEmail()
-  const lastSavedPlan = useBiblePlanSync(storyPlan, isEditing, localPlan, setLocalPlan)
+  const lastSavedPlan = useBiblePlanSync(storyPlan, isEditing, setLocalPlan)
 
   const pendingActions = externalPendingActions ?? internalPendingActions
   const setPendingAction = useCallback(

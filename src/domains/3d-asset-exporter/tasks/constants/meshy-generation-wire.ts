@@ -4,6 +4,7 @@ import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 import {
   BufferEncoding,
   ContentType,
+  FsDirectory,
   HttpAuthScheme,
   HttpMethod,
   Hyper3dTaskStatus,
@@ -103,9 +104,9 @@ export enum PrepareImagePathPrefix {
   Projects = '/projects/',
 }
 
-export enum PrepareImagePublicDir {
-  Public = 'public',
-}
+export const PrepareImagePublicDir = {
+  Public: FsDirectory.Public,
+} as const
 
 export enum PrepareImageError {
   NotFoundPrefix = 'Image file not found:',

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { Settings } from 'lucide-react'
@@ -9,14 +9,13 @@ import { SettingsDialog } from '@/domains/world-building-toolkit/ui/components/S
 import { ProjectSelectorDropdown } from '@/components/shell/ProjectSelectorDropdown'
 import { AsyncStatusIndicator } from '@/components/AsyncStatusIndicator'
 import { TroubleshootIndicator } from '@/components/shell/TroubleshootIndicator'
-import { LiquidBackgroundProvider } from '@/domains/marketing'
 
 export function GlobalHeader() {
   const currentProject = useWorkspaceProjectStore(state => state.currentProject)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   return (
-    <LiquidBackgroundProvider showCanvas={false}>
+    <>
       <div className="h-14 bg-card border-b border-border flex items-center px-4 gap-4 shrink-0 relative z-[100]">
         <div className="flex items-center gap-2">
           {/* <img src="/logo.svg" alt="Logo" className="h-6 w-auto brightness-0 invert opacity-50" /> */}
@@ -49,6 +48,6 @@ export function GlobalHeader() {
         onClose={() => setIsSettingsOpen(false)}
         projectId={currentProject?.id}
       />
-    </LiquidBackgroundProvider>
+    </>
   )
 }

@@ -4,7 +4,7 @@ import {
   recordFromJson,
   stringArrayFromJson,
 } from '@/shared/data/json-guards'
-import { LegNextJobStatus } from './generate-tile'
+import { LegNextJobStatus } from '@/shared/ai/constants/legnext'
 
 export interface GeminiInlineData {
   mime_type?: string

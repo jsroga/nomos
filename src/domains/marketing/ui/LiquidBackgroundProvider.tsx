@@ -1,8 +1,6 @@
 'use client'
 
-import { TURBULENT_BG_CANVAS_ID } from '@/domains/marketing/constants/liquid'
-import '@/domains/marketing/constants/liquid-globals'
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import dynamic from 'next/dynamic'
 import { LiquidProvider } from '../state/liquid-context'
 
@@ -16,20 +14,18 @@ interface LiquidBackgroundProviderProps {
   showCanvas?: boolean
 }
 
+/** Marketing/landing only. App shell should not wrap chrome in this. */
 export function LiquidBackgroundProvider({
   children,
   showCanvas = true,
 }: LiquidBackgroundProviderProps) {
-  // Static values for Turbulent Background
   const zoom = 0.1
   const rotation = 3.33
   const speed = 0.5
   const morphSpeed = 0.2
 
-  // State for Liquid Context (to be consumed by Liquid components)
   const [bgElement, setBgElement] = useState<HTMLDivElement | null>(null)
 
-  // Default Liquid Options for the app - matching Landing Page "sexy" defaults
   const liquidOptions = {
     refraction: 0.064,
     bevelWidth: 0.042,
@@ -40,24 +36,11 @@ export function LiquidBackgroundProvider({
     speed: speed,
   }
 
-  // Live Texture Bridge - Keeps the liquid effect synced with the canvas
-  useEffect(() => {
-    let rafId: number
-    const updateTexture = () => {
-      const bgCanvas = document.getElementById(TURBULENT_BG_CANVAS_ID)
-      const renderer = window.__liquidGLRenderer__
-
-      if (bgCanvas instanceof HTMLCanvasElement && renderer?._uploadTexture) {
-        renderer._uploadTexture(bgCanvas)
-      }
-      rafId = requestAnimationFrame(updateTexture)
-    }
-
-    // Start loop
-    rafId = requestAnimationFrame(updateTexture)
-
-    return () => cancelAnimationFrame(rafId)
-  }, [])
+  if (!showCanvas) {
+    return (
+      <LiquidProvider value={{ bgElement: null, liquidOptions }}>{children}</LiquidProvider>
+    )
+  }
 
   return (
     <TurbulentBackground
@@ -67,9 +50,8 @@ export function LiquidBackgroundProvider({
       morphSpeed={morphSpeed}
       onRef={setBgElement}
       showCanvas={showCanvas}
-      // Fixed dark theme values
       colorShift={0}
-      saturation={0.4} // Reduced saturation for background
+      saturation={0.4}
       brightness={1.5}
       contrast={1.2}
       hue={0}

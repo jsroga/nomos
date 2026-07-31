@@ -1,5 +1,6 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import {
   buildCombinedStoryboardPrompt,
   fetchGeminiStoryboardImage,
@@ -12,7 +13,7 @@ interface GenerateCombinedStoryboardPayload {
   projectId: string
   beats: { logline: string; visualHook?: string; imagePrompt?: string }[]
   providerConfig: {
-    provider: 'nanobanana'
+    provider: typeof ImageGenProvider.NanoBanana
     apiKey: string
     modelId?: string
   }

@@ -2,6 +2,7 @@ export enum AIProvider {
   OpenAI = 'openai',
   Gemini = 'gemini',
   NanoBanana = 'nano-banana',
+  Midjourney = 'midjourney',
   Stability = 'stability',
   Replicate = 'replicate',
   Fal = 'fal',

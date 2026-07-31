@@ -1,296 +1,164 @@
 # System Architecture
 
-> World Building Kit — A multi-agent creative production platform.
+> World Building Kit — multi-agent creative production platform.  
+> **Companion:** [MODULES.md](./MODULES.md) · [STORYTELLER.md](./STORYTELLER.md) · [DEVELOPMENT.md](./DEVELOPMENT.md) · root [AGENTS.md](../AGENTS.md)
 
 ## Overview
 
-The system follows a **layered architecture** with clear separation of concerns:
+1. **Presentation** — Next.js 16 (App Router, RSC)
+2. **Application** — API routes, Server Actions, SSE streams
+3. **Domain** — Mastra v1 agents / tools / workflows under `src/domains/*`
+4. **Infrastructure** — Supabase Postgres, Trigger.dev, AI providers, Vercel Blob
 
-1. **Presentation Layer**: Next.js 15 with React Server Components
-2. **Application Layer**: API Routes, Server Actions, Real-time handlers
-3. **Domain Layer**: Multi-agent orchestration (**Mastra v1** — agents, tools, workflows)
-4. **Infrastructure Layer**: External services, databases, AI providers
+### Locked stack
 
-### Target module architecture
+Next.js 16 · Mastra · Radix/CVA · Supabase · TanStack Query · Trigger.dev · Vercel · Drizzle (`src/db`).
 
-Every feature module under `src/domains/<module>/` follows the blueprint in
-[docs/unified/ARCHITECTURE.md](unified/ARCHITECTURE.md) §4 (`ui/`, `state/`, `io/`,
-`core/`, `services/`, `agents/`, `tasks/`, plus a root `index.ts` public barrel).
-Implementation sequencing and acceptance criteria live in
-[docs/unified/SPEC.md](unified/SPEC.md). Conformance is enforced by
-`src/domains/__tests__/domain-structure.test.ts` and ESLint barrel-import rules.
-
-### `src/` topology (7 folders)
+## `src/` topology
 
 | Folder | Role |
 |--------|------|
-| `app/` | Next.js routes, API glue, `_shell/` app chrome |
-| `domains/` | Feature modules (blueprint §4) |
-| `shared/` | Cross-module code (`agent-kernel`, `ai`, `data`, `auth`, …) |
-| `components/` | Radix/CVA design system — flat PascalCase folder per primitive (+ `shell/`) |
-| `db/` | Drizzle schema + client |
-| `trigger/` | Task registry + shared task helpers |
+| `app/` | Thin routes + API glue only |
+| `domains/` | Feature vertical slices (blueprint below) |
+| `shared/` | Cross-module — allowlist in `scripts/structure-gates/src-topology.ts` (`admin`, `agent-kernel`, `auth`, `canvas`, `chat`, `data`, `debug`, `errors`, `jobs`, `observability` + legacy `ai`/`three`/`tours`/`types`/`workspace`) |
+| `components/` | Design system (PascalCase folders) |
+| `db/` | Drizzle schema + `db` client (`DATABASE_URL`) |
+| `trigger/` | Task registry |
+| `trigger-dark-factory/` | Opt-in Cursor SDK execute task (esbuild-external; not in default `TRIGGER_DIRS`) |
 | `mcp/` | MCP server (separate deployable) |
 
-`src/mastra.ts` is the Mastra Studio CLI entry; `src/mastra/index.ts` is a one-file shim for `mastra dev`/`build`.
+`src/mastra.ts` — Mastra Studio CLI entry; `src/mastra/agents/` holds file-based instructions. Production instance: `src/shared/agent-kernel/MastraInstance.ts`.  
+Evals: top-level `evals/`. Structure tests: `src/__tests__/structure.test.ts`, `src/domains/__tests__/domain-structure.test.ts`.
 
-Dev-time eval harness lives in top-level `evals/` (excluded from app `tsconfig`).
-Static legal copy lives in `src/domains/marketing/legal/` (served at `/terms` and `/privacy`).
-Structure is enforced by `src/__tests__/structure.test.ts` and `src/__tests__/src-topology.ts`.
+### Dependency rule
 
-### TypeScript & ESLint (strict)
+```
+app  → domains/<m>/index.ts → module internals
+domains/<m> → shared/*, components, db   (never another domain)
+shared/* → shared/*, db                  (never domains)
+core/ (pure) → no React, no db, no fetch
+```
 
-- **`tsconfig.json`**: `strict: true` (includes `noImplicitAny` — implicit `any` is a compile error).
-- **`eslint.config.js`** (see also `.cursor/rules/eslint-boundaries.mdc`):
-  - `@typescript-eslint/strict` + `@typescript-eslint/no-explicit-any`: **`error`**
-  - `@typescript-eslint/consistent-type-assertions`: **`error`**, `assertionStyle: 'never'` (`as const` only)
-  - **Cross-domain isolation**: `src/domains/<A>` must not import `@/domains/<B>` — use `@/shared`
-  - Barrel guards for non-domain code importing domain internals
-  - Shared deep merge: `@/shared/data/deep-merge` (`deepMerge`, `deepMergeRecords`, `recordFromJson`)
-- **Style preference:** magic string protocol values → TypeScript **`enum`**, not `as const` object maps
-- **Pre-commit**: staged-file ESLint via `scripts/pre-commit-lint.mjs`; full repo: `npm run lint` / `npm run check:lint`.
-- Legacy files may still use `@ts-nocheck` during migration; new code must not add `any`, `as` casts, or cross-domain imports.
+## Module blueprint
 
----
+Every `src/domains/<module>/`:
 
-## System Context Diagram
+```
+index.ts          # ONLY public import target
+ui/               # React (PascalCase components)
+state/            # Zustand UI + TanStack queries/mutations
+core/             # pure types/logic; core/io/ = typed fetchers + DTOs
+services/         # server-only Drizzle / external APIs
+ai/               # server-only Mastra (agents under ai/agents/)
+tasks/            # Trigger.dev schemaTask
+```
 
-This shows how the system interacts with external actors and services.
+**Rules**
+
+- Server state → **TanStack Query**; Zustand → ephemeral UI only.
+- Browser never writes with privileged Supabase credentials — API → `requireAuth()` → Drizzle.
+- Long work (>~1s) → Trigger.dev + Realtime / poll; no bespoke `window` events.
+- Asset modules lean on `tasks/`; AI modules use `ai/` + prompts.
+- AI layer naming: domain folder is `ai/` (not `agents/`); packages live in `ai/agents/`.
+
+Conformance: domain-structure tests + ESLint (`.cursor/rules/eslint-boundaries.mdc`, `domain-structure.mdc`).
+
+## TypeScript & ESLint (strict)
+
+- `strict: true`; `@typescript-eslint/no-explicit-any` **error**
+- Type assertions banned (`assertionStyle: 'never'`, `as const` only)
+- Cross-domain imports forbidden — lift to `@/shared`
+- Protocol strings → TypeScript `enum`
+- Shared deep merge: `@/shared/data/deep-merge`; URLs: `@/shared/data/url-builder`
+
+## System context
 
 ```mermaid
 graph TB
-    subgraph Users
-        Creator[Content Creator]
-        Dev[Developer / MCP Client]
-    end
-
-    subgraph "World Building Kit"
-        App[Web Application]
-        MCP[MCP Server]
-        Workers[Background Workers]
-    end
-
-    subgraph "AI Providers"
-        Anthropic[Anthropic Claude]
-        OpenAI[OpenAI GPT-4]
-        Google[Google Gemini]
-    end
-
-    subgraph "Generation Services"
-        Replicate[Replicate]
-        Midjourney[Midjourney]
-        Meshy[Meshy 3D]
-        CSM[CSM AI]
-    end
-
-    subgraph "Data Infrastructure"
-        Supabase[(Supabase)]
-        Blob[Vercel Blob]
-        VoyageAI[Voyage AI]
-    end
-
-    subgraph "Observability"
-        MastraObs[Mastra Observability<br/>MastraStorageExporter]
-        Vercel[Vercel OTEL]
-    end
-
-    Creator --> App
-    Dev --> MCP
-    
-    App --> Anthropic
-    App --> OpenAI
-    App --> Google
-    
-    App --> Workers
-    Workers --> Replicate
-    Workers --> Midjourney
-    Workers --> Meshy
-    Workers --> CSM
-    
-    App --> Supabase
-    Workers --> Blob
-    App --> VoyageAI
-    
-    App --> MastraObs
-    App --> Vercel
+    Creator[Content Creator] --> App[Next.js App]
+    Dev[MCP Client] --> MCP[MCP Server]
+    App --> Mastra[Mastra Agents]
+    App --> Workers[Trigger.dev]
+    App --> Supabase[(Supabase Postgres)]
+    Workers --> Blob[Vercel Blob]
+    App --> MastraObs[Mastra Observability]
+    App --> Vercel[Vercel OTEL / Sentry]
 ```
 
----
-
-## Container Diagram
-
-Shows major deployable units and their interactions.
-
-```mermaid
-graph LR
-    subgraph "Vercel Edge"
-        NextApp[Next.js App<br/>React + RSC]
-        API[API Routes<br/>REST + Streaming]
-        Actions[Server Actions]
-    end
-
-    subgraph "Trigger.dev Cloud"
-        TaskQueue[Task Queue]
-        ImageGen[Image Tasks]
-        ModelGen[3D Model Tasks]
-        Upscale[Upscale Tasks]
-    end
-
-    subgraph "Supabase"
-        DB[(PostgreSQL)]
-        Vector[(pgvector)]
-        Auth[Auth Service]
-        RLS[Row Level Security]
-    end
-
-    subgraph "Agent Runtime"
-        Mastra[Mastra Core<br/>Agents · Tools · Workflows]
-        Tools[Tool Registry]
-    end
-
-    NextApp --> API
-    NextApp --> Actions
-    API --> Mastra
-    API --> TaskQueue
-    
-    TaskQueue --> ImageGen
-    TaskQueue --> ModelGen
-    TaskQueue --> Upscale
-    
-    Actions --> DB
-    Mastra --> Tools
-    Tools --> DB
-    Tools --> Vector
-    
-    API --> Auth
-    Auth --> RLS
-```
-
----
-
-## Data Flow Diagram
-
-Shows how data moves through the system for a typical agent interaction.
+## Data flow (typical agent turn)
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant FE as Next.js Frontend
-    participant API as API Route
-    participant Agent as Storyteller Agent
-    participant RAG as RAG Service
-    participant DB as Supabase
-    participant Obs as Mastra Storage
+    participant FE as Frontend
+    participant API as API / SSE
+    participant Agent as Domain Agent
+    participant DB as Postgres
 
-    U->>FE: Submit prompt
-    FE->>API: POST /api/storyteller/chat
-    API->>Agent: invoke(state, prompt)
-    
-    Agent->>RAG: retrieve(context)
-    RAG->>DB: Vector search
-    DB-->>RAG: Relevant chunks
-    RAG-->>Agent: Augmented context
-    
-    Agent->>Agent: LLM reasoning
-    Agent->>Obs: Auto trace + scores (MastraStorageExporter)
-    
-    Agent->>DB: Persist changes
-    Agent-->>API: Stream response
-    API-->>FE: SSE chunks
-    FE-->>U: Render updates
+    U->>FE: Prompt
+    FE->>API: POST chat/stream
+    API->>Agent: generate/stream
+    Agent->>DB: tools / RAG / persist
+    Agent-->>API: stream chunks
+    API-->>FE: SSE frames
 ```
 
----
+## Third-party services
 
-## Third-Party Services
+| Category | Service | Role |
+|----------|---------|------|
+| Hosting | Vercel | App + Blob |
+| Jobs | Trigger.dev | Image / 3D / long work |
+| DB / Auth | Supabase | Postgres + pgvector + Auth |
+| LLM gateway | OpenRouter (primary) | Agents / scorers |
+| Embeddings | Voyage (optional) | RAG |
+| Images | Gemini / Grok / Stability / LegNext | Tiles & media |
+| 3D | Meshy / Hyper3D / … | Asset exporter tasks |
+| Observability | Mastra store + Sentry/OTel | AI spans vs HTTP |
 
-| Category | Service | Purpose | Integration |
-|:---------|:--------|:--------|:------------|
-| **Hosting** | Vercel | Frontend, APIs, Edge Functions | `@vercel/otel`, Blob Storage |
-| **Compute** | Trigger.dev | Background jobs, retries | `@trigger.dev/sdk` |
-| **Database** | Supabase | PostgreSQL + pgvector + Auth | `@supabase/supabase-js` |
-| **LLM** | Anthropic | Primary agent reasoning | `@ai-sdk/anthropic` |
-| **LLM** | OpenAI | Alternative models, embeddings | `@ai-sdk/openai` |
-| **LLM** | Google | Gemini for specific tasks | `@ai-sdk/google` |
-| **Embeddings** | Voyage AI | High-quality embeddings (voyage-3) | Custom client |
-| **Images** | Replicate | Flux, SD, LoRAs | `replicate` |
-| **Images** | Midjourney | Hero assets | Proxy API |
-| **3D Models** | Meshy | Text-to-3D | REST API |
-| **3D Models** | CSM | Image-to-3D | REST API |
-| **Observability** | Mastra | AI tracing, scores (Postgres-backed) | `@mastra/observability`, `MastraStorageExporter` in `create-mastra.ts` |
-| **Evals** | Mastra scorers | Offline + live quality gates | `createScorer` in `src/shared/agent-kernel/scorers/`; harness in `evals/` |
+## Access control
 
----
+Two tiers. Supabase Auth + RLS decides *whether you are signed in and which rows you own*; an admin allowlist decides *who may change platform-wide settings*.
 
-## Core Patterns
+`NEXT_PUBLIC_CENTRAL_USERS` is a comma-separated list of admin emails (falls back to `ADMIN_USER_EMAIL` in `shared/auth/constants/admin-users`). `isAdminUser(email)` normalises case and whitespace, then membership-tests it.
 
-### 1. Confidence & Evaluation
+| Surface | Gate |
+|---|---|
+| `/admin` route group | `app/(workspace)/admin/layout.tsx` redirects non-admins |
+| `GET/PUT /api/admin/model-settings` (+ `/probe`) | `isAdminUser` before any write |
+| `/api/admin/modules`, `/api/admin/tests` | `isAdminUser` |
+| World Bible lock, onboarding bypass | `shared/auth/bible-permissions` |
 
-Every agent decision includes a self-reported confidence score (0-1). This enables:
+The `NEXT_PUBLIC_` prefix inlines the list into the client bundle so the UI can hide admin affordances. It is **not** a security boundary — treat it as public and keep every real check server-side, as the routes above do. Anything genuinely secret stays in RLS policies or server-only env.
 
-- **Filtering**: Query "decisions with confidence < 0.7"
-- **Audit**: Mastra AI traces persisted via `MastraStorageExporter` (same Postgres as agent memory)
-- **Improvement**: Mastra `createScorer` judges in `src/shared/agent-kernel/scorers/`; batch runs via `npm run eval`
+## Core patterns
 
-### 2. RAG Pipeline
+1. **RAG** — hybrid search + rerank; cite sources.
+2. **Async workers** — Frontend → API → Trigger → persist → poll/subscribe.
+3. **One Mastra instance / one Postgres store** — see AGENTS.md.
+4. **Quality gates** — `qualitygate:*`, metrics 400/800 lines, complexity 15/25 — [DEVELOPMENT.md](./DEVELOPMENT.md).
 
-```
-Query → Expansion → Hybrid Search → Rerank → Cite
-         ↓              ↓             ↓
-    Sub-queries    Vector + BM25   Cross-encoder
-```
-
-- **Voyage AI** embeddings for semantic similarity
-- **Postgres FTS** for keyword matching
-- **Citation tracking** prevents hallucinations
-
-### 3. Async Worker Pattern
-
-```
-Frontend → API → Trigger.dev → External API → Supabase
-    ↑                                             │
-    └────────── Poll/Subscribe ←──────────────────┘
-```
-
-Long-running tasks (image/3D generation) use Trigger.dev:
-- Returns `runId` immediately
-- Handles retries and timeouts
-- UI polls or subscribes for completion
-
-### 4. Agent Handoffs (V2)
-
-Instead of a central supervisor:
-
-```
-Router → Specialist A → Direct Handoff → Specialist B
-```
-
-- Preserves full context
-- Reduces latency
-- Each agent owns its domain
-
----
-
-## Mastra Studio (local dev)
-
-Inspect and chat with registered agents outside the Next.js app:
+## Mastra Studio
 
 ```bash
-npm run mastra:dev   # http://localhost:4111
+npm run mastra:dev    # :4111
+npm run mastra:build
+npm run mastra:smoke  # handover when Mastra paths change
 ```
 
 | Concern | Location |
 |---------|----------|
-| Studio entry | `src/mastra.ts` → `src/shared/agent-kernel/mastra/index.ts` |
-| Studio agent registry | `src/shared/agent-kernel/mastra/agents/registry.ts` |
-| Studio tool catalog (bundler-safe stubs) | `src/shared/agent-kernel/mastra/tools/bundles.ts` |
-| Production Mastra instance + Postgres memory | `src/shared/agent-kernel/MastraInstance.ts` |
-| Production agents & tools | `src/domains/*/agents/` |
+| Studio entry | `src/mastra.ts` |
+| File-based agents | `src/mastra/agents/<id>/` |
+| Runtime registry | `src/shared/agent-kernel/mastra/runtime-registry.ts` |
+| Domain agents | `src/domains/*/ai/` |
 
-Studio tools mirror production IDs/descriptions; DB writes and Trigger jobs run in the app runtime.
+## Agent local workspace (`.local/`)
 
----
+| Path | Use |
+|------|-----|
+| `.local/sessions/…` | Multi-request tracking |
+| `.local/tmp/…` | Throwaway recon |
+| `.local/quality-backlog.md` | Cached gate failures |
 
-## Testing
-
-See [TESTING.md](./TESTING.md). Unit tests are **colocated** under `src/**/__tests__/`. Run `npm run test:unit`. E2E: `npm run test:e2e`.
+Templates: `.agents/templates/session/`.

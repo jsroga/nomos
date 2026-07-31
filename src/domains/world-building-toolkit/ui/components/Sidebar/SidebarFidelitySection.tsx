@@ -3,6 +3,7 @@ import { Button } from '@/components/Button'
 import { SidebarSection, SidebarLabel, SidebarSliderRow } from '@/components/DomainSidebar'
 import { Loader2, Sparkles } from 'lucide-react'
 import type { WorldGenSidebarState } from '@/domains/world-building-toolkit/state/hooks/useWorldGenSidebar'
+import { GoogleModelId } from '@/shared/data/constants/protocol'
 
 type SidebarFidelitySectionProps = Pick<
   WorldGenSidebarState,
@@ -33,7 +34,7 @@ export const SidebarFidelitySection: React.FC<SidebarFidelitySectionProps> = ({
           <div className="space-y-1">
             <SidebarLabel>Provider</SidebarLabel>
             <div className="text-[11px] text-zinc-400 font-mono px-2 py-1.5 bg-zinc-900/50 border border-zinc-800 rounded-md">
-              Gemini (gemini-3-pro-image-preview)
+              Gemini ({GoogleModelId.Gemini3ProImagePreview})
             </div>
           </div>
         )}

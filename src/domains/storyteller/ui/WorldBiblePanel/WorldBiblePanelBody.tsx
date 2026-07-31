@@ -1,6 +1,6 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
-import { StorytellerBibleTab } from './constants/world-bible-panel'
+import { StorytellerBibleTab, WorldBiblePanelLazyPlaceholder, WorldBiblePanelLazyRootMargin } from './constants/world-bible-panel'
 import {
   BibleOverview,
   BibleSoundtracks,
@@ -13,6 +13,41 @@ import {
 } from '../WorldBible'
 
 const CharacterWeb = lazy(() => import('../CharacterWeb').then(m => ({ default: m.CharacterWeb })))
+
+/** Mount section only when near the viewport — cuts first-paint cost of Content tab. */
+function LazyBibleSection({
+  children,
+  minHeight = WorldBiblePanelLazyPlaceholder.MinHeightPx,
+}: {
+  children: ReactNode
+  minHeight?: number
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || visible) return
+
+    const io = new IntersectionObserver(
+      entries => {
+        if (entries.some(e => e.isIntersecting)) {
+          setVisible(true)
+          io.disconnect()
+        }
+      },
+      { rootMargin: WorldBiblePanelLazyRootMargin.Prefetch }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [visible])
+
+  return (
+    <div ref={ref} style={visible ? undefined : { minHeight }}>
+      {visible ? children : <div className="h-24 rounded-lg bg-muted/10 animate-pulse" />}
+    </div>
+  )
+}
 
 export interface WorldBiblePanelBodyProps {
   activeTab: StorytellerBibleTab
@@ -43,19 +78,33 @@ export function WorldBiblePanelBody({
             onRefetchMoodboardData={onRefetchMoodboardData}
           />
 
-          <BibleSoundtracks />
+          <LazyBibleSection>
+            <BibleSoundtracks />
+          </LazyBibleSection>
 
-          <BibleInspirations />
+          <LazyBibleSection>
+            <BibleInspirations />
+          </LazyBibleSection>
 
-          <BibleWorldLogic />
+          <LazyBibleSection>
+            <BibleWorldLogic />
+          </LazyBibleSection>
 
-          <BibleItems />
+          <LazyBibleSection>
+            <BibleItems />
+          </LazyBibleSection>
 
-          <BibleEvents />
+          <LazyBibleSection>
+            <BibleEvents />
+          </LazyBibleSection>
 
-          <BibleFactions />
+          <LazyBibleSection>
+            <BibleFactions />
+          </LazyBibleSection>
 
-          <BibleRoadmap />
+          <LazyBibleSection>
+            <BibleRoadmap />
+          </LazyBibleSection>
         </div>
       </div>
     )

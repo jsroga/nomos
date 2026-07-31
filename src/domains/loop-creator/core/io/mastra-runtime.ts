@@ -2,7 +2,7 @@
  * Loop-creator Mastra runtime surface — the sanctioned deep-import point for the
  * central Mastra instance (mirrors storyteller/game-design).
  *
- * Registers the flagged (`LOOP_CREATOR_MASTRA=1`) Mastra specialist agents so
+ * Registers the flagged (`FF_LOOP_CREATOR_MASTRA=true`) Mastra specialist agents so
  * they appear in Studio and share the instance's storage/observability/tracing.
  * The orchestration itself is the existing imperative supervisor loop
  * (`core/graph/loop-orchestrator.ts`); each specialist's single LLM call routes

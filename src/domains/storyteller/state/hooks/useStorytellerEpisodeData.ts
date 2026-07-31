@@ -57,6 +57,7 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
     setStoryPlan,
     setIsPlanApproved,
     setCurrentPhase,
+    setViewPhase,
     setScript,
     setIsFetchingPlan,
     setCurrentEpisodeTitle,
@@ -127,38 +128,42 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
     }
   }, [currentProject?.id])
 
-  // Fetch beats for selected episode
+  // Fetch beats for selected episode — clear stale beats immediately on switch
   useEffect(() => {
-    if (currentEpisodeId) {
-      fetchStorytellerTimeline(currentEpisodeId)
-        .then(data => {
-          const beats = recordArrayFromJson(data.beats)
-          if (beats.length > 0) {
-            setBeats(
-              beats.map(beat => {
-                const row = recordFromJson(beat)
-                return {
-                  id: readString(row.id) ?? '',
-                  sequence: readNumber(row.sequence) ?? 0,
-                  logline:
-                    readString(row.logline) ??
-                    readString(row.log_line) ??
-                    StorytellerDefaultTitle.UntitledBeat,
-                  beatType:
-                    readString(row.beat_type) ??
-                    readString(row.beatType) ??
-                    StorytellerBeatTypeDefault.Default,
-                  status: beatStatusFromWire(readString(row.status)),
-                }
-              }),
-            )
-          }
-        })
-        .catch(err => console.error(StorytellerLogMessage.FailedFetchBeats, err))
-    } else {
+    if (!currentEpisodeId) {
       setBeats([])
       setSelectedBeatId(null)
+      return
     }
+
+    setBeats([])
+    setSelectedBeatId(null)
+
+    fetchStorytellerTimeline(currentEpisodeId)
+      .then(data => {
+        const beats = recordArrayFromJson(data.beats)
+        if (beats.length > 0) {
+          setBeats(
+            beats.map(beat => {
+              const row = recordFromJson(beat)
+              return {
+                id: readString(row.id) ?? '',
+                sequence: readNumber(row.sequence) ?? 0,
+                logline:
+                  readString(row.logline) ??
+                  readString(row.log_line) ??
+                  StorytellerDefaultTitle.UntitledBeat,
+                beatType:
+                  readString(row.beat_type) ??
+                  readString(row.beatType) ??
+                  StorytellerBeatTypeDefault.Default,
+                status: beatStatusFromWire(readString(row.status)),
+              }
+            }),
+          )
+        }
+      })
+      .catch(err => console.error(StorytellerLogMessage.FailedFetchBeats, err))
   }, [currentEpisodeId])
 
   // Fetch story plan for selected episode OR load project bible
@@ -176,11 +181,13 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
         .then(data => {
           const planRecord = recordFromJson(data)
           const mergedPlan = buildMergedEpisodePlan(planRecord, currentProject)
+          const inferred = inferEpisodePhase(planRecord)
 
           if (mergedPlan) {
             setStoryPlan(mergedPlan)
             setIsPlanApproved(!!planRecord.planApproved)
-            setCurrentPhase(inferEpisodePhase(planRecord))
+            setCurrentPhase(inferred)
+            setViewPhase(inferred)
             const script = planRecord.script
             if (typeof script === 'string') {
               setScript(script)
@@ -195,7 +202,8 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
             setStoryPlan(null)
           }
           setIsPlanApproved(false)
-          setCurrentPhase(inferEpisodePhase(planRecord))
+          setCurrentPhase(inferred)
+          setViewPhase(inferred)
         })
         .catch(err => console.error(StorytellerLogMessage.FailedFetchPlan, err))
         .finally(() => setIsFetchingPlan(false))

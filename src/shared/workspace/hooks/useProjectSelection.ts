@@ -12,29 +12,9 @@ import {
   PROJECT_SELECTION_DELETE_DESCRIPTION,
   PROJECT_SELECTION_DELETE_TITLE,
   PROJECT_SELECTION_SUBTITLES,
-  PROJECT_SELECTION_TURBULENT_BG_CANVAS_ID,
   PROJECT_SELECTOR_BIBLE_QUERY,
-  ProjectSelectionLiquidGlobal,
 } from '../constants/project-selection'
 import { useWorkspaceProjectStore } from '../workspace-project-store'
-
-function readLiquidGLRenderer():
-  | { _uploadTexture: (canvas: HTMLCanvasElement) => void }
-  | undefined {
-  const candidate: unknown = Reflect.get(window, ProjectSelectionLiquidGlobal.Renderer)
-  if (typeof candidate !== 'object' || candidate === null) {
-    return undefined
-  }
-  const uploadTexture: unknown = Reflect.get(candidate, ProjectSelectionLiquidGlobal.UploadTexture)
-  if (typeof uploadTexture !== 'function') {
-    return undefined
-  }
-  return {
-    _uploadTexture: (canvas: HTMLCanvasElement) => {
-      uploadTexture(canvas)
-    },
-  }
-}
 
 export function useProjectSelection() {
   const router = useRouter()
@@ -53,21 +33,6 @@ export function useProjectSelection() {
     () => PROJECT_SELECTION_SUBTITLES[Math.floor(Math.random() * PROJECT_SELECTION_SUBTITLES.length)]
   )
   const [loadingProjectId, setLoadingProjectId] = useState<string | null>(null)
-
-  useEffect(() => {
-    let rafId: number
-    const updateTexture = () => {
-      const bgCanvas = document.getElementById(PROJECT_SELECTION_TURBULENT_BG_CANVAS_ID)
-      const renderer = readLiquidGLRenderer()
-
-      if (bgCanvas instanceof HTMLCanvasElement && renderer) {
-        renderer._uploadTexture(bgCanvas)
-      }
-      rafId = requestAnimationFrame(updateTexture)
-    }
-    rafId = requestAnimationFrame(updateTexture)
-    return () => cancelAnimationFrame(rafId)
-  }, [])
 
   useEffect(() => {
     let cancelled = false

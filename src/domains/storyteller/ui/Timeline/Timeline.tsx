@@ -294,13 +294,13 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
                 >
                   {hoveredBeat === beat.id && (
                     <div
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-popover border border-border rounded-lg text-xs whitespace-nowrap shadow-xl pointer-events-none"
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-zinc-700 text-white border border-zinc-600/80 rounded-lg text-xs whitespace-nowrap shadow-lg pointer-events-none"
                       style={{ zIndex: 9999 }}
                     >
-                      <div className="font-medium text-foreground mb-1">
+                      <div className="font-medium text-white mb-1">
                         {beat.beatType.toUpperCase()}
                       </div>
-                      <div className="text-muted-foreground max-w-[200px] truncate">
+                      <div className="text-zinc-200 max-w-[200px] truncate">
                         {beat.logline}
                       </div>
                       {/* Arrow */}

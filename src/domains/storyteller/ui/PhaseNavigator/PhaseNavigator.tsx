@@ -70,6 +70,8 @@ const PHASES: PhaseConfig[] = [
 
 interface PhaseNavigatorProps {
   currentPhase: PhaseId
+  /** Furthest unlocked phase (progress). Defaults to currentPhase. */
+  progressPhase?: PhaseId
   completedPhases?: PhaseId[]
   isWorking?: boolean
   onPhaseChange?: (phase: PhaseId) => void
@@ -81,13 +83,11 @@ interface PhaseNavigatorProps {
 const getPhaseState = (
   phase: PhaseConfig,
   index: number,
-  currentPhase: PhaseId,
-  currentIndex: number,
-  completedPhases: PhaseId[]
+  viewPhase: PhaseId,
+  progressIndex: number
 ): `${PhaseNavigatorState}` => {
-  if (completedPhases.includes(phase.id)) return PhaseNavigatorState.Completed
-  if (phase.id === currentPhase) return PhaseNavigatorState.Active
-  if (index < currentIndex) return PhaseNavigatorState.Completed
+  if (phase.id === viewPhase) return PhaseNavigatorState.Active
+  if (index <= progressIndex) return PhaseNavigatorState.Completed
   return PhaseNavigatorState.Locked
 }
 
@@ -101,17 +101,17 @@ const canNavigateTo = (
 
 const CompactPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
   currentPhase,
-  completedPhases = [],
+  progressPhase,
   isWorking = false,
   onPhaseChange,
 }) => {
-  const currentIndex = PHASES.findIndex(p => p.id === currentPhase)
+  const progressIndex = PHASES.findIndex(p => p.id === (progressPhase ?? currentPhase))
 
   return (
     <TooltipProvider>
       <div className="flex items-center gap-1 bg-zinc-900/80 backdrop-blur-sm rounded-md p-0.5 border border-zinc-800">
         {PHASES.map((phase, index) => {
-          const state = getPhaseState(phase, index, currentPhase, currentIndex, completedPhases)
+          const state = getPhaseState(phase, index, currentPhase, progressIndex)
           const canNav = canNavigateTo(state, isWorking)
 
           return (
@@ -131,9 +131,12 @@ const CompactPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-[200px]">
                 <p className="font-medium">{phase.label}</p>
-                <p className="text-xs text-muted-foreground">{phase.description}</p>
+                <p className="text-xs text-zinc-300">{phase.description}</p>
                 {state === PhaseNavigatorState.Locked && (
-                  <p className="text-xs text-amber-400 mt-1">Complete previous phases first</p>
+                  <p className="text-xs text-amber-300 mt-1">Complete previous phases first</p>
+                )}
+                {state === PhaseNavigatorState.Completed && (
+                  <p className="text-xs text-green-300 mt-1">Click to view</p>
                 )}
               </TooltipContent>
             </Tooltip>
@@ -146,12 +149,12 @@ const CompactPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
 
 const FullPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
   currentPhase,
-  completedPhases = [],
+  progressPhase,
   isWorking = false,
   onPhaseChange,
   episodeTitle,
 }) => {
-  const currentIndex = PHASES.findIndex(p => p.id === currentPhase)
+  const progressIndex = PHASES.findIndex(p => p.id === (progressPhase ?? currentPhase))
 
   return (
     <TooltipProvider>
@@ -162,7 +165,7 @@ const FullPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
 
         <div className="flex items-center gap-0">
           {PHASES.map((phase, index) => {
-            const state = getPhaseState(phase, index, currentPhase, currentIndex, completedPhases)
+            const state = getPhaseState(phase, index, currentPhase, progressIndex)
             const canNav = canNavigateTo(state, isWorking)
             const isLast = index === PHASES.length - 1
 
@@ -197,12 +200,12 @@ const FullPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
                     <p className="font-medium">{phase.label}</p>
-                    <p className="text-xs text-muted-foreground max-w-[180px]">{phase.description}</p>
+                    <p className="text-xs text-zinc-300 max-w-[180px]">{phase.description}</p>
                     {state === PhaseNavigatorState.Locked && (
-                      <p className="text-xs text-amber-400 mt-1">Complete previous phases first</p>
+                      <p className="text-xs text-amber-300 mt-1">Complete previous phases first</p>
                     )}
                     {state === PhaseNavigatorState.Completed && (
-                      <p className="text-xs text-green-400 mt-1">Click to revisit</p>
+                      <p className="text-xs text-green-300 mt-1">Click to view</p>
                     )}
                   </TooltipContent>
                 </Tooltip>
@@ -211,7 +214,7 @@ const FullPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
                   <div
                     className={cn(
                       'flex items-center px-1',
-                      index < currentIndex ? 'text-green-500/60' : 'text-zinc-700'
+                      index < progressIndex ? 'text-green-500/60' : 'text-zinc-700'
                     )}
                   >
                     <ChevronRight size={16} />
@@ -226,10 +229,10 @@ const FullPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
           <div
             className={cn(
               'h-full transition-all duration-500 rounded-full',
-              currentPhase === PhaseNavigatorPhase.PREMISE && 'bg-purple-500 w-[33%]',
-              currentPhase === PhaseNavigatorPhase.BREAKING && 'bg-blue-500 w-[66%]',
-              currentPhase === PhaseNavigatorPhase.WRITING && 'bg-emerald-500 w-full',
-              currentPhase === PhaseNavigatorPhase.COMPLETE && 'bg-green-500 w-full'
+              (progressPhase ?? currentPhase) === PhaseNavigatorPhase.PREMISE && 'bg-purple-500 w-[33%]',
+              (progressPhase ?? currentPhase) === PhaseNavigatorPhase.BREAKING && 'bg-blue-500 w-[66%]',
+              (progressPhase ?? currentPhase) === PhaseNavigatorPhase.WRITING && 'bg-emerald-500 w-full',
+              (progressPhase ?? currentPhase) === PhaseNavigatorPhase.COMPLETE && 'bg-green-500 w-full'
             )}
           />
         </div>

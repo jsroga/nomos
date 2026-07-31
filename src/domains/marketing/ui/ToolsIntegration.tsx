@@ -1,7 +1,15 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ThreeDIcon } from './ThreeDIcon'
+import { useEffect, useState } from 'react'
+import { MarketingIconType } from '@/domains/marketing/constants/three-d-icon'
+import {
+  MARKETING_NEAR_FOLD_SCROLL_Y,
+  MarketingDomScrollEvent,
+} from '@/domains/marketing/constants/viewport-3d'
+import { ViewportGatedThreeDIcon } from '@/domains/marketing/ui/ViewportGatedThreeDIcon'
+import { LANDING_BRAND_ACCENT } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
+import { LANDING_SECTION_PANEL_CLASS, LANDING_ABSOLUTE_OVERLAY_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 
 // Custom tool icons
 const TOOL_ICONS = {
@@ -93,9 +101,26 @@ const ToolIcon = ({
   </motion.div>
 )
 
+function useScrolledPastNearFold(): boolean {
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.scrollY >= MARKETING_NEAR_FOLD_SCROLL_Y) setReady(true)
+    }
+    onScroll()
+    window.addEventListener(MarketingDomScrollEvent.Scroll, onScroll, { passive: true })
+    return () => window.removeEventListener(MarketingDomScrollEvent.Scroll, onScroll)
+  }, [])
+
+  return ready
+}
+
 export const ToolsIntegration = () => {
+  const allowNearFold3d = useScrolledPastNearFold()
+
   return (
-    <section className="py-24 border-y border-white/5 bg-black/40 backdrop-blur-sm relative overflow-hidden">
+    <section className={LANDING_SECTION_PANEL_CLASS}>
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-12 mb-16">
           <div className="text-center md:text-left flex-1">
@@ -121,7 +146,7 @@ export const ToolsIntegration = () => {
             </motion.p>
           </div>
 
-          {/* Decorative 3D Icon on Right */}
+          {/* Decorative 3D — poster until user scrolls (near-fold). */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
@@ -129,11 +154,14 @@ export const ToolsIntegration = () => {
             transition={{ delay: 0.2 }}
             className="hidden md:block w-[800px] h-[800px] absolute -right-[200px] -top-[200px] pointer-events-none"
           >
-            <ThreeDIcon
+            <ViewportGatedThreeDIcon
+              enabled={allowNearFold3d}
               glowScale={0.5}
               density={0.8}
-              type="WORLD_GEN"
-              color="#5c7cfa"
+              type={MarketingIconType.WorldGen}
+              posterSrc="/images/icons/world-gen.png"
+              posterAlt="World generation"
+              color={LANDING_BRAND_ACCENT}
               size={1200}
               scale={0.7}
               vignette={true}
@@ -152,7 +180,7 @@ export const ToolsIntegration = () => {
 
       {/* Background Texture */}
       <div
-        className="absolute inset-0 opacity-[0.2] pointer-events-none"
+        className={LANDING_ABSOLUTE_OVERLAY_CLASS}
         style={{
           backgroundImage: 'radial-gradient(circle at center, #1a1a1a 1px, transparent 1px)',
           backgroundSize: '20px 20px',

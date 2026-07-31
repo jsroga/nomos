@@ -18,12 +18,18 @@ import {
   TriggerRunResultStatus,
 } from '@/shared/data/generation/constants/tiles-service'
 import { recordFromJson } from '@/shared/data/json-guards'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 
 // ============================================
 // SCHEMAS
 // ============================================
 
-export const aiProviderSchema = z.enum(['gemini', 'openai', 'stability', 'midjourney'])
+export const aiProviderSchema = z.enum([
+  ImageGenProvider.Gemini,
+  ImageGenProvider.OpenAi,
+  ImageGenProvider.Stability,
+  ImageGenProvider.Midjourney,
+])
 
 export const generateTileSchema = z.object({
   projectId: z.string().uuid(),
@@ -39,7 +45,10 @@ export const generateTileSchema = z.object({
 export const upscaleTileSchema = z.object({
   projectId: z.string().uuid(),
   tileId: z.string().uuid(),
-  upscaleProvider: z.enum(['midjourney', 'stability', 'topaz']).optional().default(AiUpscaleProvider.Midjourney),
+  upscaleProvider: z
+    .enum([ImageGenProvider.Midjourney, ImageGenProvider.Stability, 'topaz'])
+    .optional()
+    .default(AiUpscaleProvider.Midjourney),
 })
 
 export const getRunStatusSchema = z.object({

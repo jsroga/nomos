@@ -1,5 +1,5 @@
 export enum TextureServiceLog {
-  NoOpenAiKey = '[TextureService] No OpenAI Key found, skipping refinement',
+  NoOpenRouterKey = '[TextureService] No OPENROUTER_API_KEY found, skipping refinement',
   RefinementFailed = '[TextureService] Refinement failed:',
 }
 

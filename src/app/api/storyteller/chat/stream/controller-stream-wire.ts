@@ -1,7 +1,7 @@
 /**
  * Flagged controller stream path (PLAN-V2 Phase 4.3).
  *
- * When `STORYTELLER_CONTROLLER=1`, the chat route drives the AgentController
+ * When `FF_STORYTELLER_CONTROLLER=true`, the chat route drives the AgentController
  * session instead of `StorytellerAgent.stream()`. Controller events are mapped
  * (pure `mapControllerEvent`) to frame intents and applied through the SAME
  * `stream-wire` emitters, so read-only conversations emit byte-identical frames

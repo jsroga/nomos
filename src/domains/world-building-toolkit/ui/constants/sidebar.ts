@@ -1,5 +1,6 @@
 import { ContentType, HttpMethod, UrlScheme } from '@/shared/data/constants/protocol'
 import { CHAT_DEBUG_ADMIN_PIN } from '@/shared/chat/core/constants/chat-interface'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { ContextAssemblyVariant } from '../../constants/tile-generation-service'
 
 export { HttpMethod, UrlScheme, ContentType, CHAT_DEBUG_ADMIN_PIN, ContextAssemblyVariant }
@@ -49,9 +50,12 @@ export enum WorldGenSidebarToast {
   DeleteTileFailed = 'Failed to delete tile',
 }
 
-export enum WorldGenTileProvider {
-  NanoBanana = 'nano-banana',
-}
+export const WorldGenTileProvider = {
+  NanoBanana: ImageGenProvider.NanoBanana,
+} as const
+
+export type WorldGenTileProvider =
+  (typeof WorldGenTileProvider)[keyof typeof WorldGenTileProvider]
 
 export enum WorldGenSidebarApiRoute {
   UploadTile = '/api/upload-tile',

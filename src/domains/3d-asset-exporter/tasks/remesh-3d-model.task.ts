@@ -1,6 +1,7 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { recordFromJson } from '@/shared/data/json-guards'
+import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import {
   MeshyTaskStatusValue,
   parseMeshyTaskResult,
@@ -48,10 +49,10 @@ async function createRemeshTask(
   remeshBody: Record<string, unknown>,
 ): Promise<string> {
   const createResponse = await fetch('https://api.meshy.ai/openapi/v1/remesh', {
-    method: 'POST',
+    method: HttpMethod.Post,
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      'Content-Type': ContentType.Json,
     },
     body: JSON.stringify(remeshBody),
   })

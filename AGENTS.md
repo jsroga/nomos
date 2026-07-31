@@ -19,7 +19,7 @@ The dark-factory execute loop has three interchangeable runners that share the *
 - Use `RequestContext`, not `RuntimeContext`.
 - `createTool` execute: `(inputData, context)` — separate params.
 - No `format` on agents; use `structuredOutput`.
-- Model strings: `'openai/gpt-4o-mini'`, `'anthropic/claude-…'` (`provider/model`).
+- Model strings: `'openai/gpt-5.6-luna'`, `'anthropic/claude-…'` (`provider/model`). Fast tier = Luna or Gemini Flash via OpenRouter (`TEXT_GEN_FAST_MODEL`).
 - Keep Mastra packages on the same v1 version.
 
 ## Layout
@@ -29,8 +29,8 @@ The dark-factory execute loop has three interchangeable runners that share the *
 | Mastra instance | `src/mastra.ts` (Studio CLI canonical export), `src/shared/agent-kernel/MastraInstance.ts` (app) |
 | CLI shim | `src/mastra/index.ts` — 2-line re-export of `src/mastra.ts`; exists only because `mastra dev/build` resolves `src/mastra/index.ts`. Keep both; do not add code here. |
 | File-based prompts | `src/mastra/agents/<agent-id>/instructions.md` — static base prompts (Mastra convention), loaded by code-based agents via `loadAgentInstructions` |
-| Agents | `src/domains/*/ai/agents/` (implementations) inside `src/domains/*/ai/` (Mastra layer — server-only; see `docs/unified/ARCHITECTURE.md` §4; enforced via `import '@/shared/data/server-guard'`, NOT the `server-only` package; pure schema modules allowlisted) |
-| Agent registration | `src/shared/agent-kernel/mastra/runtime-registry.ts` (domains register at import via `core/io/mastra-runtime.ts`; shared never imports domains). Registered domains: **storyteller**, **game-design**, **loop-creator** (flagged `LOOP_CREATOR_MASTRA=1`) — side-effect-imported by `src/mastra.ts` + each domain's API route so registration precedes the first `getMastraInstance()` |
+| Agents | `src/domains/*/ai/agents/` (implementations) inside `src/domains/*/ai/` (Mastra layer — server-only; see `docs/ARCHITECTURE.md` module blueprint; enforced via `import '@/shared/data/server-guard'`, NOT the `server-only` package; pure schema modules allowlisted) |
+| Agent registration | `src/shared/agent-kernel/mastra/runtime-registry.ts` (domains register at import via `core/io/mastra-runtime.ts`; shared never imports domains). Registered domains: **storyteller**, **game-design**, **loop-creator** (flagged `FF_LOOP_CREATOR_MASTRA=true`) — side-effect-imported by `src/mastra.ts` + each domain's API route so registration precedes the first `getMastraInstance()` |
 | AgentController | `@mastra/core/agent-controller` — sessions, modes, plan→build gate (see "Plan-first agents" below) |
 | Tools | `src/domains/*/ai/tools`, `src/shared/agent-kernel/mastra/tools/` (bundler-safe Studio stubs) |
 | Models | `src/shared/agent-kernel/models.ts` (kernel/judging), domain `config/ModelConfig.ts` (`resolveRoleModel` role slots) |
@@ -83,7 +83,7 @@ For a loop that keeps working toward an objective (not one request/response):
 
 - **Goals** — `Agent` config `goal: { judge: () => resolveRoleModel('critic'), maxRuns, prompt }` + `agent.setObjective(objective, { threadId, resourceId })`. A standing thread-scoped objective is judged after each iteration by the judge model until satisfied or the budget is spent. Needs storage + a memory-backed thread (both already registered). Emits `goal` stream chunks (`GoalEvaluationPayload`).
 - **Durable agents** — `createDurableAgent({ agent })` (`@mastra/core/agent/durable`) runs the loop inside a workflow with reconnect (`observe(runId)`). In-process cache for dev; `RedisServerCache` for multi-process. Its `fullStream` is the same chunk format as `agent.stream()`.
-- **Storyteller reference:** `ai/agents/AutonomousAuthor` + `startAutonomousEpisodeDraft` (`core/io/mastra-runtime`), flagged `STORYTELLER_AUTONOMOUS=1`, mapped to the frozen SSE frames.
+- **Storyteller reference:** `ai/agents/AutonomousAuthor` + `startAutonomousEpisodeDraft` (`core/io/mastra-runtime`), flagged `FF_STORYTELLER_AUTONOMOUS=true`, mapped to the frozen SSE frames.
 - **One gate, one owner** (three long-running mechanisms coexist): *editorial verdict = workflow suspend · capability/plan-first = AgentController · loop termination = goal*. Never stack two on the same gate. See `MASTRA-AGENT-APPROACHES-EVAL.md` §8.
 
 Docs: `mastra.ai/docs/long-running-agents/{durable-agents,goals}.md`.
@@ -101,10 +101,43 @@ Docs: `mastra.ai/docs/long-running-agents/{durable-agents,goals}.md`.
 - **Non-null `!`** (`no-non-null-assertion`) — guard/`?.`/`?? fallback` instead.
 - **Repeated `.filter()`** on the same array in one scope (`local/no-repeated-array-filter`) — one pass.
 - **Manual URL construction** (`?foo=${x}`, `encodeURIComponent`, local `buildUrl`) — use `@/shared/data/url-builder` (`buildUrl`, `joinUrlPath`, `appendQueryParams`, `cloneSearchParams`).
-- **File-level `eslint-disable`** for quality rules (`local/no-magic-string`, `local/complexity-strict`, `local/max-lines-strict`, etc.) — forbidden without explicit user approval.
+- **IMPORTANT — never disable rules on your own if not allowed.** No file-level `eslint-disable`, no new/widened `eslint.config.js` `'off'` overrides, no `@ts-nocheck` to pass gates — ask in chat first. See `.cursor/rules/no-gate-bypass.mdc`.
 
 ## Verify
 
 **During work:** `npm run qualitygate:file -- <path>` · `npm run qualitygate:changed` · `npm run qualitygate:tsc -- --files <path>` — not full-repo `tsc` mid-task. **Many failures:** `npm run qualitygate:capture` → `.local/quality-backlog.md` (fix one, `qualitygate:backlog -- done <id>`, rescan every 5).
 
 **Before handoff:** `npm run typecheck` · `npm run lint` · `npm run test:unit`
+
+**When the user asks to commit:** `npm run precommit` first (includes **`test:unit`** + **`build`**), then commit without `--no-verify`. The message carries no `Co-Authored-By` trailer and no "generated with" footer naming a model, agent, or IDE. See `.cursor/rules/commit-gates.mdc`.
+
+**Mastra paths touched** (`src/mastra/**`, `src/mastra.ts`, `src/shared/agent-kernel/mastra/**`, `MastraInstance.ts`, …): also `npm run mastra:smoke` (Cursor stop hook runs this automatically when those files were edited).
+
+## Multi-request sessions (`.local/sessions/`)
+
+When a user asks for **multiple deliverables** (or work spans subsystems / turns), create:
+
+```
+.local/sessions/YYYY-MM-DD_<shortId>_<slug>/
+  REQUESTS.md  TODOS.md  PLAN.md  MEMORY.md  STATUS.md
+```
+
+Copy from `.agents/templates/session/`. Binding rule: `.cursor/rules/session-tracking.mdc`. Shared partial for Fabro/Claude/Cursor execute: `.agents/execute/partials/session-tracking.md`. `.local/` stays gitignored.
+
+The same applies to **any** agent-authored markdown — plans, audits, trackers, findings all land in `.local/`, never at repo root or beside the code they describe (`.cursor/rules/agent-artifacts.mdc`, enforced by `scripts/check-agent-artifacts.mjs` + a `preToolUse` deny hook). When something *is* durable, extend the `docs/` page that already owns the topic instead of adding a file. Comments and docs state the current contract, never the edit that produced it; config files get one trailing clause per line, not tutorials (`.cursor/rules/writing-style.mdc`).
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
+
+<!-- TRIGGER.DEV SKILLS START -->
+## Trigger.dev agent skills
+
+This project has Trigger.dev agent skills installed in `.agents/skills/`. Before writing or changing Trigger.dev code (background tasks, scheduled tasks, realtime, or chat.agent AI agents), load the most relevant skill: `trigger-authoring-chat-agent`, `trigger-authoring-tasks`, `trigger-chat-agent-advanced`, `trigger-cost-savings`, `trigger-getting-started`.
+<!-- TRIGGER.DEV SKILLS END -->

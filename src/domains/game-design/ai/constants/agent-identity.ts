@@ -16,7 +16,7 @@ export enum GameDesignSystemPromptId {
 }
 
 export enum GameDesignDefaultModel {
-  OpenAiGpt4o = 'openai:gpt-4o',
+  OpenAiGpt56Luna = 'openai:gpt-5.6-luna',
 }
 
 export enum GameDesignStreamToolChoice {

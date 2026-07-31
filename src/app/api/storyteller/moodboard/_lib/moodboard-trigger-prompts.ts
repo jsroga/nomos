@@ -1,6 +1,7 @@
 import type OpenAI from 'openai'
 import { API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { OpenAiChatRole, OpenAiModel } from '@/shared/data/constants/protocol'
+import { OpenAiChatRole } from '@/shared/data/constants/protocol'
+import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
 import {
   StorytellerMoodboardDefault,
   StorytellerMoodboardPromptCategory,
@@ -78,7 +79,7 @@ export async function generateMoodboardPrompts(
 ): Promise<string[]> {
   try {
     const gptResponse = await openai.chat.completions.create({
-      model: OpenAiModel.Gpt4o,
+      model: TEXT_GEN_FAST_MODEL,
       messages: [{ role: OpenAiChatRole.System, content: buildMoodboardSystemPrompt(context, promptIndex) }],
       temperature: 0.7,
     })

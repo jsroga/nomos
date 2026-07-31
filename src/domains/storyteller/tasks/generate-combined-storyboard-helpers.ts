@@ -2,6 +2,14 @@ import fs from 'fs'
 import path from 'path'
 import { logger } from '@trigger.dev/sdk/v3'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
+import {
+  BufferEncoding,
+  ContentType,
+  FsDirectory,
+  GoogleModelId,
+  HttpMethod,
+} from '@/shared/data/constants/protocol'
+import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
 
 interface StoryboardBeat {
   logline: string
@@ -41,18 +49,20 @@ Output: A single high-resolution Board/Map image.
 }
 
 export async function fetchGeminiStoryboardImage(apiKey: string, prompt: string): Promise<string> {
-  const targetModel = 'gemini-3-pro-image-preview'
+  const targetModel = GoogleModelId.Gemini3ProImagePreview
 
   logger.info('Generating combined image with Nano Banana (Gemini)', { model: targetModel })
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`,
     {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: HttpMethod.Post,
+      headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+        generationConfig: {
+          responseModalities: [GeminiResponseModality.Text, GeminiResponseModality.Image],
+        },
       }),
     }
   )
@@ -86,13 +96,18 @@ function extractInlineImageBase64(data: {
 
 export function saveStoryboardImage(projectId: string, episodeId: string, imageBase64: string): string {
   const filename = `combined_storyboard_${episodeId}_${Date.now()}.png`
-  const projectDir = path.join(process.cwd(), 'public', 'projects', projectId)
+  const projectDir = path.join(
+    process.cwd(),
+    FsDirectory.Public,
+    FsDirectory.Projects,
+    projectId,
+  )
 
   if (!fs.existsSync(projectDir)) {
     fs.mkdirSync(projectDir, { recursive: true })
   }
 
-  const buffer = Buffer.from(imageBase64, 'base64')
+  const buffer = Buffer.from(imageBase64, BufferEncoding.Base64)
   fs.writeFileSync(path.join(projectDir, filename), buffer)
   logger.info('Combined image saved to disk', { filename })
   return filename

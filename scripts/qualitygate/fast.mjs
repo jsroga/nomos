@@ -80,7 +80,8 @@ function eslintErrorLines(files) {
   if (!files.length) return []
   const eslint = run('npx', ['eslint', ...files])
   const out = `${eslint.stdout ?? ''}\n${eslint.stderr ?? ''}`
-  return out.split('\n').filter((l) => /\serror\s/.test(l) || /✖/.test(l))
+  // Match real error rows only — not the "✖ N problems" summary and not warnings.
+  return out.split('\n').filter((l) => /^\s*\d+:\d+\s+error\s/.test(l) || /\serror\s{2,}/.test(l))
 }
 
 /** @param {string[]} files */
@@ -178,7 +179,7 @@ export function runFastGate(opts) {
 export function printFastGateResult(result, { hookMode = false } = {}) {
   if (result.skipped) {
     if (hookMode) {
-      console.log(JSON.stringify({ user_message: result.summary }))
+      console.log(JSON.stringify({ user_message: result.summary, ok: true, skipped: true }))
       return 0
     }
     console.log(result.summary)
@@ -194,7 +195,8 @@ export function printFastGateResult(result, { hookMode = false } = {}) {
     ]
     const user_message =
       detail.length === 0 ? `${result.summary} — clean` : `${result.summary}\n${detail.join('\n')}`
-    console.log(JSON.stringify({ user_message }))
+    // Always exit 0 in hook mode — the stop script decides followup_message.
+    console.log(JSON.stringify({ user_message, ok: result.ok, skipped: false }))
     return 0
   }
 

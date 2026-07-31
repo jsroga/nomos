@@ -1,0 +1,27 @@
+---
+description: When the user asks to commit — run build + unit tests first; never skip husky
+alwaysApply: true
+---
+
+# Commit gates (build + tests before commit)
+
+When the user asks you to **commit** (or create a git commit):
+
+1. **Preflight first** — run and wait for success:
+   ```bash
+   npm run precommit
+   ```
+   That is `scripts/pre-commit.mjs`: architecture → docs → staged typecheck/eslint → **`npm run test:unit`** → **`npm run build`**.
+2. **Fix failures** before staging/committing. Do not commit a broken tree.
+3. **Then** stage relevant paths and `git commit` (HEREDOC message). Husky (`.husky/pre-commit`) runs the same script again as a safety net.
+4. **Never** `git commit --no-verify` / `-n` unless the user explicitly orders a hook skip. Cursor `beforeShellExecution` (`guard-commit.sh`) denies `--no-verify`.
+
+Docs-only / lockfile-only commits still go through the same preflight unless the user explicitly scopes a smaller check — default is full `precommit`.
+
+## No AI attribution in the message
+
+The message is `<type>(<scope>): <subject>` plus a body. Nothing else. **Never** append a `Co-Authored-By:` trailer naming a model, agent, or IDE (`Cursor`, `Claude`, `noreply@anthropic.com`), a "Generated with" footer, a robot emoji, or `Assisted-by:`. Only a human co-author the user explicitly names may appear.
+
+Do not pass `--trailer` to `git commit`. Cursor's attribution layer injects one anyway; `.husky/commit-msg` strips it. Client-side toggle: Cursor Settings → Git & PRs → Attribution (Agent → Attribution before 3.11), and `attribution.attributeCommitsToAgent: false` in `~/.cursor/cli-config.json`.
+
+Commit skill details: `.agents/skills/commit/SKILL.md` (Cursor `/commit`).

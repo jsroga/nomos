@@ -6,7 +6,17 @@
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { tilesService, threeDService, portraitService } from '@/shared/data/generation/tiles-service'
+import {
+  tilesService,
+  threeDService,
+  portraitService,
+  generateTileSchema,
+  upscaleTileSchema,
+  generate3DModelSchema,
+  remesh3DModelSchema,
+  generatePortraitSchema,
+} from '@/shared/data/generation/tiles-service'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { validateApiKey, getServiceContext } from '../../core/auth'
 
 // ============================================
@@ -24,7 +34,12 @@ const generateTile = createTool({
     y: z.number().int().describe('Y coordinate for the tile'),
     prompt: z.string().describe('The prompt describing what to generate'),
     aiProvider: z
-      .enum(['gemini', 'openai', 'stability', 'midjourney'])
+      .enum([
+        ImageGenProvider.Gemini,
+        ImageGenProvider.OpenAi,
+        ImageGenProvider.Stability,
+        ImageGenProvider.Midjourney,
+      ])
       .describe('Which AI provider to use for generation'),
     isFirstTile: z
       .boolean()
@@ -35,7 +50,7 @@ const generateTile = createTool({
       .optional()
       .describe('URLs to style reference images (optional)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async data => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
@@ -44,19 +59,7 @@ const generateTile = createTool({
 
     const context = await getServiceContext(authResult)
 
-    return tilesService.generateTile(
-      {
-        projectId: data.projectId,
-        x: data.x,
-        y: data.y,
-        prompt: data.prompt,
-        aiProvider: data.aiProvider,
-        isFirstTile: data.isFirstTile,
-        aiConfig: data.aiConfig ?? {},
-        styleReferenceUrls: data.styleReferenceUrls,
-      },
-      { userId: context.userId }
-    )
+    return tilesService.generateTile(generateTileSchema.parse(data), { userId: context.userId })
   },
 })
 
@@ -68,11 +71,11 @@ const upscaleTile = createTool({
     projectId: z.string().uuid().describe('The project ID'),
     tileId: z.string().uuid().describe('The tile ID to upscale'),
     upscaleProvider: z
-      .enum(['midjourney', 'stability', 'topaz'])
+      .enum([ImageGenProvider.Midjourney, ImageGenProvider.Stability, 'topaz'])
       .optional()
       .describe('Which upscale provider to use (default: midjourney)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async data => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
@@ -81,14 +84,7 @@ const upscaleTile = createTool({
 
     const context = await getServiceContext(authResult)
 
-    return tilesService.upscaleTile(
-      {
-        projectId: data.projectId,
-        tileId: data.tileId,
-        upscaleProvider: data.upscaleProvider,
-      },
-      { userId: context.userId }
-    )
+    return tilesService.upscaleTile(upscaleTileSchema.parse(data), { userId: context.userId })
   },
 })
 
@@ -101,7 +97,7 @@ const generate3dModel = createTool({
     assetId: z.string().uuid().describe('The asset ID to attach the 3D model to'),
     prompt: z.string().describe('The prompt describing the 3D model to generate'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async data => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
@@ -110,14 +106,9 @@ const generate3dModel = createTool({
 
     const context = await getServiceContext(authResult)
 
-    return threeDService.generate3DModel(
-      {
-        projectId: data.projectId,
-        assetId: data.assetId,
-        prompt: data.prompt,
-      },
-      { userId: context.userId }
-    )
+    return threeDService.generate3DModel(generate3DModelSchema.parse(data), {
+      userId: context.userId,
+    })
   },
 })
 
@@ -136,7 +127,7 @@ const remesh3dModel = createTool({
       .optional()
       .describe('Target polygon count (optional)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async data => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
@@ -145,14 +136,9 @@ const remesh3dModel = createTool({
 
     const context = await getServiceContext(authResult)
 
-    return threeDService.remesh3DModel(
-      {
-        projectId: data.projectId,
-        assetId: data.assetId,
-        targetPolycount: data.targetPolycount,
-      },
-      { userId: context.userId }
-    )
+    return threeDService.remesh3DModel(remesh3DModelSchema.parse(data), {
+      userId: context.userId,
+    })
   },
 })
 
@@ -166,7 +152,7 @@ const generatePortrait = createTool({
     prompt: z.string().optional().describe('Additional prompt for the portrait (optional)'),
     style: z.string().optional().describe('Art style for the portrait (optional)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async data => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
@@ -175,15 +161,9 @@ const generatePortrait = createTool({
 
     const context = await getServiceContext(authResult)
 
-    return portraitService.generatePortrait(
-      {
-        projectId: data.projectId,
-        characterId: data.characterId,
-        prompt: data.prompt,
-        style: data.style,
-      },
-      { userId: context.userId }
-    )
+    return portraitService.generatePortrait(generatePortraitSchema.parse(data), {
+      userId: context.userId,
+    })
   },
 })
 

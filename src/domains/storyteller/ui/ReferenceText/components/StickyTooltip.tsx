@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { cn } from '@/shared/data/utils'
+import { TOOLTIP_SURFACE_CLASS } from '@/components/Tooltip/Tooltip'
 import {
   DOM_EVENT_KEYDOWN,
   REFERENCE_TEXT_DOM_EVENT_KEYUP,
@@ -126,8 +127,9 @@ export const StickyTooltip: React.FC<StickyTooltipProps> = ({
           onMouseEnter={handleContentEnter}
           onMouseLeave={handleContentLeave}
           className={cn(
-            'z-[200] overflow-hidden rounded-lg bg-zinc-900 border border-zinc-700 shadow-xl',
-            'px-3 py-2 text-sm text-zinc-100',
+            'z-[200] overflow-hidden rounded-lg',
+            TOOLTIP_SURFACE_CLASS,
+            'px-3 py-2 text-sm',
             'animate-in fade-in-0 zoom-in-95',
             'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
             'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2',
@@ -137,8 +139,8 @@ export const StickyTooltip: React.FC<StickyTooltipProps> = ({
         >
           {content}
           {isAltHeld && (
-            <div className="mt-2 pt-2 border-t border-zinc-700 text-[10px] text-zinc-500 flex items-center gap-1">
-              <span className="bg-zinc-800 px-1 rounded">Option/Alt</span>
+            <div className="mt-2 pt-2 border-t border-zinc-600/80 text-[10px] text-zinc-300 flex items-center gap-1">
+              <span className="bg-zinc-800/80 px-1 rounded text-white">Option/Alt</span>
               <span>held - tooltip frozen</span>
             </div>
           )}

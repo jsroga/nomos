@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { memo, useEffect, useRef, useState } from 'react'
 import { useWorldStore } from '@/domains/world-building-toolkit'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { RepaintCanvas } from './RepaintCanvas'
@@ -6,16 +6,46 @@ import { useWorldCanvasKeyboard } from './useWorldCanvasKeyboard'
 import { useWorldCanvasTour } from './useWorldCanvasTour'
 import { useWorldCanvasWheelZoom } from './useWorldCanvasWheelZoom'
 import { useWorldCanvasInteractions } from './useWorldCanvasInteractions'
-import { renderWorldCanvasTiles } from './world-canvas-tiles'
+import { WorldCanvasTilesLayer } from './world-canvas-tiles'
 import { WorldCanvasAssetOverlays } from './WorldCanvasAssetOverlays'
 import { WorldCanvasPromptPopover } from './WorldCanvasPromptPopover'
 import { WorldCanvasSelectOverlays } from './WorldCanvasSelectOverlays'
 
+const WorldCanvasViewportTransform = memo(function WorldCanvasViewportTransform({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const viewport = useWorldStore(state => state.viewport)
+  return (
+    <div
+      className="absolute origin-center will-change-transform"
+      style={{
+        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`,
+        width: 0,
+        height: 0,
+        left: '50%',
+        top: '50%',
+      }}
+    >
+      {children}
+    </div>
+  )
+})
+
+const WorldCanvasZoomBadge = memo(function WorldCanvasZoomBadge() {
+  const scale = useWorldStore(state => state.viewport.scale)
+  return (
+    <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-xs pointer-events-none">
+      {Math.round(scale * 100)}%
+    </div>
+  )
+})
+
 export const WorldCanvas: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [viewSize, setViewSize] = useState({ width: 1920, height: 1080 })
 
-  const viewport = useWorldStore(state => state.viewport)
-  const tiles = useWorldStore(state => state.tiles)
   const isRepaintMode = useWorldStore(state => state.isRepaintMode)
   const isSelectMode = useWorldStore(state => state.isSelectMode)
   const selectedMask = useWorldStore(state => state.selectedMask)
@@ -31,6 +61,18 @@ export const WorldCanvas: React.FC = () => {
   const previewAssetId = useWorldStore(state => state.previewAssetId)
   const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
   const currentProject = useWorkspaceProjectStore(state => state.currentProject)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const update = () => {
+      setViewSize({ width: el.clientWidth || 1920, height: el.clientHeight || 1080 })
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   useWorldCanvasTour()
   useWorldCanvasWheelZoom(containerRef)
@@ -69,17 +111,8 @@ export const WorldCanvas: React.FC = () => {
       onMouseLeave={interactions.handleMouseLeave}
       onClick={interactions.handleClick}
     >
-      <div
-        className="absolute origin-center will-change-transform"
-        style={{
-          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`,
-          width: 0,
-          height: 0,
-          left: '50%',
-          top: '50%',
-        }}
-      >
-        {renderWorldCanvasTiles(tiles)}
+      <WorldCanvasViewportTransform>
+        <WorldCanvasTilesLayer viewWidth={viewSize.width} viewHeight={viewSize.height} />
 
         {isSelectMode && (
           <WorldCanvasSelectOverlays
@@ -97,11 +130,9 @@ export const WorldCanvas: React.FC = () => {
             showAllAssetMasks={showAllAssetMasks}
           />
         )}
-      </div>
+      </WorldCanvasViewportTransform>
 
-      <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-xs pointer-events-none">
-        {Math.round(viewport.scale * 100)}%
-      </div>
+      <WorldCanvasZoomBadge />
 
       <RepaintCanvas />
 

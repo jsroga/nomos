@@ -2,10 +2,14 @@
 
 import { motion } from 'framer-motion'
 import { LandingManifestoCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
+import {
+  LANDING_ABSOLUTE_OVERLAY_CLASS,
+  LANDING_SECTION_PANEL_CLASS,
+} from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 
 export function ManifestoSection() {
   return (
-    <section className="py-24 relative">
+    <section className={LANDING_SECTION_PANEL_CLASS}>
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         whileInView={{ opacity: 1, scale: 1 }}
@@ -13,7 +17,7 @@ export function ManifestoSection() {
         className="w-full bg-[#ff4400] text-black py-32 px-6 overflow-hidden relative"
       >
         <div
-          className="absolute inset-0 opacity-[0.4] mix-blend-overlay pointer-events-none"
+          className={`${LANDING_ABSOLUTE_OVERLAY_CLASS} mix-blend-overlay`}
           style={{
             backgroundImage:
               'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'1\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'1\'/%3E%3C/g%3E%3C/svg%3E")',

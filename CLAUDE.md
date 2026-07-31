@@ -31,7 +31,7 @@ npx vitest run src/domains/loop-creator            # whole directory
 
 ## Architecture
 
-**Stack:** Next.js 15 (App Router, RSC) · Supabase (Postgres + pgvector + auth/RLS) · Mastra v1 (agents/tools/workflows) · Trigger.dev v4 (background jobs) · Three.js. Long-running work (image/3D generation) goes Frontend → API → Trigger.dev task → poll/subscribe.
+**Stack:** Next.js 16 (App Router, RSC) · Supabase (Postgres + pgvector + auth/RLS) · Mastra v1 (agents/tools/workflows) · Trigger.dev v4 (background jobs) · Three.js. Long-running work (image/3D generation) goes Frontend → API → Trigger.dev task → poll/subscribe.
 
 `src/` topology:
 
@@ -39,13 +39,13 @@ npx vitest run src/domains/loop-creator            # whole directory
 |--------|------|
 | `app/` | Next.js routes, API glue, `_shell/` chrome |
 | `domains/` | Feature modules — vertical slices (storyteller, loop-creator, interior-designer, chat, …) |
-| `shared/` | Cross-module code: `agent-kernel` (Mastra instance, scorers), `ai`, `data`, `auth`, `observability` |
+| `shared/` | Cross-module (`admin`, `agent-kernel`, `auth`, `canvas`, `chat`, `data`, `debug`, `errors`, `jobs`, `observability` + legacy) — gate: `scripts/structure-gates/src-topology.ts` |
 | `components/` | Radix/CVA design system, flat PascalCase folder per primitive |
 | `db/` | Drizzle schema + client |
 | `trigger/` | Trigger.dev task registry |
 | `mcp/` | MCP server (separate deployable) |
 
-Each `src/domains/<module>/` follows the blueprint in [docs/unified/ARCHITECTURE.md](docs/unified/ARCHITECTURE.md): `ui/`, `state/`, `core/` (with `core/io/`), `services/`, `ai/`, `tasks/` + a **single public `index.ts` barrel**. Dependency rule: `ui → state → core → services → ai`; no cross-module deep imports, pure `core/` (outside `core/io/`) has no React/DB/fetch, server data lives in TanStack Query not Zustand. Enforced by `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel guards. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/`, not `ai/`.
+Each `src/domains/<module>/` follows the blueprint in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): `ui/`, `state/`, `core/` (with `core/io/`), `services/`, `ai/`, `tasks/` + a **single public `index.ts` barrel**. Dependency rule: `ui → state → core → services → ai`; no cross-module deep imports, pure `core/` (outside `core/io/`) has no React/DB/fetch, server data lives in TanStack Query not Zustand. Enforced by `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel guards. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/`, not `ai/`.
 
 Two Mastra entries: `src/mastra.ts` is the Studio CLI entry (bundler-safe tool stubs in `src/shared/agent-kernel/mastra/tools/`); `src/shared/agent-kernel/MastraInstance.ts` is the production instance (Postgres memory, tracing). Production Mastra agents live in `src/domains/*/ai/agents/`. Never create a second Mastra instance or Postgres store.
 
@@ -58,6 +58,10 @@ npm run mastra:dev       # Studio — http://localhost:4111 (needs .env.local)
 npm run mastra:build
 ```
 
+## Observability
+
+Mastra AI tracing (agent/tool/workflow spans + forwarded logs) is configured in `src/shared/agent-kernel/mastra/observability-config.ts` and lands in the Mastra store → Studio Traces. Sentry/`@vercel/otel` cover HTTP traces separately (`src/instrumentation.ts`). Wrap named operations with `withMastraSpan()` from `@/shared/observability/mastra-tracing`. Env knobs (`MASTRA_TRACE_*`, `MASTRA_PLATFORM_ACCESS_TOKEN`) and gaps: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) § Observability.
+
 ## Evaluations
 
 ```bash
@@ -66,7 +70,7 @@ npm run eval -- --samples=5
 npm run eval:dashboard    # generate + open HTML report
 ```
 
-Run evals after any change to agent prompts, tools, model config, or the storyteller generation flow. A change is an improvement only if no single scorer regresses below baseline (`evals/results/latest.json`). Scorers: `src/shared/agent-kernel/scorers/`; golden set: `evals/datasets/storyteller-golden.ts`. Details: [docs/TESTING.md](docs/TESTING.md).
+Run evals after any change to agent prompts, tools, model config, or the storyteller generation flow. A change is an improvement only if no single scorer regresses below baseline (`evals/results/latest.json`). Scorers: `src/shared/agent-kernel/scorers/`; golden set: `evals/datasets/storyteller-golden.ts`. Details: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## MCP & Trigger
 
@@ -129,7 +133,9 @@ npm run lint               # eslint . — 8 GB heap (was OOMing without it); src
 npm run test:unit
 ```
 
-**Never bypass gates:** no file-level `eslint-disable` for lint/metrics rules, no `@ts-nocheck`, no “legacy extraction” excuses — **user approval required** for any exception. See `.cursor/rules/quality-gates.mdc`.
+**When the user asks to commit:** run `npm run precommit` first (architecture, docs, staged typecheck/eslint, **unit tests**, **production build**). Fix failures, then `git commit` — never `--no-verify`. Husky `.husky/pre-commit` re-runs the same script. Cursor blocks `--no-verify` via `.cursor/hooks/guard-commit.sh`. **No AI attribution in the message** — no `Co-Authored-By: Claude/Cursor`, no "generated with" footer. Rule: `.cursor/rules/commit-gates.mdc`.
+
+**IMPORTANT — never disable rules on your own if not allowed.** No file-level `eslint-disable`, no new/widened `eslint.config.js` `'off'` overrides, no `@ts-nocheck`, no “legacy extraction” excuses — **ask the user first**. See `.cursor/rules/no-gate-bypass.mdc` and `quality-gates.mdc`.
 
 **Code metrics (ESLint + typecheck, same thresholds):** file lines warn **400** / error **800**; cyclomatic complexity warn **15** / error **25** (`scripts/code-metrics-limits.cjs`). Touched files must be clean before handoff; split oversized files one extract per step, gating each with `qualitygate:file`. See `.cursor/rules/code-metrics.mdc`.
 
@@ -143,6 +149,22 @@ Module-scoped verify: `node scripts/fabro-verify.mjs`. Details: `.cursor/skills/
 
 Ad-hoc audits and one-off scripts: **`.local/`** (gitignored). Quality backlog: `.local/quality-backlog.md` via `npm run qualitygate:capture`. Do not add repo plumbing under `src/lib` for throwaway tooling.
 
+**Every agent-authored `.md` goes in `.local/`** — plans, audits, trackers, findings, status writeups. Repo root takes `README.md`, `AGENTS.md`, `CLAUDE.md` and nothing else; durable human-facing docs go in `docs/` with a `docs/README.md` entry. Enforced by `scripts/check-agent-artifacts.mjs` (pre-commit) and a `preToolUse` deny hook. Rule: `.cursor/rules/agent-artifacts.mdc`.
+
+**Comments state the contract, not the edit.** No date stamps, audit trails, `// NEW:`, provenance notes, or restating the next line. Config files (`.env*.example`, `*.config.*`) get one trailing clause per line — tutorials and option matrices belong in `docs/`. See `.cursor/rules/writing-style.mdc`.
+
+**Extend `docs/`, don't grow it.** Find the doc that already owns the topic (`docs/README.md` is the index) and add a section. A new `docs/` file is the last resort and must be registered in `docs/README.md`.
+
+**Multi-request sessions (mandatory when applicable):** `.local/sessions/YYYY-MM-DD_<shortId>_<slug>/` with `REQUESTS.md` / `TODOS.md` / `PLAN.md` / `MEMORY.md` / `STATUS.md` — templates in `.agents/templates/session/`; rule `.cursor/rules/session-tracking.mdc`; Fabro include `.agents/execute/partials/session-tracking.md`.
+
+**Mastra smoke before handover** (when Mastra files changed): `npm run mastra:smoke` — also wired into Cursor stop hooks via `.cursor/hooks/mastra-smoke-on-stop.sh`.
+
 ## Env
 
-Copy `.env.local.example` → `.env.local`. Evaluation judges: `OPENAI_API_KEY` or `JUDGING_MODEL` (see `evals/run.ts`). Internal docs: `INTERNAL_DOCS_SECRET`.
+Copy `.env.local.example` → `.env.local`. Evaluation judges: `OPENAI_API_KEY` or `JUDGING_MODEL` (see `evals/run.ts`). Feature flags are `FF_<NAME>=true` (`src/shared/data/constants/feature-flags.ts`); default-on kill switches keep their own names and `!== 'false'` semantics.
+
+<!-- TRIGGER.DEV SKILLS START -->
+## Trigger.dev agent skills
+
+This project has Trigger.dev agent skills installed in `.claude/skills/`. Before writing or changing Trigger.dev code (background tasks, scheduled tasks, realtime, or chat.agent AI agents), load the most relevant skill: `trigger-authoring-chat-agent`, `trigger-cost-savings`, `trigger-authoring-tasks`.
+<!-- TRIGGER.DEV SKILLS END -->

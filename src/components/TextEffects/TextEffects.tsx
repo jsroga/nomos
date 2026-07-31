@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   LIQUID_DISTORTION_FONT_SIZE,
+  LIQUID_FILTER_ID,
 } from '@/components/TextEffects/constants/text-effects'
 
 /**
@@ -72,18 +73,23 @@ export const LiquidDistortionText = ({
   text,
   className = '',
   fontSize = LIQUID_DISTORTION_FONT_SIZE,
+  animated = true,
 }: {
   text: string
   className?: string
   fontSize?: string
+  /** When false the displacement is static — same paint rect, no per-frame turbulence. */
+  animated?: boolean
 }) => {
+  const filterStyle = { filter: `url(#${LIQUID_FILTER_ID})` }
+
   return (
     <div
       className={`relative ${className} group cursor-default py-4 px-4 md:py-8 md:px-20 overflow-visible flex items-center justify-center`}
     >
       <svg className="absolute w-0 h-0 pointer-events-none">
         <filter
-          id="liquidFilter"
+          id={LIQUID_FILTER_ID}
           x="-20%"
           y="-20%"
           width="140%"
@@ -96,12 +102,14 @@ export const LiquidDistortionText = ({
             numOctaves="1"
             result="warp"
           >
-            <animate
-              attributeName="baseFrequency"
-              values="0.005 0.005; 0.008 0.01; 0.005 0.005"
-              dur="10s"
-              repeatCount="indefinite"
-            />
+            {animated && (
+              <animate
+                attributeName="baseFrequency"
+                values="0.005 0.005; 0.008 0.01; 0.005 0.005"
+                dur="10s"
+                repeatCount="indefinite"
+              />
+            )}
           </feTurbulence>
           <feDisplacementMap
             xChannelSelector="R"
@@ -116,7 +124,7 @@ export const LiquidDistortionText = ({
       <div className="relative inline-block">
         <h1
           className={`${fontSize} font-black uppercase tracking-[-0.03em] font-syne text-white transition-all duration-700 leading-[0.95] text-center`}
-          style={{ filter: 'url(#liquidFilter)' }}
+          style={filterStyle}
         >
           {text}
         </h1>
@@ -124,7 +132,7 @@ export const LiquidDistortionText = ({
         {/* Very subtle glow layer instead of aggressive ghost */}
         <h1
           className={`${fontSize} font-black uppercase tracking-[-0.03em] font-syne text-primary/10 absolute inset-0 -z-10 blur-xl pointer-events-none opacity-20 leading-[0.95] text-center translate-y-1`}
-          style={{ filter: 'url(#liquidFilter)' }}
+          style={filterStyle}
         >
           {text}
         </h1>

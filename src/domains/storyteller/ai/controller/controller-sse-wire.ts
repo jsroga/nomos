@@ -12,6 +12,8 @@
  * not narrow the `AgentControllerEvent` union).
  */
 
+
+import '@/shared/data/server-guard'
 import type {
   AgentControllerEvent,
   AgentControllerMessage,

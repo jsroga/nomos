@@ -4,6 +4,7 @@ import { Button } from '@/components/Button'
 import { SidebarSection, SidebarLabel, SidebarSliderRow } from '@/components/DomainSidebar'
 import { ZoomIn } from 'lucide-react'
 import type { WorldGenSidebarState } from '@/domains/world-building-toolkit/state/hooks/useWorldGenSidebar'
+import { UpscaleProvider } from '@/domains/world-building-toolkit/core/upscale-provider-wire'
 
 type SidebarUpscaleSectionProps = Pick<
   WorldGenSidebarState,
@@ -42,9 +43,9 @@ export const SidebarUpscaleSection: React.FC<SidebarUpscaleSectionProps> = ({
               onChange={e => handleUpscaleProviderChange(e.target.value)}
               className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-1.5 px-2 text-[11px] text-zinc-300 font-mono focus:border-indigo-500/50 focus:outline-none"
             >
-              <option value="stability">Stability AI (4k)</option>
-              <option value="replicate">Replicate (Creative)</option>
-              <option value="midjourney">Midjourney (LegNext)</option>
+              <option value={UpscaleProvider.Stability}>Stability AI (4k)</option>
+              <option value={UpscaleProvider.Replicate}>Replicate (Creative)</option>
+              <option value={UpscaleProvider.Midjourney}>Midjourney (LegNext)</option>
             </select>
           </div>
         )}

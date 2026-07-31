@@ -1,0 +1,50 @@
+---
+description: Comment and doc style — state the current contract, never narrate the edit that produced it
+alwaysApply: true
+---
+
+# Writing style (comments, docs, config)
+
+Write as if the change already shipped and nobody remembers it happened. A reader six months out needs the **contract**, not the **history** — git has the history.
+
+## Never write
+
+| Anti-pattern | Example |
+|---|---|
+| Audit trail / date stamps | `# Audited against code 2026-07-31` · `// verified 2026-07-14` |
+| Change narration | `// NEW:` · `// updated to use enum` · `# was: nano-banana` |
+| Justification aimed at the reviewer | `// this is correct because…` · `// as requested` |
+| Provenance | `// extracted from FooPanel` · `// wave-0 extraction` |
+| Restating the next line | `// loop over tiles` above `for (const tile of tiles)` |
+| Hedging and filler | `// basically` · `// simple helper` · `// TODO(agent)` |
+
+## Do write
+
+- A constraint the code cannot express: `// upload_paint is whitelist-gated by LegNext (403 otherwise)`.
+- A non-obvious ordering or invariant: `// registration must precede the first getMastraInstance()`.
+- A unit, range, or external contract: `// milliseconds; OpenRouter caps at 300_000`.
+
+## Density
+
+Match the surrounding file. A well-named function with a typed signature needs no comment.
+
+## Config files are not documentation
+
+`.env*.example`, `*.config.*`, `package.json`: **one trailing clause per line**, saying what the value does. No banner tutorials, no commented-out example matrices, no "and here's how routing works".
+
+```bash
+# Bad — a doc page pretending to be a config file
+# Pin any role to a specific model id — provider/model form, routed through
+# the same key (the gateway prefix is added automatically), e.g.:
+# STORYTELLER_AUTHOR_MODEL=moonshotai/kimi-k2.7-code
+# GAME_DESIGN_MODEL=openai/gpt-5.6-luna
+# JUDGING_MODEL=anthropic/claude-sonnet-4.5
+
+# Good — the value, and where the explanation lives
+# Per-slot model pins: AGENTS.md + domain config/ModelConfig.ts
+OPENROUTER_API_KEY=sk-or-your-openrouter-key-here
+```
+
+Commented-out lines are for values a user might plausibly **uncomment**, not for teaching syntax.
+
+Same rule for markdown: no "Updated:" headers, no changelog sections, no notes about which agent wrote it.

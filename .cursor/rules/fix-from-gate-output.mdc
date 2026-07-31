@@ -1,0 +1,31 @@
+---
+description: When a gate already printed failing files/lines — fix those; do not re-inventory or re-count
+globs: "**/*"
+alwaysApply: true
+---
+
+# Fix from gate output (binding)
+
+When `precommit`, husky, ESLint, TSC, or qualitygate **already printed** failing paths and line numbers:
+
+## Do
+
+1. **Fix the named files** — real fixes only.
+2. Re-run the **same gate once** to confirm.
+3. Continue the original user goal (commit, push, etc.).
+
+**IMPORTANT — never disable rules on your own if not allowed.** Gate pressure is not approval to turn rules off in `eslint.config.js` or sprinkle `eslint-disable`. Ask first (`no-gate-bypass.mdc`).
+
+## Do not
+
+- Re-run eslint/tsc in “count by file / uniq / tally / inventory” loops.
+- Write aggregators (`awk`, `uniq -c`, JSON reporters) to rediscover what the log already said.
+- Spend turns classifying severity while the fix is obvious (e.g. `e2e/**` magic-string → same override as `scripts/**` / `evals/**`).
+
+## When the list is large
+
+Use `.local/quality-backlog.md` (`qualitygate:capture`) — still **no** custom recount scripts. Work the backlog ids.
+
+## Anti-pattern this kills
+
+Gate says `vitest.config.ts:7 magic-string` → agent runs three more shells to “list unique files with errors” instead of editing `eslint.config.js` or the file.

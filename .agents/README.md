@@ -20,7 +20,10 @@
       architecture.md
       configuration-diagram.md
       session-scratch.md
-  skills/               ← use_skill + /slash skills (23 — see skills/README.md)
+      session-tracking.md
+    templates/
+      session/          ← starters copied into .local/sessions/…
+  skills/               ← use_skill + /slash skills (17 — see skills/README.md)
     README.md
     <name>/SKILL.md
   goals/                ← session entry — one-off planning prompts (not Fabro stages)
@@ -42,8 +45,8 @@ Adapters hold YAML frontmatter only. All stage rules live in `.agents/execute/`.
 | Runner | How it loads |
 | --- | --- |
 | **Fabro** | `.fabro/skills` → symlink to `.agents/skills/`; local: copy to `~/.fabro/skills/` |
-| **Cursor** | `.cursor/skills/<name>/` → symlink to `.agents/skills/<name>/` |
-| **Claude Code** | `.claude/skills/<name>/` → symlink to `.agents/skills/<name>/` |
+| **Cursor** | `.cursor/skills` → symlink to `.agents/skills/` |
+| **Claude Code** | `.claude/skills` → symlink to `.agents/skills/` |
 
 See [skills/README.md](skills/README.md) for catalog and `~/.fabro/skills` setup.
 
@@ -57,15 +60,19 @@ Read .agents/goals/storyteller-grrm-plan-prompt.md and follow it.
 
 Orientation: [CONFIGURATION.md](CONFIGURATION.md).
 
-## Local scratch & quality backlog (optional, gitignored)
+## Local scratch, sessions & quality backlog (gitignored)
 
 | Path | Use |
 |------|-----|
+| `.local/sessions/YYYY-MM-DD_<id>_<slug>/` | **Multi-request tracking** (plans/todos/memory) — `templates/session/` + `execute/partials/session-tracking.md` |
 | `.local/tmp/{session-id}/` | Throwaway scripts, inventories — `execute/partials/session-scratch.md` |
+| `.local/findings/scope.md` | Fabro Scope → Clarify input |
 | `.local/quality-backlog.md` | Cached gate failures; fix one-by-one — `execute/partials/quality-backlog.md` |
 | `.local/quality-tracker-state.json` | `npm run qualitygate:tracker -- --file` / `qualitygate:tracker -- --skip-tsc` |
 
-Commands: `npm run qualitygate:capture` · `npm run qualitygate:backlog` · rescan every **5** fixes, not every edit.
+Commands: `npm run qualitygate:capture` · `npm run qualitygate:backlog` · `npm run mastra:smoke` · rescan every **5** fixes, not every edit.
+
+Also listed under `execute/partials/`: `session-scratch.md`, `session-tracking.md`, `quality-backlog.md`.
 
 ## Editing rules
 

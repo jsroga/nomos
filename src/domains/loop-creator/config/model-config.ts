@@ -30,7 +30,7 @@ export function resolveLoopCreatorModel(override?: string): string {
 }
 
 /**
- * Model string for the Mastra agents (`LOOP_CREATOR_MASTRA=1` specialists +
+ * Model string for the Mastra agents (`FF_LOOP_CREATOR_MASTRA=true` specialists +
  * market-analyst), routed through the OpenRouter gateway.
  */
 export function resolveLoopCreatorMastraModel(override?: string): string {

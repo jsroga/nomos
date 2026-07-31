@@ -26,8 +26,21 @@ export {
   moodboardPrimaryStorageKey,
 }
 
-export enum WorldBiblePanelProviderModel {
-  Midjourney = 'midjourney',
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+
+export const WorldBiblePanelProviderModel = {
+  Midjourney: ImageGenProvider.Midjourney,
+} as const
+
+export type WorldBiblePanelProviderModel =
+  (typeof WorldBiblePanelProviderModel)[keyof typeof WorldBiblePanelProviderModel]
+
+export enum WorldBiblePanelLazyRootMargin {
+  Prefetch = '240px 0px',
+}
+
+export enum WorldBiblePanelLazyPlaceholder {
+  MinHeightPx = 160,
 }
 
 export enum WorldBiblePanelUiCopy {

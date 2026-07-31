@@ -11,7 +11,7 @@ import { recordFromJson } from '@/shared/data/json-guards'
 import {
   TraceSanitizeFallback,
   traceFieldFallback,
-} from '@/shared/observability/constants/trace-sanitize'
+} from '@/shared/observability/trace-sanitize-wire'
 
 export type TraceSpan = {
   end: (args?: unknown) => void

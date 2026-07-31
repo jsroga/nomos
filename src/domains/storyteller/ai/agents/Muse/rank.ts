@@ -1,7 +1,4 @@
 import '@/shared/data/server-guard'
-import { Agent } from '@mastra/core/agent'
-import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
-import { loadAgentInstructions } from '@/shared/agent-kernel/mastra/load-agent-instructions'
 import type { WildIdea } from './wild-idea-schema'
 import {
   IDEA_VERDICT,
@@ -9,6 +6,10 @@ import {
   ideaTotalScore,
   type RankedIdea,
 } from './ranked-idea-schema'
+import { museRankerAgent } from '../../../../../mastra/agents/muse-ranker/agent'
+
+/** FS agent package is the SSOT — @see src/mastra/agents/muse-ranker/ */
+export { museRankerAgent }
 
 const BLOCK_SEPARATOR = '\n\n'
 const SPARKS_CONTRACT_HEADER =
@@ -18,24 +19,8 @@ const SPARKS_CONTRACT_HEADER =
  * Rank stage (PLAN-V2 5.3) — the picky judge the brainstorm deliberately
  * lacks. Runs WITH bible context (unlike the blank-context Muse): scores each
  * surviving wild idea on surprise / story motion / fit / cost, keeps the top
- * few with reasons, rejects the rest with reasons. Planner-class model —
- * this is a high-importance structural decision (user model policy).
+ * few with reasons, rejects the rest with reasons.
  */
-
-const RANKER_ID = 'muse-ranker'
-const RANKER_NAME = 'Muse Ranker'
-const RANKER_ROLE: Parameters<typeof resolveRoleModel>[0] = 'planner'
-const RANKER_DESCRIPTION =
-  'Scores wild ideas against canon: surprise, story motion, fit, cost. Keeps the few that make the story lurch forward.'
-
-// Base prompt lives in src/mastra/agents/muse-ranker/instructions.md (editable, fully static).
-export const museRankerAgent = new Agent({
-  id: RANKER_ID,
-  name: RANKER_NAME,
-  description: RANKER_DESCRIPTION,
-  instructions: loadAgentInstructions(RANKER_ID),
-  model: () => resolveRoleModel(RANKER_ROLE),
-})
 
 export interface RankInput {
   ideas: WildIdea[]

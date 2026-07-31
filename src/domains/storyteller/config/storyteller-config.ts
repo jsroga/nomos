@@ -2,22 +2,12 @@
  * Storyteller Central Configuration
  *
  * Single source of truth for all storyteller module settings.
- * Manages prompts, guardrails, evaluation thresholds, and feature flags.
- *
- * Configuration can be overridden via:
- * 1. Environment variables
- * 2. Langfuse remote prompts (ENABLE_REMOTE_PROMPTS)
- * 3. Runtime configuration
+ * Manages guardrails, evaluation thresholds, and feature flags.
+ * Overridable via environment variables or `setStorytellerConfig` at runtime.
  */
 
 import { deepMerge } from '@/shared/data/deep-merge'
-import {
-  EnvFlagValue,
-  GuardrailSeverity,
-  STORYTELLER_PROMPT_ENVIRONMENTS,
-  StorytellerPromptEnvironment,
-  StorytellerPromptHubOwner,
-} from './constants/storyteller-config-defaults'
+import { EnvFlagValue, GuardrailSeverity } from './constants/storyteller-config-defaults'
 
 // ============================================
 // TYPES
@@ -52,13 +42,6 @@ export interface EvaluationConfig {
   sampleRateForLLM: number // Sample rate for expensive LLM evaluators
 }
 
-export interface PromptConfig {
-  useHub: boolean // Pull prompts from Langfuse when ENABLE_REMOTE_PROMPTS=true
-  hubOwner: string // Legacy LangSmith Hub org (unused; kept for config compat)
-  environment: 'production' | 'staging' | 'dev'
-  fallbackToLocal: boolean // Use local prompts if remote fetch fails
-}
-
 /** Minimum entity links required in world description / roadmap / episode description. Easy to set to 5-6 via env. */
 export interface EntityLinkRequirements {
   minItems: number
@@ -72,10 +55,8 @@ export interface StorytellerConfig {
 
   // Feature flags
   features: {
-    hitlEnabled: boolean // Human-in-the-loop confirmation
     ragEnabled: boolean
     streamingEnabled: boolean
-    tracingEnabled: boolean
   }
 
   // Guardrail settings
@@ -83,14 +64,10 @@ export interface StorytellerConfig {
     antiSlop: AntiSlopConfig
     hallucination: HallucinationConfig
     consistency: ConsistencyConfig
-    globalEnabled: boolean // Master switch for all guardrails
   }
 
   // Evaluation settings
   evaluation: EvaluationConfig
-
-  // Prompt management
-  prompts: PromptConfig
 
   // Performance settings
   performance: {
@@ -119,15 +96,11 @@ const DEFAULT_CONFIG: StorytellerConfig = {
   },
 
   features: {
-    hitlEnabled: process.env.STORYTELLER_HITL_ENABLED !== EnvFlagValue.False,
     ragEnabled: true,
     streamingEnabled: true,
-    tracingEnabled: process.env.LANGCHAIN_TRACING_V2 === EnvFlagValue.True,
   },
 
   guardrails: {
-    globalEnabled: process.env.STORYTELLER_GUARDRAILS_ENABLED !== EnvFlagValue.False,
-
     antiSlop: {
       enabled: true,
       severity: GuardrailSeverity.Warning,
@@ -157,16 +130,6 @@ const DEFAULT_CONFIG: StorytellerConfig = {
     magicScoreTarget: 60,
     maxRegressionDelta: 0.1, // 10% max allowed drop
     sampleRateForLLM: 0.3, // LLM-evaluate 30% of examples
-  },
-
-  prompts: {
-    useHub: process.env.STORYTELLER_USE_PROMPT_HUB !== EnvFlagValue.False,
-    hubOwner: process.env.LANGSMITH_HUB_OWNER || StorytellerPromptHubOwner.Tilemap,
-    environment:
-      STORYTELLER_PROMPT_ENVIRONMENTS.find(
-        env => env === process.env.STORYTELLER_PROMPT_ENV
-      ) ?? StorytellerPromptEnvironment.Dev,
-    fallbackToLocal: false,
   },
 
   performance: {

@@ -2,12 +2,13 @@ import {
   logLLMRequestComplete,
   logLLMRequestError,
 } from '@/trigger/utils/llm-logger'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import {
   readGeminiImageData,
   type GeminiContentPart,
   type GeminiResponse,
 } from './generate-tile-json-guards'
-import { GeminiFinishReason } from './generate-tile'
+import { GeminiFinishReason } from '@/shared/data/constants/repaint-gemini'
 
 interface GeminiLogContext {
   model: string
@@ -21,7 +22,7 @@ function logGeminiCandidateError(
   output?: unknown
 ): never {
   logLLMRequestError({
-    provider: 'gemini',
+    provider: ImageGenProvider.Gemini,
     model: ctx.model,
     prompt: ctx.prompt,
     error,
@@ -62,7 +63,7 @@ export async function extractGeminiImageData(
   if (imagePart) {
     const imageData = await processImage(imagePart)
     logLLMRequestComplete({
-      provider: 'gemini',
+      provider: ImageGenProvider.Gemini,
       model: ctx.model,
       prompt: ctx.prompt,
       outputImageUrls: ['[Base64 Image Data]'],

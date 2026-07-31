@@ -51,11 +51,12 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
     <DomainSidebar header={null} position="right" storageKey="writers-room" defaultWidth={384} rawContent>
       <div className="flex h-full flex-col" id={TOUR_STEP_IDS.STORYTELLER_CHAT}>
         <AssistantChat
+          key={projectId || 'pending'}
           agentId="storyteller"
           suggestions={WRITERS_ROOM_SUGGESTIONS}
           mentionProviders={mentionProviders}
           mentionProjectContext={mentionProjectContext}
-          persistKey={`writers-room-${projectId}`}
+          persistKey={projectId ? `writers-room-${projectId}` : undefined}
         />
       </div>
     </DomainSidebar>

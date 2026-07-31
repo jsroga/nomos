@@ -34,11 +34,12 @@ export function LoopChatSidebar({
       <div className="flex h-full flex-col" id={chatTourId}>
         <div className="flex-1 overflow-hidden">
           <AssistantChat
+            key={projectId || 'pending'}
             moduleKey="loop-creator"
             body={{ projectId }}
             mentionProviders={mentionProviders}
             mentionProjectContext={projectContext}
-            persistKey={`loop-creator-${projectId}`}
+            persistKey={projectId ? `loop-creator-${projectId}` : undefined}
           />
         </div>
       </div>

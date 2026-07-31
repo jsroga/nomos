@@ -1,5 +1,6 @@
 import { task } from '@trigger.dev/sdk/v3'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { runStoryboardGeneration } from './run-storyboard-generation'
 
 interface GenerateStoryboardPayload {
@@ -7,7 +8,7 @@ interface GenerateStoryboardPayload {
   projectId: string
   prompt: string
   providerConfig: {
-    provider: 'nanobanana'
+    provider: typeof ImageGenProvider.NanoBanana
     apiKey: string
     modelId?: string
   }

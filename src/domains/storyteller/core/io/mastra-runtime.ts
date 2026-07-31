@@ -8,8 +8,17 @@
  * only prompts/config/tools — never the Mastra instance itself.
  */
 
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
 import { Agent } from '@mastra/core/agent'
+import { Workspace, LocalFilesystem } from '@mastra/core/workspace'
 import { registerMastraModule } from '@/shared/agent-kernel/mastra/runtime-registry'
+import {
+  STORYTELLER_WORKSPACE_DIR_ENV,
+  STORYTELLER_WORKSPACE_DIR_NAME,
+} from '@/domains/storyteller/core/io/constants/controller-workspace'
+import { createInheritedAgentMemory } from '@/shared/agent-kernel/mastra/studio-memory'
 import {
   statelessGrrmAuthor,
   statelessBeatPlanner,
@@ -60,8 +69,9 @@ const CHAT_ROLE: Parameters<typeof resolveRoleModel>[0] = 'chat'
 /**
  * The REAL chat adapter registered for Studio/observability parity: same
  * prompt builder, same 'chat' role slot, same 10 tools as the production
- * per-request `StorytellerAgent` (which additionally carries Memory). This is
- * what replaces the hardcoded Studio stub (PLAN-V2 1.1).
+ * per-request `StorytellerAgent`. Memory inherits Mastra instance storage
+ * (parity with StorytellerAgent's lastMessages window). This replaces the
+ * hardcoded Studio stub when registration loads (PLAN-V2 1.1).
  */
 const chatAdapterAgent = new Agent({
   id: CHAT_ADAPTER_ID,
@@ -69,6 +79,7 @@ const chatAdapterAgent = new Agent({
   description: CHAT_ADAPTER_DESCRIPTION,
   instructions: () => buildChatAdapterPrompt(getEntityLinkRequirements()),
   model: () => resolveRoleModel(CHAT_ROLE),
+  memory: createInheritedAgentMemory(),
   tools: {
     [manageBeatApprovalTool.id]: manageBeatApprovalTool,
     [listBeatsTool.id]: listBeatsTool,
@@ -122,16 +133,34 @@ registerMastraModule({
 
 // PLAN-V2 Phase 4.2/4.3 — lazily-initialized storyteller chat controller.
 // Instantiation is deferred (not at module load) so the legacy path pays
-// nothing; the flagged route (`STORYTELLER_CONTROLLER=1`) awaits this getter.
+// nothing; the flagged route (`FF_STORYTELLER_CONTROLLER=true`) awaits this getter.
 // Reuses the EXISTING Postgres store — never a second store (AGENTS.md).
 let storytellerControllerPromise: Promise<AgentController> | null = null
 
+/**
+ * Scratch workspace for the controller session.
+ *
+ * Defaults under the OS temp dir because that is the one writable location in
+ * both local dev and serverless (Vercel gives the function `/tmp`); the repo
+ * root is read-only in production. Contents are disposable — the plan body is
+ * carried in the suspension payload, so an evicted tmp dir cannot strand an
+ * approval.
+ */
+function resolveControllerWorkspaceDir(): string {
+  const override = process.env[STORYTELLER_WORKSPACE_DIR_ENV]?.trim()
+  return override || path.join(os.tmpdir(), STORYTELLER_WORKSPACE_DIR_NAME)
+}
+
 export function getStorytellerController(): Promise<AgentController> {
   if (!storytellerControllerPromise) {
+    const basePath = resolveControllerWorkspaceDir()
+    fs.mkdirSync(basePath, { recursive: true })
+
     const controller = new AgentController(
       buildStorytellerControllerConfig({
         agent: chatAdapterAgent,
         storage: getStorageInstance(),
+        workspace: new Workspace({ filesystem: new LocalFilesystem({ basePath }) }),
       })
     )
     storytellerControllerPromise = controller.init().then(() => controller)
@@ -141,7 +170,7 @@ export function getStorytellerController(): Promise<AgentController> {
 
 // Eval-recommendation Phase — durable wrap of the autonomous author (goals loop).
 // Lazily created so the legacy path pays nothing; the flagged entry
-// (`STORYTELLER_AUTONOMOUS=1`) uses it. In-process cache for the pilot (no Redis);
+// (`FF_STORYTELLER_AUTONOMOUS=true`) uses it. In-process cache for the pilot (no Redis);
 // swap in RedisServerCache for multi-process reconnection.
 let autonomousDurableAgent: DurableAgent | null = null
 

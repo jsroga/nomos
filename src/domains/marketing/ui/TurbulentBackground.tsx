@@ -1,12 +1,22 @@
 'use client'
 
 import {
+  DOCUMENT_VISIBILITY_HIDDEN,
   DOM_EVENT_RESIZE,
+  DOM_EVENT_VISIBILITY_CHANGE,
   TURBULENT_BG_CANVAS_ID,
+  TURBULENT_BG_MAX_PIXEL_RATIO,
+  TURBULENT_BG_MAX_PIXEL_RATIO_MOBILE,
   WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE,
 } from '@/domains/marketing/constants/liquid'
+import { MarketingMediaQuery } from '@/domains/marketing/constants/viewport-3d'
 import { useEffect, useRef } from 'react'
-import * as THREE from 'three'
+import type {
+  OrthographicCamera,
+  Scene,
+  ShaderMaterial,
+  WebGLRenderer,
+} from 'three'
 
 interface TurbulentBackgroundProps {
   children?: React.ReactNode
@@ -269,10 +279,10 @@ export function TurbulentBackground({
   onRef,
 }: TurbulentBackgroundProps & { speed?: number; morphSpeed?: number }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
-  const sceneRef = useRef<THREE.Scene | null>(null)
-  const cameraRef = useRef<THREE.OrthographicCamera | null>(null)
-  const materialRef = useRef<THREE.ShaderMaterial | null>(null)
+  const rendererRef = useRef<WebGLRenderer | null>(null)
+  const sceneRef = useRef<Scene | null>(null)
+  const cameraRef = useRef<OrthographicCamera | null>(null)
+  const materialRef = useRef<ShaderMaterial | null>(null)
   const frameIdRef = useRef<number | null>(null)
 
   // Expose ref to parent
@@ -283,110 +293,127 @@ export function TurbulentBackground({
   }, [onRef])
 
   useEffect(() => {
-    if (!containerRef.current) return
+    if (!showCanvas || !containerRef.current) return
 
     const container = containerRef.current
-    const width = window.innerWidth
-    const height = window.innerHeight
+    let cancelled = false
+    let geometryDispose: (() => void) | null = null
 
-    // Setup renderer
-    const renderer = new THREE.WebGLRenderer({
-      antialias: false, // Disable for performance
-      alpha: false,
-      powerPreference: WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE,
-      preserveDrawingBuffer: true, // Required for html2canvas/liquidGL to capture it
-    })
-    renderer.setSize(width, height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Cap at 2x for performance
-    renderer.domElement.id = TURBULENT_BG_CANVAS_ID // Add ID for liquidGL capture
-    container.appendChild(renderer.domElement)
-    rendererRef.current = renderer
+    void import('three').then(THREE => {
+      if (cancelled || !containerRef.current) return
 
-    // Setup scene
-    const scene = new THREE.Scene()
-    sceneRef.current = scene
+      const width = window.innerWidth
+      const height = window.innerHeight
 
-    // Setup orthographic camera for full-screen effect
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
-    cameraRef.current = camera
+      const renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        alpha: false,
+        powerPreference: WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE,
+        preserveDrawingBuffer: false,
+      })
+      const isMobile = window.matchMedia(MarketingMediaQuery.MobileMaxWidth).matches
+      const maxDpr = isMobile ? TURBULENT_BG_MAX_PIXEL_RATIO_MOBILE : TURBULENT_BG_MAX_PIXEL_RATIO
+      renderer.setSize(width, height)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxDpr))
+      renderer.domElement.id = TURBULENT_BG_CANVAS_ID
+      container.appendChild(renderer.domElement)
+      rendererRef.current = renderer
 
-    // Create shader material
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-        uResolution: { value: new THREE.Vector2(width, height) },
-        uZoom: { value: zoom },
-        uRotation: { value: rotation },
-        uColorShift: { value: colorShift },
-        uSaturation: { value: saturation },
-        uBrightness: { value: brightness },
-        uContrast: { value: contrast },
-        uHue: { value: hue },
-        uSpeed: { value: speed },
-        uMorphSpeed: { value: morphSpeed },
-      },
-      vertexShader,
-      fragmentShader,
-      depthWrite: false,
-      depthTest: false,
-    })
-    materialRef.current = material
+      const scene = new THREE.Scene()
+      sceneRef.current = scene
 
-    // Create full-screen quad
-    const geometry = new THREE.PlaneGeometry(2, 2)
-    const mesh = new THREE.Mesh(geometry, material)
-    scene.add(mesh)
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
+      cameraRef.current = camera
 
-    // Animation loop
-    const startTime = Date.now()
-    const animate = () => {
-      // Pass elapsed time directly - multiplication happens in shader
-      const elapsed = (Date.now() - startTime) * 0.001
+      const material = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uResolution: { value: new THREE.Vector2(width, height) },
+          uZoom: { value: zoom },
+          uRotation: { value: rotation },
+          uColorShift: { value: colorShift },
+          uSaturation: { value: saturation },
+          uBrightness: { value: brightness },
+          uContrast: { value: contrast },
+          uHue: { value: hue },
+          uSpeed: { value: speed },
+          uMorphSpeed: { value: morphSpeed },
+        },
+        vertexShader,
+        fragmentShader,
+        depthWrite: false,
+        depthTest: false,
+      })
+      materialRef.current = material
 
-      if (materialRef.current) {
-        materialRef.current.uniforms.uTime.value = elapsed
+      const geometry = new THREE.PlaneGeometry(2, 2)
+      const mesh = new THREE.Mesh(geometry, material)
+      scene.add(mesh)
+
+      let paused = document.visibilityState === DOCUMENT_VISIBILITY_HIDDEN
+      const startTime = Date.now()
+      const animate = () => {
+        frameIdRef.current = requestAnimationFrame(animate)
+        if (paused) return
+
+        const elapsed = (Date.now() - startTime) * 0.001
+        if (materialRef.current) {
+          materialRef.current.uniforms.uTime.value = elapsed
+        }
+        renderer.render(scene, camera)
       }
 
-      renderer.render(scene, camera)
-      frameIdRef.current = requestAnimationFrame(animate)
-    }
+      animate()
 
-    animate()
-
-    // Handle resize
-    const handleResize = () => {
-      const newWidth = window.innerWidth
-      const newHeight = window.innerHeight
-
-      renderer.setSize(newWidth, newHeight)
-
-      if (materialRef.current) {
-        materialRef.current.uniforms.uResolution.value.set(newWidth, newHeight)
+      const handleVisibility = () => {
+        paused = document.visibilityState === DOCUMENT_VISIBILITY_HIDDEN
       }
-    }
 
-    window.addEventListener(DOM_EVENT_RESIZE, handleResize)
+      const handleResize = () => {
+        const newWidth = window.innerWidth
+        const newHeight = window.innerHeight
 
-    // Cleanup
+        renderer.setSize(newWidth, newHeight)
+
+        if (materialRef.current) {
+          materialRef.current.uniforms.uResolution.value.set(newWidth, newHeight)
+        }
+      }
+
+      window.addEventListener(DOM_EVENT_RESIZE, handleResize)
+      document.addEventListener(DOM_EVENT_VISIBILITY_CHANGE, handleVisibility)
+
+      geometryDispose = () => {
+        window.removeEventListener(DOM_EVENT_RESIZE, handleResize)
+        document.removeEventListener(DOM_EVENT_VISIBILITY_CHANGE, handleVisibility)
+
+        if (frameIdRef.current !== null) {
+          cancelAnimationFrame(frameIdRef.current)
+          frameIdRef.current = null
+        }
+
+        if (rendererRef.current) {
+          if (rendererRef.current.domElement.parentNode === container) {
+            container.removeChild(rendererRef.current.domElement)
+          }
+          rendererRef.current.dispose()
+          rendererRef.current = null
+        }
+
+        if (materialRef.current) {
+          materialRef.current.dispose()
+          materialRef.current = null
+        }
+
+        geometry.dispose()
+      }
+    })
+
     return () => {
-      window.removeEventListener(DOM_EVENT_RESIZE, handleResize)
-
-      if (frameIdRef.current !== null) {
-        cancelAnimationFrame(frameIdRef.current)
-      }
-
-      if (rendererRef.current) {
-        container.removeChild(rendererRef.current.domElement)
-        rendererRef.current.dispose()
-      }
-
-      if (materialRef.current) {
-        materialRef.current.dispose()
-      }
-
-      geometry.dispose()
+      cancelled = true
+      geometryDispose?.()
     }
-  }, [])
+  }, [showCanvas])
 
   // Update uniforms when props change
   useEffect(() => {

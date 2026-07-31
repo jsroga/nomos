@@ -1,89 +1,57 @@
 /** @type {import('next').NextConfig} */
+const path = require('path')
+const {
+  LODASH_PACKAGE,
+  TRANSPILE_PACKAGES,
+  OPTIMIZE_PACKAGE_IMPORTS,
+  SERVER_EXTERNAL_PACKAGES,
+  DEV_INDICATOR_POSITION,
+  SSR_SELF_GLOBAL,
+  PRODUCTION_NODE_ENV,
+  REMOVE_CONSOLE_EXCLUDE,
+  SENTRY_ORG,
+  SENTRY_PROJECT,
+} = require('./next.config.constants')
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === '1',
+})
+
 const nextConfig = {
   // Transpile heavy packages for faster builds and proper bundling
-  transpilePackages: [
-    '@react-three/fiber',
-    '@react-three/drei',
-    '@react-three/postprocessing',
-    'three',
-    // Heavy UI libraries that benefit from pre-transpilation
-    '@radix-ui/react-alert-dialog',
-    '@radix-ui/react-avatar',
-    '@radix-ui/react-dialog',
-    '@radix-ui/react-dropdown-menu',
-    '@radix-ui/react-scroll-area',
-    '@radix-ui/react-slider',
-    '@radix-ui/react-tabs',
-    '@radix-ui/react-tooltip',
-    // Large visualization libraries
-    'mermaid',
-    'recharts',
-    '@xyflow/react',
-    // Animation libraries
-    'framer-motion',
-    'motion',
-    // Other heavy dependencies
-    '@scalar/api-reference-react',
-    'react-markdown',
-    'remark-gfm',
-  ],
+  transpilePackages: TRANSPILE_PACKAGES,
   // Optimize package imports for better tree-shaking and faster builds
   modularizeImports: {
-    'lodash': {
+    [LODASH_PACKAGE]: {
       transform: 'lodash/{{member}}',
       skipDefaultConversion: true,
     },
   },
-  // Optimize specific package imports (Next.js 15 feature)
+  // Next.js 16: reactCompiler is stable (was experimental in 15)
+  reactCompiler: true,
   experimental: {
-    reactCompiler: true,
-    optimizePackageImports: [
-      'lucide-react',
-      'lodash',
-      '@radix-ui/react-dialog',
-      '@radix-ui/react-dropdown-menu',
-      '@radix-ui/react-tabs',
-      '@tanstack/react-query',
-      'framer-motion',
-      'zustand',
-    ],
+    optimizePackageImports: OPTIMIZE_PACKAGE_IMPORTS,
+  },
+  // Turbopack (default in Next 16). Pin root so get_next_package resolves
+  // node_modules/next correctly (avoids "Next.js package not found" panics).
+  turbopack: {
+    root: path.join(__dirname),
+    resolveAlias: {
+      async_hooks: { browser: './empty-module.js' },
+    },
   },
   // Ship file-based agent instructions (src/mastra/agents/**/instructions.md)
   // with the serverless output so runtime fs reads resolve in production.
   outputFileTracingIncludes: {
     '/**': ['./src/mastra/agents/**/*.md'],
   },
-  // Ignore ESLint errors during build
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   // Ignore TypeScript errors during build to prevent memory issues
   typescript: {
     ignoreBuildErrors: true,
   },
   // Mark async_hooks and OpenTelemetry as external to prevent bundling errors
-  serverExternalPackages: [
-    'async_hooks',
-    '@opentelemetry/api',
-    '@opentelemetry/resources',
-    '@opentelemetry/sdk-node',
-    '@opentelemetry/sdk-trace-node',
-    '@opentelemetry/sdk-trace-base',
-    // LangChain packages are better kept external (server-only)
-    '@langchain/core',
-    '@langchain/anthropic',
-    '@langchain/openai',
-    // Mastra packages are server-only
-    '@mastra/core',
-    '@mastra/libsql',
-    '@mastra/loggers',
-    '@mastra/mcp',
-    '@mastra/memory',
-    '@mastra/observability',
-    '@mastra/pg',
-  ],
+  serverExternalPackages: SERVER_EXTERNAL_PACKAGES,
   devIndicators: {
-    position: 'bottom-right',
+    position: DEV_INDICATOR_POSITION,
   },
   async redirects() {
     return [
@@ -91,7 +59,8 @@ const nextConfig = {
       { source: '/app/:path*', destination: '/:path*', permanent: true },
     ]
   },
-  // Optimize webpack configuration for faster builds
+  // Used when building/dev with --webpack (Sentry plugin + Node polyfills).
+  // Default `next build` / `next dev` use Turbopack and ignore this block.
   webpack: (config, { isServer, dev }) => {
     if (!isServer) {
       // Don't bundle async_hooks on client side
@@ -105,7 +74,7 @@ const nextConfig = {
       // Some browser-targeting packages (formdata-polyfill, web-streams-polyfill, etc.)
       // reference 'self' as a browser global. Polyfill it for SSR.
       const { DefinePlugin } = require('webpack')
-      config.plugins.push(new DefinePlugin({ self: 'globalThis' }))
+      config.plugins.push(new DefinePlugin({ self: SSR_SELF_GLOBAL }))
     }
 
     // Optimize build performance
@@ -123,8 +92,8 @@ const nextConfig = {
   },
   // Compiler options for better performance
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
+    removeConsole: process.env.NODE_ENV === PRODUCTION_NODE_ENV ? {
+      exclude: REMOVE_CONSOLE_EXCLUDE,
     } : false,
   },
 }
@@ -136,12 +105,12 @@ module.exports = nextConfig
 
 const { withSentryConfig } = require('@sentry/nextjs')
 
-module.exports = withSentryConfig(module.exports, {
+module.exports = withBundleAnalyzer(withSentryConfig(module.exports, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
-  org: 'kurvitza',
-  project: 'sentry-coquelicot-basket',
+  org: SENTRY_ORG,
+  project: SENTRY_PROJECT,
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
@@ -171,4 +140,4 @@ module.exports = withSentryConfig(module.exports, {
       removeDebugLogging: true,
     },
   },
-})
+}))

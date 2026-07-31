@@ -41,7 +41,7 @@ export const worldBuildingAgent = new Agent({
   instructions: `You are the World Building Kit AI, a powerful assistant for game developers and storytellers.
 You have access to a wide range of tools to manage game entities, characters, episodes, assets, and more.
 You can remember context from previous interactions to assist in long-term world building.`,
-  model: 'openai/gpt-4o',
+  model: 'openai/gpt-5.6-luna',
   memory,
   tools: allTools,
 })

@@ -3,7 +3,7 @@
  *
  * Governing docs:
  * - docs/ARCHITECTURE.md § `src/` topology
- * - docs/unified/ARCHITECTURE.md §3 (repository topology) and §4 (module blueprint)
+ * - docs/ARCHITECTURE.md (repository topology + module blueprint)
  *
  * Domain blueprint details live in scripts/structure-gates/domain-conformance.ts.
  */
@@ -17,8 +17,9 @@ export const SRC_TOP_LEVEL_ALLOWED = new Set([
   'mcp',
   'shared',
   'trigger',
+  'trigger-dark-factory', // opt-in Cursor SDK task (esbuild-external); not in default TRIGGER_DIRS
   '__tests__',
-  'mastra', // CLI shim dir — must contain only index.ts (see structure.test.ts)
+  'mastra', // Studio entry + file-based agent prompts (see structure.test.ts)
 ])
 
 export const SRC_ROOT_FILES_ALLOWED = new Set([
@@ -50,12 +51,18 @@ export const SRC_TOP_LEVEL_FORBIDDEN = new Set([
   'utils',
 ])
 
-/** docs/unified/ARCHITECTURE.md §3 — target shared/ children */
+/**
+ * docs/ARCHITECTURE.md — approved shared/ children.
+ * Anything else under src/shared/ fails check-architecture / structure.test.
+ */
 export const SHARED_TOP_LEVEL_TARGET = new Set([
+  'admin', // platform admin UI + plugins
   'agent-kernel',
   'auth',
+  'canvas', // workspace module registry / settings
   'chat', // chat platform (moved from src/domains/chat — PLAN-V2 3.1 / D7)
   'data',
+  'debug', // client perf overlays (CWV HUD, React Scan)
   'errors',
   'jobs',
   'observability',
@@ -64,12 +71,26 @@ export const SHARED_TOP_LEVEL_TARGET = new Set([
 /** Present during P1 migration — no new siblings until absorbed into target */
 export const SHARED_TOP_LEVEL_LEGACY = new Set(['ai', 'tours', 'types', 'three', 'workspace'])
 
+/** Parallel bucket folders — never under src/shared/ (even as “temporary”) */
 export const SHARED_TOP_LEVEL_FORBIDDEN = new Set([
   'components',
+  'constants',
+  'helpers',
   'hooks',
   'lib',
+  'providers',
+  'services',
+  'state',
   'store',
+  'ui',
   'utils',
 ])
 
 export const SINGLE_HOME_AT_REPO_ROOT = new Set(['docs', 'e2e', 'evals'])
+
+export {
+  DOCS_ALLOWED_FILES,
+  DOCS_FORBIDDEN_DIR_NAMES,
+  DOCS_IGNORED_ENTRIES,
+  isAllowedDocsPath,
+} from './docs-allowlist.mjs'

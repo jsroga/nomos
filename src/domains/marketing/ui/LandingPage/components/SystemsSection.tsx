@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { LandingSectionId, LandingSystemsCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
 import { LANDING_DEEP_DIVES } from '@/domains/marketing/ui/LandingPage/constants/landing-deep-dives'
+import { LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 import type { ApiIntegrationTab, SelectedFeature } from '@/domains/marketing/ui/LandingPage/types'
 import { ApiMcpSection } from '@/domains/marketing/ui/LandingPage/components/ApiMcpSection'
 import { BentoGrid } from '@/domains/marketing/ui/LandingPage/components/BentoGrid'
@@ -20,7 +21,7 @@ export function SystemsSection({
   onSelectFeature,
 }: SystemsSectionProps) {
   return (
-    <section id={LandingSectionId.Systems} className="py-32 px-6 relative">
+    <section id={LandingSectionId.Systems} className={`${LANDING_SECTION_PANEL_CLASS} px-6`}>
       <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/5 hidden lg:block -translate-x-1/2" />
 
       <div className="max-w-7xl mx-auto mb-20 text-center lg:text-left">

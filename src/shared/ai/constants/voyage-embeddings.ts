@@ -19,16 +19,12 @@ export enum VoyageInputType {
   Query = 'query',
 }
 
-export enum VoyageEnvFlag {
-  Disabled = 'false',
-}
-
 export enum VoyageHttpHeader {
   RetryAfter = 'retry-after',
 }
 
 export const VOYAGE_LOG_DISABLED =
-  '[Voyage] Disabled via VOYAGE_ENABLED=false.'
+  '[Voyage] Embeddings off — set FF_VOYAGE_EMBEDDINGS=true to enable.'
 export const VOYAGE_LOG_API_KEY_MISSING = '[Voyage] VOYAGE_API_KEY not set.'
 export const VOYAGE_LOG_RATE_LIMIT_CIRCUIT =
   '[Voyage] Rate limit exceeded max retries. Activating circuit breaker for 60s.'

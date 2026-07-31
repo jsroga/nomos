@@ -5,8 +5,11 @@ import {
   HttpAuthScheme,
   HttpMethod,
   OpenAiChatRole,
-  OpenAiModel,
 } from '@/shared/data/constants/protocol'
+import {
+  TEXT_GEN_FAST_MODEL,
+  openRouterClientConfig,
+} from '@/shared/agent-kernel/models'
 import {
   TextureServiceError,
   TextureServiceLog,
@@ -20,20 +23,21 @@ export type { TextureStyle }
 
 class TextureService {
   async refinePrompt(basePrompt: string): Promise<string> {
-    if (!process.env.OPENAI_API_KEY) {
-      console.warn(TextureServiceLog.NoOpenAiKey)
+    const { apiKey, baseURL } = openRouterClientConfig()
+    if (!apiKey) {
+      console.warn(TextureServiceLog.NoOpenRouterKey)
       return basePrompt
     }
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(`${baseURL}/chat/completions`, {
         method: HttpMethod.Post,
         headers: {
           'Content-Type': ContentType.Json,
-          Authorization: `${HttpAuthScheme.Bearer}${process.env.OPENAI_API_KEY}`,
+          Authorization: `${HttpAuthScheme.Bearer}${apiKey}`,
         },
         body: JSON.stringify({
-          model: OpenAiModel.Gpt4o,
+          model: TEXT_GEN_FAST_MODEL,
           messages: [
             {
               role: OpenAiChatRole.System,

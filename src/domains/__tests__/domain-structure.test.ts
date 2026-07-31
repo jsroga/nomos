@@ -1,7 +1,7 @@
 /**
  * Domain folder structure conformance tests.
  *
- * Ratchets each module toward docs/unified/ARCHITECTURE.md §4 via
+ * Ratchets each module toward docs/ARCHITECTURE.md module blueprint via
  * scripts/structure-gates/domain-conformance.ts.
  */
 
@@ -81,6 +81,7 @@ const AI_LAYER_FOLDERS = new Set([
   'agents',
   'prompts',
   'types',
+  'controller', // AgentController config (not a Mastra Agent package)
 ])
 
 function findAiAgentLayerViolations(aiDir: string, relPrefix = ''): string[] {
@@ -122,6 +123,8 @@ const PURE_AI_MODULES: Record<string, readonly string[]> = {
     'ai/request-context.ts',
     'ai/tracing.ts',
     'ai/workflows/beat-draft-contract.ts',
+    'ai/workflows/beat-draft-default-deps.ts',
+    'ai/workflows/beat-draft-deps-types.ts',
     'ai/agents/Muse/wild-idea-schema.ts',
     'ai/agents/Muse/ranked-idea-schema.ts',
     'ai/prompts/schemas/agent-schemas.ts',
@@ -130,6 +133,13 @@ const PURE_AI_MODULES: Record<string, readonly string[]> = {
     'ai/prompts/beat-planner-prompt.ts',
     'ai/prompts/chat-adapter-prompt.ts',
     'ai/prompts/types.ts',
+    'ai/tools/beat-tool-operations.ts',
+    'ai/tools/beat-tools-schema.ts',
+    'ai/tools/character-tool-operations.ts',
+    'ai/tools/character-tools-schema.ts',
+    'ai/tools/episode-tool-operations.ts',
+    'ai/tools/episode-tools-schema.ts',
+    'ai/tools/manage-tools-wire.ts',
   ],
 }
 
@@ -236,6 +246,8 @@ describe('Domain folder structure conformance', () => {
             !f.endsWith('.test.ts') &&
             // constants/ dirs hold pure string-artifact tables by convention
             !f.split(path.sep).includes('constants') &&
+            // prompts/schemas/ — pure Zod contracts (no Mastra runtime)
+            !f.split(path.sep).includes('schemas') &&
             !isPureAiModule(domain, f),
         )
 

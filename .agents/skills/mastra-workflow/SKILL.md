@@ -54,7 +54,7 @@ rg -n 'workflow' src/shared/agent-kernel/MastraInstance.ts src/mastra/
 wc -l src/app/api/storyteller/chat/stream/route.ts
 ```
 
-Read `docs/orchestration-rfc.md` § on suspend/resume and SSE (`closeOnSuspend`, I1–I4 invariants).
+Read `docs/STORYTELLER.md` on suspend/resume, AgentController modes, and SSE frames.
 
 ## Step 4 — Design the workflow graph
 

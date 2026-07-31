@@ -1,7 +1,7 @@
 /**
  * Per-domain blueprint conformance map.
  *
- * Ratchets toward docs/unified/ARCHITECTURE.md §4. Remove legacy folder names
+ * Ratchets toward docs/ARCHITECTURE.md module blueprint. Remove legacy folder names
  * from `legacyTopLevel` as each migration wave lands.
  */
 

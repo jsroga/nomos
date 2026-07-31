@@ -1,6 +1,10 @@
 /**
  * Storyteller page wire constants — protocol strings for the Writers Room page shell.
  */
+
+import { FsDirectory, HttpMethod } from '@/shared/data/constants/protocol'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+
 export enum StorytellerTab {
   Plan = 'plan',
   Board = 'board',
@@ -77,11 +81,14 @@ export enum StorytellerUnknownLabel {
   Unknown = 'Unknown',
 }
 
-export enum StorytellerHttpMethod {
-  Post = 'POST',
-  Patch = 'PATCH',
-  Delete = 'DELETE',
-}
+export const StorytellerHttpMethod = {
+  Post: HttpMethod.Post,
+  Patch: HttpMethod.Patch,
+  Delete: HttpMethod.Delete,
+} as const
+
+export type StorytellerHttpMethod =
+  (typeof StorytellerHttpMethod)[keyof typeof StorytellerHttpMethod]
 
 export enum StorytellerQueryParam {
   ProjectId = 'projectId',
@@ -243,21 +250,27 @@ export enum StorytellerTempIdPrefix {
   Temp = 'temp-',
 }
 
-export enum StorytellerStorageSegment {
-  Public = 'public',
-  Projects = 'projects',
-  Portraits = 'portraits',
-  Episodes = 'episodes',
-}
+export const StorytellerStorageSegment = {
+  Public: FsDirectory.Public,
+  Projects: FsDirectory.Projects,
+  Portraits: 'portraits',
+  Episodes: 'episodes',
+} as const
+
+export type StorytellerStorageSegment =
+  (typeof StorytellerStorageSegment)[keyof typeof StorytellerStorageSegment]
 
 export enum StorytellerImageVariantLabel {
   Cropped = 'cropped',
 }
 
-export enum StorytellerMoodboardProvider {
-  Midjourney = 'midjourney',
-  Nanobanana = 'nanobanana',
-}
+export const StorytellerMoodboardProvider = {
+  Midjourney: ImageGenProvider.Midjourney,
+  NanoBanana: ImageGenProvider.NanoBanana,
+} as const
+
+export type StorytellerMoodboardProvider =
+  (typeof StorytellerMoodboardProvider)[keyof typeof StorytellerMoodboardProvider]
 
 export enum StorytellerPosterThemeFallback {
   Cinematic = 'Cinematic',

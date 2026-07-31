@@ -11,9 +11,12 @@ You orchestrate the Fabro `execute` workflow inside Cursor. Same stages, same pr
 
 `/execute <module>` — `<module>` is a folder under `src/domains/` (e.g. `storyteller`, `interior-designer`, `chat`), or a special scope: `domains-catalog` (all 9 modules) or `src-root` (top-level `src/` cleanup). If the user omits `<module>`, ask which one before starting.
 
-Set the goal: *"Clean up and align the `<module>` module with `docs/unified/ARCHITECTURE.md`. Produce a prioritized plan; implement only after human approval at Verification."*
+Set the goal: *"Clean up and align the `<module>` module with `docs/ARCHITECTURE.md`. Produce a prioritized plan; implement only after human approval at Verification."*
 
 Configuration map (goals vs execute, agents, skills): `.agents/CONFIGURATION.md`.
+
+**Multi-request tracking:** `.local/sessions/YYYY-MM-DD_<id>_<slug>/` — see
+`execute/partials/session-tracking.md` and `.agents/templates/session/`.
 
 Optional session scratch: `.local/tmp/{session-id}/` for throwaway scripts or inventories
 (gitignored) — see `execute/partials/session-scratch.md`.

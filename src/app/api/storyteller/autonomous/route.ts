@@ -1,4 +1,4 @@
-// Flagged autonomous drafting route (STORYTELLER_AUTONOMOUS=1). Starts the
+// Flagged autonomous drafting route (FF_STORYTELLER_AUTONOMOUS=true). Starts the
 // durable goals loop and streams its progress as the frozen SSE frames. Server
 // submodule imports only (the `@/domains/storyteller` barrel pulls client UI).
 import {

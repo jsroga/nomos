@@ -2,18 +2,14 @@
 
 import { AnimatePresence, motion } from 'framer-motion'
 import { Play, X } from 'lucide-react'
-import dynamic from 'next/dynamic'
 import { useState } from 'react'
+import { ViewportGatedThreeDIcon } from '@/domains/marketing/ui/ViewportGatedThreeDIcon'
 import { LANDING_BRAND_ACCENT } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
 import {
   LandingDeepDiveUiCopy,
 } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
+import { LANDING_SECTION_PANEL_CLASS, LANDING_ABSOLUTE_OVERLAY_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 import { FeatureDeepDiveAlign, type FeatureDeepDiveConfig } from '@/domains/marketing/ui/LandingPage/types'
-
-const ThreeDIcon = dynamic(() => import('../../ThreeDIcon').then(mod => mod.ThreeDIcon), {
-  ssr: false,
-  loading: () => <div className="w-full h-full bg-white/5 animate-pulse rounded-full" />,
-})
 
 type FeatureDeepDiveProps = FeatureDeepDiveConfig
 
@@ -38,12 +34,13 @@ export function FeatureDeepDive({
   twist,
   metalness,
   vignette = false,
+  pngIcon,
 }: FeatureDeepDiveProps) {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const layoutId = `screenshot-${index}`
 
   return (
-    <section className="py-24 relative">
+    <section className={LANDING_SECTION_PANEL_CLASS}>
       <div className="absolute left-[50%] top-0 bottom-0 w-px bg-white/5 hidden lg:block" />
 
       <div
@@ -57,9 +54,11 @@ export function FeatureDeepDive({
           className="flex-1 w-full relative"
         >
           <div className="relative aspect-square lg:aspect-[4/3] rounded-lg overflow-hidden bg-[#050505] border border-white/10 group">
-            <div className="absolute inset-0 pointer-events-none">
-              <ThreeDIcon
+            <div className={LANDING_ABSOLUTE_OVERLAY_CLASS}>
+              <ViewportGatedThreeDIcon
                 type={type3d}
+                posterSrc={pngIcon}
+                posterAlt={title}
                 color={color}
                 scale={modelScale}
                 offset={[modelOffsetX, modelOffsetY]}

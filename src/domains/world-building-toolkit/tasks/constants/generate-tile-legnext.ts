@@ -8,6 +8,9 @@ import {
   logLLMRequestStart,
 } from '@/trigger/utils/llm-logger'
 import type { AiProviderConfig } from '@/shared/ai/ai-provider-config'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+import { LegNextModelId } from '@/shared/ai/constants/legnext'
+import { BufferEncoding, ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
 import { wait } from '@trigger.dev/sdk/v3'
@@ -20,7 +23,7 @@ import { parseLegNextJob, readLegNextImageUrl } from './generate-tile-json-guard
 import { pollLegNextTask } from './generate-tile-legnext-poll'
 
 async function analyzeStyleWithSharp(imageBase64: string): Promise<StyleInfo> {
-  return imageService.analyzeStyle(Buffer.from(imageBase64, 'base64'))
+  return imageService.analyzeStyle(Buffer.from(imageBase64, BufferEncoding.Base64))
 }
 
 async function uploadLegNextSourceImage(
@@ -54,7 +57,7 @@ async function uploadLegNextSourceImage(
     .png()
     .toBuffer()
 
-  const blankBase64 = `data:image/png;base64,${blankPng.toString('base64')}`
+  const blankBase64 = `data:${ContentType.Png};base64,${blankPng.toString(BufferEncoding.Base64)}`
   const tempFilename = `first_tile_canvas_${uuidv4()}.png`
   const publicImageUrl = await storageService.uploadPublicImage(tempFilename, blankBase64)
   if (!publicImageUrl) {
@@ -95,7 +98,7 @@ async function buildLegNextMaskField(isFirstTile: boolean): Promise<object> {
       .composite([{ input: whiteSquare, left: 256, top: 256 }])
       .png()
       .toBuffer()
-    const maskBase64 = `data:image/png;base64,${maskPng.toString('base64')}`
+    const maskBase64 = `data:${ContentType.Png};base64,${maskPng.toString(BufferEncoding.Base64)}`
     const maskFilename = `masks/followup_${uuidv4()}.png`
     const maskUrl = await storageService.uploadPublicImage(maskFilename, maskBase64)
     if (!maskUrl) throw new Error('Failed to upload follow-up mask')
@@ -121,8 +124,8 @@ async function submitLegNextUploadPaint(
   }
 
   logLLMRequestStart({
-    provider: 'midjourney',
-    model: 'legnext-upload-paint',
+    provider: ImageGenProvider.Midjourney,
+    model: LegNextModelId.UploadPaint,
     prompt: remixPrompt,
     inputImageUrls: [publicImageUrl],
     input: uploadPaintPayload,
@@ -130,10 +133,10 @@ async function submitLegNextUploadPaint(
   })
 
   const uploadPaintResponse = await fetch('https://api.legnext.ai/api/v1/upload-paint', {
-    method: 'POST',
+    method: HttpMethod.Post,
     headers: {
       'x-api-key': config.apiKey,
-      'Content-Type': 'application/json',
+      'Content-Type': ContentType.Json,
     },
     body: JSON.stringify(uploadPaintPayload),
   })
@@ -141,8 +144,8 @@ async function submitLegNextUploadPaint(
   if (!uploadPaintResponse.ok) {
     const errorText = await uploadPaintResponse.text()
     logLLMRequestError({
-      provider: 'midjourney',
-      model: 'legnext-upload-paint',
+      provider: ImageGenProvider.Midjourney,
+      model: LegNextModelId.UploadPaint,
       prompt: remixPrompt,
       error: `HTTP ${uploadPaintResponse.status}: ${errorText}`,
       input: uploadPaintPayload,
@@ -156,8 +159,8 @@ async function submitLegNextUploadPaint(
   const jobId = uploadPaintData.job_id
   if (!jobId) {
     logLLMRequestError({
-      provider: 'midjourney',
-      model: 'legnext-upload-paint',
+      provider: ImageGenProvider.Midjourney,
+      model: LegNextModelId.UploadPaint,
       prompt: remixPrompt,
       error: 'No job_id returned',
       input: uploadPaintPayload,
@@ -200,7 +203,7 @@ async function extractVariantUrls(gridImageUrl: string, isFirstTile: boolean): P
       .png()
       .toBuffer()
 
-    const tileBase64 = `data:image/png;base64,${tileBuf.toString('base64')}`
+    const tileBase64 = `data:${ContentType.Png};base64,${tileBuf.toString(BufferEncoding.Base64)}`
     const variantFilename = `variants/${uuidv4()}.png`
     const variantUrl = await storageService.uploadPublicImage(variantFilename, tileBase64)
     if (!variantUrl) throw new Error(`Failed to upload variant ${col}_${row}`)
@@ -236,7 +239,7 @@ async function downloadAcceptedVariant(variantUrls: string[], variantIndex: numb
   const acceptResp = await fetch(acceptedUrl)
   if (!acceptResp.ok) throw new Error(`Failed to fetch accepted variant: ${acceptResp.status}`)
   const acceptBuf = Buffer.from(await acceptResp.arrayBuffer())
-  return acceptBuf.toString('base64')
+  return acceptBuf.toString(BufferEncoding.Base64)
 }
 
 async function upscaleLegNextVariant(
@@ -252,8 +255,8 @@ async function upscaleLegNextVariant(
 
   const upscalePayload = { jobId, imageNo: variantIndex, type: 0 }
   logLLMRequestStart({
-    provider: 'midjourney',
-    model: 'legnext-upscale',
+    provider: ImageGenProvider.Midjourney,
+    model: LegNextModelId.Upscale,
     prompt: remixPrompt,
     inputImageUrls: [gridImageUrl],
     input: upscalePayload,
@@ -261,10 +264,10 @@ async function upscaleLegNextVariant(
   })
 
   const upscaleResponse = await fetch('https://api.legnext.ai/api/v1/upscale', {
-    method: 'POST',
+    method: HttpMethod.Post,
     headers: {
       'x-api-key': config.apiKey,
-      'Content-Type': 'application/json',
+      'Content-Type': ContentType.Json,
     },
     body: JSON.stringify(upscalePayload),
   })
@@ -272,8 +275,8 @@ async function upscaleLegNextVariant(
   if (!upscaleResponse.ok) {
     const errorText = await upscaleResponse.text()
     logLLMRequestError({
-      provider: 'midjourney',
-      model: 'legnext-upscale',
+      provider: ImageGenProvider.Midjourney,
+      model: LegNextModelId.Upscale,
       prompt: remixPrompt,
       error: `HTTP ${upscaleResponse.status}: ${errorText}`,
       input: upscalePayload,
@@ -296,8 +299,8 @@ async function upscaleLegNextVariant(
   if (!imageUrl) throw new Error('LegNext upscale result missing image_url')
 
   logLLMRequestComplete({
-    provider: 'midjourney',
-    model: 'legnext-upscale',
+    provider: ImageGenProvider.Midjourney,
+    model: LegNextModelId.Upscale,
     prompt: remixPrompt,
     outputImageUrls: [imageUrl],
     output: upscaleResult.output,
@@ -323,14 +326,14 @@ async function upscaleLegNextVariant(
       .resize(TILE_CROP_SIZE, TILE_CROP_SIZE, { fit: 'fill' })
       .png()
       .toBuffer()
-    return croppedBuffer.toString('base64')
+    return croppedBuffer.toString(BufferEncoding.Base64)
   }
 
   const resizedBuffer = await sharp(buffer)
     .resize(TILE_CROP_SIZE, TILE_CROP_SIZE, { fit: 'fill' })
     .png()
     .toBuffer()
-  return resizedBuffer.toString('base64')
+  return resizedBuffer.toString(BufferEncoding.Base64)
 }
 
 export async function generateWithLegNext(
@@ -369,8 +372,8 @@ export async function generateWithLegNext(
   const uploadPaintResult = await pollLegNextTask(jobId, config.apiKey, 300, 40)
   const uploadPaintImageUrl = readLegNextImageUrl(uploadPaintResult)
   logLLMRequestComplete({
-    provider: 'midjourney',
-    model: 'legnext-upload-paint',
+    provider: ImageGenProvider.Midjourney,
+    model: LegNextModelId.UploadPaint,
     prompt: remixPrompt,
     outputImageUrls: uploadPaintImageUrl ? [uploadPaintImageUrl] : undefined,
     output: uploadPaintResult.output,

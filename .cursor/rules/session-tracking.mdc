@@ -1,0 +1,22 @@
+---
+description: Multi-request agent sessions must track plans/todos/memory under .local/sessions/
+alwaysApply: true
+---
+
+# Multi-request session tracking
+
+When the user asks for **multiple things**, or work spans **>1 subsystem / >1 agent turn**, create and maintain:
+
+```
+.local/sessions/YYYY-MM-DD_<shortId>_<slug>/
+  REQUESTS.md  TODOS.md  PLAN.md  MEMORY.md  STATUS.md
+```
+
+- Copy starters from `.agents/templates/session/`.
+- Full convention: `.agents/templates/session/README.md` and `.agents/execute/partials/session-tracking.md`.
+- `.local/` is gitignored — never commit secrets.
+- Keep `TODOS.md` / `STATUS.md` current; before handover every todo is `[x]` or deferred with a reason in `STATUS.md`.
+- Fabro stage artifacts (`PLAN.md` at module root, `.local/findings/scope.md`) stay as today — the session folder tracks **ad-hoc multi-request work** across Cursor / Claude / Fabro.
+- Throwaway recon only: `.local/tmp/{id}/`. Gate backlog: `.local/quality-backlog.md`.
+
+**Skip** for single-file / single-bug one-shots.

@@ -2,14 +2,14 @@
  * GET /api/settings/models — model-routing readout (PLAN-V2 1.5).
  *
  * The role→model table with provenance ("author → moonshotai/kimi-k2.7-code
- * (default)", "planner → … (STORYTELLER_PLANNER_MODEL)"). Secret sauce —
- * inspectable by operators only: available outside production, or with the
- * INTERNAL_DOCS_SECRET header in production. API keys never leave the server
- * (endpoint-object models are reported as url + id only).
+ * (default)", "planner → … (STORYTELLER_PLANNER_MODEL)"). Signed-in users only,
+ * and in production only when FF_INTERNAL_DOCS=true. API keys never leave the
+ * server (endpoint-object models are reported as url + id only).
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { requireAuth } from '@/shared/data/api-utils'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 import {
   ROLE_ENV_VARS,
   resolveRoleModel,
@@ -20,7 +20,6 @@ import {
 // eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
 export const runtime = 'nodejs'
 
-const INTERNAL_SECRET_HEADER = 'x-internal-secret'
 const ERR_UNAUTHORIZED = 'Unauthorized'
 const ERR_NOT_AVAILABLE = 'Not available'
 const SOURCE_ENV = 'env'
@@ -47,18 +46,18 @@ function describeResolvedModel(role: StorytellerModelRole): string {
   }
 }
 
-function isOperatorRequest(request: NextRequest): boolean {
+/** Readout is open in dev; in production it is off unless the flag is set. */
+function isOperatorRequest(): boolean {
   if (process.env.NODE_ENV !== PRODUCTION_ENV) return true
-  const secret = process.env.INTERNAL_DOCS_SECRET
-  return Boolean(secret && request.headers.get(INTERNAL_SECRET_HEADER) === secret)
+  return isFeatureEnabled(FeatureFlag.InternalDocs)
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const { error } = await requireAuth()
   if (error) {
     return NextResponse.json({ error: ERR_UNAUTHORIZED }, { status: 401 })
   }
-  if (!isOperatorRequest(request)) {
+  if (!isOperatorRequest()) {
     return NextResponse.json({ error: ERR_NOT_AVAILABLE }, { status: 404 })
   }
 

@@ -3,6 +3,7 @@
 import {
   MarketingIconType,
   MarketingThreeDModelPath,
+  resolveMarketingModelUrl,
 } from '@/domains/marketing/constants/three-d-icon'
 import { GLTFModel } from './GLTFModel'
 import { KurvitzaSphere } from './KurvitzaSphere'
@@ -34,19 +35,34 @@ function resolveIconModelPreset(type: string, density: number | undefined): Icon
   switch (type) {
     case MarketingIconType.AiNarrative:
     case MarketingIconType.Neural:
-      return { url: MarketingThreeDModelPath.NeuralConnections, dotsDensity: lowDensity }
+      return {
+        url: resolveMarketingModelUrl(MarketingThreeDModelPath.NeuralConnections),
+        dotsDensity: lowDensity,
+      }
     case MarketingIconType.SculptSim:
     case MarketingIconType.SecAst:
-      return { url: MarketingThreeDModelPath.EnchantedCosmosCode, dotsDensity: highDensity }
+      return {
+        url: resolveMarketingModelUrl(MarketingThreeDModelPath.EnchantedCosmosCode),
+        dotsDensity: highDensity,
+      }
     case MarketingIconType.ExportSec:
     case MarketingIconType.Exporter:
-      return { url: MarketingThreeDModelPath.PredatorCosmos, dotsDensity: highDensity }
+      return {
+        url: resolveMarketingModelUrl(MarketingThreeDModelPath.PredatorCosmos),
+        dotsDensity: highDensity,
+      }
     case MarketingIconType.LoopDes:
-      return { url: MarketingThreeDModelPath.OceanicCosmos, dotsDensity: highDensity }
+      return {
+        url: resolveMarketingModelUrl(MarketingThreeDModelPath.OceanicCosmos),
+        dotsDensity: highDensity,
+      }
     case MarketingIconType.WorldGen:
     case MarketingIconType.Generator:
     default:
-      return { url: MarketingThreeDModelPath.Cosmos, dotsDensity: highDensity }
+      return {
+        url: resolveMarketingModelUrl(MarketingThreeDModelPath.Cosmos),
+        dotsDensity: highDensity,
+      }
   }
 }
 
@@ -67,7 +83,7 @@ function StrTstIconScene({
   return (
     <group scale={scale}>
       <GLTFModel
-        url={MarketingThreeDModelPath.Realistic14k}
+        url={resolveMarketingModelUrl(MarketingThreeDModelPath.Realistic14k)}
         dotsDensity={density ?? highDensity}
         dotsColor={color}
         includeSphere={false}
