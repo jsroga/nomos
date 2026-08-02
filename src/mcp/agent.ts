@@ -1,24 +1,15 @@
 import { Agent } from '@mastra/core/agent'
 import type { ToolsInput } from '@mastra/core/agent'
 import { Memory } from '@mastra/memory'
-import { PostgresStore } from '@mastra/pg'
+import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
 import { entitiesTools } from './domains/entities/tools'
 import { storytellerTools } from './domains/storyteller/tools'
 import { generationTools } from './domains/generation/tools'
 import { triggerTools } from './domains/trigger/tools'
-import {
-  MCP_AGENT_DESCRIPTION,
-  MCP_POSTGRES_STORE_ID,
-  McpAgentName,
-} from './constants/agent'
+import { MCP_AGENT_DESCRIPTION, McpAgentName } from './constants/agent'
 
-// Initialize Memory with Postgres persistence
-const connectionString = process.env.DATABASE_URL ?? ''
-const store = new PostgresStore({
-  id: MCP_POSTGRES_STORE_ID,
-  connectionString,
-})
-const memory = new Memory({ storage: store })
+// Shared store — falls back when DATABASE_URL is absent at build time
+const memory = new Memory({ storage: getStorageInstance() })
 
 // Aggregate all implemented tools.
 // loop-creator, interior-designer, and world-building domains are not yet

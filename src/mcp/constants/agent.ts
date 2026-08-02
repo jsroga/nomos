@@ -1,5 +1,3 @@
-export const MCP_POSTGRES_STORE_ID = 'world-building-store'
-
 export enum McpAgentName {
   WorldBuilding = 'world-building-agent',
 }
