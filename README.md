@@ -1,4 +1,4 @@
-# World Building Kit
+# Nomos - Game Building Kit
 
 AI workspace for storytellers and game designers — characters, narratives, loops, 3D worlds, and agent tooling.
 
