@@ -66,7 +66,7 @@ export enum WorldGenSidebarStorageKey {
 }
 
 export enum WorldGenSidebarHeader {
-  WorldGen = 'World Gen',
+  WorldGen = 'Infinite Canvas',
 }
 
 export enum WorldGenDataUrlCheck {

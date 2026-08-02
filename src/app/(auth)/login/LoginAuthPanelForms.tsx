@@ -2,11 +2,13 @@
 
 import type { ReactNode } from 'react'
 import type { FieldInputProps, FormikProps } from 'formik'
+import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import { Label } from '@/components/Label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/Tabs'
 import LoginButton from '@/components/LoginButton'
+import { LOGIN_PAGE_STYLES } from '@/app/(auth)/constants/auth-styles'
+import { AuthTab, LoginFormCopy } from '@/shared/auth/constants/auth-messages'
 
 interface SignInValues {
   email: string
@@ -49,9 +51,9 @@ function FormField({
   labelExtra,
 }: FormFieldProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-[9px]">
       <div className={labelExtra ? 'flex items-center justify-between' : undefined}>
-        <Label htmlFor={id} className="text-white/80">
+        <Label htmlFor={id} className={LOGIN_PAGE_STYLES.LABEL}>
           {label}
         </Label>
         {labelExtra}
@@ -63,7 +65,7 @@ function FormField({
         className={inputClassName}
         {...fieldProps}
       />
-      {touched && error && <p className={errorClassName}>{error}</p>}
+      {touched && error ? <p className={errorClassName}>{error}</p> : null}
     </div>
   )
 }
@@ -82,7 +84,7 @@ export function LoginSignInForm({
   onForgotPassword,
 }: LoginSignInFormProps) {
   return (
-    <form onSubmit={form.handleSubmit} className="space-y-4">
+    <form onSubmit={form.handleSubmit} className="space-y-[18px]">
       <FormField
         id="signin-email"
         label="Email"
@@ -107,19 +109,15 @@ export function LoginSignInForm({
           <button
             type="button"
             onClick={onForgotPassword}
-            className="text-xs text-white/50 hover:text-white transition-colors"
+            className="text-[12px] text-[hsl(235_88%_65%)] transition-colors hover:text-[hsl(235_88%_71%)]"
           >
-            Forgot password?
+            {LoginFormCopy.Forgot}
           </button>
         }
       />
-      <Button
-        type="submit"
-        className="w-full bg-primary hover:bg-primary/90 text-white"
-        size="lg"
-        disabled={form.isSubmitting}
-      >
-        {form.isSubmitting ? 'Signing in...' : 'Sign In'}
+      <Button type="submit" className={LOGIN_PAGE_STYLES.SUBMIT} disabled={form.isSubmitting}>
+        {form.isSubmitting ? LoginFormCopy.SignInSubmitting : LoginFormCopy.SignInSubmit}
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
       </Button>
     </form>
   )
@@ -133,7 +131,7 @@ interface LoginSignUpFormProps {
 
 export function LoginSignUpForm({ form, inputClassName, errorClassName }: LoginSignUpFormProps) {
   return (
-    <form onSubmit={form.handleSubmit} className="space-y-4">
+    <form onSubmit={form.handleSubmit} className="space-y-[18px]">
       <FormField
         id="signup-email"
         label="Email"
@@ -165,13 +163,9 @@ export function LoginSignUpForm({ form, inputClassName, errorClassName }: LoginS
         error={form.errors.confirmPassword}
         fieldProps={form.getFieldProps('confirmPassword')}
       />
-      <Button
-        type="submit"
-        className="w-full bg-primary hover:bg-primary/90 text-white"
-        size="lg"
-        disabled={form.isSubmitting}
-      >
-        {form.isSubmitting ? 'Creating account...' : 'Create Account'}
+      <Button type="submit" className={LOGIN_PAGE_STYLES.SUBMIT} disabled={form.isSubmitting}>
+        {form.isSubmitting ? LoginFormCopy.SignUpSubmitting : LoginFormCopy.SignUpSubmit}
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
       </Button>
     </form>
   )
@@ -184,6 +178,8 @@ interface LoginAuthTabsProps {
   errorClassName: string
   onClearError: () => void
   onForgotPassword: () => void
+  authTab: AuthTab
+  onAuthTabChange: (tab: AuthTab) => void
 }
 
 export function LoginAuthTabs({
@@ -193,54 +189,51 @@ export function LoginAuthTabs({
   errorClassName,
   onClearError,
   onForgotPassword,
+  authTab,
+  onAuthTabChange,
 }: LoginAuthTabsProps) {
+  const handleTab = (tab: AuthTab) => {
+    onClearError()
+    onAuthTabChange(tab)
+  }
+
   return (
-    <>
-      <Tabs defaultValue="signin" className="w-full" onValueChange={onClearError}>
-        <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10 mb-6">
-          <TabsTrigger
-            value="signin"
-            className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/60"
-          >
-            Sign In
-          </TabsTrigger>
-          <TabsTrigger
-            value="signup"
-            className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/60"
-          >
-            Sign Up
-          </TabsTrigger>
-        </TabsList>
+    <div className="flex flex-col gap-[30px]">
+      <LoginButton />
 
-        <TabsContent value="signin" className="space-y-4">
-          <LoginSignInForm
-            form={signInForm}
-            inputClassName={inputClassName}
-            errorClassName={errorClassName}
-            onForgotPassword={onForgotPassword}
-          />
-        </TabsContent>
-
-        <TabsContent value="signup" className="space-y-4">
-          <LoginSignUpForm
-            form={signUpForm}
-            inputClassName={inputClassName}
-            errorClassName={errorClassName}
-          />
-        </TabsContent>
-      </Tabs>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-white/10" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-transparent px-2 text-white/40">Or continue with</span>
-        </div>
+      <div className="flex items-center gap-3.5">
+        <span className="h-px flex-1 bg-white/10" />
+        <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.24em] text-white/[0.32]">
+          {LoginFormCopy.DividerEmail}
+        </span>
+        <span className="h-px flex-1 bg-white/10" />
       </div>
 
-      <LoginButton />
-    </>
+      {authTab === AuthTab.SignIn ? (
+        <LoginSignInForm
+          form={signInForm}
+          inputClassName={inputClassName}
+          errorClassName={errorClassName}
+          onForgotPassword={onForgotPassword}
+        />
+      ) : (
+        <LoginSignUpForm
+          form={signUpForm}
+          inputClassName={inputClassName}
+          errorClassName={errorClassName}
+        />
+      )}
+
+      {authTab === AuthTab.SignUp ? (
+        <button
+          type="button"
+          onClick={() => handleTab(AuthTab.SignIn)}
+          className="text-center text-[13px] text-white/40 transition-colors hover:text-white/70"
+        >
+          {LoginFormCopy.AlreadyHaveAccount}
+        </button>
+      ) : null}
+    </div>
   )
 }
 
@@ -258,12 +251,10 @@ export function LoginForgotPasswordForm({
   onBackToSignIn,
 }: LoginForgotPasswordFormProps) {
   return (
-    <form onSubmit={form.handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold text-white text-center">Reset Password</h2>
-        <p className="text-sm text-white/50 text-center">
-          Enter your email and we&apos;ll send you a reset link.
-        </p>
+    <form onSubmit={form.handleSubmit} className="space-y-[18px]">
+      <div className="sr-only space-y-[9px]">
+        <h2>{LoginFormCopy.ResetTitle}</h2>
+        <p>{LoginFormCopy.ResetSubtitle}</p>
       </div>
       <FormField
         id="forgot-email"
@@ -276,20 +267,16 @@ export function LoginForgotPasswordForm({
         error={form.errors.email}
         fieldProps={form.getFieldProps('email')}
       />
-      <Button
-        type="submit"
-        className="w-full bg-primary hover:bg-primary/90 text-white"
-        size="lg"
-        disabled={form.isSubmitting}
-      >
-        {form.isSubmitting ? 'Sending...' : 'Send Reset Link'}
+      <Button type="submit" className={LOGIN_PAGE_STYLES.SUBMIT} disabled={form.isSubmitting}>
+        {form.isSubmitting ? LoginFormCopy.ResetSubmitting : LoginFormCopy.ResetSubmit}
+        <ArrowRight className="h-4 w-4" aria-hidden />
       </Button>
       <button
         type="button"
         onClick={onBackToSignIn}
-        className="w-full text-sm text-white/50 hover:text-white transition-colors"
+        className="w-full font-mono text-[11px] uppercase tracking-[0.16em] text-white/35 transition-colors hover:text-white/60"
       >
-        Back to sign in
+        {LoginFormCopy.BackToSignIn}
       </button>
     </form>
   )
@@ -297,18 +284,18 @@ export function LoginForgotPasswordForm({
 
 export function LoginTermsFooter() {
   return (
-    <p className="text-[10px] text-center text-white/30 leading-tight px-4 pt-2">
+    <p className="text-[11px] leading-[1.5] text-white/30">
       By signing up, you agree to our{' '}
       <a
         href="/terms"
-        className="hover:text-white underline decoration-white/30 underline-offset-2"
+        className="text-white/50 underline underline-offset-[3px] hover:text-white/70"
       >
         Terms of Service
       </a>{' '}
       and{' '}
       <a
         href="/privacy"
-        className="hover:text-white underline decoration-white/30 underline-offset-2"
+        className="text-white/50 underline underline-offset-[3px] hover:text-white/70"
       >
         Privacy Policy
       </a>

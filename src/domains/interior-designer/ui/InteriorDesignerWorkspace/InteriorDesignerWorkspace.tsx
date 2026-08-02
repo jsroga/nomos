@@ -1,9 +1,8 @@
 'use client'
 
-import React, { useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { Loader2, Download, Save, Focus } from 'lucide-react'
-import { debounce } from 'lodash'
 import { Button } from '@/components/Button'
 import { DomainSidebar } from '@/components/DomainSidebar'
 import { DOM_EVENT_KEYDOWN, KEYBOARD_KEY_TAB } from '@/domains/interior-designer/constants/keyboard'
@@ -47,21 +46,18 @@ export function InteriorDesignerWorkspace() {
     }
   }
 
-  // Auto-save debounced (2 seconds after last change)
-  const debouncedSave = useCallback(
-    debounce(() => {
-      if (currentProject?.id && hasUnsavedChanges) {
-        saveDesign(currentProject.id)
-      }
-    }, 2000),
-    [currentProject?.id, hasUnsavedChanges, saveDesign]
-  )
+  const projectId = currentProject?.id
 
+  // Auto-save 2s after last change
   useEffect(() => {
-    if (hasUnsavedChanges) {
-      debouncedSave()
-    }
-  }, [hasUnsavedChanges, debouncedSave])
+    if (!hasUnsavedChanges || !projectId) return
+
+    const timer = window.setTimeout(() => {
+      void saveDesign(projectId)
+    }, 2000)
+
+    return () => window.clearTimeout(timer)
+  }, [hasUnsavedChanges, projectId, saveDesign])
 
   const zenMode = useInteriorStore(state => state.zenMode)
   const toggleZenMode = useInteriorStore(state => state.toggleZenMode)
@@ -88,7 +84,7 @@ export function InteriorDesignerWorkspace() {
       >
         <div className="flex items-center gap-4">
           <h1 className="font-mono font-bold text-sm tracking-widest text-zinc-100 uppercase">
-            Interior Designer
+            3D Canvas
           </h1>
           <DesignManager />
         </div>

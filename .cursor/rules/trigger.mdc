@@ -1,5 +1,5 @@
 ---
-description: Trigger.dev v4 rules for this repo — task patterns, deploy gotchas, cursor-execute
+description: Trigger.dev v4 rules for this repo — task patterns, deploy gotchas
 globs: "**/trigger/**/*.ts,src/trigger/**/*.ts"
 alwaysApply: false
 ---
@@ -40,18 +40,6 @@ Always check `ok` before reading `output`.
 - Prod deploy: `npm run trigger:deploy` (sets `OTEL_TRACES_EXPORTER=none`).
 - Or manually: `OTEL_TRACES_EXPORTER=none npx trigger.dev@latest deploy --env prod`.
 - Promote pending version after deploy when needed.
-
-### Dark-factory headless execute
-
-`src/trigger/cursor-execute.task.ts` — task id **`cursor-execute`**.
-
-Wraps `src/shared/agent-kernel/cursor-runner.ts` so the Fabro `/execute` loop runs on Trigger's runtime. Payload: `module` (required), optional `repo`, `autoCreatePR`, `autoApprove`, `model`, `notes`, `environment`.
-
-```ts
-import { cursorExecuteTask } from '@/trigger/cursor-execute.task'
-
-const result = await cursorExecuteTask.triggerAndWait({ module: 'storyteller' })
-```
 
 ### Long work in domains
 

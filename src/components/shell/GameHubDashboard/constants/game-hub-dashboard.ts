@@ -13,8 +13,8 @@ export enum GameHubRouteId {
 export enum GameHubDomainLabel {
   Storyteller = 'Storyteller',
   LoopCreator = 'Loop Creator',
-  WorldBuilder = 'World Builder',
-  InteriorDesigner = 'Interior Designer',
+  WorldBuilder = 'Infinite Canvas',
+  InteriorDesigner = '3D Canvas',
   AssetExporter = 'Asset Exporter',
 }
 
@@ -22,7 +22,7 @@ export enum GameHubDomainDescription {
   Storyteller = 'Write scripts, develop characters, build story world',
   LoopCreator = 'Design game loops, mechanics, and progression',
   WorldBuilder = 'Generate tile maps and world layouts',
-  InteriorDesigner = 'Build 3D interior spaces and levels',
+  InteriorDesigner = 'Build 3D spaces and levels',
   AssetExporter = 'Convert 2D assets to 3D models',
 }
 

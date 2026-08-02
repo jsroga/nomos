@@ -8,9 +8,9 @@
 | `storyteller` | AI | Writers’ room — bible, beats, script, critics, media tasks |
 | `loop-creator` | AI | Gameplay loop design (Mastra supervisor + specialists) |
 | `game-design` | AI | Pattern / design-lab agents (Mastra) |
-| `world-building-toolkit` | Asset | Procedural tiles, upscale, fidelity (Trigger tasks) |
+| `world-building-toolkit` | Asset | **Infinite Canvas** — procedural tiles, upscale, fidelity (Trigger tasks) |
 | `3d-asset-exporter` | Asset | GLB ingest, Meshy/Hyper3D generation, remesh |
-| `interior-designer` | Asset | R3F interiors — terrain, surfaces, props |
+| `interior-designer` | Asset | **3D Canvas** — R3F interiors, terrain, surfaces, props |
 | `marketing` | UI | Landing / legal surfaces |
 | `chat` | Shared UI | Streaming chat chrome (platformizing toward `@/shared/chat`) |
 
@@ -24,7 +24,7 @@ Virtual writers’ room on **Mastra v1**: chat SSE, beat-draft workflow (plan �
 
 AI game-design assistant. Orchestrator in `loop-creator/core/graph/`; agents under `ai/`. Optional Mastra chat: `FF_LOOP_CREATOR_MASTRA=true`.
 
-## World Building Toolkit
+## Infinite Canvas (`world-building-toolkit`)
 
 Tile generation (OpenRouter/Grok, Gemini, LegNext), upscale (Stability / LegNext), fidelity enhance. Client canvas + Trigger tasks under `tasks/`. Server writes via API + Drizzle — not privileged browser Supabase writes.
 
@@ -32,7 +32,7 @@ Tile generation (OpenRouter/Grok, Gemini, LegNext), upscale (Stability / LegNext
 
 Workspace for GLB/GLTF prep and text/image-to-3D providers. Heavy work in `tasks/`.
 
-## Interior Designer
+## 3D Canvas (`interior-designer`)
 
 R3F sculpt/paint/place. UI stores for scene vs high-frequency terrain; persistence through sanctioned APIs.
 

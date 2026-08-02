@@ -80,12 +80,12 @@ export const CHAT_MODELS: ChatModelOption[] = [
     userSelectable: true,
   },
   {
-    id: 'moonshotai:kimi-k2.7-code',
-    label: 'Kimi 2.7',
+    id: 'moonshotai:kimi-k3',
+    label: 'Kimi K3',
     provider: 'Moonshot (via OpenRouter)',
     providerKey: 'openrouter',
     envVar: 'OPENROUTER_API_KEY',
-    description: 'Moonshot Kimi K2.7 Code via OpenRouter — default author, single key.',
+    description: 'Moonshot Kimi K3 (non-code) via OpenRouter — default author, single key.',
     userSelectable: true,
   },
 ]
@@ -95,7 +95,7 @@ export const USER_SELECTABLE_CHAT_MODELS: ChatModelOption[] = CHAT_MODELS.filter
   option => option.userSelectable
 )
 
-export const DEFAULT_CHAT_MODEL = 'moonshotai:kimi-k2.7-code'
+export const DEFAULT_CHAT_MODEL = 'moonshotai:kimi-k3'
 
 const CHAT_MODEL_BY_ID = new Map(CHAT_MODELS.map(m => [m.id, m]))
 

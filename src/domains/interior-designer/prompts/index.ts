@@ -1,7 +1,7 @@
 /**
- * Interior Designer Prompts
+ * 3D Canvas prompts
  *
- * Centralized prompts for the interior designer module.
+ * Centralized prompts for the interior-designer (3D Canvas) module.
  */
 
 // ============================================================================

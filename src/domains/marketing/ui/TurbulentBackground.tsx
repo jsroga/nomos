@@ -4,13 +4,18 @@ import {
   DOCUMENT_VISIBILITY_HIDDEN,
   DOM_EVENT_RESIZE,
   DOM_EVENT_VISIBILITY_CHANGE,
+  TURBULENT_BG_CANVAS_DISPLAY,
   TURBULENT_BG_CANVAS_ID,
+  TURBULENT_BG_CANVAS_OPACITY,
+  TURBULENT_BG_CANVAS_SIZE,
+  TURBULENT_BG_FADE_MS,
   TURBULENT_BG_MAX_PIXEL_RATIO,
   TURBULENT_BG_MAX_PIXEL_RATIO_MOBILE,
+  TURBULENT_BG_TARGET_FPS,
   WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE,
 } from '@/domains/marketing/constants/liquid'
 import { MarketingMediaQuery } from '@/domains/marketing/constants/viewport-3d'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type {
   OrthographicCamera,
   Scene,
@@ -28,6 +33,7 @@ interface TurbulentBackgroundProps {
   contrast?: number
   hue?: number
   showCanvas?: boolean
+  canvasOpacity?: number
   onRef?: (el: HTMLDivElement | null) => void
 }
 
@@ -229,8 +235,8 @@ const fragmentShader = `
     float colorIndex = n + length(warped)*0.2 + uColorShift + uTime * uMorphSpeed * 0.05;
     vec3 color = getColor(colorIndex);
     
-    // BLACK VOID PRESERVATION
-    float voidMask = smoothstep(0.3, 0.55, n);
+    // BLACK VOID PRESERVATION — keep depth without crushing the field to flat black
+    float voidMask = smoothstep(0.12, 0.42, n);
     color *= voidMask;
     
     // Apply saturation
@@ -276,6 +282,7 @@ export function TurbulentBackground({
   contrast = 1.32,
   hue = 0,
   showCanvas = true,
+  canvasOpacity = TURBULENT_BG_CANVAS_OPACITY,
   onRef,
 }: TurbulentBackgroundProps & { speed?: number; morphSpeed?: number }) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -284,6 +291,7 @@ export function TurbulentBackground({
   const cameraRef = useRef<OrthographicCamera | null>(null)
   const materialRef = useRef<ShaderMaterial | null>(null)
   const frameIdRef = useRef<number | null>(null)
+  const [canvasReady, setCanvasReady] = useState(false)
 
   // Expose ref to parent
   useEffect(() => {
@@ -298,6 +306,7 @@ export function TurbulentBackground({
     const container = containerRef.current
     let cancelled = false
     let geometryDispose: (() => void) | null = null
+    setCanvasReady(false)
 
     void import('three').then(THREE => {
       if (cancelled || !containerRef.current) return
@@ -307,7 +316,7 @@ export function TurbulentBackground({
 
       const renderer = new THREE.WebGLRenderer({
         antialias: false,
-        alpha: false,
+        alpha: true,
         powerPreference: WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE,
         preserveDrawingBuffer: false,
       })
@@ -315,7 +324,11 @@ export function TurbulentBackground({
       const maxDpr = isMobile ? TURBULENT_BG_MAX_PIXEL_RATIO_MOBILE : TURBULENT_BG_MAX_PIXEL_RATIO
       renderer.setSize(width, height)
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxDpr))
+      renderer.setClearColor(0x000000, 0)
       renderer.domElement.id = TURBULENT_BG_CANVAS_ID
+      renderer.domElement.style.display = TURBULENT_BG_CANVAS_DISPLAY
+      renderer.domElement.style.width = TURBULENT_BG_CANVAS_SIZE
+      renderer.domElement.style.height = TURBULENT_BG_CANVAS_SIZE
       container.appendChild(renderer.domElement)
       rendererRef.current = renderer
 
@@ -343,6 +356,7 @@ export function TurbulentBackground({
         fragmentShader,
         depthWrite: false,
         depthTest: false,
+        transparent: true,
       })
       materialRef.current = material
 
@@ -351,19 +365,30 @@ export function TurbulentBackground({
       scene.add(mesh)
 
       let paused = document.visibilityState === DOCUMENT_VISIBILITY_HIDDEN
-      const startTime = Date.now()
-      const animate = () => {
+      let revealed = false
+      const startTime = performance.now()
+      const frameIntervalMs = 1000 / TURBULENT_BG_TARGET_FPS
+      let lastFrameAt = 0
+
+      const animate = (now: number) => {
         frameIdRef.current = requestAnimationFrame(animate)
         if (paused) return
+        if (now - lastFrameAt < frameIntervalMs) return
+        lastFrameAt = now
 
-        const elapsed = (Date.now() - startTime) * 0.001
+        const elapsed = (now - startTime) * 0.001
         if (materialRef.current) {
           materialRef.current.uniforms.uTime.value = elapsed
         }
         renderer.render(scene, camera)
+
+        if (!revealed) {
+          revealed = true
+          setCanvasReady(true)
+        }
       }
 
-      animate()
+      animate(performance.now())
 
       const handleVisibility = () => {
         paused = document.visibilityState === DOCUMENT_VISIBILITY_HIDDEN
@@ -411,6 +436,7 @@ export function TurbulentBackground({
 
     return () => {
       cancelled = true
+      setCanvasReady(false)
       geometryDispose?.()
     }
   }, [showCanvas])
@@ -430,16 +456,24 @@ export function TurbulentBackground({
     }
   }, [zoom, rotation, colorShift, saturation, brightness, contrast, hue, speed, morphSpeed])
 
+  const opacity = Math.min(canvasOpacity, TURBULENT_BG_CANVAS_OPACITY)
+  const visible = showCanvas && canvasReady
+
   return (
     <div className="relative w-full">
       <div
         id="turbulent-bg-container"
         ref={containerRef}
-        className={`fixed inset-0 transition-opacity duration-1000 ${showCanvas ? 'opacity-100' : 'opacity-0'}`}
-        style={{ zIndex: -1 }}
+        className="pointer-events-none fixed inset-0"
+        style={{
+          zIndex: 0,
+          opacity: visible ? opacity : 0,
+          transition: `opacity ${TURBULENT_BG_FADE_MS}ms ease-out`,
+          contain: 'strict',
+          willChange: visible ? 'auto' : 'opacity',
+        }}
       />
       <div className="relative z-10 pointer-events-none">
-        {/* Enable pointer events for children */}
         <div className="pointer-events-auto">{children}</div>
       </div>
     </div>

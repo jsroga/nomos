@@ -13,7 +13,7 @@ import type { SubmitPlanResumeData } from '@mastra/core/tools'
 import type { ControllerFrameIntent } from '@/domains/storyteller/ai/controller/controller-sse-wire'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 
-// ---------- ANSI (same palette as scripts/storyteller-repl.ts) ----------
+// ---------- ANSI ----------
 const ESC = '\x1b['
 export const c = {
   reset: `${ESC}0m`,

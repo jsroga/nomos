@@ -62,6 +62,7 @@ function resolveIconModelPreset(type: string, density: number | undefined): Icon
       return {
         url: resolveMarketingModelUrl(MarketingThreeDModelPath.Cosmos),
         dotsDensity: highDensity,
+        includeSphere: false,
       }
   }
 }
@@ -128,7 +129,7 @@ export function IconScene(props: IconSceneProps) {
       distortion={distortion}
       speed={speed}
       scale={scale}
-      includeSphere={preset.includeSphere ?? true}
+      includeSphere={preset.includeSphere ?? false}
     />
   )
 }

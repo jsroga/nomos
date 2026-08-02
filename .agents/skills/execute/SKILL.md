@@ -112,7 +112,7 @@ Show the Plan Author's < 400-word final response (P0 declaration, Clarify recap,
 fabro run .fabro/workflows/execute/workflow.toml -I module=<module>
 ```
 
-For headless/CI: `src/shared/agent-kernel/cursor-runner.ts`, kicked by Trigger.dev task `cursor-execute`.
+For headless/CI: `npx tsx src/shared/agent-kernel/cursor-runner.ts --module <module>` (or sandboxed `fabro run` above).
 
 ## Single source of truth
 

@@ -14,6 +14,7 @@
 
 import '@/shared/data/server-guard'
 import type { AgentControllerConfig, AgentControllerMode } from '@mastra/core/agent-controller'
+import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 import { readWorldBibleTool, checkContinuityTool } from '@/domains/storyteller/ai/tools/bible-tools'
 import { listBeatsTool } from '@/domains/storyteller/ai/tools/beat-tools'
@@ -56,6 +57,12 @@ const CHAT_MODE_TOOLS: string[] = [
   listEpisodesTool.id,
   checkContinuityTool.id,
   SUBMIT_PLAN_TOOL_NAME,
+  // `submit_plan` suspends with a plan FILE path — the host reads the body off
+  // disk. Without a write tool in this allowlist the model has no way to
+  // produce that file, so the plan gate can never fire. Writes land in the
+  // controller's scratch workspace, NOT the project database, so this does not
+  // weaken the mutations-only invariant.
+  WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE,
 ]
 
 /**

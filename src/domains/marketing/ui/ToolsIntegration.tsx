@@ -1,20 +1,21 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
-import { MarketingIconType } from '@/domains/marketing/constants/three-d-icon'
 import {
-  MARKETING_NEAR_FOLD_SCROLL_Y,
-  MarketingDomScrollEvent,
-} from '@/domains/marketing/constants/viewport-3d'
-import { ViewportGatedThreeDIcon } from '@/domains/marketing/ui/ViewportGatedThreeDIcon'
-import { LANDING_BRAND_ACCENT } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
-import { LANDING_SECTION_PANEL_CLASS, LANDING_ABSOLUTE_OVERLAY_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
+  LANDING_ABSOLUTE_OVERLAY_CLASS,
+  LANDING_REVEAL_ANIMATE,
+  LANDING_REVEAL_INITIAL,
+  LANDING_REVEAL_TRANSITION,
+  LANDING_REVEAL_VIEWPORT,
+  LANDING_SECTION_CONTAINER_CLASS,
+  LANDING_SECTION_PAD_Y_CLASS,
+  LANDING_SECTION_PANEL_CLASS,
+} from '@/domains/marketing/ui/LandingPage/constants/landing-section'
+import { LandingToolsCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
 
-// Custom tool icons
 const TOOL_ICONS = {
   unity: (
-    <svg viewBox="0 0 19 22" fill="none" className="w-10 h-10">
+    <svg viewBox="0 0 19 22" fill="none" className="h-7 w-7">
       <path
         d="M10.3305 3.93605L13.7281 5.94619C13.8503 6.01676 13.8547 6.21254 13.7281 6.28311L9.69098 8.67343C9.56884 8.74627 9.4245 8.74172 9.31124 8.67343L5.27408 6.28311C5.14972 6.21482 5.1475 6.01449 5.27408 5.94619L8.66947 3.93605V0L0 5.13121V15.3936L3.32433 13.4267V9.40646C3.32211 9.26304 3.48644 9.1606 3.60858 9.238L7.64575 11.6283C7.76788 11.7012 7.83672 11.8309 7.83672 11.9652V16.7436C7.83894 16.887 7.67461 16.9894 7.55248 16.912L4.15486 14.9019L0.830529 16.8688L9.5 22L18.1695 16.8688L14.8451 14.9019L11.4475 16.912C11.3276 16.9872 11.1588 16.8893 11.1633 16.7436V11.9652C11.1633 11.8218 11.241 11.6943 11.3543 11.6283L15.3914 9.238C15.5113 9.16287 15.6801 9.25849 15.6757 9.40646V13.4267L19 15.3936V5.13121L10.3305 0V3.93605Z"
         fill="currentColor"
@@ -22,7 +23,7 @@ const TOOL_ICONS = {
     </svg>
   ),
   unreal: (
-    <svg viewBox="0 0 116 116" fill="currentColor" className="w-14 h-14">
+    <svg viewBox="0 0 116 116" fill="currentColor" className="h-9 w-9">
       <path
         fillRule="evenodd"
         d="M79.43 63.498c-.61 2.942-3.324 10.487-11.973 14.574l-3.47-3.905-5.858 5.892a21.634 21.634 0 0 1-17.108-8.775 8.433 8.433 0 0 0 1.918.36c.959.017 1.998-.334 1.998-1.952V53.8a2.617 2.617 0 0 0-3.293-2.618c-2.712.62-4.881 7.39-4.881 7.39a21.532 21.532 0 0 1 7.454-16.5C48.256 38.649 52.202 37.465 55.2 37c-2.961 1.688-4.627 4.443-4.627 6.756 0 3.707 2.239 3.27 2.902 2.722v21.46c.113.27.258.524.434.757a3.166 3.166 0 0 0 2.597 1.31c2.243 0 5.152-2.56 5.152-2.56V50.07c0-1.768-1.332-3.905-2.666-4.634 0 0 2.469-.434 4.378 1.022.358-.439.739-.858 1.141-1.256 4.439-4.36 8.628-5.597 12.116-6.218 0 0-6.35 4.99-6.35 11.672 0 4.974.128 17.103.128 17.103 2.363 2.269 5.862-1.007 9.025-4.26Z"
@@ -36,7 +37,7 @@ const TOOL_ICONS = {
     </svg>
   ),
   blender: (
-    <svg viewBox="0.499 48.118 511.002 415.763" fill="none" className="w-10 h-10">
+    <svg viewBox="0.499 48.118 511.002 415.763" fill="none" className="h-7 w-7">
       <path
         d="M510.003 279.642c-2.998-21.097-10.305-41.104-21.725-59.459-9.959-16.019-22.738-30.266-37.991-42.375l.041-.038L290.133 54.731a4.569 4.569 0 0 0-.361-.287c-5.326-4.08-12.537-6.325-20.297-6.325-7.77 0-15.263 2.25-21.088 6.338-6.263 4.375-9.843 10.18-10.093 16.359-.229 5.765 2.521 11.312 7.764 15.636 10.31 8.135 20.597 16.447 30.898 24.769 9.997 8.08 20.298 16.401 30.549 24.502l-196.213-.133c-22.439 0-37.718 10.537-40.861 28.178-1.381 7.727 1.056 16.223 6.504 22.73 5.78 6.898 14.172 10.703 23.629 10.703l14.958.01c20.664 0 41.419-.051 62.146-.101l19.766-.046-178.08 131.748-.707.517C8.7 336.953 2.188 347.642.783 358.653c-1.065 8.342.881 15.965 5.63 22.053 5.66 7.258 14.497 11.25 24.885 11.25 10.205 0 20.618-3.867 29.334-10.908l96.166-78.7c-.411 3.843-.91 9.481-.853 13.573.108 6.479 2.188 19.479 5.481 30.033 6.804 21.69 18.265 41.535 34.063 58.963 16.438 18.132 36.458 32.509 59.5 42.722 24.36 10.774 50.547 16.243 77.836 16.243h.253c27.376-.066 53.646-5.622 78.085-16.519 23.08-10.334 43.091-24.769 59.467-42.898 15.778-17.517 27.223-37.395 34.014-59.067a151.124 151.124 0 0 0 6.416-33.003c.839-10.83.478-21.85-1.057-32.753zM334.82 383.601c-60.141 0-108.911-43.627-108.911-97.447 0-53.814 48.771-97.441 108.911-97.441 60.142 0 108.907 43.627 108.907 97.441.002 53.82-48.765 97.447-108.907 97.447zm62.807-106.01c.887 16.063-5.529 30.978-16.796 42.019-11.461 11.248-27.815 18.313-46.103 18.313-18.28 0-34.637-7.065-46.102-18.313-11.262-11.041-17.665-25.954-16.783-42.006.864-15.603 8.475-29.376 19.939-39.128 11.273-9.589 26.41-15.439 42.945-15.439 16.537 0 31.67 5.852 42.944 15.439 11.47 9.752 19.083 23.515 19.956 39.115z"
         fill="currentColor"
@@ -49,7 +50,7 @@ const TOOL_ICONS = {
       fill="currentColor"
       stroke="currentColor"
       strokeWidth="4.16261"
-      className="w-11 h-11 text-white/80"
+      className="h-8 w-8"
       xmlns="http://www.w3.org/2000/svg"
     >
       <path d="m417.61523 76.875c-42.39203 9.424151-84.32671 22.54494-123.64257 42.33398.89912 34.71618 3.14362 67.97967 7.69336 101.76758-15.26846 9.78214-31.31507 18.17757-45.57618 29.62891-14.49005 11.14747-29.2896 21.81231-42.41015 34.84961-26.21196-17.33728-53.95467-33.6299-82.53516-48.01172C100.33705 270.59856 71.53124 306.38342 48 346.42773c18.493057 29.02877 38.32949 58.20569 56.69922 80.95899v197.7832 25.1211 22.86132c.44956.00417.89835.02088 1.34375.0625l150.66992 14.52735c7.89231.76176 14.07749 7.11448 14.62695 15.02343l4.64649 66.50977 131.42969 9.37891 9.05468-61.38672c1.17386-7.95891 8.00029-13.85742 16.05078-13.85742h158.96094c8.04633.0 14.87302 5.89851 16.04688 13.85742l9.05468 61.38672 131.4336-9.37891 4.64258-66.50977c.55362-7.90895 6.73464-14.25751 14.62695-15.02343l150.61133-14.52735c.4454-.04162.89028-.05833 1.33984-.0625v-19.61132l.0625-.01954V427.38672c21.2165-26.70928 41.30684-56.1715 56.69922-80.95899-23.52291-40.04431-52.34486-75.82917-83.15234-108.98437-28.57217 14.38182-56.32515 30.67444-82.53711 48.01172-13.11639-13.0373-27.88953-23.70214-42.40039-34.84961-14.25695-11.45134-30.32318-19.84677-45.5625-29.62891 4.53724-33.78791 6.7803-67.0514 7.68359-101.76758-39.32002-19.78904-81.24927-32.909829-123.66211-42.33398-16.9335 28.45977-32.41939 59.27922-45.90625 89.4082-15.99275-2.67239-32.05995-3.66203-48.14844-3.85351v-.02539c-.11239.0-.21676.02539-.3125.02539-.0999.0-.20478-.02539-.30468-.02539v.02539c-16.11763.19148-32.17106 1.18112-48.16797 3.85351-13.47854-30.12898-28.95559-60.94843-45.91407-89.4082zM298.41602 436.39844c50.15113.0 90.79882 40.61746 90.79882 90.75195.0 50.16779-40.64769 90.80859-90.79882 90.80859-50.12617.0-90.78711-40.6408-90.78711-90.80859.0-50.13449 40.66094-90.75195 90.78711-90.75195zm427.17773.0c50.122.0 90.7793 40.61746 90.7793 90.75195.0 50.16779-40.6573 90.80859-90.7793 90.80859-50.15946.0-90.80664-40.6408-90.80664-90.80859.0-50.13449 40.64718-90.75195 90.80664-90.75195zm-213.59961 53.10937c16.14261.0 29.25391 11.90816 29.25391 26.56055v83.58984c0 14.66488-13.1113 26.5625-29.25391 26.5625-16.1426.0-29.22656-11.89762-29.22656-26.5625v-83.58984c0-14.65239 13.08396-26.56055 29.22656-26.56055z" />
@@ -62,7 +63,7 @@ const TOOL_ICONS = {
     <svg
       viewBox="0 0 17.469 17.469"
       fill="currentColor"
-      className="w-10 h-10 text-white/80"
+      className="h-7 w-7"
       xmlns="http://www.w3.org/2000/svg"
     >
       <path d="M5.925,4.982c-0.442,0-0.742,0.043-0.898,0.087v2.841C5.213,7.952,5.44,7.966,5.754,7.966 c1.157,0,1.871-0.585,1.871-1.571C7.624,5.511,7.01,4.982,5.925,4.982z" />
@@ -71,114 +72,59 @@ const TOOL_ICONS = {
   ),
 }
 
-const ToolIcon = ({
-  name,
-  icon,
-  delay,
-}: {
-  name: string
-  icon: React.ReactNode
-  delay: number
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ delay, duration: 0.5 }}
-    className="flex flex-col items-center gap-4 group min-w-[100px]"
-  >
-    <div className="h-20 w-20 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl group-hover:bg-white/10 group-hover:border-primary/50 group-hover:scale-110 transition-all duration-300 relative overflow-hidden">
-      {/* Background glow on hover */}
-      <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      <div className="relative z-10 text-white/70 group-hover:text-white transition-colors">
-        {icon}
-      </div>
-    </div>
-    <span className="text-[10px] font-mono tracking-widest uppercase text-white/40 group-hover:text-primary transition-colors">
-      {name}
-    </span>
-  </motion.div>
-)
-
-function useScrolledPastNearFold(): boolean {
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    const onScroll = () => {
-      if (window.scrollY >= MARKETING_NEAR_FOLD_SCROLL_Y) setReady(true)
-    }
-    onScroll()
-    window.addEventListener(MarketingDomScrollEvent.Scroll, onScroll, { passive: true })
-    return () => window.removeEventListener(MarketingDomScrollEvent.Scroll, onScroll)
-  }, [])
-
-  return ready
-}
+const TOOLS = [
+  { name: LandingToolsCopy.Unity, icon: TOOL_ICONS.unity },
+  { name: LandingToolsCopy.Unreal, icon: TOOL_ICONS.unreal },
+  { name: LandingToolsCopy.Blender, icon: TOOL_ICONS.blender },
+  { name: LandingToolsCopy.Godot, icon: TOOL_ICONS.godot },
+  { name: LandingToolsCopy.Photoshop, icon: TOOL_ICONS.photoshop },
+] as const
 
 export const ToolsIntegration = () => {
-  const allowNearFold3d = useScrolledPastNearFold()
-
   return (
-    <section className={LANDING_SECTION_PANEL_CLASS}>
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-12 mb-16">
-          <div className="text-center md:text-left flex-1">
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-4xl md:text-5xl font-black font-syne uppercase leading-tight mb-4"
-            >
-              Keep Your Tools.
+    <section className={`${LANDING_SECTION_PANEL_CLASS} ${LANDING_SECTION_PAD_Y_CLASS}`}>
+      <div className={LANDING_SECTION_CONTAINER_CLASS}>
+        <motion.div
+          initial={LANDING_REVEAL_INITIAL}
+          whileInView={LANDING_REVEAL_ANIMATE}
+          viewport={LANDING_REVEAL_VIEWPORT}
+          transition={LANDING_REVEAL_TRANSITION}
+          className="grid items-center gap-[clamp(32px,4vw,64px)] md:grid-cols-[minmax(280px,1fr)_minmax(380px,1.15fr)]"
+        >
+          <div className="text-left">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="h-px w-7 bg-[hsl(235_88%_65%)]" />
+              <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-[hsl(235_88%_70%)]">
+                {LandingToolsCopy.Eyebrow}
+              </span>
+            </div>
+            <h2 className="mb-4 font-syne text-[clamp(30px,3.2vw,46px)] font-extrabold uppercase leading-[1.04] tracking-[-0.02em]">
+              {LandingToolsCopy.TitleKeep}
               <br />
-              <span className="text-primary">Add More Power.</span>
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-white/50 font-mono max-w-md text-sm leading-relaxed"
-            >
-              Works seamlessly with industry-standard tools so you can keep using what&apos;s
-              familiar—while accelerating workflows with AI.
-            </motion.p>
+              <span className="text-[hsl(235_88%_68%)]">{LandingToolsCopy.TitlePower}</span>
+            </h2>
+            <p className="max-w-[400px] font-sans text-[15px] leading-[1.65] text-white/50">
+              {LandingToolsCopy.Body}
+            </p>
           </div>
 
-          {/* Decorative 3D — poster until user scrolls (near-fold). */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="hidden md:block w-[800px] h-[800px] absolute -right-[200px] -top-[200px] pointer-events-none"
-          >
-            <ViewportGatedThreeDIcon
-              enabled={allowNearFold3d}
-              glowScale={0.5}
-              density={0.8}
-              type={MarketingIconType.WorldGen}
-              posterSrc="/images/icons/world-gen.png"
-              posterAlt="World generation"
-              color={LANDING_BRAND_ACCENT}
-              size={1200}
-              scale={0.7}
-              vignette={true}
-            />
-          </motion.div>
-        </div>
-
-        <div className="flex flex-wrap justify-center md:justify-start gap-8 md:gap-12">
-          <ToolIcon name="Unity" icon={TOOL_ICONS.unity} delay={0.1} />
-          <ToolIcon name="Unreal" icon={TOOL_ICONS.unreal} delay={0.15} />
-          <ToolIcon name="Blender" icon={TOOL_ICONS.blender} delay={0.2} />
-          <ToolIcon name="Godot" icon={TOOL_ICONS.godot} delay={0.25} />
-          <ToolIcon name="Photoshop" icon={TOOL_ICONS.photoshop} delay={0.35} />
-        </div>
+          <div className="rounded-[18px] border border-white/[0.08] bg-white/[0.04] p-[clamp(20px,2.2vw,34px)]">
+            <div className="grid grid-cols-5 gap-[clamp(8px,1.2vw,18px)]">
+              {TOOLS.map(tool => (
+                <div key={tool.name} className="group flex flex-col items-center">
+                  <div className="flex aspect-square w-full max-w-16 items-center justify-center rounded-[14px] border border-white/[0.09] bg-white/[0.04] text-white/[0.72] transition-all duration-[250ms] group-hover:border-[hsl(235_88%_65%/0.55)] group-hover:bg-white/[0.08] group-hover:text-white">
+                    {tool.icon}
+                  </div>
+                  <span className="mt-3.5 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-white/40">
+                    {tool.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
       </div>
 
-      {/* Background Texture */}
       <div
         className={LANDING_ABSOLUTE_OVERLAY_CLASS}
         style={{

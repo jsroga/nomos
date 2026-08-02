@@ -3,7 +3,15 @@
 import { motion } from 'framer-motion'
 import { LandingSectionId, LandingSystemsCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
 import { LANDING_DEEP_DIVES } from '@/domains/marketing/ui/LandingPage/constants/landing-deep-dives'
-import { LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
+import {
+  LANDING_REVEAL_ANIMATE,
+  LANDING_REVEAL_INITIAL,
+  LANDING_REVEAL_TRANSITION,
+  LANDING_REVEAL_VIEWPORT,
+  LANDING_SECTION_CONTAINER_CLASS,
+  LANDING_SECTION_PAD_Y_CLASS,
+  LANDING_SECTION_PANEL_CLASS,
+} from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 import type { ApiIntegrationTab, SelectedFeature } from '@/domains/marketing/ui/LandingPage/types'
 import { ApiMcpSection } from '@/domains/marketing/ui/LandingPage/components/ApiMcpSection'
 import { BentoGrid } from '@/domains/marketing/ui/LandingPage/components/BentoGrid'
@@ -21,52 +29,43 @@ export function SystemsSection({
   onSelectFeature,
 }: SystemsSectionProps) {
   return (
-    <section id={LandingSectionId.Systems} className={`${LANDING_SECTION_PANEL_CLASS} px-6`}>
-      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/5 hidden lg:block -translate-x-1/2" />
+    <>
+      <section id={LandingSectionId.Systems} className={`${LANDING_SECTION_PANEL_CLASS} ${LANDING_SECTION_PAD_Y_CLASS}`}>
+        <div className="pointer-events-none absolute bottom-0 left-1/2 top-0 hidden w-px -translate-x-1/2 bg-white/[0.06] lg:block" />
 
-      <div className="max-w-7xl mx-auto mb-20 text-center lg:text-left">
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          className="flex items-center justify-center lg:justify-start gap-4 mb-8"
-        >
-          <div className="w-8 h-px bg-primary" />
-          <span className="text-xs font-mono text-primary uppercase tracking-widest">
-            {LandingSystemsCopy.Eyebrow}
-          </span>
-        </motion.div>
+        <div className={LANDING_SECTION_CONTAINER_CLASS}>
+          <motion.div
+            initial={LANDING_REVEAL_INITIAL}
+            whileInView={LANDING_REVEAL_ANIMATE}
+            viewport={LANDING_REVEAL_VIEWPORT}
+            transition={LANDING_REVEAL_TRANSITION}
+            className="mb-[72px] text-center lg:text-left"
+          >
+            <div className="mb-8 flex items-center justify-center gap-4 lg:justify-start">
+              <div className="h-px w-8 bg-[hsl(235_88%_65%)]" />
+              <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-[hsl(235_88%_70%)]">
+                {LandingSystemsCopy.Eyebrow}
+              </span>
+            </div>
 
-        <motion.h2
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter font-mono"
-        >
-          <span className="text-white">{LandingSystemsCopy.TitleAi}</span>
-          <span className="text-primary">{LandingSystemsCopy.TitleArsenal}</span>
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.1 }}
-          className="text-sm md:text-base font-mono text-white/40 mt-4 tracking-widest"
-        >
-          {LandingSystemsCopy.Subtitle}
-        </motion.p>
-      </div>
+            <h2 className="font-syne text-[clamp(3.5rem,7vw,6rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.04em]">
+              <span className="text-white">{LandingSystemsCopy.TitleAi}</span>
+              <span className="text-[hsl(235_88%_68%)]">{LandingSystemsCopy.TitleArsenal}</span>
+            </h2>
+            <p className="mt-5 font-mono text-[13px] uppercase tracking-[0.24em] text-white/[0.36]">
+              {LandingSystemsCopy.Subtitle}
+            </p>
+          </motion.div>
 
-      <div className="max-w-7xl mx-auto">
-        <BentoGrid onSelectFeature={onSelectFeature} />
-
-        <div className="space-y-12">
-          {LANDING_DEEP_DIVES.map(config => (
-            <FeatureDeepDive key={config.index} {...config} />
-          ))}
-          <ApiMcpSection activeTab={activeTab} onTabChange={onTabChange} />
+          <BentoGrid onSelectFeature={onSelectFeature} />
         </div>
-      </div>
-    </section>
+      </section>
+
+      {LANDING_DEEP_DIVES.map(config => (
+        <FeatureDeepDive key={config.index} {...config} />
+      ))}
+
+      <ApiMcpSection activeTab={activeTab} onTabChange={onTabChange} />
+    </>
   )
 }

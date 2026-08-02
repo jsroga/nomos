@@ -1,5 +1,5 @@
 /**
- * Interior Designer public module API.
+ * 3D Canvas public module API (`interior-designer` domain path).
  *
  * This is the only supported import target for code outside
  * src/domains/interior-designer.

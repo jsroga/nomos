@@ -10,9 +10,6 @@ export enum TriggerLogLevel {
 
 export enum TriggerBuildExternal {
   DrizzleOrm = 'drizzle-orm',
-  CursorSdk = '@cursor/sdk',
-  BunSqlite = 'bun:sqlite',
-  NodeSqlite = 'node:sqlite',
 }
 
 export enum TriggerEnvFile {

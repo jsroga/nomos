@@ -27,6 +27,8 @@ const REGENERATE_LABEL = 'Regenerate'
 const INPUT_PLACEHOLDER = 'Write a message…'
 const EMPTY_HINT = 'Start a conversation.'
 const SCROLL_LABEL = '↓'
+const RUNNING_STATUS = 'Working…'
+const RUNNING_STATUS_TEST_ID = 'assistant-running-status'
 
 const MarkdownText: TextMessagePartComponent = ({ text }) => (
   <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
@@ -118,6 +120,16 @@ export function AssistantThread({ suggestions = [], mentions }: AssistantThreadP
         </ThreadPrimitive.Empty>
 
         <ThreadPrimitive.Messages components={MESSAGE_COMPONENTS} />
+
+        <ThreadPrimitive.If running>
+          <div
+            data-testid={RUNNING_STATUS_TEST_ID}
+            className="px-1 text-xs italic opacity-60"
+            aria-live="polite"
+          >
+            {RUNNING_STATUS}
+          </div>
+        </ThreadPrimitive.If>
 
         <ThreadPrimitive.ScrollToBottom className="sticky bottom-2 ml-auto flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white/80 text-sm shadow disabled:invisible dark:border-white/10 dark:bg-black/60">
           {SCROLL_LABEL}

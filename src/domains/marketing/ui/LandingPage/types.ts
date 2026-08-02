@@ -38,5 +38,4 @@ export type FeatureDeepDiveConfig = {
   metalness?: number
   vignette?: boolean
   pngIcon?: string
-  screenshotPlaceholder?: boolean
 }

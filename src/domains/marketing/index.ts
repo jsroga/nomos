@@ -7,10 +7,17 @@ export { GlobalLiquidLoader } from './ui/GlobalLiquidLoader'
 export { LandingPage } from './ui/LandingPage'
 export { Liquid } from './ui/Liquid'
 export { LiquidBackgroundProvider } from './ui/LiquidBackgroundProvider'
+export { MarketingVoiceLine } from './ui/MarketingVoiceLine'
+export { VoiceLineAlign } from './constants/voice-line'
 export { ProPlanPromo } from './ui/ProPlanPromo'
 export { ThreeDIcon } from './ui/ThreeDIcon'
 export { ToolsIntegration } from './ui/ToolsIntegration'
 export { TurbulentBackground } from './ui/TurbulentBackground'
+export { LANDING_HERO_HEADLINES } from './ui/LandingPage/constants/landing-copy'
+export {
+  LandingLoginBrandCopy,
+  LandingNavUiCopy,
+} from './ui/LandingPage/constants/landing-ui-copy'
 export { LiquidProvider, useLiquid } from './state/liquid-context'
 export {
   assignHeroAbVariant,

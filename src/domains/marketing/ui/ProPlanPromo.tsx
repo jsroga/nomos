@@ -3,12 +3,12 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Check, Sparkles } from 'lucide-react'
-import { LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
+import { LANDING_SECTION_PANEL_CLASS, LANDING_SECTION_PAD_Y_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 
 export const ProPlanPromo = () => {
   return (
-    <section className={`${LANDING_SECTION_PANEL_CLASS} px-6`}>
-      <div className="max-w-5xl mx-auto">
+    <section className={`${LANDING_SECTION_PANEL_CLASS} ${LANDING_SECTION_PAD_Y_CLASS}`}>
+      <div className="relative z-10 mx-auto w-full max-w-5xl px-6">
         <div className="relative group rounded-3xl p-[2px] overflow-hidden transform hover:scale-[1.01] transition-transform duration-500">
           {/* Base subtle border glow */}
           <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#ff4400]/30 via-transparent to-primary/30 opacity-60" />

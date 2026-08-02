@@ -24,7 +24,6 @@ Next.js 16 · Mastra · Radix/CVA · Supabase · TanStack Query · Trigger.dev �
 | `components/` | Design system (PascalCase folders) |
 | `db/` | Drizzle schema + `db` client (`DATABASE_URL`) |
 | `trigger/` | Task registry |
-| `trigger-dark-factory/` | Opt-in Cursor SDK execute task (esbuild-external; not in default `TRIGGER_DIRS`) |
 | `mcp/` | MCP server (separate deployable) |
 
 `src/mastra.ts` — Mastra Studio CLI entry; `src/mastra/agents/` holds file-based instructions. Production instance: `src/shared/agent-kernel/MastraInstance.ts`.  

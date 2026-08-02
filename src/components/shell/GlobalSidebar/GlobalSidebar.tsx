@@ -59,7 +59,7 @@ export const GlobalSidebar = () => {
         <Button
           variant={isActive(`/${projectId}/world-gen`) ? 'default' : 'ghost'}
           size="icon"
-          title="World Building"
+          title="Infinite Canvas"
           className="w-10 h-10"
         >
           <Map size={20} />
@@ -81,7 +81,7 @@ export const GlobalSidebar = () => {
         <Button
           variant={isActive(`/${projectId}/interior-design`) ? 'default' : 'ghost'}
           size="icon"
-          title="Interior Designer"
+          title="3D Canvas"
           className="w-10 h-10"
         >
           <Home size={20} />

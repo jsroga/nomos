@@ -13,7 +13,7 @@ export interface LegacyFeature {
 export const LEGACY_FEATURES: LegacyFeature[] = [
   {
     icon: Map,
-    title: 'World Generation',
+    title: 'Infinite Canvas',
     description: 'Infinite procedural terrain. Days → minutes. Ship-ready assets.',
     accent: '#5c7cfa',
     code: 'WLD_GEN',

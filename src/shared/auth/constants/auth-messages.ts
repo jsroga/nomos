@@ -26,6 +26,30 @@ export enum AuthPageView {
   ForgotPassword = 'forgot-password',
 }
 
+export enum AuthTab {
+  SignIn = 'signin',
+  SignUp = 'signup',
+}
+
+export enum LoginFormCopy {
+  SignInTitle = 'Sign in',
+  SignInSubtitle = 'Welcome back — continue building your worlds.',
+  SignUpTitle = 'Create account',
+  SignUpSubtitle = 'Set up your workspace and start building.',
+  ResetTitle = 'Reset Password',
+  ResetSubtitle = 'Enter your email and we\'ll send you a reset link.',
+  AlreadyHaveAccount = 'Already have an account? Sign in',
+  DividerEmail = 'Or continue with email',
+  Forgot = 'Forgot?',
+  SignInSubmit = 'Sign In',
+  SignInSubmitting = 'Signing in...',
+  SignUpSubmit = 'Create Account',
+  SignUpSubmitting = 'Creating account...',
+  ResetSubmit = 'Send Reset Link',
+  ResetSubmitting = 'Sending...',
+  BackToSignIn = 'Back to sign in',
+}
+
 export const AUTH_PAGE_ELEMENT_ID = {
   TURBULENT_BG_CANVAS: 'turbulent-bg-canvas',
 } as const

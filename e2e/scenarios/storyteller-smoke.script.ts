@@ -19,6 +19,7 @@
 
 import {
   BANNER_WIDTH,
+  BYPASS_AUTH_VALUE,
   DB_PROPAGATION_DELAY_MS,
   DEFAULT_BASE_URL,
   DEFAULT_TEST_PROJECT_ID,
@@ -142,7 +143,7 @@ async function sendChatMessage(message: string, projectId: string = TEST_PROJECT
     method: SmokeHttp.Post,
     headers: {
       'Content-Type': 'application/json',
-      'x-bypass-auth': SmokeHttp.BypassAuthValue // Bypass auth for E2E tests
+      'x-bypass-auth': BYPASS_AUTH_VALUE // Bypass auth for E2E tests
     },
     body: JSON.stringify({
       message,
@@ -329,7 +330,7 @@ async function postActionApproval(action: SSEAction | undefined): Promise<Approv
     headers: {
       'Content-Type': 'application/json',
       'Cookie': AUTH_COOKIE,
-      'x-bypass-auth': SmokeHttp.BypassAuthValue,
+      'x-bypass-auth': BYPASS_AUTH_VALUE,
     },
     body: JSON.stringify({
       action,
@@ -401,7 +402,7 @@ async function verifyPersistedWorldRules() {
   const projectResponse = await fetch(`${PROJECT_API_URL}/${TEST_PROJECT_ID}`, {
     headers: {
       'Cookie': AUTH_COOKIE,
-      'x-bypass-auth': SmokeHttp.BypassAuthValue
+      'x-bypass-auth': BYPASS_AUTH_VALUE
     }
   })
 
@@ -551,7 +552,7 @@ async function verifyCharacterPersisted(charName: string) {
   await new Promise(r => setTimeout(r, DB_PROPAGATION_DELAY_MS))
 
   const charsResponse = await fetch(`${BASE_URL}/api/storyteller/characters?projectId=${TEST_PROJECT_ID}`, {
-    headers: { 'Cookie': AUTH_COOKIE, 'x-bypass-auth': SmokeHttp.BypassAuthValue }
+    headers: { 'Cookie': AUTH_COOKIE, 'x-bypass-auth': BYPASS_AUTH_VALUE }
   })
 
   if (!charsResponse.ok) {

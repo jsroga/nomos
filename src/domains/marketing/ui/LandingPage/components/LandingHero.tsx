@@ -1,8 +1,11 @@
 import Link from 'next/link'
+import { ArrowRight, Plus } from 'lucide-react'
 import { LandingHeroAbVariant } from '@/domains/marketing/constants/hero-ab'
 import { LandingExternalUrl, LandingHeroCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
-import { LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
+import { LANDING_SECTION_CONTAINER_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 import { HeadlineVariant } from '@/domains/marketing/ui/LandingPage/components/HeadlineVariant'
+import { MarketingVoiceLine } from '@/domains/marketing/ui/MarketingVoiceLine'
+import { TerrainFloor } from '@/domains/marketing/ui/terrain-floor/TerrainFloor'
 
 type LandingHeroProps = {
   readonly headlineVariant?: LandingHeroAbVariant
@@ -11,41 +14,45 @@ type LandingHeroProps = {
 /** Server-rendered hero — LCP text in the first HTML response (no icon package). */
 export function LandingHero({ headlineVariant = LandingHeroAbVariant.A }: LandingHeroProps) {
   return (
-    <section
-      className={`${LANDING_SECTION_PANEL_CLASS} min-h-[85vh] flex flex-col items-center justify-center px-6 pt-20 pb-8`}
-    >
-      <div className="text-center max-w-5xl mx-auto mb-12">
-        <div className="mb-6">
-          <HeadlineVariant variant={headlineVariant} />
-        </div>
-
-        <div className="flex flex-col gap-1 text-base md:text-lg text-white/70 max-w-2xl mx-auto leading-snug tracking-tight">
-          <span>{LandingHeroCopy.Tagline1}</span>
-          <span>{LandingHeroCopy.Tagline2}</span>
-          <span className="text-primary">{LandingHeroCopy.Tagline3}</span>
-        </div>
+    <section className="relative z-10 flex h-svh min-h-svh flex-col items-center justify-center overflow-hidden bg-[hsl(240_10%_3.9%)] pb-14 pt-[120px]">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.38] [mask-image:linear-gradient(to_bottom,transparent_0%,black_62%,rgba(0,0,0,0.45)_100%)]">
+        <TerrainFloor />
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center gap-5">
-        <Link
-          prefetch={false}
-          href={LandingExternalUrl.Login}
-          className="group relative inline-flex items-center gap-3 px-10 py-5 text-sm font-bold text-white transition-colors duration-200 rounded-lg border border-primary/60 hover:border-primary bg-primary/20 hover:bg-primary/30 font-syne tracking-wide"
-        >
-          <span aria-hidden>+</span>
-          {LandingHeroCopy.StartBuilding}
-          <span aria-hidden className="group-hover:translate-x-1 transition-transform">
-            →
-          </span>
-        </Link>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(62%_62%_at_50%_48%,rgba(5,5,7,0.9)_0%,rgba(5,5,7,0.6)_58%,transparent_82%)]"
+      />
 
-        <button
-          type="button"
-          className="group relative inline-flex items-center gap-3 px-8 py-4 text-sm font-bold text-white transition-colors duration-200 rounded-lg border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 font-syne tracking-wide"
-        >
-          <span aria-hidden>▶</span>
-          <span>{LandingHeroCopy.WatchDemo}</span>
-        </button>
+      <div className={`${LANDING_SECTION_CONTAINER_CLASS} flex flex-col items-center text-center`}>
+        <div className="flex max-w-5xl flex-col items-center gap-[26px]">
+          <MarketingVoiceLine />
+          <HeadlineVariant variant={headlineVariant} />
+          <div className="flex max-w-[620px] flex-col items-center gap-3">
+            <p className="font-sans text-[20px] leading-[1.5] text-white/[0.66]">
+              {LandingHeroCopy.SubCopy}
+            </p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.26em] text-white/[0.34]">
+              {LandingHeroCopy.MetaLine}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-11 flex items-center justify-center">
+          <Link
+            prefetch={false}
+            href={LandingExternalUrl.Login}
+            className="group inline-flex h-[66px] items-center gap-3.5 rounded-xl bg-[hsl(235_92%_68%)] px-[42px] font-syne text-[16px] font-extrabold uppercase tracking-[0.09em] text-white shadow-[0_0_0_1px_hsl(235_92%_78%/0.5),0_18px_60px_-10px_hsl(235_92%_68%/0.95)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[hsl(235_92%_74%)] hover:shadow-[0_0_0_1px_hsl(235_92%_78%/0.5),0_24px_70px_-8px_hsl(235_92%_68%/0.95)]"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+            {LandingHeroCopy.StartBuilding}
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </Link>
+        </div>
+
+        <p className="mt-[18px] font-mono text-[10px] uppercase tracking-[0.26em] text-white/30">
+          {LandingHeroCopy.Reassurance}
+        </p>
       </div>
     </section>
   )

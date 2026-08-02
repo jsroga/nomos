@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion'
 import { LandingApiMcpCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
-import { LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
+import { LANDING_SECTION_CONTAINER_CLASS, LANDING_SECTION_PAD_Y_CLASS, LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 import { ApiIntegrationTab } from '@/domains/marketing/ui/LandingPage/types'
 
 type ApiMcpSectionProps = {
@@ -12,10 +12,10 @@ type ApiMcpSectionProps = {
 
 export function ApiMcpSection({ activeTab, onTabChange }: ApiMcpSectionProps) {
   return (
-    <section className={LANDING_SECTION_PANEL_CLASS}>
-      <div className="absolute left-[50%] top-0 bottom-0 w-px bg-white/5 hidden lg:block" />
+    <section className={`${LANDING_SECTION_PANEL_CLASS} ${LANDING_SECTION_PAD_Y_CLASS}`}>
+      <div className="pointer-events-none absolute bottom-0 left-1/2 top-0 hidden w-px -translate-x-1/2 bg-white/5 lg:block" />
 
-      <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 items-center">
+      <div className={`${LANDING_SECTION_CONTAINER_CLASS} flex flex-col items-center gap-12 lg:flex-row lg:gap-24`}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}

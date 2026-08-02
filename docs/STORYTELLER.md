@@ -15,7 +15,8 @@ Virtual **writers’ room**: series bible, characters, episodes, beats, script d
 | AgentController chat | `FF_STORYTELLER_CONTROLLER=true` — plan-first modes |
 | Autonomous draft | `FF_STORYTELLER_AUTONOMOUS=true` — durable agent + goals |
 | Beat-draft workflow | Mastra workflow: plan → draft → critics → revise; editorial **suspend/resume** HITL |
-| CLI probes | `npm run storyteller:controller` · `storyteller:repl` · `storyteller:orchestrate` |
+| CLI probe | `npm run storyteller:controller` — interactive plan→approve→build REPL |
+| Live tests | `npm run test:live` — `*.e2e.test.ts` against real agents/models/DB |
 
 ## AgentController (accepted ADR, 2026-07)
 

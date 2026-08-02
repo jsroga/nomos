@@ -51,7 +51,7 @@ export function isUnityPrimitiveModelUrl(url: string): boolean {
 }
 
 export const UNITY_EXPORT_README = `
-Interior Designer Project Export
+3D Canvas Project Export
 --------------------------------
 1. Drag the 'Assets' folder from this Zip into your Unity Project root.
 2. Open 'Assets/InteriorDesign/InteriorScene.unity'.

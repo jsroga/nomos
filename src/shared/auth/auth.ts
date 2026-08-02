@@ -12,7 +12,7 @@ import {
 } from '@/shared/auth/constants/e2e-auth'
 import {
   ApiErrorMessage,
-  AuthBypassFlag,
+  EnvVarName,
   HttpHeader,
   NodeEnv,
 } from '@/shared/data/constants/protocol'
@@ -46,7 +46,8 @@ export async function getUserSession() {
   ) {
     const headersList = await headers()
     const e2eHeader = headersList.get(HttpHeader.BYPASS_AUTH)
-    if (e2eHeader === AuthBypassFlag.True) {
+    const bypassSecret = process.env[EnvVarName.E2eBypassAuthSecret]
+    if (bypassSecret && e2eHeader === bypassSecret) {
       return { session: DEV_MOCK_SESSION, supabase: null, error: null }
     }
   }

@@ -64,13 +64,18 @@ export const LANDING_HERO_HEADLINES: Record<
 }
 
 export enum LandingHeroCopy {
-  Tagline1 = 'AI-powered game dev toolkit.',
-  Tagline2 = '10x faster iteration.',
-  Tagline3 = 'Ship games, not busywork.',
+  VoiceLine = 'Build worlds that bleed',
+  SubCopy = 'AI-powered game dev toolkit — 10× faster iteration so you ship games, not busywork.',
+  MetaLine = 'AI TOOLKIT · WORLDS · NARRATIVE · LOOPS',
+  Reassurance = 'Start free · No credit card',
   StartBuilding = 'START BUILDING FREE',
   WatchDemo = 'WATCH DEMO',
   Dashboard = 'Dashboard',
-  GetStarted = 'Get Started',
+  GetStarted = 'Get started',
+  SignIn = 'Sign in',
+  Tagline1 = 'AI-powered game dev toolkit.',
+  Tagline2 = '10x faster iteration.',
+  Tagline3 = 'Ship games, not busywork.',
 }
 
 export enum LandingSystemsCopy {

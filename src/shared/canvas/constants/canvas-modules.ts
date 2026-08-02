@@ -70,7 +70,7 @@ export const CANVAS_MODULES: readonly CanvasModuleDef[] = [
   },
   {
     key: 'world-building',
-    label: 'World Builder',
+    label: 'Infinite Canvas',
     description: 'Tile-based world canvas — image/3D via Trigger.dev (no agent).',
     enabledByDefault: true,
   },

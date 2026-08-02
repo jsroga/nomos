@@ -1,15 +1,10 @@
 import { AppProviders } from '@/shared/auth/AppProviders'
-import {
-  inter,
-  jetbrainsMono,
-} from '@/shared/data/constants/root-layout-fonts'
 
+/** Font CSS vars (Syne / Inter / JetBrains Mono) come from root layout. */
 export default function AuthGroupLayout({ children }: { children: React.ReactNode }) {
   return (
     <AppProviders>
-      <div className={`${inter.variable} ${jetbrainsMono.variable} font-sans min-h-screen`}>
-        {children}
-      </div>
+      <div className="min-h-screen font-sans">{children}</div>
     </AppProviders>
   )
 }

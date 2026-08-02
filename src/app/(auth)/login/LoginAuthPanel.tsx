@@ -1,7 +1,7 @@
 'use client'
 
 import type { FormikProps } from 'formik'
-import { AuthPageView } from '@/shared/auth/constants/auth-messages'
+import { AuthPageView, AuthTab } from '@/shared/auth/constants/auth-messages'
 import { LOGIN_PAGE_STYLES } from '@/app/(auth)/constants/auth-styles'
 import {
   LoginAuthTabs,
@@ -22,6 +22,8 @@ interface LoginAuthPanelProps {
   signInForm: FormikProps<SignInValues>
   signUpForm: FormikProps<SignUpValues>
   forgotForm: FormikProps<ForgotValues>
+  authTab: AuthTab
+  onAuthTabChange: (tab: AuthTab) => void
 }
 
 function LoginSuccessBanner({
@@ -32,11 +34,11 @@ function LoginSuccessBanner({
   onBackToSignIn: () => void
 }) {
   return (
-    <div className="mb-6 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm text-center">
+    <div className="mb-6 rounded-lg border border-green-500/20 bg-green-500/10 p-3 text-center text-sm text-green-400">
       {message}
       <button
         onClick={onBackToSignIn}
-        className="block mx-auto mt-2 text-xs text-white/60 hover:text-white underline"
+        className="mx-auto mt-2 block text-xs text-white/60 underline hover:text-white"
       >
         Back to sign in
       </button>
@@ -46,7 +48,7 @@ function LoginSuccessBanner({
 
 function LoginErrorBanner({ message }: { message: string }) {
   return (
-    <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+    <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-center text-sm text-red-400">
       {message}
     </div>
   )
@@ -62,6 +64,8 @@ export function LoginAuthPanel({
   signInForm,
   signUpForm,
   forgotForm,
+  authTab,
+  onAuthTabChange,
 }: LoginAuthPanelProps) {
   const inputClassName = LOGIN_PAGE_STYLES.INPUT
   const errorClassName = LOGIN_PAGE_STYLES.ERROR
@@ -83,14 +87,14 @@ export function LoginAuthPanel({
 
   return (
     <>
-      {successMessage && (
+      {successMessage ? (
         <LoginSuccessBanner message={successMessage} onBackToSignIn={handleSuccessDismiss} />
-      )}
+      ) : null}
 
-      {authError && !successMessage && <LoginErrorBanner message={authError} />}
+      {authError && !successMessage ? <LoginErrorBanner message={authError} /> : null}
 
-      {!successMessage && (
-        <div className="space-y-6">
+      {!successMessage ? (
+        <div className="space-y-[30px]">
           {view === AuthPageView.Auth ? (
             <LoginAuthTabs
               signInForm={signInForm}
@@ -99,6 +103,8 @@ export function LoginAuthPanel({
               errorClassName={errorClassName}
               onClearError={() => setAuthError(null)}
               onForgotPassword={handleForgotPassword}
+              authTab={authTab}
+              onAuthTabChange={onAuthTabChange}
             />
           ) : (
             <LoginForgotPasswordForm
@@ -111,7 +117,7 @@ export function LoginAuthPanel({
 
           <LoginTermsFooter />
         </div>
-      )}
+      ) : null}
     </>
   )
 }

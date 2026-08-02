@@ -1,12 +1,13 @@
+/** Shared turbulent backdrop — one tuning for landing + login. */
 export const TURBULENT_BG_PROPS = {
-  zoom: 0.1,
+  zoom: 0.14,
   rotation: 3.33,
-  speed: 1.0,
-  morphSpeed: 0.5,
+  speed: 0.55,
+  morphSpeed: 0.28,
   colorShift: 0,
-  saturation: 0.65,
-  brightness: 2.39,
-  contrast: 1.32,
+  saturation: 0.75,
+  brightness: 2.8,
+  contrast: 1.15,
   hue: 0,
 }
 

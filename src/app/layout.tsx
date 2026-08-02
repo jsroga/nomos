@@ -1,5 +1,7 @@
 import './globals.css'
 import {
+  inter,
+  jetbrainsMono,
   syne,
   ROOT_LAYOUT_DESCRIPTION,
   ROOT_LAYOUT_OG_DESCRIPTION,
@@ -32,10 +34,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     : null
 
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${syne.variable} bg-background text-foreground min-h-screen antialiased`}
-      >
+    <html
+      lang="en"
+      className={`dark ${syne.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         {DebugToolsMount ? <DebugToolsMount /> : null}
         {children}
       </body>

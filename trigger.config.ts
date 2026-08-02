@@ -27,14 +27,7 @@ export default defineConfig({
   },
   dirs: [...TRIGGER_DIRS],
   build: {
-    // @cursor/sdk ships bun:sqlite + vendor paths that esbuild cannot bundle.
-    // cursor-execute lives in src/trigger-dark-factory/ (opt-in) for that reason.
-    external: [
-      TriggerBuildExternal.DrizzleOrm,
-      TriggerBuildExternal.CursorSdk,
-      TriggerBuildExternal.BunSqlite,
-      TriggerBuildExternal.NodeSqlite,
-    ],
+    external: [TriggerBuildExternal.DrizzleOrm],
     extensions: [
       syncEnvVars(async () => {
         const result = config({ path: TriggerEnvFile.Local })

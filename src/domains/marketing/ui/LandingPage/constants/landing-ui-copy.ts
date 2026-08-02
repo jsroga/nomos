@@ -1,13 +1,18 @@
 /** Remaining landing display strings (eslint-exempt constants folder). */
 
 export enum LandingHeroCopy {
-  Tagline1 = 'AI-powered game dev toolkit.',
-  Tagline2 = '10x faster iteration.',
-  Tagline3 = 'Ship games, not busywork.',
+  VoiceLine = 'Build worlds that bleed',
+  SubCopy = 'AI-powered game dev toolkit — 10× faster iteration so you ship games, not busywork.',
+  MetaLine = 'AI TOOLKIT · CANVAS · NARRATIVE · LOOPS',
+  Reassurance = 'Start free · No credit card',
   StartBuilding = 'START BUILDING FREE',
   WatchDemo = 'WATCH DEMO',
   Dashboard = 'Dashboard',
-  GetStarted = 'Get Started',
+  GetStarted = 'Get started',
+  SignIn = 'Sign in',
+  Tagline1 = 'AI-powered game dev toolkit.',
+  Tagline2 = '10x faster iteration.',
+  Tagline3 = 'Ship games, not busywork.',
 }
 
 export enum LandingSystemsCopy {
@@ -19,7 +24,7 @@ export enum LandingSystemsCopy {
 
 export enum LandingBentoCopy {
   WorldGenCode = 'WLD_GEN',
-  WorldGenTitle = 'World Generation',
+  WorldGenTitle = 'Infinite Canvas',
   WorldGenDescription = 'Infinite procedural terrain. Days → minutes. Ship-ready assets.',
   WorldGenModalDescription =
     'Infinite procedural terrain generation. From continents to caves, biomes to battlegrounds. Ship-ready assets in minutes, not weeks.',
@@ -30,7 +35,7 @@ export enum LandingBentoCopy {
     'Real-time physics simulation for combat, environmental hazards, and object interactions. Test your world mechanics without writing a single line of code.',
   TeamCode = 'Team',
   TeamTitle = 'Collab',
-  TeamSoon = '(soon)',
+  TeamSoon = 'Soon',
   TeamDescription = 'Multiplayer editing.',
   TeamModalDescription =
     'Real-time multiplayer editing for your entire team. Role-based access control, version history, and instant syncing across all connected clients.',
@@ -117,6 +122,30 @@ export enum LandingDeepDiveUiCopy {
 export enum LandingNavUiCopy {
   Menu = 'MENU',
   GitHub = 'GitHub',
-  LogoAlt = 'KURVITZA',
+  LogoAlt = 'nomos.gg',
   CloseDetails = 'Close Details',
+}
+
+export enum LandingToolsCopy {
+  Eyebrow = 'TOOLCHAIN',
+  TitleKeep = 'Keep Your Tools.',
+  TitlePower = 'Add More Power.',
+  Body =
+    'Works seamlessly with industry-standard tools so you can keep using what\'s familiar—while accelerating workflows with AI.',
+  Unity = 'Unity',
+  Unreal = 'Unreal',
+  Blender = 'Blender',
+  Godot = 'Godot',
+  Photoshop = 'Photoshop',
+}
+
+export enum LandingLoginBrandCopy {
+  SubCopy = 'AI-powered game dev toolkit — 10× faster iteration so you ship games, not busywork.',
+  ModuleStoryteller = 'Storyteller',
+  ModuleWorlds = 'Infinite Canvas',
+  ModuleCanvas = '3D Canvas',
+  ModuleLoops = 'Loop Designer',
+  ModuleExport = 'One-Click Export',
+  BackHome = '← Marketing site',
+  NewHere = 'New here? Create an account →',
 }

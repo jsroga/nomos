@@ -5,13 +5,13 @@ import Link from 'next/link'
 import {
   LandingExternalUrl,
 } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
-import { LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
+import { LANDING_SECTION_PAD_Y_CLASS, LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 import { LandingFooterCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
 
 export function LandingFooter() {
   return (
-    <footer className={`${LANDING_SECTION_PANEL_CLASS} px-6`}>
-      <div className="max-w-4xl mx-auto relative z-10 text-center">
+    <footer className={`${LANDING_SECTION_PANEL_CLASS} ${LANDING_SECTION_PAD_Y_CLASS}`}>
+      <div className="relative z-10 mx-auto w-full max-w-4xl px-6 text-center">
         <span className="text-[10px] font-mono text-primary tracking-[0.4em] uppercase mb-6 block">
           {LandingFooterCopy.Eyebrow}
         </span>

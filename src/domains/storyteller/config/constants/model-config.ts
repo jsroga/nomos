@@ -242,11 +242,11 @@ export const AGENT_RUNTIME_DEFAULTS = {
 export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
   // === TIER 1: CHEAP + FAST (analysis, scoring, structured output) ===
   psychologist: {
-    model: 'anthropic:claude-sonnet-5',
+    model: 'moonshotai:kimi-k3',
     temperature: 0.55,
     topP: 0.9,
     maxOutputTokens: 4000,
-    rationale: 'High EQ required. Temp 0.55 balances analytical rigor with narrative voice — too cold produces formulaic psychology.',
+    rationale: 'High EQ required. Temp 0.55 balances analytical rigor with narrative voice — too cold produces formulaic psychology. Non-core role: Kimi K3 replaces the prohibited Claude Sonnet 5.',
   },
   consequence: {
     model: 'openai:gpt-5.2',
@@ -288,12 +288,12 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
       'Critique requires finding logic gaps. GPT-5.2 is best for red-teaming and logic checks.',
   },
   'gardener-standard': {
-    model: 'anthropic:claude-sonnet-5',
+    model: 'openai:gpt-5.2',
     temperature: 0.72,
     topP: 0.92,
     maxOutputTokens: 6000,
     rationale:
-      'Standard scene writing. Temp 0.72 narrows quality band — still creative but less prone to purple prose.',
+      'Standard scene writing. Temp 0.72 narrows quality band — still creative but less prone to purple prose. Fast non-core role uses GPT-5.2 instead of Claude Sonnet 5.',
   },
   autocomplete: {
     model: 'openai:gpt-5.6-luna',
@@ -305,12 +305,12 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
 
   // === TIER 3: FULL CREATIVE POWER (important scenes, orchestration) ===
   storyteller: {
-    model: 'anthropic:claude-sonnet-5',
+    model: 'moonshotai:kimi-k3',
     temperature: 0.75,
     topP: 0.92,
     maxOutputTokens: 8000,
     rationale:
-      'Orchestrator and main writer. Temp 0.75 balances originality with consistency — high enough for surprise, low enough to avoid slop.',
+      'Orchestrator and main writer — core role must use Kimi or GLM per user policy (Claude Sonnet 5 prohibited). Kimi K3 balances originality with consistency.',
   },
   'premise-architect': {
     model: 'openai:gpt-5.2',
@@ -322,19 +322,19 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
 
   // === TIER 4: PRESTIGE (climactic scenes, refinement passes) ===
   'gardener-climax': {
-    model: 'anthropic:claude-sonnet-5',
+    model: 'moonshotai:kimi-k3',
     temperature: 0.78,
     topP: 0.93,
     maxOutputTokens: 8000,
     rationale:
-      'Climactic scenes get slightly higher temp for peak creativity, but still controlled.',
+      'Climactic scenes get slightly higher temp for peak creativity, but still controlled. Core creative role uses Kimi K3 instead of Claude Sonnet 5.',
   },
   'gardener-refinement': {
-    model: 'anthropic:claude-sonnet-5',
+    model: 'openai:gpt-5.2',
     temperature: 0.65,
     topP: 0.9,
     maxOutputTokens: 6000,
-    rationale: 'Refinement passes need precision over creativity. Lower temp for targeted, controlled rewrites.',
+    rationale: 'Refinement passes need precision over creativity. Lower temp for targeted, controlled rewrites. Non-core role uses GPT-5.2 instead of Claude Sonnet 5.',
   },
 
   // === TIER 5: REASONING (complex planning, multi-step logic) ===
@@ -352,12 +352,12 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
   // the sampling fields below are advisory for older models only; workflow
   // steps must not pass modelSettings when the resolved model is Claude 4.7+.
   author: {
-    model: 'moonshotai:kimi-k2.7-code',
+    model: 'moonshotai:kimi-k3',
     temperature: 0.75,
     topP: 0.92,
     maxOutputTokens: 8000,
     rationale:
-      'Single GRRM author drafts AND revises — the token-heavy role runs on Kimi 2.7 by user decision (2026-07-09); GLM 5.2 is the picker alternative. High-importance reasoning (planner/premise) stays Opus. Rollback: STORYTELLER_AUTHOR_MODEL=anthropic:claude-opus-4-8; validation: PLAN-V2 7.2 evals.',
+      'Single GRRM author drafts AND revises — the token-heavy role runs on non-code Kimi K3 by user decision (2026-07-09); code models (Kimi K2.7 Code, Codex) are prohibited in storyteller. GLM 5.2 is the picker alternative. High-importance reasoning (planner/premise) stays Opus. Rollback: STORYTELLER_AUTHOR_MODEL=anthropic:claude-opus-4-8; validation: PLAN-V2 7.2 evals.',
   },
   planner: {
     model: 'anthropic:claude-opus-4-8',
@@ -392,12 +392,12 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
       'Premise / roadmap architecture — the highest-leverage structural decisions. Fable-class opt-in via STORYTELLER_PREMISE_MODEL=anthropic:claude-fable-5.',
   },
   chat: {
-    model: 'anthropic:claude-sonnet-5',
+    model: 'openai:gpt-5.6-luna',
     temperature: 0.7,
     topP: 0.9,
-    maxOutputTokens: 4000,
+    maxOutputTokens: 2000,
     rationale:
-      'Thin chat adapter — tool routing and conversation glue, not prose. The picker does NOT drive this slot (the picker drives the author, per D2).',
+      'Chat adapter — fast OpenRouter tier for quick conversation responses. Replaces the prohibited Claude Sonnet 5.',
   },
 }
 

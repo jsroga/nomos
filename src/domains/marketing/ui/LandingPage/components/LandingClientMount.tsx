@@ -1,13 +1,8 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+import { LandingDeferred } from './LandingDeferred'
 
-const LandingDeferred = dynamic(
-  () => import('./LandingDeferred').then(m => ({ default: m.LandingDeferred })),
-  { ssr: false }
-)
-
-/** Below-fold island only — static nav stays in the server HTML. */
+/** Client interactivity for below-fold; sections still render in first HTML. */
 export function LandingClientMount() {
   return <LandingDeferred />
 }

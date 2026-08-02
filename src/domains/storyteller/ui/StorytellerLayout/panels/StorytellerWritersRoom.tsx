@@ -53,6 +53,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
         <AssistantChat
           key={projectId || 'pending'}
           agentId="storyteller"
+          body={{ projectId }}
           suggestions={WRITERS_ROOM_SUGGESTIONS}
           mentionProviders={mentionProviders}
           mentionProjectContext={mentionProjectContext}

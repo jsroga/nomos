@@ -21,6 +21,11 @@ export enum MarketingWebGlBudget {
   MaxConcurrentCanvases = 2,
 }
 
+export enum MarketingCanvasFrameloop {
+  Always = 'always',
+  Never = 'never',
+}
+
 export const MARKETING_BG_PLACEHOLDER_CLASS =
   'fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,_rgba(92,124,250,0.12)_0%,_#050505_55%,_#000_100%)]'
 

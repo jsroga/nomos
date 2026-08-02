@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { IconScene } from './three-d-icon/IconScene'
 import {
@@ -8,6 +8,11 @@ import {
   MouseRotationGroup,
   ScaleContext,
 } from './three-d-icon/three-d-icon-contexts'
+import {
+  DOCUMENT_VISIBILITY_HIDDEN,
+  DOM_EVENT_VISIBILITY_CHANGE,
+} from '@/domains/marketing/constants/liquid'
+import { MarketingCanvasFrameloop } from '@/domains/marketing/constants/viewport-3d'
 
 interface ThreeDIconCanvasProps {
   type: string
@@ -40,13 +45,30 @@ export function ThreeDIconCanvas({
   metalness,
   mousePosition,
 }: ThreeDIconCanvasProps) {
+  const [frameloop, setFrameloop] = useState<MarketingCanvasFrameloop>(
+    MarketingCanvasFrameloop.Always,
+  )
+
+  useEffect(() => {
+    const sync = () => {
+      setFrameloop(
+        document.visibilityState === DOCUMENT_VISIBILITY_HIDDEN
+          ? MarketingCanvasFrameloop.Never
+          : MarketingCanvasFrameloop.Always,
+      )
+    }
+    sync()
+    document.addEventListener(DOM_EVENT_VISIBILITY_CHANGE, sync)
+    return () => document.removeEventListener(DOM_EVENT_VISIBILITY_CHANGE, sync)
+  }, [])
+
   return (
     <Canvas
       camera={{ position: [0, 0, 1.1], fov: 50 }}
       style={{ background: 'transparent' }}
       gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
       dpr={1}
-      frameloop="always"
+      frameloop={frameloop}
     >
       <ambientLight intensity={0.5} />
       <directionalLight position={[2, 2, 2]} intensity={1} />

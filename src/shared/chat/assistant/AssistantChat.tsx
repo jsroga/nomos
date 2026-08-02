@@ -11,10 +11,11 @@
  * "Rendered fewer hooks than expected".
  */
 
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
-import { useAISDKRuntime, AssistantChatTransport } from '@assistant-ui/react-ai-sdk'
+import { useAISDKRuntime } from '@assistant-ui/react-ai-sdk'
+import { DefaultChatTransport } from 'ai'
 import { createSessionThreadHistoryAdapter } from './thread-history-adapter'
 import {
   getCanvasModuleAgentId,
@@ -31,7 +32,6 @@ const DEFAULT_AGENT_ID = 'storyteller'
 const ASSISTANT_API_BASE = '/api/assistant/'
 const EMPTY_PROVIDERS: readonly MentionProvider[] = []
 const EMPTY_PROJECT_CONTEXT: ProjectContext = { projectId: '' }
-const JSON_NULL = 'null'
 
 interface AssistantChatProps {
   /** Explicit Mastra agent id (reachable via /api/assistant/<agentId>). */
@@ -95,22 +95,11 @@ export function AssistantChat({
     [persistKey]
   )
   const api = resolveApi(agentId, moduleKey)
-  const bodyKey = JSON.stringify(body ?? null)
-  const transport = useMemo(() => {
-    if (bodyKey === JSON_NULL) return new AssistantChatTransport({ api })
-    const parsed: unknown = JSON.parse(bodyKey)
-    return new AssistantChatTransport({
-      api,
-      body: isPlainObject(parsed) ? parsed : undefined,
-    })
-  }, [api, bodyKey])
+  const chatBody = useMemo(() => (isPlainObject(body) ? body : undefined), [body])
+  const transport = useMemo(() => new DefaultChatTransport({ api, body: chatBody }), [api, chatBody])
   const chat = useChat({ transport })
   const adapters = useMemo(() => (history ? { history } : undefined), [history])
   const runtime = useAISDKRuntime(chat, { adapters })
-
-  useEffect(() => {
-    transport.setRuntime(runtime)
-  }, [transport, runtime])
 
   const resolvedSuggestions =
     suggestions ?? (moduleKey ? getCanvasModuleSuggestions(moduleKey) : [])

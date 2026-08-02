@@ -18,7 +18,7 @@ import React, { useMemo } from 'react'
 import { ReferenceText, type EntityReference } from '../ReferenceText'
 import { hasReferences } from '@/domains/storyteller/core/entities/reference-parser'
 import { cn } from '@/shared/data/utils'
-import { useOptionalBible } from '../WorldBible'
+import { useOptionalBible } from '../WorldBible/components/BibleContext'
 import { extractEntitiesFromPlan } from '@/domains/storyteller/core/entities/entity-extractor'
 import {
   RICH_TEXT_EMPTY_PLACEHOLDER,

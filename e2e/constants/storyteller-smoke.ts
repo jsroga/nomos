@@ -29,9 +29,10 @@ export enum SmokeActionStatus {
   Pending = 'pending',
 }
 
+export const BYPASS_AUTH_VALUE = process.env.E2E_BYPASS_AUTH_SECRET ?? ''
+
 export enum SmokeHttp {
   Post = 'POST',
-  BypassAuthValue = 'true',
   SseDataPrefix = 'data: ',
 }
 

@@ -26,7 +26,7 @@ import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-js
 import { stringArrayFromJson } from '@/shared/data/json-guards'
 // CharacterCreationDialog removed - Cast is managed via CharacterPanel sidebar
 
-import { BibleProvider, useBible } from '../WorldBible'
+import { BibleProvider, useBible } from '../WorldBible/components/BibleContext'
 
 // Helper to get provider config from localStorage
 const getProviderConfig = () => {

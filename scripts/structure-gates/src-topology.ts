@@ -17,7 +17,6 @@ export const SRC_TOP_LEVEL_ALLOWED = new Set([
   'mcp',
   'shared',
   'trigger',
-  'trigger-dark-factory', // opt-in Cursor SDK task (esbuild-external); not in default TRIGGER_DIRS
   '__tests__',
   'mastra', // Studio entry + file-based agent prompts (see structure.test.ts)
 ])

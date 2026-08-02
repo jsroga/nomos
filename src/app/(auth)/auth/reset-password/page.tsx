@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md">
         <div className="p-8 flex flex-col justify-center bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl">
           <div className="flex flex-col items-center space-y-2 text-center mb-8">
-            <img src="/logo.svg" alt="KUR" className="w-32 h-auto drop-shadow-lg mb-2" />
+            <img src="/logo.png" alt="nomos.gg" className="w-40 h-auto drop-shadow-lg mb-2" />
             <h1 className="text-lg font-semibold text-white">Set New Password</h1>
             <p className="text-sm text-white/50">Enter your new password below.</p>
           </div>

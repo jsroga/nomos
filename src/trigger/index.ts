@@ -26,6 +26,3 @@ export * from '@/domains/storyteller/tasks/generate-portrait.task'
 export * from '@/domains/storyteller/tasks/generate-moodboard.task'
 export * from '@/domains/storyteller/tasks/select-portrait-variant.task'
 export * from '@/domains/storyteller/tasks/upload-asset.task'
-
-// Dark factory cursor-execute lives in src/trigger-dark-factory/ (opt-in dirs)
-// — @cursor/sdk cannot be bundled by the Trigger worker esbuild.

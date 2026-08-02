@@ -50,10 +50,10 @@ export function ProjectSelectionLayout() {
         <div className="z-50">
           <Link href="/">
             <Image
-              src="/logo.svg"
-              alt="Logo"
+              src="/logo.png"
+              alt="nomos.gg"
               width={237}
-              height={59}
+              height={42}
               className="w-[237px] h-auto opacity-90 hover:opacity-100 transition-opacity cursor-pointer"
               priority
             />

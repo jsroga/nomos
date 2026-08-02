@@ -8,12 +8,16 @@
 import '@/shared/data/server-guard'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { projects } from '@/db/schema'
+import { projects, storyPlans } from '@/db/schema'
 import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { countOccurrences } from '@/shared/data/count-occurrences'
-import { deepMergeRecords } from '@/shared/data/deep-merge'
+import { deepMergeRecords, recordFromJson } from '@/shared/data/deep-merge'
+import {
+  ConsistencyCheckKind,
+  isConsistencyCheckKind,
+} from '@/domains/storyteller/services/consistency-types'
 import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import {
   STORYTELLER_PROJECT_ID,
@@ -228,6 +232,25 @@ export const updateWorldBibleTool = createTool({
         })
         .where(eq(projects.id, projectId))
 
+      // Keep the dedicated storyPlans table in sync so the World Bible panel
+      // reflects chat-driven updates.
+      const [existingStoryPlan] = await db
+        .select()
+        .from(storyPlans)
+        .where(eq(storyPlans.projectId, projectId))
+        .limit(1)
+      const currentStoryPlanContent = existingStoryPlan
+        ? recordFromJson(existingStoryPlan.content)
+        : {}
+      const updatedStoryPlanContent = deepMergeRecords(currentStoryPlanContent, updates)
+      await db
+        .insert(storyPlans)
+        .values({ projectId, content: updatedStoryPlanContent, updatedAt: new Date() })
+        .onConflictDoUpdate({
+          target: storyPlans.projectId,
+          set: { content: updatedStoryPlanContent, updatedAt: new Date() },
+        })
+
       return {
         success: true,
         message: `Updated Story Plan successfully (${updatedFields.length} sections)`,
@@ -314,11 +337,12 @@ export const checkContinuityTool = createTool({
         '@/domains/storyteller/services/consistency-service'
       )
 
+      const normalizedCheckTypes = (checkTypes ?? ['all']).filter(isConsistencyCheckKind)
       const result = await runConsistencyCheck({
         projectId,
         episodeId,
         beatIds,
-        checkTypes: checkTypes || ['all'],
+        checkTypes: normalizedCheckTypes.length > 0 ? normalizedCheckTypes : [ConsistencyCheckKind.ALL],
       })
 
       if (!result.ok) {

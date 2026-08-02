@@ -40,8 +40,8 @@ export enum GameSourceDomainId {
 export const GAME_SOURCE_DOMAIN_LABELS: Record<GameSourceDomainId, string> = {
   [GameSourceDomainId.Storyteller]: 'Storyteller',
   [GameSourceDomainId.LoopCreator]: 'Loop Creator',
-  [GameSourceDomainId.InteriorDesigner]: 'Interior Designer',
-  [GameSourceDomainId.WorldBuilding]: 'World Builder',
+  [GameSourceDomainId.WorldBuilding]: 'Infinite Canvas',
+  [GameSourceDomainId.InteriorDesigner]: '3D Canvas',
 }
 
 export enum EntityApiQueryParam {

@@ -1,6 +1,4 @@
-import { jetbrainsMono } from '@/shared/data/constants/root-layout-fonts'
-
-/** Public marketing — Syne from root; JetBrains Mono for body/eyebrow copy on `/`. */
+/** Public marketing — Syne / Inter / JetBrains Mono CSS vars come from root layout. */
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
-  return <div className={`${jetbrainsMono.variable} min-h-screen`}>{children}</div>
+  return <div className="min-h-screen">{children}</div>
 }

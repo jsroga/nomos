@@ -21,10 +21,8 @@
  * route uses — so `FF_STORYTELLER_CONTROLLER=true` (which only gates the HTTP route in
  * `stream-post-handler`) is NOT required. The HTTP path is untouched.
  *
- * Siblings, deliberately separate: `storyteller:repl` drives
- * `createStorytellerAgent().stream()` (no modes, no plan gate);
- * `storyteller:orchestrate` probes the beat-draft workflow — a separate, inner
- * verdict gate that build mode reaches through `run_beat_draft_workflow`.
+ * This is the interactive probe. The same three guarantees are asserted
+ * non-interactively by `storyteller-controller.e2e.test.ts` (`npm run test:live`).
  */
 
 // MUST stay first: loads .env.local and neutralises `server-only` before any
@@ -241,10 +239,7 @@ async function allowChatModeReads(session: Session): Promise<void> {
   const chatMode = buildStorytellerControllerModes().find(
     mode => mode.id === StorytellerControllerMode.Chat
   )
-  const readOnlyTools = (chatMode?.availableTools ?? []).filter(
-    toolName => toolName !== submitPlanTool.id
-  )
-  for (const toolName of readOnlyTools) {
+  for (const toolName of chatMode?.availableTools ?? []) {
     await session.permissions.setForTool({ toolName, policy: 'allow' })
   }
 }

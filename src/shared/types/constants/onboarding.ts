@@ -8,9 +8,9 @@ export enum ModuleIdKey {
 
 export enum ModuleDisplayName {
   Storyteller = 'Storyteller',
-  InteriorDesigner = 'Interior Designer',
+  InteriorDesigner = '3D Canvas',
   LoopCreator = 'Loop Creator',
-  WorldGen = 'World Gen',
+  WorldGen = 'Infinite Canvas',
   AssetExporter = 'Asset Exporter',
 }
 

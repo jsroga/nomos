@@ -4,17 +4,19 @@ import { motion } from 'framer-motion'
 import { LandingManifestoCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
 import {
   LANDING_ABSOLUTE_OVERLAY_CLASS,
+  LANDING_SECTION_CONTAINER_CLASS,
+  LANDING_SECTION_PAD_Y_CLASS,
   LANDING_SECTION_PANEL_CLASS,
 } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 
 export function ManifestoSection() {
   return (
-    <section className={LANDING_SECTION_PANEL_CLASS}>
+    <section className={`${LANDING_SECTION_PANEL_CLASS} ${LANDING_SECTION_PAD_Y_CLASS}`}>
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true }}
-        className="w-full bg-[#ff4400] text-black py-32 px-6 overflow-hidden relative"
+        className="relative w-full overflow-hidden bg-[#ff4400] py-24 text-black md:py-28"
       >
         <div
           className={`${LANDING_ABSOLUTE_OVERLAY_CLASS} mix-blend-overlay`}
@@ -25,7 +27,7 @@ export function ManifestoSection() {
           }}
         />
 
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
+        <div className={`${LANDING_SECTION_CONTAINER_CLASS} grid items-center gap-16 lg:grid-cols-2`}>
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <div className="w-4 h-4 bg-black rounded-full" />
