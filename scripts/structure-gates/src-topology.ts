@@ -25,7 +25,7 @@ export const SRC_TOP_LEVEL_ALLOWED = new Set([
 export const SRC_ROOT_FILES_ALLOWED = new Set([
   'instrumentation.ts',
   'instrumentation-client.ts',
-  'middleware.ts',
+  'proxy.ts',
   'mastra.ts',
 ])
 

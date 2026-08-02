@@ -77,7 +77,7 @@ UI lives in `src/shared/debug/`. Unset both flags → overlays hidden.
 
 ## Landing A/B (hero headline)
 
-Sticky cookie `lp_hero` (`a` | `b`) assigned in `src/middleware.ts` on `/`. Split via env (0–100); missing → 50/50; one side set → other is remainder; both set but not summing to 100 → normalized.
+Sticky cookie `lp_hero` (`a` | `b`) assigned in `src/proxy.ts` on `/`. Split via env (0–100); missing → 50/50; one side set → other is remainder; both set but not summing to 100 → normalized.
 
 | Env | Effect |
 |---|---|

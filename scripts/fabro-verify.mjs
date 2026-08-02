@@ -40,7 +40,7 @@ const SRC_ROOT_DIRS = [
 ];
 
 function isSrcRootPath(file) {
-  if (file.startsWith('src/middleware') || file.startsWith('src/instrumentation')) {
+  if (file.startsWith('src/proxy') || file.startsWith('src/instrumentation')) {
     return true;
   }
   return SRC_ROOT_DIRS.some((d) => file === d || file.startsWith(`${d}/`));
@@ -55,7 +55,7 @@ function srcRootFileGlobs() {
     );
     files.push(...out.split('\n').map((f) => f.trim()).filter(Boolean));
   }
-  for (const f of ['src/middleware.ts', 'src/instrumentation.ts', 'src/instrumentation-client.ts']) {
+  for (const f of ['src/proxy.ts', 'src/instrumentation.ts', 'src/instrumentation-client.ts']) {
     if (existsSync(f)) files.push(f);
   }
   return files;
@@ -162,23 +162,6 @@ function runEslint(files) {
     stdio: 'inherit',
     env: { ...process.env, NODE_OPTIONS: NODE_OPTS },
   });
-}
-
-function filterErrors(output, allowedPaths) {
-  const lines = output.split('\n');
-  const errors = lines.filter((l) => /error TS\d+/.test(l));
-  const inScope = errors.filter((l) =>
-    allowedPaths.some((p) => l.includes(p)),
-  );
-  const outside = errors.filter(
-    (l) => !allowedPaths.some((p) => l.includes(p)),
-  );
-  return { inScope, outside };
-}
-
-function modulePrefixes(module) {
-  if (module === 'src-root') return SRC_ROOT_DIRS.map((d) => `${d}/`);
-  return [`src/domains/${module}/`, `src/app/api/${module}/`];
 }
 
 function runModuleTypecheck(module, focusFiles) {

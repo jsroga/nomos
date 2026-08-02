@@ -70,7 +70,7 @@ export function parseHeroAbCookieValue(
 
 type EnvBag = Readonly<Record<string, string | undefined>>
 
-/** Read process env for middleware / server (literal keys for clarity). */
+/** Read process env for proxy / server (literal keys for clarity). */
 export function heroAbWeightsFromEnv(env: EnvBag = process.env): LandingHeroAbWeights {
   return resolveHeroAbWeights(env[LandingHeroAbEnv.APct], env[LandingHeroAbEnv.BPct])
 }

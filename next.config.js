@@ -31,7 +31,11 @@ const nextConfig = {
   reactCompiler: true,
   experimental: {
     optimizePackageImports: OPTIMIZE_PACKAGE_IMPORTS,
+    // Lowers peak RAM on webpack builds (analyze / local --webpack); slight compile cost
+    webpackMemoryOptimizations: true,
+    webpackBuildWorker: true,
   },
+  productionBrowserSourceMaps: false,
   // Turbopack (default in Next 16). Pin root so get_next_package resolves
   // node_modules/next correctly (avoids "Next.js package not found" panics).
   turbopack: {
@@ -116,15 +120,15 @@ module.exports = withBundleAnalyzer(withSentryConfig(module.exports, {
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
 
-  // For all available options, see:
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
-  // Upload a larger set of source maps for prettier stack traces (increases build time)
-  widenClientFileUpload: true,
+  // Skip heavy source-map work when no auth token (Hobby OOM); enable when SENTRY_AUTH_TOKEN is set
+  widenClientFileUpload: Boolean(process.env.SENTRY_AUTH_TOKEN),
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
 
   // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
   // This can increase your server load as well as your hosting bill.
-  // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
+  // Note: Check that the configured route will not match with your Next.js proxy, otherwise reporting of client-
   // side errors will fail.
   tunnelRoute: '/monitoring',
 

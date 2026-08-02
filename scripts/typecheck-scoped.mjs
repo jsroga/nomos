@@ -52,7 +52,7 @@ const SLICES = [
       'src/app/documentation/**/*.tsx',
       'src/instrumentation.ts',
       'src/instrumentation-client.ts',
-      'src/middleware.ts',
+      'src/proxy.ts',
       'src/mastra.ts',
     ],
   },

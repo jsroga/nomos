@@ -11,7 +11,7 @@ import {
   parseHeroAbCookieValue,
 } from '@/domains/marketing/core/hero-ab'
 
-enum LandingMiddlewarePath {
+enum LandingProxyPath {
   Home = '/',
 }
 
@@ -19,8 +19,8 @@ enum CookieSameSite {
   Lax = 'lax',
 }
 
-export function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname !== LandingMiddlewarePath.Home) {
+export function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname !== LandingProxyPath.Home) {
     return NextResponse.next()
   }
 
@@ -39,7 +39,7 @@ export function middleware(request: NextRequest) {
 
   if (existing === null) {
     response.cookies.set(LandingHeroAbCookie.Name, variant, {
-      path: LandingMiddlewarePath.Home,
+      path: LandingProxyPath.Home,
       maxAge: LANDING_HERO_AB_COOKIE_MAX_AGE_SEC,
       sameSite: CookieSameSite.Lax,
       httpOnly: false,
