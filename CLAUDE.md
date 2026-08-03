@@ -38,14 +38,14 @@ npx vitest run src/domains/loop-creator            # whole directory
 | Folder | Role |
 |--------|------|
 | `app/` | Next.js routes, API glue, `_shell/` chrome |
-| `domains/` | Feature modules — vertical slices (storyteller, loop-creator, interior-designer, chat, …) |
+| `domains/` | Feature modules — vertical slices (storyteller, loop-creator, 2d-canvas, 3d-canvas, …) |
 | `shared/` | Cross-module (`admin`, `agent-kernel`, `auth`, `canvas`, `chat`, `data`, `debug`, `errors`, `jobs`, `observability` + legacy) — gate: `scripts/structure-gates/src-topology.ts` |
 | `components/` | Radix/CVA design system, flat PascalCase folder per primitive |
 | `db/` | Drizzle schema + client |
 | `trigger/` | Trigger.dev task registry |
 | `mcp/` | MCP server (separate deployable) |
 
-Each `src/domains/<module>/` follows the blueprint in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): `ui/`, `state/`, `core/` (with `core/io/`), `services/`, `ai/`, `tasks/` + a **single public `index.ts` barrel**. Dependency rule: `ui → state → core → services → ai`; no cross-module deep imports, pure `core/` (outside `core/io/`) has no React/DB/fetch, server data lives in TanStack Query not Zustand. Enforced by `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel guards. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/`, not `ai/`.
+Each `src/domains/<module>/` follows the blueprint in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): `ui/`, `state/`, `core/` (with `core/io/`), `services/`, `ai/`, `tasks/` + a **single public `index.ts` barrel**. Dependency rule: `ui → state → core → services → ai`; no cross-module deep imports, pure `core/` (outside `core/io/`) has no React/DB/fetch, server data lives in TanStack Query not Zustand. Enforced by `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel guards. Asset modules (`2d-canvas`, `3d-canvas`, `3d-asset-exporter`) lean on `tasks/`, not `ai/`.
 
 Two Mastra entries: `src/mastra.ts` is the Studio CLI entry (bundler-safe tool stubs in `src/shared/agent-kernel/mastra/tools/`); `src/shared/agent-kernel/MastraInstance.ts` is the production instance (Postgres memory, tracing). Production Mastra agents live in `src/domains/*/ai/agents/`. Never create a second Mastra instance or Postgres store.
 

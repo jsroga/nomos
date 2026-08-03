@@ -11,9 +11,6 @@ import {
   QueryParamKey,
 } from '@/shared/data/constants/protocol'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const dynamic = 'force-dynamic'
-
 const PROXY_ALLOWED_HOSTS = [
   ProxyAllowedHost.AssetsMeshy,
   ProxyAllowedHost.CdnMeshy,

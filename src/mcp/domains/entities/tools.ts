@@ -7,6 +7,7 @@
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { entitiesService } from '@/shared/data/entities-service'
+import { AppModuleId, GameEntityKind } from '@/shared/data/constants/protocol'
 import { validateApiKey, getServiceContext } from '../../core/auth'
 
 // ============================================
@@ -19,12 +20,9 @@ const listEntities = createTool({
     'List game entities for a project with optional filtering by type or domain. Returns characters, locations, mechanics, factions, items, and quests.',
   inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to list entities for (required)'),
-    entityType: z
-      .enum(['character', 'location', 'mechanic', 'faction', 'item', 'quest'])
-      .optional()
-      .describe('Filter by entity type (optional)'),
+    entityType: z.nativeEnum(GameEntityKind).optional().describe('Filter by entity type (optional)'),
     sourceDomain: z
-      .enum(['storyteller', 'loop-creator', 'interior-designer', 'world-building'])
+      .nativeEnum(AppModuleId)
       .optional()
       .describe('Filter by source domain (optional)'),
     search: z
@@ -78,16 +76,14 @@ const getEntity = createTool({
 const createEntity = createTool({
   id: 'create_entity',
   description:
-    'Create a new game entity. Entities are cross-domain objects that can be referenced across storyteller, loop-creator, interior-designer, and world-building modules.',
+    'Create a new game entity. Entities are cross-domain objects that can be referenced across storyteller, loop-creator, 3d-canvas, and 2d-canvas modules.',
   inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to create the entity in'),
-    entityType: z
-      .enum(['character', 'location', 'mechanic', 'faction', 'item', 'quest'])
-      .describe('The type of entity to create'),
+    entityType: z.nativeEnum(GameEntityKind).describe('The type of entity to create'),
     name: z.string().describe('The name of the entity'),
     description: z.string().optional().describe('A description of the entity (optional)'),
     sourceDomain: z
-      .enum(['storyteller', 'loop-creator', 'interior-designer', 'world-building'])
+      .nativeEnum(AppModuleId)
       .describe('The domain where this entity originates'),
     metadata: z
       .record(z.any())

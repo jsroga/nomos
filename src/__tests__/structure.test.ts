@@ -225,7 +225,7 @@ describe('single-home invariants', () => {
 describe('docs/ flat catalog (no trash)', () => {
   const docsDir = path.join(REPO_ROOT, 'docs')
 
-  it('contains only the six allowlisted markdown files (no subfolders)', () => {
+  it('contains only the seven allowlisted markdown files (no subfolders)', () => {
     const violations = findDocsCatalogViolations(docsDir)
     expect(
       violations,
@@ -234,6 +234,6 @@ describe('docs/ flat catalog (no trash)', () => {
   })
 
   it('allowlist matches docs/README catalog size', () => {
-    expect(DOCS_ALLOWED_FILES.size).toBe(6)
+    expect(DOCS_ALLOWED_FILES.size).toBe(7)
   })
 })

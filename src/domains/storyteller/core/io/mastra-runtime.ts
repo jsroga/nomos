@@ -53,6 +53,10 @@ import { runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools/workflo
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import {
+  STORYTELLER_AUTHOR_MODEL,
+  requestContextString,
+} from '@/domains/storyteller/ai/request-context'
 import { AgentController } from '@mastra/core/agent-controller'
 import { createDurableAgent } from '@mastra/core/agent/durable'
 import type { DurableAgent } from '@mastra/core/agent/durable'
@@ -78,7 +82,11 @@ const chatAdapterAgent = new Agent({
   name: CHAT_ADAPTER_NAME,
   description: CHAT_ADAPTER_DESCRIPTION,
   instructions: () => buildChatAdapterPrompt(getEntityLinkRequirements()),
-  model: () => resolveRoleModel(CHAT_ROLE),
+  model: ({ requestContext }) =>
+    resolveRoleModel(
+      CHAT_ROLE,
+      requestContextString(requestContext, STORYTELLER_AUTHOR_MODEL),
+    ),
   memory: createInheritedAgentMemory(),
   tools: {
     [manageBeatApprovalTool.id]: manageBeatApprovalTool,

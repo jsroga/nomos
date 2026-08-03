@@ -34,7 +34,7 @@ When splitting oversized files (see `.cursor/rules/code-metrics.mdc` — warn **
 
 | Mistake | Why it happens | Correct fix |
 |--------|----------------|-------------|
-| Moving hooks/workspace into `app/` | Cross-domain lint errors in `domains/`; shell scripts that dump code into wrong layer | Keep code in domain; fix imports via `@/shared` or existing seams (see interior-designer + `useWorldStore`) |
+| Moving hooks/workspace into `app/` | Cross-domain lint errors in `domains/`; shell scripts that dump code into wrong layer | Keep code in domain; fix imports via `@/shared` or existing seams (see `3d-canvas` + `useWorldStore`) |
 | `page.tsx` imports `./StorytellerPageClient` | Treating app route as feature root | `import { StorytellerLayout } from '@/domains/storyteller'` |
 | Domain `StorytellerLayout` re-exports from `@/app/...` | Backwards dependency domain → app | Domain layout owns `useStorytellerPage()` + workspace |
 | File-level `eslint-disable` | Gate failures on legacy extract | Split files + enums; ask user before any disable |

@@ -23,6 +23,10 @@ import {
   getCanvasModuleSuggestions,
 } from '@/shared/canvas/module-registry'
 import type { MentionProvider, ProjectContext } from '@/shared/chat/core/mentions/types'
+import {
+  AssistantChatBodyKey,
+  type AssistantChatModelOption,
+} from '@/shared/chat/core/constants/assistant-thread-ui'
 import { isPlainObject } from '@/shared/data/json-guards'
 import { AssistantThread } from './AssistantThread'
 import { AskUserToolUI } from './AssistantHumanTool'
@@ -48,6 +52,12 @@ interface AssistantChatProps {
   mentionProjectContext?: ProjectContext
   /** When set, the thread is persisted (sessionStorage) under this key across reloads. */
   persistKey?: string
+  /** Selected chat model id (Writers Room picker). */
+  chatModelId?: string
+  /** Models offered in the composer dropdown. */
+  chatModelOptions?: readonly AssistantChatModelOption[]
+  /** Persist / update the selected chat model. */
+  onChatModelChange?: (modelId: string) => void
 }
 
 function resolveApi(agentId?: string, moduleKey?: string): string {
@@ -62,10 +72,16 @@ function AssistantChatBody({
   suggestions,
   mentionProviders,
   mentionProjectContext,
+  chatModelId,
+  chatModelOptions,
+  onChatModelChange,
 }: {
   suggestions: readonly string[]
   mentionProviders?: readonly MentionProvider[]
   mentionProjectContext?: ProjectContext
+  chatModelId?: string
+  chatModelOptions?: readonly AssistantChatModelOption[]
+  onChatModelChange?: (modelId: string) => void
 }) {
   const mentions = useAssistantMentions(
     mentionProviders ?? EMPTY_PROVIDERS,
@@ -77,6 +93,9 @@ function AssistantChatBody({
     <AssistantThread
       suggestions={suggestions}
       mentions={mentionsEnabled ? mentions : undefined}
+      chatModelId={chatModelId}
+      chatModelOptions={chatModelOptions}
+      onChatModelChange={onChatModelChange}
     />
   )
 }
@@ -89,14 +108,25 @@ export function AssistantChat({
   mentionProviders,
   mentionProjectContext,
   persistKey,
+  chatModelId,
+  chatModelOptions,
+  onChatModelChange,
 }: AssistantChatProps) {
   const history = useMemo(
     () => (persistKey ? createSessionThreadHistoryAdapter(persistKey) : undefined),
     [persistKey]
   )
   const api = resolveApi(agentId, moduleKey)
-  const chatBody = useMemo(() => (isPlainObject(body) ? body : undefined), [body])
-  const transport = useMemo(() => new DefaultChatTransport({ api, body: chatBody }), [api, chatBody])
+  const chatBody = useMemo(() => {
+    const base = isPlainObject(body) ? body : {}
+    if (!chatModelId) return base
+    return { ...base, [AssistantChatBodyKey.ModelName]: chatModelId }
+  }, [body, chatModelId])
+
+  const transport = useMemo(
+    () => new DefaultChatTransport({ api, body: chatBody }),
+    [api, chatBody],
+  )
   const chat = useChat({ transport })
   const adapters = useMemo(() => (history ? { history } : undefined), [history])
   const runtime = useAISDKRuntime(chat, { adapters })
@@ -111,6 +141,9 @@ export function AssistantChat({
         suggestions={resolvedSuggestions}
         mentionProviders={mentionProviders}
         mentionProjectContext={mentionProjectContext}
+        chatModelId={chatModelId}
+        chatModelOptions={chatModelOptions}
+        onChatModelChange={onChatModelChange}
       />
     </AssistantRuntimeProvider>
   )

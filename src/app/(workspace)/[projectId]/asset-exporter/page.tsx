@@ -6,7 +6,7 @@ import {
   AssetsPanel,
   SettingsDialog,
   useWorldStore,
-} from '@/domains/world-building-toolkit'
+} from '@/domains/2d-canvas'
 import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { useAuthStore } from '@/shared/auth/useAuthStore'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'

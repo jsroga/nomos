@@ -9,7 +9,7 @@ import {
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 
 export type EntityType = 'character' | 'location' | 'mechanic' | 'faction' | 'item' | 'quest'
-export type SourceDomain = 'storyteller' | 'loop-creator' | 'interior-designer' | 'world-building'
+export type SourceDomain = 'storyteller' | 'loop-creator' | '3d-canvas' | '2d-canvas'
 
 export interface GameEntity {
   id: string

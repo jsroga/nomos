@@ -42,7 +42,7 @@ When `constants/`, `tools/`, `workflows/`, or `prompts/` sit beside Mastra agent
 5. Typed boundaries — no `any` at module edges; no `z.any()` in workflow/agent schemas; **no `as` type assertions** (`as const` only).
 6. File size / complexity — warn **400** / error **800** lines; complexity **15** / **25** — see `.cursor/rules/code-metrics.mdc` and `quality-backlog.mdc` when splitting god files.
 7. ESLint import guards — barrel guards for outsiders; **cross-domain imports forbidden** (`@/domains/A` must not import `@/domains/B`; shared code goes in `@/shared`). See `.cursor/rules/eslint-boundaries.mdc`.
-8. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/` not `ai/`.
+8. Asset modules (`2d-canvas`, `3d-canvas`, `3d-asset-exporter`) lean on `tasks/` not `ai/`.
 9. Magic string sets (action types, statuses, phases) → **TypeScript `enum`**, not inline literals or `as const` object maps.
 
 ## When changing a module

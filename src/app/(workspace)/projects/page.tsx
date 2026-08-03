@@ -2,16 +2,26 @@
 
 import { ProjectSelectionLayout } from '@/shared/workspace'
 
-/** Static ambient backdrop — no WebGL / RAF (TurbulentBackground is marketing-only). */
+/** Projects dashboard — static indigo wash + dot grid; no WebGL. */
 export default function ProjectSelectionPage() {
   return (
-    <div className="relative min-h-screen w-full bg-black text-foreground">
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(79,70,229,0.22),transparent_55%),radial-gradient(ellipse_at_80%_100%,rgba(59,130,246,0.16),transparent_50%),radial-gradient(ellipse_at_50%_50%,rgba(139,92,246,0.08),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.15)_0%,rgba(0,0,0,0.75)_100%)]" />
+    <div className="relative h-full min-h-0 w-full bg-[hsl(240_10%_3.9%)] text-[hsl(0_0%_98%)]">
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+        <div
+          className="absolute inset-0 opacity-[0.28]"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at center, #1a1a1a 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+          }}
+        />
+        <div
+          className="absolute inset-x-0 top-0 h-[420px]"
+          style={{
+            background:
+              'radial-gradient(80% 100% at 50% 0%, hsl(235 88% 65% / .1) 0%, transparent 72%)',
+          }}
+        />
       </div>
       <ProjectSelectionLayout />
     </div>

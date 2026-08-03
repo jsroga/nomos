@@ -384,9 +384,9 @@
         }
       }
     },
-    "/interior-designer/designs": {
+    "/3d-canvas/designs": {
       "get": {
-        "operationId": "get-interior-designer-designs",
+        "operationId": "get-3d-canvas-designs",
         "summary": "",
         "description": "",
         "tags": [
@@ -405,7 +405,7 @@
         }
       },
       "post": {
-        "operationId": "post-interior-designer-designs",
+        "operationId": "post-3d-canvas-designs",
         "summary": "",
         "description": "",
         "tags": [
@@ -424,7 +424,7 @@
         }
       },
       "patch": {
-        "operationId": "patch-interior-designer-designs",
+        "operationId": "patch-3d-canvas-designs",
         "summary": "",
         "description": "",
         "tags": [
@@ -443,7 +443,7 @@
         }
       },
       "delete": {
-        "operationId": "delete-interior-designer-designs",
+        "operationId": "delete-3d-canvas-designs",
         "summary": "",
         "description": "",
         "tags": [
@@ -462,9 +462,9 @@
         }
       }
     },
-    "/interior-designer/material": {
+    "/3d-canvas/material": {
       "post": {
-        "operationId": "post-interior-designer-material",
+        "operationId": "post-3d-canvas-material",
         "summary": "",
         "description": "",
         "tags": [
@@ -483,9 +483,9 @@
         }
       }
     },
-    "/interior-designer/retexture": {
+    "/3d-canvas/retexture": {
       "post": {
-        "operationId": "post-interior-designer-retexture",
+        "operationId": "post-3d-canvas-retexture",
         "summary": "",
         "description": "",
         "tags": [
@@ -504,9 +504,9 @@
         }
       }
     },
-    "/interior-designer/text-to-3d": {
+    "/3d-canvas/text-to-3d": {
       "post": {
-        "operationId": "post-interior-designer-text-to-3d",
+        "operationId": "post-3d-canvas-text-to-3d",
         "summary": "",
         "description": "",
         "tags": [
@@ -525,9 +525,9 @@
         }
       }
     },
-    "/interior-designer/texture": {
+    "/3d-canvas/texture": {
       "post": {
-        "operationId": "post-interior-designer-texture",
+        "operationId": "post-3d-canvas-texture",
         "summary": "",
         "description": "",
         "tags": [
@@ -546,9 +546,9 @@
         }
       }
     },
-    "/interior-designer/textures": {
+    "/3d-canvas/textures": {
       "post": {
-        "operationId": "post-interior-designer-textures",
+        "operationId": "post-3d-canvas-textures",
         "summary": "",
         "description": "",
         "tags": [
@@ -567,9 +567,9 @@
         }
       }
     },
-    "/interior-designer/material/{taskId}": {
+    "/3d-canvas/material/{taskId}": {
       "get": {
-        "operationId": "get-interior-designer-material-{taskId}",
+        "operationId": "get-3d-canvas-material-{taskId}",
         "summary": "",
         "description": "",
         "tags": [
@@ -588,9 +588,9 @@
         }
       }
     },
-    "/interior-designer/retexture/{runId}": {
+    "/3d-canvas/retexture/{runId}": {
       "get": {
-        "operationId": "get-interior-designer-retexture-{runId}",
+        "operationId": "get-3d-canvas-retexture-{runId}",
         "summary": "",
         "description": "",
         "tags": [
@@ -609,9 +609,9 @@
         }
       }
     },
-    "/interior-designer/text-to-3d/{taskId}": {
+    "/3d-canvas/text-to-3d/{taskId}": {
       "get": {
-        "operationId": "get-interior-designer-text-to-3d-{taskId}",
+        "operationId": "get-3d-canvas-text-to-3d-{taskId}",
         "summary": "",
         "description": "",
         "tags": [

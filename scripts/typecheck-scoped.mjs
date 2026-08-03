@@ -23,13 +23,13 @@ const MODULE_SUBDIR_CHUNK = 5
 const DOMAIN_MODULES = [
   'storyteller',
   'chat',
-  'interior-designer',
+  '3d-canvas',
   'loop-creator',
   'marketing',
   'deduction-puzzle-designer',
   '3d-asset-exporter',
   'game-design',
-  'world-building-toolkit',
+  '2d-canvas',
 ]
 
 const SLICES = [
@@ -59,7 +59,7 @@ const SLICES = [
   { id: 'app-api-storyteller', include: ['src/app/api/storyteller/**/*.ts', 'src/app/api/storyteller/**/*.tsx'] },
   { id: 'app-api-entities', include: ['src/app/api/entities/**/*.ts', 'src/app/api/entities/**/*.tsx'] },
   { id: 'app-api-world', include: ['src/app/api/world/**/*.ts', 'src/app/api/world/**/*.tsx'] },
-  { id: 'app-api-interior', include: ['src/app/api/interior-designer/**/*.ts', 'src/app/api/interior-designer/**/*.tsx'] },
+  { id: 'app-api-interior', include: ['src/app/api/3d-canvas/**/*.ts', 'src/app/api/3d-canvas/**/*.tsx'] },
   { id: 'app-api-trigger', include: ['src/app/api/trigger*/**/*.ts', 'src/app/api/trigger*/**/*.tsx'] },
   { id: 'app-api-auth', include: ['src/app/api/auth/**/*.ts', 'src/app/api/auth/**/*.tsx'] },
   { id: 'app-api-rest', include: ['src/app/api/**/*.ts', 'src/app/api/**/*.tsx'] },

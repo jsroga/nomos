@@ -2,8 +2,10 @@
 
 import { useParams, useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
-import { useWorldStore } from '@/domains/world-building-toolkit'
+import { useWorldStore } from '@/domains/2d-canvas'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
+import { isValidProjectId } from '@/shared/auth/security'
+import { AUTH_ROUTE } from '@/shared/auth/constants/auth-messages'
 import {
   ProjectLoaderLog,
   ProjectLoaderMessage,
@@ -16,7 +18,9 @@ export function useProjectFromUrl() {
 
   // Handle both single projectId and catch-all array
   const rawProjectId = params?.projectId
-  const projectId = Array.isArray(rawProjectId) ? rawProjectId[0] : rawProjectId
+  const candidateId = Array.isArray(rawProjectId) ? rawProjectId[0] : rawProjectId
+  const projectId =
+    typeof candidateId === 'string' && isValidProjectId(candidateId) ? candidateId : undefined
 
   const currentProject = useWorkspaceProjectStore(state => state.currentProject)
   const loadWorkspaceProject = useWorkspaceProjectStore(state => state.loadProject)
@@ -31,10 +35,12 @@ export function useProjectFromUrl() {
   const loadedProjectIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    // Only load if:
-    // 1. We have a projectId in URL
-    // 2. currentProject doesn't match (or doesn't exist)
-    // 3. We haven't already loaded this project in this session
+    // Reserved paths (e.g. /projects) can match `[projectId]` — never hit the API.
+    if (typeof candidateId === 'string' && candidateId.length > 0 && !projectId) {
+      router.replace(AUTH_ROUTE.PROJECTS)
+      return
+    }
+
     const shouldLoad =
       projectId && currentProject?.id !== projectId && loadedProjectIdRef.current !== projectId
 
@@ -42,7 +48,7 @@ export function useProjectFromUrl() {
       console.log(ProjectLoaderLog.StartingLoad, projectId)
       setIsLoading(true)
       setError(null)
-      loadedProjectIdRef.current = projectId // Mark as loading
+      loadedProjectIdRef.current = projectId
 
       loadWorkspaceProject(projectId)
         .then(async loadedProject => {
@@ -52,21 +58,17 @@ export function useProjectFromUrl() {
 
           console.log(ProjectLoaderLog.LoadComplete, !!loadedProject)
           if (!loadedProject) {
-            // Project doesn't exist - redirect to base path
             console.warn(ProjectLoaderLog.ProjectNotFoundRedirect)
             setError(ProjectLoaderMessage.ProjectNotFound)
-            loadedProjectIdRef.current = null // Reset on error
-            const basePath = '/' + (pathname?.split('/')[1] || '')
-            router.replace(basePath)
+            loadedProjectIdRef.current = null
+            router.replace(AUTH_ROUTE.PROJECTS)
           }
         })
         .catch(err => {
           console.error(ProjectLoaderLog.FailedLoadProject, err)
           setError(ProjectLoaderMessage.FailedLoadProject)
-          loadedProjectIdRef.current = null // Reset on error
-          // Redirect to base path
-          const basePath = '/' + (pathname?.split('/')[1] || '')
-          router.replace(basePath)
+          loadedProjectIdRef.current = null
+          router.replace(AUTH_ROUTE.PROJECTS)
         })
         .finally(() => setIsLoading(false))
     } else if (!projectId && currentProject) {
@@ -75,6 +77,7 @@ export function useProjectFromUrl() {
       loadedProjectIdRef.current = null
     }
   }, [
+    candidateId,
     projectId,
     currentProject?.id,
     loadWorkspaceProject,

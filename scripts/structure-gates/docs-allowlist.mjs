@@ -7,6 +7,7 @@ export const DOCS_ALLOWED_FILES = new Set([
   'ARCHITECTURE.md',
   'MODULES.md',
   'DEVELOPMENT.md',
+  'DESIGN.md',
   'MCP_API.md',
   'STORYTELLER.md',
 ])

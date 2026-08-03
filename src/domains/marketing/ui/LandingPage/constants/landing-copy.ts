@@ -26,9 +26,9 @@ export const LANDING_NAV_ITEMS: readonly LandingNavItem[] = [
 ]
 
 export enum LandingExternalUrl {
-  DocsReadme = 'https://github.com/jsroga/kurvitza#readme',
-  ApiDocs = 'https://github.com/jsroga/kurvitza/tree/main/docs',
-  GitHubRepo = 'https://github.com/jsroga/world-building-kit',
+  DocsReadme = 'https://github.com/jsroga/nomos#readme',
+  ApiDocs = 'https://github.com/jsroga/nomos/tree/main/docs',
+  GitHubRepo = 'https://github.com/jsroga/nomos',
   Login = '/login',
   Projects = '/projects',
   Terms = '/terms',

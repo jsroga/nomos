@@ -33,10 +33,9 @@ export interface ChatModelOption {
   /** Optional one-line description for the picker. */
   description?: string
   /**
-   * Offered in the user-facing picker (PLAN-V2 1.4 lockdown): only the
-   * author-model choices (Kimi, GLM) are user-selectable — the rest of the
-   * catalog is internal routing ("secret sauce"). `resolveChatModelId` still
-   * accepts non-selectable ids so legacy saved preferences keep resolving.
+   * Offered in the user-facing picker: Kimi, GLM, and Opus 5.
+   * `resolveChatModelId` still accepts non-selectable ids so legacy saved
+   * preferences keep resolving.
    */
   userSelectable: boolean
 }
@@ -88,9 +87,19 @@ export const CHAT_MODELS: ChatModelOption[] = [
     description: 'Moonshot Kimi K3 (non-code) via OpenRouter — default author, single key.',
     userSelectable: true,
   },
+  {
+    id: 'anthropic:claude-opus-5',
+    label: 'Opus 5',
+    provider: 'Anthropic (via OpenRouter)',
+    providerKey: 'openrouter',
+    envVar: 'OPENROUTER_API_KEY',
+    openRouterId: 'anthropic/claude-opus-5',
+    description: 'Claude Opus 5 via OpenRouter — high-reasoning picker choice.',
+    userSelectable: true,
+  },
 ]
 
-/** Models offered in the user-facing picker (Kimi + GLM only — 1.4 lockdown). */
+/** Models offered in the user-facing picker (Kimi, GLM, Opus 5). */
 export const USER_SELECTABLE_CHAT_MODELS: ChatModelOption[] = CHAT_MODELS.filter(
   option => option.userSelectable
 )

@@ -8,6 +8,7 @@
 import { db } from '@/db/client'
 import { beats, episodes, projects, characters, gameLoops } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import { isValidProjectId } from '@/shared/auth/security'
 import {
   E2E_BYPASS_NODE_ENVS,
   E2E_TEST_USER_ID,
@@ -35,6 +36,9 @@ export interface BeatAccessResult extends AccessResult {
  * Single query - most basic check
  */
 export async function verifyProjectAccess(projectId: string, userId: string): Promise<boolean> {
+  // Guard before Postgres — non-UUID ids (e.g. reserved path "projects") throw 22P02.
+  if (!isValidProjectId(projectId)) return false
+
   const [project] = await db
     .select({ userId: projects.userId })
     .from(projects)

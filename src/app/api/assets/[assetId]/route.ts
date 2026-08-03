@@ -7,9 +7,6 @@ import { getErrorMessage } from '@/shared/errors/error-utils'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const dynamic = 'force-dynamic'
-
 async function verifyAssetAccess(assetId: string, userId: string) {
   const [asset] = await db.select().from(assets).where(eq(assets.id, assetId))
   if (!asset) return false

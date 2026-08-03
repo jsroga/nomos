@@ -22,7 +22,7 @@ function main() {
       '\ncheck-architecture: FAILED\n' +
         'Run: npm run test:unit -- src/__tests__/structure.test.ts src/domains/__tests__/domain-structure.test.ts\n' +
         'Governing docs: docs/ARCHITECTURE.md, docs/MODULES.md\n' +
-        'docs/ catalog: scripts/structure-gates/docs-allowlist.mjs (flat 6 files)\n',
+        'docs/ catalog: scripts/structure-gates/docs-allowlist.mjs (flat 7 files)\n',
     )
     process.exit(result.status ?? 1)
   }

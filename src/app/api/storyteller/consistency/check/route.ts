@@ -16,8 +16,6 @@ import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {

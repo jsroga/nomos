@@ -71,8 +71,8 @@ From `docs/ARCHITECTURE.md` + `docs/MODULES.md`:
 | Module | Plan focus | Known landmines |
 | --- | --- | --- |
 | storyteller | Agent/tool reduction, SSE/HITL, anti-slop | Council/orchestration deletion breaks imports if order wrong; `ActionApprovalModal` outside Mastra workflow |
-| world-building-toolkit | Client writes → API, TanStack migration | `AssetsPanel.tsx` Supabase delete; `TileGenerationService` polling |
-| interior-designer | Asset module: `io/` + `tasks/` + `state/queries/` | No agents unless plan adds AI |
+| 2d-canvas | Client writes → API, TanStack migration | `AssetsPanel.tsx` Supabase delete; `TileGenerationService` polling |
+| 3d-canvas | Asset module: `io/` + `tasks/` + `state/queries/` | No agents unless plan adds AI |
 | loop-creator | Complete blueprint (`io/`, `tasks/`) | Mastra agents exist, graph incomplete |
 | chat | Thin — wire contract consumer | Do not change `useChatStream` event types without explicit scope |
 | marketing | UI-only | No backend layers |

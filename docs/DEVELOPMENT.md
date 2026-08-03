@@ -77,7 +77,7 @@ UI lives in `src/shared/debug/`. Unset both flags → overlays hidden.
 
 ## Landing SSR (`ssr: false`)
 
-On marketing pages: `{ ssr: false }` is allowed **only** for non-text FX (WebGL / canvas / Three). Text and content sections must SSR — use `dynamic()` without `ssr: false`, plus scroll/idle gates for FX. Agent rule: `.cursor/rules/marketing-ssr.mdc`.
+On marketing pages: `{ ssr: false }` is allowed **only** for non-text FX (WebGL / canvas / Three). Text and content sections must SSR — use `dynamic()` without `ssr: false`, plus scroll/idle gates for FX. Agent rule: `.cursor/rules/marketing-ssr.mdc`. Full product UI contract (projects, chat, tokens): [DESIGN.md](./DESIGN.md).
 
 ## Landing A/B (hero headline)
 

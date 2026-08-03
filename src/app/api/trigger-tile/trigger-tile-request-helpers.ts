@@ -7,7 +7,7 @@ import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-table
 import type {
   GenerateTileContextPayload,
   GenerateTilePayload,
-} from '@/domains/world-building-toolkit/tasks/constants/generate-tile'
+} from '@/domains/2d-canvas/tasks/constants/generate-tile'
 import type { TileAIProvider } from '@/trigger/providers/follow-up-provider'
 
 enum TileContextPayloadKey {

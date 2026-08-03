@@ -8,15 +8,16 @@ import {
 } from '@/shared/data/api-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
+import { AppModuleId, GameEntityKind } from '@/shared/data/constants/protocol'
 import { GameEntityQueryParam } from '@/shared/data/constants/game-entities-wire'
 
 // Entity creation schema
 const createEntitySchema = z.object({
   projectId: z.string().uuid(),
-  entityType: z.enum(['character', 'location', 'mechanic', 'faction', 'item', 'quest']),
+  entityType: z.nativeEnum(GameEntityKind),
   name: z.string().min(1),
   description: z.string().optional(),
-  sourceDomain: z.enum(['storyteller', 'loop-creator', 'interior-designer', 'world-building']),
+  sourceDomain: z.nativeEnum(AppModuleId),
   sourceEntityId: z.string().uuid().optional(),
   metadata: z.record(z.any()).optional(),
   tags: z.array(z.string()).optional(),

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/Button'
-import { SettingsDialog } from '@/domains/world-building-toolkit/ui/components/SettingsDialog'
+import { SettingsDialog } from '@/domains/2d-canvas'
 import { ProjectSelectorDropdown } from '@/components/shell/ProjectSelectorDropdown'
 import { AsyncStatusIndicator } from '@/components/AsyncStatusIndicator'
 import { TroubleshootIndicator } from '@/components/shell/TroubleshootIndicator'
@@ -18,7 +18,7 @@ export function GlobalHeader() {
     <>
       <div className="h-14 bg-card border-b border-border flex items-center px-4 gap-4 shrink-0 relative z-[100]">
         <div className="flex items-center gap-2">
-          {/* <img src="/logo.svg" alt="Logo" className="h-6 w-auto brightness-0 invert opacity-50" /> */}
+          {/* <img src="/logo.png" alt="Logo" className="h-6 w-auto brightness-0 invert opacity-50" /> */}
           <Link
             href="/projects"
             className="text-sm font-mono font-bold uppercase tracking-widest text-muted-foreground cursor-pointer hover:text-foreground transition-colors"

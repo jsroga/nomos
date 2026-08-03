@@ -4,9 +4,9 @@ import {
   deleteTileRequestSchema,
   listTilesQuerySchema,
   upsertTileRequestSchema,
-} from '@/domains/world-building-toolkit/core/io/world.dto'
-import { worldTileService } from '@/domains/world-building-toolkit/services/world-data-service'
-import { WORLD_QUERY_PARAM } from '@/domains/world-building-toolkit/constants/world-query-params'
+} from '@/domains/2d-canvas/core/io/world.dto'
+import { worldTileService } from '@/domains/2d-canvas/services/world-data-service'
+import { WORLD_QUERY_PARAM } from '@/domains/2d-canvas/constants/world-query-params'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 
 export async function GET(req: Request) {

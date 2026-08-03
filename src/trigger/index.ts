@@ -4,11 +4,11 @@
  * Re-exports all module-owned tasks for build discovery via trigger.config.ts.
  */
 
-// World Building Toolkit
-export * from '@/domains/world-building-toolkit/tasks/generate-tile.task'
-export * from '@/domains/world-building-toolkit/tasks/upscale-tile.task'
-export * from '@/domains/world-building-toolkit/tasks/enhance-fidelity.task'
-export * from '@/domains/world-building-toolkit/tasks/select-mj-variant.task'
+// 2D Canvas (Infinite Canvas) tile tasks
+export * from '@/domains/2d-canvas/tasks/generate-tile.task'
+export * from '@/domains/2d-canvas/tasks/upscale-tile.task'
+export * from '@/domains/2d-canvas/tasks/enhance-fidelity.task'
+export * from '@/domains/2d-canvas/tasks/select-mj-variant.task'
 
 // 3D Asset Exporter
 export * from '@/domains/3d-asset-exporter/tasks/generate-3d-model.task'

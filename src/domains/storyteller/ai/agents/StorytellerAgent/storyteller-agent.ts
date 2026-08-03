@@ -22,6 +22,10 @@ import {
   resolveRoleModel,
   resolveStorytellerModel,
 } from '@/domains/storyteller/config/constants/model-config'
+import {
+  STORYTELLER_AUTHOR_MODEL,
+  requestContextString,
+} from '@/domains/storyteller/ai/request-context'
 
 // Import consolidated GRRM tools (9 CRUD) + the workflow entry tool (#10)
 import { grrmTools, runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools'
@@ -66,12 +70,15 @@ export class StorytellerAgent {
     // Get workspace from Mastra instance to ensure skills are loaded
     const workspace = m?.getWorkspace()
 
-    // The chat adapter runs on the fixed 'chat' role slot (D2): the picker
-    // drives the AUTHOR via RequestContext, never this glue agent. An explicit
-    // modelName (CLI/testing) still wins.
+    // Explicit modelName (CLI/testing) wins; otherwise the Writers Room picker
+    // override rides on RequestContext (same key as the author slot).
     const model = config.modelName
       ? resolveStorytellerModel(config.modelName)
-      : () => resolveRoleModel(AgentModelRole.Chat)
+      : ({ requestContext }: { requestContext?: RequestContext }) =>
+          resolveRoleModel(
+            AgentModelRole.Chat,
+            requestContextString(requestContext, STORYTELLER_AUTHOR_MODEL),
+          )
 
     // Configure memory for multi-turn conversation context
     // See: https://mastra.ai/docs/agents/agent-memory

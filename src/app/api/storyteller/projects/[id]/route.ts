@@ -4,12 +4,17 @@ import { projects } from '@/db'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
+import { isValidProjectId } from '@/shared/auth/security'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { cleanProjectResponse, patchStorytellerProject } from './project-route-helpers'
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
   try {
+    if (!isValidProjectId(params.id)) {
+      return NextResponse.json({ error: API_ERROR.PROJECT_NOT_FOUND }, { status: 400 })
+    }
+
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
@@ -47,6 +52,10 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
   try {
+    if (!isValidProjectId(params.id)) {
+      return NextResponse.json({ error: API_ERROR.PROJECT_NOT_FOUND }, { status: 400 })
+    }
+
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 

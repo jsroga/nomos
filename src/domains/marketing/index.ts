@@ -13,7 +13,7 @@ export { ProPlanPromo } from './ui/ProPlanPromo'
 export { ThreeDIcon } from './ui/ThreeDIcon'
 export { ToolsIntegration } from './ui/ToolsIntegration'
 export { TurbulentBackground } from './ui/TurbulentBackground'
-export { LANDING_HERO_HEADLINES } from './ui/LandingPage/constants/landing-copy'
+export { LANDING_HERO_HEADLINES, LandingExternalUrl } from './ui/LandingPage/constants/landing-copy'
 export {
   LandingLoginBrandCopy,
   LandingNavUiCopy,

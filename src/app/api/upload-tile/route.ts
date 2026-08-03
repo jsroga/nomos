@@ -11,9 +11,6 @@ import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE, DB_UPSERT } from '@/shared/data/constants/db-tables'
 import { BufferEncoding, FsDirectory } from '@/shared/data/constants/protocol'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const dynamic = 'force-dynamic'
-
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const { projectId, x, y, imageBase64, prompt } = await request.json()

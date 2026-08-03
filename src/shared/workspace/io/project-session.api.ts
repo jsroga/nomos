@@ -1,6 +1,7 @@
 import { FetchCache } from '@/shared/data/constants/protocol'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { joinUrlPath } from '@/shared/data/url-builder'
+import { isValidProjectId } from '@/shared/auth/security'
 import type { WorkspaceProject } from '../types'
 import { toWorkspaceProject, workspaceProjectResponseSchema } from './workspace-project-schema'
 
@@ -15,6 +16,9 @@ enum ProjectSessionCacheControl {
 }
 
 export async function fetchWorkspaceProject(projectId: string): Promise<WorkspaceProject> {
+  if (!isValidProjectId(projectId)) {
+    throw new Error(`Invalid project id: ${projectId}`)
+  }
   const data = await fetchJsonRecord(joinUrlPath(WORKSPACE_PROJECT_API_PATH, projectId), {
     cache: FetchCache.NoStore,
     headers: { [ProjectSessionFetchHeader.CacheControl]: ProjectSessionCacheControl.NoCache },

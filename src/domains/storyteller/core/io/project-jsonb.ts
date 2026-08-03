@@ -13,6 +13,11 @@ let hasLoggedStoryPlanParseFailure = false
 export function parseStoryPlanJson(value: unknown): StoryPlan | null {
   if (value === null || value === undefined) return null
 
+  // Empty / placeholder jsonb — not an error, just "no plan yet".
+  if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) {
+    return null
+  }
+
   const result = StoryPlanSchema.safeParse(value)
   if (!result.success) {
     if (!hasLoggedStoryPlanParseFailure) {

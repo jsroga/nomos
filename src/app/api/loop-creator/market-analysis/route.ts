@@ -21,8 +21,6 @@ import {
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { ContentType } from '@/shared/data/constants/protocol'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const runtime = 'nodejs'
 export const maxDuration = 120 // 2 minutes max for thorough analysis
 
 export async function POST(req: NextRequest) {

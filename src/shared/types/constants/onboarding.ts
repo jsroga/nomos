@@ -1,8 +1,8 @@
 export enum ModuleIdKey {
   Storyteller = 'storyteller',
-  InteriorDesigner = 'interior-designer',
+  InteriorDesigner = '3d-canvas',
   LoopCreator = 'loop-creator',
-  WorldGen = 'world-gen',
+  WorldGen = '2d-canvas',
   AssetExporter = 'asset-exporter',
 }
 

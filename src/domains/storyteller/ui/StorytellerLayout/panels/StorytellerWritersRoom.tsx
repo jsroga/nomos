@@ -5,6 +5,7 @@ import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { DomainSidebar } from '@/components/DomainSidebar'
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
 import { WRITERS_ROOM_SUGGESTIONS } from '@/domains/storyteller/config/constants/writers-room'
+import { useStorytellerChatModel } from '@/domains/storyteller/state/hooks/useStorytellerChatModel'
 import { getStorytellerMentionProviders } from '@/domains/storyteller/ui/MentionsProvider/providers'
 import { buildStorytellerProjectContext } from '@/domains/storyteller/ui/MentionsProvider/build-storyteller-project-context'
 import { getGameEntityProvider } from '@/shared/chat/core/mentions/game-entity-provider'
@@ -25,6 +26,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
   const { routeProjectId, characters, beats, storyPlan } = props.core
 
   const projectId = routeProjectId ?? ''
+  const { modelId, setModelId, options: chatModelOptions } = useStorytellerChatModel()
   const mentionProviders = useMemo(
     () => [...getStorytellerMentionProviders(), getGameEntityProvider()],
     []
@@ -58,6 +60,9 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
           mentionProviders={mentionProviders}
           mentionProjectContext={mentionProjectContext}
           persistKey={projectId ? `writers-room-${projectId}` : undefined}
+          chatModelId={modelId}
+          chatModelOptions={chatModelOptions}
+          onChatModelChange={setModelId}
         />
       </div>
     </DomainSidebar>

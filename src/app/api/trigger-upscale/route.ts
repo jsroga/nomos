@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
-import type { upscaleTileTask } from '@/domains/world-building-toolkit/tasks/upscale-tile.task'
+import type { upscaleTileTask } from '@/domains/2d-canvas/tasks/upscale-tile.task'
 import {
   withAuth,
   withRateLimit,
@@ -19,10 +19,7 @@ import {
   isUpscaleMode,
   validateUpscaleProvider,
 } from './trigger-upscale-helpers'
-import type { ProviderConfig } from '@/domains/world-building-toolkit/tasks/upscale-tile-providers'
-
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const dynamic = 'force-dynamic'
+import type { ProviderConfig } from '@/domains/2d-canvas/tasks/upscale-tile-providers'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {

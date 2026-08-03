@@ -33,8 +33,8 @@ export const GAME_ENTITY_TYPE_ICONS: Record<GameEntityTypeId, GameEntityIconName
 export enum GameSourceDomainId {
   Storyteller = 'storyteller',
   LoopCreator = 'loop-creator',
-  InteriorDesigner = 'interior-designer',
-  WorldBuilding = 'world-building',
+  InteriorDesigner = '3d-canvas',
+  WorldBuilding = '2d-canvas',
 }
 
 export const GAME_SOURCE_DOMAIN_LABELS: Record<GameSourceDomainId, string> = {

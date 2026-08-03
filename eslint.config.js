@@ -14,13 +14,13 @@ const strictTypeScriptRules = typescript.configs.strict.rules
 const DOMAIN_MODULES = [
   'storyteller',
   // chat moved to src/shared/chat (PLAN-V2 3.1 — platform, not a domain)
-  'interior-designer',
+  '3d-canvas',
   'loop-creator',
   'marketing',
   // deduction-puzzle-designer deleted (user-confirmed, PLAN-V2 6.2)
   '3d-asset-exporter',
   'game-design',
-  'world-building-toolkit',
+  '2d-canvas',
 ]
 
 const DOMAIN_BARREL_GUARD_PATTERNS = [
@@ -30,14 +30,14 @@ const DOMAIN_BARREL_GUARD_PATTERNS = [
       'Import from "@/domains/storyteller" instead of storyteller internals. Only core/io/ is allowed for deep imports.',
   },
   {
-    group: ['@/domains/interior-designer/*', '!@/domains/interior-designer/core/io/*'],
+    group: ['@/domains/3d-canvas/*', '!@/domains/3d-canvas/core/io/*'],
     message:
-      'Import from "@/domains/interior-designer" instead of interior-designer internals. Only core/io/ is allowed for deep imports.',
+      'Import from "@/domains/3d-canvas" instead of 3d-canvas internals. Only core/io/ is allowed for deep imports.',
   },
   {
-    group: ['@/domains/world-building-toolkit/*'],
+    group: ['@/domains/2d-canvas/*', '!@/domains/2d-canvas/core/io/*'],
     message:
-      'Import from "@/domains/world-building-toolkit" instead of world-building-toolkit internals.',
+      'Import from "@/domains/2d-canvas" instead of 2d-canvas internals. Only core/io/ is allowed for deep imports.',
   },
   {
     // chat lives in src/shared/chat now (PLAN-V2 3.1); the old path must not come back
@@ -341,7 +341,12 @@ module.exports = [
     },
   },
   {
-    files: ['eslint.config.js', 'scripts/**/*.{ts,mjs,cjs,js}'],
+    files: [
+      'eslint.config.js',
+      '*.config.js',
+      '*.config.cjs',
+      'scripts/**/*.{ts,mjs,cjs,js}',
+    ],
     rules: {
       'local/no-magic-string': 'off',
       'max-lines': 'off',

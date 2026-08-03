@@ -30,7 +30,7 @@ export function LandingNav({
           <div className="flex min-w-0 items-center gap-[30px]">
             <Link href="/" prefetch={false} className="flex shrink-0 items-center">
               <img
-                src="/logo.svg"
+                src="/logo.png"
                 alt={LandingNavUiCopy.LogoAlt}
                 className="h-auto w-[132px] object-contain"
                 width={132}

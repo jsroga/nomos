@@ -11,6 +11,9 @@ import { NodeEnv } from '@/shared/data/constants/protocol-http'
 
 import type { Metadata } from 'next'
 
+/** Root still mounts request-time debug tooling — opt out of instant validation. */
+export const instant = false
+
 export const metadata: Metadata = {
   title: {
     template: '/kur/ %s',
