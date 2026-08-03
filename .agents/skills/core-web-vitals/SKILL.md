@@ -104,8 +104,16 @@ Landing hero contract: **server-rendered** Syne headline in first HTML (`Landing
 | --- | --- | --- |
 | GLBs ~124MB on first load | Eager `ThreeDIcon` | Lite GLBs (`npm run marketing:glb-lite`), `ViewportGatedThreeDIcon`, canvas budget |
 | Three.js in initial graph | Static `import * as THREE` | `import('three')` inside effect when `showCanvas` |
-| TurbulentBackground + deep sections in first JS | Static imports on `LandingPage` | Scroll-gate: CSS placeholder first; dynamic sections after scroll (`LandingDeferred`) |
+| TurbulentBackground + deep sections in first JS | Static imports on `LandingPage` | Scroll-gate FX; `dynamic()` content **without** `ssr: false` (`LandingDeferred`) |
 | Login page chunk on `/` | `next/link` prefetch | `prefetch={false}` on marketing CTAs |
+
+### 7b. Marketing `ssr: false` (strict)
+
+| Allowed | Forbidden |
+| --- | --- |
+| Non-text FX only: WebGL / canvas / Three / liquid (`TurbulentBackground`, `TerrainFloor`, …) | Any text/content: hero, tools, systems, promo, manifesto, nav, footer, legal |
+
+Defer heavy **copy** with `dynamic()` (SSR on) + scroll/idle for FX mount. Never blank marketing HTML via `ssr: false`. Rule: `.cursor/rules/marketing-ssr.mdc`.
 
 ### 8. Flaky lab scores
 

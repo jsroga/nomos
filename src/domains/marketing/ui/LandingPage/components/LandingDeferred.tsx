@@ -7,17 +7,31 @@ import {
   MARKETING_NEAR_FOLD_SCROLL_Y,
   MarketingDomScrollEvent,
 } from '@/domains/marketing/constants/viewport-3d'
-import { ToolsIntegration } from '@/domains/marketing/ui/ToolsIntegration'
-import { ProPlanPromo } from '@/domains/marketing/ui/ProPlanPromo'
 import { TURBULENT_BG_PROPS } from '@/shared/data/constants/visuals'
-import { SystemsSection } from './SystemsSection'
-import { ManifestoSection } from './ManifestoSection'
 import { LandingFooter } from './LandingFooter'
 import { FeatureLightbox } from './FeatureLightbox'
+import { ManifestoSection } from './ManifestoSection'
 
+/** Canvas / WebGL only — `ssr: false` is allowed for non-text marketing FX. */
 const TurbulentBackground = dynamic(
   () => import('../../TurbulentBackground').then(m => ({ default: m.TurbulentBackground })),
   { ssr: false },
+)
+
+const ToolsIntegration = dynamic(() =>
+  import('@/domains/marketing/ui/ToolsIntegration').then(m => ({
+    default: m.ToolsIntegration,
+  })),
+)
+
+const SystemsSection = dynamic(() =>
+  import('./SystemsSection').then(m => ({ default: m.SystemsSection })),
+)
+
+const ProPlanPromo = dynamic(() =>
+  import('@/domains/marketing/ui/ProPlanPromo').then(m => ({
+    default: m.ProPlanPromo,
+  })),
 )
 
 function useScrolledPastFold(): boolean {
@@ -36,7 +50,7 @@ function useScrolledPastFold(): boolean {
   return ready
 }
 
-/** Sections are SSR'd in first HTML; WebGL backdrop mounts after a short scroll. */
+/** Below-fold client sections — code-split so hero JS stays small. */
 export function LandingDeferred() {
   const showWebGl = useScrolledPastFold()
   const [selectedFeature, setSelectedFeature] = useState<SelectedFeature | null>(null)

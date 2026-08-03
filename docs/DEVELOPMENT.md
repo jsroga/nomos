@@ -75,6 +75,10 @@ npm run audit:cwv -- --url http://localhost:3000/
 
 UI lives in `src/shared/debug/`. Unset both flags → overlays hidden.
 
+## Landing SSR (`ssr: false`)
+
+On marketing pages: `{ ssr: false }` is allowed **only** for non-text FX (WebGL / canvas / Three). Text and content sections must SSR — use `dynamic()` without `ssr: false`, plus scroll/idle gates for FX. Agent rule: `.cursor/rules/marketing-ssr.mdc`.
+
 ## Landing A/B (hero headline)
 
 Sticky cookie `lp_hero` (`a` | `b`) assigned in `src/proxy.ts` on `/`. Split via env (0–100); missing → 50/50; one side set → other is remainder; both set but not summing to 100 → normalized.

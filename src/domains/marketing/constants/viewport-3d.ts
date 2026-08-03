@@ -15,6 +15,8 @@ export enum MarketingIdleDeferMs {
   /** Below-fold sections; scroll unlocks earlier for real users. */
   BelowFoldSections = 12000,
   HeroTextEffects = 2000,
+  /** Hero floor Three.js — after first paint / idle so LCP text is not blocked. */
+  HeroTerrain = 2800,
 }
 
 export enum MarketingWebGlBudget {

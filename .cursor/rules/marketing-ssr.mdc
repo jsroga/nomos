@@ -1,0 +1,34 @@
+---
+description: Marketing SSR — never ssr:false on text/content; allowed only for non-text FX
+globs: src/domains/marketing/**/*
+alwaysApply: true
+---
+
+# Marketing SSR (`ssr: false`)
+
+**Strict.** Applies to `src/domains/marketing/**` and marketing App Router routes (`src/app/(marketing)/**`, public `/`).
+
+## Prohibited
+
+`next/dynamic(..., { ssr: false })` on **any text or content** surface:
+
+- Hero / headlines / CTAs / nav / footer / manifesto
+- Tools, Systems, ProPlan, feature copy, legal pages
+- Any component whose primary job is readable HTML for LCP, SEO, or crawlers
+
+Do **not** “fix” CWV by blanking marketing copy from the SSR HTML.
+
+## Allowed
+
+`{ ssr: false }` **only** for **non-text** decorative / WebGL / canvas FX, e.g.:
+
+- `TurbulentBackground`, `TerrainFloor`, liquid canvases, Three.js icon canvases
+- Pure visual layers with no marketing copy as the main payload
+
+Prefer scroll/idle mount gates so FX stay off the LCP path even when `ssr: false` is used.
+
+## Correct deferral for content
+
+- Server-render text (static import or `dynamic()` **without** `ssr: false`)
+- Code-split with `dynamic()` if the chunk is heavy
+- Defer **execution** of WebGL with client `useState(false)` + scroll/idle — not by stripping section HTML from SSR

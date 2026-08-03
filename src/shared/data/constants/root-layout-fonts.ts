@@ -9,28 +9,28 @@ import { JetBrains_Mono, Inter, Syne } from 'next/font/google'
 
 // next/font requires statically analyzable literal arguments — the loader is
 // evaluated at build time, so enum/const references break the webpack plugin.
-// `block` avoids FOUT (fallback → webfont flash). Self-hosted + preload keeps
-// the brief block period near-zero. `adjustFontFallback` matches metrics.
+// Syne is the landing LCP face — preload + swap. Body/mono fonts load without
+// blocking critical CSS (swap + no preload).
 export const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
-  display: 'block',
-  preload: true,
+  display: 'swap',
+  preload: false,
   adjustFontFallback: true,
 })
 export const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['400', '500', '700'],
   variable: '--font-mono',
-  display: 'block',
-  preload: true,
+  display: 'swap',
+  preload: false,
   adjustFontFallback: true,
 })
 export const syne = Syne({
   subsets: ['latin'],
   weight: ['400', '700', '800'],
   variable: '--font-syne',
-  display: 'block',
+  display: 'swap',
   preload: true,
   adjustFontFallback: true,
 })

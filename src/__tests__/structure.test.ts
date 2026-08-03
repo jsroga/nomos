@@ -40,6 +40,7 @@ const APP_ROOT_FILES = new Set([
   'global-error.tsx',
   'globals.css',
   'icon.png',
+  'robots.ts',
 ])
 const FORBIDDEN_APP_NAMES = ['docs', 'documentation', 'evaluation', 'evals', 'e2e', 'test', 'tests', '_shell']
 

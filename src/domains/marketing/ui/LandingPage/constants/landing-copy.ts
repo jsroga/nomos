@@ -39,6 +39,10 @@ export enum LandingSectionId {
   Systems = 'systems',
 }
 
+export enum LandingHeroDomId {
+  TerrainSlot = 'landing-hero-terrain',
+}
+
 export const LANDING_BRAND_ACCENT = '#5c7cfa'
 
 export type LandingHeroHeadlineLines = {

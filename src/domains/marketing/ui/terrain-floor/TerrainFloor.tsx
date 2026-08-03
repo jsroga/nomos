@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { MarketingMediaQuery } from '@/domains/marketing/constants/viewport-3d'
 
 /**
- * Cursor-sculpted terrain floor — decorative hero layer. Idle-gated so it never
- * touches LCP; reduced-motion users get the static CSS poster instead.
+ * Cursor-sculpted terrain floor — decorative hero layer. Parent mounts after first
+ * paint; reduced-motion users keep the empty CSS poster slot.
  */
 export function TerrainFloor() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -13,14 +13,7 @@ export function TerrainFloor() {
 
   useEffect(() => {
     if (window.matchMedia(MarketingMediaQuery.PrefersReducedMotion).matches) return
-
-    const enable = () => setEnabled(true)
-    if (typeof window.requestIdleCallback === 'function') {
-      const idleId = window.requestIdleCallback(enable, { timeout: 500 })
-      return () => window.cancelIdleCallback(idleId)
-    }
-    const timeoutId = window.setTimeout(enable, 200)
-    return () => window.clearTimeout(timeoutId)
+    setEnabled(true)
   }, [])
 
   useEffect(() => {

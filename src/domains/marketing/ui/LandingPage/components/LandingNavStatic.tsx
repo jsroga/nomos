@@ -22,7 +22,7 @@ export function LandingNavStatic() {
         <div className="flex min-w-0 items-center gap-[30px]">
           <Link href="/" prefetch={false} className="flex shrink-0 items-center">
             <img
-              src="/logo.png"
+              src="/logo.svg"
               alt={LandingNavUiCopy.LogoAlt}
               className="h-auto w-[132px] object-contain"
               width={132}
