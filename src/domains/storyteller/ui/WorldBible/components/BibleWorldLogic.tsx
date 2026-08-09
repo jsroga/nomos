@@ -14,6 +14,8 @@ import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { bibleSectionItems, planItems } from '../utils/bible-section-items'
 import type { PendingAction } from '../utils/bible-context-types'
+import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 
 const WorldRuleEditItem: FC<{
   rule: WorldRule
@@ -194,6 +196,55 @@ const WorldRulesSection: FC<{
   </BibleSectionShell>
 )
 
+const PlotTwistsHeaderActions: FC<{
+  isLoading: boolean
+  isEditing: boolean
+  isReadOnly: boolean
+  onSendMessage?: (msg: string, section?: string) => void
+  onAddPlotTwist: () => void
+}> = ({ isLoading, isEditing, isReadOnly, onSendMessage, onAddPlotTwist }) => {
+  const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
+  const generateDisabled = isLoading || isGenerationActivityBusy(generationPhase)
+
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2">
+        <Shuffle className="w-5 h-5 text-red-400/80" />
+        <h3 className="font-syne font-bold text-lg">Twists</h3>
+      </div>
+      <div className="flex gap-2">
+        {isEditing && (
+          <button
+            onClick={onAddPlotTwist}
+            className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
+            title="Add Plot Twist"
+            disabled={isLoading}
+            type="button"
+          >
+            <Plus size={14} />
+          </button>
+        )}
+        {!isReadOnly && onSendMessage && (
+          <button
+            onClick={() =>
+              onSendMessage(
+                'Generate 3 completely BRAND NEW major plot twists for this story. IMPORTANT: Take a completely new creative direction and do NOT repeat previous twists.',
+                'plotTwists'
+              )
+            }
+            className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${generateDisabled ? 'pointer-events-none opacity-50' : ''}`}
+            title="Generate Twists"
+            disabled={generateDisabled}
+            type="button"
+          >
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const PlotTwistsSection: FC<{
   isLoading: boolean
   pending?: PendingAction
@@ -229,41 +280,13 @@ const PlotTwistsSection: FC<{
       </div>
     )}
     {pending && <SectionPendingOverlay pendingAction={pending} onReview={pending.onReview} />}
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-2">
-        <Shuffle className="w-5 h-5 text-red-400/80" />
-        <h3 className="font-syne font-bold text-lg">Twists</h3>
-      </div>
-      <div className="flex gap-2">
-        {isEditing && (
-          <button
-            onClick={onAddPlotTwist}
-            className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
-            title="Add Plot Twist"
-            disabled={isLoading}
-            type="button"
-          >
-            <Plus size={14} />
-          </button>
-        )}
-        {!isReadOnly && onSendMessage && (
-          <button
-            onClick={() =>
-              onSendMessage(
-                'Generate 3 completely BRAND NEW major plot twists for this story. IMPORTANT: Take a completely new creative direction and do NOT repeat previous twists.',
-                'plotTwists'
-              )
-            }
-            className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
-            title="Generate Twists"
-            disabled={isLoading}
-            type="button"
-          >
-            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-          </button>
-        )}
-      </div>
-    </div>
+    <PlotTwistsHeaderActions
+      isLoading={isLoading}
+      isEditing={isEditing}
+      isReadOnly={isReadOnly}
+      onSendMessage={onSendMessage}
+      onAddPlotTwist={onAddPlotTwist}
+    />
     {isEditing ? (
       <div className="space-y-2">
         {localPlotTwists.length === 0 ? (

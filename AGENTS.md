@@ -34,7 +34,7 @@ The dark-factory execute loop has three interchangeable runners that share the *
 | AgentController | `@mastra/core/agent-controller` — sessions, modes, plan→build gate (see "Plan-first agents" below) |
 | Tools | `src/domains/*/ai/tools`, `src/shared/agent-kernel/mastra/tools/` (bundler-safe Studio stubs) |
 | Models | `src/shared/agent-kernel/models.ts` (kernel/judging), domain `config/ModelConfig.ts` (`resolveRoleModel` role slots) |
-| Memory | `@mastra/memory` + `PostgresStore` via shared storage. One Mastra `PostgresStore`/memory only. **Documented exception:** game-design's `GameDesignMemory` keeps its own `PgVector` **pattern-RAG index** (not agent memory) — a domain vector index is allowed; a second Mastra store/instance is not |
+| Memory | `@mastra/memory` + `PostgresStoreVNext` via shared storage (vNext observability domain for Studio discovery/feedback). One Mastra store/instance only. **Documented exception:** game-design's `GameDesignMemory` keeps its own `PgVector` **pattern-RAG index** (not agent memory) — a domain vector index is allowed; a second Mastra store/instance is not |
 | Observability | `@mastra/observability` registry (`create-mastra`) + `tracingOptions`; real spans via `src/shared/observability/mastra-tracing.ts` (`withMastraSpan`); `observability.ts` = sanitizers only |
 | Evals / scorers | `@mastra/core/evals` `createScorer`, `src/shared/agent-kernel/scorers/` + domain deterministic scorers unioned in `evals/run.ts` |
 | Prompts | `src/shared/agent-kernel/prompts/` (repository + core prompts), domain `prompts/`; **static agent prompts** → `src/mastra/agents/<id>/instructions.md` (file-based, via `loadAgentInstructions`) |
@@ -108,6 +108,8 @@ Docs: `mastra.ai/docs/long-running-agents/{durable-agents,goals}.md`.
 **During work:** `npm run qualitygate:file -- <path>` · `npm run qualitygate:changed` · `npm run qualitygate:tsc -- --files <path>` — not full-repo `tsc` mid-task. **Many failures:** `npm run qualitygate:capture` → `.local/quality-backlog.md` (fix one, `qualitygate:backlog -- done <id>`, rescan every 5).
 
 **Before handoff:** `npm run typecheck` · `npm run lint` · `npm run test:unit`
+
+**IMPORTANT — never open the app in a browser.** No browser MCP tools, no `browser-use` subagent, no `curl` against `localhost:3000` to check behaviour, no logging in as the user. Verify through reusable committed tests: `npm run test:unit`, the live tier `npm run test:live` (`*.e2e.test.ts`, needs a **scratch** project id), or a **Playwright** spec. Browser testing has exactly one allowed form — a reusable spec in `e2e/scenarios/*.spec.ts` with actions in `e2e/fixtures/`, string constants as enums in `e2e/constants/`, `setupAuthenticatedPage` for login, and a throwaway project for data; running it stays operator-only. If something can't be checked that way, say it is unverified and name the test that would cover it. Highest-priority rule: `.cursor/rules/no-agent-browser.mdc`.
 
 **When the user asks to commit:** `npm run precommit` first (includes **`test:unit`** + **`build`**), then commit without `--no-verify`. The message carries no `Co-Authored-By` trailer and no "generated with" footer naming a model, agent, or IDE. See `.cursor/rules/commit-gates.mdc`.
 

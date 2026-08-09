@@ -6,11 +6,18 @@
  *
  * Uses `@mastra/ai-sdk` `handleChatStream` so start / finish / tool parts match
  * what `useChat` expects — without `finish`, the composer stays on Stop.
+ *
+ * Domain registration imports are static so agents exist before the first
+ * getMastraInstance() in this route (ordering contract).
  */
+
+import '@/domains/storyteller/core/io/mastra-runtime'
+import '@/domains/game-design/core/io/mastra-runtime'
+import '@/domains/loop-creator/core/io/mastra-runtime'
 
 import { RequestContext } from '@mastra/core/di'
 import { handleChatStream } from '@mastra/ai-sdk'
-import { createUIMessageStreamResponse } from 'ai'
+import { createUIMessageStream, createUIMessageStreamResponse, generateId } from 'ai'
 import type { UIMessage } from 'ai'
 import { getMastraInstance } from '@/shared/agent-kernel/mastra-instance'
 import { buildStorytellerRequestContext } from '@/domains/storyteller/ai/request-context'
@@ -20,23 +27,97 @@ import {
   resolveChatModelId,
 } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
-// Side-effect: register every domain's agents before the first
-// getMastraInstance(), so any registered agent id is reachable here.
-import '@/domains/storyteller/core/io/mastra-runtime'
-import '@/domains/game-design/core/io/mastra-runtime'
-import '@/domains/loop-creator/core/io/mastra-runtime'
+import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { requireAuth } from '@/shared/auth/auth'
+import { ApiErrorMessage } from '@/shared/data/constants/protocol'
+import { readString } from '@/shared/data/json-guards'
+import {
+  BEAT_TOOL_ID,
+  LIST_BEATS_TOOL_ID,
+  CHARACTER_TOOL_ID,
+  LIST_CHARACTERS_TOOL_ID,
+  EPISODE_TOOL_ID,
+  LIST_EPISODES_TOOL_ID,
+  UPDATE_WORLD_BIBLE_TOOL_ID,
+  READ_WORLD_BIBLE_TOOL_ID,
+  CHECK_CONTINUITY_TOOL_ID,
+} from '@/domains/storyteller/ai/tools/manage-tools-wire'
+import { RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
+
+/** Storyteller chat tools only — excludes inherited Mastra workspace FS tools. */
+const STORYTELLER_CHAT_ACTIVE_TOOLS = [
+  BEAT_TOOL_ID,
+  LIST_BEATS_TOOL_ID,
+  CHARACTER_TOOL_ID,
+  LIST_CHARACTERS_TOOL_ID,
+  EPISODE_TOOL_ID,
+  LIST_EPISODES_TOOL_ID,
+  UPDATE_WORLD_BIBLE_TOOL_ID,
+  READ_WORLD_BIBLE_TOOL_ID,
+  CHECK_CONTINUITY_TOOL_ID,
+  RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
+] as const
 
 export const maxDuration = 300
 
 const INVALID_BODY_MESSAGE = 'Invalid body'
 const AGENT_NOT_FOUND_MESSAGE = 'Agent not found'
 const UNKNOWN_MODEL_PREFIX = 'Unknown model: '
+const PROJECT_ACCESS_DENIED = 'Project access denied'
+const EPISODE_ACCESS_DENIED = 'Episode access denied'
 const STATUS_NOT_FOUND = 404
 const STATUS_BAD_REQUEST = 400
+const STATUS_FORBIDDEN = 403
+const STATUS_UNAUTHORIZED = 401
 const TOOL_CHOICE_AUTO = 'auto'
 
 enum AiSdkUiMessageVersion {
   V6 = 'v6',
+}
+
+enum UiMessageStreamChunkType {
+  Start = 'start',
+}
+
+enum AssistantTurnLog {
+  ContextReady = '[Stream] World context ready in ',
+  FirstChunk = '[Stream] First agent chunk after ',
+}
+
+/** Logs time-to-first-chunk so a slow turn can be attributed to context vs model. */
+function withFirstChunkTiming<T>(
+  source: ReadableStream<T>,
+  startedAt: number
+): ReadableStream<T> {
+  let logged = false
+  return source.pipeThrough(
+    new TransformStream<T, T>({
+      transform(chunk, controller) {
+        if (!logged) {
+          logged = true
+          console.log(`${AssistantTurnLog.FirstChunk}${Date.now() - startedAt}ms`)
+        }
+        controller.enqueue(chunk)
+      },
+    })
+  )
+}
+
+enum StorytellerOpenWorkspaceCopy {
+  Header = '=== OPEN WORKSPACE (authoritative — do not invent or scrape IDs from the repo) ===',
+  ProjectIdMissing = 'projectId: (missing)',
+  ProjectIdLabel = 'projectId',
+  EpisodeIdLabel = 'episodeId',
+  NoWorkspaceTools =
+    'Use ONLY these IDs for tool calls. Never call workspace filesystem tools (list/grep/read repo files).',
+  GenerateViaTool =
+    'For GENERATE / REGENERATE world description or bible sections: call update_world_bible immediately with these IDs — do not browse the codebase.',
+  RememberProjectIdMid = 'Remember: Use projectId=',
+  RememberProjectIdEnd = ' for all tool calls that require it.',
+}
+
+function quotedIdLine(label: string, id: string): string {
+  return `${label}: ${JSON.stringify(id)}`
 }
 
 interface RouteContext {
@@ -46,7 +127,9 @@ interface RouteContext {
 interface AssistantChatBody {
   messages: UIMessage[]
   projectId?: string
+  episodeId?: string
   modelName?: string
+  bibleSection?: string
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -59,6 +142,21 @@ function isAssistantChatBody(value: unknown): value is AssistantChatBody {
     AssistantChatBodyKey.Messages in value &&
     Array.isArray(Reflect.get(value, AssistantChatBodyKey.Messages))
   )
+}
+
+function latestUserText(messages: UIMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]
+    if (message?.role !== ChatMessageRole.User) continue
+    const chunks: string[] = []
+    for (const part of message.parts) {
+      if (part.type !== ChatPartType.Text) continue
+      const text = Reflect.get(part, ChatPartType.Text)
+      if (typeof text === 'string' && text.trim()) chunks.push(text)
+    }
+    if (chunks.length > 0) return chunks.join('\n')
+  }
+  return ''
 }
 
 function buildRequestContext(agentId: string, body: AssistantChatBody): RequestContext | undefined {
@@ -75,11 +173,15 @@ function buildRequestContext(agentId: string, body: AssistantChatBody): RequestC
   }
 
   const projectId = body[AssistantChatBodyKey.ProjectId]
-  if (!projectId && !authorModel) return undefined
+  const episodeId = body[AssistantChatBodyKey.EpisodeId]
+  const bibleSection = body[AssistantChatBodyKey.BibleSection]
+  if (!projectId && !episodeId && !authorModel && !bibleSection) return undefined
 
   return buildStorytellerRequestContext({
     projectId,
+    episodeId,
     authorModel,
+    bibleSection,
   })
 }
 
@@ -91,7 +193,69 @@ function readModelNameError(body: AssistantChatBody): string | null {
   return null
 }
 
+function buildStorytellerSystemContext(opts: {
+  contextPrompt: string
+  projectId?: string
+  episodeId?: string
+}): string {
+  const projectId = readString(opts.projectId) ?? ''
+  const episodeId = readString(opts.episodeId)
+  const lines = [
+    opts.contextPrompt,
+    '',
+    StorytellerOpenWorkspaceCopy.Header,
+    projectId
+      ? quotedIdLine(StorytellerOpenWorkspaceCopy.ProjectIdLabel, projectId)
+      : StorytellerOpenWorkspaceCopy.ProjectIdMissing,
+  ]
+  if (episodeId) {
+    lines.push(quotedIdLine(StorytellerOpenWorkspaceCopy.EpisodeIdLabel, episodeId))
+  }
+  lines.push(
+    StorytellerOpenWorkspaceCopy.NoWorkspaceTools,
+    StorytellerOpenWorkspaceCopy.GenerateViaTool
+  )
+  if (projectId) {
+    lines.push(
+      `${StorytellerOpenWorkspaceCopy.RememberProjectIdMid}${JSON.stringify(projectId)}${StorytellerOpenWorkspaceCopy.RememberProjectIdEnd}`
+    )
+  }
+  return lines.filter(Boolean).join('\n')
+}
+
+async function resolveStorytellerSystem(opts: {
+  agentId: string
+  projectId?: string
+  episodeId?: string
+  messages: UIMessage[]
+  userId: string
+}): Promise<string | undefined> {
+  if (opts.agentId !== StorytellerAgentId.Storyteller || !opts.projectId) return undefined
+  const { assembleStorytellerContext } = await import(
+    '@/domains/storyteller/services/context-assembly-service'
+  )
+  const userMessage = latestUserText(opts.messages)
+  const { contextPrompt } = await assembleStorytellerContext({
+    projectId: opts.projectId,
+    episodeId: opts.episodeId,
+    message: userMessage || ' ',
+    userId: opts.userId,
+  })
+  return buildStorytellerSystemContext({
+    contextPrompt,
+    projectId: opts.projectId,
+    episodeId: opts.episodeId,
+  })
+}
+
 export async function POST(req: Request, { params }: RouteContext) {
+  const { session, error: authError } = await requireAuth()
+  if (authError || !session?.user?.id) {
+    return new Response(JSON.stringify({ error: ApiErrorMessage.UNAUTHORIZED }), {
+      status: STATUS_UNAUTHORIZED,
+    })
+  }
+
   const { agentId } = await params
   const raw = await req.json()
   if (!isAssistantChatBody(raw)) {
@@ -103,25 +267,75 @@ export async function POST(req: Request, { params }: RouteContext) {
     return new Response(JSON.stringify({ error: modelError }), { status: STATUS_BAD_REQUEST })
   }
 
+  const projectId = raw[AssistantChatBodyKey.ProjectId]
+  const episodeId = raw[AssistantChatBodyKey.EpisodeId]
+  const userId = session.user.id
+
+  const { verifyProjectAccess, verifyEpisodeAccess } = await import(
+    '@/domains/storyteller/services/access-verification-service'
+  )
+
+  if (projectId && !(await verifyProjectAccess(projectId, userId))) {
+    return new Response(JSON.stringify({ error: PROJECT_ACCESS_DENIED }), { status: STATUS_FORBIDDEN })
+  }
+  if (episodeId && !(await verifyEpisodeAccess(episodeId, userId))) {
+    return new Response(JSON.stringify({ error: EPISODE_ACCESS_DENIED }), { status: STATUS_FORBIDDEN })
+  }
+
   const requestContext = buildRequestContext(agentId, raw)
   const mastra = getMastraInstance()
   if (!mastra.getAgentById(agentId)) {
     return new Response(JSON.stringify({ error: AGENT_NOT_FOUND_MESSAGE }), { status: STATUS_NOT_FOUND })
   }
 
-  const stream = await handleChatStream({
-    mastra,
-    agentId,
-    version: AiSdkUiMessageVersion.V6,
-    params: {
-      messages: raw.messages,
-      requestContext,
-      toolChoice: TOOL_CHOICE_AUTO,
+  const isStoryteller = agentId === StorytellerAgentId.Storyteller
+
+  // Return the SSE response immediately; assemble context inside the stream so
+  // the client leaves "submitted" while world context loads (not hung).
+  const stream = createUIMessageStream({
+    execute: async ({ writer }) => {
+      // A start chunk only flips useChat off "submitted" when it carries a
+      // messageId; the agent stream therefore runs with sendStart: false so
+      // exactly one start frame (this one) owns the assistant message id.
+      writer.write({ type: UiMessageStreamChunkType.Start, messageId: generateId() })
+
+      const turnStartedAt = Date.now()
+      const system = await resolveStorytellerSystem({
+        agentId,
+        projectId,
+        episodeId,
+        messages: raw.messages,
+        userId,
+      })
+      console.log(`${AssistantTurnLog.ContextReady}${Date.now() - turnStartedAt}ms`)
+      const agentStream = await handleChatStream({
+        mastra,
+        agentId,
+        version: AiSdkUiMessageVersion.V6,
+        params: {
+          messages: raw.messages,
+          requestContext,
+          toolChoice: TOOL_CHOICE_AUTO,
+          ...(system ? { system } : {}),
+          ...(isStoryteller ? { activeTools: [...STORYTELLER_CHAT_ACTIVE_TOOLS] } : {}),
+        },
+        sendStart: false,
+        sendFinish: true,
+        sendReasoning: false,
+      })
+      writer.merge(withFirstChunkTiming(agentStream, turnStartedAt))
     },
-    sendStart: true,
-    sendFinish: true,
-    sendReasoning: false,
   })
 
   return createUIMessageStreamResponse({ stream })
+}
+
+/** Warm the route chunk + Mastra registration without starting a chat turn. */
+export async function GET(_req: Request, { params }: RouteContext) {
+  const { agentId } = await params
+  const mastra = getMastraInstance()
+  if (!mastra.getAgentById(agentId)) {
+    return new Response(JSON.stringify({ error: AGENT_NOT_FOUND_MESSAGE }), { status: STATUS_NOT_FOUND })
+  }
+  return Response.json({ ok: true, agentId })
 }

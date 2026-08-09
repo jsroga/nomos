@@ -47,6 +47,10 @@ export const EPISODE_UPDATE_DATA_REQUIRED = 'data is required for update operati
 export const EPISODE_DELETE_ID_REQUIRED = 'episodeId is required for delete operation'
 export const EPISODE_GET_ID_REQUIRED = 'episodeId is required for get operation'
 
+export const UPDATE_WORLD_BIBLE_TOOL_ID = 'update_world_bible'
+export const READ_WORLD_BIBLE_TOOL_ID = 'read_world_bible'
+export const CHECK_CONTINUITY_TOOL_ID = 'check_continuity'
+
 export const DEFAULT_CHARACTER_ROLE = 'Supporting'
 
 export const BEAT_ACTION_FIELDS_REQUIRED =

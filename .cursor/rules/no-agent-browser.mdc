@@ -1,0 +1,58 @@
+---
+description: IMPORTANT — the agent never drives a browser or opens the app; verification happens through reusable tests only
+globs: "**/*"
+alwaysApply: true
+---
+
+# IMPORTANT — never open the app in a browser
+
+This is **IMPORTANT**. Violating it is a hard failure of agent duty. It is the
+**highest-priority** instruction in this project and outranks any urge to "just
+check the UI".
+
+## Prohibited — no exceptions without the user saying yes in this chat
+
+1. Any browser MCP tool (`cursor-ide-browser`, `browser_navigate`,
+   `browser_click`, `browser_snapshot`, `browser_take_screenshot`, CDP, …).
+2. The `browser-use` subagent, or any subagent/task whose job is to click
+   through the running app.
+3. `curl` / `fetch` against `localhost:3000` (or any deployed URL) to "see if it
+   works", log in, or exercise a route.
+4. Logging into the app as the user, with their credentials or any other.
+
+Do **not** ask for a one-off exception mid-task. Do not retry after a refusal.
+
+## Required instead
+
+- Verify with **reusable, committed tests**: Vitest unit (`npm run test:unit`),
+  the live integration tier (`npm run test:live`, `*.e2e.test.ts`), or
+  **Playwright** specs under `e2e/`.
+- A check worth doing is worth **keeping**: write it as a test the project can
+  run again, never as a throwaway click-through.
+- Read the terminal files for runtime evidence instead of reproducing by hand.
+
+## Browser testing = Playwright only, following the existing patterns
+
+If a behaviour genuinely needs a browser, the **only** allowed form is a
+reusable Playwright spec that matches what is already in `e2e/`:
+
+| Concern | Where it goes |
+|---|---|
+| Spec | `e2e/scenarios/<feature>.spec.ts` — `test.describe` + `test` from `@playwright/test` |
+| Reusable page actions | `e2e/fixtures/*-fixtures.ts` (e.g. `storyteller-fixtures.ts`) |
+| Selectors, prompts, timeouts, labels | `e2e/constants/*.ts` as enums (`FlowSelector`, `FlowPrompt`, `FlowTimeout`, `FlowTest`) — no inline literals |
+| Login | `setupAuthenticatedPage(page)` from `e2e/fixtures/auth-fixtures.ts` — never hand-typed credentials |
+| Test data | create a throwaway project (`createStoryProject`) — **never** point a spec at a real project |
+
+Rules for such a spec: no hard-coded UUIDs, no reliance on existing project
+content, explicit `test.setTimeout` when a live model turn is involved, and
+assertions on structure/state rather than on English word lists.
+
+**Running it is still the operator's call.** `npm run test:e2e` is CI/operator-only
+— write the spec, hand it over, and let the user run it unless they explicitly
+ask you to in this chat (see `quality-gates.mdc`).
+
+## When you cannot verify without a browser
+
+Say so plainly. Name what is unverified and what test would cover it, then hand
+back. An honest "not verified" is correct; a browser session is not.

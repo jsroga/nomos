@@ -17,6 +17,7 @@ import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/
 import {
   BIBLE_SECTION_UPDATE_KEYS,
   PREMISE_SECTION_UPDATE_KEYS,
+  SoundtrackFieldAlias,
 } from './constants/bible-wire-fields'
 import {
   ManageBeatOperationToken,
@@ -79,6 +80,10 @@ export function detectLoadingSection(
   if (argSection && PREMISE_SECTIONS.includes(argSection)) {
     // Regenerating an individual premise field → show shimmer on the premise panel
     argSection = BibleSection.EPISODE_PREMISE
+  }
+
+  if (argSection === SoundtrackFieldAlias.MoodSoundtrack) {
+    argSection = BibleSection.SOUNDTRACKS
   }
 
   if (!argSection) return null

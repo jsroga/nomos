@@ -25,7 +25,7 @@ export interface TokenBudgets {
 
 export const DEFAULT_TOKEN_BUDGETS: TokenBudgets = {
   [ContextBudgetSection.SystemPrompt]: 3000, // Fixed, not truncated
-  [ContextBudgetSection.ProjectContext]: 4000, // Bible, rules, factions
+  [ContextBudgetSection.ProjectContext]: 12000, // Whole bible verbatim — never mid-sentence truncated
   [ContextBudgetSection.Characters]: 2000, // Top N most relevant characters
   [ContextBudgetSection.Beats]: 2000, // Last N beats (summarized)
   [ContextBudgetSection.Memory]: 4000, // Compressed conversation history

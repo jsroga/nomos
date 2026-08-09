@@ -11,6 +11,7 @@ import {
   ASSISTANT_THREAD_COPY,
   type AssistantChatModelOption,
 } from '../core/constants/assistant-thread-ui'
+import { AssistantChatDetailsProvider } from './AssistantChatDetailsContext'
 import { AssistantThreadComposer } from './AssistantThreadComposer'
 import { AssistantMessage, UserMessage } from './AssistantThreadMessages'
 
@@ -32,49 +33,51 @@ export function AssistantThread({
   onChatModelChange,
 }: AssistantThreadProps) {
   return (
-    <ThreadPrimitive.Root className="aui-chat">
-      <div className="aui-chat-glow" aria-hidden />
+    <AssistantChatDetailsProvider>
+      <ThreadPrimitive.Root className="aui-chat">
+        <div className="aui-chat-glow" aria-hidden />
 
-      <ThreadPrimitive.Viewport className="aui-thread">
-        <div className="aui-thread-col">
-          <div className="aui-day">
-            <span className="aui-day-line" aria-hidden />
-            <span className="aui-day-label">{ASSISTANT_THREAD_COPY.DayToday}</span>
-            <span className="aui-day-line" aria-hidden />
-          </div>
-
-          <ThreadPrimitive.Empty>
-            <div className="aui-empty">
-              <span className="aui-empty-hint">{ASSISTANT_THREAD_COPY.EmptyHint}</span>
-              {suggestions.length > 0 ? (
-                <div className="aui-chips justify-center">
-                  {suggestions.map(prompt => (
-                    <ThreadPrimitive.Suggestion
-                      key={prompt}
-                      prompt={prompt}
-                      autoSend
-                      className="aui-chip"
-                    >
-                      {prompt}
-                    </ThreadPrimitive.Suggestion>
-                  ))}
-                </div>
-              ) : null}
+        <ThreadPrimitive.Viewport className="aui-thread">
+          <div className="aui-thread-col">
+            <div className="aui-day">
+              <span className="aui-day-line" aria-hidden />
+              <span className="aui-day-label">{ASSISTANT_THREAD_COPY.DayToday}</span>
+              <span className="aui-day-line" aria-hidden />
             </div>
-          </ThreadPrimitive.Empty>
 
-          <ThreadPrimitive.Messages components={MESSAGE_COMPONENTS} />
+            <ThreadPrimitive.Empty>
+              <div className="aui-empty">
+                <span className="aui-empty-hint">{ASSISTANT_THREAD_COPY.EmptyHint}</span>
+                {suggestions.length > 0 ? (
+                  <div className="aui-chips justify-center">
+                    {suggestions.map(prompt => (
+                      <ThreadPrimitive.Suggestion
+                        key={prompt}
+                        prompt={prompt}
+                        autoSend
+                        className="aui-chip"
+                      >
+                        {prompt}
+                      </ThreadPrimitive.Suggestion>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </ThreadPrimitive.Empty>
 
-          <ThreadPrimitive.ScrollToBottom className="aui-scroll-bottom">↓</ThreadPrimitive.ScrollToBottom>
-        </div>
-      </ThreadPrimitive.Viewport>
+            <ThreadPrimitive.Messages components={MESSAGE_COMPONENTS} />
 
-      <AssistantThreadComposer
-        mentions={mentions}
-        chatModelId={chatModelId}
-        chatModelOptions={chatModelOptions}
-        onChatModelChange={onChatModelChange}
-      />
-    </ThreadPrimitive.Root>
+            <ThreadPrimitive.ScrollToBottom className="aui-scroll-bottom">↓</ThreadPrimitive.ScrollToBottom>
+          </div>
+        </ThreadPrimitive.Viewport>
+
+        <AssistantThreadComposer
+          mentions={mentions}
+          chatModelId={chatModelId}
+          chatModelOptions={chatModelOptions}
+          onChatModelChange={onChatModelChange}
+        />
+      </ThreadPrimitive.Root>
+    </AssistantChatDetailsProvider>
   )
 }

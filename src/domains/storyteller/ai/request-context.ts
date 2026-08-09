@@ -15,6 +15,8 @@ import { RequestContext } from '@mastra/core/di'
 
 export const STORYTELLER_PROJECT_ID = 'storyteller.projectId'
 export const STORYTELLER_EPISODE_ID = 'storyteller.episodeId'
+/** Bible panel that started this Writers Room turn — tools drop off-section writes. */
+export const STORYTELLER_BIBLE_SECTION = 'storyteller.bibleSection'
 /** The user's picker choice — consumed by the author's dynamic model resolver (phase D). */
 export const STORYTELLER_AUTHOR_MODEL = 'storyteller.authorModel'
 
@@ -22,6 +24,7 @@ export interface StorytellerRequestContextInput {
   projectId?: string | null
   episodeId?: string | null
   authorModel?: string | null
+  bibleSection?: string | null
 }
 
 /** Build the RequestContext an API route passes into `agent.stream/generate`. */
@@ -32,6 +35,7 @@ export function buildStorytellerRequestContext(
   if (input.projectId) ctx.set(STORYTELLER_PROJECT_ID, input.projectId)
   if (input.episodeId) ctx.set(STORYTELLER_EPISODE_ID, input.episodeId)
   if (input.authorModel) ctx.set(STORYTELLER_AUTHOR_MODEL, input.authorModel)
+  if (input.bibleSection) ctx.set(STORYTELLER_BIBLE_SECTION, input.bibleSection)
   return ctx
 }
 

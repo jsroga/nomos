@@ -63,6 +63,9 @@ export const ASSISTANT_THREAD_COPY = {
   DayToday: 'Today',
   ModelFallback: 'Auto',
   AddToWorldPromptPrefix: 'Add these to the world bible:\n',
+  ShowDetails: 'Details',
+  ShowDetailsAria: 'Show tool and JSON details',
+  HideDetailsAria: 'Hide tool and JSON details',
 } as const
 
 export const ASSISTANT_THREAD_WIRE = {
@@ -75,6 +78,8 @@ export const ASSISTANT_THREAD_WIRE = {
 export enum AssistantChatBodyKey {
   ModelName = 'modelName',
   ProjectId = 'projectId',
+  EpisodeId = 'episodeId',
+  BibleSection = 'bibleSection',
   Messages = 'messages',
 }
 

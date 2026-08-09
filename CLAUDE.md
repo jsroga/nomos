@@ -11,7 +11,8 @@ Markdown docs live in **`docs/`** (repo root). The site serves them at `/docs` v
 ## Daily
 
 ```bash
-npm run dev              # Next.js (turbo) — http://localhost:4000
+npm run dev          # Next.js (webpack) — http://localhost:3000
+npm run dev:stack    # Next turbopack (:3000) + Mastra Studio (:4111) + Trigger.dev
 npm run build
 npm run lint
 npm run typecheck
@@ -138,6 +139,8 @@ npm run test:unit
 **IMPORTANT — never disable rules on your own if not allowed.** No file-level `eslint-disable`, no new/widened `eslint.config.js` `'off'` overrides, no `@ts-nocheck`, no “legacy extraction” excuses — **ask the user first**. See `.cursor/rules/no-gate-bypass.mdc` and `quality-gates.mdc`.
 
 **Code metrics (ESLint + typecheck, same thresholds):** file lines warn **400** / error **800**; cyclomatic complexity warn **15** / error **25** (`scripts/code-metrics-limits.cjs`). Touched files must be clean before handoff; split oversized files one extract per step, gating each with `qualitygate:file`. See `.cursor/rules/code-metrics.mdc`.
+
+**IMPORTANT — never open the app in a browser (highest priority).** No browser MCP tools, no `browser-use` subagent, no `curl` against `localhost:3000` to check behaviour, no logging in as the user. Verify through reusable committed tests only: `npm run test:unit`, `npm run test:live` (the `*.e2e.test.ts` tier — needs a **scratch** project id, never a real project), or a **Playwright** spec. Browser testing has exactly one allowed shape, matching what is already in `e2e/`: spec in `e2e/scenarios/*.spec.ts`, page actions in `e2e/fixtures/`, selectors/prompts/timeouts as enums in `e2e/constants/`, login via `setupAuthenticatedPage`, throwaway project via `createStoryProject`, no hard-coded UUIDs. Writing the spec is yours; **running** `npm run test:e2e` stays operator-only. A check worth doing is worth keeping as a test; when something can't be verified that way, report it as unverified and name the test that would cover it. See `.cursor/rules/no-agent-browser.mdc`.
 
 **Refactor discipline (binding):** never rewrite `src/**` with bulk codegen (`node -e`, `python`/`node` heredocs, ad-hoc transform scripts) — edit incrementally, one extract/file at a time. Route pages stay thin shells; feature logic lives in `src/domains/<module>/`, never under `app/`. See `.cursor/rules/refactor-discipline.mdc`.
 

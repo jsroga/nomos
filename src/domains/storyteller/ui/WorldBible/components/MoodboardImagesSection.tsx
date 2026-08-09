@@ -4,13 +4,16 @@ import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { fetchLegnextServerConfigured } from '@/domains/storyteller/core/io/moodboard.api'
 import { useBible } from './BibleContext'
+import { BibleSectionHeader } from './BibleSectionChrome'
 import { MoodboardAddTile, MoodboardImageTile } from './MoodboardImageTile'
 import { MoodboardEmptyState, MoodboardProgressBar } from './MoodboardEmptyState'
 import {
   BibleOverviewConfirm,
   BibleOverviewMoodboardCopy,
+  BibleOverviewSectionTitle,
 } from '../constants/bible-overview'
 import { deriveMoodboardGeneratingState } from '../utils/bible-overview-moodboard'
+import { generateInitialMoodboard } from '../utils/bible-overview-moodboard-actions'
 
 interface MoodboardImagesSectionProps {
   primaryImageIndex: number | null
@@ -57,20 +60,37 @@ export const MoodboardImagesSection: React.FC<MoodboardImagesSectionProps> = ({
   const hasWorldDescription = Boolean(localPlan.worldDescription || storyPlan.worldDescription)
   const providerConfig = getProviderConfig()
 
+  const handleRefreshMoodboard = () => {
+    void generateInitialMoodboard({
+      projectId,
+      isGenerating: moodboardState.isGenerating,
+      hasWorldDescription,
+      config: providerConfig,
+      legnextFromServer,
+      onRefetchMoodboardData,
+    })
+  }
+
   return (
     <section>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Palette className="w-5 h-5 text-pink-400/80" />
-          <h3 className="font-syne font-bold text-lg">Moodboard</h3>
-        </div>
-        {!isReadOnly && moodboardState.isGenerating ? (
-          <div className="flex items-center gap-2 text-sm text-pink-500 font-medium">
-            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-            <span>{moodboardState.progressDetails || BibleOverviewMoodboardCopy.ProcessingVisuals}</span>
-          </div>
-        ) : null}
-      </div>
+      <BibleSectionHeader
+        icon={<Palette className="w-5 h-5 text-pink-400/80" />}
+        title={BibleOverviewSectionTitle.Moodboard}
+        isReadOnly={isReadOnly}
+        isLoading={moodboardState.isGenerating}
+        onGenerate={handleRefreshMoodboard}
+        generateTitle={BibleOverviewMoodboardCopy.RefreshMoodboard}
+        trailingActions={
+          !isReadOnly && moodboardState.isGenerating ? (
+            <div className="flex items-center gap-2 text-sm text-pink-500 font-medium">
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+              <span>
+                {moodboardState.progressDetails || BibleOverviewMoodboardCopy.ProcessingVisuals}
+              </span>
+            </div>
+          ) : null
+        }
+      />
       {!isReadOnly && moodboardState.isGenerating ? (
         <MoodboardProgressBar progressPercent={moodboardState.progressPercent} />
       ) : null}

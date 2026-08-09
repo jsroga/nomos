@@ -39,7 +39,6 @@ import {
   ContextAssemblyFallback,
   ContextAssemblyLog,
 } from '@/domains/storyteller/services/constants/context-assembly'
-import { ChatSenderAlias } from '@/shared/chat/core/constants/chat-messages'
 
 export interface AssembleContextParams {
   projectId?: string
@@ -55,32 +54,9 @@ export interface AssembledContext {
   existingBibleData: Record<string, unknown>
 }
 
-async function getRAGContext(projectId: string, query: string): Promise<string> {
-  try {
-    const { ragService } = await import('@/domains/storyteller/services/rag-service')
-    const ragResults = await ragService.assembleAgentContext(projectId, ChatSenderAlias.Showrunner, query)
-
-    let ragContext = ''
-    if (ragResults.relevantHistory) {
-      ragContext += `\n## RELEVANT HISTORY\n${ragResults.relevantHistory}\n`
-    }
-    if (ragResults.pastDecisions) {
-      ragContext += `\n## PAST DECISIONS\n${ragResults.pastDecisions}\n`
-    }
-    if (ragResults.userPreferences) {
-      ragContext += `\n## USER PREFERENCES\n${ragResults.userPreferences}\n`
-    }
-    return ragContext
-  } catch (e) {
-    console.warn(ContextAssemblyLog.RagRetrievalFailed, e)
-    return ''
-  }
-}
-
 async function loadContextSourceData(
   projectId: string,
   episodeId: string | undefined,
-  message: string,
   userId: string
 ) {
   return Promise.all([
@@ -99,7 +75,6 @@ async function loadContextSourceData(
       ])
       return { characters: charsReq.characters, beats: beatsReq.beats }
     }),
-    getRAGContext(projectId, message),
   ])
 }
 
@@ -111,10 +86,8 @@ function buildContextParts(params: {
   projectData: Awaited<ReturnType<typeof loadContextSourceData>>[0]
   storyPlanData: Awaited<ReturnType<typeof loadContextSourceData>>[1]
   serviceData: Awaited<ReturnType<typeof loadContextSourceData>>[2]
-  ragContext: string
 }): { contextPrompt: string; existingBibleData: Record<string, unknown> } {
-  const { projectId, episodeId, phase, message, projectData, storyPlanData, serviceData, ragContext } =
-    params
+  const { projectId, episodeId, phase, message, projectData, storyPlanData, serviceData } = params
 
   const rawBible = parseSeriesBibleRecord(projectData?.seriesBible)
   const storyPlan = storyPlanFromJson(storyPlanData?.content)
@@ -155,7 +128,6 @@ function buildContextParts(params: {
     projectContext: projectCtx,
     characters: formatCharactersBlock(sortedChars),
     beats: formatBeatsBlock(beats),
-    rag: ragContext || undefined,
     userMessage: message,
   }
   const budgeted = budgetContext(rawParts)
@@ -180,12 +152,13 @@ export async function assembleStorytellerContext(
   const phase = parsePhaseId(currentPhase)
 
   try {
-    const [projectData, storyPlanData, serviceData, ragContext] = await loadContextSourceData(
+    const startedAt = Date.now()
+    const [projectData, storyPlanData, serviceData] = await loadContextSourceData(
       projectId,
       episodeId,
-      message,
       userId
     )
+    console.log(`${ContextAssemblyLog.SourcesLoadedIn}${Date.now() - startedAt}ms`)
 
     return buildContextParts({
       projectId,
@@ -195,7 +168,6 @@ export async function assembleStorytellerContext(
       projectData,
       storyPlanData,
       serviceData,
-      ragContext,
     })
   } catch (err) {
     console.warn(ContextAssemblyLog.FailedToLoadContext, err)

@@ -16,10 +16,11 @@ npx vitest run src/domains/storyteller/ai/tools/__tests__/storytelling.test.ts
 npm run test:e2e smoke
 npm run eval -- --samples=5
 npm run eval:dashboard
+npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 ```
 
 - Colocate unit tests next to code. Exclude `*.e2e.test.ts` from default unit runs (need DB/LLM).
-- E2E needs `npm run dev` + `.env.local`.
+- E2E needs `npm run dev` (or `dev:stack`) + `.env.local`.
 - Golden set: `evals/datasets/storyteller-golden.ts`. Baseline: `evals/results/latest.json` — **no scorer may regress** below baseline to ship.
 
 ### Eval gating (short)
@@ -53,7 +54,7 @@ Two systems (not correlated today):
 | Mastra AI tracing | Agents, tools, workflows, scorers | Mastra Postgres store → Studio; optional Cloud |
 | Sentry / `@vercel/otel` | HTTP, RSC, errors | Sentry |
 
-Config: `src/shared/agent-kernel/mastra/observability-config.ts`. Spans in app code: `withMastraSpan()` from `@/shared/observability/mastra-tracing`.
+Config: `src/shared/agent-kernel/mastra/observability-config.ts`. Spans in app code: `withMastraSpan()` from `@/shared/observability/mastra-tracing`. Storage uses `PostgresStoreVNext` so Studio discovery/feedback endpoints work (optional `OBSERVABILITY_DATABASE_URL`, else `DATABASE_URL`).
 
 ```bash
 MASTRA_TRACE_CONSOLE=true

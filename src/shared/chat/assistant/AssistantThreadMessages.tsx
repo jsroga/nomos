@@ -23,12 +23,12 @@ import type { TextMessagePartComponent } from '@assistant-ui/react'
 import {
   ActionBarPrimitive,
   MessagePrimitive,
-  useComposerRuntime,
   useMessage,
   useMessageRuntime,
 } from '@assistant-ui/react'
 import { Button } from '@/components/Button'
 import { AssistantToolFallback } from './AssistantToolFallback'
+import { useAssistantAddToWorld } from './AssistantAddToWorldContext'
 import {
   ASSISTANT_THREAD_COPY,
   CHAT_ENTITY_KIND_STYLE,
@@ -116,7 +116,7 @@ const USER_PART_COMPONENTS = {
 
 function AddToWorldButton() {
   const messageRuntime = useMessageRuntime()
-  const composer = useComposerRuntime()
+  const onAddToWorld = useAssistantAddToWorld()
 
   return (
     <Button
@@ -127,13 +127,9 @@ function AddToWorldButton() {
       onClick={() => {
         const text = messageRuntime.unstable_getCopyText().trim()
         if (!text) return
-        const parsed = parseAssistantEntities(text)
-        const payload =
-          parsed.entities.length > 0
-            ? parsed.entities.map(e => `- ${e.name}: ${e.description}`).join('\n')
-            : text
-        composer.setText(`${ASSISTANT_THREAD_COPY.AddToWorldPromptPrefix}${payload}`)
-        composer.send()
+        // The host decides what the message means; rewriting it here destroyed
+        // everything the answer carried (urls, structure) before it arrived.
+        onAddToWorld?.(text)
       }}
     >
       <Plus size={12} aria-hidden />

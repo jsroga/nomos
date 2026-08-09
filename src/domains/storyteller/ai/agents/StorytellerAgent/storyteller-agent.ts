@@ -67,9 +67,6 @@ export class StorytellerAgent {
     const m = getMastraInstance()
     const storage = getStorageInstance()
 
-    // Get workspace from Mastra instance to ensure skills are loaded
-    const workspace = m?.getWorkspace()
-
     // Explicit modelName (CLI/testing) wins; otherwise the Writers Room picker
     // override rides on RequestContext (same key as the author slot).
     const model = config.modelName
@@ -89,6 +86,9 @@ export class StorytellerAgent {
       },
     })
 
+    // Opt out of Mastra-instance workspace (repo FS tools). A function that
+    // returns undefined does not fall back to the global workspace — otherwise
+    // the model scrapes e2e projectIds instead of calling update_world_bible.
     this.agent = new Agent({
       id: StorytellerAgentId.Storyteller,
       name: StorytellerAgentLabel.Storyteller,
@@ -96,8 +96,8 @@ export class StorytellerAgent {
       model,
       tools: this.toolsMap,
       mastra: m,
-      workspace, // Pass workspace to enable skills and filesystem tools
-      memory, // Enable memory for conversation context
+      memory,
+      workspace: () => undefined,
     })
 
       // Manually link observability (extends the agent with a mastra ref)

@@ -1,11 +1,14 @@
 'use client'
 
+import { useCallback } from 'react'
 import { cloneSearchParams } from '@/shared/data/url-builder'
 import { StorytellerEmptyState } from '../../StorytellerEmptyState'
 import {
   StorytellerBibleQuery,
   StorytellerQueryParam,
 } from '@/domains/storyteller/core/storyteller-page-wire'
+import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { WorldBiblePanel } from '../storyteller-dynamic-imports'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 import { StorytellerEpisodeHeader } from './StorytellerEpisodeHeader'
@@ -33,16 +36,34 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
     selectEpisode,
     isSending,
     loadingSections,
+    setLoadingSections,
   } = core
   const { handleDraftFirstEpisode, handleGenerateBible, handlePreviousPhase, handlePhaseChange } =
     phase
   const { worldBiblePanelStoryPlan, handleUpdateGlobalBible, closeWorldBiblePanel } = agents
+  const requestChatPrompt = useStorytellerUiStore(state => state.requestChatPrompt)
 
   const openBible = () => {
     const params = cloneSearchParams(searchParams)
     params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Open)
     router.push(`?${params.toString()}`)
   }
+
+  const handleBibleSendMessage = useCallback(
+    (message: string, section?: string) => {
+      const { generationActivity } = useStorytellerUiStore.getState()
+      if (isGenerationActivityBusy(generationActivity.phase)) return
+
+      if (section) {
+        setLoadingSections(prev => ({
+          ...prev,
+          [section]: { loading: true },
+        }))
+      }
+      requestChatPrompt(message, section)
+    },
+    [requestChatPrompt, setLoadingSections]
+  )
 
   return (
     <div className="flex-1 flex flex-col relative border-r border-border h-full overflow-hidden bg-black">
@@ -98,6 +119,7 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
             loadingSections={loadingSections}
             pendingActions={sectionPendingActions}
             onClose={closeWorldBiblePanel}
+            onSendMessage={handleBibleSendMessage}
           />
         </div>
       )}

@@ -9,6 +9,7 @@ export enum SoundtrackFieldAlias {
   Tracks = 'tracks',
   Music = 'music',
   Soundtrack = 'soundtrack',
+  MoodSoundtrack = 'moodSoundtrack',
 }
 
 /** Moodboard field aliases in tool results. */
@@ -101,6 +102,7 @@ export const STORY_PLAN_MERGE_FIELDS: StoryPlanMergeField[] = [
 /** Section keys recognised in update_world_bible tool args (shimmer + detection). */
 export const BIBLE_SECTION_UPDATE_KEYS: string[] = [
   BibleSection.SOUNDTRACKS,
+  SoundtrackFieldAlias.MoodSoundtrack,
   BibleSection.WORLD_RULES,
   BibleSection.FACTIONS,
   BibleSection.INSPIRATIONS,

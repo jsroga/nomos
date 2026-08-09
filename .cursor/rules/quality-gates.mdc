@@ -26,6 +26,8 @@ Run these before claiming a task is done. Failures must be fixed, not bypassed.
 
 **Do not run E2E during agent work** — skip `npm run test:e2e` entirely at this stage (no smoke, no full-loop). E2E is operator/CI-only unless the user explicitly asks.
 
+**Never open the app in a browser** — no browser MCP, no `browser-use` subagent, no `curl` against `localhost:3000` to check behaviour. Verification goes through reusable committed tests. See `no-agent-browser.mdc` (highest priority).
+
 ## Fast gates (during work — few seconds)
 
 Use these while implementing. See also `todo-batch-verify.mdc` (every **5** completed todos) and `quality-backlog.mdc` (cache failures in `.local/`).

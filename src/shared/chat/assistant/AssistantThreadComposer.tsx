@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   ArrowUp,
   // AtSign,
+  Braces,
   ChevronDown,
   // Paperclip,
   Square,
@@ -23,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/DropdownMenu'
 import type { AssistantMentionBundle } from './useAssistantMentions'
+import { useAssistantChatDetails } from './AssistantChatDetailsContext'
 import {
   ASSISTANT_THREAD_COPY,
   ASSISTANT_THREAD_WIRE,
@@ -162,6 +164,28 @@ function AttachButton() {
 }
 */
 
+function DetailsToggle() {
+  const { showDetails, toggleDetails } = useAssistantChatDetails()
+  return (
+    <button
+      type="button"
+      className={
+        showDetails ? 'aui-composer-tool aui-composer-tool--active' : 'aui-composer-tool'
+      }
+      aria-label={
+        showDetails
+          ? ASSISTANT_THREAD_COPY.HideDetailsAria
+          : ASSISTANT_THREAD_COPY.ShowDetailsAria
+      }
+      aria-pressed={showDetails}
+      title={ASSISTANT_THREAD_COPY.ShowDetails}
+      onClick={toggleDetails}
+    >
+      <Braces size={15} aria-hidden />
+    </button>
+  )
+}
+
 function ModelPicker({
   modelId,
   options,
@@ -232,6 +256,7 @@ export function AssistantThreadComposer({
               <div className="aui-composer-left">
                 {/* <AttachButton /> */}
                 {/* <MentionButton enabled={Boolean(mentions)} /> */}
+                <DetailsToggle />
                 {hasPicker && chatModelId && onChatModelChange && chatModelOptions ? (
                   <ModelPicker
                     modelId={chatModelId}

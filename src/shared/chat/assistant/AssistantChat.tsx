@@ -11,7 +11,7 @@
  * "Rendered fewer hooks than expected".
  */
 
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { useAISDKRuntime } from '@assistant-ui/react-ai-sdk'
@@ -31,11 +31,56 @@ import { isPlainObject } from '@/shared/data/json-guards'
 import { AssistantThread } from './AssistantThread'
 import { AskUserToolUI } from './AssistantHumanTool'
 import { useAssistantMentions } from './useAssistantMentions'
+import { AssistantAddToWorldProvider } from './AssistantAddToWorldContext'
+import {
+  AssistantChatStreamStatus,
+  isAssistantTurnBusy,
+  shouldEmitCompletedToolCalls,
+} from './assistant-turn-phase'
+import {
+  AssistantGenerationLabel,
+  AssistantGenerationPhase,
+  deriveAssistantGenerationActivity,
+  type AssistantGenerationActivity,
+} from './derive-assistant-generation-activity'
+import {
+  extractCompletedAssistantToolCalls,
+  type AssistantCompletedToolCall,
+} from './extract-completed-assistant-tool-calls'
 
 const DEFAULT_AGENT_ID = 'storyteller'
 const ASSISTANT_API_BASE = '/api/assistant/'
 const EMPTY_PROVIDERS: readonly MentionProvider[] = []
 const EMPTY_PROJECT_CONTEXT: ProjectContext = { projectId: '' }
+/** Clear stuck overlays if the stream dies without an idle transition (e.g. server restart). */
+const GENERATION_STUCK_TIMEOUT_MS = 180_000
+/** Context assembly runs before the stream opens — show a slower hint after this. */
+const GENERATION_SLOW_HINT_MS = 12_000
+
+enum WarmHttpMethod {
+  Get = 'GET',
+}
+
+function emitFreshCompletedTools(
+  messages: Parameters<typeof extractCompletedAssistantToolCalls>[0],
+  proposedToolKeys: Set<string>,
+  onCompleted: ((calls: readonly AssistantCompletedToolCall[]) => void) | undefined,
+) {
+  const completed = extractCompletedAssistantToolCalls(messages)
+  if (completed.length === 0 || !onCompleted) return
+  const fresh = completed.filter(call => {
+    const key = `${call.toolName}:${JSON.stringify(call.args).slice(0, 160)}`
+    if (proposedToolKeys.has(key)) return false
+    proposedToolKeys.add(key)
+    return true
+  })
+  if (fresh.length > 0) onCompleted(fresh)
+}
+
+export interface AssistantPendingPrompt {
+  id: number
+  text: string
+}
 
 interface AssistantChatProps {
   /** Explicit Mastra agent id (reachable via /api/assistant/<agentId>). */
@@ -58,6 +103,17 @@ interface AssistantChatProps {
   chatModelOptions?: readonly AssistantChatModelOption[]
   /** Persist / update the selected chat model. */
   onChatModelChange?: (modelId: string) => void
+  /** External inject (e.g. bible section refresh) — sent once per id. */
+  pendingPrompt?: AssistantPendingPrompt | null
+  onPendingPromptHandled?: (id: number) => void
+  /** Fires when the chat leaves a streaming/submitted state. */
+  onStreamIdle?: () => void
+  /** Live tool/stream progress for host overlays (bible section refresh, etc.). */
+  onGenerationActivity?: (activity: AssistantGenerationActivity) => void
+  /** Completed tool calls from the latest assistant turn (bible board sync, etc.). */
+  onCompletedToolCalls?: (calls: readonly AssistantCompletedToolCall[]) => void
+  /** Chat “Add to world” — host shows pending bible approval for the message text. */
+  onAddToWorld?: (text: string) => void
 }
 
 function resolveApi(agentId?: string, moduleKey?: string): string {
@@ -111,12 +167,20 @@ export function AssistantChat({
   chatModelId,
   chatModelOptions,
   onChatModelChange,
+  pendingPrompt,
+  onPendingPromptHandled,
+  onStreamIdle,
+  onGenerationActivity,
+  onCompletedToolCalls,
+  onAddToWorld,
 }: AssistantChatProps) {
   const history = useMemo(
     () => (persistKey ? createSessionThreadHistoryAdapter(persistKey) : undefined),
     [persistKey]
   )
   const api = resolveApi(agentId, moduleKey)
+  const resolvedAgentId =
+    agentId ?? (moduleKey ? getCanvasModuleAgentId(moduleKey) : undefined) ?? DEFAULT_AGENT_ID
   const chatBody = useMemo(() => {
     const base = isPlainObject(body) ? body : {}
     if (!chatModelId) return base
@@ -130,21 +194,172 @@ export function AssistantChat({
   const chat = useChat({ transport })
   const adapters = useMemo(() => (history ? { history } : undefined), [history])
   const runtime = useAISDKRuntime(chat, { adapters })
+  const lastHandledPromptId = useRef<number | null>(null)
+  const wasBusy = useRef(false)
+  const stuckTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const proposedToolKeys = useRef(new Set<string>())
+  const onStreamIdleRef = useRef(onStreamIdle)
+  const onGenerationActivityRef = useRef(onGenerationActivity)
+  const onPendingPromptHandledRef = useRef(onPendingPromptHandled)
+  const onCompletedToolCallsRef = useRef(onCompletedToolCalls)
+
+  useEffect(() => {
+    onStreamIdleRef.current = onStreamIdle
+  }, [onStreamIdle])
+
+  useEffect(() => {
+    onGenerationActivityRef.current = onGenerationActivity
+  }, [onGenerationActivity])
+
+  useEffect(() => {
+    onPendingPromptHandledRef.current = onPendingPromptHandled
+  }, [onPendingPromptHandled])
+
+  useEffect(() => {
+    onCompletedToolCallsRef.current = onCompletedToolCalls
+  }, [onCompletedToolCalls])
+
+  const clearStuckTimer = useCallback(() => {
+    if (!stuckTimer.current) return
+    clearTimeout(stuckTimer.current)
+    stuckTimer.current = null
+  }, [])
+
+  const finishGeneration = useCallback((opts?: { error?: string }) => {
+    clearStuckTimer()
+    if (opts?.error) {
+      onGenerationActivityRef.current?.({
+        phase: AssistantGenerationPhase.Error,
+        label: AssistantGenerationLabel.Error,
+        error: opts.error,
+        agentId: resolvedAgentId,
+      })
+    } else {
+      onGenerationActivityRef.current?.({
+        phase: AssistantGenerationPhase.Idle,
+        label: '',
+        agentId: resolvedAgentId,
+      })
+    }
+    onStreamIdleRef.current?.()
+  }, [clearStuckTimer, resolvedAgentId])
+
+  useEffect(() => {
+    if (!pendingPrompt) return
+    if (lastHandledPromptId.current === pendingPrompt.id) return
+    lastHandledPromptId.current = pendingPrompt.id
+
+    // One in-flight turn only — a second sendMessage while busy duplicates
+    // message ids in assistant-ui's MessageRepository and crashes the chat.
+    if (isAssistantTurnBusy(chat.status)) {
+      onPendingPromptHandledRef.current?.(pendingPrompt.id)
+      return
+    }
+
+    onGenerationActivityRef.current?.({
+      phase: AssistantGenerationPhase.Submitted,
+      label: AssistantGenerationLabel.Submitted,
+      agentId: resolvedAgentId,
+    })
+    clearStuckTimer()
+    const slowHintTimer = setTimeout(() => {
+      onGenerationActivityRef.current?.({
+        phase: AssistantGenerationPhase.Submitted,
+        label: AssistantGenerationLabel.SubmittedSlow,
+        agentId: resolvedAgentId,
+      })
+    }, GENERATION_SLOW_HINT_MS)
+    stuckTimer.current = setTimeout(() => {
+      clearTimeout(slowHintTimer)
+      finishGeneration({ error: AssistantGenerationLabel.TimedOut })
+    }, GENERATION_STUCK_TIMEOUT_MS)
+
+    // Capture section refs / clear the queued prompt before the stream so
+    // completed tools still know which bible panel started this turn.
+    onPendingPromptHandledRef.current?.(pendingPrompt.id)
+
+    void chat
+      .sendMessage({ text: pendingPrompt.text })
+      .catch((err: unknown) => {
+        clearTimeout(slowHintTimer)
+        const message = err instanceof Error ? err.message : AssistantGenerationLabel.Error
+        finishGeneration({ error: message })
+      })
+      .finally(() => {
+        clearTimeout(slowHintTimer)
+      })
+  }, [pendingPrompt, chat, resolvedAgentId, clearStuckTimer, finishGeneration])
+
+  useEffect(() => {
+    const busy = isAssistantTurnBusy(chat.status)
+
+    if (busy) {
+      const derived = deriveAssistantGenerationActivity(chat.messages, resolvedAgentId)
+      if (derived) {
+        onGenerationActivityRef.current?.(derived)
+      } else if (chat.status === AssistantChatStreamStatus.Submitted) {
+        onGenerationActivityRef.current?.({
+          phase: AssistantGenerationPhase.Submitted,
+          label: AssistantGenerationLabel.Submitted,
+          agentId: resolvedAgentId,
+        })
+      } else {
+        onGenerationActivityRef.current?.({
+          phase: AssistantGenerationPhase.Streaming,
+          label: AssistantGenerationLabel.Streaming,
+          agentId: resolvedAgentId,
+        })
+      }
+    }
+
+    if (shouldEmitCompletedToolCalls(chat.status)) {
+      emitFreshCompletedTools(
+        chat.messages,
+        proposedToolKeys.current,
+        onCompletedToolCallsRef.current,
+      )
+    }
+
+    if (wasBusy.current && !busy) {
+      if (chat.status === AssistantChatStreamStatus.Error || chat.error) {
+        finishGeneration({
+          error:
+            chat.error instanceof Error ? chat.error.message : AssistantGenerationLabel.Error,
+        })
+      } else {
+        finishGeneration()
+      }
+    }
+    wasBusy.current = busy
+  }, [chat.status, chat.messages, chat.error, resolvedAgentId, finishGeneration])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void fetch(api, {
+      method: WarmHttpMethod.Get,
+      signal: controller.signal,
+    }).catch(() => undefined)
+    return () => controller.abort()
+  }, [api])
+
+  useEffect(() => () => clearStuckTimer(), [clearStuckTimer])
 
   const resolvedSuggestions =
     suggestions ?? (moduleKey ? getCanvasModuleSuggestions(moduleKey) : [])
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <AskUserToolUI />
-      <AssistantChatBody
-        suggestions={resolvedSuggestions}
-        mentionProviders={mentionProviders}
-        mentionProjectContext={mentionProjectContext}
-        chatModelId={chatModelId}
-        chatModelOptions={chatModelOptions}
-        onChatModelChange={onChatModelChange}
-      />
+      <AssistantAddToWorldProvider onAddToWorld={onAddToWorld}>
+        <AskUserToolUI />
+        <AssistantChatBody
+          suggestions={resolvedSuggestions}
+          mentionProviders={mentionProviders}
+          mentionProjectContext={mentionProjectContext}
+          chatModelId={chatModelId}
+          chatModelOptions={chatModelOptions}
+          onChatModelChange={onChatModelChange}
+        />
+      </AssistantAddToWorldProvider>
     </AssistantRuntimeProvider>
   )
 }
