@@ -114,7 +114,7 @@ export function buildLoopCrossDomainSuggestions(input: {
       title: `Design a level for ${input.name}`,
       description: CrossDomainSuggestionCopy.LoopToLevelDescription,
       targetDomain: AppModuleId.InteriorDesigner,
-      targetRoute: `/${input.projectId}/interior-design`,
+      targetRoute: `/${input.projectId}/3d-canvas`,
       priority: 4,
       entityId: entityRef,
     },

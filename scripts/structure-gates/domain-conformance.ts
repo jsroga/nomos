@@ -66,17 +66,17 @@ export const DOMAIN_CONFORMANCE: Record<string, DomainConformance> = {
     aiGuardEnforced: true,
     aiLayerStructureEnforced: true,
   },
-  'interior-designer': {
+  '3d-canvas': {
     requiresIndex: true,
     legacyTopLevel: [],
     requiredFolders: ['ui', 'state', 'core', 'services', 'tasks'],
-    optionalFolders: ['prompts', '__tests__'],
+    optionalFolders: ['prompts', 'config', '__tests__'],
   },
-  'world-building-toolkit': {
+  '2d-canvas': {
     requiresIndex: true,
     legacyTopLevel: [],
     requiredFolders: ['ui', 'state', 'core', 'services'],
-    optionalFolders: ['tasks', '__tests__'],
+    optionalFolders: ['tasks', 'config', '__tests__'],
     uiLayerStructureEnforced: true,
   },
   // chat moved to src/shared/chat (PLAN-V2 3.1) — platform module, not a domain.

@@ -30,7 +30,7 @@ icons) on top of **Radix** + **Tailwind** + **class-variance-authority**.
 ## Step 2 — Map the domain components
 
 - Identify which domain the work lands in under `src/domains/*/components`
-  (`storyteller`, `interior-designer`, `chat`, `game-design`, `loop-creator`).
+  (`storyteller`, `3d-canvas`, `chat`, `game-design`, `loop-creator`).
 - Find 2-3 existing components closest to what you need. Record their file paths,
   props, and the states they handle (loading/empty/error/success/disabled).
 - Note the folder convention: `ComponentName/ComponentName.tsx` + `index.ts`.

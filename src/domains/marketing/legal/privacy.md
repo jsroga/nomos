@@ -20,4 +20,4 @@ We use industry-standard security measures to protect your information.
 
 ## 5. Contact
 
-For privacy concerns, contact privacy@kur.com.
+For privacy concerns, contact privacy@nomos.gg.

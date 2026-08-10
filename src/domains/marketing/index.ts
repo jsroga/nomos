@@ -3,6 +3,7 @@
  * Server-only helpers (e.g. loadLegalMarkdown) live in ./core/legal-docs — import there.
  */
 
+export { ApiDocsPage } from './ui/ApiDocs/components/ApiDocsPage'
 export { GlobalLiquidLoader } from './ui/GlobalLiquidLoader'
 export { LandingPage } from './ui/LandingPage'
 export { Liquid } from './ui/Liquid'
@@ -13,7 +14,7 @@ export { ProPlanPromo } from './ui/ProPlanPromo'
 export { ThreeDIcon } from './ui/ThreeDIcon'
 export { ToolsIntegration } from './ui/ToolsIntegration'
 export { TurbulentBackground } from './ui/TurbulentBackground'
-export { LANDING_HERO_HEADLINES } from './ui/LandingPage/constants/landing-copy'
+export { LANDING_HERO_HEADLINES, LandingExternalUrl } from './ui/LandingPage/constants/landing-copy'
 export {
   LandingLoginBrandCopy,
   LandingNavUiCopy,

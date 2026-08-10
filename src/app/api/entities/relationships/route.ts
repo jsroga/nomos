@@ -8,23 +8,7 @@ import {
 } from '@/shared/data/api-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam, SupabaseColumn, SupabaseTable } from '@/shared/data/constants/protocol'
-
-// Relationship creation schema
-const createRelationshipSchema = z.object({
-  projectId: z.string().uuid(),
-  fromEntityId: z.string().uuid(),
-  toEntityId: z.string().uuid(),
-  relationshipType: z.enum([
-    'uses',
-    'located_in',
-    'conflicts_with',
-    'allies_with',
-    'owns',
-    'part_of',
-  ]),
-  metadata: z.record(z.any()).optional(),
-})
-
+import { openApiCreateRelationshipRequestSchema } from '@/shared/openapi/schemas/entities'
 /**
  * GET /api/entities/relationships
  * Get relationships for entities
@@ -91,7 +75,7 @@ export const POST = withRateLimit(
     const body = await request.json()
 
     try {
-      const validated = createRelationshipSchema.parse(body)
+      const validated = openApiCreateRelationshipRequestSchema.parse(body)
 
       // Prevent self-relationships
       if (validated.fromEntityId === validated.toEntityId) {

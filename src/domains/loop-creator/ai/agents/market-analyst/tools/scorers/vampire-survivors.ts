@@ -1,4 +1,10 @@
 /**
+ * Jacek Confirm this regex — every criterion below classifies a mechanic by
+ * matching English words in its name/type ('reward', 'collect', 'evolv',
+ * 'unlock', 'permanent'), so a mechanic named differently scores zero regardless
+ * of what it does. Pending confirmation for all three scorer files.
+ * See .local/findings/word-dictionary-heuristics.md (Group B).
+ *
  * Vampire Survivors Scorer Tool
  *
  * Scores the loop design against action/survivors-like criteria.

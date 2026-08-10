@@ -1,4 +1,7 @@
 export * from './contextAssembler'
+export * from './apiframe'
+export * from './apiframe-nano-banana'
+export * from './image-model-env'
 export * from './fal'
 export * from './legnext'
 export * from './meshy'

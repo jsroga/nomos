@@ -10,9 +10,6 @@ import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { MastraWorkflowStatus, QueryParam } from '@/shared/data/constants/protocol'
 import { StorytellerWorkflowVerdict } from '@/domains/storyteller/core/storyteller-page-wire'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const runtime = 'nodejs'
-
 /**
  * Request contract is UNCHANGED (published — `useChatStream.resumeWorkflow()`
  * sends exactly this shape). `selectedOption` maps to the workflow verdict

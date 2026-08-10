@@ -22,6 +22,12 @@ const CHAT_INPUT = `${FlowSelector.TextArea}[placeholder="${FlowUiLabel.Composer
 const CHAT_SEND_TIMEOUT = FlowTimeout.Short
 const CHAT_STATUS_TIMEOUT = FlowTimeout.Short
 const CHAT_WARMUP_TIMEOUT = FlowTimeout.Long
+/**
+ * Jacek Confirm this regex — asserts "the assistant replied" by requiring one of
+ * nine English words, so a valid reply worded differently fails the test.
+ * A non-empty assistant message plus an idle composer already prove a reply
+ * arrived. See .local/findings/word-dictionary-heuristics.md.
+ */
 const REPLY_PATTERN = /\b(hello|hi|hey|help|story|world|ready|assist|today)\b/i
 
 function isString(value: unknown): value is string {

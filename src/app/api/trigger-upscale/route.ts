@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tasks } from '@trigger.dev/sdk/v3'
-import type { upscaleTileTask } from '@/domains/world-building-toolkit/tasks/upscale-tile.task'
+import type { upscaleTileTask } from '@/domains/2d-canvas/tasks/upscale-tile.task'
 import {
   withAuth,
   withRateLimit,
@@ -14,15 +14,12 @@ import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-table
 import { AIProvider } from '@/shared/types/enums'
 import { JobType } from '@/shared/types/enums'
 import {
-  buildGeminiPreUpscaleConfig,
   buildUpscaleProviderConfig,
   isUpscaleMode,
   validateUpscaleProvider,
 } from './trigger-upscale-helpers'
-import type { ProviderConfig } from '@/domains/world-building-toolkit/tasks/upscale-tile-providers'
-
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const dynamic = 'force-dynamic'
+import type { ProviderConfig } from '@/domains/2d-canvas/tasks/upscale-tile-providers'
+import { resolveDefaultUpscaleProvider } from '@/shared/ai/image-model-env'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
@@ -32,13 +29,9 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.MISSING_UPSCALE_FIELDS }, { status: 400 })
     }
 
-    const provider = payload.provider || AIProvider.Stability
+    const provider = payload.provider || resolveDefaultUpscaleProvider() || AIProvider.Stability
     const providerResult = validateUpscaleProvider(provider)
     if (providerResult instanceof NextResponse) return providerResult
-
-    const skipGeminiPreUpscale = payload.skipGeminiPreUpscale ?? false
-    const geminiResult = buildGeminiPreUpscaleConfig(skipGeminiPreUpscale)
-    if (geminiResult instanceof NextResponse) return geminiResult
 
     const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
     if (!hasAccess) {
@@ -78,8 +71,6 @@ export const POST = withRateLimit(
         creativity: payload.creativity,
         provider,
         providerConfig,
-        geminiConfig: geminiResult.geminiConfig,
-        skipGeminiPreUpscale,
         styleReferenceUrls,
       },
       { ttl: TriggerTaskTtl.UpscaleTile }

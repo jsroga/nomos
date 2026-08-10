@@ -10,9 +10,12 @@ import {
   heroAbWeightsFromEnv,
   parseHeroAbCookieValue,
 } from '@/domains/marketing/core/hero-ab'
+import { AUTH_QUERY_PARAM } from '@/shared/auth/constants/auth-messages'
+import { enforceSiteBasicAuth } from '@/shared/auth/site-basic-auth'
 
 enum LandingProxyPath {
   Home = '/',
+  AuthCallback = '/auth/callback',
 }
 
 enum CookieSameSite {
@@ -20,8 +23,18 @@ enum CookieSameSite {
 }
 
 export function proxy(request: NextRequest) {
+  const basicAuth = enforceSiteBasicAuth(request)
+  if (basicAuth) return basicAuth
+
   if (request.nextUrl.pathname !== LandingProxyPath.Home) {
     return NextResponse.next()
+  }
+
+  // Supabase Site URL fallback lands OAuth codes on `/` — forward to the exchange route.
+  if (request.nextUrl.searchParams.get(AUTH_QUERY_PARAM.CODE)) {
+    const callbackUrl = request.nextUrl.clone()
+    callbackUrl.pathname = LandingProxyPath.AuthCallback
+    return NextResponse.redirect(callbackUrl)
   }
 
   const existing = parseHeroAbCookieValue(
@@ -50,5 +63,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/'],
+  matcher: [
+    // Gate every page + API; skip Next internals and common static assets.
+    '/((?!_next/static|_next/image|.*\\.(?:ico|png|jpg|jpeg|gif|webp|svg|woff2?)$).*)',
+  ],
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
@@ -11,9 +11,11 @@ import {
   PROJECT_SELECTION_DELETE_CONFIRM,
   PROJECT_SELECTION_DELETE_DESCRIPTION,
   PROJECT_SELECTION_DELETE_TITLE,
-  PROJECT_SELECTION_SUBTITLES,
   PROJECT_SELECTOR_BIBLE_QUERY,
+  PROJECT_SORT_CYCLE,
+  ProjectSortMode,
 } from '../constants/project-selection'
+import { filterAndSortProjects, groupProjectsByMonth } from '../lib/group-projects'
 import { useWorkspaceProjectStore } from '../workspace-project-store'
 
 export function useProjectSelection() {
@@ -29,9 +31,8 @@ export function useProjectSelection() {
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
-  const [subtitle] = useState(
-    () => PROJECT_SELECTION_SUBTITLES[Math.floor(Math.random() * PROJECT_SELECTION_SUBTITLES.length)]
-  )
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortMode, setSortMode] = useState(ProjectSortMode.Newest)
   const [loadingProjectId, setLoadingProjectId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -60,6 +61,16 @@ export function useProjectSelection() {
       cancelled = true
     }
   }, [fetchAllProjects, router, supabase])
+
+  const visibleProjects = useMemo(
+    () => filterAndSortProjects(projects, searchQuery, sortMode),
+    [projects, searchQuery, sortMode],
+  )
+
+  const monthGroups = useMemo(
+    () => groupProjectsByMonth(visibleProjects),
+    [visibleProjects],
+  )
 
   const handleSelectProject = (projectId: string) => {
     setLoadingProjectId(projectId)
@@ -98,14 +109,26 @@ export function useProjectSelection() {
     router.push('/login')
   }
 
+  const cycleSortMode = () => {
+    const index = PROJECT_SORT_CYCLE.indexOf(sortMode)
+    const next = PROJECT_SORT_CYCLE[(index + 1) % PROJECT_SORT_CYCLE.length]
+    setSortMode(next ?? ProjectSortMode.Newest)
+  }
+
   return {
     user,
     projects,
+    projectCount: projects.length,
+    monthGroups,
+    visibleCount: visibleProjects.length,
     isLoading,
     isCreating,
     newProjectName,
     setNewProjectName,
-    subtitle,
+    searchQuery,
+    setSearchQuery,
+    sortMode,
+    cycleSortMode,
     loadingProjectId,
     handleSelectProject,
     handleDeleteProject,

@@ -2,7 +2,9 @@
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "entry": [
     "src/app/**/*.{ts,tsx}",
+    "src/components/**/*.{ts,tsx}",
     "src/mcp/server.ts",
+    "src/shared/agent-kernel/cursor-runner.ts",
     "src/trigger/**/*.ts",
     "trigger.config.ts",
     "scripts/**/*.{ts,js,mjs}",
@@ -26,12 +28,12 @@
     "@types/*",
     "server-only",
     "eslint-*",
-    "@anthropic-ai/sdk",
-    "webpack"
+    "webpack",
+    "axios"
   ],
   "ignoreBinaries": [
     "tsx",
-    "live-server"
+    "open"
   ],
   "ignoreExportsUsedInFile": true
 }

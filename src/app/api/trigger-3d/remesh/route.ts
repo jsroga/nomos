@@ -8,9 +8,6 @@ import {
 } from '@/shared/data/constants/api-errors'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const dynamic = 'force-dynamic'
-
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session: _session }: AuthenticatedRequest) => {
     const payload = await request.json()

@@ -1,13 +1,22 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import { loadLegalMarkdown, type LegalDocSlug } from '../core/legal-docs'
+import { cacheLife, cacheTag } from 'next/cache'
+import { loadLegalMarkdown, LEGAL_DOCS, type LegalDocSlug } from '../core/legal-docs'
 
 type LegalMarkdownPageProps = {
   doc: LegalDocSlug
 }
 
+enum LegalPageCacheLife {
+  Days = 'days',
+}
+
 export async function LegalMarkdownPage({ doc }: LegalMarkdownPageProps) {
+  'use cache'
+  cacheLife(LegalPageCacheLife.Days)
+  cacheTag(LEGAL_DOCS[doc].tag)
+
   const content = await loadLegalMarkdown(doc)
 
   return (

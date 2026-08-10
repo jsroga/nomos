@@ -9,6 +9,7 @@ import { Label } from '@/components/Label'
 import LoginButton from '@/components/LoginButton'
 import { LOGIN_PAGE_STYLES } from '@/app/(auth)/constants/auth-styles'
 import { AuthTab, LoginFormCopy } from '@/shared/auth/constants/auth-messages'
+import { LandingExternalUrl } from '@/domains/marketing'
 
 interface SignInValues {
   email: string
@@ -287,14 +288,14 @@ export function LoginTermsFooter() {
     <p className="text-[11px] leading-[1.5] text-white/30">
       By signing up, you agree to our{' '}
       <a
-        href="/terms"
+        href={LandingExternalUrl.Terms}
         className="text-white/50 underline underline-offset-[3px] hover:text-white/70"
       >
         Terms of Service
       </a>{' '}
       and{' '}
       <a
-        href="/privacy"
+        href={LandingExternalUrl.Privacy}
         className="text-white/50 underline underline-offset-[3px] hover:text-white/70"
       >
         Privacy Policy

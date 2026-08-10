@@ -8,9 +8,9 @@
 | `storyteller` | AI | Writers’ room — bible, beats, script, critics, media tasks |
 | `loop-creator` | AI | Gameplay loop design (Mastra supervisor + specialists) |
 | `game-design` | AI | Pattern / design-lab agents (Mastra) |
-| `world-building-toolkit` | Asset | **Infinite Canvas** — procedural tiles, upscale, fidelity (Trigger tasks) |
+| `2d-canvas` | Asset | **2D / Infinite Canvas** — procedural tiles, upscale, fidelity (Trigger tasks) |
 | `3d-asset-exporter` | Asset | GLB ingest, Meshy/Hyper3D generation, remesh |
-| `interior-designer` | Asset | **3D Canvas** — R3F interiors, terrain, surfaces, props |
+| `3d-canvas` | Asset | **3D Canvas** — R3F interiors, terrain, surfaces, props |
 | `marketing` | UI | Landing / legal surfaces |
 | `chat` | Shared UI | Streaming chat chrome (platformizing toward `@/shared/chat`) |
 
@@ -24,17 +24,17 @@ Virtual writers’ room on **Mastra v1**: chat SSE, beat-draft workflow (plan �
 
 AI game-design assistant. Orchestrator in `loop-creator/core/graph/`; agents under `ai/`. Optional Mastra chat: `FF_LOOP_CREATOR_MASTRA=true`.
 
-## Infinite Canvas (`world-building-toolkit`)
+## 2D Canvas (`2d-canvas`)
 
-Tile generation (OpenRouter/Grok, Gemini, LegNext), upscale (Stability / LegNext), fidelity enhance. Client canvas + Trigger tasks under `tasks/`. Server writes via API + Drizzle — not privileged browser Supabase writes.
+Infinite tile canvas (product name **Infinite Canvas**). Tile generation (OpenRouter/Grok, Gemini, LegNext), upscale (Stability / LegNext), fidelity enhance. Workspace route `/{projectId}/2d-canvas`. Client canvas + Trigger tasks under `tasks/`. Server writes via `/api/world` + Drizzle — not privileged browser Supabase writes.
 
 ## 3D Asset Exporter
 
 Workspace for GLB/GLTF prep and text/image-to-3D providers. Heavy work in `tasks/`.
 
-## 3D Canvas (`interior-designer`)
+## 3D Canvas (`3d-canvas`)
 
-R3F sculpt/paint/place. UI stores for scene vs high-frequency terrain; persistence through sanctioned APIs.
+R3F sculpt/paint/place. Workspace route `/{projectId}/3d-canvas`; API under `/api/3d-canvas`. Scene undo is separate from high-frequency heightmaps; Low/Medium/High render-quality presets (adaptive while orbiting/sculpting). Perf HUD when `NEXT_PUBLIC_FF_PERF_DEBUG=true` — [DEVELOPMENT.md](./DEVELOPMENT.md).
 
 ## Marketing
 

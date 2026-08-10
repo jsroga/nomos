@@ -44,7 +44,8 @@ vars. A top-level `createClient(...)` would throw during indexing. Always reach
 for `supabaseAdmin` instead of constructing a new client at module load in code
 that a task might import.
 
-Required env: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server),
+Required env (canonical names only — do not also set `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_SECRET_KEY`):
+`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server),
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` (client/auth).
 
 ## Data access

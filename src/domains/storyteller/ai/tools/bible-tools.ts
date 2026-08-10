@@ -8,22 +8,32 @@
 import '@/shared/data/server-guard'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { projects, storyPlans } from '@/db/schema'
+import { projects } from '@/db/schema'
 import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { countOccurrences } from '@/shared/data/count-occurrences'
-import { deepMergeRecords, recordFromJson } from '@/shared/data/deep-merge'
 import {
   ConsistencyCheckKind,
   isConsistencyCheckKind,
 } from '@/domains/storyteller/services/consistency-types'
 import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
+import { recordFromJson } from '@/shared/data/json-guards'
 import {
   STORYTELLER_PROJECT_ID,
   STORYTELLER_EPISODE_ID,
+  STORYTELLER_BIBLE_SECTION,
   requestContextString,
 } from '@/domains/storyteller/ai/request-context'
+import { filterUpdatesForBibleSection } from '@/domains/storyteller/ai/tools/bible-section-allowlist'
+import {
+  BibleToolError,
+  BibleToolLog,
+  BibleEpisodePremiseError,
+  persistStoryPlanUpdates,
+  persistEpisodePremiseUpdate,
+  proposedFieldsFromInput,
+} from '@/domains/storyteller/ai/tools/bible-tools-update'
 
 // ==========================================
 // SCHEMAS
@@ -77,12 +87,65 @@ const UpdateWorldBibleInputSchema = z.object({
     )
     .optional()
     .describe('Major plot twists'),
+  soundtracks: z
+    .array(
+      z.object({
+        title: z.string(),
+        artist: z.string(),
+        youtubeUrl: z.string(),
+        mood: z.string().optional(),
+      })
+    )
+    .optional()
+    .describe('Real YouTube tracks scoring the world — use this for any soundtrack or music request'),
+  moodSoundtrack: z
+    .string()
+    .optional()
+    .describe('One-line description of the overall musical mood — never use this for inspirations'),
+  inspirations: z
+    .object({
+      books: z
+        .array(z.object({ title: z.string(), description: z.string() }))
+        .optional(),
+      movies: z
+        .array(z.object({ title: z.string(), description: z.string() }))
+        .optional(),
+      games: z
+        .array(z.object({ title: z.string(), description: z.string() }))
+        .optional(),
+    })
+    .optional()
+    .describe(
+      'Books, movies, and games that inspire the world — use this for any inspirations request'
+    ),
+  episodeRoadmap: z
+    .record(z.unknown())
+    .optional()
+    .describe('Season / episode roadmap for the series bible'),
+  episodePremise: z
+    .record(z.unknown())
+    .optional()
+    .describe(
+      'Ozymandias premise for the currently selected episode — requires an open episodeId; otherwise use manage_episode create with data.premise'
+    ),
 })
 
 const ReadWorldBibleInputSchema = z.object({
   projectId: z.string().uuid().describe('Project ID'),
   sections: z
-    .array(z.enum(['worldDescription', 'items', 'events', 'factions', 'worldRules', 'plotTwists', 'all']))
+    .array(
+      z.enum([
+        'worldDescription',
+        'items',
+        'events',
+        'factions',
+        'worldRules',
+        'plotTwists',
+        'soundtracks',
+        'inspirations',
+        'all',
+      ])
+    )
     .optional()
     .default(['all'])
     .describe('Which sections to read'),
@@ -118,6 +181,8 @@ const ReadWorldBibleOutputSchema = z.object({
   factions: z.array(z.record(z.unknown())).optional(),
   worldRules: z.array(z.record(z.unknown())).optional(),
   plotTwists: z.array(z.record(z.unknown())).optional(),
+  soundtracks: z.array(z.record(z.unknown())).optional(),
+  inspirations: z.record(z.unknown()).optional(),
 })
 
 const ContinuityIssueSchema = z.object({
@@ -148,10 +213,6 @@ const CheckContinuityOutputSchema = z.object({
 // HELPER FUNCTIONS
 // ==========================================
 
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
-
 function isObjectLike(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -175,13 +236,16 @@ export const updateWorldBibleTool = createTool({
   inputSchema: UpdateWorldBibleInputSchema,
   outputSchema: UpdateWorldBibleOutputSchema,
   execute: async (inputData, context) => {
-    const { worldDescription, items, events, factions, worldRules, plotTwists } = inputData
     // Server-trusted request-context IDs beat model-supplied input.
     const projectId =
       requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
+    const bibleSection = requestContextString(
+      context.requestContext,
+      STORYTELLER_BIBLE_SECTION
+    )
+    const episodeId = requestContextString(context.requestContext, STORYTELLER_EPISODE_ID)
 
     try {
-      // Fetch existing project
       const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
 
       if (!project) {
@@ -191,65 +255,50 @@ export const updateWorldBibleTool = createTool({
         }
       }
 
-      const currentStoryPlan = parseStoryPlanRecord(project.storyPlan)
-      const updates: Record<string, unknown> = {}
-      const updatedFields: string[] = []
-
-      // Update each section if provided
-      if (worldDescription !== undefined) {
-        updates.worldDescription = worldDescription
-        updatedFields.push('worldDescription')
+      const proposed = proposedFieldsFromInput({ ...inputData })
+      const { updates, dropped } = filterUpdatesForBibleSection(proposed, bibleSection)
+      if (dropped.length > 0) {
+        console.warn(
+          `${BibleToolLog.DroppedOffSection}${bibleSection ?? '(none)'}: ${dropped.join(', ')}`
+        )
       }
-      if (items !== undefined) {
-        updates.items = items
-        updatedFields.push('items')
-      }
-      if (events !== undefined) {
-        updates.events = events
-        updatedFields.push('events')
-      }
-      if (factions !== undefined) {
-        updates.factions = factions
-        updatedFields.push('factions')
-      }
-      if (worldRules !== undefined) {
-        updates.worldRules = worldRules
-        updatedFields.push('worldRules')
-      }
-      if (plotTwists !== undefined) {
-        updates.plotTwists = plotTwists
-        updatedFields.push('plotTwists')
+      const updatedFields = Object.keys(updates)
+      if (updatedFields.length === 0) {
+        return {
+          success: false,
+          error: bibleSection
+            ? `${BibleToolError.NoFieldsForSectionPrefix}${bibleSection}${BibleToolError.NoFieldsForSectionSuffix}`
+            : BibleToolError.NoFields,
+        }
       }
 
-      // Merge updates into storyPlan
-      const updatedStoryPlan = deepMergeRecords(currentStoryPlan, updates)
+      const projectUpdates: Record<string, unknown> = { ...updates }
+      const premiseValue = projectUpdates.episodePremise
+      delete projectUpdates.episodePremise
 
-      await db
-        .update(projects)
-        .set({
-          storyPlan: updatedStoryPlan,
-          updatedAt: new Date(),
-        })
-        .where(eq(projects.id, projectId))
+      if (premiseValue !== undefined) {
+        if (!episodeId) {
+          return {
+            success: false,
+            error: BibleEpisodePremiseError.EpisodeIdRequired,
+          }
+        }
+        if (typeof premiseValue !== 'object' || premiseValue === null || Array.isArray(premiseValue)) {
+          return {
+            success: false,
+            error: BibleToolError.NoFields,
+          }
+        }
+        await persistEpisodePremiseUpdate(episodeId, recordFromJson(premiseValue))
+      }
 
-      // Keep the dedicated storyPlans table in sync so the World Bible panel
-      // reflects chat-driven updates.
-      const [existingStoryPlan] = await db
-        .select()
-        .from(storyPlans)
-        .where(eq(storyPlans.projectId, projectId))
-        .limit(1)
-      const currentStoryPlanContent = existingStoryPlan
-        ? recordFromJson(existingStoryPlan.content)
-        : {}
-      const updatedStoryPlanContent = deepMergeRecords(currentStoryPlanContent, updates)
-      await db
-        .insert(storyPlans)
-        .values({ projectId, content: updatedStoryPlanContent, updatedAt: new Date() })
-        .onConflictDoUpdate({
-          target: storyPlans.projectId,
-          set: { content: updatedStoryPlanContent, updatedAt: new Date() },
-        })
+      if (Object.keys(projectUpdates).length > 0) {
+        await persistStoryPlanUpdates(
+          projectId,
+          parseStoryPlanRecord(project.storyPlan),
+          projectUpdates
+        )
+      }
 
       return {
         success: true,
@@ -302,6 +351,10 @@ export const readWorldBibleTool = createTool({
       if (shouldInclude('factions')) result.factions = recordArray(storyPlan.factions)
       if (shouldInclude('worldRules')) result.worldRules = recordArray(storyPlan.worldRules)
       if (shouldInclude('plotTwists')) result.plotTwists = recordArray(storyPlan.plotTwists)
+      if (shouldInclude('soundtracks')) result.soundtracks = recordArray(storyPlan.soundtracks)
+      if (shouldInclude('inspirations') && isObjectLike(storyPlan.inspirations)) {
+        result.inspirations = storyPlan.inspirations
+      }
 
       return result
     } catch (_error) {

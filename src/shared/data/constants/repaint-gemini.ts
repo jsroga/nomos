@@ -16,3 +16,8 @@ export enum GeminiResponseModality {
 export enum GeminiFinishReason {
   Safety = 'SAFETY',
 }
+
+export enum RepaintUploadPrefix {
+  Image = 'repaint_image',
+  Mask = 'repaint_mask',
+}

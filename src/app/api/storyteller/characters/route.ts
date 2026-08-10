@@ -16,7 +16,6 @@ import {
 import { DEFAULT_BASE_URL } from '@/shared/data/constants/url'
 import { DB_COLUMN } from '@/shared/data/constants/db-tables'
 import { readRowString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
-import './characters-openapi-doc'
 import {
   buildCharacterPatchUpdates,
   createCharacterRecord,

@@ -33,6 +33,12 @@ export enum BibleOverviewMoodboardCopy {
   NoImage = 'No Image',
   NoMoodVisuals = 'No mood visuals generated yet.',
   GenerateWithMidjourney = 'Generate Moodboard with Midjourney',
+  RefreshMoodboard = 'Generate or refresh moodboard',
+}
+
+export enum BibleOverviewSectionTitle {
+  Overview = 'Overview',
+  Moodboard = 'Moodboard',
 }
 
 export const WORLD_DESCRIPTION_REGEN_PROMPT =

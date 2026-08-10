@@ -11,6 +11,7 @@ export enum LocalStorageKeys {
   AI_CONFIG_HYPER3D = 'ai-config-hyper3d',
   AI_CONFIG_MESHY = 'ai-config-meshy',
   AI_CONFIG_LEGNEXT = 'ai-config-legnext',
+  AI_CONFIG_APIFRAME = 'ai-config-apiframe',
 
   // Storyteller chat model picker (selected chat model id)
   STORYTELLER_CHAT_MODEL = 'storyteller-chat-model',

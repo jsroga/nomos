@@ -4,23 +4,16 @@ import type { SeriesBible } from '@/domains/storyteller/services/context/series-
 import { seriesBibleFromRecord } from '@/domains/storyteller/services/context/series-bible-from-record'
 import { recordFromJson } from '@/shared/data/json-guards'
 
-export enum ProjectJsonbLog {
-  StoryPlanParseFailed = '[storyteller] parseStoryPlanJson: schema validation failed',
-}
-
-let hasLoggedStoryPlanParseFailure = false
-
 export function parseStoryPlanJson(value: unknown): StoryPlan | null {
   if (value === null || value === undefined) return null
 
-  const result = StoryPlanSchema.safeParse(value)
-  if (!result.success) {
-    if (!hasLoggedStoryPlanParseFailure) {
-      console.warn(ProjectJsonbLog.StoryPlanParseFailed, result.error.flatten())
-      hasLoggedStoryPlanParseFailure = true
-    }
+  // Empty / placeholder jsonb — not an error, just "no plan yet".
+  if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) {
     return null
   }
+
+  const result = StoryPlanSchema.safeParse(value)
+  if (!result.success) return null
 
   return result.data
 }

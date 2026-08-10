@@ -29,6 +29,8 @@ const nextConfig = {
   },
   // Next.js 16: reactCompiler is stable (was experimental in 15)
   reactCompiler: true,
+  // Explicit Cache Components — opt into `'use cache'` / PPR shell model
+  cacheComponents: true,
   experimental: {
     optimizePackageImports: OPTIMIZE_PACKAGE_IMPORTS,
     // Lowers peak RAM on webpack builds (analyze / local --webpack); slight compile cost

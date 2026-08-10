@@ -1,7 +1,10 @@
 import type { Mastra } from '@mastra/core/mastra'
 import type { PostgresStore } from '@mastra/pg'
 import { createMastra, createPostgresStore } from '@/shared/agent-kernel/mastra/create-mastra'
-import { consumeMastraRegistrations } from '@/shared/agent-kernel/mastra/runtime-registry'
+import {
+  consumeMastraRegistrations,
+  setMastraInstanceInvalidator,
+} from '@/shared/agent-kernel/mastra/runtime-registry'
 import {
   LIST_JOIN_SEPARATOR,
   MASTRA_STORAGE_INITIALIZED_LOG,
@@ -9,6 +12,10 @@ import {
 
 let mastraInstance: Mastra | null = null
 let storageInstance: PostgresStore | null = null
+
+setMastraInstanceInvalidator(() => {
+  mastraInstance = null
+})
 
 /**
  * Get or create Postgres storage instance for memory persistence
@@ -23,12 +30,11 @@ export function getStorageInstance(): PostgresStore {
 }
 
 /**
- * The single production Mastra instance (never create a second one).
+ * The single production Mastra instance (never create a second one concurrently).
  *
  * Agents and workflows come from the runtime registry — domains push their
  * runtime modules there at import time (dependency inversion; shared/ may
- * not import domains). See `mastra/runtime-registry.ts` for the ordering
- * contract.
+ * not import domains). See `mastra/runtime-registry.ts`.
  */
 export function getMastraInstance(): Mastra {
   if (!mastraInstance) {

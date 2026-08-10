@@ -9,7 +9,7 @@ You orchestrate the Fabro `execute` workflow inside Cursor. Same stages, same pr
 
 ## Invocation
 
-`/execute <module>` — `<module>` is a folder under `src/domains/` (e.g. `storyteller`, `interior-designer`, `chat`), or a special scope: `domains-catalog` (all 9 modules) or `src-root` (top-level `src/` cleanup). If the user omits `<module>`, ask which one before starting.
+`/execute <module>` — `<module>` is a folder under `src/domains/` (e.g. `storyteller`, `3d-canvas`, `chat`), or a special scope: `domains-catalog` (all 9 modules) or `src-root` (top-level `src/` cleanup). If the user omits `<module>`, ask which one before starting.
 
 Set the goal: *"Clean up and align the `<module>` module with `docs/ARCHITECTURE.md`. Produce a prioritized plan; implement only after human approval at Verification."*
 

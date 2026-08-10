@@ -14,8 +14,6 @@ import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller/serve
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const runtime = 'nodejs'
 export const maxDuration = 30
 
 function consistencyFixFromRow(value: unknown): ConsistencyFix | null {

@@ -12,7 +12,7 @@ import { MCP_AGENT_DESCRIPTION, McpAgentName } from './constants/agent'
 const memory = new Memory({ storage: getStorageInstance() })
 
 // Aggregate all implemented tools.
-// loop-creator, interior-designer, and world-building domains are not yet
+// loop-creator, 3d-canvas, and 2d-canvas domains are not yet
 // implemented as MCP tools — add them here when their tools.ts is built.
 // Typed as ToolsInput so the Agent constructor doesn't try to infer a circular
 // generic from these tools (they omit outputSchema, which otherwise leaks an

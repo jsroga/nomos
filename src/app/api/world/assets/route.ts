@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/shared/auth'
-import { listAssetsQuerySchema } from '@/domains/world-building-toolkit/core/io/world.dto'
-import { worldAssetService } from '@/domains/world-building-toolkit/services/world-data-service'
-import { WORLD_QUERY_PARAM } from '@/domains/world-building-toolkit/constants/world-query-params'
+import { listAssetsQuerySchema } from '@/domains/2d-canvas/core/io/world.dto'
+import { worldAssetService } from '@/domains/2d-canvas/services/world-data-service'
+import { WORLD_QUERY_PARAM } from '@/domains/2d-canvas/constants/world-query-params'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 
 export async function GET(req: Request) {

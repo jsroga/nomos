@@ -10,7 +10,8 @@ AI workspace for storytellers and game designers — characters, narratives, loo
 |--------|----------------|
 | Storyteller | Writers room — bible, episodes, beats, characters |
 | Loop Creator | Game-loop design with multi-agent planning |
-| Interior Designer | 3D terrain, tilemaps, world editing |
+| 2D Canvas | Infinite tile canvas — procedural maps, upscale, fidelity |
+| 3D Canvas | R3F interiors, terrain, surfaces, props |
 | Chat | Streaming agent chat with tool approvals |
 | MCP | Model Context Protocol server for external tools |
 

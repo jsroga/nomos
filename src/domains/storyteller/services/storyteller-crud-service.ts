@@ -93,12 +93,6 @@ export interface ServiceContext {
   userId: string
 }
 
-export interface LangSmithContext {
-  runName?: string
-  tags?: string[]
-  metadata?: Record<string, unknown>
-}
-
 // ============================================
 // SERVICE CLASS
 // ============================================
@@ -352,7 +346,6 @@ export class StorytellerService {
   async chat(
     input: ChatMessageInput,
     context: ServiceContext,
-    _langsmithContext?: LangSmithContext
   ): Promise<{
     response: { messages: Array<{ role: 'assistant'; content: string }> }
     threadId: string

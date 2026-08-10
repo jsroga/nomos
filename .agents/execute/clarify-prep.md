@@ -13,7 +13,7 @@ reflect **which module** is in the run goal, not a generic "staged/minimal/full"
 | Posture | Modules | Typical Clarify tensions |
 | --- | --- | --- |
 | **Agent sprawl** | storyteller, loop-creator, game-design | How many agents/tools to keep? Council vs solo agent? Orchestration vs pure Mastra? |
-| **Asset + async debt** | world-building-toolkit, interior-designer, 3d-asset-exporter | Browser Supabase writes, `localStorage` job recovery vs Trigger + `useJob` |
+| **Asset + async debt** | 2d-canvas, 3d-canvas, 3d-asset-exporter | Browser Supabase writes, `localStorage` job recovery vs Trigger + `useJob` |
 | **Wire contract** | storyteller + chat | SSE chat frame order is published — scope must flag if human wants route changes |
 | **Schema duplication** | storyteller (known) | Module `db/schema.ts` vs root `src/db/schema.ts` |
 | **Presentation-only** | marketing, deduction-puzzle-designer | Scope is UI polish, not agents/db |

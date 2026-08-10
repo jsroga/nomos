@@ -10,6 +10,11 @@ import { readString, recordFromJson } from '@/shared/data/json-guards'
  * The golden row supplies the planted cliché via `input.plantedCliche`.
  */
 
+/**
+ * Jacek Confirm this regex — decides "the critic offered a rewrite" by matching
+ * 15 English phrasings. Pending confirmation: approve, or let a judge model make
+ * the call. See .local/findings/word-dictionary-heuristics.md (Group A).
+ */
 const REWRITE_MARKERS = [
   'instead, try',
   'instead try',

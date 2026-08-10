@@ -46,7 +46,7 @@ src/domains/<module>/
 ```
 
 - **AI modules** (storyteller, chat, loop-creator…) use `agents/` + `prompts/`.
-  **Asset modules** (world-building-toolkit, 3d-asset-exporter, interior-designer)
+  **Asset modules** (2d-canvas, 3d-asset-exporter, 3d-canvas)
   skip them and lean on `tasks/`.
 
 ### Dependency rule (points inward and downward — enforced by lint)
@@ -102,7 +102,7 @@ If unsure, consult `docs/ARCHITECTURE.md` and `docs/MODULES.md` rather than gues
 ### App routes — thin shell only (common agent failure)
 
 `src/app/(workspace)/[projectId]/<module>/page.tsx` imports **one** layout/workspace
-from `@/domains/<module>` and renders it. Match `interior-design/page.tsx` and
+from `@/domains/<module>` and renders it. Match `3d-canvas/page.tsx` and
 `loop-creator/page.tsx`.
 
 **Never** add under `app/<module>/`:

@@ -9,7 +9,7 @@ export default defineConfig({
     environment: VitestEnvironment.Node,
     setupFiles: ['dotenv/config'],
     include: [
-      'src/domains/world-building-toolkit/tasks/smokes/generate-tile-providers.tests.ts',
+      'src/domains/2d-canvas/tasks/smokes/generate-tile-providers.tests.ts',
     ],
     exclude: ['**/node_modules/**', '**/dist/**'],
     testTimeout: 300_000,

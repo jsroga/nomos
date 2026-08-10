@@ -247,7 +247,7 @@ client in the module).
 ## Rules
 
 - Place every change in the correct layer per `docs/ARCHITECTURE.md`.
-- **Asset modules** (`interior-designer`, etc.): prioritize `ui/` + `state/queries/` +
+- **Asset modules** (`3d-canvas`, etc.): prioritize `ui/` + `state/queries/` +
   `io/` + `tasks/`; no `agents/` unless the plan explicitly adds AI surfaces.
   Replace browser Supabase writes and `localStorage` job recovery with API + `useJob`.
 - No browser→Supabase writes; no server state in Zustand; no `any` at boundaries.

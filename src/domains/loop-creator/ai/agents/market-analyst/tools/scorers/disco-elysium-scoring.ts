@@ -1,3 +1,9 @@
+/**
+ * Jacek Confirm this regex — classifies mechanics by matching 'narrative',
+ * 'dialogue', 'story', 'choice', 'decision', 'consequence', 'character' in
+ * names/types rather than by behaviour.
+ * See .local/findings/word-dictionary-heuristics.md (Group B).
+ */
 export interface DesignAnalysis {
   mechanics: Array<{ name: string; type: string; description?: string }>
   loops?: Array<{ name: string; type: string; description?: string }>

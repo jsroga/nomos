@@ -5,8 +5,8 @@ export { AppModuleId, GameEntityKind }
 export enum GameHubRouteId {
   Storyteller = 'storyteller',
   LoopCreator = 'loop-creator',
-  WorldGen = 'world-gen',
-  InteriorDesign = 'interior-design',
+  WorldGen = '2d-canvas',
+  InteriorDesign = '3d-canvas',
   AssetExporter = 'asset-exporter',
 }
 

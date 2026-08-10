@@ -6,7 +6,6 @@
  */
 
 import { createOpenAI } from '@ai-sdk/openai'
-import { google } from '@ai-sdk/google'
 
 // =============================================================================
 // OPENROUTER GATEWAY — one key to rule them all
@@ -165,7 +164,7 @@ export function createPureModel(modelName: string) {
     ? enforced.replace(PROVIDER_SLASH, PROVIDER_COLON)
     : enforced
 
-  // OpenAI (Luna / Sol / …) — prefer OpenRouter when only that key is set
+  // OpenAI (Luna / Sol / …) — prefer OpenRouter; optional OPENAI_API_KEY direct fallback
   if (colonForm.startsWith('openai:')) {
     const useOpenRouter = Boolean(process.env.OPENROUTER_API_KEY)
     const modelId = useOpenRouter
@@ -178,20 +177,13 @@ export function createPureModel(modelName: string) {
     return openai(modelId)
   }
 
-  // Moonshot / Kimi via OpenRouter
-  if (colonForm.startsWith('moonshotai:')) {
-    const modelId = colonForm.replace('moonshotai:', 'moonshotai/')
+  // Google / Moonshot — OpenRouter only (no direct vendor key required)
+  if (colonForm.startsWith('google:') || colonForm.startsWith('moonshotai:')) {
     const openai = createOpenAI({
       apiKey: process.env.OPENROUTER_API_KEY,
       baseURL: OPENROUTER_BASE_URL,
     })
-    return openai(modelId)
-  }
-
-  // Google
-  if (colonForm.startsWith('google:')) {
-    const modelId = colonForm.replace('google:', '')
-    return google(modelId)
+    return openai(colonForm.replace(PROVIDER_COLON, PROVIDER_SLASH))
   }
 
   // Default: Kimi latest via OpenRouter

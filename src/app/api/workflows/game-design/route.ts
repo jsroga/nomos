@@ -21,7 +21,6 @@ enum TargetAudience {
   Hardcore = 'hardcore',
 }
 
-
 // Request schemas
 const CreateLoopRequestSchema = z.object({
   projectId: z.string().uuid(),

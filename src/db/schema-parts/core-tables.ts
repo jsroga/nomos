@@ -221,7 +221,7 @@ export const gameEntities = pgTable('game_entities', {
   description: text('description'),
 
   // Domain tracking
-  sourceDomain: text('source_domain').notNull(), // 'storyteller' | 'loop-creator' | 'interior-designer' | 'world-building'
+  sourceDomain: text('source_domain').notNull(), // 'storyteller' | 'loop-creator' | '3d-canvas' | '2d-canvas'
   sourceEntityId: uuid('source_entity_id'), // ID in the source domain's table
   usedInDomains: text('used_in_domains').array().default([]), // ['storyteller', 'loop-creator']
 
@@ -300,7 +300,7 @@ export const selectPoints = pgTable('select_points', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
-// Interior Designs table (interior-designer)
+// Interior Designs table (3d-canvas)
 export const interiorDesigns = pgTable('interior_designs', {
   id: uuid('id').primaryKey().defaultRandom(),
   projectId: uuid('project_id')

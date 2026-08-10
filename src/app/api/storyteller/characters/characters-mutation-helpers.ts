@@ -207,7 +207,7 @@ function buildCharacterSuggestions(input: {
       title: `Build ${input.name}'s home`,
       description: CrossDomainSuggestionCopy.CharToHomeDescription,
       targetDomain: AppModuleId.InteriorDesigner,
-      targetRoute: `/${input.projectId}/interior-design`,
+      targetRoute: `/${input.projectId}/3d-canvas`,
       priority: 3,
       entityId: entityRef,
     },

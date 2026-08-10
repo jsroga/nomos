@@ -2,6 +2,9 @@
  * Single source of truth for AI slop phrases.
  * Used as prompt guidance so the model avoids slop proactively — quality is
  * judged by the LLM critique, not regex scoring.
+ *
+ * Jacek confirmed: these phrase lists are an allowed exception to the ban on
+ * word-list matching, including the substring gate in `beat-plan-quality.ts`.
  */
 
 export const AI_SLOP_BANNED_PHRASES = [

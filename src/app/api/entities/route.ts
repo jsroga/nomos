@@ -6,22 +6,10 @@ import {
   verifyProjectAccess,
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
+import { createEntitySchema, listEntitiesSchema } from '@/shared/data/entities-service'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 import { GameEntityQueryParam } from '@/shared/data/constants/game-entities-wire'
-
-// Entity creation schema
-const createEntitySchema = z.object({
-  projectId: z.string().uuid(),
-  entityType: z.enum(['character', 'location', 'mechanic', 'faction', 'item', 'quest']),
-  name: z.string().min(1),
-  description: z.string().optional(),
-  sourceDomain: z.enum(['storyteller', 'loop-creator', 'interior-designer', 'world-building']),
-  sourceEntityId: z.string().uuid().optional(),
-  metadata: z.record(z.any()).optional(),
-  tags: z.array(z.string()).optional(),
-  imageUrl: z.string().url().optional(),
-})
 
 /**
  * GET /api/entities
@@ -34,14 +22,21 @@ export const GET = withAuth(
     }
 
     const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get(GameEntityQueryParam.ProjectId)
-    const entityType = searchParams.get(GameEntityQueryParam.EntityType)
-    const sourceDomain = searchParams.get(GameEntityQueryParam.SourceDomain)
-    const search = searchParams.get(GameEntityQueryParam.Search)
+    const parsed = listEntitiesSchema.safeParse({
+      projectId: searchParams.get(GameEntityQueryParam.ProjectId),
+      entityType: searchParams.get(GameEntityQueryParam.EntityType) ?? undefined,
+      sourceDomain: searchParams.get(GameEntityQueryParam.SourceDomain) ?? undefined,
+      search: searchParams.get(GameEntityQueryParam.Search) ?? undefined,
+    })
 
-    if (!projectId) {
-      return NextResponse.json({ error: API_ERROR.PROJECT_ID_QUERY_REQUIRED }, { status: 400 })
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: API_ERROR.INVALID_REQUEST, details: parsed.error.errors },
+        { status: 400 }
+      )
     }
+
+    const { projectId, entityType, sourceDomain, search } = parsed.data
 
     const hasAccess = await verifyProjectAccess(supabase, projectId)
     if (!hasAccess) {

@@ -13,8 +13,8 @@ import {
 import { composeGrrmInstructions } from './compose-instructions'
 
 /**
- * File-based GRRM author. Stateless Studio/workflow path uses this config;
- * class wrapper may rebuild instructions with phase/context via compose*.
+ * File-based GRRM author. Uses the author orchestration slot
+ * (STORYTELLER_AUTHOR_MODEL / matrix) — not the Writers Room chat picker.
  */
 export default agentConfig({
   id: GrrmAuthorAgentId.GrrmAuthor,

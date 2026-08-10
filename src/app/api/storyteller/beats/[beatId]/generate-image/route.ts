@@ -4,14 +4,17 @@ import { beats, episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import { generateStoryboard } from '@/domains/storyteller/tasks/generate-storyboard.task'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { readApiframeApiKey, resolveStoryboardModel } from '@/shared/ai/image-model-env'
 
 export async function POST(req: Request, props: { params: Promise<{ beatId: string }> }) {
   const params = await props.params
   try {
     const { beatId } = params
-    const { prompt, config } = await req.json()
+    const body = await req.json()
+    const { prompt, config } = body
+    const apiKey = config?.apiKey || readApiframeApiKey()
 
-    if (!prompt || !config || !config.apiKey) {
+    if (!prompt || !apiKey) {
       return NextResponse.json({ error: API_ERROR.MISSING_PROMPT_OR_API_KEY }, { status: 400 })
     }
 
@@ -40,7 +43,11 @@ export async function POST(req: Request, props: { params: Promise<{ beatId: stri
       beatId,
       projectId,
       prompt,
-      providerConfig: config,
+      providerConfig: {
+        ...config,
+        apiKey,
+        modelId: config?.modelId || resolveStoryboardModel(),
+      },
     })
 
     return NextResponse.json({

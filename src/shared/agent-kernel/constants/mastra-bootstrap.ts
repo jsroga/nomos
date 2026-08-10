@@ -15,6 +15,11 @@ export const MASTRA_SERIALIZATION_MAX_TOTAL_CHARS = '1000000'
 export const MASTRA_DATABASE_URL_WARNING =
   '⚠️ [Mastra] DATABASE_URL is not set. Memory persistence might fail if storage is required.'
 
+/** Optional dedicated DB for Studio observability (discovery / feedback / metrics). */
+export enum MastraObservabilityDatabaseEnv {
+  Url = 'OBSERVABILITY_DATABASE_URL',
+}
+
 export const MASTRA_STORAGE_ID = 'storyteller-storage'
 export const MASTRA_LOGGER_NAME = 'Mastra'
 export const MASTRA_LOGGER_LEVEL = 'info'

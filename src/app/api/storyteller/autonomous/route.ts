@@ -14,9 +14,6 @@ const AUTONOMOUS_DISABLED_MESSAGE = 'Autonomous drafting is disabled'
 const AUTONOMOUS_MISSING_FIELDS = 'objective and prompt are required'
 const AUTONOMOUS_THREAD_FALLBACK = 'storyteller-autonomous'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const runtime = 'nodejs'
-
 export async function POST(req: Request) {
   try {
     if (!isStorytellerAutonomousEnabled()) {

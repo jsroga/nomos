@@ -53,18 +53,35 @@ import { runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools/workflo
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import {
+  STORYTELLER_CHAT_MODEL,
+  requestContextString,
+} from '@/domains/storyteller/ai/request-context'
 import { AgentController } from '@mastra/core/agent-controller'
 import { createDurableAgent } from '@mastra/core/agent/durable'
 import type { DurableAgent } from '@mastra/core/agent/durable'
 import { buildStorytellerControllerConfig } from '@/domains/storyteller/ai/controller/storyteller-controller'
 import { autonomousAuthorAgent } from '@/domains/storyteller/ai/agents/AutonomousAuthor/autonomous-author-agent'
 import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
+import { goalReachedScorer } from '@/shared/agent-kernel/scorers'
 
 const CHAT_ADAPTER_ID = 'storyteller'
 const CHAT_ADAPTER_NAME = 'Storyteller'
 const CHAT_ADAPTER_DESCRIPTION =
   'Chat adapter: converse, keep the world bible current via tools, delegate beat drafting to the beat-draft workflow.'
 const CHAT_ROLE: Parameters<typeof resolveRoleModel>[0] = 'chat'
+
+enum ScorerSamplingType {
+  Ratio = 'ratio',
+}
+
+/** Live Studio scores — every chat turn; async, never fails the run. */
+const CHAT_ADAPTER_SCORERS = {
+  goalReached: {
+    scorer: goalReachedScorer,
+    sampling: { type: ScorerSamplingType.Ratio, rate: 1 },
+  },
+} as const
 
 /**
  * The REAL chat adapter registered for Studio/observability parity: same
@@ -78,8 +95,16 @@ const chatAdapterAgent = new Agent({
   name: CHAT_ADAPTER_NAME,
   description: CHAT_ADAPTER_DESCRIPTION,
   instructions: () => buildChatAdapterPrompt(getEntityLinkRequirements()),
-  model: () => resolveRoleModel(CHAT_ROLE),
+  model: ({ requestContext }) =>
+    resolveRoleModel(
+      CHAT_ROLE,
+      requestContextString(requestContext, STORYTELLER_CHAT_MODEL),
+    ),
   memory: createInheritedAgentMemory(),
+  // Opt out of Mastra-instance workspace (repo FS tools). A function that
+  // returns undefined does not fall back to the global workspace.
+  workspace: () => undefined,
+  scorers: CHAT_ADAPTER_SCORERS,
   tools: {
     [manageBeatApprovalTool.id]: manageBeatApprovalTool,
     [listBeatsTool.id]: listBeatsTool,
@@ -121,6 +146,7 @@ export {
   STORYTELLER_PROJECT_ID,
   STORYTELLER_EPISODE_ID,
   STORYTELLER_AUTHOR_MODEL,
+  STORYTELLER_CHAT_MODEL,
 } from '@/domains/storyteller/ai/request-context'
 
 // Dependency inversion: push this domain's runtime into the kernel registry

@@ -9,8 +9,6 @@ import {
   STREAM_ROUTE_TEXT,
 } from './stream-route-handler'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const runtime = 'nodejs'
 export const maxDuration = 300
 
 export async function POST(req: Request) {

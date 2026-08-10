@@ -9,6 +9,8 @@ export const TileTriggerProvider = {
   LegnextUploadPaint: LegNextModelId.UploadPaint,
   NanoBanana: ImageGenProvider.NanoBanana,
   Grok: ImageGenProvider.Grok,
+  OpenAi: ImageGenProvider.OpenAi,
+  Stability: ImageGenProvider.Stability,
 } as const
 
 export type TileTriggerProvider =

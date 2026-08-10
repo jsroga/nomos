@@ -234,6 +234,8 @@ export enum EnvVarName {
   GoogleApiKey = 'GOOGLE_API_KEY',
   OpenRouterApiKey = 'OPENROUTER_API_KEY',
   E2eBypassAuthSecret = 'E2E_BYPASS_AUTH_SECRET',
+  BasicAuthUser = 'BASIC_AUTH_USER',
+  BasicAuthPassword = 'BASIC_AUTH_PASSWORD',
 }
 
 export enum MeshyArtStyle {

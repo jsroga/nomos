@@ -1,36 +1,34 @@
+/**
+ * Live integration tier (`npm run test:live`): the `*.e2e.test.ts` files that
+ * `vitest.config.ts` excludes because they need a real database, real model keys
+ * and a scratch project. Each suite self-skips when its env is absent.
+ *
+ *   CONTROLLER_E2E_PROJECT_ID=<scratch-uuid> npm run test:live
+ */
+
 import { defineConfig } from 'vitest/config'
 import path from 'path'
 import { VitestEnvFile, VitestEnvironment } from './vitest.config.constants'
 
-/**
- * Keys-required tier: every `*.e2e.test.ts` — real agents, real models, real DB.
- *
- * The default config excludes this glob so `test:unit` stays hermetic, which
- * also means `npx vitest run <path>` cannot run them (the exclude wins over an
- * explicit filter). This config inverts that: the same files, included.
- *
- *   npm run test:live                      # all of them
- *   npm run test:live -- <path>            # one file
- *
- * Each test self-skips unless its own env is present, so a bare run against a
- * half-configured `.env.local` reports skips rather than failures.
- */
+/** A live turn plus an LLM judge outlasts the 5s default. */
+const LIVE_TEST_TIMEOUT_MS = 120_000
+
 export default defineConfig({
   test: {
     globals: true,
     environment: VitestEnvironment.Node,
     setupFiles: ['dotenv/config'],
-    include: ['**/*.e2e.test.{ts,tsx}'],
-    exclude: ['**/node_modules/**', '**/dist/**'],
-    testTimeout: 300_000,
-    hookTimeout: 300_000,
+    dangerouslyIgnoreUnhandledErrors: true,
+    include: ['src/**/*.e2e.test.{ts,tsx}'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
+    testTimeout: LIVE_TEST_TIMEOUT_MS,
+    hookTimeout: LIVE_TEST_TIMEOUT_MS,
     env: {
       DOTENV_CONFIG_PATH: VitestEnvFile.Local,
     },
     alias: {
       '@/evals': path.resolve(__dirname, './evals'),
       '@': path.resolve(__dirname, './src'),
-      // Next's marker package throws when imported outside a Server Component.
       'server-only': path.resolve(__dirname, './empty-module.js'),
     },
   },

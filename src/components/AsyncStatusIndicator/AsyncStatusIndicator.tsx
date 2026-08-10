@@ -107,7 +107,7 @@ export const AsyncStatusIndicator: React.FC = () => {
 
       console.log(`${AsyncStatusIndicatorLog.CheckingRetexture} ${operation.id} with taskId ${taskId}`)
 
-      const res = await fetch(joinUrlPath('/api/interior-designer/retexture', taskId))
+      const res = await fetch(joinUrlPath('/api/3d-canvas/retexture', taskId))
 
       if (!res.ok) {
         console.warn(`${AsyncStatusIndicatorLog.TaskNotFound} ${taskId} not found, marking as failed`)

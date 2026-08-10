@@ -64,7 +64,13 @@ export const SECTION_CONFIGS: SectionConfig[] = [
   {
     section: BibleSection.SOUNDTRACKS,
     actionType: ActionType.UPDATE_SOUNDTRACKS,
-    fieldNames: [SoundtrackFieldAlias.Soundtracks, SoundtrackFieldAlias.Tracks, SoundtrackFieldAlias.Music, SoundtrackFieldAlias.Soundtrack],
+    fieldNames: [
+      SoundtrackFieldAlias.Soundtracks,
+      SoundtrackFieldAlias.Tracks,
+      SoundtrackFieldAlias.Music,
+      SoundtrackFieldAlias.Soundtrack,
+      SoundtrackFieldAlias.MoodSoundtrack,
+    ],
     requiresApproval: true,
     extractPayload: fields => ({
       soundtracks:
@@ -72,6 +78,7 @@ export const SECTION_CONFIGS: SectionConfig[] = [
         fields[SoundtrackFieldAlias.Tracks] ||
         fields[SoundtrackFieldAlias.Music] ||
         fields[SoundtrackFieldAlias.Soundtrack],
+      moodSoundtrack: fields[SoundtrackFieldAlias.MoodSoundtrack],
     }),
   },
   {

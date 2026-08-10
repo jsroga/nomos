@@ -65,6 +65,7 @@ export const SHARED_TOP_LEVEL_TARGET = new Set([
   'errors',
   'jobs',
   'observability',
+  'openapi', // Zod → OpenAPI registry for public /api-docs
 ])
 
 /** Present during P1 migration — no new siblings until absorbed into target */

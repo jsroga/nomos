@@ -1,7 +1,9 @@
 /**
- * Action-forward heuristics data (PLAN-V2 5.2): word lists used by the
- * deterministic Muse post-filter. Cheap stem matching — the point is to
- * reject "X feels/realizes/is" mush before ranking, not to parse English.
+ * Jacek Confirm this regex — word lists that judge meaning, not structure.
+ * The Muse post-filter decides whether a hook is "action-forward" or "stasis"
+ * by matching English verb stems. Pending confirmation: either delete these and
+ * move the criterion into the Muse/critic prompt, or approve them as-is.
+ * See .local/findings/word-dictionary-heuristics.md (Group A).
  */
 
 /** Verb stems that signal an on-screen action with consequences. */

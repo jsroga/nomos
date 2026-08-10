@@ -45,5 +45,5 @@ export async function fetchMoodboardRunStatus(
 export async function fetchLegnextServerConfigured(): Promise<boolean> {
   const data = await fetchJsonRecord(SETTINGS_PROVIDERS_ENDPOINT)
   const providers = recordFromJson(data.providers)
-  return providers.legnext === true
+  return providers.apiframe === true || providers.legnext === true
 }

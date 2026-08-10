@@ -1,8 +1,13 @@
+'use client'
+
 import React from 'react'
 import { Loader2 } from 'lucide-react'
 import { RichText } from '../../RichText'
 import type { PendingAction } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
+import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 
 interface WorldDescriptionLoadingProps {
   isWorldDescLoading: boolean
@@ -12,21 +17,44 @@ interface WorldDescriptionLoadingProps {
 export const WorldDescriptionLoading: React.FC<WorldDescriptionLoadingProps> = ({
   isWorldDescLoading,
   pendingAction,
-}) => (
-  <>
-    {pendingAction ? (
-      <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
-    ) : null}
-    {isWorldDescLoading && !pendingAction ? (
-      <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm rounded-lg flex items-center justify-center">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
-          <span>Painting your world...</span>
+}) => {
+  const activity = useStorytellerUiStore(state => state.generationActivity)
+  const showActivity =
+    isWorldDescLoading &&
+    !pendingAction &&
+    activity.phase !== GenerationActivityPhase.Idle
+
+  return (
+    <>
+      {pendingAction ? (
+        <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
+      ) : null}
+      {isWorldDescLoading && !pendingAction ? (
+        <div className="absolute inset-0 z-10 bg-background/70 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-3 p-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin text-indigo-400 shrink-0" />
+            <span>
+              {showActivity && activity.label ? activity.label : 'Painting your world…'}
+            </span>
+          </div>
+          {showActivity && activity.toolName ? (
+            <div className="text-[11px] font-mono text-indigo-300/80">
+              agent: {activity.agentId ?? StorytellerAgentId.Storyteller} · {activity.toolName}
+            </div>
+          ) : null}
+          {showActivity && activity.preview ? (
+            <div className="max-h-40 w-full max-w-xl overflow-y-auto rounded-md border border-indigo-500/20 bg-background/80 p-3 text-xs leading-relaxed text-foreground/80 whitespace-pre-wrap">
+              {activity.preview}
+            </div>
+          ) : null}
+          {activity.phase === GenerationActivityPhase.Error && activity.error ? (
+            <p className="text-xs text-red-400 max-w-md text-center">{activity.error}</p>
+          ) : null}
         </div>
-      </div>
-    ) : null}
-  </>
-)
+      ) : null}
+    </>
+  )
+}
 
 interface WorldDescriptionBodyProps {
   isEditing: boolean

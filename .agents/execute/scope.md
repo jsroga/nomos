@@ -17,8 +17,8 @@ Vitest 4, Playwright e2e. Architecture: `docs/ARCHITECTURE.md`.
 | Module | Posture | Sprawl signals to watch |
 | --- | --- | --- |
 | **storyteller** | Agent-heavy (council, judges, orchestration, 40+ tools) | `agents/council/`, `agents/orchestration/`, 944-LOC SSE route `src/app/api/storyteller/chat/stream/route.ts`, duplicate `db/schema.ts`, `ActionApprovalModal` HITL |
-| **world-building-toolkit** | Asset + tasks (tiles, canvas) | Browser Supabase writes in `ui/AssetsPanel.tsx`, `localStorage` job recovery in services |
-| **interior-designer** | 3D asset module | `localStorage` for AI keys in UI; tasks-first, no agents |
+| **2d-canvas** | Asset + tasks (tiles, canvas) | Browser Supabase writes in `ui/AssetsPanel.tsx`, `localStorage` job recovery in services |
+| **3d-canvas** | 3D asset module | `localStorage` for AI keys in UI; tasks-first, no agents |
 | **loop-creator** | Mastra graph agents | Incomplete blueprint (no `io/`, `tasks/`) |
 | **chat** | Shared SSE consumer | `useChatStream.ts` 1166+ LOC; published wire contract |
 | **3d-asset-exporter** | Tasks + UI | `localStorage` in `ThreeDPanel.tsx` |

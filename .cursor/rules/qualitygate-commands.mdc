@@ -19,7 +19,7 @@ Single CLI: `node scripts/qualitygate.mjs` · implementation: `scripts/qualityga
 | `qualitygate:tsc -- --files <path>` | TSC only on files |
 | `qualitygate:tsc -- --changed` | TSC only on git-changed |
 | `qualitygate:tsc -- --all-slices` | Full partitioned TSC (slow) |
-| `qualitygate:tracker -- --skip-tsc` | Refresh `SRC-QUALITY-TRACKER.md` (eslint/magic) |
+| `qualitygate:tracker -- --skip-tsc` | Refresh `.local/SRC-QUALITY-TRACKER.md` (eslint/magic) |
 | `qualitygate:tracker -- --file <path>` | Update one tracker row |
 
 **Many failures?** See `quality-backlog.mdc` — fix one-by-one, rescan every **5** fixes.

@@ -16,7 +16,7 @@ export const MODULE_TOUR_CONFIGS: ModuleTourConfig[] = [
   {
     id: ModuleIdKey.InteriorDesigner,
     name: ModuleDisplayName.InteriorDesigner,
-    routeMatch: /\/app\/[^/]+\/interior-design/,
+    routeMatch: /\/app\/[^/]+\/3d-canvas/,
     steps: interiorDesignerTourSteps,
   },
   {
@@ -28,7 +28,7 @@ export const MODULE_TOUR_CONFIGS: ModuleTourConfig[] = [
   {
     id: ModuleIdKey.WorldGen,
     name: ModuleDisplayName.WorldGen,
-    routeMatch: /\/app\/[^/]+\/world-gen/,
+    routeMatch: /\/app\/[^/]+\/2d-canvas/,
     steps: worldGenTourSteps,
   },
   {

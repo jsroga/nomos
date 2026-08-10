@@ -96,9 +96,6 @@ export function sanitizeOutput(output: unknown): string | Record<string, unknown
   return sanitizedObjectRecord(output, TraceSanitizeFallback.Empty)
 }
 
-/** @deprecated Use sanitizeTraceValue */
-export const sanitizeForLangfuse = sanitizeTraceValue
-
 export interface AgentTraceContext {
   traceId: string
   agentName: string

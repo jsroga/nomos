@@ -32,6 +32,8 @@ Match the surrounding file. A well-named function with a typed signature needs n
 
 `.env*.example`, `*.config.*`, `package.json`: **one trailing clause per line**, saying what the value does. No banner tutorials, no commented-out example matrices, no "and here's how routing works".
 
+**Env sync (binding):** when adding, renaming, or removing an env var, update **both** `.env.local.example` (committed) and `.env.local` (local secrets) in the same change. Same key names; never commit secret values.
+
 ```bash
 # Bad — a doc page pretending to be a config file
 # Pin any role to a specific model id — provider/model form, routed through

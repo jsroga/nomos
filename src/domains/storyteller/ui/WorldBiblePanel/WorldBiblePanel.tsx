@@ -34,7 +34,9 @@ const getProviderConfig = () => {
     browserStorage.getString(MoodboardStorageKey.Provider) || MoodboardProvider.Midjourney
 
   const geminiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_GEMINI)
-  const legnextKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+  const midjourneyKey =
+    browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) ||
+    browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
 
   if (provider === MoodboardProvider.NanoBanana) {
     return {
@@ -47,7 +49,7 @@ const getProviderConfig = () => {
   // Default to midjourney
   return {
     provider: MoodboardProvider.Midjourney,
-    apiKey: legnextKey,
+    apiKey: midjourneyKey,
     modelId: WorldBiblePanelProviderModel.Midjourney,
   }
 }

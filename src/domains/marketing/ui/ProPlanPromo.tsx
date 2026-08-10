@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Check, Sparkles } from 'lucide-react'
 import { LANDING_SECTION_PANEL_CLASS, LANDING_SECTION_PAD_Y_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 

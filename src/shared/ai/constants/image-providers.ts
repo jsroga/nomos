@@ -8,7 +8,8 @@ export enum ImageGenProvider {
   OpenAi = 'openai',
   Stability = 'stability',
   Replicate = 'replicate',
-  /** Follow-up tiles via OpenRouter → xAI Grok Imagine. */
+  /** Follow-up tiles via Apiframe → xAI Grok Imagine. */
   Grok = 'grok',
   NanoBanana = 'nano-banana',
+  Apiframe = 'apiframe',
 }

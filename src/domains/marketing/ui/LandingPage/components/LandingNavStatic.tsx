@@ -22,7 +22,7 @@ export function LandingNavStatic() {
         <div className="flex min-w-0 items-center gap-[30px]">
           <Link href="/" prefetch={false} className="flex shrink-0 items-center">
             <img
-              src="/logo.svg"
+              src="/logo.png"
               alt={LandingNavUiCopy.LogoAlt}
               className="h-auto w-[132px] object-contain"
               width={132}
@@ -35,7 +35,7 @@ export function LandingNavStatic() {
                 key={item}
                 href={navHref(item)}
                 className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50 transition-colors duration-200 hover:text-white"
-                {...(item !== LandingNavItem.Systems
+                {...(item === LandingNavItem.Docs
                   ? { target: '_blank', rel: 'noopener noreferrer' }
                   : {})}
               >

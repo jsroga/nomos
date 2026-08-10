@@ -40,7 +40,7 @@ describe('consistencyScorer', () => {
 })
 
 describe('magicScorer', () => {
-  it.skipIf(!process.env.OPENAI_API_KEY)(
+  it.skipIf(!process.env.OPENROUTER_API_KEY)(
     'scores creative output via LLM',
     async () => {
       registerCorePrompts()

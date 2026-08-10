@@ -11,8 +11,15 @@ import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/e
 import { entityMetadata, parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
 import { InferredRelationshipType } from '@/domains/storyteller/services/constants/entity-graph-wire'
 import { EntityGraphLog } from '@/domains/storyteller/services/constants/entity-graph-log'
+import { SqlResultColumn } from '@/shared/data/constants/protocol'
+import { readRowNumber, sqlResultRows } from '@/shared/data/json-guards'
 import { EntityReference, EntityType } from './entity-registry-service'
-import { EMBEDDING_DIMENSION, vectorSql } from './entity-graph-vector'
+import {
+  conciseErrorMessage,
+  EMBEDDING_DIMENSION,
+  fitEmbeddingDimensions,
+  vectorSql,
+} from './entity-graph-vector'
 import {
   DEFAULT_GRAPH_RAG_OPTIONS,
   extractRelationshipsFromText,
@@ -29,6 +36,32 @@ import {
 
 export type { GraphRAGOptions, ScoredEntity }
 export { EntityGraphService, extractRelationshipsFromText }
+
+/**
+ * Live `entity_references.embedding` column dimension. For pgvector,
+ * `atttypmod` IS the declared dimension (e.g. vector(1024) → 1024).
+ * Probed once per process; falls back to the API output dim on failure.
+ */
+let embeddingColumnDimPromise: Promise<number> | null = null
+
+function getEmbeddingColumnDim(): Promise<number> {
+  if (!embeddingColumnDimPromise) {
+    embeddingColumnDimPromise = db
+      .execute(
+        sql`SELECT atttypmod FROM pg_attribute WHERE attrelid = 'entity_references'::regclass AND attname = 'embedding'`
+      )
+      .then(result => {
+        const row = sqlResultRows(result)[0]
+        const dim = readRowNumber(row ?? {}, SqlResultColumn.Atttypmod)
+        return dim && dim > 0 ? dim : EMBEDDING_DIMENSION
+      })
+      .catch(() => {
+        embeddingColumnDimPromise = null
+        return EMBEDDING_DIMENSION
+      })
+  }
+  return embeddingColumnDimPromise
+}
 
 class EntityGraphService {
   async findRelatedEntitiesWithScoring(
@@ -51,21 +84,25 @@ class EntityGraphService {
     )
   }
 
-  async buildEntityEmbedding(entityId: string, content: string): Promise<void> {
+  async buildEntityEmbedding(entityId: string, content: string): Promise<boolean> {
     try {
       const { getVoyageEmbeddings } =
         await import('@/shared/ai/embeddings/voyage-embeddings')
       const embeddings = getVoyageEmbeddings()
       const [embedding] = await embeddings.embedDocuments([content])
 
-      if (embedding && embedding.length === EMBEDDING_DIMENSION) {
-        const vecFragment = vectorSql(embedding)
-        await db.execute(
-          sql`UPDATE entity_references SET embedding = ${vecFragment}, last_referenced_at = NOW() WHERE id = ${entityId}`
-        )
-      }
+      if (!embedding || embedding.length === 0) return false
+
+      const targetDim = await getEmbeddingColumnDim()
+      const fitted = fitEmbeddingDimensions(embedding, targetDim)
+      const vecFragment = vectorSql(fitted)
+      await db.execute(
+        sql`UPDATE entity_references SET embedding = ${vecFragment}, last_referenced_at = NOW() WHERE id = ${entityId}`
+      )
+      return true
     } catch (err) {
-      console.warn(EntityGraphLog.FailedToBuildEmbedding, err)
+      console.warn(EntityGraphLog.FailedToBuildEmbedding, conciseErrorMessage(err))
+      return false
     }
   }
 
@@ -82,10 +119,12 @@ class EntityGraphService {
       const embeddings = getVoyageEmbeddings()
       const queryEmbedding = await embeddings.embedQuery(query)
 
-      if (!queryEmbedding || queryEmbedding.length !== EMBEDDING_DIMENSION) {
+      if (!queryEmbedding || queryEmbedding.length === 0) {
         console.warn(EntityGraphLog.InvalidQueryEmbedding)
         return []
       }
+
+      const queryVec = fitEmbeddingDimensions(queryEmbedding, await getEmbeddingColumnDim())
 
       const results = await db
         .select({
@@ -98,7 +137,7 @@ class EntityGraphService {
           sourceEntityId: entityReferences.sourceEntityId,
           createdAt: entityReferences.createdAt,
           lastReferencedAt: entityReferences.lastReferencedAt,
-          similarity: sql<number>`1 - (${entityReferences.embedding} <=> ${vectorSql(queryEmbedding)})`,
+          similarity: sql<number>`1 - (${entityReferences.embedding} <=> ${vectorSql(queryVec)})`,
         })
         .from(entityReferences)
         .where(
@@ -108,7 +147,7 @@ class EntityGraphService {
             opts.types.length > 0 ? inArray(entityReferences.type, opts.types) : sql`TRUE`
           )
         )
-        .orderBy(desc(sql`1 - (${entityReferences.embedding} <=> ${vectorSql(queryEmbedding)})`))
+        .orderBy(desc(sql`1 - (${entityReferences.embedding} <=> ${vectorSql(queryVec)})`))
         .limit(opts.maxResults)
 
       return results
@@ -121,7 +160,7 @@ class EntityGraphService {
         })
         .filter((entity): entity is EntityReference => entity !== null)
     } catch (err) {
-      console.warn(EntityGraphLog.SemanticSearchFailed, err)
+      console.warn(EntityGraphLog.SemanticSearchFailed, conciseErrorMessage(err))
       return []
     }
   }

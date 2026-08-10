@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { LandingManifestoCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
 import {
   LANDING_ABSOLUTE_OVERLAY_CLASS,

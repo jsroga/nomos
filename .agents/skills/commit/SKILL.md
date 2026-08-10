@@ -69,7 +69,7 @@ Good examples:
 
 ```
 feat(storyteller): add episode poster variant selector
-fix(interior-designer): correct polygon winding for concave rooms
+fix(3d-canvas): correct polygon winding for concave rooms
 refactor(chat): extract context builder from stream route
 ```
 

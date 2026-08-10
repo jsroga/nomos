@@ -1,7 +1,7 @@
 import { BibleCategoryKey } from '@/shared/data/constants/protocol'
 
 export enum ContextAssemblyLog {
-  RagRetrievalFailed = 'RAG context retrieval failed:',
+  SourcesLoadedIn = '[Stream] Context sources loaded in ',
   TokenBudgetTrimmed = '[Stream] Token budget trimmed sections:',
   FailedToLoadContext = 'Failed to load context for stream:',
 }

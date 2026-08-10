@@ -2,14 +2,8 @@ import fs from 'fs'
 import path from 'path'
 import { logger } from '@trigger.dev/sdk/v3'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
-import {
-  BufferEncoding,
-  ContentType,
-  FsDirectory,
-  GoogleModelId,
-  HttpMethod,
-} from '@/shared/data/constants/protocol'
-import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
+import { BufferEncoding, FsDirectory } from '@/shared/data/constants/protocol'
+import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
 
 interface StoryboardBeat {
   logline: string
@@ -48,50 +42,18 @@ Output: A single high-resolution Board/Map image.
 `.trim()
 }
 
-export async function fetchGeminiStoryboardImage(apiKey: string, prompt: string): Promise<string> {
-  const targetModel = GoogleModelId.Gemini3ProImagePreview
-
-  logger.info('Generating combined image with Nano Banana (Gemini)', { model: targetModel })
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`,
-    {
-      method: HttpMethod.Post,
-      headers: { 'Content-Type': ContentType.Json },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseModalities: [GeminiResponseModality.Text, GeminiResponseModality.Image],
-        },
-      }),
-    }
-  )
-
-  if (!response.ok) {
-    const errText = await response.text()
-    logger.error('Gemini API Error', { error: errText })
-    throw new Error(`Gemini API Error: ${errText}`)
-  }
-
-  const data = await response.json()
-  const imageBase64 = extractInlineImageBase64(data)
-  if (!imageBase64) {
-    throw new Error('No image data returned from Gemini API')
-  }
-  return imageBase64
-}
-
-function extractInlineImageBase64(data: {
-  candidates?: Array<{ content?: { parts?: Array<{ inline_data?: { data?: string }; inlineData?: { data?: string } }> } }>
-}): string | null {
-  const parts = data.candidates?.[0]?.content?.parts
-  if (!parts) return null
-
-  for (const part of parts) {
-    if (part.inline_data?.data) return part.inline_data.data
-    if (part.inlineData?.data) return part.inlineData.data
-  }
-  return null
+export async function fetchGeminiStoryboardImage(
+  apiKey: string,
+  prompt: string,
+  modelId?: string,
+): Promise<string> {
+  logger.info('Generating combined storyboard via Apiframe Nano Banana')
+  return generateNanoBananaBase64({
+    prompt,
+    apiKey,
+    modelId,
+    aspectRatio: '16:9',
+  })
 }
 
 export function saveStoryboardImage(projectId: string, episodeId: string, imageBase64: string): string {

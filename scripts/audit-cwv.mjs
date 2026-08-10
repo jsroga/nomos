@@ -14,9 +14,11 @@ import { fileURLToPath } from 'node:url'
 import { launch } from 'chrome-launcher'
 import lighthouse from 'lighthouse'
 import desktopConfig from 'lighthouse/core/config/desktop-config.js'
+import dotenv from 'dotenv'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
+dotenv.config({ path: join(root, '.env.local') })
 
 function readArg(flag, fallback) {
   const idx = process.argv.indexOf(flag)
@@ -24,10 +26,21 @@ function readArg(flag, fallback) {
   return process.argv[idx + 1]
 }
 
+function basicAuthHeader() {
+  const password = process.env.BASIC_AUTH_PASSWORD?.trim()
+  if (!password) return undefined
+  const user = process.env.BASIC_AUTH_USER?.trim() ?? ''
+  const token = Buffer.from(`${user}:${password}`).toString('base64')
+  return `Basic ${token}`
+}
+
 const url = readArg('--url', process.env.CWV_AUDIT_URL ?? 'http://localhost:3000/')
 const formFactor = readArg('--form-factor', 'mobile')
 const outDir = join(root, '.local/tmp/cwv-audit')
 mkdirSync(outDir, { recursive: true })
+
+const authHeader = basicAuthHeader()
+const extraHeaders = authHeader ? { Authorization: authHeader } : undefined
 
 const chrome = await launch({
   chromeFlags: ['--headless', '--no-sandbox', '--disable-gpu'],
@@ -41,6 +54,7 @@ try {
       port: chrome.port,
       output: ['json', 'html'],
       onlyCategories: ['performance'],
+      ...(extraHeaders ? { extraHeaders } : {}),
       // Mobile keeps LH defaults (slow 4G + 4× CPU). Desktop must use the
       // desktop config — otherwise simulate still applies mobile throttling.
       ...(isDesktop

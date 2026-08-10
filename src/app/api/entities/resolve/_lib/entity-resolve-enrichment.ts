@@ -8,6 +8,8 @@ import {
 
 const MAX_CONTEXT_LENGTH = 1000
 const MAX_CONTEXTUAL_SUMMARIES = 10
+/** Below this there is no surrounding text worth sending to the model. */
+const MIN_CONTEXT_LENGTH = 10
 
 export async function resolveEntitiesWithAutoRegister(
   ids: string[],
@@ -99,12 +101,12 @@ export async function applyContextualSummaries(
   context: string | null
 ): Promise<EntityReference[]> {
   const safeContext = context ? context.slice(0, MAX_CONTEXT_LENGTH) : ''
-  const hasValidContext = safeContext.length > 10
-  const needsBaselineSummary = entities.some(
-    entity => !entity.description || entity.description.trim() === ''
-  )
+  const hasValidContext = safeContext.length > MIN_CONTEXT_LENGTH
 
-  if (!hasValidContext && !needsBaselineSummary) {
+  // Each summary is an LLM round trip. Without surrounding text there is nothing
+  // to contextualise, and 10 of them stall the caller (and starve the browser's
+  // connection pool) for ~20s to produce nothing useful.
+  if (!hasValidContext) {
     return entities
   }
 

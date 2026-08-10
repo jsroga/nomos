@@ -33,10 +33,9 @@ export interface ChatModelOption {
   /** Optional one-line description for the picker. */
   description?: string
   /**
-   * Offered in the user-facing picker (PLAN-V2 1.4 lockdown): only the
-   * author-model choices (Kimi, GLM) are user-selectable — the rest of the
-   * catalog is internal routing ("secret sauce"). `resolveChatModelId` still
-   * accepts non-selectable ids so legacy saved preferences keep resolving.
+   * Offered in the user-facing picker: Kimi, GLM, and Opus 5.
+   * `resolveChatModelId` still accepts non-selectable ids so legacy saved
+   * preferences keep resolving.
    */
   userSelectable: boolean
 }
@@ -56,7 +55,7 @@ export const CHAT_MODELS: ChatModelOption[] = [
     label: 'Claude Sonnet 5',
     provider: 'Anthropic',
     providerKey: 'anthropic',
-    envVar: 'ANTHROPIC_API_KEY',
+    envVar: 'OPENROUTER_API_KEY',
     description: 'Strong narrative voice and consistency — internal chat slot.',
     userSelectable: false,
   },
@@ -65,7 +64,7 @@ export const CHAT_MODELS: ChatModelOption[] = [
     label: 'Gemini 2.5 Flash',
     provider: 'Google',
     providerKey: 'google',
-    envVar: 'GOOGLE_API_KEY',
+    envVar: 'OPENROUTER_API_KEY',
     description: 'Fast Google model with a large context window.',
     userSelectable: false,
   },
@@ -88,9 +87,19 @@ export const CHAT_MODELS: ChatModelOption[] = [
     description: 'Moonshot Kimi K3 (non-code) via OpenRouter — default author, single key.',
     userSelectable: true,
   },
+  {
+    id: 'anthropic:claude-opus-5',
+    label: 'Opus 5',
+    provider: 'Anthropic (via OpenRouter)',
+    providerKey: 'openrouter',
+    envVar: 'OPENROUTER_API_KEY',
+    openRouterId: 'anthropic/claude-opus-5',
+    description: 'Claude Opus 5 via OpenRouter — high-reasoning picker choice.',
+    userSelectable: true,
+  },
 ]
 
-/** Models offered in the user-facing picker (Kimi + GLM only — 1.4 lockdown). */
+/** Models offered in the user-facing picker (Kimi, GLM, Opus 5). */
 export const USER_SELECTABLE_CHAT_MODELS: ChatModelOption[] = CHAT_MODELS.filter(
   option => option.userSelectable
 )
@@ -108,14 +117,16 @@ export function isKnownChatModel(id: string): boolean {
 }
 
 /**
- * Resolve the effective chat model id from an optional client override.
- * Falls back to `NEXT_PUBLIC_DEFAULT_AGENT_MODEL` when it is a known catalog
- * entry, otherwise `DEFAULT_CHAT_MODEL`.
+ * Resolve the effective chat model id from an optional client override
+ * (Writers Room picker). Falls back to `STORYTELLER_CHAT_MODEL`, then
+ * `NEXT_PUBLIC_DEFAULT_AGENT_MODEL` when known, otherwise {@link DEFAULT_CHAT_MODEL}.
  */
 export function resolveChatModelId(modelName?: string | null): string {
   const trimmed = typeof modelName === 'string' ? modelName.trim() : ''
   if (trimmed) return trimmed
-  const fromEnv = process.env.NEXT_PUBLIC_DEFAULT_AGENT_MODEL
-  if (fromEnv && isKnownChatModel(fromEnv)) return fromEnv
+  const fromChatEnv = process.env.STORYTELLER_CHAT_MODEL?.trim()
+  if (fromChatEnv && isKnownChatModel(fromChatEnv)) return fromChatEnv
+  const fromPublic = process.env.NEXT_PUBLIC_DEFAULT_AGENT_MODEL
+  if (fromPublic && isKnownChatModel(fromPublic)) return fromPublic
   return DEFAULT_CHAT_MODEL
 }

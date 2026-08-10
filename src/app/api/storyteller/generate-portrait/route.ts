@@ -31,12 +31,12 @@ export const POST = withRateLimit(
 
     const effectiveCharacterId = characterId || `${StorytellerTempIdPrefix.Temp}${Date.now()}`
 
-    const apiKey = clientApiKey || process.env.LEGNEXT_API_KEY
+    const apiKey = clientApiKey || process.env.APIFRAME_API_KEY
     if (!apiKey) {
       return NextResponse.json(
         {
-          error: API_ERROR.LEGNEXT_API_KEY_NOT_PROVIDED,
-          message: API_ERROR.LEGNEXT_API_KEY_CONFIGURE,
+          error: API_ERROR.APIFRAME_API_KEY_NOT_PROVIDED,
+          message: API_ERROR.APIFRAME_API_KEY_CONFIGURE,
         },
         { status: 401 }
       )

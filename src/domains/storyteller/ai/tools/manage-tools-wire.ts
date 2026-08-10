@@ -36,7 +36,7 @@ export const CHARACTER_GET_ID_REQUIRED = 'characterId is required for get operat
 
 export const EPISODE_TOOL_ID = 'manage_episode'
 export const EPISODE_TOOL_DESC =
-  'Create, update, delete, or get an episode. Create requires projectId and title. Update requires episodeId.'
+  'Create, update, delete, or get an episode. Create requires projectId and title; pass data.premise (Ozymandias) in the same create when drafting a first episode. Update requires episodeId.'
 export const LIST_EPISODES_TOOL_ID = 'list_episodes'
 export const LIST_EPISODES_TOOL_DESC = 'List all episodes in a project, ordered by sequence.'
 
@@ -46,6 +46,10 @@ export const EPISODE_UPDATE_ID_REQUIRED = 'episodeId is required for update oper
 export const EPISODE_UPDATE_DATA_REQUIRED = 'data is required for update operation'
 export const EPISODE_DELETE_ID_REQUIRED = 'episodeId is required for delete operation'
 export const EPISODE_GET_ID_REQUIRED = 'episodeId is required for get operation'
+
+export const UPDATE_WORLD_BIBLE_TOOL_ID = 'update_world_bible'
+export const READ_WORLD_BIBLE_TOOL_ID = 'read_world_bible'
+export const CHECK_CONTINUITY_TOOL_ID = 'check_continuity'
 
 export const DEFAULT_CHARACTER_ROLE = 'Supporting'
 

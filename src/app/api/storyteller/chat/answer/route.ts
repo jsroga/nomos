@@ -7,9 +7,6 @@ import {
   StorytellerMessageType,
 } from '@/domains/storyteller/core/storyteller-page-wire'
 
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const runtime = 'nodejs'
-
 /**
  * POST /api/storyteller/chat/answer
  * Submit an answer to a question and continue the agent flow

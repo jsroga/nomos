@@ -55,7 +55,7 @@ Route pages (`src/app/**/page.tsx`) stay thin shells — orchestration belongs i
 
 ## Legacy debt
 
-Full-repo `npm run typecheck` / `qualitygate:metrics` may fail on pre-existing violations. **Touched files must be clean** before handoff. Tracker: `SRC-QUALITY-TRACKER.md` · refresh: `npm run qualitygate:tracker -- --skip-tsc`.
+Full-repo `npm run typecheck` / `qualitygate:metrics` may fail on pre-existing violations. **Touched files must be clean** before handoff. Tracker: `.local/SRC-QUALITY-TRACKER.md` · refresh: `npm run qualitygate:tracker -- --skip-tsc`.
 
 ## Exempt from metrics rules
 

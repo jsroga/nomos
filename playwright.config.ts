@@ -38,6 +38,13 @@ const EXTERNAL_URL_PATTERN = /^https?:\/\//
 const BASE_URL = process.env.BASE_URL?.trim() || LOCAL_BASE_URL
 const IS_EXTERNAL_URL = EXTERNAL_URL_PATTERN.test(BASE_URL)
 
+const BASIC_AUTH_USER = process.env.BASIC_AUTH_USER?.trim()
+const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD?.trim()
+const HTTP_CREDENTIALS =
+  BASIC_AUTH_USER && BASIC_AUTH_PASSWORD
+    ? { username: BASIC_AUTH_USER, password: BASIC_AUTH_PASSWORD }
+    : undefined
+
 /**
  * Playwright Configuration for Swiss Army Knife E2E Tests
  */
@@ -81,6 +88,8 @@ export default defineConfig({
 
     // Video on failure
     video: VIDEO_MODE,
+
+    ...(HTTP_CREDENTIALS ? { httpCredentials: HTTP_CREDENTIALS } : {}),
   },
 
   // Configure projects for major browsers

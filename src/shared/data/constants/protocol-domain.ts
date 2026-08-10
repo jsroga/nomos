@@ -99,6 +99,7 @@ export enum SqlResultColumn {
   Similarity = 'similarity',
   SourceId = 'source_id',
   TargetId = 'target_id',
+  Atttypmod = 'atttypmod',
 }
 
 export enum BibleCategoryKey {
@@ -160,8 +161,8 @@ export enum LoopCreatorServiceId {
 export enum AppModuleId {
   Storyteller = 'storyteller',
   LoopCreator = 'loop-creator',
-  InteriorDesigner = 'interior-designer',
-  WorldBuilding = 'world-building',
+  InteriorDesigner = '3d-canvas',
+  WorldBuilding = '2d-canvas',
 }
 
 export enum GameEntityKind {

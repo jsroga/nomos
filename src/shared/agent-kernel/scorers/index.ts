@@ -1,4 +1,5 @@
 import { consistencyScorer } from './consistency-scorer'
+import { goalReachedScorer } from './goal-reached-scorer'
 import { hallucinationScorer } from './hallucination-scorer'
 import { ideaUniquenessScorer } from './idea-uniqueness-scorer-wire'
 import { ideaDiversityJudgeScorer } from './idea-diversity-judge-scorer'
@@ -38,11 +39,13 @@ export const STORYTELLER_SCORERS = {
   'prose-craft': proseCraftScorer,
   'stakes-cost': stakesCostScorer,
   'story-motion': storyMotionScorer,
+  'goal-reached': goalReachedScorer,
 } as const
 
 export {
   magicScorer,
   consistencyScorer,
+  goalReachedScorer,
   hallucinationScorer,
   ideaUniquenessScorer,
   ideaDiversityJudgeScorer,

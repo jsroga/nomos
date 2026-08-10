@@ -20,10 +20,6 @@ import { CHAT_MODELS } from '@/domains/storyteller/config/constants/chat-model-c
 import { resolveStorytellerModel } from '@/domains/storyteller/config/constants/model-config'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
-// Node.js Runtime required for Mastra core dependencies
-// eslint-disable-next-line local/no-magic-string -- Next.js segment config must be a statically analyzable literal (user-approved exception, 2026-07-09)
-export const runtime = 'nodejs'
-
 const TEST_TIMEOUT_MS = 10_000
 const RATE_LIMIT_KEY_PREFIX = 'provider-test'
 const RATE_LIMIT = { maxRequests: 5, windowMs: 60_000, keyPrefix: RATE_LIMIT_KEY_PREFIX }

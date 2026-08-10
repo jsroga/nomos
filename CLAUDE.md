@@ -11,7 +11,8 @@ Markdown docs live in **`docs/`** (repo root). The site serves them at `/docs` v
 ## Daily
 
 ```bash
-npm run dev              # Next.js (turbo) — http://localhost:4000
+npm run dev          # Next.js (webpack) — http://localhost:3000
+npm run dev:stack    # Next turbopack (:3000) + Mastra Studio (:4111) + Trigger.dev
 npm run build
 npm run lint
 npm run typecheck
@@ -38,14 +39,14 @@ npx vitest run src/domains/loop-creator            # whole directory
 | Folder | Role |
 |--------|------|
 | `app/` | Next.js routes, API glue, `_shell/` chrome |
-| `domains/` | Feature modules — vertical slices (storyteller, loop-creator, interior-designer, chat, …) |
+| `domains/` | Feature modules — vertical slices (storyteller, loop-creator, 2d-canvas, 3d-canvas, …) |
 | `shared/` | Cross-module (`admin`, `agent-kernel`, `auth`, `canvas`, `chat`, `data`, `debug`, `errors`, `jobs`, `observability` + legacy) — gate: `scripts/structure-gates/src-topology.ts` |
 | `components/` | Radix/CVA design system, flat PascalCase folder per primitive |
 | `db/` | Drizzle schema + client |
 | `trigger/` | Trigger.dev task registry |
 | `mcp/` | MCP server (separate deployable) |
 
-Each `src/domains/<module>/` follows the blueprint in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): `ui/`, `state/`, `core/` (with `core/io/`), `services/`, `ai/`, `tasks/` + a **single public `index.ts` barrel**. Dependency rule: `ui → state → core → services → ai`; no cross-module deep imports, pure `core/` (outside `core/io/`) has no React/DB/fetch, server data lives in TanStack Query not Zustand. Enforced by `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel guards. Asset modules (`interior-designer`, `world-building-toolkit`, `3d-asset-exporter`) lean on `tasks/`, not `ai/`.
+Each `src/domains/<module>/` follows the blueprint in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): `ui/`, `state/`, `core/` (with `core/io/`), `services/`, `ai/`, `tasks/` + a **single public `index.ts` barrel**. Dependency rule: `ui → state → core → services → ai`; no cross-module deep imports, pure `core/` (outside `core/io/`) has no React/DB/fetch, server data lives in TanStack Query not Zustand. Enforced by `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel guards. Asset modules (`2d-canvas`, `3d-canvas`, `3d-asset-exporter`) lean on `tasks/`, not `ai/`.
 
 Two Mastra entries: `src/mastra.ts` is the Studio CLI entry (bundler-safe tool stubs in `src/shared/agent-kernel/mastra/tools/`); `src/shared/agent-kernel/MastraInstance.ts` is the production instance (Postgres memory, tracing). Production Mastra agents live in `src/domains/*/ai/agents/`. Never create a second Mastra instance or Postgres store.
 
@@ -139,6 +140,8 @@ npm run test:unit
 
 **Code metrics (ESLint + typecheck, same thresholds):** file lines warn **400** / error **800**; cyclomatic complexity warn **15** / error **25** (`scripts/code-metrics-limits.cjs`). Touched files must be clean before handoff; split oversized files one extract per step, gating each with `qualitygate:file`. See `.cursor/rules/code-metrics.mdc`.
 
+**IMPORTANT — never open the app in a browser (highest priority).** No browser MCP tools, no `browser-use` subagent, no `curl` against `localhost:3000` to check behaviour, no logging in as the user. Verify through reusable committed tests only: `npm run test:unit`, `npm run test:live` (the `*.e2e.test.ts` tier — needs a **scratch** project id, never a real project), or a **Playwright** spec. Browser testing has exactly one allowed shape, matching what is already in `e2e/`: spec in `e2e/scenarios/*.spec.ts`, page actions in `e2e/fixtures/`, selectors/prompts/timeouts as enums in `e2e/constants/`, login via `setupAuthenticatedPage`, throwaway project via `createStoryProject`, no hard-coded UUIDs. Writing the spec is yours; **running** `npm run test:e2e` stays operator-only. A check worth doing is worth keeping as a test; when something can't be verified that way, report it as unverified and name the test that would cover it. See `.cursor/rules/no-agent-browser.mdc`.
+
 **Refactor discipline (binding):** never rewrite `src/**` with bulk codegen (`node -e`, `python`/`node` heredocs, ad-hoc transform scripts) — edit incrementally, one extract/file at a time. Route pages stay thin shells; feature logic lives in `src/domains/<module>/`, never under `app/`. See `.cursor/rules/refactor-discipline.mdc`.
 
 **Boundaries:** cross-domain imports are lint errors — code shared by 2+ domains moves to `@/shared` (chat is being platformized to `@/shared/chat`); `shared/` never imports `@/domains/*` or `@/app/*`. See `.cursor/rules/eslint-boundaries.mdc`.
@@ -161,7 +164,7 @@ Ad-hoc audits and one-off scripts: **`.local/`** (gitignored). Quality backlog: 
 
 ## Env
 
-Copy `.env.local.example` → `.env.local`. Evaluation judges: `OPENAI_API_KEY` or `JUDGING_MODEL` (see `evals/run.ts`). Feature flags are `FF_<NAME>=true` (`src/shared/data/constants/feature-flags.ts`); default-on kill switches keep their own names and `!== 'false'` semantics.
+Copy `.env.local.example` → `.env.local`. Text LLMs use `OPENROUTER_API_KEY` only; judges: `JUDGING_MODEL` (see `evals/run.ts`). Feature flags are `FF_<NAME>=true` (`src/shared/data/constants/feature-flags.ts`); default-on kill switches keep their own names and `!== 'false'` semantics.
 
 <!-- TRIGGER.DEV SKILLS START -->
 ## Trigger.dev agent skills
