@@ -99,6 +99,7 @@ export enum SqlResultColumn {
   Similarity = 'similarity',
   SourceId = 'source_id',
   TargetId = 'target_id',
+  Atttypmod = 'atttypmod',
 }
 
 export enum BibleCategoryKey {

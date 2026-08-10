@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion'
+import { useMotionValue, useScroll, useSpring, useTransform } from 'motion/react'
 import {
   LANDING_HERO_OPACITY_RANGE,
   LANDING_HERO_SCROLL_SPRING,

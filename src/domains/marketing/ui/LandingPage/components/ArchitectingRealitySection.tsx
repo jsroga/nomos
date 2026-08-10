@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Plus } from 'lucide-react'
 import { MarketingIconType } from '@/domains/marketing/constants/three-d-icon'
 import { ViewportGatedThreeDIcon } from '@/domains/marketing/ui/ViewportGatedThreeDIcon'

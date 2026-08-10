@@ -1,6 +1,6 @@
 'use client'
 
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { LandingApiMcpCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
 import { LANDING_SECTION_CONTAINER_CLASS, LANDING_SECTION_PAD_Y_CLASS, LANDING_SECTION_PANEL_CLASS } from '@/domains/marketing/ui/LandingPage/constants/landing-section'
 import { ApiIntegrationTab } from '@/domains/marketing/ui/LandingPage/types'

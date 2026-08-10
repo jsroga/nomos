@@ -1,4 +1,9 @@
 import type { SurfaceType, TerrainBrushType, TerrainQuality } from '@/domains/3d-canvas/core/interior-types'
+import {
+  RENDER_QUALITY_LABELS,
+  RENDER_QUALITY_VALUES,
+  RenderQuality,
+} from '@/domains/3d-canvas/constants/render-quality'
 
 export enum TerrainBrushKind {
   Raise = 'raise',
@@ -6,6 +11,8 @@ export enum TerrainBrushKind {
   Flatten = 'flatten',
   Smooth = 'smooth',
 }
+
+export { RENDER_QUALITY_LABELS, RENDER_QUALITY_VALUES, RenderQuality }
 
 export const TERRAIN_BRUSH_TYPES: TerrainBrushType[] = [
   TerrainBrushKind.Raise,

@@ -36,6 +36,6 @@ A new file in `docs/` is the **last** resort. Search first — `docs/README.md` 
 2. Do **not** add a 7th file or `docs/internal/` / `docs/adr/` / etc. — expand an allowlisted file or update the allowlist + tests intentionally.
 3. Never park a per-change writeup (`FOO-MIGRATION.md`, `BAR-FIX-NOTES.md`) in `docs/` — that is `.local/findings/`.
 
-Config files are not documentation: `.env*.example`, `*.config.*`, and `package.json` get one trailing clause per line saying what the value does. Tutorials, option matrices, and worked examples go in `docs/` with the config pointing at them.
+Config files are not documentation: `.env*.example`, `*.config.*`, and `package.json` get one trailing clause per line saying what the value does. Tutorials, option matrices, and worked examples go in `docs/` with the config pointing at them. When changing env vars, update **both** `.env.local.example` and `.env.local` in the same change (same keys; never commit secrets).
 
 Enforced by `scripts/check-agent-artifacts.mjs` (pre-commit) and `.cursor/hooks/guard-agent-artifacts.sh` (on edit).

@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/shared/data/utils'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import {
   GLOW_DEFAULT_COLORS,
   GLOW_GRADIENT_JOINER,

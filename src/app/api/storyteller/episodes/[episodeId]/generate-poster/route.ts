@@ -13,10 +13,9 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
     const { episodeId } = params
     const body = await req.json()
     const { prompt, config } = body
-    // Use LegNext (The Next Leg) API Key
-    const apiKey = config?.apiKey || process.env.LEGNEXT_API_KEY
+    const apiKey = config?.apiKey || process.env.APIFRAME_API_KEY
     console.log(
-      `${API_LOG_PREFIX.POSTER_GEN_CONFIG} ${!!config?.apiKey}, Env Key present: ${!!process.env.LEGNEXT_API_KEY}`
+      `${API_LOG_PREFIX.POSTER_GEN_CONFIG} ${!!config?.apiKey}, Env Key present: ${!!process.env.APIFRAME_API_KEY}`
     )
 
     if (!prompt) {

@@ -2,12 +2,11 @@ import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { BufferEncoding, ContentType } from '@/shared/data/constants/protocol'
+import { ApiframeUpscaleModel } from '@/shared/ai/constants/apiframe'
 import { UpscaleProvider } from '../core/upscale-provider-wire'
-import { runGeminiPreUpscaleStep } from './upscale-tile-gemini-step'
 import {
+  upscaleWithApiframe,
   upscaleWithLegNext,
-  upscaleWithReplicate,
-  upscaleWithStability,
   type ProviderConfig,
 } from './upscale-tile-providers'
 
@@ -26,11 +25,6 @@ export const upscaleTileTask = task({
     creativity: number
     provider: UpscaleProvider
     providerConfig: ProviderConfig
-    geminiConfig?: {
-      apiKey: string
-      model?: string
-    }
-    skipGeminiPreUpscale?: boolean
     styleReferenceUrls?: string[]
   }) => {
     const {
@@ -41,15 +35,12 @@ export const upscaleTileTask = task({
       creativity,
       provider,
       providerConfig,
-      geminiConfig,
-      skipGeminiPreUpscale,
       styleReferenceUrls,
     } = payload
 
     logger.info(`Starting upscale for tile ${tileId}`, {
       provider,
       projectId,
-      skipGeminiPreUpscale,
     })
 
     await metadata.set('progress', 0)
@@ -57,30 +48,12 @@ export const upscaleTileTask = task({
     await metadata.set('tile_id', tileId)
     await metadata.set('stage', 'initializing')
 
-    let step1Image = imageBase64
-    let step1MimeType: string = ContentType.Png
-
-    if (!skipGeminiPreUpscale && geminiConfig?.apiKey) {
-      const geminiResult = await runGeminiPreUpscaleStep({
-        imageBase64,
-        prompt,
-        creativity,
-        geminiConfig,
-        styleReferenceUrls,
-      })
-      step1Image = geminiResult.step1Image
-      step1MimeType = geminiResult.step1MimeType
-    } else {
-      logger.info('Skipping Gemini pre-upscale')
-      await metadata.set('progress', 10)
-    }
-
     await metadata.set('stage', 'provider_upscale')
     const providerResult = await runProviderUpscale({
       provider,
       providerConfig,
-      step1Image,
-      step1MimeType,
+      step1Image: imageBase64,
+      step1MimeType: ContentType.Png,
       prompt,
       creativity,
       styleReferenceUrls,
@@ -179,62 +152,57 @@ async function runProviderUpscale(params: {
         resizedImage = resizedBuffer.toString(BufferEncoding.Base64)
       }
 
-      const legNextResult = await upscaleWithLegNext(
+      const mjResult = await upscaleWithLegNext(
         resizedImage,
         prompt,
         providerConfig.apiKey,
         step1MimeType,
         styleReferenceUrls,
-        creativity
+        creativity,
       )
 
-      logger.info('Midjourney upscale via LegNext completed', {
-        finalImageUrl: legNextResult.imageUrl,
+      logger.info('Midjourney upscale via Apiframe completed', {
+        finalImageUrl: mjResult.imageUrl,
       })
 
-      return { finalImageUrl: legNextResult.imageUrl, finalImageBase64: null }
+      return { finalImageUrl: mjResult.imageUrl, finalImageBase64: null }
     }
 
     case UpscaleProvider.Replicate: {
-      if (!providerConfig.model) {
-        throw new Error('Replicate model is required')
-      }
-      const replicateResult = await upscaleWithReplicate(
+      const result = await upscaleWithApiframe(
         step1Image,
         prompt,
         providerConfig.apiKey,
-        providerConfig.model
+        ApiframeUpscaleModel.ClarityUpscale,
+        step1MimeType,
       )
-      if (replicateResult.type === 'url') {
-        return { finalImageUrl: replicateResult.data, finalImageBase64: null }
-      }
-      return { finalImageUrl: null, finalImageBase64: replicateResult.data }
+      return { finalImageUrl: result.imageUrl, finalImageBase64: null }
     }
 
-    case UpscaleProvider.Stability: {
-      const base64 = await upscaleWithStability(
+    case UpscaleProvider.Stability:
+    default: {
+      const result = await upscaleWithApiframe(
         step1Image,
+        prompt,
         providerConfig.apiKey,
-        providerConfig.upscaleMode || 'conservative'
+        ApiframeUpscaleModel.TopazImageUpscale,
+        step1MimeType,
       )
-      return { finalImageUrl: null, finalImageBase64: base64 }
+      return { finalImageUrl: result.imageUrl, finalImageBase64: null }
     }
-
-    default:
-      throw new Error(`Unknown provider: ${provider}`)
   }
 }
 
-async function resolveUpscaledImageData(result: ProviderUpscaleResult): Promise<string> {
-  if (result.finalImageUrl) {
-    const response = await fetch(result.finalImageUrl)
-    const arrayBuffer = await response.arrayBuffer()
-    return Buffer.from(arrayBuffer).toString(BufferEncoding.Base64)
+async function resolveUpscaledImageData(providerResult: ProviderUpscaleResult): Promise<string> {
+  if (providerResult.finalImageBase64) {
+    return providerResult.finalImageBase64.replace(/^data:image\/\w+;base64,/, '')
   }
-
-  if (result.finalImageBase64) {
-    return result.finalImageBase64.replace(/^data:image\/\w+;base64,/, '')
+  if (!providerResult.finalImageUrl) {
+    throw new Error('Upscale provider returned no image')
   }
-
-  throw new Error('No image data to save')
+  const response = await fetch(providerResult.finalImageUrl)
+  if (!response.ok) {
+    throw new Error(`Failed to download upscaled image: ${response.status}`)
+  }
+  return Buffer.from(await response.arrayBuffer()).toString(BufferEncoding.Base64)
 }

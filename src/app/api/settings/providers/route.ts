@@ -8,18 +8,24 @@ export async function GET() {
     return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
   }
 
+  const openrouter = !!process.env.OPENROUTER_API_KEY
+  const apiframe = !!process.env.APIFRAME_API_KEY
+
   return NextResponse.json({
     providers: {
-      openai: !!process.env.OPENAI_API_KEY,
-      anthropic: !!process.env.ANTHROPIC_API_KEY,
-      google: !!process.env.GOOGLE_API_KEY,
-      legnext: !!process.env.LEGNEXT_API_KEY,
-      stability: !!process.env.STABILITY_API_KEY,
-      replicate: !!process.env.REPLICATE_API_TOKEN,
+      openrouter,
+      // Text LLMs route via OpenRouter — direct vendor keys are optional fallbacks only.
+      openai: openrouter || !!process.env.OPENAI_API_KEY,
+      anthropic: openrouter || !!process.env.ANTHROPIC_API_KEY,
+      google: openrouter || !!process.env.GOOGLE_API_KEY,
+      apiframe,
+      legnext: false,
+      stability: apiframe,
+      replicate: apiframe,
       hyper3d: !!process.env.HYPER3D_API_KEY,
       meshy: !!process.env.MESHY_API_KEY,
       fal: !!process.env.FAL_KEY,
-      voyage: !!process.env.OPENROUTER_API_KEY,
+      voyage: openrouter,
     },
   })
 }

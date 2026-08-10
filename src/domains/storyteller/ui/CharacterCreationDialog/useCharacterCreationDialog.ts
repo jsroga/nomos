@@ -176,7 +176,9 @@ export function useCharacterCreationDialog({
     }
 
     try {
-      const apiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+      const apiKey =
+        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) ||
+        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
       const { handleId } = await startCharacterPortraitGeneration({
         prompt: description || `A portrait of ${name}, ${gender}`,
         projectId,

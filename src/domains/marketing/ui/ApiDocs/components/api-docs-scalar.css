@@ -1,0 +1,28 @@
+.api-docs-scalar {
+  --scalar-primary: #5c7cfa;
+  --scalar-background-1: #050505;
+  --scalar-background-2: #0a0a0a;
+  --scalar-background-3: #111111;
+  --scalar-color-1: #ffffff;
+  --scalar-color-2: #a1a1aa;
+  --scalar-color-3: #71717a;
+  --scalar-border-color: rgba(255, 255, 255, 0.05);
+  --scalar-font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --scalar-font-family-mono: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+  min-height: 100vh;
+}
+
+.api-docs-scalar .scalar-button {
+  border-radius: 8px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.api-docs-scalar .scalar-app {
+  --scalar-header-height: 0px;
+}
+
+.api-docs-scalar .scalar-app .sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}

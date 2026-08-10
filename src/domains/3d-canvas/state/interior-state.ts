@@ -1,3 +1,4 @@
+import type { RenderQuality } from '@/domains/3d-canvas/constants/render-quality'
 import type {
   Floor,
   GridResolution,
@@ -33,6 +34,8 @@ export interface InteriorState {
   exportRequested: boolean
   cameraResetRequested: boolean
   zenMode: boolean
+  renderQuality: RenderQuality
+  interactionActive: boolean
 
   currentDesignId: string | null
   currentDesignName: string | null
@@ -88,6 +91,7 @@ export interface InteriorState {
     delta: number,
     brushType: TerrainBrushType
   ) => void
+  flushHeightmapVersion: () => void
   autoFillWaterBelowLevel: () => void
   paintMaterialAt: (x: number, z: number, radius: number, material: TerrainMaterialType) => void
   resetTerrain: () => void
@@ -102,6 +106,8 @@ export interface InteriorState {
   setCameraResetRequested: (requested: boolean) => void
   setZenMode: (enabled: boolean) => void
   toggleZenMode: () => void
+  setRenderQuality: (quality: RenderQuality) => void
+  setInteractionActive: (active: boolean) => void
   addWall: (wall: Omit<Wall, 'id'>) => void
   updateWall: (id: string, updates: Partial<Wall>) => void
   removeWall: (id: string) => void

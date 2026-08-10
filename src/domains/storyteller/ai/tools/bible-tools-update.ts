@@ -1,5 +1,5 @@
 import '@/shared/data/server-guard'
-import { projects, storyPlans } from '@/db/schema'
+import { projects, storyPlans, episodes } from '@/db/schema'
 import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 import { deepMergeRecords, recordFromJson } from '@/shared/data/deep-merge'
@@ -24,7 +24,40 @@ const UPDATE_FIELD_KEYS = [
   'soundtracks',
   'moodSoundtrack',
   'inspirations',
+  'episodeRoadmap',
+  'episodePremise',
 ] as const
+
+export enum BibleEpisodePremiseError {
+  EpisodeIdRequired =
+    'episodePremise requires an open episode — create one with manage_episode (include data.premise) or select an episode first',
+}
+
+export async function persistEpisodePremiseUpdate(
+  episodeId: string,
+  premise: Record<string, unknown>
+): Promise<void> {
+  const [existing] = await db.select().from(episodes).where(eq(episodes.id, episodeId)).limit(1)
+  if (!existing) {
+    throw new Error(`Episode ${episodeId} not found`)
+  }
+  const existingPlan = recordFromJson(existing.storyPlan)
+  const newPlan = {
+    ...existingPlan,
+    premise: {
+      ...recordFromJson(existingPlan.premise),
+      ...premise,
+    },
+  }
+  await db
+    .update(episodes)
+    .set({
+      premise: JSON.stringify(premise),
+      storyPlan: newPlan,
+      updatedAt: new Date(),
+    })
+    .where(eq(episodes.id, episodeId))
+}
 
 export function proposedFieldsFromInput(
   input: Record<string, unknown>

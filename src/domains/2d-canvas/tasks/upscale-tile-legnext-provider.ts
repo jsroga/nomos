@@ -1,13 +1,8 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
 import { storageService } from '@/shared/data/storage/storage-service'
-import { UPSCALE_PROMPTS, MASK_CONFIG } from '@/shared/data/server/prompts'
-import {
-  readRowString,
-  recordFromJson,
-  stringArrayFromJson,
-} from '@/shared/data/json-guards'
-import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
-import { pollLegNextTask } from './upscale-tile-legnext-poll'
+import { UPSCALE_PROMPTS } from '@/shared/data/server/prompts'
+import { ContentType } from '@/shared/data/constants/protocol'
+import { generateMidjourneyUpscaledImage } from '@/shared/ai/apiframe'
 
 export async function upscaleWithLegNext(
   imageBase64: string,
@@ -15,12 +10,11 @@ export async function upscaleWithLegNext(
   apiKey: string,
   mimeType: string = ContentType.Png,
   styleReferenceUrls?: string[],
-  creativity: number = 0.3
+  _creativity: number = 0.3
 ): Promise<{ id: string; imageUrl: string }> {
-  logger.info('Starting Midjourney upscale via LegNext AI (upload_paint)', {
+  logger.info('Starting Midjourney upscale via Apiframe', {
     mimeType,
     styleReferenceUrls,
-    creativity,
   })
   await metadata.set('stage', 'uploading_image')
   await metadata.set('progress', 32)
@@ -36,124 +30,27 @@ export async function upscaleWithLegNext(
 
   logger.info('Image uploaded to public URL', { publicImageUrl })
 
-  logger.info('Submitting upload_paint task')
-  await metadata.set('stage', 'submitting_upload_paint')
-  await metadata.set('progress', 35)
-
   let remixPrompt: string = UPSCALE_PROMPTS.MIDJOURNEY
-
   if (styleReferenceUrls && styleReferenceUrls.length > 0) {
     remixPrompt += ` --sref ${styleReferenceUrls.join(' ')}`
   }
+  const fullPrompt = `${publicImageUrl} ${remixPrompt}`.trim()
 
-  const uploadPaintPayload = {
-    imgUrl: publicImageUrl,
-    canvas: {
-      width: 1024,
-      height: 1024,
-    },
-    imgPos: {
-      width: 1024,
-      height: 1024,
-      x: 0,
-      y: 0,
-    },
-    mask: {
-      areas: [
-        {
-          width: MASK_CONFIG.FULL_CANVAS.width,
-          height: MASK_CONFIG.FULL_CANVAS.height,
-          points: MASK_CONFIG.FULL_CANVAS.points,
-        },
-      ],
-    },
-    remixPrompt,
-  }
-
-  logger.info('Submitting upload_paint with payload:', uploadPaintPayload)
-
-  const uploadPaintResponse = await fetch('https://api.legnext.ai/api/v1/upload-paint', {
-    method: HttpMethod.Post,
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': ContentType.Json,
-    },
-    body: JSON.stringify(uploadPaintPayload),
-  })
-
-  if (!uploadPaintResponse.ok) {
-    const errorText = await uploadPaintResponse.text()
-    throw new Error(
-      `LegNext upload_paint submission failed: ${uploadPaintResponse.status} - ${errorText}`
-    )
-  }
-
-  const uploadPaintData = await uploadPaintResponse.json()
-  const jobId = uploadPaintData.job_id
-
-  if (!jobId) {
-    throw new Error('LegNext upload_paint failed: No job_id returned')
-  }
-
-  await metadata.set('upload_paint_job_id', jobId)
-  logger.info('Upload_paint task submitted', { jobId })
-
-  await metadata.set('stage', 'waiting_upload_paint')
+  await metadata.set('stage', 'submitting_apiframe')
   await metadata.set('progress', 40)
 
-  await pollLegNextTask(jobId, apiKey, 300, 40)
-
-  logger.info('Upload_paint completed, submitting upscale', { jobId })
-
-  await metadata.set('stage', 'submitting_upscale')
-  await metadata.set('progress', 70)
-
-  const upscalePayload = {
-    jobId: jobId,
-    imageNo: 0,
-    type: 0,
-  }
-
-  logger.info('Submitting upscale with payload:', upscalePayload)
-
-  const upscaleResponse = await fetch('https://api.legnext.ai/api/v1/upscale', {
-    method: HttpMethod.Post,
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': ContentType.Json,
-    },
-    body: JSON.stringify(upscalePayload),
+  const result = await generateMidjourneyUpscaledImage(fullPrompt, apiKey, {
+    index: 1,
+    maxAttempts: 120,
   })
 
-  if (!upscaleResponse.ok) {
-    const errorText = await upscaleResponse.text()
-    throw new Error(`LegNext upscale submission failed: ${upscaleResponse.status} - ${errorText}`)
-  }
+  await metadata.set('stage', 'completed')
+  await metadata.set('progress', 100)
 
-  const upscaleData = await upscaleResponse.json()
-  const upscaleJobId = upscaleData.job_id
+  logger.info('Apiframe Midjourney upscale completed', {
+    imageUrl: result.imageUrl,
+    upsampleJobId: result.upsampleJobId,
+  })
 
-  if (!upscaleJobId) {
-    throw new Error('LegNext upscale failed: No job_id returned')
-  }
-
-  await metadata.set('upscale_task_id', upscaleJobId)
-  await metadata.set('stage', 'waiting_upscale')
-  await metadata.set('progress', 75)
-
-  logger.info('Waiting for upscale task', { upscaleJobId })
-  const upscaleResult = await pollLegNextTask(upscaleJobId, apiKey, 300, 75)
-
-  const upscaleOutput = recordFromJson(upscaleResult.output)
-  const imageUrls = stringArrayFromJson(upscaleOutput.image_urls)
-  const imageUrl = readRowString(upscaleOutput, 'image_url') ?? imageUrls[0]
-
-  if (!imageUrl) {
-    throw new Error('LegNext upscale result missing image_url')
-  }
-
-  return {
-    id: upscaleJobId,
-    imageUrl,
-  }
+  return { id: result.upsampleJobId, imageUrl: result.imageUrl }
 }

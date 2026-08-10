@@ -1,22 +1,22 @@
 /* eslint-disable react/no-unknown-property */
 'use client'
 
-import React, { useMemo } from 'react'
-import { Surface } from '@/domains/3d-canvas'
+import React, { useEffect, useMemo } from 'react'
+import { Surface, useInteriorStore } from '@/domains/3d-canvas'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { isActiveOperationStatus } from '@/shared/jobs/constants/async-operation-status'
 import * as THREE from 'three'
-import { Extrude } from '@react-three/drei'
 import { ThreeEvent } from '@react-three/fiber'
 import { RoadMesh } from '@/domains/3d-canvas/ui/meshes/RoadMesh'
 import { SculptableSurface } from './SculptableSurface'
-import { getCachedTexture } from '@/domains/3d-canvas/core/textureCache'
+import { ExtrudedSurfaceMesh } from './ExtrudedSurfaceMesh'
+import { getCachedTexture, releaseCachedTexture } from '@/domains/3d-canvas/core/textureCache'
+import { resolveEffectiveRenderConfig } from '@/domains/3d-canvas/core/render-quality'
 import {
   GROUND_TINT_SURFACE_TYPES,
   SCULPTABLE_SURFACE_TYPES,
   SURFACE_RENDER_CONFIG,
   SurfaceGeometryKind,
-  SurfaceMaterialColor,
 } from '@/domains/3d-canvas/constants/surface-render-config'
 import { SurfaceTypeValue } from '@/domains/3d-canvas/constants/terrain-defaults'
 
@@ -27,15 +27,7 @@ function useSurfaceGenerating(surfaceId: string): boolean {
   return Boolean(operation && isActiveOperationStatus(operation.status))
 }
 
-function sculptableTypesIncludes(type: Surface['type']): boolean {
-  return SCULPTABLE_SURFACE_TYPES.includes(type)
-}
-
-function buildSurfaceConfig(
-  surface: Surface,
-  groundColor: string,
-  waterColor: string
-) {
+function buildSurfaceConfig(surface: Surface, groundColor: string, waterColor: string) {
   const base = SURFACE_RENDER_CONFIG[surface.type]
   if (surface.type === SurfaceTypeValue.Water) return { ...base, color: waterColor }
   if (GROUND_TINT_SURFACE_TYPES.includes(surface.type)) {
@@ -58,74 +50,6 @@ function buildSurfaceGeometry(
   return { type: SurfaceGeometryKind.Shape, shape }
 }
 
-const ExtrudedSurfaceMesh: React.FC<{
-  surface: Surface
-  config: ReturnType<typeof buildSurfaceConfig>
-  textureMap: THREE.Texture | null
-  opacity: number
-  isSelected: boolean
-  onClick: (e: ThreeEvent<MouseEvent>) => void
-}> = ({ surface, config, textureMap, opacity, isSelected, onClick }) => {
-  const geometry = buildSurfaceGeometry(surface)
-  if (!geometry || geometry.type !== SurfaceGeometryKind.Shape) return null
-
-  return (
-    <group
-      position={[0, config.verticalOffset, 0]}
-      rotation={surface.rotation ? new THREE.Euler(...surface.rotation) : new THREE.Euler(0, 0, 0)}
-      userData={{ id: surface.id }}
-      name={surface.id}
-    >
-      <Extrude
-        args={[geometry.shape, { depth: config.depth, bevelEnabled: false }]}
-        rotation={[Math.PI / 2, 0, 0]}
-        onClick={onClick}
-        castShadow
-        receiveShadow
-      >
-        <meshPhysicalMaterial
-          color={surface.texture ? SurfaceMaterialColor.White : config.color}
-          map={surface.texture ? textureMap : null}
-          metalness={surface.metalness ?? config.metalness}
-          roughness={surface.roughness ?? config.roughness}
-          transmission={config.transmission || 0}
-          opacity={(config.opacity || 1) * opacity}
-          transparent={opacity < 1 || (!!config.opacity && config.opacity < 1)}
-          envMapIntensity={surface.texture ? 1.0 : 0.5}
-        />
-        {isSelected && (
-          <lineSegments>
-            <edgesGeometry
-              args={[
-                new THREE.ExtrudeGeometry(geometry.shape, {
-                  depth: config.depth,
-                  bevelEnabled: false,
-                }),
-              ]}
-            />
-            <lineBasicMaterial color={SurfaceMaterialColor.Highlight} />
-          </lineSegments>
-        )}
-      </Extrude>
-
-      {isSelected && (
-        <group>
-          {surface.points.map((p, i) => (
-            <mesh
-              key={i}
-              position={new THREE.Vector3(p[0], config.verticalOffset, p[2])}
-              userData={{ isControlPoint: true, index: i, surfaceId: surface.id }}
-            >
-              <sphereGeometry args={[0.2]} />
-              <meshBasicMaterial color={SurfaceMaterialColor.White} />
-            </mesh>
-          ))}
-        </group>
-      )}
-    </group>
-  )
-}
-
 export const SurfaceRenderer: React.FC<{
   surface: Surface
   isSelected: boolean
@@ -135,6 +59,13 @@ export const SurfaceRenderer: React.FC<{
   waterColor: string
 }> = ({ surface, isSelected, onClick, opacity = 1, groundColor, waterColor }) => {
   const isGenerating = useSurfaceGenerating(surface.id)
+  const renderQuality = useInteriorStore(state => state.renderQuality)
+  const interactionActive = useInteriorStore(state => state.interactionActive)
+  const usePhysical = resolveEffectiveRenderConfig(
+    renderQuality,
+    interactionActive
+  ).usePhysicalMaterials
+
   const config = useMemo(
     () => buildSurfaceConfig(surface, groundColor, waterColor),
     [surface, groundColor, waterColor]
@@ -142,16 +73,21 @@ export const SurfaceRenderer: React.FC<{
 
   const textureMap = useMemo(() => {
     if (!surface.texture) return null
-    const tex = getCachedTexture(surface.texture, {
+    const scale = surface.textureScale ?? 0.5
+    return getCachedTexture(surface.texture, {
       wrapS: THREE.RepeatWrapping,
       wrapT: THREE.RepeatWrapping,
+      repeat: [scale, scale],
     })
-    if (tex) {
-      const scale = surface.textureScale ?? 0.5
-      tex.repeat.set(scale, scale)
-    }
-    return tex
   }, [surface.texture, surface.textureScale])
+
+  useEffect(() => {
+    return () => {
+      if (surface.texture) {
+        releaseCachedTexture(surface.texture, textureMap)
+      }
+    }
+  }, [surface.texture, textureMap])
 
   const geometry = useMemo(() => buildSurfaceGeometry(surface), [surface])
 
@@ -170,7 +106,7 @@ export const SurfaceRenderer: React.FC<{
 
   if (!geometry) return null
 
-  if (sculptableTypesIncludes(surface.type) && geometry.type === SurfaceGeometryKind.Shape) {
+  if (SCULPTABLE_SURFACE_TYPES.includes(surface.type) && geometry.type === SurfaceGeometryKind.Shape) {
     return (
       <SculptableSurface
         surface={surface}
@@ -193,6 +129,7 @@ export const SurfaceRenderer: React.FC<{
       opacity={opacity}
       isSelected={isSelected}
       onClick={onClick}
+      usePhysical={usePhysical}
     />
   )
 }

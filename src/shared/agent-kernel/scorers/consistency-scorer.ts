@@ -11,6 +11,9 @@ export const consistencyScorer = createScorer({
     const facts = stringArrayFromJson(inputRecord(run.input).facts)
     const text = outputToString(run.output).toLowerCase()
 
+    // Jacek Confirm this regex — the only contradiction this detects is the
+    // literal words "alive" vs "dead"; every other inconsistency scores 1.
+    // See .local/findings/word-dictionary-heuristics.md (Group B).
     if (text.includes('alive') && facts.some(f => f.toLowerCase().includes('dead'))) {
       return 0
     }

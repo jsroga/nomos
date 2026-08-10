@@ -40,10 +40,24 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 | Many failures | `npm run qualitygate:capture` → `.local/quality-backlog.md` |
 | Before “done” | `npm run typecheck` · `npm run lint` · `npm run test:unit` |
 | Commit | `npm run precommit` (never `--no-verify`) |
+| OpenAPI public docs | `npm run openapi:generate` · `npm run openapi:check` (precommit) |
 | Module handoff | `node scripts/fabro-verify.mjs` |
 
 **Metrics (warn / error):** 400 / 800 lines · complexity 15 / 25.  
 **IMPORTANT — never disable rules on your own if not allowed.** No file-level `eslint-disable` and no new `eslint.config.js` `'off'` overrides without explicit user approval.
+
+## Public OpenAPI (`/api-docs`)
+
+Scalar at `/api-docs` serves committed [`public/openapi.json`](../public/openapi.json). **Zod is the contract** — do not hand-edit the JSON.
+
+To add or change a documented route:
+
+1. Put request/response Zod in `core/io/*.dto.ts` or `@/shared/data/*-service` (parse in the route).
+2. Register path + method in `src/shared/openapi/register-shared-routes.ts` or `src/domains/<module>/core/io/openapi-routes.ts`.
+3. Run `npm run openapi:generate` and commit `public/openapi.json`.
+4. `npm run openapi:check` (also in precommit) fails if the committed spec drifts.
+
+SSE chat streams stay out of the REST spec; MCP tool details live in [MCP_API.md](./MCP_API.md).
 
 ## Observability
 
@@ -69,12 +83,21 @@ npm run mastra:dev   # Traces tab
 
 ```bash
 NEXT_PUBLIC_FF_CWV_HUD=true      # live Core Web Vitals overlay (attribution) — restart dev
-NEXT_PUBLIC_FF_PERF_DEBUG=true   # React Scan re-render overlay (+ enables CWV HUD too)
+NEXT_PUBLIC_FF_PERF_DEBUG=true   # React Scan + CWV HUD + 3d-canvas renderer HUD
 npm run analyze                  # ANALYZE=true webpack bundle report
 npm run audit:cwv -- --url http://localhost:3000/
 ```
 
 UI lives in `src/shared/debug/`. Unset both flags → overlays hidden.
+
+### 3D canvas operator checklist
+
+With `NEXT_PUBLIC_FF_PERF_DEBUG=true` open `/{projectId}/3d-canvas` and confirm:
+
+1. Idle orbit FPS rises vs pre-change baseline; shadow map ≤2048 at High.
+2. Sculpt ~10s — heightmap bumps/s stay near ~30; undo still reverts walls/objects (not every brush stamp).
+3. Scatter ~100 props — object count climbs without Html loaders; tab hidden → frameloop stops.
+4. Switch Render Quality Low/Medium/High under Terrain → Optimization & Lighting.
 
 ## Landing SSR (`ssr: false`)
 
@@ -113,19 +136,26 @@ Every model resolves through the OpenRouter gateway on `OPENROUTER_API_KEY`. Def
 
 | Slot | Env var | Resolver |
 |---|---|---|
-| Storyteller roles | `STORYTELLER_{AUTHOR,PLANNER,CRITIC,MUSE,PREMISE,CHAT}_MODEL` | `ROLE_ENV_VARS` → `resolveRoleModel` |
+| Storyteller chat (Writers Room) | UI picker → `STORYTELLER_CHAT_MODEL` → matrix `chat` | `resolveRoleModel('chat')` + RequestContext `storyteller.chatModel` |
+| Storyteller orchestration | `STORYTELLER_{AUTHOR,PLANNER,CRITIC,MUSE,PREMISE}_MODEL` | `ROLE_ENV_VARS` → `resolveRoleModel` (not the chat picker) |
 | Game design | `GAME_DESIGN_MODEL` | `domains/game-design/config/model-config.ts` |
 | Loop creator | `LOOP_CREATOR_MODEL` | `domains/loop-creator/config/model-config.ts` |
 | Generation | `GENERATION_MODEL`, `GENERATION_MODEL_FAST`, `GENERATION_MODEL_CREATIVE` | `models.ts` |
 | Planning | `PLANNING_MODEL`, `PLANNING_MODEL_REASONING` | `models.ts` |
 | Embeddings | `EMBEDDING_MODEL` (default `openai/text-embedding-3-small`) | OpenRouter `/embeddings` |
 | Eval judges | `JUDGING_MODEL`, `JUDGING_MODEL_FALLBACK` | `models.ts` |
-| Writers-room picker default | `NEXT_PUBLIC_DEFAULT_AGENT_MODEL` | `domains/storyteller/config/constants/model-config.ts` |
+| Chat picker fallback (client default) | `NEXT_PUBLIC_DEFAULT_AGENT_MODEL` | `resolveChatModelId` when env chat pin unset |
+
+**Writers Room vs orchestration.** The composer offers three catalog models (Kimi / GLM / Opus). That choice only overrides the **chat adapter**. Beat-draft author, planner, critics, muse, and premise use their own matrix rows and `STORYTELLER_*_MODEL` pins — never the picker. `STORYTELLER_CHAT_MODEL` is the server default when the client sends no picker id.
+
+**Image models (Apiframe)** — pixel paths use `APIFRAME_API_KEY` only. Pin a surface with `IMAGE_*_MODEL` (see `.env.local.example`). Generate values: `midjourney` · `nano-banana` · `nano-banana-pro` · `grok-imagine-image` · `gpt-image-1.5` · `flux-2-pro`. Upscale: `topaz-image-upscale` · `clarity-upscale` · `midjourney`. Repaint: `flux-fill-pro`. Resolvers live in `src/shared/ai/image-model-env.ts`.
 
 Overrides are read at call time, not module load, so dotenv scripts and per-environment rollbacks work regardless of import order. `GET /api/settings/models` prints the resolved role→model table with provenance.
 
-The writers-room picker offers Kimi 2.7 (`moonshotai/kimi-k2.7-code`) and GLM 5.2 (`z-ai/glm-5.2`); both route through the same key, so no per-provider keys are required. RAG embeddings and Cohere rerank also use `OPENROUTER_API_KEY`. Remaining direct-provider exceptions: OpenAI for the moodboard, `generate-metrics`, and interior-texture endpoints.
+The Writers Room picker offers three catalog models (Kimi / GLM / Opus); selection is chat-only. Orchestration pins use `STORYTELLER_{AUTHOR,PLANNER,CRITIC,MUSE,PREMISE}_MODEL`. Text LLMs, RAG embeddings, and Cohere rerank use `OPENROUTER_API_KEY` only — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` are optional legacy fallbacks. Image paths use Apiframe (`APIFRAME_API_KEY`).
 
 ## Mastra / agents
 
 See root [AGENTS.md](../AGENTS.md). Smoke: `npm run mastra:smoke`.
+
+Studio bundling resolves `@/*` via `tsconfig.json` `compilerOptions.paths` and requires `baseUrl: "."`. If `mastra dev` crashes with `Cannot find package '@/…'`, wipe the stale bundle (`rm -rf .mastra`) and restart — smoke also fails when `.mastra/output/index.mjs` still contains those imports.

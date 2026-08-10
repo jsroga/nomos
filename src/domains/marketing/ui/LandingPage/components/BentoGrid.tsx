@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Map, Sparkles, Users, Zap } from 'lucide-react'
 import {
   LANDING_REVEAL_ANIMATE,

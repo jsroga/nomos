@@ -50,6 +50,10 @@ function bibleFieldsFromArgs(args: Record<string, unknown>): Record<string, unkn
   if (moodSoundtrack) fields.moodSoundtrack = moodSoundtrack
   const inspirations = recordFromJson(args.inspirations)
   if (Object.keys(inspirations).length > 0) fields.inspirations = inspirations
+  const episodeRoadmap = recordFromJson(args.episodeRoadmap)
+  if (Object.keys(episodeRoadmap).length > 0) fields.episodeRoadmap = episodeRoadmap
+  const episodePremise = recordFromJson(args.episodePremise)
+  if (Object.keys(episodePremise).length > 0) fields.episodePremise = episodePremise
   return fields
 }
 

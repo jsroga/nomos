@@ -1,68 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { projects } from '@/db'
-
-/**
- * @openapi
- * /api/storyteller/projects:
- *   get:
- *     summary: List all projects
- *     description: Retrieves all storyteller projects
- *     tags:
- *       - Storyteller Projects
- *     responses:
- *       200:
- *         description: A list of projects
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   description:
- *                     type: string
- *                   seriesBible:
- *                     type: object
- *                   createdAt:
- *                     type: string
- *                     format: date-time
- *       500:
- *         description: Server error
- *   post:
- *     summary: Create a new project
- *     description: Creates a new storyteller project
- *     tags:
- *       - Storyteller Projects
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *             properties:
- *               name:
- *                 type: string
- *                 description: Project name
- *               description:
- *                 type: string
- *                 description: Project description
- *               seriesBible:
- *                 type: object
- *                 description: Series bible configuration
- *     responses:
- *       200:
- *         description: The created project
- *       500:
- *         description: Server error
- */
-
 import { requireAuth } from '@/shared/auth/auth'
 import { eq } from 'drizzle-orm'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'

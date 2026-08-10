@@ -1,10 +1,10 @@
 /**
  * Live Trigger.dev smokes:
- *   - generate-tile via OpenRouter Grok Imagine
- *   - LegNext diffusion via shared client (tile upload_paint is whitelist-gated)
+ *   - generate-tile via Apiframe Grok Imagine
+ *   - Midjourney via Apiframe (shared client)
  *
  * Requires: `npm run trigger:dev`
- * Env: TRIGGER_SECRET_KEY, OPENROUTER_API_KEY, LEGNEXT_API_KEY, BLOB_READ_WRITE_TOKEN
+ * Env: TRIGGER_SECRET_KEY, APIFRAME_API_KEY, BLOB_READ_WRITE_TOKEN
  *
  *   npm run test:smoke:tile-providers
  */
@@ -13,9 +13,8 @@ import { config as loadEnv } from 'dotenv'
 import { tasks, runs } from '@trigger.dev/sdk/v3'
 import type { generateTileTask } from '@/domains/2d-canvas/tasks/generate-tile.task'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { OpenRouterImageModel } from '@/shared/ai/constants/openrouter-image'
-import { submitImagineTask, pollLegNextTask } from '@/shared/ai/legnext'
-import { EnvVarName } from '@/shared/data/constants/protocol'
+import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
+import { generateMidjourneyImages, pickApiframeImageUrl } from '@/shared/ai/apiframe'
 import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { isPlainObject, readString } from '@/shared/data/json-guards'
 import { TriggerEnvFile } from '../../../../../trigger.config.constants'
@@ -24,11 +23,11 @@ loadEnv({ path: TriggerEnvFile.Local })
 
 enum TileProviderSmokeWire {
   DefaultProjectId = 'tile-provider-smoke',
-  LegNextPrompt = 'isometric grassy meadow with a small stone path, painterly game tile --ar 1:1',
+  ApiframePrompt = 'isometric grassy meadow with a small stone path, painterly game tile --ar 1:1',
   GrokPrompt = 'isometric grassy meadow with a small stone path, painterly game tile',
   EnvTestProjectId = 'TEST_PROJECT_ID',
   EnvWildcardsProjectId = 'WILDCARDS_AB_PROJECT_ID',
-  EnvLegNextApiKey = 'LEGNEXT_API_KEY',
+  EnvApiframeApiKey = 'APIFRAME_API_KEY',
   EnvTriggerSecret = 'TRIGGER_SECRET_KEY',
   EnvBlobToken = 'BLOB_READ_WRITE_TOKEN',
 }
@@ -71,14 +70,13 @@ async function waitForRunSuccess(runId: string): Promise<Record<string, unknown>
 
 const hasTrigger = Boolean(process.env[TileProviderSmokeWire.EnvTriggerSecret]?.trim())
 const hasBlob = Boolean(process.env[TileProviderSmokeWire.EnvBlobToken]?.trim())
-const hasOpenRouter = Boolean(process.env[EnvVarName.OpenRouterApiKey]?.trim())
-const hasLegNext = Boolean(process.env[TileProviderSmokeWire.EnvLegNextApiKey]?.trim())
+const hasApiframe = Boolean(process.env[TileProviderSmokeWire.EnvApiframeApiKey]?.trim())
 
 describe.runIf(hasTrigger && hasBlob)('image providers (live Trigger)', () => {
-  it.runIf(hasOpenRouter)(
-    'generate-tile via OpenRouter Grok Imagine',
+  it.runIf(hasApiframe)(
+    'generate-tile via Apiframe Grok Imagine',
     async () => {
-      const openRouterKey = envOrSkip(EnvVarName.OpenRouterApiKey)
+      const apiframeKey = envOrSkip(TileProviderSmokeWire.EnvApiframeApiKey)
       const handle = await tasks.trigger<typeof generateTileTask>(TRIGGER_TASK_ID.GENERATE_TILE, {
         projectId: TEST_PROJECT_ID,
         x: 90,
@@ -86,8 +84,8 @@ describe.runIf(hasTrigger && hasBlob)('image providers (live Trigger)', () => {
         prompt: TileProviderSmokeWire.GrokPrompt,
         aiProvider: ImageGenProvider.Grok,
         aiConfig: {
-          apiKey: openRouterKey,
-          model: OpenRouterImageModel.GrokImagineImageQuality,
+          apiKey: apiframeKey,
+          model: ApiframeImageModel.GrokImagineImage,
         },
         isFirstTile: true,
       })
@@ -100,17 +98,17 @@ describe.runIf(hasTrigger && hasBlob)('image providers (live Trigger)', () => {
     TIMEOUT_MS + 30_000
   )
 
-  it.runIf(hasLegNext)(
-    'generate-tile via LegNext upload_paint / Midjourney',
+  it.runIf(hasApiframe)(
+    'generate-tile via Apiframe Midjourney',
     async () => {
-      const legNextKey = envOrSkip(TileProviderSmokeWire.EnvLegNextApiKey)
+      const apiframeKey = envOrSkip(TileProviderSmokeWire.EnvApiframeApiKey)
       const handle = await tasks.trigger<typeof generateTileTask>(TRIGGER_TASK_ID.GENERATE_TILE, {
         projectId: TEST_PROJECT_ID,
         x: 92,
         y: 92,
         prompt: TileProviderSmokeWire.GrokPrompt,
         aiProvider: ImageGenProvider.Midjourney,
-        aiConfig: { apiKey: legNextKey },
+        aiConfig: { apiKey: apiframeKey },
         isFirstTile: true,
       })
 
@@ -122,15 +120,17 @@ describe.runIf(hasTrigger && hasBlob)('image providers (live Trigger)', () => {
     TIMEOUT_MS + 30_000
   )
 
-  it.runIf(hasLegNext)(
-    'LegNext diffusion API key smoke',
+  it.runIf(hasApiframe)(
+    'Apiframe Midjourney API key smoke',
     async () => {
-      const legNextKey = envOrSkip(TileProviderSmokeWire.EnvLegNextApiKey)
-      const jobId = await submitImagineTask(TileProviderSmokeWire.LegNextPrompt, legNextKey)
-      expect(jobId.length).toBeGreaterThan(0)
-      const output = await pollLegNextTask(jobId, legNextKey)
-      const imageUrl = output.image_url ?? output.image_urls?.[0]
-      expect(Boolean(imageUrl)).toBe(true)
+      const apiframeKey = envOrSkip(TileProviderSmokeWire.EnvApiframeApiKey)
+      const result = await generateMidjourneyImages(
+        TileProviderSmokeWire.ApiframePrompt,
+        apiframeKey,
+        { aspectRatio: '1:1' },
+      )
+      expect(result.jobId.length).toBeGreaterThan(0)
+      expect(Boolean(pickApiframeImageUrl(result))).toBe(true)
     },
     TIMEOUT_MS + 30_000
   )

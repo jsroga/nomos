@@ -3,6 +3,7 @@
  * Server-only helpers (e.g. loadLegalMarkdown) live in ./core/legal-docs — import there.
  */
 
+export { ApiDocsPage } from './ui/ApiDocs/components/ApiDocsPage'
 export { GlobalLiquidLoader } from './ui/GlobalLiquidLoader'
 export { LandingPage } from './ui/LandingPage'
 export { Liquid } from './ui/Liquid'

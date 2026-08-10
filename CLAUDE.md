@@ -164,7 +164,7 @@ Ad-hoc audits and one-off scripts: **`.local/`** (gitignored). Quality backlog: 
 
 ## Env
 
-Copy `.env.local.example` → `.env.local`. Evaluation judges: `OPENAI_API_KEY` or `JUDGING_MODEL` (see `evals/run.ts`). Feature flags are `FF_<NAME>=true` (`src/shared/data/constants/feature-flags.ts`); default-on kill switches keep their own names and `!== 'false'` semantics.
+Copy `.env.local.example` → `.env.local`. Text LLMs use `OPENROUTER_API_KEY` only; judges: `JUDGING_MODEL` (see `evals/run.ts`). Feature flags are `FF_<NAME>=true` (`src/shared/data/constants/feature-flags.ts`); default-on kill switches keep their own names and `!== 'false'` semantics.
 
 <!-- TRIGGER.DEV SKILLS START -->
 ## Trigger.dev agent skills

@@ -3,7 +3,9 @@ import React, { useMemo, useRef, useEffect, useCallback } from 'react'
 import { ThreeEvent } from '@react-three/fiber'
 import { CATMULL_ROM_CURVE_TYPE } from '@/domains/3d-canvas/constants/three-js'
 import { useInteriorStore, Surface } from '@/domains/3d-canvas'
-import { getCachedTexture } from '@/domains/3d-canvas/core/textureCache'
+import { getCachedTexture, releaseCachedTexture } from '@/domains/3d-canvas/core/textureCache'
+import { computeRoadExtrudeSteps } from '@/domains/3d-canvas/core/road-extrude-steps'
+import { resolveEffectiveRenderConfig } from '@/domains/3d-canvas/core/render-quality'
 
 interface RoadMeshProps {
   surface: Surface
@@ -99,7 +101,7 @@ export const RoadMesh: React.FC<RoadMeshProps> = ({
     // ... (rest of extrusion)
 
     const length = curve.getLength()
-    const steps = Math.max(50, Math.ceil(length * 5))
+    const steps = computeRoadExtrudeSteps(length)
 
     const extrudeSettings = {
       steps: steps,
@@ -119,22 +121,28 @@ export const RoadMesh: React.FC<RoadMeshProps> = ({
     config.depth,
   ])
 
+  const renderQuality = useInteriorStore(state => state.renderQuality)
+  const interactionActive = useInteriorStore(state => state.interactionActive)
+  const deferNormals = resolveEffectiveRenderConfig(renderQuality, interactionActive).roadDeferNormals
+
   // 2. Load Texture using cached texture loader (OPTIMIZATION: shared texture cache)
   const textureMap = useMemo(() => {
     if (!surface.texture) return null
-
-    const tex = getCachedTexture(surface.texture, {
+    const scale = surface.textureScale ?? 1
+    return getCachedTexture(surface.texture, {
       wrapS: THREE.RepeatWrapping,
       wrapT: THREE.RepeatWrapping,
+      repeat: [1, scale],
     })
-
-    if (tex) {
-      const scale = surface.textureScale ?? 1
-      tex.repeat.set(1, scale)
-    }
-
-    return tex
   }, [surface.texture, surface.textureScale])
+
+  useEffect(() => {
+    return () => {
+      if (surface.texture) {
+        releaseCachedTexture(surface.texture, textureMap)
+      }
+    }
+  }, [surface.texture, textureMap])
 
   // Store original positions once geometry is created
   useEffect(() => {
@@ -145,48 +153,49 @@ export const RoadMesh: React.FC<RoadMeshProps> = ({
   }, [geometry])
 
   // Displacement function - optimized with direct state access
-  const applyHeightmapDisplacement = useCallback(() => {
-    if (!meshRef.current || !geometry || !originalPositionsRef.current || surface.isVertical) return
+  const applyHeightmapDisplacement = useCallback(
+    (computeNormals: boolean) => {
+      if (!meshRef.current || !geometry || !originalPositionsRef.current || surface.isVertical) return
 
-    const { heightmap, heightmapSize, baseGroundHeight } =
-      useInteriorStore.getState().terrainSettings
+      const { heightmap, heightmapSize, baseGroundHeight } =
+        useInteriorStore.getState().terrainSettings
 
-    if (!heightmap) return
+      if (!heightmap) return
 
-    const geo = meshRef.current.geometry
-    const posAttribute = geo.attributes.position
-    const original = originalPositionsRef.current
+      const geo = meshRef.current.geometry
+      const posAttribute = geo.attributes.position
+      const original = originalPositionsRef.current
 
-    for (let i = 0; i < posAttribute.count; i++) {
-      const origX = original[i * 3]
-      const origY = original[i * 3 + 1]
-      const origZ = original[i * 3 + 2]
+      for (let i = 0; i < posAttribute.count; i++) {
+        const origX = original[i * 3]
+        const origY = original[i * 3 + 1]
+        const origZ = original[i * 3 + 2]
 
-      // Road ExtrudeGeometry: path is CatmullRomCurve3 in XZ plane
-      // Shape is extruded perpendicular to path
-      // X and Z are world coordinates, Y is the extrusion cross-section
-      const worldX = origX
-      const worldZ = origZ
+        const worldX = origX
+        const worldZ = origZ
 
-      const gridX = Math.floor((worldX + TERRAIN_SIZE / 2) * (heightmapSize / TERRAIN_SIZE))
-      const gridZ = Math.floor((worldZ + TERRAIN_SIZE / 2) * (heightmapSize / TERRAIN_SIZE))
+        const gridX = Math.floor((worldX + TERRAIN_SIZE / 2) * (heightmapSize / TERRAIN_SIZE))
+        const gridZ = Math.floor((worldZ + TERRAIN_SIZE / 2) * (heightmapSize / TERRAIN_SIZE))
 
-      let h = baseGroundHeight
-      if (gridX >= 0 && gridX < heightmapSize && gridZ >= 0 && gridZ < heightmapSize) {
-        h = heightmap[gridZ * heightmapSize + gridX]
+        let h = baseGroundHeight
+        if (gridX >= 0 && gridX < heightmapSize && gridZ >= 0 && gridZ < heightmapSize) {
+          h = heightmap[gridZ * heightmapSize + gridX]
+        }
+
+        posAttribute.setXYZ(i, origX, origY + h + (config.verticalOffset || 0.01), origZ)
       }
 
-      // Preserve original Y (cross-section shape) and add terrain height
-      posAttribute.setXYZ(i, origX, origY + h + (config.verticalOffset || 0.01), origZ)
-    }
-
-    posAttribute.needsUpdate = true
-    geo.computeVertexNormals()
-  }, [geometry, surface.isVertical, config.verticalOffset])
+      posAttribute.needsUpdate = true
+      if (computeNormals) {
+        geo.computeVertexNormals()
+      }
+    },
+    [geometry, surface.isVertical, config.verticalOffset]
+  )
 
   // Initial displacement
   useEffect(() => {
-    applyHeightmapDisplacement()
+    applyHeightmapDisplacement(true)
   }, [applyHeightmapDisplacement])
 
   // OPTIMIZATION: Subscribe only to heightmapVersion changes for reactivity
@@ -196,12 +205,22 @@ export const RoadMesh: React.FC<RoadMeshProps> = ({
     const unsubscribe = useInteriorStore.subscribe(state => {
       if (state.terrainSettings.heightmapVersion !== prevVersion) {
         prevVersion = state.terrainSettings.heightmapVersion
-        applyHeightmapDisplacement()
+        const interacting = state.interactionActive
+        const quality = state.renderQuality
+        const defer = resolveEffectiveRenderConfig(quality, interacting).roadDeferNormals
+        applyHeightmapDisplacement(!defer)
       }
     })
 
     return unsubscribe
   }, [applyHeightmapDisplacement])
+
+  // Recompute normals when interaction ends
+  useEffect(() => {
+    if (!deferNormals) {
+      applyHeightmapDisplacement(true)
+    }
+  }, [deferNormals, applyHeightmapDisplacement])
 
   // OPTIMIZATION: Proper cleanup on unmount to prevent memory leaks
   useEffect(() => {

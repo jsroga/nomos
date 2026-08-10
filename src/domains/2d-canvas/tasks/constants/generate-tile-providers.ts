@@ -1,10 +1,8 @@
 import type { AiProviderConfig } from '@/shared/ai/ai-provider-config'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { GenerateTileProvider } from './generate-tile'
-import { generateWithGemini } from './generate-tile-gemini'
-import { generateWithGrok } from './generate-tile-grok'
-import { generateWithOpenAI } from './generate-tile-openai'
-import { generateWithStability } from './generate-tile-stability'
-import { generateWithLegNext } from './generate-tile-legnext'
+import { generateTileViaApiframeModel } from './generate-tile-apiframe-models'
+import { generateWithApiframeMidjourney } from './generate-tile-apiframe'
 
 export async function generateTileImage(
   aiProvider: string,
@@ -13,53 +11,58 @@ export async function generateTileImage(
   isFirstTile: boolean,
   styleReferenceUrls: string[] | undefined,
   contextImageBase64: string | undefined,
-  styleContext: string | undefined
+  styleContext: string | undefined,
 ): Promise<string> {
   switch (aiProvider) {
     case GenerateTileProvider.Gemini:
     case GenerateTileProvider.NanoBanana:
-      return generateWithGemini(
+      return generateTileViaApiframeModel(
+        ImageGenProvider.NanoBanana,
         prompt,
         providerConfig,
         isFirstTile,
         styleReferenceUrls,
         contextImageBase64,
-        styleContext
+        styleContext,
       )
     case GenerateTileProvider.Grok:
-      return generateWithGrok(
+      return generateTileViaApiframeModel(
+        ImageGenProvider.Grok,
         prompt,
         providerConfig,
         isFirstTile,
         styleReferenceUrls,
         contextImageBase64,
-        styleContext
+        styleContext,
       )
     case GenerateTileProvider.OpenAi:
-      return generateWithOpenAI(
-        prompt,
-        providerConfig,
-        isFirstTile,
-        styleReferenceUrls,
-        contextImageBase64
-      )
-    case GenerateTileProvider.Stability:
-      return generateWithStability(
-        prompt,
-        providerConfig,
-        isFirstTile,
-        styleReferenceUrls,
-        contextImageBase64
-      )
-    case GenerateTileProvider.Midjourney:
-    case GenerateTileProvider.LegnextUploadPaint:
-      return generateWithLegNext(
+      return generateTileViaApiframeModel(
+        ImageGenProvider.OpenAi,
         prompt,
         providerConfig,
         isFirstTile,
         styleReferenceUrls,
         contextImageBase64,
-        styleContext
+        styleContext,
+      )
+    case GenerateTileProvider.Stability:
+      return generateTileViaApiframeModel(
+        ImageGenProvider.Stability,
+        prompt,
+        providerConfig,
+        isFirstTile,
+        styleReferenceUrls,
+        contextImageBase64,
+        styleContext,
+      )
+    case GenerateTileProvider.Midjourney:
+      return generateWithApiframeMidjourney(
+        prompt,
+        providerConfig,
+        isFirstTile,
+        styleReferenceUrls,
+        contextImageBase64,
+        styleContext,
       )
     default:
       throw new Error(`Unsupported AI provider: ${aiProvider}`)

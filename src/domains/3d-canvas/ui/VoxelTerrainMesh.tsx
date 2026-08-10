@@ -14,6 +14,7 @@
 import React, { useMemo, useRef, useEffect } from 'react'
 import * as THREE from 'three'
 import { useInteriorStore, Surface } from '@/domains/3d-canvas'
+import { resolveEffectiveRenderConfig } from '@/domains/3d-canvas/core/render-quality'
 
 interface VoxelTerrainMeshProps {
   surface: Surface
@@ -73,11 +74,17 @@ export const VoxelTerrainMesh: React.FC<VoxelTerrainMeshProps> = React.memo(
     const baseGroundHeight = useInteriorStore(state => state.terrainSettings.baseGroundHeight)
     const storeGroundColor = useInteriorStore(state => state.terrainSettings.groundColor)
     const fidelity = useInteriorStore(state => state.terrainBrush.fidelity)
-
+    const renderQuality = useInteriorStore(state => state.renderQuality)
+    const interactionActive = useInteriorStore(state => state.interactionActive)
     const heightmapVersion = useInteriorStore(state => state.terrainSettings.heightmapVersion)
 
     // Use prop color or fall back to store groundColor
     const effectiveColor = color || storeGroundColor
+
+    const lodMultiplier = resolveEffectiveRenderConfig(
+      renderQuality,
+      interactionActive
+    ).voxelLodMultiplier
 
     // Calculate bounding box
     const bounds = useMemo(() => {
@@ -92,20 +99,19 @@ export const VoxelTerrainMesh: React.FC<VoxelTerrainMeshProps> = React.memo(
       }
     }, [surface.points])
 
-    // OPTIMIZATION: Adaptive block size based on surface area (LOD)
+    // OPTIMIZATION: Adaptive block size based on surface area (LOD) + quality preset
     const blockSize = useMemo(() => {
-      const baseBlockSize = 5 / fidelity
+      const baseBlockSize = (5 / fidelity) * lodMultiplier
 
       if (!bounds) return baseBlockSize
 
       const area = (bounds.maxX - bounds.minX) * (bounds.maxZ - bounds.minZ)
 
-      // Large surfaces: use coarser blocks for performance
       if (area > 500) return baseBlockSize * 2
       if (area > 200) return baseBlockSize * 1.5
 
       return baseBlockSize
-    }, [fidelity, bounds])
+    }, [fidelity, bounds, lodMultiplier])
 
     // Generate instanced cube positions (OPTIMIZED: uses temp objects)
     const instanceData = useMemo(() => {

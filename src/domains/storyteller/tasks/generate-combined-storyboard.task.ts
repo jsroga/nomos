@@ -24,7 +24,7 @@ export const generateCombinedStoryboard = task({
   maxDuration: 600,
   run: async (payload: GenerateCombinedStoryboardPayload) => {
     const { episodeId, projectId, beats, providerConfig } = payload
-    const { apiKey } = providerConfig
+    const { apiKey, modelId } = providerConfig
 
     logger.info(
       `Starting combined storyboard generation for episode ${episodeId} with ${beats.length} beats.`
@@ -36,7 +36,7 @@ export const generateCombinedStoryboard = task({
 
     try {
       const prompt = buildCombinedStoryboardPrompt(beats)
-      const imageBase64 = await fetchGeminiStoryboardImage(apiKey, prompt)
+      const imageBase64 = await fetchGeminiStoryboardImage(apiKey, prompt, modelId)
 
       await metadata.set('stage', 'saving_image')
       const filename = saveStoryboardImage(projectId, episodeId, imageBase64)

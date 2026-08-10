@@ -1,19 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { updateEntitySchema } from '@/shared/data/entities-service'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
-
-// Entity update schema
-const updateEntitySchema = z.object({
-  name: z.string().min(1).optional(),
-  description: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
-  tags: z.array(z.string()).optional(),
-  imageUrl: z.string().url().optional(),
-  usedInDomains: z.array(z.string()).optional(),
-})
-
 /**
  * GET /api/entities/[entityId]
  * Get a single entity by ID

@@ -16,6 +16,7 @@ export interface ProviderStatus {
   google: boolean
   zhipu: boolean
   moonshot: boolean
+  apiframe: boolean
   legnext: boolean
   stability: boolean
   replicate: boolean
@@ -23,7 +24,6 @@ export interface ProviderStatus {
   meshy: boolean
   fal: boolean
   voyage: boolean
-  langsmith: boolean
 }
 
 export interface ProviderTestResult {
@@ -57,6 +57,7 @@ function parseProviderStatus(value: unknown): ProviderStatus {
     google: record.google === true,
     zhipu: record.zhipu === true,
     moonshot: record.moonshot === true,
+    apiframe: record.apiframe === true,
     legnext: record.legnext === true,
     stability: record.stability === true,
     replicate: record.replicate === true,
@@ -64,7 +65,6 @@ function parseProviderStatus(value: unknown): ProviderStatus {
     meshy: record.meshy === true,
     fal: record.fal === true,
     voyage: record.voyage === true,
-    langsmith: record.langsmith === true,
   }
 }
 

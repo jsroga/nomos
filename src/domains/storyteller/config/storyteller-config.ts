@@ -173,7 +173,7 @@ export function getEntityLinkRequirements(): EntityLinkRequirements {
 // ============================================
 
 /**
- * Prompt identifiers for Langfuse / local registry names.
+ * Prompt identifiers for the local / remote prompt registry.
  * Push via: npm run prompts:push[:staging|:prod]
  */
 export { PROMPT_IDS } from './constants/storyteller-config-defaults'

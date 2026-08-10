@@ -1,16 +1,13 @@
 /* eslint-disable react/no-unknown-property */
 'use client'
 
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid, OrthographicCamera } from '@react-three/drei'
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing'
 import { WallManager } from './WallManager'
 import { WallTool } from './tools/WallTool'
 import { FloorManager } from './FloorManager'
-// import { FloorTool } from './tools/FloorTool'
-// import { WaterManager } from './WaterManager'
-// import { WaterTool } from './tools/WaterTool'
 import { SurfaceManager } from './SurfaceManager'
 import { SurfaceTool } from './tools/SurfaceTool'
 import { ObjectManager } from './ObjectManager'
@@ -23,13 +20,21 @@ import { CameraController } from './CameraController'
 import { KeybindingManager } from './KeybindingManager'
 import { GlobalWaterPlane, TerrainBrushPreview } from './terrain'
 import { TerrainTool } from './tools/TerrainTool'
+import { CanvasPerfHud } from './perf/CanvasPerfHud'
 import { useInteriorStore } from '@/domains/3d-canvas'
+import {
+  CanvasFrameloopMode,
+  DocumentVisibilityStateValue,
+  DomVisibilityEvent,
+} from '@/domains/3d-canvas/constants/render-quality'
+import { resolveEffectiveRenderConfig } from '@/domains/3d-canvas/core/render-quality'
 
-// Dynamic Sun Light component that uses sunAngle from store
-const SunLight: React.FC = () => {
+const SunLight: React.FC<{
+  shadowsEnabled: boolean
+  shadowMapSize: number
+}> = ({ shadowsEnabled, shadowMapSize }) => {
   const sunAngle = useInteriorStore(state => state.terrainSettings.sunAngle)
 
-  // Convert angle to position on a circle at Y=20
   const radians = (sunAngle * Math.PI) / 180
   const distance = 20
   const x = Math.cos(radians) * distance
@@ -39,8 +44,8 @@ const SunLight: React.FC = () => {
     <directionalLight
       position={[x, 20, z]}
       intensity={1.8}
-      castShadow
-      shadow-mapSize={[4096, 4096]}
+      castShadow={shadowsEnabled}
+      shadow-mapSize={shadowsEnabled ? [shadowMapSize, shadowMapSize] : [512, 512]}
       shadow-camera-left={-40}
       shadow-camera-right={40}
       shadow-camera-top={40}
@@ -51,15 +56,60 @@ const SunLight: React.FC = () => {
   )
 }
 
+function useCanvasFrameloop(): CanvasFrameloopMode {
+  const [frameloop, setFrameloop] = useState<CanvasFrameloopMode>(CanvasFrameloopMode.Always)
+
+  useEffect(() => {
+    const sync = () => {
+      setFrameloop(
+        document.visibilityState === DocumentVisibilityStateValue.Hidden
+          ? CanvasFrameloopMode.Never
+          : CanvasFrameloopMode.Always
+      )
+    }
+    sync()
+    document.addEventListener(DomVisibilityEvent.VisibilityChange, sync)
+    return () => document.removeEventListener(DomVisibilityEvent.VisibilityChange, sync)
+  }, [])
+
+  return frameloop
+}
+
 export const InteriorCanvas: React.FC = () => {
+  const frameloop = useCanvasFrameloop()
+  const renderQuality = useInteriorStore(state => state.renderQuality)
+  const interactionActive = useInteriorStore(state => state.interactionActive)
+  const setInteractionActive = useInteriorStore(state => state.setInteractionActive)
+
+  const effective = useMemo(
+    () => resolveEffectiveRenderConfig(renderQuality, interactionActive),
+    [renderQuality, interactionActive]
+  )
+
+  const markInteractStart = () => {
+    setInteractionActive(true)
+  }
+  const markInteractEnd = () => {
+    setInteractionActive(false)
+  }
+
   return (
-    <Canvas shadows className="w-full h-full" gl={{ stencil: true }}>
+    <Canvas
+      shadows={effective.shadowsEnabled}
+      className="w-full h-full"
+      dpr={effective.dpr}
+      frameloop={frameloop}
+      gl={{
+        stencil: true,
+        powerPreference: 'high-performance',
+        antialias: true,
+      }}
+    >
       <color attach="background" args={['#1e1e1e']} />
 
-      {/* Disco Elysium Style Camera (Adjusted for Isometric) */}
       <OrthographicCamera
         makeDefault
-        position={[20, 20, 20]} // True Isometric Angle
+        position={[20, 20, 20]}
         zoom={60}
         near={-100}
         far={300}
@@ -67,9 +117,11 @@ export const InteriorCanvas: React.FC = () => {
       />
 
       <ambientLight intensity={0.3} />
-      <SunLight />
+      <SunLight
+        shadowsEnabled={effective.shadowsEnabled}
+        shadowMapSize={effective.shadowMapSize}
+      />
 
-      {/* Fill light for atmosphere */}
       <pointLight position={[-10, 10, -10]} intensity={0.4} color="#ffffff" />
 
       <OrbitControls
@@ -78,9 +130,8 @@ export const InteriorCanvas: React.FC = () => {
         enableZoom={true}
         minZoom={10}
         maxZoom={100}
-        // Lock polar angle for true isometric feel if desired, but freedom is nice too
-        // minPolarAngle={Math.PI / 4}
-        // maxPolarAngle={Math.PI / 3}
+        onStart={markInteractStart}
+        onEnd={markInteractEnd}
       />
 
       <WallManager />
@@ -95,7 +146,6 @@ export const InteriorCanvas: React.FC = () => {
       <ScatterTool />
       <TransformManager />
 
-      {/* Terrain Tool - operates on surfaces directly, no separate terrain mesh */}
       <TerrainBrushPreview />
       <TerrainTool />
       <GlobalWaterPlane />
@@ -104,8 +154,8 @@ export const InteriorCanvas: React.FC = () => {
       <RetextureExporter />
       <CameraController />
       <KeybindingManager />
+      <CanvasPerfHud />
 
-      {/* Grid rendered last to appear on top of terrain */}
       <Grid
         infiniteGrid
         cellSize={1}
@@ -113,15 +163,28 @@ export const InteriorCanvas: React.FC = () => {
         fadeDistance={100}
         cellColor="#444"
         sectionColor="#666"
-        renderOrder={1} // Ensure it renders on top
+        renderOrder={1}
       />
 
-      {/* Post Processing for Disco Elysium Atmosphere */}
-      <EffectComposer stencilBuffer>
-        <Bloom luminanceThreshold={0.8} mipmapBlur intensity={0.5} radius={0.4} />
-        <Noise opacity={0.15} />
-        <Vignette eskil={false} offset={0.1} darkness={0.5} />
-      </EffectComposer>
+      {effective.postFxEnabled ? (
+        <EffectComposer stencilBuffer>
+          {[
+            effective.bloom ? (
+              <Bloom
+                key="bloom"
+                luminanceThreshold={0.8}
+                mipmapBlur
+                intensity={0.5}
+                radius={0.4}
+              />
+            ) : null,
+            effective.noise ? <Noise key="noise" opacity={0.15} /> : null,
+            effective.vignette ? (
+              <Vignette key="vignette" eskil={false} offset={0.1} darkness={0.5} />
+            ) : null,
+          ].filter((node): node is React.ReactElement => node !== null)}
+        </EffectComposer>
+      ) : null}
     </Canvas>
   )
 }

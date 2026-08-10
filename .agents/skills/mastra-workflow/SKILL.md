@@ -35,7 +35,7 @@ Reject designs that use **6+ writer agents** in sequence — that averages voice
 | Agent inside step | Instantiate domain `Agent` in `execute`, call with `RequestContext` — not `RuntimeContext` |
 | Tool calls | `createTool` with `(inputData, context)` — delegate CRUD to existing services |
 | Registration | Export workflow from domain; register on `getMastraInstance()` / domain Mastra entry |
-| Tracing | Reuse domain `withSpan` / Langfuse patterns; one trace per workflow run |
+| Tracing | Mastra `withMastraSpan` / Observability registry; one trace per workflow run |
 
 **Don't:** root `@mastra/core` imports, `format` on agents, `z.any()` on step schemas, second Postgres store.
 

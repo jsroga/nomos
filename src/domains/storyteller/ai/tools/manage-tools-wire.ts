@@ -36,7 +36,7 @@ export const CHARACTER_GET_ID_REQUIRED = 'characterId is required for get operat
 
 export const EPISODE_TOOL_ID = 'manage_episode'
 export const EPISODE_TOOL_DESC =
-  'Create, update, delete, or get an episode. Create requires projectId and title. Update requires episodeId.'
+  'Create, update, delete, or get an episode. Create requires projectId and title; pass data.premise (Ozymandias) in the same create when drafting a first episode. Update requires episodeId.'
 export const LIST_EPISODES_TOOL_ID = 'list_episodes'
 export const LIST_EPISODES_TOOL_DESC = 'List all episodes in a project, ordered by sequence.'
 

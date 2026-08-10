@@ -8,20 +8,13 @@
  * `src/domains/storyteller/core/io/mastra-runtime.ts`), and `getMastraInstance()`
  * drains the registry when it constructs the instance.
  *
- * Ordering contract: a domain's registration module must be imported before
- * the first `getMastraInstance()` call. The storyteller tools barrel imports
- * its registration module for exactly this reason. Late registrations are
- * ignored with a loud warning — Mastra cannot add workflows to a live
- * instance.
+ * If a domain registers after the instance was already built (HMR, raced
+ * import), registrations are merged and the singleton is invalidated so the
+ * next `getMastraInstance()` rebuilds with the full set.
  */
 
 import type { Agent } from '@mastra/core/agent'
 import type { AnyWorkflow } from '@mastra/core/workflows'
-import {
-  LIST_JOIN_SEPARATOR,
-  MASTRA_LATE_REGISTRATION_IMPORT_HINT,
-  MASTRA_LATE_REGISTRATION_WARN_PREFIX,
-} from '@/shared/agent-kernel/constants/runtime-registry'
 
 export interface MastraRuntimeModule {
   agents?: Record<string, Agent>
@@ -31,19 +24,19 @@ export interface MastraRuntimeModule {
 const pendingAgents: Record<string, Agent> = {}
 const pendingWorkflows: Record<string, AnyWorkflow> = {}
 let consumed = false
+let invalidateMastraInstance: (() => void) | null = null
+
+/** Wired once from mastra-instance.ts (avoids an import cycle). */
+export function setMastraInstanceInvalidator(fn: () => void): void {
+  invalidateMastraInstance = fn
+}
 
 export function registerMastraModule(module: MastraRuntimeModule): void {
-  if (consumed) {
-    console.warn(
-      MASTRA_LATE_REGISTRATION_WARN_PREFIX +
-        `Agents: [${Object.keys(module.agents ?? {}).join(LIST_JOIN_SEPARATOR)}], ` +
-        `workflows: [${Object.keys(module.workflows ?? {}).join(LIST_JOIN_SEPARATOR)}]. ` +
-        MASTRA_LATE_REGISTRATION_IMPORT_HINT
-    )
-    return
-  }
   Object.assign(pendingAgents, module.agents ?? {})
   Object.assign(pendingWorkflows, module.workflows ?? {})
+  if (!consumed) return
+  consumed = false
+  invalidateMastraInstance?.()
 }
 
 /** Drain registrations for instance construction. Called once by getMastraInstance(). */

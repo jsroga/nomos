@@ -65,13 +65,18 @@ const TexturedMaterial: React.FC<{ url: string; isSelected: boolean; opacity?: n
 }) => {
   const loadedTexture = useTexture(url)
 
-  // Clone texture to avoid mutating hook return value
   const texture = React.useMemo(() => {
     const cloned = loadedTexture.clone()
     cloned.wrapS = cloned.wrapT = THREE.RepeatWrapping
     cloned.needsUpdate = true
     return cloned
   }, [loadedTexture])
+
+  React.useEffect(() => {
+    return () => {
+      texture.dispose()
+    }
+  }, [texture])
 
   return (
     <meshStandardMaterial

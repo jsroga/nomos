@@ -1,9 +1,6 @@
 /** Wire values for `next.config.js` (root config — keep magic strings out of the config file). */
 
 const THREE = 'three'
-const MERMAID = 'mermaid'
-const RECHARTS = 'recharts'
-const FRAMER_MOTION = 'framer-motion'
 const MOTION = 'motion'
 const REACT_MARKDOWN = 'react-markdown'
 const REMARK_GFM = 'remark-gfm'
@@ -25,10 +22,7 @@ const TRANSPILE_PACKAGES = [
   '@radix-ui/react-slider',
   '@radix-ui/react-tabs',
   '@radix-ui/react-tooltip',
-  MERMAID,
-  RECHARTS,
   '@xyflow/react',
-  FRAMER_MOTION,
   MOTION,
   '@scalar/api-reference-react',
   REACT_MARKDOWN,
@@ -42,7 +36,7 @@ const OPTIMIZE_PACKAGE_IMPORTS = [
   '@radix-ui/react-dropdown-menu',
   '@radix-ui/react-tabs',
   '@tanstack/react-query',
-  FRAMER_MOTION,
+  MOTION,
   ZUSTAND,
 ]
 
@@ -54,7 +48,6 @@ const SERVER_EXTERNAL_PACKAGES = [
   '@opentelemetry/sdk-trace-node',
   '@opentelemetry/sdk-trace-base',
   '@langchain/core',
-  '@langchain/anthropic',
   '@langchain/openai',
   '@mastra/core',
   '@mastra/libsql',

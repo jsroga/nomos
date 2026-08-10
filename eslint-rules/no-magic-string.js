@@ -14,7 +14,13 @@ const TYPEOF_RESULTS = new Set([
   'symbol',
 ])
 
-const DIRECTIVE_LITERALS = new Set(['use client', 'use server'])
+const DIRECTIVE_LITERALS = new Set([
+  'use client',
+  'use server',
+  'use cache',
+  'use cache: private',
+  'use cache: remote',
+])
 
 const ALLOWED_FILE_PATTERNS = [
   /[/\\]Enums\.ts$/,
@@ -90,94 +96,82 @@ function isModuleScope(node) {
   return false
 }
 
-/**
- * @param {import('estree').Node} node
- * @param {import('eslint').Rule.RuleContext} context
- */
-function isNamedConstantDefinition(node, context) {
+/** @param {import('estree').Node} node */
+function isModuleImportSource(node) {
   const parent = node.parent
   if (!parent) return false
-
-  if (parent.type === 'TSEnumMember' && parent.initializer === node) {
-    return true
-  }
-
-  if (parent.type === 'TSLiteralType' && parent.literal === node) {
-    return true
-  }
-
-  if (parent.type === 'ImportDeclaration' && parent.source === node) {
-    return true
-  }
-
-  if (parent.type === 'ImportExpression' && parent.source === node) {
-    return true
-  }
-
-  if (parent.type === 'CallExpression' && parent.arguments[0] === node) {
-    if (parent.callee?.type === 'Identifier' && parent.callee.name === 'require') {
-      return true
-    }
-  }
-
+  if (parent.type === 'ImportDeclaration' && parent.source === node) return true
+  if (parent.type === 'ImportExpression' && parent.source === node) return true
   if (
     (parent.type === 'ExportNamedDeclaration' || parent.type === 'ExportAllDeclaration') &&
     parent.source === node
   ) {
     return true
   }
-
   if (parent.type === 'CallExpression' && parent.arguments[0] === node) {
-    const callee = parent.callee
-    if (
-      callee?.type === 'MemberExpression' &&
-      !callee.computed &&
-      callee.property?.type === 'Identifier' &&
-      (callee.property.name === 'literal' || callee.property.name === 'enum')
-    ) {
-      return true
-    }
-    if (callee?.type === 'Identifier' && callee.name === 'enum') {
-      return true
-    }
+    return parent.callee?.type === 'Identifier' && parent.callee.name === 'require'
   }
+  return false
+}
 
-  if (parent.type === 'VariableDeclarator' && parent.init === node && isModuleScope(parent)) {
-    const id = parent.id
-    if (id?.type === 'Identifier' && /^[A-Z][A-Z0-9_]*$/.test(id.name)) {
-      return true
-    }
-  }
-
-  if (parent.type === 'Property' && parent.key === node && !parent.computed) {
+/** @param {import('estree').Node} callee */
+function isZodEnumOrLiteralCallee(callee) {
+  if (
+    callee?.type === 'MemberExpression' &&
+    !callee.computed &&
+    callee.property?.type === 'Identifier' &&
+    (callee.property.name === 'literal' || callee.property.name === 'enum')
+  ) {
     return true
   }
+  return callee?.type === 'Identifier' && callee.name === 'enum'
+}
 
-  if (parent.type === 'TSPropertySignature' && parent.key === node && !parent.computed) {
-    return true
+/** @param {import('estree').Node} node */
+function isZodSchemaStringArg(node) {
+  const parent = node.parent
+  if (!parent) return false
+  if (parent.type === 'CallExpression' && parent.arguments[0] === node) {
+    return isZodEnumOrLiteralCallee(parent.callee)
   }
-
   if (parent.type === 'ArrayExpression') {
     const grand = parent.parent
     if (grand?.type === 'CallExpression') {
-      const callee = grand.callee
-      if (
-        callee?.type === 'MemberExpression' &&
-        !callee.computed &&
-        callee.property?.type === 'Identifier' &&
-        callee.property.name === 'enum'
-      ) {
-        return true
-      }
-      if (callee?.type === 'Identifier' && callee.name === 'enum') {
-        return true
-      }
+      return isZodEnumOrLiteralCallee(grand.callee)
     }
   }
+  return false
+}
 
-  if (parent.type === 'TemplateLiteral' && parent.quasis?.includes(node)) {
-    return false
-  }
+/** @param {import('estree').Node} node */
+function isScreamingConstInit(node) {
+  const parent = node.parent
+  if (!parent || parent.type !== 'VariableDeclarator' || parent.init !== node) return false
+  if (!isModuleScope(parent)) return false
+  const id = parent.id
+  return id?.type === 'Identifier' && /^[A-Z][A-Z0-9_]*$/.test(id.name)
+}
+
+/** @param {import('estree').Node} node */
+function isObjectOrTsKey(node) {
+  const parent = node.parent
+  if (!parent || parent.key !== node || parent.computed) return false
+  return parent.type === 'Property' || parent.type === 'TSPropertySignature'
+}
+
+/**
+ * @param {import('estree').Node} node
+ */
+function isNamedConstantDefinition(node) {
+  const parent = node.parent
+  if (!parent) return false
+
+  if (parent.type === 'TSEnumMember' && parent.initializer === node) return true
+  if (parent.type === 'TSLiteralType' && parent.literal === node) return true
+  if (isModuleImportSource(node)) return true
+  if (isZodSchemaStringArg(node)) return true
+  if (isScreamingConstInit(node)) return true
+  if (isObjectOrTsKey(node)) return true
 
   return false
 }
@@ -284,7 +278,7 @@ module.exports = {
     /** @param {import('estree').Literal} node */
     function checkLiteral(node) {
       if (shouldIgnoreLiteral(node)) return
-      if (isNamedConstantDefinition(node, context)) return
+      if (isNamedConstantDefinition(node)) return
       if (allowJsx && isInsideJsx(node)) return
 
       context.report({

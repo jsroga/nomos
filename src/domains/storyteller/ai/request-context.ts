@@ -17,12 +17,23 @@ export const STORYTELLER_PROJECT_ID = 'storyteller.projectId'
 export const STORYTELLER_EPISODE_ID = 'storyteller.episodeId'
 /** Bible panel that started this Writers Room turn — tools drop off-section writes. */
 export const STORYTELLER_BIBLE_SECTION = 'storyteller.bibleSection'
-/** The user's picker choice — consumed by the author's dynamic model resolver (phase D). */
+/**
+ * Writers Room composer picker (Kimi / GLM / Opus) — chat adapter only.
+ * Does not drive author / planner / critic / muse / premise orchestration.
+ */
+export const STORYTELLER_CHAT_MODEL = 'storyteller.chatModel'
+/**
+ * Optional per-request author override for beat-draft / GRRM paths.
+ * Not set by the Writers Room chat picker.
+ */
 export const STORYTELLER_AUTHOR_MODEL = 'storyteller.authorModel'
 
 export interface StorytellerRequestContextInput {
   projectId?: string | null
   episodeId?: string | null
+  /** Picker choice for the chat adapter. */
+  chatModel?: string | null
+  /** Explicit author override (orchestration), not the chat picker. */
   authorModel?: string | null
   bibleSection?: string | null
 }
@@ -34,6 +45,7 @@ export function buildStorytellerRequestContext(
   const ctx = new RequestContext()
   if (input.projectId) ctx.set(STORYTELLER_PROJECT_ID, input.projectId)
   if (input.episodeId) ctx.set(STORYTELLER_EPISODE_ID, input.episodeId)
+  if (input.chatModel) ctx.set(STORYTELLER_CHAT_MODEL, input.chatModel)
   if (input.authorModel) ctx.set(STORYTELLER_AUTHOR_MODEL, input.authorModel)
   if (input.bibleSection) ctx.set(STORYTELLER_BIBLE_SECTION, input.bibleSection)
   return ctx

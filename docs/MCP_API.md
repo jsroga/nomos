@@ -158,6 +158,7 @@ Read-only data access via MCP resources.
 1.  **Service**: Create `src/services/<domain>.service.ts`.
 2.  **Schema**: Define Zod schemas for inputs.
 3.  **Use**: Call the service from both MCP tools and Next.js API routes.
+4.  **Public REST docs**: register the same Zod in `src/shared/openapi/` or `domains/*/core/io/openapi-routes.ts`, then `npm run openapi:generate` (Scalar: `/api-docs`).
 
 ### Integrations
 

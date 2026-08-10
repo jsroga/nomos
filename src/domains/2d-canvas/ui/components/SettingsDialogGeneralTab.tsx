@@ -71,16 +71,15 @@ export const SettingsDialogGeneralTab: React.FC<SettingsDialogGeneralTabProps> =
               <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
                 Image Generation
               </h5>
-              <ConnectionDot connected={providers.legnext} label="LegNext / Midjourney" />
-              <ConnectionDot connected={providers.google} label="Gemini Imagen" />
+              <ConnectionDot connected={providers.apiframe} label="Apiframe (tiles, posters, moodboard)" />
             </div>
 
             <div className="space-y-2">
               <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
-                Upscaling
+                Upscaling & edit
               </h5>
-              <ConnectionDot connected={providers.stability} label="Stability AI" />
-              <ConnectionDot connected={providers.replicate} label="Replicate" />
+              <ConnectionDot connected={providers.apiframe} label="Apiframe (Topaz / Clarity / Flux Fill)" />
+              <ConnectionDot connected={providers.apiframe} label="Midjourney upsample" />
             </div>
 
             <div className="space-y-2">
@@ -98,13 +97,6 @@ export const SettingsDialogGeneralTab: React.FC<SettingsDialogGeneralTabProps> =
               <ConnectionDot connected={providers.fal} label="Fal.ai" />
               <ConnectionDot connected={providers.voyage} label="Voyage AI" />
             </div>
-
-            <div className="space-y-2">
-              <h5 className="text-xs font-medium font-mono text-muted-foreground uppercase tracking-wider">
-                Observability
-              </h5>
-              <ConnectionDot connected={providers.langsmith} label="LangSmith" />
-            </div>
           </div>
         ) : (
           <div className="text-xs text-muted-foreground py-4 text-center">
@@ -118,13 +110,14 @@ export const SettingsDialogGeneralTab: React.FC<SettingsDialogGeneralTabProps> =
       <h3 className="text-lg font-medium mb-4">Generation</h3>
       <div className="p-4 rounded-lg bg-zinc-900/20 border border-zinc-900 space-y-2">
         <p className="text-xs text-muted-foreground">
-          First tile picks <span className="text-zinc-300 font-mono">grok</span> (OpenRouter), then{' '}
-          <span className="text-zinc-300 font-mono">gemini</span>, with{' '}
-          <span className="text-zinc-300 font-mono">midjourney</span> as last resort. Follow-up tiles
-          use <span className="text-zinc-300 font-mono">FOLLOW_UP_IMAGE_PROVIDER</span> (
-          <span className="text-zinc-300 font-mono">grok</span>,{' '}
-          <span className="text-zinc-300 font-mono">nano-banana</span>, or{' '}
-          <span className="text-zinc-300 font-mono">legnext-upload-paint</span>).
+          Pixel paths use <span className="text-zinc-300 font-mono">APIFRAME_API_KEY</span>. Per-surface
+          models: <span className="text-zinc-300 font-mono">IMAGE_TILE_FIRST_MODEL</span>,{' '}
+          <span className="text-zinc-300 font-mono">IMAGE_TILE_FOLLOW_UP_MODEL</span>,{' '}
+          <span className="text-zinc-300 font-mono">IMAGE_UPSCALE_MODEL</span>,{' '}
+          <span className="text-zinc-300 font-mono">IMAGE_MOODBOARD_MODEL</span>,{' '}
+          <span className="text-zinc-300 font-mono">IMAGE_STORYBOARD_MODEL</span>,{' '}
+          <span className="text-zinc-300 font-mono">IMAGE_FIDELITY_MODEL</span> (see{' '}
+          <span className="text-zinc-300 font-mono">.env.local.example</span>).
         </p>
       </div>
     </div>

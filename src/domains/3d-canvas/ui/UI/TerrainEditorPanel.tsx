@@ -32,6 +32,7 @@ import {
   TERRAIN_QUALITY_LABELS,
   TerrainBrushKind,
 } from '@/domains/3d-canvas/constants/terrain-editor-panel'
+import { RenderQualityControls } from '@/domains/3d-canvas/ui/UI/RenderQualityControls'
 
 // Brush type icon component
 const BrushIcon: React.FC<{ type: TerrainBrushType; size?: number }> = ({
@@ -66,6 +67,8 @@ export const TerrainEditorPanel: React.FC = () => {
   const setWaterOpacity = useInteriorStore(state => state.setWaterOpacity)
   const setSunAngle = useInteriorStore(state => state.setSunAngle)
   const initializeHeightmap = useInteriorStore(state => state.initializeHeightmap)
+  const renderQuality = useInteriorStore(state => state.renderQuality)
+  const setRenderQuality = useInteriorStore(state => state.setRenderQuality)
 
   // Brush Settings
   const terrainBrush = useInteriorStore(state => state.terrainBrush)
@@ -339,6 +342,11 @@ export const TerrainEditorPanel: React.FC = () => {
 
         {showAdvanced && (
           <div className="mt-4 p-5 rounded-3xl border border-white/5 bg-white/2 space-y-6 animate-in fade-in slide-in-from-top-2 duration-300 shadow-xl shadow-black/20">
+            <RenderQualityControls
+              renderQuality={renderQuality}
+              setRenderQuality={setRenderQuality}
+            />
+
             <div className="space-y-2">
               <SidebarLabel className="text-zinc-500 font-bold tracking-tighter text-[10px] uppercase opacity-70">
                 Atmospheric Sun Angle

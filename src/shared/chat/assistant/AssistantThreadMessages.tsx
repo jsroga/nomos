@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
   Anchor,
+  Check,
   Copy,
   Droplets,
   MapPin,
@@ -114,9 +115,36 @@ const USER_PART_COMPONENTS = {
   Text: UserPlainText,
 }
 
+function assistantPlainText(
+  content: ReadonlyArray<{ type: string; text?: string }>,
+): string {
+  return content
+    .filter(part => part.type === ChatPartType.Text && typeof part.text === 'string')
+    .map(part => part.text ?? '')
+    .join('\n')
+    .trim()
+}
+
 function AddToWorldButton() {
   const messageRuntime = useMessageRuntime()
   const onAddToWorld = useAssistantAddToWorld()
+  const fallbackText = useMessage(m => assistantPlainText(m.content))
+  const [added, setAdded] = useState(false)
+
+  if (added) {
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="ml-0.5 h-6 gap-1 text-xs border-primary/50 text-primary"
+        disabled
+      >
+        <Check size={12} aria-hidden />
+        {ASSISTANT_THREAD_COPY.AddedToWorld}
+      </Button>
+    )
+  }
 
   return (
     <Button
@@ -124,12 +152,14 @@ function AddToWorldButton() {
       size="sm"
       variant="outline"
       className="ml-0.5 h-6 gap-1 text-xs border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground"
+      disabled={!onAddToWorld}
       onClick={() => {
-        const text = messageRuntime.unstable_getCopyText().trim()
+        if (!onAddToWorld) return
+        const text =
+          messageRuntime.unstable_getCopyText().trim() || fallbackText
         if (!text) return
-        // The host decides what the message means; rewriting it here destroyed
-        // everything the answer carried (urls, structure) before it arrived.
-        onAddToWorld?.(text)
+        onAddToWorld(text)
+        setAdded(true)
       }}
     >
       <Plus size={12} aria-hidden />

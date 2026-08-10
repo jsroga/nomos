@@ -10,16 +10,38 @@ import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { openRouterClientConfig } from '@/shared/agent-kernel/models'
-import { StorytellerMoodboardProvider } from '@/domains/storyteller/core/storyteller-page-wire'
 import {
   buildMoodboardProjectContext,
   generateMoodboardPrompts,
 } from '../_lib/moodboard-trigger-prompts'
+import {
+  imageGenerateModelToImageGenProvider,
+  readApiframeApiKey,
+  resolveMoodboardModel,
+} from '@/shared/ai/image-model-env'
 
 function getOpenRouterClient() {
   const { apiKey, baseURL } = openRouterClientConfig()
   if (!apiKey) return null
   return new OpenAI({ apiKey, baseURL })
+}
+
+function resolveMoodboardProviderConfig(
+  providerConfig: Record<string, unknown> | undefined,
+  styleReferenceUrls: string[],
+) {
+  const moodboardModel = resolveMoodboardModel()
+  const apiKey =
+    (typeof providerConfig?.apiKey === 'string' ? providerConfig.apiKey : undefined) ||
+    readApiframeApiKey()
+  return {
+    ...providerConfig,
+    styleReferenceUrls,
+    provider:
+      providerConfig?.provider ?? imageGenerateModelToImageGenProvider(moodboardModel),
+    modelId: providerConfig?.modelId ?? moodboardModel,
+    apiKey,
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -66,17 +88,15 @@ export async function POST(req: NextRequest) {
     })
 
     const prompts = await generateMoodboardPrompts(openai, context, promptIndex)
-
-    const resolvedProviderConfig = {
-      ...providerConfig,
+    const resolvedProviderConfig = resolveMoodboardProviderConfig(
+      providerConfig,
       styleReferenceUrls,
-    }
-    if (
-      resolvedProviderConfig.provider === StorytellerMoodboardProvider.Midjourney &&
-      !resolvedProviderConfig.apiKey &&
-      process.env.LEGNEXT_API_KEY
-    ) {
-      resolvedProviderConfig.apiKey = process.env.LEGNEXT_API_KEY
+    )
+    if (!resolvedProviderConfig.apiKey) {
+      return NextResponse.json(
+        { error: API_ERROR.APIFRAME_API_KEY_NOT_PROVIDED },
+        { status: 500 },
+      )
     }
 
     const handle = await tasks.trigger(TRIGGER_TASK_ID.GENERATE_MOODBOARD, {

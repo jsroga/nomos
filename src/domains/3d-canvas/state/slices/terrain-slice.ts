@@ -22,6 +22,10 @@ import {
   createDefaultTerrainSettings,
 } from '../interior-store-constants'
 import { stampHeightmapBrush } from '../utils/update-heightmap-brush'
+import {
+  shouldBumpHeightmapVersion,
+  shouldFlushHeightmapVersion,
+} from '@/domains/3d-canvas/core/heightmap-version-throttle'
 
 export type TerrainSlice = Pick<
   InteriorState,
@@ -48,6 +52,7 @@ export type TerrainSlice = Pick<
   | 'setSunAngle'
   | 'initializeHeightmap'
   | 'updateHeightmapAt'
+  | 'flushHeightmapVersion'
   | 'autoFillWaterBelowLevel'
   | 'paintMaterialAt'
   | 'resetTerrain'
@@ -202,12 +207,25 @@ export const createTerrainSlice: StateCreator<InteriorState, [], [], TerrainSlic
       fidelity: state.terrainBrush.fidelity,
     })
 
+    const bumpVersion = shouldBumpHeightmapVersion()
+    set(current => ({
+      terrainSettings: bumpVersion
+        ? {
+            ...current.terrainSettings,
+            heightmapVersion: current.terrainSettings.heightmapVersion + 1,
+          }
+        : current.terrainSettings,
+      hasUnsavedChanges: true,
+    }))
+  },
+
+  flushHeightmapVersion: () => {
+    if (!shouldFlushHeightmapVersion()) return
     set(state => ({
       terrainSettings: {
         ...state.terrainSettings,
         heightmapVersion: state.terrainSettings.heightmapVersion + 1,
       },
-      hasUnsavedChanges: true,
     }))
   },
 

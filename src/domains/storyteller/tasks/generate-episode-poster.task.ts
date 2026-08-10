@@ -3,15 +3,10 @@ import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import {
-  BufferEncoding,
-  ContentType,
-  FsDirectory,
-  GoogleModelId,
-  HttpMethod,
-} from '@/shared/data/constants/protocol'
-import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
+import { BufferEncoding, FsDirectory } from '@/shared/data/constants/protocol'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
+import { resolveEpisodePosterModel } from '@/shared/ai/image-model-env'
 
 interface GenerateEpisodePosterPayload {
   episodeId: string
@@ -29,7 +24,7 @@ export const generateEpisodePoster = task({
   maxDuration: 300,
   run: async (payload: GenerateEpisodePosterPayload) => {
     const { episodeId, projectId, prompt, providerConfig } = payload
-    const { apiKey, modelId: _modelId } = providerConfig
+    const { apiKey, modelId = resolveEpisodePosterModel() } = providerConfig
 
     logger.info(`Starting episode poster generation for episode ${episodeId}`, { prompt })
 
@@ -38,61 +33,17 @@ export const generateEpisodePoster = task({
     await metadata.set('progress', 0)
 
     try {
-      // 1. Generate Image (Gemini / Nano Banana)
       await metadata.set('stage', 'generating_image')
-      const targetModel = GoogleModelId.Gemini3ProImagePreview
-
-      // Enhance prompt for Poster style
-      // "Movie poster style, cinematic composition, title card, dramatic lighting, high resolution."
       const enhancedPrompt = `${prompt}. Movie poster style, cinematic composition, dramatic lighting, high resolution, highly detailed, vertical aspect ratio.`
 
-      logger.info('Generating with Nano Banana (Gemini)', { model: targetModel })
+      logger.info('Generating episode poster via Apiframe Nano Banana')
+      const imageBase64 = await generateNanoBananaBase64({
+        prompt: enhancedPrompt,
+        apiKey,
+        modelId,
+        aspectRatio: '2:3',
+      })
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`,
-        {
-          method: HttpMethod.Post,
-          headers: { 'Content-Type': ContentType.Json },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [{ text: enhancedPrompt }],
-              },
-            ],
-            generationConfig: {
-              responseModalities: [GeminiResponseModality.Text, GeminiResponseModality.Image],
-            },
-          }),
-        }
-      )
-
-      if (!response.ok) {
-        const errText = await response.text()
-        logger.error('Gemini API Error', { error: errText })
-        throw new Error(`Gemini API Error: ${errText}`)
-      }
-
-      const data = await response.json()
-      let imageBase64: string | null = null
-
-      if (data.candidates?.[0]?.content?.parts) {
-        for (const part of data.candidates[0].content.parts) {
-          if (part.inline_data?.data) {
-            imageBase64 = part.inline_data.data
-            break
-          }
-          if (part.inlineData?.data) {
-            imageBase64 = part.inlineData.data
-            break
-          }
-        }
-      }
-
-      if (!imageBase64) {
-        throw new Error('No image data returned from Gemini API')
-      }
-
-      // 2. Save to Disk
       await metadata.set('stage', 'saving_image')
       await metadata.set('progress', 50)
 
@@ -108,16 +59,16 @@ export const generateEpisodePoster = task({
         fs.mkdirSync(projectDir, { recursive: true })
       }
 
-      const buffer = Buffer.from(imageBase64, BufferEncoding.Base64)
-      fs.writeFileSync(path.join(projectDir, filename), buffer)
+      fs.writeFileSync(
+        path.join(projectDir, filename),
+        Buffer.from(imageBase64, BufferEncoding.Base64),
+      )
       logger.info('Image saved to disk', { filename })
 
-      // 3. Update Database
       await metadata.set('stage', 'updating_database')
       await metadata.set('progress', 80)
 
       const supabase = createSupabaseServiceClient()
-
       const { error } = await supabase
         .from('episodes')
         .update({

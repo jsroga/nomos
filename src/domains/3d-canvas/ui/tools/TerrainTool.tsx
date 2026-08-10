@@ -14,7 +14,11 @@ export const TerrainTool: React.FC = () => {
   const terrainBrush = useInteriorStore(state => state.terrainBrush)
   const setTerrainBrushPosition = useInteriorStore(state => state.setTerrainBrushPosition)
   const updateHeightmapAt = useInteriorStore(state => state.updateHeightmapAt)
-  const terrainSettings = useInteriorStore(state => state.terrainSettings)
+  const flushHeightmapVersion = useInteriorStore(state => state.flushHeightmapVersion)
+  const setInteractionActive = useInteriorStore(state => state.setInteractionActive)
+  const baseGroundHeight = useInteriorStore(state => state.terrainSettings.baseGroundHeight)
+  const showWaterPlane = useInteriorStore(state => state.terrainSettings.showWaterPlane)
+  const waterSurfaceHeight = useInteriorStore(state => state.terrainSettings.waterSurfaceHeight)
 
   const { raycaster, pointer, camera, scene } = useThree()
 
@@ -57,7 +61,7 @@ export const TerrainTool: React.FC = () => {
     }
 
     // Fallback to ground plane at base height
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -terrainSettings.baseGroundHeight)
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -baseGroundHeight)
     const target = new THREE.Vector3()
     if (raycaster.ray.intersectPlane(plane, target)) {
       // Clamp to terrain bounds
@@ -67,7 +71,7 @@ export const TerrainTool: React.FC = () => {
     }
 
     return null
-  }, [raycaster, pointer, camera, findTerrainMesh, terrainSettings.baseGroundHeight])
+  }, [raycaster, pointer, camera, findTerrainMesh, baseGroundHeight])
 
   // Handle continuous painting
   const doPaint = useCallback(
@@ -116,29 +120,34 @@ export const TerrainTool: React.FC = () => {
 
       const point = getIntersection()
       if (point) {
+        setInteractionActive(true)
         setIsPainting(true)
         doPaint(point)
       }
     },
-    [getIntersection, doPaint]
+    [getIntersection, doPaint, setInteractionActive]
   )
 
   const handlePointerUp = useCallback(() => {
     setIsPainting(false)
     lastPaintPosition.current = null
-  }, [])
+    flushHeightmapVersion()
+    setInteractionActive(false)
+  }, [flushHeightmapVersion, setInteractionActive])
 
   const handlePointerLeave = useCallback(() => {
     setTerrainBrushPosition(null)
     setIsPainting(false)
     lastPaintPosition.current = null
-  }, [setTerrainBrushPosition])
+    flushHeightmapVersion()
+    setInteractionActive(false)
+  }, [setTerrainBrushPosition, flushHeightmapVersion, setInteractionActive])
 
   return (
     <>
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, terrainSettings.baseGroundHeight - 0.01, 0]}
+        position={[0, baseGroundHeight - 0.01, 0]}
         visible={false}
         onPointerMove={handlePointerMove}
         onPointerDown={handlePointerDown}
@@ -171,8 +180,8 @@ export const TerrainTool: React.FC = () => {
       )}
 
       {/* Water Level Reference Plane (Visual aid when editing height) */}
-      {!terrainSettings.showWaterPlane && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, terrainSettings.waterSurfaceHeight, 0]}>
+      {!showWaterPlane && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, waterSurfaceHeight, 0]}>
           <planeGeometry args={[TERRAIN_SIZE, TERRAIN_SIZE]} />
           <meshBasicMaterial color="#06b6d4" transparent opacity={0.05} side={THREE.DoubleSide} />
         </mesh>

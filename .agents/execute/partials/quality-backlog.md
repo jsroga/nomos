@@ -48,7 +48,7 @@ npm run qualitygate:backlog -- done 3
 1. `npm run qualitygate:backlog` — read **Next up** (top unchecked item).
 2. Fix **only that item** (one file / one rule cluster).
 3. `npm run qualitygate:backlog -- done <id>` — mark fixed in backlog.
-4. Optional: `npm run qualitygate:tracker -- --file <path>` — update `SRC-QUALITY-TRACKER.md` row (~5s).
+4. Optional: `npm run qualitygate:tracker -- --file <path>` — update `.local/SRC-QUALITY-TRACKER.md` row (~5s).
 5. After **5** `done` marks (or 5 completed todos): `npm run qualitygate:capture` — refresh cache.
 6. Repeat until backlog empty for **your scope**, then `npm run qualitygate:file -- <touched>`.
 

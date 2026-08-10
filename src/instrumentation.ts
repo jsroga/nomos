@@ -13,6 +13,8 @@ const sentryOptions = {
   tracesSampleRate: 1,
   enableLogs: true,
   sendDefaultPii: true,
+  // @vercel/otel owns the tracer provider below — avoid dual OTel SDK init.
+  skipOpenTelemetrySetup: true,
 } satisfies Sentry.NodeOptions
 
 export async function register() {
@@ -57,6 +59,8 @@ export async function register() {
   // NOTE: the admin model-settings cache is NOT warmed here — importing it pulls
   // `pg` into the Edge instrumentation bundle (it uses Node's `util/types`). It
   // self-warms lazily in Node on the first resolver call (see model-settings.ts).
+  // Do NOT import Mastra/domain runtimes here — Next also bundles this file for
+  // Edge Instrumentation and Node-only modules (fs/path) fail the edge compile.
 }
 
 export const onRequestError = Sentry.captureRequestError

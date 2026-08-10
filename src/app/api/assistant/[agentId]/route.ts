@@ -163,24 +163,24 @@ function buildRequestContext(agentId: string, body: AssistantChatBody): RequestC
   if (agentId !== StorytellerAgentId.Storyteller) return undefined
 
   const rawModel = body[AssistantChatBodyKey.ModelName]
-  const authorModel =
+  const chatModel =
     typeof rawModel === 'string' && rawModel.trim()
       ? resolveChatModelId(rawModel)
       : undefined
 
-  if (authorModel && !isKnownChatModel(authorModel)) {
+  if (chatModel && !isKnownChatModel(chatModel)) {
     return undefined
   }
 
   const projectId = body[AssistantChatBodyKey.ProjectId]
   const episodeId = body[AssistantChatBodyKey.EpisodeId]
   const bibleSection = body[AssistantChatBodyKey.BibleSection]
-  if (!projectId && !episodeId && !authorModel && !bibleSection) return undefined
+  if (!projectId && !episodeId && !chatModel && !bibleSection) return undefined
 
   return buildStorytellerRequestContext({
     projectId,
     episodeId,
-    authorModel,
+    chatModel,
     bibleSection,
   })
 }

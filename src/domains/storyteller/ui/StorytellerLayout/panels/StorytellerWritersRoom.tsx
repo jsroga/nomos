@@ -1,20 +1,18 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { DomainSidebar } from '@/components/DomainSidebar'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
 import type { AssistantGenerationActivity } from '@/shared/chat/assistant/derive-assistant-generation-activity'
-import { AssistantGenerationPhase } from '@/shared/chat/assistant/derive-assistant-generation-activity'
 import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
 import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { resolveWritersRoomSuggestions, writersRoomCharacterCount } from '@/domains/storyteller/config/resolve-writers-room-suggestions'
 import {
   applyUpdatesToStoryPlan,
-  findSectionConfigByFields,
-  processToolResultToAction,
 } from '@/domains/storyteller/config/action-config'
 import { useStorytellerChatModel } from '@/domains/storyteller/state/hooks/useStorytellerChatModel'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
@@ -24,6 +22,8 @@ import {
   type ProposedBibleSectionUpdate,
 } from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
 import { resolveAddToWorldTarget } from '@/domains/storyteller/state/utils/resolve-add-to-world-target'
+import { parseCreatedEpisodeFromToolCall } from '@/domains/storyteller/state/utils/parse-created-episode-from-tool'
+import { storytellerKeys } from '@/domains/storyteller/core/io/storyteller.keys'
 import { getStorytellerMentionProviders } from '@/domains/storyteller/ui/MentionsProvider/providers'
 import { buildStorytellerProjectContext } from '@/domains/storyteller/ui/MentionsProvider/build-storyteller-project-context'
 import { getGameEntityProvider } from '@/shared/chat/core/mentions/game-entity-provider'
@@ -34,98 +34,17 @@ import {
 } from '@/shared/data/json-guards'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
-import { BibleSection } from '@/domains/storyteller/core/types/enums'
-import { UPDATE_WORLD_BIBLE_TOOL_ID } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import {
   WritersRoomToast,
   WritersRoomConfirm,
   writersRoomExtraDescription,
 } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
-
-function omitSectionKey<V>(
-  current: Record<string, V>,
-  section: string,
-): Record<string, V> {
-  const next: Record<string, V> = {}
-  for (const key of Object.keys(current)) {
-    if (key === section) continue
-    const value = current[key]
-    if (value !== undefined) next[key] = value
-  }
-  return next
-}
-
-function previewAlreadyInPlan(
-  preview: Record<string, unknown>,
-  plan: Record<string, unknown>,
-): boolean {
-  for (const key of Object.keys(preview)) {
-    if (JSON.stringify(plan[key]) !== JSON.stringify(preview[key])) return false
-  }
-  return Object.keys(preview).length > 0
-}
-
-function proposalsFromExtraFields(
-  extraFields: Record<string, unknown>,
-  episodeId?: string | null,
-): ProposedBibleSectionUpdate[] {
-  const proposals: ProposedBibleSectionUpdate[] = []
-  const keys = Object.keys(extraFields)
-  const claimed = new Set<string>()
-
-  while (claimed.size < keys.length) {
-    const remaining = keys.filter(key => !claimed.has(key))
-    if (remaining.length === 0) break
-    const config = findSectionConfigByFields(remaining)
-    if (!config || config.section === BibleSection.FULL) break
-
-    const sectionPreview: Record<string, unknown> = {}
-    for (const name of config.fieldNames) {
-      if (extraFields[name] !== undefined) {
-        sectionPreview[name] = extraFields[name]
-        claimed.add(name)
-      }
-    }
-    if (Object.keys(sectionPreview).length === 0) break
-
-    const processed = processToolResultToAction(
-      UPDATE_WORLD_BIBLE_TOOL_ID,
-      sectionPreview,
-      episodeId,
-    )
-    if (!processed?.actionType) break
-
-    const contentPreview = JSON.stringify(sectionPreview).slice(0, 120)
-    proposals.push({
-      section: config.section,
-      action: {
-        type: processed.actionType,
-        payload: processed.payload,
-        status: ApprovalActionStatus.PENDING,
-        id: `assistant-bible-extra-${config.section}-${Date.now()}`,
-      },
-      preview: sectionPreview,
-      dedupeKey: `${UPDATE_WORLD_BIBLE_TOOL_ID}:${config.section}:${contentPreview}`,
-    })
-  }
-
-  return proposals
-}
-
-function mapAssistantPhase(phase: AssistantGenerationPhase): GenerationActivityPhase {
-  switch (phase) {
-    case AssistantGenerationPhase.Idle:
-      return GenerationActivityPhase.Idle
-    case AssistantGenerationPhase.Submitted:
-      return GenerationActivityPhase.Submitted
-    case AssistantGenerationPhase.Streaming:
-      return GenerationActivityPhase.Streaming
-    case AssistantGenerationPhase.Tool:
-      return GenerationActivityPhase.Tool
-    case AssistantGenerationPhase.Error:
-      return GenerationActivityPhase.Error
-  }
-}
+import {
+  mapAssistantPhase,
+  omitSectionKey,
+  previewAlreadyInPlan,
+  proposalsFromExtraFields,
+} from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-tool-helpers'
 
 /**
  * Writers Room chat — on assistant-ui (roadmap B4). Streams the registered
@@ -141,13 +60,16 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
     hasBible,
     hasEpisodes,
     currentEpisodeId,
+    selectEpisode,
     setLoadingSections,
     setStoryPlan,
+    sectionPendingActions,
     setSectionPendingActions,
     executeAction,
   } = props.core
 
   const projectId = routeProjectId ?? ''
+  const queryClient = useQueryClient()
   const { modelId, setModelId, options: chatModelOptions } = useStorytellerChatModel()
   const pendingChatPrompt = useStorytellerUiStore(state => state.pendingChatPrompt)
   const clearPendingChatPrompt = useStorytellerUiStore(state => state.clearPendingChatPrompt)
@@ -286,8 +208,12 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
       const trimmed = text.trim()
       if (!trimmed) return
       const target = resolveAddToWorldTarget(trimmed, answeredSectionRef.current)
-      if (!target) {
-        toast.info(WritersRoomToast.NothingToAdd)
+
+      // Pending Review Accept — reuse that handler, do not invent a second path.
+      const pending = sectionPendingActions[target.section]
+      if (pending) {
+        pending.onAccept()
+        toast.success(WritersRoomToast.AddedToWorld)
         return
       }
 
@@ -304,10 +230,9 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
       }
       proposedKeysRef.current.add(dedupeKey)
 
-      // Same path as Accept: commit immediately — no pending-review blur.
+      // Same body as Accept when there is no pending proposal yet.
       setStoryPlan(prev => applyUpdatesToStoryPlan(prev, target.preview))
       setLoadingSections(prev => omitSectionKey(prev, target.section))
-      setSectionPendingActions(current => omitSectionKey(current, target.section))
       void executeAction({
         type: target.actionType,
         payload: target.preview,
@@ -316,13 +241,30 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
       })
       toast.success(WritersRoomToast.AddedToWorld)
     },
-    [executeAction, setLoadingSections, setSectionPendingActions, setStoryPlan]
+    [
+      executeAction,
+      sectionPendingActions,
+      setLoadingSections,
+      setStoryPlan,
+    ]
   )
 
   const handleCompletedToolCalls = useCallback(
     (calls: readonly AssistantCompletedToolCall[]) => {
       void (async () => {
         for (const call of calls) {
+          const created = parseCreatedEpisodeFromToolCall(call)
+          if (created) {
+            await queryClient.invalidateQueries({
+              queryKey: storytellerKeys.episodes(projectId),
+            })
+            selectEpisode(created.episodeId)
+            toast.success(
+              `${WritersRoomToast.EpisodeCreated}: ${created.title}`
+            )
+            continue
+          }
+
           const proposal = proposeAssistantBibleUpdate(
             call,
             currentEpisodeId,
@@ -351,7 +293,14 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
         }
       })()
     },
-    [applyBibleProposal, confirm, currentEpisodeId]
+    [
+      applyBibleProposal,
+      confirm,
+      currentEpisodeId,
+      projectId,
+      queryClient,
+      selectEpisode,
+    ]
   )
 
   const handleGenerationActivity = useCallback(

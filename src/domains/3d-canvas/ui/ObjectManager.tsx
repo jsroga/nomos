@@ -5,8 +5,7 @@ import React, { useEffect, useMemo } from 'react'
 import { ApiRoutePath } from '@/shared/data/constants/protocol'
 import { MODEL_ERROR_LOG } from '@/domains/3d-canvas/constants/object-manager-messages'
 import { useInteriorStore, SceneObject } from '@/domains/3d-canvas'
-import { Box, useGLTF, Html } from '@react-three/drei'
-import { Loader2 } from 'lucide-react'
+import { Box, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { ObjectRendererContent } from './ObjectRendererContent'
 import {
@@ -23,19 +22,13 @@ const getProxiedUrl = (url: string): string => {
   return url
 }
 
-// Loading placeholder component
+// Loading placeholder — mesh-only (avoid Html portal per instance)
 const LoadingPlaceholder: React.FC = () => {
   return (
     <group>
       <Box args={[1, 1, 1]}>
         <meshStandardMaterial color="#4f46e5" wireframe opacity={0.5} transparent />
       </Box>
-      <Html center>
-        <div className="flex flex-col items-center gap-1 bg-black/80 px-2 py-1 rounded text-white">
-          <Loader2 className="animate-spin" size={16} />
-          <span className="text-[10px]">Loading...</span>
-        </div>
-      </Html>
     </group>
   )
 }
@@ -95,7 +88,6 @@ const GLBModel: React.FC<{
     return { clonedScene: clone, naturalSize: size }
   }, [scene])
 
-  // Notify parent of natural dimensions AFTER render (avoids state update during render)
   useEffect(() => {
     if (onDimensionsCalculated && naturalSize) {
       onDimensionsCalculated(naturalSize)

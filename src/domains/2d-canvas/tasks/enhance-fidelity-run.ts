@@ -1,6 +1,7 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
 import { FIDELITY_PROMPTS, getCreativityPrompt } from '@/shared/data/server/prompts'
+import { REPAINT_STYLE_REF_PREFIX } from '@/shared/data/constants/repaint-gemini'
 import {
   logLLMRequestStart,
   logLLMRequestError,
@@ -9,16 +10,13 @@ import {
   BufferEncoding,
   BlobAccess,
   ContentType,
-  GoogleModelId,
-  HttpMethod,
+  StringSeparator,
+  UrlScheme,
 } from '@/shared/data/constants/protocol'
-import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import {
-  parseGeminiResponse,
-  readGeminiImageData,
-} from './constants/generate-tile-json-guards'
-import { extractGeminiImageData } from './constants/generate-tile-gemini-response'
+import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
+import { resolveFidelityModel } from '@/shared/ai/image-model-env'
+import { storageService } from '@/shared/data/storage/storage-service'
 import { createSupabaseServiceClient } from './constants/generate-tile-persist'
 
 export interface EnhanceFidelityPayload {
@@ -27,11 +25,16 @@ export interface EnhanceFidelityPayload {
   imageBase64: string
   stylePrompt: string
   creativity: number
-  geminiConfig: {
+  apiframeConfig: {
     apiKey: string
     model?: string
   }
   styleReferenceUrls?: string[]
+}
+
+function toDataUrl(base64: string): string {
+  if (base64.startsWith(UrlScheme.Data)) return base64
+  return `${UrlScheme.Data}${ContentType.Png};${BufferEncoding.Base64},${base64}`
 }
 
 export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
@@ -41,7 +44,7 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
     imageBase64,
     stylePrompt,
     creativity,
-    geminiConfig,
+    apiframeConfig,
     styleReferenceUrls,
   } = payload
 
@@ -54,88 +57,61 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
   await metadata.set('stage', 'enhancing')
   await metadata.set('progress', 30)
 
-  const model = geminiConfig.model || GoogleModelId.Gemini3ProImagePreview
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiConfig.apiKey}`
-
   const styleRefHint = styleReferenceUrls?.length
-    ? ` Use these style references for visual guidance: ${styleReferenceUrls.join(', ')}.`
+    ? `${REPAINT_STYLE_REF_PREFIX}${styleReferenceUrls.join(StringSeparator.CommaSpace)}.`
     : ''
 
   const creativityPrompt = getCreativityPrompt(creativity || 0.3)
   const finalPrompt = FIDELITY_PROMPTS.GEMINI(stylePrompt, creativityPrompt, styleRefHint)
+  const model = apiframeConfig.model || resolveFidelityModel()
 
-  const geminiPayload = {
-    contents: [
-      {
-        parts: [
-          { text: finalPrompt },
-          {
-            inline_data: {
-              mime_type: ContentType.Png,
-              data: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
-            },
-          },
-        ],
-      },
-    ],
-    generationConfig: {
-      responseModalities: [GeminiResponseModality.Text, GeminiResponseModality.Image],
-    },
+  const { v4: uuidv4 } = await import('uuid')
+  const publicImageUrl = await storageService.uploadPublicImage(
+    `fidelity_input_${uuidv4()}.png`,
+    toDataUrl(imageBase64),
+  )
+  if (!publicImageUrl) {
+    throw new Error('Failed to upload image for fidelity enhancement')
   }
 
-  logger.info('Calling Gemini API for fidelity enhancement', {
+  logger.info('Calling Apiframe Nano Banana for fidelity enhancement', {
     model,
     promptLength: finalPrompt.length,
   })
 
   logLLMRequestStart({
-    provider: ImageGenProvider.Gemini,
+    provider: ImageGenProvider.Apiframe,
     model,
     prompt: finalPrompt,
-    inputImageUrls: ['[Input Image Base64]'],
-    input: geminiPayload,
+    inputImageUrls: [publicImageUrl],
+    input: { model, prompt: finalPrompt, image_input: [publicImageUrl] },
     metadata: {
       task: 'fidelity-enhancement',
       creativity,
     },
   })
 
-  const response = await fetch(url, {
-    method: HttpMethod.Post,
-    headers: { 'Content-Type': ContentType.Json },
-    body: JSON.stringify(geminiPayload),
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    logger.error('Gemini API error', { status: response.status, errorText })
+  let enhancedImageBase64: string
+  try {
+    enhancedImageBase64 = await generateNanoBananaBase64({
+      prompt: finalPrompt,
+      apiKey: apiframeConfig.apiKey,
+      modelId: model,
+      imageInputUrls: [publicImageUrl],
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
     logLLMRequestError({
-      provider: ImageGenProvider.Gemini,
+      provider: ImageGenProvider.Apiframe,
       model,
       prompt: finalPrompt,
-      error: `HTTP ${response.status}: ${errorText}`,
-      input: geminiPayload,
+      error: message,
+      input: { model, prompt: finalPrompt, image_input: [publicImageUrl] },
     })
-    throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
+    throw error
   }
 
-  const data = await response.json()
-  const geminiResponse = parseGeminiResponse(data)
-  const logContext = { model, prompt: finalPrompt, payload: geminiPayload }
-
-  const enhancedImageBase64 = await extractGeminiImageData(
-    geminiResponse,
-    logContext,
-    async imagePart => {
-      const imageData = readGeminiImageData(imagePart)
-      if (!imageData) {
-        throw new Error('No image found in Gemini response')
-      }
-      return imageData
-    }
-  )
-
-  logger.info('Gemini fidelity enhancement completed', {
+  logger.info('Apiframe fidelity enhancement completed', {
     imageLength: enhancedImageBase64.length,
   })
 

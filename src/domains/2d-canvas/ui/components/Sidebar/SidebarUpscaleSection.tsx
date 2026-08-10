@@ -43,9 +43,9 @@ export const SidebarUpscaleSection: React.FC<SidebarUpscaleSectionProps> = ({
               onChange={e => handleUpscaleProviderChange(e.target.value)}
               className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md py-1.5 px-2 text-[11px] text-zinc-300 font-mono focus:border-indigo-500/50 focus:outline-none"
             >
-              <option value={UpscaleProvider.Stability}>Stability AI (4k)</option>
-              <option value={UpscaleProvider.Replicate}>Replicate (Creative)</option>
-              <option value={UpscaleProvider.Midjourney}>Midjourney (LegNext)</option>
+              <option value={UpscaleProvider.Stability}>Topaz (Apiframe)</option>
+              <option value={UpscaleProvider.Replicate}>Clarity (Apiframe)</option>
+              <option value={UpscaleProvider.Midjourney}>Midjourney (Apiframe)</option>
             </select>
           </div>
         )}

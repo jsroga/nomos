@@ -16,12 +16,11 @@ export function GlobalHeader() {
 
   return (
     <>
-      <div className="h-14 bg-card border-b border-border flex items-center px-4 gap-4 shrink-0 relative z-[100]">
+      <div className="relative z-[100] flex h-16 shrink-0 items-center gap-4 border-b border-white/[0.06] bg-[rgba(9,9,11,0.92)] px-6">
         <div className="flex items-center gap-2">
-          {/* <img src="/logo.png" alt="Logo" className="h-6 w-auto brightness-0 invert opacity-50" /> */}
           <Link
             href="/projects"
-            className="text-sm font-mono font-bold uppercase tracking-widest text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+            className="cursor-pointer font-mono text-sm font-bold uppercase tracking-widest text-white/50 transition-colors hover:text-white"
           >
             / PROJECT /
           </Link>
@@ -35,6 +34,7 @@ export function GlobalHeader() {
             size="icon"
             onClick={() => setIsSettingsOpen(true)}
             title="Settings"
+            className="text-white/70 hover:bg-white/5 hover:text-white"
           >
             <Settings size={18} />
           </Button>

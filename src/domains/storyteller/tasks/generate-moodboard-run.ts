@@ -8,37 +8,31 @@ import {
   logLLMRequestError,
 } from '@/trigger/utils/llm-logger'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { LegNextJobStatus, LegNextModelId } from '@/shared/ai/constants/legnext'
+import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
+import {
+  generateMidjourneyImages,
+  pickApiframeImageUrl,
+} from '@/shared/ai/apiframe'
+import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
 import {
   BufferEncoding,
-  ContentType,
   FsDirectory,
-  GoogleModelId,
-  HttpMethod,
 } from '@/shared/data/constants/protocol'
-import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
 import {
   MOODBOARD_BASE64_LABEL,
-  MOODBOARD_COMMA_JOIN,
   MOODBOARD_GEMINI_NO_IMAGE,
   MOODBOARD_IMAGE_GEN_FAILED,
-  MOODBOARD_INLINE_DATA_KEY,
-  MOODBOARD_LEGNEXT_NO_IMAGE,
-  MOODBOARD_LEGNEXT_NO_JOB,
-  MOODBOARD_LEGNEXT_NOT_FOUND,
-  MOODBOARD_LEGNEXT_TIMEOUT,
+  MOODBOARD_APIFRAME_NO_IMAGE,
+  MOODBOARD_APIFRAME_NO_JOB,
   MOODBOARD_LLM_TASK,
   MOODBOARD_METADATA_DIFFUSION_JOB_ID,
   MOODBOARD_METADATA_PROGRESS,
   MOODBOARD_METADATA_STAGE,
-  MOODBOARD_NOT_FOUND_FRAGMENT,
-  MOODBOARD_POLL_CONTINUE,
   MOODBOARD_PROMPT_SUFFIX,
   MOODBOARD_STAGE_DOWNLOADING,
   MOODBOARD_STAGE_SAVING,
   MOODBOARD_STAGE_SUBMITTING,
   MOODBOARD_STAGE_WAITING,
-  MOODBOARD_UNKNOWN_ERROR,
 } from './constants/moodboard-task-wire'
 
 export interface GenerateMoodboardPayload {
@@ -54,88 +48,11 @@ export interface GenerateMoodboardPayload {
   }
 }
 
-interface LegNextPollResult {
-  status?: string
-  message?: string
-  output?: {
-    image_url?: string
-    image_urls?: string[]
-    error_messages?: string[]
-    [key: string]: unknown
-  }
-  [key: string]: unknown
-}
-
 function collectStyleReferences(
   styleReference?: string,
   styleReferenceUrls?: string[],
 ): string[] {
   return [...(styleReference ? [styleReference] : []), ...(styleReferenceUrls || [])].filter(Boolean)
-}
-
-function estimateLegNextProgress(status: string | undefined, attempts: number): number {
-  if (status === LegNextJobStatus.Completed) return 100
-  if (status === LegNextJobStatus.Processing) return 50 + (attempts % 40)
-  if (status === LegNextJobStatus.Pending) return 10
-  return 0
-}
-
-async function fetchLegNextJob(jobId: string, apiKey: string): Promise<LegNextPollResult | null> {
-  const fetchResponse = await fetch(`https://api.legnext.ai/api/v1/job/${jobId}`, {
-    method: HttpMethod.Get,
-    headers: { 'x-api-key': apiKey },
-  })
-  if (fetchResponse.status === 404) throw new Error(MOODBOARD_LEGNEXT_NOT_FOUND)
-  if (!fetchResponse.ok) {
-    logger.warn(`LegNext polling error: ${fetchResponse.status} - ${await fetchResponse.text()}`)
-    return null
-  }
-  return fetchResponse.json()
-}
-
-async function handleLegNextPollResult(
-  data: LegNextPollResult,
-): Promise<LegNextPollResult | typeof MOODBOARD_POLL_CONTINUE> {
-  if (data.status === LegNextJobStatus.Completed) return data
-  if (data.status === LegNextJobStatus.Failed) {
-    const errorMsg =
-      data.output?.error_messages?.join(MOODBOARD_COMMA_JOIN) ||
-      data.message ||
-      MOODBOARD_UNKNOWN_ERROR
-    throw new Error(errorMsg)
-  }
-  return MOODBOARD_POLL_CONTINUE
-}
-
-async function pollLegNextTask(
-  jobId: string,
-  apiKey: string,
-  maxAttempts: number = 300,
-  progressOffset: number = 30,
-): Promise<LegNextPollResult> {
-  let attempts = 0
-  while (attempts < maxAttempts) {
-    await new Promise(resolve => setTimeout(resolve, 5000))
-    try {
-      const data = await fetchLegNextJob(jobId, apiKey)
-      if (!data) {
-        attempts++
-        continue
-      }
-      const scaledProgress =
-        progressOffset + Math.round(estimateLegNextProgress(data.status, attempts) * 0.65)
-      await metadata.set(MOODBOARD_METADATA_PROGRESS, scaledProgress)
-      const outcome = await handleLegNextPollResult(data)
-      if (outcome !== MOODBOARD_POLL_CONTINUE) {
-        await metadata.set(MOODBOARD_METADATA_PROGRESS, progressOffset + 65)
-        return outcome
-      }
-    } catch (e: unknown) {
-      if (getErrorMessage(e)?.includes(MOODBOARD_NOT_FOUND_FRAGMENT)) throw e
-    }
-    attempts++
-  }
-  throw new Error(MOODBOARD_LEGNEXT_TIMEOUT)
 }
 
 function buildMidjourneyPrompt(enhancedPrompt: string, allStyleRefs: string[]): string {
@@ -159,84 +76,59 @@ async function generateMidjourneyImage(
   promptIndex: number,
 ): Promise<string | null> {
   const fullPrompt = buildMidjourneyPrompt(`${prompt}${MOODBOARD_PROMPT_SUFFIX}`, allStyleRefs)
-  const diffusionPayload = { text: fullPrompt }
+  const requestPayload = {
+    model: ApiframeImageModel.Midjourney,
+    prompt: fullPrompt,
+    midjourneyParams: { aspect_ratio: '16:9' },
+  }
   logLLMRequestStart({
     provider: ImageGenProvider.Midjourney,
-    model: LegNextModelId.Diffusion,
+    model: ApiframeImageModel.Midjourney,
     prompt: fullPrompt,
     inputImageUrls: allStyleRefs.length > 0 ? allStyleRefs : undefined,
-    input: diffusionPayload,
+    input: requestPayload,
     metadata: { task: MOODBOARD_LLM_TASK, promptIndex },
   })
   await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_SUBMITTING)
-  const diffusionResponse = await fetch('https://api.legnext.ai/api/v1/diffusion', {
-    method: HttpMethod.Post,
-    headers: { 'x-api-key': apiKey, 'Content-Type': ContentType.Json },
-    body: JSON.stringify(diffusionPayload),
-  })
-  if (!diffusionResponse.ok) {
-    logLLMRequestError({
-      provider: ImageGenProvider.Midjourney,
-      model: LegNextModelId.Diffusion,
-      prompt: fullPrompt,
-      error: `HTTP ${diffusionResponse.status}: ${await diffusionResponse.text()}`,
-      input: diffusionPayload,
+  try {
+    await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_WAITING)
+    const result = await generateMidjourneyImages(fullPrompt, apiKey, {
+      aspectRatio: '16:9',
+      maxAttempts: 90,
+      intervalMs: 3000,
     })
-    return null
-  }
-  const diffusionData = await diffusionResponse.json()
-  const jobId = diffusionData.job_id
-  if (!jobId) {
-    logLLMRequestError({
+    await metadata.set(MOODBOARD_METADATA_DIFFUSION_JOB_ID, result.jobId)
+    await metadata.set(MOODBOARD_METADATA_PROGRESS, 90)
+    const imageUrl = pickApiframeImageUrl(result)
+    if (!imageUrl) {
+      logLLMRequestError({
+        provider: ImageGenProvider.Midjourney,
+        model: ApiframeImageModel.Midjourney,
+        prompt: fullPrompt,
+        error: MOODBOARD_APIFRAME_NO_IMAGE,
+        input: requestPayload,
+        output: result,
+      })
+      return null
+    }
+    logLLMRequestComplete({
       provider: ImageGenProvider.Midjourney,
-      model: LegNextModelId.Diffusion,
+      model: ApiframeImageModel.Midjourney,
       prompt: fullPrompt,
-      error: MOODBOARD_LEGNEXT_NO_JOB,
-      input: diffusionPayload,
-      output: diffusionData,
-    })
-    return null
-  }
-  await metadata.set(MOODBOARD_METADATA_DIFFUSION_JOB_ID, jobId)
-  await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_WAITING)
-  const result = await pollLegNextTask(jobId, apiKey)
-  const imageUrl = result.output?.image_urls?.[0] || result.output?.image_url
-  if (!imageUrl) {
-    logLLMRequestError({
-      provider: ImageGenProvider.Midjourney,
-      model: LegNextModelId.Diffusion,
-      prompt: fullPrompt,
-      error: MOODBOARD_LEGNEXT_NO_IMAGE,
-      input: diffusionPayload,
+      outputImageUrls: [imageUrl],
       output: result,
     })
+    return downloadImageAsBase64(imageUrl)
+  } catch (error: unknown) {
+    logLLMRequestError({
+      provider: ImageGenProvider.Midjourney,
+      model: ApiframeImageModel.Midjourney,
+      prompt: fullPrompt,
+      error: getErrorMessage(error) || MOODBOARD_APIFRAME_NO_JOB,
+      input: requestPayload,
+    })
     return null
   }
-  logLLMRequestComplete({
-    provider: ImageGenProvider.Midjourney,
-    model: LegNextModelId.Diffusion,
-    prompt: fullPrompt,
-    outputImageUrls: [imageUrl],
-    output: result.output,
-  })
-  return downloadImageAsBase64(imageUrl)
-}
-
-function extractGeminiImageBase64(data: {
-  candidates?: Array<{ content?: { parts?: Array<Record<string, unknown>> } }>
-}): string | null {
-  for (const part of data.candidates?.[0]?.content?.parts ?? []) {
-    const inlineData = part.inline_data ?? part.inlineData
-    if (
-      inlineData &&
-      typeof inlineData === 'object' &&
-      MOODBOARD_INLINE_DATA_KEY in inlineData &&
-      typeof inlineData[MOODBOARD_INLINE_DATA_KEY] === 'string'
-    ) {
-      return inlineData[MOODBOARD_INLINE_DATA_KEY]
-    }
-  }
-  return null
 }
 
 async function generateNanoBananaImage(
@@ -246,61 +138,40 @@ async function generateNanoBananaImage(
   allStyleRefs: string[],
   promptIndex: number,
 ): Promise<string | null> {
-  const targetModel = modelId || GoogleModelId.Gemini20FlashPreviewImageGeneration
   const enhancedPrompt = `${prompt}${MOODBOARD_PROMPT_SUFFIX}`
-  const payload = {
-    contents: [{ parts: [{ text: enhancedPrompt }] }],
-    generationConfig: {
-      responseModalities: [GeminiResponseModality.Text, GeminiResponseModality.Image],
-    },
-  }
+  const model = modelId || ApiframeImageModel.NanoBanana
   logLLMRequestStart({
-    provider: ImageGenProvider.Gemini,
-    model: targetModel,
+    provider: ImageGenProvider.NanoBanana,
+    model,
     prompt: enhancedPrompt,
     inputImageUrls: allStyleRefs.length > 0 ? allStyleRefs : undefined,
-    input: payload,
     metadata: { task: MOODBOARD_LLM_TASK, promptIndex, provider: ImageGenProvider.NanoBanana },
   })
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`,
-    {
-      method: HttpMethod.Post,
-      headers: { 'Content-Type': ContentType.Json },
-      body: JSON.stringify(payload),
-    },
-  )
-  if (!response.ok) {
-    logLLMRequestError({
-      provider: ImageGenProvider.Gemini,
-      model: targetModel,
+  try {
+    const imageBase64 = await generateNanoBananaBase64({
       prompt: enhancedPrompt,
-      error: `HTTP ${response.status}: ${await response.text()}`,
-      input: payload,
+      apiKey,
+      modelId,
+      imageInputUrls: allStyleRefs.length > 0 ? allStyleRefs : undefined,
+      aspectRatio: '16:9',
+    })
+    logLLMRequestComplete({
+      provider: ImageGenProvider.NanoBanana,
+      model,
+      prompt: enhancedPrompt,
+      outputImageUrls: [MOODBOARD_BASE64_LABEL],
+      output: { hasImage: true },
+    })
+    return imageBase64
+  } catch (error: unknown) {
+    logLLMRequestError({
+      provider: ImageGenProvider.NanoBanana,
+      model,
+      prompt: enhancedPrompt,
+      error: getErrorMessage(error) || MOODBOARD_GEMINI_NO_IMAGE,
     })
     return null
   }
-  const data = await response.json()
-  const imageBase64 = extractGeminiImageBase64(data)
-  if (!imageBase64) {
-    logLLMRequestError({
-      provider: ImageGenProvider.Gemini,
-      model: targetModel,
-      prompt: enhancedPrompt,
-      error: MOODBOARD_GEMINI_NO_IMAGE,
-      input: payload,
-      output: data,
-    })
-    return null
-  }
-  logLLMRequestComplete({
-    provider: ImageGenProvider.Gemini,
-    model: targetModel,
-    prompt: enhancedPrompt,
-    outputImageUrls: [MOODBOARD_BASE64_LABEL],
-    output: { finishReason: data.candidates?.[0]?.finishReason, hasImage: true },
-  })
-  return imageBase64
 }
 
 async function generateMoodboardImage(

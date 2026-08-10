@@ -7,7 +7,7 @@
  * improves and no gate scorer regresses.
  *
  * Requires keys + a scratch project/episode (so it is a no-op until they exist):
- *   DATABASE_URL, an LLM key (JUDGING_MODEL / OPENAI_API_KEY / ANTHROPIC_API_KEY),
+ *   DATABASE_URL, an LLM key (OPENROUTER_API_KEY; JUDGING_MODEL optional),
  *   WILDCARDS_AB_PROJECT_ID, WILDCARDS_AB_EPISODE_ID.
  *
  * Usage: npx tsx evals/experiments/wildcards-ab.ts
@@ -56,7 +56,7 @@ function mean(values: number[]): number {
 }
 
 function hasLlmKey(): boolean {
-  return Boolean(process.env.JUDGING_MODEL || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY)
+  return Boolean(process.env.OPENROUTER_API_KEY || process.env.JUDGING_MODEL || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY)
 }
 
 async function runArm(

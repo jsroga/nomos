@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { LandingSectionId, LandingSystemsCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
 import { LANDING_DEEP_DIVES } from '@/domains/marketing/ui/LandingPage/constants/landing-deep-dives'
 import {

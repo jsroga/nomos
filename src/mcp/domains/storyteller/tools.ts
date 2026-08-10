@@ -6,13 +6,22 @@
 
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { storytellerService } from '@/domains/storyteller/server'
+import {
+  createCharacterSchema,
+  storytellerService,
+  updateCharacterSchema,
+} from '@/domains/storyteller/server'
+import { StorytellerCharacterRole } from '@/domains/storyteller/services/constants/storyteller-crud-service'
 import { validateApiKey, getServiceContext } from '../../core/auth'
-import { LangSmithContext } from '../../core/types'
+import type { MCPServiceContext } from '../../core/types'
 
-// ============================================
-// TOOL DEFINITIONS
-// ============================================
+async function requireMcpServiceContext(): Promise<MCPServiceContext> {
+  const apiKey = process.env.MCP_API_KEY
+  if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
+  const authResult = await validateApiKey(apiKey)
+  if (!authResult.valid) throw new Error('Invalid API key')
+  return getServiceContext(authResult)
+}
 
 const listCharacters = createTool({
   id: 'list_characters',
@@ -20,18 +29,11 @@ const listCharacters = createTool({
   inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to list characters for'),
   }),
-  execute: async ({ context: _ctx, data }) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
-
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    const context = await getServiceContext(authResult)
-
+  execute: async data => {
+    const context = await requireMcpServiceContext()
     return storytellerService.listCharacters(
       { projectId: data.projectId },
-      { userId: context.userId }
+      { userId: context.userId },
     )
   },
 })
@@ -42,15 +44,8 @@ const getCharacter = createTool({
   inputSchema: z.object({
     characterId: z.string().uuid().describe('The character ID to retrieve'),
   }),
-  execute: async ({ context: _ctx, data }) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
-
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    const context = await getServiceContext(authResult)
-
+  execute: async data => {
+    const context = await requireMcpServiceContext()
     return storytellerService.getCharacter(data.characterId, { userId: context.userId })
   },
 })
@@ -63,7 +58,7 @@ const createCharacter = createTool({
     projectId: z.string().uuid().describe('The project ID to create the character in'),
     name: z.string().describe('The character name'),
     role: z
-      .enum(['Lead', 'Supporting', 'Background'])
+      .nativeEnum(StorytellerCharacterRole)
       .optional()
       .describe('The character role (default: Supporting)'),
     gender: z.string().optional().describe('The character gender'),
@@ -89,16 +84,10 @@ const createCharacter = createTool({
       .optional()
       .describe('Transformation progress (0-100, default: 0)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
-
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    const context = await getServiceContext(authResult)
-
-    return storytellerService.createCharacter(data, { userId: context.userId })
+  execute: async data => {
+    const context = await requireMcpServiceContext()
+    const parsed = createCharacterSchema.parse(data)
+    return storytellerService.createCharacter(parsed, { userId: context.userId })
   },
 })
 
@@ -108,7 +97,7 @@ const updateCharacter = createTool({
   inputSchema: z.object({
     characterId: z.string().uuid().describe('The character ID to update'),
     name: z.string().optional(),
-    role: z.enum(['Lead', 'Supporting', 'Background']).optional(),
+    role: z.nativeEnum(StorytellerCharacterRole).optional(),
     gender: z.string().optional(),
     characterPrompt: z.string().optional(),
     description: z.string().optional(),
@@ -123,17 +112,11 @@ const updateCharacter = createTool({
     isolation: z.number().min(0).max(100).optional(),
     transformation: z.number().min(0).max(100).optional(),
   }),
-  execute: async ({ context: _ctx, data }) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
-
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    const context = await getServiceContext(authResult)
-
+  execute: async data => {
+    const context = await requireMcpServiceContext()
     const { characterId, ...updateData } = data
-    return storytellerService.updateCharacter(characterId, updateData, {
+    const parsed = updateCharacterSchema.parse(updateData)
+    return storytellerService.updateCharacter(characterId, parsed, {
       userId: context.userId,
     })
   },
@@ -145,63 +128,39 @@ const deleteCharacter = createTool({
   inputSchema: z.object({
     characterId: z.string().uuid().describe('The character ID to delete'),
   }),
-  execute: async ({ context: _ctx, data }) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
-
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    const context = await getServiceContext(authResult)
-
+  execute: async data => {
+    const context = await requireMcpServiceContext()
     return storytellerService.deleteCharacter(data.characterId, { userId: context.userId })
   },
 })
 
-// Episode tools
 const listEpisodes = createTool({
   id: 'list_episodes',
   description: 'List all episodes in a project.',
   inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to list episodes for'),
   }),
-  execute: async ({ context: _ctx, data }) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
-
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    const context = await getServiceContext(authResult)
-
+  execute: async data => {
+    const context = await requireMcpServiceContext()
     return storytellerService.listEpisodes(
       { projectId: data.projectId },
-      { userId: context.userId }
+      { userId: context.userId },
     )
   },
 })
 
-// Beat tools
 const listBeats = createTool({
   id: 'list_beats',
   description: 'List all beats in an episode. Beats are the story moments that make up an episode.',
   inputSchema: z.object({
     episodeId: z.string().uuid().describe('The episode ID to list beats for'),
   }),
-  execute: async ({ context: _ctx, data }) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
-
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    const context = await getServiceContext(authResult)
-
+  execute: async data => {
+    const context = await requireMcpServiceContext()
     return storytellerService.listBeats({ episodeId: data.episodeId }, { userId: context.userId })
   },
 })
 
-// Series bible
 const getSeriesBible = createTool({
   id: 'get_series_bible',
   description:
@@ -209,20 +168,12 @@ const getSeriesBible = createTool({
   inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to get the series bible for'),
   }),
-  execute: async ({ context: _ctx, data }) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
-
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    const context = await getServiceContext(authResult)
-
+  execute: async data => {
+    const context = await requireMcpServiceContext()
     return storytellerService.getSeriesBible(data.projectId, { userId: context.userId })
   },
 })
 
-// Chat / Writers Room
 const storytellerChat = createTool({
   id: 'storyteller_chat',
   description:
@@ -234,7 +185,7 @@ const storytellerChat = createTool({
       .string()
       .optional()
       .describe(
-        'Thread ID for conversation continuity. If not provided, a new thread will be created.'
+        'Thread ID for conversation continuity. If not provided, a new thread will be created.',
       ),
     episodeId: z
       .string()
@@ -242,35 +193,8 @@ const storytellerChat = createTool({
       .optional()
       .describe('Episode ID for episode-specific context (optional)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
-
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    const context = await getServiceContext(authResult)
-
-    // Reconstruct simplified LangSmith context for now
-    const enhancedLangsmith: LangSmithContext = {
-      runName: 'MCP: storyteller_chat',
-      tags: [
-        'storyteller',
-        'chat',
-        'writers-room',
-        data.threadId ? 'continued-thread' : 'new-thread',
-      ],
-      metadata: {
-        source: 'mcp',
-        apiKeyId: authResult.keyId,
-        apiKeyName: authResult.keyName,
-        projectId: data.projectId,
-        threadId: data.threadId,
-        episodeId: data.episodeId,
-        messageLength: data.message.length,
-      },
-    }
-
+  execute: async data => {
+    const context = await requireMcpServiceContext()
     return storytellerService.chat(
       {
         projectId: data.projectId,
@@ -279,12 +203,10 @@ const storytellerChat = createTool({
         episodeId: data.episodeId,
       },
       { userId: context.userId },
-      enhancedLangsmith
     )
   },
 })
 
-// Export tools
 export const storytellerTools = {
   listCharacters,
   getCharacter,

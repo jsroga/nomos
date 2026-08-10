@@ -1,3 +1,9 @@
+/**
+ * Jacek Confirm this regex — a sentiment dictionary: positive/negative is decided
+ * by counting English keyword hits, so "not fun" and "fun" both score positive.
+ * Pending confirmation: delete and let the analyst model read sentiment.
+ * See .local/findings/word-dictionary-heuristics.md (Group B).
+ */
 const SENTIMENT_KEYWORDS = {
   positive: [
     'amazing',

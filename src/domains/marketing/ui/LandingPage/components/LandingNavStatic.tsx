@@ -35,7 +35,7 @@ export function LandingNavStatic() {
                 key={item}
                 href={navHref(item)}
                 className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50 transition-colors duration-200 hover:text-white"
-                {...(item !== LandingNavItem.Systems
+                {...(item === LandingNavItem.Docs
                   ? { target: '_blank', rel: 'noopener noreferrer' }
                   : {})}
               >

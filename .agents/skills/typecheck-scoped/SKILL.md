@@ -59,4 +59,4 @@ npm run qualitygate:tsc -- --all-slices
 2. Fix **one** backlog item → `npm run qualitygate:backlog -- done <id>`
 3. After 5 fixes: `npm run qualitygate:capture` again
 4. Handoff: `npm run qualitygate:file -- <touched>`
-5. See `.agents/execute/partials/quality-backlog.md` and `SRC-QUALITY-TRACKER.md`
+5. See `.agents/execute/partials/quality-backlog.md` and `.local/SRC-QUALITY-TRACKER.md`

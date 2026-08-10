@@ -43,7 +43,9 @@ export function useCharacterPortraitGeneration({
     mutationFn: async (input: { prompt: string; name: string; gender: string }) => {
       if (!projectId) throw new Error(PROJECT_ID_REQUIRED_ERROR)
 
-      const apiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+      const apiKey =
+        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) ||
+        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
 
       return startCharacterPortraitGeneration({
         prompt: input.prompt || `A portrait of ${input.name}, ${input.gender}`,

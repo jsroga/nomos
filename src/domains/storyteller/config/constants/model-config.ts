@@ -1,5 +1,4 @@
 import { createOpenAI } from '@ai-sdk/openai'
-import { google } from '@ai-sdk/google'
 import {
   DEFAULT_CHAT_MODEL,
   getChatModelOption,
@@ -62,36 +61,28 @@ export function getAgentModel(modelName: string = TEXT_GEN_PRIMARY_MODEL) {
   // AI SDK v4 requires specificationVersion 'v1'
   const specVersion = 'v1'
 
-  // 1. Handle OpenAI (GPT-5.6 Sol etc.) via OpenRouter when available
+  // OpenAI — prefer OpenRouter; optional OPENAI_API_KEY direct fallback
   if (colonForm.startsWith('openai:')) {
-    const modelId = process.env.OPENROUTER_API_KEY
+    const useOpenRouter = Boolean(process.env.OPENROUTER_API_KEY)
+    const modelId = useOpenRouter
       ? colonForm.replace(':', '/')
       : colonForm.replace('openai:', '')
     const openai = createOpenAI({
       apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
-      baseURL: process.env.OPENROUTER_API_KEY ? OPENROUTER_BASE_URL : undefined,
+      baseURL: useOpenRouter ? OPENROUTER_BASE_URL : undefined,
     })
     const model = openai(modelId)
     Object.assign(model, { specificationVersion: specVersion })
     return model
   }
 
-  // 2. Handle Moonshot / Kimi via OpenRouter
-  if (colonForm.startsWith('moonshotai:')) {
-    const modelId = colonForm.replace('moonshotai:', 'moonshotai/')
+  // Google / Moonshot — OpenRouter only
+  if (colonForm.startsWith('google:') || colonForm.startsWith('moonshotai:')) {
     const openai = createOpenAI({
       apiKey: process.env.OPENROUTER_API_KEY,
       baseURL: OPENROUTER_BASE_URL,
     })
-    const model = openai(modelId)
-    Object.assign(model, { specificationVersion: specVersion })
-    return model
-  }
-
-  // 3. Handle Google (Gemini)
-  if (colonForm.startsWith('google:')) {
-    const modelId = colonForm.replace('google:', '')
-    const model = google(modelId)
+    const model = openai(colonForm.replace(':', '/'))
     Object.assign(model, { specificationVersion: specVersion })
     return model
   }
@@ -357,7 +348,7 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
     topP: 0.92,
     maxOutputTokens: 8000,
     rationale:
-      'Single GRRM author drafts AND revises — the token-heavy role runs on non-code Kimi K3 by user decision (2026-07-09); code models (Kimi K2.7 Code, Codex) are prohibited in storyteller. GLM 5.2 is the picker alternative. High-importance reasoning (planner/premise) stays Opus. Rollback: STORYTELLER_AUTHOR_MODEL=anthropic:claude-opus-4-8; validation: PLAN-V2 7.2 evals.',
+      'Single GRRM author drafts AND revises — Kimi K3 by default; pin via STORYTELLER_AUTHOR_MODEL. Not driven by the Writers Room chat picker (that only overrides the chat adapter). Planner/premise stay Opus-class. Code models are prohibited in storyteller.',
   },
   planner: {
     model: 'anthropic:claude-opus-4-8',
@@ -381,7 +372,7 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
     topP: 0.98,
     maxOutputTokens: 1500,
     rationale:
-      'Blank-context wildcard ideas — model follows the Writers Room user picker (same as author). Entropy is code-side (D4).',
+      'Blank-context wildcard ideas. Uses the muse slot (STORYTELLER_MUSE_MODEL / matrix), not the Writers Room chat picker. Entropy is code-side (D4).',
   },
   premise: {
     model: 'anthropic:claude-opus-4-8',
@@ -392,12 +383,12 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
       'Premise / roadmap architecture — the highest-leverage structural decisions. Fable-class opt-in via STORYTELLER_PREMISE_MODEL=anthropic:claude-fable-5.',
   },
   chat: {
-    model: 'openai:gpt-5.6-luna',
+    model: DEFAULT_CHAT_MODEL,
     temperature: 0.7,
     topP: 0.9,
     maxOutputTokens: 2000,
     rationale:
-      'Chat adapter — fast OpenRouter tier for quick conversation responses. Replaces the prohibited Claude Sonnet 5.',
+      'Writers Room chat adapter. Per-request picker (Kimi / GLM / Opus) wins; else STORYTELLER_CHAT_MODEL; else this matrix default. Orchestration roles (author/planner/critic/muse/premise) use their own slots — not the chat picker.',
   },
 }
 
@@ -467,10 +458,10 @@ export function resolveRoleModel(
 }
 
 /**
- * OpenRouter model id for paths that should track the Writers Room user picker
- * (author catalog) but talk to OpenAI-compatible clients (string `model` only).
- * Order: request override → admin author/default → STORYTELLER_AUTHOR_MODEL →
- * {@link DEFAULT_CHAT_MODEL}.
+ * OpenRouter model id for author-slot paths that talk to OpenAI-compatible
+ * clients (string `model` only). Order: explicit override → admin author →
+ * STORYTELLER_AUTHOR_MODEL → {@link DEFAULT_CHAT_MODEL}.
+ * Not the Writers Room chat picker.
  */
 export function resolveUserPickerOpenRouterModelId(overrideId?: string): string {
   const validatedOverride = overrideId && isKnownChatModel(overrideId) ? overrideId : undefined

@@ -23,7 +23,7 @@ import {
   resolveStorytellerModel,
 } from '@/domains/storyteller/config/constants/model-config'
 import {
-  STORYTELLER_AUTHOR_MODEL,
+  STORYTELLER_CHAT_MODEL,
   requestContextString,
 } from '@/domains/storyteller/ai/request-context'
 
@@ -68,13 +68,13 @@ export class StorytellerAgent {
     const storage = getStorageInstance()
 
     // Explicit modelName (CLI/testing) wins; otherwise the Writers Room picker
-    // override rides on RequestContext (same key as the author slot).
+    // rides on RequestContext (chat slot only — not author/planner/critics).
     const model = config.modelName
       ? resolveStorytellerModel(config.modelName)
       : ({ requestContext }: { requestContext?: RequestContext }) =>
           resolveRoleModel(
             AgentModelRole.Chat,
-            requestContextString(requestContext, STORYTELLER_AUTHOR_MODEL),
+            requestContextString(requestContext, STORYTELLER_CHAT_MODEL),
           )
 
     // Configure memory for multi-turn conversation context

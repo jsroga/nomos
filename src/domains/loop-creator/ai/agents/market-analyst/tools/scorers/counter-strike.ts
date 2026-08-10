@@ -1,4 +1,8 @@
 /**
+ * Jacek Confirm this regex — classifies mechanics by matching 'skill', 'aim',
+ * 'precision', 'economy', 'buy', 'money' in names/types rather than by behaviour.
+ * See .local/findings/word-dictionary-heuristics.md (Group B).
+ *
  * Counter-Strike Scorer Tool
  *
  * Scores the loop design against competitive tactical shooter criteria.

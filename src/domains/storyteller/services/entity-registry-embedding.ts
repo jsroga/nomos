@@ -36,8 +36,10 @@ export async function generateEntityEmbedding(entity: EntityReferenceForEmbeddin
 
     if (embeddingContent.length < 5) return
 
-    await entityGraphService.buildEntityEmbedding(entity.id, embeddingContent)
-    console.log(`🧠 [EntityRegistry] Generated embedding for ${entity.id}`)
+    const wrote = await entityGraphService.buildEntityEmbedding(entity.id, embeddingContent)
+    if (wrote) {
+      console.log(`🧠 [EntityRegistry] Generated embedding for ${entity.id}`)
+    }
   } catch (err) {
     console.warn(`[EntityRegistry] Embedding failed for ${entity.id}:`, err)
   }

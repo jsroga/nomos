@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Regenerate SRC-QUALITY-TRACKER.md — TSC + magic-string status per file.
+ * Regenerate `.local/SRC-QUALITY-TRACKER.md` — TSC + magic-string status per file.
+ * Output stays gitignored under `.local/` (not a repo-root tracker md).
  *
  * FAST (use these while fixing):
  *   node scripts/refresh-src-quality-tracker.mjs --file src/path/file.ts   (~5s, one row)
@@ -11,9 +12,10 @@
  */
 import { execSync, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 
 const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=4096'
-const OUT = 'SRC-QUALITY-TRACKER.md'
+const OUT = '.local/SRC-QUALITY-TRACKER.md'
 const STATE_PATH = '.local/quality-tracker-state.json'
 
 const EXEMPT_PATTERNS = [
@@ -302,6 +304,7 @@ State: \`.local/quality-tracker-state.json\`
 |------|-----|----------|-------|
 `
 
+  mkdirSync(dirname(OUT), { recursive: true })
   writeFileSync(OUT, header + rows.join('\n') + '\n')
   console.log(`refresh-tracker: wrote ${OUT} (${files.length} rows)`)
   console.log(

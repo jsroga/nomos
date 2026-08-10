@@ -67,20 +67,24 @@ core/io/       # API clients, mastra-runtime seam
 
 ## Writers Room ↔ World Bible
 
+**Models:** composer picker (Kimi / GLM / Opus) → chat adapter only. Default when unset: `STORYTELLER_CHAT_MODEL`. Author / planner / critic / muse / premise use their own `STORYTELLER_*_MODEL` pins — see [DEVELOPMENT.md](./DEVELOPMENT.md) § Model routing.
+
 Chat goes through `/api/assistant/storyteller` (shared assistant route). Section refreshes and free chat share one thread; bible writes are gated so the wrong panel does not get a Pending Review blur.
 
 | Concern | Contract |
 |---------|----------|
 | Active section | Client sends `bibleSection` on the chat body; route sets `STORYTELLER_BIBLE_SECTION` on Mastra `RequestContext` (`ai/request-context.ts`) |
-| Tool writes | `update_world_bible` may set `worldDescription`, `inspirations`, `moodSoundtrack`, `soundtracks`, characters, etc. When a section is set, `bible-section-allowlist.ts` drops off-section fields before execute |
+| Tool writes | `update_world_bible` may set `worldDescription`, `inspirations`, `moodSoundtrack`, `soundtracks`, `episodeRoadmap`, characters, etc. When a section is set, `bible-section-allowlist.ts` drops off-section fields before execute |
+| Episode create | `manage_episode` create persists the row; Writers Room invalidates the episodes query and `selectEpisode`s the new id (toast “Episode created”) |
+| Episode premise | Prefer `manage_episode` create/update with `data.premise`. `update_world_bible` `{ episodePremise }` only when an `episodeId` is already in the open workspace |
 | Tool proposals | Completed `update_world_bible` → `proposeAssistantBibleUpdate` → Accept/Reject on that section (`BibleSectionChrome`) |
 | Free chat | Overview-only prose dumps do **not** auto-open Pending Review; user uses **Add to world** |
-| Add to world | Infers target (overview / inspirations / soundtrack) via structured extractors, then **commits** with `executeAction` (toast “Added to world”) — not another pending overlay |
+| Add to world | If that section already has Pending Review, runs the same `onAccept` as Accept. Otherwise infers target (structured extract, else Overview) and **commits** with `executeAction` (toast “Added to world”) — never a silent no-op |
 | Extras | If the tool also wrote fields outside the requested section, ConfirmDialog: commit requested only vs include extras |
 | Concurrent refresh | One section refresh at a time while the thread is busy (avoids Mastra `MessageRepository` duplicate-id crashes) |
 | Status labels | Waiting copy is “Waiting for Writers Room…” / “Still waiting for the model…” — not “Loading world context…” |
 
-Key paths: `StorytellerWritersRoom.tsx`, `propose-assistant-bible-update.ts`, `resolve-add-to-world-target.ts`, `extract-inspirations.ts`, `extract-soundtrack-tracks.ts`, `src/mastra/agents/storyteller/instructions.md`.
+Key paths: `StorytellerWritersRoom.tsx`, `propose-assistant-bible-update.ts`, `parse-created-episode-from-tool.ts`, `resolve-add-to-world-target.ts`, `extract-inspirations.ts`, `extract-soundtrack-tracks.ts`, `src/mastra/agents/storyteller/instructions.md`.
 
 Chat context assembly does **not** run entity-graph RAG on the hot path; project snapshot token budget is larger (`context-assembly-service.ts`, `token-budget.ts`).
 

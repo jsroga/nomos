@@ -34,7 +34,7 @@ Workspace for GLB/GLTF prep and text/image-to-3D providers. Heavy work in `tasks
 
 ## 3D Canvas (`3d-canvas`)
 
-R3F sculpt/paint/place. Workspace route `/{projectId}/3d-canvas`; API under `/api/3d-canvas`. UI stores for scene vs high-frequency terrain; persistence through sanctioned APIs.
+R3F sculpt/paint/place. Workspace route `/{projectId}/3d-canvas`; API under `/api/3d-canvas`. Scene undo is separate from high-frequency heightmaps; Low/Medium/High render-quality presets (adaptive while orbiting/sculpting). Perf HUD when `NEXT_PUBLIC_FF_PERF_DEBUG=true` — [DEVELOPMENT.md](./DEVELOPMENT.md).
 
 ## Marketing
 

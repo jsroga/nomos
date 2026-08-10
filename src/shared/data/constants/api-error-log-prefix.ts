@@ -101,6 +101,7 @@ export const API_LOG_PREFIX = {
   ENTITIES_FETCH_ERROR: '[Entities API] Error fetching entities:',
   ENTITIES_CREATE_ERROR: '[Entities API] Error creating entity:',
   GEMINI_INPAINTING_ERROR: 'Gemini inpainting error:',
+  APIFRAME_EDIT_ERROR: 'Apiframe edit error:',
   ASSETS_UPLOAD_FAILED: 'Upload failed:',
   RELATIONSHIPS_FETCH_ERROR: '[Relationships API] Error fetching relationships:',
   RELATIONSHIPS_CREATE_ERROR: '[Relationships API] Error creating relationship:',

@@ -2,7 +2,7 @@ import { task } from '@trigger.dev/sdk/v3'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
-import { submitImagineTask, pollLegNextTask } from '@/shared/ai/legnext'
+import { generateMidjourneyImages, pickApiframeImageUrl } from '@/shared/ai/apiframe'
 
 interface GeneratePortraitPayload {
   prompt: string
@@ -14,7 +14,7 @@ interface GeneratePortraitPayload {
 
 export const generatePortrait = task({
   id: 'generate-portrait',
-  maxDuration: 300, // 5 mins
+  maxDuration: 300,
   run: async (payload: GeneratePortraitPayload) => {
     const { prompt, projectId, characterId, apiKey, styleReferenceUrls } = payload
 
@@ -23,14 +23,13 @@ export const generatePortrait = task({
     )
 
     if (!apiKey) {
-      throw new Error('LegNext API key is required')
+      throw new Error('Apiframe API key is required')
     }
 
     if (!projectId || !characterId) {
       throw new Error('projectId and characterId are required')
     }
 
-    // Build image prompt (first URL) + --sref (all URLs)
     let imagePromptPart = ''
     let srefParam = ''
     if (styleReferenceUrls && styleReferenceUrls.length > 0) {
@@ -40,29 +39,17 @@ export const generatePortrait = task({
 
     const fullPrompt = `${imagePromptPart}portrait of ${prompt}, professional headshot, high quality, detailed --ar 1:1${srefParam}`
 
-    // 1. Submit Imagine Task to LegNext API
-    console.log('Submitting imagine task to LegNext API...')
-    const jobId = await submitImagineTask(fullPrompt, apiKey)
-
-    console.log(`Task submitted to LegNext. Job ID: ${jobId}`)
-
-    // 2. Poll for Completion using helper
-    console.log('Polling for completion...')
-    const output = await pollLegNextTask(jobId, apiKey)
-
-    // Output from pollLegNextTask contains image_url or image_urls
-    const targetImageUrl =
-      output.image_url ||
-      (output.image_urls && output.image_urls.length > 0 ? output.image_urls[0] : null)
+    console.log('Submitting Midjourney imagine via Apiframe...')
+    const result = await generateMidjourneyImages(fullPrompt, apiKey, { aspectRatio: '1:1' })
+    const targetImageUrl = pickApiframeImageUrl(result)
 
     if (!targetImageUrl) {
-      console.error('LegNext output:', output)
-      throw new Error('No image URL found in LegNext output')
+      console.error('Apiframe output:', result)
+      throw new Error('No image URL found in Apiframe output')
     }
 
     console.log('Generation successful:', targetImageUrl)
 
-    // 3. Download image from LegNext URL
     const imgResponse = await fetch(targetImageUrl)
     if (!imgResponse.ok) {
       throw new Error(`Failed to download image: ${imgResponse.status}`)
@@ -70,7 +57,6 @@ export const generatePortrait = task({
     const arrayBuffer = await imgResponse.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // 4. Save the image to disk
     const filename = `portrait_${characterId}_${Date.now()}.png`
     const projectDir = path.join(process.cwd(), 'public', 'projects', projectId, 'portraits')
 
@@ -82,7 +68,6 @@ export const generatePortrait = task({
     fs.writeFileSync(filePath, buffer)
     console.log(`Portrait saved to ${filePath}`)
 
-    // 5. Update character in database
     const localPath = `/projects/${projectId}/portraits/${filename}`
     const supabase = createSupabaseServiceClient()
 
@@ -95,7 +80,6 @@ export const generatePortrait = task({
 
     if (dbError) {
       console.error('Failed to update character in DB:', dbError)
-      // Don't throw - the image was saved successfully
     } else {
       console.log(`Character ${characterId} portrait_url updated to ${localPath}`)
     }
@@ -103,7 +87,7 @@ export const generatePortrait = task({
     return {
       success: true,
       imageUrl: localPath,
-      jobId: jobId,
+      jobId: result.jobId,
       characterId: characterId,
     }
   },

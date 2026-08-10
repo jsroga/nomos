@@ -11,13 +11,7 @@ import { generateApiKey, hashApiKey } from '@/mcp/core/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
 import { QueryParam } from '@/shared/data/constants/protocol'
-
-// Schema for creating API keys
-const createApiKeySchema = z.object({
-  name: z.string().min(1).max(100),
-  scopes: z.array(z.string()).optional().default(['*']),
-  expiresAt: z.string().datetime().optional(),
-})
+import { createApiKeyRequestSchema } from '@/shared/openapi/schemas/api-keys'
 
 /**
  * GET /api/api-keys
@@ -50,13 +44,11 @@ export const POST = withRateLimit(
     const body = await request.json()
 
     try {
-      const validated = createApiKeySchema.parse(body)
+      const validated = createApiKeyRequestSchema.parse(body)
 
-      // Generate new API key
       const plainKey = generateApiKey()
       const keyHash = await hashApiKey(plainKey)
 
-      // Store hashed key in database
       const { data, error } = await supabase
         .from(DB_TABLE.API_KEYS)
         .insert({
@@ -74,12 +66,11 @@ export const POST = withRateLimit(
         return NextResponse.json({ error: API_ERROR.FAILED_CREATE_API_KEY }, { status: 500 })
       }
 
-      // Return the plain text key - this is the ONLY time it will be shown
       return NextResponse.json(
         {
           apiKey: {
             ...data,
-            key: plainKey, // Plain text key - save it now!
+            key: plainKey,
           },
           message: API_ERROR.API_KEY_SAVE_NOW,
         },
@@ -95,7 +86,7 @@ export const POST = withRateLimit(
       throw error
     }
   }),
-  { maxRequests: 10, windowMs: 60000 } // 10 key creations per minute
+  { maxRequests: 10, windowMs: 60000 }
 )
 
 /**
@@ -111,12 +102,11 @@ export const DELETE = withAuth(
       return NextResponse.json({ error: API_ERROR.API_KEY_ID_REQUIRED }, { status: 400 })
     }
 
-    // Revoke by setting revoked_at timestamp (soft delete)
     const { error } = await supabase
       .from(DB_TABLE.API_KEYS)
       .update({ [DB_COLUMN.REVOKED_AT]: new Date().toISOString() })
       .eq(DB_COLUMN.ID, keyId)
-      .eq(DB_COLUMN.USER_ID, session.user.id) // Ensure user owns the key
+      .eq(DB_COLUMN.USER_ID, session.user.id)
 
     if (error) {
       console.error(API_LOG_PREFIX.API_KEYS_REVOKE_ERROR, error)

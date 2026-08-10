@@ -15,7 +15,7 @@ type ProjectSelectionTopBarProps = {
   onSignOut: () => void
 }
 
-/** Same chrome geometry as marketing LandingNav (h-16, 1280 / px-6). */
+/** Shared chrome with LandingNav + GlobalHeader (h-16, dark glass bar). */
 export function ProjectSelectionTopBar({
   email,
   avatarUrl,
@@ -24,7 +24,7 @@ export function ProjectSelectionTopBar({
   const initial = (email?.[0] ?? '?').toUpperCase()
 
   return (
-    <header className="sticky top-0 z-40 h-16 border-b border-white/[0.06] bg-[rgba(9,9,11,0.92)]">
+    <header className="sticky top-0 z-50 h-16 shrink-0 border-b border-white/[0.06] bg-[rgba(9,9,11,0.92)]">
       <div className="mx-auto flex h-full max-w-[1280px] items-center justify-between gap-6 px-6">
         <Link href="/" prefetch={false} className="flex shrink-0 items-center">
           <img
@@ -40,17 +40,24 @@ export function ProjectSelectionTopBar({
           <button
             type="button"
             onClick={onSignOut}
-            className={`font-mono text-[11px] uppercase tracking-[0.2em] text-white/50 transition-colors duration-200 hover:text-white ${PROJECT_SELECTION_FOCUS_RING_VISIBLE}`}
+            className={`hidden text-[14px] font-medium text-white/[0.72] transition-colors duration-200 hover:text-white sm:inline ${PROJECT_SELECTION_FOCUS_RING_VISIBLE}`}
           >
             {PROJECT_SELECTION_SIGN_OUT}
           </button>
-          <div aria-hidden className="hidden h-5 w-px bg-white/10 sm:block" />
-          <Avatar className="h-[30px] w-[30px] border border-primary/30 bg-primary/20">
-            <AvatarImage src={avatarUrl} alt="" />
-            <AvatarFallback className="bg-transparent font-mono text-[11px] font-bold text-primary">
-              {initial}
-            </AvatarFallback>
-          </Avatar>
+
+          <div className="inline-flex h-[34px] items-center gap-2.5 rounded-md border border-white/10 bg-white/[0.04] py-0 pl-1.5 pr-3">
+            <Avatar className="h-7 w-7 border border-primary/30 bg-primary/20">
+              <AvatarImage src={avatarUrl} alt="" />
+              <AvatarFallback className="bg-transparent font-mono text-[10px] font-bold text-primary">
+                {initial}
+              </AvatarFallback>
+            </Avatar>
+            {email ? (
+              <span className="max-w-[180px] truncate text-[13px] font-medium text-white/80">
+                {email}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
     </header>

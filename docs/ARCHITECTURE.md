@@ -20,7 +20,7 @@ Next.js 16 · Mastra · Radix/CVA · Supabase · TanStack Query · Trigger.dev �
 |--------|------|
 | `app/` | Thin routes + API glue only |
 | `domains/` | Feature vertical slices (blueprint below) |
-| `shared/` | Cross-module — allowlist in `scripts/structure-gates/src-topology.ts` (`admin`, `agent-kernel`, `auth`, `canvas`, `chat`, `data`, `debug`, `errors`, `jobs`, `observability` + legacy `ai`/`three`/`tours`/`types`/`workspace`) |
+| `shared/` | Cross-module — allowlist in `scripts/structure-gates/src-topology.ts` (`admin`, `agent-kernel`, `auth`, `canvas`, `chat`, `data`, `debug`, `errors`, `jobs`, `observability`, `openapi` + legacy `ai`/`three`/`tours`/`types`/`workspace`) |
 | `components/` | Design system (PascalCase folders) |
 | `db/` | Drizzle schema + `db` client (`DATABASE_URL`) |
 | `trigger/` | Task registry |

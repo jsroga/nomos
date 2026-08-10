@@ -11,6 +11,8 @@ export const SECTION_UPDATE_ALLOWLIST: Record<string, readonly string[]> = {
   [BibleSection.FACTIONS]: ['factions'],
   [BibleSection.WORLD_RULES]: ['worldRules'],
   [BibleSection.PLOT_TWISTS]: ['plotTwists'],
+  [BibleSection.EPISODE_PREMISE]: ['episodePremise'],
+  [BibleSection.EPISODE_ROADMAP]: ['episodeRoadmap'],
 }
 
 export function filterUpdatesForBibleSection(

@@ -14,11 +14,11 @@ import {
   TRIGGER_TASK_TTL,
 } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
-import { EnvVarName, GoogleModelId } from '@/shared/data/constants/protocol'
+import { resolveFidelityModel, readApiframeApiKey } from '@/shared/ai/image-model-env'
 
 /**
  * POST /api/trigger-fidelity
- * Trigger fidelity enhancement task
+ * Trigger fidelity enhancement task (Apiframe Nano Banana img2img)
  */
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
@@ -28,26 +28,24 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.FIDELITY_FIELDS_REQUIRED }, { status: 400 })
     }
 
-    // Server-side key resolution
-    if (!process.env[EnvVarName.GoogleApiKey]) {
+    const apiKey = readApiframeApiKey()
+    if (!apiKey) {
       return NextResponse.json(
-        { error: API_ERROR.GOOGLE_API_KEY_NOT_CONFIGURED_FIDELITY },
+        { error: API_ERROR.APIFRAME_API_KEY_NOT_PROVIDED },
         { status: 500 }
       )
     }
 
-    const geminiConfig = {
-      apiKey: process.env[EnvVarName.GoogleApiKey],
-      model: GoogleModelId.Gemini3ProImagePreview,
+    const apiframeConfig = {
+      apiKey,
+      model: resolveFidelityModel(),
     }
 
-    // Verify project access via RLS
     const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
-    // Fetch project style references using authenticated client (preset or custom URLs)
     let styleReferenceUrls = payload.styleReferenceUrls
     if (!styleReferenceUrls) {
       const { data } = await supabase
@@ -70,7 +68,7 @@ export const POST = withRateLimit(
         imageBase64: payload.imageBase64,
         stylePrompt: payload.stylePrompt,
         creativity: payload.creativity || 0.3,
-        geminiConfig,
+        apiframeConfig,
         styleReferenceUrls,
       },
       {
@@ -84,5 +82,5 @@ export const POST = withRateLimit(
       publicAccessToken: handle.publicAccessToken,
     })
   }),
-  { maxRequests: 15, windowMs: 60000 } // 15 fidelity enhancements per minute
+  { maxRequests: 15, windowMs: 60000 }
 )

@@ -34,4 +34,14 @@ describe('filterUpdatesForBibleSection', () => {
     expect(updates).toEqual({ moodSoundtrack: 'drone' })
     expect(dropped).toEqual(['worldDescription'])
   })
+
+  it('allows episodePremise on premise turns', () => {
+    const premise = { logline: 'A door opens.' }
+    const { updates, dropped } = filterUpdatesForBibleSection(
+      { episodePremise: premise, worldDescription: 'nope' },
+      BibleSection.EPISODE_PREMISE
+    )
+    expect(updates).toEqual({ episodePremise: premise })
+    expect(dropped).toEqual(['worldDescription'])
+  })
 })

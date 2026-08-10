@@ -34,8 +34,6 @@ export function LandingFooter() {
           <Link
             prefetch={false}
             href={LandingExternalUrl.ApiDocs}
-            target="_blank"
-            rel="noopener noreferrer"
             className="group inline-flex items-center gap-2 px-6 py-4 text-sm font-bold text-white/60 hover:text-white transition-colors duration-200 border border-transparent hover:border-white/10 rounded-lg hover:bg-white/5 font-mono"
           >
             {LandingFooterCopy.ReadDocs}

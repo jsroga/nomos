@@ -27,7 +27,7 @@ export const LANDING_NAV_ITEMS: readonly LandingNavItem[] = [
 
 export enum LandingExternalUrl {
   DocsReadme = 'https://github.com/jsroga/nomos#readme',
-  ApiDocs = 'https://github.com/jsroga/nomos/tree/main/docs',
+  ApiDocs = '/api-docs',
   GitHubRepo = 'https://github.com/jsroga/nomos',
   Login = '/login',
   Projects = '/projects',

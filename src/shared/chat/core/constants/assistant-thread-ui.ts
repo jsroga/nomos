@@ -60,6 +60,7 @@ export const ASSISTANT_THREAD_COPY = {
   Connecting: 'Connecting',
   Writing: 'Writing',
   AddToWorld: 'Add to world',
+  AddedToWorld: 'Added',
   DayToday: 'Today',
   ModelFallback: 'Auto',
   AddToWorldPromptPrefix: 'Add these to the world bible:\n',

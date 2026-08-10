@@ -1,8 +1,8 @@
 /**
- * SculptableSurface v3 - Fixed Reactivity + Lighting
+ * SculptableSurface — displacement shader top + optional voxel mode.
  */
 
-import React, { useRef, useEffect, useMemo, useState } from 'react'
+import React, { useRef, useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { ThreeEvent } from '@react-three/fiber'
 import { useInteriorStore, Surface } from '@/domains/3d-canvas'
@@ -13,6 +13,10 @@ import {
 } from '@/domains/3d-canvas/constants/three-js'
 import type { SurfaceRenderConfig } from '@/domains/3d-canvas/constants/surface-render-config'
 import { vec2 } from '@/domains/3d-canvas/core/vec3'
+import {
+  resolveEffectiveRenderConfig,
+  resolveTerrainMeshQuality,
+} from '@/domains/3d-canvas/core/render-quality'
 import { VoxelTerrainMesh } from './VoxelTerrainMesh'
 import { SculptableSurfaceOverlay } from './SculptableSurfaceOverlay'
 import {
@@ -58,13 +62,20 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
   const wallMeshRef = useRef<THREE.Mesh>(null)
   const materialRef = useRef<THREE.ShaderMaterial | null>(null)
   const heightmapTextureRef = useRef<THREE.DataTexture | null>(null)
-  const [_wallGeometryVersion, setWallGeometryVersion] = useState(0)
 
   const quality = useInteriorStore(state => state.terrainSettings.quality)
+  const renderQuality = useInteriorStore(state => state.renderQuality)
+  const interactionActive = useInteriorStore(state => state.interactionActive)
   const voxelMode = useInteriorStore(state => state.terrainBrush.pixelate)
   const heightmap = useInteriorStore(state => state.terrainSettings.heightmap)
   const heightmapSize = useInteriorStore(state => state.terrainSettings.heightmapSize)
   const baseGroundHeight = useInteriorStore(state => state.terrainSettings.baseGroundHeight)
+  const heightmapVersion = useInteriorStore(state => state.terrainSettings.heightmapVersion)
+
+  const meshQuality = resolveTerrainMeshQuality(
+    quality,
+    resolveEffectiveRenderConfig(renderQuality, interactionActive).terrainQualityCap
+  )
 
   useEffect(() => {
     let prevVersion = useInteriorStore.getState().terrainSettings.heightmapVersion
@@ -77,8 +88,6 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
         if (nextHeightmap && heightmapTextureRef.current) {
           writeHeightmapToTexture(nextHeightmap, heightmapTextureRef.current, baseHeight)
         }
-
-        setWallGeometryVersion(v => v + 1)
       }
     })
     return () => unsubscribe()
@@ -112,8 +121,8 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
 
   const topGeometry = useMemo(() => {
     if (!bounds) return null
-    return buildSculptableTopGeometry({ bounds, quality, color: config.color })
-  }, [bounds, quality, config.color])
+    return buildSculptableTopGeometry({ bounds, quality: meshQuality, color: config.color })
+  }, [bounds, meshQuality, config.color])
 
   const topMaterial = useMemo(() => {
     if (!bounds || !surface.points) return null
@@ -179,7 +188,8 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
       heightmapSize,
       baseHeight: baseGroundHeight,
     })
-  }, [bounds, surface.points, config, heightmap, heightmapSize, baseGroundHeight])
+    // heightmapVersion forces rebuild when the shared Float32Array is mutated in place
+  }, [bounds, surface.points, config, heightmap, heightmapSize, baseGroundHeight, heightmapVersion])
 
   const wallMaterial = useMemo(
     () =>
@@ -194,8 +204,9 @@ export const SculptableSurface: React.FC<SculptableSurfaceProps> = ({
     return () => {
       heightmapTextureRef.current?.dispose()
       materialRef.current?.dispose()
+      wallMaterial.dispose()
     }
-  }, [])
+  }, [wallMaterial])
 
   if (!topGeometry || !topMaterial || !bounds) return null
 

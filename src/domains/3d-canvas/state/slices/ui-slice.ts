@@ -6,6 +6,7 @@ import {
   InteriorSurfacePreset,
   TransformMode,
 } from '@/domains/3d-canvas/constants/interaction-modes'
+import { RenderQuality } from '@/domains/3d-canvas/constants/render-quality'
 import type { InteractionMode } from '../../core/interior-types'
 import type { InteriorState } from '../interior-state'
 import {
@@ -20,6 +21,8 @@ export type UiSlice = Pick<
   | 'exportRequested'
   | 'cameraResetRequested'
   | 'zenMode'
+  | 'renderQuality'
+  | 'interactionActive'
   | 'activeLevel'
   | 'activeModelUrl'
   | 'activeSurfaceType'
@@ -37,6 +40,8 @@ export type UiSlice = Pick<
   | 'setCameraResetRequested'
   | 'setZenMode'
   | 'toggleZenMode'
+  | 'setRenderQuality'
+  | 'setInteractionActive'
   | 'setLockY'
   | 'setSnapEnabled'
   | 'setSnapSize'
@@ -49,6 +54,8 @@ export const createUiSlice: StateCreator<InteriorState, [], [], UiSlice> = set =
   exportRequested: false,
   cameraResetRequested: false,
   zenMode: false,
+  renderQuality: RenderQuality.High,
+  interactionActive: false,
   activeLevel: 0,
   activeModelUrl: InteriorObjectModel.Cube,
   activeSurfaceType: InteriorSurfacePreset.Road,
@@ -75,13 +82,15 @@ export const createUiSlice: StateCreator<InteriorState, [], [], UiSlice> = set =
   setCameraResetRequested: requested => set({ cameraResetRequested: requested }),
   setZenMode: enabled => set({ zenMode: enabled }),
   toggleZenMode: () => set(state => ({ zenMode: !state.zenMode })),
+  setRenderQuality: renderQuality => set({ renderQuality }),
+  setInteractionActive: interactionActive => set({ interactionActive }),
   setLockY: lockY => set({ lockY }),
   setSnapEnabled: snapEnabled => set({ snapEnabled }),
   setSnapSize: snapSize => set({ snapSize }),
   setTransformMode: transformMode => set({ transformMode }),
 
   resetInterior: () =>
-    set(() => ({
+    set(state => ({
       mode: INTERACTION_MODE_SELECT,
       walls: [],
       floors: [],
@@ -98,6 +107,8 @@ export const createUiSlice: StateCreator<InteriorState, [], [], UiSlice> = set =
       currentDesignName: null,
       hasUnsavedChanges: false,
       lastSaved: null,
+      renderQuality: state.renderQuality,
+      interactionActive: false,
       terrainSettings: createDefaultTerrainSettings(),
       terrainBrush: createDefaultTerrainBrush(),
       terrainMaterialPaint: createDefaultTerrainMaterialPaint(),

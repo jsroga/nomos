@@ -168,7 +168,9 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
 
       setIsGeneratingPoster(true)
 
-      const apiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+      const apiKey =
+        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) ||
+        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
 
       try {
         const premise = recordFromJson(recordFromJson(storyPlan).premise)

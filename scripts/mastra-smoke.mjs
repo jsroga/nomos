@@ -81,6 +81,16 @@ if (!existsSync(studioIndex)) {
   )
 }
 
+const bundledEntry = join(root, '.mastra/output/index.mjs')
+if (existsSync(bundledEntry)) {
+  const bundled = readFileSync(bundledEntry, 'utf8')
+  if (/from ['"]@\//.test(bundled)) {
+    problems.push(
+      "bundled .mastra/output/index.mjs still imports '@/…' — tsconfig paths were not applied. Ensure compilerOptions.baseUrl is \".\" then `rm -rf .mastra && npm run mastra:build`",
+    )
+  }
+}
+
 // Optional live probe — never fail the smoke solely because Studio isn't running.
 let studioHint = ''
 try {

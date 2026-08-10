@@ -4,7 +4,7 @@ export enum WritersRoomToast {
   AlreadyInWorld = 'Already in the world bible',
   AlreadyQueued = 'Already queued for review',
   AddedToWorld = 'Added to world',
-  NothingToAdd = 'Nothing structured to add from this message',
+  EpisodeCreated = 'Episode created',
 }
 
 export enum WritersRoomConfirm {

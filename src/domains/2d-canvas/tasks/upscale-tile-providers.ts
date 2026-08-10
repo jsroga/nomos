@@ -1,5 +1,3 @@
 export type { ProviderConfig, UpscaleProvider } from './upscale-tile-provider-types'
-export { pollLegNextTask } from './upscale-tile-legnext-poll'
 export { upscaleWithLegNext } from './upscale-tile-legnext-provider'
-export { upscaleWithReplicate } from './upscale-tile-replicate-provider'
-export { upscaleWithStability } from './upscale-tile-stability-provider'
+export { upscaleWithApiframe } from './upscale-tile-apiframe-provider'

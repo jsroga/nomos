@@ -72,7 +72,7 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
   const requestContext = buildStorytellerRequestContext({
     projectId: input.projectId,
     episodeId: input.episodeId,
-    authorModel: requestedModel,
+    chatModel: requestedModel,
   })
 
   if (isStorytellerControllerEnabled()) {

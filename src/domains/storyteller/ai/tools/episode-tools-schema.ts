@@ -8,9 +8,19 @@ export const EpisodePremiseSchema = z
     antagonistMove: z.string().optional().describe('What the antagonist does to create conflict'),
     fatalFlaw: z.string().optional().describe('How protagonist flaw creates problems'),
     thematicQuestion: z.string().optional().describe('The central question this episode explores'),
+    stakes: z.string().optional().describe('What is at risk if the protagonist fails'),
+    inevitableConsequence: z
+      .string()
+      .optional()
+      .describe('What must happen if the protagonist stays on this path'),
+    tenPointsPlan: z
+      .array(z.string())
+      .optional()
+      .describe('Ten concrete story beats that carry the episode'),
   })
+  .passthrough()
   .optional()
-  .describe('Episode premise structure')
+  .describe('Episode premise (Ozymandias) — include when creating or drafting an episode')
 
 export const EpisodeDataSchema = z.object({
   title: z.string().min(1).describe('Episode title'),

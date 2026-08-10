@@ -17,10 +17,10 @@ export const API_ERROR = {
   FAILED_CREATE_ENTITY: 'Failed to create entity',
   GOOGLE_API_KEY_NOT_CONFIGURED_SERVER: 'GOOGLE_API_KEY not configured on server',
   OPENROUTER_API_KEY_NOT_CONFIGURED_SERVER:
-    'OPENROUTER_API_KEY not configured on server (required for FOLLOW_UP_IMAGE_PROVIDER=grok)',
+    'OPENROUTER_API_KEY not configured on server',
   MISSING_REPAINT_FIELDS: 'Missing required fields: projectId, base64Image, maskBase64',
   NO_AI_PROVIDER_CONFIGURED:
-    'No AI provider configured (LEGNEXT_API_KEY, GOOGLE_API_KEY, or OPENROUTER_API_KEY required)',
+    'No AI provider configured (APIFRAME_API_KEY required for image generation)',
   MISSING_TILE_TRIGGER_FIELDS: 'Missing required fields: projectId, x, y, prompt',
   NO_CANDIDATES_GEMINI: 'No candidates returned from Gemini',
   GENERATION_BLOCKED_SAFETY: 'Generation blocked by safety filters',
@@ -132,6 +132,8 @@ export const API_ERROR = {
   FAILED_UPDATE_PROJECT: 'Failed to update project',
   LEGNEXT_API_KEY_NOT_PROVIDED: 'LegNext API key not provided',
   LEGNEXT_API_KEY_CONFIGURE: 'Please configure your LegNext API key in Settings',
+  APIFRAME_API_KEY_NOT_PROVIDED: 'Apiframe API key not provided',
+  APIFRAME_API_KEY_CONFIGURE: 'Please configure your Apiframe API key in Settings',
   FAILED_GET_STATUS: 'Failed to get status',
   WORKFLOW_NOT_REGISTERED: 'Workflow not registered',
   WORKFLOW_NOT_FOUND_OR_COMPLETED: 'Workflow not found or already completed',

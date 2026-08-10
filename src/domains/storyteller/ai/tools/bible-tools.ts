@@ -18,6 +18,7 @@ import {
   isConsistencyCheckKind,
 } from '@/domains/storyteller/services/consistency-types'
 import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
+import { recordFromJson } from '@/shared/data/json-guards'
 import {
   STORYTELLER_PROJECT_ID,
   STORYTELLER_EPISODE_ID,
@@ -28,7 +29,9 @@ import { filterUpdatesForBibleSection } from '@/domains/storyteller/ai/tools/bib
 import {
   BibleToolError,
   BibleToolLog,
+  BibleEpisodePremiseError,
   persistStoryPlanUpdates,
+  persistEpisodePremiseUpdate,
   proposedFieldsFromInput,
 } from '@/domains/storyteller/ai/tools/bible-tools-update'
 
@@ -114,6 +117,16 @@ const UpdateWorldBibleInputSchema = z.object({
     .optional()
     .describe(
       'Books, movies, and games that inspire the world — use this for any inspirations request'
+    ),
+  episodeRoadmap: z
+    .record(z.unknown())
+    .optional()
+    .describe('Season / episode roadmap for the series bible'),
+  episodePremise: z
+    .record(z.unknown())
+    .optional()
+    .describe(
+      'Ozymandias premise for the currently selected episode — requires an open episodeId; otherwise use manage_episode create with data.premise'
     ),
 })
 
@@ -230,6 +243,7 @@ export const updateWorldBibleTool = createTool({
       context.requestContext,
       STORYTELLER_BIBLE_SECTION
     )
+    const episodeId = requestContextString(context.requestContext, STORYTELLER_EPISODE_ID)
 
     try {
       const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
@@ -258,11 +272,33 @@ export const updateWorldBibleTool = createTool({
         }
       }
 
-      await persistStoryPlanUpdates(
-        projectId,
-        parseStoryPlanRecord(project.storyPlan),
-        updates
-      )
+      const projectUpdates: Record<string, unknown> = { ...updates }
+      const premiseValue = projectUpdates.episodePremise
+      delete projectUpdates.episodePremise
+
+      if (premiseValue !== undefined) {
+        if (!episodeId) {
+          return {
+            success: false,
+            error: BibleEpisodePremiseError.EpisodeIdRequired,
+          }
+        }
+        if (typeof premiseValue !== 'object' || premiseValue === null || Array.isArray(premiseValue)) {
+          return {
+            success: false,
+            error: BibleToolError.NoFields,
+          }
+        }
+        await persistEpisodePremiseUpdate(episodeId, recordFromJson(premiseValue))
+      }
+
+      if (Object.keys(projectUpdates).length > 0) {
+        await persistStoryPlanUpdates(
+          projectId,
+          parseStoryPlanRecord(project.storyPlan),
+          projectUpdates
+        )
+      }
 
       return {
         success: true,
