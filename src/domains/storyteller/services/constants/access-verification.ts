@@ -1,4 +1,6 @@
-export const E2E_TEST_USER_ID = 'e2e-test-user-id'
+import { E2E_MOCK_USER_ID } from '@/shared/auth/constants/e2e-auth'
+
+export const E2E_TEST_USER_ID = E2E_MOCK_USER_ID
 
 export enum NodeEnv {
   Development = 'development',

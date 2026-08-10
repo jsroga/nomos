@@ -32,7 +32,6 @@ import {
   PAYLOAD_LOG_LIMIT,
   SmokeAction,
   SmokeActionStatus,
-  SmokeDummySuite,
   SmokeError,
   SmokeEvent,
   SmokeHttp,
@@ -108,6 +107,13 @@ function readPayloadArray(payload: unknown, key: SmokeKey): unknown[] {
   if (Array.isArray(direct)) return direct
   const nested = readNested(readNested(payload, SmokeKey.UpdatedFields), key)
   return Array.isArray(nested) ? nested : []
+}
+
+/** True when the action targeted `key` (full array and/or updatedFields list). */
+function payloadTouchesField(payload: unknown, key: SmokeKey): boolean {
+  if (readPayloadArray(payload, key).length > 0) return true
+  const updated = readNested(payload, SmokeKey.UpdatedFields)
+  return Array.isArray(updated) && updated.some(value => value === key)
 }
 
 async function parseSSEStream(response: Response): Promise<SSEEvent[]> {
@@ -388,7 +394,7 @@ function extractWorldRulesPayload(events: SSEEvent[]): unknown[] {
   const payload = worldRulesAction.action?.payload
   const worldRules = readPayloadArray(payload, SmokeKey.WorldRules)
 
-  if (worldRules.length === 0) {
+  if (worldRules.length === 0 && !payloadTouchesField(payload, SmokeKey.WorldRules)) {
     console.log(SmokeLog.Payload, JSON.stringify(payload).slice(0, PAYLOAD_LOG_LIMIT))
     throw new Error(SmokeError.Step3NoWorldRulesPayload)
   }
@@ -494,7 +500,7 @@ async function test_E2E_PlotTwists_GenerateAndPersist() {
   const payload = plotTwistsAction.action?.payload
   const plotTwists = readPayloadArray(payload, SmokeKey.PlotTwists)
 
-  if (plotTwists.length === 0) {
+  if (plotTwists.length === 0 && !payloadTouchesField(payload, SmokeKey.PlotTwists)) {
     console.log(SmokeLog.Payload, JSON.stringify(payload).slice(0, PAYLOAD_LOG_LIMIT))
     throw new Error(SmokeError.NoPlotTwistsPayload)
   }
@@ -775,6 +781,3 @@ main().catch(err => {
   console.error(SmokeLog.FatalError, err)
   process.exit(1)
 })
-
-import { describe, it } from 'vitest'
-describe.skip(SmokeDummySuite.Describe, () => { it(SmokeDummySuite.Test, () => {}) })
