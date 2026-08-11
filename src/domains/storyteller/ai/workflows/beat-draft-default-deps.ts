@@ -19,15 +19,73 @@ import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/ai/tools/be
 import { readWorldBibleTool } from '@/domains/storyteller/ai/tools/bible-tools'
 import { statelessGrrmAuthor, statelessBeatPlanner } from './stateless-agents'
 import {
+  BEAT_DRAFT_AUTHOR_CANON_CHAR_BUDGET,
+  BEAT_DRAFT_AUTHOR_CANON_TRUNCATED,
+  BEAT_DRAFT_AUTHOR_CRITIQUES_CHAR_BUDGET,
+  BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
   BEAT_DRAFT_CHARACTERS_JOIN,
   BEAT_DRAFT_CRITIQUE_JOIN,
   BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
   BEAT_DRAFT_NO_FINDINGS,
   BeatDraftCriticName,
-  BeatDraftManageBeatOperation,
+  BeatDraftStructuredOutputErrorStrategy,
   BeatDraftToolChoice,
+  BeatDraftWorldBibleSection,
 } from './constants/beat-draft-workflow'
+import { ManageToolOperation } from '@/domains/storyteller/ai/tools/manage-tools-wire'
+import { ManageBeatOutputSchema } from '@/domains/storyteller/ai/tools/beat-tools-schema'
 import type { BeatDraftDeps } from './beat-draft-deps-types'
+
+function truncateForAuthor(text: string, budget: number): string {
+  if (text.length <= budget) return text
+  return `${text.slice(0, budget)}${BEAT_DRAFT_AUTHOR_CANON_TRUNCATED}`
+}
+
+function truncateCanonForAuthor(canon: string): string {
+  return truncateForAuthor(canon, BEAT_DRAFT_AUTHOR_CANON_CHAR_BUDGET)
+}
+
+/** Thinking models may wrap chain-of-thought; strip it so only script text is persisted. */
+function extractAuthorScript(text: string): string {
+  const withoutThinking = text
+    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+    .replace(/^```(?:script|text|markdown)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim()
+  return withoutThinking.length > 0 ? withoutThinking : text.trim()
+}
+
+async function generateAuthorDraft(prompt: string): Promise<string> {
+  const hardened = `${prompt}
+
+Respond with the script beat only. No thinking tags, no markdown fences, no preamble.`
+
+  let lastText = ''
+  for (let attempt = 0; attempt < 1; attempt++) {
+    const response = await Promise.race([
+      statelessGrrmAuthor.generate(hardened, {
+        toolChoice: BeatDraftToolChoice.None,
+        maxSteps: 1,
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(
+            new Error(
+              `Author generate timed out after ${BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS}ms (attempt ${attempt + 1})`
+            )
+          )
+        }, BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS)
+      }),
+    ])
+    lastText = response.text
+    const script = extractAuthorScript(lastText)
+    if (script.length > 0) return script
+  }
+
+  throw new Error(
+    `Author generate returned empty script text after retry (raw length ${lastText.length})`
+  )
+}
 
 async function invokeTool<TInput, TOutput>(
   tool: {
@@ -53,19 +111,29 @@ async function invokeTool<TInput, TOutput>(
 }
 
 async function runCritic(critic: Agent, name: string, prompt: string): Promise<string> {
-  const response = await critic.generate(prompt, {
-    structuredOutput: { schema: CriticReportSchema },
-  })
-  const parsed = CriticReportSchema.safeParse(response.object)
-  if (!parsed.success) {
-    return `## ${name} findings\n${response.text || BEAT_DRAFT_NO_FINDINGS}`
+  try {
+    const response = await critic.generate(prompt, {
+      structuredOutput: {
+        schema: CriticReportSchema,
+        errorStrategy: BeatDraftStructuredOutputErrorStrategy.Warn,
+      },
+    })
+    const parsed = CriticReportSchema.safeParse(response.object)
+    if (!parsed.success) {
+      return `## ${name} findings\n${response.text || BEAT_DRAFT_NO_FINDINGS}`
+    }
+    return formatCriticReport(name, parsed.data)
+  } catch {
+    return `## ${name} findings\n${BEAT_DRAFT_NO_FINDINGS}`
   }
-  return formatCriticReport(name, parsed.data)
 }
 
 export const defaultBeatDraftDeps: BeatDraftDeps = {
   assembleCanon: async ctx => {
-    const bible = await invokeTool(readWorldBibleTool, { projectId: ctx.projectId })
+    const bible = await invokeTool(readWorldBibleTool, {
+      projectId: ctx.projectId,
+      sections: [BeatDraftWorldBibleSection.All],
+    })
     const beats = await invokeTool(listBeatsTool, {
       episodeId: ctx.episodeId,
       includeContent: false,
@@ -102,7 +170,7 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
   },
 
   draftBeat: async (ctx, canon, plan) => {
-    const prompt = `${canon}
+    const prompt = `${truncateCanonForAuthor(canon)}
 
 Generate a script-format story beat for episode ${ctx.episodeId}.
 Beat plan: ${JSON.stringify(plan)}
@@ -116,8 +184,7 @@ Follow the Script Beat Format (§ GrrmSystemPrompt):
 
 Output ONLY the script beat — no preamble, no notes.`
 
-    const response = await statelessGrrmAuthor.generate(prompt, { toolChoice: BeatDraftToolChoice.None })
-    return response.text
+    return generateAuthorDraft(prompt)
   },
 
   critique: async (draft, canon) => {
@@ -135,7 +202,7 @@ Output ONLY the script beat — no preamble, no notes.`
     const noteBlock = editorNote
       ? `\nYOUR EDITOR'S DIRECTION (this outranks the critics and your own preferences):\n${editorNote}\n`
       : ''
-    const prompt = `${canon}
+    const prompt = `${truncateCanonForAuthor(canon)}
 
 You drafted this script beat:
 
@@ -143,12 +210,11 @@ ${draft}
 
 Three narrow critics reviewed it. Their briefs are deliberately limited; they diagnose, you decide. You may REJECT findings that would damage the beat's voice or intent — critics find faults, they don't hold the vision. Fix what is genuinely broken.
 
-${critiques}
+${truncateForAuthor(critiques, BEAT_DRAFT_AUTHOR_CRITIQUES_CHAR_BUDGET)}
 ${noteBlock}
 Output the REVISED beat in full, in Script Beat Format. Script only — no preamble, no notes.`
 
-    const response = await statelessGrrmAuthor.generate(prompt, { toolChoice: BeatDraftToolChoice.None })
-    return response.text
+    return generateAuthorDraft(prompt)
   },
 
   generateSparks: async (ctx, canon) => {
@@ -163,7 +229,7 @@ Output the REVISED beat in full, in Script Beat Format. Script only — no pream
 
   persistBeat: async (ctx, plan, finalDraft) => {
     const result = await invokeTool(manageBeatTool, {
-      operation: BeatDraftManageBeatOperation.Create,
+      operation: ManageToolOperation.Create,
       episodeId: ctx.episodeId,
       projectId: ctx.projectId,
       data: {
@@ -175,10 +241,14 @@ Output the REVISED beat in full, in Script Beat Format. Script only — no pream
         storyStateChange: plan.turn,
       },
     })
+    const parsed = ManageBeatOutputSchema.safeParse(result)
+    if (!parsed.success) {
+      throw new Error(`Tool ${manageBeatTool.id} returned no result`)
+    }
     return {
-      saved: result.success,
-      beatId: result.beat?.id,
-      message: result.message ?? result.error ?? BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
+      saved: parsed.data.success,
+      beatId: parsed.data.beat?.id,
+      message: parsed.data.message ?? parsed.data.error ?? BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
     }
   },
 }

@@ -7,12 +7,22 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { Mastra } from '@mastra/core/mastra'
+import { recordFromJson } from '@/shared/data/deep-merge'
 import {
   createBeatDraftWorkflow,
   type BeatDraftDeps,
 } from '../beat-draft-workflow'
 import { VERDICT_STEP_ID, beatDraftOutputSchema } from '../beat-draft-contract'
 import type { BeatPlan } from '../../agents/BeatPlanner/beat-plan-schema'
+
+function suspendPayload(
+  steps: Record<string, { suspendPayload?: unknown } | undefined> | undefined,
+  stepId: string
+): Record<string, unknown> | undefined {
+  const raw = steps?.[stepId]?.suspendPayload
+  if (raw == null) return undefined
+  return recordFromJson(raw)
+}
 
 /**
  * Suspend snapshots need a Mastra binding — a throwaway test instance with
@@ -64,8 +74,7 @@ describe('beat-draft-workflow mechanics (no LLM)', () => {
     const result = await run.start({ inputData: INPUT })
 
     expect(result.status).toBe('suspended')
-    const payload: Record<string, unknown> | undefined =
-      result.steps[VERDICT_STEP_ID]?.suspendPayload
+    const payload = suspendPayload(result.steps, VERDICT_STEP_ID)
     expect(payload?.draft).toContain('INT. CHAPEL')
     expect(payload?.critiques).toContain('NO FINDINGS')
     expect(deps.persistBeat).not.toHaveBeenCalled()
@@ -193,8 +202,7 @@ describe('beat-plan concreteness gate (item 35)', () => {
     expect(retryFeedback).toContain('tension rises')
 
     expect(result.status).toBe('suspended')
-    const payload: Record<string, unknown> | undefined =
-      result.steps[VERDICT_STEP_ID]?.suspendPayload
+    const payload = suspendPayload(result.steps, VERDICT_STEP_ID)
     expect(payload?.planWarnings).toBeUndefined()
   })
 
@@ -207,8 +215,7 @@ describe('beat-plan concreteness gate (item 35)', () => {
 
     expect(planBeat).toHaveBeenCalledTimes(2)
     expect(result.status).toBe('suspended')
-    const payload: Record<string, unknown> | undefined =
-      result.steps[VERDICT_STEP_ID]?.suspendPayload
+    const payload = suspendPayload(result.steps, VERDICT_STEP_ID)
     expect(Array.isArray(payload?.planWarnings)).toBe(true)
     expect(String(payload?.planWarnings)).toContain('goal is too thin')
     // The vague plan still flows through — flagged, not fatal.
@@ -240,8 +247,7 @@ describe('Muse sparks wiring (item 5.3)', () => {
     expect(String(planBeatCall[3])).toContain(KEPT_SPARK.idea.hook)
 
     expect(result.status).toBe('suspended')
-    const payload: Record<string, unknown> | undefined =
-      result.steps[VERDICT_STEP_ID]?.suspendPayload
+    const payload = suspendPayload(result.steps, VERDICT_STEP_ID)
     expect(payload?.sparks).toEqual([KEPT_SPARK.idea.hook])
   })
 
@@ -253,8 +259,7 @@ describe('Muse sparks wiring (item 5.3)', () => {
 
     expect(deps.generateSparks).not.toHaveBeenCalled()
     expect(result.status).toBe('suspended')
-    const payload: Record<string, unknown> | undefined =
-      result.steps[VERDICT_STEP_ID]?.suspendPayload
+    const payload = suspendPayload(result.steps, VERDICT_STEP_ID)
     expect(payload?.sparks).toBeUndefined()
   })
 })

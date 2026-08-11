@@ -153,6 +153,9 @@ module.exports = [
     ignores: [
       'node_modules/**',
       '.next/**',
+      '.mastra/**',
+      '.local/**',
+      '.design-sync/**',
       'out/**',
       'dist/**',
       'build/**',
@@ -365,7 +368,12 @@ module.exports = [
     // Test files: describe/it titles, fixtures, and assertion messages are
     // inherently string-heavy — the magic-string rule targets RUNTIME wire/
     // domain values, not test prose. Other quality rules still apply.
-    files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', '**/*.e2e.test.{ts,tsx}'],
+    files: [
+      '**/__tests__/**/*.{ts,tsx}',
+      '**/*.test.{ts,tsx}',
+      '**/*.e2e.test.{ts,tsx}',
+      'e2e/**/*.{ts,tsx}',
+    ],
     rules: {
       'local/no-magic-string': 'off',
     },

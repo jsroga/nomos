@@ -1,4 +1,3 @@
-import React from 'react'
 import { AlertTriangle, Sparkles } from 'lucide-react'
 import { EpisodeRoadmapEpisode } from '../types/episode-roadmap-card'
 import { EpisodeRefText } from './EpisodeRefText'

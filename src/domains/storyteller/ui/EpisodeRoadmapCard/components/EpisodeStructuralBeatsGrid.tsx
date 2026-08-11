@@ -1,4 +1,3 @@
-import React from 'react'
 import { cn } from '@/shared/data/utils'
 import { StructuralBeat } from '../utils/episode-roadmap-beats'
 import { EpisodeRefText } from './EpisodeRefText'

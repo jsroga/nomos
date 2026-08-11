@@ -9,14 +9,7 @@ import { ExpansionDirection, TargetAudience } from './logic-tool-wire'
 export const AnalyzeMechanicBalanceInputSchema = z.object({
   loopId: z.string().uuid(),
   mechanics: z.array(GameMechanicSchema),
-  resources: z.array(
-    z.object({
-      id: z.string().uuid(),
-      name: z.string(),
-      type: z.enum(['currency', 'material', 'stat', 'abstract']),
-      initialValue: z.number(),
-    })
-  ),
+  resources: z.array(GameResourceSchema),
   targetAudience: z.enum([
     TargetAudience.Casual,
     TargetAudience.Midcore,

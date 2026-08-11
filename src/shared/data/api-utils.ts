@@ -28,10 +28,13 @@ export interface AuthenticatedRequest {
   supabase: SupabaseClient
 }
 
+/** Next App Router passes `params` as a Promise (Next 15+). */
+export type RouteHandlerContext = { params: Promise<Record<string, string>> }
+
 export type ApiHandler<T = unknown> = (
   request: NextRequest,
   auth: AuthenticatedRequest,
-  context?: { params: Record<string, string> }
+  context: RouteHandlerContext
 ) => Promise<NextResponse<T>>
 
 // ============================================
@@ -63,7 +66,7 @@ export async function requireAuth() {
 // inferring it from the handler picks the first member of union returns like
 // NextResponse<A> | NextResponse<B> and then rejects the rest.
 export function withAuth<T = unknown>(handler: ApiHandler<NoInfer<T>>) {
-  return async (request: NextRequest, context?: { params: Record<string, string> }) => {
+  return async (request: NextRequest, context: RouteHandlerContext) => {
     const { session, supabase, error } = await getUserSession()
 
     if (error || !session) {
@@ -153,11 +156,11 @@ export function checkRateLimit(
 export function withRateLimit<T = unknown>(
   handler: (
     request: NextRequest,
-    context?: { params: Record<string, string> }
+    context: RouteHandlerContext
   ) => Promise<NextResponse<NoInfer<T>>>,
   config: RateLimitConfig & { getKey?: (request: NextRequest) => string } = {}
 ) {
-  return async (request: NextRequest, context?: { params: Record<string, string> }) => {
+  return async (request: NextRequest, context: RouteHandlerContext) => {
     const {
       // NextRequest has no `ip` in Next 15 — the proxy header is the source.
       getKey = req => req.headers.get(RATE_LIMIT.FORWARDED_FOR_HEADER) || RATE_LIMIT.ANONYMOUS_KEY,

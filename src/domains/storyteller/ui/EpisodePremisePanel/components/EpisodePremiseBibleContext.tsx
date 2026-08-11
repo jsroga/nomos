@@ -1,4 +1,3 @@
-import React from 'react'
 import { Book, Target } from 'lucide-react'
 import { Faction, StoryPlan, WorldRule } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 

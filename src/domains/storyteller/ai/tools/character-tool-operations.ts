@@ -25,11 +25,11 @@ export function characterResponse(character: CharacterRow) {
     voiceSignature: character.voiceSignature ?? undefined,
     portraitUrl: character.portraitUrl ?? undefined,
     psychology: psychologyRecord(character.psychology),
-    valence: character.valence,
-    arousal: character.arousal,
-    autonomy: character.autonomy,
-    competence: character.competence,
-    relatedness: character.relatedness,
+    valence: character.valence ?? undefined,
+    arousal: character.arousal ?? undefined,
+    autonomy: character.autonomy ?? undefined,
+    competence: character.competence ?? undefined,
+    relatedness: character.relatedness ?? undefined,
   }
 }
 

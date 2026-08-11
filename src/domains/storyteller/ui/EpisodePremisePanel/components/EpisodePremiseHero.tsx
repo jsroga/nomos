@@ -1,4 +1,3 @@
-import React from 'react'
 import { Edit2, RefreshCw, Save, Sparkles } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Skeleton } from '@/components/Skeleton'

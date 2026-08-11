@@ -7,7 +7,7 @@
  * writers-room chat surface — the chat platform never imports these.
  */
 
-import * as React from 'react'
+
 import type { ChatRenderers } from '@/shared/chat'
 import { ReferenceText } from '@/domains/storyteller/ui/ReferenceText'
 import { ConsistencyMessage } from '@/domains/storyteller/ui/ConsistencyMessage'

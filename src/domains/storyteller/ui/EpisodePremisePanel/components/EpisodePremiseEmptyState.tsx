@@ -1,4 +1,3 @@
-import React from 'react'
 import { Sparkles, Target } from 'lucide-react'
 import { Button } from '@/components/Button'
 

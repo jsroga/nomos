@@ -1,4 +1,3 @@
-import React from 'react'
 import { RefreshCw } from 'lucide-react'
 import { EpisodePremise } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { Button } from '@/components/Button'

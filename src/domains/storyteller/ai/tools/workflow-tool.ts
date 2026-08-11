@@ -64,12 +64,14 @@ interface SuspendedVerdictPayload {
   planWarnings?: string[]
 }
 
+type RunBeatDraftOutput = z.infer<typeof RunBeatDraftOutputSchema>
+
 export const runBeatDraftWorkflowTool = createTool({
   id: RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
   description: RUN_BEAT_DRAFT_TOOL_DESCRIPTION,
   inputSchema: RunBeatDraftInputSchema,
   outputSchema: RunBeatDraftOutputSchema,
-  execute: async (inputData, context) => {
+  execute: async (inputData, context): Promise<RunBeatDraftOutput> => {
     const projectId =
       requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
     const episodeId =

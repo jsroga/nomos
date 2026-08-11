@@ -56,6 +56,20 @@ export const StructureValidationResultSchema = z.object({
   metrics: StructureValidationMetricsSchema.nullable(),
 })
 
+/** Raw validate_loop_structure tool payload (success | failure). */
+export const StructureValidateToolResultSchema = z.union([
+  z.object({
+    success: z.literal(true),
+    isValid: z.boolean(),
+    issues: z.array(z.object({ description: z.string() })),
+    metrics: StructureValidationMetricsSchema,
+  }),
+  z.object({
+    success: z.literal(false),
+    error: z.string().optional(),
+  }),
+])
+
 export const WorkflowOutputSchema = z.object({
   loopId: z.string().uuid().optional(),
   loop: LoopProposalSchema.optional(),

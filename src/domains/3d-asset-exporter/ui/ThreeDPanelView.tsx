@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import dynamic from 'next/dynamic'
 import { Box, Loader2 } from 'lucide-react'
 import { AIProvider } from '@/shared/types/enums'

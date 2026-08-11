@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { Download, Layers } from 'lucide-react'
 import { Button } from '@/components/Button'
 import type { MeshyResult } from '../core/types/three-d-generation'

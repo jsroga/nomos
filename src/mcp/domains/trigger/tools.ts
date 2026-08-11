@@ -20,7 +20,7 @@ const getRunStatus = createTool({
   inputSchema: z.object({
     runId: z.string().describe('The run ID returned from a generation task (starts with run_)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async (inputData) => {
     // Auth check optional for status? Let's enforce it for consistency
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
@@ -28,7 +28,7 @@ const getRunStatus = createTool({
     const authResult = await validateApiKey(apiKey)
     if (!authResult.valid) throw new Error('Invalid API key')
 
-    return tilesService.getRunStatus({ runId: data.runId })
+    return tilesService.getRunStatus({ runId: inputData.runId })
   },
 })
 
@@ -38,14 +38,14 @@ const cancelRun = createTool({
   inputSchema: z.object({
     runId: z.string().describe('The run ID to cancel'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async (inputData) => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
     if (!authResult.valid) throw new Error('Invalid API key')
 
-    return tilesService.cancelRun(data.runId)
+    return tilesService.cancelRun(inputData.runId)
   },
 })
 
@@ -70,15 +70,15 @@ const waitForRun = createTool({
       .optional()
       .describe('How often to check status in seconds (default: 2)'),
   }),
-  execute: async ({ context: _ctx, data }) => {
+  execute: async (inputData) => {
     const apiKey = process.env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
     if (!authResult.valid) throw new Error('Invalid API key')
 
-    const timeoutSeconds = Math.min(data.timeoutSeconds || 60, 300)
-    const pollIntervalSeconds = Math.min(data.pollIntervalSeconds || 2, 30)
+    const timeoutSeconds = Math.min(inputData.timeoutSeconds || 60, 300)
+    const pollIntervalSeconds = Math.min(inputData.pollIntervalSeconds || 2, 30)
     const startTime = Date.now()
     const timeoutMs = timeoutSeconds * 1000
     const pollIntervalMs = pollIntervalSeconds * 1000
@@ -95,7 +95,7 @@ const waitForRun = createTool({
     ]
 
     while (Date.now() - startTime < timeoutMs) {
-      const status = await tilesService.getRunStatus({ runId: data.runId })
+      const status = await tilesService.getRunStatus({ runId: inputData.runId })
 
       if (terminalStatuses.includes(status.status)) {
         return {
@@ -110,7 +110,7 @@ const waitForRun = createTool({
     }
 
     // Timeout reached
-    const finalStatus = await tilesService.getRunStatus({ runId: data.runId })
+    const finalStatus = await tilesService.getRunStatus({ runId: inputData.runId })
     return {
       ...finalStatus,
       waitDurationMs: Date.now() - startTime,

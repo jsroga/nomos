@@ -1,4 +1,3 @@
-import React from 'react'
 import { cn } from '@/shared/data/utils'
 import { ChevronRight } from 'lucide-react'
 import { ParsedDescriptionMeta } from '../types/episode-roadmap-card'

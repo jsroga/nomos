@@ -1,4 +1,3 @@
-import React from 'react'
 import { ListOrdered, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { EpisodePremise } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { Button } from '@/components/Button'

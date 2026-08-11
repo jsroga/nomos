@@ -1,4 +1,3 @@
-import React from 'react'
 import { Button } from '@/components/Button'
 import { Wand2 } from 'lucide-react'
 import { StorytellerImage } from '../StorytellerImage'

@@ -6,7 +6,6 @@
 
 'use client'
 
-import React from 'react'
 import { X, TrendingUp, Loader2, Save, RefreshCw, Check } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'

@@ -1,4 +1,3 @@
-import React from 'react'
 import { cn } from '@/shared/data/utils'
 import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
 import { ReferenceText } from '../ReferenceText'

@@ -36,6 +36,28 @@ export function unpackActionFields(setupsPayoffs: unknown): Partial<ActionFields
   }
 }
 
+function emotionalShiftsFromDb(
+  value: unknown
+): Record<string, { from: string; to: string }> | undefined {
+  if (value == null) return undefined
+  const record = recordFromJson(value)
+  const out: Record<string, { from: string; to: string }> = {}
+  for (const [key, entry] of Object.entries(record)) {
+    if (
+      typeof entry !== 'object' ||
+      entry === null ||
+      !('from' in entry) ||
+      !('to' in entry) ||
+      typeof entry.from !== 'string' ||
+      typeof entry.to !== 'string'
+    ) {
+      continue
+    }
+    out[key] = { from: entry.from, to: entry.to }
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
 export function beatResponse(beat: BeatRow) {
   const action = unpackActionFields(beat.setupsPayoffs)
   return {
@@ -45,13 +67,13 @@ export function beatResponse(beat: BeatRow) {
     logline: beat.logline,
     content: beat.content ?? undefined,
     beatType: beat.beatType,
-    status: beat.status,
+    status: beat.status ?? 'proposed',
     actionTaken: action.actionTaken,
     consequence: action.consequence,
     storyStateChange: action.storyStateChange,
     visualHook: beat.visualHook ?? undefined,
     charactersInvolved: stringArrayFromJson(beat.charactersInvolved),
-    emotionalShifts: recordFromJson(beat.emotionalShifts),
+    emotionalShifts: emotionalShiftsFromDb(beat.emotionalShifts),
     causalDependencies: stringArrayFromJson(beat.causalDependencies),
     setupsPayoffs: recordFromJson(beat.setupsPayoffs),
   }

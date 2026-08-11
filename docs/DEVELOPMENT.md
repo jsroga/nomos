@@ -46,6 +46,8 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 **Metrics (warn / error):** 400 / 800 lines · complexity 15 / 25.  
 **IMPORTANT — never disable rules on your own if not allowed.** No file-level `eslint-disable` and no new `eslint.config.js` `'off'` overrides without explicit user approval.
 
+ESLint (`eslint.config.js`) ignores generated/local trees (`.mastra/**`, `.local/**`, `.design-sync/**`). `local/no-magic-string` is off for Vitest and Playwright suites (`**/__tests__/**`, `**/*.test.*`, `**/*.e2e.test.*`, `e2e/**`) — titles and fixtures are prose, not wire vocabulary.
+
 ## Public OpenAPI (`/api-docs`)
 
 Scalar at `/api-docs` serves committed [`public/openapi.json`](../public/openapi.json). **Zod is the contract** — do not hand-edit the JSON.

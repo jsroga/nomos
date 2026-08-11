@@ -5,6 +5,9 @@ export enum EnvFlagValue {
   False = 'false',
 }
 
+/** Minimum [Name][item|event|rule-id] links required in world description / roadmap prose. */
+export const ENTITY_LINK_MIN_COUNT = 6
+
 export enum GuardrailSeverity {
   Error = 'error',
   Warning = 'warning',

@@ -30,7 +30,6 @@ import {
   formatPlanQualityFeedback,
 } from '@/domains/storyteller/ai/agents/BeatPlanner/beat-plan-quality'
 import { formatSparksForPlanner } from '@/domains/storyteller/ai/agents/Muse/rank'
-import { proseCraftScorer, stakesCostScorer } from '@/shared/agent-kernel/scorers'
 import { defaultBeatDraftDeps } from './beat-draft-default-deps'
 import type { BeatDraftContext, BeatDraftDeps } from './beat-draft-deps-types'
 import {
@@ -46,18 +45,6 @@ import {
   BeatDraftStepId,
   BeatDraftVerdictAction,
 } from './constants/beat-draft-workflow'
-
-/**
- * Craft scorers attached to the draft and revise steps (rate 1, StoryForge
- * pattern): scores land in Mastra storage / Studio Observability and answer
- * "did the revision beat the draft?" across prompt changes. Scoring is async
- * observability — a judge failure never fails the run.
- */
-const RATIO_SAMPLING = 'ratio'
-const CRAFT_STEP_SCORERS = {
-  proseCraft: { scorer: proseCraftScorer, sampling: { type: RATIO_SAMPLING, rate: 1 } },
-  stakesCost: { scorer: stakesCostScorer, sampling: { type: RATIO_SAMPLING, rate: 1 } },
-} as const
 
 export {
   beatDraftInputSchema,
@@ -154,7 +141,6 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
     id: BeatDraftStepId.DraftScript,
     inputSchema: planOutputSchema,
     outputSchema: draftOutputSchema,
-    scorers: CRAFT_STEP_SCORERS,
     execute: async ({ inputData }) => {
       const draft = await deps.draftBeat(
         {
@@ -223,7 +209,6 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
     id: BeatDraftStepId.Revise,
     inputSchema: verdictOutputSchema,
     outputSchema: beatDraftOutputSchema,
-    scorers: CRAFT_STEP_SCORERS,
     execute: async ({ inputData }) => {
       if (inputData.action === BeatDraftVerdictAction.Kill) {
         return {

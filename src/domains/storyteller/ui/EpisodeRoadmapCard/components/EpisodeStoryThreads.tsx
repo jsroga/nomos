@@ -1,4 +1,3 @@
-import React from 'react'
 import { EpisodeRoadmapEpisode } from '../types/episode-roadmap-card'
 import { EpisodeRefText } from './EpisodeRefText'
 

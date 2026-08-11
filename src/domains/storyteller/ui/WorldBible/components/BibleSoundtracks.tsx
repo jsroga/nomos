@@ -1,4 +1,4 @@
-import React, { useState, type FC } from 'react'
+import { useState, type FC } from 'react'
 import { Music } from 'lucide-react'
 import { SoundtrackTrack } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { YouTubePlayer, YouTubeEmbedPlayer } from '../../YouTubePlayer'

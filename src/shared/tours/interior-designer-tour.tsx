@@ -1,4 +1,3 @@
-import React from 'react'
 import { TourStep } from '@/shared/tours/tour-types'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { TourStepPosition } from '@/shared/tours/constants/tour-positions'

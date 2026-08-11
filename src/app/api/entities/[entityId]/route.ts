@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import {
+  withAuth,
+  withRateLimit,
+  type AuthenticatedRequest,
+  type RouteHandlerContext,
+} from '@/shared/data/api-utils'
 import { updateEntitySchema } from '@/shared/data/entities-service'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
@@ -12,13 +17,14 @@ export const GET = withAuth(
   async (
     _request: NextRequest,
     { session: _session, supabase }: AuthenticatedRequest,
-    context?: { params: Record<string, string> }
+    context: RouteHandlerContext
   ) => {
     if (!supabase) {
       return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
     }
 
-    const entityId = context?.params?.entityId
+    const params = await context.params
+    const entityId = params.entityId
 
     if (!entityId) {
       return NextResponse.json({ error: API_ERROR.ENTITY_ID_REQUIRED }, { status: 400 })
@@ -48,13 +54,14 @@ export const PATCH = withRateLimit(
     async (
       request: NextRequest,
       { session: _session, supabase }: AuthenticatedRequest,
-      context?: { params: Record<string, string> }
+      context: RouteHandlerContext
     ) => {
       if (!supabase) {
         return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
       }
 
-      const entityId = context?.params?.entityId
+      const params = await context.params
+      const entityId = params.entityId
 
       if (!entityId) {
         return NextResponse.json({ error: API_ERROR.ENTITY_ID_REQUIRED }, { status: 400 })
@@ -116,13 +123,14 @@ export const DELETE = withAuth(
   async (
     _request: NextRequest,
     { session: _session, supabase }: AuthenticatedRequest,
-    context?: { params: Record<string, string> }
+    context: RouteHandlerContext
   ) => {
     if (!supabase) {
       return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
     }
 
-    const entityId = context?.params?.entityId
+    const params = await context.params
+    const entityId = params.entityId
 
     if (!entityId) {
       return NextResponse.json({ error: API_ERROR.ENTITY_ID_REQUIRED }, { status: 400 })

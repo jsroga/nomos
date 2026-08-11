@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { MarketAnalysisPanel } from './MarketAnalysisPanel'
 import { LoopCreatorHeader, LoopNodeToolbar } from './LoopCreatorChrome'
 import { LoopFlowCanvas } from './LoopFlowCanvas'

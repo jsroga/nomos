@@ -33,8 +33,8 @@ import {
   invokeWorkflowTool,
   isBalanceSuccess,
   mergeLoopModifications,
+  parseStructureValidateToolResult,
   refineLoopFromFeedback,
-  type StructureValidationIssue,
 } from './game-loop-workflow-helpers'
 import { db } from '@/db/client'
 import { gameLoops } from '@/db/schema'
@@ -167,29 +167,14 @@ export function createStructureValidationStep() {
         }
       }
 
-      const result = await invokeWorkflowTool(validateTool, {
+      const rawResult: unknown = await invokeWorkflowTool(validateTool, {
         loop: buildValidatedLoop(loopProposal),
         mechanics: parsedMechanics.data,
       })
 
-      if (!result.success) {
-        return {
-          ...inputData,
-          structureValidation: {
-            isValid: false,
-            structureIssues: [result.error ?? GameLoopWorkflowCopy.StructureValidationFailed],
-            metrics: null,
-          },
-        }
-      }
-
       return {
         ...inputData,
-        structureValidation: {
-          isValid: result.isValid,
-          structureIssues: result.issues.map((issue: StructureValidationIssue) => issue.description),
-          metrics: result.metrics,
-        },
+        structureValidation: parseStructureValidateToolResult(rawResult),
       }
     },
   })

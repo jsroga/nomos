@@ -3,11 +3,15 @@
  *
  * Single source of truth for all storyteller module settings.
  * Manages guardrails, evaluation thresholds, and feature flags.
- * Overridable via environment variables or `setStorytellerConfig` at runtime.
+ * Overridable via `setStorytellerConfig` at runtime.
  */
 
 import { deepMerge } from '@/shared/data/deep-merge'
-import { EnvFlagValue, GuardrailSeverity } from './constants/storyteller-config-defaults'
+import {
+  ENTITY_LINK_MIN_COUNT,
+  EnvFlagValue,
+  GuardrailSeverity,
+} from './constants/storyteller-config-defaults'
 
 // ============================================
 // TYPES
@@ -42,7 +46,7 @@ export interface EvaluationConfig {
   sampleRateForLLM: number // Sample rate for expensive LLM evaluators
 }
 
-/** Minimum entity links required in world description / roadmap / episode description. Easy to set to 5-6 via env. */
+/** Minimum entity links required in world description / roadmap / episode description. */
 export interface EntityLinkRequirements {
   minItems: number
   minEvents: number
@@ -50,7 +54,7 @@ export interface EntityLinkRequirements {
 }
 
 export interface StorytellerConfig {
-  /** Minimum [Name][item-id], [Name][event-id], [Name][rule-id] in world description & roadmap. Default 3; set STORYTELLER_MIN_*_LINKS=5 or 6 for more. */
+  /** Minimum [Name][item-id], [Name][event-id], [Name][rule-id] in world description & roadmap. */
   entityLinks: EntityLinkRequirements
 
   // Feature flags
@@ -90,9 +94,9 @@ export interface StorytellerConfig {
 
 const DEFAULT_CONFIG: StorytellerConfig = {
   entityLinks: {
-    minItems: parseInt(process.env.STORYTELLER_MIN_ITEM_LINKS || '3', 10) || 3,
-    minEvents: parseInt(process.env.STORYTELLER_MIN_EVENT_LINKS || '3', 10) || 3,
-    minRules: parseInt(process.env.STORYTELLER_MIN_RULE_LINKS || '3', 10) || 3,
+    minItems: ENTITY_LINK_MIN_COUNT,
+    minEvents: ENTITY_LINK_MIN_COUNT,
+    minRules: ENTITY_LINK_MIN_COUNT,
   },
 
   features: {
@@ -161,8 +165,7 @@ export function getStorytellerConfig(): StorytellerConfig {
 
 /**
  * Get required minimum entity links for world description / roadmap.
- * Used by agent prompt and update_world_bible tool. Change to 5-6 via env:
- * STORYTELLER_MIN_ITEM_LINKS=5 STORYTELLER_MIN_EVENT_LINKS=5 STORYTELLER_MIN_RULE_LINKS=5
+ * Used by agent prompt and update_world_bible tool. Tuned via ENTITY_LINK_MIN_COUNT.
  */
 export function getEntityLinkRequirements(): EntityLinkRequirements {
   return getStorytellerConfig().entityLinks

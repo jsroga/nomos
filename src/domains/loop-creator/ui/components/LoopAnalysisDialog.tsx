@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/Button'
 import {

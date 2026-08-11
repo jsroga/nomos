@@ -46,7 +46,10 @@ export function BleedingText({
   const rafRef = useRef<number | null>(null)
   // Keep a mutable ref so the raf loop always reads the latest color without restarting
   const particleColorRef = useRef(particleColor)
-  particleColorRef.current = particleColor
+
+  useEffect(() => {
+    particleColorRef.current = particleColor
+  }, [particleColor])
 
   const startLoop = useCallback(() => {
     if (rafRef.current !== null) return

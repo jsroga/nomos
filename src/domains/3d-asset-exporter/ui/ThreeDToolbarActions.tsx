@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { Cuboid, Layers, Loader2, RefreshCw, Settings, Upload, XCircle } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { AIProvider } from '@/shared/types/enums'

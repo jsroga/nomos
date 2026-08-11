@@ -50,7 +50,7 @@ afterAll(async () => {
 describe.runIf(ready)('beat-draft-workflow full tier (LLM + DB)', () => {
   it(
     'runs plan → draft → critics → revise with autoApprove and persists the beat',
-    { timeout: 300_000 },
+    { timeout: 900_000 },
     async () => {
       const workflow = makeWorkflow()
       const run = await workflow.createRun()

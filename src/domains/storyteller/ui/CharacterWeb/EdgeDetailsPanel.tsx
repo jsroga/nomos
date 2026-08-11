@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   CHARACTER_WEB_DEFAULT_RELATIONSHIP,
 } from './constants/character-web'

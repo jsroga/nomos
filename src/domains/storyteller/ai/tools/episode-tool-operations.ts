@@ -15,7 +15,7 @@ export function episodeResponse(episode: EpisodeRow) {
   return {
     id: episode.id,
     projectId: episode.projectId,
-    title: episode.title,
+    title: episode.title ?? '',
     sequence: episode.sequence,
     thematicFocus: episode.thematicFocus ?? undefined,
     premise: episode.premise ?? undefined,

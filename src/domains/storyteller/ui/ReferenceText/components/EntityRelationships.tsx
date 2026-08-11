@@ -1,4 +1,3 @@
-import React from 'react'
 import { Users } from 'lucide-react'
 import { cn } from '@/shared/data/utils'
 import { PREFIX_TO_TYPE, stripReferences } from '@/domains/storyteller/core/entities/reference-parser'

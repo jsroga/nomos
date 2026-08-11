@@ -111,15 +111,25 @@ function render(report: MultiVariantReport): string {
 </html>`
 }
 
+function isMultiVariantReport(value: unknown): value is MultiVariantReport {
+  if (typeof value !== 'object' || value === null) return false
+  if (!('variants' in value) || !Array.isArray(value.variants)) return false
+  return true
+}
+
 function main(): void {
   if (!fs.existsSync(RESULTS)) {
     console.error(`No eval results found at ${RESULTS}. Run \`npm run eval\` first.`)
     process.exit(1)
   }
 
-  const report = JSON.parse(fs.readFileSync(RESULTS, 'utf8')) as MultiVariantReport
+  const parsed: unknown = JSON.parse(fs.readFileSync(RESULTS, 'utf8'))
+  if (!isMultiVariantReport(parsed)) {
+    console.error(`Invalid eval results shape at ${RESULTS}`)
+    process.exit(1)
+  }
   fs.mkdirSync(OUT_DIR, { recursive: true })
-  fs.writeFileSync(OUT_FILE, render(report), 'utf8')
+  fs.writeFileSync(OUT_FILE, render(parsed), 'utf8')
   console.log(`Eval report written to ${OUT_FILE}`)
 }
 

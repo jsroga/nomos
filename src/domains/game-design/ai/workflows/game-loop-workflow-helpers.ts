@@ -19,7 +19,11 @@ import {
   GameLoopTypeInput,
 } from '../constants/game-loop-workflow-wire'
 import type { BalanceAnalysisResult } from './game-loop-workflow-schemas'
-import { BalanceAnalysisSuccessSchema } from './game-loop-workflow-schemas'
+import {
+  BalanceAnalysisSuccessSchema,
+  StructureValidateToolResultSchema,
+  StructureValidationMetricsSchema,
+} from './game-loop-workflow-schemas'
 
 export async function invokeWorkflowTool<TInput, TOutput>(
   tool: {
@@ -42,6 +46,37 @@ export async function invokeWorkflowTool<TInput, TOutput>(
     throw new Error(`Tool ${tool.id} input validation failed: ${JSON.stringify(result)}`)
   }
   return result
+}
+
+export type StructureValidationIssue = { description: string }
+
+export function parseStructureValidateToolResult(rawResult: unknown): {
+  isValid: boolean
+  structureIssues: string[]
+  metrics: z.infer<typeof StructureValidationMetricsSchema> | null
+} {
+  const parsed = StructureValidateToolResultSchema.safeParse(rawResult)
+  if (!parsed.success) {
+    return {
+      isValid: false,
+      structureIssues: [GameLoopWorkflowCopy.StructureValidationFailed],
+      metrics: null,
+    }
+  }
+
+  if (!parsed.data.success) {
+    return {
+      isValid: false,
+      structureIssues: [parsed.data.error ?? GameLoopWorkflowCopy.StructureValidationFailed],
+      metrics: null,
+    }
+  }
+
+  return {
+    isValid: parsed.data.isValid,
+    structureIssues: parsed.data.issues.map(issue => issue.description),
+    metrics: parsed.data.metrics,
+  }
 }
 
 export function extractLoopProposalFromResponse(
@@ -106,5 +141,3 @@ export function mergeLoopModifications(
 ): LoopProposal | undefined {
   return mergeLoopProposal(loopProposal, modifications)
 }
-
-export type StructureValidationIssue = { description: string }
