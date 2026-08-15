@@ -47,6 +47,7 @@ export interface ProjectStyleSettings {
   name?: string
   styleReferenceUrls?: string[]
   stylePreset?: string | null
+  generationMode?: string | null
 }
 
 function parseProviderStatus(value: unknown): ProviderStatus {
@@ -99,7 +100,9 @@ function parseProjectStyleSettings(value: unknown): ProjectStyleSettings {
   return {
     name: readString(record.name) ?? undefined,
     styleReferenceUrls,
-    stylePreset: readString(record.stylePreset) ?? null,
+    stylePreset: readString(record.stylePreset) ?? readString(record.style_preset) ?? null,
+    generationMode:
+      readString(record.generationMode) ?? readString(record.generation_mode) ?? null,
   }
 }
 

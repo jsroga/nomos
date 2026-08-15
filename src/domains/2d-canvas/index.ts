@@ -52,3 +52,14 @@ export {
   WORLD_BUILDING_TOOLKIT_MODULE_ID,
   WORLD_BUILDING_TOOLKIT_ROUTE_SEGMENT,
 } from './config/module'
+
+export {
+  DEFAULT_GENERATION_MODE,
+  GENERATION_MODES,
+  GenerationCamera,
+  GenerationMode,
+  UpscaleStrategy,
+  generationModeDef,
+  resolveGenerationMode,
+} from './constants/generation-modes'
+export type { GenerationModeDef } from './constants/generation-modes'

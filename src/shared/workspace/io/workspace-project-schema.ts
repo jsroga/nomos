@@ -21,6 +21,8 @@ export const workspaceProjectResponseSchema = z
     story_plan: z.record(z.unknown()).nullable().optional(),
     stylePreset: z.string().nullable().optional(),
     style_preset: z.string().nullable().optional(),
+    generationMode: z.string().nullable().optional(),
+    generation_mode: z.string().nullable().optional(),
     createdAt: dateLikeSchema.optional(),
     created_at: dateLikeSchema.optional(),
   })
@@ -34,6 +36,7 @@ export const workspaceProjectResponseSchema = z
     seriesBible: row.seriesBible ?? row.series_bible ?? {},
     storyPlan: row.storyPlan ?? row.story_plan ?? {},
     stylePreset: row.stylePreset ?? row.style_preset ?? null,
+    generationMode: row.generationMode ?? row.generation_mode ?? null,
     createdAt: row.createdAt ?? row.created_at,
   }))
 
@@ -46,6 +49,7 @@ export function toWorkspaceProject(row: z.infer<typeof workspaceProjectResponseS
     series_bible: row.seriesBible,
     story_plan: row.storyPlan,
     stylePreset: row.stylePreset,
+    generationMode: row.generationMode,
     description: row.description,
     created_at: row.createdAt,
   }

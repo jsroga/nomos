@@ -23,6 +23,7 @@ function mapProject(row: typeof projects.$inferSelect): WorldProject {
     seriesBible: recordFromJson(row.seriesBible),
     storyPlan: recordFromJson(row.storyPlan),
     stylePreset: row.stylePreset ?? null,
+    generationMode: row.generationMode ?? null,
     createdAt: row.createdAt?.toISOString(),
   }
 }

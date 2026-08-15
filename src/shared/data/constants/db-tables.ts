@@ -15,6 +15,7 @@ export const DB_COLUMN = {
   PROJECT_ID: 'project_id',
   STYLE_REFERENCE_URLS: 'style_reference_urls',
   STYLE_PRESET: 'style_preset',
+  GENERATION_MODE: 'generation_mode',
   EPISODE_ID: 'episode_id',
   BEAT_ID: 'beat_id',
   SEQUENCE: 'sequence',
@@ -47,7 +48,7 @@ export const DB_SELECT = {
   CHARACTER_SNAPSHOT_WITH_RELATIONS: '*, characters (id, name), beats (id, sequence, logline)',
   API_KEY_LIST: 'id, name, scopes, created_at, last_used_at, revoked_at, expires_at',
   API_KEY_CREATE: 'id, name, scopes, created_at, expires_at',
-  PROJECT_STYLE_REFS: 'style_reference_urls, style_preset',
+  PROJECT_STYLE_REFS: 'style_reference_urls, style_preset, generation_mode',
 } as const
 
 export const DB_UPSERT = {

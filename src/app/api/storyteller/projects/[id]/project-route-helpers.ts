@@ -42,6 +42,10 @@ function buildProjectDbUpdates(body: Record<string, unknown>) {
   if (body.styleReferenceUrls !== undefined) dbUpdates.styleReferenceUrls = body.styleReferenceUrls
   if (body.style_preset !== undefined) dbUpdates.stylePreset = readNullableString(body.style_preset)
   if (body.stylePreset !== undefined) dbUpdates.stylePreset = readNullableString(body.stylePreset)
+  if (body.generation_mode !== undefined)
+    dbUpdates.generationMode = readNullableString(body.generation_mode)
+  if (body.generationMode !== undefined)
+    dbUpdates.generationMode = readNullableString(body.generationMode)
   if (body.name !== undefined) {
     const name = readString(body.name)
     if (name !== undefined) dbUpdates.name = name

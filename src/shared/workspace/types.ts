@@ -7,6 +7,7 @@ export type WorkspaceProject = {
   series_bible: Record<string, unknown>
   story_plan: Record<string, unknown>
   stylePreset?: string | null
+  generationMode?: string | null
   description?: string | null
   created_at?: string
 }

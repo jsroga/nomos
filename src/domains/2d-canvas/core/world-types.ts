@@ -40,6 +40,7 @@ export function toLegacyProject(project: WorldProject): Project {
     series_bible: project.seriesBible,
     story_plan: project.storyPlan,
     stylePreset: project.stylePreset ?? null,
+    generationMode: project.generationMode ?? null,
     description: project.description,
     created_at: project.createdAt,
   }

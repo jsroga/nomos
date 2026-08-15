@@ -9,6 +9,7 @@ export interface Database {
           name: string
           master_prompt: string | null
           series_bible: Json | null
+          generation_mode: string | null
           created_at: string
         }
         Insert: {
@@ -16,6 +17,7 @@ export interface Database {
           name: string
           master_prompt?: string | null
           series_bible?: Json | null
+          generation_mode?: string | null
           created_at?: string
         }
         Update: {
@@ -23,6 +25,7 @@ export interface Database {
           name?: string
           master_prompt?: string | null
           series_bible?: Json | null
+          generation_mode?: string | null
           created_at?: string
         }
       }
