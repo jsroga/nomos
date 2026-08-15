@@ -47,6 +47,7 @@ async function buildTilePrompt(
   masterPrompt?: string,
   modePromptFragment?: string,
   modeNegatives?: string[],
+  styleAnchorUrl?: string,
 ): Promise<{ text: string; imageUrls: string[] }> {
   const imageUrls: string[] = []
   const layers = tilePromptLayersFrom({
@@ -61,6 +62,7 @@ async function buildTilePrompt(
         layers,
         styleReferenceUrls,
         modeNegatives,
+        styleAnchorUrl,
       })
     : isFirstTile
       ? GENERATION_PROMPTS.FIRST_TILE.GEMINI(layers)
@@ -124,6 +126,7 @@ export async function generateTileViaApiframeModel(
   masterPrompt?: string,
   modePromptFragment?: string,
   modeNegatives?: string[],
+  styleAnchorUrl?: string,
 ): Promise<string> {
   const model = mapProviderToApiframeModel(provider, config)
   const forMidjourney = model === ApiframeImageModel.Midjourney
@@ -137,6 +140,7 @@ export async function generateTileViaApiframeModel(
     masterPrompt,
     modePromptFragment,
     modeNegatives,
+    styleAnchorUrl,
   )
 
   logger.info('Starting tile generation via Apiframe', { provider, model, isFirstTile })

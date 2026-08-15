@@ -28,6 +28,7 @@ import {
   type WorldUiState,
 } from './useWorldUiStore'
 import { omitRecordKey } from './utils/omit-record-key'
+import { persistFirstTileStyleAnchor } from './utils/persist-style-anchor'
 
 export type { Asset, Project, Tile, SelectBox, PendingUpscale, PendingGeneration, PendingFidelity }
 
@@ -180,6 +181,8 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
 
     const tileKey = `${x},${y}`
     const imageUrl = acceptedUrl || pending.newUrl
+
+    await persistFirstTileStyleAnchor(pending.isFirstTile, imageUrl)
 
     const tile = await worldApi.tiles.upsert({
       projectId: currentProject.id,

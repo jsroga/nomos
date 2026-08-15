@@ -25,6 +25,7 @@ async function buildApiframeTilePrompt(
   masterPrompt?: string,
   modePromptFragment?: string,
   modeNegatives?: string[],
+  styleAnchorUrl?: string,
 ): Promise<string> {
   const layers = tilePromptLayersFrom({
     prompt,
@@ -37,6 +38,7 @@ async function buildApiframeTilePrompt(
     layers,
     styleReferenceUrls,
     modeNegatives,
+    styleAnchorUrl,
   })
   if (!isFirstTile && contextImageBase64) {
     const tempFilename = `mj_context_${uuidv4()}.png`
@@ -72,6 +74,7 @@ export async function generateWithApiframeMidjourney(
   masterPrompt?: string,
   modePromptFragment?: string,
   modeNegatives?: string[],
+  styleAnchorUrl?: string,
 ): Promise<string> {
   logger.info('Starting Midjourney generation via Apiframe', { isFirstTile, styleReferenceUrls })
 
@@ -84,6 +87,7 @@ export async function generateWithApiframeMidjourney(
     masterPrompt,
     modePromptFragment,
     modeNegatives,
+    styleAnchorUrl,
   )
   logger.info('Midjourney prompt', { prompt: fullPrompt })
 

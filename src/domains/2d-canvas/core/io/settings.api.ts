@@ -48,6 +48,7 @@ export interface ProjectStyleSettings {
   styleReferenceUrls?: string[]
   stylePreset?: string | null
   generationMode?: string | null
+  styleAnchorUrl?: string | null
 }
 
 function parseProviderStatus(value: unknown): ProviderStatus {
@@ -103,6 +104,8 @@ function parseProjectStyleSettings(value: unknown): ProjectStyleSettings {
     stylePreset: readString(record.stylePreset) ?? readString(record.style_preset) ?? null,
     generationMode:
       readString(record.generationMode) ?? readString(record.generation_mode) ?? null,
+    styleAnchorUrl:
+      readString(record.styleAnchorUrl) ?? readString(record.style_anchor_url) ?? null,
   }
 }
 

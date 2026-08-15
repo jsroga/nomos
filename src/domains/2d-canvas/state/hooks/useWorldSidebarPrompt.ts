@@ -35,6 +35,7 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
   const persistProjectFields = async (fields: {
     masterPrompt?: string
     generationMode?: string
+    styleAnchorUrl?: string | null
   }) => {
     const project = projectRef.current
     if (!project) return
@@ -46,6 +47,7 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
         ...latest,
         ...(fields.masterPrompt !== undefined ? { master_prompt: fields.masterPrompt } : {}),
         ...(fields.generationMode !== undefined ? { generationMode: fields.generationMode } : {}),
+        ...(fields.styleAnchorUrl !== undefined ? { styleAnchorUrl: fields.styleAnchorUrl } : {}),
       })
     } catch (error) {
       console.error(WorldGenSidebarLog.FailedToSaveWorldSettings, error)
@@ -73,10 +75,16 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
     void persistProjectFields(fields)
   }
 
+  const handleResetStyleAnchor = () => {
+    void persistProjectFields({ styleAnchorUrl: null })
+  }
+
   return {
     masterPrompt,
     handleMasterPromptChange,
     handleSelectGenerationMode,
+    handleResetStyleAnchor,
     generationMode: resolveGenerationMode(currentProject?.generationMode),
+    styleAnchorUrl: currentProject?.styleAnchorUrl ?? null,
   }
 }

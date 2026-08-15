@@ -55,6 +55,10 @@ function buildProjectDbUpdates(body: Record<string, unknown>) {
   if (body.master_prompt !== undefined)
     dbUpdates.masterPrompt = readNullableString(body.master_prompt)
   if (body.masterPrompt !== undefined) dbUpdates.masterPrompt = readNullableString(body.masterPrompt)
+  if (body.style_anchor_url !== undefined)
+    dbUpdates.styleAnchorUrl = readNullableString(body.style_anchor_url)
+  if (body.styleAnchorUrl !== undefined)
+    dbUpdates.styleAnchorUrl = readNullableString(body.styleAnchorUrl)
 
   return dbUpdates
 }

@@ -24,6 +24,7 @@ export const projects = pgTable('projects', {
   styleReferenceUrls: jsonb('style_reference_urls').default([]),
   stylePreset: text('style_preset'),
   generationMode: text('generation_mode'),
+  styleAnchorUrl: text('style_anchor_url'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

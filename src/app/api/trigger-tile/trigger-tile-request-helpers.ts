@@ -69,6 +69,7 @@ export async function resolveTileStyleInputs(
   masterPrompt?: string
   modePromptFragment?: string
   modeNegatives?: string[]
+  styleAnchorUrl?: string
 }> {
   const { data: projectData } = await supabase
     .from(DB_TABLE.PROJECTS)
@@ -80,6 +81,7 @@ export async function resolveTileStyleInputs(
   const styleContext = resolveStyleContext({ stylePreset }) ?? undefined
   const mode = generationModeDef(resolveGenerationMode(projectData?.generation_mode))
   const masterPrompt = readString(projectData?.master_prompt) ?? undefined
+  const styleAnchorUrl = readString(projectData?.style_anchor_url) ?? undefined
 
   const styleReferenceUrls =
     payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
@@ -95,6 +97,7 @@ export async function resolveTileStyleInputs(
     masterPrompt,
     modePromptFragment: mode.promptFragment,
     modeNegatives: mode.negatives,
+    styleAnchorUrl,
   }
 }
 
@@ -107,6 +110,7 @@ export function buildGenerateTileTaskPayload(
     masterPrompt?: string
     modePromptFragment?: string
     modeNegatives?: string[]
+    styleAnchorUrl?: string
   }
 ): GenerateTilePayload {
   const taskPayload: GenerateTilePayload = {
@@ -133,6 +137,9 @@ export function buildGenerateTileTaskPayload(
   }
   if (styleInputs.modeNegatives?.length) {
     taskPayload.modeNegatives = styleInputs.modeNegatives
+  }
+  if (styleInputs.styleAnchorUrl) {
+    taskPayload.styleAnchorUrl = styleInputs.styleAnchorUrl
   }
   if (payload.contextImageBase64) {
     taskPayload.contextImageBase64 = payload.contextImageBase64

@@ -30,6 +30,7 @@ export const generateTileTask = task({
       masterPrompt,
       modePromptFragment,
       modeNegatives,
+      styleAnchorUrl,
       neighbors,
     } = payload
 
@@ -67,6 +68,7 @@ export const generateTileTask = task({
       masterPrompt,
       modePromptFragment,
       modeNegatives,
+      styleAnchorUrl,
     )
 
     await metadata.set('progress', 70)

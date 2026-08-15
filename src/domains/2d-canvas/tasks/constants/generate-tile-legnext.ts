@@ -21,6 +21,10 @@ import {
 } from './generate-tile'
 import { parseLegNextJob, readLegNextImageUrl } from './generate-tile-json-guards'
 import { pollLegNextTask } from './generate-tile-legnext-poll'
+import {
+  createSupabaseServiceClient,
+  persistStyleAnchorIfEmpty,
+} from './generate-tile-persist'
 
 async function buildLegNextRemixPrompt(
   isFirstTile: boolean,
@@ -30,6 +34,7 @@ async function buildLegNextRemixPrompt(
   masterPrompt?: string,
   modePromptFragment?: string,
   modeNegatives?: string[],
+  styleAnchorUrl?: string,
 ): Promise<string> {
   const layers = tilePromptLayersFrom({
     prompt,
@@ -42,6 +47,7 @@ async function buildLegNextRemixPrompt(
     layers,
     styleReferenceUrls,
     modeNegatives,
+    styleAnchorUrl,
   })
 }
 
@@ -348,6 +354,8 @@ export async function generateWithLegNext(
   masterPrompt?: string,
   modePromptFragment?: string,
   modeNegatives?: string[],
+  styleAnchorUrl?: string,
+  projectId?: string,
 ): Promise<string> {
   logger.info('Starting Midjourney generation via LegNext API', { isFirstTile, styleReferenceUrls })
 
@@ -360,6 +368,7 @@ export async function generateWithLegNext(
     masterPrompt,
     modePromptFragment,
     modeNegatives,
+    styleAnchorUrl,
   )
   logger.info('Midjourney prompt', { prompt: remixPrompt })
 
@@ -397,6 +406,10 @@ export async function generateWithLegNext(
   logger.info('User made variant selection', { action, variantIndex })
 
   if (action === VariantSelectionAction.Accept) {
+    const selectedUrl = variantUrls[variantIndex]
+    if (isFirstTile && projectId && selectedUrl) {
+      await persistStyleAnchorIfEmpty(createSupabaseServiceClient(), projectId, selectedUrl)
+    }
     return downloadAcceptedVariant(variantUrls, variantIndex)
   }
 

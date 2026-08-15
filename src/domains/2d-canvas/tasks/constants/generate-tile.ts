@@ -25,6 +25,7 @@ export interface GenerateTilePayload {
   masterPrompt?: string
   modePromptFragment?: string
   modeNegatives?: string[]
+  styleAnchorUrl?: string
   contextImageBase64?: string
   contextPayload?: GenerateTileContextPayload
   neighbors?: TileNeighborsPayload

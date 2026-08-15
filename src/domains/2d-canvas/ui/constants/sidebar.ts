@@ -24,6 +24,7 @@ export enum WorldGenSidebarWorldCopy {
   Title = 'World',
   PromptLabel = 'Master prompt',
   Placeholder = 'World context for every generated tile...',
+  ResetStyleAnchor = 'Reset style anchor',
 }
 
 export enum WorldGenSidebarLog {

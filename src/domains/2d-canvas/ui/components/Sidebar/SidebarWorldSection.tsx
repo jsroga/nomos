@@ -15,14 +15,21 @@ import { WorldGenSidebarWorldCopy } from '../../constants/sidebar'
 
 type SidebarWorldSectionProps = Pick<
   WorldGenSidebarState,
-  'masterPrompt' | 'handleMasterPromptChange' | 'handleSelectGenerationMode' | 'generationMode'
+  | 'masterPrompt'
+  | 'handleMasterPromptChange'
+  | 'handleSelectGenerationMode'
+  | 'handleResetStyleAnchor'
+  | 'generationMode'
+  | 'styleAnchorUrl'
 >
 
 export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
   masterPrompt,
   handleMasterPromptChange,
   handleSelectGenerationMode,
+  handleResetStyleAnchor,
   generationMode,
+  styleAnchorUrl,
 }) => {
   return (
     <SidebarSection title={WorldGenSidebarWorldCopy.Title}>
@@ -63,6 +70,16 @@ export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
           placeholder={WorldGenSidebarWorldCopy.Placeholder}
           className="h-24"
         />
+        {styleAnchorUrl ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 px-0 text-xs text-muted-foreground"
+            onClick={handleResetStyleAnchor}
+          >
+            {WorldGenSidebarWorldCopy.ResetStyleAnchor}
+          </Button>
+        ) : null}
       </div>
     </SidebarSection>
   )

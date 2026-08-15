@@ -57,4 +57,31 @@ describe('Apiframe and LegNext Midjourney params', () => {
       followUp.slice(followUp.length - suffix.length)
     )
   })
+
+  it('puts the style anchor first in follow-up --sref', () => {
+    const anchor = 'https://cdn.example.com/anchor.png'
+    const preset = 'https://cdn.example.com/preset.png'
+    const prompt = buildMidjourneyTilePromptText({
+      isFirstTile: false,
+      layers: LAYERS,
+      styleReferenceUrls: [preset],
+      styleAnchorUrl: anchor,
+    })
+    expect(prompt).toContain(
+      `${MidjourneyParamFlag.StyleRef} ${anchor} ${preset}`
+    )
+  })
+
+  it('omits the style anchor from the first-tile --sref list', () => {
+    const anchor = 'https://cdn.example.com/anchor.png'
+    const preset = 'https://cdn.example.com/preset.png'
+    const prompt = buildMidjourneyTilePromptText({
+      isFirstTile: true,
+      layers: LAYERS,
+      styleReferenceUrls: [preset],
+      styleAnchorUrl: anchor,
+    })
+    expect(prompt).toContain(`${MidjourneyParamFlag.StyleRef} ${preset}`)
+    expect(prompt).not.toContain(`${MidjourneyParamFlag.StyleRef} ${anchor}`)
+  })
 })

@@ -23,6 +23,8 @@ export const workspaceProjectResponseSchema = z
     style_preset: z.string().nullable().optional(),
     generationMode: z.string().nullable().optional(),
     generation_mode: z.string().nullable().optional(),
+    styleAnchorUrl: z.string().nullable().optional(),
+    style_anchor_url: z.string().nullable().optional(),
     createdAt: dateLikeSchema.optional(),
     created_at: dateLikeSchema.optional(),
   })
@@ -37,6 +39,7 @@ export const workspaceProjectResponseSchema = z
     storyPlan: row.storyPlan ?? row.story_plan ?? {},
     stylePreset: row.stylePreset ?? row.style_preset ?? null,
     generationMode: row.generationMode ?? row.generation_mode ?? null,
+    styleAnchorUrl: row.styleAnchorUrl ?? row.style_anchor_url ?? null,
     createdAt: row.createdAt ?? row.created_at,
   }))
 
@@ -50,6 +53,7 @@ export function toWorkspaceProject(row: z.infer<typeof workspaceProjectResponseS
     story_plan: row.storyPlan,
     stylePreset: row.stylePreset,
     generationMode: row.generationMode,
+    styleAnchorUrl: row.styleAnchorUrl,
     description: row.description,
     created_at: row.createdAt,
   }

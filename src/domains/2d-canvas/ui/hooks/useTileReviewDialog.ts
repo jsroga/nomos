@@ -15,6 +15,8 @@ import {
 } from '../constants/tile-review-dialog'
 import type { TileReviewType } from '../constants/tile-review-dialog'
 import { findVariantIndex } from '../utils/tile-review-variant'
+import { persistFirstTileStyleAnchor } from '@/domains/2d-canvas/state/utils/persist-style-anchor'
+import { getWorldUiStore } from '@/domains/2d-canvas/state/useWorldUiStore'
 
 const TYPE_LABELS = {
   [WorldGenReviewType.Generation]: {
@@ -84,6 +86,8 @@ export function useTileReviewDialog({
   const acceptMjVariant = async (urls: string[], selectedUrl: string) => {
     if (!tokenId) return
     const variantIndex = findVariantIndex(urls, selectedUrl)
+    const pending = getWorldUiStore().getPendingGeneration(tileX, tileY)
+    await persistFirstTileStyleAnchor(pending?.isFirstTile === true, selectedUrl)
     await tileGenerationService.completeVariantSelection(
       tokenId,
       VariantSelectionAction.Accept,

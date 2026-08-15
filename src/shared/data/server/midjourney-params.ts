@@ -62,17 +62,32 @@ export function appendMidjourneyParams(
   return `${prompt} ${buildMidjourneyParamSuffix(options)}`
 }
 
+export function styleReferenceUrlsWithAnchor(
+  styleReferenceUrls: string[] | undefined,
+  styleAnchorUrl: string | undefined,
+  isFirstTile: boolean
+): string[] | undefined {
+  if (isFirstTile || !styleAnchorUrl) return styleReferenceUrls
+  const rest = (styleReferenceUrls ?? []).filter(url => url !== styleAnchorUrl)
+  return [styleAnchorUrl, ...rest]
+}
+
 export function buildMidjourneyTilePromptText(input: {
   isFirstTile: boolean
   layers: TilePromptLayers
   styleReferenceUrls?: string[]
   modeNegatives?: string[]
+  styleAnchorUrl?: string
 }): string {
   const body = input.isFirstTile
     ? GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(input.layers)
     : GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(input.layers)
   return appendMidjourneyParams(body, {
-    styleReferenceUrls: input.styleReferenceUrls,
+    styleReferenceUrls: styleReferenceUrlsWithAnchor(
+      input.styleReferenceUrls,
+      input.styleAnchorUrl,
+      input.isFirstTile
+    ),
     modeNegatives: input.modeNegatives,
   })
 }

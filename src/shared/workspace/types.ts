@@ -8,6 +8,7 @@ export type WorkspaceProject = {
   story_plan: Record<string, unknown>
   stylePreset?: string | null
   generationMode?: string | null
+  styleAnchorUrl?: string | null
   description?: string | null
   created_at?: string
 }

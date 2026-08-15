@@ -2,6 +2,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
 import { logger } from '@trigger.dev/sdk/v3'
 import { BufferEncoding, ContentType } from '@/shared/data/constants/protocol'
+import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { imageService } from '@/shared/data/server/image-service'
 import type { GenerateTilePayload, TileNeighborsPayload } from './generate-tile'
 import { CONTEXT_CANONICAL_VARIANT } from './generate-tile'
@@ -99,4 +101,22 @@ export async function resolveOriginalTileUrl(
     return existingTile.image_filename
   }
   return `/projects/${projectId}/${existingTile.image_filename}`
+}
+
+export async function persistStyleAnchorIfEmpty(
+  supabase: SupabaseClient,
+  projectId: string,
+  imageUrl: string
+): Promise<void> {
+  const { data } = await supabase
+    .from(DB_TABLE.PROJECTS)
+    .select(DB_COLUMN.STYLE_ANCHOR_URL)
+    .eq(DB_COLUMN.ID, projectId)
+    .maybeSingle()
+  if (readString(recordFromJson(data)[DB_COLUMN.STYLE_ANCHOR_URL])) return
+  await supabase
+    .from(DB_TABLE.PROJECTS)
+    .update({ [DB_COLUMN.STYLE_ANCHOR_URL]: imageUrl })
+    .eq(DB_COLUMN.ID, projectId)
+    .is(DB_COLUMN.STYLE_ANCHOR_URL, null)
 }

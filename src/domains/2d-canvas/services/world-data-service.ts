@@ -24,6 +24,7 @@ function mapProject(row: typeof projects.$inferSelect): WorldProject {
     storyPlan: recordFromJson(row.storyPlan),
     stylePreset: row.stylePreset ?? null,
     generationMode: row.generationMode ?? null,
+    styleAnchorUrl: row.styleAnchorUrl ?? null,
     createdAt: row.createdAt?.toISOString(),
   }
 }

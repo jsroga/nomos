@@ -33,8 +33,14 @@ export function useWorldGenSidebar() {
   const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
   const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
 
-  const { masterPrompt, handleMasterPromptChange, handleSelectGenerationMode, generationMode } =
-    useWorldSidebarPrompt(currentProject)
+  const {
+    masterPrompt,
+    handleMasterPromptChange,
+    handleSelectGenerationMode,
+    handleResetStyleAnchor,
+    generationMode,
+    styleAnchorUrl,
+  } = useWorldSidebarPrompt(currentProject)
 
   const [tilePrompt, setTilePrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -306,7 +312,9 @@ export function useWorldGenSidebar() {
     masterPrompt,
     handleMasterPromptChange,
     handleSelectGenerationMode,
+    handleResetStyleAnchor,
     generationMode,
+    styleAnchorUrl,
     tilePrompt,
     setTilePrompt,
     error,
