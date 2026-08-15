@@ -1,6 +1,5 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
-import { GENERATION_PROMPTS } from '@/shared/data/server/prompts'
-import { imageService } from '@/shared/data/server/image-service'
+import { GENERATION_PROMPTS, tilePromptLayersFrom } from '@/shared/data/server/prompts'
 import { storageService } from '@/shared/data/storage/storage-service'
 import {
   logLLMRequestComplete,
@@ -44,24 +43,24 @@ async function buildTilePrompt(
   contextImageBase64: string | undefined,
   styleReferenceUrls: string[] | undefined,
   forMidjourney: boolean,
+  masterPrompt?: string,
+  modePromptFragment?: string,
 ): Promise<{ text: string; imageUrls: string[] }> {
   const imageUrls: string[] = []
-  let text: string
-  if (isFirstTile) {
-    text = forMidjourney
-      ? GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(prompt, styleContext)
-      : GENERATION_PROMPTS.FIRST_TILE.GEMINI(prompt, styleContext)
-  } else {
-    let styleInfo = styleContext ?? 'consistent art style'
-    if (contextImageBase64) {
-      const analysis = await imageService.analyzeStyle(
-        Buffer.from(contextImageBase64, BufferEncoding.Base64),
-      )
-      styleInfo = analysis.description
-    }
-    text = forMidjourney
-      ? GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(prompt, styleInfo)
-      : GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt, styleInfo)
+  const layers = tilePromptLayersFrom({
+    prompt,
+    masterPrompt,
+    modePromptFragment,
+    styleContext,
+  })
+  let text = isFirstTile
+    ? forMidjourney
+      ? GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(layers)
+      : GENERATION_PROMPTS.FIRST_TILE.GEMINI(layers)
+    : forMidjourney
+      ? GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(layers)
+      : GENERATION_PROMPTS.FOLLOW_UP.GEMINI(layers)
+  if (!isFirstTile) {
     const contextUrl = await uploadContextIfPresent(contextImageBase64)
     if (contextUrl) {
       if (forMidjourney) text = `${contextUrl} ${text}`
@@ -118,6 +117,8 @@ export async function generateTileViaApiframeModel(
   styleReferenceUrls: string[] | undefined,
   contextImageBase64: string | undefined,
   styleContext: string | undefined,
+  masterPrompt?: string,
+  modePromptFragment?: string,
 ): Promise<string> {
   const model = mapProviderToApiframeModel(provider, config)
   const forMidjourney = model === ApiframeImageModel.Midjourney
@@ -128,6 +129,8 @@ export async function generateTileViaApiframeModel(
     contextImageBase64,
     styleReferenceUrls,
     forMidjourney,
+    masterPrompt,
+    modePromptFragment,
   )
 
   logger.info('Starting tile generation via Apiframe', { provider, model, isFirstTile })

@@ -1,6 +1,5 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
-import { GENERATION_PROMPTS, MASK_CONFIG } from '@/shared/data/server/prompts'
-import { imageService, type StyleInfo } from '@/shared/data/server/image-service'
+import { GENERATION_PROMPTS, MASK_CONFIG, tilePromptLayersFrom } from '@/shared/data/server/prompts'
 import { storageService } from '@/shared/data/storage/storage-service'
 import {
   logLLMRequestComplete,
@@ -22,8 +21,23 @@ import {
 import { parseLegNextJob, readLegNextImageUrl } from './generate-tile-json-guards'
 import { pollLegNextTask } from './generate-tile-legnext-poll'
 
-async function analyzeStyleWithSharp(imageBase64: string): Promise<StyleInfo> {
-  return imageService.analyzeStyle(Buffer.from(imageBase64, BufferEncoding.Base64))
+async function buildLegNextRemixPrompt(
+  isFirstTile: boolean,
+  prompt: string,
+  styleContext: string | undefined,
+  masterPrompt?: string,
+  modePromptFragment?: string,
+): Promise<string> {
+  const layers = tilePromptLayersFrom({
+    prompt,
+    masterPrompt,
+    modePromptFragment,
+    styleContext,
+  })
+  if (isFirstTile) {
+    return GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(layers)
+  }
+  return GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(layers)
 }
 
 async function uploadLegNextSourceImage(
@@ -65,23 +79,6 @@ async function uploadLegNextSourceImage(
   }
   logger.info('Blank canvas uploaded for first tile', { publicImageUrl })
   return publicImageUrl
-}
-
-async function buildLegNextRemixPrompt(
-  isFirstTile: boolean,
-  prompt: string,
-  styleContext: string | undefined,
-  contextImageBase64: string | undefined
-): Promise<string> {
-  if (isFirstTile) {
-    return GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(prompt, styleContext)
-  }
-  let styleInfo = 'medium neutral palette'
-  if (contextImageBase64) {
-    const analysis = await analyzeStyleWithSharp(contextImageBase64)
-    styleInfo = analysis.description
-  }
-  return GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(prompt, styleInfo)
 }
 
 async function buildLegNextMaskField(isFirstTile: boolean): Promise<object> {
@@ -342,7 +339,9 @@ export async function generateWithLegNext(
   isFirstTile: boolean,
   styleReferenceUrls?: string[],
   contextImageBase64?: string,
-  styleContext?: string
+  styleContext?: string,
+  masterPrompt?: string,
+  modePromptFragment?: string,
 ): Promise<string> {
   logger.info('Starting Midjourney generation via LegNext API', { isFirstTile, styleReferenceUrls })
 
@@ -351,7 +350,8 @@ export async function generateWithLegNext(
     isFirstTile,
     prompt,
     styleContext,
-    contextImageBase64
+    masterPrompt,
+    modePromptFragment,
   )
   if (styleReferenceUrls?.length) {
     remixPrompt += ` --sref ${styleReferenceUrls.join(' ')}`

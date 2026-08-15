@@ -1,6 +1,5 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
-import { GENERATION_PROMPTS } from '@/shared/data/server/prompts'
-import { imageService } from '@/shared/data/server/image-service'
+import { GENERATION_PROMPTS, tilePromptLayersFrom } from '@/shared/data/server/prompts'
 import { storageService } from '@/shared/data/storage/storage-service'
 import {
   logLLMRequestComplete,
@@ -22,25 +21,23 @@ async function buildApiframeTilePrompt(
   styleContext: string | undefined,
   contextImageBase64: string | undefined,
   styleReferenceUrls?: string[],
+  masterPrompt?: string,
+  modePromptFragment?: string,
 ): Promise<string> {
-  let basePrompt: string
-  if (isFirstTile) {
-    basePrompt = GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(prompt, styleContext)
-  } else {
-    let styleInfo = 'medium neutral palette'
-    if (contextImageBase64) {
-      const analysis = await imageService.analyzeStyle(
-        Buffer.from(contextImageBase64, BufferEncoding.Base64),
-      )
-      styleInfo = analysis.description
-    }
-    basePrompt = GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(prompt, styleInfo)
-    if (contextImageBase64) {
-      const tempFilename = `mj_context_${uuidv4()}.png`
-      const publicImageUrl = await storageService.uploadPublicImage(tempFilename, contextImageBase64)
-      if (publicImageUrl) {
-        basePrompt = `${publicImageUrl} ${basePrompt}`
-      }
+  const layers = tilePromptLayersFrom({
+    prompt,
+    masterPrompt,
+    modePromptFragment,
+    styleContext,
+  })
+  let basePrompt = isFirstTile
+    ? GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(layers)
+    : GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(layers)
+  if (!isFirstTile && contextImageBase64) {
+    const tempFilename = `mj_context_${uuidv4()}.png`
+    const publicImageUrl = await storageService.uploadPublicImage(tempFilename, contextImageBase64)
+    if (publicImageUrl) {
+      basePrompt = `${publicImageUrl} ${basePrompt}`
     }
   }
   if (styleReferenceUrls?.length) {
@@ -70,6 +67,8 @@ export async function generateWithApiframeMidjourney(
   styleReferenceUrls?: string[],
   contextImageBase64?: string,
   styleContext?: string,
+  masterPrompt?: string,
+  modePromptFragment?: string,
 ): Promise<string> {
   logger.info('Starting Midjourney generation via Apiframe', { isFirstTile, styleReferenceUrls })
 
@@ -79,6 +78,8 @@ export async function generateWithApiframeMidjourney(
     styleContext,
     contextImageBase64,
     styleReferenceUrls,
+    masterPrompt,
+    modePromptFragment,
   )
 
   logLLMRequestStart({

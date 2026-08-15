@@ -12,6 +12,8 @@ export async function generateTileImage(
   styleReferenceUrls: string[] | undefined,
   contextImageBase64: string | undefined,
   styleContext: string | undefined,
+  masterPrompt?: string,
+  modePromptFragment?: string,
 ): Promise<string> {
   switch (aiProvider) {
     case GenerateTileProvider.Gemini:
@@ -24,6 +26,8 @@ export async function generateTileImage(
         styleReferenceUrls,
         contextImageBase64,
         styleContext,
+        masterPrompt,
+        modePromptFragment,
       )
     case GenerateTileProvider.Grok:
       return generateTileViaApiframeModel(
@@ -34,6 +38,8 @@ export async function generateTileImage(
         styleReferenceUrls,
         contextImageBase64,
         styleContext,
+        masterPrompt,
+        modePromptFragment,
       )
     case GenerateTileProvider.OpenAi:
       return generateTileViaApiframeModel(
@@ -44,6 +50,8 @@ export async function generateTileImage(
         styleReferenceUrls,
         contextImageBase64,
         styleContext,
+        masterPrompt,
+        modePromptFragment,
       )
     case GenerateTileProvider.Stability:
       return generateTileViaApiframeModel(
@@ -54,6 +62,8 @@ export async function generateTileImage(
         styleReferenceUrls,
         contextImageBase64,
         styleContext,
+        masterPrompt,
+        modePromptFragment,
       )
     case GenerateTileProvider.Midjourney:
       return generateWithApiframeMidjourney(
@@ -63,6 +73,8 @@ export async function generateTileImage(
         styleReferenceUrls,
         contextImageBase64,
         styleContext,
+        masterPrompt,
+        modePromptFragment,
       )
     default:
       throw new Error(`Unsupported AI provider: ${aiProvider}`)

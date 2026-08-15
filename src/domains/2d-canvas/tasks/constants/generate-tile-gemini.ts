@@ -1,5 +1,5 @@
 import { logger } from '@trigger.dev/sdk/v3'
-import { GENERATION_PROMPTS } from '@/shared/data/server/prompts'
+import { GENERATION_PROMPTS, tilePromptLayersFrom } from '@/shared/data/server/prompts'
 import {
   logLLMRequestError,
   logLLMRequestStart,
@@ -64,10 +64,18 @@ function buildGeminiPayload(
   prompt: string,
   styleContext: string | undefined,
   contextImageBase64: string | undefined,
-  styleImageParts: GeminiInlineDataPart[]
+  styleImageParts: GeminiInlineDataPart[],
+  masterPrompt?: string,
+  modePromptFragment?: string,
 ): { payload: GeminiRequestPayload; finalPrompt: string } {
+  const layers = tilePromptLayersFrom({
+    prompt,
+    masterPrompt,
+    modePromptFragment,
+    styleContext,
+  })
   if (isFirstTile || !contextImageBase64) {
-    const finalPrompt = GENERATION_PROMPTS.FIRST_TILE.GEMINI(prompt, styleContext)
+    const finalPrompt = GENERATION_PROMPTS.FIRST_TILE.GEMINI(layers)
     return {
       finalPrompt,
       payload: {
@@ -82,10 +90,7 @@ function buildGeminiPayload(
     }
   }
 
-  const finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(
-    prompt,
-    styleContext ?? 'consistent art style'
-  )
+  const finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(layers)
   return {
     finalPrompt,
     payload: {
@@ -167,7 +172,9 @@ export async function generateWithGemini(
   isFirstTile: boolean,
   styleReferenceUrls?: string[],
   contextImageBase64?: string,
-  styleContext?: string
+  styleContext?: string,
+  masterPrompt?: string,
+  modePromptFragment?: string,
 ): Promise<string> {
   const model = config.params?.modelId ?? config.model ?? GEMINI_DEFAULT_MODEL
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.apiKey}`
@@ -181,7 +188,9 @@ export async function generateWithGemini(
     prompt,
     styleContext,
     contextImageBase64,
-    styleImageParts
+    styleImageParts,
+    masterPrompt,
+    modePromptFragment,
   )
 
   if (isFirstTile || !contextImageBase64) {

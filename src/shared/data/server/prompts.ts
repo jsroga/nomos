@@ -13,10 +13,6 @@
  * | Enhance Fidelity   | Gemini     | None                  | creativityPrompt|
  */
 
-// ============================================================================
-// GENERATION PROMPTS
-// ============================================================================
-
 import { DEFAULT_STYLE_CONTEXT } from '@/shared/data/constants/style-presets'
 import {
   CREATIVITY_PROMPT_PREFIX,
@@ -26,58 +22,123 @@ import {
 } from '@/shared/data/server/constants/generation-prompts'
 import { StringSeparator } from '@/shared/data/constants/protocol'
 
-/** Full style phrase for first tile: "Isometric painted world, " + (project style or default). */
-function getFirstTileStylePhrase(styleContext?: string | null): string {
-  return `Isometric painted world, ${styleContext ?? DEFAULT_STYLE_CONTEXT}`
+export interface TilePromptLayers {
+  tileDescription: string
+  masterPrompt?: string | null
+  modePromptFragment?: string | null
+  styleContext?: string | null
+}
+
+function joinPromptParts(parts: Array<string | undefined | null>): string {
+  return parts
+    .map(part => part?.trim() ?? '')
+    .filter(part => part.length > 0)
+    .join(' ')
+}
+
+export function composeFirstTilePrompt(layers: TilePromptLayers): string {
+  const description = layers.tileDescription.trim()
+  const styleContext = layers.styleContext?.trim() || DEFAULT_STYLE_CONTEXT
+  return joinPromptParts([
+    `Overhead view of ${description}, ${GenerationPromptCopy.FirstTileCroppedFragment}`,
+    layers.masterPrompt,
+    GenerationPromptCopy.FirstTileFrameFill,
+    layers.modePromptFragment,
+    styleContext,
+  ])
+}
+
+export function composeFollowUpPrompt(layers: TilePromptLayers): string {
+  const description = layers.tileDescription.trim()
+  const styleContext = layers.styleContext?.trim() || DEFAULT_STYLE_CONTEXT
+  return joinPromptParts([
+    `${GenerationPromptCopy.FollowUpGreyCenter} ${description}.`,
+    layers.masterPrompt,
+    layers.modePromptFragment,
+    styleContext,
+  ])
+}
+
+export function tilePromptLayersFrom(input: {
+  prompt: string
+  masterPrompt?: string | null
+  modePromptFragment?: string | null
+  styleContext?: string | null
+}): TilePromptLayers {
+  return {
+    tileDescription: input.prompt,
+    masterPrompt: input.masterPrompt,
+    modePromptFragment: input.modePromptFragment,
+    styleContext: input.styleContext,
+  }
 }
 
 export const GENERATION_PROMPTS = {
-  /** First tile - no neighbors, full creative generation (prompt text matches 34158c5). */
+  /** First tile - no neighbors, full creative generation. */
   FIRST_TILE: {
-    GEMINI: (prompt: string, _styleContext?: string | null) =>
-      `Generate an isometric tile image: ${prompt}. The image should be 512x512 pixels, isometric perspective, suitable for a tile-based game world. Style: painterly, detailed, vibrant colors.`,
+    GEMINI: (layers: TilePromptLayers) => composeFirstTilePrompt(layers),
 
-    MIDJOURNEY: (prompt: string, styleContext?: string | null) =>
-      `Isometric tile for a game world: ${prompt}. ${getFirstTileStylePhrase(styleContext)} 512x512, detailed, vibrant colors, seamless edges --v 6.1 --ar 1:1`,
+    MIDJOURNEY: (layers: TilePromptLayers) => composeFirstTilePrompt(layers),
 
-    OPENAI: (prompt: string, styleContext?: string | null) =>
-      `Isometric tile for a game world: ${prompt}. ${getFirstTileStylePhrase(styleContext)} 512x512, detailed.`,
+    OPENAI: (layers: TilePromptLayers) => composeFirstTilePrompt(layers),
 
-    STABILITY: (prompt: string, styleContext?: string | null) =>
-      `Isometric tile for a game world: ${prompt}. ${getFirstTileStylePhrase(styleContext)} Detailed, vibrant colors.`,
+    STABILITY: (layers: TilePromptLayers) => composeFirstTilePrompt(layers),
   },
 
   /** Follow-up tile - has neighbors, must match edges */
   FOLLOW_UP: {
     /** Master template for inpainting follow-up tiles */
-    MASTER: (prompt: string, styleInfo: string) =>
-      `Inpaint the central gray square to seamlessly connect with the surrounding edge context. Fill the gray area with: ${prompt}. Maintain ${styleInfo}, ${GenerationPromptStyle.ConsistentArtStyle}. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not generate borders or frames.`,
+    MASTER: (layers: TilePromptLayers) =>
+      joinPromptParts([
+        `Inpaint the central gray square to connect with the surrounding edge context. Fill the gray area with: ${layers.tileDescription.trim()}.`,
+        layers.masterPrompt,
+        layers.modePromptFragment,
+        layers.styleContext,
+        GenerationPromptStyle.ConsistentArtStyle,
+        GenerationPromptCopy.FollowUpNoBorders,
+      ]),
 
-    GEMINI: (prompt: string, _styleInfo: string = GenerationPromptStyle.ConsistentArtStyle) =>
-      `Inpaint the bright magenta/pink square in the center of this image. The magenta marks exactly where new content must go — replace ONLY the magenta pixels with: ${prompt}. The gray areas outside the magenta are unconstrained empty borders with no adjacent tiles — do not fill or alter them. The non-gray, non-magenta areas are neighboring tiles — seamlessly continue their colors, lines, and lighting at every edge where they touch the magenta area. Ensure continuous lines, consistent isometric perspective, and matching lighting. Do not alter any non-magenta pixels. Do not add borders or frames.`,
+    GEMINI: (layers: TilePromptLayers) =>
+      joinPromptParts([
+        `Inpaint the bright magenta/pink square in the center of this image. The magenta marks exactly where new content must go — replace ONLY the magenta pixels with: ${layers.tileDescription.trim()}.`,
+        layers.masterPrompt,
+        layers.modePromptFragment,
+        layers.styleContext,
+        GenerationPromptCopy.FollowUpGeminiConstraints,
+      ]),
 
-    GEMINI_MASKED: (_prompt?: string, _styleInfo: string = GenerationPromptStyle.ConsistentArtStyle) =>
-      GenerationPromptCopy.MaskedCenterTile,
+    GEMINI_MASKED: (_layers?: TilePromptLayers) => GenerationPromptCopy.MaskedCenterTile,
 
-    GEMINI_EDGE_GUIDED: (prompt: string, edgeLabels: string[], styleContext?: string) => {
-      const styleHint = styleContext ? ` ${styleContext}.` : ''
+    GEMINI_EDGE_GUIDED: (layers: TilePromptLayers, edgeLabels: string[]) => {
       const edgeList = edgeLabels.join(StringSeparator.CommaSpace)
-      return `Generate a 512x512 isometric game tile: ${prompt}.${styleHint} The tile MUST seamlessly blend with its neighboring tiles. I am providing the edge strips of adjacent tiles (${edgeList}). Your generated tile's edges must visually continue from these neighbor edges with matching colors, lines, shapes, and lighting. Do not add borders or frames.`
+      return joinPromptParts([
+        `Generate an image that continues the neighboring world: ${layers.tileDescription.trim()}.`,
+        layers.masterPrompt,
+        layers.modePromptFragment,
+        layers.styleContext,
+        `The image MUST blend with its neighbors. Edge strips of adjacent images (${edgeList}) are provided. Edges must visually continue from these neighbor edges with matching colors, lines, shapes, and lighting. Do not add borders or frames.`,
+      ])
     },
 
-    MIDJOURNEY: (_prompt: string, _styleInfo: string) => GenerationPromptCopy.MidjourneyGreyFill,
+    MIDJOURNEY: (layers: TilePromptLayers) => composeFollowUpPrompt(layers),
 
-    OPENAI: (prompt: string) =>
-      `Fill seamlessly to match surrounding edges: ${prompt}. Maintain isometric perspective and consistent style.`,
+    OPENAI: (layers: TilePromptLayers) =>
+      joinPromptParts([
+        `Fill to match surrounding edges: ${layers.tileDescription.trim()}.`,
+        layers.masterPrompt,
+        layers.modePromptFragment,
+        layers.styleContext,
+      ]),
 
-    STABILITY: (prompt: string) =>
-      `Fill seamlessly to match surrounding edges: ${prompt}. Maintain isometric perspective and consistent style.`,
+    STABILITY: (layers: TilePromptLayers) =>
+      joinPromptParts([
+        `Fill to match surrounding edges: ${layers.tileDescription.trim()}.`,
+        layers.masterPrompt,
+        layers.modePromptFragment,
+        layers.styleContext,
+      ]),
   },
 } as const
-
-// ============================================================================
-// UPSCALE PROMPTS
-// ============================================================================
 
 export const UPSCALE_PROMPTS = {
   /** Gemini Step 1 - initial upscale with style preservation */
@@ -90,23 +151,12 @@ export const UPSCALE_PROMPTS = {
   STABILITY: GenerationPromptCopy.StabilityUpscale,
 } as const
 
-// ============================================================================
-// FIDELITY ENHANCEMENT PROMPTS
-// ============================================================================
-
 export const FIDELITY_PROMPTS = {
   /** Gemini fidelity enhancement */
   GEMINI: (stylePrompt: string, creativityPrompt: string, styleRefHint: string = '') =>
     `${stylePrompt}\n\nApply this artistic style to the image while maintaining the exact same composition, subject matter, and structure. Enhance the visual fidelity and add artistic detail according to the style description above. ${creativityPrompt} Ensure each object has a clear, natural-looking shape definition suitable for 3D conversion, especially for characters and people.${styleRefHint}`,
 } as const
 
-// ============================================================================
-// CREATIVITY PROMPTS
-// ============================================================================
-
-/**
- * Get creativity level prompt hint based on 0-1 slider value
- */
 export function getCreativityPrompt(creativity: number): string {
   const level = Math.round(creativity * 100)
   let hint: string
@@ -125,10 +175,6 @@ export function getCreativityPrompt(creativity: number): string {
 
   return `${CREATIVITY_PROMPT_PREFIX} ${level}/100. ${hint}`
 }
-
-// ============================================================================
-// MASK CONFIGURATIONS
-// ============================================================================
 
 export const MASK_CONFIG = {
   /** Full canvas mask for first tile generation */

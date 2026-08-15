@@ -104,9 +104,7 @@ export async function generateSingleWorldTile(params: {
     ].some(Boolean)
 
     const effectiveTilePrompt = tilePrompt.trim() || masterPrompt
-    const fullPrompt = hasNeighbors
-      ? effectiveTilePrompt
-      : `${tilePrompt}, ${masterPrompt}`.replace(/^, /, '')
+    const fullPrompt = effectiveTilePrompt
 
     let followUpContext: FollowUpContextPayload | undefined
 

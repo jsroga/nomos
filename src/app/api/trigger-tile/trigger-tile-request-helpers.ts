@@ -4,6 +4,10 @@ import { resolveStyleReferenceUrls, resolveStyleContext } from '@/shared/data/co
 import { readString, stringArrayFromJson } from '@/shared/data/json-guards'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
+import {
+  generationModeDef,
+  resolveGenerationMode,
+} from '@/domains/2d-canvas/constants/generation-modes'
 import type {
   GenerateTileContextPayload,
   GenerateTilePayload,
@@ -59,7 +63,12 @@ function parseGenerateTileContextPayload(value: unknown): GenerateTileContextPay
 export async function resolveTileStyleInputs(
   supabase: SupabaseClient,
   payload: TileRequestPayload
-): Promise<{ styleReferenceUrls?: string[]; styleContext?: string }> {
+): Promise<{
+  styleReferenceUrls?: string[]
+  styleContext?: string
+  masterPrompt?: string
+  modePromptFragment?: string
+}> {
   const { data: projectData } = await supabase
     .from(DB_TABLE.PROJECTS)
     .select(DB_SELECT.PROJECT_STYLE_REFS)
@@ -68,6 +77,8 @@ export async function resolveTileStyleInputs(
 
   const stylePreset = readString(projectData?.style_preset) ?? null
   const styleContext = resolveStyleContext({ stylePreset }) ?? undefined
+  const mode = generationModeDef(resolveGenerationMode(projectData?.generation_mode))
+  const masterPrompt = readString(projectData?.master_prompt) ?? undefined
 
   const styleReferenceUrls =
     payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
@@ -77,13 +88,23 @@ export async function resolveTileStyleInputs(
           styleReferenceUrls: stringArrayFromJson(projectData?.style_reference_urls),
         }) ?? undefined
 
-  return { styleReferenceUrls, styleContext }
+  return {
+    styleReferenceUrls,
+    styleContext,
+    masterPrompt,
+    modePromptFragment: mode.promptFragment,
+  }
 }
 
 export function buildGenerateTileTaskPayload(
   payload: TileRequestPayload,
   providerResult: { aiProvider: TileAIProvider; aiConfig: Record<string, unknown> },
-  styleInputs: { styleReferenceUrls?: string[]; styleContext?: string }
+  styleInputs: {
+    styleReferenceUrls?: string[]
+    styleContext?: string
+    masterPrompt?: string
+    modePromptFragment?: string
+  }
 ): GenerateTilePayload {
   const taskPayload: GenerateTilePayload = {
     projectId: payload.projectId,
@@ -100,6 +121,12 @@ export function buildGenerateTileTaskPayload(
   }
   if (styleInputs.styleContext) {
     taskPayload.styleContext = styleInputs.styleContext
+  }
+  if (styleInputs.masterPrompt) {
+    taskPayload.masterPrompt = styleInputs.masterPrompt
+  }
+  if (styleInputs.modePromptFragment) {
+    taskPayload.modePromptFragment = styleInputs.modePromptFragment
   }
   if (payload.contextImageBase64) {
     taskPayload.contextImageBase64 = payload.contextImageBase64

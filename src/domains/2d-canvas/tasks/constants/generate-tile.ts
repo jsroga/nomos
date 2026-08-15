@@ -22,6 +22,8 @@ export interface GenerateTilePayload {
   isFirstTile?: boolean
   styleReferenceUrls?: string[]
   styleContext?: string
+  masterPrompt?: string
+  modePromptFragment?: string
   contextImageBase64?: string
   contextPayload?: GenerateTileContextPayload
   neighbors?: TileNeighborsPayload

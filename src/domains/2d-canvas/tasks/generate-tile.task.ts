@@ -27,6 +27,8 @@ export const generateTileTask = task({
       isFirstTile = true,
       styleReferenceUrls,
       styleContext,
+      masterPrompt,
+      modePromptFragment,
       neighbors,
     } = payload
 
@@ -60,7 +62,9 @@ export const generateTileTask = task({
       isFirstTile,
       styleReferenceUrls,
       contextImageBase64,
-      styleContext
+      styleContext,
+      masterPrompt,
+      modePromptFragment,
     )
 
     await metadata.set('progress', 70)

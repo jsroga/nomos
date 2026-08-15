@@ -1,5 +1,5 @@
 import { logger } from '@trigger.dev/sdk/v3'
-import { GENERATION_PROMPTS } from '@/shared/data/server/prompts'
+import { GENERATION_PROMPTS, tilePromptLayersFrom } from '@/shared/data/server/prompts'
 import {
   logLLMRequestError,
   logLLMRequestStart,
@@ -89,13 +89,21 @@ export async function generateWithGrok(
   isFirstTile: boolean,
   styleReferenceUrls: string[] | undefined,
   contextImageBase64: string | undefined,
-  styleContext: string | undefined
+  styleContext: string | undefined,
+  masterPrompt?: string,
+  modePromptFragment?: string,
 ): Promise<string> {
   const model = resolveGrokModel(config)
+  const layers = tilePromptLayersFrom({
+    prompt,
+    masterPrompt,
+    modePromptFragment,
+    styleContext,
+  })
   const isFollowUp = !isFirstTile && !!contextImageBase64
   const finalPrompt = isFollowUp
-    ? GENERATION_PROMPTS.FOLLOW_UP.GEMINI(prompt, styleContext ?? 'consistent art style')
-    : GENERATION_PROMPTS.FIRST_TILE.GEMINI(prompt, styleContext)
+    ? GENERATION_PROMPTS.FOLLOW_UP.GEMINI(layers)
+    : GENERATION_PROMPTS.FIRST_TILE.GEMINI(layers)
 
   const inputReferences: OpenRouterImageReference[] = []
   if (contextImageBase64) {
