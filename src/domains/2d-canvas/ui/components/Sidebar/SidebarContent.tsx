@@ -5,6 +5,7 @@ import { SidebarSection, SidebarEmptyState } from '@/components/DomainSidebar'
 import { AssetsPanel } from '@/domains/2d-canvas/ui/components/AssetsPanel'
 import { MjVariantPicker } from '@/domains/2d-canvas/ui/components/MjVariantPicker'
 import type { WorldGenSidebarState } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
+import { SidebarWorldSection } from './SidebarWorldSection'
 import { SidebarGenerationSection } from './SidebarGenerationSection'
 import { SidebarUpscaleSection } from './SidebarUpscaleSection'
 import { SidebarFidelitySection } from './SidebarFidelitySection'
@@ -29,6 +30,7 @@ export const SidebarContent: React.FC<WorldGenSidebarState> = sidebar => {
             </div>
           )}
 
+          <SidebarWorldSection {...sidebar} />
           <SidebarGenerationSection {...sidebar} />
           <SidebarUpscaleSection {...sidebar} />
           <SidebarFidelitySection {...sidebar} />

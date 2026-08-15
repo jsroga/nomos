@@ -25,16 +25,17 @@ import {
   WorldGenStyleUrlStoragePrefix,
 } from '../../ui/constants/sidebar'
 import { generateSingleWorldTile } from './generate-single-world-tile'
+import { useWorldSidebarPrompt } from './useWorldSidebarPrompt'
 
 export function useWorldGenSidebar() {
-  const defaultMasterPrompt = ''
-
   const currentProject = useWorkspaceProjectStore(state => state.currentProject)
   const assets = useWorldStore(state => state.assets)
   const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
   const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
 
-  const [masterPrompt, setMasterPrompt] = useState('')
+  const { masterPrompt, handleMasterPromptChange, handleSelectGenerationMode, generationMode } =
+    useWorldSidebarPrompt(currentProject)
+
   const [tilePrompt, setTilePrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [upscaleCreativity, setUpscaleCreativity] = useState(0.3)
@@ -52,22 +53,6 @@ export function useWorldGenSidebar() {
     }
     return UpscaleProvider.Stability
   })
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && currentProject?.id) {
-      const savedPrompt = browserStorage.getString(
-        `${LocalStorageKeys.MASTER_PROMPT}-${currentProject.id}`
-      )
-      setMasterPrompt(savedPrompt || defaultMasterPrompt)
-    }
-  }, [currentProject?.id])
-
-  const handleMasterPromptChange = (value: string) => {
-    setMasterPrompt(value)
-    if (typeof window !== 'undefined' && currentProject?.id) {
-      browserStorage.setString(`${LocalStorageKeys.MASTER_PROMPT}-${currentProject.id}`, value)
-    }
-  }
 
   const selectedTiles = useWorldStore(state => state.selectedTiles)
   const selectedTile = useWorldStore(state => state.selectedTile)
@@ -319,6 +304,9 @@ export function useWorldGenSidebar() {
     showAllAssetMasks,
     setShowAllAssetMasks,
     masterPrompt,
+    handleMasterPromptChange,
+    handleSelectGenerationMode,
+    generationMode,
     tilePrompt,
     setTilePrompt,
     error,
@@ -331,7 +319,6 @@ export function useWorldGenSidebar() {
     isDebugMode,
     upscaleProvider,
     handleUpscaleProviderChange,
-    handleMasterPromptChange,
     selectedTiles,
     selectedTile,
     tiles,

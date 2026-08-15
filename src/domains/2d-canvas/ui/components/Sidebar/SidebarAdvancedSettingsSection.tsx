@@ -1,7 +1,7 @@
 import React from 'react'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { Button } from '@/components/Button'
-import { SidebarSection, SidebarLabel, SidebarTextarea } from '@/components/DomainSidebar'
+import { SidebarSection, SidebarLabel } from '@/components/DomainSidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/Tooltip'
 import { Loader2, BookOpen, Palette, ChevronDown, ChevronUp, Info } from 'lucide-react'
 import type { WorldGenSidebarState } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
@@ -10,8 +10,6 @@ type SidebarAdvancedSettingsSectionProps = Pick<
   WorldGenSidebarState,
   | 'showAdvancedSettings'
   | 'setShowAdvancedSettings'
-  | 'masterPrompt'
-  | 'handleMasterPromptChange'
   | 'fetchWorldSummary'
   | 'isFetchingSummary'
   | 'currentProject'
@@ -23,8 +21,6 @@ type SidebarAdvancedSettingsSectionProps = Pick<
 export const SidebarAdvancedSettingsSection: React.FC<SidebarAdvancedSettingsSectionProps> = ({
   showAdvancedSettings,
   setShowAdvancedSettings,
-  masterPrompt,
-  handleMasterPromptChange,
   fetchWorldSummary,
   isFetchingSummary,
   currentProject,
@@ -88,12 +84,6 @@ export const SidebarAdvancedSettingsSection: React.FC<SidebarAdvancedSettingsSec
                 </TooltipContent>
               </Tooltip>
             </div>
-            <SidebarTextarea
-              value={masterPrompt}
-              onChange={e => handleMasterPromptChange(e.target.value)}
-              placeholder="Define the overall art style and aesthetic..."
-              className="h-24"
-            />
             {activeStyleUrls.length > 0 && (
               <div className="space-y-1.5">
                 <SidebarLabel>Style Reference Image</SidebarLabel>

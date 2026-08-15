@@ -18,9 +18,18 @@ export enum WorldGenDefaultFidelityPrompt {
     'Enhance with fine artistic details, crisp textures, and vibrant colors while maintaining the original composition.',
 }
 
+export const MASTER_PROMPT_SAVE_DEBOUNCE_MS = 500
+
+export enum WorldGenSidebarWorldCopy {
+  Title = 'World',
+  PromptLabel = 'Master prompt',
+  Placeholder = 'World context for every generated tile...',
+}
+
 export enum WorldGenSidebarLog {
   MjGridReady = 'MJ grid ready:',
   FailedToLoadProjectStyleRefs = 'Failed to load project style refs:',
+  FailedToSaveWorldSettings = 'Failed to save world settings:',
   BlobToDataUrlInvalidBlob = '[Sidebar] blobToDataUrl received invalid blob:',
   ConvertingBlobToDataUrl = '[Sidebar] Converting blob to data URL:',
   DataUrlCreated = '[Sidebar] Data URL created:',
