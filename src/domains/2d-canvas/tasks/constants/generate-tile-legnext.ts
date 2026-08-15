@@ -1,5 +1,6 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
-import { GENERATION_PROMPTS, MASK_CONFIG, tilePromptLayersFrom } from '@/shared/data/server/prompts'
+import { MASK_CONFIG, tilePromptLayersFrom } from '@/shared/data/server/prompts'
+import { buildMidjourneyTilePromptText } from '@/shared/data/server/midjourney-params'
 import { storageService } from '@/shared/data/storage/storage-service'
 import {
   logLLMRequestComplete,
@@ -25,8 +26,10 @@ async function buildLegNextRemixPrompt(
   isFirstTile: boolean,
   prompt: string,
   styleContext: string | undefined,
+  styleReferenceUrls?: string[],
   masterPrompt?: string,
   modePromptFragment?: string,
+  modeNegatives?: string[],
 ): Promise<string> {
   const layers = tilePromptLayersFrom({
     prompt,
@@ -34,10 +37,12 @@ async function buildLegNextRemixPrompt(
     modePromptFragment,
     styleContext,
   })
-  if (isFirstTile) {
-    return GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(layers)
-  }
-  return GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(layers)
+  return buildMidjourneyTilePromptText({
+    isFirstTile,
+    layers,
+    styleReferenceUrls,
+    modeNegatives,
+  })
 }
 
 async function uploadLegNextSourceImage(
@@ -342,21 +347,21 @@ export async function generateWithLegNext(
   styleContext?: string,
   masterPrompt?: string,
   modePromptFragment?: string,
+  modeNegatives?: string[],
 ): Promise<string> {
   logger.info('Starting Midjourney generation via LegNext API', { isFirstTile, styleReferenceUrls })
 
   const publicImageUrl = await uploadLegNextSourceImage(isFirstTile, contextImageBase64)
-  let remixPrompt = await buildLegNextRemixPrompt(
+  const remixPrompt = await buildLegNextRemixPrompt(
     isFirstTile,
     prompt,
     styleContext,
+    styleReferenceUrls,
     masterPrompt,
     modePromptFragment,
+    modeNegatives,
   )
-  if (styleReferenceUrls?.length) {
-    remixPrompt += ` --sref ${styleReferenceUrls.join(' ')}`
-  }
-  logger.info('Using remix prompt', { remixPrompt })
+  logger.info('Midjourney prompt', { prompt: remixPrompt })
 
   await metadata.set('stage', 'submitting_upload_paint')
   await metadata.set('progress', 35)

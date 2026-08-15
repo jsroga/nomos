@@ -1,5 +1,6 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
-import { GENERATION_PROMPTS, tilePromptLayersFrom } from '@/shared/data/server/prompts'
+import { tilePromptLayersFrom } from '@/shared/data/server/prompts'
+import { buildMidjourneyTilePromptText } from '@/shared/data/server/midjourney-params'
 import { storageService } from '@/shared/data/storage/storage-service'
 import {
   logLLMRequestComplete,
@@ -23,6 +24,7 @@ async function buildApiframeTilePrompt(
   styleReferenceUrls?: string[],
   masterPrompt?: string,
   modePromptFragment?: string,
+  modeNegatives?: string[],
 ): Promise<string> {
   const layers = tilePromptLayersFrom({
     prompt,
@@ -30,18 +32,18 @@ async function buildApiframeTilePrompt(
     modePromptFragment,
     styleContext,
   })
-  let basePrompt = isFirstTile
-    ? GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(layers)
-    : GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(layers)
+  let basePrompt = buildMidjourneyTilePromptText({
+    isFirstTile,
+    layers,
+    styleReferenceUrls,
+    modeNegatives,
+  })
   if (!isFirstTile && contextImageBase64) {
     const tempFilename = `mj_context_${uuidv4()}.png`
     const publicImageUrl = await storageService.uploadPublicImage(tempFilename, contextImageBase64)
     if (publicImageUrl) {
       basePrompt = `${publicImageUrl} ${basePrompt}`
     }
-  }
-  if (styleReferenceUrls?.length) {
-    basePrompt += ` --sref ${styleReferenceUrls.join(' ')}`
   }
   return basePrompt
 }
@@ -69,6 +71,7 @@ export async function generateWithApiframeMidjourney(
   styleContext?: string,
   masterPrompt?: string,
   modePromptFragment?: string,
+  modeNegatives?: string[],
 ): Promise<string> {
   logger.info('Starting Midjourney generation via Apiframe', { isFirstTile, styleReferenceUrls })
 
@@ -80,7 +83,9 @@ export async function generateWithApiframeMidjourney(
     styleReferenceUrls,
     masterPrompt,
     modePromptFragment,
+    modeNegatives,
   )
+  logger.info('Midjourney prompt', { prompt: fullPrompt })
 
   logLLMRequestStart({
     provider: ImageGenProvider.Midjourney,

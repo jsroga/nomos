@@ -1,5 +1,6 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
 import { GENERATION_PROMPTS, tilePromptLayersFrom } from '@/shared/data/server/prompts'
+import { buildMidjourneyTilePromptText } from '@/shared/data/server/midjourney-params'
 import { storageService } from '@/shared/data/storage/storage-service'
 import {
   logLLMRequestComplete,
@@ -45,6 +46,7 @@ async function buildTilePrompt(
   forMidjourney: boolean,
   masterPrompt?: string,
   modePromptFragment?: string,
+  modeNegatives?: string[],
 ): Promise<{ text: string; imageUrls: string[] }> {
   const imageUrls: string[] = []
   const layers = tilePromptLayersFrom({
@@ -53,12 +55,15 @@ async function buildTilePrompt(
     modePromptFragment,
     styleContext,
   })
-  let text = isFirstTile
-    ? forMidjourney
-      ? GENERATION_PROMPTS.FIRST_TILE.MIDJOURNEY(layers)
-      : GENERATION_PROMPTS.FIRST_TILE.GEMINI(layers)
-    : forMidjourney
-      ? GENERATION_PROMPTS.FOLLOW_UP.MIDJOURNEY(layers)
+  let text = forMidjourney
+    ? buildMidjourneyTilePromptText({
+        isFirstTile,
+        layers,
+        styleReferenceUrls,
+        modeNegatives,
+      })
+    : isFirstTile
+      ? GENERATION_PROMPTS.FIRST_TILE.GEMINI(layers)
       : GENERATION_PROMPTS.FOLLOW_UP.GEMINI(layers)
   if (!isFirstTile) {
     const contextUrl = await uploadContextIfPresent(contextImageBase64)
@@ -67,9 +72,8 @@ async function buildTilePrompt(
       else imageUrls.push(contextUrl)
     }
   }
-  if (styleReferenceUrls?.length) {
-    if (forMidjourney) text += ` --sref ${styleReferenceUrls.join(' ')}`
-    else imageUrls.push(...styleReferenceUrls)
+  if (!forMidjourney && styleReferenceUrls?.length) {
+    imageUrls.push(...styleReferenceUrls)
   }
   return { text, imageUrls }
 }
@@ -119,6 +123,7 @@ export async function generateTileViaApiframeModel(
   styleContext: string | undefined,
   masterPrompt?: string,
   modePromptFragment?: string,
+  modeNegatives?: string[],
 ): Promise<string> {
   const model = mapProviderToApiframeModel(provider, config)
   const forMidjourney = model === ApiframeImageModel.Midjourney
@@ -131,9 +136,13 @@ export async function generateTileViaApiframeModel(
     forMidjourney,
     masterPrompt,
     modePromptFragment,
+    modeNegatives,
   )
 
   logger.info('Starting tile generation via Apiframe', { provider, model, isFirstTile })
+  if (forMidjourney) {
+    logger.info('Midjourney prompt', { prompt: text })
+  }
   logLLMRequestStart({
     provider,
     model,

@@ -85,3 +85,5 @@ export enum ApiframeImageField {
   ImagePrompt = 'image_prompt',
   AspectRatio = 'aspect_ratio',
 }
+
+export const MIDJOURNEY_VERSION = '8.2'

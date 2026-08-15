@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { generateMidjourneyUpscaledImage } from '@/shared/ai/apiframe'
+import { MIDJOURNEY_VERSION } from '@/shared/ai/constants/apiframe'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
@@ -20,7 +21,7 @@ export const POST = withRateLimit(
         : ''
 
     const promptText =
-      `${imageUrl ? imageUrl + ' ' : ''}${prompt || ''} --v 6.1 --q 2 --s 250${srefParam}`.trim()
+      `${imageUrl ? imageUrl + ' ' : ''}${prompt || ''} --v ${MIDJOURNEY_VERSION} --q 2 --s 250${srefParam}`.trim()
 
     console.log(API_LOG_PREFIX.MJ_WAITING_IMAGINE)
     const result = await generateMidjourneyUpscaledImage(promptText, apiKey, { index: 1 })
