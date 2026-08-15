@@ -18,6 +18,15 @@ import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
 import { resolveFidelityModel } from '@/shared/ai/image-model-env'
 import { storageService } from '@/shared/data/storage/storage-service'
 import { createSupabaseServiceClient } from './constants/generate-tile-persist'
+import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
+import {
+  generationModeDef,
+  resolveGenerationMode,
+} from '../constants/generation-modes'
+
+export enum EnhanceFidelityError {
+  NotAllowedForMode = 'Fidelity enhancement is not allowed for this generation mode',
+}
 
 export interface EnhanceFidelityPayload {
   tileId: string
@@ -47,6 +56,17 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
     apiframeConfig,
     styleReferenceUrls,
   } = payload
+
+  const supabase = createSupabaseServiceClient()
+  const { data: projectRow } = await supabase
+    .from(DB_TABLE.PROJECTS)
+    .select(DB_SELECT.PROJECT_STYLE_REFS)
+    .eq(DB_COLUMN.ID, projectId)
+    .single()
+  const mode = generationModeDef(resolveGenerationMode(projectRow?.generation_mode))
+  if (!mode.allowsFidelityEnhance) {
+    throw new Error(EnhanceFidelityError.NotAllowedForMode)
+  }
 
   logger.info(`Starting fidelity enhancement for tile ${tileId}`, { projectId })
 
@@ -134,8 +154,6 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
 
   const enhancedUrl = blob.url
   logger.info('Enhanced image uploaded to Vercel Blob', { enhancedUrl })
-
-  const supabase = createSupabaseServiceClient()
 
   await metadata.set('progress', 90)
   await metadata.set('stage', 'pending_review')

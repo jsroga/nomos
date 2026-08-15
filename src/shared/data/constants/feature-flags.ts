@@ -12,6 +12,7 @@ export enum FeatureFlag {
   RemotePrompts = 'FF_REMOTE_PROMPTS',
   InternalDocs = 'FF_INTERNAL_DOCS',
   VoyageEmbeddings = 'FF_VOYAGE_EMBEDDINGS',
+  CanvasGeminiUpscale = 'FF_CANVAS_GEMINI_UPSCALE',
 }
 
 export const FEATURE_FLAG_ON = 'true'

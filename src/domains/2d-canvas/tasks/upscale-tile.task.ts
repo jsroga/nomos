@@ -2,13 +2,10 @@ import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { BufferEncoding, ContentType } from '@/shared/data/constants/protocol'
-import { ApiframeUpscaleModel } from '@/shared/ai/constants/apiframe'
 import { UpscaleProvider } from '../core/upscale-provider-wire'
-import {
-  upscaleWithApiframe,
-  upscaleWithLegNext,
-  type ProviderConfig,
-} from './upscale-tile-providers'
+import { UpscaleStrategy } from '../constants/generation-modes'
+import type { ProviderConfig } from './upscale-tile-providers'
+import { runModeUpscale } from './upscale-tile-mode-run'
 
 export const upscaleTileTask = task({
   id: 'upscale-tile',
@@ -26,6 +23,8 @@ export const upscaleTileTask = task({
     provider: UpscaleProvider
     providerConfig: ProviderConfig
     styleReferenceUrls?: string[]
+    upscaleStrategy?: UpscaleStrategy
+    geminiConfig?: { apiKey: string; model?: string }
   }) => {
     const {
       tileId,
@@ -36,11 +35,14 @@ export const upscaleTileTask = task({
       provider,
       providerConfig,
       styleReferenceUrls,
+      upscaleStrategy = UpscaleStrategy.Topaz,
+      geminiConfig,
     } = payload
 
     logger.info(`Starting upscale for tile ${tileId}`, {
       provider,
       projectId,
+      upscaleStrategy,
     })
 
     await metadata.set('progress', 0)
@@ -49,14 +51,14 @@ export const upscaleTileTask = task({
     await metadata.set('stage', 'initializing')
 
     await metadata.set('stage', 'provider_upscale')
-    const providerResult = await runProviderUpscale({
-      provider,
+    const providerResult = await runModeUpscale({
+      upscaleStrategy,
       providerConfig,
-      step1Image: imageBase64,
-      step1MimeType: ContentType.Png,
+      imageBase64,
       prompt,
       creativity,
       styleReferenceUrls,
+      geminiConfig,
     })
 
     await metadata.set('stage', 'uploading')
@@ -116,81 +118,6 @@ export const upscaleTileTask = task({
 interface ProviderUpscaleResult {
   finalImageUrl: string | null
   finalImageBase64: string | null
-}
-
-async function runProviderUpscale(params: {
-  provider: UpscaleProvider
-  providerConfig: ProviderConfig
-  step1Image: string
-  step1MimeType: string
-  prompt: string
-  creativity: number
-  styleReferenceUrls?: string[]
-}): Promise<ProviderUpscaleResult> {
-  const {
-    provider,
-    providerConfig,
-    step1Image,
-    step1MimeType,
-    prompt,
-    creativity,
-    styleReferenceUrls,
-  } = params
-
-  switch (provider) {
-    case UpscaleProvider.Midjourney: {
-      const sharp = (await import('sharp')).default
-      const buffer = Buffer.from(step1Image, BufferEncoding.Base64)
-      const meta = await sharp(buffer).metadata()
-
-      let resizedImage = step1Image
-      if (meta.width && meta.width > 512) {
-        logger.info('Downsizing image for MJ (compatibility)', { originalWidth: meta.width })
-        const resizedBuffer = await sharp(buffer)
-          .resize(512, 512, { fit: 'fill' })
-          .toBuffer()
-        resizedImage = resizedBuffer.toString(BufferEncoding.Base64)
-      }
-
-      const mjResult = await upscaleWithLegNext(
-        resizedImage,
-        prompt,
-        providerConfig.apiKey,
-        step1MimeType,
-        styleReferenceUrls,
-        creativity,
-      )
-
-      logger.info('Midjourney upscale via Apiframe completed', {
-        finalImageUrl: mjResult.imageUrl,
-      })
-
-      return { finalImageUrl: mjResult.imageUrl, finalImageBase64: null }
-    }
-
-    case UpscaleProvider.Replicate: {
-      const result = await upscaleWithApiframe(
-        step1Image,
-        prompt,
-        providerConfig.apiKey,
-        ApiframeUpscaleModel.ClarityUpscale,
-        step1MimeType,
-      )
-      return { finalImageUrl: result.imageUrl, finalImageBase64: null }
-    }
-
-    case UpscaleProvider.Stability:
-    default: {
-      const result = await upscaleWithApiframe(
-        step1Image,
-        prompt,
-        providerConfig.apiKey,
-        ApiframeUpscaleModel.TopazImageUpscale,
-        step1MimeType,
-      )
-      return { finalImageUrl: result.imageUrl, finalImageBase64: null }
-    }
-  }
 }
 
 async function resolveUpscaledImageData(providerResult: ProviderUpscaleResult): Promise<string> {

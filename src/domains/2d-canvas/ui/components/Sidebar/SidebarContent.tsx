@@ -10,6 +10,7 @@ import { SidebarGenerationSection } from './SidebarGenerationSection'
 import { SidebarUpscaleSection } from './SidebarUpscaleSection'
 import { SidebarFidelitySection } from './SidebarFidelitySection'
 import { SidebarAdvancedSettingsSection } from './SidebarAdvancedSettingsSection'
+import { generationModeDef } from '@/domains/2d-canvas/constants/generation-modes'
 
 export const SidebarContent: React.FC<WorldGenSidebarState> = sidebar => {
   const { currentProject, assets, showAllAssetMasks, setShowAllAssetMasks, error, mjGridData, setMjGridData } =
@@ -33,7 +34,9 @@ export const SidebarContent: React.FC<WorldGenSidebarState> = sidebar => {
           <SidebarWorldSection {...sidebar} />
           <SidebarGenerationSection {...sidebar} />
           <SidebarUpscaleSection {...sidebar} />
-          <SidebarFidelitySection {...sidebar} />
+          {generationModeDef(sidebar.generationMode).allowsFidelityEnhance ? (
+            <SidebarFidelitySection {...sidebar} />
+          ) : null}
 
           <SidebarSection
             separator

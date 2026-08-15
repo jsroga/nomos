@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { EnvVarName } from '@/shared/data/constants/protocol'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
+import { UpscaleStrategy } from '@/domains/2d-canvas/constants/generation-modes'
 
 export enum UpscaleMode {
   Conservative = 'conservative',
@@ -43,4 +46,25 @@ export function validateUpscaleProvider(provider: string): NextResponse | { prov
     )
   }
   return { providerApiKey }
+}
+
+export function resolveModeUpscaleAuth(strategy: UpscaleStrategy): NextResponse | {
+  providerApiKey: string
+  geminiConfig?: { apiKey: string }
+} {
+  if (strategy === UpscaleStrategy.NearestNeighbour) {
+    return { providerApiKey: '' }
+  }
+  const token = process.env[EnvVarName.ReplicateApiToken]
+  if (!token) {
+    return NextResponse.json({ error: API_ERROR.REPLICATE_TOKEN_NOT_CONFIGURED }, { status: 500 })
+  }
+  if (!isFeatureEnabled(FeatureFlag.CanvasGeminiUpscale)) {
+    return { providerApiKey: token }
+  }
+  const googleKey = process.env[EnvVarName.GoogleApiKey]
+  if (!googleKey) {
+    return NextResponse.json({ error: API_ERROR.GOOGLE_API_KEY_GEMINI_PREUPSCALE }, { status: 500 })
+  }
+  return { providerApiKey: token, geminiConfig: { apiKey: googleKey } }
 }

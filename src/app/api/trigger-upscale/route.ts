@@ -11,12 +11,17 @@ import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { TriggerTaskTtl } from '@/shared/data/constants/protocol'
 import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
-import { AIProvider } from '@/shared/types/enums'
 import { JobType } from '@/shared/types/enums'
+import { readString } from '@/shared/data/json-guards'
+import {
+  generationModeDef,
+  resolveGenerationMode,
+} from '@/domains/2d-canvas/constants/generation-modes'
+import { parseUpscaleProvider } from '@/domains/2d-canvas/core/upscale-provider-wire'
 import {
   buildUpscaleProviderConfig,
   isUpscaleMode,
-  validateUpscaleProvider,
+  resolveModeUpscaleAuth,
 } from './trigger-upscale-helpers'
 import type { ProviderConfig } from '@/domains/2d-canvas/tasks/upscale-tile-providers'
 import { resolveDefaultUpscaleProvider } from '@/shared/ai/image-model-env'
@@ -29,30 +34,32 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.MISSING_UPSCALE_FIELDS }, { status: 400 })
     }
 
-    const provider = payload.provider || resolveDefaultUpscaleProvider() || AIProvider.Stability
-    const providerResult = validateUpscaleProvider(provider)
-    if (providerResult instanceof NextResponse) return providerResult
-
     const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
-    let styleReferenceUrls = payload.styleReferenceUrls
-    if (!styleReferenceUrls) {
-      const { data } = await supabase
-        .from(DB_TABLE.PROJECTS)
-        .select(DB_SELECT.PROJECT_STYLE_REFS)
-        .eq(DB_COLUMN.ID, payload.projectId)
-        .single()
+    const { data } = await supabase
+      .from(DB_TABLE.PROJECTS)
+      .select(DB_SELECT.PROJECT_STYLE_REFS)
+      .eq(DB_COLUMN.ID, payload.projectId)
+      .single()
 
-      styleReferenceUrls = resolveStyleReferenceUrls({
-        stylePreset: data?.style_preset,
+    const mode = generationModeDef(resolveGenerationMode(data?.generation_mode))
+    const auth = resolveModeUpscaleAuth(mode.upscaleStrategy)
+    if (auth instanceof NextResponse) return auth
+
+    const styleReferenceUrls =
+      payload.styleReferenceUrls ??
+      resolveStyleReferenceUrls({
+        stylePreset: readString(data?.style_preset),
         styleReferenceUrls: data?.style_reference_urls,
       })
-    }
 
-    const rawProviderConfig = buildUpscaleProviderConfig(payload, providerResult.providerApiKey)
+    const provider = parseUpscaleProvider(
+      payload.provider || resolveDefaultUpscaleProvider()
+    )
+    const rawProviderConfig = buildUpscaleProviderConfig(payload, auth.providerApiKey)
     const providerConfig: ProviderConfig = {
       apiKey: rawProviderConfig.apiKey,
       ...(typeof rawProviderConfig.model === 'string' ? { model: rawProviderConfig.model } : {}),
@@ -72,6 +79,8 @@ export const POST = withRateLimit(
         provider,
         providerConfig,
         styleReferenceUrls,
+        upscaleStrategy: mode.upscaleStrategy,
+        ...(auth.geminiConfig ? { geminiConfig: auth.geminiConfig } : {}),
       },
       { ttl: TriggerTaskTtl.UpscaleTile }
     )

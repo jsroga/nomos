@@ -233,6 +233,7 @@ export enum EnvVarName {
   Hyper3dApiKey = 'HYPER3D_API_KEY',
   GoogleApiKey = 'GOOGLE_API_KEY',
   OpenRouterApiKey = 'OPENROUTER_API_KEY',
+  ReplicateApiToken = 'REPLICATE_API_TOKEN',
   E2eBypassAuthSecret = 'E2E_BYPASS_AUTH_SECRET',
   BasicAuthUser = 'BASIC_AUTH_USER',
   BasicAuthPassword = 'BASIC_AUTH_PASSWORD',
