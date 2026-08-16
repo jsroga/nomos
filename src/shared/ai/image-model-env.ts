@@ -247,3 +247,17 @@ export function hasApiframeApiKey(source?: Record<string, string | undefined>): 
 export function readApiframeApiKey(source?: Record<string, string | undefined>): string | undefined {
   return readEnv(ImageEnvVar.ApiKey, source)
 }
+
+const APIFRAME_KEY_PREFIX = 'afk_'
+
+/**
+ * Prefer server `APIFRAME_API_KEY`. Only accept a client-supplied key when it
+ * looks like an Apiframe key — never a stale LegNext / other provider key.
+ */
+export function resolveApiframeApiKey(clientKey?: string | null): string | undefined {
+  const fromEnv = readApiframeApiKey()
+  if (fromEnv) return fromEnv
+  const trimmed = clientKey?.trim()
+  if (trimmed?.startsWith(APIFRAME_KEY_PREFIX)) return trimmed
+  return undefined
+}

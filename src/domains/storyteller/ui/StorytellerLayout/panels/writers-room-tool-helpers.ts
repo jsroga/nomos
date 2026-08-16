@@ -1,13 +1,74 @@
+import { proposeAssistantEpisodeUpdate } from '@/domains/storyteller/state/utils/propose-assistant-episode-update'
 import {
-  findSectionConfigByFields,
-  processToolResultToAction,
-} from '@/domains/storyteller/config/action-config'
-import type { ProposedBibleSectionUpdate } from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
-import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
-import { BibleSection } from '@/domains/storyteller/core/types/enums'
-import { UPDATE_WORLD_BIBLE_TOOL_ID } from '@/domains/storyteller/ai/tools/manage-tools-wire'
+  proposeAssistantBibleUpdates,
+  type ProposedBibleSectionUpdate,
+} from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
+import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
 import { AssistantGenerationPhase } from '@/shared/chat/assistant/derive-assistant-generation-activity'
 import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import {
+  recordArrayFromJson,
+  recordFromJson,
+  readString,
+  stringArrayFromJson,
+} from '@/shared/data/json-guards'
+import { buildStorytellerProjectContext } from '@/domains/storyteller/ui/MentionsProvider/build-storyteller-project-context'
+import type { ProjectContext } from '@/shared/chat'
+import {
+  formatBibleSectionList,
+  isNonBibleToolPayload,
+} from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
+import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
+import { resolveAddToWorldCommit } from '@/domains/storyteller/state/utils/resolve-add-to-world-target'
+import { StorytellerChatTool, StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
+import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { ActionType } from '@/domains/storyteller/core/types/enums'
+import type { StreamAgentAction } from '@/domains/storyteller/core/types/action-types'
+import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
+import {
+  episodePremiseFromToolArgs,
+  pickEpisodePremise,
+  pickWorldDescriptionForBible,
+  stripAssistantBibleChatChrome,
+  worldDescriptionFromToolArgs,
+} from '@/domains/storyteller/state/utils/strip-assistant-bible-chat-chrome'
+
+export function writersRoomChatBody(input: {
+  projectId: string
+  episodeId?: string | null
+  bibleSection?: string
+}): Record<string, string> {
+  const body: Record<string, string> = {
+    [AssistantChatBodyKey.ProjectId]: input.projectId,
+  }
+  if (input.episodeId) body[AssistantChatBodyKey.EpisodeId] = input.episodeId
+  if (input.bibleSection) body[AssistantChatBodyKey.BibleSection] = input.bibleSection
+  return body
+}
+
+export function writersRoomProjectContext(input: {
+  projectId: string
+  characters: ProjectContext['characters']
+  beats: ProjectContext['beats']
+  storyPlan: unknown
+}): ProjectContext {
+  const plan = recordFromJson(input.storyPlan)
+  return buildStorytellerProjectContext({
+    projectId: input.projectId,
+    characters: input.characters,
+    episodes: [],
+    beats: input.beats,
+    seriesBible: {
+      ...plan,
+      worldRules: recordArrayFromJson(plan.worldRules),
+      inspirations: recordFromJson(plan.inspirations),
+      soundtracks: recordArrayFromJson(plan.soundtracks),
+      plotTwists: stringArrayFromJson(plan.plotTwists),
+      factions: recordArrayFromJson(plan.factions),
+    },
+  })
+}
 
 export function omitSectionKey<V>(
   current: Record<string, V>,
@@ -32,51 +93,154 @@ export function previewAlreadyInPlan(
   return Object.keys(preview).length > 0
 }
 
-export function proposalsFromExtraFields(
-  extraFields: Record<string, unknown>,
+export function worldDescriptionFromPendings(
+  pendings: Record<string, { preview?: unknown }>,
+): string | undefined {
+  for (const pending of Object.values(pendings)) {
+    const description = readString(recordFromJson(pending.preview).worldDescription)
+    if (description) return description
+  }
+  return undefined
+}
+
+export function episodePremiseFromPendings(
+  pendings: Record<string, { preview?: unknown }>,
+): Record<string, unknown> | undefined {
+  for (const pending of Object.values(pendings)) {
+    const preview = recordFromJson(pending.preview)
+    const premise = recordFromJson(preview.premise ?? preview.episodePremise)
+    if (Object.keys(premise).length > 0) return premise
+  }
+  return undefined
+}
+
+export function proposalsFromCompletedToolCall(
+  call: AssistantCompletedToolCall,
   episodeId?: string | null,
+  requestedSection?: string,
 ): ProposedBibleSectionUpdate[] {
-  const proposals: ProposedBibleSectionUpdate[] = []
-  const keys = Object.keys(extraFields)
-  const claimed = new Set<string>()
+  const bibleProposals = proposeAssistantBibleUpdates(call, episodeId, requestedSection)
+  if (bibleProposals.length > 0) return bibleProposals
+  const episodeProposal = proposeAssistantEpisodeUpdate(call, episodeId)
+  return episodeProposal ? [episodeProposal] : []
+}
 
-  while (claimed.size < keys.length) {
-    const remaining = keys.filter(key => !claimed.has(key))
-    if (remaining.length === 0) break
-    const config = findSectionConfigByFields(remaining)
-    if (!config || config.section === BibleSection.FULL) break
+export function extraPendingSectionsMessage(
+  proposals: readonly ProposedBibleSectionUpdate[],
+): string | null {
+  if (proposals.length < 2) return null
+  return `${WritersRoomToast.PendingExtrasPrefix}${formatBibleSectionList(
+    proposals.slice(1).map(proposal => proposal.section),
+  )}`
+}
 
-    const sectionPreview: Record<string, unknown> = {}
-    for (const name of config.fieldNames) {
-      if (extraFields[name] !== undefined) {
-        sectionPreview[name] = extraFields[name]
-        claimed.add(name)
-      }
-    }
-    if (Object.keys(sectionPreview).length === 0) break
+enum BeatWriteOperation {
+  Create = 'create',
+}
 
-    const processed = processToolResultToAction(
-      UPDATE_WORLD_BIBLE_TOOL_ID,
-      sectionPreview,
-      episodeId,
-    )
-    if (!processed?.actionType) break
+export function isBeatCreateToolArgs(toolArgs: readonly Record<string, unknown>[]): boolean {
+  return createBeatCommitActions(toolArgs).length > 0
+}
 
-    const contentPreview = JSON.stringify(sectionPreview).slice(0, 120)
-    proposals.push({
-      section: config.section,
-      action: {
-        type: processed.actionType,
-        payload: processed.payload,
-        status: ApprovalActionStatus.PENDING,
-        id: `assistant-bible-extra-${config.section}-${Date.now()}`,
+export function createBeatCommitActions(
+  toolArgs: readonly Record<string, unknown>[],
+): StreamAgentAction[] {
+  const actions: StreamAgentAction[] = []
+  for (const args of toolArgs) {
+    const operation = readString(args.operation)
+    const data = recordFromJson(args.data)
+    const logline = readString(data.logline)
+    if (!logline) continue
+    if (operation !== undefined && operation !== BeatWriteOperation.Create) continue
+    const setups = recordFromJson(data.setupsPayoffs)
+    actions.push({
+      type: ActionType.CREATE_BEAT,
+      payload: {
+        logline,
+        content: data.content,
+        beatType: data.beatType,
+        visualHook: data.visualHook,
+        charactersInvolved: data.charactersInvolved,
+        emotionalShifts: data.emotionalShifts,
+        causalDependencies: data.causalDependencies,
+        setupsPayoffs: {
+          ...setups,
+          actionTaken: data.actionTaken,
+          consequence: data.consequence,
+          storyStateChange: data.storyStateChange,
+        },
       },
-      preview: sectionPreview,
-      dedupeKey: `${UPDATE_WORLD_BIBLE_TOOL_ID}:${config.section}:${contentPreview}`,
+      status: ApprovalActionStatus.COMMITTED,
+      id: `add-to-world-beat-${actions.length}-${Date.now()}`,
     })
   }
+  return actions
+}
 
-  return proposals
+export function showBeatOnBoard(input: {
+  episodeId: string | null | undefined
+  setActiveTab: (tab: string) => void
+  closeBible: () => void
+  refreshBeats: (episodeId: string) => Promise<unknown>
+}): boolean {
+  if (!input.episodeId) return false
+  input.setActiveTab(StorytellerTab.Board)
+  input.closeBible()
+  getStorytellerUiStore().setPendingBoardHydration(true)
+  void Promise.resolve(input.refreshBeats(input.episodeId)).finally(() => {
+    getStorytellerUiStore().setPendingBoardHydration(false)
+  })
+  return true
+}
+
+export function isSuccessfulBeatWrite(call: AssistantCompletedToolCall): boolean {
+  if (call.toolName !== StorytellerChatTool.ManageBeat) return false
+  const result = recordFromJson(call.result)
+  return result.success === true && Object.keys(recordFromJson(result.beat)).length > 0
+}
+
+/** `null` means skip (non-bible tool args). `[]` means nothing to commit. */
+export function chatFallbackAddToWorldTargets(input: {
+  toolArgs: readonly Record<string, unknown>[]
+  pending: Record<string, { preview?: unknown }>
+  lastPreview: unknown
+  chatText: string
+  requestedSection?: string
+}): ProposedBibleSectionUpdate[] | null {
+  if (isNonBibleToolPayload(input.toolArgs)) return null
+  const lastPreview = recordFromJson(input.lastPreview)
+  const episodePremise = pickEpisodePremise([
+    episodePremiseFromToolArgs(input.toolArgs),
+    episodePremiseFromPendings(input.pending),
+    recordFromJson(lastPreview.premise ?? lastPreview.episodePremise),
+  ])
+  const overviewProse = pickWorldDescriptionForBible([
+    worldDescriptionFromToolArgs(input.toolArgs),
+    worldDescriptionFromPendings(input.pending),
+    readString(lastPreview.worldDescription),
+    stripAssistantBibleChatChrome(input.chatText),
+  ])
+  const fallback = resolveAddToWorldCommit({
+    episodePremise,
+    overviewProse,
+    cleanedChat:
+      episodePremise || overviewProse ? '' : stripAssistantBibleChatChrome(input.chatText),
+    requestedSection: input.requestedSection,
+  })
+  if (!fallback) return []
+  return [
+    {
+      section: fallback.section,
+      preview: fallback.preview,
+      action: {
+        type: fallback.actionType,
+        payload: fallback.preview,
+        status: ApprovalActionStatus.COMMITTED,
+        id: `add-to-world-${Date.now()}`,
+      },
+      dedupeKey: `add-to-world:${fallback.section}`,
+    },
+  ]
 }
 
 export function mapAssistantPhase(phase: AssistantGenerationPhase): GenerationActivityPhase {

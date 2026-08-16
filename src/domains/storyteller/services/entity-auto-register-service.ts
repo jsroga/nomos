@@ -23,7 +23,11 @@ import {
 } from '@/shared/data/constants/protocol'
 import { eq } from 'drizzle-orm'
 import { entityRegistry } from './entity-registry-service'
-import { getEntityTypeFromId } from './entity-registry-reference-id'
+import {
+  displayNameFromRefId,
+  getEntityTypeFromId,
+} from './entity-registry-reference-id'
+import { generateBaseEntityDescription } from './entity-base-description-service'
 
 interface AutoRegisterNameParts {
   namePart: string
@@ -47,13 +51,7 @@ interface AutoRegisterContext extends AutoRegisterNameParts {
 
 function extractNameFromRefId(refId: string): AutoRegisterNameParts {
   const namePart = refId.split('-').slice(1).join('-')
-  const normalizedName = namePart
-    .replace(/-/g, ' ')
-    .split(' ')
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ')
-
-  return { namePart, normalizedName }
+  return { namePart, normalizedName: displayNameFromRefId(refId) }
 }
 
 function entityNameMatches(
@@ -121,23 +119,35 @@ function buildFactionDescription(
   return descriptionParts.length > 0 ? descriptionParts.slice(0, 3).join(' ') : faction.name
 }
 
+async function generatedStubDescription(ctx: AutoRegisterContext, type: EntityType): Promise<string> {
+  return generateBaseEntityDescription({
+    name: ctx.normalizedName,
+    type,
+    surroundingText: ctx.context ?? '',
+    projectId: ctx.projectId,
+  })
+}
+
+async function registerGeneratedStub(ctx: AutoRegisterContext, type: EntityType): Promise<boolean> {
+  const description = await generatedStubDescription(ctx, type)
+  await entityRegistry.registerWithId(ctx.refId, {
+    name: ctx.normalizedName,
+    description,
+    metadata: { status: EntityAutoRegisterStatus.Discovered, inferredFromText: true },
+    projectId: ctx.projectId,
+  })
+  return true
+}
+
 async function registerStubFaction(ctx: AutoRegisterContext): Promise<boolean> {
   console.log(
     `⚠️ [AutoRegister] No faction matched in storyPlan for: ${ctx.normalizedName}. Creating stub.`
   )
-
-  const stubDescription = ctx.context ? ctx.context.slice(0, 300) : ''
-
-  await entityRegistry.registerWithId(ctx.refId, {
-    name: ctx.normalizedName,
-    description: stubDescription,
-    metadata: { status: EntityAutoRegisterStatus.Discovered, inferredFromText: true },
-    projectId: ctx.projectId,
-  })
+  const registered = await registerGeneratedStub(ctx, StoryEntityType.Faction)
   console.log(
     `✅ [AutoRegister] Created stub faction with ID ${ctx.refId}: ${ctx.normalizedName}`
   )
-  return true
+  return registered
 }
 
 async function tryRegisterFaction(ctx: AutoRegisterContext): Promise<boolean> {
@@ -269,7 +279,10 @@ async function tryRegisterCharacter(
   if (await tryRegisterCharacterFromCast(ctx, project)) {
     return true
   }
-  return tryRegisterCharacterFromDb(ctx)
+  if (await tryRegisterCharacterFromDb(ctx)) {
+    return true
+  }
+  return registerGeneratedStub(ctx, StoryEntityType.Character)
 }
 
 async function tryRegisterRule(ctx: AutoRegisterContext): Promise<boolean> {
@@ -282,7 +295,7 @@ async function tryRegisterRule(ctx: AutoRegisterContext): Promise<boolean> {
   )
 
   if (!rule) {
-    return false
+    return registerGeneratedStub(ctx, StoryEntityType.Rule)
   }
 
   const ruleText = readString(rule.rule)
@@ -319,15 +332,17 @@ function extractPlaceDescription(
 async function tryRegisterPlace(ctx: AutoRegisterContext): Promise<boolean> {
   console.log(`[AutoRegister] Registering place: ${ctx.normalizedName}`)
 
-  const placeDescription = extractPlaceDescription(
+  const fromWorld = extractPlaceDescription(
     ctx.normalizedName,
     ctx.storyPlan,
     ctx.seriesBible
   )
+  const placeDescription =
+    fromWorld || (await generatedStubDescription(ctx, StoryEntityType.Place))
 
   await entityRegistry.registerWithId(ctx.refId, {
     name: ctx.normalizedName,
-    description: placeDescription || '',
+    description: placeDescription,
     metadata: { inferredFromText: true },
     projectId: ctx.projectId,
   })
@@ -339,14 +354,9 @@ async function tryRegisterPlace(ctx: AutoRegisterContext): Promise<boolean> {
 }
 
 async function tryRegisterEvent(ctx: AutoRegisterContext): Promise<boolean> {
-  await entityRegistry.registerWithId(ctx.refId, {
-    name: ctx.normalizedName,
-    description: ctx.context?.slice(0, 300) || '',
-    metadata: { inferredFromText: true },
-    projectId: ctx.projectId,
-  })
+  const registered = await registerGeneratedStub(ctx, StoryEntityType.Event)
   console.log(`✅ [AutoRegister] Registered event with ID ${ctx.refId}: ${ctx.normalizedName}`)
-  return true
+  return registered
 }
 
 async function registerByEntityType(
@@ -366,7 +376,7 @@ async function registerByEntityType(
     case StoryEntityType.Event:
       return tryRegisterEvent(ctx)
     default:
-      return false
+      return registerGeneratedStub(ctx, type)
   }
 }
 

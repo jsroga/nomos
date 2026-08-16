@@ -2,16 +2,15 @@
 
 /**
  * Storyteller's tenant renderers for the chat platform (PLAN-V2 3.1 / D7):
- * entity-reference chips via ReferenceText, and the consistency payload via
+ * entity-reference chips via ChatEntityMarkdown, and the consistency payload via
  * ConsistencyMessage. Injected through `ChatRenderersProvider` around the
  * writers-room chat surface — the chat platform never imports these.
  */
 
 
 import type { ChatRenderers } from '@/shared/chat'
-import { ReferenceText } from '@/domains/storyteller/ui/ReferenceText'
+import { ChatEntityMarkdown } from '@/domains/storyteller/ui/MentionsProvider/chat-entity-markdown'
 import { ConsistencyMessage } from '@/domains/storyteller/ui/ConsistencyMessage'
-import { hasReferences } from '@/domains/storyteller/core/entities/reference-parser'
 import { recordFromJson } from '@/shared/data/json-guards'
 import type { ConsistencyCheckResult } from '@/domains/storyteller/core/types/consistency-types'
 
@@ -24,16 +23,24 @@ function isConsistencyCheckResult(value: unknown): value is ConsistencyCheckResu
   return Array.isArray(record.inconsistencies) && typeof record.summary === 'string'
 }
 
-export const storytellerChatRenderers: ChatRenderers = {
-  hasRichMarkup: text => hasReferences(text),
-  renderRichText: (text, { projectId, inline }) =>
-    !text || !hasReferences(text) ? (
-      text
-    ) : (
-      <ReferenceText text={text} projectId={projectId} inline={inline} />
-    ),
-  renderConsistency: (result, { canUndo }) =>
-    isConsistencyCheckResult(result) ? (
-      <ConsistencyMessage result={result} canUndo={canUndo ?? false} />
-    ) : null,
+export function createStorytellerChatRenderers(projectId?: string): ChatRenderers {
+  return {
+    hasRichMarkup: () => true,
+    renderRichText: (text, { projectId: optsProjectId, inline }) =>
+      !text ? (
+        text
+      ) : (
+        <ChatEntityMarkdown
+          text={text}
+          projectId={optsProjectId ?? projectId}
+          inline={inline}
+        />
+      ),
+    renderConsistency: (result, { canUndo }) =>
+      isConsistencyCheckResult(result) ? (
+        <ConsistencyMessage result={result} canUndo={canUndo ?? false} />
+      ) : null,
+  }
 }
+
+export const storytellerChatRenderers = createStorytellerChatRenderers()

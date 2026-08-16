@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import toast from 'react-hot-toast'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { BeatCard as BeatData, beatCardFromJson } from '@/domains/storyteller/core/types/story-types'
+import { validatePremiseForBeatboard } from '@/domains/storyteller/core/utils/validate-premise-for-beatboard'
 import {
   createEpisodeBeat,
   deleteBeat,
@@ -15,19 +17,33 @@ import {
   CORK_BOARD_DELETE_CONFIRM,
   CORK_BOARD_DELETE_DESCRIPTION,
   CORK_BOARD_DELETE_TITLE,
+  CORK_BOARD_GENERATE_BEATS_PROMPT,
   CORK_BOARD_NEW_BEAT_LOGLINE,
   CORK_BOARD_NEW_BEAT_TYPE,
   CORK_BOARD_UNKNOWN_PROJECT,
+  CorkBoardCopy,
 } from './constants/cork-board'
 import { resolveCorkBoardUrl } from './CorkBoardStoryboardSection'
-import { runCorkBoardBeatGeneration } from './cork-board-generation'
+import {
+  preferRicherBeats,
+  requestCorkBoardNextBeat,
+  runCorkBoardBeatImageGeneration,
+} from './cork-board-generation'
 import { useCorkBoardDragDrop } from './useCorkBoardDragDrop'
+
+function beatsFromListPayload(data: unknown): BeatData[] {
+  if (!Array.isArray(data)) return []
+  return data.map(row => beatCardFromJson(row)).filter(beat => Boolean(beat.id))
+}
 
 interface UseCorkBoardStateParams {
   initialBeats: BeatData[]
   episodeId?: string
   onAddMessage?: (message: Message) => void
   onSendMessage?: (message: string) => void
+  onRefreshBeats?: () => void
+  premise?: unknown
+  isChatBusy?: boolean
   propProjectId?: string
 }
 
@@ -36,10 +52,14 @@ export const useCorkBoardState = ({
   episodeId,
   onAddMessage,
   onSendMessage,
+  onRefreshBeats,
+  premise,
+  isChatBusy = false,
   propProjectId,
 }: UseCorkBoardStateParams) => {
   const [beats, setBeats] = useState<BeatData[]>(initialBeats)
   const [isGeneratingBeats, setIsGeneratingBeats] = useState(false)
+  const [awaitingBoardRefresh, setAwaitingBoardRefresh] = useState(false)
   const [expandedBeatId, setExpandedBeatId] = useState<string | null>(null)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
   const params = useParams<{ projectId: string }>()
@@ -47,21 +67,21 @@ export const useCorkBoardState = ({
   const { onDragStart, onDragOver, onDrop } = useCorkBoardDragDrop(beats, setBeats)
 
   useEffect(() => {
-    queueMicrotask(() => setBeats(initialBeats || []))
+    queueMicrotask(() => {
+      setBeats(prev => preferRicherBeats(prev, initialBeats || []))
+    })
   }, [initialBeats])
 
   useEffect(() => {
-    if (!episodeId) return
+    if (isChatBusy || !episodeId) return
+    if (awaitingBoardRefresh) {
+      queueMicrotask(() => setAwaitingBoardRefresh(false))
+      onRefreshBeats?.()
+    }
     fetchEpisodeBeatsList(episodeId).then(data => {
-      if (Array.isArray(data)) {
-        setBeats(
-          data
-            .map(row => beatCardFromJson(row))
-            .filter(beat => Boolean(beat.id))
-        )
-      }
+      setBeats(prev => preferRicherBeats(prev, beatsFromListPayload(data)))
     })
-  }, [episodeId])
+  }, [isChatBusy, awaitingBoardRefresh, episodeId, onRefreshBeats])
 
   const expandedBeatIndex = beats.findIndex(b => b.id === expandedBeatId)
   const expandedBeat = expandedBeatIndex !== -1 ? beats[expandedBeatIndex] : null
@@ -96,13 +116,39 @@ export const useCorkBoardState = ({
     await deleteBeat(id)
   }
 
-  const handleGenerateBeats = () => {
-    if (!projectId) return
-    void runCorkBoardBeatGeneration({
+  const handleGenerateTextBeats = async () => {
+    const result = validatePremiseForBeatboard(premise)
+    if (!result.ok) {
+      toast.error(result.message)
+      return
+    }
+    if (beats.length > 0) {
+      const confirmed = await confirm({
+        title: CorkBoardCopy.ReplaceTitle,
+        description: CorkBoardCopy.ReplaceDescription,
+        confirmLabel: CorkBoardCopy.ReplaceConfirm,
+        cancelLabel: CorkBoardCopy.ReplaceCancel,
+        variant: StorytellerConfirmVariant.Destructive,
+      })
+      if (!confirmed) return
+      await Promise.all(beats.map(beat => deleteBeat(beat.id)))
+      setBeats([])
+    }
+    onSendMessage?.(CORK_BOARD_GENERATE_BEATS_PROMPT)
+    setAwaitingBoardRefresh(true)
+  }
+
+  const handleGenerateNextBeat = () => {
+    if (!requestCorkBoardNextBeat(premise, beats, onSendMessage)) return
+    setAwaitingBoardRefresh(true)
+  }
+
+  const handleGenerateImages = () => {
+    if (!projectId || beats.length === 0) return
+    void runCorkBoardBeatImageGeneration({
       projectId,
       beats,
       onAddMessage,
-      onSendMessage,
       setBeats,
       setIsGeneratingBeats,
     })
@@ -124,6 +170,7 @@ export const useCorkBoardState = ({
     beats,
     projectId,
     isGeneratingBeats,
+    isChatBusy,
     expandedBeatId,
     setExpandedBeatId,
     expandedBeat,
@@ -135,7 +182,9 @@ export const useCorkBoardState = ({
     handleCreate,
     handleUpdate,
     handleDelete,
-    handleGenerateBeats,
+    handleGenerateTextBeats,
+    handleGenerateNextBeat,
+    handleGenerateImages,
     handleNextBeat,
     handlePrevBeat,
     ConfirmDialogComponent,

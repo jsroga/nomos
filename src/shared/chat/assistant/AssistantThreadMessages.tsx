@@ -28,8 +28,10 @@ import {
   useMessageRuntime,
 } from '@assistant-ui/react'
 import { Button } from '@/components/Button'
+import { useChatRenderers } from '../core/renderers'
 import { AssistantToolFallback } from './AssistantToolFallback'
 import { useAssistantAddToWorld } from './AssistantAddToWorldContext'
+import { createToolArgsSnapshotSelector } from './tool-args-from-assistant-content'
 import {
   ASSISTANT_THREAD_COPY,
   CHAT_ENTITY_KIND_STYLE,
@@ -83,7 +85,12 @@ function MarkdownBlock({ text }: { text: string }) {
 }
 
 const AssistantMarkdownText: TextMessagePartComponent = ({ text }) => {
+  const { hasRichMarkup, renderRichText } = useChatRenderers()
   const parsed = useMemo(() => parseAssistantEntities(text), [text])
+
+  if (hasRichMarkup(text)) {
+    return <>{renderRichText(text, { inline: false })}</>
+  }
 
   if (parsed.entities.length === 0) {
     return <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
@@ -127,9 +134,16 @@ function assistantPlainText(
 
 function AddToWorldButton() {
   const messageRuntime = useMessageRuntime()
-  const onAddToWorld = useAssistantAddToWorld()
+  const { onAddToWorld, sectionLabelsFromToolArgs } = useAssistantAddToWorld()
   const fallbackText = useMessage(m => assistantPlainText(m.content))
+  const selectToolArgs = useMemo(() => createToolArgsSnapshotSelector(), [])
+  const toolArgs = useMessage(m => selectToolArgs(m.content))
+  const sectionLabels = useMemo(
+    () => sectionLabelsFromToolArgs?.(toolArgs) ?? [],
+    [sectionLabelsFromToolArgs, toolArgs],
+  )
   const [added, setAdded] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   if (added) {
     return (
@@ -147,24 +161,34 @@ function AddToWorldButton() {
   }
 
   return (
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      className="ml-0.5 h-6 gap-1 text-xs border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground"
-      disabled={!onAddToWorld}
-      onClick={() => {
-        if (!onAddToWorld) return
-        const text =
-          messageRuntime.unstable_getCopyText().trim() || fallbackText
-        if (!text) return
-        onAddToWorld(text)
-        setAdded(true)
-      }}
-    >
-      <Plus size={12} aria-hidden />
-      {ASSISTANT_THREAD_COPY.AddToWorld}
-    </Button>
+    <span className="ml-0.5 inline-flex items-center gap-1.5">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="h-6 gap-1 text-xs border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground"
+        disabled={!onAddToWorld || busy}
+        onClick={() => {
+          if (!onAddToWorld) return
+          const text =
+            messageRuntime.unstable_getCopyText().trim() || fallbackText
+          if (!text && toolArgs.length === 0) return
+          setBusy(true)
+          void Promise.resolve(onAddToWorld({ text, toolArgs })).then(ok => {
+            if (ok) setAdded(true)
+            setBusy(false)
+          })
+        }}
+      >
+        <Plus size={12} aria-hidden />
+        {ASSISTANT_THREAD_COPY.AddToWorld}
+      </Button>
+      {sectionLabels.length > 0 ? (
+        <span className="max-w-[180px] truncate text-[10px] leading-tight text-muted-foreground">
+          {sectionLabels.join(ASSISTANT_THREAD_COPY.SectionLabelJoin)}
+        </span>
+      ) : null}
+    </span>
   )
 }
 

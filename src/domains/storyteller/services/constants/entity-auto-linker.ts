@@ -38,3 +38,6 @@ export enum EntityAutoLinkerRegexReplacement {
 export enum EntityAutoLinkerLog {
   FailedAutoLink = '[AutoLinker] Failed to auto-link entities:',
 }
+
+/** Skip auto-link on short strings (ids, labels) that cannot contain entity names. */
+export const ENTITY_AUTO_LINKER_MIN_STRING_LENGTH = 10

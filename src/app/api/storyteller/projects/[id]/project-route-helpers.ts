@@ -34,22 +34,16 @@ function readNullableString(value: unknown): string | null | undefined {
   return readString(value)
 }
 
-function buildProjectDbUpdates(body: Record<string, unknown>) {
-  const dbUpdates: Partial<typeof projects.$inferInsert> = { updatedAt: new Date() }
-
-  if (body.style_reference_urls !== undefined)
-    dbUpdates.styleReferenceUrls = body.style_reference_urls
-  if (body.styleReferenceUrls !== undefined) dbUpdates.styleReferenceUrls = body.styleReferenceUrls
+function assignOptionalProjectTextFields(
+  dbUpdates: Partial<typeof projects.$inferInsert>,
+  body: Record<string, unknown>,
+) {
   if (body.style_preset !== undefined) dbUpdates.stylePreset = readNullableString(body.style_preset)
   if (body.stylePreset !== undefined) dbUpdates.stylePreset = readNullableString(body.stylePreset)
   if (body.generation_mode !== undefined)
     dbUpdates.generationMode = readNullableString(body.generation_mode)
   if (body.generationMode !== undefined)
     dbUpdates.generationMode = readNullableString(body.generationMode)
-  if (body.name !== undefined) {
-    const name = readString(body.name)
-    if (name !== undefined) dbUpdates.name = name
-  }
   if (body.description !== undefined)
     dbUpdates.description = readNullableString(body.description)
   if (body.master_prompt !== undefined)
@@ -59,6 +53,23 @@ function buildProjectDbUpdates(body: Record<string, unknown>) {
     dbUpdates.styleAnchorUrl = readNullableString(body.style_anchor_url)
   if (body.styleAnchorUrl !== undefined)
     dbUpdates.styleAnchorUrl = readNullableString(body.styleAnchorUrl)
+  if (body.canvas_master_prompt !== undefined)
+    dbUpdates.canvasMasterPrompt = readNullableString(body.canvas_master_prompt)
+  if (body.canvasMasterPrompt !== undefined)
+    dbUpdates.canvasMasterPrompt = readNullableString(body.canvasMasterPrompt)
+}
+
+function buildProjectDbUpdates(body: Record<string, unknown>) {
+  const dbUpdates: Partial<typeof projects.$inferInsert> = { updatedAt: new Date() }
+
+  if (body.style_reference_urls !== undefined)
+    dbUpdates.styleReferenceUrls = body.style_reference_urls
+  if (body.styleReferenceUrls !== undefined) dbUpdates.styleReferenceUrls = body.styleReferenceUrls
+  assignOptionalProjectTextFields(dbUpdates, body)
+  if (body.name !== undefined) {
+    const name = readString(body.name)
+    if (name !== undefined) dbUpdates.name = name
+  }
 
   return dbUpdates
 }

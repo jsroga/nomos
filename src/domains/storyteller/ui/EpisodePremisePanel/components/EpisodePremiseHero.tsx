@@ -5,6 +5,13 @@ import { StorytellerImage } from '../../StorytellerImage'
 import { EpisodePremiseSectionKey } from '../constants/ozymandias-sections'
 import { cn } from '@/shared/data/utils'
 import { LocalPremise } from '../hooks/useEpisodePremiseLocalState'
+import { RichText } from '../../RichText'
+import {
+  MasterPromptEditor,
+  MasterPromptScope,
+  MasterPromptSurface,
+} from '../../MasterPromptEditor'
+import { EpisodePremiseCopy } from '../../StoryPlanBoard/constants/episode-premise-fields'
 
 type PremiseSectionKey = EpisodePremiseSectionKey
 
@@ -88,9 +95,12 @@ interface EpisodePremiseHeroProps {
   generatingSection: string | null
   fullPosterUrl: string | null
   posterPrompt?: string | null
+  projectId: string
   onGeneratePoster?: () => void
   onTitleChange: (value: string) => void
   onThematicFocusChange: (value: string) => void
+  episodePrompt?: string
+  onSaveEpisodePrompt?: (prompt: string) => void
 }
 
 export function EpisodePremiseHero({
@@ -100,9 +110,12 @@ export function EpisodePremiseHero({
   generatingSection,
   fullPosterUrl,
   posterPrompt,
+  projectId,
   onGeneratePoster,
   onTitleChange,
   onThematicFocusChange,
+  episodePrompt,
+  onSaveEpisodePrompt,
 }: EpisodePremiseHeroProps) {
   return (
     <>
@@ -113,14 +126,29 @@ export function EpisodePremiseHero({
               className="font-mono text-2xl sm:text-3xl font-semibold tracking-tight bg-transparent border-b border-border focus:border-primary outline-none flex-1 min-w-[12rem] text-foreground"
               value={localPremise.title || ''}
               onChange={e => onTitleChange(e.target.value)}
-              placeholder="Untitled Episode"
+              placeholder={EpisodePremiseCopy.UntitledEpisode}
             />
           ) : (
             <h2 className="font-mono text-2xl sm:text-3xl font-semibold tracking-tight text-foreground break-words">
-              {localPremise.title || 'Untitled Episode'}
+              <RichText
+                text={localPremise.title || EpisodePremiseCopy.UntitledEpisode}
+                projectId={projectId}
+                inline
+                markdown
+              />
             </h2>
           )}
         </div>
+        {onSaveEpisodePrompt ? (
+          <div className="mt-4">
+            <MasterPromptEditor
+              scope={MasterPromptScope.Episode}
+              surface={MasterPromptSurface.Page}
+              initialPrompt={episodePrompt ?? ''}
+              onSave={onSaveEpisodePrompt}
+            />
+          </div>
+        ) : null}
       </header>
 
       <div className="w-full flex flex-col sm:flex-row gap-6 sm:gap-8 mb-8">
@@ -164,7 +192,7 @@ export function EpisodePremiseHero({
           ) : (
             localPremise.thematicFocus && (
               <span className="px-2 py-1 bg-muted border border-border text-foreground rounded-md text-xs font-mono uppercase tracking-wider shrink-0 mb-2">
-                {localPremise.thematicFocus}
+                <RichText text={localPremise.thematicFocus} projectId={projectId} inline />
               </span>
             )
           )}
@@ -177,7 +205,7 @@ export function EpisodePremiseHero({
           ) : null}
           {localPremise.logline && (
             <blockquote className="text-sm border-l-2 border-primary/50 pl-4 text-foreground/90 break-words italic">
-              "{localPremise.logline}"
+              <RichText text={localPremise.logline} projectId={projectId} markdown />
             </blockquote>
           )}
         </div>

@@ -5,8 +5,10 @@ import { TOOLTIP_SURFACE_CLASS } from '@/components/Tooltip/Tooltip'
 import {
   DOM_EVENT_KEYDOWN,
   REFERENCE_TEXT_DOM_EVENT_KEYUP,
+  REFERENCE_TOOLTIP_CLOSE_DELAY_MS,
   ReferenceTextKeyboardKey,
 } from '../constants/reference-text-display'
+import { shouldCloseStickyOnAltRelease } from '../utils/should-close-sticky-on-alt-release'
 
 let isAltKeyDown = false
 if (typeof window !== 'undefined') {
@@ -42,14 +44,16 @@ function useAltKeyHeld(): boolean {
 function useCloseOnAltRelease(
   isAltHeld: boolean,
   isHoveringContent: boolean,
-  isOpen: boolean,
   setOpen: (open: boolean) => void
 ): void {
+  const wasAltHeldRef = useRef(isAltHeld)
+
   useEffect(() => {
-    if (!isAltHeld && !isHoveringContent && isOpen) {
+    if (shouldCloseStickyOnAltRelease(wasAltHeldRef.current, isAltHeld, isHoveringContent)) {
       setOpen(false)
     }
-  }, [isAltHeld, isHoveringContent, isOpen, setOpen])
+    wasAltHeldRef.current = isAltHeld
+  }, [isAltHeld, isHoveringContent, setOpen])
 }
 
 interface StickyTooltipProps {
@@ -57,6 +61,7 @@ interface StickyTooltipProps {
   content: React.ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  onOpened?: () => void
 }
 
 export const StickyTooltip: React.FC<StickyTooltipProps> = ({
@@ -64,6 +69,7 @@ export const StickyTooltip: React.FC<StickyTooltipProps> = ({
   content,
   open: controlledOpen,
   onOpenChange,
+  onOpened,
 }) => {
   const [internalOpen, setInternalOpen] = useState(false)
   const [isHoveringContent, setIsHoveringContent] = useState(false)
@@ -80,11 +86,12 @@ export const StickyTooltip: React.FC<StickyTooltipProps> = ({
     isAltHeldRef.current = isAltHeld
   }, [isHoveringContent, isAltHeld])
 
-  useCloseOnAltRelease(isAltHeld, isHoveringContent, isOpen, setOpen)
+  useCloseOnAltRelease(isAltHeld, isHoveringContent, setOpen)
 
   const handleTriggerEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
     setOpen(true)
+    onOpened?.()
   }
 
   const handleTriggerLeave = () => {
@@ -94,7 +101,7 @@ export const StickyTooltip: React.FC<StickyTooltipProps> = ({
       if (!isHoveringContentRef.current && !isAltHeldRef.current) {
         setOpen(false)
       }
-    }, 300)
+    }, REFERENCE_TOOLTIP_CLOSE_DELAY_MS)
   }
 
   const handleContentEnter = () => {
@@ -110,7 +117,7 @@ export const StickyTooltip: React.FC<StickyTooltipProps> = ({
   }
 
   return (
-    <TooltipPrimitive.Root open={isOpen}>
+    <TooltipPrimitive.Root open={isOpen} delayDuration={0}>
       <TooltipPrimitive.Trigger asChild>
         <span
           onMouseEnter={handleTriggerEnter}

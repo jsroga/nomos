@@ -5,6 +5,7 @@ import {
   WritersRoomSuggestionPrompt,
   WritersRoomSuggestionStage,
 } from '@/domains/storyteller/config/constants/writers-room'
+import { recordFromJson, readString } from '@/shared/data/json-guards'
 
 /** Minimal bible signals — accepts page StoryPlan without coupling to one schema module. */
 export interface WritersRoomBibleSignals {
@@ -31,6 +32,32 @@ export interface WritersRoomSuggestionInput {
 
 function listLength(value: readonly unknown[] | null | undefined): number {
   return Array.isArray(value) ? value.length : 0
+}
+
+function optionalList(value: unknown): readonly unknown[] | null {
+  return Array.isArray(value) ? value : null
+}
+
+/** Narrow untyped page storyPlan into the suggestion bible signals. */
+export function writersRoomBibleSignalsFrom(
+  value: unknown
+): WritersRoomBibleSignals | null {
+  if (value === null || value === undefined) return null
+  const record = recordFromJson(value)
+  const inspirations = recordFromJson(record.inspirations)
+  return {
+    worldDescription: readString(record.worldDescription) ?? null,
+    worldRules: optionalList(record.worldRules),
+    factions: optionalList(record.factions),
+    plotTwists: optionalList(record.plotTwists),
+    themes: optionalList(record.themes),
+    keyCharacters: optionalList(record.keyCharacters),
+    inspirations: {
+      books: optionalList(inspirations.books),
+      movies: optionalList(inspirations.movies),
+      games: optionalList(inspirations.games),
+    },
+  }
 }
 
 function inspirationCount(storyPlan: WritersRoomBibleSignals | null | undefined): number {
@@ -194,9 +221,9 @@ export function resolveWritersRoomSuggestions(
 
 /** Character count from page cast + any plan-level keyCharacters still only on the bible. */
 export function writersRoomCharacterCount(
-  characters: readonly unknown[],
+  characters: readonly unknown[] | undefined,
   storyPlan: WritersRoomBibleSignals | null | undefined
 ): number {
-  if (characters.length > 0) return characters.length
+  if (characters && characters.length > 0) return characters.length
   return listLength(storyPlan?.keyCharacters)
 }

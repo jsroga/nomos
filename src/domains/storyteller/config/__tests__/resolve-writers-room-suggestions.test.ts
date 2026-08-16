@@ -6,6 +6,8 @@ import {
 import {
   resolveWritersRoomSuggestionStage,
   resolveWritersRoomSuggestions,
+  writersRoomBibleSignalsFrom,
+  writersRoomCharacterCount,
   type WritersRoomBibleSignals,
 } from '@/domains/storyteller/config/resolve-writers-room-suggestions'
 
@@ -77,5 +79,28 @@ describe('resolveWritersRoomSuggestions', () => {
       WritersRoomSuggestionPrompt.AddCharacter,
       WritersRoomSuggestionPrompt.CheckContinuity,
     ])
+  })
+})
+
+describe('writersRoomBibleSignalsFrom', () => {
+  it('reads bible lists from an untyped story plan record', () => {
+    const signals = writersRoomBibleSignalsFrom({
+      worldDescription: 'A drowned city under glass.',
+      worldRules: [{ rule: 'Tide Law' }],
+      inspirations: { books: ['Dune'], movies: [], games: [] },
+    })
+    expect(signals?.worldDescription).toBe('A drowned city under glass.')
+    expect(signals?.worldRules).toHaveLength(1)
+    expect(signals?.inspirations?.books).toEqual(['Dune'])
+  })
+
+  it('returns null for missing plans', () => {
+    expect(writersRoomBibleSignalsFrom(null)).toBeNull()
+    expect(writersRoomBibleSignalsFrom(undefined)).toBeNull()
+  })
+
+  it('counts page cast before bible keyCharacters', () => {
+    expect(writersRoomCharacterCount([{ id: 'a', name: 'A' }], READY_BIBLE)).toBe(1)
+    expect(writersRoomCharacterCount(undefined, { keyCharacters: [{}, {}] })).toBe(2)
   })
 })

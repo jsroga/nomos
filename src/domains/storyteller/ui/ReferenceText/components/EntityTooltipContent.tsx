@@ -14,7 +14,7 @@ import {
 } from '../constants/reference-text-display'
 import { buildDisplayMeta, synthesizeEntityDescription } from '../utils/entity-tooltip-meta'
 import { EntityRelationships } from './EntityRelationships'
-import { ReferenceText } from '../ReferenceText'
+import { RichText } from '../../RichText'
 
 interface EntityTooltipContentProps {
   parsedRef: ParsedReference
@@ -77,7 +77,12 @@ function ContextualSummaryBlock({
         </div>
       )}
       <div className={cn('text-xs opacity-90 leading-relaxed', description && 'italic')}>
-        {entity.contextualSummary}
+        <RichText
+          text={entity.contextualSummary}
+          projectId={entity.projectId}
+          markdown
+          inline
+        />
       </div>
     </div>
   )
@@ -94,7 +99,13 @@ function BaseDescriptionBlock({
 
   return (
     <div className="text-xs mt-2 opacity-90 leading-relaxed">
-      <ReferenceText text={description} projectId={entity.projectId} className="inline" inline={true} />
+      <RichText
+        text={description}
+        projectId={entity.projectId}
+        markdown
+        inline
+        className="inline"
+      />
     </div>
   )
 }
@@ -119,14 +130,17 @@ function ResolvedEntityTooltip({
   parsedRef,
   type,
   Icon,
+  isDescriptionLoading,
 }: {
   entity: EntityReference
   parsedRef: ParsedReference
   type: ParsedEntityType
   Icon: React.ComponentType<{ size?: number; className?: string }>
+  isDescriptionLoading: boolean
 }) {
   const description = synthesizeEntityDescription(entity)
   const displayMeta = buildDisplayMeta(entity, description)
+  const showBodyLoading = isDescriptionLoading && !description && !entity.contextualSummary
 
   return (
     <div className="max-w-sm">
@@ -135,8 +149,16 @@ function ResolvedEntityTooltip({
         {entity.name}
       </div>
       <div className="text-xs opacity-70 capitalize mt-0.5">{entity.type}</div>
-      <ContextualSummaryBlock entity={entity} description={description} />
-      <BaseDescriptionBlock entity={entity} description={description} />
+      {showBodyLoading ? (
+        <div className="mt-2">
+          <LoadingTooltip />
+        </div>
+      ) : (
+        <>
+          <ContextualSummaryBlock entity={entity} description={description} />
+          <BaseDescriptionBlock entity={entity} description={description} />
+        </>
+      )}
       <DisplayMetaBlock items={displayMeta} />
       <EntityRelationships entity={entity} />
       <div className="text-[10px] opacity-40 mt-2 font-mono">{parsedRef.refId}</div>
@@ -151,9 +173,19 @@ export function EntityTooltipContent({
   type,
   Icon,
 }: EntityTooltipContentProps) {
-  if (isLoading) return <LoadingTooltip />
-  if (!entity) return <MissingEntityTooltip parsedRef={parsedRef} type={type} Icon={Icon} />
-  return <ResolvedEntityTooltip entity={entity} parsedRef={parsedRef} type={type} Icon={Icon} />
+  if (!entity) {
+    if (isLoading) return <LoadingTooltip />
+    return <MissingEntityTooltip parsedRef={parsedRef} type={type} Icon={Icon} />
+  }
+  return (
+    <ResolvedEntityTooltip
+      entity={entity}
+      parsedRef={parsedRef}
+      type={type}
+      Icon={Icon}
+      isDescriptionLoading={isLoading}
+    />
+  )
 }
 
 export function resolveEntityChipVisuals(parsedRef: ParsedReference) {

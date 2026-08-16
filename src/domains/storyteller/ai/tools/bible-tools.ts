@@ -18,21 +18,21 @@ import {
   isConsistencyCheckKind,
 } from '@/domains/storyteller/services/consistency-types'
 import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
-import { recordFromJson } from '@/shared/data/json-guards'
 import {
   STORYTELLER_PROJECT_ID,
   STORYTELLER_EPISODE_ID,
   STORYTELLER_BIBLE_SECTION,
+  STORYTELLER_PREMISE_FIELD,
   requestContextString,
 } from '@/domains/storyteller/ai/request-context'
 import { filterUpdatesForBibleSection } from '@/domains/storyteller/ai/tools/bible-section-allowlist'
 import {
   BibleToolError,
   BibleToolLog,
+  BibleToolMessage,
   BibleEpisodePremiseError,
-  persistStoryPlanUpdates,
-  persistEpisodePremiseUpdate,
   proposedFieldsFromInput,
+  applyPremiseFieldNarrowing,
 } from '@/domains/storyteller/ai/tools/bible-tools-update'
 
 // ==========================================
@@ -126,7 +126,7 @@ const UpdateWorldBibleInputSchema = z.object({
     .record(z.unknown())
     .optional()
     .describe(
-      'Ozymandias premise for the currently selected episode — requires an open episodeId; otherwise use manage_episode create with data.premise'
+      'Partial Ozymandias object for the open episode. Episode description / logline → { logline } only. Full object only when the user asked for a premise or Ozymandias.'
     ),
 })
 
@@ -232,7 +232,7 @@ function recordArray(value: unknown): Array<Record<string, unknown>> {
 export const updateWorldBibleTool = createTool({
   id: 'update_world_bible',
   description:
-    'Update the Series Bible (World Bible) with new details about the setting, lore, factions, or world rules. All updates are merged into storyPlan.',
+    'Propose Series Bible (World Bible) updates for the user to Accept or Add to world. Does not persist until they confirm.',
   inputSchema: UpdateWorldBibleInputSchema,
   outputSchema: UpdateWorldBibleOutputSchema,
   execute: async (inputData, context) => {
@@ -255,11 +255,14 @@ export const updateWorldBibleTool = createTool({
         }
       }
 
-      const proposed = proposedFieldsFromInput({ ...inputData })
+      const proposed = applyPremiseFieldNarrowing(
+        proposedFieldsFromInput({ ...inputData }),
+        requestContextString(context.requestContext, STORYTELLER_PREMISE_FIELD),
+      )
       const { updates, dropped } = filterUpdatesForBibleSection(proposed, bibleSection)
       if (dropped.length > 0) {
         console.warn(
-          `${BibleToolLog.DroppedOffSection}${bibleSection ?? '(none)'}: ${dropped.join(', ')}`
+          `${BibleToolLog.OffSectionFields}${bibleSection ?? '(none)'}: ${dropped.join(', ')}`
         )
       }
       const updatedFields = Object.keys(updates)
@@ -272,10 +275,7 @@ export const updateWorldBibleTool = createTool({
         }
       }
 
-      const projectUpdates: Record<string, unknown> = { ...updates }
-      const premiseValue = projectUpdates.episodePremise
-      delete projectUpdates.episodePremise
-
+      const premiseValue = updates.episodePremise
       if (premiseValue !== undefined) {
         if (!episodeId) {
           return {
@@ -289,20 +289,11 @@ export const updateWorldBibleTool = createTool({
             error: BibleToolError.NoFields,
           }
         }
-        await persistEpisodePremiseUpdate(episodeId, recordFromJson(premiseValue))
-      }
-
-      if (Object.keys(projectUpdates).length > 0) {
-        await persistStoryPlanUpdates(
-          projectId,
-          parseStoryPlanRecord(project.storyPlan),
-          projectUpdates
-        )
       }
 
       return {
         success: true,
-        message: `Updated Story Plan successfully (${updatedFields.length} sections)`,
+        message: `${BibleToolMessage.ProposedPrefix}${updatedFields.length}${BibleToolMessage.ProposedSuffix}`,
         updatedFields,
       }
     } catch (error) {

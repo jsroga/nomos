@@ -30,6 +30,15 @@ describe('detectLoadingSection', () => {
   it('returns null for non-bible tools', () => {
     expect(detectLoadingSection('manage_beat', { logline: 'x' })).toBeNull()
   })
+
+  it('maps manage_episode premise writes to the episodePremise panel', () => {
+    expect(
+      detectLoadingSection('manage_episode', {
+        operation: 'update',
+        data: { title: 'Pilot', premise: { logline: 'x' } },
+      }),
+    ).toBe('episodePremise')
+  })
 })
 
 describe('getActionDedupeKey', () => {

@@ -22,6 +22,8 @@ const IDLE_GENERATION_ACTIVITY: GenerationActivityState = {
 
 interface StorytellerUiState {
   entityNavigation: EntityNavigationPayload | null
+  isWorldBibleOpen: boolean
+  bibleTab: StorytellerBibleTab
   bibleTabRequest: StorytellerBibleTab | null
   moodboardComplete: MoodboardCompletePayload | null
   moodboardCompleteVersion: number
@@ -29,9 +31,13 @@ interface StorytellerUiState {
   pendingChatPrompt: PendingChatPromptPayload | null
   pendingChatPromptSeq: number
   generationActivity: GenerationActivityState
+  pendingBoardHydration: boolean
 
   navigateToEntity: (payload: EntityNavigationPayload) => void
   clearEntityNavigation: () => void
+  setWorldBibleOpen: (open: boolean) => void
+  toggleWorldBible: () => void
+  setBibleTab: (tab: StorytellerBibleTab) => void
   requestBibleTab: (tab: StorytellerBibleTab) => void
   clearBibleTabRequest: () => void
   notifyMoodboardComplete: (payload: MoodboardCompletePayload) => void
@@ -40,10 +46,15 @@ interface StorytellerUiState {
   clearPendingChatPrompt: () => void
   setGenerationActivity: (patch: Partial<GenerationActivityState> & { phase: GenerationActivityPhase }) => void
   clearGenerationActivity: () => void
+  setPendingBoardHydration: (pending: boolean) => void
 }
+
+let worldBibleSeeded = false
 
 export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
   entityNavigation: null,
+  isWorldBibleOpen: true,
+  bibleTab: StorytellerBibleTab.Content,
   bibleTabRequest: null,
   moodboardComplete: null,
   moodboardCompleteVersion: 0,
@@ -51,10 +62,20 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
   pendingChatPrompt: null,
   pendingChatPromptSeq: 0,
   generationActivity: IDLE_GENERATION_ACTIVITY,
+  pendingBoardHydration: false,
 
   navigateToEntity: (payload) => set({ entityNavigation: payload }),
   clearEntityNavigation: () => set({ entityNavigation: null }),
-  requestBibleTab: (tab) => set({ bibleTabRequest: tab }),
+  setWorldBibleOpen: (open) => {
+    worldBibleSeeded = true
+    set({ isWorldBibleOpen: open })
+  },
+  toggleWorldBible: () => {
+    worldBibleSeeded = true
+    set(state => ({ isWorldBibleOpen: !state.isWorldBibleOpen }))
+  },
+  setBibleTab: (tab) => set({ bibleTab: tab }),
+  requestBibleTab: (tab) => set({ bibleTab: tab, bibleTabRequest: tab }),
   clearBibleTabRequest: () => set({ bibleTabRequest: null }),
   notifyMoodboardComplete: (payload) =>
     set((state) => ({
@@ -89,9 +110,16 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
       },
     })),
   clearGenerationActivity: () => set({ generationActivity: IDLE_GENERATION_ACTIVITY }),
+  setPendingBoardHydration: pending => set({ pendingBoardHydration: pending }),
 }))
 
 /** Imperative access for services that cannot use React hooks. */
 export function getStorytellerUiStore() {
   return useStorytellerUiStore.getState()
+}
+
+/** First visit: bible open unless an episode is already in the URL. Later toggles win. */
+export function seedWorldBibleOpen(hasEpisode: boolean) {
+  if (worldBibleSeeded) return
+  getStorytellerUiStore().setWorldBibleOpen(!hasEpisode)
 }

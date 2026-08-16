@@ -10,6 +10,7 @@ export interface Database {
           master_prompt: string | null
           series_bible: Json | null
           generation_mode: string | null
+          canvas_master_prompt: string | null
           style_anchor_url: string | null
           created_at: string
         }
@@ -19,6 +20,7 @@ export interface Database {
           master_prompt?: string | null
           series_bible?: Json | null
           generation_mode?: string | null
+          canvas_master_prompt?: string | null
           style_anchor_url?: string | null
           created_at?: string
         }
@@ -28,6 +30,7 @@ export interface Database {
           master_prompt?: string | null
           series_bible?: Json | null
           generation_mode?: string | null
+          canvas_master_prompt?: string | null
           style_anchor_url?: string | null
           created_at?: string
         }

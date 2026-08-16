@@ -4,7 +4,6 @@ import { OverviewExecutiveSummary, OverviewMetaGrid } from './OverviewMetaCards'
 import { WorldDescriptionBody, WorldDescriptionLoading } from './WorldDescriptionBody'
 import { WorldDescriptionHeader } from './WorldDescriptionHeader'
 import { resolveOverviewDisplayFields } from '../utils/bible-overview-fields'
-import { recordFromJson, readString } from '@/shared/data/json-guards'
 
 export const WorldDescriptionSection: React.FC = () => {
   const {
@@ -22,10 +21,6 @@ export const WorldDescriptionSection: React.FC = () => {
   const isWorldDescLoading = loadingSections?.worldDescription?.loading ?? false
   const pendingAction = pendingActions?.worldDescription
   const fields = resolveOverviewDisplayFields(storyPlan, localPlan)
-  const pendingWorldDescription = readString(
-    recordFromJson(pendingAction?.preview).worldDescription
-  )
-  const displayWorldDescription = fields.worldDescription || pendingWorldDescription
 
   return (
     <section className={isWorldDescLoading || pendingAction ? 'relative' : ''}>
@@ -54,7 +49,7 @@ export const WorldDescriptionSection: React.FC = () => {
 
       <WorldDescriptionBody
         isEditing={isEditing}
-        worldDescription={displayWorldDescription}
+        worldDescription={fields.worldDescription}
         projectId={projectId}
         onWorldDescriptionChange={value => onChange({ worldDescription: value })}
       />

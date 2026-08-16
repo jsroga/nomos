@@ -89,6 +89,11 @@ function appendBeatParts(meta: TooltipMeta, parts: string[]): void {
   if (meta.action) parts.push(meta.action)
 }
 
+function appendItemParts(meta: TooltipMeta, parts: string[]): void {
+  if (meta.description) parts.push(meta.description)
+  if (meta.significance) parts.push(meta.significance)
+}
+
 export function synthesizeEntityDescription(entity: EntityReference): string | null {
   if (entity.description && entity.description.trim()) {
     return entity.description
@@ -103,6 +108,7 @@ export function synthesizeEntityDescription(entity: EntityReference): string | n
   if (entity.type === StoryEntityType.Event) appendEventParts(meta, parts)
   if (entity.type === StoryEntityType.Rule) appendRuleParts(meta, parts)
   if (entity.type === StoryEntityType.Beat) appendBeatParts(meta, parts)
+  if (entity.type === StoryEntityType.Item) appendItemParts(meta, parts)
 
   return parts.length > 0
     ? parts.slice(0, 3).join(StorytellerTextSeparator.PeriodSpace) + '.'

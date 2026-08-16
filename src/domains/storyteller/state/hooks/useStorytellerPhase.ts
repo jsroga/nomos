@@ -16,11 +16,12 @@ import {
   StorytellerPhaseLabel,
   StorytellerEpisodeSeed,
   StorytellerQueryParam,
-  StorytellerBibleQuery,
   StorytellerConfirmVariant,
   StorytellerConfirmCopy,
 } from '@/domains/storyteller/core/storyteller-page-wire'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { storytellerSearchParams } from '@/domains/storyteller/state/utils/strip-bible-search-params'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 
 const PHASE_ORDER: PhaseId[] = [Phase.PREMISE, Phase.BREAKING, Phase.WRITING, Phase.COMPLETE]
@@ -157,11 +158,11 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore) {
 
       const episodeId = readString(newEpisode.id)
       if (episodeId) {
-        const params = new URLSearchParams(searchParams?.toString() || '')
+        const params = storytellerSearchParams(searchParams)
         params.set(StorytellerQueryParam.EpisodeId, episodeId)
-        params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Off)
         router.push(`?${params.toString()}`)
         setCurrentEpisodeId(episodeId)
+        getStorytellerUiStore().setWorldBibleOpen(false)
       }
       setIsSending(false)
     } catch (error) {
@@ -171,10 +172,8 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore) {
   }, [currentProject?.id, isSending, setIsSending, searchParams, router, setCurrentEpisodeId])
 
   const handleGenerateBible = useCallback(() => {
-    const params = new URLSearchParams(searchParams?.toString() || '')
-    params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Open)
-    router.push(`?${params.toString()}`)
-  }, [searchParams, router])
+    getStorytellerUiStore().setWorldBibleOpen(true)
+  }, [])
 
   const { confirm: confirmPhaseBack, ConfirmDialogComponent: PhaseBackConfirmDialog } =
     useConfirmDialog()

@@ -1,31 +1,24 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useLayoutEffect } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useBibleLock } from '@/domains/storyteller/state/queries/useBibleLock'
+import { StorytellerQueryParam } from '@/domains/storyteller/core/storyteller-page-wire'
 import {
-  StorytellerBibleQuery,
-  StorytellerQueryParam,
-} from '@/domains/storyteller/state/constants/bible-state'
+  seedWorldBibleOpen,
+  useStorytellerUiStore,
+} from '@/domains/storyteller/state/useStorytellerUiStore'
+import { storytellerSearchParams } from '@/domains/storyteller/state/utils/strip-bible-search-params'
 
 export function useBibleState(projectId: string | undefined) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
 
-  const bibleParamValue = searchParams?.get(StorytellerQueryParam.Bible) ?? null
-  const [optimisticBibleOpen, setOptimisticBibleOpen] = useState<boolean | null>(null)
+  const isWorldBibleOpen = useStorytellerUiStore(state => state.isWorldBibleOpen)
+  const setWorldBibleOpen = useStorytellerUiStore(state => state.setWorldBibleOpen)
+  const toggleWorldBible = useStorytellerUiStore(state => state.toggleWorldBible)
   const bibleLockQuery = useBibleLock(projectId)
-
-  useEffect(() => {
-    if (optimisticBibleOpen === null) return
-    const urlState = bibleParamValue === StorytellerBibleQuery.Open
-    if (optimisticBibleOpen === urlState) {
-      setOptimisticBibleOpen(null)
-    }
-  }, [bibleParamValue, optimisticBibleOpen])
-
-  const isWorldBibleOpen = optimisticBibleOpen ?? (bibleParamValue === StorytellerBibleQuery.Open)
 
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
@@ -40,40 +33,26 @@ export function useBibleState(projectId: string | undefined) {
     fetchUser()
   }, [])
 
-  // Default to bible=open on first visit
-  useEffect(() => {
-    if (!pathname || searchParams?.has(StorytellerQueryParam.Bible)) return
-    const next = new URLSearchParams(searchParams?.toString() || '')
-    next.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Open)
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false })
+  useLayoutEffect(() => {
+    seedWorldBibleOpen(Boolean(searchParams?.get(StorytellerQueryParam.EpisodeId)))
+    if (!pathname || !searchParams) return
+    const next = storytellerSearchParams(searchParams)
+    if (next.toString() === searchParams.toString()) return
+    const query = next.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
   }, [pathname, router, searchParams])
 
-  const toggleBible = useCallback(() => {
-    const nextState = !isWorldBibleOpen
-    setOptimisticBibleOpen(nextState)
-    const params = new URLSearchParams(searchParams?.toString() || '')
-    if (nextState) {
-      params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Open)
-    } else {
-      params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Off)
-    }
-    router.push(`?${params.toString()}`)
-  }, [isWorldBibleOpen, searchParams, router])
-
   const closeBible = useCallback(() => {
-    setOptimisticBibleOpen(false)
-    const params = new URLSearchParams(searchParams?.toString() || '')
-    params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Off)
-    router.push(`?${params.toString()}`)
-  }, [searchParams, router])
+    setWorldBibleOpen(false)
+  }, [setWorldBibleOpen])
 
   return {
     isWorldBibleOpen,
     isBibleLocked: bibleLockQuery.data?.isLocked ?? false,
     bibleLockedBy: bibleLockQuery.data?.lockedBy ?? null,
     userEmail,
-    setOptimisticBibleOpen,
-    toggleBible,
+    setWorldBibleOpen,
+    toggleBible: toggleWorldBible,
     closeBible,
     bibleLockQuery,
   }

@@ -1,13 +1,18 @@
 import type { beats, characters } from '@/db'
 import type { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
+import { BeatboardPremiseFieldKey } from '@/domains/storyteller/core/constants/beatboard-premise-validation'
 import { parseStoryPlanJson } from '@/domains/storyteller/core/io/project-jsonb'
+import { episodePremiseFromPlan } from '@/domains/storyteller/core/utils/validate-premise-for-beatboard'
 import {
   namedRecordsFromJson,
   recordArrayFromJson,
   recordFromJson,
   readString,
 } from '@/shared/data/json-guards'
-import { ContextAssemblyFallback } from '@/domains/storyteller/services/constants/context-assembly'
+import {
+  ContextAssemblyFallback,
+  ContextPremiseExtraField,
+} from '@/domains/storyteller/services/constants/context-assembly'
 
 export type { StoryPlan }
 
@@ -179,11 +184,69 @@ export interface ProjectMeta {
   premise: Record<string, unknown>
 }
 
+export interface ResolveContextEpisodePremiseInput {
+  episodeStoryPlan: unknown
+  episodePremiseText?: string | null
+  episodeTenPoints?: unknown
+  projectStoryPlan: Record<string, unknown>
+  bible: Record<string, unknown>
+}
+
+const CONTEXT_PREMISE_KEYS: readonly string[] = [
+  ContextPremiseExtraField.Title,
+  BeatboardPremiseFieldKey.Logline,
+  BeatboardPremiseFieldKey.ProtagonistHook,
+  BeatboardPremiseFieldKey.FatalFlaw,
+  BeatboardPremiseFieldKey.Stakes,
+  BeatboardPremiseFieldKey.InevitableConsequence,
+  BeatboardPremiseFieldKey.TenPointsPlan,
+  ContextPremiseExtraField.ThematicQuestion,
+  ContextPremiseExtraField.AntagonistMove,
+]
+
+function compactPremiseForContext(premise: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = {}
+  for (const key of CONTEXT_PREMISE_KEYS) {
+    const value = premise[key]
+    if (value === undefined || value === null || value === '') continue
+    if (Array.isArray(value) && value.length === 0) continue
+    next[key] = value
+  }
+  return next
+}
+
+export function resolveContextEpisodePremise(
+  input: ResolveContextEpisodePremiseInput
+): Record<string, unknown> {
+  const fromEpisode = episodePremiseFromPlan(input.episodeStoryPlan)
+  const fromProject = recordFromJson(
+    input.projectStoryPlan.premise ??
+      input.projectStoryPlan.episodePremise ??
+      input.bible.episodePremise
+  )
+  const base =
+    fromEpisode && Object.keys(fromEpisode).length > 0 ? fromEpisode : fromProject
+  const next = { ...base }
+  const existingPlan = next[BeatboardPremiseFieldKey.TenPointsPlan]
+  if (
+    (!Array.isArray(existingPlan) || existingPlan.length === 0) &&
+    Array.isArray(input.episodeTenPoints) &&
+    input.episodeTenPoints.length > 0
+  ) {
+    next[BeatboardPremiseFieldKey.TenPointsPlan] = input.episodeTenPoints
+  }
+  if (!readString(next[BeatboardPremiseFieldKey.Logline]) && input.episodePremiseText) {
+    next[BeatboardPremiseFieldKey.Logline] = input.episodePremiseText
+  }
+  return compactPremiseForContext(next)
+}
+
 export function deriveProjectMeta(
   storyPlan: Record<string, unknown>,
   bible: Record<string, unknown>,
   notSetLabel: string,
   commaSep: string,
+  episodePremise?: Record<string, unknown>,
 ): ProjectMeta {
   const genreValue = storyPlan.genre
   const genre = Array.isArray(genreValue)
@@ -200,7 +263,9 @@ export function deriveProjectMeta(
     readString(bible.centralQuestion) ||
     notSetLabel
   const premise =
-    recordFromJson(storyPlan.premise ?? storyPlan.episodePremise ?? bible.episodePremise)
+    episodePremise && Object.keys(episodePremise).length > 0
+      ? episodePremise
+      : recordFromJson(storyPlan.premise ?? storyPlan.episodePremise ?? bible.episodePremise)
   return { genre, tone, theme, premise }
 }
 

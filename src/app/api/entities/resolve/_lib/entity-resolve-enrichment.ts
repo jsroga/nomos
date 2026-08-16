@@ -5,11 +5,50 @@ import {
   relationshipEnricher,
   tryAutoRegisterEntity,
 } from '@/domains/storyteller/server'
+import {
+  fillMissingEntityDescriptions,
+  generateBaseEntityDescription,
+} from '@/domains/storyteller/services/entity-base-description-service'
+import { entityNeedsDescription } from '@/domains/storyteller/services/constants/entity-needs-description'
+import { hasUsefulResolveContext } from '@/domains/storyteller/services/constants/entity-base-description'
+import {
+  displayNameFromRefId,
+  getEntityTypeFromId,
+} from '@/domains/storyteller/services/entity-registry-reference-id'
 
 const MAX_CONTEXT_LENGTH = 1000
 const MAX_CONTEXTUAL_SUMMARIES = 10
-/** Below this there is no surrounding text worth sending to the model. */
-const MIN_CONTEXT_LENGTH = 10
+
+async function registerMissingAsGeneratedStubs(
+  ids: string[],
+  resolved: Map<string, EntityReference>,
+  projectId: string,
+  context: string | null
+): Promise<Map<string, EntityReference>> {
+  const missing = ids.filter(id => !resolved.has(id))
+  if (missing.length === 0) return resolved
+
+  await Promise.all(
+    missing.map(async id => {
+      const type = getEntityTypeFromId(id)
+      if (!type) return
+      const name = displayNameFromRefId(id) || id
+      const description = await generateBaseEntityDescription({
+        name,
+        type,
+        surroundingText: context ?? '',
+        projectId,
+      })
+      await entityRegistry.registerWithId(id, {
+        name,
+        description,
+        metadata: { inferredFromText: true },
+        projectId,
+      })
+    })
+  )
+  return entityRegistry.resolveMany(ids)
+}
 
 export async function resolveEntitiesWithAutoRegister(
   ids: string[],
@@ -29,6 +68,7 @@ export async function resolveEntitiesWithAutoRegister(
     resolved = await entityRegistry.resolveMany(ids)
   }
 
+  resolved = await registerMissingAsGeneratedStubs(ids, resolved, projectId, context)
   return Array.from(resolved.values())
 }
 
@@ -61,7 +101,7 @@ function partitionEntitiesByDescription(
   const withoutDescription: EntityReference[] = []
   const withDescription: EntityReference[] = []
   for (const entity of entities) {
-    if (!entity.description || entity.description.trim() === '') {
+    if (entityNeedsDescription(entity.description, entity.name)) {
       withoutDescription.push(entity)
     } else {
       withDescription.push(entity)
@@ -95,28 +135,37 @@ async function enrichEntityWithContextualSummary(
   }
 }
 
+async function withFilledDescriptions(
+  entities: EntityReference[],
+  safeContext: string
+): Promise<EntityReference[]> {
+  const { withoutDescription } = partitionEntitiesByDescription(entities)
+  if (withoutDescription.length === 0) return entities
+  const filled = await fillMissingEntityDescriptions(
+    withoutDescription,
+    safeContext,
+    generateBaseEntityDescription,
+    (id, description) => entityRegistry.updateDescription(id, description)
+  )
+  const filledById = new Map(filled.map(entity => [entity.id, entity]))
+  return entities.map(entity => filledById.get(entity.id) ?? entity)
+}
+
 export async function applyContextualSummaries(
   entities: EntityReference[],
   projectId: string,
   context: string | null
 ): Promise<EntityReference[]> {
   const safeContext = context ? context.slice(0, MAX_CONTEXT_LENGTH) : ''
-  const hasValidContext = safeContext.length > MIN_CONTEXT_LENGTH
+  const withBase = await withFilledDescriptions(entities, safeContext)
 
-  // Each summary is an LLM round trip. Without surrounding text there is nothing
-  // to contextualise, and 10 of them stall the caller (and starve the browser's
-  // connection pool) for ~20s to produce nothing useful.
-  if (!hasValidContext) {
-    return entities
+  if (!hasUsefulResolveContext(safeContext)) {
+    return withBase
   }
 
-  const { withoutDescription, withDescription } = partitionEntitiesByDescription(entities)
-  const entitiesToEnrich = [...withoutDescription, ...withDescription].slice(
-    0,
-    MAX_CONTEXTUAL_SUMMARIES
-  )
+  const entitiesToEnrich = withBase.slice(0, MAX_CONTEXTUAL_SUMMARIES)
   const enrichedIds = new Set(entitiesToEnrich.map(entity => entity.id))
-  const remainingEntities = entities.filter(entity => !enrichedIds.has(entity.id))
+  const remainingEntities = withBase.filter(entity => !enrichedIds.has(entity.id))
 
   const contextualEntities = await Promise.all(
     entitiesToEnrich.map(entity =>

@@ -34,6 +34,8 @@ export const worldProjectSchema = z
     style_preset: z.string().nullable().optional(),
     generationMode: z.string().nullable().optional(),
     generation_mode: z.string().nullable().optional(),
+    canvasMasterPrompt: z.string().nullable().optional(),
+    canvas_master_prompt: z.string().nullable().optional(),
     styleAnchorUrl: z.string().nullable().optional(),
     style_anchor_url: z.string().nullable().optional(),
     createdAt: dateLikeSchema.optional(),
@@ -50,6 +52,7 @@ export const worldProjectSchema = z
     storyPlan: row.storyPlan ?? row.story_plan ?? {},
     stylePreset: row.stylePreset ?? row.style_preset ?? null,
     generationMode: row.generationMode ?? row.generation_mode ?? null,
+    canvasMasterPrompt: row.canvasMasterPrompt ?? row.canvas_master_prompt ?? '',
     styleAnchorUrl: row.styleAnchorUrl ?? row.style_anchor_url ?? null,
     createdAt: row.createdAt ?? row.created_at,
   }))

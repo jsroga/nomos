@@ -16,6 +16,12 @@ export enum ContextAssemblyFallback {
   RuleLabel = 'Rule',
 }
 
+export enum ContextPremiseExtraField {
+  Title = 'title',
+  ThematicQuestion = 'thematicQuestion',
+  AntagonistMove = 'antagonistMove',
+}
+
 export const BIBLE_CATEGORY_KEYS: readonly BibleCategoryKey[] = [
   BibleCategoryKey.General,
   BibleCategoryKey.Setting,

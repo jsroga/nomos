@@ -113,16 +113,58 @@ function validateUpdateActionFields(data: BeatData) {
   return null
 }
 
+export function proposedBeatFromData(
+  episodeId: string,
+  sequence: number,
+  data: BeatData,
+  id: string,
+) {
+  const actionTaken = data.actionTaken ?? ''
+  const consequence = data.consequence ?? ''
+  const storyStateChange = data.storyStateChange ?? ''
+  return {
+    id,
+    episodeId,
+    sequence,
+    logline: data.logline,
+    content: data.content,
+    beatType: data.beatType ?? BeatType.SETUP,
+    status: BeatStatus.PROPOSED,
+    actionTaken,
+    consequence,
+    storyStateChange,
+    visualHook: data.visualHook,
+    charactersInvolved: data.charactersInvolved ?? [],
+    emotionalShifts: data.emotionalShifts,
+    causalDependencies: data.causalDependencies ?? [],
+    setupsPayoffs: packSetupsPayoffs(data.setupsPayoffs, {
+      actionTaken,
+      consequence,
+      storyStateChange,
+    }),
+  }
+}
+
 export async function createBeatOperation(
   episodeId: string,
   sequence: number | undefined,
   data: BeatData,
+  persist = true,
 ) {
   const actionError = validateCreateActionFields(data)
   if (actionError) return actionError
 
   const newBeatId = uuidv4()
   const beatSequence = sequence ?? 1
+  const proposed = proposedBeatFromData(episodeId, beatSequence, data, newBeatId)
+
+  if (!persist) {
+    return {
+      success: true as const,
+      message: `Created beat "${data.logline}" at sequence ${beatSequence}`,
+      beat: proposed,
+    }
+  }
 
   await db.insert(beats).values({
     id: newBeatId,
@@ -136,11 +178,7 @@ export async function createBeatOperation(
     charactersInvolved: data.charactersInvolved ?? [],
     emotionalShifts: data.emotionalShifts ?? null,
     causalDependencies: data.causalDependencies ?? [],
-    setupsPayoffs: packSetupsPayoffs(data.setupsPayoffs, {
-      actionTaken: data.actionTaken,
-      consequence: data.consequence,
-      storyStateChange: data.storyStateChange,
-    }),
+    setupsPayoffs: proposed.setupsPayoffs,
   })
 
   const [created] = await db.select().from(beats).where(eq(beats.id, newBeatId))

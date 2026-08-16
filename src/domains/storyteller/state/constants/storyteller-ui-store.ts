@@ -47,6 +47,8 @@ export interface GenerationActivityState {
   agentId?: string
   /** Streaming tool-input preview (e.g. worldDescription draft). */
   preview?: string
+  /** True when the latest tool part has output (args/result loaded). */
+  toolComplete?: boolean
   error?: string
   updatedAt: number
 }
@@ -58,4 +60,5 @@ export enum StorytellerUiSignal {
   MoodboardPrimaryChanged = 'moodboardPrimaryChanged',
   PendingChatPrompt = 'pendingChatPrompt',
   GenerationActivity = 'generationActivity',
+  PendingBoardHydration = 'pendingBoardHydration',
 }

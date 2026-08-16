@@ -1,7 +1,10 @@
 import React from 'react'
 import { Plus } from 'lucide-react'
 import { BeatCard } from '../BeatCard'
+import { BeatCardLoading } from '../BeatCard/BeatCardLoading'
 import { BeatCard as BeatData } from '@/domains/storyteller/core/types/story-types'
+import { CorkBoardLoadingKey } from './constants/cork-board'
+import { corkBoardLoadingPlaceholderCount } from './cork-board-list-mode'
 
 interface CorkBoardBeatGridProps {
   beats: BeatData[]
@@ -15,6 +18,8 @@ interface CorkBoardBeatGridProps {
   onSendMessage?: (message: string) => void
   onCreate: () => void
   confirmDialog: React.ReactNode
+  isChatBusy?: boolean
+  showLoadingCard?: boolean
 }
 
 export const CorkBoardBeatGrid: React.FC<CorkBoardBeatGridProps> = ({
@@ -29,6 +34,8 @@ export const CorkBoardBeatGrid: React.FC<CorkBoardBeatGridProps> = ({
   onSendMessage,
   onCreate,
   confirmDialog,
+  isChatBusy = false,
+  showLoadingCard = false,
 }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
     {beats
@@ -45,8 +52,13 @@ export const CorkBoardBeatGrid: React.FC<CorkBoardBeatGridProps> = ({
           onExpand={onExpand}
           onSendMessage={onSendMessage}
           projectId={projectId}
+          isChatBusy={isChatBusy}
         />
       ))}
+
+    {Array.from({ length: corkBoardLoadingPlaceholderCount(showLoadingCard) }, (_, index) => (
+      <BeatCardLoading key={`${CorkBoardLoadingKey.Placeholder}-${index}`} />
+    ))}
 
     <button
       type="button"

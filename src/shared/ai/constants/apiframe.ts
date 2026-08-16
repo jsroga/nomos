@@ -83,7 +83,14 @@ export const APIFRAME_NANO_BANANA_PRO_TOKEN = 'pro'
 export enum ApiframeImageField {
   ImageInput = 'image_input',
   ImagePrompt = 'image_prompt',
+  Image = 'image',
   AspectRatio = 'aspect_ratio',
 }
+
+/** Reference-image field per model. Only ImageInput takes an array; the rest take one URL. */
+export type ApiframeImageUrlField =
+  | ApiframeImageField.ImageInput
+  | ApiframeImageField.ImagePrompt
+  | ApiframeImageField.Image
 
 export const MIDJOURNEY_VERSION = '8.2'

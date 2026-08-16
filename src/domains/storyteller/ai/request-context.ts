@@ -17,6 +17,8 @@ export const STORYTELLER_PROJECT_ID = 'storyteller.projectId'
 export const STORYTELLER_EPISODE_ID = 'storyteller.episodeId'
 /** Bible panel that started this Writers Room turn — tools drop off-section writes. */
 export const STORYTELLER_BIBLE_SECTION = 'storyteller.bibleSection'
+/** When the user asked for episode description / logline only. */
+export const STORYTELLER_PREMISE_FIELD = 'storyteller.premiseField'
 /**
  * Writers Room composer picker (Kimi / GLM / Opus) — chat adapter only.
  * Does not drive author / planner / critic / muse / premise orchestration.
@@ -36,6 +38,7 @@ export interface StorytellerRequestContextInput {
   /** Explicit author override (orchestration), not the chat picker. */
   authorModel?: string | null
   bibleSection?: string | null
+  premiseField?: string | null
 }
 
 /** Build the RequestContext an API route passes into `agent.stream/generate`. */
@@ -48,6 +51,7 @@ export function buildStorytellerRequestContext(
   if (input.chatModel) ctx.set(STORYTELLER_CHAT_MODEL, input.chatModel)
   if (input.authorModel) ctx.set(STORYTELLER_AUTHOR_MODEL, input.authorModel)
   if (input.bibleSection) ctx.set(STORYTELLER_BIBLE_SECTION, input.bibleSection)
+  if (input.premiseField) ctx.set(STORYTELLER_PREMISE_FIELD, input.premiseField)
   return ctx
 }
 

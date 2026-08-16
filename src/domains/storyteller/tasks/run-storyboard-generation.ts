@@ -47,7 +47,8 @@ export async function runStoryboardGeneration(payload: GenerateStoryboardPayload
   if (!fs.existsSync(projectDir)) fs.mkdirSync(projectDir, { recursive: true })
   fs.writeFileSync(path.join(projectDir, filename), Buffer.from(imageBase64, BufferEncoding.Base64))
 
-  const localPath = `/projects/${projectId}/${filename}`
+  // Relative to /projects/{projectId}/ — UI prefixes the public path
+  const localPath = filename
   const supabase = createSupabaseServiceClient()
   const { error } = await supabase.from('beats').update({ image_url: localPath }).eq('id', beatId)
   if (error) logger.error('Failed to update beat image_url', { error: getErrorMessage(error) })

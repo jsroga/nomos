@@ -1,9 +1,6 @@
-import {
-  StorytellerBibleQuery,
-  StorytellerQueryParam,
-} from '@/domains/storyteller/core/storyteller-page-wire'
+import { StorytellerQueryParam } from '@/domains/storyteller/core/storyteller-page-wire'
 
-export { StorytellerBibleQuery, StorytellerQueryParam }
+export { StorytellerQueryParam }
 
 export enum StorytellerBibleDomEvent {
   Opened = 'bible-opened',

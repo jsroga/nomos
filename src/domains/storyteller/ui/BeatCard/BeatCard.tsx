@@ -1,13 +1,11 @@
-import React, { useState } from 'react'
-import { GripVertical } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { GripVertical, Loader2 } from 'lucide-react'
 import { Textarea } from '@/components/Textarea'
 import {
-  BEAT_STATUS_BADGE_CLASS,
-  BEAT_STATUS_DEFAULT_BADGE,
   BEAT_TYPE_BORDER_CLASS,
+  BeatCardCopy,
   BeatCardType,
   BeatGenerationMode,
-  isBeatCardStatus,
   isBeatCardType,
 } from './constants/beat-card'
 import { BeatCardActions } from './BeatCardActions'
@@ -35,6 +33,7 @@ interface BeatCardProps {
   onExpand?: (id: string) => void
   onSendMessage?: (message: string) => void
   projectId: string
+  isChatBusy?: boolean
 }
 
 const getTypeColor = (type: string) => {
@@ -42,13 +41,6 @@ const getTypeColor = (type: string) => {
     return BEAT_TYPE_BORDER_CLASS[type]
   }
   return BEAT_TYPE_BORDER_CLASS[BeatCardType.Default]
-}
-
-const getStatusBadge = (status?: string) => {
-  if (status && isBeatCardStatus(status)) {
-    return BEAT_STATUS_BADGE_CLASS[status]
-  }
-  return BEAT_STATUS_DEFAULT_BADGE
 }
 
 export const BeatCard: React.FC<BeatCardProps> = ({
@@ -61,6 +53,7 @@ export const BeatCard: React.FC<BeatCardProps> = ({
   onExpand,
   onSendMessage,
   projectId,
+  isChatBusy = false,
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editState, setEditState] = useState(beat)
@@ -68,18 +61,15 @@ export const BeatCard: React.FC<BeatCardProps> = ({
 
   const beatType = beat.beatType || beat.type || BeatCardType.Default
 
+  useEffect(() => {
+    if (!isChatBusy) setIsGenerating(null)
+  }, [isChatBusy])
+
   const triggerGeneration = (mode: BeatGenerationMode, message: string) => {
     if (!onSendMessage) return
     setIsGenerating(mode)
     onSendMessage(message)
-    setTimeout(() => setIsGenerating(null), 2000)
   }
-
-  const handleGenerateContent = () =>
-    triggerGeneration(
-      BeatGenerationMode.Content,
-      `Write detailed scene content for beat #${beat.sequence} "${beat.logline}". Include visual descriptions, dialogue, and subtext. Beat type: ${beat.beatType || beat.type}.`
-    )
 
   const handleGenerateImage = () =>
     triggerGeneration(
@@ -104,6 +94,15 @@ export const BeatCard: React.FC<BeatCardProps> = ({
       onDrop={e => onDrop(e, beat.id)}
       className={`min-h-[120px] border border-border text-foreground p-4 rounded-md border-l-[3px] ${getTypeColor(beatType)} flex flex-col group relative transition-colors ${!isEditing ? 'cursor-grab active:cursor-grabbing hover:border-l-opacity-100' : ''}`}
     >
+      {isGenerating ? (
+        <div className="absolute inset-0 z-10 rounded-md bg-background/70 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2">
+          <Loader2 size={18} className="animate-spin text-primary" />
+          <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            {BeatCardCopy.Generating}
+          </span>
+        </div>
+      ) : null}
+
       {!isEditing && (
         <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity pointer-events-none">
           <GripVertical size={12} className="text-muted-foreground" />
@@ -122,8 +121,11 @@ export const BeatCard: React.FC<BeatCardProps> = ({
             <option value={BeatCardType.Setup}>Setup</option>
             <option value={BeatCardType.Complication}>Complication</option>
             <option value={BeatCardType.Revelation}>Revelation</option>
+            <option value={BeatCardType.Confrontation}>Confrontation</option>
+            <option value={BeatCardType.Transition}>Transition</option>
             <option value={BeatCardType.Decision}>Decision</option>
             <option value={BeatCardType.Consequence}>Consequence</option>
+            <option value={BeatCardType.Climax}>Climax</option>
             <option value={BeatCardType.Resolution}>Resolution</option>
           </select>
         ) : (
@@ -131,13 +133,6 @@ export const BeatCard: React.FC<BeatCardProps> = ({
             <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {beatType}
             </span>
-            {beat.status && (
-              <span
-                className={`font-mono text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-md ${getStatusBadge(beat.status)}`}
-              >
-                {beat.status}
-              </span>
-            )}
           </div>
         )}
         <span className="font-mono text-[10px] text-muted-foreground tabular-nums flex-shrink-0">
@@ -178,7 +173,6 @@ export const BeatCard: React.FC<BeatCardProps> = ({
           onCancelEdit={() => setIsEditing(false)}
           onStartEdit={() => setIsEditing(true)}
           onDelete={() => onDelete(beat.id)}
-          onGenerateContent={onSendMessage ? handleGenerateContent : undefined}
           onGenerateImage={onSendMessage ? handleGenerateImage : undefined}
         />
       </div>

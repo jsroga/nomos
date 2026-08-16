@@ -80,7 +80,7 @@ export async function resolveTileStyleInputs(
   const stylePreset = readString(projectData?.style_preset) ?? null
   const styleContext = resolveStyleContext({ stylePreset }) ?? undefined
   const mode = generationModeDef(resolveGenerationMode(projectData?.generation_mode))
-  const masterPrompt = readString(projectData?.master_prompt) ?? undefined
+  const masterPrompt = readString(projectData?.canvas_master_prompt) ?? undefined
   const styleAnchorUrl = readString(projectData?.style_anchor_url) ?? undefined
 
   const styleReferenceUrls =

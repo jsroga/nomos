@@ -19,10 +19,10 @@ import {
   pickApiframeImageUrl,
   resolveNanoBananaModel,
 } from '@/shared/ai/apiframe'
-import { BufferEncoding, ContentType } from '@/shared/data/constants/protocol'
-import sharp from 'sharp'
+import { ContentType } from '@/shared/data/constants/protocol'
 import { v4 as uuidv4 } from 'uuid'
-import { TILE_CROP_SIZE } from './generate-tile'
+import { downloadTileAsBase64 } from './generate-tile-output'
+import { inpaintFollowUpViaFluxFill } from './generate-tile-apiframe-inpaint'
 
 const TILE_ASPECT_RATIO = '1:1'
 
@@ -66,7 +66,7 @@ async function buildTilePrompt(
       })
     : isFirstTile
       ? GENERATION_PROMPTS.FIRST_TILE.GEMINI(layers)
-      : GENERATION_PROMPTS.FOLLOW_UP.GEMINI(layers)
+      : GENERATION_PROMPTS.FOLLOW_UP.MASTER(layers)
   if (!isFirstTile) {
     const contextUrl = await uploadContextIfPresent(contextImageBase64)
     if (contextUrl) {
@@ -78,19 +78,6 @@ async function buildTilePrompt(
     imageUrls.push(...styleReferenceUrls)
   }
   return { text, imageUrls }
-}
-
-async function downloadTileAsBase64(imageUrl: string): Promise<string> {
-  const response = await fetch(imageUrl)
-  if (!response.ok) {
-    throw new Error(`Failed to download Apiframe tile image: ${response.status}`)
-  }
-  const buffer = Buffer.from(await response.arrayBuffer())
-  const resized = await sharp(buffer)
-    .resize(TILE_CROP_SIZE, TILE_CROP_SIZE, { fit: 'cover' })
-    .png()
-    .toBuffer()
-  return resized.toString(BufferEncoding.Base64)
 }
 
 function mapProviderToApiframeModel(
@@ -147,18 +134,27 @@ export async function generateTileViaApiframeModel(
   if (forMidjourney) {
     logger.info('Midjourney prompt', { prompt: text })
   }
-  logLLMRequestStart({
-    provider,
-    model,
-    prompt: text,
-    inputImageUrls: imageUrls.length > 0 ? imageUrls : styleReferenceUrls,
-    metadata: { task: 'generate-tile', isFirstTile },
-  })
   await metadata.set('stage', 'submitting_apiframe')
   await metadata.set('progress', 35)
 
+  const [contextImageUrl] = imageUrls
+  if (!forMidjourney && !isFirstTile && contextImageUrl) {
+    return inpaintFollowUpViaFluxFill({
+      apiKey: config.apiKey,
+      prompt: text,
+      contextImageUrl,
+    })
+  }
+
   try {
     if (forMidjourney) {
+      logLLMRequestStart({
+        provider,
+        model,
+        prompt: text,
+        inputImageUrls: imageUrls.length > 0 ? imageUrls : styleReferenceUrls,
+        metadata: { task: 'generate-tile', isFirstTile },
+      })
       const result = await generateMidjourneyUpscaledImage(text, config.apiKey, {
         aspectRatio: TILE_ASPECT_RATIO,
         index: 1,
@@ -170,9 +166,16 @@ export async function generateTileViaApiframeModel(
         prompt: text,
         outputImageUrls: [result.imageUrl],
       })
-      return downloadTileAsBase64(result.imageUrl)
+      return downloadTileAsBase64(result.imageUrl, isFirstTile)
     }
 
+    logLLMRequestStart({
+      provider,
+      model,
+      prompt: text,
+      inputImageUrls: imageUrls.length > 0 ? imageUrls : styleReferenceUrls,
+      metadata: { task: 'generate-tile', isFirstTile },
+    })
     await metadata.set('stage', 'waiting_apiframe')
     await metadata.set('progress', 45)
     const result = await generateApiframeImage({
@@ -192,7 +195,7 @@ export async function generateTileViaApiframeModel(
       outputImageUrls: [imageUrl],
     })
     await metadata.set('progress', 85)
-    return downloadTileAsBase64(imageUrl)
+    return downloadTileAsBase64(imageUrl, isFirstTile)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     logLLMRequestError({ provider, model, prompt: text, error: message })

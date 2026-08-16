@@ -89,7 +89,8 @@ export class MoodboardGenerationService {
     styleReference: string | undefined,
     providerConfig: Record<string, unknown>,
     onComplete?: () => void,
-    promptIndex?: number
+    promptIndex?: number,
+    onError?: (error: unknown) => void,
   ): Promise<string | null> {
     console.log(`Starting moodboard generation via Trigger.dev for project ${projectId}`)
 
@@ -130,7 +131,7 @@ export class MoodboardGenerationService {
       }
 
       browserStorage.setObject(opId, runState)
-      void this.pollRun(runState, opId, onComplete)
+      void this.pollRun(runState, opId, onComplete, onError)
 
       return handleId
     } catch (error) {
@@ -143,13 +144,14 @@ export class MoodboardGenerationService {
   private async pollRun(
     runState: MoodboardGenRunState,
     opId: string,
-    onComplete?: () => void
+    onComplete?: () => void,
+    onError?: (error: unknown) => void,
   ): Promise<void> {
     console.log(`📡 Starting moodboard status polling for run: ${runState.runId}`)
 
     try {
       const result = await waitForTriggerRun(() => fetchMoodboardRunStatus(runState.runId), {
-        intervalMs: POLLING_INTERVALS.FAST,
+        intervalMs: POLLING_INTERVALS.DEFAULT,
         maxPolls: 120,
         onPoll: data => {
           const metadata =
@@ -169,7 +171,7 @@ export class MoodboardGenerationService {
             runState,
             { success: true, images: stringArrayFromJson(output.images) },
             opId,
-            onComplete
+            onComplete,
           )
           return
         }
@@ -177,6 +179,7 @@ export class MoodboardGenerationService {
 
       console.error(MoodboardGenerationLog.Failed, result.error || result.status)
       this.clearRunState(runState, opId)
+      onError?.(result.error ?? new Error(MoodboardGenerationError.GenerationFailed))
     } catch (error) {
       if (error instanceof TriggerRunPollFailedError) {
         console.error(MoodboardGenerationLog.Failed, error.runError || error.status)
@@ -184,6 +187,7 @@ export class MoodboardGenerationService {
         console.error(MoodboardGenerationLog.PollingError, error)
       }
       this.clearRunState(runState, opId)
+      onError?.(error)
     }
   }
 
@@ -219,7 +223,11 @@ export class MoodboardGenerationService {
     useGlobalStatusStore.getState().removeOperation(opId)
   }
 
-  resumePendingGenerations(projectId: string, onComplete?: () => void) {
+  resumePendingGenerations(
+    projectId: string,
+    onComplete?: () => void,
+    onError?: (error: unknown) => void,
+  ) {
     if (typeof window === 'undefined') return
 
     const prefix = MoodboardStorageKey.GenPrefix + projectId
@@ -242,7 +250,7 @@ export class MoodboardGenerationService {
           status: MoodboardOperationStatus.InProgress,
         })
 
-        void this.pollRun(runState, key, onComplete)
+        void this.pollRun(runState, key, onComplete, onError)
       } catch {
         console.warn(MoodboardGenerationLog.ParseStateFailed, key)
       }

@@ -38,6 +38,7 @@ export const useErrorStore = create<ErrorState>()(set => ({
         ...state.errors,
       ].slice(0, 50), // Keep last 50 errors max
       hasUnviewedErrors: true,
+      isPanelOpen: true,
     })),
 
   clearErrors: () => set({ errors: [], hasUnviewedErrors: false }),

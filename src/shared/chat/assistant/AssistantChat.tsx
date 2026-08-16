@@ -22,16 +22,19 @@ import {
   getCanvasModuleChatApiPath,
   getCanvasModuleSuggestions,
 } from '@/shared/canvas/module-registry'
+import { ChatRenderersProvider, type ChatRenderers } from '@/shared/chat/core/renderers'
 import type { MentionProvider, ProjectContext } from '@/shared/chat/core/mentions/types'
 import {
   AssistantChatBodyKey,
+  ChatMessageRole,
+  ChatPartType,
   type AssistantChatModelOption,
 } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { isPlainObject } from '@/shared/data/json-guards'
 import { AssistantThread } from './AssistantThread'
 import { AskUserToolUI } from './AssistantHumanTool'
 import { useAssistantMentions } from './useAssistantMentions'
-import { AssistantAddToWorldProvider } from './AssistantAddToWorldContext'
+import { AssistantAddToWorldProvider, type AddToWorldPayload } from './AssistantAddToWorldContext'
 import {
   AssistantChatStreamStatus,
   isAssistantTurnBusy,
@@ -61,10 +64,29 @@ enum WarmHttpMethod {
   Get = 'GET',
 }
 
+function lastUserTextFromMessages(
+  messages: Parameters<typeof extractCompletedAssistantToolCalls>[0],
+): string {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]
+    if (message?.role !== ChatMessageRole.User) continue
+    const chunks: string[] = []
+    for (const part of message.parts) {
+      if (part.type !== ChatPartType.Text) continue
+      const text = Reflect.get(part, ChatPartType.Text)
+      if (typeof text === 'string' && text.trim()) chunks.push(text)
+    }
+    if (chunks.length > 0) return chunks.join('\n')
+  }
+  return ''
+}
+
 function emitFreshCompletedTools(
   messages: Parameters<typeof extractCompletedAssistantToolCalls>[0],
   proposedToolKeys: Set<string>,
-  onCompleted: ((calls: readonly AssistantCompletedToolCall[]) => void) | undefined,
+  onCompleted:
+    | ((calls: readonly AssistantCompletedToolCall[], userText: string) => void)
+    | undefined,
 ) {
   const completed = extractCompletedAssistantToolCalls(messages)
   if (completed.length === 0 || !onCompleted) return
@@ -74,7 +96,7 @@ function emitFreshCompletedTools(
     proposedToolKeys.add(key)
     return true
   })
-  if (fresh.length > 0) onCompleted(fresh)
+  if (fresh.length > 0) onCompleted(fresh, lastUserTextFromMessages(messages))
 }
 
 export interface AssistantPendingPrompt {
@@ -111,9 +133,16 @@ interface AssistantChatProps {
   /** Live tool/stream progress for host overlays (bible section refresh, etc.). */
   onGenerationActivity?: (activity: AssistantGenerationActivity) => void
   /** Completed tool calls from the latest assistant turn (bible board sync, etc.). */
-  onCompletedToolCalls?: (calls: readonly AssistantCompletedToolCall[]) => void
-  /** Chat “Add to world” — host shows pending bible approval for the message text. */
-  onAddToWorld?: (text: string) => void
+  onCompletedToolCalls?: (
+    calls: readonly AssistantCompletedToolCall[],
+    userText?: string,
+  ) => void
+  /** Chat “Add to world” — host commits tool payloads, never assistant wrap-up copy. */
+  onAddToWorld?: (payload: AddToWorldPayload) => boolean | Promise<boolean>
+  /** Labels for bible sections this message’s tool args would commit. */
+  sectionLabelsFromToolArgs?: (toolArgs: readonly Record<string, unknown>[]) => string[]
+  /** Domain-injected markdown/chip renderers (Writers Room entity links). */
+  chatRenderers?: ChatRenderers
 }
 
 function resolveApi(agentId?: string, moduleKey?: string): string {
@@ -173,6 +202,8 @@ export function AssistantChat({
   onGenerationActivity,
   onCompletedToolCalls,
   onAddToWorld,
+  sectionLabelsFromToolArgs,
+  chatRenderers,
 }: AssistantChatProps) {
   const history = useMemo(
     () => (persistKey ? createSessionThreadHistoryAdapter(persistKey) : undefined),
@@ -347,19 +378,30 @@ export function AssistantChat({
   const resolvedSuggestions =
     suggestions ?? (moduleKey ? getCanvasModuleSuggestions(moduleKey) : [])
 
+  const chatBodyUi = (
+    <AssistantAddToWorldProvider
+      onAddToWorld={onAddToWorld}
+      sectionLabelsFromToolArgs={sectionLabelsFromToolArgs}
+    >
+      <AskUserToolUI />
+      <AssistantChatBody
+        suggestions={resolvedSuggestions}
+        mentionProviders={mentionProviders}
+        mentionProjectContext={mentionProjectContext}
+        chatModelId={chatModelId}
+        chatModelOptions={chatModelOptions}
+        onChatModelChange={onChatModelChange}
+      />
+    </AssistantAddToWorldProvider>
+  )
+
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <AssistantAddToWorldProvider onAddToWorld={onAddToWorld}>
-        <AskUserToolUI />
-        <AssistantChatBody
-          suggestions={resolvedSuggestions}
-          mentionProviders={mentionProviders}
-          mentionProjectContext={mentionProjectContext}
-          chatModelId={chatModelId}
-          chatModelOptions={chatModelOptions}
-          onChatModelChange={onChatModelChange}
-        />
-      </AssistantAddToWorldProvider>
+      {chatRenderers ? (
+        <ChatRenderersProvider renderers={chatRenderers}>{chatBodyUi}</ChatRenderersProvider>
+      ) : (
+        chatBodyUi
+      )}
     </AssistantRuntimeProvider>
   )
 }

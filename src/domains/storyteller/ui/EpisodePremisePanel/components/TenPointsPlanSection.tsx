@@ -4,7 +4,7 @@ import { Button } from '@/components/Button'
 import { Skeleton } from '@/components/Skeleton'
 import { EpisodePremiseSectionKey } from '../constants/ozymandias-sections'
 import { cn } from '@/shared/data/utils'
-import { ReferenceText } from '../../ReferenceText'
+import { RichText } from '../../RichText'
 
 interface TenPointsPlanSectionProps {
   tenPointsPlan: EpisodePremise['tenPointsPlan'] | undefined
@@ -101,17 +101,19 @@ function TenPointReadRow({
               <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mr-2">
                 {k}:
               </span>
-              <ReferenceText
+              <RichText
                 text={String(v)}
                 projectId={projectId}
+                markdown
                 className="text-foreground text-sm leading-relaxed"
               />
             </div>
           ))
         ) : (
-          <ReferenceText
+          <RichText
             text={String(point)}
             projectId={projectId}
+            markdown
             className="text-foreground text-sm leading-relaxed"
           />
         )}

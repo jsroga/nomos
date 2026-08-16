@@ -67,10 +67,6 @@ export enum StorytellerBibleTab {
   Relationships = 'relationships',
 }
 
-export enum StorytellerBibleUrlParam {
-  BibleTab = 'bibleTab',
-}
-
 export enum StorytellerOverrideState {
   NoBible = 'NO_BIBLE',
   NoEpisodes = 'NO_EPISODES',
@@ -95,6 +91,7 @@ export enum StorytellerQueryParam {
   EpisodeId = 'episodeId',
   BeatId = 'beatId',
   Bible = 'bible',
+  BibleTab = 'bibleTab',
 }
 
 export enum StorytellerBibleQuery {

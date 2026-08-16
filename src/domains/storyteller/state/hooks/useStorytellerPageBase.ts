@@ -70,7 +70,7 @@ export function useStorytellerPageBase() {
     isBibleLocked,
     bibleLockedBy,
     userEmail,
-    setOptimisticBibleOpen,
+    setWorldBibleOpen,
     toggleBible,
     closeBible,
   } = useBibleState(currentProject?.id)
@@ -89,10 +89,10 @@ export function useStorytellerPageBase() {
 
   const selectEpisode = useCallback(
     (id: string) => {
-      setOptimisticBibleOpen(false)
+      setWorldBibleOpen(false)
       selectEpisodeRaw(id)
     },
-    [selectEpisodeRaw, setOptimisticBibleOpen]
+    [selectEpisodeRaw, setWorldBibleOpen]
   )
 
   const [selectedBeatId, setSelectedBeatId] = useState<string | null>(null)
@@ -111,6 +111,7 @@ export function useStorytellerPageBase() {
   const [isFetchingPlan, setIsFetchingPlan] = useState(!!episodeParam)
   const [isGeneratingPoster, setIsGeneratingPoster] = useState(false)
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false)
+  const [posterIsVariantGrid, setPosterIsVariantGrid] = useState(false)
   const [primaryMoodboardUrl, setPrimaryMoodboardUrl] = useState<string | null>(null)
   const [isActivityPanelOpen, setIsActivityPanelOpen] = useState(false)
   const [storyDecisions, setStoryDecisions] = useState<Record<string, string>>({})
@@ -234,7 +235,7 @@ export function useStorytellerPageBase() {
     isBibleLocked,
     bibleLockedBy,
     userEmail,
-    setOptimisticBibleOpen,
+    setWorldBibleOpen,
     toggleBible,
     closeBible,
     currentEpisodeId,
@@ -272,6 +273,8 @@ export function useStorytellerPageBase() {
     setIsFetchingPlan,
     isGeneratingPoster,
     setIsGeneratingPoster,
+    posterIsVariantGrid,
+    setPosterIsVariantGrid,
     isGeneratingStoryboard,
     setIsGeneratingStoryboard,
     primaryMoodboardUrl,

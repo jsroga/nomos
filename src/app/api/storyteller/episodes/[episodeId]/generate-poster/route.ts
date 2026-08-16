@@ -6,6 +6,7 @@ import { tasks } from '@trigger.dev/sdk/v3'
 import type { generatePoster } from '@/domains/storyteller/tasks/generate-poster.task'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { resolveApiframeApiKey } from '@/shared/ai/image-model-env'
 
 export async function POST(req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
@@ -13,13 +14,24 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
     const { episodeId } = params
     const body = await req.json()
     const { prompt, config } = body
-    const apiKey = config?.apiKey || process.env.APIFRAME_API_KEY
+    const clientKey = typeof config?.apiKey === 'string' ? config.apiKey : undefined
+    const apiKey = resolveApiframeApiKey(clientKey)
     console.log(
-      `${API_LOG_PREFIX.POSTER_GEN_CONFIG} ${!!config?.apiKey}, Env Key present: ${!!process.env.APIFRAME_API_KEY}`
+      `${API_LOG_PREFIX.POSTER_GEN_CONFIG} ${Boolean(clientKey)}, Env Key present: ${Boolean(process.env.APIFRAME_API_KEY)}`
     )
 
     if (!prompt) {
       return NextResponse.json({ error: API_ERROR.PROMPT_REQUIRED }, { status: 400 })
+    }
+
+    if (!apiKey) {
+      return NextResponse.json(
+        {
+          error: API_ERROR.APIFRAME_API_KEY_NOT_PROVIDED,
+          message: API_ERROR.APIFRAME_API_KEY_CONFIGURE,
+        },
+        { status: 500 },
+      )
     }
 
     // 1. Get Project ID and Style References

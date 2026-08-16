@@ -48,8 +48,8 @@ export function beatCardFromJson(value: unknown): BeatCard {
     logline: readString(row.logline) ?? '',
     beatType: readString(row.beatType) ?? '',
     visualHook: readString(row.visualHook),
-    imagePrompt: readString(row.imagePrompt),
-    imageUrl: readString(row.imageUrl),
+    imagePrompt: readString(row.imagePrompt) ?? readString(row.image_prompt),
+    imageUrl: readString(row.imageUrl) ?? readString(row.image_url),
     mazurElements: row.mazurElements === undefined ? undefined : recordFromJson(row.mazurElements),
     charactersInvolved:
       row.charactersInvolved === undefined ? undefined : stringArrayFromJson(row.charactersInvolved),

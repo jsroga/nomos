@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { resolveAddToWorldTarget } from '../resolve-add-to-world-target'
+import {
+  resolveAddToWorldCommit,
+  resolveAddToWorldCommitTarget,
+  resolveAddToWorldTarget,
+} from '../resolve-add-to-world-target'
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums'
 
 const SOUNDTRACK_PROSE = `
@@ -55,5 +59,54 @@ describe('resolveAddToWorldTarget', () => {
       actionType: ActionType.UPDATE_SOUNDTRACKS,
       preview: { moodSoundtrack: 'A rainy nocturne mood.' },
     })
+  })
+})
+
+describe('resolveAddToWorldCommitTarget', () => {
+  it('writes pending tool prose to Overview instead of chat wrap-up', () => {
+    expect(
+      resolveAddToWorldCommitTarget(
+        'The world of Aeternum is defined by a single impossible fact.',
+        'I\'ll generate a rich world description.\n\nThe world bible is now live. Here\'s what I built.',
+        undefined,
+      )
+    ).toEqual({
+      section: BibleSection.WORLD_DESCRIPTION,
+      actionType: ActionType.UPDATE_WORLD_DESCRIPTION,
+      preview: {
+        worldDescription: 'The world of Aeternum is defined by a single impossible fact.',
+      },
+    })
+  })
+
+  it('returns null when there is no pending prose and chat chrome stripped empty', () => {
+    expect(resolveAddToWorldCommitTarget(undefined, '', undefined)).toBeNull()
+  })
+})
+
+describe('resolveAddToWorldCommit', () => {
+  it('commits tool premise to the episode panel instead of Overview', () => {
+    const premise = { logline: 'A clerk discovers the ledger writes her name in advance.' }
+    expect(
+      resolveAddToWorldCommit({
+        episodePremise: premise,
+        overviewProse: 'The world of Aeternum is defined by a single impossible fact.',
+        cleanedChat: 'I\'ll generate a rich episode premise.',
+        requestedSection: undefined,
+      }),
+    ).toEqual({
+      section: BibleSection.EPISODE_PREMISE,
+      actionType: ActionType.UPDATE_EPISODE_PREMISE,
+      preview: { premise },
+    })
+  })
+
+  it('does not dump episode-turn chat wrap-up into Overview', () => {
+    expect(
+      resolveAddToWorldCommit({
+        cleanedChat: '',
+        requestedSection: BibleSection.EPISODE_PREMISE,
+      }),
+    ).toBeNull()
   })
 })

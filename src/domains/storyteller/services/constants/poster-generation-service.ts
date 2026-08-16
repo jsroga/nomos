@@ -36,6 +36,13 @@ export enum PosterOperationDetail {
 export enum PosterGenerationError {
   StoryboardTriggerFailed = 'Failed to trigger storyboard generation task',
   PosterTriggerFailed = 'Failed to trigger poster generation task',
+  NoImageUrl = 'Generation completed but no image was returned',
+  GenerationFailed = 'Image generation failed',
+}
+
+export enum PosterUserToast {
+  PosterFailed = 'Poster generation failed',
+  StoryboardFailed = 'Storyboard generation failed',
 }
 
 export enum PosterGenerationLog {

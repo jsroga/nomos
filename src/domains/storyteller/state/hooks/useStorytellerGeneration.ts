@@ -13,7 +13,6 @@ import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-s
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   StorytellerGenerationAgentName,
-  StorytellerGenerationAlert,
   StorytellerGenerationFailLabel,
   StorytellerGenerationLog,
   StorytellerLogMessage,
@@ -27,12 +26,14 @@ import {
 } from '@/domains/storyteller/services/constants/moodboard-generation-service'
 import {
   PosterPersistField,
+  PosterUserToast,
 } from '@/domains/storyteller/services/constants/poster-generation-service'
 import {
   patchStorytellerEpisode,
   fetchStorytellerProjectOptional,
 } from '@/domains/storyteller/core/io/storyteller.api'
 import { BrowserStorageEventName } from '@/shared/chat/core/constants/chat-interface'
+import { toastGenerationError } from '@/domains/storyteller/state/utils/toast-generation-error'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 
 export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
@@ -41,6 +42,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
     currentEpisodeId,
     isGeneratingPoster,
     setIsGeneratingPoster,
+    setPosterIsVariantGrid,
     isGeneratingStoryboard,
     setIsGeneratingStoryboard,
     storyPlan,
@@ -62,10 +64,11 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       import('@/domains/storyteller/services/poster-generation-service').then(({ posterGenerationService }) =>
         posterGenerationService.resumePendingGenerations(
           projectId,
-          async (url, episodeId, type) => {
+          async (url, episodeId, type, meta) => {
             if (episodeId === currentEpisodeId) {
               if (type === StorytellerPosterType.Poster) {
                 setIsGeneratingPoster(false)
+                setPosterIsVariantGrid(Boolean(meta?.isVariantGrid))
                 setStoryPlan(prev => (prev ? { ...prev, posterUrl: url } : null))
               } else {
                 setIsGeneratingStoryboard(false)
@@ -82,11 +85,34 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
             } catch (e) {
               console.error(StorytellerLogMessage.FailedSaveResumedGeneration, e)
             }
-          }
+          },
+          (error, episodeId, type) => {
+            if (episodeId === currentEpisodeId) {
+              if (type === StorytellerPosterType.Poster) {
+                setIsGeneratingPoster(false)
+                setPosterIsVariantGrid(false)
+              } else {
+                setIsGeneratingStoryboard(false)
+              }
+            }
+            toastGenerationError(
+              type === StorytellerPosterType.Storyboard
+                ? PosterUserToast.StoryboardFailed
+                : PosterUserToast.PosterFailed,
+              error,
+            )
+          },
         )
       )
     }
-  }, [currentProject?.id, currentEpisodeId, setIsGeneratingPoster, setIsGeneratingStoryboard, setStoryPlan])
+  }, [
+    currentProject?.id,
+    currentEpisodeId,
+    setIsGeneratingPoster,
+    setIsGeneratingStoryboard,
+    setPosterIsVariantGrid,
+    setStoryPlan,
+  ])
 
   // Storyboard Trigger (Gemini)
   const handleStoryboardTrigger = useCallback(
@@ -98,14 +124,6 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       if (isGeneratingStoryboard) return
 
       setIsGeneratingStoryboard(true)
-
-      const geminiApiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_GEMINI) || undefined
-
-      if (!geminiApiKey) {
-        alert(StorytellerGenerationAlert.GeminiApiKeyMissing)
-        setIsGeneratingStoryboard(false)
-        return
-      }
 
       try {
         const premise = recordFromJson(recordFromJson(storyPlan).premise)
@@ -120,12 +138,14 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
         const { posterGenerationService } = await import(
           '@/domains/storyteller/services/poster-generation-service'
         )
+        const apiKey =
+          browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) || undefined
         await posterGenerationService.generateStoryboard(
           currentProject.id,
           episodeId,
           prompt,
           beatsPayload,
-          { apiKey: geminiApiKey },
+          apiKey ? { apiKey } : {},
           async url => {
             setIsGeneratingStoryboard(false)
             setStoryPlan(prev => (prev ? { ...prev, storyboardUrl: url } : null))
@@ -139,11 +159,16 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
                 console.error(StorytellerLogMessage.FailedSaveStoryboardUrl, e)
               }
             }
-          }
+          },
+          error => {
+            setIsGeneratingStoryboard(false)
+            toastGenerationError(PosterUserToast.StoryboardFailed, error)
+          },
         )
       } catch (error) {
         console.error(StorytellerGenerationLog.StoryboardFailed, error)
         setIsGeneratingStoryboard(false)
+        toastGenerationError(PosterUserToast.StoryboardFailed, error)
       }
     },
     [
@@ -167,10 +192,10 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       if (isGeneratingPoster) return
 
       setIsGeneratingPoster(true)
+      setPosterIsVariantGrid(false)
 
       const apiKey =
-        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) ||
-        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) || undefined
 
       try {
         const premise = recordFromJson(recordFromJson(storyPlan).premise)
@@ -195,9 +220,10 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
           currentProject.id,
           episodeId,
           prompt,
-          { apiKey },
-          async url => {
+          apiKey ? { apiKey } : {},
+          async (url, meta) => {
             setIsGeneratingPoster(false)
+            setPosterIsVariantGrid(Boolean(meta?.isVariantGrid))
             setStoryPlan(prev => (prev ? { ...prev, posterUrl: url } : null))
 
             if (episodeId) {
@@ -221,12 +247,31 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
               },
               ...prev,
             ])
-          }
+          },
+          error => {
+            setIsGeneratingPoster(false)
+            setPosterIsVariantGrid(false)
+            toastGenerationError(PosterUserToast.PosterFailed, error)
+            setActionHistory(prev => [
+              {
+                id: `poster-fail-${Date.now()}`,
+                action: {
+                  type: ActionType.GENERATE_POSTER,
+                  payload: { episodeId, prompt: StorytellerGenerationFailLabel.Failed },
+                },
+                agentName: StorytellerGenerationAgentName.PosterAgent,
+                status: ActionHistoryStatus.UNDONE,
+                timestamp: new Date(),
+              },
+              ...prev,
+            ])
+          },
         )
       } catch (error) {
         console.error(StorytellerGenerationLog.PosterFailed, error)
         setIsGeneratingPoster(false)
-        alert(StorytellerGenerationAlert.PosterGenerationFailed)
+        setPosterIsVariantGrid(false)
+        toastGenerationError(PosterUserToast.PosterFailed, error)
 
         // Log failure
         setActionHistory(prev => [
@@ -251,6 +296,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       storyPlan,
       setActionHistory,
       setIsGeneratingPoster,
+      setPosterIsVariantGrid,
       setStoryPlan,
     ]
   )

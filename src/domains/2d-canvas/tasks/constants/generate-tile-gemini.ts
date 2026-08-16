@@ -7,14 +7,10 @@ import {
 import type { AiProviderConfig } from '@/shared/ai/ai-provider-config'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { BufferEncoding, ContentType, HttpMethod } from '@/shared/data/constants/protocol'
-import { imageService } from '@/shared/data/server/image-service'
-import sharp from 'sharp'
 import {
-  CENTER_CROP_OFFSET,
-  CONTEXT_CANVAS_SIZE,
   GEMINI_DEFAULT_MODEL,
-  TILE_CROP_SIZE,
 } from './generate-tile'
+import { toTilePngBase64 } from './generate-tile-output'
 import {
   parseGeminiResponse,
   readGeminiImageData,
@@ -90,7 +86,7 @@ function buildGeminiPayload(
     }
   }
 
-  const finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.GEMINI(layers)
+  const finalPrompt = GENERATION_PROMPTS.FOLLOW_UP.MASTER(layers)
   return {
     finalPrompt,
     payload: {
@@ -113,44 +109,6 @@ function buildGeminiPayload(
   }
 }
 
-async function resizeGeminiFollowUpOutput(imageData: string): Promise<string> {
-  let imgBuffer = Buffer.from(imageData, BufferEncoding.Base64)
-  const meta = await sharp(imgBuffer).metadata()
-  const w = meta.width ?? 0
-  const h = meta.height ?? 0
-  logger.info('Gemini output dimensions', { width: w, height: h })
-
-  if (w !== CONTEXT_CANVAS_SIZE || h !== CONTEXT_CANVAS_SIZE) {
-    logger.warn('Gemini output is not 1024x1024, resizing before crop', { width: w, height: h })
-    imgBuffer = Buffer.from(
-      await sharp(imgBuffer).resize(CONTEXT_CANVAS_SIZE, CONTEXT_CANVAS_SIZE, { fit: 'fill' }).png().toBuffer()
-    )
-  }
-  imgBuffer = Buffer.from(
-    await imageService.crop(imgBuffer, {
-      x: CENTER_CROP_OFFSET,
-      y: CENTER_CROP_OFFSET,
-      width: TILE_CROP_SIZE,
-      height: TILE_CROP_SIZE,
-    })
-  )
-  return imgBuffer.toString(BufferEncoding.Base64)
-}
-
-async function resizeGeminiFirstTileOutput(imageData: string): Promise<string> {
-  const imgBuffer = Buffer.from(imageData, BufferEncoding.Base64)
-  const meta = await sharp(imgBuffer).metadata()
-  const w = meta.width ?? 0
-  const h = meta.height ?? 0
-  logger.info('Gemini output dimensions', { width: w, height: h })
-  if (w === TILE_CROP_SIZE && h === TILE_CROP_SIZE) {
-    return imageData
-  }
-  logger.info('Resizing Gemini output to 512x512', { from: `${w}x${h}` })
-  const resized = await sharp(imgBuffer).resize(TILE_CROP_SIZE, TILE_CROP_SIZE, { fit: 'cover' }).png().toBuffer()
-  return resized.toString(BufferEncoding.Base64)
-}
-
 async function processGeminiImagePart(
   imagePart: GeminiContentPart,
   isFirstTile: boolean,
@@ -160,10 +118,7 @@ async function processGeminiImagePart(
   if (!rawData) {
     throw new Error('Gemini image part missing inline data')
   }
-  if (!isFirstTile && contextImageBase64) {
-    return resizeGeminiFollowUpOutput(rawData)
-  }
-  return resizeGeminiFirstTileOutput(rawData)
+  return toTilePngBase64(rawData, isFirstTile || !contextImageBase64)
 }
 
 export async function generateWithGemini(

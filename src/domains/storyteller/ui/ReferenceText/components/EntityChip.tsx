@@ -10,13 +10,21 @@ interface EntityChipProps {
   entity: EntityReference | null
   isLoading: boolean
   onClick?: (refId: string, entity: EntityReference | null) => void
+  onTooltipOpened?: () => void
 }
 
-export const EntityChip: React.FC<EntityChipProps> = ({ parsedRef, entity, isLoading, onClick }) => {
+export const EntityChip: React.FC<EntityChipProps> = ({
+  parsedRef,
+  entity,
+  isLoading,
+  onClick,
+  onTooltipOpened,
+}) => {
   const { type, Icon, colorClass } = resolveEntityChipVisuals(parsedRef)
 
   return (
     <StickyTooltip
+      onOpened={onTooltipOpened}
       content={
         <EntityTooltipContent
           parsedRef={parsedRef}

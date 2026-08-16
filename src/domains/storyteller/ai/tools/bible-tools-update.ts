@@ -3,15 +3,21 @@ import { projects, storyPlans, episodes } from '@/db/schema'
 import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 import { deepMergeRecords, recordFromJson } from '@/shared/data/deep-merge'
+import { narrowPremiseRecord } from '@/domains/storyteller/core/utils/requested-episode-premise-field'
 
 export enum BibleToolLog {
-  DroppedOffSection = '[update_world_bible] Dropped off-section fields for ',
+  OffSectionFields = '[update_world_bible] Off-section fields for ',
 }
 
 export enum BibleToolError {
   NoFields = 'No bible fields to update',
   NoFieldsForSectionPrefix = 'No fields allowed for section "',
   NoFieldsForSectionSuffix = '" in this tool call',
+}
+
+export enum BibleToolMessage {
+  ProposedPrefix = 'Proposed Story Plan updates (',
+  ProposedSuffix = ' sections). Persist on Accept or Add to world.',
 }
 
 const UPDATE_FIELD_KEYS = [
@@ -68,6 +74,17 @@ export function proposedFieldsFromInput(
     if (value !== undefined) proposed[key] = value
   }
   return proposed
+}
+
+export function applyPremiseFieldNarrowing(
+  updates: Record<string, unknown>,
+  premiseField: string | undefined,
+): Record<string, unknown> {
+  if (!premiseField || updates.episodePremise === undefined) return updates
+  return {
+    ...updates,
+    episodePremise: narrowPremiseRecord(recordFromJson(updates.episodePremise), premiseField),
+  }
 }
 
 export async function persistStoryPlanUpdates(

@@ -19,6 +19,18 @@ export function getEntityTypeFromId(refId: string): EntityType | null {
   return PREFIX_TO_TYPE[prefix] || null
 }
 
+export function displayNameFromRefId(refId: string): string {
+  return refId
+    .split('-')
+    .slice(1)
+    .join('-')
+    .replace(/-/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 export function generateReferenceId(type: EntityType): string {
   const prefix = ENTITY_PREFIXES[type]
   const shortUuid = uuidv4().split('-')[0]

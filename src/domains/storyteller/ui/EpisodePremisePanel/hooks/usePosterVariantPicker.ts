@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { EpisodePremiseUrlScheme } from '../constants/episode-premise-panel'
 
 interface PosterVariantPickerState {
   showVariantPicker: boolean
@@ -8,37 +7,35 @@ interface PosterVariantPickerState {
   setGridImageUrl: (url: string | null) => void
 }
 
+/** Only open the Midjourney quadrant picker when the completed image is a variant grid. */
 export function usePosterVariantPicker(
   posterUrl: string | null | undefined,
   isGeneratingPoster: boolean,
-  fullPosterUrl: string | null
+  fullPosterUrl: string | null,
+  isVariantGrid: boolean,
 ): PosterVariantPickerState {
   const [showVariantPicker, setShowVariantPicker] = useState(false)
   const [gridImageUrl, setGridImageUrl] = useState<string | null>(null)
   const prevPosterUrlRef = useRef(posterUrl)
   const prevIsGeneratingRef = useRef(isGeneratingPoster)
-  const hasCheckedInitialRef = useRef(false)
 
   useEffect(() => {
     const justFinished =
       prevIsGeneratingRef.current &&
       !isGeneratingPoster &&
-      posterUrl &&
+      Boolean(posterUrl) &&
       posterUrl !== prevPosterUrlRef.current
 
-    const isGrid = Boolean(posterUrl && posterUrl.startsWith(EpisodePremiseUrlScheme.Http))
-
-    if ((justFinished || (!hasCheckedInitialRef.current && isGrid)) && fullPosterUrl) {
+    if (justFinished && isVariantGrid && fullPosterUrl) {
       queueMicrotask(() => {
         setGridImageUrl(fullPosterUrl)
         setShowVariantPicker(true)
       })
-      hasCheckedInitialRef.current = true
     }
 
     prevPosterUrlRef.current = posterUrl
     prevIsGeneratingRef.current = isGeneratingPoster
-  }, [posterUrl, isGeneratingPoster, fullPosterUrl])
+  }, [posterUrl, isGeneratingPoster, fullPosterUrl, isVariantGrid])
 
   return {
     showVariantPicker,

@@ -6,7 +6,7 @@
  */
 
 import { eq } from 'drizzle-orm'
-import { projects, storyPlans } from '@/db'
+import { episodes, projects, storyPlans } from '@/db'
 import { db } from '@/db/client'
 import { budgetContext, type RawContextParts } from '@/domains/storyteller/services/context/token-budget'
 import {
@@ -20,6 +20,7 @@ import {
   charactersFromJson,
   deriveProjectMeta,
   flattenSeriesBible,
+  resolveContextEpisodePremise,
   mergeCharactersFromPlanAndDb,
   sortCharactersByRole,
   storyPlanFromJson,
@@ -62,6 +63,9 @@ async function loadContextSourceData(
   return Promise.all([
     db.select().from(projects).where(eq(projects.id, projectId)).then(r => r[0]),
     db.select().from(storyPlans).where(eq(storyPlans.projectId, projectId)).then(r => r[0]),
+    episodeId
+      ? db.select().from(episodes).where(eq(episodes.id, episodeId)).then(r => r[0])
+      : Promise.resolve(undefined),
     import('./storyteller-crud-service').then(async m => {
       const [charsReq, beatsReq] = await Promise.all([
         m.storytellerService
@@ -85,9 +89,19 @@ function buildContextParts(params: {
   message: string
   projectData: Awaited<ReturnType<typeof loadContextSourceData>>[0]
   storyPlanData: Awaited<ReturnType<typeof loadContextSourceData>>[1]
-  serviceData: Awaited<ReturnType<typeof loadContextSourceData>>[2]
+  episodeData: Awaited<ReturnType<typeof loadContextSourceData>>[2]
+  serviceData: Awaited<ReturnType<typeof loadContextSourceData>>[3]
 }): { contextPrompt: string; existingBibleData: Record<string, unknown> } {
-  const { projectId, episodeId, phase, message, projectData, storyPlanData, serviceData } = params
+  const {
+    projectId,
+    episodeId,
+    phase,
+    message,
+    projectData,
+    storyPlanData,
+    episodeData,
+    serviceData,
+  } = params
 
   const rawBible = parseSeriesBibleRecord(projectData?.seriesBible)
   const storyPlan = storyPlanFromJson(storyPlanData?.content)
@@ -109,11 +123,19 @@ function buildContextParts(params: {
   const beats = serviceData.beats
 
   const systemCtx = buildSystemContextBlock({ projectId, episodeId, phase, masterPrompt })
+  const episodePremise = resolveContextEpisodePremise({
+    episodeStoryPlan: episodeData?.storyPlan,
+    episodePremiseText: episodeData?.premise,
+    episodeTenPoints: episodeData?.tenPointsPlan,
+    projectStoryPlan: storyPlan,
+    bible,
+  })
   const meta = deriveProjectMeta(
     storyPlan,
     bible,
     ContextAssemblyFallback.NotSet,
-    StorytellerAnswerSeparator.CommaSpace
+    StorytellerAnswerSeparator.CommaSpace,
+    episodePremise
   )
   const projectCtx = buildProjectContextBlock({
     projectName: projectData?.name,
@@ -153,7 +175,7 @@ export async function assembleStorytellerContext(
 
   try {
     const startedAt = Date.now()
-    const [projectData, storyPlanData, serviceData] = await loadContextSourceData(
+    const [projectData, storyPlanData, episodeData, serviceData] = await loadContextSourceData(
       projectId,
       episodeId,
       userId
@@ -167,6 +189,7 @@ export async function assembleStorytellerContext(
       message,
       projectData,
       storyPlanData,
+      episodeData,
       serviceData,
     })
   } catch (err) {

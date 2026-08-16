@@ -25,7 +25,6 @@ import { Textarea } from '@/components/Textarea'
 import {
   AppRouteSegment,
   DefaultWorkspaceModule,
-  PROJECT_SELECTOR_BIBLE_QUERY,
   PROJECT_SELECTOR_CANCEL_LABEL,
   PROJECT_SELECTOR_CREATE_BUTTON,
   PROJECT_SELECTOR_CREATE_LABEL,
@@ -55,7 +54,7 @@ export function ProjectSelectorDropdown() {
   // Extract current module from pathname (e.g., /project-id/storyteller -> storyteller)
   // Pathname: /:projectId/:module...
   const getNextUrl = (nextProjectId: string) => {
-    if (!pathname) return `/${nextProjectId}/${DefaultWorkspaceModule.Storyteller}?${PROJECT_SELECTOR_BIBLE_QUERY}`
+    if (!pathname) return `/${nextProjectId}/${DefaultWorkspaceModule.Storyteller}`
 
     const parts = pathname.split('/').filter(Boolean)
     // parts[0] is app, parts[1] is projectId, parts[2] is module
@@ -96,7 +95,7 @@ export function ProjectSelectorDropdown() {
       setNewProjectName('')
       setNewProjectPrompt('')
       // Navigate to the new project with bible open
-      router.push(`/${id}/${DefaultWorkspaceModule.Storyteller}?${PROJECT_SELECTOR_BIBLE_QUERY}`)
+      router.push(`/${id}/${DefaultWorkspaceModule.Storyteller}`)
     }
   }
 

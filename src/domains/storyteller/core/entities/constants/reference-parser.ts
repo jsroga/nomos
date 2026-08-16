@@ -44,6 +44,11 @@ export const ENTITY_TYPES: EntityType[] = [
 
 export const REFERENCE_DISPLAY_CAPTURE = '$1'
 
+/** Markdown href prefix so GFM tables keep entity chips as real links. */
+export enum EntityMarkdownHref {
+  Prefix = 'https://entity.invalid/',
+}
+
 export const PREFIX_TO_TYPE: Record<string, EntityType> = Object.create(null)
 for (const type of ENTITY_TYPES) {
   PREFIX_TO_TYPE[ENTITY_PREFIXES[type]] = type

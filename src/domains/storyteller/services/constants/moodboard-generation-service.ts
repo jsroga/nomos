@@ -41,6 +41,11 @@ export enum MoodboardOperationDetail {
 
 export enum MoodboardGenerationError {
   TriggerFailed = 'Failed to trigger moodboard generation task',
+  GenerationFailed = 'Moodboard generation failed',
+}
+
+export enum MoodboardUserToast {
+  GenerationFailed = 'Moodboard generation failed',
 }
 
 export enum MoodboardGenerationLog {

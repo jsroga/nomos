@@ -14,7 +14,7 @@ const JSON_HEADERS = { 'Content-Type': ContentType.Json }
 export async function startCharacterPortraitGeneration(input: {
   prompt: string
   projectId: string
-  apiKey: string
+  apiKey?: string
 }): Promise<{ handleId: string | null }> {
   const data = recordFromJson(await fetchJson(PORTRAIT_ROUTE, {
     method: HttpMethod.Post,

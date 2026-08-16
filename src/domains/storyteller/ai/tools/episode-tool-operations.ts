@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { recordFromJson } from '@/shared/data/deep-merge'
 import type { EpisodeData } from './episode-tools-schema'
+import { episodeWriteDataWithoutPremise } from './episode-write-data'
 
 type EpisodeRow = typeof episodes.$inferSelect
 
@@ -26,9 +27,6 @@ export function episodeResponse(episode: EpisodeRow) {
 
 function buildStoryPlanData(data: EpisodeData): Record<string, unknown> | null {
   const storyPlanData: Record<string, unknown> = { ...(data.storyPlan ?? {}) }
-  if (data.premise) {
-    storyPlanData.premise = data.premise
-  }
   return Object.keys(storyPlanData).length > 0 ? storyPlanData : null
 }
 
@@ -46,11 +44,6 @@ function buildEpisodeUpdateFields(
   if (data.title !== undefined) updateFields.title = data.title
   if (data.sequence !== undefined) updateFields.sequence = data.sequence
   if (data.thematicFocus !== undefined) updateFields.thematicFocus = data.thematicFocus
-  if (data.premise !== undefined) {
-    updateFields.premise = JSON.stringify(data.premise)
-    const currentStoryPlan = recordFromJson(existing.storyPlan)
-    updateFields.storyPlan = { ...currentStoryPlan, premise: data.premise }
-  }
   if (data.storyPlan !== undefined) {
     const currentStoryPlan = recordFromJson(existing.storyPlan)
     updateFields.storyPlan = { ...currentStoryPlan, ...data.storyPlan }
@@ -60,19 +53,20 @@ function buildEpisodeUpdateFields(
 }
 
 export async function createEpisodeOperation(projectId: string, data: EpisodeData) {
-  const sequence = await resolveEpisodeSequence(projectId, data.sequence)
+  const persistable = episodeWriteDataWithoutPremise(data)
+  const sequence = await resolveEpisodeSequence(projectId, persistable.sequence)
   const newEpisodeId = uuidv4()
-  const storyPlan = buildStoryPlanData(data)
+  const storyPlan = buildStoryPlanData(persistable)
 
   await db.insert(episodes).values({
     id: newEpisodeId,
     projectId,
-    title: data.title,
+    title: persistable.title,
     sequence,
-    thematicFocus: data.thematicFocus ?? null,
-    premise: data.premise ? JSON.stringify(data.premise) : null,
+    thematicFocus: persistable.thematicFocus ?? null,
+    premise: null,
     storyPlan,
-    posterUrl: data.thumbnailUrl ?? null,
+    posterUrl: persistable.thumbnailUrl ?? null,
   })
 
   const [created] = await db.select().from(episodes).where(eq(episodes.id, newEpisodeId))
@@ -90,7 +84,17 @@ export async function updateEpisodeOperation(episodeId: string, data: EpisodeDat
     return { success: false as const, error: `Episode ${episodeId} not found` }
   }
 
-  const updateFields = buildEpisodeUpdateFields(existing, data)
+  const persistable = episodeWriteDataWithoutPremise(data)
+  const updateFields = buildEpisodeUpdateFields(existing, persistable)
+  const persistedKeys = Object.keys(updateFields).filter(key => key !== 'updatedAt')
+  if (persistedKeys.length === 0) {
+    return {
+      success: true as const,
+      message: `Proposed episode updates for "${existing.title}"`,
+      episode: episodeResponse(existing),
+    }
+  }
+
   await db.update(episodes).set(updateFields).where(eq(episodes.id, episodeId))
 
   const [updated] = await db.select().from(episodes).where(eq(episodes.id, episodeId))

@@ -2,6 +2,12 @@ import { EntityReference } from '@/domains/storyteller/core/entities/entity-refe
 import { parseEntityType, entityMetadata } from '@/domains/storyteller/core/entities/entity-type-guards'
 import { readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
 import { resolveEntities } from '@/domains/storyteller/core/io/entities.api'
+import {
+  enqueueEntityLoad,
+  rejectEntityLoadWaiters,
+  resolveEntityLoadWaiters,
+  type EntityLoadBatchItem,
+} from './entity-loader-queue'
 
 function entityReferenceFromJson(value: unknown): EntityReference | null {
   const row = recordFromJson(value)
@@ -33,15 +39,7 @@ function entityReferenceFromJson(value: unknown): EntityReference | null {
  * into a single API call.
  */
 export class EntityLoader {
-  private queue: Map<
-    string,
-    {
-      resolve: (value: EntityReference | null) => void
-      reject: (reason?: unknown) => void
-      projectId: string
-      context?: string
-    }
-  > = new Map()
+  private queue: Map<string, EntityLoadBatchItem> = new Map()
   private timeout: NodeJS.Timeout | null = null
   private readonly delay: number
 
@@ -54,10 +52,10 @@ export class EntityLoader {
    */
   load(id: string, projectId: string, context?: string): Promise<EntityReference | null> {
     return new Promise((resolve, reject) => {
-      const key = `${projectId}:${id}`
-
-      // Store context if provided (last one wins for the batch)
-      this.queue.set(key, { resolve, reject, projectId, context })
+      enqueueEntityLoad(this.queue, `${projectId}:${id}`, projectId, context, {
+        resolve,
+        reject,
+      })
 
       if (!this.timeout) {
         this.timeout = setTimeout(() => this.flush(), this.delay)
@@ -117,21 +115,19 @@ export class EntityLoader {
             .filter((entity): entity is EntityReference => entity !== null)
           const entityMap = new Map(entities.map(e => [e.id, e]))
 
-          // Resolve promises
           ids.forEach(originalId => {
             const key = `${projectId}:${originalId}`
             const handler = currentQueue.get(key)
             if (handler) {
-              handler.resolve(entityMap.get(originalId) || null)
+              resolveEntityLoadWaiters(handler, entityMap.get(originalId) || null)
             }
           })
         } catch (error) {
-          // Reject all for this project
           ids.forEach(originalId => {
             const key = `${projectId}:${originalId}`
             const handler = currentQueue.get(key)
             if (handler) {
-              handler.reject(error)
+              rejectEntityLoadWaiters(handler, error)
             }
           })
         }

@@ -2,24 +2,30 @@
 
 import { createContext, useContext, type ReactNode } from 'react'
 
-type AddToWorldHandler = ((text: string) => void) | undefined
+export interface AddToWorldPayload {
+  text: string
+  toolArgs: readonly Record<string, unknown>[]
+}
 
-const AssistantAddToWorldContext = createContext<AddToWorldHandler>(undefined)
+export interface AssistantAddToWorldApi {
+  onAddToWorld?: (payload: AddToWorldPayload) => boolean | Promise<boolean>
+  sectionLabelsFromToolArgs?: (toolArgs: readonly Record<string, unknown>[]) => string[]
+}
+
+const AssistantAddToWorldContext = createContext<AssistantAddToWorldApi>({})
 
 export function AssistantAddToWorldProvider({
   onAddToWorld,
+  sectionLabelsFromToolArgs,
   children,
-}: {
-  onAddToWorld?: (text: string) => void
-  children: ReactNode
-}) {
+}: AssistantAddToWorldApi & { children: ReactNode }) {
   return (
-    <AssistantAddToWorldContext.Provider value={onAddToWorld}>
+    <AssistantAddToWorldContext.Provider value={{ onAddToWorld, sectionLabelsFromToolArgs }}>
       {children}
     </AssistantAddToWorldContext.Provider>
   )
 }
 
-export function useAssistantAddToWorld(): AddToWorldHandler {
+export function useAssistantAddToWorld(): AssistantAddToWorldApi {
   return useContext(AssistantAddToWorldContext)
 }

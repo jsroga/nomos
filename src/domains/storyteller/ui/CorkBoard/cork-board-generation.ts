@@ -1,13 +1,20 @@
 import type { Dispatch, SetStateAction } from 'react'
+import toast from 'react-hot-toast'
 import { BeatCard as BeatData } from '@/domains/storyteller/core/types/story-types'
 import { beatImageService } from '@/domains/storyteller/services/beat-image-service'
+import { validatePremiseForBeatboard } from '@/domains/storyteller/core/utils/validate-premise-for-beatboard'
 import type { Message } from '@/shared/chat'
 import {
+  CORK_BOARD_BEAT_IMAGES_FAILED_TOAST,
   CORK_BOARD_COUNT_PLACEHOLDER,
   CORK_BOARD_GENERATE_BEATS_PROMPT,
+  CORK_BOARD_GENERATE_NEXT_BEAT_PROMPT,
   CORK_BOARD_STORYBOARD_FAILED_LOG,
   CORK_BOARD_STORYBOARD_STARTED_CONTENT,
   CORK_BOARD_VISUAL_DIRECTOR_SENDER,
+  CorkBoardBeatListSep,
+  CorkBoardExistingBeatsLabel,
+  CorkBoardPromptPlaceholder,
 } from './constants/cork-board'
 import { StorytellerMessageType } from '@/domains/storyteller/core/storyteller-page-wire'
 
@@ -15,24 +22,82 @@ interface GenerateBeatImagesParams {
   projectId: string
   beats: BeatData[]
   onAddMessage?: (message: Message) => void
-  onSendMessage?: (message: string) => void
   setBeats: Dispatch<SetStateAction<BeatData[]>>
   setIsGeneratingBeats: (value: boolean) => void
 }
 
-export const runCorkBoardBeatGeneration = async ({
+function sendIfPremiseReady(
+  premise: unknown,
+  onSendMessage: ((message: string) => void) | undefined,
+  message: string
+): boolean {
+  const result = validatePremiseForBeatboard(premise)
+  if (!result.ok) {
+    toast.error(result.message)
+    return false
+  }
+  if (!onSendMessage) return false
+  onSendMessage(message)
+  return true
+}
+
+export function requestCorkBoardTextBeats(
+  premise: unknown,
+  onSendMessage?: (message: string) => void
+): boolean {
+  return sendIfPremiseReady(premise, onSendMessage, CORK_BOARD_GENERATE_BEATS_PROMPT)
+}
+
+export function corkBoardNextBeatPrompt(
+  beats: ReadonlyArray<{ sequence: number; logline: string }>
+): string {
+  const existing =
+    beats.length === 0
+      ? CorkBoardExistingBeatsLabel.None
+      : [...beats]
+          .sort((left, right) => left.sequence - right.sequence)
+          .map(beat => `${beat.sequence}${CorkBoardBeatListSep.Item}${beat.logline}`)
+          .join(CorkBoardBeatListSep.Join)
+  return CORK_BOARD_GENERATE_NEXT_BEAT_PROMPT.replace(
+    CorkBoardPromptPlaceholder.Sequence,
+    String(beats.length + 1)
+  ).replace(CorkBoardPromptPlaceholder.Existing, existing)
+}
+
+export function preferRicherBeats<T extends { id: string }>(
+  local: readonly T[],
+  incoming: readonly T[]
+): T[] {
+  const localIds = new Set(local.map(beat => beat.id).filter(Boolean))
+  const incomingIds = new Set(incoming.map(beat => beat.id).filter(Boolean))
+  let incomingOnly = 0
+  let localOnly = 0
+  for (const id of incomingIds) {
+    if (!localIds.has(id)) incomingOnly += 1
+  }
+  for (const id of localIds) {
+    if (!incomingIds.has(id)) localOnly += 1
+  }
+  if (localOnly > incomingOnly) return [...local]
+  if (incomingOnly > 0 || incoming.length >= local.length) return [...incoming]
+  return [...local]
+}
+
+export function requestCorkBoardNextBeat(
+  premise: unknown,
+  beats: ReadonlyArray<{ sequence: number; logline: string }>,
+  onSendMessage?: (message: string) => void
+): boolean {
+  return sendIfPremiseReady(premise, onSendMessage, corkBoardNextBeatPrompt(beats))
+}
+
+export const runCorkBoardBeatImageGeneration = async ({
   projectId,
   beats,
   onAddMessage,
-  onSendMessage,
   setBeats,
   setIsGeneratingBeats,
 }: GenerateBeatImagesParams): Promise<void> => {
-  if (beats.length === 0) {
-    onSendMessage?.(CORK_BOARD_GENERATE_BEATS_PROMPT)
-    return
-  }
-
   setIsGeneratingBeats(true)
   onAddMessage?.({
     sender: CORK_BOARD_VISUAL_DIRECTOR_SENDER,
@@ -51,6 +116,11 @@ export const runCorkBoardBeatGeneration = async ({
     }
   } catch (e) {
     console.error(CORK_BOARD_STORYBOARD_FAILED_LOG, e)
+    toast.error(
+      e instanceof Error && e.message.trim().length > 0
+        ? e.message
+        : CORK_BOARD_BEAT_IMAGES_FAILED_TOAST
+    )
   } finally {
     setIsGeneratingBeats(false)
   }

@@ -1,12 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
-import { cloneSearchParams } from '@/shared/data/url-builder'
 import { StorytellerEmptyState } from '../../StorytellerEmptyState'
-import {
-  StorytellerBibleQuery,
-  StorytellerQueryParam,
-} from '@/domains/storyteller/core/storyteller-page-wire'
 import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { WorldBiblePanel } from '../storyteller-dynamic-imports'
@@ -31,8 +26,6 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
     isWorldBibleOpen,
     isFetchingPlan,
     sectionPendingActions,
-    searchParams,
-    router,
     selectEpisode,
     isSending,
     loadingSections,
@@ -42,12 +35,7 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
     phase
   const { worldBiblePanelStoryPlan, handleUpdateGlobalBible, closeWorldBiblePanel } = agents
   const requestChatPrompt = useStorytellerUiStore(state => state.requestChatPrompt)
-
-  const openBible = () => {
-    const params = cloneSearchParams(searchParams)
-    params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Open)
-    router.push(`?${params.toString()}`)
-  }
+  const setWorldBibleOpen = useStorytellerUiStore(state => state.setWorldBibleOpen)
 
   const handleBibleSendMessage = useCallback(
     (message: string, section?: string) => {
@@ -92,6 +80,7 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
             handlePhaseChange={handlePhaseChange}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            isWorldBibleOpen={isWorldBibleOpen}
           />
           <StorytellerActiveTabContent {...props} />
         </>
@@ -104,7 +93,7 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
           onGenerateBible={handleGenerateBible}
           onDraftFirstEpisode={handleDraftFirstEpisode}
           onSelectFirstEpisode={selectEpisode}
-          onOpenBible={openBible}
+          onOpenBible={() => setWorldBibleOpen(true)}
         />
       )}
 

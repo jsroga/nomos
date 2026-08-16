@@ -9,6 +9,7 @@ export interface PendingAction {
   onReject: () => void
   onReview?: () => void
   isProcessing?: boolean
+  episodeId?: string | null
 }
 
 export type BibleProviderConfig = Record<string, unknown>

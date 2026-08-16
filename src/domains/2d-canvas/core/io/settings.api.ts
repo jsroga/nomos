@@ -48,6 +48,7 @@ export interface ProjectStyleSettings {
   styleReferenceUrls?: string[]
   stylePreset?: string | null
   generationMode?: string | null
+  canvasMasterPrompt?: string | null
   styleAnchorUrl?: string | null
 }
 
@@ -104,6 +105,8 @@ function parseProjectStyleSettings(value: unknown): ProjectStyleSettings {
     stylePreset: readString(record.stylePreset) ?? readString(record.style_preset) ?? null,
     generationMode:
       readString(record.generationMode) ?? readString(record.generation_mode) ?? null,
+    canvasMasterPrompt:
+      readString(record.canvasMasterPrompt) ?? readString(record.canvas_master_prompt) ?? null,
     styleAnchorUrl:
       readString(record.styleAnchorUrl) ?? readString(record.style_anchor_url) ?? null,
   }

@@ -2,7 +2,6 @@ import { Button } from '@/components/Button'
 import { Wand2 } from 'lucide-react'
 import { StorytellerImage } from '../StorytellerImage'
 import {
-  CHARACTER_DIALOG_PORTRAIT_DATA_URL_PREFIX,
   CHARACTER_DIALOG_PORTRAIT_STATUS_PICK,
   CHARACTER_DIALOG_PORTRAIT_STATUS_POWERED_BY,
   CHARACTER_DIALOG_PORTRAIT_STATUS_SELECTED,
@@ -19,13 +18,8 @@ interface CharacterCreationDialogPortraitSectionProps {
   onSetGridImageUrl: (url: string) => void
 }
 
-function canPickPortraitVariant(portraitUrl: string, gridImageUrl: string | null): boolean {
-  const hasGrid = Boolean(gridImageUrl)
-  const hasUncroppedPortrait =
-    Boolean(portraitUrl) &&
-    !/_(v\d|cropped)_/.test(portraitUrl) &&
-    !portraitUrl.startsWith(CHARACTER_DIALOG_PORTRAIT_DATA_URL_PREFIX)
-  return hasGrid || hasUncroppedPortrait
+function canPickPortraitVariant(gridImageUrl: string | null): boolean {
+  return Boolean(gridImageUrl)
 }
 
 function portraitStatusLabel(portraitUrl: string): string {
@@ -46,7 +40,7 @@ export function CharacterCreationDialogPortraitSection({
   onShowVariantPicker,
   onSetGridImageUrl,
 }: CharacterCreationDialogPortraitSectionProps) {
-  const showVariantPicker = canPickPortraitVariant(portraitUrl, gridImageUrl)
+  const showVariantPicker = canPickPortraitVariant(gridImageUrl)
 
   return (
     <div className="space-y-2">

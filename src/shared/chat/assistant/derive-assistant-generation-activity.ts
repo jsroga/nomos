@@ -35,6 +35,7 @@ export interface AssistantGenerationActivity {
   preview?: string
   error?: string
   agentId?: string
+  toolComplete?: boolean
 }
 
 const WORLD_DESCRIPTION_KEY = 'worldDescription'
@@ -114,6 +115,7 @@ export function deriveAssistantGenerationActivity(
       toolName: lastToolName,
       preview,
       agentId,
+      toolComplete: done,
     }
   }
 

@@ -11,6 +11,7 @@ export enum GenerationPromptCopy {
   StabilityUpscale = 'upscale maintaining the same style, high quality, detailed, sharp',
   FirstTileCroppedFragment =
     'rendered as a cropped fragment of a much larger continuous world.',
+  FirstTileOverheadPrefix = 'Overhead view of',
   FirstTileFrameFill =
     'The image fills the entire square frame from edge to edge. Objects are cut off by all four frame edges mid-shape. No sky, no horizon, no background, no empty corners.',
   FollowUpGreyCenter = 'Fill the grey center to continue the surrounding world:',

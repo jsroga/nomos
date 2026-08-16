@@ -11,10 +11,8 @@ import type { AiProviderConfig } from '@/shared/ai/ai-provider-config'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
 import { generateMidjourneyUpscaledImage } from '@/shared/ai/apiframe'
-import { BufferEncoding } from '@/shared/data/constants/protocol'
-import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
-import { TILE_CROP_SIZE } from './generate-tile'
+import { downloadTileAsBase64 } from './generate-tile-output'
 
 async function buildApiframeTilePrompt(
   isFirstTile: boolean,
@@ -48,19 +46,6 @@ async function buildApiframeTilePrompt(
     }
   }
   return basePrompt
-}
-
-async function downloadTileAsBase64(imageUrl: string): Promise<string> {
-  const response = await fetch(imageUrl)
-  if (!response.ok) {
-    throw new Error(`Failed to download Apiframe tile image: ${response.status}`)
-  }
-  const buffer = Buffer.from(await response.arrayBuffer())
-  const resized = await sharp(buffer)
-    .resize(TILE_CROP_SIZE, TILE_CROP_SIZE, { fit: 'cover' })
-    .png()
-    .toBuffer()
-  return resized.toString(BufferEncoding.Base64)
 }
 
 /** Midjourney tile generation via Apiframe v2. */
@@ -121,7 +106,7 @@ export async function generateWithApiframeMidjourney(
     })
 
     await metadata.set('stage', 'downloading_result')
-    return downloadTileAsBase64(result.imageUrl)
+    return downloadTileAsBase64(result.imageUrl, isFirstTile)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     logLLMRequestError({

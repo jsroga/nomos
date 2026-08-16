@@ -44,13 +44,12 @@ export function useCharacterPortraitGeneration({
       if (!projectId) throw new Error(PROJECT_ID_REQUIRED_ERROR)
 
       const apiKey =
-        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) ||
-        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) || undefined
 
       return startCharacterPortraitGeneration({
         prompt: input.prompt || `A portrait of ${input.name}, ${input.gender}`,
         projectId,
-        apiKey,
+        ...(apiKey ? { apiKey } : {}),
       })
     },
     onSuccess: data => {

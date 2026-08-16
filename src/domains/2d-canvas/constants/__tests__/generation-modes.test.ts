@@ -3,6 +3,7 @@ import {
   DEFAULT_GENERATION_MODE,
   GENERATION_MODES,
   GenerationMode,
+  GenerationModeName,
   generationModeDef,
   resolveGenerationMode,
 } from '../generation-modes'
@@ -31,6 +32,6 @@ describe('generation modes', () => {
   })
 
   it('looks up the matching definition', () => {
-    expect(generationModeDef(GenerationMode.AnimeLineart).name).toBe('Anime i komiks')
+    expect(generationModeDef(GenerationMode.AnimeLineart).name).toBe(GenerationModeName.AnimeLineart)
   })
 })

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Skeleton } from '@/components/Skeleton'
+import { resolveCorkBoardUrl } from '@/domains/storyteller/ui/CorkBoard/CorkBoardStoryboardSection'
 
 interface BeatCardImageSectionProps {
   imageUrl?: string
@@ -20,14 +21,16 @@ export const BeatCardImageSection: React.FC<BeatCardImageSectionProps> = ({
     return null
   }
 
+  const resolvedSrc = imageUrl ? resolveCorkBoardUrl(imageUrl, projectId) : null
+
   return (
     <div
       className="mt-3 w-full aspect-video rounded-md overflow-hidden border border-border relative group/image cursor-zoom-in"
       onClick={() => imageUrl && onExpand?.(beatId)}
     >
-      {imageUrl ? (
+      {resolvedSrc ? (
         <img
-          src={`/projects/${projectId}/${imageUrl}`}
+          src={resolvedSrc}
           alt={imagePrompt || 'Beat storyboard'}
           className="w-full h-full object-cover transition-transform duration-300 group-hover/image:scale-[1.02]"
         />
@@ -41,7 +44,7 @@ export const BeatCardImageSection: React.FC<BeatCardImageSectionProps> = ({
           </div>
         </div>
       )}
-      {imagePrompt && imageUrl && (
+      {imagePrompt && resolvedSrc && (
         <div className="absolute inset-0 bg-black/80 p-2 font-mono text-[10px] text-white opacity-0 group-hover/image:opacity-100 transition-opacity overflow-y-auto">
           {imagePrompt}
         </div>

@@ -28,7 +28,7 @@ export const CorkBoardStoryboardSection: React.FC<CorkBoardStoryboardSectionProp
             <ImageIcon className="w-3.5 h-3.5 text-primary" />
             Combined Storyboard
           </h3>
-          <p className="text-[10px] text-muted-foreground mt-1">Gemini Visual Summary</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Episode visual summary</p>
         </div>
         {onGenerateCombined && (
           <Button

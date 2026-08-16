@@ -13,7 +13,6 @@ export const POLLING_INTERVALS = {
 
   /**
    * Faster polling for critical operations that need quick feedback (3 seconds)
-   * Use sparingly and only when absolutely necessary
    */
   FAST: 3000,
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import toast from 'react-hot-toast'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { WorldBiblePanelBody } from './WorldBiblePanelBody'
 import { WorldBiblePanelHeader } from './WorldBiblePanelHeader'
@@ -13,12 +14,12 @@ import {
   MoodboardProvider,
   MoodboardStorageKey,
   StorytellerBibleTab,
-  StorytellerBibleUrlParam,
   StorytellerLogMessage,
   WorldBiblePanelProviderModel,
   moodboardGenOperationPrefix,
   moodboardPrimaryStorageKey,
 } from './constants/world-bible-panel'
+import { MoodboardUserToast } from '@/domains/storyteller/services/constants/moodboard-generation-service'
 
 import { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { fetchStorytellerProjectOptional } from '@/domains/storyteller/core/io/storyteller.api'
@@ -34,9 +35,7 @@ const getProviderConfig = () => {
     browserStorage.getString(MoodboardStorageKey.Provider) || MoodboardProvider.Midjourney
 
   const geminiKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_GEMINI)
-  const midjourneyKey =
-    browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) ||
-    browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+  const midjourneyKey = browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME)
 
   if (provider === MoodboardProvider.NanoBanana) {
     return {
@@ -136,49 +135,19 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
   const [focusEntityId, setFocusEntityId] = useState<string | null>(null)
   const entityNavigation = useStorytellerUiStore(state => state.entityNavigation)
   const clearEntityNavigation = useStorytellerUiStore(state => state.clearEntityNavigation)
-  const bibleTabRequest = useStorytellerUiStore(state => state.bibleTabRequest)
-  const clearBibleTabRequest = useStorytellerUiStore(state => state.clearBibleTabRequest)
+  const activeTab = useStorytellerUiStore(state => state.bibleTab)
+  const setBibleTab = useStorytellerUiStore(state => state.setBibleTab)
   const moodboardCompleteVersion = useStorytellerUiStore(state => state.moodboardCompleteVersion)
   const notifyMoodboardPrimaryChanged = useStorytellerUiStore(
     state => state.notifyMoodboardPrimaryChanged
   )
 
-  // Read initial tab from URL
-  const [activeTab, setActiveTab] = useState<StorytellerBibleTab>(() => {
-    if (typeof window === 'undefined') return StorytellerBibleTab.Content
-    const params = new URLSearchParams(window.location.search)
-    return params.get(StorytellerBibleUrlParam.BibleTab) === StorytellerBibleTab.Relationships
-      ? StorytellerBibleTab.Relationships
-      : StorytellerBibleTab.Content
-  })
-
-  // Persist tab in URL
-  const switchTab = useCallback((tab: StorytellerBibleTab) => {
-    setActiveTab(tab)
-    if (typeof window === 'undefined') return
-    const url = new URL(window.location.href)
-    if (tab === StorytellerBibleTab.Relationships) {
-      url.searchParams.set(StorytellerBibleUrlParam.BibleTab, StorytellerBibleTab.Relationships)
-    } else {
-      url.searchParams.delete(StorytellerBibleUrlParam.BibleTab)
-    }
-    window.history.replaceState({}, '', url.toString())
-  }, [])
-
-  // React to cross-panel navigation signals
-  useEffect(() => {
-    if (bibleTabRequest === StorytellerBibleTab.Relationships) {
-      switchTab(StorytellerBibleTab.Relationships)
-      clearBibleTabRequest()
-    }
-  }, [bibleTabRequest, switchTab, clearBibleTabRequest])
-
   useEffect(() => {
     if (!entityNavigation?.refId) return
     setFocusEntityId(entityNavigation.refId)
-    switchTab(StorytellerBibleTab.Relationships)
+    setBibleTab(StorytellerBibleTab.Relationships)
     clearEntityNavigation()
-  }, [entityNavigation, switchTab, clearEntityNavigation])
+  }, [entityNavigation, setBibleTab, clearEntityNavigation])
 
   const isUserCentralUser = isCentralUser(userEmail)
   const canUserEditBible = canEditBible(userEmail, isBibleLocked)
@@ -222,7 +191,13 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
 
     // Resume any pending generations for this project
     import('@/domains/storyteller/services/moodboard-generation-service').then(({ moodboardGenerationService }) => {
-      moodboardGenerationService.resumePendingGenerations(projectId, refetchMoodboardData)
+      moodboardGenerationService.resumePendingGenerations(projectId, refetchMoodboardData, error => {
+        if (error instanceof Error && error.message.trim().length > 0) {
+          toast.error(error.message)
+          return
+        }
+        toast.error(MoodboardUserToast.GenerationFailed)
+      })
     })
   }, [projectId, refetchMoodboardData, moodboardCompleteVersion])
 
@@ -247,7 +222,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     <div className="h-full min-h-0 relative flex flex-col">
       <WorldBiblePanelHeader
         activeTab={activeTab}
-        onSwitchTab={switchTab}
+        onSwitchTab={setBibleTab}
         isUserCentralUser={isUserCentralUser}
         isBibleLocked={isBibleLocked}
         lockedBy={lockedBy}

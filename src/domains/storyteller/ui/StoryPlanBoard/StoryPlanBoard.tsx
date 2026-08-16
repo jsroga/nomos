@@ -54,6 +54,7 @@ import { EpisodePremisePanel } from '../EpisodePremisePanel'
 import { Button } from '@/components/Button'
 import { TooltipProvider } from '@/components/Tooltip'
 import { CheckCircle } from 'lucide-react'
+import type { PendingAction } from '../WorldBible/utils/bible-context-types'
 
 export interface StoryPlanBoardProps {
   storyPlan: StoryPlan | null
@@ -69,11 +70,16 @@ export interface StoryPlanBoardProps {
   isGenerating?: boolean
   onUpdateSequence?: (id: number, updates: Partial<StorySequence>) => void
   isGeneratingPoster?: boolean
+  posterIsVariantGrid?: boolean
   isGeneratingStoryboard?: boolean
   isLoading?: boolean
   projectId: string
   episodeId?: string | null
   generatingSection?: string | null
+  pendingPremiseAction?: PendingAction
+  episodeTitle?: string
+  episodePrompt?: string
+  onSaveEpisodePrompt?: (prompt: string) => void
 }
 
 const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
@@ -87,11 +93,16 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
   onGeneratePremiseSection,
   isGenerating = false,
   isGeneratingPoster = false,
+  posterIsVariantGrid = false,
   isGeneratingStoryboard = false,
   isLoading = false,
   projectId,
   episodeId,
   generatingSection = null,
+  pendingPremiseAction,
+  episodeTitle,
+  episodePrompt,
+  onSaveEpisodePrompt,
 }) => {
   // Extract episode premise if it exists within storyPlan (temporary bridging or permanent structure)
   // Assuming storyPlan MIGHT be the episode plan structure.
@@ -153,7 +164,12 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
         isGenerating={isGenerating}
         generatingSection={generatingSection}
         isGeneratingPoster={isGeneratingPoster}
+        posterIsVariantGrid={posterIsVariantGrid}
         isGeneratingStoryboard={isGeneratingStoryboard}
+        pendingAction={pendingPremiseAction}
+        episodeTitle={episodeTitle}
+        episodePrompt={episodePrompt}
+        onSaveEpisodePrompt={onSaveEpisodePrompt}
       />
 
       {/* Plan Ready - sharp CTA when premise is complete */}

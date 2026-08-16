@@ -11,6 +11,7 @@
  */
 
 import React, { useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useEntities } from '@/domains/storyteller/state/queries/useEntity'
 import { cn } from '@/shared/data/utils'
 import {
@@ -23,11 +24,18 @@ import {
   EntityType,
 } from '@/domains/storyteller/core/entities/entity-references'
 import {
+  REFERENCE_RESOLVE_CONTEXT_MAX,
   ReferenceSegmentType,
   RichTextContainerTag,
 } from './constants/reference-text-display'
 import { markEntityReferenced } from '@/domains/storyteller/core/io/entities.api'
+import { StorytellerQueryKey } from '@/domains/storyteller/core/io/constants/query-keys'
+import { storytellerKeys } from '@/domains/storyteller/core/io/storyteller.keys'
 import { EntityChip } from './components/EntityChip'
+import {
+  shouldRefetchEntityForTooltip,
+  shouldShowEntityTooltipLoading,
+} from './utils/should-show-entity-tooltip-loading'
 
 export type { EntityReference, EntityRelationship, EntityType }
 
@@ -66,11 +74,16 @@ function buildEntityMap(
 
 function collectLoadingIds(
   queryResults: ReturnType<typeof useEntities>,
-  refIds: string[]
+  refIds: string[],
+  initialEntities: Map<string, EntityReference> | undefined
 ): Set<string> {
   const set = new Set<string>()
-  queryResults.forEach((r, i) => {
-    if (r.isLoading) set.add(refIds[i])
+  queryResults.forEach((result, index) => {
+    const refId = refIds[index]
+    const entity = result.data ?? initialEntities?.get(refId) ?? null
+    if (shouldShowEntityTooltipLoading(result.isPending, result.isFetching, entity)) {
+      set.add(refId)
+    }
   })
   return set
 }
@@ -86,17 +99,30 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
 }) => {
   const segments = useMemo(() => splitIntoSegments(text), [text])
   const refIds = useMemo(() => collectReferenceIds(segments), [segments])
-  const queryResults = useEntities(refIds, projectId)
+  const resolveContext = useMemo(
+    () => text.slice(0, REFERENCE_RESOLVE_CONTEXT_MAX),
+    [text]
+  )
+  const queryClient = useQueryClient()
+  const queryResults = useEntities(refIds, projectId, resolveContext)
 
   const loadingIds = useMemo(
-    () => collectLoadingIds(queryResults, refIds),
-    [queryResults, refIds]
+    () => collectLoadingIds(queryResults, refIds, initialEntities),
+    [queryResults, refIds, initialEntities]
   )
 
   const finalEntities = useMemo(
     () => buildEntityMap(initialEntities, queryResults, refIds),
     [initialEntities, queryResults, refIds]
   )
+
+  const handleTooltipOpened = (refId: string, entity: EntityReference | null) => {
+    if (!projectId) return
+    if (!shouldRefetchEntityForTooltip(entity)) return
+    void queryClient.invalidateQueries({
+      queryKey: [...storytellerKeys.all, StorytellerQueryKey.Entity, projectId, refId],
+    })
+  }
 
   const handleEntityClick = (refId: string, entity: EntityReference | null) => {
     if (projectId) {
@@ -123,6 +149,9 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
         entity={entity}
         isLoading={isLoading}
         onClick={handleEntityClick}
+        onTooltipOpened={
+          isLoading ? undefined : () => handleTooltipOpened(segment.ref.refId, entity)
+        }
       />
     )
   })

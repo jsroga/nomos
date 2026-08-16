@@ -5,6 +5,10 @@ import { REFERENCE_DISPLAY_CAPTURE } from '@/domains/storyteller/core/entities/c
 import { CharacterRole } from '@/shared/data/constants/protocol'
 import { recordFromJson } from '@/shared/data/deep-merge'
 import { SyncCastFallbackName } from '../constants/action-request-wire'
+import {
+  optionalCastString,
+  resolveInsertMbti,
+} from '@/domains/storyteller/services/cast-field-normalize'
 
 function stripEntityLinks(value: unknown): string | undefined {
   return typeof value === 'string'
@@ -81,14 +85,17 @@ async function syncExistingCharacter(
 
 async function insertNewCharacter(projectId: string, char: Record<string, unknown>) {
   const name = typeof char.name === 'string' ? char.name : ''
+  const description = typeof char.description === 'string' ? char.description : ''
+  const providedMbti = typeof char.mbti === 'string' ? char.mbti : undefined
+  const mbti = await resolveInsertMbti({ provided: providedMbti, name, description })
   await db.insert(characters).values({
     projectId,
     name,
     role: typeof char.role === 'string' ? char.role : CharacterRole.Supporting,
-    description: typeof char.description === 'string' ? char.description : '',
+    description,
     gender: typeof char.gender === 'string' ? char.gender : undefined,
-    mbti: typeof char.mbti === 'string' ? char.mbti : undefined,
-    voiceSignature: typeof char.voiceSignature === 'string' ? char.voiceSignature : undefined,
+    mbti,
+    voiceSignature: optionalCastString(char.voiceSignature),
     psychology: buildNewCharacterPsychology(char),
     valence: 0,
     arousal: 50,

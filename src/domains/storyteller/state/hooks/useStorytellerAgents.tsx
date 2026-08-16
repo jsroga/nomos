@@ -5,9 +5,8 @@ import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-con
 import {
   StorytellerDefaultTitle,
   StorytellerLogMessage,
-  StorytellerQueryParam,
-  StorytellerBibleQuery,
 } from '@/domains/storyteller/core/storyteller-page-wire'
+import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 import { useStorytellerAgentBible } from './useStorytellerAgentBible'
 
@@ -21,8 +20,6 @@ export function useStorytellerAgents(core: StorytellerWorkspaceCore) {
   const {
     currentProject,
     storyPlan,
-    searchParams,
-    router,
     setIsActivityPanelOpen,
     setFocusEntityId,
     loadingStates,
@@ -44,10 +41,8 @@ export function useStorytellerAgents(core: StorytellerWorkspaceCore) {
     })
 
   const closeWorldBiblePanel = useCallback(() => {
-    const params = new URLSearchParams(searchParams?.toString() || '')
-    params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Off)
-    router.push(`?${params.toString()}`)
-  }, [router, searchParams])
+    getStorytellerUiStore().setWorldBibleOpen(false)
+  }, [])
 
   const toggleActivityPanel = useCallback(() => {
     setIsActivityPanelOpen(prev => !prev)

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import toast from 'react-hot-toast'
 import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
 import {
   recordArrayFromJson,
@@ -16,6 +17,7 @@ import {
   StorytellerBeatStatus,
   StorytellerBeatTypeDefault,
 } from '@/domains/storyteller/core/storyteller-page-wire'
+import { MoodboardUserToast } from '@/domains/storyteller/services/constants/moodboard-generation-service'
 import { projectHasStoredPlan } from '@/domains/storyteller/state/utils/episode-route'
 import {
   buildFallbackBiblePlan,
@@ -109,21 +111,31 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
     if (projectId) {
       import('@/domains/storyteller/services/moodboard-generation-service').then(
         ({ moodboardGenerationService }) =>
-        moodboardGenerationService.resumePendingGenerations(projectId, async () => {
-          try {
-            const data = await fetchStorytellerProjectOptional(projectId)
-            if (data) {
-              const bible = parseSeriesBibleRecord(data.seriesBible ?? data.series_bible)
-              if (Array.isArray(bible.moodImages)) {
-                setStoryPlan(prev =>
-                  prev ? { ...prev, moodImages: stringArrayFromJson(bible.moodImages) } : prev
-                )
+        moodboardGenerationService.resumePendingGenerations(
+          projectId,
+          async () => {
+            try {
+              const data = await fetchStorytellerProjectOptional(projectId)
+              if (data) {
+                const bible = parseSeriesBibleRecord(data.seriesBible ?? data.series_bible)
+                if (Array.isArray(bible.moodImages)) {
+                  setStoryPlan(prev =>
+                    prev ? { ...prev, moodImages: stringArrayFromJson(bible.moodImages) } : prev
+                  )
+                }
               }
+            } catch (error) {
+              console.error(StorytellerLogMessage.FailedRefetchMoodboard, error)
             }
-          } catch (error) {
-            console.error(StorytellerLogMessage.FailedRefetchMoodboard, error)
-          }
-        })
+          },
+          error => {
+            if (error instanceof Error && error.message.trim().length > 0) {
+              toast.error(error.message)
+              return
+            }
+            toast.error(MoodboardUserToast.GenerationFailed)
+          },
+        )
       )
     }
   }, [currentProject?.id])

@@ -16,6 +16,7 @@ export const DB_COLUMN = {
   STYLE_REFERENCE_URLS: 'style_reference_urls',
   STYLE_PRESET: 'style_preset',
   GENERATION_MODE: 'generation_mode',
+  CANVAS_MASTER_PROMPT: 'canvas_master_prompt',
   STYLE_ANCHOR_URL: 'style_anchor_url',
   EPISODE_ID: 'episode_id',
   BEAT_ID: 'beat_id',
@@ -50,7 +51,7 @@ export const DB_SELECT = {
   API_KEY_LIST: 'id, name, scopes, created_at, last_used_at, revoked_at, expires_at',
   API_KEY_CREATE: 'id, name, scopes, created_at, expires_at',
   PROJECT_STYLE_REFS:
-    'style_reference_urls, style_preset, generation_mode, master_prompt, style_anchor_url',
+    'style_reference_urls, style_preset, generation_mode, canvas_master_prompt, style_anchor_url',
 } as const
 
 export const DB_UPSERT = {

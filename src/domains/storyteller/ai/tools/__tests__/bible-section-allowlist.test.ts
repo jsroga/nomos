@@ -11,37 +11,36 @@ describe('filterUpdatesForBibleSection', () => {
     })
   })
 
-  it('keeps only inspirations for an inspirations turn', () => {
-    const { updates, dropped } = filterUpdatesForBibleSection(
-      {
-        inspirations: { books: [{ title: 'Dune', description: 'Sand.' }] },
-        moodSoundtrack: 'jazz',
-        plotTwists: [{ title: 'Nope', description: 'No.' }],
-      },
+  it('keeps off-section fields so sibling panels can pending-review them', () => {
+    const updates = {
+      inspirations: { books: [{ title: 'Dune', description: 'Sand.' }] },
+      moodSoundtrack: 'jazz',
+      plotTwists: [{ title: 'Nope', description: 'No.' }],
+    }
+    const { updates: kept, dropped } = filterUpdatesForBibleSection(
+      updates,
       BibleSection.INSPIRATIONS
     )
-    expect(updates).toEqual({
-      inspirations: { books: [{ title: 'Dune', description: 'Sand.' }] },
-    })
+    expect(kept).toEqual(updates)
     expect(dropped).toEqual(['moodSoundtrack', 'plotTwists'])
   })
 
-  it('allows moodSoundtrack on soundtrack turns', () => {
+  it('allows moodSoundtrack on soundtrack turns and still reports extras', () => {
     const { updates, dropped } = filterUpdatesForBibleSection(
       { moodSoundtrack: 'drone', worldDescription: 'overwrite me' },
       BibleSection.SOUNDTRACKS
     )
-    expect(updates).toEqual({ moodSoundtrack: 'drone' })
+    expect(updates).toEqual({ moodSoundtrack: 'drone', worldDescription: 'overwrite me' })
     expect(dropped).toEqual(['worldDescription'])
   })
 
-  it('allows episodePremise on premise turns', () => {
+  it('allows episodePremise on premise turns and still reports extras', () => {
     const premise = { logline: 'A door opens.' }
     const { updates, dropped } = filterUpdatesForBibleSection(
       { episodePremise: premise, worldDescription: 'nope' },
       BibleSection.EPISODE_PREMISE
     )
-    expect(updates).toEqual({ episodePremise: premise })
+    expect(updates).toEqual({ episodePremise: premise, worldDescription: 'nope' })
     expect(dropped).toEqual(['worldDescription'])
   })
 })

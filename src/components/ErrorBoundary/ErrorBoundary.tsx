@@ -7,8 +7,15 @@ import {
   ErrorBoundaryMessage,
   ErrorBoundarySource,
   HmrErrorFragment,
+  ERROR_BOUNDARY_HMR_RETRY_MS,
+  NodeEnv,
 } from '@/components/ErrorBoundary/constants/error-boundary'
 import { DomEventType } from '@/shared/data/constants/protocol'
+import {
+  formatConsoleErrorMessage,
+  shouldCaptureConsoleError,
+  stackFromConsoleErrorArgs,
+} from '@/components/ErrorBoundary/should-capture-console-error'
 
 interface Props {
   children: ReactNode
@@ -32,6 +39,8 @@ class ErrorBoundaryClass extends Component<Props, State> {
   public state: State = {
     hasError: false,
   }
+  private hmrRetryTimer: ReturnType<typeof setTimeout> | undefined
+  private hmrRetryUsed = false
 
   public static getDerivedStateFromError(): State {
     return { hasError: true } // Block rendering to prevent infinite error loops
@@ -40,6 +49,22 @@ class ErrorBoundaryClass extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error(ErrorBoundaryLog.CaughtError, error, errorInfo)
     addErrorToStore(error, ErrorBoundarySource.React)
+
+    if (
+      process.env.NODE_ENV !== NodeEnv.Development ||
+      this.hmrRetryUsed ||
+      !(error instanceof ReferenceError)
+    ) {
+      return
+    }
+    this.hmrRetryUsed = true
+    this.hmrRetryTimer = setTimeout(() => {
+      this.setState({ hasError: false })
+    }, ERROR_BOUNDARY_HMR_RETRY_MS)
+  }
+
+  public componentWillUnmount() {
+    if (this.hmrRetryTimer !== undefined) clearTimeout(this.hmrRetryTimer)
   }
 
   public render() {
@@ -93,54 +118,20 @@ export function useGlobalErrorListener() {
       })
     }
 
-    // Intercept console.error
     const originalConsoleError = console.error
     console.error = (...args: unknown[]) => {
-      // Call original first
       originalConsoleError.apply(console, args)
 
-      // Skip our own error boundary logs to avoid loops
-      const firstArg = String(args[0] || '')
-      if (firstArg.includes(ErrorBoundaryLog.CaughtPrefix)) {
-        return
-      }
+      const message = formatConsoleErrorMessage(args)
+      if (!shouldCaptureConsoleError(message)) return
 
-      // Format the error message
-      const message = args
-        .map(arg => {
-          if (arg instanceof Error) return arg.message
-          if (typeof arg === 'object') {
-            try {
-              return JSON.stringify(arg)
-            } catch {
-              return String(arg)
-            }
-          }
-          return String(arg)
+      const stack = stackFromConsoleErrorArgs(args)
+      queueMicrotask(() => {
+        useErrorStore.getState().addError({
+          message: message || ErrorBoundaryMessage.ConsoleError,
+          stack,
+          source: ErrorBoundarySource.ConsoleError,
         })
-        .join(' ')
-
-      // Get stack trace from Error object if present, or create one
-      let stack: string | undefined
-      let errorArg: Error | undefined
-      for (const arg of args) {
-        if (arg instanceof Error) {
-          errorArg = arg
-          break
-        }
-      }
-      if (errorArg?.stack) {
-        stack = errorArg.stack
-      } else {
-        // Create a stack trace to show where console.error was called
-        const stackError = new Error()
-        stack = stackError.stack?.split('\n').slice(2).join('\n') // Remove Error and console.error lines
-      }
-
-      useErrorStore.getState().addError({
-        message: message || ErrorBoundaryMessage.ConsoleError,
-        stack,
-        source: ErrorBoundarySource.ConsoleError,
       })
     }
 

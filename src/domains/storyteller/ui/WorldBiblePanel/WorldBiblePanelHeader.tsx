@@ -3,6 +3,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
 import { StorytellerBibleTab, WorldBiblePanelLockButtonClass, WorldBiblePanelUiCopy } from './constants/world-bible-panel'
+import { toggledBibleTab } from './utils/toggled-bible-tab'
 
 const headerChromeStyle = {
   marginLeft: -25,
@@ -70,7 +71,8 @@ export function WorldBiblePanelHeader({
             {WorldBiblePanelUiCopy.ContentTab}
           </button>
           <button
-            onClick={() => onSwitchTab(StorytellerBibleTab.Relationships)}
+            type="button"
+            onClick={() => onSwitchTab(toggledBibleTab(activeTab))}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
               activeTab === StorytellerBibleTab.Relationships

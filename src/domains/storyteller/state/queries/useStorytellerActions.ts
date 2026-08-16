@@ -70,6 +70,7 @@ export function useStorytellerActions({
         onAccept: () => void
         onReject: () => void
         onReview?: () => void
+        episodeId?: string | null
       }
     >
   >({})
@@ -128,7 +129,8 @@ export function useStorytellerActions({
     async (action: StreamAgentAction) => {
       if (!currentProject?.id) return
 
-      const episodeId = episodeIdRef.current
+      const payload = jsonRecordFromJson(action.payload)
+      const episodeId = readString(payload.episodeId) ?? episodeIdRef.current
       try {
         const data = await postStorytellerAction({
           action,

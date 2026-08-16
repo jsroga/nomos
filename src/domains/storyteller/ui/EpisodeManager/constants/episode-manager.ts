@@ -1,6 +1,9 @@
 /** Episode manager UI copy and log messages. */
 
 export const EPISODE_MANAGER_UNTITLED = 'Untitled Episode'
+export const EPISODE_MANAGER_RENAMED_TOAST = 'Episode renamed'
+export const EPISODE_MANAGER_SAVE_LABEL = 'Save'
+export const EPISODE_MANAGER_RENAME_LABEL = 'Rename episode'
 export const EPISODE_MANAGER_DELETE_TITLE = 'Delete Episode'
 export const EPISODE_MANAGER_DELETE_CONFIRM = 'Delete'
 export const EPISODE_MANAGER_DELETE_CANCEL = 'Cancel'

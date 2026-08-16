@@ -11,6 +11,8 @@ import { useEpisodePremiseLocalState } from './hooks/useEpisodePremiseLocalState
 import { usePosterVariantPicker } from './hooks/usePosterVariantPicker'
 import { handleEpisodePosterVariantSelect } from './utils/handle-poster-variant-select'
 import { resolveFullPosterUrl } from './utils/resolve-full-poster-url'
+import { SectionPendingOverlay } from '../WorldBible/components/SectionPendingOverlay'
+import type { PendingAction } from '../WorldBible/utils/bible-context-types'
 
 interface EpisodePremisePanelProps {
   premise: EpisodePremise | null
@@ -24,11 +26,16 @@ interface EpisodePremisePanelProps {
   onGenerateSection?: (section: EpisodePremiseSectionKey) => void
   isGenerating?: boolean
   isGeneratingPoster?: boolean
+  posterIsVariantGrid?: boolean
   isGeneratingStoryboard?: boolean
   projectId: string
   episodeId?: string
   storyboardUrl?: string | null
   generatingSection?: string | null
+  pendingAction?: PendingAction
+  episodeTitle?: string
+  episodePrompt?: string
+  onSaveEpisodePrompt?: (prompt: string) => void
 }
 
 export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
@@ -43,11 +50,16 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
   onGenerateSection,
   isGenerating = false,
   isGeneratingPoster = false,
+  posterIsVariantGrid = false,
   isGeneratingStoryboard: _isGeneratingStoryboard = false,
   projectId,
   episodeId,
   storyboardUrl: _storyboardUrl,
   generatingSection = null,
+  pendingAction,
+  episodeTitle,
+  episodePrompt,
+  onSaveEpisodePrompt,
 }) => {
   const [showBibleContext, _setShowBibleContext] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -58,10 +70,25 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
 
   const fullPosterUrl = resolveFullPosterUrl(localPremise.poster, posterUrl, projectId)
   const { showVariantPicker, gridImageUrl, setShowVariantPicker, setGridImageUrl } =
-    usePosterVariantPicker(posterUrl, isGeneratingPoster, fullPosterUrl)
+    usePosterVariantPicker(posterUrl, isGeneratingPoster, fullPosterUrl, posterIsVariantGrid)
 
   if (!premise && !isEditing) {
-    return <EpisodePremiseEmptyState isGenerating={isGenerating} onGenerate={onGenerate} />
+    return (
+      <div className="relative h-full">
+        {pendingAction ? (
+          <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
+        ) : null}
+        <div className="h-full overflow-y-auto p-6 md:p-8">
+          <EpisodePremiseEmptyState
+            isGenerating={isGenerating}
+            onGenerate={onGenerate}
+            episodeTitle={episodeTitle}
+            episodePrompt={episodePrompt}
+            onSaveEpisodePrompt={onSaveEpisodePrompt}
+          />
+        </div>
+      </div>
+    )
   }
 
   const onSave = () => {
@@ -86,6 +113,9 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
     <>
       <div className="flex h-full overflow-hidden">
         <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8 relative">
+          {pendingAction ? (
+            <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
+          ) : null}
           <EpisodePremiseToolbar
             isEditing={isEditing}
             isGenerating={isGenerating}
@@ -104,9 +134,12 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
             generatingSection={generatingSection}
             fullPosterUrl={fullPosterUrl}
             posterPrompt={posterPrompt}
+            projectId={projectId}
             onGeneratePoster={onGeneratePoster}
             onTitleChange={value => handleChange('title', value)}
             onThematicFocusChange={value => handleChange('thematicFocus', value)}
+            episodePrompt={episodePrompt}
+            onSaveEpisodePrompt={onSaveEpisodePrompt}
           />
 
           <OzymandiasSections

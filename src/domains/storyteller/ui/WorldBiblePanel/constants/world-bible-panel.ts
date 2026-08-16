@@ -2,7 +2,6 @@
 
 import {
   StorytellerBibleTab,
-  StorytellerBibleUrlParam,
   StorytellerLogMessage,
 } from '@/domains/storyteller/core/storyteller-page-wire'
 import {
@@ -16,7 +15,6 @@ import {
 
 export {
   StorytellerBibleTab,
-  StorytellerBibleUrlParam,
   StorytellerLogMessage,
   MoodboardProvider,
   MoodboardStorageKey,

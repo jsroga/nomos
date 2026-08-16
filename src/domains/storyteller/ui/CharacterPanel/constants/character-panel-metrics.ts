@@ -88,6 +88,18 @@ export enum CharacterPanelConfirmCopy {
 
 export const CHARACTER_PANEL_LOG_FETCH_FAILED = 'Failed to fetch character snapshots:'
 
+export enum CharacterMissingValue {
+  Dash = '---',
+}
+
+export enum CharacterUnsetSentinel {
+  Empty = '',
+  QuestionMarks = '????',
+  QuestionMarksShort = '???',
+  UndefinedLower = 'undefined',
+  UndefinedTitle = 'Undefined',
+}
+
 export interface CharacterMetricConfig {
   key: CharacterMetricKey
   label: string

@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { RichText } from '../../RichText'
 import type { PendingAction } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
+import { ToolActivityMarkdownPreview } from './BibleSectionChrome'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
@@ -23,6 +24,7 @@ export const WorldDescriptionLoading: React.FC<WorldDescriptionLoadingProps> = (
     isWorldDescLoading &&
     !pendingAction &&
     activity.phase !== GenerationActivityPhase.Idle
+  const showSpinner = showActivity && !activity.toolComplete
 
   return (
     <>
@@ -32,7 +34,9 @@ export const WorldDescriptionLoading: React.FC<WorldDescriptionLoadingProps> = (
       {isWorldDescLoading && !pendingAction ? (
         <div className="absolute inset-0 z-10 bg-background/70 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-3 p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin text-indigo-400 shrink-0" />
+            {showSpinner ? (
+              <Loader2 className="w-4 h-4 animate-spin text-indigo-400 shrink-0" />
+            ) : null}
             <span>
               {showActivity && activity.label ? activity.label : 'Painting your world…'}
             </span>
@@ -42,11 +46,10 @@ export const WorldDescriptionLoading: React.FC<WorldDescriptionLoadingProps> = (
               agent: {activity.agentId ?? StorytellerAgentId.Storyteller} · {activity.toolName}
             </div>
           ) : null}
-          {showActivity && activity.preview ? (
-            <div className="max-h-40 w-full max-w-xl overflow-y-auto rounded-md border border-indigo-500/20 bg-background/80 p-3 text-xs leading-relaxed text-foreground/80 whitespace-pre-wrap">
-              {activity.preview}
-            </div>
-          ) : null}
+          <ToolActivityMarkdownPreview
+            preview={showActivity ? activity.preview : undefined}
+            className="max-h-40 max-w-xl p-3 leading-relaxed"
+          />
           {activity.phase === GenerationActivityPhase.Error && activity.error ? (
             <p className="text-xs text-red-400 max-w-md text-center">{activity.error}</p>
           ) : null}
@@ -83,6 +86,7 @@ export const WorldDescriptionBody: React.FC<WorldDescriptionBodyProps> = ({
           <RichText
             text={worldDescription}
             projectId={projectId}
+            markdown
             showPlaceholder
             placeholder="No world description available."
           />

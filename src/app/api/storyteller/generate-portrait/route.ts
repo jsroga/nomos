@@ -10,6 +10,7 @@ import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { TriggerRunStatus } from '@/shared/data/constants/protocol'
 import { StorytellerTempIdPrefix } from '@/domains/storyteller/core/storyteller-page-wire'
+import { resolveApiframeApiKey } from '@/shared/ai/image-model-env'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
@@ -31,14 +32,16 @@ export const POST = withRateLimit(
 
     const effectiveCharacterId = characterId || `${StorytellerTempIdPrefix.Temp}${Date.now()}`
 
-    const apiKey = clientApiKey || process.env.APIFRAME_API_KEY
+    const apiKey = resolveApiframeApiKey(
+      typeof clientApiKey === 'string' ? clientApiKey : undefined,
+    )
     if (!apiKey) {
       return NextResponse.json(
         {
           error: API_ERROR.APIFRAME_API_KEY_NOT_PROVIDED,
           message: API_ERROR.APIFRAME_API_KEY_CONFIGURE,
         },
-        { status: 401 }
+        { status: 500 }
       )
     }
 

@@ -265,6 +265,21 @@ class EntityRegistryService {
     }
   }
 
+  async updateDescription(refId: string, description: string): Promise<void> {
+    const entity = this.cache.get(refId) ?? (await this.resolve(refId))
+    if (!entity) {
+      console.warn(EntityRegistryLog.UpdateDescriptionFailed, refId)
+      return
+    }
+    entity.description = description
+    this.cacheEntity(entity, entity.projectId)
+    try {
+      await this.persistEntity(entity)
+    } catch (err) {
+      console.warn(EntityRegistryLog.UpdateDescriptionFailed, err)
+    }
+  }
+
   async markReferenced(refId: string): Promise<void> {
     const entity = this.cache.get(refId)
     if (entity) {

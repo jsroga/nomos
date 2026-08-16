@@ -29,21 +29,35 @@ export interface TilePromptLayers {
   styleContext?: string | null
 }
 
+/**
+ * Joins layers, dropping any layer already contained in an earlier one — the
+ * master prompt is seeded from the mode picker and can carry the mode fragment
+ * verbatim, and a repeated clause is read as emphasis by the image models.
+ */
 function joinPromptParts(parts: Array<string | undefined | null>): string {
-  return parts
-    .map(part => part?.trim() ?? '')
-    .filter(part => part.length > 0)
-    .join(' ')
+  const kept: string[] = []
+  for (const raw of parts) {
+    const part = raw?.trim() ?? ''
+    if (part.length === 0) continue
+    if (kept.some(previous => previous.includes(part))) continue
+    kept.push(part)
+  }
+  return kept.join(' ')
 }
 
 export function composeFirstTilePrompt(layers: TilePromptLayers): string {
   const description = layers.tileDescription.trim()
   const styleContext = layers.styleContext?.trim() || DEFAULT_STYLE_CONTEXT
+  const modeFragment = layers.modePromptFragment?.trim() ?? ''
+  // The mode fragment states the camera; only fall back to overhead without one.
+  const subject = modeFragment
+    ? `${description}, ${GenerationPromptCopy.FirstTileCroppedFragment}`
+    : `${GenerationPromptCopy.FirstTileOverheadPrefix} ${description}, ${GenerationPromptCopy.FirstTileCroppedFragment}`
   return joinPromptParts([
-    `Overhead view of ${description}, ${GenerationPromptCopy.FirstTileCroppedFragment}`,
+    subject,
     layers.masterPrompt,
     GenerationPromptCopy.FirstTileFrameFill,
-    layers.modePromptFragment,
+    modeFragment,
     styleContext,
   ])
 }

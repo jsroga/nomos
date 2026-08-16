@@ -22,6 +22,8 @@ export const CHARACTER_DIALOG_ERROR_GENERATE_PORTRAIT = 'Failed to generate port
 export const CHARACTER_DIALOG_ERROR_GENERATE_METRICS = 'Failed to generate metrics:'
 export const CHARACTER_DIALOG_ERROR_SAVE_VARIANT = 'Failed to save variant to server:'
 export const CHARACTER_DIALOG_ERROR_SAVE_CHARACTER = 'Failed to save character:'
+export const CHARACTER_DIALOG_TOAST_PORTRAIT_FAILED = 'Portrait generation failed'
+export const CHARACTER_DIALOG_TOAST_METRICS_FAILED = 'Character metrics generation failed'
 
 export const CHARACTER_DIALOG_TITLE_EDIT = 'Edit Character'
 export const CHARACTER_DIALOG_TITLE_CONVERT = 'Convert to Cast'

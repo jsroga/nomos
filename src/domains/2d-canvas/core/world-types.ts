@@ -41,6 +41,7 @@ export function toLegacyProject(project: WorldProject): Project {
     story_plan: project.storyPlan,
     stylePreset: project.stylePreset ?? null,
     generationMode: project.generationMode ?? null,
+    canvasMasterPrompt: project.canvasMasterPrompt ?? '',
     styleAnchorUrl: project.styleAnchorUrl ?? null,
     description: project.description,
     created_at: project.createdAt,

@@ -9,14 +9,16 @@
 
 import {
   ENTITY_PREFIXES,
+  EntityMarkdownHref,
   PREFIX_TO_TYPE,
   REFERENCE_DISPLAY_CAPTURE,
   ReferenceSegmentType,
   type EntityType,
 } from '@/domains/storyteller/core/entities/constants/reference-parser'
+import { encodePathSegment } from '@/shared/data/url-builder'
 
 export type { EntityType }
-export { ENTITY_PREFIXES, PREFIX_TO_TYPE }
+export { ENTITY_PREFIXES, EntityMarkdownHref, PREFIX_TO_TYPE }
 
 /**
  * Parsed reference from text
@@ -53,16 +55,26 @@ export type TextSegment =
  * - \[([^\]\s]+)\] = Entity ID in brackets (any non-whitespace, non-bracket chars)
  */
 const REFERENCE_REGEX = /\[([^\]]+)\]\[([^\]\s]+)\]/g
+const ESCAPED_MARKDOWN_BRACKET = /\\([\[\]])/g
+
+export function unescapeMarkdownEntityBrackets(text: string): string {
+  return text.replace(ESCAPED_MARKDOWN_BRACKET, (_full, bracket: string) => bracket)
+}
+
+function referenceSource(text: string): string {
+  return unescapeMarkdownEntityBrackets(text)
+}
 
 /**
  * Parse all references from text
  */
 export function parseReferences(text: string): ParsedReference[] {
   const refs: ParsedReference[] = []
+  const source = referenceSource(text)
   const pattern = new RegExp(REFERENCE_REGEX.source, 'g')
   let match
 
-  while ((match = pattern.exec(text)) !== null) {
+  while ((match = pattern.exec(source)) !== null) {
     const refId = match[2]
     const prefix = refId.split('-')[0]
 
@@ -85,24 +97,23 @@ export function parseReferences(text: string): ParsedReference[] {
  */
 export function splitIntoSegments(text: string): TextSegment[] {
   const segments: TextSegment[] = []
-  const refs = parseReferences(text)
+  const source = referenceSource(text)
+  const refs = parseReferences(source)
 
   if (refs.length === 0) {
-    return [{ type: ReferenceSegmentType.Text, content: text }]
+    return [{ type: ReferenceSegmentType.Text, content: source }]
   }
 
   let lastIndex = 0
 
   for (const ref of refs) {
-    // Add text before this reference
     if (ref.startIndex > lastIndex) {
       segments.push({
         type: ReferenceSegmentType.Text,
-        content: text.slice(lastIndex, ref.startIndex),
+        content: source.slice(lastIndex, ref.startIndex),
       })
     }
 
-    // Add the reference
     segments.push({
       type: ReferenceSegmentType.Reference,
       ref,
@@ -111,29 +122,44 @@ export function splitIntoSegments(text: string): TextSegment[] {
     lastIndex = ref.endIndex
   }
 
-  // Add remaining text after last reference
-  if (lastIndex < text.length) {
+  if (lastIndex < source.length) {
     segments.push({
       type: ReferenceSegmentType.Text,
-      content: text.slice(lastIndex),
+      content: source.slice(lastIndex),
     })
   }
 
   return segments
 }
 
-/**
- * Replace references with just display names (for plain text output)
- */
 export function stripReferences(text: string): string {
-  return text.replace(REFERENCE_REGEX, REFERENCE_DISPLAY_CAPTURE)
+  return referenceSource(text).replace(
+    new RegExp(REFERENCE_REGEX.source, 'g'),
+    REFERENCE_DISPLAY_CAPTURE,
+  )
 }
 
-/**
- * Check if text contains any references
- */
 export function hasReferences(text: string): boolean {
-  return new RegExp(REFERENCE_REGEX.source).test(text)
+  return new RegExp(REFERENCE_REGEX.source).test(referenceSource(text))
+}
+
+export function rewriteEntityRefsToMarkdownLinks(text: string): string {
+  return referenceSource(text).replace(
+    new RegExp(REFERENCE_REGEX.source, 'g'),
+    (_full, display: string, refId: string) =>
+      `[${display}](${EntityMarkdownHref.Prefix}${encodePathSegment(refId)})`,
+  )
+}
+
+export function entityRefIdFromHref(href: string | undefined): string | null {
+  if (!href || !href.startsWith(EntityMarkdownHref.Prefix)) return null
+  const encoded = href.slice(EntityMarkdownHref.Prefix.length)
+  if (!encoded) return null
+  try {
+    return decodeURIComponent(encoded)
+  } catch {
+    return encoded
+  }
 }
 
 /**

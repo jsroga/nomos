@@ -1,8 +1,17 @@
 /** Beat card UI wire constants. */
 
 export enum BeatGenerationMode {
-  Content = 'content',
   Image = 'image',
+}
+
+export enum BeatCardCopy {
+  Generating = 'Generating…',
+}
+
+export enum BeatCardActionLabel {
+  GenerateImage = 'Generate storyboard image',
+  Edit = 'Edit beat',
+  Delete = 'Delete beat',
 }
 
 export enum BeatCardType {
@@ -10,8 +19,11 @@ export enum BeatCardType {
   Setup = 'setup',
   Complication = 'complication',
   Revelation = 'revelation',
+  Confrontation = 'confrontation',
+  Transition = 'transition',
   Decision = 'decision',
   Consequence = 'consequence',
+  Climax = 'climax',
   Resolution = 'resolution',
 }
 
@@ -26,8 +38,11 @@ export const BEAT_TYPE_BORDER_CLASS: Record<BeatCardType, string> = {
   [BeatCardType.Setup]: 'border-l-blue-500 bg-card',
   [BeatCardType.Complication]: 'border-l-red-500 bg-card',
   [BeatCardType.Revelation]: 'border-l-amber-500 bg-card',
+  [BeatCardType.Confrontation]: 'border-l-red-400 bg-card',
+  [BeatCardType.Transition]: 'border-l-sky-500 bg-card',
   [BeatCardType.Decision]: 'border-l-purple-500 bg-card',
   [BeatCardType.Consequence]: 'border-l-orange-500 bg-card',
+  [BeatCardType.Climax]: 'border-l-fuchsia-500 bg-card',
   [BeatCardType.Resolution]: 'border-l-emerald-500 bg-card',
 }
 

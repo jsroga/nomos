@@ -1,7 +1,8 @@
 import '@/shared/data/server-guard'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 
-/** When a bible panel refresh started the turn, only those fields may be written. */
+/** When a bible panel refresh started the turn, off-section fields are still
+ * returned so sibling panels can show pending review. `dropped` is informational. */
 export const SECTION_UPDATE_ALLOWLIST: Record<string, readonly string[]> = {
   [BibleSection.WORLD_DESCRIPTION]: ['worldDescription'],
   [BibleSection.INSPIRATIONS]: ['inspirations'],
@@ -22,14 +23,9 @@ export function filterUpdatesForBibleSection(
   if (!bibleSection) return { updates, dropped: [] }
   const allow = SECTION_UPDATE_ALLOWLIST[bibleSection]
   if (!allow) return { updates, dropped: [] }
-  const next: Record<string, unknown> = {}
   const dropped: string[] = []
   for (const key of Object.keys(updates)) {
-    if (allow.includes(key)) {
-      next[key] = updates[key]
-    } else {
-      dropped.push(key)
-    }
+    if (!allow.includes(key)) dropped.push(key)
   }
-  return { updates: next, dropped }
+  return { updates, dropped }
 }

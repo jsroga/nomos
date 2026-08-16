@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { Plus, Edit2, Film, Trash2 } from 'lucide-react'
+import { Plus, Edit2, Check, Film, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/Button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/Tooltip'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
@@ -24,8 +25,15 @@ import {
   EPISODE_MANAGER_FETCH_ERROR_LOG,
   EPISODE_MANAGER_FETCH_FAILED_LOG,
   EPISODE_MANAGER_UNTITLED,
+  EPISODE_MANAGER_RENAMED_TOAST,
   episodeDeleteDescription,
 } from './constants/episode-manager'
+import {
+  EpisodeTitleActionMode,
+  episodeTitleActionLabel,
+  episodeTitleActionMode,
+  shouldPersistEpisodeRename,
+} from './episode-title-action'
 import {
   createStorytellerEpisode,
   deleteStorytellerEpisode,
@@ -36,8 +44,9 @@ import { readString, recordFromJson } from '@/shared/data/json-guards'
 import {
   StorytellerConfirmVariant,
   StorytellerQueryParam,
-  StorytellerBibleQuery,
 } from '@/domains/storyteller/core/storyteller-page-wire'
+import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { storytellerSearchParams } from '@/domains/storyteller/state/utils/strip-bible-search-params'
 
 interface Episode {
   id: string
@@ -51,7 +60,6 @@ interface EpisodeManagerProps {
   currentEpisodeTitle?: string | null
   onEpisodeChange: (episodeId: string) => void
   onEpisodeTitleChange?: (title: string) => void
-  isWorldBibleOpen?: boolean
 }
 
 export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
@@ -60,13 +68,13 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
   currentEpisodeTitle,
   onEpisodeChange,
   onEpisodeTitleChange,
-  isWorldBibleOpen: _isWorldBibleOpen,
 }) => {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [draftTitle, setDraftTitle] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
 
@@ -96,12 +104,13 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
 
   const handleRename = async (id: string, newTitle: string) => {
     setEditingId(null)
-    if (!newTitle.trim()) return
+    if (!shouldPersistEpisodeRename(newTitle)) return
 
     // Optimistic update
     setEpisodes(episodes.map(ep => (ep.id === id ? { ...ep, title: newTitle } : ep)))
 
     await patchStorytellerEpisode(id, { title: newTitle })
+    toast.success(EPISODE_MANAGER_RENAMED_TOAST)
   }
 
   const handleDelete = async (id: string, title: string) => {
@@ -120,10 +129,10 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
 
     // If we deleted the current episode, redirect to Story Bible (clear prompt)
     if (currentEpisodeId === id) {
-      const params = new URLSearchParams(searchParams?.toString() || '')
+      const params = storytellerSearchParams(searchParams)
       params.delete(StorytellerQueryParam.EpisodeId)
-      params.set(StorytellerQueryParam.Bible, StorytellerBibleQuery.Open)
       router.push(`${pathname}?${params.toString()}`)
+      getStorytellerUiStore().setWorldBibleOpen(true)
     } else {
       // If we deleted a non-active episode, no nav change needed
       // But if we want to be safe, we could check if any selection logic is needed
@@ -268,10 +277,10 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
                     <input
                       autoFocus
                       className="bg-transparent border-b-2 border-primary focus:outline-none w-full text-sm"
-                      defaultValue={ep.title}
-                      onBlur={e => handleRename(ep.id, e.target.value)}
+                      value={draftTitle}
+                      onChange={e => setDraftTitle(e.target.value)}
                       onKeyDown={e => {
-                        if (e.key === 'Enter') handleRename(ep.id, e.currentTarget.value)
+                        if (e.key === 'Enter') void handleRename(ep.id, draftTitle)
                       }}
                       onClick={e => e.stopPropagation()}
                     />
@@ -286,7 +295,11 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
                     </span>
                   )}
                 </div>
-                <div className="opacity-0 group-hover:opacity-100 flex gap-1">
+                <div
+                  className={`flex gap-1 ${
+                    editingId === ep.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}
+                >
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -295,14 +308,24 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
                         className="h-6 w-6 p-0"
                         onClick={e => {
                           e.stopPropagation()
+                          if (editingId === ep.id) {
+                            void handleRename(ep.id, draftTitle)
+                            return
+                          }
+                          setDraftTitle(ep.title)
                           setEditingId(ep.id)
                         }}
                       >
-                        <Edit2 size={12} />
+                        {episodeTitleActionMode(editingId, ep.id) ===
+                        EpisodeTitleActionMode.Save ? (
+                          <Check size={12} />
+                        ) : (
+                          <Edit2 size={12} />
+                        )}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Rename episode</p>
+                      <p>{episodeTitleActionLabel(episodeTitleActionMode(editingId, ep.id))}</p>
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip>

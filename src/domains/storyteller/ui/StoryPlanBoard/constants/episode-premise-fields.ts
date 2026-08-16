@@ -11,3 +11,17 @@ export enum EpisodePremiseField {
   InevitableConsequence = 'inevitableConsequence',
   ThematicFocus = 'thematicFocus',
 }
+
+export enum EpisodePremiseCopy {
+  UntitledEpisode = 'Untitled Episode',
+}
+
+export const EPISODE_PREMISE_RICH_TEXT_FIELDS = [
+  EpisodePremiseField.Title,
+  EpisodePremiseField.ThematicFocus,
+  EpisodePremiseField.Logline,
+  EpisodePremiseField.ProtagonistHook,
+  EpisodePremiseField.FatalFlaw,
+  EpisodePremiseField.Stakes,
+  EpisodePremiseField.InevitableConsequence,
+] as const

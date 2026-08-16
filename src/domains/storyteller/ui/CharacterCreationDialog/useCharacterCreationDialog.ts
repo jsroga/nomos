@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
 import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
@@ -20,6 +21,8 @@ import {
   CHARACTER_DIALOG_LOG_POLL_CANCELLED,
   CHARACTER_DIALOG_LOG_VARIANT_SAVED,
   CHARACTER_DIALOG_NEW_ID,
+  CHARACTER_DIALOG_TOAST_METRICS_FAILED,
+  CHARACTER_DIALOG_TOAST_PORTRAIT_FAILED,
   CharacterDialogMode,
 } from './constants/character-creation-dialog'
 import {
@@ -177,17 +180,17 @@ export function useCharacterCreationDialog({
 
     try {
       const apiKey =
-        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) ||
-        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_LEGNEXT)
+        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) || undefined
       const { handleId } = await startCharacterPortraitGeneration({
         prompt: description || `A portrait of ${name}, ${gender}`,
         projectId,
-        apiKey,
+        ...(apiKey ? { apiKey } : {}),
       })
 
       if (!handleId) {
         console.error(CHARACTER_DIALOG_ERROR_NO_HANDLE)
         updateGenState(targetCharId, { isGenerating: false })
+        toast.error(CHARACTER_DIALOG_TOAST_PORTRAIT_FAILED)
         return
       }
 
@@ -208,15 +211,17 @@ export function useCharacterCreationDialog({
       )
 
       const imageUrl = readString(recordFromJson(run.output).imageUrl)
+      const isVariantGrid = recordFromJson(run.output).isVariantGrid === true
       if (imageUrl) {
         updateGenState(targetCharId, {
           isGenerating: false,
-          gridImageUrl: imageUrl,
-          needsVariantPick: true,
+          gridImageUrl: isVariantGrid ? imageUrl : null,
+          needsVariantPick: isVariantGrid,
           portraitUrlOverride: imageUrl,
         })
       } else {
         updateGenState(targetCharId, { isGenerating: false })
+        toast.error(CHARACTER_DIALOG_TOAST_PORTRAIT_FAILED)
       }
     } catch (error) {
       if (error instanceof TriggerRunPollAbortedError) {
@@ -225,6 +230,11 @@ export function useCharacterCreationDialog({
       }
       console.error(CHARACTER_DIALOG_ERROR_GENERATE_PORTRAIT, error)
       updateGenState(targetCharId, { isGenerating: false })
+      toast.error(
+        error instanceof Error && error.message.trim().length > 0
+          ? error.message
+          : CHARACTER_DIALOG_TOAST_PORTRAIT_FAILED,
+      )
     }
   }, [activeCharId, description, gender, name, projectId, updateGenState])
 
@@ -236,6 +246,7 @@ export function useCharacterCreationDialog({
       setMetrics(prev => ({ ...prev, ...generated }))
     } catch (error) {
       console.error(CHARACTER_DIALOG_ERROR_GENERATE_METRICS, error)
+      toast.error(CHARACTER_DIALOG_TOAST_METRICS_FAILED)
     } finally {
       setIsGeneratingMetrics(false)
     }

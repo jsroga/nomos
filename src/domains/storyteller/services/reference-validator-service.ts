@@ -1,5 +1,18 @@
 import { entityRegistry } from './entity-registry-service'
 import { parseReferences } from '@/domains/storyteller/core/entities/reference-parser'
+import { descriptionForNewReference } from '@/domains/storyteller/services/entity-base-description-service'
+
+const REFERENCE_CONTEXT_WINDOW = 300
+
+function surroundingTextForRef(
+  text: string,
+  startIndex: number,
+  endIndex: number
+): string {
+  const from = Math.max(0, startIndex - REFERENCE_CONTEXT_WINDOW)
+  const to = Math.min(text.length, endIndex + REFERENCE_CONTEXT_WINDOW)
+  return text.slice(from, to)
+}
 
 /**
  * Validates references in the text.
@@ -39,11 +52,16 @@ export async function validateReferences(text: string, projectId: string): Promi
       // Auto-replace with the correct ID
       newRefId = existingByName.id
     } else {
-      // Auto-register it
+      const description = await descriptionForNewReference('', {
+        name: ref.displayName,
+        type: ref.type,
+        surroundingText: surroundingTextForRef(text, ref.startIndex, ref.endIndex),
+        projectId,
+      })
       newRefId = await entityRegistry.register({
         type: ref.type,
         name: ref.displayName,
-        description: '',
+        description,
         projectId,
       })
     }

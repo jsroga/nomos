@@ -90,47 +90,25 @@ function emitVerdictGateIfSuspended(
   })
 }
 
-/** Auto-link entity names in string/array payload fields (best-effort). */
+/** Auto-link entity names in nested payload fields, then register unknown [Name][id] refs. */
 async function autoLinkActionPayload(
   actionPayload: Record<string, unknown>,
   projectId: string
 ): Promise<Record<string, unknown>> {
-  const linkedPayload = { ...actionPayload }
   try {
     const { entityAutoLinker } = await import(
       '@/domains/storyteller/services/entity-auto-linker-service'
     )
-
-    // Auto-link text fields in the payload
-    for (const [key, value] of Object.entries(linkedPayload)) {
-      if (typeof value === 'string' && value.length > 10) {
-        linkedPayload[key] = await entityAutoLinker.autoLink(value, projectId)
-      } else if (Array.isArray(value)) {
-        // Handle arrays (e.g., plotTwists)
-        linkedPayload[key] = await Promise.all(
-          value.map(async (item: unknown) => {
-            if (typeof item === 'string') {
-              return await entityAutoLinker.autoLink(item, projectId)
-            } else if (isRecord(item)) {
-              // Handle objects with text fields
-              const linkedItem: Record<string, unknown> = { ...item }
-              for (const [field, fieldValue] of Object.entries(linkedItem)) {
-                if (typeof fieldValue === 'string' && fieldValue.length > 10) {
-                  linkedItem[field] = await entityAutoLinker.autoLink(fieldValue, projectId)
-                }
-              }
-              return linkedItem
-            }
-            return item
-          })
-        )
-      }
-    }
+    const { validateReferencesInObject } = await import(
+      '@/domains/storyteller/services/reference-validator-service'
+    )
+    const linked = await entityAutoLinker.autoLinkUnknown(actionPayload, projectId)
+    const validated = await validateReferencesInObject(linked, projectId)
+    if (isRecord(validated)) return validated
   } catch (err) {
     console.warn('[Stream] Entity auto-linking in payload failed:', err)
-    // Continue with original payload
   }
-  return linkedPayload
+  return { ...actionPayload }
 }
 
 /** Dedupe, auto-link, and queue an action for post-message emission. */

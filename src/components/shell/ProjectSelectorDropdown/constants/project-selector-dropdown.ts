@@ -30,8 +30,6 @@ export const PROJECT_SELECTOR_CREATE_BUTTON = 'Create Project' as const
 
 export const PROJECT_SELECTOR_LOAD_ERROR = 'Error loading projects:' as const
 
-export const PROJECT_SELECTOR_BIBLE_QUERY = 'bible=open' as const
-
 export enum ProjectsDbSelect {
   IdName = 'id, name',
 }

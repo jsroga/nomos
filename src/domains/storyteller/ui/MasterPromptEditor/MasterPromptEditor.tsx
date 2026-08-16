@@ -1,21 +1,28 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/Button'
+import { Textarea } from '@/components/Textarea'
 import { Save, Scroll, FileText, Sparkles } from 'lucide-react'
 import { SidebarTextarea } from '@/components/DomainSidebar'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { getRandomWorldPromptIdea } from '@/shared/data/constants/worldPromptIdeas'
-import { MasterPromptScope } from '@/domains/storyteller/ui/MasterPromptEditor/constants/master-prompt-editor'
+import { cn } from '@/shared/data/utils'
+import {
+  MasterPromptScope,
+  MasterPromptSurface,
+} from '@/domains/storyteller/ui/MasterPromptEditor/constants/master-prompt-editor'
 
 interface MasterPromptEditorProps {
   scope: `${MasterPromptScope}`
   initialPrompt: string
   onSave: (prompt: string) => void
+  surface?: `${MasterPromptSurface}`
 }
 
 export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
   scope,
   initialPrompt,
   onSave,
+  surface = MasterPromptSurface.Sidebar,
 }) => {
   const [prompt, setPrompt] = useState(initialPrompt)
   const [isDirty, setIsDirty] = useState(false)
@@ -49,17 +56,25 @@ export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
     setSuggestedIdea(null)
   }
 
+  const isPage = surface === MasterPromptSurface.Page
   const ScopeIcon = scope === MasterPromptScope.Project ? Scroll : FileText
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-          <ScopeIcon size={12} />
+    <div className={cn('space-y-2', isPage && 'w-full')}>
+      <div className="flex items-center justify-between gap-3">
+        <label
+          className={cn(
+            'uppercase flex items-center text-muted-foreground',
+            isPage
+              ? 'font-mono text-[11px] font-medium tracking-widest gap-2'
+              : 'text-xs font-bold tracking-wider gap-1.5'
+          )}
+        >
+          <ScopeIcon size={isPage ? 14 : 12} />
           {scope} Prompt
         </label>
         <div className="flex items-center gap-1">
-          {scope === 'Project' && !suggestedIdea && (
+          {scope === MasterPromptScope.Project && !suggestedIdea && (
             <Button
               id={TOUR_STEP_IDS.SUGGEST_IDEA_BUTTON}
               size="sm"
@@ -119,6 +134,16 @@ export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
             </Button>
           </div>
         </div>
+      ) : isPage ? (
+        <Textarea
+          value={prompt}
+          onChange={e => {
+            setPrompt(e.target.value)
+            setIsDirty(true)
+          }}
+          className="min-h-[72px] resize-none bg-muted/5 border-border/40 text-sm leading-relaxed placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:ring-offset-0"
+          placeholder={`Define the style and instructions for this ${scope.toLowerCase()}...`}
+        />
       ) : (
         <SidebarTextarea
           value={prompt}

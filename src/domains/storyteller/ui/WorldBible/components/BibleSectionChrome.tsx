@@ -9,12 +9,34 @@ import {
   isGenerationActivityBusy,
 } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
+import { BibleMarkdown } from '@/domains/storyteller/ui/RichText/BibleMarkdown'
+import { cn } from '@/shared/data/utils'
 
 const actionButtonClass =
   'p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105'
 
 function disabledWhenLoading(isLoading: boolean): string {
   return isLoading ? BibleSectionChromeClass.DisabledWhenLoading : ''
+}
+
+export function ToolActivityMarkdownPreview({
+  preview,
+  className,
+}: {
+  preview?: string
+  className?: string
+}) {
+  if (!preview) return null
+  return (
+    <div
+      className={cn(
+        'w-full overflow-y-auto rounded-md border border-border/40 bg-background/80 p-2 text-xs text-foreground/80',
+        className
+      )}
+    >
+      <BibleMarkdown text={preview} />
+    </div>
+  )
 }
 
 export const BibleSectionLoadingOverlay: FC<{ message: string; spinnerClassName?: string }> = ({
@@ -26,11 +48,14 @@ export const BibleSectionLoadingOverlay: FC<{ message: string; spinnerClassName?
     activity.phase !== GenerationActivityPhase.Idle && activity.label
       ? activity.label
       : message
+  const showSpinner = !activity.toolComplete
 
   return (
     <div className="absolute inset-0 z-10 bg-background/70 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2 p-4">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className={`w-4 h-4 animate-spin ${spinnerClassName}`} />
+        {showSpinner ? (
+          <Loader2 className={`w-4 h-4 animate-spin ${spinnerClassName}`} />
+        ) : null}
         <span>{liveLabel}</span>
       </div>
       {activity.toolName ? (
@@ -38,11 +63,7 @@ export const BibleSectionLoadingOverlay: FC<{ message: string; spinnerClassName?
           agent: {activity.agentId ?? StorytellerAgentId.Storyteller} · {activity.toolName}
         </div>
       ) : null}
-      {activity.preview ? (
-        <div className="max-h-32 w-full max-w-lg overflow-y-auto rounded-md border border-border/40 bg-background/80 p-2 text-xs text-foreground/80 whitespace-pre-wrap">
-          {activity.preview}
-        </div>
-      ) : null}
+      <ToolActivityMarkdownPreview preview={activity.preview} className="max-h-32 max-w-lg" />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import React from 'react'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 import type { StorytellerCharacter } from '@/domains/storyteller/core/entities/character-wire'
 import { CharacterMetricGrid } from './CharacterMetricGrid'
+import { characterDisplayValue } from './character-display-value'
 
 interface CharacterCardExpandedContentProps {
   character: StorytellerCharacter
@@ -51,12 +52,12 @@ export const CharacterCardExpandedContent: React.FC<CharacterCardExpandedContent
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div className="bg-background/50 p-2 rounded border border-border">
           <div className="text-[10px] text-muted-foreground uppercase mb-1">MBTI</div>
-          <div className="font-mono">{character.mbti || '????'}</div>
+          <div className="font-mono">{characterDisplayValue(character.mbti)}</div>
         </div>
         <div className="bg-background/50 p-2 rounded border border-border">
           <div className="text-[10px] text-muted-foreground uppercase mb-1">Voice</div>
-          <div className="truncate" title={character.voiceSignature}>
-            {character.voiceSignature || 'Undefined'}
+          <div className="truncate" title={characterDisplayValue(character.voiceSignature)}>
+            {characterDisplayValue(character.voiceSignature)}
           </div>
         </div>
       </div>

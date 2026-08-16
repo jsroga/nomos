@@ -2,7 +2,7 @@ import { task } from '@trigger.dev/sdk/v3'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
-import { generateMidjourneyImages, pickApiframeImageUrl } from '@/shared/ai/apiframe'
+import { generateMidjourneyImages, resolveApiframeImageSelection } from '@/shared/ai/apiframe'
 
 interface GeneratePosterPayload {
   prompt: string
@@ -41,7 +41,7 @@ export const generatePoster = task({
 
     console.log('Submitting Midjourney imagine via Apiframe...')
     const result = await generateMidjourneyImages(fullPrompt, apiKey, { aspectRatio: '2:3' })
-    const targetImageUrl = pickApiframeImageUrl(result)
+    const { imageUrl: targetImageUrl, isVariantGrid } = resolveApiframeImageSelection(result)
 
     if (!targetImageUrl) {
       console.error('Apiframe output:', result)
@@ -89,6 +89,7 @@ export const generatePoster = task({
     return {
       success: true,
       imageUrl: localPath,
+      isVariantGrid,
       jobId: result.jobId,
       episodeId: episodeId,
     }

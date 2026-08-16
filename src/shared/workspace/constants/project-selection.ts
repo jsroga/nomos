@@ -87,5 +87,3 @@ export function projectMonthKey(iso: string | undefined): string {
   if (Number.isNaN(date.getTime())) return 'unknown'
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
-
-export { PROJECT_SELECTOR_BIBLE_QUERY } from '@/components/shell/ProjectSelectorDropdown/constants/project-selector-dropdown'

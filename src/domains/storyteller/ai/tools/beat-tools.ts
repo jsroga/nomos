@@ -46,12 +46,13 @@ async function dispatchBeatOperation(
   episodeId: string | undefined,
   sequence: number | undefined,
   data: Parameters<typeof createBeatOperation>[2] | undefined,
+  persistCreates: boolean,
 ) {
   switch (operation) {
     case ManageToolOperation.Create: {
       if (!episodeId) return { success: false, error: BEAT_CREATE_EPISODE_ID_REQUIRED }
       if (!data) return { success: false, error: BEAT_CREATE_DATA_REQUIRED }
-      return createBeatOperation(episodeId, sequence, data)
+      return createBeatOperation(episodeId, sequence, data, persistCreates)
     }
     case ManageToolOperation.Update: {
       if (!beatId) return { success: false, error: BEAT_UPDATE_ID_REQUIRED }
@@ -73,30 +74,42 @@ async function dispatchBeatOperation(
 
 type ManageBeatInput = z.infer<typeof ManageBeatInputSchema>
 
-async function executeManageBeat(
-  inputData: ManageBeatInput,
-  context: { requestContext?: RequestContext }
-) {
-  const { operation, beatId, sequence, data } = inputData
-  const episodeId =
-    requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
+function executeManageBeat(persistCreates: boolean) {
+  return async (
+    inputData: ManageBeatInput,
+    context: { requestContext?: RequestContext }
+  ) => {
+    const { operation, beatId, sequence, data } = inputData
+    const episodeId =
+      requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
 
-  try {
-    return await dispatchBeatOperation(operation, beatId, episodeId, sequence, data)
-  } catch (error) {
-    return { success: false, error: getErrorMessage(error) }
+    try {
+      return await dispatchBeatOperation(
+        operation,
+        beatId,
+        episodeId,
+        sequence,
+        data,
+        persistCreates
+      )
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error) }
+    }
   }
 }
 
 const MANAGE_BEAT_DESCRIPTION =
   'Create, update, delete, or get a story beat. CREATE/UPDATE REQUIRE actionTaken, consequence, storyStateChange (Law of Motion: every beat must move action forward).'
 
+const MANAGE_BEAT_CHAT_DESCRIPTION =
+  'Propose, update, delete, or get a story beat. Create does not persist until the user Accepts or Adds to world. CREATE/UPDATE REQUIRE actionTaken, consequence, storyStateChange (Law of Motion: every beat must move action forward).'
+
 export const manageBeatTool = createTool({
   id: BEAT_TOOL_ID,
   description: MANAGE_BEAT_DESCRIPTION,
   inputSchema: ManageBeatInputSchema,
   outputSchema: ManageBeatOutputSchema,
-  execute: executeManageBeat,
+  execute: executeManageBeat(true),
 })
 
 /**
@@ -108,11 +121,11 @@ export const manageBeatTool = createTool({
  */
 export const manageBeatApprovalTool = createTool({
   id: BEAT_TOOL_ID,
-  description: MANAGE_BEAT_DESCRIPTION,
+  description: MANAGE_BEAT_CHAT_DESCRIPTION,
   inputSchema: ManageBeatInputSchema,
   outputSchema: ManageBeatOutputSchema,
   requireApproval: input => input.operation === ManageToolOperation.Delete,
-  execute: executeManageBeat,
+  execute: executeManageBeat(false),
 })
 
 export const listBeatsTool = createTool({

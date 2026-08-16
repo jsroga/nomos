@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  type GenerationMode,
   type GenerationModeDef,
   resolveGenerationMode,
 } from '../../constants/generation-modes'
@@ -9,8 +8,14 @@ import { MASTER_PROMPT_SAVE_DEBOUNCE_MS, WorldGenSidebarLog } from '../../ui/con
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import type { WorkspaceProject } from '@/shared/workspace/types'
 
-export function masterPromptAfterModePick(current: string, hint: string): string {
-  return current.trim() === '' ? hint : current
+export function masterPromptAfterModePick(_current: string, promptFragment: string): string {
+  return promptFragment
+}
+
+type PersistableWorldFields = {
+  canvasMasterPrompt?: string
+  generationMode?: string
+  styleAnchorUrl?: string | null
 }
 
 export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
@@ -23,8 +28,8 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
   }, [currentProject])
 
   useEffect(() => {
-    setMasterPrompt(currentProject?.master_prompt ?? '')
-  }, [currentProject?.id, currentProject?.master_prompt])
+    setMasterPrompt(currentProject?.canvasMasterPrompt ?? '')
+  }, [currentProject?.id, currentProject?.canvasMasterPrompt])
 
   useEffect(() => {
     return () => {
@@ -32,11 +37,7 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
     }
   }, [])
 
-  const persistProjectFields = async (fields: {
-    masterPrompt?: string
-    generationMode?: string
-    styleAnchorUrl?: string | null
-  }) => {
+  const persistProjectFields = async (fields: PersistableWorldFields) => {
     const project = projectRef.current
     if (!project) return
     try {
@@ -45,7 +46,9 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
       if (!latest || latest.id !== project.id) return
       useWorkspaceProjectStore.getState().setCurrentProject({
         ...latest,
-        ...(fields.masterPrompt !== undefined ? { master_prompt: fields.masterPrompt } : {}),
+        ...(fields.canvasMasterPrompt !== undefined
+          ? { canvasMasterPrompt: fields.canvasMasterPrompt }
+          : {}),
         ...(fields.generationMode !== undefined ? { generationMode: fields.generationMode } : {}),
         ...(fields.styleAnchorUrl !== undefined ? { styleAnchorUrl: fields.styleAnchorUrl } : {}),
       })
@@ -58,21 +61,18 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
     setMasterPrompt(value)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      void persistProjectFields({ masterPrompt: value })
+      void persistProjectFields({ canvasMasterPrompt: value })
     }, MASTER_PROMPT_SAVE_DEBOUNCE_MS)
   }
 
   const handleSelectGenerationMode = (mode: GenerationModeDef) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    const nextPrompt = masterPromptAfterModePick(masterPrompt, mode.hint)
+    const nextPrompt = masterPromptAfterModePick(masterPrompt, mode.promptFragment)
     setMasterPrompt(nextPrompt)
-    const fields: { masterPrompt?: string; generationMode: GenerationMode } = {
+    void persistProjectFields({
       generationMode: mode.id,
-    }
-    if (nextPrompt !== (projectRef.current?.master_prompt ?? '')) {
-      fields.masterPrompt = nextPrompt
-    }
-    void persistProjectFields(fields)
+      canvasMasterPrompt: nextPrompt,
+    })
   }
 
   const handleResetStyleAnchor = () => {

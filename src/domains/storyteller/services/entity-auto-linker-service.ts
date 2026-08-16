@@ -13,6 +13,7 @@ import { namedRecordsFromJson, readString, recordArrayFromJson, recordFromJson }
 import { parseStoryPlanRecord, parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import {
   AutoLinkerEntityType,
+  ENTITY_AUTO_LINKER_MIN_STRING_LENGTH,
   EntityAutoLinkerArticlePrefix,
   EntityAutoLinkerIdPrefix,
   EntityAutoLinkerLog,
@@ -20,6 +21,7 @@ import {
   EntityAutoLinkerRegexReplacement,
   EntityAutoLinkerStopWord,
 } from '@/domains/storyteller/services/constants/entity-auto-linker'
+import { mapLinkedValue } from '@/domains/storyteller/services/entity-auto-linker-map'
 
 interface EntityMatch {
   name: string
@@ -254,6 +256,56 @@ function linkMatches(text: string, matches: EntityMatch[]): string {
   return result
 }
 
+async function loadProjectEntityMap(projectId: string): Promise<Map<string, EntityRef> | null> {
+  const { db } = await import('@/db/client')
+  const { projects, storyPlans, characters } = await import('@/db')
+  const { eq } = await import('drizzle-orm')
+
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+  })
+  if (!project) return null
+
+  let storyPlan = parseStoryPlanRecord(project.storyPlan)
+  if (Object.keys(storyPlan).length === 0) {
+    const sp = await db.query.storyPlans.findFirst({
+      where: eq(storyPlans.projectId, projectId),
+    })
+    if (sp?.content) {
+      storyPlan = parseStoryPlanRecord(sp.content)
+    }
+  }
+
+  const seriesBible = parseSeriesBibleRecord(project.seriesBible)
+  const projectCharacters = await db.query.characters.findMany({
+    where: eq(characters.projectId, projectId),
+  })
+  const cast = (projectCharacters || []).map(recordFromJson)
+  const entityMap = buildEntityMap(storyPlan, seriesBible, cast)
+  return entityMap.size === 0 ? null : entityMap
+}
+
+function linkTextWithMap(entityMap: Map<string, EntityRef>): (text: string) => Promise<string> {
+  return async (text: string) => {
+    const matches = collectEntityMatches(text, entityMap)
+    if (matches.length === 0) return text
+    return linkMatches(text, matches)
+  }
+}
+
+async function createProjectTextLinker(
+  projectId: string
+): Promise<(text: string) => Promise<string>> {
+  try {
+    const entityMap = await loadProjectEntityMap(projectId)
+    if (!entityMap) return async text => text
+    return linkTextWithMap(entityMap)
+  } catch (error) {
+    console.warn(EntityAutoLinkerLog.FailedAutoLink, error)
+    return async text => text
+  }
+}
+
 /**
  * Auto-link entity names in text to entity references
  *
@@ -263,54 +315,17 @@ function linkMatches(text: string, matches: EntityMatch[]): string {
  */
 export async function autoLinkEntities(text: string, projectId: string): Promise<string> {
   if (!text || !projectId) return text
+  const linked = await autoLinkUnknown(text, projectId)
+  return typeof linked === 'string' ? linked : text
+}
 
-  try {
-    // Fetch all known entities from the project
-    const { db } = await import('@/db/client')
-    const { projects, storyPlans, characters } = await import('@/db')
-    const { eq } = await import('drizzle-orm')
-
-    // Fetch project basics first (lighter query)
-    const project = await db.query.projects.findFirst({
-      where: eq(projects.id, projectId),
-    })
-
-    if (!project) return text
-
-    // Fetch story plan content separately if needed (avoids heavy join)
-    let storyPlan = parseStoryPlanRecord(project.storyPlan)
-
-    // If no legacy storyPlan, check the table
-    if (Object.keys(storyPlan).length === 0) {
-      const sp = await db.query.storyPlans.findFirst({
-        where: eq(storyPlans.projectId, projectId),
-      })
-      if (sp?.content) {
-        storyPlan = parseStoryPlanRecord(sp.content)
-      }
-    }
-
-    const seriesBible = parseSeriesBibleRecord(project.seriesBible)
-
-    // Fetch characters from the characters table
-    const projectCharacters = await db.query.characters.findMany({
-      where: eq(characters.projectId, projectId),
-    })
-    const cast = (projectCharacters || []).map(recordFromJson)
-
-    const entityMap = buildEntityMap(storyPlan, seriesBible, cast)
-    if (entityMap.size === 0) return text // No entities to link
-
-    const matches = collectEntityMatches(text, entityMap)
-    if (matches.length === 0) return text // No matches found
-
-    return linkMatches(text, matches)
-  } catch (error) {
-    console.warn(EntityAutoLinkerLog.FailedAutoLink, error)
-    return text // Return original text on error
-  }
+export async function autoLinkUnknown(value: unknown, projectId: string): Promise<unknown> {
+  if (!projectId) return value
+  const linkText = await createProjectTextLinker(projectId)
+  return mapLinkedValue(value, linkText, ENTITY_AUTO_LINKER_MIN_STRING_LENGTH)
 }
 
 export const entityAutoLinker = {
   autoLink: autoLinkEntities,
+  autoLinkUnknown,
 }

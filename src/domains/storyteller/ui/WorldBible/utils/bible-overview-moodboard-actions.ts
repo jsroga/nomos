@@ -12,6 +12,14 @@ function reportMissingApiKey(config: Record<string, unknown>) {
   )
 }
 
+function reportMoodboardPollFailure(error: unknown): void {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    toast.error(error.message)
+    return
+  }
+  toast.error(BibleOverviewToast.GenerationFailed)
+}
+
 export async function regenerateMoodboardImage(input: {
   projectId: string | undefined
   isGenerating: boolean
@@ -34,7 +42,8 @@ export async function regenerateMoodboardImage(input: {
       undefined,
       input.config,
       input.onRefetchMoodboardData,
-      input.promptIndex
+      input.promptIndex,
+      reportMoodboardPollFailure,
     )
   } catch (err) {
     console.error(err)
@@ -92,7 +101,8 @@ export async function addMoodboardImage(input: {
       undefined,
       input.config,
       input.onRefetchMoodboardData,
-      input.nextIndex
+      input.nextIndex,
+      reportMoodboardPollFailure,
     )
     toast.success(BibleOverviewToast.NewImageGenerating)
   } catch (err) {
@@ -129,7 +139,9 @@ export async function generateInitialMoodboard(input: {
       [],
       undefined,
       input.config,
-      input.onRefetchMoodboardData
+      input.onRefetchMoodboardData,
+      undefined,
+      reportMoodboardPollFailure,
     )
     toast.success(BibleOverviewToast.InitialMoodboardGenerating)
   } catch (err) {

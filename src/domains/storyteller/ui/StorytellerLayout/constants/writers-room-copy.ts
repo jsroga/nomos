@@ -5,17 +5,41 @@ export enum WritersRoomToast {
   AlreadyQueued = 'Already queued for review',
   AddedToWorld = 'Added to world',
   EpisodeCreated = 'Episode created',
+  PendingExtrasPrefix = 'Also pending: ',
+  NoBibleUpdates = 'No world bible updates in this message',
+  BeatOnBoard = 'Beat is on the board',
+  CastAdded = 'Added new characters to cast',
+  SectionAddedPrefix = 'Added to world: ',
 }
 
 export enum WritersRoomConfirm {
   ExtraTitle = 'Extra bible updates',
   ExtraConfirm = 'Include extras',
   ExtraCancel = 'Only requested section',
+  AddToWorldTitle = 'Add to world',
+  AddToWorldConfirm = 'Update all',
+  AddToWorldCancel = 'Cancel',
+  AddToWorldPrefix = 'These sections will be updated: ',
+}
+
+export enum WritersRoomCastConfirm {
+  Title = 'Add new characters to cast',
+  Confirm = 'Add to cast',
+  Cancel = 'Skip',
+  Prefix = 'These characters will be added to the cast: ',
+}
+
+export enum WritersRoomListJoin {
+  CommaSpace = ', ',
 }
 
 export function writersRoomExtraDescription(
   requestedSection: string,
   extraKeys: string[],
 ): string {
-  return `Requested section: ${requestedSection}. The agent also returned: ${extraKeys.join(', ')}. Include those extras in pending review, or keep only the requested section?`
+  return `Requested section: ${requestedSection}. The agent also returned: ${extraKeys.join(WritersRoomListJoin.CommaSpace)}. Include those extras in pending review, or keep only the requested section?`
+}
+
+export function newCastDescription(names: readonly string[]): string {
+  return `${WritersRoomCastConfirm.Prefix}${names.join(WritersRoomListJoin.CommaSpace)}`
 }

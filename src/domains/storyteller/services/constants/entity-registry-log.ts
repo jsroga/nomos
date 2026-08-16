@@ -6,6 +6,7 @@ export enum EntityRegistryLog {
   ProjectEntitiesFailed = '[EntityRegistry] Failed to get project entities:',
   EntitiesByTypeFailed = '[EntityRegistry] Failed to get entities by type:',
   UpdateReferenceFailed = '[EntityRegistry] Failed to update reference timestamp:',
+  UpdateDescriptionFailed = '[EntityRegistry] Failed to update description:',
   DeleteFailed = '[EntityRegistry] Failed to delete entity:',
 }
 

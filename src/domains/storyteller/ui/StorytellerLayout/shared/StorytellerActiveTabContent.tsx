@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import { CorkBoard } from '../../CorkBoard'
 import { StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
 import { editStorytellerScript } from '@/domains/storyteller/core/io/storyteller.api'
@@ -9,6 +10,13 @@ import {
   CharacterWeb,
 } from '../storyteller-dynamic-imports'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
+import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { StorytellerAgentTriggerPrompt } from '@/domains/storyteller/state/constants/agent-trigger-prompts'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
+import { EpisodePremiseSectionKey } from '@/domains/storyteller/ui/EpisodePremisePanel/constants/ozymandias-sections'
+import { pendingActionForCurrentEpisode } from '@/domains/storyteller/ui/WorldBible/utils/pending-action-for-episode'
+import { episodePremiseFromPlan } from '@/domains/storyteller/core/utils/validate-premise-for-beatboard'
+import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 
 export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = props => {
   const { core, episode, phase, generation, agents } = props
@@ -17,6 +25,7 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
     storyPlan,
     currentProject,
     isGeneratingPoster,
+    posterIsVariantGrid,
     isGeneratingStoryboard,
     isFetchingPlan,
     routeProjectId,
@@ -28,11 +37,48 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
     isScriptLoading,
     focusEntityId,
     isSending,
+    sectionPendingActions,
+    loadingSections,
+    setLoadingSections,
+    currentEpisode,
+    currentEpisodeTitle,
+    refreshBeats,
   } = core
   const { isFetchingCharacters, updateEpisodePremise, characterWebVersion } = episode
   const { handleApprovePlan } = phase
   const { handlePosterTrigger, handleStoryboardTrigger } = generation
-  const { handleCharacterWebNodeClick } = agents
+  const { handleCharacterWebNodeClick, handleSaveEpisodePrompt } = agents
+  const requestChatPrompt = useStorytellerUiStore(state => state.requestChatPrompt)
+  const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
+  const isChatBusy = isGenerationActivityBusy(generationPhase)
+
+  const queuePremisePrompt = useCallback(
+    (message: string) => {
+      setLoadingSections(prev => ({
+        ...prev,
+        [BibleSection.EPISODE_PREMISE]: { loading: true },
+      }))
+      requestChatPrompt(message, BibleSection.EPISODE_PREMISE)
+    },
+    [requestChatPrompt, setLoadingSections]
+  )
+
+  const handleGeneratePremise = useCallback(() => {
+    queuePremisePrompt(StorytellerAgentTriggerPrompt.GenerateEpisodePremiseUser)
+  }, [queuePremisePrompt])
+
+  const handleGeneratePremiseSection = useCallback(
+    (section: string) => {
+      if (section === EpisodePremiseSectionKey.Logline) {
+        queuePremisePrompt(StorytellerAgentTriggerPrompt.GenerateEpisodeDescriptionUser)
+        return
+      }
+      queuePremisePrompt(
+        `${StorytellerAgentTriggerPrompt.RegeneratePremiseSectionUserPrefix}${section}${StorytellerAgentTriggerPrompt.RegeneratePremiseSectionUserSuffix}`
+      )
+    },
+    [queuePremisePrompt]
+  )
 
   return (
     <div className="flex-1 relative overflow-hidden">
@@ -42,15 +88,27 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
           globalBible={currentProject?.series_bible ?? {}}
           onApprove={handleApprovePlan}
           onUpdatePremise={updateEpisodePremise}
+          onGeneratePremise={handleGeneratePremise}
+          onGeneratePremiseSection={section => handleGeneratePremiseSection(section)}
           onGeneratePoster={episodeId => void handlePosterTrigger(episodeId)}
           onGenerateStoryboard={episodeId => void handleStoryboardTrigger(episodeId)}
-          isGenerating={isSending}
+          isGenerating={
+            isSending || Boolean(loadingSections[BibleSection.EPISODE_PREMISE]?.loading)
+          }
           isGeneratingPoster={isGeneratingPoster}
+          posterIsVariantGrid={posterIsVariantGrid}
           isGeneratingStoryboard={isGeneratingStoryboard}
           isLoading={isFetchingPlan || isFetchingCharacters}
           projectId={routeProjectId ?? ''}
           episodeId={currentEpisodeId}
           generatingSection={generatingSection}
+          pendingPremiseAction={pendingActionForCurrentEpisode(
+            sectionPendingActions[BibleSection.EPISODE_PREMISE],
+            currentEpisodeId,
+          )}
+          episodeTitle={currentEpisodeTitle}
+          episodePrompt={currentEpisode?.episode_prompt ?? ''}
+          onSaveEpisodePrompt={handleSaveEpisodePrompt}
         />
       )}
 
@@ -64,6 +122,12 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
               isGeneratingCombined={isGeneratingStoryboard}
               onGenerateCombined={handleStoryboardTrigger}
               projectId={routeProjectId ?? ''}
+              premise={episodePremiseFromPlan(storyPlan)}
+              isChatBusy={isChatBusy}
+              onSendMessage={message => requestChatPrompt(message)}
+              onRefreshBeats={() => {
+                if (currentEpisodeId) void refreshBeats(currentEpisodeId)
+              }}
             />
           </div>
         </div>

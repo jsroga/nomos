@@ -65,3 +65,38 @@ export function resolveAddToWorldTarget(
 
   return overviewTarget(text)
 }
+
+export function resolveAddToWorldCommitTarget(
+  descriptionFromPending: string | undefined,
+  cleanedChat: string,
+  requestedSection: string | undefined,
+): AddToWorldTarget | null {
+  if (descriptionFromPending) return overviewTarget(descriptionFromPending)
+  if (!cleanedChat) return null
+  return resolveAddToWorldTarget(cleanedChat, requestedSection)
+}
+
+function episodePremiseTarget(premise: Record<string, unknown>): AddToWorldTarget {
+  return {
+    section: BibleSection.EPISODE_PREMISE,
+    actionType: ActionType.UPDATE_EPISODE_PREMISE,
+    preview: { premise },
+  }
+}
+
+export function resolveAddToWorldCommit(input: {
+  episodePremise?: Record<string, unknown>
+  overviewProse?: string
+  cleanedChat: string
+  requestedSection?: string
+}): AddToWorldTarget | null {
+  if (input.episodePremise && Object.keys(input.episodePremise).length > 0) {
+    return episodePremiseTarget(input.episodePremise)
+  }
+  if (input.requestedSection === BibleSection.EPISODE_PREMISE) return null
+  return resolveAddToWorldCommitTarget(
+    input.overviewProse,
+    input.cleanedChat,
+    input.requestedSection,
+  )
+}

@@ -15,6 +15,7 @@ export enum BibleOverviewToast {
   RemoveImageError = 'Error removing image',
   NewImageGenerating = 'Generating new moodboard image...',
   GenerationError = 'Error starting generation',
+  GenerationFailed = 'Moodboard generation failed',
   WorldDescriptionRequired = 'Please add a world description first.',
   InitialMoodboardGenerating = 'Generating moodboard images...',
 }

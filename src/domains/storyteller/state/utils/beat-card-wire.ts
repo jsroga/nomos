@@ -32,5 +32,6 @@ export function beatCardFromWireRow(value: unknown): BeatCard | null {
     content: readString(row.content) ?? undefined,
     imagePrompt:
       readString(row.image_prompt) ?? readString(row.imagePrompt) ?? undefined,
+    imageUrl: readString(row.image_url) ?? readString(row.imageUrl) ?? undefined,
   }
 }

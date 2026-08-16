@@ -3,7 +3,7 @@ import { EpisodePremise } from '@/domains/storyteller/ai/prompts/schemas/agent-s
 import { Button } from '@/components/Button'
 import { Skeleton } from '@/components/Skeleton'
 import { cn } from '@/shared/data/utils'
-import { ReferenceText } from '../../ReferenceText'
+import { RichText } from '../../RichText'
 import {
   EpisodePremiseSectionKey,
   OzymandiasFieldKey,
@@ -77,7 +77,12 @@ function OzymandiasReadView({
 }) {
   return (
     <div className={cn('p-4 bg-card rounded-md', ozymandiasBorderClass(config.tone))}>
-      <ReferenceText text={value} projectId={projectId} className="text-foreground text-sm leading-relaxed" />
+      <RichText
+        text={value}
+        projectId={projectId}
+        markdown
+        className="text-foreground text-sm leading-relaxed"
+      />
     </div>
   )
 }

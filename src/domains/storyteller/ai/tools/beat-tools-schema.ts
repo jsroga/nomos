@@ -2,9 +2,15 @@ import { z } from 'zod'
 import { ManageToolOperation } from './manage-tools-wire'
 
 export const BeatDataSchema = z.object({
-  logline: z.string().min(1).describe('One-line summary of what happens'),
+  logline: z
+    .string()
+    .min(1)
+    .describe('SHORT one-line summary — max 20 words. No clauses stacked with em dashes.'),
   content: z.string().optional().describe('Full beat content/description'),
-  visualHook: z.string().optional().describe('The iconic visual that opens this beat'),
+  visualHook: z
+    .string()
+    .optional()
+    .describe('SHORT iconic visual — one sentence.'),
   beatType: z
     .enum(['setup', 'confrontation', 'resolution', 'transition', 'revelation', 'climax', 'default'])
     .optional()
@@ -25,9 +31,15 @@ export const BeatDataSchema = z.object({
   actionTaken: z
     .string()
     .min(1)
-    .describe('REQUIRED: What character(s) did or decided. No static description beats.'),
-  consequence: z.string().min(1).describe('REQUIRED: Immediate result/change from the action'),
-  storyStateChange: z.string().min(1).describe('REQUIRED: How world/relationships/plot shifted'),
+    .describe('REQUIRED, SHORT: what they did or decided — one sentence. No static description beats.'),
+  consequence: z
+    .string()
+    .min(1)
+    .describe('REQUIRED, SHORT: immediate result — one sentence.'),
+  storyStateChange: z
+    .string()
+    .min(1)
+    .describe('REQUIRED, SHORT: how the plot shifted — one sentence.'),
 })
 
 export const ManageBeatInputSchema = z.object({

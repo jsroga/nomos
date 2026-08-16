@@ -35,6 +35,7 @@ import {
   resolveWorldBibleSuccessAction,
   UPDATE_WORLD_BIBLE_TOOL_ID,
 } from './map-tool-result-handlers'
+import { EPISODE_TOOL_ID } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 
 export type DetectedSection = BibleSection | ToolResultDetectedSection
 
@@ -69,6 +70,15 @@ export function detectLoadingSection(
   toolName: string,
   toolArgs: Record<string, unknown>
 ): string | null {
+  if (toolName === EPISODE_TOOL_ID) {
+    const data = isRecord(toolArgs.data) ? toolArgs.data : {}
+    const storyPlan = isRecord(data.storyPlan) ? data.storyPlan : {}
+    if (isRecord(data.premise) || isRecord(storyPlan.premise)) {
+      return BibleSection.EPISODE_PREMISE
+    }
+    return null
+  }
+
   if (toolName !== UPDATE_WORLD_BIBLE_TOOL_ID) {
     return null
   }

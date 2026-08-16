@@ -15,6 +15,7 @@ import {
   ApiframeImageField,
   ApiframeJobLabel,
   ApiframeParamsKey,
+  type ApiframeImageUrlField,
   ApiframeUpscaleModel,
 } from '@/shared/ai/constants/apiframe'
 
@@ -120,13 +121,14 @@ export function extractApiframeAspectRatio(prompt: string): string | undefined {
 function optionalAspectAndImages(
   aspectRatio: string | undefined,
   imageInputUrls: string[] | undefined,
-  imageField: ApiframeImageField.ImageInput | ApiframeImageField.ImagePrompt,
+  imageField: ApiframeImageUrlField,
 ): Record<string, unknown> {
   const params: Record<string, unknown> = {}
   if (aspectRatio) params[ApiframeImageField.AspectRatio] = aspectRatio
-  if (imageInputUrls && imageInputUrls.length > 0) {
+  const [firstImageUrl] = imageInputUrls ?? []
+  if (firstImageUrl) {
     params[imageField] =
-      imageField === ApiframeImageField.ImagePrompt ? imageInputUrls[0] : imageInputUrls
+      imageField === ApiframeImageField.ImageInput ? imageInputUrls : firstImageUrl
   }
   return params
 }
@@ -166,7 +168,7 @@ function buildGenerateBody(options: {
       attachParamsIfPresent(
         body,
         ApiframeParamsKey.GrokImagine,
-        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.ImageInput),
+        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.Image),
       )
       return body
     case ApiframeImageModel.GptImage15:
@@ -405,6 +407,20 @@ export async function editApiframeImage(input: {
 
 export function pickApiframeImageUrl(result: ApiframeImageResult): string | null {
   return result.images[0] ?? result.gridUrl ?? null
+}
+
+/**
+ * Prefer the Midjourney 2×2 grid when present so callers can offer quadrant pick.
+ * Discrete single (or multi-URL without a grid) images skip the variant picker.
+ */
+export function resolveApiframeImageSelection(result: ApiframeImageResult): {
+  imageUrl: string | null
+  isVariantGrid: boolean
+} {
+  if (result.gridUrl) {
+    return { imageUrl: result.gridUrl, isVariantGrid: true }
+  }
+  return { imageUrl: result.images[0] ?? null, isVariantGrid: false }
 }
 
 export function resolveNanoBananaModel(modelId?: string): ApiframeImageModel {

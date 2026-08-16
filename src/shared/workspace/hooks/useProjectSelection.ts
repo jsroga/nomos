@@ -11,7 +11,6 @@ import {
   PROJECT_SELECTION_DELETE_CONFIRM,
   PROJECT_SELECTION_DELETE_DESCRIPTION,
   PROJECT_SELECTION_DELETE_TITLE,
-  PROJECT_SELECTOR_BIBLE_QUERY,
   PROJECT_SORT_CYCLE,
   ProjectSortMode,
 } from '../constants/project-selection'
@@ -74,7 +73,7 @@ export function useProjectSelection() {
 
   const handleSelectProject = (projectId: string) => {
     setLoadingProjectId(projectId)
-    router.push(`/${projectId}/storyteller?${PROJECT_SELECTOR_BIBLE_QUERY}`)
+    router.push(`/${projectId}/storyteller`)
   }
 
   const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
@@ -98,7 +97,7 @@ export function useProjectSelection() {
     setIsCreating(true)
     const id = await createProject(newProjectName, '')
     if (id) {
-      router.push(`/${id}/storyteller?${PROJECT_SELECTOR_BIBLE_QUERY}`)
+      router.push(`/${id}/storyteller`)
     } else {
       setIsCreating(false)
     }

@@ -4,6 +4,9 @@ import {
   composeFirstTilePrompt,
   composeFollowUpPrompt,
 } from '../prompts'
+import { GenerationPromptCopy } from '../constants/generation-prompts'
+
+const OVERHEAD_PREFIX: string = GenerationPromptCopy.FirstTileOverheadPrefix
 
 const LAYERS = {
   tileDescription: 'a rainy harbour quay',
@@ -32,6 +35,21 @@ describe('composeFirstTilePrompt', () => {
     expect(prompt).toContain(LAYERS.styleContext)
     expect(prompt).toContain(LAYERS.tileDescription)
   })
+
+  it('lets the mode fragment own the camera and falls back to overhead without one', () => {
+    expect(composeFirstTilePrompt(LAYERS)).not.toContain(OVERHEAD_PREFIX)
+    expect(
+      composeFirstTilePrompt({ ...LAYERS, modePromptFragment: undefined })
+    ).toContain(OVERHEAD_PREFIX)
+  })
+
+  it('emits the mode fragment once when the master prompt already carries it', () => {
+    const prompt = composeFirstTilePrompt({
+      ...LAYERS,
+      masterPrompt: LAYERS.modePromptFragment,
+    })
+    expect(prompt.split(LAYERS.modePromptFragment)).toHaveLength(2)
+  })
 })
 
 describe('composeFollowUpPrompt', () => {
@@ -40,5 +58,11 @@ describe('composeFollowUpPrompt', () => {
     expect(prompt.indexOf(LAYERS.styleContext)).toBeGreaterThan(
       prompt.indexOf(LAYERS.modePromptFragment)
     )
+  })
+
+  it('describes the grey context hole, not magenta', () => {
+    const prompt = GENERATION_PROMPTS.FOLLOW_UP.MASTER(LAYERS)
+    expect(prompt.toLowerCase()).toMatch(/gr[ae]y/)
+    expect(prompt.toLowerCase()).not.toContain('magenta')
   })
 })

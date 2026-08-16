@@ -30,6 +30,7 @@ import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thr
 import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { requireAuth } from '@/shared/auth/auth'
 import { ApiErrorMessage } from '@/shared/data/constants/protocol'
+import { requestedEpisodePremiseField } from '@/domains/storyteller/core/utils/requested-episode-premise-field'
 import { readString } from '@/shared/data/json-guards'
 import {
   BEAT_TOOL_ID,
@@ -112,6 +113,8 @@ enum StorytellerOpenWorkspaceCopy {
     'Use ONLY these IDs for tool calls. Never call workspace filesystem tools (list/grep/read repo files).',
   GenerateViaTool =
     'For GENERATE / REGENERATE world description or bible sections: call update_world_bible immediately with these IDs — do not browse the codebase.',
+  EpisodeDescriptionOnly =
+    'Latest user request is episode description (logline) only. Write episodePremise: { logline }. Do not fill other Ozymandias fields.',
   RememberProjectIdMid = 'Remember: Use projectId=',
   RememberProjectIdEnd = ' for all tool calls that require it.',
 }
@@ -182,6 +185,7 @@ function buildRequestContext(agentId: string, body: AssistantChatBody): RequestC
     episodeId,
     chatModel,
     bibleSection,
+    premiseField: requestedEpisodePremiseField(latestUserText(body.messages)),
   })
 }
 
@@ -197,6 +201,7 @@ function buildStorytellerSystemContext(opts: {
   contextPrompt: string
   projectId?: string
   episodeId?: string
+  userMessage?: string
 }): string {
   const projectId = readString(opts.projectId) ?? ''
   const episodeId = readString(opts.episodeId)
@@ -215,6 +220,9 @@ function buildStorytellerSystemContext(opts: {
     StorytellerOpenWorkspaceCopy.NoWorkspaceTools,
     StorytellerOpenWorkspaceCopy.GenerateViaTool
   )
+  if (requestedEpisodePremiseField(opts.userMessage ?? '')) {
+    lines.push(StorytellerOpenWorkspaceCopy.EpisodeDescriptionOnly)
+  }
   if (projectId) {
     lines.push(
       `${StorytellerOpenWorkspaceCopy.RememberProjectIdMid}${JSON.stringify(projectId)}${StorytellerOpenWorkspaceCopy.RememberProjectIdEnd}`
@@ -245,6 +253,7 @@ async function resolveStorytellerSystem(opts: {
     contextPrompt,
     projectId: opts.projectId,
     episodeId: opts.episodeId,
+    userMessage,
   })
 }
 

@@ -6,6 +6,8 @@ import { SmartQuickActionPrompt } from '@/shared/chat/core/constants/quick-actio
 // which a string enum member may not do (prefer-literal-enum-member).
 export const StorytellerAgentTriggerPrompt = {
   GenerateEpisodePremiseUser: SmartQuickActionPrompt.GeneratePremise,
+  GenerateEpisodeDescriptionUser:
+    'Generate only the episode description (the logline). Do not write the rest of the Ozymandias premise.',
   GenerateEpisodePremiseAgent:
     'Please generate an episode premise using the Ozymandias framework. Delegate to the Episode Premise Architect.',
   GenerateRoadmapUser: 'Please generate a detailed episode roadmap for the season.',

@@ -26,6 +26,12 @@ export enum ReferenceTextKeyboardKey {
 
 export const REFERENCE_TEXT_DOM_EVENT_KEYUP = 'keyup'
 
+/** Delay before closing so the pointer can move onto the tooltip. */
+export const REFERENCE_TOOLTIP_CLOSE_DELAY_MS = 300
+
+/** Surrounding text sent to resolve — keep the GET query short. */
+export const REFERENCE_RESOLVE_CONTEXT_MAX = 500
+
 export enum ReferenceTextMetaLabel {
   Role = 'Role',
   Motivation = 'Motivation',

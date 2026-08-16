@@ -47,7 +47,7 @@ export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
                 {QuickActionLabel.SuggestIdea}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuContent align="end" className="w-80">
               {GENERATION_MODES.map(mode => (
                 <DropdownMenuItem
                   key={mode.id}
@@ -68,7 +68,7 @@ export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
           value={masterPrompt}
           onChange={e => handleMasterPromptChange(e.target.value)}
           placeholder={WorldGenSidebarWorldCopy.Placeholder}
-          className="h-24"
+          className="h-32"
         />
         {styleAnchorUrl ? (
           <Button

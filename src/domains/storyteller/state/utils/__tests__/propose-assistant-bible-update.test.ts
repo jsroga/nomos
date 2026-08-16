@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { proposeAssistantBibleUpdate } from '../propose-assistant-bible-update'
+import { proposeAssistantBibleUpdate, proposeAssistantBibleUpdates } from '../propose-assistant-bible-update'
 import { UPDATE_WORLD_BIBLE_TOOL_ID } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums'
 
@@ -24,17 +24,19 @@ describe('proposeAssistantBibleUpdate', () => {
     expect(proposal?.preview.worldDescription).toContain('salt-marsh')
   })
 
-  it('ignores free-chat worldDescription dumps without a panel request', () => {
-    expect(
-      proposeAssistantBibleUpdate({
-        toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
-        args: {
-          projectId: '0696e553-d361-4a36-a839-fb9c5e570e75',
-          worldDescription: 'Done — here are twelve inspirations…',
-        },
-        result: { success: true, updatedFields: ['worldDescription'] },
-      })
-    ).toBeNull()
+  it('proposes Overview for a free-chat worldDescription write', () => {
+    const proposal = proposeAssistantBibleUpdate({
+      toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+      args: {
+        projectId: '0696e553-d361-4a36-a839-fb9c5e570e75',
+        worldDescription: 'A salt-marsh city lit by bioluminescent kelp.',
+      },
+      result: { success: true, updatedFields: ['worldDescription'] },
+    })
+
+    expect(proposal?.section).toBe(BibleSection.WORLD_DESCRIPTION)
+    expect(proposal?.action.type).toBe(ActionType.UPDATE_WORLD_DESCRIPTION)
+    expect(proposal?.preview.worldDescription).toContain('salt-marsh')
   })
 
   it('routes a soundtrack write to the soundtrack panel', () => {
@@ -72,6 +74,9 @@ describe('proposeAssistantBibleUpdate', () => {
     expect(proposal?.section).toBe(BibleSection.SOUNDTRACKS)
     expect(proposal?.preview.worldDescription).toBeUndefined()
     expect(proposal?.preview.soundtracks).toEqual(soundtracks)
+    expect(proposal?.extraFields?.worldDescription).toBe(
+      'Five tracks that sound temporally unstuck.',
+    )
   })
 
   it('keeps an unrequested worldDescription out of a soundtrack request', () => {
@@ -92,18 +97,17 @@ describe('proposeAssistantBibleUpdate', () => {
     expect(proposal?.preview.worldDescription).toBeUndefined()
   })
 
-  it('proposes nothing when the write misses the requested section entirely', () => {
-    expect(
-      proposeAssistantBibleUpdate(
-        {
-          toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
-          args: { plotTwists: [{ title: 'Off target', description: 'Nobody asked.' }] },
-          result: { success: true, updatedFields: ['plotTwists'] },
-        },
-        null,
-        BibleSection.SOUNDTRACKS
-      )
-    ).toBeNull()
+  it('overlays extras when the write misses the requested section', () => {
+    const proposals = proposeAssistantBibleUpdates(
+      {
+        toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+        args: { plotTwists: [{ title: 'Off target', description: 'Nobody asked.' }] },
+        result: { success: true, updatedFields: ['plotTwists'] },
+      },
+      null,
+      BibleSection.SOUNDTRACKS
+    )
+    expect(proposals.map(proposal => proposal.section)).toEqual([BibleSection.PLOT_TWISTS])
   })
 
   it('routes inspirations writes to the inspirations panel', () => {
@@ -127,18 +131,17 @@ describe('proposeAssistantBibleUpdate', () => {
     expect(proposal?.preview.inspirations).toEqual(inspirations)
   })
 
-  it('rejects moodSoundtrack when the requested section is inspirations', () => {
-    expect(
-      proposeAssistantBibleUpdate(
-        {
-          toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
-          args: { moodSoundtrack: 'Cigarette-burned jazz.' },
-          result: { success: true, updatedFields: ['moodSoundtrack'] },
-        },
-        null,
-        BibleSection.INSPIRATIONS
-      )
-    ).toBeNull()
+  it('overlays soundtrack extras when inspirations was requested but missed', () => {
+    const proposals = proposeAssistantBibleUpdates(
+      {
+        toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+        args: { moodSoundtrack: 'Cigarette-burned jazz.' },
+        result: { success: true, updatedFields: ['moodSoundtrack'] },
+      },
+      null,
+      BibleSection.INSPIRATIONS
+    )
+    expect(proposals.map(proposal => proposal.section)).toEqual([BibleSection.SOUNDTRACKS])
   })
 
   it('surfaces off-section fields as extras when a panel was requested', () => {
@@ -173,5 +176,103 @@ describe('proposeAssistantBibleUpdate', () => {
         result: { success: false, error: 'boom' },
       })
     ).toBeNull()
+  })
+
+  it('ignores chat wrap-up dumped into worldDescription', () => {
+    expect(
+      proposeAssistantBibleUpdate({
+        toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+        args: {
+          worldDescription:
+            'I\'ll generate a rich world description.\n\nThe world bible is now live. Here\'s what I built for **Aeternum**.',
+        },
+        result: { success: true, updatedFields: ['worldDescription'] },
+      })
+    ).toBeNull()
+  })
+
+  it('keeps Overview as the primary overlay when items/events/rules are also written', () => {
+    const proposal = proposeAssistantBibleUpdate({
+      toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+      args: {
+        worldDescription: 'The world of Aeternum is defined by a single impossible fact.',
+        items: [{ name: 'The Pale Ledger', description: 'A living record of every death.' }],
+        events: [{ name: 'The Stillness', description: 'Aging stopped.' }],
+        worldRules: [{ rule: 'No Natural Death', consequence: 'Only killing ends life.' }],
+        inspirations: { books: [], movies: [], games: [] },
+      },
+      result: {
+        success: true,
+        updatedFields: ['worldDescription', 'items', 'events', 'worldRules'],
+      },
+    })
+
+    expect(proposal?.section).toBe(BibleSection.WORLD_DESCRIPTION)
+    expect(proposal?.action.type).toBe(ActionType.UPDATE_WORLD_DESCRIPTION)
+    expect(proposal?.preview.worldDescription).toContain('Aeternum')
+  })
+
+  it('puts items, events, and world rules on sibling extras, not Overview preview', () => {
+    const proposal = proposeAssistantBibleUpdate({
+      toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+      args: {
+        worldDescription: 'The world of Aeternum is defined by a single impossible fact.',
+        items: [{ name: 'The Pale Ledger', description: 'A living record of every death.' }],
+        events: [{ name: 'The Stillness', description: 'Aging stopped.' }],
+        worldRules: [{ rule: 'No Natural Death', consequence: 'Only killing ends life.' }],
+      },
+      result: {
+        success: true,
+        updatedFields: ['worldDescription', 'items', 'events', 'worldRules'],
+      },
+    })
+
+    expect(proposal?.preview.items).toBeUndefined()
+    expect(proposal?.extraFields?.items).toHaveLength(1)
+    expect(proposal?.extraFields?.events).toHaveLength(1)
+    expect(proposal?.extraFields?.worldRules).toHaveLength(1)
+  })
+
+  it('routes episodePremise writes to the episode premise panel', () => {
+    const premise = {
+      logline: 'A clerk discovers the ledger writes her name in advance.',
+      fatalFlaw: 'She trusts the record more than the living.',
+    }
+    const proposal = proposeAssistantBibleUpdate({
+      toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+      args: { projectId: '0696e553-d361-4a36-a839-fb9c5e570e75', episodePremise: premise },
+      result: { success: true, updatedFields: ['episodePremise'] },
+    })
+
+    expect(proposal?.section).toBe(BibleSection.EPISODE_PREMISE)
+    expect(proposal?.action.type).toBe(ActionType.UPDATE_EPISODE_PREMISE)
+    expect(proposal?.preview.premise).toEqual(premise)
+  })
+
+  it('splits overview, factions, and plot twists into independent proposals', () => {
+    const factions = [{ name: 'The Ledger Keepers', description: 'They tally every death.' }]
+    const plotTwists = [{ title: 'The clerk wrote her own name.', description: 'She always had.' }]
+    const proposals = proposeAssistantBibleUpdates({
+      toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+      args: {
+        worldDescription: 'The world of Aeternum is defined by a single impossible fact.',
+        factions,
+        plotTwists,
+      },
+      result: {
+        success: true,
+        updatedFields: ['worldDescription', 'factions', 'plotTwists'],
+      },
+    })
+
+    expect(proposals.map(proposal => proposal.section)).toEqual([
+      BibleSection.WORLD_DESCRIPTION,
+      BibleSection.FACTIONS,
+      BibleSection.PLOT_TWISTS,
+    ])
+    expect(proposals[0]?.preview.worldDescription).toContain('Aeternum')
+    expect(proposals[0]?.preview.factions).toBeUndefined()
+    expect(proposals[1]?.preview.factions).toEqual(factions)
+    expect(proposals[2]?.preview.plotTwists).toEqual(plotTwists)
   })
 })
