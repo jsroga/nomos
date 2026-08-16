@@ -1,0 +1,61 @@
+{
+  "world": "aeternum",
+  "projectId": "9b80467c-18b5-4570-9b32-d66f86d71986",
+  "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+  "exportedAt": "2026-08-16T14:14:34.396Z",
+  "exportedFromCommit": "836370d49cb01adc1a9488a82dc490a67031f17e",
+  "beatCount": 30,
+  "generatorPath": "cork-board-manage-beat",
+  "modelId": "unknown",
+  "usableForModelComparison": false,
+  "inputs": {
+    "episodePlan": {
+      "path": "episode-01.plan.json",
+      "sha256": "da922857b7627492d6201cd91d819e9a388a8ba837b0ef56b450c2d15a66e925"
+    },
+    "worldBible": {
+      "path": "world-bible.json",
+      "sha256": "e61b933fa26c1242e5e2a2e23d29089d7e69d208b313e2dd95ca07a4bdab8058"
+    },
+    "characters": {
+      "path": "characters.json",
+      "sha256": "c60c5d3af47191a3463f9f92906d7a7fd8a8891def1568e1eb06f61c4d513637"
+    },
+    "cast": {
+      "path": "cast.json",
+      "sha256": "4d5e2ff81c66591c444fe72f8fa9f41d0343757c7bb14c4ee6285d74f8f6f1f7"
+    },
+    "canonLexicon": {
+      "path": "canon-lexicon.json",
+      "sha256": "7d77b5d6615580368ab79bdb10aac2a1a69ab7cff8b79fff2d23a247fcd0e10e"
+    },
+    "systemPrompt": {
+      "path": "system-prompt.md",
+      "sha256": "747849801d7ec6ae29e9cb6b3d83dd9fa289e8dc4e80e853e6cc39f0a0bf4787",
+      "gitSha": "d06607a42862c9e669c9e827b8e8bbb2b90218e4",
+      "sourceFiles": [
+        {
+          "path": "src/mastra/agents/grrm-author/instructions.md",
+          "gitSha": "d06607a42862c9e669c9e827b8e8bbb2b90218e4"
+        },
+        {
+          "path": "src/mastra/agents/grrm-author/skills/anti-slop/SKILL.md",
+          "gitSha": "d06607a42862c9e669c9e827b8e8bbb2b90218e4"
+        },
+        {
+          "path": "src/mastra/agents/grrm-author/skills/psychology/SKILL.md",
+          "gitSha": "d06607a42862c9e669c9e827b8e8bbb2b90218e4"
+        },
+        {
+          "path": "src/domains/storyteller/ai/prompts/guardrails/anti-slop-phrases.ts",
+          "gitSha": "b60eec9118e0f492231e3ee06d995d4cbc472110"
+        }
+      ]
+    }
+  },
+  "notes": [
+    "projects.series_bible is empty. Frozen world text came from episode.storyPlan. canon_violation measures drift between beats and this frozen plan, not against an independent source of truth.",
+    "modelId is unknown. This baseline is a structural reference only and is excluded from model comparison.",
+    "The bible describes funeral rites / a ritual of compelled empathy around the Mourner's Bell but gives that practice no proper name. It is not a lexicon matcher. The Mourner's Bell remains an object; its late introduction is a setup_payoff_distance finding."
+  ]
+}

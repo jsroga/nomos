@@ -1,0 +1,30 @@
+{
+  "corpus": [
+    "smile didn't reach his eyes",
+    "the implications crystallize",
+    "eyes darting",
+    "with surprising strength"
+  ],
+  "beats": [
+    {
+      "id": "s8-1",
+      "episodeId": "ep",
+      "sequence": 1,
+      "logline": "His smile didn't reach his eyes as the implications crystallize.",
+      "beatType": "setup",
+      "content": "",
+      "visualHook": "Eyes darting across the room.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": {
+        "actionTaken": "He lifts the crate with surprising strength.",
+        "consequence": "The board splits.",
+        "storyStateChange": "Slop lands on the page."
+      },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    }
+  ]
+}

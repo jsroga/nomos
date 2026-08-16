@@ -1,0 +1,201 @@
+{
+  "world": "aeternum",
+  "sourceFile": "world-bible.json",
+  "matching": {
+    "caseInsensitive": true,
+    "ignoreLeadingThe": true,
+    "singularPlural": true,
+    "explicitAliases": true,
+    "wholePhraseWordBoundaries": true
+  },
+  "byKind": {
+    "place": [
+      {
+        "term": "Aeternum",
+        "aliases": [],
+        "source": {
+          "path": "worldDescription",
+          "line": "Seven centuries ago, the biological clock of every living person in Aeternum simply stopped."
+        }
+      },
+      {
+        "term": "Memory Flood district",
+        "aliases": [],
+        "source": {
+          "path": "worldDescription",
+          "line": "The catastrophe known as the [Memory Flood][event-the-memory-flood] occurred when a Warden's vault cracked and centuries of bottled Death Debts spilled into the water supply, causing an entire district to experience the memories of thousands of murdered people at once — many went permanently mad, and the district remains quarantined behind walls no one has touched in a century."
+        }
+      }
+    ],
+    "institution": [
+      {
+        "term": "Death Wardens",
+        "aliases": ["Wardens", "Warden"],
+        "source": {
+          "path": "worldDescription",
+          "line": "Aeternum governs killing through Death Wardens — sanctioned killers whose authority is etched into [The Tallybone][item-the-tallybone], a carved bone recording every sanctioned life they have taken, simultaneously badge of office, ledger of service, and unerasable confession."
+        }
+      }
+    ],
+    "law": [
+      {
+        "term": "The Age Lock",
+        "aliases": ["Age Lock"],
+        "source": {
+          "path": "worldRules[5].consequence",
+          "line": "Each person is frozen at the biological age they were when the Stillness struck. Children remain children forever, elders remain elders, and apparent age reveals nothing about power or experience."
+        }
+      },
+      {
+        "term": "The Death Debt",
+        "aliases": ["Death Debt", "Death Debts"],
+        "source": {
+          "path": "worldRules[2].consequence",
+          "line": "Killers involuntarily inherit a fragment of their victim's memories. This debt cannot be refused, refused, or willed away, making every kill a permanent psychic burden."
+        }
+      },
+      {
+        "term": "The Flesh Remembers",
+        "aliases": ["Flesh Remembers"],
+        "source": {
+          "path": "worldRules[4].consequence",
+          "line": "Every scar, wound, and mutilation accumulates across centuries of immortality, healing only in function, never in appearance. Bodies become living records of every violence endured."
+        }
+      },
+      {
+        "term": "The Last Word",
+        "aliases": ["Last Word", "Last Words"],
+        "source": {
+          "path": "worldRules[3].consequence",
+          "line": "A person about to be killed may speak one final sentence magically bound to be heard by the killer. No one can refuse the Last Word, and some have toppled regimes with theirs."
+        }
+      },
+      {
+        "term": "The Law of Equivalence",
+        "aliases": ["Law of Equivalence"],
+        "source": {
+          "path": "worldRules[0].consequence",
+          "line": "Every life taken must be weighed against a life given. No death is free; the universe demands balance, creating an economy of killing where every murder has a price."
+        }
+      },
+      {
+        "term": "The Silence of the Dying",
+        "aliases": ["Silence of the Dying"],
+        "source": {
+          "path": "worldRules[1].consequence",
+          "line": "When a person is killed, all sound within ten paces ceases for exactly one breath. This silence is the soul's departure and the world's only acknowledgment of death."
+        }
+      }
+    ],
+    "ritual": [],
+    "object": [
+      {
+        "term": "The Ashen Compass",
+        "aliases": ["Ashen Compass"],
+        "source": {
+          "path": "items[0].description",
+          "line": "A device that points toward the nearest act of intentional killing, its needle glowing brighter the closer one gets. Used by investigators and bounty hunters — but also by those who would rather find a murder before it happens."
+        }
+      },
+      {
+        "term": "The Dying Candle",
+        "aliases": ["Dying Candle"],
+        "source": {
+          "path": "items[1].description",
+          "line": "A candle that burns with a black, lightless flame only in the presence of someone who has killed within the last year. It casts shadow, not light — a silent confession no one can refuse."
+        }
+      },
+      {
+        "term": "The Fleshward",
+        "aliases": ["Fleshward"],
+        "source": {
+          "path": "items[4].description",
+          "line": "An alchemical salve that temporarily restores a scarred or mutilated body to its original Stillness-day appearance for one agonizing day. The most counterfeited substance in Aeternum's black markets."
+        }
+      },
+      {
+        "term": "The Mourner's Bell",
+        "aliases": ["Mourner's Bell"],
+        "source": {
+          "path": "items[3].description",
+          "line": "A bell that, when rung, causes everyone who hears it to feel the emotional state of the most recently killed person. Used in funeral rites across Aeternum — sacred to some, torture to others."
+        }
+      },
+      {
+        "term": "The Tallybone",
+        "aliases": ["Tallybone"],
+        "source": {
+          "path": "items[5].description",
+          "line": "A piece of carved bone worn by Death Wardens, each notch representing a sanctioned kill. It is simultaneously a badge of authority, a record of service, and an unerasable confession of every life taken."
+        }
+      },
+      {
+        "term": "Veins of Lethe",
+        "aliases": ["Lethe"],
+        "source": {
+          "path": "items[2].description",
+          "line": "A rare mineral found only in the deepest mines that erases the involuntary Death Debt memories of killers. Fiercely sought after, heavily controlled, and rumored to erase more than just memories if used too often."
+        }
+      }
+    ],
+    "event": [
+      {
+        "term": "The Stillness",
+        "aliases": ["Stillness"],
+        "source": {
+          "path": "worldDescription",
+          "line": "The event — never explained, never repeated — is called the Stillness, and it remade civilization in a single breath."
+        }
+      },
+      {
+        "term": "The Census of the Damned",
+        "aliases": ["Census of the Damned"],
+        "source": {
+          "path": "events[5].description",
+          "line": "A recent and controversial recount revealed far more living people than anyone admitted, and far fewer sanctioned deaths than births — threatening the fragile arithmetic that keeps Aeternum's civilization from collapsing under its own eternal weight."
+        }
+      },
+      {
+        "term": "The Child Uprising",
+        "aliases": ["Child Uprising"],
+        "source": {
+          "path": "events[1].description",
+          "line": "Children frozen at young ages for centuries rose against adult-bodied immortals, demanding the right to grow. They were brutally suppressed. Their youngest leaders still sit in prison cells — forever seven years old."
+        }
+      },
+      {
+        "term": "The Great Refusal",
+        "aliases": ["Great Refusal"],
+        "source": {
+          "path": "events[3].description",
+          "line": "A movement where millions voluntarily surrendered the power to kill simultaneously, nearly collapsing the sanctioned-death system. The constitutional crisis it triggered remains unresolved to this day."
+        }
+      },
+      {
+        "term": "The Memory Flood",
+        "aliases": ["Memory Flood"],
+        "source": {
+          "path": "events[4].description",
+          "line": "A Warden's vault cracked, spilling centuries of bottled Death Debts into the water supply. An entire district experienced the memories of thousands of murdered people at once. Many went permanently mad; the district is still quarantined."
+        }
+      },
+      {
+        "term": "The Night of a Thousand Silences",
+        "aliases": ["Night of a Thousand Silences"],
+        "source": {
+          "path": "events[0].description",
+          "line": "A single night in which one thousand people were killed simultaneously across the capital. The collective silence was so profound it permanently deafened half the city. The event haunts Aeternum as the night silence became a weapon."
+        }
+      },
+      {
+        "term": "The Scar Epidemic",
+        "aliases": ["Scar Epidemic"],
+        "source": {
+          "path": "events[2].description",
+          "line": "A sadistic cult deliberately mutilated thousands of people, knowing their bodies would never heal the marks. Those scars remain on living bodies today, a visible wound that time cannot mend and society cannot forget."
+        }
+      }
+    ],
+    "character": []
+  }
+}

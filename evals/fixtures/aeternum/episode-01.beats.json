@@ -1,0 +1,733 @@
+[
+  {
+    "id": "a4499b10-8a68-4cf9-82b0-96aa8086b4b1",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 1,
+    "logline": "Sera Voss oversees a routine sanctioned killing in a cold alley at dawn.",
+    "beatType": "setup",
+    "content": "",
+    "visualHook": "Sera's scarred hands steady a trembling victim as the Silence falls.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera carries out a sanctioned kill and records it on her Tallybone.",
+      "consequence": "Another notch carved into bone; another fragment of a stranger's memory lodges in her mind.",
+      "storyStateChange": "Establishes Sera's daily reality as a Death Warden burdened by centuries of killing."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:12.394Z",
+    "updatedAt": "2026-08-16T09:29:12.394Z"
+  },
+  {
+    "id": "2ccdd215-914b-4645-81d0-ade5569d760a",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 2,
+    "logline": "Sera walks the aftermath, Ashen Compass steady in her grip.",
+    "beatType": "setup",
+    "content": "",
+    "visualHook": "The compass needle glows warm amber, pulling toward the fresh kill.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera confirms the kill location with the Compass and prepares to file her report.",
+      "consequence": "Routine feels hollow as a dead woman's childhood memory of rain surfaces unbidden.",
+      "storyStateChange": "Shows Sera's psychic erosion from accumulated Death Debts during normal work."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:15.819Z",
+    "updatedAt": "2026-08-16T09:29:15.819Z"
+  },
+  {
+    "id": "b87fad7e-c683-42a2-b3aa-b142506d58cd",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 3,
+    "logline": "The Ashen Compass goes dark for the first time in seven centuries.",
+    "beatType": "revelation",
+    "content": "",
+    "visualHook": "The needle spins wildly, then stops dead — no glow, no pull, nothing.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera stares at the dead Compass, trying to force it to respond.",
+      "consequence": "The tool that defines her profession has never failed before; something unprecedented has happened.",
+      "storyStateChange": "The central mystery ignites — the Compass detects no intentional killing, defying all known law."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:18.487Z",
+    "updatedAt": "2026-08-16T09:29:18.487Z"
+  },
+  {
+    "id": "70586aff-df2a-403f-b80e-cf201080dc5c",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 4,
+    "logline": "Sera is summoned to a tenement where a body lies still.",
+    "beatType": "setup",
+    "content": "",
+    "visualHook": "A cramped room, a body on a cot, no blood, no wound — just stillness.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera arrives at the secondary scene and begins her examination.",
+      "consequence": "The victim has no scar, no wound, and no silence — the body simply stopped.",
+      "storyStateChange": "Sera faces a death that exists outside every framework she knows."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:20.113Z",
+    "updatedAt": "2026-08-16T09:29:20.113Z"
+  },
+  {
+    "id": "b2c05037-b51e-4f10-815b-4905f87539f3",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 5,
+    "logline": "The Dying Candle in the room burns normally — no killer nearby.",
+    "beatType": "revelation",
+    "content": "",
+    "visualHook": "A candle flame leans warm and golden, casting light, not shadow.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera checks the Dying Candle and finds no confession of murder.",
+      "consequence": "No one who killed within the last year has been near this body.",
+      "storyStateChange": "Every tool of investigation confirms the impossible: this was not a killing."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:21.888Z",
+    "updatedAt": "2026-08-16T09:29:21.888Z"
+  },
+  {
+    "id": "3e9d3379-6a75-46c0-9ab7-92641d5eeec8",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 6,
+    "logline": "Neighbors say the victim was perfectly fine yesterday.",
+    "beatType": "setup",
+    "content": "",
+    "visualHook": "A child-faced neighbor speaks with centuries-old eyes about yesterday's friend.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera interviews the tenement neighbors about the victim's final hours.",
+      "consequence": "No one heard the Silence of the Dying fall — because it never fell.",
+      "storyStateChange": "The absence of the Silence becomes evidence itself: no murder occurred."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:24.408Z",
+    "updatedAt": "2026-08-16T09:29:24.408Z"
+  },
+  {
+    "id": "aa8a7bc4-4896-4f63-918c-6c2b8d9cfea5",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 7,
+    "logline": "Sera consults the Tallybone records for any death warrant on the victim.",
+    "beatType": "confrontation",
+    "content": "",
+    "visualHook": "Pages of carved bone-clicks echo in the silent archive hall.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera searches the Warden archives for any sanctioned warrant on this person.",
+      "consequence": "No warrant, no enemies, no bounty — the victim had no reason to die.",
+      "storyStateChange": "The bureaucratic machinery of death has no record that explains this body."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:26.305Z",
+    "updatedAt": "2026-08-16T09:29:26.305Z"
+  },
+  {
+    "id": "16e01400-a6f2-42e1-83f2-0d1cd0c6e8aa",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 8,
+    "logline": "The victim has been registered as age forty-three for six hundred years.",
+    "beatType": "revelation",
+    "content": "",
+    "visualHook": "A registry page yellow with age shows the same entry, unchanged for centuries.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera cross-references the victim's registration age against the body's condition.",
+      "consequence": "The body shows decay consistent with aging — but the Age Lock should make that impossible.",
+      "storyStateChange": "The Stillness itself may be breaking, threatening the foundation of all civilization."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:28.022Z",
+    "updatedAt": "2026-08-16T09:29:28.022Z"
+  },
+  {
+    "id": "b3c8067a-3c62-4196-8c5e-c2a467f2b3e0",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 9,
+    "logline": "By every law of Aeternum, this death is impossible.",
+    "beatType": "revelation",
+    "content": "",
+    "visualHook": "Sera's hands tremble over the body as the implications crystallize.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera synthesizes all evidence and reaches a forbidden conclusion.",
+      "consequence": "If word spreads, the entire economy of killing becomes irrelevant.",
+      "storyStateChange": "The impossible death transforms from a puzzle into an existential threat to the regime."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:28.758Z",
+    "updatedAt": "2026-08-16T09:29:28.758Z"
+  },
+  {
+    "id": "3a9daf6e-fd42-43d0-a558-a7ce3ffa10a1",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 10,
+    "logline": "A dead victim's memory surfaces, mixing with the crime scene.",
+    "beatType": "confrontation",
+    "content": "",
+    "visualHook": "Sera sees the tenement overlaid with someone else's childhood garden.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "An accumulated Death Debt memory erupts unbidden, distorting Sera's perception.",
+      "consequence": "Sera can no longer trust whether what she sees is real or inherited.",
+      "storyStateChange": "Sera's fractured identity becomes an active obstacle to the investigation."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:29.111Z",
+    "updatedAt": "2026-08-16T09:29:29.111Z"
+  },
+  {
+    "id": "594f59bc-9aca-4a65-81f1-801dfafeb681",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 11,
+    "logline": "Sera reaches for Veins of Lethe to clear her fracturing mind.",
+    "beatType": "confrontation",
+    "content": "",
+    "visualHook": "Sera's fingers close around an empty vial — the last grains of Lethe dust.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera seeks out her Lethe supplier in the lower districts.",
+      "consequence": "Her usual contact has nothing to give her.",
+      "storyStateChange": "Sera's coping mechanism for centuries of Death Debts is suddenly severed."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:29.417Z",
+    "updatedAt": "2026-08-16T09:29:29.417Z"
+  },
+  {
+    "id": "c430d332-8978-4f99-9198-2cea444bde1e",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 12,
+    "logline": "The supplier reveals Marchand has restricted all Lethe distribution.",
+    "beatType": "revelation",
+    "content": "",
+    "visualHook": "A nervous supplier whispers behind a sealed door, eyes darting.",
+    "charactersInvolved": [
+      "Sera Voss",
+      "Lethe Supplier"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "The supplier tells Sera that High Warden Marchand cut off all Lethe flow on special order.",
+      "consequence": "Every Warden dependent on Lethe is now trapped with their accumulating Death Debts.",
+      "storyStateChange": "Marchand's move signals he anticipated this crisis and is tightening control before it breaks."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:29.684Z",
+    "updatedAt": "2026-08-16T09:29:29.684Z"
+  },
+  {
+    "id": "17334059-d518-45af-839b-0c3b6815bdc7",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 13,
+    "logline": "High Warden Marchand arrives at the scene before Sera reports.",
+    "beatType": "confrontation",
+    "content": "",
+    "visualHook": "Marchand steps through the tenement door, calm and preemptive, as if he expected this.",
+    "charactersInvolved": [
+      "Sera Voss",
+      "Cael Marchand"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Marchand appears at the body before Sera can file her findings with Warden command.",
+      "consequence": "His early arrival proves he already knew about the impossible death.",
+      "storyStateChange": "The antagonist reveals himself as someone hiding the truth rather than seeking it."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:29.939Z",
+    "updatedAt": "2026-08-16T09:29:29.939Z"
+  },
+  {
+    "id": "349509f1-42dc-4d61-b858-6eb274854b86",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 14,
+    "logline": "Marchand confiscates the body under an ancient containment protocol.",
+    "beatType": "confrontation",
+    "content": "",
+    "visualHook": "Marchand's gloved hand seals the body in a black shroud marked with a centuries-old sigil.",
+    "charactersInvolved": [
+      "Sera Voss",
+      "Cael Marchand"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Marchand invokes a containment protocol unused since the Memory Flood to seize the body.",
+      "consequence": "Sera's only physical evidence is taken from her under lawful authority.",
+      "storyStateChange": "The investigation's central evidence is now in the antagonist's hands."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:30.194Z",
+    "updatedAt": "2026-08-16T09:29:30.194Z"
+  },
+  {
+    "id": "768544eb-4972-42ba-9850-3ea7a6f78ca7",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 15,
+    "logline": "Marchand tells Sera the case is closed — natural causes, rare anomaly.",
+    "beatType": "confrontation",
+    "content": "",
+    "visualHook": "Marchand's smile doesn't reach his eyes as he dismisses the impossible.",
+    "charactersInvolved": [
+      "Sera Voss",
+      "Cael Marchand"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Marchand orders Sera to accept the death as a rare anomaly and move on.",
+      "consequence": "Sera is officially forbidden from investigating further under Warden authority.",
+      "storyStateChange": "Sera must choose between obedience and the truth that could free her from her Debts."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:30.464Z",
+    "updatedAt": "2026-08-16T09:29:30.464Z"
+  },
+  {
+    "id": "e694cfb8-12e1-4e30-8d3f-8aa59729f9e6",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 16,
+    "logline": "Sera disobeys Marchand and commits to finding the truth.",
+    "beatType": "transition",
+    "content": "",
+    "visualHook": "Sera walks past Warden headquarters without entering, turning toward the quarantine walls.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera decides to investigate the impossible death on her own, defying Marchand's order.",
+      "consequence": "She crosses from sanctioned Warden to rogue investigator in a single step.",
+      "storyStateChange": "Sera commits to a path that will make her an enemy of the regime she served."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:30.724Z",
+    "updatedAt": "2026-08-16T09:29:30.724Z"
+  },
+  {
+    "id": "4ac0b27c-937c-433c-b434-14e33316ac52",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 17,
+    "logline": "Sera enters the quarantined Memory Flood district seeking a rogue alchemist.",
+    "beatType": "transition",
+    "content": "",
+    "visualHook": "Rusting quarantine gates groan open to streets where people whisper to themselves.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera breaches the century-old quarantine to find the alchemist who studied the Stillness.",
+      "consequence": "She enters a landscape of perpetual psychic torment where residents relive thousands of murders.",
+      "storyStateChange": "Sera enters a zone outside all law and protection, raising the stakes of her search."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:31.023Z",
+    "updatedAt": "2026-08-16T09:29:31.023Z"
+  },
+  {
+    "id": "d12b3198-7238-4f3d-bf37-aa17d92ca636",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 18,
+    "logline": "The quarantine streets are filled with people drowning in murdered memories.",
+    "beatType": "setup",
+    "content": "",
+    "visualHook": "A woman rocks on the ground weeping in three different voices at once.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera navigates the haunted district, dodging residents lost in other people's deaths.",
+      "consequence": "The district's suffering mirrors what Sera's own Death Debts will become without Lethe.",
+      "storyStateChange": "Sera sees her own future in the quarantined — a preview of her fate if the Debts keep accumulating."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:31.332Z",
+    "updatedAt": "2026-08-16T09:29:31.332Z"
+  },
+  {
+    "id": "21a70f04-d281-4018-88d6-0a5fe751c7a3",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 19,
+    "logline": "Sera finds the rogue alchemist hiding in a collapsed apothecary.",
+    "beatType": "revelation",
+    "content": "",
+    "visualHook": "An old woman's body sits behind a wall of shattered glass vials, surrounded by centuries of notes.",
+    "charactersInvolved": [
+      "Sera Voss",
+      "The Alchemist"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera locates the alchemist who was exiled for studying the Stillness itself.",
+      "consequence": "The alchemist has spent centuries developing a theory no one else dared voice.",
+      "storyStateChange": "A new source of forbidden knowledge enters the story, outside Marchand's control."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:31.619Z",
+    "updatedAt": "2026-08-16T09:29:31.619Z"
+  },
+  {
+    "id": "af3a3b43-f53c-4afa-bcfe-31667dd00278",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 20,
+    "logline": "The alchemist reveals the Stillness was never permanent — only paused.",
+    "beatType": "revelation",
+    "content": "",
+    "visualHook": "The alchemist draws a breath, holds it, then releases — 'Like that. The world held its breath.'",
+    "charactersInvolved": [
+      "Sera Voss",
+      "The Alchemist"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "The alchemist explains her theory that the Stillness was a pause, not a permanent state.",
+      "consequence": "If correct, aging will resume for everyone — the foundation of Aeternum is temporary.",
+      "storyStateChange": "The impossible death transforms from anomaly into the first symptom of a global change."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:31.914Z",
+    "updatedAt": "2026-08-16T09:29:31.914Z"
+  },
+  {
+    "id": "baa1c803-09a6-4a6c-bc48-409f8884c081",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 21,
+    "logline": "The alchemist warns: the body Sera found is just the first to resume aging.",
+    "beatType": "revelation",
+    "content": "",
+    "visualHook": "The alchemist grabs Sera's wrist with surprising strength. 'You found the first. There will be more.'",
+    "charactersInvolved": [
+      "Sera Voss",
+      "The Alchemist"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "The alchemist tells Sera the death she discovered is the beginning, not an isolated event.",
+      "consequence": "If the Stillness is ending, every institution built on eternal life will collapse.",
+      "storyStateChange": "The stakes escalate from one impossible death to the potential end of civilization as known."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:32.210Z",
+    "updatedAt": "2026-08-16T09:29:32.210Z"
+  },
+  {
+    "id": "d0b9928b-af6d-4e1b-9df9-4c78345e1dda",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 22,
+    "logline": "Marchand's agents ambush Sera inside the quarantine zone.",
+    "beatType": "confrontation",
+    "content": "",
+    "visualHook": "Three figures in Warden black step from the fog of the quarantine streets.",
+    "charactersInvolved": [
+      "Sera Voss",
+      "Marchand's Agents"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Marchand's agents corner Sera in the Memory Flood district to silence her.",
+      "consequence": "Sera is trapped between hostile agents and a district full of dangers.",
+      "storyStateChange": "Marchand escalates from bureaucratic suppression to direct violent intervention."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:32.522Z",
+    "updatedAt": "2026-08-16T09:29:32.522Z"
+  },
+  {
+    "id": "ad7ca69e-54f7-469c-ab1f-da6f0fd82444",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 23,
+    "logline": "Sera kills one agent in self-defense and the Silence of the Dying falls.",
+    "beatType": "climax",
+    "content": "",
+    "visualHook": "All sound vanishes within ten paces — the breath of silence grips the quarantine street.",
+    "charactersInvolved": [
+      "Sera Voss",
+      "Marchand's Agents"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera kills an attacking agent to save her own life.",
+      "consequence": "The Silence falls for the first time in Sera's life outside a sanctioned kill, and she inherits the agent's final memories.",
+      "storyStateChange": "Sera crosses the line from investigator to killer outside the law."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:32.799Z",
+    "updatedAt": "2026-08-16T09:29:32.799Z"
+  },
+  {
+    "id": "e0d225f2-67f9-47a7-a869-1097a636f0ad",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 24,
+    "logline": "The dead agent's final memory reveals Marchand's vault full of aged bodies.",
+    "beatType": "revelation",
+    "content": "",
+    "visualHook": "In Sera's mind: a stone vault, cold and dark, stacked with dozens of shriveled, aged corpses.",
+    "charactersInvolved": [
+      "Sera Voss",
+      "Cael Marchand"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera experiences the dead agent's last memory — a vision of Marchand's secret vault.",
+      "consequence": "The impossible death isn't the first; Marchand has been collecting them for an unknown period.",
+      "storyStateChange": "The conspiracy expands: Marchand isn't just hiding one death, he's hoarding evidence of many."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:33.074Z",
+    "updatedAt": "2026-08-16T09:29:33.074Z"
+  },
+  {
+    "id": "2b2b1534-2b92-47fc-b3b7-7fec854ddde5",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 25,
+    "logline": "Sera escapes the quarantine zone, carrying a dead agent's memory.",
+    "beatType": "transition",
+    "content": "",
+    "visualHook": "Sera stumbles through rusted gates, bleeding from a wound that will scar forever.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera flees the quarantine district with the surviving agents in pursuit.",
+      "consequence": "She carries proof of Marchand's conspiracy in her own mind, but no physical evidence.",
+      "storyStateChange": "Sera is now both witness and fugitive, carrying the regime's most dangerous secret."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:33.379Z",
+    "updatedAt": "2026-08-16T09:29:33.379Z"
+  },
+  {
+    "id": "7d680804-e1f7-46bb-b6ef-0cb79538cf5b",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 26,
+    "logline": "Sera returns to Warden HQ and finds Marchand has already moved against her.",
+    "beatType": "confrontation",
+    "content": "",
+    "visualHook": "Sera's Tallybone crumbles to dust in her hands as she crosses the threshold.",
+    "charactersInvolved": [
+      "Sera Voss",
+      "Cael Marchand"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera discovers Marchand has formally charged her with unsanctioned killing.",
+      "consequence": "Her Tallybone is stripped, her Warden authority revoked, and a kill warrant issued in her name.",
+      "storyStateChange": "Sera is transformed from enforcer to quarry in the system she served for centuries."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:33.649Z",
+    "updatedAt": "2026-08-16T09:29:33.649Z"
+  },
+  {
+    "id": "f00b494e-cd1d-4515-883c-6307e59fd805",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 27,
+    "logline": "Sera is now a fugitive hunted by the Wardens she once led.",
+    "beatType": "confrontation",
+    "content": "",
+    "visualHook": "Wanted posters bearing Sera's scarred face appear on every corner within the hour.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera goes to ground, hiding from the Warden network that knows her every habit.",
+      "consequence": "Every ally she had is now legally required to kill her on sight.",
+      "storyStateChange": "Sera is completely isolated with the truth and no means to spread it safely."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:33.952Z",
+    "updatedAt": "2026-08-16T09:29:33.952Z"
+  },
+  {
+    "id": "7e750dec-183c-4ce2-b8e7-60a55dc067b7",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 28,
+    "logline": "Cornered and desperate, Sera finds a Mourner's Bell in an abandoned shrine.",
+    "beatType": "transition",
+    "content": "",
+    "visualHook": "A tarnished bell hangs from a rotted frame in a shrine no one has visited in decades.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera reaches for the Mourner's Bell as her last resort to make the truth felt.",
+      "consequence": "The Bell will force everyone who hears it to experience the emotional state of the most recently killed person.",
+      "storyStateChange": "Sera chooses to weaponize empathy itself — making the impossible death undeniable to the masses."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:34.239Z",
+    "updatedAt": "2026-08-16T09:29:34.239Z"
+  },
+  {
+    "id": "a62eaf36-73a8-4ef9-892c-4c872f213363",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 29,
+    "logline": "Sera rings the Mourner's Bell in a crowded public square.",
+    "beatType": "climax",
+    "content": "",
+    "visualHook": "The bell's tone cuts through market noise, and hundreds freeze mid-motion.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "Sera strikes the Mourner's Bell in the most crowded square in Aeternum.",
+      "consequence": "Hundreds of civilians are forced to feel the emotional state of the impossible victim — the peace of a natural death.",
+      "storyStateChange": "The truth of mortality escapes containment and enters the minds of the public directly."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:34.550Z",
+    "updatedAt": "2026-08-16T09:29:34.550Z"
+  },
+  {
+    "id": "6868f039-5ab1-4901-90af-40c04cde94fc",
+    "episodeId": "b694d7a4-47ee-4231-a06e-1a5ae3154a96",
+    "sequence": 30,
+    "logline": "The crowd experiences natural death for the first time — terror or hope?",
+    "beatType": "resolution",
+    "content": "",
+    "visualHook": "Faces in the crowd shift from horror to wonder to tears, one by one, as the bell's resonance fades.",
+    "charactersInvolved": [
+      "Sera Voss"
+    ],
+    "emotionalShifts": {},
+    "causalDependencies": [],
+    "setupsPayoffs": {
+      "actionTaken": "The crowd processes a sensation none of them have ever known — the peace of dying without murder.",
+      "consequence": "The question hangs in the air: is the return of natural death the end of their world, or its liberation?",
+      "storyStateChange": "The episode ends on the cliffhanger of a civilization confronting the possibility of its own transformation."
+    },
+    "status": "proposed",
+    "imageUrl": null,
+    "imagePrompt": null,
+    "createdAt": "2026-08-16T09:29:34.849Z",
+    "updatedAt": "2026-08-16T09:29:34.849Z"
+  }
+]

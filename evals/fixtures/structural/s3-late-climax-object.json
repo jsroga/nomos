@@ -1,0 +1,118 @@
+{
+  "lexicon": {
+    "matching": {
+      "caseInsensitive": true,
+      "ignoreLeadingThe": true,
+      "singularPlural": true,
+      "explicitAliases": true,
+      "wholePhraseWordBoundaries": true
+    },
+    "byKind": {
+      "object": [{ "term": "Sun Dagger", "aliases": [] }],
+      "place": [],
+      "institution": [],
+      "law": [],
+      "ritual": [],
+      "event": [],
+      "character": []
+    }
+  },
+  "beats": [
+    {
+      "id": "s3-1",
+      "episodeId": "ep",
+      "sequence": 1,
+      "logline": "A market morning with no relic in sight.",
+      "beatType": "setup",
+      "content": "",
+      "visualHook": "Stalls open.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": { "actionTaken": "Sera walks the aisle.", "consequence": "Nothing shines.", "storyStateChange": "No relic yet." },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    },
+    {
+      "id": "s3-2",
+      "episodeId": "ep",
+      "sequence": 2,
+      "logline": "Sera questions a baker.",
+      "beatType": "setup",
+      "content": "",
+      "visualHook": "Flour on the counter.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": { "actionTaken": "Sera asks.", "consequence": "The baker shrugs.", "storyStateChange": "Still no relic." },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    },
+    {
+      "id": "s3-3",
+      "episodeId": "ep",
+      "sequence": 3,
+      "logline": "Rain starts on the square.",
+      "beatType": "transition",
+      "content": "",
+      "visualHook": "Wet stone.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": { "actionTaken": "Sera covers her notes.", "consequence": "Ink runs.", "storyStateChange": "The search slows." },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    },
+    {
+      "id": "s3-4",
+      "episodeId": "ep",
+      "sequence": 4,
+      "logline": "A rumor names a vault, not a blade.",
+      "beatType": "revelation",
+      "content": "",
+      "visualHook": "A locked grate.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": { "actionTaken": "Sera listens.", "consequence": "The vault is empty.", "storyStateChange": "The rumor dies." },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    },
+    {
+      "id": "s3-5",
+      "episodeId": "ep",
+      "sequence": 5,
+      "logline": "Sera climbs the tower stairs.",
+      "beatType": "confrontation",
+      "content": "",
+      "visualHook": "Narrow steps.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": { "actionTaken": "Sera climbs.", "consequence": "Wind hits her.", "storyStateChange": "She reaches the roof." },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    },
+    {
+      "id": "s3-6",
+      "episodeId": "ep",
+      "sequence": 6,
+      "logline": "At the climax Sera draws the Sun Dagger for the first time.",
+      "beatType": "climax",
+      "content": "",
+      "visualHook": "The Sun Dagger catches the last light.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": { "actionTaken": "Sera raises the Sun Dagger.", "consequence": "The crowd gasps.", "storyStateChange": "The relic arrives too late." },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    }
+  ]
+}

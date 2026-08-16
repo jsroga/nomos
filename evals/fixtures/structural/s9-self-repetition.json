@@ -1,0 +1,64 @@
+{
+  "beats": [
+    {
+      "id": "s9-1",
+      "episodeId": "ep",
+      "sequence": 1,
+      "logline": "The red door opens onto the same wet street again.",
+      "beatType": "setup",
+      "content": "",
+      "visualHook": "The red door opens onto the same wet street again.",
+      "charactersInvolved": [],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": {
+        "actionTaken": "The red door opens onto the same wet street again.",
+        "consequence": "The red door opens onto the same wet street again.",
+        "storyStateChange": "The red door opens onto the same wet street again."
+      },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    },
+    {
+      "id": "s9-2",
+      "episodeId": "ep",
+      "sequence": 2,
+      "logline": "The red door opens onto the same wet street again.",
+      "beatType": "setup",
+      "content": "",
+      "visualHook": "The red door opens onto the same wet street again.",
+      "charactersInvolved": [],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": {
+        "actionTaken": "The red door opens onto the same wet street again.",
+        "consequence": "The red door opens onto the same wet street again.",
+        "storyStateChange": "The red door opens onto the same wet street again."
+      },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    },
+    {
+      "id": "s9-3",
+      "episodeId": "ep",
+      "sequence": 3,
+      "logline": "The red door opens onto the same wet street again.",
+      "beatType": "setup",
+      "content": "",
+      "visualHook": "The red door opens onto the same wet street again.",
+      "charactersInvolved": [],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": {
+        "actionTaken": "The red door opens onto the same wet street again.",
+        "consequence": "The red door opens onto the same wet street again.",
+        "storyStateChange": "The red door opens onto the same wet street again."
+      },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    }
+  ]
+}

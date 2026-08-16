@@ -1,0 +1,609 @@
+{
+  "world": "aeternum",
+  "fixture": "evals/fixtures/aeternum/episode-01.beats.json",
+  "dated": "2026-08-16",
+  "scoredAt": "2026-08-16T14:32:57.582Z",
+  "headSha": "836370d49cb01adc1a9488a82dc490a67031f17e",
+  "scorerCodeSha": "8ad744dfbd69b6a104427e0ca446e1f5b66f506afce8e9144031837823859c8a",
+  "manifestSha256": {
+    "episodePlan": {
+      "path": "episode-01.plan.json",
+      "sha256": "da922857b7627492d6201cd91d819e9a388a8ba837b0ef56b450c2d15a66e925"
+    },
+    "worldBible": {
+      "path": "world-bible.json",
+      "sha256": "e61b933fa26c1242e5e2a2e23d29089d7e69d208b313e2dd95ca07a4bdab8058"
+    },
+    "characters": {
+      "path": "characters.json",
+      "sha256": "c60c5d3af47191a3463f9f92906d7a7fd8a8891def1568e1eb06f61c4d513637"
+    },
+    "cast": {
+      "path": "cast.json",
+      "sha256": "4d5e2ff81c66591c444fe72f8fa9f41d0343757c7bb14c4ee6285d74f8f6f1f7"
+    },
+    "canonLexicon": {
+      "path": "canon-lexicon.json",
+      "sha256": "7d77b5d6615580368ab79bdb10aac2a1a69ab7cff8b79fff2d23a247fcd0e10e"
+    },
+    "systemPrompt": {
+      "path": "system-prompt.md",
+      "sha256": "747849801d7ec6ae29e9cb6b3d83dd9fa289e8dc4e80e853e6cc39f0a0bf4787",
+      "gitSha": "d06607a42862c9e669c9e827b8e8bbb2b90218e4",
+      "sourceFiles": [
+        {
+          "path": "src/mastra/agents/grrm-author/instructions.md",
+          "gitSha": "d06607a42862c9e669c9e827b8e8bbb2b90218e4"
+        },
+        {
+          "path": "src/mastra/agents/grrm-author/skills/anti-slop/SKILL.md",
+          "gitSha": "d06607a42862c9e669c9e827b8e8bbb2b90218e4"
+        },
+        {
+          "path": "src/mastra/agents/grrm-author/skills/psychology/SKILL.md",
+          "gitSha": "d06607a42862c9e669c9e827b8e8bbb2b90218e4"
+        },
+        {
+          "path": "src/domains/storyteller/ai/prompts/guardrails/anti-slop-phrases.ts",
+          "gitSha": "b60eec9118e0f492231e3ee06d995d4cbc472110"
+        }
+      ]
+    }
+  },
+  "applicability": {
+    "causal_graph_integrity": "beats include causalDependencies (empty arrays preserved)",
+    "plan_coverage_evenness": "10-point plan read from storyPlan.premise.tenPointsPlan",
+    "setup_payoff_distance": "lexicon has place/institution/object entries",
+    "canon_violation": "lexicon + cast present",
+    "schema_validity": "raw beat rows present",
+    "slop_rate": "negative corpus present",
+    "character_field_adherence": "NOT_APPLICABLE: no wants/fears/wontBreak on cast",
+    "self_repetition": "intra-set applicable; cross-run NOT_APPLICABLE (one run)"
+  },
+  "scorers": {
+    "causal_graph_integrity": {
+      "state": "number",
+      "value": {
+        "shareNonEmptyCausal": 0,
+        "maxInDegree": 0,
+        "multiDependencyCount": 0,
+        "orphanCount": 29,
+        "forwardDependencyCount": 0,
+        "plainChain": false
+      },
+      "findings": []
+    },
+    "plan_coverage_evenness": {
+      "state": "number",
+      "value": {
+        "coverageVariance": 0.8,
+        "unmappedCount": 0,
+        "gridFillingSuspected": false,
+        "planPointCount": 10
+      },
+      "findings": [
+        {
+          "sequence": 1,
+          "planPoint": 3
+        },
+        {
+          "sequence": 2,
+          "planPoint": 4
+        },
+        {
+          "sequence": 3,
+          "planPoint": 1
+        },
+        {
+          "sequence": 4,
+          "planPoint": 2
+        },
+        {
+          "sequence": 5,
+          "planPoint": 2
+        },
+        {
+          "sequence": 6,
+          "planPoint": 2
+        },
+        {
+          "sequence": 7,
+          "planPoint": 3
+        },
+        {
+          "sequence": 8,
+          "planPoint": 3
+        },
+        {
+          "sequence": 9,
+          "planPoint": 3
+        },
+        {
+          "sequence": 10,
+          "planPoint": 4
+        },
+        {
+          "sequence": 11,
+          "planPoint": 4
+        },
+        {
+          "sequence": 12,
+          "planPoint": 4
+        },
+        {
+          "sequence": 13,
+          "planPoint": 5
+        },
+        {
+          "sequence": 14,
+          "planPoint": 5
+        },
+        {
+          "sequence": 15,
+          "planPoint": 5
+        },
+        {
+          "sequence": 16,
+          "planPoint": 9
+        },
+        {
+          "sequence": 17,
+          "planPoint": 6
+        },
+        {
+          "sequence": 18,
+          "planPoint": 6
+        },
+        {
+          "sequence": 19,
+          "planPoint": 6
+        },
+        {
+          "sequence": 20,
+          "planPoint": 7
+        },
+        {
+          "sequence": 21,
+          "planPoint": 7
+        },
+        {
+          "sequence": 22,
+          "planPoint": 8
+        },
+        {
+          "sequence": 23,
+          "planPoint": 8
+        },
+        {
+          "sequence": 24,
+          "planPoint": 8
+        },
+        {
+          "sequence": 25,
+          "planPoint": 9
+        },
+        {
+          "sequence": 26,
+          "planPoint": 9
+        },
+        {
+          "sequence": 27,
+          "planPoint": 9
+        },
+        {
+          "sequence": 28,
+          "planPoint": 10
+        },
+        {
+          "sequence": 29,
+          "planPoint": 10
+        },
+        {
+          "sequence": 30,
+          "planPoint": 10
+        }
+      ]
+    },
+    "setup_payoff_distance": {
+      "state": "number",
+      "value": {
+        "trackedEntityCount": 8,
+        "lateAppearanceCount": 11,
+        "lateClimaxIntroductionCount": 2
+      },
+      "findings": [
+        {
+          "term": "The Mourner's Bell",
+          "matchedString": "The Mourner's Bell",
+          "firstMentionSequence": 28,
+          "payoffSequence": 29,
+          "beatType": "climax"
+        },
+        {
+          "term": "The Mourner's Bell",
+          "matchedString": "The Mourner's Bell",
+          "firstMentionSequence": 28,
+          "payoffSequence": 29,
+          "beatType": "climax"
+        }
+      ]
+    },
+    "canon_violation": {
+      "state": "number",
+      "value": {
+        "unknownEntityCount": 27,
+        "newCharacterCount": 0,
+        "unknownEntityPerThousandTokens": 13.595166163141993,
+        "tokenCount": 1986,
+        "buckets": {
+          "unknownEntity": [
+            {
+              "matchedString": "Silence",
+              "count": 2,
+              "sequences": [
+                1,
+                6
+              ]
+            },
+            {
+              "matchedString": "Another",
+              "count": 1,
+              "sequences": [
+                1
+              ]
+            },
+            {
+              "matchedString": "Establishes",
+              "count": 1,
+              "sequences": [
+                1
+              ]
+            },
+            {
+              "matchedString": "Compass",
+              "count": 2,
+              "sequences": [
+                2,
+                3
+              ]
+            },
+            {
+              "matchedString": "Routine",
+              "count": 1,
+              "sequences": [
+                2
+              ]
+            },
+            {
+              "matchedString": "Shows",
+              "count": 1,
+              "sequences": [
+                2
+              ]
+            },
+            {
+              "matchedString": "Every",
+              "count": 3,
+              "sequences": [
+                5,
+                12,
+                27
+              ]
+            },
+            {
+              "matchedString": "Neighbors",
+              "count": 1,
+              "sequences": [
+                6
+              ]
+            },
+            {
+              "matchedString": "Pages",
+              "count": 1,
+              "sequences": [
+                7
+              ]
+            },
+            {
+              "matchedString": "Debts",
+              "count": 2,
+              "sequences": [
+                15,
+                18
+              ]
+            },
+            {
+              "matchedString": "Rusting",
+              "count": 1,
+              "sequences": [
+                17
+              ]
+            },
+            {
+              "matchedString": "Like",
+              "count": 1,
+              "sequences": [
+                20
+              ]
+            },
+            {
+              "matchedString": "There",
+              "count": 1,
+              "sequences": [
+                21
+              ]
+            },
+            {
+              "matchedString": "Three",
+              "count": 1,
+              "sequences": [
+                22
+              ]
+            },
+            {
+              "matchedString": "All",
+              "count": 1,
+              "sequences": [
+                23
+              ]
+            },
+            {
+              "matchedString": "The Silence",
+              "count": 1,
+              "sequences": [
+                23
+              ]
+            },
+            {
+              "matchedString": "HQ",
+              "count": 1,
+              "sequences": [
+                26
+              ]
+            },
+            {
+              "matchedString": "Wanted",
+              "count": 1,
+              "sequences": [
+                27
+              ]
+            },
+            {
+              "matchedString": "Cornered",
+              "count": 1,
+              "sequences": [
+                28
+              ]
+            },
+            {
+              "matchedString": "The Bell",
+              "count": 1,
+              "sequences": [
+                28
+              ]
+            },
+            {
+              "matchedString": "Hundreds",
+              "count": 1,
+              "sequences": [
+                29
+              ]
+            },
+            {
+              "matchedString": "Faces",
+              "count": 1,
+              "sequences": [
+                30
+              ]
+            }
+          ],
+          "newCharacter": []
+        }
+      },
+      "findings": [
+        {
+          "sequence": 1,
+          "matchedString": "Silence",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 1,
+          "matchedString": "Another",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 1,
+          "matchedString": "Establishes",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 2,
+          "matchedString": "Compass",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 2,
+          "matchedString": "Routine",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 2,
+          "matchedString": "Shows",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 3,
+          "matchedString": "Compass",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 5,
+          "matchedString": "Every",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 6,
+          "matchedString": "Neighbors",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 6,
+          "matchedString": "Silence",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 7,
+          "matchedString": "Pages",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 12,
+          "matchedString": "Every",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 15,
+          "matchedString": "Debts",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 17,
+          "matchedString": "Rusting",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 18,
+          "matchedString": "Debts",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 20,
+          "matchedString": "Like",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 21,
+          "matchedString": "There",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 22,
+          "matchedString": "Three",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 23,
+          "matchedString": "All",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 23,
+          "matchedString": "The Silence",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 26,
+          "matchedString": "HQ",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 27,
+          "matchedString": "Wanted",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 27,
+          "matchedString": "Every",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 28,
+          "matchedString": "Cornered",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 28,
+          "matchedString": "The Bell",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 29,
+          "matchedString": "Hundreds",
+          "bucket": "unknown_entity"
+        },
+        {
+          "sequence": 30,
+          "matchedString": "Faces",
+          "bucket": "unknown_entity"
+        }
+      ]
+    },
+    "schema_validity": {
+      "state": "number",
+      "value": {
+        "parseRate": 1,
+        "rawFailures": 0,
+        "repairedCount": 0,
+        "retriesNeeded": 0
+      },
+      "findings": []
+    },
+    "slop_rate": {
+      "state": "number",
+      "value": {
+        "hitCount": 3,
+        "hitsPerThousandTokens": 1.5105740181268883,
+        "tokenCount": 1986
+      },
+      "findings": [
+        {
+          "sequence": 9,
+          "phrase": "the implications crystallize",
+          "matchedString": "the implications crystallize"
+        },
+        {
+          "sequence": 12,
+          "phrase": "eyes darting",
+          "matchedString": "eyes darting"
+        },
+        {
+          "sequence": 21,
+          "phrase": "with surprising strength",
+          "matchedString": "with surprising strength"
+        }
+      ]
+    },
+    "character_field_adherence": {
+      "state": "NOT_APPLICABLE",
+      "reason": "cast psychology has no wants, fears, or wontBreak (all records empty)"
+    },
+    "self_repetition": {
+      "state": "number",
+      "value": {
+        "distinct3": {
+          "state": "number",
+          "value": 0.9596774193548387
+        },
+        "distinct4": {
+          "state": "number",
+          "value": 0.9884014120020171
+        },
+        "pairwiseSimilarityMean": {
+          "state": "NOT_APPLICABLE",
+          "reason": "single run; cross-run similarity cannot be computed"
+        }
+      },
+      "findings": []
+    }
+  },
+  "notRun": [
+    {
+      "scorer": "character_field_adherence",
+      "reason": "cast psychology has no wants/fears/wontBreak"
+    },
+    {
+      "scorer": "agency_ratio (S4)",
+      "reason": "judge scorer; skipped by measurement plan"
+    }
+  ]
+}

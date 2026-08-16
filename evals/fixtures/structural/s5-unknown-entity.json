@@ -1,0 +1,45 @@
+{
+  "lexicon": {
+    "matching": {
+      "caseInsensitive": true,
+      "ignoreLeadingThe": true,
+      "singularPlural": true,
+      "explicitAliases": true,
+      "wholePhraseWordBoundaries": true
+    },
+    "byKind": {
+      "place": [{ "term": "Aeternum", "aliases": [] }],
+      "law": [{ "term": "The Age Lock", "aliases": ["Age Lock"] }],
+      "institution": [],
+      "ritual": [],
+      "object": [],
+      "event": [],
+      "character": []
+    }
+  },
+  "cast": {
+    "people": [{ "name": "Sera Voss", "aliases": ["Sera"], "psychology": {} }]
+  },
+  "beats": [
+    {
+      "id": "s5-1",
+      "episodeId": "ep",
+      "sequence": 1,
+      "logline": "Jorik Hale invokes the Iron Tithe in Aeternum.",
+      "beatType": "revelation",
+      "content": "",
+      "visualHook": "Jorik Hale lifts a black coin.",
+      "charactersInvolved": ["Jorik Hale"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": {
+        "actionTaken": "Jorik Hale speaks the Iron Tithe.",
+        "consequence": "The square goes still.",
+        "storyStateChange": "A new law is named."
+      },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    }
+  ]
+}

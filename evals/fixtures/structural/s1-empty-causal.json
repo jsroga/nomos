@@ -1,0 +1,64 @@
+{
+  "beats": [
+    {
+      "id": "s1-a",
+      "episodeId": "ep",
+      "sequence": 1,
+      "logline": "Opening beat starts the chain.",
+      "beatType": "setup",
+      "content": "",
+      "visualHook": "A door opens.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": {
+        "actionTaken": "Sera opens the door.",
+        "consequence": "The hall is empty.",
+        "storyStateChange": "The episode begins."
+      },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    },
+    {
+      "id": "s1-b",
+      "episodeId": "ep",
+      "sequence": 2,
+      "logline": "Second beat has no causal parent.",
+      "beatType": "setup",
+      "content": "",
+      "visualHook": "Dust motes hang.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": {
+        "actionTaken": "Sera waits.",
+        "consequence": "Nothing answers.",
+        "storyStateChange": "No cause is recorded."
+      },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    },
+    {
+      "id": "s1-c",
+      "episodeId": "ep",
+      "sequence": 3,
+      "logline": "Third beat also has an empty dependency list.",
+      "beatType": "revelation",
+      "content": "",
+      "visualHook": "A lamp dies.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": {
+        "actionTaken": "Sera lights nothing.",
+        "consequence": "Darkness holds.",
+        "storyStateChange": "Still no graph edge."
+      },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    }
+  ]
+}

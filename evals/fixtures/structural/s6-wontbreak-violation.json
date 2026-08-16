@@ -1,0 +1,44 @@
+{
+  "cast": {
+    "people": [
+      {
+        "name": "Sera Voss",
+        "aliases": ["Sera"],
+        "psychology": {
+          "wontBreak": "will not kill a child",
+          "wants": "to remember her name",
+          "fears": "erasure"
+        }
+      }
+    ]
+  },
+  "matching": {
+    "caseInsensitive": true,
+    "ignoreLeadingThe": true,
+    "singularPlural": true,
+    "explicitAliases": true,
+    "wholePhraseWordBoundaries": true
+  },
+  "beats": [
+    {
+      "id": "s6-1",
+      "episodeId": "ep",
+      "sequence": 1,
+      "logline": "Sera kills a child in the square.",
+      "beatType": "climax",
+      "content": "",
+      "visualHook": "A small body on the stones.",
+      "charactersInvolved": ["Sera Voss"],
+      "emotionalShifts": {},
+      "causalDependencies": [],
+      "setupsPayoffs": {
+        "actionTaken": "Sera kills a child.",
+        "consequence": "The crowd breaks.",
+        "storyStateChange": "The line she would not cross is gone."
+      },
+      "status": "proposed",
+      "imageUrl": null,
+      "imagePrompt": null
+    }
+  ]
+}

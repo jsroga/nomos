@@ -1,0 +1,30 @@
+{
+  "beats": [
+    {
+      "id": "s7-ok",
+      "episodeId": "ep",
+      "sequence": 1,
+      "logline": "A valid beat keeps its logline.",
+      "beatType": "setup",
+      "content": "",
+      "visualHook": "A lamp.",
+      "charactersInvolved": [],
+      "causalDependencies": [],
+      "setupsPayoffs": { "actionTaken": "She waits.", "consequence": "Night falls.", "storyStateChange": "Time passes." },
+      "status": "proposed"
+    },
+    {
+      "id": "s7-bad",
+      "episodeId": "ep",
+      "sequence": 2,
+      "logline": "",
+      "beatType": "setup",
+      "content": "",
+      "visualHook": "Nothing.",
+      "charactersInvolved": [],
+      "causalDependencies": [],
+      "setupsPayoffs": {},
+      "status": "proposed"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "world": "aeternum",
+  "source": [
+    "characters.json",
+    "episode-01.plan.json storyPlan.premise"
+  ],
+  "people": [
+    {
+      "name": "Sera Voss",
+      "aliases": ["Sera"],
+      "source": "characters.json",
+      "psychology": {}
+    },
+    {
+      "name": "Cael Marchand",
+      "aliases": [
+        "Marchand",
+        "High Warden Marchand",
+        "High Warden Cael Marchand"
+      ],
+      "source": "characters.json + episode-01.plan.json storyPlan.premise.antagonistMove",
+      "psychology": {}
+    },
+    {
+      "name": "Lethe Supplier",
+      "aliases": [],
+      "source": "characters.json + episode-01.plan.json storyPlan.premise.tenPointsPlan",
+      "psychology": {}
+    },
+    {
+      "name": "The Alchemist",
+      "aliases": ["Alchemist", "rogue alchemist"],
+      "source": "characters.json + episode-01.plan.json storyPlan.premise.tenPointsPlan",
+      "psychology": {}
+    },
+    {
+      "name": "Marchand's Agents",
+      "aliases": [],
+      "source": "characters.json + episode-01.plan.json storyPlan.premise.tenPointsPlan",
+      "psychology": {}
+    }
+  ]
+}
