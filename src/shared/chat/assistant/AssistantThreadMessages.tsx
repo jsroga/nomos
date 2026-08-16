@@ -134,7 +134,8 @@ function assistantPlainText(
 
 function AddToWorldButton() {
   const messageRuntime = useMessageRuntime()
-  const { onAddToWorld, sectionLabelsFromToolArgs } = useAssistantAddToWorld()
+  const { onAddToWorld, sectionLabelsFromToolArgs, isAddToWorldSettled } =
+    useAssistantAddToWorld()
   const fallbackText = useMessage(m => assistantPlainText(m.content))
   const selectToolArgs = useMemo(() => createToolArgsSnapshotSelector(), [])
   const toolArgs = useMessage(m => selectToolArgs(m.content))
@@ -144,8 +145,9 @@ function AddToWorldButton() {
   )
   const [added, setAdded] = useState(false)
   const [busy, setBusy] = useState(false)
+  const settled = isAddToWorldSettled?.(toolArgs) ?? false
 
-  if (added) {
+  if (added || settled) {
     return (
       <Button
         type="button"
@@ -184,7 +186,7 @@ function AddToWorldButton() {
         {ASSISTANT_THREAD_COPY.AddToWorld}
       </Button>
       {sectionLabels.length > 0 ? (
-        <span className="max-w-[180px] truncate text-[10px] leading-tight text-muted-foreground">
+        <span className="max-w-[280px] text-[10px] leading-tight text-muted-foreground">
           {sectionLabels.join(ASSISTANT_THREAD_COPY.SectionLabelJoin)}
         </span>
       ) : null}

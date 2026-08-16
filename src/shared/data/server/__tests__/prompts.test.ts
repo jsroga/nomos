@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   GENERATION_PROMPTS,
+  composeApiframeFollowUpPrompt,
   composeFirstTilePrompt,
   composeFollowUpPrompt,
 } from '../prompts'
-import { GenerationPromptCopy } from '../constants/generation-prompts'
+import {
+  FollowUpApiframeCopy,
+  GenerationPromptCopy,
+} from '../constants/generation-prompts'
 
 const OVERHEAD_PREFIX: string = GenerationPromptCopy.FirstTileOverheadPrefix
 
@@ -64,5 +68,20 @@ describe('composeFollowUpPrompt', () => {
     const prompt = GENERATION_PROMPTS.FOLLOW_UP.MASTER(LAYERS)
     expect(prompt.toLowerCase()).toMatch(/gr[ae]y/)
     expect(prompt.toLowerCase()).not.toContain('magenta')
+  })
+})
+
+describe('composeApiframeFollowUpPrompt', () => {
+  it('asks for the grey cell on the packed neighbor canvas', () => {
+    const prompt = composeApiframeFollowUpPrompt(LAYERS)
+    expect(prompt).toContain(FollowUpApiframeCopy.PackedWorld)
+    expect(prompt).toContain(FollowUpApiframeCopy.PackedKeepNeighbors)
+    expect(prompt).toContain(FollowUpApiframeCopy.MatchContract)
+    expect(prompt).toContain(LAYERS.masterPrompt)
+    expect(prompt).toContain(LAYERS.tileDescription)
+    expect(prompt.toLowerCase()).not.toContain('inpaint')
+    expect(prompt.toLowerCase()).not.toContain('magenta')
+    expect(prompt).toContain('Avoid:')
+    expect(prompt).toContain('diamond shape')
   })
 })

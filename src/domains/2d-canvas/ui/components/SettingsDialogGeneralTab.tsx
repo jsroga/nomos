@@ -114,6 +114,7 @@ export const SettingsDialogGeneralTab: React.FC<SettingsDialogGeneralTabProps> =
           models: <span className="text-zinc-300 font-mono">IMAGE_TILE_FIRST_MODEL</span>,{' '}
           <span className="text-zinc-300 font-mono">IMAGE_TILE_FOLLOW_UP_MODEL</span>,{' '}
           <span className="text-zinc-300 font-mono">IMAGE_UPSCALE_MODEL</span>,{' '}
+          <span className="text-zinc-300 font-mono">IMAGE_UPSCALE_MODE</span>,{' '}
           <span className="text-zinc-300 font-mono">IMAGE_MOODBOARD_MODEL</span>,{' '}
           <span className="text-zinc-300 font-mono">IMAGE_STORYBOARD_MODEL</span>,{' '}
           <span className="text-zinc-300 font-mono">IMAGE_FIDELITY_MODEL</span> (see{' '}

@@ -1,0 +1,9 @@
+{
+  "id": "procedural-scene-log",
+  "situation": "procedural",
+  "title": "Instruments that have no category",
+  "beatType": "setup",
+  "characters": ["Sera Voss"],
+  "priorStoryState": "Sera Voss is alone in the tenement room with the unwounded body. Neighbors said the victim was well yesterday. The Ashen Compass in her hand is dark. The Dying Candle burns with ordinary light, not shadow. No Silence of the Dying has fallen. Tallybone records, already checked, show no warrant and an Age Lock of forty-three held for six hundred years. She has not yet left the room. Marchand has not yet arrived.",
+  "brief": "Write the beat of the official scene log. Sera must record, in order, the Compass reading, the Candle test, the Silence check, and the Tallybone search. Each instrument returns a result. The log entry she files is the action; once filed it cannot be an ordinary sanctioned killing."
+}

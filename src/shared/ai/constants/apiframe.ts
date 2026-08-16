@@ -87,6 +87,23 @@ export enum ApiframeImageField {
   AspectRatio = 'aspect_ratio',
 }
 
+/** Grok imagine allowlist; Nano Banana / GPT / Flux / MJ share this intersection. */
+export enum ApiframeGenerateAspectRatio {
+  Square = '1:1',
+  PortraitTwoThree = '2:3',
+  LandscapeThreeTwo = '3:2',
+  Widescreen = '16:9',
+  TallNineSixteen = '9:16',
+}
+
+export const APIFRAME_GENERATE_ASPECT_RATIOS = [
+  ApiframeGenerateAspectRatio.Square,
+  ApiframeGenerateAspectRatio.PortraitTwoThree,
+  ApiframeGenerateAspectRatio.LandscapeThreeTwo,
+  ApiframeGenerateAspectRatio.Widescreen,
+  ApiframeGenerateAspectRatio.TallNineSixteen,
+] as const
+
 /** Reference-image field per model. Only ImageInput takes an array; the rest take one URL. */
 export type ApiframeImageUrlField =
   | ApiframeImageField.ImageInput

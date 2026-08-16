@@ -1,0 +1,9 @@
+{
+  "id": "political-containment",
+  "situation": "political",
+  "title": "Containment without a killer",
+  "beatType": "confrontation",
+  "characters": ["Sera Voss", "Cael Marchand"],
+  "priorStoryState": "Sera Voss is still a Death Warden. She wears her Tallybone. This morning her Ashen Compass went dark over a tenement body with no wound, no scar, and no Silence of the Dying. The Dying Candle in that room burned normally. Tallybone records show the victim locked at age forty-three for six hundred years, with no sanctioned warrant. High Warden Cael Marchand has not yet confiscated the body. Memory Flood containment protocol has not been invoked since the vault cracked. The Census of the Damned already counted more living people than sanctioned deaths.",
+  "brief": "Write the beat in which Sera is summoned into a Warden chamber and must argue, in front of Marchand, whether Memory Flood containment can be invoked on a death that triggered neither the Compass nor the Silence. Marchand holds the mines and the protocol. Sera must take a concrete action that changes who controls the body."
+}

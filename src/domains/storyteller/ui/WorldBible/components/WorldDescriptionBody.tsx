@@ -81,7 +81,7 @@ export const WorldDescriptionBody: React.FC<WorldDescriptionBodyProps> = ({
         placeholder="Describe the world..."
       />
     ) : (
-      <div className="p-8 bg-muted/5 border border-border/20 rounded-2xl">
+      <div className="bg-muted/5 border border-border/20 rounded-2xl">
         <div className="max-w-4xl mx-auto text-foreground/80 text-[15px] leading-relaxed font-sans">
           <RichText
             text={worldDescription}

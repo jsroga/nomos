@@ -2,10 +2,9 @@
  * OpenRouter live smoke — real calls through the gateway; proves the single
  * OPENROUTER_API_KEY actually drives every layer.
  *
- * Opt-in: activates only when RUN_OPENROUTER_SMOKE=1 AND OPENROUTER_API_KEY are
- * set, so the normal `npm run test:unit` never hits the network. Run it with:
+ * Not part of `npm run test:unit`. Run with:
  *
- *   npm run test:smoke:openrouter          # sets RUN_OPENROUTER_SMOKE=1
+ *   npm run test:smoke:openrouter
  */
 
 import { describe, it, expect } from 'vitest'
@@ -17,19 +16,18 @@ import {
 } from '@/shared/agent-kernel/models'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
 import { resolveGameDesignModel } from '@/domains/game-design/config/model-config'
+import { registerCorePrompts } from '@/shared/agent-kernel/prompts/registry'
 
-const optedIn = Boolean(process.env.RUN_OPENROUTER_SMOKE)
-const hasKey = Boolean(process.env.OPENROUTER_API_KEY)
-const active = optedIn && hasKey
-const smoke = active ? describe : describe.skip
 const TIMEOUT_MS = 45_000
+const MAGIC_TIMEOUT_MS = 60_000
+const OPENROUTER_SMOKE_MISSING_KEY =
+  'OPENROUTER_API_KEY is required for npm run test:smoke:openrouter'
 
-if (optedIn && !hasKey) {
-  // Opted in but no key — surface WHY it skipped rather than silently passing.
-  console.warn('[openrouter-smoke] skipped — RUN_OPENROUTER_SMOKE set but OPENROUTER_API_KEY missing.')
+if (!process.env.OPENROUTER_API_KEY) {
+  throw new Error(OPENROUTER_SMOKE_MISSING_KEY)
 }
 
-smoke('OpenRouter live smoke (needs OPENROUTER_API_KEY)', () => {
+describe('OpenRouter live smoke', () => {
   it(
     'a Mastra Agent on the auto gateway string returns text',
     async () => {
@@ -84,5 +82,22 @@ smoke('OpenRouter live smoke (needs OPENROUTER_API_KEY)', () => {
       expect(text.trim().length).toBeGreaterThan(0)
     },
     TIMEOUT_MS
+  )
+
+  it(
+    'magicScorer scores creative output via LLM',
+    async () => {
+      registerCorePrompts()
+      const { magicScorer } = await import('@/shared/agent-kernel/scorers/magic-scorer')
+      const result = await magicScorer.run({
+        input: { message: 'Write a scene' },
+        output:
+          'Rain hammered the corrugated roof. Mara counted the seconds between thunder and counted them wrong on purpose.',
+      })
+      expect(result.score).toBeGreaterThanOrEqual(0)
+      expect(result.score).toBeLessThanOrEqual(1)
+      expect(result.reason).toBeTruthy()
+    },
+    MAGIC_TIMEOUT_MS
   )
 })

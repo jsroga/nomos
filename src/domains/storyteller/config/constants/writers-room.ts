@@ -10,8 +10,8 @@ export const WRITERS_ROOM_SUGGESTIONS: readonly string[] = [
 /** Chat starter prompts — clicked verbatim into the composer. */
 export enum WritersRoomSuggestionPrompt {
   GenerateWorldDescription = 'Generate a rich world description for the storybible.',
-  GenerateWorldRules = 'Generate 3–5 fundamental world rules for the storybible.',
-  GenerateFactions = 'Generate 3–5 major factions for the storybible.',
+  GenerateWorldRules = 'Generate 3–5 fundamental world rules for the storybible. Each needs a short titled name (2–6 words) and the full law in the rule field.',
+  GenerateFactions = 'Generate 3–5 major factions for the storybible. Each needs a short titled name (2–6 words) and the full summary in the description field.',
   GeneratePlotTwists = 'Generate 3–5 plot twists for the storybible.',
   GenerateInspirations = 'Generate inspirations (books, movies, games) for the storybible.',
   GenerateThemes = 'Generate core themes for the storybible.',

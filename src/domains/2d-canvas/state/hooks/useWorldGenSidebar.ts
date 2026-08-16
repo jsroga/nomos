@@ -3,16 +3,14 @@ import toast from 'react-hot-toast'
 import { useWorldStore } from '@/domains/2d-canvas'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { upscaleService } from '@/domains/2d-canvas/state/client-services/upscale-service'
-import { settingsApi } from '@/domains/2d-canvas/core/io/settings.api'
 import { uploadTileBase64 } from '@/domains/2d-canvas/core/io/world-data.api'
-import { fetchWorldGenSummary } from '@/shared/data/io/world-summary.api'
 import { fileReaderText, readString, recordFromJson } from '@/shared/data/json-guards'
 import { tileGenerationService } from '@/domains/2d-canvas/state/client-services/tile-generation-service'
 import { fidelityService } from '@/domains/2d-canvas/state/client-services/fidelity-service'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { STYLE_PRESETS_MAP } from '@/shared/data/constants/style-presets'
-import { parseUpscaleProvider, UpscaleProvider } from '../../core/upscale-provider-wire'
+import { clampStyleReferenceUrls } from '@/domains/2d-canvas/constants/mj-sref'
+import { UpscaleProvider } from '../../core/upscale-provider-wire'
 import { useWorldUiStore } from '@/domains/2d-canvas/state/useWorldUiStore'
 import type { MjGridPayload } from '@/domains/2d-canvas/state/constants/world-ui-store'
 import {
@@ -21,11 +19,11 @@ import {
   WorldGenSidebarError,
   WorldGenSidebarLog,
   WorldGenSidebarToast,
-  WorldGenStylePresetFallback,
-  WorldGenStyleUrlStoragePrefix,
 } from '../../ui/constants/sidebar'
 import { generateSingleWorldTile } from './generate-single-world-tile'
 import { useWorldSidebarPrompt } from './useWorldSidebarPrompt'
+
+const UPSCALE_GEMINI_CREATIVITY = 0.3
 
 export function useWorldGenSidebar() {
   const currentProject = useWorkspaceProjectStore(state => state.currentProject)
@@ -38,27 +36,24 @@ export function useWorldGenSidebar() {
     handleMasterPromptChange,
     handleSelectGenerationMode,
     handleResetStyleAnchor,
+    handleAddStyleRefFiles,
+    handleRemoveStyleRef,
+    handleClearStyleRefs,
+    styleReferenceUrls,
+    isUploadingStyleRefs,
     generationMode,
     styleAnchorUrl,
   } = useWorldSidebarPrompt(currentProject)
 
   const [tilePrompt, setTilePrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [upscaleCreativity, setUpscaleCreativity] = useState(0.3)
   const [showDebug, setShowDebug] = useState(false)
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
 
   const [isDebugMode] = useState(() =>
     typeof window !== 'undefined'
       ? browserStorage.getString(LocalStorageKeys.DEBUG_MODE) === CHAT_DEBUG_ADMIN_PIN
       : false
   )
-  const [upscaleProvider, setUpscaleProvider] = useState<UpscaleProvider>(() => {
-    if (typeof window !== 'undefined') {
-      return parseUpscaleProvider(browserStorage.getString(LocalStorageKeys.AI_ACTIVE_UPSCALER))
-    }
-    return UpscaleProvider.Stability
-  })
 
   const selectedTiles = useWorldStore(state => state.selectedTiles)
   const selectedTile = useWorldStore(state => state.selectedTile)
@@ -69,42 +64,12 @@ export function useWorldGenSidebar() {
   const upscalingTiles = useWorldStore(state => state.upscalingTiles)
   const enhancingTiles = useWorldStore(state => state.enhancingTiles)
 
-  const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
-  const [isFetchingSummary, setIsFetchingSummary] = useState(false)
 
-  const styleUrlLocalStorageKey = currentProject?.id
-    ? `${WorldGenStyleUrlStoragePrefix.Index}${currentProject.id}-${currentProject.stylePreset || WorldGenStylePresetFallback.Custom}`
-    : null
-
-  const [selectedStyleUrlIndex, setSelectedStyleUrlIndex] = useState<number>(0)
-
-  useEffect(() => {
-    if (!styleUrlLocalStorageKey) return
-    const saved = browserStorage.getString(styleUrlLocalStorageKey)
-    setSelectedStyleUrlIndex(saved !== null ? parseInt(saved, 10) : 0)
-  }, [styleUrlLocalStorageKey])
-
-  const handleSelectStyleUrl = (index: number) => {
-    setSelectedStyleUrlIndex(index)
-    if (styleUrlLocalStorageKey) {
-      browserStorage.setString(styleUrlLocalStorageKey, String(index))
-    }
-  }
-
-  const activeStyleUrls = useMemo(() => {
-    if (currentProject?.stylePreset) {
-      const preset = STYLE_PRESETS_MAP[currentProject.stylePreset]
-      if (preset && preset.urls.length > 0) return preset.urls
-    }
-    return styleReferenceUrls
-  }, [currentProject?.stylePreset, styleReferenceUrls])
-
-  const effectiveStyleUrls = useMemo(() => {
-    if (activeStyleUrls.length === 0) return []
-    const idx = Math.min(selectedStyleUrlIndex, activeStyleUrls.length - 1)
-    return [activeStyleUrls[idx]]
-  }, [activeStyleUrls, selectedStyleUrlIndex])
+  const effectiveStyleUrls = useMemo(
+    () => clampStyleReferenceUrls(styleReferenceUrls),
+    [styleReferenceUrls],
+  )
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -130,19 +95,6 @@ export function useWorldGenSidebar() {
   }, [pendingMjGrid, mjGridVersion])
 
   useEffect(() => {
-    if (currentProject?.id) {
-      settingsApi
-        .fetchProject(currentProject.id)
-        .then(data => {
-          if (data.styleReferenceUrls?.length) {
-            setStyleReferenceUrls(data.styleReferenceUrls)
-          }
-        })
-        .catch(err => console.error(WorldGenSidebarLog.FailedToLoadProjectStyleRefs, err))
-    }
-  }, [currentProject?.id])
-
-  useEffect(() => {
     tileGenerationService.resumePendingGenerations()
     upscaleService.resumePendingUpscales()
     fidelityService.resumePendingEnhancements()
@@ -161,30 +113,6 @@ export function useWorldGenSidebar() {
       setError,
       setGenerationDebugInfo,
     })
-  }
-
-  const fetchWorldSummary = async () => {
-    if (!currentProject) return
-    setIsFetchingSummary(true)
-    try {
-      const data = await fetchWorldGenSummary(currentProject.id)
-
-      const worldGenPrompt = readString(data.worldGenPrompt)
-      if (worldGenPrompt) {
-        handleMasterPromptChange(worldGenPrompt)
-        toast.success(WorldGenSidebarToast.MasterPromptUpdated)
-      }
-
-      const summarize = readString(data.summarize)
-      if (summarize) {
-        console.log(WorldGenSidebarLog.WorldSummary, summarize)
-      }
-    } catch (summaryError) {
-      console.error(WorldGenSidebarLog.FailedToFetchWorldSummary, summaryError)
-      toast.error(WorldGenSidebarToast.FailedToFetchWorldInfo)
-    } finally {
-      setIsFetchingSummary(false)
-    }
   }
 
   const handleGenerate = async () => {
@@ -263,7 +191,12 @@ export function useWorldGenSidebar() {
     const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
     if (!fullTile) return
     await toast.promise(
-      upscaleService.upscale(fullTile, upscaleCreativity, effectiveStyleUrls, upscaleProvider),
+      upscaleService.upscale(
+        fullTile,
+        UPSCALE_GEMINI_CREATIVITY,
+        effectiveStyleUrls,
+        UpscaleProvider.Stability,
+      ),
       {
         loading: WorldGenSidebarToast.Upscaling,
         success: WorldGenSidebarToast.UpscaleQueued,
@@ -298,12 +231,6 @@ export function useWorldGenSidebar() {
     }
   }
 
-  const handleUpscaleProviderChange = (value: string) => {
-    const provider = parseUpscaleProvider(value)
-    setUpscaleProvider(provider)
-    browserStorage.setString(LocalStorageKeys.AI_ACTIVE_UPSCALER, provider)
-  }
-
   return {
     currentProject,
     assets,
@@ -313,20 +240,19 @@ export function useWorldGenSidebar() {
     handleMasterPromptChange,
     handleSelectGenerationMode,
     handleResetStyleAnchor,
+    handleAddStyleRefFiles,
+    handleRemoveStyleRef,
+    handleClearStyleRefs,
+    styleReferenceUrls,
+    isUploadingStyleRefs,
     generationMode,
     styleAnchorUrl,
     tilePrompt,
     setTilePrompt,
     error,
-    upscaleCreativity,
-    setUpscaleCreativity,
     showDebug,
     setShowDebug,
-    showAdvancedSettings,
-    setShowAdvancedSettings,
     isDebugMode,
-    upscaleProvider,
-    handleUpscaleProviderChange,
     selectedTiles,
     selectedTile,
     tiles,
@@ -336,18 +262,13 @@ export function useWorldGenSidebar() {
     upscalingTiles,
     enhancingTiles,
     isUploading,
-    isFetchingSummary,
-    activeStyleUrls,
     effectiveStyleUrls,
-    selectedStyleUrlIndex,
-    handleSelectStyleUrl,
     fileInputRef,
     fidelityPrompt,
     fidelityCreativity,
     setFidelityCreativity,
     mjGridData,
     setMjGridData,
-    fetchWorldSummary,
     handleGenerate,
     handleUploadTile,
     handleUpscale,

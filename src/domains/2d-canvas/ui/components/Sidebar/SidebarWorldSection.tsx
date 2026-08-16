@@ -8,10 +8,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/DropdownMenu'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { QuickActionLabel } from '@/shared/chat/core/constants/quick-actions'
-import { GENERATION_MODES } from '@/domains/2d-canvas/constants/generation-modes'
+import { GENERATION_MODES, type GenerationModeDef } from '@/domains/2d-canvas/constants/generation-modes'
 import type { WorldGenSidebarState } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
-import { WorldGenSidebarWorldCopy } from '../../constants/sidebar'
+import {
+  WorldGenSidebarWorldCopy,
+  switchGenerationModeDescription,
+} from '../../constants/sidebar'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { confirmGenerationModeSwitch } from '@/domains/2d-canvas/constants/mj-sref'
+import { SidebarStyleRefs } from './SidebarStyleRefs'
 
 type SidebarWorldSectionProps = Pick<
   WorldGenSidebarState,
@@ -19,6 +26,11 @@ type SidebarWorldSectionProps = Pick<
   | 'handleMasterPromptChange'
   | 'handleSelectGenerationMode'
   | 'handleResetStyleAnchor'
+  | 'handleAddStyleRefFiles'
+  | 'handleRemoveStyleRef'
+  | 'handleClearStyleRefs'
+  | 'styleReferenceUrls'
+  | 'isUploadingStyleRefs'
   | 'generationMode'
   | 'styleAnchorUrl'
 >
@@ -28,12 +40,29 @@ export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
   handleMasterPromptChange,
   handleSelectGenerationMode,
   handleResetStyleAnchor,
+  handleAddStyleRefFiles,
+  handleRemoveStyleRef,
+  handleClearStyleRefs,
+  styleReferenceUrls,
+  isUploadingStyleRefs,
   generationMode,
   styleAnchorUrl,
 }) => {
+  const { confirm, ConfirmDialogComponent } = useConfirmDialog()
+
+  const onSelectMode = async (mode: GenerationModeDef) => {
+    const approved = await confirmGenerationModeSwitch(
+      confirm,
+      WorldGenSidebarWorldCopy.SwitchModeTitle,
+      switchGenerationModeDescription(mode.name),
+    )
+    if (!approved) return
+    await handleSelectGenerationMode(mode)
+  }
+
   return (
     <SidebarSection title={WorldGenSidebarWorldCopy.Title}>
-      <div className="space-y-3">
+      <div className="space-y-3" id={TOUR_STEP_IDS.WORLDGEN_STYLE_PROMPT}>
         <div className="flex items-center justify-between gap-2">
           <SidebarLabel>{WorldGenSidebarWorldCopy.PromptLabel}</SidebarLabel>
           <DropdownMenu>
@@ -52,7 +81,9 @@ export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
                 <DropdownMenuItem
                   key={mode.id}
                   className="flex flex-col items-start gap-0.5 py-2"
-                  onSelect={() => handleSelectGenerationMode(mode)}
+                  onSelect={() => {
+                    void onSelectMode(mode)
+                  }}
                   data-selected={mode.id === generationMode}
                 >
                   <span className="text-sm font-medium">{mode.name}</span>
@@ -70,6 +101,15 @@ export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
           placeholder={WorldGenSidebarWorldCopy.Placeholder}
           className="h-32"
         />
+        <SidebarStyleRefs
+          urls={styleReferenceUrls}
+          isUploading={isUploadingStyleRefs}
+          onAddFiles={files => {
+            void handleAddStyleRefFiles(files)
+          }}
+          onRemove={handleRemoveStyleRef}
+          onClear={handleClearStyleRefs}
+        />
         {styleAnchorUrl ? (
           <Button
             size="sm"
@@ -81,6 +121,7 @@ export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
           </Button>
         ) : null}
       </div>
+      {ConfirmDialogComponent}
     </SidebarSection>
   )
 }

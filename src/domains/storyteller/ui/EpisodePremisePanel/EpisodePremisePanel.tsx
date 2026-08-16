@@ -12,7 +12,12 @@ import { usePosterVariantPicker } from './hooks/usePosterVariantPicker'
 import { handleEpisodePosterVariantSelect } from './utils/handle-poster-variant-select'
 import { resolveFullPosterUrl } from './utils/resolve-full-poster-url'
 import { SectionPendingOverlay } from '../WorldBible/components/SectionPendingOverlay'
+import {
+  pendingReviewHostClass,
+  SectionPendingOverlayClass,
+} from '../WorldBible/constants/section-pending-overlay'
 import type { PendingAction } from '../WorldBible/utils/bible-context-types'
+import { cn } from '@/shared/data/utils'
 
 interface EpisodePremisePanelProps {
   premise: EpisodePremise | null
@@ -74,7 +79,12 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
 
   if (!premise && !isEditing) {
     return (
-      <div className="relative h-full">
+      <div
+        className={cn(
+          'h-full',
+          pendingReviewHostClass(Boolean(pendingAction)) || SectionPendingOverlayClass.HostRelative
+        )}
+      >
         {pendingAction ? (
           <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
         ) : null}
@@ -112,7 +122,13 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
   return (
     <>
       <div className="flex h-full overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8 relative">
+        <div
+          className={cn(
+            'flex-1 min-h-0 overflow-y-auto p-6 md:p-8',
+            pendingReviewHostClass(Boolean(pendingAction)) ||
+              SectionPendingOverlayClass.HostRelative
+          )}
+        >
           {pendingAction ? (
             <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
           ) : null}

@@ -9,7 +9,6 @@ import { SidebarWorldSection } from './SidebarWorldSection'
 import { SidebarGenerationSection } from './SidebarGenerationSection'
 import { SidebarUpscaleSection } from './SidebarUpscaleSection'
 import { SidebarFidelitySection } from './SidebarFidelitySection'
-import { SidebarAdvancedSettingsSection } from './SidebarAdvancedSettingsSection'
 import { generationModeDef } from '@/domains/2d-canvas/constants/generation-modes'
 
 export const SidebarContent: React.FC<WorldGenSidebarState> = sidebar => {
@@ -59,8 +58,6 @@ export const SidebarContent: React.FC<WorldGenSidebarState> = sidebar => {
           >
             <AssetsPanel />
           </SidebarSection>
-
-          <SidebarAdvancedSettingsSection {...sidebar} />
         </div>
       )}
 

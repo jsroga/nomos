@@ -1,0 +1,9 @@
+{
+  "id": "violent-tallybone",
+  "situation": "violent",
+  "title": "The badge comes off or the Silence falls",
+  "beatType": "confrontation",
+  "characters": ["Sera Voss"],
+  "priorStoryState": "Sera Voss still wears her Tallybone. Twenty years ago she carried out a sanctioned warrant on a partner of a Scar Epidemic survivor. That survivor has followed her from the tenement where the Compass went dark. They are in the alley behind the building. No other Warden is present. If she kills, the Silence of the Dying will fall within ten paces and she will take another Death Debt. If she does not, the Tallybone can be cut from her wrist.",
+  "brief": "Write the beat of the assault. The survivor uses a blade on the cord of the Tallybone. Sera must act in the alley: kill, maim, yield the badge, or bind the attacker. Whatever she does has to change whether she still holds Warden authority when she leaves the alley."
+}

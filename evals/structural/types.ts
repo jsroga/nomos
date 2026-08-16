@@ -60,6 +60,10 @@ export interface StructuralScore {
   flags: ReadonlyArray<Record<string, unknown>>
 }
 
+export function toScoreFlags(flags: ReadonlyArray<object>): ReadonlyArray<Record<string, unknown>> {
+  return flags.map(flag => Object.fromEntries(Object.entries(flag)))
+}
+
 export interface CharacterFieldFinding {
   character: string
   field: CharacterFieldName

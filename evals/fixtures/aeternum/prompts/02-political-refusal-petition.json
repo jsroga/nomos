@@ -1,0 +1,9 @@
+{
+  "id": "political-refusal-petition",
+  "situation": "political",
+  "title": "A death the Refusal will not call a kill",
+  "beatType": "confrontation",
+  "characters": ["Sera Voss", "Cael Marchand"],
+  "priorStoryState": "The Great Refusal still has no constitutional settlement. A capital block of people who surrendered the power to kill still live under Warden census. One of them has been found dead in his room: no warrant, no Compass pull, no Silence of the Dying. Sera Voss is the Warden assigned to receive petitions for that block. Marchand has circulated a written order: any death without a killer is to be logged as incomplete and sealed. Sera still has her Tallybone.",
+  "brief": "Write the beat in which a Refusal delegate stands in the Warden receiving hall and demands the death be recorded without a warrant. Sera must either enter it as a completed death against Marchand's order or refuse the petition in a way the delegate can witness. The action has to change the official record, not the mood in the room."
+}

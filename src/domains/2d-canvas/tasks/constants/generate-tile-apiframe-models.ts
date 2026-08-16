@@ -1,5 +1,5 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
-import { GENERATION_PROMPTS, tilePromptLayersFrom } from '@/shared/data/server/prompts'
+import { logger } from '@trigger.dev/sdk/v3'
+import { tilePromptLayersFrom } from '@/shared/data/server/prompts'
 import { buildMidjourneyTilePromptText } from '@/shared/data/server/midjourney-params'
 import { storageService } from '@/shared/data/storage/storage-service'
 import {
@@ -11,6 +11,7 @@ import type { AiProviderConfig } from '@/shared/ai/ai-provider-config'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import {
   ApiframeErrorMessage,
+  ApiframeGenerateAspectRatio,
   ApiframeImageModel,
 } from '@/shared/ai/constants/apiframe'
 import {
@@ -19,12 +20,34 @@ import {
   pickApiframeImageUrl,
   resolveNanoBananaModel,
 } from '@/shared/ai/apiframe'
-import { ContentType } from '@/shared/data/constants/protocol'
+import { ContentType, BufferEncoding } from '@/shared/data/constants/protocol'
 import { v4 as uuidv4 } from 'uuid'
-import { downloadTileAsBase64 } from './generate-tile-output'
-import { inpaintFollowUpViaFluxFill } from './generate-tile-apiframe-inpaint'
+import { downloadTileAsBase64, assertTilePngSize } from './generate-tile-output'
+import { fillWhiteCornerTriangles } from './generate-tile-white-corners'
+import {
+  apiframeFollowUpImageUrls,
+  composeNonMidjourneyTilePrompt,
+} from './generate-tile-apiframe-prompt'
+import { packedAspectRatio, type PackedCropSpec } from '@/shared/ai/context-pack-layout'
+import {
+  GenerateTileProgress,
+  GenerateTileStage,
+  advanceGenerateTileProgress,
+} from './generate-tile-progress'
+import type { NeighborImageUrls } from '../../core/neighbor-image-urls'
 
-const TILE_ASPECT_RATIO = '1:1'
+async function downloadGeneratedTile(
+  imageUrl: string,
+  isFirstTile: boolean,
+  packedCrop: PackedCropSpec | undefined,
+): Promise<string> {
+  const downloaded = await downloadTileAsBase64(imageUrl, isFirstTile, packedCrop)
+  const tileBuffer = Buffer.from(downloaded, BufferEncoding.Base64)
+  await assertTilePngSize(tileBuffer)
+  const filled = await fillWhiteCornerTriangles(tileBuffer)
+  await assertTilePngSize(filled)
+  return filled.toString(BufferEncoding.Base64)
+}
 
 async function uploadContextIfPresent(
   contextImageBase64: string | undefined,
@@ -49,7 +72,6 @@ async function buildTilePrompt(
   modeNegatives?: string[],
   styleAnchorUrl?: string,
 ): Promise<{ text: string; imageUrls: string[] }> {
-  const imageUrls: string[] = []
   const layers = tilePromptLayersFrom({
     prompt,
     masterPrompt,
@@ -64,19 +86,15 @@ async function buildTilePrompt(
         modeNegatives,
         styleAnchorUrl,
       })
-    : isFirstTile
-      ? GENERATION_PROMPTS.FIRST_TILE.GEMINI(layers)
-      : GENERATION_PROMPTS.FOLLOW_UP.MASTER(layers)
-  if (!isFirstTile) {
-    const contextUrl = await uploadContextIfPresent(contextImageBase64)
-    if (contextUrl) {
-      if (forMidjourney) text = `${contextUrl} ${text}`
-      else imageUrls.push(contextUrl)
-    }
-  }
-  if (!forMidjourney && styleReferenceUrls?.length) {
-    imageUrls.push(...styleReferenceUrls)
-  }
+    : composeNonMidjourneyTilePrompt(isFirstTile, layers, modeNegatives)
+  const contextUrl = isFirstTile
+    ? undefined
+    : await uploadContextIfPresent(contextImageBase64)
+  if (contextUrl && forMidjourney) text = `${contextUrl} ${text}`
+  const imageUrls = apiframeFollowUpImageUrls(
+    isFirstTile,
+    forMidjourney ? undefined : contextUrl,
+  )
   return { text, imageUrls }
 }
 
@@ -114,6 +132,8 @@ export async function generateTileViaApiframeModel(
   modePromptFragment?: string,
   modeNegatives?: string[],
   styleAnchorUrl?: string,
+  _neighborImageUrls?: NeighborImageUrls,
+  packedCrop?: PackedCropSpec,
 ): Promise<string> {
   const model = mapProviderToApiframeModel(provider, config)
   const forMidjourney = model === ApiframeImageModel.Midjourney
@@ -129,22 +149,19 @@ export async function generateTileViaApiframeModel(
     modeNegatives,
     styleAnchorUrl,
   )
+  const aspectRatio =
+    !isFirstTile && packedCrop
+      ? packedAspectRatio(packedCrop.packedWidth, packedCrop.packedHeight)
+      : ApiframeGenerateAspectRatio.Square
 
   logger.info('Starting tile generation via Apiframe', { provider, model, isFirstTile })
   if (forMidjourney) {
     logger.info('Midjourney prompt', { prompt: text })
   }
-  await metadata.set('stage', 'submitting_apiframe')
-  await metadata.set('progress', 35)
-
-  const [contextImageUrl] = imageUrls
-  if (!forMidjourney && !isFirstTile && contextImageUrl) {
-    return inpaintFollowUpViaFluxFill({
-      apiKey: config.apiKey,
-      prompt: text,
-      contextImageUrl,
-    })
-  }
+  await advanceGenerateTileProgress(
+    GenerateTileProgress.Submitting,
+    GenerateTileStage.SubmittingApiframe,
+  )
 
   try {
     if (forMidjourney) {
@@ -152,11 +169,11 @@ export async function generateTileViaApiframeModel(
         provider,
         model,
         prompt: text,
-        inputImageUrls: imageUrls.length > 0 ? imageUrls : styleReferenceUrls,
+        inputImageUrls: imageUrls.length > 0 ? imageUrls : undefined,
         metadata: { task: 'generate-tile', isFirstTile },
       })
       const result = await generateMidjourneyUpscaledImage(text, config.apiKey, {
-        aspectRatio: TILE_ASPECT_RATIO,
+        aspectRatio,
         index: 1,
         maxAttempts: 120,
       })
@@ -166,23 +183,25 @@ export async function generateTileViaApiframeModel(
         prompt: text,
         outputImageUrls: [result.imageUrl],
       })
-      return downloadTileAsBase64(result.imageUrl, isFirstTile)
+      return downloadGeneratedTile(result.imageUrl, isFirstTile, packedCrop)
     }
 
     logLLMRequestStart({
       provider,
       model,
       prompt: text,
-      inputImageUrls: imageUrls.length > 0 ? imageUrls : styleReferenceUrls,
+      inputImageUrls: imageUrls.length > 0 ? imageUrls : undefined,
       metadata: { task: 'generate-tile', isFirstTile },
     })
-    await metadata.set('stage', 'waiting_apiframe')
-    await metadata.set('progress', 45)
+    await advanceGenerateTileProgress(
+      GenerateTileProgress.Waiting,
+      GenerateTileStage.WaitingApiframe,
+    )
     const result = await generateApiframeImage({
       model,
       prompt: text,
       apiKey: config.apiKey,
-      aspectRatio: TILE_ASPECT_RATIO,
+      aspectRatio,
       imageInputUrls: imageUrls.length > 0 ? imageUrls : undefined,
       maxAttempts: 120,
     })
@@ -194,8 +213,11 @@ export async function generateTileViaApiframeModel(
       prompt: text,
       outputImageUrls: [imageUrl],
     })
-    await metadata.set('progress', 85)
-    return downloadTileAsBase64(imageUrl, isFirstTile)
+    await advanceGenerateTileProgress(
+      GenerateTileProgress.Downloaded,
+      GenerateTileStage.DownloadingResult,
+    )
+    return downloadGeneratedTile(imageUrl, isFirstTile, packedCrop)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     logLLMRequestError({ provider, model, prompt: text, error: message })

@@ -1,6 +1,7 @@
 import type { FC } from 'react'
 import { Crown } from 'lucide-react'
 import { FactionSchema } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
+import { BibleEntityTileClass } from '../../BibleEntityTile'
 import { FactionCard } from '../../FactionCard'
 import { useBible } from './BibleContext'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
@@ -45,7 +46,7 @@ export const BibleFactions: FC = () => {
           onSendMessage
             ? () =>
                 onSendMessage(
-                  'Generate completely BRAND NEW major factions, power structures, and political forces in this world. IMPORTANT: Take a completely new creative direction and do NOT repeat any previously generated factions.',
+                  'Generate completely BRAND NEW major factions, power structures, and political forces in this world. Each faction needs a short titled name (2–6 words, same length as a world-rule or event name) and the full summary in the description field. IMPORTANT: Take a completely new creative direction and do NOT repeat any previously generated factions.',
                   'factions'
                 )
             : undefined
@@ -63,7 +64,7 @@ export const BibleFactions: FC = () => {
           No factions defined. Power is a vacuum.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={BibleEntityTileClass.Grid}>
           {displayFactions.map((faction, idx) => {
             const parsed = FactionSchema.safeParse(faction)
             if (!parsed.success) return null

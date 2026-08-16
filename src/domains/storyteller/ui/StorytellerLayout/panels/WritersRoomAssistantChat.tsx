@@ -44,6 +44,7 @@ interface WritersRoomAssistantChatProps {
   ) => void
   onAddToWorld: (payload: AddToWorldPayload) => boolean | Promise<boolean>
   sectionLabelsFromToolArgs: (toolArgs: readonly Record<string, unknown>[]) => string[]
+  isAddToWorldSettled: (toolArgs: readonly Record<string, unknown>[]) => boolean
 }
 
 export function WritersRoomAssistantChat({
@@ -65,6 +66,7 @@ export function WritersRoomAssistantChat({
   onCompletedToolCalls,
   onAddToWorld,
   sectionLabelsFromToolArgs,
+  isAddToWorldSettled,
 }: WritersRoomAssistantChatProps) {
   const mentionProviders = useMemo(
     () => [...getStorytellerMentionProviders(), getGameEntityProvider()],
@@ -115,6 +117,7 @@ export function WritersRoomAssistantChat({
         onCompletedToolCalls={onCompletedToolCalls}
         onAddToWorld={onAddToWorld}
         sectionLabelsFromToolArgs={sectionLabelsFromToolArgs}
+        isAddToWorldSettled={isAddToWorldSettled}
         chatRenderers={chatRenderers}
       />
     </div>

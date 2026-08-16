@@ -86,6 +86,7 @@ export enum BlobAccess {
 
 export enum SharpFit {
   Cover = 'cover',
+  Fill = 'fill',
 }
 
 export enum SharpPosition {

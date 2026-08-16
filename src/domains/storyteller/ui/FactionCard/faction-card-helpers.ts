@@ -13,6 +13,28 @@ export function normalizeFactionRivals(faction: Faction): string[] {
   return []
 }
 
+export enum FactionTitleSeparator {
+  EmDash = ' — ',
+  EnDash = ' – ',
+  Hyphen = ' - ',
+}
+
+export function factionTileCopy(faction: Faction): { title: string; description: string } {
+  const name = faction.name?.trim() ?? ''
+  const description = faction.description?.trim() ?? ''
+  for (const separator of Object.values(FactionTitleSeparator)) {
+    const index = name.indexOf(separator)
+    if (index > 0) {
+      const rest = name.slice(index + separator.length).trim()
+      return {
+        title: name.slice(0, index).trim(),
+        description: [rest, description].filter(Boolean).join(' '),
+      }
+    }
+  }
+  return { title: name, description }
+}
+
 export function resolveFactionResources(faction: Faction): {
   resources: string
   politicalForces: string | undefined

@@ -1,0 +1,9 @@
+{
+  "id": "violent-last-word",
+  "situation": "violent",
+  "title": "The Last Word in the uprising wing",
+  "beatType": "climax",
+  "characters": ["Sera Voss"],
+  "priorStoryState": "Sera Voss holds a sanctioned warrant on a Child Uprising prisoner. The body is locked at seven by the Age Lock; the mind has sat in the uprising wing for centuries. She is the assigned Warden. The cell door is unlocked. The prisoner will be allowed one Last Word, bound to be heard. Marchand signed the warrant. Sera has not yet drawn the instrument of the kill. No Fleshward will restore this body afterward.",
+  "brief": "Write the beat inside the cell at the moment of the warrant. The prisoner speaks a Last Word. Sera either completes the sanctioned kill or refuses it in a way that leaves the warrant unfulfilled. The Silence, the Death Debt, or the unbroken warrant must be the state change."
+}

@@ -3,6 +3,7 @@ import { useBible } from './BibleContext'
 import { OverviewExecutiveSummary, OverviewMetaGrid } from './OverviewMetaCards'
 import { WorldDescriptionBody, WorldDescriptionLoading } from './WorldDescriptionBody'
 import { WorldDescriptionHeader } from './WorldDescriptionHeader'
+import { pendingReviewHostClass } from '../constants/section-pending-overlay'
 import { resolveOverviewDisplayFields } from '../utils/bible-overview-fields'
 
 export const WorldDescriptionSection: React.FC = () => {
@@ -23,7 +24,7 @@ export const WorldDescriptionSection: React.FC = () => {
   const fields = resolveOverviewDisplayFields(storyPlan, localPlan)
 
   return (
-    <section className={isWorldDescLoading || pendingAction ? 'relative' : ''}>
+    <section className={pendingReviewHostClass(Boolean(pendingAction), isWorldDescLoading)}>
       <WorldDescriptionLoading
         isWorldDescLoading={isWorldDescLoading}
         pendingAction={pendingAction}
@@ -35,12 +36,7 @@ export const WorldDescriptionSection: React.FC = () => {
       />
 
       {!isEditing ? (
-        <OverviewMetaGrid
-          title={fields.title}
-          genre={fields.genre}
-          tone={fields.tone}
-          centralQuestion={fields.centralQuestion}
-        />
+        <OverviewMetaGrid centralQuestion={fields.centralQuestion} />
       ) : null}
 
       {!isEditing && fields.executiveSummary ? (

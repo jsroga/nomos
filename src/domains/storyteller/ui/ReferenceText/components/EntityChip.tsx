@@ -39,7 +39,8 @@ export const EntityChip: React.FC<EntityChipProps> = ({
         type="button"
         onClick={() => onClick?.(parsedRef.refId, entity)}
         className={cn(
-          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md',
+          'inline-flex items-center align-middle gap-1 px-1.5 py-0.5 rounded-md',
+          'w-auto max-w-full whitespace-nowrap',
           'transition-colors duration-150 cursor-pointer',
           'text-sm font-medium',
           colorClass

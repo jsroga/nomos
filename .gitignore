@@ -41,6 +41,9 @@ public/projects/
 /test-results/
 /playwright-report/
 
+# Vitest coverage (HTML + LCOV + json-summary)
+/coverage/
+
 # Mastra CLI build output
 .mastra/
 src/mastra/public/

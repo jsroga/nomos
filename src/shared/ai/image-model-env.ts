@@ -10,6 +10,7 @@ import {
   ImageGenerateModelId,
   ImageModelAlias,
   ImageRepaintModelId,
+  ImageUpscaleMode,
   ImageUpscaleModelId,
 } from '@/shared/ai/constants/image-env'
 
@@ -196,6 +197,21 @@ export function resolveUpscaleModelId(
   if (normalized === ImageUpscaleModelId.ClarityUpscale) return ImageUpscaleModelId.ClarityUpscale
   if (normalized === ImageUpscaleModelId.Midjourney) return ImageUpscaleModelId.Midjourney
   return ImageUpscaleModelId.TopazImageUpscale
+}
+
+function normalizeUpscaleModeToken(raw: string): string {
+  return raw.trim().toLowerCase()
+}
+
+/** Canvas tile upscale is always Topaz; this picks Standard V2 vs High Fidelity V2. */
+export function resolveImageUpscaleMode(
+  source?: Record<string, string | undefined>,
+): ImageUpscaleMode {
+  const raw = readEnv(ImageEnvVar.UpscaleMode, source)
+  if (!raw) return ImageUpscaleMode.Standard
+  const normalized = normalizeUpscaleModeToken(raw)
+  if (normalized === ImageUpscaleMode.Creative) return ImageUpscaleMode.Creative
+  return ImageUpscaleMode.Standard
 }
 
 /** Maps IMAGE_UPSCALE_MODEL → UpscaleProvider wire ids used by /api/trigger-upscale. */

@@ -7,11 +7,14 @@
 | Tier | Command | Location |
 |------|---------|----------|
 | Unit | `npm run test:unit` | `src/**/__tests__/**` (Vitest) |
+| Coverage | `npm run test:coverage` | Vitest `@vitest/coverage-v8` · HTML at `coverage/index.html` |
 | E2E | `npm run test:e2e [scenario]` | Playwright via `scripts/run-e2e.ts` |
 | Eval | `npm run eval` | `evals/` + Mastra scorers |
 
 ```bash
 npm run test:unit
+npm run test:coverage
+npm run test:coverage:open
 npx vitest run src/domains/storyteller/ai/tools/__tests__/storytelling.test.ts
 npm run test:e2e smoke
 npm run eval -- --samples=5
@@ -20,6 +23,7 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 ```
 
 - Colocate unit tests next to code. Exclude `*.e2e.test.ts` from default unit runs (need DB/LLM).
+- Coverage (`npm run test:coverage`) uses `@vitest/coverage-v8` on every `src` `.ts`/`.tsx` file (`all: true`). `test:unit` stays uninstrumented. HTML / LCOV / json-summary land in `coverage/` (gitignored); `npm run test:coverage:open` generates then opens the HTML report.
 - E2E needs `npm run dev` (or `dev:stack`) + `.env.local`.
 - Golden set: `evals/datasets/storyteller-golden.ts`. Baseline: `evals/results/latest.json` — **no scorer may regress** below baseline to ship.
 

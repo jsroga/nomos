@@ -1,5 +1,6 @@
 export interface WorldRule {
   category: string
+  name: string
   rule: string
   consequence: string
   exceptions?: string | null

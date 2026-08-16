@@ -8,6 +8,7 @@ import { cn } from '@/shared/data/utils'
 
 enum BibleMarkdownClass {
   Block = '[&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:font-semibold',
+  InlineRoot = 'inline [&>div]:inline [&>p]:inline',
 }
 
 enum MarkdownElement {
@@ -32,9 +33,11 @@ export function BibleMarkdown({ text, inline = false, className }: BibleMarkdown
   if (!text) return null
   if (inline) {
     return (
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={BIBLE_MARKDOWN_INLINE_COMPONENTS}>
-        {text}
-      </ReactMarkdown>
+      <span className={BibleMarkdownClass.InlineRoot}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={BIBLE_MARKDOWN_INLINE_COMPONENTS}>
+          {text}
+        </ReactMarkdown>
+      </span>
     )
   }
   return (

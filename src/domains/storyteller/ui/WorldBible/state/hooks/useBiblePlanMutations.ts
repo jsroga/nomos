@@ -60,6 +60,7 @@ export function useBiblePlanMutations(setLocalPlan: SetLocalPlan) {
 
   const addWorldRule = useCallback(() => {
     appendPlanArrayItem(setLocalPlan, BiblePlanArrayKey.WorldRules, {
+      name: '',
       rule: '',
       consequence: '',
       category: BIBLE_CONTEXT_DEFAULT_WORLD_RULE_CATEGORY,

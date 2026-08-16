@@ -122,7 +122,7 @@ export const StickyTooltip: React.FC<StickyTooltipProps> = ({
         <span
           onMouseEnter={handleTriggerEnter}
           onMouseLeave={handleTriggerLeave}
-          className="cursor-pointer"
+          className="inline-flex align-middle cursor-pointer"
         >
           {children}
         </span>

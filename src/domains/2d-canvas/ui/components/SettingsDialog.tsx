@@ -1,38 +1,32 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Settings, Image as ImageIcon, Key } from 'lucide-react'
+import { X, Settings, Key } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { ScrollArea } from '@/components/ScrollArea'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { TESTABLE_LLM_PROVIDERS } from '@/shared/data/constants/llm-providers'
-import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import {
   settingsApi,
   type McpApiKey,
-  type ProjectStyleSettings,
   type ProviderStatus,
   type ProviderTestResult,
 } from '@/domains/2d-canvas/core/io/settings.api'
 import {
+  SETTINGS_CLOSE_LABEL,
   SETTINGS_COPIED_TOAST,
   SETTINGS_LOAD_MCP_KEYS_FAILED_LOG,
-  SETTINGS_LOAD_PROJECT_FAILED_LOG,
   SETTINGS_LOAD_PROVIDERS_FAILED_LOG,
   SETTINGS_MCP_CREATE_KEY_FAILED_TOAST,
   SETTINGS_MCP_KEY_CREATED_TOAST,
   SETTINGS_MCP_KEY_NAME_REQUIRED,
   SETTINGS_MCP_KEY_REVOKED_TOAST,
   SETTINGS_MCP_REVOKE_KEY_FAILED,
-  SETTINGS_SAVE_PROJECT_FAILED_LOG,
-  SETTINGS_SAVE_PROJECT_FAILED_TOAST,
   SETTINGS_TEST_REQUEST_FAILED,
   SettingsDialogTab,
-  SettingsStyleMode,
 } from '@/domains/2d-canvas/constants/settings-dialog'
 import { SettingsDialogGeneralTab } from './SettingsDialogGeneralTab'
 import { SettingsDialogMcpKeysTab } from './SettingsDialogMcpKeysTab'
-import { SettingsDialogProjectSettingsTab } from './SettingsDialogProjectSettingsTab'
 
 interface SettingsDialogProps {
   isOpen: boolean
@@ -42,8 +36,7 @@ interface SettingsDialogProps {
 
 type Tab = SettingsDialogTab
 
-export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose, projectId }) => {
-  const loadWorkspaceProject = useWorkspaceProjectStore(state => state.loadProject)
+export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -52,11 +45,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
   const [loadingProviders, setLoadingProviders] = useState(false)
   const [providerTests, setProviderTests] = useState<Record<string, ProviderTestResult>>({})
   const [testingProvider, setTestingProvider] = useState<string | null>(null)
-  const [projectData, setProjectData] = useState<ProjectStyleSettings | null>(null)
-  const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
-  const [newStyleUrl, setNewStyleUrl] = useState<string>('')
-  const [styleMode, setStyleMode] = useState<SettingsStyleMode>(SettingsStyleMode.Custom)
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
   const [mcpKeys, setMcpKeys] = useState<McpApiKey[]>([])
   const [isLoadingMcpKeys, setIsLoadingMcpKeys] = useState(false)
   const [newMcpKeyName, setNewMcpKeyName] = useState('')
@@ -87,29 +75,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     }
   }
 
-  const saveStyleSettings = async (
-    mode: SettingsStyleMode,
-    preset: string | null,
-    urls: string[]
-  ) => {
-    if (!projectId) return
-    try {
-      const body: Record<string, unknown> = {}
-      if (mode === SettingsStyleMode.Preset) {
-        body.stylePreset = preset
-        body.style_reference_urls = []
-      } else {
-        body.stylePreset = null
-        body.style_reference_urls = urls
-      }
-      await settingsApi.patchProjectStyle(projectId, body)
-      await loadWorkspaceProject(projectId)
-    } catch (error) {
-      console.error(SETTINGS_SAVE_PROJECT_FAILED_LOG, error)
-      toast.error(SETTINGS_SAVE_PROJECT_FAILED_TOAST)
-    }
-  }
-
   useEffect(() => {
     if (!isOpen) return
 
@@ -120,37 +85,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
       .catch(err => console.error(SETTINGS_LOAD_PROVIDERS_FAILED_LOG, err))
       .finally(() => setLoadingProviders(false))
 
-    if (projectId) {
-      settingsApi
-        .fetchProject(projectId)
-        .then(data => {
-          setProjectData(data)
-          setStyleReferenceUrls(data.styleReferenceUrls || [])
-          if (data.stylePreset) {
-            setStyleMode(SettingsStyleMode.Preset)
-            setSelectedPreset(data.stylePreset)
-          } else {
-            setStyleMode(SettingsStyleMode.Custom)
-            setSelectedPreset(null)
-          }
-        })
-        .catch(err => console.error(SETTINGS_LOAD_PROJECT_FAILED_LOG, err))
-    }
-
     setIsLoadingMcpKeys(true)
     settingsApi
       .fetchMcpKeys()
       .then(setMcpKeys)
       .catch(err => console.error(SETTINGS_LOAD_MCP_KEYS_FAILED_LOG, err))
       .finally(() => setIsLoadingMcpKeys(false))
-  }, [isOpen, projectId])
-
-  const handleSave = async () => {
-    if (styleMode === SettingsStyleMode.Custom) {
-      await saveStyleSettings(SettingsStyleMode.Custom, null, styleReferenceUrls)
-    }
-    onClose()
-  }
+  }, [isOpen])
 
   const handleCreateMcpKey = async () => {
     if (!newMcpKeyName.trim()) {
@@ -218,16 +159,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
               <Key className="w-4 h-4" />
               MCP Keys
             </Button>
-            {projectId && (
-              <Button
-                variant={activeTab === SettingsDialogTab.ProjectSettings ? 'secondary' : 'ghost'}
-                className="w-full justify-start gap-2"
-                onClick={() => setActiveTab(SettingsDialogTab.ProjectSettings)}
-              >
-                <ImageIcon className="w-4 h-4" />
-                Project Settings
-              </Button>
-            )}
           </nav>
         </div>
 
@@ -258,29 +189,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                   onCopyToClipboard={copyToClipboard}
                 />
               )}
-
-              {activeTab === SettingsDialogTab.ProjectSettings && projectId && (
-                <SettingsDialogProjectSettingsTab
-                  projectData={projectData}
-                  styleReferenceUrls={styleReferenceUrls}
-                  newStyleUrl={newStyleUrl}
-                  styleMode={styleMode}
-                  selectedPreset={selectedPreset}
-                  onStyleModeChange={setStyleMode}
-                  onSelectedPresetChange={setSelectedPreset}
-                  onStyleReferenceUrlsChange={setStyleReferenceUrls}
-                  onNewStyleUrlChange={setNewStyleUrl}
-                  onSaveStyleSettings={saveStyleSettings}
-                />
-              )}
             </div>
           </ScrollArea>
 
           <div className="p-4 border-t border-border bg-card flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              {SETTINGS_CLOSE_LABEL}
             </Button>
-            <Button onClick={() => void handleSave()}>Save Changes</Button>
           </div>
         </div>
       </div>

@@ -1,18 +1,21 @@
 /**
  * Context Assembler Web Worker
  *
- * Runs entirely off the main thread.
- * Fetches neighbor tile images, composes them onto an OffscreenCanvas,
- * and returns the image + mask blobs back to the caller.
- *
  * Protocol:
- *   IN  → { id, size, neighborUrls }
- *   OUT → { id, imageBlob, maskBlob, cropRect }   (success)
- *       | { id, error }                            (failure)
+ *   IN  → { id, neighborUrls, variant? }
+ *   OUT → { id, imageBlob, maskBlob, cropRect, packedWidth, packedHeight } (success)
+ *       | { id, error }
  */
-
 import { resolveContextFramingStrategy } from './contextAssembler-framing-strategy'
-import { buildEditableRegionMask } from './contextAssembler-mask'
+import { buildHoleMask } from './contextAssembler-mask'
+import {
+  packedCanvasLayout,
+  packedCropSpecFromLayout,
+  cardinalCount,
+  PACKED_CANVAS_CSS,
+  PACKED_HOLE_CSS,
+  type CardinalPresence,
+} from './context-pack-layout'
 
 interface NeighborUrls {
   up?: string
@@ -25,20 +28,11 @@ interface NeighborUrls {
   bottomRight?: string
 }
 
-const NEIGHBOR_DIRS: (keyof NeighborUrls)[] = [
-  'up',
-  'down',
-  'left',
-  'right',
-  'topLeft',
-  'topRight',
-  'bottomLeft',
-  'bottomRight',
-]
+const CARDINAL_DIRS = ['up', 'down', 'left', 'right'] as const
 
 interface WorkerInput {
   id: number
-  size: number
+  size?: number
   neighborUrls: NeighborUrls
   variant?: 'canonicalFullContext' | 'smartSeamContext'
 }
@@ -50,6 +44,8 @@ interface WorkerOutputSuccess {
   imageBlob: Blob
   maskBlob: Blob
   cropRect: { x: number; y: number; width: number; height: number }
+  packedWidth: number
+  packedHeight: number
   directNeighborCount: number
   variant: 'canonicalFullContext' | 'smartSeamContext'
   strategy: {
@@ -63,12 +59,10 @@ interface WorkerOutputError {
   error: string
 }
 
-/** Load a URL (http/https or data:) into an ImageBitmap without touching the DOM. */
 async function fetchImageBitmap(url: string): Promise<ImageBitmap> {
   if (url.startsWith('data:')) {
-    // Decode base64 data URL → Blob → ImageBitmap
     const commaIdx = url.indexOf(',')
-    const meta = url.slice(0, commaIdx) // e.g. "data:image/png;base64"
+    const meta = url.slice(0, commaIdx)
     const base64 = url.slice(commaIdx + 1)
     const mimeType = (meta.match(/:(.*?);/) ?? [])[1] ?? 'image/png'
     const binaryStr = atob(base64)
@@ -78,27 +72,28 @@ async function fetchImageBitmap(url: string): Promise<ImageBitmap> {
     return createImageBitmap(blob)
   }
 
-  // Use 'omit' so cross-origin CDN URLs (Vercel Blob, etc.) aren't blocked by CORS.
-  // 'Access-Control-Allow-Origin: *' responses are incompatible with credentialed requests.
   const response = await fetch(url, { credentials: 'omit' })
   if (!response.ok) throw new Error(`HTTP ${response.status} fetching ${url}`)
   const blob = await response.blob()
   return createImageBitmap(blob)
 }
 
+function drawNeighbor(
+  ctx: OffscreenCanvasRenderingContext2D,
+  bmp: ImageBitmap | undefined,
+  dest: { x: number; y: number } | undefined,
+  cellSize: number,
+): void {
+  if (!bmp || !dest) return
+  ctx.drawImage(bmp, 0, 0, bmp.width, bmp.height, dest.x, dest.y, cellSize, cellSize)
+}
+
 async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
-  const { id, size, neighborUrls, variant = 'canonicalFullContext' } = input
-
-  const TILE_SIZE = 512
-  const CONTEXT_SIZE = 256
-  const TARGET_X = (size - TILE_SIZE) / 2 // 256
-  const TARGET_Y = (size - TILE_SIZE) / 2 // 256
-
-  // Load all neighbor images concurrently
-  const bitmaps: Partial<Record<keyof NeighborUrls, ImageBitmap>> = {}
+  const { id, neighborUrls, variant = 'canonicalFullContext' } = input
+  const bitmaps: Partial<Record<(typeof CARDINAL_DIRS)[number], ImageBitmap>> = {}
 
   await Promise.all(
-    NEIGHBOR_DIRS.map(async dir => {
+    CARDINAL_DIRS.map(async dir => {
       const url = neighborUrls[dir]
       if (!url) return
       try {
@@ -109,151 +104,41 @@ async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
     })
   )
 
-  const directNeighborCount =
-    (bitmaps.up ? 1 : 0) +
-    (bitmaps.down ? 1 : 0) +
-    (bitmaps.left ? 1 : 0) +
-    (bitmaps.right ? 1 : 0)
-  const directNeighbors = {
+  const presence: CardinalPresence = {
     up: !!bitmaps.up,
     down: !!bitmaps.down,
     left: !!bitmaps.left,
     right: !!bitmaps.right,
   }
-  const strategy = resolveContextFramingStrategy(variant, directNeighbors)
+  const layout = packedCanvasLayout(presence)
+  const spec = packedCropSpecFromLayout(layout)
+  const directNeighborCount = cardinalCount(presence)
+  const strategy = resolveContextFramingStrategy(variant, presence)
 
-  // ------------------------------------------------------------------
-  // Image canvas
-  // ------------------------------------------------------------------
-  const canvas = new OffscreenCanvas(size, size)
+  const canvas = new OffscreenCanvas(layout.width, layout.height)
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error(CANVAS_2D_UNAVAILABLE)
 
-  ctx.fillStyle = '#808080'
-  ctx.fillRect(0, 0, size, size)
-
-  /** Source crop helpers (same logic as main-thread assembler) */
-  const cornerCrop = (
-    bmp: ImageBitmap,
-    corner: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
-  ) => {
-    const ratio = CONTEXT_SIZE / TILE_SIZE
-    const { width: w, height: h } = bmp
-    switch (corner) {
-      case 'topLeft': return { sx: 0, sy: 0, sw: w * ratio, sh: h * ratio }
-      case 'topRight': return { sx: w * (1 - ratio), sy: 0, sw: w * ratio, sh: h * ratio }
-      case 'bottomLeft': return { sx: 0, sy: h * (1 - ratio), sw: w * ratio, sh: h * ratio }
-      case 'bottomRight': return { sx: w * (1 - ratio), sy: h * (1 - ratio), sw: w * ratio, sh: h * ratio }
-    }
-  }
-
-  const edgeCrop = (bmp: ImageBitmap, edge: 'top' | 'bottom' | 'left' | 'right') => {
-    const ratio = CONTEXT_SIZE / TILE_SIZE
-    const { width: w, height: h } = bmp
-    switch (edge) {
-      case 'top': return { sx: 0, sy: 0, sw: w, sh: h * ratio }
-      case 'bottom': return { sx: 0, sy: h * (1 - ratio), sw: w, sh: h * ratio }
-      case 'left': return { sx: 0, sy: 0, sw: w * ratio, sh: h }
-      case 'right': return { sx: w * (1 - ratio), sy: 0, sw: w * ratio, sh: h }
-    }
-  }
-
-  // CORNERS (drawn first so direct neighbors overlay them), then DIRECT
-  // NEIGHBORS. Wrapped so their eight branches don't inflate `assemble`.
-  const drawNeighborTiles = () => {
-    if (bitmaps.topLeft) {
-      const { sx, sy, sw, sh } = cornerCrop(bitmaps.topLeft, 'bottomRight')
-      ctx.drawImage(bitmaps.topLeft, sx, sy, sw, sh, 0, 0, CONTEXT_SIZE, CONTEXT_SIZE)
-    }
-    if (bitmaps.topRight) {
-      const { sx, sy, sw, sh } = cornerCrop(bitmaps.topRight, 'bottomLeft')
-      ctx.drawImage(bitmaps.topRight, sx, sy, sw, sh, TARGET_X + TILE_SIZE, 0, CONTEXT_SIZE, CONTEXT_SIZE)
-    }
-    if (bitmaps.bottomLeft) {
-      const { sx, sy, sw, sh } = cornerCrop(bitmaps.bottomLeft, 'topRight')
-      ctx.drawImage(bitmaps.bottomLeft, sx, sy, sw, sh, 0, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE)
-    }
-    if (bitmaps.bottomRight) {
-      const { sx, sy, sw, sh } = cornerCrop(bitmaps.bottomRight, 'topLeft')
-      ctx.drawImage(bitmaps.bottomRight, sx, sy, sw, sh, TARGET_X + TILE_SIZE, TARGET_Y + TILE_SIZE, CONTEXT_SIZE, CONTEXT_SIZE)
-    }
-    if (bitmaps.up) {
-      const { sx, sy, sw, sh } = edgeCrop(bitmaps.up, 'bottom')
-      ctx.drawImage(bitmaps.up, sx, sy, sw, sh, TARGET_X, 0, TILE_SIZE, CONTEXT_SIZE)
-    }
-    if (bitmaps.down) {
-      const { sx, sy, sw, sh } = edgeCrop(bitmaps.down, 'top')
-      ctx.drawImage(bitmaps.down, sx, sy, sw, sh, TARGET_X, TARGET_Y + TILE_SIZE, TILE_SIZE, CONTEXT_SIZE)
-    }
-    if (bitmaps.left) {
-      const { sx, sy, sw, sh } = edgeCrop(bitmaps.left, 'right')
-      ctx.drawImage(bitmaps.left, sx, sy, sw, sh, 0, TARGET_Y, CONTEXT_SIZE, TILE_SIZE)
-    }
-    if (bitmaps.right) {
-      const { sx, sy, sw, sh } = edgeCrop(bitmaps.right, 'left')
-      ctx.drawImage(bitmaps.right, sx, sy, sw, sh, TARGET_X + TILE_SIZE, TARGET_Y, CONTEXT_SIZE, TILE_SIZE)
-    }
-  }
-  drawNeighborTiles()
-
-  const drawSmartCornerFromEdge = (
-    bmp: ImageBitmap | undefined,
-    edge: 'top' | 'bottom' | 'left' | 'right',
-    sourceHalf: 'start' | 'end',
-    destX: number,
-    destY: number
-  ) => {
-    if (!bmp || variant !== 'smartSeamContext') return
-    const edgeSrc = edgeCrop(bmp, edge)
-    const useVerticalHalf = edge === 'left' || edge === 'right'
-    const src = useVerticalHalf
-      ? {
-          sx: edgeSrc.sx,
-          sy: sourceHalf === 'start' ? edgeSrc.sy : edgeSrc.sy + edgeSrc.sh / 2,
-          sw: edgeSrc.sw,
-          sh: edgeSrc.sh / 2,
-        }
-      : {
-          sx: sourceHalf === 'start' ? edgeSrc.sx : edgeSrc.sx + edgeSrc.sw / 2,
-          sy: edgeSrc.sy,
-          sw: edgeSrc.sw / 2,
-          sh: edgeSrc.sh,
-        }
-    ctx.drawImage(bmp, src.sx, src.sy, src.sw, src.sh, destX, destY, CONTEXT_SIZE, CONTEXT_SIZE)
-  }
-
-  const drawSmartSeamCorners = () => {
-    const farX = TARGET_X + TILE_SIZE
-    const farY = TARGET_Y + TILE_SIZE
-    if (strategy.mode === 'horizontal_priority') {
-      if (!bitmaps.topLeft) drawSmartCornerFromEdge(bitmaps.left, 'right', 'start', 0, 0)
-      if (!bitmaps.bottomLeft) drawSmartCornerFromEdge(bitmaps.left, 'right', 'end', 0, farY)
-      if (!bitmaps.topRight) drawSmartCornerFromEdge(bitmaps.right, 'left', 'start', farX, 0)
-      if (!bitmaps.bottomRight) drawSmartCornerFromEdge(bitmaps.right, 'left', 'end', farX, farY)
-    }
-    if (strategy.mode === 'vertical_priority') {
-      if (!bitmaps.topLeft) drawSmartCornerFromEdge(bitmaps.up, 'bottom', 'start', 0, 0)
-      if (!bitmaps.topRight) drawSmartCornerFromEdge(bitmaps.up, 'bottom', 'end', farX, 0)
-      if (!bitmaps.bottomLeft) drawSmartCornerFromEdge(bitmaps.down, 'top', 'start', 0, farY)
-      if (!bitmaps.bottomRight) drawSmartCornerFromEdge(bitmaps.down, 'top', 'end', farX, farY)
-    }
-  }
-  drawSmartSeamCorners()
-
-  ctx.fillStyle = '#808080'
-  ctx.fillRect(TARGET_X, TARGET_Y, TILE_SIZE, TILE_SIZE)
+  ctx.fillStyle = PACKED_CANVAS_CSS
+  ctx.fillRect(0, 0, layout.width, layout.height)
+  drawNeighbor(ctx, bitmaps.left, layout.left, layout.cellSize)
+  drawNeighbor(ctx, bitmaps.right, layout.right, layout.cellSize)
+  drawNeighbor(ctx, bitmaps.up, layout.up, layout.cellSize)
+  drawNeighbor(ctx, bitmaps.down, layout.down, layout.cellSize)
+  ctx.fillStyle = PACKED_HOLE_CSS
+  ctx.fillRect(layout.hole.x, layout.hole.y, layout.hole.width, layout.hole.height)
 
   const imageBlob = await canvas.convertToBlob({ type: 'image/png' })
-  const maskBlob = await buildEditableRegionMask(canvas, size)
-
-  // Free ImageBitmap memory
+  const maskBlob = await buildHoleMask(layout.width, layout.height, layout.hole)
   Object.values(bitmaps).forEach(bmp => bmp?.close())
 
   return {
     id,
     imageBlob,
     maskBlob,
-    cropRect: { x: TARGET_X, y: TARGET_Y, width: TILE_SIZE, height: TILE_SIZE },
+    cropRect: spec.cropRect,
+    packedWidth: spec.packedWidth,
+    packedHeight: spec.packedHeight,
     directNeighborCount,
     variant,
     strategy,

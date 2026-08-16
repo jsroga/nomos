@@ -188,6 +188,7 @@ export const API_ERROR = {
   MARKET_ANALYSIS_NOT_FOUND: 'Market analysis not found',
   UNAUTHORIZED_ACCESS_TO_PROJECT: 'Unauthorized access to project',
   MISSING_FILE_OR_PROJECT_ID: 'Missing file or projectId',
+  STYLE_REF_UPLOAD_FAILED: 'Failed to upload style reference image',
   INVALID_ASSET_FILE_TYPE: 'Invalid file type. Only GLB, GLTF, PNG, JPG, WEBP allowed.',
   UPLOAD_FAILED: 'Upload failed',
   ENTITY_ID_QUERY_REQUIRED: 'entityId is required',

@@ -1,12 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 import {
   type GenerationModeDef,
   resolveGenerationMode,
 } from '../../constants/generation-modes'
+import {
+  clampStyleReferenceUrls,
+  generationModePersistFields,
+  remainingStyleRefSlots,
+  takeStyleRefFiles,
+} from '../../constants/mj-sref'
 import { settingsApi } from '../../core/io/settings.api'
-import { MASTER_PROMPT_SAVE_DEBOUNCE_MS, WorldGenSidebarLog } from '../../ui/constants/sidebar'
+import { uploadStyleRefFile } from '../../core/io/style-refs.api'
+import {
+  MASTER_PROMPT_SAVE_DEBOUNCE_MS,
+  WorldGenSidebarLog,
+  WorldGenSidebarToast,
+} from '../../ui/constants/sidebar'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import type { WorkspaceProject } from '@/shared/workspace/types'
+import { resolveGenerationModeSrefUrls } from './apply-generation-mode-srefs'
 
 export function masterPromptAfterModePick(_current: string, promptFragment: string): string {
   return promptFragment
@@ -16,10 +29,14 @@ type PersistableWorldFields = {
   canvasMasterPrompt?: string
   generationMode?: string
   styleAnchorUrl?: string | null
+  styleReferenceUrls?: string[]
+  stylePreset?: string | null
 }
 
 export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
   const [masterPrompt, setMasterPrompt] = useState('')
+  const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
+  const [isUploadingStyleRefs, setIsUploadingStyleRefs] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const projectRef = useRef(currentProject)
 
@@ -30,6 +47,19 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
   useEffect(() => {
     setMasterPrompt(currentProject?.canvasMasterPrompt ?? '')
   }, [currentProject?.id, currentProject?.canvasMasterPrompt])
+
+  useEffect(() => {
+    if (!currentProject?.id) {
+      setStyleReferenceUrls([])
+      return
+    }
+    settingsApi
+      .fetchProject(currentProject.id)
+      .then(data => {
+        setStyleReferenceUrls(clampStyleReferenceUrls(data.styleReferenceUrls ?? []))
+      })
+      .catch(err => console.error(WorldGenSidebarLog.FailedToLoadProjectStyleRefs, err))
+  }, [currentProject?.id])
 
   useEffect(() => {
     return () => {
@@ -51,10 +81,17 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
           : {}),
         ...(fields.generationMode !== undefined ? { generationMode: fields.generationMode } : {}),
         ...(fields.styleAnchorUrl !== undefined ? { styleAnchorUrl: fields.styleAnchorUrl } : {}),
+        ...(fields.stylePreset !== undefined ? { stylePreset: fields.stylePreset } : {}),
       })
     } catch (error) {
       console.error(WorldGenSidebarLog.FailedToSaveWorldSettings, error)
     }
+  }
+
+  const persistStyleUrls = async (urls: string[]) => {
+    const next = clampStyleReferenceUrls(urls)
+    setStyleReferenceUrls(next)
+    await persistProjectFields({ styleReferenceUrls: next, stylePreset: null })
   }
 
   const handleMasterPromptChange = (value: string) => {
@@ -65,14 +102,52 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
     }, MASTER_PROMPT_SAVE_DEBOUNCE_MS)
   }
 
-  const handleSelectGenerationMode = (mode: GenerationModeDef) => {
+  const handleSelectGenerationMode = async (mode: GenerationModeDef) => {
+    const project = projectRef.current
+    if (!project) return
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    const nextPrompt = masterPromptAfterModePick(masterPrompt, mode.promptFragment)
-    setMasterPrompt(nextPrompt)
-    void persistProjectFields({
-      generationMode: mode.id,
-      canvasMasterPrompt: nextPrompt,
-    })
+    setIsUploadingStyleRefs(true)
+    try {
+      const urls = await resolveGenerationModeSrefUrls(mode, window.location.origin)
+      const fields = generationModePersistFields({ mode, styleReferenceUrls: urls })
+      setMasterPrompt(fields.canvasMasterPrompt)
+      setStyleReferenceUrls(fields.styleReferenceUrls)
+      await persistProjectFields(fields)
+    } catch (error) {
+      console.error(WorldGenSidebarLog.FailedToUploadStyleRefs, error)
+      toast.error(WorldGenSidebarToast.StyleRefUploadFailed)
+    } finally {
+      setIsUploadingStyleRefs(false)
+    }
+  }
+
+  const handleAddStyleRefFiles = async (files: Iterable<File>) => {
+    const project = projectRef.current
+    if (!project) return
+    const accepted = takeStyleRefFiles(files, remainingStyleRefSlots(styleReferenceUrls.length))
+    if (accepted.length === 0) return
+    setIsUploadingStyleRefs(true)
+    try {
+      const uploaded: string[] = []
+      for (const file of accepted) {
+        uploaded.push(await uploadStyleRefFile({ projectId: project.id, file }))
+      }
+      await persistStyleUrls([...styleReferenceUrls, ...uploaded])
+    } catch (error) {
+      console.error(WorldGenSidebarLog.FailedToUploadStyleRefs, error)
+      toast.error(WorldGenSidebarToast.StyleRefUploadFailed)
+    } finally {
+      setIsUploadingStyleRefs(false)
+    }
+  }
+
+  const handleRemoveStyleRef = (index: number) => {
+    void persistStyleUrls(styleReferenceUrls.filter((_, i) => i !== index))
+  }
+
+  const handleClearStyleRefs = () => {
+    void persistStyleUrls([])
+    toast.success(WorldGenSidebarToast.StyleRefsCleared)
   }
 
   const handleResetStyleAnchor = () => {
@@ -84,6 +159,11 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
     handleMasterPromptChange,
     handleSelectGenerationMode,
     handleResetStyleAnchor,
+    handleAddStyleRefFiles,
+    handleRemoveStyleRef,
+    handleClearStyleRefs,
+    styleReferenceUrls,
+    isUploadingStyleRefs,
     generationMode: resolveGenerationMode(currentProject?.generationMode),
     styleAnchorUrl: currentProject?.styleAnchorUrl ?? null,
   }

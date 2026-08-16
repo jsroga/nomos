@@ -9,10 +9,10 @@ export const worldGenTourSteps: TourStep[] = [
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <Palette className="w-5 h-5" />
-          <h3 className="font-bold">Style Prompt</h3>
+          <h3 className="font-bold">Master prompt</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          First, define the overall artistic style for your world. This will ensure consistency across all generated tiles.
+          First, define the overall world context and artistic style. This stays on every generated tile.
         </p>
       </div>
     ),

@@ -6,9 +6,10 @@ import {
   BibleSoundtracks,
   BibleInspirations,
   BibleWorldLogic,
+  BibleFactions,
   BibleItems,
   BibleEvents,
-  BibleFactions,
+  BiblePlotTwists,
   BibleRoadmap,
 } from '../WorldBible'
 
@@ -91,6 +92,10 @@ export function WorldBiblePanelBody({
           </LazyBibleSection>
 
           <LazyBibleSection>
+            <BibleFactions />
+          </LazyBibleSection>
+
+          <LazyBibleSection>
             <BibleItems />
           </LazyBibleSection>
 
@@ -99,7 +104,7 @@ export function WorldBiblePanelBody({
           </LazyBibleSection>
 
           <LazyBibleSection>
-            <BibleFactions />
+            <BiblePlotTwists />
           </LazyBibleSection>
 
           <LazyBibleSection>

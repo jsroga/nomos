@@ -18,6 +18,7 @@ Work product **for the agent** goes in `.local/` (gitignored). Work product **fo
 | `docs/` | **Flat allowlist only** (7 files in `scripts/structure-gates/docs-allowlist.mjs`) — no subfolders |
 | `.agents/` `.cursor/` `.claude/` `.fabro/` | Prompts, rules, skills, subagent configs |
 | `src/**` | Only shipped assets: `instructions.md`, `SKILL.md`, legal pages |
+| `evals/fixtures/` | Frozen eval inputs (system prompts), not scratch |
 | Repo root | `README.md`, `AGENTS.md`, `CLAUDE.md` only |
 
 ## Forbidden

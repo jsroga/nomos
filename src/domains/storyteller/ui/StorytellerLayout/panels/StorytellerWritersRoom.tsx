@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { DomainSidebar } from '@/components/DomainSidebar'
@@ -14,7 +14,10 @@ import { useStorytellerChatModel } from '@/domains/storyteller/state/hooks/useSt
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { type ProposedBibleSectionUpdate } from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
-import { addToWorldSectionLabels } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
+import {
+  addToWorldSectionLabels,
+  areAddToWorldSectionsSettled,
+} from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
 import { parseCreatedEpisodeFromToolCall } from '@/domains/storyteller/state/utils/parse-created-episode-from-tool'
 import {
   narrowEpisodePremiseProposal,
@@ -70,6 +73,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
   const proposedKeysRef = useRef(new Set<string>())
   const lastBibleProposalRef = useRef<ProposedBibleSectionUpdate | null>(null)
   const rejectedSectionsRef = useRef(new Set<string>())
+  const [settledSections, setSettledSections] = useState<ReadonlySet<string>>(() => new Set())
   const requestedSectionRef = useRef<string | undefined>(undefined)
   const answeredSectionRef = useRef<string | undefined>(undefined)
   const requestedPremiseFieldRef = useRef<string | undefined>(undefined)
@@ -119,6 +123,12 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
       proposedKeysRef.current.add(proposal.dedupeKey)
       lastBibleProposalRef.current = proposal
       rejectedSectionsRef.current.delete(proposal.section)
+      setSettledSections(current => {
+        if (!current.has(proposal.section)) return current
+        const next = new Set(current)
+        next.delete(proposal.section)
+        return next
+      })
       if (focusPanel && proposal.section === BibleSection.EPISODE_PREMISE) {
         setActiveTab(StorytellerTab.Plan)
         closeBible()
@@ -132,6 +142,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
           action: proposal.action,
           episodeId: readString(recordFromJson(proposal.action.payload).episodeId),
           onAccept: () => {
+            setSettledSections(current => new Set([...current, proposal.section]))
             setStoryPlan(current => applyUpdatesToStoryPlan(current, proposal.preview))
             setSectionPendingActions(current => omitSectionKey(current, proposal.section))
             void executeAction({
@@ -141,6 +152,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
           },
           onReject: () => {
             rejectedSectionsRef.current.add(proposal.section)
+            setSettledSections(current => new Set([...current, proposal.section]))
             setSectionPendingActions(current => omitSectionKey(current, proposal.section))
           },
         },
@@ -156,9 +168,19 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
         toolArgs,
         episodeId: currentEpisodeId,
         requestedSection: answeredSectionRef.current,
-        rejectedSections: rejectedSectionsRef.current,
+        rejectedSections: settledSections,
       }),
-    [currentEpisodeId, sectionPendingActions],
+    [currentEpisodeId, settledSections],
+  )
+  const isAddToWorldSettled = useCallback(
+    (toolArgs: readonly Record<string, unknown>[]) =>
+      areAddToWorldSectionsSettled({
+        toolArgs,
+        episodeId: currentEpisodeId,
+        requestedSection: answeredSectionRef.current,
+        settledSections,
+      }),
+    [currentEpisodeId, settledSections],
   )
   const handleAddToWorld = useCallback(
     async (payload: AddToWorldPayload): Promise<boolean> =>
@@ -290,6 +312,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
         onCompletedToolCalls={handleCompletedToolCalls}
         onAddToWorld={handleAddToWorld}
         sectionLabelsFromToolArgs={sectionLabelsFromToolArgs}
+        isAddToWorldSettled={isAddToWorldSettled}
       />
       {ConfirmDialogComponent}
     </DomainSidebar>

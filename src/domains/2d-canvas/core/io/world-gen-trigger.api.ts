@@ -3,9 +3,10 @@ import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
 import { FidelityApiRoute } from '../../constants/fidelity-service'
-import { TileGenerationApiRoute } from '../../constants/tile-generation-service'
+import { TileGenerationApiRoute, VariantSelectionAction } from '../../constants/tile-generation-service'
 import { UpscaleApiRoute } from '../../constants/upscale-service'
-import type { VariantSelectionAction } from '../../ui/constants/tile-review-dialog'
+import type { NeighborImageUrls } from '../neighbor-image-urls'
+import type { PackedCropSpec } from '@/shared/ai/context-pack-layout'
 
 const JSON_HEADERS = { 'Content-Type': ContentType.Json }
 const TRIGGER_FIDELITY_ERROR = 'Failed to trigger fidelity enhancement task'
@@ -66,13 +67,27 @@ export async function triggerTileGeneration(input: {
   y: number
   prompt: string
   isFirstTile: boolean
+  packedCrop?: PackedCropSpec
   contextPayload?: unknown
   styleReferenceUrls?: string[]
+  neighborImageUrls?: NeighborImageUrls
 }): Promise<{ runId: string }> {
+  const body: Record<string, unknown> = {}
+  if (input.packedCrop) body.packedCrop = input.packedCrop
+  body.projectId = input.projectId
+  body.x = input.x
+  body.y = input.y
+  body.prompt = input.prompt
+  body.isFirstTile = input.isFirstTile
+  if (input.contextPayload) body.contextPayload = input.contextPayload
+  if (input.styleReferenceUrls?.length) body.styleReferenceUrls = input.styleReferenceUrls
+  if (input.neighborImageUrls && Object.keys(input.neighborImageUrls).length > 0) {
+    body.neighborImageUrls = input.neighborImageUrls
+  }
   const data = await fetchJsonRecord(TileGenerationApiRoute.Trigger, {
     method: HttpMethod.Post,
     headers: JSON_HEADERS,
-    body: JSON.stringify(input),
+    body: JSON.stringify(body),
   })
   const runId = readString(data.runId)
   if (!runId) {

@@ -1,22 +1,30 @@
 import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { resolveStyleReferenceUrls, resolveStyleContext } from '@/shared/data/constants/style-presets'
-import { readString, stringArrayFromJson } from '@/shared/data/json-guards'
+import { resolveStyleContext } from '@/shared/data/constants/style-presets'
+import { readString, readNumber, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
 import {
   generationModeDef,
   resolveGenerationMode,
 } from '@/domains/2d-canvas/constants/generation-modes'
+import { absolutizeStyleReferenceUrls } from '@/domains/2d-canvas/constants/mj-sref'
+import { getSiteURL } from '@/shared/data/url'
 import type {
   GenerateTileContextPayload,
   GenerateTilePayload,
 } from '@/domains/2d-canvas/tasks/constants/generate-tile'
+import { packedCropFromContext } from '@/domains/2d-canvas/tasks/constants/generate-tile'
+import type { PackedCropRect, PackedCropSpec } from '@/shared/ai/context-pack-layout'
+import { ContextAssemblyVariant } from '@/domains/2d-canvas/constants/tile-generation-service'
 import type { TileAIProvider } from '@/trigger/providers/follow-up-provider'
 
 enum TileContextPayloadKey {
   Images = 'images',
   PreferredVariant = 'preferredVariant',
+  CropRect = 'cropRect',
+  PackedWidth = 'packedWidth',
+  PackedHeight = 'packedHeight',
 }
 
 export interface TileRequestPayload {
@@ -27,7 +35,9 @@ export interface TileRequestPayload {
   isFirstTile?: boolean
   styleReferenceUrls?: string[]
   contextPayload?: unknown
+  packedCrop?: unknown
   contextImageBase64?: string
+  neighborImageUrls?: GenerateTilePayload['neighborImageUrls']
 }
 
 export function validateTileRequestPayload(payload: TileRequestPayload): NextResponse | null {
@@ -42,22 +52,65 @@ export function validateTileRequestPayload(payload: TileRequestPayload): NextRes
   return null
 }
 
+function parseCropRect(value: unknown): PackedCropRect | undefined {
+  const record = recordFromJson(value)
+  const x = readNumber(record.x)
+  const y = readNumber(record.y)
+  const width = readNumber(record.width)
+  const height = readNumber(record.height)
+  if (x === undefined || y === undefined || width === undefined || height === undefined) {
+    return undefined
+  }
+  return { x, y, width, height }
+}
+
+function parseContextImages(value: unknown): GenerateTileContextPayload['images'] | undefined {
+  const record = recordFromJson(value)
+  const images: GenerateTileContextPayload['images'] = {}
+  const canonical = record[ContextAssemblyVariant.CanonicalFullContext]
+  const smartSeam = record[ContextAssemblyVariant.SmartSeamContext]
+  if (typeof canonical === 'string') {
+    images[ContextAssemblyVariant.CanonicalFullContext] = canonical
+  }
+  if (typeof smartSeam === 'string') {
+    images[ContextAssemblyVariant.SmartSeamContext] = smartSeam
+  }
+  if (!images[ContextAssemblyVariant.CanonicalFullContext] && !images[ContextAssemblyVariant.SmartSeamContext]) {
+    return undefined
+  }
+  return images
+}
+
 function parseGenerateTileContextPayload(value: unknown): GenerateTileContextPayload | undefined {
   if (!value || typeof value !== 'object' || !(TileContextPayloadKey.Images in value)) {
     return undefined
   }
 
-  const record = value
-  const images = record[TileContextPayloadKey.Images]
-  if (!images || typeof images !== 'object') return undefined
+  const record = recordFromJson(value)
+  const images = parseContextImages(record[TileContextPayloadKey.Images])
+  if (!images) return undefined
 
-  const preferredVariant =
-    TileContextPayloadKey.PreferredVariant in record &&
-    typeof record[TileContextPayloadKey.PreferredVariant] === 'string'
-      ? record[TileContextPayloadKey.PreferredVariant]
-      : undefined
+  const preferredVariant = readString(record[TileContextPayloadKey.PreferredVariant])
+  const cropRect = parseCropRect(record[TileContextPayloadKey.CropRect])
+  const packedWidth = readNumber(record[TileContextPayloadKey.PackedWidth])
+  const packedHeight = readNumber(record[TileContextPayloadKey.PackedHeight])
+  const parsed: GenerateTileContextPayload = preferredVariant
+    ? { images, preferredVariant }
+    : { images }
+  if (cropRect) parsed.cropRect = cropRect
+  if (packedWidth !== undefined) parsed.packedWidth = packedWidth
+  if (packedHeight !== undefined) parsed.packedHeight = packedHeight
+  return parsed
+}
 
-  return preferredVariant ? { images, preferredVariant } : { images }
+function parsePackedCropSpec(value: unknown): PackedCropSpec | undefined {
+  const record = recordFromJson(value)
+  return packedCropFromContext({
+    images: {},
+    cropRect: parseCropRect(record[TileContextPayloadKey.CropRect]),
+    packedWidth: readNumber(record[TileContextPayloadKey.PackedWidth]),
+    packedHeight: readNumber(record[TileContextPayloadKey.PackedHeight]),
+  })
 }
 
 export async function resolveTileStyleInputs(
@@ -83,13 +136,12 @@ export async function resolveTileStyleInputs(
   const masterPrompt = readString(projectData?.canvas_master_prompt) ?? undefined
   const styleAnchorUrl = readString(projectData?.style_anchor_url) ?? undefined
 
-  const styleReferenceUrls =
+  const styleReferenceUrls = absolutizeStyleReferenceUrls(
     payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
       ? payload.styleReferenceUrls
-      : resolveStyleReferenceUrls({
-          stylePreset,
-          styleReferenceUrls: stringArrayFromJson(projectData?.style_reference_urls),
-        }) ?? undefined
+      : stringArrayFromJson(projectData?.style_reference_urls),
+    getSiteURL(),
+  )
 
   return {
     styleReferenceUrls,
@@ -123,7 +175,7 @@ export function buildGenerateTileTaskPayload(
     isFirstTile: payload.isFirstTile ?? true,
   }
 
-  if (styleInputs.styleReferenceUrls) {
+  if (styleInputs.styleReferenceUrls?.length) {
     taskPayload.styleReferenceUrls = styleInputs.styleReferenceUrls
   }
   if (styleInputs.styleContext) {
@@ -144,11 +196,16 @@ export function buildGenerateTileTaskPayload(
   if (payload.contextImageBase64) {
     taskPayload.contextImageBase64 = payload.contextImageBase64
   }
+  if (payload.neighborImageUrls) {
+    taskPayload.neighborImageUrls = payload.neighborImageUrls
+  }
 
   const contextPayload = parseGenerateTileContextPayload(payload.contextPayload)
   if (contextPayload) {
     taskPayload.contextPayload = contextPayload
   }
+  const packedCrop = parsePackedCropSpec(payload.packedCrop) ?? packedCropFromContext(contextPayload)
+  if (packedCrop) taskPayload.packedCrop = packedCrop
 
   return taskPayload
 }

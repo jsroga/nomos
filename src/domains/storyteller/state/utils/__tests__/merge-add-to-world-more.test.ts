@@ -4,6 +4,7 @@ import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import {
   BibleSectionDisplayName,
   addToWorldSectionLabels,
+  areAddToWorldSectionsSettled,
   bibleSectionDisplayName,
   mergeAddToWorldProposals,
   mergeToolArgFields,
@@ -137,5 +138,46 @@ describe('addToWorldSectionLabels', () => {
       BibleSectionDisplayName.Overview,
       BibleSectionDisplayName.EpisodePremise,
     ])
+  })
+
+  it('lists World logic, Factions, and Characters from one write', () => {
+    const labels = addToWorldSectionLabels({
+      toolArgs: [
+        {
+          worldRules: [{ rule: 'The tide writes names.' }],
+          factions: [{ name: 'Keepers', description: 'They tally.' }],
+          characters: [{ name: 'Vera', description: 'She keeps the wardens at bay.' }],
+        },
+      ],
+      rejectedSections: new Set(),
+    })
+
+    expect(labels).toEqual([
+      BibleSectionDisplayName.WorldRules,
+      BibleSectionDisplayName.Factions,
+      BibleSectionDisplayName.Cast,
+    ])
+  })
+})
+
+describe('areAddToWorldSectionsSettled', () => {
+  it('is true after every generated section was accepted', () => {
+    const toolArgs = [{ worldRules: [{ rule: 'The tide writes names.' }] }]
+
+    const settled = areAddToWorldSectionsSettled({
+      toolArgs,
+      settledSections: new Set([BibleSection.WORLD_RULES]),
+    })
+
+    expect(settled).toBe(true)
+  })
+
+  it('is false while a generated section is still open', () => {
+    const settled = areAddToWorldSectionsSettled({
+      toolArgs: [{ worldRules: [{ rule: 'The tide writes names.' }] }],
+      settledSections: new Set(),
+    })
+
+    expect(settled).toBe(false)
   })
 })

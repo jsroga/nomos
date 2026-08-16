@@ -4,7 +4,11 @@ import React, { useState } from 'react'
 import { Check, X, Eye, Loader2 } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { VisualJsonDiff } from '@/domains/storyteller/ui/ActionToast/VisualJsonDiff'
-import { SectionPendingOverlayCopy } from '@/domains/storyteller/ui/WorldBible/constants/section-pending-overlay'
+import {
+  SectionPendingOverlayClass,
+  SectionPendingOverlayCopy,
+} from '@/domains/storyteller/ui/WorldBible/constants/section-pending-overlay'
+import { cn } from '@/shared/data/utils'
 import type { PendingAction } from '../utils/bible-context-types'
 
 interface SectionPendingOverlayProps {
@@ -25,7 +29,7 @@ export const SectionPendingOverlay: React.FC<SectionPendingOverlayProps> = ({
   }
 
   return (
-    <div className="absolute inset-0 z-20 bg-background/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-3 border-2 border-amber-500/50 animate-in fade-in duration-200 overflow-y-auto p-4">
+    <div className={cn(SectionPendingOverlayClass.Layer, SectionPendingOverlayClass.MinHeight)}>
       <div className="text-center">
         <div className="text-xs font-medium text-amber-400 uppercase tracking-wider mb-1">
           {isProcessing ? SectionPendingOverlayCopy.Applying : SectionPendingOverlayCopy.Title}

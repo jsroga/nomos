@@ -10,6 +10,7 @@ export interface AddToWorldPayload {
 export interface AssistantAddToWorldApi {
   onAddToWorld?: (payload: AddToWorldPayload) => boolean | Promise<boolean>
   sectionLabelsFromToolArgs?: (toolArgs: readonly Record<string, unknown>[]) => string[]
+  isAddToWorldSettled?: (toolArgs: readonly Record<string, unknown>[]) => boolean
 }
 
 const AssistantAddToWorldContext = createContext<AssistantAddToWorldApi>({})
@@ -17,10 +18,13 @@ const AssistantAddToWorldContext = createContext<AssistantAddToWorldApi>({})
 export function AssistantAddToWorldProvider({
   onAddToWorld,
   sectionLabelsFromToolArgs,
+  isAddToWorldSettled,
   children,
 }: AssistantAddToWorldApi & { children: ReactNode }) {
   return (
-    <AssistantAddToWorldContext.Provider value={{ onAddToWorld, sectionLabelsFromToolArgs }}>
+    <AssistantAddToWorldContext.Provider
+      value={{ onAddToWorld, sectionLabelsFromToolArgs, isAddToWorldSettled }}
+    >
       {children}
     </AssistantAddToWorldContext.Provider>
   )

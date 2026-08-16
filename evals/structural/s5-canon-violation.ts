@@ -1,13 +1,14 @@
 import { CanonBucket, EntityKind, ScorerId, TOKENS_PER_THOUSAND } from './constants'
 import { beatProse, tokenCount } from './beat-text'
 import { findPhraseHits, maskSpans } from './phrase-match'
-import type {
-  CanonFlag,
-  CastPerson,
-  DumpedBeat,
-  LexiconEntry,
-  MatchingRules,
-  StructuralScore,
+import {
+  toScoreFlags,
+  type CanonFlag,
+  type CastPerson,
+  type DumpedBeat,
+  type LexiconEntry,
+  type MatchingRules,
+  type StructuralScore,
 } from './types'
 
 const TITLE_CASE = /\b[A-Z][A-Za-z']+(?:\s+[A-Z][A-Za-z']+)*\b/g
@@ -153,6 +154,6 @@ export function scoreCanonViolation(
       unknownEntityPerThousandTokens: flagsPerThousand,
       tokenCount: tokens,
     },
-    flags,
+    flags: toScoreFlags(flags),
   }
 }

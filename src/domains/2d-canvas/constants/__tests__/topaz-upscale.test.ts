@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
   TOPAZ_MAX_OUTPUT_PX,
+  TopazEnhanceModel,
   TopazUpscaleFactor,
   resolveNearestNeighbourSize,
   resolveTopazUpscalePlan,
+  topazEnhanceModelFromMode,
 } from '../topaz-upscale'
 import {
   GenerationMode,
   UpscaleStrategy,
   generationModeDef,
 } from '../generation-modes'
+import { ImageUpscaleMode } from '@/shared/ai/constants/image-env'
 
 describe('resolveTopazUpscalePlan', () => {
   it('caps a 512 tile at 4x / 2048', () => {
@@ -31,9 +34,20 @@ describe('resolveNearestNeighbourSize', () => {
 })
 
 describe('Pixel art upscale policy', () => {
-  it('uses nearest-neighbour and disables fidelity enhance', () => {
+  it('uses nearest-neighbour and disables fidelity enhance', async () => {
     const mode = generationModeDef(GenerationMode.PixelArt)
     expect(mode.upscaleStrategy).toBe(UpscaleStrategy.NearestNeighbour)
     expect(mode.allowsFidelityEnhance).toBe(false)
+  })
+})
+
+describe('topazEnhanceModelFromMode', () => {
+  it('maps standard to Standard V2 and creative to High Fidelity V2', () => {
+    expect(topazEnhanceModelFromMode(ImageUpscaleMode.Standard)).toBe(
+      TopazEnhanceModel.StandardV2,
+    )
+    expect(topazEnhanceModelFromMode(ImageUpscaleMode.Creative)).toBe(
+      TopazEnhanceModel.HighFidelityV2,
+    )
   })
 })

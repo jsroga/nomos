@@ -1,15 +1,20 @@
 import type { TileContext } from '@/shared/ai/types'
 import type { ContextImageVariant } from '@/shared/ai/contextAssembler'
+import type { PackedCropRect, PackedCropSpec } from '@/shared/ai/context-pack-layout'
 import { GoogleModelId } from '@/shared/data/constants/protocol'
 import { GeminiFinishReason } from '@/shared/data/constants/repaint-gemini'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { LegNextJobStatus, LegNextModelId } from '@/shared/ai/constants/legnext'
+import type { NeighborImageUrls } from '../../core/neighbor-image-urls'
 
 export type TileNeighborsPayload = TileContext['neighbors']
 
 export interface GenerateTileContextPayload {
   images: Partial<Record<ContextImageVariant, string>>
   preferredVariant?: string
+  cropRect?: PackedCropRect
+  packedWidth?: number
+  packedHeight?: number
 }
 
 export interface GenerateTilePayload {
@@ -29,6 +34,8 @@ export interface GenerateTilePayload {
   contextImageBase64?: string
   contextPayload?: GenerateTileContextPayload
   neighbors?: TileNeighborsPayload
+  neighborImageUrls?: NeighborImageUrls
+  packedCrop?: PackedCropSpec
 }
 
 export interface GenerateTileResult {
@@ -73,3 +80,19 @@ export const CONTEXT_CANONICAL_VARIANT = 'canonicalFullContext'
 export const TILE_CROP_SIZE = 512
 export const CONTEXT_CANVAS_SIZE = 1024
 export const CENTER_CROP_OFFSET = 256
+/** Follow-up seam color-fade width in px. Unused on the packed-crop path. */
+export const FOLLOW_UP_SEAM_BLEND_PX = 16
+
+export function packedCropFromContext(
+  payload: GenerateTileContextPayload | undefined,
+): PackedCropSpec | undefined {
+  if (!payload?.cropRect) return undefined
+  const packedWidth = payload.packedWidth
+  const packedHeight = payload.packedHeight
+  if (!packedWidth || !packedHeight) return undefined
+  return {
+    cropRect: payload.cropRect,
+    packedWidth,
+    packedHeight,
+  }
+}

@@ -1,7 +1,8 @@
 /**
  * Semantic image-model env keys (Apiframe).
  * Available generate values: midjourney | nano-banana | nano-banana-pro | grok-imagine-image | gpt-image-1.5 | flux-2-pro
- * Available upscale values: topaz-image-upscale | clarity-upscale | midjourney
+ * Available upscale values: topaz-image-upscale (canvas tiles always Topaz)
+ * Available upscale modes: standard | creative
  * Available repaint values: flux-fill-pro
  */
 
@@ -16,6 +17,7 @@ export enum ImageEnvVar {
   PortraitModel = 'IMAGE_PORTRAIT_MODEL',
   FidelityModel = 'IMAGE_FIDELITY_MODEL',
   UpscaleModel = 'IMAGE_UPSCALE_MODEL',
+  UpscaleMode = 'IMAGE_UPSCALE_MODE',
   RepaintModel = 'IMAGE_REPAINT_MODEL',
   /** @deprecated Prefer IMAGE_TILE_FOLLOW_UP_MODEL */
   LegacyFollowUpProvider = 'FOLLOW_UP_IMAGE_PROVIDER',
@@ -40,6 +42,12 @@ export enum ImageUpscaleModelId {
 
 export enum ImageRepaintModelId {
   FluxFillPro = 'flux-fill-pro',
+}
+
+/** Topaz enhance preset for canvas tile upscale. */
+export enum ImageUpscaleMode {
+  Standard = 'standard',
+  Creative = 'creative',
 }
 
 /** Short aliases still accepted for IMAGE_TILE_FOLLOW_UP_MODEL / legacy FOLLOW_UP_IMAGE_PROVIDER. */

@@ -2,6 +2,7 @@ import type { FC, ReactNode } from 'react'
 import { Loader2, Plus, RefreshCw } from 'lucide-react'
 import type { PendingAction } from '../utils/bible-context-types'
 import { BibleSectionChromeClass } from '../constants/bible-section-ui'
+import { pendingReviewHostClass } from '../constants/section-pending-overlay'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
@@ -136,7 +137,7 @@ export const BibleSectionShell: FC<{
   pendingAction?: PendingAction
   children: ReactNode
 }> = ({ isLoading, loadingMessage, spinnerClassName, pendingAction, children }) => (
-  <section className={isLoading || pendingAction ? 'relative' : ''}>
+  <section className={pendingReviewHostClass(Boolean(pendingAction), isLoading)}>
     {pendingAction && (
       <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
     )}

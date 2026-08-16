@@ -152,6 +152,9 @@ export async function generateSingleWorldTile(params: {
         images: { canonicalFullContext: canonicalBase64 },
         maskBase64,
         preferredVariant,
+        cropRect: canonicalContext.cropRect,
+        packedWidth: canonicalContext.packedWidth,
+        packedHeight: canonicalContext.packedHeight,
       }
 
       const getImageUrl = (neighborTile: (Tile & { imageUrl?: string }) | undefined) =>

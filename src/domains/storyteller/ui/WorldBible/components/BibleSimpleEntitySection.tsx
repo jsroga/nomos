@@ -1,6 +1,6 @@
 import type { FC, ReactNode } from 'react'
 import { Trash2 } from 'lucide-react'
-import { RichText } from '../../RichText'
+import { BibleEntityTile, BibleEntityTileClass } from '../../BibleEntityTile'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
 import type { PendingAction } from '../utils/bible-context-types'
 
@@ -56,29 +56,19 @@ const NamedEntityDisplayGrid: FC<{
   items: NamedEntity[]
   emptyMessage: string
   projectId: string
-  cardIcon: ReactNode
-  cardIconWrapClassName: string
-}> = ({ items, emptyMessage, projectId, cardIcon, cardIconWrapClassName }) => {
+}> = ({ items, emptyMessage, projectId }) => {
   if (items.length === 0) return <EmptyState message={emptyMessage} />
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className={BibleEntityTileClass.Grid}>
       {items.map((item, idx) => {
         if (!item) return null
         return (
-          <div
+          <BibleEntityTile
             key={idx}
-            className="group cursor-default transition-all duration-300 border hover:border-primary/30 bg-card/40 backdrop-blur-sm p-5 rounded-xl flex flex-col gap-2"
-          >
-            <div className="flex items-center gap-3 mb-1">
-              <div className={`p-2 rounded-lg shrink-0 ${cardIconWrapClassName}`}>{cardIcon}</div>
-              <h4 className="font-syne font-bold text-[16px] text-foreground leading-tight">
-                {item.name}
-              </h4>
-            </div>
-            <div className="text-sm text-muted-foreground/80 leading-relaxed mt-2">
-              <RichText text={item.description} projectId={projectId} inline />
-            </div>
-          </div>
+            projectId={projectId}
+            title={item.name || ''}
+            description={item.description}
+          />
         )
       })}
     </div>
@@ -96,8 +86,6 @@ export type BibleSimpleEntitySectionProps = {
   generateTitle: string
   addTitle: string
   sectionKey: string
-  cardIcon: ReactNode
-  cardIconWrapClassName: string
   localItems: NamedEntity[]
   displayItems: NamedEntity[]
   isEditing: boolean
@@ -122,8 +110,6 @@ export const BibleSimpleEntitySection: FC<BibleSimpleEntitySectionProps> = ({
   generateTitle,
   addTitle,
   sectionKey,
-  cardIcon,
-  cardIconWrapClassName,
   localItems,
   displayItems,
   isEditing,
@@ -167,8 +153,6 @@ export const BibleSimpleEntitySection: FC<BibleSimpleEntitySectionProps> = ({
         items={displayItems}
         emptyMessage={emptyDisplayMessage}
         projectId={projectId}
-        cardIcon={cardIcon}
-        cardIconWrapClassName={cardIconWrapClassName}
       />
     )}
   </BibleSectionShell>

@@ -29,8 +29,9 @@ describe('Midjourney prompts for generation modes', () => {
         styleReferenceUrls: ['https://cdn.example.com/sref.png'],
         modeNegatives: mode.negatives,
       })
+      expect(first, mode.id).not.toMatch(FORBIDDEN_TILE_WORD)
+      expect(mode.promptFragment, mode.id).not.toMatch(FORBIDDEN_TILE_WORD)
       for (const prompt of [first, followUp]) {
-        expect(prompt, mode.id).not.toMatch(FORBIDDEN_TILE_WORD)
         expect(prompt.toLowerCase(), mode.id).not.toContain(FORBIDDEN_SEAMLESS_EDGES)
         expect(prompt, mode.id).not.toContain(FORBIDDEN_PIXEL_SIZE)
       }

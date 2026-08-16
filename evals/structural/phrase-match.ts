@@ -1,4 +1,4 @@
-import { recordFromJson, readString, stringArrayFromJson } from '@/shared/data/json-guards'
+import { recordFromJson, readString, stringArrayFromJson } from '../../src/shared/data/json-guards'
 import { EntityKind } from './constants'
 import type { CastPerson, LexiconEntry, MatchingRules, PhraseHit } from './types'
 

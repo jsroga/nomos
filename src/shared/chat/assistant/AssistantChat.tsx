@@ -141,6 +141,8 @@ interface AssistantChatProps {
   onAddToWorld?: (payload: AddToWorldPayload) => boolean | Promise<boolean>
   /** Labels for bible sections this message’s tool args would commit. */
   sectionLabelsFromToolArgs?: (toolArgs: readonly Record<string, unknown>[]) => string[]
+  /** True after Accept / reject leaves nothing for this message to commit. */
+  isAddToWorldSettled?: (toolArgs: readonly Record<string, unknown>[]) => boolean
   /** Domain-injected markdown/chip renderers (Writers Room entity links). */
   chatRenderers?: ChatRenderers
 }
@@ -203,6 +205,7 @@ export function AssistantChat({
   onCompletedToolCalls,
   onAddToWorld,
   sectionLabelsFromToolArgs,
+  isAddToWorldSettled,
   chatRenderers,
 }: AssistantChatProps) {
   const history = useMemo(
@@ -382,6 +385,7 @@ export function AssistantChat({
     <AssistantAddToWorldProvider
       onAddToWorld={onAddToWorld}
       sectionLabelsFromToolArgs={sectionLabelsFromToolArgs}
+      isAddToWorldSettled={isAddToWorldSettled}
     >
       <AskUserToolUI />
       <AssistantChatBody

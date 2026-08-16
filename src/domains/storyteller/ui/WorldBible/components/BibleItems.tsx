@@ -34,8 +34,6 @@ export const BibleItems: FC = () => {
       generateTitle="Generate Items"
       addTitle="Add Item"
       sectionKey="items"
-      cardIcon={<Package className="w-4 h-4 text-amber-500" />}
-      cardIconWrapClassName="bg-amber-500/15 border-amber-500/20"
       localItems={localItems}
       displayItems={displayItems}
       isEditing={isEditing}

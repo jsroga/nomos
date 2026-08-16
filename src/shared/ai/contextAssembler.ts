@@ -1,29 +1,24 @@
 /**
  * Context Assembler
  *
- * Composes a 1024×1024 context canvas from neighboring tiles for outpainting.
- * All heavy work (image fetch, decode, canvas draw) runs inside a Web Worker
- * using OffscreenCanvas so the main thread stays responsive.
- *
- * Falls back to the main-thread implementation if workers are not supported.
+ * Packs full 512 cardinal neighbors around a grey target hole on a tight canvas.
+ * Heavy work runs in a Web Worker; main thread is the fallback.
  */
 import { resolveContextFramingStrategy } from './contextAssembler-framing-strategy'
-import { applySmartSeamCorners } from './contextAssembler-smart-corners'
+import {
+  packedCanvasLayout,
+  packedCropSpecFromLayout,
+  cardinalCount,
+  PACKED_CANVAS_CSS,
+  PACKED_HOLE_CSS,
+  type CardinalPresence,
+  type PackedCropRect,
+} from './context-pack-layout'
 import { TileContext } from './types'
 
-interface CropRect {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-const NEUTRAL_FILL_RGB = { r: 128, g: 128, b: 128 }
-const NEUTRAL_FILL_TOLERANCE = 2
+const CANVAS_2D_UNAVAILABLE = 'Failed to acquire 2D canvas context'
 
 type DirectNeighborKey = 'up' | 'down' | 'left' | 'right'
-
-const CANVAS_2D_UNAVAILABLE = 'Failed to acquire 2D canvas context'
 
 export type ContextImageVariant = 'canonicalFullContext' | 'smartSeamContext'
 
@@ -35,15 +30,13 @@ export interface ContextFramingStrategy {
 export interface AssembleContextImageResult {
   imageBlob: Blob
   maskBlob: Blob
-  cropRect: CropRect
+  cropRect: PackedCropRect
+  packedWidth: number
+  packedHeight: number
   directNeighborCount: number
   variant: ContextImageVariant
   strategy: ContextFramingStrategy
 }
-
-// ---------------------------------------------------------------------------
-// Worker singleton
-// ---------------------------------------------------------------------------
 
 let _worker: Worker | null = null
 let _workerSupported: boolean | null = null
@@ -68,7 +61,6 @@ function getWorker(): Worker | null {
 
 let _nextId = 0
 
-/** Resolve a possibly-relative image URL to an absolute URL the worker can fetch. */
 function toAbsoluteUrl(url: string): string {
   if (!url) return url
   if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url
@@ -82,7 +74,7 @@ function extractNeighborUrls(context: TileContext): Record<string, string | unde
     const raw = t?.imageUrl ?? (t?.image_filename
       ? t.image_filename.startsWith('http')
         ? t.image_filename
-        : t.image_filename  // caller should have already resolved, but handle gracefully
+        : t.image_filename
       : undefined)
     return raw ? toAbsoluteUrl(raw) : undefined
   }
@@ -98,7 +90,7 @@ function extractNeighborUrls(context: TileContext): Record<string, string | unde
   }
 }
 
-function getDirectNeighborPresence(neighborUrls: Record<string, string | undefined>) {
+function getDirectNeighborPresence(neighborUrls: Record<string, string | undefined>): CardinalPresence {
   return {
     up: !!neighborUrls.up,
     down: !!neighborUrls.down,
@@ -109,19 +101,14 @@ function getDirectNeighborPresence(neighborUrls: Record<string, string | undefin
 
 function getContextFramingStrategy(
   variant: ContextImageVariant,
-  directNeighbors: Record<DirectNeighborKey, boolean>
+  directNeighbors: CardinalPresence
 ): ContextFramingStrategy {
   return resolveContextFramingStrategy(variant, directNeighbors)
 }
 
-// ---------------------------------------------------------------------------
-// Worker path
-// ---------------------------------------------------------------------------
-
 function assembleViaWorker(
   worker: Worker,
   neighborUrls: Record<string, string | undefined>,
-  size: number,
   variant: ContextImageVariant
 ): Promise<AssembleContextImageResult> {
   return new Promise((resolve, reject) => {
@@ -137,6 +124,8 @@ function assembleViaWorker(
           imageBlob: event.data.imageBlob,
           maskBlob: event.data.maskBlob,
           cropRect: event.data.cropRect,
+          packedWidth: event.data.packedWidth,
+          packedHeight: event.data.packedHeight,
           directNeighborCount: event.data.directNeighborCount ?? 0,
           variant: event.data.variant ?? variant,
           strategy: event.data.strategy ?? getContextFramingStrategy(variant, getDirectNeighborPresence(neighborUrls)),
@@ -145,233 +134,125 @@ function assembleViaWorker(
     }
 
     worker.addEventListener('message', onMessage)
-    worker.postMessage({ id, size, neighborUrls, variant })
+    worker.postMessage({ id, neighborUrls, variant })
   })
 }
 
-// ---------------------------------------------------------------------------
-// Main-thread fallback (preserved verbatim for reliability)
-// ---------------------------------------------------------------------------
-
-const TILE_SIZE = 512
-const CONTEXT_SIZE = 256
-
-type NeighborCorner = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
-type NeighborEdge = 'top' | 'bottom' | 'left' | 'right'
-interface ScaledCrop {
-  x: number
-  y: number
-  w: number
-  h: number
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    if (src.startsWith('data:') && !src.startsWith('data:image/')) {
+      reject(new Error('Cannot load non-image data URI'))
+      return
+    }
+    const img = new Image()
+    img.crossOrigin = 'Anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
 }
 
-function getScaledCornerCrop(img: HTMLImageElement, corner: NeighborCorner): ScaledCrop {
-  const ratio = CONTEXT_SIZE / TILE_SIZE
-  const { width: w, height: h } = img
-  switch (corner) {
-    case 'topLeft':
-      return { x: 0, y: 0, w: w * ratio, h: h * ratio }
-    case 'topRight':
-      return { x: w * (1 - ratio), y: 0, w: w * ratio, h: h * ratio }
-    case 'bottomLeft':
-      return { x: 0, y: h * (1 - ratio), w: w * ratio, h: h * ratio }
-    case 'bottomRight':
-      return { x: w * (1 - ratio), y: h * (1 - ratio), w: w * ratio, h: h * ratio }
+async function loadCardinalImage(
+  neighbor: TileContext['neighbors']['up']
+): Promise<HTMLImageElement | undefined> {
+  if (!neighbor?.imageUrl) return undefined
+  try {
+    return await loadImage(neighbor.imageUrl)
+  } catch {
+    return undefined
   }
 }
 
-function getScaledEdgeCrop(img: HTMLImageElement, edge: NeighborEdge): ScaledCrop {
-  const ratio = CONTEXT_SIZE / TILE_SIZE
-  const { width: w, height: h } = img
-  switch (edge) {
-    case 'top':
-      return { x: 0, y: 0, w, h: h * ratio }
-    case 'bottom':
-      return { x: 0, y: h * (1 - ratio), w, h: h * ratio }
-    case 'left':
-      return { x: 0, y: 0, w: w * ratio, h }
-    case 'right':
-      return { x: w * (1 - ratio), y: 0, w: w * ratio, h }
-  }
+function drawHtmlNeighbor(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement | undefined,
+  dest: { x: number; y: number } | undefined,
+  cellSize: number,
+): void {
+  if (!img || !dest) return
+  ctx.drawImage(img, 0, 0, img.width, img.height, dest.x, dest.y, cellSize, cellSize)
+}
+
+function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((res, rej) =>
+    canvas.toBlob(b => (b ? res(b) : rej(new Error('canvas.toBlob returned null'))), 'image/png')
+  )
+}
+
+function fillHoleMask(
+  width: number,
+  height: number,
+  hole: PackedCropRect
+): HTMLCanvasElement {
+  const maskCanvas = document.createElement('canvas')
+  maskCanvas.width = width
+  maskCanvas.height = height
+  const maskCtx = maskCanvas.getContext('2d')
+  if (!maskCtx) throw new Error(CANVAS_2D_UNAVAILABLE)
+  maskCtx.fillStyle = PACKED_CANVAS_CSS
+  maskCtx.fillRect(0, 0, width, height)
+  maskCtx.fillStyle = '#ffffff'
+  maskCtx.fillRect(hole.x, hole.y, hole.width, hole.height)
+  return maskCanvas
 }
 
 async function assembleOnMainThread(
   context: TileContext,
-  size: number,
   variant: ContextImageVariant
 ): Promise<AssembleContextImageResult> {
+  const { up, down, left, right } = context.neighbors
+  const [upImg, downImg, leftImg, rightImg] = await Promise.all([
+    loadCardinalImage(up),
+    loadCardinalImage(down),
+    loadCardinalImage(left),
+    loadCardinalImage(right),
+  ])
+  const presence: CardinalPresence = {
+    up: !!upImg,
+    down: !!downImg,
+    left: !!leftImg,
+    right: !!rightImg,
+  }
+  const layout = packedCanvasLayout(presence)
+  const spec = packedCropSpecFromLayout(layout)
+  const strategy = getContextFramingStrategy(variant, presence)
+
   const canvas = document.createElement('canvas')
-  canvas.width = size
-  canvas.height = size
+  canvas.width = layout.width
+  canvas.height = layout.height
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Could not get canvas context')
 
-  ctx.fillStyle = '#808080'
-  ctx.fillRect(0, 0, size, size)
+  ctx.fillStyle = PACKED_CANVAS_CSS
+  ctx.fillRect(0, 0, layout.width, layout.height)
+  drawHtmlNeighbor(ctx, leftImg, layout.left, layout.cellSize)
+  drawHtmlNeighbor(ctx, rightImg, layout.right, layout.cellSize)
+  drawHtmlNeighbor(ctx, upImg, layout.up, layout.cellSize)
+  drawHtmlNeighbor(ctx, downImg, layout.down, layout.cellSize)
+  ctx.fillStyle = PACKED_HOLE_CSS
+  ctx.fillRect(layout.hole.x, layout.hole.y, layout.hole.width, layout.hole.height)
 
-  const TARGET_X = (size - TILE_SIZE) / 2
-  const TARGET_Y = (size - TILE_SIZE) / 2
-
-  const loadImage = (src: string): Promise<HTMLImageElement> =>
-    new Promise((resolve, reject) => {
-      if (src.startsWith('data:') && !src.startsWith('data:image/')) {
-        reject(new Error('Cannot load non-image data URI'))
-        return
-      }
-      const img = new Image()
-      img.crossOrigin = 'Anonymous'
-      img.onload = () => resolve(img)
-      img.onerror = reject
-      img.src = src
-    })
-
-  const { up, down, left, right, topLeft, topRight, bottomLeft, bottomRight } = context.neighbors
-  let directNeighborCount = 0
-  const directNeighbors = {
-    up: !!up?.imageUrl,
-    down: !!down?.imageUrl,
-    left: !!left?.imageUrl,
-    right: !!right?.imageUrl,
-  }
-  const strategy = getContextFramingStrategy(variant, directNeighbors)
-
-  const drawCorner = async (
-    neighbor: typeof up,
-    corner: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight',
-    destX: number,
-    destY: number
-  ) => {
-    if (!neighbor?.imageUrl) return
-    try {
-      const img = await loadImage(neighbor.imageUrl)
-      const src = getScaledCornerCrop(img, corner)
-      ctx.drawImage(img, src.x, src.y, src.w, src.h, destX, destY, CONTEXT_SIZE, CONTEXT_SIZE)
-    } catch { }
-  }
-
-  const drawEdge = async (
-    neighbor: typeof up,
-    edge: 'top' | 'bottom' | 'left' | 'right',
-    destX: number,
-    destY: number,
-    destW: number,
-    destH: number
-  ) => {
-    if (!neighbor?.imageUrl) return
-    try {
-      const img = await loadImage(neighbor.imageUrl)
-      const src = getScaledEdgeCrop(img, edge)
-      ctx.drawImage(img, src.x, src.y, src.w, src.h, destX, destY, destW, destH)
-      directNeighborCount++
-    } catch { }
-  }
-
-  await drawCorner(topLeft, 'bottomRight', 0, 0)
-  await drawCorner(topRight, 'bottomLeft', TARGET_X + TILE_SIZE, 0)
-  await drawCorner(bottomLeft, 'topRight', 0, TARGET_Y + TILE_SIZE)
-  await drawCorner(bottomRight, 'topLeft', TARGET_X + TILE_SIZE, TARGET_Y + TILE_SIZE)
-  await drawEdge(up, 'bottom', TARGET_X, 0, TILE_SIZE, CONTEXT_SIZE)
-  await drawEdge(down, 'top', TARGET_X, TARGET_Y + TILE_SIZE, TILE_SIZE, CONTEXT_SIZE)
-  await drawEdge(left, 'right', 0, TARGET_Y, CONTEXT_SIZE, TILE_SIZE)
-  await drawEdge(right, 'left', TARGET_X + TILE_SIZE, TARGET_Y, CONTEXT_SIZE, TILE_SIZE)
-
-  const drawSmartCornerFromEdge = async (
-    neighbor: typeof up,
-    edge: 'top' | 'bottom' | 'left' | 'right',
-    sourceHalf: 'start' | 'end',
-    destX: number,
-    destY: number
-  ) => {
-    if (!neighbor?.imageUrl || variant !== 'smartSeamContext') return
-    try {
-      const img = await loadImage(neighbor.imageUrl)
-      const edgeSrc = getScaledEdgeCrop(img, edge)
-      const useVerticalHalf = edge === 'left' || edge === 'right'
-      const src = useVerticalHalf
-        ? {
-            x: edgeSrc.x,
-            y: sourceHalf === 'start' ? edgeSrc.y : edgeSrc.y + edgeSrc.h / 2,
-            w: edgeSrc.w,
-            h: edgeSrc.h / 2,
-          }
-        : {
-            x: sourceHalf === 'start' ? edgeSrc.x : edgeSrc.x + edgeSrc.w / 2,
-            y: edgeSrc.y,
-            w: edgeSrc.w / 2,
-            h: edgeSrc.h,
-          }
-      ctx.drawImage(img, src.x, src.y, src.w, src.h, destX, destY, CONTEXT_SIZE, CONTEXT_SIZE)
-    } catch {}
-  }
-
-  await applySmartSeamCorners({
-    mode: strategy.mode,
-    draw: drawSmartCornerFromEdge,
-    corners: { topLeft, topRight, bottomLeft, bottomRight },
-    edges: { up, down, left, right },
-    targetX: TARGET_X,
-    targetY: TARGET_Y,
-    tileSize: TILE_SIZE,
-  })
-
-  // In masked flows the center should stay visually neutral; the mask defines the edit area.
-  ctx.fillStyle = '#808080'
-  ctx.fillRect(TARGET_X, TARGET_Y, TILE_SIZE, TILE_SIZE)
-
-  const maskCanvas = document.createElement('canvas')
-  maskCanvas.width = size
-  maskCanvas.height = size
-  const maskCtx = maskCanvas.getContext('2d')
-  if (!maskCtx) throw new Error(CANVAS_2D_UNAVAILABLE)
-  const imageData = ctx.getImageData(0, 0, size, size)
-  const maskImageData = maskCtx.createImageData(size, size)
-  const source = imageData.data
-  const target = maskImageData.data
-
-  for (let i = 0; i < source.length; i += 4) {
-    const r = source[i]
-    const g = source[i + 1]
-    const b = source[i + 2]
-    const a = source[i + 3]
-    const isNeutralEditableRegion =
-      a > 0 &&
-      Math.abs(r - NEUTRAL_FILL_RGB.r) <= NEUTRAL_FILL_TOLERANCE &&
-      Math.abs(g - NEUTRAL_FILL_RGB.g) <= NEUTRAL_FILL_TOLERANCE &&
-      Math.abs(b - NEUTRAL_FILL_RGB.b) <= NEUTRAL_FILL_TOLERANCE
-
-    const value = isNeutralEditableRegion ? 255 : 0
-    target[i] = value
-    target[i + 1] = value
-    target[i + 2] = value
-    target[i + 3] = 255
-  }
-
-  maskCtx.putImageData(maskImageData, 0, 0)
-
-  const imageBlob = await new Promise<Blob>((res, rej) =>
-    canvas.toBlob(b => (b ? res(b) : rej(new Error('canvas.toBlob returned null'))), 'image/png')
-  )
-  const maskBlob = await new Promise<Blob>((res, rej) =>
-    maskCanvas.toBlob(b => (b ? res(b) : rej(new Error('canvas.toBlob returned null'))), 'image/png')
-  )
+  const maskCanvas = fillHoleMask(layout.width, layout.height, layout.hole)
+  const [imageBlob, maskBlob] = await Promise.all([
+    canvasToPngBlob(canvas),
+    canvasToPngBlob(maskCanvas),
+  ])
 
   return {
     imageBlob,
     maskBlob,
-    cropRect: { x: TARGET_X, y: TARGET_Y, width: TILE_SIZE, height: TILE_SIZE },
-    directNeighborCount,
+    cropRect: spec.cropRect,
+    packedWidth: spec.packedWidth,
+    packedHeight: spec.packedHeight,
+    directNeighborCount: cardinalCount(presence),
     variant,
     strategy,
   }
 }
 
-// ---------------------------------------------------------------------------
-// Public API (unchanged signature)
-// ---------------------------------------------------------------------------
-
 export async function assembleContextImage(
   context: TileContext,
-  size: number = 1024,
+  _size: number = 1024,
   variant: ContextImageVariant = 'canonicalFullContext'
 ): Promise<AssembleContextImageResult> {
   const worker = typeof window !== 'undefined' ? getWorker() : null
@@ -379,12 +260,11 @@ export async function assembleContextImage(
   if (worker) {
     const neighborUrls = extractNeighborUrls(context)
     try {
-      return await assembleViaWorker(worker, neighborUrls, size, variant)
+      return await assembleViaWorker(worker, neighborUrls, variant)
     } catch (err) {
       console.warn('[contextAssembler] Worker failed, falling back to main thread:', err)
-      // fall through to main thread
     }
   }
 
-  return assembleOnMainThread(context, size, variant)
+  return assembleOnMainThread(context, variant)
 }

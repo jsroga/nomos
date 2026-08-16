@@ -1,3 +1,4 @@
+import { STRUCTURAL_MASTRA_SCORERS } from '@/evals/structural/mastra-scorers'
 import { consistencyScorer } from './consistency-scorer'
 import { goalReachedScorer } from './goal-reached-scorer'
 import { hallucinationScorer } from './hallucination-scorer'
@@ -40,6 +41,7 @@ export const STORYTELLER_SCORERS = {
   'stakes-cost': stakesCostScorer,
   'story-motion': storyMotionScorer,
   'goal-reached': goalReachedScorer,
+  ...STRUCTURAL_MASTRA_SCORERS,
 } as const
 
 export {

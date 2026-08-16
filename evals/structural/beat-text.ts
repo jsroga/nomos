@@ -1,4 +1,4 @@
-import { recordFromJson, readNumber, readString, stringArrayFromJson } from '@/shared/data/json-guards'
+import { recordFromJson, readNumber, readString, stringArrayFromJson } from '../../src/shared/data/json-guards'
 import {
   PACKED_ACTION_TAKEN,
   PACKED_CONSEQUENCE,

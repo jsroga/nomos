@@ -5,14 +5,6 @@ import { ContextAssemblyVariant } from '../../constants/tile-generation-service'
 
 export { HttpMethod, UrlScheme, ContentType, CHAT_DEBUG_ADMIN_PIN, ContextAssemblyVariant }
 
-export enum WorldGenStylePresetFallback {
-  Custom = 'custom',
-}
-
-export enum WorldGenStyleUrlStoragePrefix {
-  Index = 'worldgen-style-url-idx-',
-}
-
 export enum WorldGenDefaultFidelityPrompt {
   Default =
     'Enhance with fine artistic details, crisp textures, and vibrant colors while maintaining the original composition.',
@@ -25,12 +17,32 @@ export enum WorldGenSidebarWorldCopy {
   PromptLabel = 'Master prompt',
   Placeholder = 'World context for every generated tile...',
   ResetStyleAnchor = 'Reset style anchor',
+  StyleImagesLabel = 'Midjourney style images',
+  StyleImagesHint = 'Up to 3 images. Midjourney --sref only. Drag and drop or choose files.',
+  StyleImagesDrop = 'Drop images here',
+  StyleImagesChoose = 'Choose images',
+  StyleImagesClear = 'Clear all',
+  StyleImagesRemove = 'Remove',
+  StyleImagesFull = '3 of 3',
+  SwitchModeTitle = 'Switch generation mode?',
+  SwitchModeDescription =
+    'Switching to {mode} replaces the master prompt and the Midjourney style images.',
+}
+
+export const GENERATION_MODE_NAME_PLACEHOLDER = '{mode}'
+
+export function switchGenerationModeDescription(modeName: string): string {
+  return WorldGenSidebarWorldCopy.SwitchModeDescription.replace(
+    GENERATION_MODE_NAME_PLACEHOLDER,
+    modeName,
+  )
 }
 
 export enum WorldGenSidebarLog {
   MjGridReady = 'MJ grid ready:',
   FailedToLoadProjectStyleRefs = 'Failed to load project style refs:',
   FailedToSaveWorldSettings = 'Failed to save world settings:',
+  FailedToUploadStyleRefs = 'Failed to upload style refs:',
   BlobToDataUrlInvalidBlob = '[Sidebar] blobToDataUrl received invalid blob:',
   ConvertingBlobToDataUrl = '[Sidebar] Converting blob to data URL:',
   DataUrlCreated = '[Sidebar] Data URL created:',
@@ -58,6 +70,8 @@ export enum WorldGenSidebarToast {
   EnhancingFidelity = 'Enhancing fidelity...',
   FidelityQueued = 'Tile queued for fidelity enhancement!',
   DeleteTileFailed = 'Failed to delete tile',
+  StyleRefUploadFailed = 'Failed to upload style image',
+  StyleRefsCleared = 'Style images cleared',
 }
 
 export const WorldGenTileProvider = {

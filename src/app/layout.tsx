@@ -8,6 +8,7 @@ import {
   OpenGraphType,
 } from '@/shared/data/constants/root-layout-fonts'
 import { NodeEnv } from '@/shared/data/constants/protocol-http'
+import { DebugToolsMount } from '@/shared/debug/DebugToolsMount'
 
 import type { Metadata } from 'next'
 
@@ -30,11 +31,8 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const isDev = process.env.NODE_ENV === NodeEnv.Development
-  const DebugToolsMount = isDev
-    ? (await import('@/shared/debug/DebugToolsMount')).DebugToolsMount
-    : null
 
   return (
     <html
@@ -42,7 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`dark ${syne.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
-        {DebugToolsMount ? <DebugToolsMount /> : null}
+        {isDev ? <DebugToolsMount /> : null}
         {children}
       </body>
     </html>

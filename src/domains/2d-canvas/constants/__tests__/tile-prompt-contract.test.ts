@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { GENERATION_MODES, type GenerationModeDef } from '../generation-modes'
-import { GENERATION_PROMPTS, tilePromptLayersFrom } from '@/shared/data/server/prompts'
+import {
+  composeApiframeFollowUpPrompt,
+  GENERATION_PROMPTS,
+  tilePromptLayersFrom,
+} from '@/shared/data/server/prompts'
 import { buildMidjourneyTilePromptText } from '@/shared/data/server/midjourney-params'
 
 const MASTER_PROMPT = 'a drowned trade city under permanent rain'
@@ -19,10 +23,11 @@ function promptsSentToModels(
     modePromptFragment: mode.promptFragment,
     styleContext: STYLE_CONTEXT,
   })
+  const apiframe = isFirstTile
+    ? GENERATION_PROMPTS.FIRST_TILE.GEMINI(layers)
+    : composeApiframeFollowUpPrompt(layers, mode.negatives)
   return [
-    isFirstTile
-      ? GENERATION_PROMPTS.FIRST_TILE.GEMINI(layers)
-      : GENERATION_PROMPTS.FOLLOW_UP.MASTER(layers),
+    apiframe,
     buildMidjourneyTilePromptText({ isFirstTile, layers, modeNegatives: mode.negatives }),
   ]
 }
@@ -50,11 +55,18 @@ describe('tile prompt contract', () => {
     }
   })
 
-  it('tells follow-up models to fill the grey hole', () => {
+  it('asks Grok follow-up to paint the grey cell in the packed canvas', () => {
     for (const mode of GENERATION_MODES) {
-      const [apiframe] = promptsSentToModels(mode, false, MASTER_PROMPT)
-      expect(apiframe.toLowerCase(), mode.id).toMatch(/gr[ae]y/)
+      const [apiframe, midjourney] = promptsSentToModels(mode, false, MASTER_PROMPT)
+      expect(apiframe, mode.id).toContain('grey cell')
+      expect(apiframe, mode.id).toContain('entire attached canvas')
+      expect(apiframe, mode.id).not.toContain('NEW 1:1 square')
+      expect(apiframe, mode.id).toContain('Avoid:')
+      expect(apiframe.toLowerCase(), mode.id).not.toContain('inpaint')
       expect(apiframe.toLowerCase(), mode.id).not.toContain('magenta')
+      expect(apiframe.toLowerCase(), mode.id).not.toContain('central gray')
+      expect(apiframe.toLowerCase(), mode.id).not.toContain('central grey')
+      expect(midjourney.toLowerCase(), mode.id).toContain('grey cell')
     }
   })
 })

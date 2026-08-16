@@ -66,6 +66,7 @@ export enum TileGenerationServiceError {
 
 export enum ContextAssemblyVariant {
   CanonicalFullContext = 'canonicalFullContext',
+  SmartSeamContext = 'smartSeamContext',
 }
 
 export enum DynamicLocalStoragePrefix {

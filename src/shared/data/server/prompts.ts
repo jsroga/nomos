@@ -17,6 +17,8 @@ import { DEFAULT_STYLE_CONTEXT } from '@/shared/data/constants/style-presets'
 import {
   CREATIVITY_PROMPT_PREFIX,
   CreativityPromptLevel,
+  FollowUpApiframeAvoid,
+  FollowUpApiframeCopy,
   GenerationPromptCopy,
   GenerationPromptStyle,
 } from '@/shared/data/server/constants/generation-prompts'
@@ -66,10 +68,35 @@ export function composeFollowUpPrompt(layers: TilePromptLayers): string {
   const description = layers.tileDescription.trim()
   const styleContext = layers.styleContext?.trim() || DEFAULT_STYLE_CONTEXT
   return joinPromptParts([
-    `${GenerationPromptCopy.FollowUpGreyCenter} ${description}.`,
+    FollowUpApiframeCopy.PackedWorld,
+    description,
     layers.masterPrompt,
     layers.modePromptFragment,
     styleContext,
+  ])
+}
+
+function followUpAvoidLine(modeNegatives?: string[]): string {
+  const avoided = [...Object.values(FollowUpApiframeAvoid), ...(modeNegatives ?? [])]
+  return `${GenerationPromptCopy.FollowUpAvoidPrefix} ${avoided.join(StringSeparator.CommaSpace)}`
+}
+
+/** Apiframe follow-up — packed neighbor canvas with a grey hole, not a grey-1024 inpaint. */
+export function composeApiframeFollowUpPrompt(
+  layers: TilePromptLayers,
+  modeNegatives?: string[],
+): string {
+  const description = layers.tileDescription.trim()
+  const styleContext = layers.styleContext?.trim() || DEFAULT_STYLE_CONTEXT
+  return joinPromptParts([
+    FollowUpApiframeCopy.PackedWorld,
+    description,
+    layers.masterPrompt,
+    layers.modePromptFragment,
+    styleContext,
+    FollowUpApiframeCopy.PackedKeepNeighbors,
+    FollowUpApiframeCopy.MatchContract,
+    followUpAvoidLine(modeNegatives),
   ])
 }
 

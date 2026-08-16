@@ -3,6 +3,8 @@ import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { GenerateTileProvider } from './generate-tile'
 import { generateTileViaApiframeModel } from './generate-tile-apiframe-models'
 import { generateWithApiframeMidjourney } from './generate-tile-apiframe'
+import type { NeighborImageUrls } from '../../core/neighbor-image-urls'
+import type { PackedCropSpec } from '@/shared/ai/context-pack-layout'
 
 export async function generateTileImage(
   aiProvider: string,
@@ -16,6 +18,8 @@ export async function generateTileImage(
   modePromptFragment?: string,
   modeNegatives?: string[],
   styleAnchorUrl?: string,
+  neighborImageUrls?: NeighborImageUrls,
+  packedCrop?: PackedCropSpec,
 ): Promise<string> {
   switch (aiProvider) {
     case GenerateTileProvider.Gemini:
@@ -32,6 +36,8 @@ export async function generateTileImage(
         modePromptFragment,
         modeNegatives,
         styleAnchorUrl,
+        neighborImageUrls,
+        packedCrop,
       )
     case GenerateTileProvider.Grok:
       return generateTileViaApiframeModel(
@@ -46,6 +52,8 @@ export async function generateTileImage(
         modePromptFragment,
         modeNegatives,
         styleAnchorUrl,
+        neighborImageUrls,
+        packedCrop,
       )
     case GenerateTileProvider.OpenAi:
       return generateTileViaApiframeModel(
@@ -60,6 +68,8 @@ export async function generateTileImage(
         modePromptFragment,
         modeNegatives,
         styleAnchorUrl,
+        neighborImageUrls,
+        packedCrop,
       )
     case GenerateTileProvider.Stability:
       return generateTileViaApiframeModel(
@@ -74,6 +84,8 @@ export async function generateTileImage(
         modePromptFragment,
         modeNegatives,
         styleAnchorUrl,
+        neighborImageUrls,
+        packedCrop,
       )
     case GenerateTileProvider.Midjourney:
       return generateWithApiframeMidjourney(
@@ -87,6 +99,7 @@ export async function generateTileImage(
         modePromptFragment,
         modeNegatives,
         styleAnchorUrl,
+        packedCrop,
       )
     default:
       throw new Error(`Unsupported AI provider: ${aiProvider}`)

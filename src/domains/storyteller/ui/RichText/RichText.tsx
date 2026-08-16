@@ -112,16 +112,17 @@ function RichTextReferenced({
     return (
       <div className={cn(RichTextWhitespaceClass.ParagraphStack, className)}>
         {splitBibleParagraphs(text).map((paragraph, paragraphIndex) => (
-          <ReferenceText
-            key={paragraphIndex}
-            text={paragraph}
-            projectId={projectId}
-            className={RichTextWhitespaceClass.Normal}
-            inline={false}
-            onEntityClick={onEntityClick}
-            initialEntities={initialEntities}
-            renderText={renderText}
-          />
+          <div key={paragraphIndex} className={RichTextWhitespaceClass.Normal}>
+            <ReferenceText
+              text={paragraph}
+              projectId={projectId}
+              className={RichTextWhitespaceClass.Normal}
+              inline
+              onEntityClick={onEntityClick}
+              initialEntities={initialEntities}
+              renderText={renderText}
+            />
+          </div>
         ))}
       </div>
     )

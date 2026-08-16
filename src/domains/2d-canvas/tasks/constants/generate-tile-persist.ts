@@ -7,6 +7,8 @@ import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { imageService } from '@/shared/data/server/image-service'
 import type { GenerateTilePayload, TileNeighborsPayload } from './generate-tile'
 import { CONTEXT_CANONICAL_VARIANT } from './generate-tile'
+import type { PackedCropSpec } from '@/shared/ai/context-pack-layout'
+import { assertTilePngSize } from './generate-tile-output'
 
 export function extractContextImageBase64(payload: GenerateTilePayload): string | undefined {
   if (payload.contextImageBase64) {
@@ -30,18 +32,22 @@ export async function assembleServerContextImage(
   x: number,
   y: number,
   neighbors: TileNeighborsPayload
-): Promise<string> {
+): Promise<{ imageBase64: string; packedCrop: PackedCropSpec }> {
   logger.info('Assembling context image on server')
-  const { image } = await imageService.assembleContext(
-    {
-      targetX: x,
-      targetY: y,
-      neighbors,
-      allTiles: {},
+  const assembled = await imageService.assembleContext({
+    targetX: x,
+    targetY: y,
+    neighbors,
+    allTiles: {},
+  })
+  return {
+    imageBase64: assembled.image.toString(BufferEncoding.Base64),
+    packedCrop: {
+      cropRect: assembled.cropRect,
+      packedWidth: assembled.packedWidth,
+      packedHeight: assembled.packedHeight,
     },
-    1024
-  )
-  return image.toString(BufferEncoding.Base64)
+  }
 }
 
 export function requireBlobToken(): string {
@@ -61,6 +67,7 @@ export async function uploadTileToBlob(
   const filename = `tiles/${projectId}/${x}_${y}_${Date.now()}.png`
   const base64Data = generatedImageBase64.replace(/^data:image\/\w+;base64,/, '')
   const buffer = Buffer.from(base64Data, BufferEncoding.Base64)
+  await assertTilePngSize(buffer)
   const blob = await put(filename, buffer, {
     access: 'public',
     token: requireBlobToken(),

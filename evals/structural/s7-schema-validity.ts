@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { recordFromJson, readNumber, readString, stringArrayFromJson } from '@/shared/data/json-guards'
+import { recordFromJson, readNumber, readString, stringArrayFromJson } from '../../src/shared/data/json-guards'
 import { ScorerId } from './constants'
 import type { StructuralScore } from './types'
 

@@ -7,10 +7,11 @@ import {
 } from '@/shared/ai/replicate-output'
 import {
   TOPAZ_REPLICATE_MODEL,
-  TopazEnhanceModel,
   TopazOutputFormat,
   resolveTopazUpscalePlan,
+  topazEnhanceModelFromMode,
 } from '../constants/topaz-upscale'
+import { resolveImageUpscaleMode } from '@/shared/ai/image-model-env'
 
 export async function upscaleWithReplicate(
   imageBase64: string,
@@ -71,15 +72,17 @@ async function buildTopazInput(
   )
   const meta = await sharp(buffer).metadata()
   const plan = resolveTopazUpscalePlan(meta.width ?? 1, meta.height ?? 1)
+  const enhanceModel = topazEnhanceModelFromMode(resolveImageUpscaleMode())
   logger.info('Topaz upscale job', {
     megapixels: plan.megapixels,
     outputWidth: plan.outputWidth,
     outputHeight: plan.outputHeight,
     factor: plan.factor,
+    enhanceModel,
   })
   return {
     image: inputImageUrl,
-    enhance_model: TopazEnhanceModel.HighFidelityV2,
+    enhance_model: enhanceModel,
     upscale_factor: plan.factor,
     output_format: TopazOutputFormat.Png,
     face_enhancement: false,

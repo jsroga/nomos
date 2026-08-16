@@ -12,7 +12,11 @@ import {
 } from '../midjourney-params'
 import { tilePromptLayersFrom } from '../prompts'
 
-const SREF_URLS = ['https://cdn.example.com/anchor.png', 'https://cdn.example.com/preset.png']
+const SREF_URLS = [
+  'https://cdn.example.com/anchor.png',
+  'https://cdn.example.com/preset.png',
+  'https://cdn.example.com/third.png',
+]
 const MODE_NEGATIVES = ['pixel art', 'flat vector']
 
 const LAYERS = tilePromptLayersFrom({

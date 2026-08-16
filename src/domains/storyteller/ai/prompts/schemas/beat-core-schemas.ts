@@ -33,15 +33,33 @@ export const MazurElementsSchema = z.object({
 
 export const WorldRuleSchema = z.object({
   category: z.enum(['Physics', 'Magic', 'Technology', 'Society', 'Politics', 'Economics']),
-  rule: z.string().min(15).describe('The rule itself — be specific, not vague. Min 15 chars.'),
+  name: z
+    .string()
+    .min(2)
+    .max(48)
+    .describe(
+      'Short law title, 2–6 words, same length as a faction or event name. No em-dash. No explanation.'
+    ),
+  rule: z
+    .string()
+    .min(15)
+    .describe('The full law — explanation only, not the title. Min 15 chars.'),
   consequence: z.string().min(15).describe('What happens if this rule is broken or ignored — concrete consequence. Min 15 chars.'),
   exceptions: z.string().nullable().optional().describe('Are there exceptions?'),
 })
 
 export const FactionSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(2),
-  description: z.string().min(30).describe('Brief summary of the faction — be specific about what makes them unique. Min 30 chars.'),
+  name: z
+    .string()
+    .min(2)
+    .describe(
+      'Short faction name, 2–6 words, same length as a world-rule or event name. No em-dash. No explanation.'
+    ),
+  description: z
+    .string()
+    .min(30)
+    .describe('Full faction summary — not the name. Be specific about what makes them unique. Min 30 chars.'),
   ideology: z.string().min(10).describe('Core belief or philosophy — not just "power" or "justice". Min 10 chars.'),
   goals: z.array(z.string().min(10)).describe('What they want — each goal must be specific'),
   resources: z.string().min(10).describe('What power/assets they control'),

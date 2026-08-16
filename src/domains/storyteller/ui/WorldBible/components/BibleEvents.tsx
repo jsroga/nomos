@@ -34,8 +34,6 @@ export const BibleEvents: FC = () => {
       generateTitle="Generate Events"
       addTitle="Add Event"
       sectionKey="events"
-      cardIcon={<CalendarHeart className="w-4 h-4 text-rose-500" />}
-      cardIconWrapClassName="bg-rose-500/15 border-rose-500/20"
       localItems={localEvents}
       displayItems={displayEvents}
       isEditing={isEditing}

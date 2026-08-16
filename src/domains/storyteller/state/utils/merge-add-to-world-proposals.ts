@@ -11,14 +11,14 @@ export enum BibleSectionDisplayName {
   Overview = 'Overview',
   Factions = 'Factions',
   PlotTwists = 'Plot twists',
-  WorldRules = 'World rules',
+  WorldRules = 'World logic',
   Items = 'Items',
   Events = 'Events',
   Inspirations = 'Inspirations',
   Soundtracks = 'Soundtracks',
   EpisodePremise = 'Episode premise',
   EpisodeRoadmap = 'Episode roadmap',
-  Cast = 'Cast',
+  Cast = 'Characters',
   Moodboard = 'Moodboard',
 }
 
@@ -67,7 +67,7 @@ export function isNonBibleToolPayload(toolArgs: readonly Record<string, unknown>
   return toolArgs.length > 0 && Object.keys(mergeToolArgFields(toolArgs)).length === 0
 }
 
-export function addToWorldSectionLabels(input: {
+export function addToWorldSections(input: {
   toolArgs: readonly Record<string, unknown>[]
   episodeId?: string | null
   requestedSection?: string
@@ -79,7 +79,32 @@ export function addToWorldSectionLabels(input: {
     input.requestedSection,
   )
     .filter(proposal => !input.rejectedSections.has(proposal.section))
-    .map(proposal => bibleSectionDisplayName(proposal.section))
+    .map(proposal => proposal.section)
+}
+
+export function addToWorldSectionLabels(input: {
+  toolArgs: readonly Record<string, unknown>[]
+  episodeId?: string | null
+  requestedSection?: string
+  rejectedSections: ReadonlySet<string>
+}): string[] {
+  return addToWorldSections(input).map(bibleSectionDisplayName)
+}
+
+export function areAddToWorldSectionsSettled(input: {
+  toolArgs: readonly Record<string, unknown>[]
+  episodeId?: string | null
+  requestedSection?: string
+  settledSections: ReadonlySet<string>
+}): boolean {
+  const sections = addToWorldSections({
+    toolArgs: input.toolArgs,
+    episodeId: input.episodeId,
+    requestedSection: input.requestedSection,
+    rejectedSections: new Set(),
+  })
+  if (sections.length === 0) return false
+  return sections.every(section => input.settledSections.has(section))
 }
 
 export function mergeAddToWorldProposals(input: {

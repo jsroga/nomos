@@ -172,4 +172,5 @@ export const API_LOG_PREFIX = {
   RELATIONSHIPS_API_FAILED: '[Relationships API] Failed:',
   AUTO_REGISTER_FACTION_NAMES: '[AutoRegister] Faction names:',
   AUTO_REGISTER_CHARACTER_NAMES: '[AutoRegister] Character names:',
+  STYLE_REFS_UPLOAD_FAILED: 'Style ref upload failed:',
 } as const

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { TileTriggerProvider } from '@/shared/data/constants/trigger-tile-route'
-import { ImageEnvVar, ImageGenerateModelId } from '@/shared/ai/constants/image-env'
+import { ImageEnvVar, ImageGenerateModelId, ImageUpscaleMode, ImageUpscaleModelId } from '@/shared/ai/constants/image-env'
 import { resolveFollowUpImageProviderFromEnv } from '../follow-up-provider'
 import {
   resolveTileFirstModel,
   resolveTileFollowUpModel,
   resolveUpscaleModelId,
   resolveDefaultUpscaleProvider,
+  resolveImageUpscaleMode,
 } from '@/shared/ai/image-model-env'
-import { ImageUpscaleModelId } from '@/shared/ai/constants/image-env'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
 
@@ -73,6 +73,16 @@ describe('image model env resolvers', () => {
       resolveDefaultUpscaleProvider({ [ImageEnvVar.UpscaleModel]: 'clarity' }),
     ).toBe(ImageGenProvider.Replicate)
     expect(resolveDefaultUpscaleProvider({})).toBe(ImageGenProvider.Stability)
+  })
+
+  it('resolves IMAGE_UPSCALE_MODE for Topaz standard vs creative', () => {
+    expect(resolveImageUpscaleMode({})).toBe(ImageUpscaleMode.Standard)
+    expect(
+      resolveImageUpscaleMode({ [ImageEnvVar.UpscaleMode]: ImageUpscaleMode.Creative }),
+    ).toBe(ImageUpscaleMode.Creative)
+    expect(
+      resolveImageUpscaleMode({ [ImageEnvVar.UpscaleMode]: ImageUpscaleMode.Standard }),
+    ).toBe(ImageUpscaleMode.Standard)
   })
 
   it('prefers IMAGE_TILE_FOLLOW_UP_MODEL over legacy', () => {

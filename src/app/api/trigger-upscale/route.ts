@@ -17,14 +17,13 @@ import {
   generationModeDef,
   resolveGenerationMode,
 } from '@/domains/2d-canvas/constants/generation-modes'
-import { parseUpscaleProvider } from '@/domains/2d-canvas/core/upscale-provider-wire'
+import { UpscaleProvider } from '@/domains/2d-canvas/core/upscale-provider-wire'
 import {
   buildUpscaleProviderConfig,
   isUpscaleMode,
   resolveModeUpscaleAuth,
 } from './trigger-upscale-helpers'
 import type { ProviderConfig } from '@/domains/2d-canvas/tasks/upscale-tile-providers'
-import { resolveDefaultUpscaleProvider } from '@/shared/ai/image-model-env'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
@@ -56,9 +55,7 @@ export const POST = withRateLimit(
         styleReferenceUrls: data?.style_reference_urls,
       })
 
-    const provider = parseUpscaleProvider(
-      payload.provider || resolveDefaultUpscaleProvider()
-    )
+    const provider = UpscaleProvider.Stability
     const rawProviderConfig = buildUpscaleProviderConfig(payload, auth.providerApiKey)
     const providerConfig: ProviderConfig = {
       apiKey: rawProviderConfig.apiKey,

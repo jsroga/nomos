@@ -9,10 +9,16 @@ import {
 } from '@/trigger/utils/llm-logger'
 import type { AiProviderConfig } from '@/shared/ai/ai-provider-config'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeGenerateAspectRatio, ApiframeImageModel } from '@/shared/ai/constants/apiframe'
 import { generateMidjourneyUpscaledImage } from '@/shared/ai/apiframe'
 import { v4 as uuidv4 } from 'uuid'
 import { downloadTileAsBase64 } from './generate-tile-output'
+import { packedAspectRatio, type PackedCropSpec } from '@/shared/ai/context-pack-layout'
+import {
+  GenerateTileProgress,
+  GenerateTileStage,
+  advanceGenerateTileProgress,
+} from './generate-tile-progress'
 
 async function buildApiframeTilePrompt(
   isFirstTile: boolean,
@@ -60,6 +66,7 @@ export async function generateWithApiframeMidjourney(
   modePromptFragment?: string,
   modeNegatives?: string[],
   styleAnchorUrl?: string,
+  packedCrop?: PackedCropSpec,
 ): Promise<string> {
   logger.info('Starting Midjourney generation via Apiframe', { isFirstTile, styleReferenceUrls })
 
@@ -84,19 +91,29 @@ export async function generateWithApiframeMidjourney(
     metadata: { task: 'generate-tile', isFirstTile },
   })
 
-  await metadata.set('stage', 'submitting_apiframe')
-  await metadata.set('progress', 35)
+  await advanceGenerateTileProgress(
+    GenerateTileProgress.Submitting,
+    GenerateTileStage.SubmittingApiframe,
+  )
 
   try {
-    await metadata.set('stage', 'waiting_apiframe')
-    await metadata.set('progress', 45)
+    await advanceGenerateTileProgress(
+      GenerateTileProgress.Waiting,
+      GenerateTileStage.WaitingApiframe,
+    )
     const result = await generateMidjourneyUpscaledImage(fullPrompt, config.apiKey, {
-      aspectRatio: '1:1',
+      aspectRatio:
+        !isFirstTile && packedCrop
+          ? packedAspectRatio(packedCrop.packedWidth, packedCrop.packedHeight)
+          : ApiframeGenerateAspectRatio.Square,
       index: 1,
       maxAttempts: 120,
     })
     await metadata.set('apiframe_job_id', result.upsampleJobId)
-    await metadata.set('progress', 85)
+    await advanceGenerateTileProgress(
+      GenerateTileProgress.Downloaded,
+      GenerateTileStage.DownloadingResult,
+    )
 
     logLLMRequestComplete({
       provider: ImageGenProvider.Midjourney,
@@ -105,8 +122,7 @@ export async function generateWithApiframeMidjourney(
       outputImageUrls: [result.imageUrl],
     })
 
-    await metadata.set('stage', 'downloading_result')
-    return downloadTileAsBase64(result.imageUrl, isFirstTile)
+    return downloadTileAsBase64(result.imageUrl, isFirstTile, packedCrop)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     logLLMRequestError({

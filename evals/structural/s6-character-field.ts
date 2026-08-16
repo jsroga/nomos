@@ -1,13 +1,14 @@
-import { readString } from '@/shared/data/json-guards'
+import { readString } from '../../src/shared/data/json-guards'
 import { CharacterFieldName, EntityKind, ScorerId } from './constants'
 import { beatProse } from './beat-text'
 import { findPhraseHits } from './phrase-match'
-import type {
-  CastPerson,
-  CharacterFieldFinding,
-  DumpedBeat,
-  MatchingRules,
-  StructuralScore,
+import {
+  toScoreFlags,
+  type CastPerson,
+  type CharacterFieldFinding,
+  type DumpedBeat,
+  type MatchingRules,
+  type StructuralScore,
 } from './types'
 
 const NEGATION_PREFIX = /^(will not|won't|wont|never)\s+/i
@@ -126,6 +127,6 @@ export function scoreCharacterFieldAdherence(
       findingCount: findings.length,
       wontBreakHardFailCount: hardFails,
     },
-    flags: findings,
+    flags: toScoreFlags(findings),
   }
 }

@@ -1,3 +1,5 @@
+import { ImageUpscaleMode } from '@/shared/ai/constants/image-env'
+
 export const TOPAZ_MAX_OUTPUT_PX = 2048
 export const TOPAZ_MEGAPIXEL_DIVISOR = 1_000_000
 export const TOPAZ_REPLICATE_MODEL = 'topazlabs/image-upscale'
@@ -10,11 +12,18 @@ export enum TopazUpscaleFactor {
 }
 
 export enum TopazEnhanceModel {
+  StandardV2 = 'Standard V2',
   HighFidelityV2 = 'High Fidelity V2',
 }
 
 export enum TopazOutputFormat {
   Png = 'png',
+}
+
+export function topazEnhanceModelFromMode(mode: ImageUpscaleMode): TopazEnhanceModel {
+  return mode === ImageUpscaleMode.Creative
+    ? TopazEnhanceModel.HighFidelityV2
+    : TopazEnhanceModel.StandardV2
 }
 
 const FACTOR_STEPS: Array<{ factor: TopazUpscaleFactor; scale: number }> = [

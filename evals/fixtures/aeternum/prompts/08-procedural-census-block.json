@@ -1,0 +1,9 @@
+{
+  "id": "procedural-census-block",
+  "situation": "procedural",
+  "title": "The last door on the ledger",
+  "beatType": "revelation",
+  "characters": ["Sera Voss", "Marchand's Agents"],
+  "priorStoryState": "The Census of the Damned already published more living than sanctioned deaths. High Warden Marchand has ordered a re-count of one tenement block. Sera Voss is assigned as Warden escort to the clerks, not as investigator. Marchand's Agents walk behind her. His instruction: the living in this block must match the ledger of sanctioned deaths. She still has her Tallybone. They are at the last door.",
+  "brief": "Write the beat at the last door. The count of the living exceeds the ledger. Sera must either enter the discrepancy on the census sheet in front of Marchand's Agents or alter the tally so the numbers close. The sheet that leaves the block is the changed state."
+}

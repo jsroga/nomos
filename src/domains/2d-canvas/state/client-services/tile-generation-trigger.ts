@@ -5,6 +5,7 @@ import {
   TileGenerationServiceLog,
 } from '../../constants/tile-generation-service'
 import { buildNeighborUrls } from './tile-generation-neighbors'
+import { neighborImageUrlsFromSides } from '../../core/neighbor-image-urls'
 import { pollTileGenRun } from './tile-generation-poll-run'
 import {
   handleTileGenStartError,
@@ -37,7 +38,8 @@ export async function startTileGeneration(
 
   try {
     const tiles = useWorldStore.getState().tiles
-    const { hasNeighbors } = buildNeighborUrls(projectId, x, y, tiles)
+    const { neighborUrls, hasNeighbors } = buildNeighborUrls(projectId, x, y, tiles)
+    const neighborImageUrls = neighborImageUrlsFromSides(neighborUrls)
 
     if (normalizedContext) {
       console.log(TileGenerationServiceLog.UsingPreAssembledContext, {
@@ -55,7 +57,19 @@ export async function startTileGeneration(
       `${TileGenerationServiceLog.TriggeringTask}${isFirstTile}${TileGenerationServiceLog.HasContext}${!!normalizedContext}`
     )
 
+    const packedCrop =
+      normalizedContext?.cropRect &&
+      normalizedContext.packedWidth &&
+      normalizedContext.packedHeight
+        ? {
+            cropRect: normalizedContext.cropRect,
+            packedWidth: normalizedContext.packedWidth,
+            packedHeight: normalizedContext.packedHeight,
+          }
+        : undefined
+
     const { runId } = await triggerTileGeneration({
+      ...(packedCrop ? { packedCrop } : {}),
       projectId,
       x,
       y,
@@ -63,6 +77,7 @@ export async function startTileGeneration(
       isFirstTile,
       ...(normalizedContext ? { contextPayload: normalizedContext } : {}),
       ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
+      ...(Object.keys(neighborImageUrls).length > 0 ? { neighborImageUrls } : {}),
     })
 
     console.log(TileGenerationServiceLog.TaskTriggered, runId)

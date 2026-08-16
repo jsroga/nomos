@@ -1,4 +1,5 @@
 import type { ContextImageVariant } from '@/shared/ai/contextAssembler'
+import type { PackedCropRect } from '@/shared/ai/context-pack-layout'
 import { ContextAssemblyVariant } from '../../constants/tile-generation-service'
 
 export interface TileGenRunState {
@@ -14,6 +15,9 @@ export interface FollowUpContextPayload {
   images: Partial<Record<ContextImageVariant, string>>
   maskBase64?: string
   preferredVariant: ContextImageVariant
+  cropRect?: PackedCropRect
+  packedWidth?: number
+  packedHeight?: number
 }
 
 export type NormalizedTileGenContext = FollowUpContextPayload

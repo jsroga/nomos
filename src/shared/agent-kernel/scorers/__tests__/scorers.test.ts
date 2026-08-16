@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { registerCorePrompts } from '@/shared/agent-kernel/prompts/registry'
 import { consistencyScorer } from '../consistency-scorer'
 import { inputRecord, normalizeScore, outputToString } from '../shared'
 
@@ -37,23 +36,4 @@ describe('consistencyScorer', () => {
     })
     expect(result.score).toBe(1)
   })
-})
-
-describe('magicScorer', () => {
-  it.skipIf(!process.env.OPENROUTER_API_KEY || !process.env.RUN_OPENROUTER_SMOKE)(
-    'scores creative output via LLM',
-    async () => {
-      registerCorePrompts()
-      const { magicScorer } = await import('../magic-scorer')
-      const result = await magicScorer.run({
-        input: { message: 'Write a scene' },
-        output:
-          'Rain hammered the corrugated roof. Mara counted the seconds between thunder and counted them wrong on purpose.',
-      })
-      expect(result.score).toBeGreaterThanOrEqual(0)
-      expect(result.score).toBeLessThanOrEqual(1)
-      expect(result.reason).toBeTruthy()
-    },
-    60_000,
-  )
 })

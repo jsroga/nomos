@@ -160,6 +160,7 @@ module.exports = [
       'dist/**',
       'build/**',
       'coverage/**',
+      '.trigger/**',
       '.cursor/**',
       '.claude/**',
       'playwright-report/**',

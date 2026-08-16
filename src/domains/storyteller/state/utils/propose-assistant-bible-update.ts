@@ -15,7 +15,11 @@ import { UPDATE_WORLD_BIBLE_TOOL_ID } from '@/domains/storyteller/ai/tools/manag
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
-import { WorldDescriptionFieldAlias } from '@/domains/storyteller/config/constants/bible-wire-fields'
+import {
+  WorldDescriptionFieldAlias,
+  WorldRulesFieldAlias,
+} from '@/domains/storyteller/config/constants/bible-wire-fields'
+import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import {
   episodePremiseFromUnknown,
   isAssistantChatWrapUp,
@@ -49,7 +53,16 @@ export function bibleFieldsFromToolArgs(args: Record<string, unknown>): Record<s
   if (Array.isArray(args.items)) fields.items = args.items
   if (Array.isArray(args.events)) fields.events = args.events
   if (Array.isArray(args.factions)) fields.factions = args.factions
-  if (Array.isArray(args.worldRules)) fields.worldRules = args.worldRules
+  const worldRules =
+    args[WorldRulesFieldAlias.WorldRules] ??
+    args[WorldRulesFieldAlias.Rules] ??
+    args[WorldRulesFieldAlias.WorldRulesSnake]
+  if (Array.isArray(worldRules)) fields.worldRules = worldRules
+  const cast =
+    args[CastFieldAlias.Cast] ??
+    args[CastFieldAlias.Characters] ??
+    args[CastFieldAlias.KeyCharacters]
+  if (Array.isArray(cast)) fields.cast = cast
   if (Array.isArray(args.plotTwists)) fields.plotTwists = args.plotTwists
   if (Array.isArray(args.soundtracks)) fields.soundtracks = args.soundtracks
   const moodSoundtrack = readString(args.moodSoundtrack)

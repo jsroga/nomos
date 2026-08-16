@@ -17,6 +17,7 @@ npm run build
 npm run lint
 npm run typecheck
 npm run test:unit
+npm run test:coverage        # Vitest v8 HTML/LCOV → coverage/
 npm run test:e2e         # Playwright (default)
 npm run test:e2e smoke   # storyteller smoke; also: actions, full-loop, swiss-knife
 ```

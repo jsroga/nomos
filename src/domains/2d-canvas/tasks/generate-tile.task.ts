@@ -1,6 +1,8 @@
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { aiProviderConfigFromRecord } from '@/shared/ai/ai-provider-config'
 import type { GenerateTilePayload } from './constants/generate-tile'
+import { packedCropFromContext } from './constants/generate-tile'
+import { PackedCropError } from './constants/generate-tile-output'
 import {
   assembleServerContextImage,
   createSupabaseServiceClient,
@@ -9,6 +11,17 @@ import {
   uploadTileToBlob,
 } from './constants/generate-tile-persist'
 import { generateTileImage } from './constants/generate-tile-providers'
+import {
+  GenerateTileProgress,
+  GenerateTileStage,
+  advanceGenerateTileProgress,
+  runWithTileProgress,
+} from './constants/generate-tile-progress'
+
+enum GenerateTileCoordKey {
+  TileX = 'tile_x',
+  TileY = 'tile_y',
+}
 
 export const generateTileTask = task({
   id: 'generate-tile',
@@ -16,7 +29,8 @@ export const generateTileTask = task({
   retry: {
     maxAttempts: 3,
   },
-  run: async (payload: GenerateTilePayload) => {
+  run: async (payload: GenerateTilePayload) =>
+    runWithTileProgress(async () => {
     const {
       projectId,
       x,
@@ -32,29 +46,42 @@ export const generateTileTask = task({
       modeNegatives,
       styleAnchorUrl,
       neighbors,
+      neighborImageUrls,
     } = payload
 
     let contextImageBase64 = extractContextImageBase64(payload)
+    let packedCrop = payload.packedCrop ?? packedCropFromContext(payload.contextPayload)
 
     logger.info(`Generating tile at ${x},${y} for project ${projectId}`, {
       isFirstTile,
       hasContext: !!contextImageBase64,
       hasNeighbors: !!neighbors,
       hasStyleRefs: !!styleReferenceUrls?.length,
+      hasPackedCrop: !!packedCrop,
     })
 
-    await metadata.set('progress', 0)
-    await metadata.set('stage', 'initializing')
-    await metadata.set('tile_x', x)
-    await metadata.set('tile_y', y)
+    await advanceGenerateTileProgress(GenerateTileProgress.Init, GenerateTileStage.Initializing)
+    await metadata.set(GenerateTileCoordKey.TileX, x)
+    await metadata.set(GenerateTileCoordKey.TileY, y)
 
     if (!isFirstTile && !contextImageBase64 && neighbors) {
-      await metadata.set('stage', 'assembling_context')
-      contextImageBase64 = await assembleServerContextImage(x, y, neighbors)
+      await advanceGenerateTileProgress(
+        GenerateTileProgress.Init,
+        GenerateTileStage.AssemblingContext,
+      )
+      const assembled = await assembleServerContextImage(x, y, neighbors)
+      contextImageBase64 = assembled.imageBase64
+      packedCrop = assembled.packedCrop
     }
 
-    await metadata.set('stage', 'generating_image')
-    await metadata.set('progress', 30)
+    if (!isFirstTile && !packedCrop) {
+      throw new Error(PackedCropError.MissingPackedCrop)
+    }
+
+    await advanceGenerateTileProgress(
+      GenerateTileProgress.Generating,
+      GenerateTileStage.GeneratingImage,
+    )
 
     const providerConfig = aiProviderConfigFromRecord(aiConfig)
     const generatedImageBase64 = await generateTileImage(
@@ -69,23 +96,24 @@ export const generateTileTask = task({
       modePromptFragment,
       modeNegatives,
       styleAnchorUrl,
+      neighborImageUrls,
+      packedCrop,
     )
 
-    await metadata.set('progress', 70)
-    await metadata.set('stage', 'uploading')
-    await metadata.set('progress', 80)
+    await advanceGenerateTileProgress(GenerateTileProgress.Uploading, GenerateTileStage.Uploading)
 
     const { filename, newUrl } = await uploadTileToBlob(projectId, x, y, generatedImageBase64)
 
     const supabase = createSupabaseServiceClient()
 
-    await metadata.set('stage', 'checking_original')
-    await metadata.set('progress', 95)
+    await advanceGenerateTileProgress(
+      GenerateTileProgress.CheckingOriginal,
+      GenerateTileStage.CheckingOriginal,
+    )
 
     const originalUrl = await resolveOriginalTileUrl(supabase, projectId, x, y)
 
-    await metadata.set('progress', 100)
-    await metadata.set('stage', 'completed')
+    await advanceGenerateTileProgress(GenerateTileProgress.Completed, GenerateTileStage.Completed)
     logger.info('Tile generated - pending user review', { filename, hasOriginal: !!originalUrl })
 
     return {
@@ -96,5 +124,5 @@ export const generateTileTask = task({
       isFirstTile: !originalUrl,
       pendingReview: true,
     }
-  },
+  }),
 })
