@@ -19,6 +19,14 @@ export enum GenerationPromptCopy {
   FollowUpGeminiConstraints =
     'The gray areas outside the magenta are unconstrained empty borders with no adjacent images — do not fill or alter them. The non-gray, non-magenta areas are neighboring images — continue their colors, lines, and lighting at every edge where they touch the magenta area. Ensure continuous lines and matching lighting. Do not alter any non-magenta pixels. Do not add borders or frames.',
   FollowUpAvoidPrefix = 'Avoid:',
+  TileDescriptionDirectivePrefix = '!imporant: image should show:',
+  TileDescriptionDirectiveSuffix = '!',
+  FollowUpInpaintGraySquare =
+    'Inpaint the central gray square to connect with the surrounding edge context.',
+  FollowUpInpaintMagenta =
+    'Inpaint the bright magenta/pink square in the center of this image. The magenta marks exactly where new content must go — replace ONLY the magenta pixels.',
+  FollowUpContinueNeighborWorld = 'Generate an image that continues the neighboring world.',
+  FollowUpFillMatchEdges = 'Fill to match surrounding edges.',
 }
 
 export enum TileNeighborEdge {

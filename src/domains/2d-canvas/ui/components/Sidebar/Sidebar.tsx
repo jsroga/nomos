@@ -1,19 +1,19 @@
 import React from 'react'
-import { DomainSidebar, SidebarHeader } from '@/components/DomainSidebar'
-import { useWorldGenSidebar } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
+import { DomainSidebar } from '@/components/DomainSidebar'
+import type { WorldGenSidebarState } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
 import { WorldGenSidebarHeader, WorldGenSidebarStorageKey } from '../../constants/sidebar'
 import { SidebarContent } from './SidebarContent'
 
-export const Sidebar: React.FC = () => {
-  const sidebar = useWorldGenSidebar()
+interface SidebarProps {
+  sidebar: WorldGenSidebarState
+}
 
+export const Sidebar: React.FC<SidebarProps> = ({ sidebar }) => {
   return (
     <DomainSidebar
-      header={
-        <div className="flex items-center justify-between w-full pl-2">
-          <SidebarHeader>{WorldGenSidebarHeader.WorldGen}</SidebarHeader>
-        </div>
-      }
+      collapsible
+      wordmark={WorldGenSidebarHeader.WorldGen}
+      header={WorldGenSidebarHeader.WorldGen}
       storageKey={WorldGenSidebarStorageKey.WorldGen}
     >
       <SidebarContent {...sidebar} />

@@ -15,11 +15,11 @@ interface CorkBoardBeatGridProps {
   onDragOver: (e: React.DragEvent, id: string) => void
   onDrop: (e: React.DragEvent, id: string) => void
   onExpand: (id: string) => void
-  onSendMessage?: (message: string) => void
   onCreate: () => void
   confirmDialog: React.ReactNode
   isChatBusy?: boolean
   showLoadingCard?: boolean
+  generatingBeatIds?: ReadonlySet<string>
 }
 
 export const CorkBoardBeatGrid: React.FC<CorkBoardBeatGridProps> = ({
@@ -31,11 +31,11 @@ export const CorkBoardBeatGrid: React.FC<CorkBoardBeatGridProps> = ({
   onDragOver,
   onDrop,
   onExpand,
-  onSendMessage,
   onCreate,
   confirmDialog,
   isChatBusy = false,
   showLoadingCard = false,
+  generatingBeatIds,
 }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
     {beats
@@ -50,9 +50,9 @@ export const CorkBoardBeatGrid: React.FC<CorkBoardBeatGridProps> = ({
           onDragOver={onDragOver}
           onDrop={onDrop}
           onExpand={onExpand}
-          onSendMessage={onSendMessage}
           projectId={projectId}
           isChatBusy={isChatBusy}
+          isBatchGenerating={generatingBeatIds?.has(beat.id) === true}
         />
       ))}
 

@@ -2,8 +2,11 @@
 
 import {
   OpenGraphType,
+  ROOT_LAYOUT_BRAND_PREFIX,
   ROOT_LAYOUT_DESCRIPTION,
   ROOT_LAYOUT_OG_DESCRIPTION,
+  ROOT_LAYOUT_TITLE_DEFAULT,
+  ROOT_LAYOUT_TITLE_TEMPLATE,
 } from '@/shared/data/constants/root-layout'
 import { JetBrains_Mono, Inter, Syne } from 'next/font/google'
 
@@ -35,4 +38,11 @@ export const syne = Syne({
   adjustFontFallback: true,
 })
 
-export { ROOT_LAYOUT_DESCRIPTION, ROOT_LAYOUT_OG_DESCRIPTION, OpenGraphType }
+export {
+  OpenGraphType,
+  ROOT_LAYOUT_BRAND_PREFIX,
+  ROOT_LAYOUT_DESCRIPTION,
+  ROOT_LAYOUT_OG_DESCRIPTION,
+  ROOT_LAYOUT_TITLE_DEFAULT,
+  ROOT_LAYOUT_TITLE_TEMPLATE,
+}

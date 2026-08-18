@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildPublicOpenApiDocument } from './build-document'
+import { assertOpenApiRouteCoverage } from './route-coverage'
 
 enum OpenApiGenerateArg {
   Check = '--check',
@@ -48,12 +49,14 @@ function main(): void {
       process.exit(1)
     }
     console.log('openapi:check OK')
+    if (!assertOpenApiRouteCoverage(repoRoot)) process.exit(1)
     return
   }
 
   writeFileSync(specPath, next, 'utf8')
   const pathCount = Object.keys(document.paths ?? {}).length
   console.log(`Wrote ${OpenApiGeneratePath.SpecRelative} (${pathCount} paths)`)
+  if (!assertOpenApiRouteCoverage(repoRoot)) process.exit(1)
 }
 
 main()

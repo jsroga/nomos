@@ -3,3 +3,7 @@ export enum ScorerOutputField {
   Draft = 'draft',
   FinalDraft = 'finalDraft',
 }
+
+export enum LanguageModelMiddlewareSpec {
+  V3 = 'v3',
+}

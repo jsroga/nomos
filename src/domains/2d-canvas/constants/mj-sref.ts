@@ -1,21 +1,15 @@
 import { GenerationMode, type GenerationModeDef } from './generation-modes'
 import { UrlScheme } from '@/shared/data/constants/protocol'
-import { joinUrlPath } from '@/shared/data/url-builder'
 
 export const STYLE_REFERENCE_URL_MAX = 3
 export const STYLE_REF_BLOB_PREFIX = 'style-refs'
 
-export enum MjSrefSlotFile {
-  One = '1.png',
-  Two = '2.png',
-  Three = '3.png',
+export enum StyleRefFileSuffix {
+  Png = '.png',
+  Jpg = '.jpg',
+  Jpeg = '.jpeg',
+  Webp = '.webp',
 }
-
-export const MJ_SREF_SLOT_FILES = [
-  MjSrefSlotFile.One,
-  MjSrefSlotFile.Two,
-  MjSrefSlotFile.Three,
-] as const
 
 export enum StyleRefImageMime {
   Png = 'image/png',
@@ -33,18 +27,23 @@ export enum StyleRefApiRoute {
   Upload = '/api/style-refs/upload',
 }
 
-/** Committed Midjourney --sref slots. User uploads go to Vercel Blob, not here. */
-const MJ_SREF_PUBLIC_ROOT = '/2d-canvas/mj-sref'
-
-export function mjSrefPublicPath(modeId: GenerationMode, fileName: string): string {
-  return joinUrlPath(MJ_SREF_PUBLIC_ROOT, modeId, fileName)
+export enum PaintedIsometricSrefUrl {
+  One = 'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/9b80467c-18b5-4570-9b32-d66f86d71986/1787051463098.png',
+  Two = 'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/9b80467c-18b5-4570-9b32-d66f86d71986/1787051525449.png',
+  Three = 'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/9b80467c-18b5-4570-9b32-d66f86d71986/1787051559763.png',
 }
 
-export function mjSrefPathsThatExist(
-  modeId: GenerationMode,
-  exists: (path: string) => boolean,
-): string[] {
-  return MJ_SREF_SLOT_FILES.map(fileName => mjSrefPublicPath(modeId, fileName)).filter(exists)
+export const PAINTED_ISOMETRIC_SREF_URLS = [
+  PaintedIsometricSrefUrl.One,
+  PaintedIsometricSrefUrl.Two,
+  PaintedIsometricSrefUrl.Three,
+] as const
+
+export function generationModePresetSrefUrls(modeId: GenerationMode): string[] {
+  if (modeId === GenerationMode.PaintedIsometric) {
+    return [...PAINTED_ISOMETRIC_SREF_URLS]
+  }
+  return []
 }
 
 export function absolutePublicStyleRefUrl(path: string, origin: string): string {
@@ -60,13 +59,6 @@ export function absolutizeStyleReferenceUrls(urls: string[], origin: string): st
 
 export function clampStyleReferenceUrls(urls: string[]): string[] {
   return urls.filter(url => url.length > 0).slice(0, STYLE_REFERENCE_URL_MAX)
-}
-
-export enum StyleRefFileSuffix {
-  Png = '.png',
-  Jpg = '.jpg',
-  Jpeg = '.jpeg',
-  Webp = '.webp',
 }
 
 export function isAllowedStyleRefMime(type: string): boolean {

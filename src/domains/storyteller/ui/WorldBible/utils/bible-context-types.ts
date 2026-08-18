@@ -19,11 +19,6 @@ export interface BibleContextType {
   localPlan: Partial<StoryPlan>
   isEditing: boolean
   isReadOnly: boolean
-  isLocked: boolean
-  lockedBy: string | null
-  lockedAt: Date | null
-  userEmail: string | null
-  isLockLoading: boolean
   projectId: string
   onSendMessage?: (msg: string, section?: string) => void
   getProviderConfig: () => BibleProviderConfig
@@ -34,7 +29,6 @@ export interface BibleContextType {
   updateLocalPlan: (updates: Partial<StoryPlan>) => void
   savePlan: () => Promise<void>
   cancelEdit: () => void
-  toggleLock: () => Promise<void>
   updateWorldRule: <K extends keyof WorldRule>(index: number, field: K, value: WorldRule[K]) => void
   addWorldRule: () => void
   removeWorldRule: (index: number) => void

@@ -39,7 +39,9 @@ export const BeatDataSchema = z.object({
   storyStateChange: z
     .string()
     .min(1)
-    .describe('REQUIRED, SHORT: how the plot shifted — one sentence.'),
+    .describe(
+      'REQUIRED, SHORT: solely a change in the world — one sentence, quotable by a subsequent beat. Revelation beats must introduce a new unknown, not confirm the previous one.',
+    ),
 })
 
 export const ManageBeatInputSchema = z.object({

@@ -9,6 +9,13 @@ import {
   type MoodboardCompletePayload,
   type PendingChatPromptPayload,
 } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import {
+  ConsistencyFixRunPhase,
+  isConsistencyFixRunBusy,
+} from '@/domains/storyteller/ui/FixInconsistencies/constants/fix-inconsistencies-dialog'
+import type { ConsistencyFixItem, ContinuityFinding } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-schema'
+import type { SkippedFinding } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-contract'
+import { mergePendingBeatArgs } from '@/domains/storyteller/state/utils/pending-beat-adds'
 
 enum GenerationActivityBootstrapLabel {
   SendingToWritersRoom = 'Sending to Writers Room…',
@@ -32,6 +39,11 @@ interface StorytellerUiState {
   pendingChatPromptSeq: number
   generationActivity: GenerationActivityState
   pendingBoardHydration: boolean
+  pendingBeatAdds: Record<string, unknown>[]
+  beatAddsCommitted: boolean
+  isBibleEditing: boolean
+  isEpisodeEditing: boolean
+  consistencyFixRun: ConsistencyFixRunState
 
   navigateToEntity: (payload: EntityNavigationPayload) => void
   clearEntityNavigation: () => void
@@ -47,6 +59,40 @@ interface StorytellerUiState {
   setGenerationActivity: (patch: Partial<GenerationActivityState> & { phase: GenerationActivityPhase }) => void
   clearGenerationActivity: () => void
   setPendingBoardHydration: (pending: boolean) => void
+  appendPendingBeatAdds: (incoming: readonly Record<string, unknown>[]) => void
+  clearPendingBeatAdds: (committed: boolean) => void
+  setBibleEditing: (editing: boolean) => void
+  setEpisodeEditing: (editing: boolean) => void
+  setConsistencyFixRun: (patch: Partial<ConsistencyFixRunState>) => void
+  resetConsistencyFixRun: () => void
+}
+
+export interface ConsistencyFixRunState {
+  phase: ConsistencyFixRunPhase
+  projectId: string | null
+  runId: string | null
+  stepId: string | null
+  findings: ContinuityFinding[]
+  fixes: ConsistencyFixItem[]
+  skipped: SkippedFinding[]
+  empty: boolean
+  message: string
+  error: string | null
+  appliedCount: number
+}
+
+export const IDLE_CONSISTENCY_FIX_RUN: ConsistencyFixRunState = {
+  phase: ConsistencyFixRunPhase.Idle,
+  projectId: null,
+  runId: null,
+  stepId: null,
+  findings: [],
+  fixes: [],
+  skipped: [],
+  empty: false,
+  message: '',
+  error: null,
+  appliedCount: 0,
 }
 
 let worldBibleSeeded = false
@@ -63,6 +109,11 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
   pendingChatPromptSeq: 0,
   generationActivity: IDLE_GENERATION_ACTIVITY,
   pendingBoardHydration: false,
+  pendingBeatAdds: [],
+  beatAddsCommitted: false,
+  isBibleEditing: false,
+  isEpisodeEditing: false,
+  consistencyFixRun: IDLE_CONSISTENCY_FIX_RUN,
 
   navigateToEntity: (payload) => set({ entityNavigation: payload }),
   clearEntityNavigation: () => set({ entityNavigation: null }),
@@ -86,7 +137,12 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
     set((state) => ({ moodboardPrimaryVersion: state.moodboardPrimaryVersion + 1 })),
   requestChatPrompt: (message, section) =>
     set((state) => {
-      if (isGenerationActivityBusy(state.generationActivity.phase)) return state
+      if (
+        isGenerationActivityBusy(state.generationActivity.phase) ||
+        isConsistencyFixRunBusy(state.consistencyFixRun.phase)
+      ) {
+        return state
+      }
       const id = state.pendingChatPromptSeq + 1
       return {
         pendingChatPromptSeq: id,
@@ -111,6 +167,19 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
     })),
   clearGenerationActivity: () => set({ generationActivity: IDLE_GENERATION_ACTIVITY }),
   setPendingBoardHydration: pending => set({ pendingBoardHydration: pending }),
+  appendPendingBeatAdds: incoming =>
+    set(state => ({
+      pendingBeatAdds: mergePendingBeatArgs(state.pendingBeatAdds, incoming),
+      beatAddsCommitted: false,
+    })),
+  clearPendingBeatAdds: committed => set({ pendingBeatAdds: [], beatAddsCommitted: committed }),
+  setBibleEditing: editing => set({ isBibleEditing: editing }),
+  setEpisodeEditing: editing => set({ isEpisodeEditing: editing }),
+  setConsistencyFixRun: patch =>
+    set(state => ({
+      consistencyFixRun: { ...state.consistencyFixRun, ...patch },
+    })),
+  resetConsistencyFixRun: () => set({ consistencyFixRun: IDLE_CONSISTENCY_FIX_RUN }),
 }))
 
 /** Imperative access for services that cannot use React hooks. */

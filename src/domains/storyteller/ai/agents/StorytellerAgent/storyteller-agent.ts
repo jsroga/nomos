@@ -18,6 +18,7 @@ import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import { v4 as uuidv4 } from 'uuid'
 import { getMastraInstance, getStorageInstance } from '@/shared/agent-kernel'
 import {
+  AGENT_MODEL_MATRIX,
   AGENT_RUNTIME_DEFAULTS,
   resolveRoleModel,
   resolveStorytellerModel,
@@ -98,6 +99,11 @@ export class StorytellerAgent {
       mastra: m,
       memory,
       workspace: () => undefined,
+      defaultOptions: {
+        modelSettings: {
+          maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
+        },
+      },
     })
 
       // Manually link observability (extends the agent with a mastra ref)
@@ -157,6 +163,9 @@ export class StorytellerAgent {
         const response = await this.agent.generate(prompt, {
           toolChoice,
           maxSteps: AGENT_RUNTIME_DEFAULTS.maxSteps,
+          modelSettings: {
+            maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
+          },
           tracingOptions: {
             traceId: id,
             ...(span.spanId ? { parentSpanId: span.spanId } : {}),
@@ -263,6 +272,9 @@ Create a beat with:
     return this.agent.stream(prompt, {
       toolChoice: options?.toolChoice || AgentModelRole.Auto,
       maxSteps: AGENT_RUNTIME_DEFAULTS.maxSteps,
+      modelSettings: {
+        maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
+      },
       ...(options?.requestContext ? { requestContext: options.requestContext } : {}),
       tracingOptions: {
         traceId,

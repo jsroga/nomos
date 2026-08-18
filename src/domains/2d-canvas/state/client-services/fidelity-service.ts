@@ -66,6 +66,7 @@ export class FidelityService {
 
     // Track enhancing status
     useWorldStore.getState().addEnhancingTile(tile.x, tile.y)
+    useWorldStore.getState().setTileProgress(tile.x, tile.y, 0, TileProgressStage.Initializing)
     const opId = `${FidelityOperationIdPrefix.Fidelity}${tile.x}-${tile.y}`
     useGlobalStatusStore.getState().addOperation({
       id: opId,
@@ -126,6 +127,7 @@ export class FidelityService {
           error instanceof Error ? error.message : FidelityServiceError.EnhancementFailed
         )
       useWorldStore.getState().removeEnhancingTile(tile.x, tile.y)
+      useWorldStore.getState().clearTileProgress(tile.x, tile.y)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
     }
@@ -145,6 +147,7 @@ export class FidelityService {
             useGlobalStatusStore.getState().updateOperation(opId, {
               details: `(${runState.tileX}, ${runState.tileY}) ${stage} ${progress}%`,
             })
+            useWorldStore.getState().setTileProgress(runState.tileX, runState.tileY, progress, stage)
           },
         }
       )
@@ -257,6 +260,7 @@ export class FidelityService {
 
     // Clear UI status
     useWorldStore.getState().removeEnhancingTile(runState.tileX, runState.tileY)
+    useWorldStore.getState().clearTileProgress(runState.tileX, runState.tileY)
     useGlobalStatusStore.getState().removeOperation(opId)
   }
 
@@ -271,6 +275,12 @@ export class FidelityService {
           console.log(FidelityServiceLog.ResumingPolling, runState.runId)
 
           useWorldStore.getState().addEnhancingTile(runState.tileX, runState.tileY)
+          useWorldStore.getState().setTileProgress(
+            runState.tileX,
+            runState.tileY,
+            0,
+            TileProgressStage.Initializing,
+          )
           const opId = `${FidelityOperationIdPrefix.Fidelity}${runState.tileX}-${runState.tileY}`
           useGlobalStatusStore.getState().addOperation({
             id: opId,

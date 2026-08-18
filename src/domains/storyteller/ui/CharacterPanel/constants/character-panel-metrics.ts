@@ -16,6 +16,19 @@ import {
   StorytellerConfirmVariant,
 } from '@/domains/storyteller/core/storyteller-page-wire'
 
+export enum CharacterPanelCopy {
+  Title = 'CAST',
+  Empty = 'No characters yet. Click + to add one.',
+  Add = 'Add new character',
+  Edit = 'Edit character',
+  Toggle = 'Toggle character details',
+  UnknownInitial = '?',
+}
+
+export function formatCastHeading(count: number): string {
+  return `${CharacterPanelCopy.Title} (${count})`
+}
+
 export enum CharacterMetricKey {
   Valence = 'valence',
   Arousal = 'arousal',

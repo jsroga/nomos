@@ -87,6 +87,9 @@ mastra-memory.db-wal
 /screenshots/
 /IMPROVEMENT_PLAN.md
 
+# Storybook static build
+storybook-static/
+
 # design-sync machine state
 .ds-sync/
 ds-bundle/

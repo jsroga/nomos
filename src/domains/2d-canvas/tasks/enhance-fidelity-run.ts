@@ -1,28 +1,30 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
-import { FIDELITY_PROMPTS, getCreativityPrompt } from '@/shared/data/server/prompts'
-import { REPAINT_STYLE_REF_PREFIX } from '@/shared/data/constants/repaint-gemini'
 import {
-  logLLMRequestStart,
-  logLLMRequestError,
-} from '@/trigger/utils/llm-logger'
+  readApiframeApiKey,
+  resolveFidelityEngine,
+  resolveFidelityModel,
+  resolveImageFidelityMode,
+} from '@/shared/ai/image-model-env'
+import { FidelityEngine } from '@/shared/ai/constants/image-env'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { TileProgressStage } from '../constants/fidelity-service'
 import {
   BufferEncoding,
   BlobAccess,
   ContentType,
-  StringSeparator,
   UrlScheme,
 } from '@/shared/data/constants/protocol'
-import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
-import { resolveFidelityModel } from '@/shared/ai/image-model-env'
-import { storageService } from '@/shared/data/storage/storage-service'
 import { createSupabaseServiceClient } from './constants/generate-tile-persist'
 import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
 import {
   generationModeDef,
   resolveGenerationMode,
 } from '../constants/generation-modes'
+import { topazEnhanceModelFromFidelityMode } from '../constants/topaz-upscale'
+import { upscaleWithApiframe } from './upscale-tile-apiframe-provider'
+import { ApiframeTopazUpscaleFactor } from '@/shared/ai/constants/apiframe'
+import { enhanceFidelityWithGenerate } from './enhance-fidelity-generate'
 
 export enum EnhanceFidelityError {
   NotAllowedForMode = 'Fidelity enhancement is not allowed for this generation mode',
@@ -34,28 +36,11 @@ export interface EnhanceFidelityPayload {
   imageBase64: string
   stylePrompt: string
   creativity: number
-  apiframeConfig: {
-    apiKey: string
-    model?: string
-  }
   styleReferenceUrls?: string[]
 }
 
-function toDataUrl(base64: string): string {
-  if (base64.startsWith(UrlScheme.Data)) return base64
-  return `${UrlScheme.Data}${ContentType.Png};${BufferEncoding.Base64},${base64}`
-}
-
 export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
-  const {
-    tileId,
-    projectId,
-    imageBase64,
-    stylePrompt,
-    creativity,
-    apiframeConfig,
-    styleReferenceUrls,
-  } = payload
+  const { tileId, projectId, imageBase64 } = payload
 
   const supabase = createSupabaseServiceClient()
   const { data: projectRow } = await supabase
@@ -68,75 +53,43 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
     throw new Error(EnhanceFidelityError.NotAllowedForMode)
   }
 
-  logger.info(`Starting fidelity enhancement for tile ${tileId}`, { projectId })
+  const apiKey = readApiframeApiKey()
+  if (!apiKey) {
+    throw new Error(API_ERROR.APIFRAME_API_KEY_NOT_PROVIDED)
+  }
+
+  const engine = resolveFidelityEngine()
+  logger.info(`Starting fidelity enhancement for tile ${tileId}`, {
+    projectId,
+    engine,
+  })
 
   await metadata.set('progress', 0)
-  await metadata.set('stage', 'initializing')
+  await metadata.set('stage', TileProgressStage.Initializing)
   await metadata.set('tile_id', tileId)
 
-  await metadata.set('stage', 'enhancing')
+  await metadata.set('stage', TileProgressStage.Enhancing)
   await metadata.set('progress', 30)
 
-  const styleRefHint = styleReferenceUrls?.length
-    ? `${REPAINT_STYLE_REF_PREFIX}${styleReferenceUrls.join(StringSeparator.CommaSpace)}.`
-    : ''
-
-  const creativityPrompt = getCreativityPrompt(creativity || 0.3)
-  const finalPrompt = FIDELITY_PROMPTS.GEMINI(stylePrompt, creativityPrompt, styleRefHint)
-  const model = apiframeConfig.model || resolveFidelityModel()
-
-  const { v4: uuidv4 } = await import('uuid')
-  const publicImageUrl = await storageService.uploadPublicImage(
-    `fidelity_input_${uuidv4()}.png`,
-    toDataUrl(imageBase64),
-  )
-  if (!publicImageUrl) {
-    throw new Error('Failed to upload image for fidelity enhancement')
-  }
-
-  logger.info('Calling Apiframe Nano Banana for fidelity enhancement', {
-    model,
-    promptLength: finalPrompt.length,
-  })
-
-  logLLMRequestStart({
-    provider: ImageGenProvider.Apiframe,
-    model,
-    prompt: finalPrompt,
-    inputImageUrls: [publicImageUrl],
-    input: { model, prompt: finalPrompt, image_input: [publicImageUrl] },
-    metadata: {
-      task: 'fidelity-enhancement',
-      creativity,
-    },
-  })
-
-  let enhancedImageBase64: string
-  try {
-    enhancedImageBase64 = await generateNanoBananaBase64({
-      prompt: finalPrompt,
-      apiKey: apiframeConfig.apiKey,
-      modelId: model,
-      imageInputUrls: [publicImageUrl],
-    })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    logLLMRequestError({
-      provider: ImageGenProvider.Apiframe,
-      model,
-      prompt: finalPrompt,
-      error: message,
-      input: { model, prompt: finalPrompt, image_input: [publicImageUrl] },
-    })
-    throw error
-  }
-
-  logger.info('Apiframe fidelity enhancement completed', {
+  const sourceImageUrl =
+    engine === FidelityEngine.Topaz
+      ? await enhanceFidelityWithTopaz(imageBase64, apiKey)
+      : await enhanceFidelityWithGenerate({
+          apiKey,
+          model: resolveFidelityModel(),
+          imageBase64,
+          stylePrompt: payload.stylePrompt,
+          creativity: payload.creativity,
+          styleReferenceUrls: payload.styleReferenceUrls,
+        })
+  const enhancedImageBase64 = await downloadImageAsBase64(sourceImageUrl)
+  logger.info('Fidelity enhancement completed', {
     imageLength: enhancedImageBase64.length,
+    engine,
   })
 
   await metadata.set('progress', 70)
-  await metadata.set('stage', 'uploading')
+  await metadata.set('stage', TileProgressStage.Uploading)
 
   const timestamp = Date.now()
   const filename = `fidelity/${projectId}/${tileId}_enhanced_${timestamp}.png`
@@ -156,7 +109,7 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
   logger.info('Enhanced image uploaded to Vercel Blob', { enhancedUrl })
 
   await metadata.set('progress', 90)
-  await metadata.set('stage', 'pending_review')
+  await metadata.set('stage', TileProgressStage.PendingReview)
 
   const { data: tile } = await supabase
     .from('tiles')
@@ -166,13 +119,13 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
 
   let originalUrl = ''
   if (tile?.image_filename) {
-    originalUrl = tile.image_filename.startsWith('http')
+    originalUrl = tile.image_filename.startsWith(UrlScheme.Http)
       ? tile.image_filename
       : `/projects/${projectId}/${tile.image_filename}`
   }
 
   await metadata.set('progress', 100)
-  await metadata.set('stage', 'completed')
+  await metadata.set('stage', TileProgressStage.Completed)
 
   logger.info('Fidelity enhancement completed - pending user review', { filename })
 
@@ -184,4 +137,23 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
     originalUrl,
     pendingReview: true,
   }
+}
+
+async function enhanceFidelityWithTopaz(imageBase64: string, apiKey: string): Promise<string> {
+  const fidelityMode = resolveImageFidelityMode()
+  const modelType = topazEnhanceModelFromFidelityMode(fidelityMode)
+  logger.info('Running Topaz fidelity enhancement', { modelType, fidelityMode })
+  const result = await upscaleWithApiframe(imageBase64, apiKey, {
+    modelType,
+    factor: ApiframeTopazUpscaleFactor.One,
+  })
+  return result.imageUrl
+}
+
+async function downloadImageAsBase64(imageUrl: string): Promise<string> {
+  const response = await fetch(imageUrl)
+  if (!response.ok) {
+    throw new Error(`Failed to download enhanced image: ${response.status}`)
+  }
+  return Buffer.from(await response.arrayBuffer()).toString(BufferEncoding.Base64)
 }

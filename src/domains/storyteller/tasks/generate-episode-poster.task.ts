@@ -3,20 +3,35 @@ import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { BufferEncoding, FsDirectory } from '@/shared/data/constants/protocol'
-import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
+import { FsDirectory } from '@/shared/data/constants/protocol'
+import { generateApiframeSurfaceImage } from '@/shared/ai/generate-apiframe-surface-image'
+import {
+  ApiframeGenerateAspectRatio,
+  ApiframeImageModel,
+} from '@/shared/ai/constants/apiframe'
 import { resolveEpisodePosterModel } from '@/shared/ai/image-model-env'
+
+enum PosterPrompt {
+  Midjourney = 'movie poster for ',
+  MidjourneySuffix = ', cinematic lighting, high resolution, detailed, textless',
+  GenericSuffix = '. Movie poster style, cinematic composition, dramatic lighting, high resolution, highly detailed, vertical aspect ratio.',
+}
 
 interface GenerateEpisodePosterPayload {
   episodeId: string
   projectId: string
   prompt: string
   providerConfig: {
-    provider: typeof ImageGenProvider.NanoBanana
     apiKey: string
     modelId?: string
   }
+}
+
+function posterPromptForModel(prompt: string, model: ApiframeImageModel): string {
+  if (model === ApiframeImageModel.Midjourney) {
+    return `${PosterPrompt.Midjourney}${prompt}${PosterPrompt.MidjourneySuffix}`
+  }
+  return `${prompt}${PosterPrompt.GenericSuffix}`
 }
 
 export const generateEpisodePoster = task({
@@ -24,7 +39,8 @@ export const generateEpisodePoster = task({
   maxDuration: 300,
   run: async (payload: GenerateEpisodePosterPayload) => {
     const { episodeId, projectId, prompt, providerConfig } = payload
-    const { apiKey, modelId = resolveEpisodePosterModel() } = providerConfig
+    const { apiKey } = providerConfig
+    const model = resolveEpisodePosterModel()
 
     logger.info(`Starting episode poster generation for episode ${episodeId}`, { prompt })
 
@@ -34,18 +50,22 @@ export const generateEpisodePoster = task({
 
     try {
       await metadata.set('stage', 'generating_image')
-      const enhancedPrompt = `${prompt}. Movie poster style, cinematic composition, dramatic lighting, high resolution, highly detailed, vertical aspect ratio.`
+      const enhancedPrompt = posterPromptForModel(prompt, model)
 
-      logger.info('Generating episode poster via Apiframe Nano Banana')
-      const imageBase64 = await generateNanoBananaBase64({
+      const generated = await generateApiframeSurfaceImage({
+        model,
         prompt: enhancedPrompt,
         apiKey,
-        modelId,
-        aspectRatio: '2:3',
+        aspectRatio: ApiframeGenerateAspectRatio.PortraitTwoThree,
       })
 
       await metadata.set('stage', 'saving_image')
       await metadata.set('progress', 50)
+
+      const imgResponse = await fetch(generated.imageUrl)
+      if (!imgResponse.ok) {
+        throw new Error(`Failed to download image from URL: ${imgResponse.status}`)
+      }
 
       const filename = `episode_poster_${episodeId}_${Date.now()}.png`
       const projectDir = path.join(
@@ -61,7 +81,7 @@ export const generateEpisodePoster = task({
 
       fs.writeFileSync(
         path.join(projectDir, filename),
-        Buffer.from(imageBase64, BufferEncoding.Base64),
+        Buffer.from(await imgResponse.arrayBuffer()),
       )
       logger.info('Image saved to disk', { filename })
 
@@ -91,6 +111,8 @@ export const generateEpisodePoster = task({
         episodeId,
         imageUrl: filename,
         fullUrl: `/projects/${projectId}/${filename}`,
+        isVariantGrid: generated.isVariantGrid,
+        jobId: generated.jobId,
       }
     } catch (error: unknown) {
       logger.error('Poster generation failed', { error: getErrorMessage(error) })

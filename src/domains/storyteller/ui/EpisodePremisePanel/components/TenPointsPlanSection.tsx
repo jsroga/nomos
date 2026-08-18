@@ -140,14 +140,17 @@ function TenPointsReadView({
 
 function TenPointsEmptyState({
   onGenerateSection,
+  disabled,
 }: {
   onGenerateSection?: (section: EpisodePremiseSectionKey) => void
+  disabled: boolean
 }) {
   return (
     <button
       type="button"
-      className="w-full p-8 bg-card border border-dashed border-border rounded-md flex flex-col items-center justify-center min-h-[180px] hover:border-primary/50 hover:bg-muted/20 transition-colors"
+      className="w-full p-8 bg-card border border-dashed border-border rounded-md flex flex-col items-center justify-center min-h-[180px] hover:border-primary/50 hover:bg-muted/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
       onClick={() => onGenerateSection?.(EpisodePremiseSectionKey.TenPointsPlan)}
+      disabled={disabled}
     >
       <ListOrdered className="w-10 h-10 text-muted-foreground mb-3" />
       <h3 className="font-mono text-sm font-semibold tracking-tight mb-1">No 10-Point Plan</h3>
@@ -198,7 +201,7 @@ export function TenPointsPlanSection({
       ) : hasPlan && tenPointsPlan ? (
         <TenPointsReadView tenPointsPlan={tenPointsPlan} projectId={projectId} />
       ) : (
-        <TenPointsEmptyState onGenerateSection={onGenerateSection} />
+        <TenPointsEmptyState onGenerateSection={onGenerateSection} disabled={isGenerating} />
       )}
     </div>
   )

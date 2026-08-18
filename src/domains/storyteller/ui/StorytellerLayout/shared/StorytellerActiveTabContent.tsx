@@ -10,13 +10,17 @@ import {
   CharacterWeb,
 } from '../storyteller-dynamic-imports'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
-import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import {
+  getStorytellerUiStore,
+  useStorytellerUiStore,
+} from '@/domains/storyteller/state/useStorytellerUiStore'
+import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { StorytellerAgentTriggerPrompt } from '@/domains/storyteller/state/constants/agent-trigger-prompts'
-import { BibleSection } from '@/domains/storyteller/core/types/enums'
+import { BibleSection, Phase } from '@/domains/storyteller/core/types/enums'
 import { EpisodePremiseSectionKey } from '@/domains/storyteller/ui/EpisodePremisePanel/constants/ozymandias-sections'
 import { pendingActionForCurrentEpisode } from '@/domains/storyteller/ui/WorldBible/utils/pending-action-for-episode'
 import { episodePremiseFromPlan } from '@/domains/storyteller/core/utils/validate-premise-for-beatboard'
-import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { commitBeatCreatesToWorld } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-add-to-world'
 
 export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = props => {
   const { core, episode, phase, generation, agents } = props
@@ -42,10 +46,13 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
     setLoadingSections,
     currentEpisode,
     currentEpisodeTitle,
+    setActiveTab,
+    closeBible,
     refreshBeats,
+    executeAction,
   } = core
   const { isFetchingCharacters, updateEpisodePremise, characterWebVersion } = episode
-  const { handleApprovePlan } = phase
+  const { handleApprovePlan, handlePhaseChange } = phase
   const { handlePosterTrigger, handleStoryboardTrigger } = generation
   const { handleCharacterWebNodeClick, handleSaveEpisodePrompt } = agents
   const requestChatPrompt = useStorytellerUiStore(state => state.requestChatPrompt)
@@ -80,8 +87,19 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
     [queuePremisePrompt]
   )
 
+  const handleAddGeneratedBeats = useCallback(async () => {
+    await commitBeatCreatesToWorld({
+      toolArgs: getStorytellerUiStore().pendingBeatAdds,
+      currentEpisodeId,
+      executeAction,
+      setActiveTab,
+      closeBible,
+      refreshBeats,
+    })
+  }, [closeBible, currentEpisodeId, executeAction, refreshBeats, setActiveTab])
+
   return (
-    <div className="flex-1 relative overflow-hidden">
+    <div className="h-full min-h-0 overflow-hidden flex flex-col">
       {activeTab === StorytellerTab.Plan && (
         <StoryPlanBoard
           storyPlan={storyPlan}
@@ -93,7 +111,9 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
           onGeneratePoster={episodeId => void handlePosterTrigger(episodeId)}
           onGenerateStoryboard={episodeId => void handleStoryboardTrigger(episodeId)}
           isGenerating={
-            isSending || Boolean(loadingSections[BibleSection.EPISODE_PREMISE]?.loading)
+            isChatBusy ||
+            isSending ||
+            Boolean(loadingSections[BibleSection.EPISODE_PREMISE]?.loading)
           }
           isGeneratingPoster={isGeneratingPoster}
           posterIsVariantGrid={posterIsVariantGrid}
@@ -113,23 +133,23 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
       )}
 
       {activeTab === StorytellerTab.Board && (
-        <div className="flex-1 overflow-hidden relative h-full">
-          <div className="absolute inset-0 overflow-y-auto p-4">
-            <CorkBoard
-              beats={beats}
-              episodeId={currentEpisodeId || undefined}
-              storyboardUrl={storyPlan?.storyboardUrl}
-              isGeneratingCombined={isGeneratingStoryboard}
-              onGenerateCombined={handleStoryboardTrigger}
-              projectId={routeProjectId ?? ''}
-              premise={episodePremiseFromPlan(storyPlan)}
-              isChatBusy={isChatBusy}
-              onSendMessage={message => requestChatPrompt(message)}
-              onRefreshBeats={() => {
-                if (currentEpisodeId) void refreshBeats(currentEpisodeId)
-              }}
-            />
-          </div>
+        <div className="h-full min-h-0 overflow-hidden">
+          <CorkBoard
+            beats={beats}
+            episodeId={currentEpisodeId || undefined}
+            storyboardUrl={storyPlan?.storyboardUrl}
+            isGeneratingCombined={isGeneratingStoryboard}
+            onGenerateCombined={handleStoryboardTrigger}
+            projectId={routeProjectId ?? ''}
+            premise={episodePremiseFromPlan(storyPlan)}
+            isChatBusy={isChatBusy}
+            onSendMessage={message => requestChatPrompt(message)}
+            onRefreshBeats={() => {
+              if (currentEpisodeId) void refreshBeats(currentEpisodeId)
+            }}
+            onAddGeneratedBeats={handleAddGeneratedBeats}
+            onContinueToDraft={() => handlePhaseChange(Phase.WRITING)}
+          />
         </div>
       )}
 

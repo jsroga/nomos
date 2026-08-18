@@ -9,7 +9,7 @@
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System topology + module blueprint |
 | [MODULES.md](./MODULES.md) | Domain map |
 | [STORYTELLER.md](./STORYTELLER.md) | Writers’ room + AgentController |
-| [DEVELOPMENT.md](./DEVELOPMENT.md) | Tests, evals, observability, quality gates, perf debug |
+| [DEVELOPMENT.md](./DEVELOPMENT.md) | Tests, evals, Storybook, observability, quality gates, perf debug |
 | [DESIGN.md](./DESIGN.md) | Product UI contract (tokens, projects, chat, marketing SSR) |
 | [MCP_API.md](./MCP_API.md) | MCP tools / auth for integrators |
 | [README.md](./README.md) | This index |

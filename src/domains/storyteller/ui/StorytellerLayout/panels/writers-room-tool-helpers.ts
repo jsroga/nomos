@@ -199,6 +199,12 @@ export function isSuccessfulBeatWrite(call: AssistantCompletedToolCall): boolean
   return result.success === true && Object.keys(recordFromJson(result.beat)).length > 0
 }
 
+export function pendingBeatArgsFromToolCalls(
+  calls: readonly AssistantCompletedToolCall[],
+): Record<string, unknown>[] {
+  return calls.filter(isSuccessfulBeatWrite).map(call => recordFromJson(call.args))
+}
+
 /** `null` means skip (non-bible tool args). `[]` means nothing to commit. */
 export function chatFallbackAddToWorldTargets(input: {
   toolArgs: readonly Record<string, unknown>[]

@@ -8,6 +8,7 @@ import {
   createBeatCommitActions,
   isBeatCreateToolArgs,
   isSuccessfulBeatWrite,
+  pendingBeatArgsFromToolCalls,
   showBeatOnBoard,
 } from '../writers-room-tool-helpers'
 import { StorytellerChatTool, StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
@@ -118,6 +119,29 @@ describe('isSuccessfulBeatWrite', () => {
         result: { success: true, beats: [], count: 1 },
       }),
     ).toBe(false)
+  })
+})
+
+describe('pendingBeatArgsFromToolCalls', () => {
+  it('keeps args from successful manage_beat creates', () => {
+    const created = {
+      operation: 'create',
+      data: { logline: 'A body ages overnight.' },
+    }
+    expect(
+      pendingBeatArgsFromToolCalls([
+        {
+          toolName: StorytellerChatTool.ManageBeat,
+          args: created,
+          result: { success: true, beat: { id: 'b2', logline: 'A body ages overnight.' } },
+        },
+        {
+          toolName: StorytellerChatTool.ManageBeat,
+          args: { operation: 'list', episodeId: 'ep-1' },
+          result: { success: true, beats: [] },
+        },
+      ]),
+    ).toEqual([created])
   })
 })
 

@@ -73,6 +73,15 @@ export function registerSharedComponents(registry: OpenAPIRegistry): void {
     },
   })
 
+  registry.registerComponent(OpenApiComponentKind.Responses, OpenApiComponentResponse.Forbidden, {
+    description: OpenApiComponentDescription.Forbidden,
+    content: {
+      [OpenApiMediaType.Json]: {
+        schema: schemaRef(OpenApiSchemaName.ErrorBody),
+      },
+    },
+  })
+
   registry.registerComponent(OpenApiComponentKind.Responses, OpenApiComponentResponse.NotFound, {
     description: OpenApiComponentDescription.NotFound,
     content: {

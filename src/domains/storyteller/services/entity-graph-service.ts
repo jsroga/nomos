@@ -22,7 +22,6 @@ import {
 } from './entity-graph-vector'
 import {
   DEFAULT_GRAPH_RAG_OPTIONS,
-  extractRelationshipsFromText,
   inferRelationshipType,
   scoredEntityFromRow,
   type GraphRAGOptions,
@@ -35,7 +34,7 @@ import {
 } from './entity-graph-traversal'
 
 export type { GraphRAGOptions, ScoredEntity }
-export { EntityGraphService, extractRelationshipsFromText }
+export { EntityGraphService }
 
 /**
  * Live `entity_references.embedding` column dimension. For pgvector,
@@ -307,8 +306,6 @@ class EntityGraphService {
       return { nodes: [], edges: [] }
     }
   }
-
-  extractRelationshipsFromText = extractRelationshipsFromText
 }
 
 export const entityGraphService = new EntityGraphService()

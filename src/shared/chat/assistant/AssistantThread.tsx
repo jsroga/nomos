@@ -39,12 +39,6 @@ export function AssistantThread({
 
         <ThreadPrimitive.Viewport className="aui-thread">
           <div className="aui-thread-col">
-            <div className="aui-day">
-              <span className="aui-day-line" aria-hidden />
-              <span className="aui-day-label">{ASSISTANT_THREAD_COPY.DayToday}</span>
-              <span className="aui-day-line" aria-hidden />
-            </div>
-
             <ThreadPrimitive.Empty>
               <div className="aui-empty">
                 <span className="aui-empty-hint">{ASSISTANT_THREAD_COPY.EmptyHint}</span>

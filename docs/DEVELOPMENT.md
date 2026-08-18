@@ -10,6 +10,7 @@
 | Coverage | `npm run test:coverage` | Vitest `@vitest/coverage-v8` · HTML at `coverage/index.html` |
 | E2E | `npm run test:e2e [scenario]` | Playwright via `scripts/run-e2e.ts` |
 | Eval | `npm run eval` | `evals/` + Mastra scorers |
+| Storybook | `npm run storybook` | `stories/` + `.storybook/` (Vite; `src/components/` primitives) |
 
 ```bash
 npm run test:unit
@@ -19,6 +20,7 @@ npx vitest run src/domains/storyteller/ai/tools/__tests__/storytelling.test.ts
 npm run test:e2e smoke
 npm run eval -- --samples=5
 npm run eval:dashboard
+npm run storybook   # Vite catalog of src/components primitives (:6006)
 npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 ```
 
@@ -44,13 +46,13 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 | Many failures | `npm run qualitygate:capture` → `.local/quality-backlog.md` |
 | Before “done” | `npm run typecheck` · `npm run lint` · `npm run test:unit` |
 | Commit | `npm run precommit` (never `--no-verify`) |
-| OpenAPI public docs | `npm run openapi:generate` · `npm run openapi:check` (precommit) |
+| OpenAPI public docs | `npm run openapi:generate` · `npm run openapi:check` (drift + route coverage; also in precommit) |
 | Module handoff | `node scripts/fabro-verify.mjs` |
 
 **Metrics (warn / error):** 400 / 800 lines · complexity 15 / 25.  
 **IMPORTANT — never disable rules on your own if not allowed.** No file-level `eslint-disable` and no new `eslint.config.js` `'off'` overrides without explicit user approval.
 
-ESLint (`eslint.config.js`) ignores generated/local trees (`.mastra/**`, `.local/**`, `.design-sync/**`). `local/no-magic-string` is off for Vitest and Playwright suites (`**/__tests__/**`, `**/*.test.*`, `**/*.e2e.test.*`, `e2e/**`) — titles and fixtures are prose, not wire vocabulary.
+ESLint (`eslint.config.js`) ignores generated/local trees (`.mastra/**`, `.local/**`, `.design-sync/**`). `local/no-magic-string` is off for Vitest and Playwright suites (`**/__tests__/**`, `**/*.test.*`, `**/*.e2e.test.*`, `e2e/**`) and Storybook (`stories/**`, `.storybook/**`) — titles and fixtures are prose, not wire vocabulary.
 
 ## Public OpenAPI (`/api-docs`)
 
@@ -61,9 +63,9 @@ To add or change a documented route:
 1. Put request/response Zod in `core/io/*.dto.ts` or `@/shared/data/*-service` (parse in the route).
 2. Register path + method in `src/shared/openapi/register-shared-routes.ts` or `src/domains/<module>/core/io/openapi-routes.ts`.
 3. Run `npm run openapi:generate` and commit `public/openapi.json`.
-4. `npm run openapi:check` (also in precommit) fails if the committed spec drifts.
+4. `npm run openapi:check` (also in precommit) fails if the committed spec drifts **or** a `src/app/api/**/route.ts` is missing from the spec (unless its path is on `scripts/openapi/route-coverage-omit.ts`). `qualitygate:file` on API routes runs the same coverage check.
 
-SSE chat streams stay out of the REST spec; MCP tool details live in [MCP_API.md](./MCP_API.md).
+Scalar `info.description` is public product copy — keep generate commands out of the spec. Storyteller REST (projects, characters, episodes, beats, bible, plan, jobs, consistency) is in the spec. SSE chat (`/storyteller/chat/stream`, autonomous draft) and a few workspace-only helpers stay out; MCP tool details live in [MCP_API.md](./MCP_API.md).
 
 ## Observability
 
@@ -131,6 +133,10 @@ Opt-in flags are named `FF_<NAME>` and turn on with the exact value `true`; anyt
 | `FF_LOOP_CREATOR_MASTRA` | Loop-creator chat via Mastra instead of the legacy adapter |
 | `FF_REMOTE_PROMPTS` | Remote prompt hub instead of the local registry |
 | `FF_INTERNAL_DOCS` | Exposes `GET /api/settings/models` in production (still requires `INTERNAL_DOCS_SECRET`) |
+| `FF_CANVAS_GEMINI_UPSCALE` | Gemini pre-upscale before Topaz |
+| `FF_TILE_SEAM_COLOR_FADE` | 16px follow-up tile edge color fade (off: packed grey-hole crop only) |
+| `NEXT_PUBLIC_FF_3D_CANVAS` | Show 3D Canvas in the workspace sidebar and project hub |
+| `NEXT_PUBLIC_FF_LOOP_CREATOR` | Show Loop Creator in the workspace sidebar and project hub |
 | `NEXT_PUBLIC_FF_PERF_DEBUG` | React Scan overlay + CWV HUD + CharacterWeb timings |
 | `NEXT_PUBLIC_FF_CWV_HUD` | Core Web Vitals overlay only |
 
@@ -154,7 +160,7 @@ Every model resolves through the OpenRouter gateway on `OPENROUTER_API_KEY`. Def
 
 **Writers Room vs orchestration.** The composer offers three catalog models (Kimi / GLM / Opus). That choice only overrides the **chat adapter**. Beat-draft author, planner, critics, muse, and premise use their own matrix rows and `STORYTELLER_*_MODEL` pins — never the picker. `STORYTELLER_CHAT_MODEL` is the server default when the client sends no picker id.
 
-**Image models (Apiframe)** — pixel paths use `APIFRAME_API_KEY` only. Pin a surface with `IMAGE_*_MODEL` (see `.env.local.example`). Generate values: `midjourney` · `nano-banana` · `nano-banana-pro` · `grok-imagine-image` · `gpt-image-1.5` · `flux-2-pro`. Upscale: `topaz-image-upscale` · `clarity-upscale` · `midjourney`. Repaint: `flux-fill-pro`. Resolvers live in `src/shared/ai/image-model-env.ts`.
+**Image models (Apiframe)** — pixel paths use `APIFRAME_API_KEY` only. Pin a surface with `IMAGE_*_MODEL` (see `.env.local.example`). First tile defaults to `midjourney`. Moodboard, episode posters, and series posters honor `IMAGE_MOODBOARD_MODEL`, `IMAGE_EPISODE_POSTER_MODEL`, and `IMAGE_SERIES_POSTER_MODEL` (including `midjourney`). Generate values: `midjourney` · `nano-banana` · `nano-banana-pro` · `grok-imagine-image` · `gpt-image-1.5` · `flux-2-pro`. Upscale: `topaz-image-upscale` · `clarity-upscale` · `midjourney`. Repaint: `flux-fill-pro`. Resolvers live in `src/shared/ai/image-model-env.ts`.
 
 Overrides are read at call time, not module load, so dotenv scripts and per-environment rollbacks work regardless of import order. `GET /api/settings/models` prints the resolved role→model table with provenance.
 

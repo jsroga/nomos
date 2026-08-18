@@ -23,6 +23,27 @@ export function parseFastArgs(argv) {
   return opts
 }
 
+function needsOpenApiCoverage(files) {
+  return files.some(
+    (f) =>
+      /src\/app\/api\/.+route\.ts$/.test(f) ||
+      f.includes('openapi-routes') ||
+      f.includes('openapi-schemas') ||
+      f.includes('src/shared/openapi/') ||
+      f.includes('scripts/openapi/'),
+  )
+}
+
+function openApiCoverageLines(files) {
+  if (!needsOpenApiCoverage(files)) return []
+  const result = run('npx', ['tsx', 'scripts/openapi/check-route-coverage.ts'])
+  if ((result.status ?? 0) === 0) return []
+  return `${result.stdout ?? ''}\n${result.stderr ?? ''}`
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+}
+
 function run(cmd, args) {
   return spawnSync(cmd, args, {
     encoding: 'utf8',
@@ -156,10 +177,17 @@ export function runFastGate(opts) {
   const metrics = checkCodeMetrics({ files })
   const metricErrors = metrics.errors.map((message) => `metrics error ${message}`)
   const metricWarnings = metrics.warnings.map((message) => `metrics warn ${message}`)
+  const openApiErrors = openApiCoverageLines(files)
   const issues = structuredIssues(files, tscErrors, lintErrors, metrics)
   const ms = Date.now() - t0
-  const summary = `qualitygate: ${files.length} file(s) · ${(ms / 1000).toFixed(1)}s · TSC ${tscErrors.length} · ESLint ${lintErrors.length} · metrics ${metricErrors.length}e/${metricWarnings.length}w`
-  const ok = !(tscErrors.length || lintErrors.length || metricErrors.length || tsc.status !== 0)
+  const summary = `qualitygate: ${files.length} file(s) · ${(ms / 1000).toFixed(1)}s · TSC ${tscErrors.length} · ESLint ${lintErrors.length} · metrics ${metricErrors.length}e/${metricWarnings.length}w · openapi ${openApiErrors.length}`
+  const ok = !(
+    tscErrors.length ||
+    lintErrors.length ||
+    metricErrors.length ||
+    openApiErrors.length ||
+    tsc.status !== 0
+  )
 
   return {
     files,
@@ -170,6 +198,7 @@ export function runFastGate(opts) {
     lintErrors,
     metricErrors,
     metricWarnings,
+    openApiErrors,
     issues,
     ms,
     tscStatus: tsc.status ?? 0,
@@ -192,6 +221,7 @@ export function printFastGateResult(result, { hookMode = false } = {}) {
       ...result.lintErrors.slice(0, 8),
       ...result.metricErrors.slice(0, 8),
       ...result.metricWarnings.slice(0, 4),
+      ...(result.openApiErrors ?? []).slice(0, 8),
     ]
     const user_message =
       detail.length === 0 ? `${result.summary} — clean` : `${result.summary}\n${detail.join('\n')}`
@@ -208,6 +238,9 @@ export function printFastGateResult(result, { hookMode = false } = {}) {
   }
   if (result.metricWarnings.length) {
     console.warn('\n--- Code metrics (warnings) ---\n' + result.metricWarnings.slice(0, 20).join('\n'))
+  }
+  if (result.openApiErrors?.length) {
+    console.error('\n--- OpenAPI coverage ---\n' + result.openApiErrors.slice(0, 30).join('\n'))
   }
   return result.ok ? 0 : 1
 }

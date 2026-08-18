@@ -1,15 +1,9 @@
 /**
- * Decide which bible panel "Add to world" should target from chat prose.
- * Structured extracts win; otherwise commit Overview — same action Accept uses
- * for worldDescription — so the button never silently no-ops.
+ * Decide which bible panel "Add to world" should target.
+ * Only tool-shaped pending overlays win; chat prose is never mined.
  */
 
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums'
-import { extractSoundtrackTracks } from '@/domains/storyteller/core/utils/extract-soundtrack-tracks'
-import {
-  extractInspirations,
-  hasExtractedInspirations,
-} from '@/domains/storyteller/core/utils/extract-inspirations'
 
 export interface AddToWorldTarget {
   section: string
@@ -29,38 +23,12 @@ export function resolveAddToWorldTarget(
   text: string,
   requestedSection: string | undefined,
 ): AddToWorldTarget {
-  const soundtracks = extractSoundtrackTracks(text)
-  if (soundtracks.length > 0) {
-    return {
-      section: BibleSection.SOUNDTRACKS,
-      actionType: ActionType.UPDATE_SOUNDTRACKS,
-      preview: { soundtracks },
-    }
-  }
-
-  const inspirations = extractInspirations(text)
-  if (hasExtractedInspirations(inspirations)) {
-    return {
-      section: BibleSection.INSPIRATIONS,
-      actionType: ActionType.UPDATE_INSPIRATIONS,
-      preview: { inspirations },
-    }
-  }
-
   if (requestedSection === BibleSection.SOUNDTRACKS) {
     return {
       section: BibleSection.SOUNDTRACKS,
       actionType: ActionType.UPDATE_SOUNDTRACKS,
       preview: { moodSoundtrack: text },
     }
-  }
-
-  if (requestedSection === BibleSection.INSPIRATIONS) {
-    return overviewTarget(text)
-  }
-
-  if (requestedSection === BibleSection.WORLD_DESCRIPTION) {
-    return overviewTarget(text)
   }
 
   return overviewTarget(text)

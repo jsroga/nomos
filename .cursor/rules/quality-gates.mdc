@@ -35,7 +35,8 @@ Use these while implementing. See also `todo-batch-verify.mdc` (every **5** comp
 | Command | When |
 |---------|------|
 | `npm run qualitygate:changed` | After every **5 completed todos** or git-changed `src/**` (~5–15s) |
-| `npm run qualitygate:file -- <path>` | After each single-file extract or focused edit (TSC + ESLint + **code metrics**) |
+| `npm run qualitygate:file -- <path>` | After each single-file extract or focused edit (TSC + ESLint + **code metrics**; OpenAPI route coverage when the file is `src/app/api/**/route.ts`) |
+| `npm run openapi:check` | After adding/changing an API route — spec drift + every `route.ts` is in `public/openapi.json` or `scripts/openapi/route-coverage-omit.ts` |
 | `npm run lint:file -- <path>` | ESLint only on one file |
 | `npm run qualitygate:tsc -- --changed` | Scoped TSC on git-changed files only |
 | `npm run qualitygate:tsc -- --files <path>` | Scoped TSC on named file(s) |

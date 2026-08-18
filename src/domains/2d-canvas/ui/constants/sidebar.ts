@@ -11,22 +11,27 @@ export enum WorldGenDefaultFidelityPrompt {
 }
 
 export const MASTER_PROMPT_SAVE_DEBOUNCE_MS = 500
+export const STYLE_REF_UNDO_TOAST_MS = 4000
 
 export enum WorldGenSidebarWorldCopy {
-  Title = 'World',
-  PromptLabel = 'Master prompt',
-  Placeholder = 'World context for every generated tile...',
+  PromptLabel = 'MASTER PROMPT',
+  Placeholder = 'Describe the look of your world…',
   ResetStyleAnchor = 'Reset style anchor',
-  StyleImagesLabel = 'Midjourney style images',
-  StyleImagesHint = 'Up to 3 images. Midjourney --sref only. Drag and drop or choose files.',
+  StyleImagesLabel = 'Style references',
+  StyleImagesHintBefore = 'Up to 3 images, used as Midjourney ',
+  StyleImagesHintAfter = '.',
   StyleImagesDrop = 'Drop images here',
   StyleImagesChoose = 'Choose images',
   StyleImagesClear = 'Clear all',
   StyleImagesRemove = 'Remove',
   StyleImagesFull = '3 of 3',
+  StyleImagesUploading = 'UPLOADING',
+  SrefCaption = 'SREF',
+  SrefFlag = '--sref',
   SwitchModeTitle = 'Switch generation mode?',
   SwitchModeDescription =
     'Switching to {mode} replaces the master prompt and the Midjourney style images.',
+  PromptGenerating = 'Prompt is generating — references stay editable.',
 }
 
 export const GENERATION_MODE_NAME_PLACEHOLDER = '{mode}'
@@ -36,6 +41,32 @@ export function switchGenerationModeDescription(modeName: string): string {
     GENERATION_MODE_NAME_PLACEHOLDER,
     modeName,
   )
+}
+
+export function styleRefCaption(index: number): string {
+  return `${WorldGenSidebarWorldCopy.SrefCaption} ${index + 1}`
+}
+
+export function styleRefCountLabel(count: number, max: number): string {
+  return `${count} / ${max}`
+}
+
+export function styleRefUploadingLabel(count: number): string {
+  return `${WorldGenSidebarWorldCopy.StyleImagesUploading} ${count}`
+}
+
+export enum WorldGenStyleRefsClass {
+  Header = 'mt-[22px] mb-2 flex items-center gap-2',
+  Label = 'inline-flex items-center gap-2 font-mono text-[10.5px] tracking-[0.16em] uppercase text-muted-foreground/80 whitespace-nowrap',
+  Count = 'ml-auto font-mono text-[10.5px] text-muted-foreground/60 whitespace-nowrap',
+  Uploading = 'ml-auto font-mono text-[10.5px] text-primary whitespace-nowrap',
+  Hint = 'mb-2.5 text-[11.5px] leading-[1.6] text-muted-foreground/75 text-pretty',
+  HintFlag = 'font-mono',
+  Generating = 'mt-2.5 text-[11.5px] leading-[1.6] text-muted-foreground/75',
+}
+
+export enum WorldGenSidebarClass {
+  Divider = 'h-px bg-border/55 mt-5 mb-4',
 }
 
 export enum WorldGenSidebarLog {
@@ -72,6 +103,8 @@ export enum WorldGenSidebarToast {
   DeleteTileFailed = 'Failed to delete tile',
   StyleRefUploadFailed = 'Failed to upload style image',
   StyleRefsCleared = 'Style images cleared',
+  ReferenceRemoved = 'Reference removed',
+  Undo = 'Undo',
 }
 
 export const WorldGenTileProvider = {
@@ -90,7 +123,7 @@ export enum WorldGenSidebarStorageKey {
 }
 
 export enum WorldGenSidebarHeader {
-  WorldGen = 'Infinite Canvas',
+  WorldGen = 'INFINITE CANVAS',
 }
 
 export enum WorldGenDataUrlCheck {

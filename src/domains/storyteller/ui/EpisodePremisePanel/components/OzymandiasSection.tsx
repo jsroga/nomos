@@ -90,18 +90,22 @@ function OzymandiasReadView({
 function OzymandiasEmptyState({
   config,
   onGenerate,
+  disabled,
 }: {
   config: OzymandiasSectionConfig
   onGenerate: () => void
+  disabled: boolean
 }) {
   return (
     <button
       type="button"
       className={cn(
         'w-full p-4 bg-card border border-dashed rounded-md flex flex-col items-center justify-center min-h-[100px] transition-colors text-left',
-        ozymandiasDashedClass(config.tone)
+        ozymandiasDashedClass(config.tone),
+        disabled && 'opacity-50 cursor-not-allowed pointer-events-none'
       )}
       onClick={onGenerate}
+      disabled={disabled}
     >
       <RefreshCw className={cn('w-5 h-5 mb-2', ozymandiasEmptyIconClass(config.tone))} />
       <span className="text-xs text-muted-foreground">{config.emptyActionLabel}</span>
@@ -155,7 +159,7 @@ export function OzymandiasSection({
       ) : value ? (
         <OzymandiasReadView config={config} value={value} projectId={projectId} />
       ) : (
-        <OzymandiasEmptyState config={config} onGenerate={onGenerate} />
+        <OzymandiasEmptyState config={config} onGenerate={onGenerate} disabled={isGenerating} />
       )}
     </section>
   )

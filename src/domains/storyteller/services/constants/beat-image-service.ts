@@ -22,6 +22,23 @@ export const BEAT_IMAGE_LOG_POLLING_ERROR = 'Polling error:'
 export const BEAT_IMAGE_LOG_GENERATION_FAILED = 'Failed to generate beat image:'
 export const BEAT_IMAGE_LOG_COMPLETE = '✅ Generation complete!'
 
+export enum BeatImageStorageKeyPrefix {
+  BeatImageGen = 'beat-image-gen-',
+}
+
+export enum BeatImageOperationLabel {
+  GeneratingBeatImage = 'Generating Beat Image',
+}
+
+export enum BeatImageOperationDetail {
+  CreatingStoryboard = 'Creating storyboard frame...',
+  StatusPrefix = 'Status: ',
+}
+
+export function beatImageOperationId(beatId: string): string {
+  return `${BeatImageStorageKeyPrefix.BeatImageGen}${beatId}`
+}
+
 export enum BeatImageTriggerStatus {
   Completed = 'COMPLETED',
   Failed = 'FAILED',

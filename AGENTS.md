@@ -102,10 +102,11 @@ Docs: `mastra.ai/docs/long-running-agents/{durable-agents,goals}.md`.
 - **Repeated `.filter()`** on the same array in one scope (`local/no-repeated-array-filter`) — one pass.
 - **Manual URL construction** (`?foo=${x}`, `encodeURIComponent`, local `buildUrl`) — use `@/shared/data/url-builder` (`buildUrl`, `joinUrlPath`, `appendQueryParams`, `cloneSearchParams`).
 - **IMPORTANT — never disable rules on your own if not allowed.** No file-level `eslint-disable`, no new/widened `eslint.config.js` `'off'` overrides, no `@ts-nocheck` to pass gates — ask in chat first. See `.cursor/rules/no-gate-bypass.mdc`.
+- **New/changed `src/app/api/**/route.ts`** — register Zod + path in `domains/*/core/io/openapi-routes.ts` (or `src/shared/openapi/`), then `npm run openapi:generate`. SSE/admin/workspace-only → omit prefix in `scripts/openapi/route-coverage-omit.ts`. Gate: `npm run openapi:check`.
 
 ## Verify
 
-**During work:** `npm run qualitygate:file -- <path>` · `npm run qualitygate:changed` · `npm run qualitygate:tsc -- --files <path>` — not full-repo `tsc` mid-task. **Many failures:** `npm run qualitygate:capture` → `.local/quality-backlog.md` (fix one, `qualitygate:backlog -- done <id>`, rescan every 5).
+**During work:** `npm run qualitygate:file -- <path>` · `npm run qualitygate:changed` · `npm run qualitygate:tsc -- --files <path>` — not full-repo `tsc` mid-task. **Many failures:** `npm run qualitygate:capture` → `.local/quality-backlog.md` (fix one, `qualitygate:backlog -- done <id>`, rescan every 5). After adding or changing `src/app/api/**/route.ts`, also `npm run openapi:generate` (coverage is part of `openapi:check` / `qualitygate:file` on those routes).
 
 **Before handoff:** `npm run typecheck` · `npm run lint` · `npm run test:unit`
 

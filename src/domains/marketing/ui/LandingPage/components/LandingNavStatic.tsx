@@ -7,9 +7,9 @@ import {
   LandingSectionId,
 } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
 import { LandingNavUiCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
+import { LandingGitHubLink } from './LandingGitHubLink'
 
 function navHref(item: LandingNavItem): string {
-  if (item === LandingNavItem.Docs) return LandingExternalUrl.DocsReadme
   if (item === LandingNavItem.Api) return LandingExternalUrl.ApiDocs
   return `#${LandingSectionId.Systems}`
 }
@@ -35,9 +35,6 @@ export function LandingNavStatic() {
                 key={item}
                 href={navHref(item)}
                 className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50 transition-colors duration-200 hover:text-white"
-                {...(item === LandingNavItem.Docs
-                  ? { target: '_blank', rel: 'noopener noreferrer' }
-                  : {})}
               >
                 {item}
               </a>
@@ -45,6 +42,7 @@ export function LandingNavStatic() {
           </div>
         </div>
         <div className="flex items-center gap-5">
+          <LandingGitHubLink className="flex items-center text-white/50 transition-colors duration-200 hover:text-white" />
           <Link
             prefetch={false}
             href={LandingExternalUrl.Login}

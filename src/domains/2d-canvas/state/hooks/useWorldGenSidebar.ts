@@ -39,8 +39,10 @@ export function useWorldGenSidebar() {
     handleAddStyleRefFiles,
     handleRemoveStyleRef,
     handleClearStyleRefs,
+    handleRestoreStyleRefs,
     styleReferenceUrls,
     isUploadingStyleRefs,
+    isApplyingGenerationMode,
     generationMode,
     styleAnchorUrl,
   } = useWorldSidebarPrompt(currentProject)
@@ -205,12 +207,13 @@ export function useWorldGenSidebar() {
     )
   }
 
-  const handleEnhanceFidelity = async () => {
+  const handleEnhanceFidelity = async (creativity = fidelityCreativity) => {
     if (!selectedTile) return
     const fullTile = tiles[`${selectedTile.x},${selectedTile.y}`]
     if (!fullTile) return
+    setFidelityCreativity(creativity)
     await toast.promise(
-      fidelityService.enhance(fullTile, fidelityPrompt, fidelityCreativity, effectiveStyleUrls),
+      fidelityService.enhance(fullTile, fidelityPrompt, creativity, effectiveStyleUrls),
       {
         loading: WorldGenSidebarToast.EnhancingFidelity,
         success: WorldGenSidebarToast.FidelityQueued,
@@ -219,10 +222,24 @@ export function useWorldGenSidebar() {
     )
   }
 
+  const handleCancelBusy = () => {
+    if (!selectedTile) return
+    const key = `${selectedTile.x},${selectedTile.y}`
+    const tile = tiles[key]
+    if (generatingTiles[key]) {
+      tileGenerationService.stopGeneration(selectedTile.x, selectedTile.y)
+    }
+    if (upscalingTiles[key] && tile) {
+      upscaleService.stopUpscale(tile.id)
+    }
+    if (enhancingTiles[key] && tile) {
+      fidelityService.stopEnhancement(tile.id)
+    }
+  }
+
   const handleDeleteTile = async () => {
     if (selectedTiles.length === 0) return
     const tile = selectedTiles[0]
-    if (!confirm(`Delete tile at (${tile.x}, ${tile.y})?`)) return
     try {
       await useWorldStore.getState().removeTile(tile.x, tile.y)
       toast.success(`Tile (${tile.x}, ${tile.y}) deleted`)
@@ -243,8 +260,10 @@ export function useWorldGenSidebar() {
     handleAddStyleRefFiles,
     handleRemoveStyleRef,
     handleClearStyleRefs,
+    handleRestoreStyleRefs,
     styleReferenceUrls,
     isUploadingStyleRefs,
+    isApplyingGenerationMode,
     generationMode,
     styleAnchorUrl,
     tilePrompt,
@@ -274,6 +293,7 @@ export function useWorldGenSidebar() {
     handleUpscale,
     handleEnhanceFidelity,
     handleDeleteTile,
+    handleCancelBusy,
   }
 }
 

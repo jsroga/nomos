@@ -1,6 +1,11 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
-import { StorytellerBibleTab, WorldBiblePanelLazyPlaceholder, WorldBiblePanelLazyRootMargin } from './constants/world-bible-panel'
+import {
+  StorytellerBibleTab,
+  WorldBiblePanelBodyClass,
+  WorldBiblePanelLazyPlaceholder,
+  WorldBiblePanelLazyRootMargin,
+} from './constants/world-bible-panel'
 import {
   BibleOverview,
   BibleSoundtracks,
@@ -71,7 +76,7 @@ export function WorldBiblePanelBody({
 }: WorldBiblePanelBodyProps) {
   if (activeTab === StorytellerBibleTab.Content) {
     return (
-      <div className="flex-1 min-h-0 overflow-y-auto pr-2 pt-6">
+      <div className={WorldBiblePanelBodyClass.Content}>
         <div className="space-y-8 pb-20">
           <BibleOverview
             primaryImageIndex={primaryImageIndex}
@@ -116,7 +121,7 @@ export function WorldBiblePanelBody({
   }
 
   return (
-    <div className="flex-1 min-h-0 overflow-hidden pt-4">
+    <div className={WorldBiblePanelBodyClass.Relationships}>
       <Suspense
         fallback={
           <div className="flex-1 flex items-center justify-center h-full">

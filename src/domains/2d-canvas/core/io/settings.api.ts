@@ -1,6 +1,11 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
-import { recordArrayFromJson, recordFromJson, readString } from '@/shared/data/json-guards'
+import {
+  recordArrayFromJson,
+  recordFromJson,
+  readString,
+  stringArrayFromJson,
+} from '@/shared/data/json-guards'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
 import { DB_COLUMN } from '@/shared/data/constants/db-tables'
 import {
@@ -11,6 +16,7 @@ import {
 } from '../../constants/settings-dialog'
 
 export interface ProviderStatus {
+  openrouter: boolean
   openai: boolean
   anthropic: boolean
   google: boolean
@@ -55,6 +61,7 @@ export interface ProjectStyleSettings {
 function parseProviderStatus(value: unknown): ProviderStatus {
   const record = recordFromJson(value)
   return {
+    openrouter: record.openrouter === true,
     openai: record.openai === true,
     anthropic: record.anthropic === true,
     google: record.google === true,
@@ -94,13 +101,11 @@ function parseMcpApiKey(value: unknown): McpApiKey {
   }
 }
 
-function parseProjectStyleSettings(value: unknown): ProjectStyleSettings {
+export function parseProjectStyleSettings(value: unknown): ProjectStyleSettings {
   const record = recordFromJson(value)
-  const styleReferenceUrls = recordArrayFromJson(
+  const styleReferenceUrls = stringArrayFromJson(
     record.styleReferenceUrls ?? record[DB_COLUMN.STYLE_REFERENCE_URLS],
   )
-    .map(item => readString(item))
-    .filter((url): url is string => Boolean(url))
   return {
     name: readString(record.name) ?? undefined,
     styleReferenceUrls,

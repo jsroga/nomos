@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { submitImageGenerate } from '../apiframe'
-import { ApiframeImageModel, ApiframeParamsKey } from '../constants/apiframe'
+import { submitImageGenerate, submitImageUpscale } from '../apiframe'
+import {
+  ApiframeImageModel,
+  ApiframeParamsKey,
+  ApiframeTopazModelType,
+  ApiframeTopazOutputFormat,
+  ApiframeTopazUpscaleFactor,
+  ApiframeUpscaleModel,
+} from '../constants/apiframe'
 import { recordFromJson } from '@/shared/data/deep-merge'
 
 const API_KEY = 'afk_test'
@@ -72,5 +79,27 @@ describe('Apiframe generate body', () => {
     expect(recordFromJson(sentBody[ApiframeParamsKey.GrokImagine])).toEqual({
       aspect_ratio: ASPECT_RATIO,
     })
+  })
+})
+
+describe('Apiframe Topaz upscale body', () => {
+  it('sends model_type and integer upscale_factor under topazUpscaleParams', async () => {
+    await submitImageUpscale({
+      apiKey: API_KEY,
+      model: ApiframeUpscaleModel.TopazImageUpscale,
+      imageUrl: CONTEXT_URL,
+      upscaleFactor: ApiframeTopazUpscaleFactor.One,
+      modelType: ApiframeTopazModelType.Redefine,
+    })
+    expect(sentBody.model).toBe(ApiframeUpscaleModel.TopazImageUpscale)
+    const params = recordFromJson(sentBody[ApiframeParamsKey.TopazUpscale])
+    expect(params).toEqual({
+      image: CONTEXT_URL,
+      upscale_factor: ApiframeTopazUpscaleFactor.One,
+      model_type: ApiframeTopazModelType.Redefine,
+      face_enhance: false,
+      output_format: ApiframeTopazOutputFormat.Png,
+    })
+    expect(typeof params.upscale_factor).toBe('number')
   })
 })

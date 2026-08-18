@@ -5,6 +5,8 @@ import {
   syne,
   ROOT_LAYOUT_DESCRIPTION,
   ROOT_LAYOUT_OG_DESCRIPTION,
+  ROOT_LAYOUT_TITLE_DEFAULT,
+  ROOT_LAYOUT_TITLE_TEMPLATE,
   OpenGraphType,
 } from '@/shared/data/constants/root-layout-fonts'
 import { NodeEnv } from '@/shared/data/constants/protocol-http'
@@ -17,15 +19,15 @@ export const instant = false
 
 export const metadata: Metadata = {
   title: {
-    template: '/kur/ %s',
-    default: '/kur/ Build Worlds',
+    template: ROOT_LAYOUT_TITLE_TEMPLATE,
+    default: ROOT_LAYOUT_TITLE_DEFAULT,
   },
   description: ROOT_LAYOUT_DESCRIPTION,
   icons: {
     icon: '/favicon.svg?v=9',
   },
   openGraph: {
-    title: '/kur/ Build Worlds',
+    title: ROOT_LAYOUT_TITLE_DEFAULT,
     description: ROOT_LAYOUT_OG_DESCRIPTION,
     type: OpenGraphType.Website,
   },

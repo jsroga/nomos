@@ -58,4 +58,4 @@ export {
 }
 export { scoreIdeaDiversity } from './idea-diversity-metrics-wire'
 export type { IdeaDiversityMetrics } from './idea-diversity-metrics-wire'
-export { extractProse, inputRecord, normalizeScore, outputToString, toMastraJudgingModel } from './shared'
+export { extractProse, inputRecord, normalizeScore, outputToString, toMastraJudgingLanguageModel, toMastraJudgingModel } from './shared'

@@ -27,7 +27,8 @@ Next.js 16 · Mastra · Radix/CVA · Supabase · TanStack Query · Trigger.dev �
 | `mcp/` | MCP server (separate deployable) |
 
 `src/mastra.ts` — Mastra Studio CLI entry; `src/mastra/agents/` holds file-based instructions. Production instance: `src/shared/agent-kernel/MastraInstance.ts`.  
-Evals: top-level `evals/`. Structure tests: `src/__tests__/structure.test.ts`, `src/domains/__tests__/domain-structure.test.ts`.
+Evals: top-level `evals/`. Structure tests: `src/__tests__/structure.test.ts`, `src/domains/__tests__/domain-structure.test.ts`.  
+Storybook (shared primitives): top-level `stories/` + `.storybook/` — Vite catalog of `src/components/`, not App Router.
 
 ### Dependency rule
 

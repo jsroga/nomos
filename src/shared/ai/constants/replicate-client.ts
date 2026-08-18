@@ -1,3 +1,7 @@
+export enum ReplicateTokenPrefix {
+  Official = 'r8_',
+}
+
 export enum ReplicateClientLog {
   RawOutput = '[ReplicateClient] Raw output:',
   UnexpectedFormat = '[ReplicateClient] Unexpected output format:',

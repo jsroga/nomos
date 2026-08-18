@@ -1,35 +1,41 @@
-import { ImageUpscaleMode } from '@/shared/ai/constants/image-env'
+import { ImageFidelityMode, ImageUpscaleMode } from '@/shared/ai/constants/image-env'
+import {
+  ApiframeTopazModelType,
+  ApiframeTopazUpscaleFactor,
+} from '@/shared/ai/constants/apiframe'
 
 export const TOPAZ_MAX_OUTPUT_PX = 2048
 export const TOPAZ_MEGAPIXEL_DIVISOR = 1_000_000
-export const TOPAZ_REPLICATE_MODEL = 'topazlabs/image-upscale'
 
-export enum TopazUpscaleFactor {
-  None = 'None',
-  TwoX = '2x',
-  FourX = '4x',
-  SixX = '6x',
-}
-
-export enum TopazEnhanceModel {
-  StandardV2 = 'Standard V2',
-  HighFidelityV2 = 'High Fidelity V2',
-}
-
-export enum TopazOutputFormat {
-  Png = 'png',
-}
-
-export function topazEnhanceModelFromMode(mode: ImageUpscaleMode): TopazEnhanceModel {
+export function topazEnhanceModelFromMode(mode: ImageUpscaleMode): ApiframeTopazModelType {
   return mode === ImageUpscaleMode.Creative
-    ? TopazEnhanceModel.HighFidelityV2
-    : TopazEnhanceModel.StandardV2
+    ? ApiframeTopazModelType.HighFidelityV2
+    : ApiframeTopazModelType.StandardV2
 }
 
-const FACTOR_STEPS: Array<{ factor: TopazUpscaleFactor; scale: number }> = [
-  { factor: TopazUpscaleFactor.SixX, scale: 6 },
-  { factor: TopazUpscaleFactor.FourX, scale: 4 },
-  { factor: TopazUpscaleFactor.TwoX, scale: 2 },
+export function topazEnhanceModelFromFidelityMode(
+  mode: ImageFidelityMode,
+): ApiframeTopazModelType {
+  switch (mode) {
+    case ImageFidelityMode.Creative:
+      return ApiframeTopazModelType.HighFidelityV2
+    case ImageFidelityMode.LowResolution:
+      return ApiframeTopazModelType.LowResV2
+    case ImageFidelityMode.Cgi:
+      return ApiframeTopazModelType.Cgi
+    case ImageFidelityMode.TextRefine:
+      return ApiframeTopazModelType.TextRefine
+    case ImageFidelityMode.Redefine:
+      return ApiframeTopazModelType.Redefine
+    case ImageFidelityMode.Standard:
+      return ApiframeTopazModelType.StandardV2
+  }
+}
+
+const FACTOR_STEPS: Array<{ factor: ApiframeTopazUpscaleFactor; scale: number }> = [
+  { factor: ApiframeTopazUpscaleFactor.Six, scale: 6 },
+  { factor: ApiframeTopazUpscaleFactor.Four, scale: 4 },
+  { factor: ApiframeTopazUpscaleFactor.Two, scale: 2 },
 ]
 
 export function resolveNearestNeighbourSize(
@@ -46,7 +52,7 @@ export function resolveTopazUpscalePlan(
   width: number,
   height: number
 ): {
-  factor: TopazUpscaleFactor
+  factor: ApiframeTopazUpscaleFactor
   outputWidth: number
   outputHeight: number
   megapixels: number
@@ -66,7 +72,7 @@ export function resolveTopazUpscalePlan(
     }
   }
   return {
-    factor: TopazUpscaleFactor.None,
+    factor: ApiframeTopazUpscaleFactor.One,
     outputWidth: srcW,
     outputHeight: srcH,
     megapixels: (srcW * srcH) / TOPAZ_MEGAPIXEL_DIVISOR,

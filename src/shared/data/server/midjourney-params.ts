@@ -1,6 +1,6 @@
 import { GENERATION_PROMPTS, type TilePromptLayers } from '@/shared/data/server/prompts'
 import { MIDJOURNEY_VERSION } from '@/shared/ai/constants/apiframe'
-import { StringSeparator } from '@/shared/data/constants/protocol'
+import { StringSeparator, UrlScheme } from '@/shared/data/constants/protocol'
 
 export enum MidjourneyBaseNegative {
   Border = 'border',
@@ -60,6 +60,30 @@ export function appendMidjourneyParams(
   }
 ): string {
   return `${prompt} ${buildMidjourneyParamSuffix(options)}`
+}
+
+const STYLE_REF_URLS_PATTERN = new RegExp(
+  `\\s*${MidjourneyParamFlag.StyleRef}\\s+(?:(?:${UrlScheme.Https}|${UrlScheme.Http}):\\/\\/\\S+[ \\t]*)+`,
+  'i',
+)
+
+export function stripMidjourneyStyleRefClause(prompt: string): string {
+  if (!prompt.includes(MidjourneyParamFlag.StyleRef)) return prompt.trim()
+  return prompt.replace(STYLE_REF_URLS_PATTERN, ' ').replace(/[ \t]{2,}/g, ' ').trim()
+}
+
+export function stripLeadingHttpUrl(prompt: string): string {
+  const trimmed = prompt.trim()
+  if (!trimmed.startsWith(UrlScheme.Http)) return trimmed
+  return trimmed.replace(/^\S+\s*/, '').trim()
+}
+
+export function nextMidjourneyPromptAfterImageDenial(prompt: string): string | undefined {
+  const withoutStyleRefs = stripMidjourneyStyleRefClause(prompt)
+  if (withoutStyleRefs !== prompt.trim()) return withoutStyleRefs
+  const withoutLeadImage = stripLeadingHttpUrl(prompt)
+  if (withoutLeadImage !== prompt.trim()) return withoutLeadImage
+  return undefined
 }
 
 export function styleReferenceUrlsWithAnchor(

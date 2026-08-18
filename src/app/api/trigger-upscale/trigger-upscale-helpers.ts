@@ -3,6 +3,7 @@ import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { EnvVarName } from '@/shared/data/constants/protocol'
 import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 import { UpscaleStrategy } from '@/domains/2d-canvas/constants/generation-modes'
+import { readApiframeApiKey } from '@/shared/ai/image-model-env'
 
 export enum UpscaleMode {
   Conservative = 'conservative',
@@ -55,9 +56,9 @@ export function resolveModeUpscaleAuth(strategy: UpscaleStrategy): NextResponse 
   if (strategy === UpscaleStrategy.NearestNeighbour) {
     return { providerApiKey: '' }
   }
-  const token = process.env[EnvVarName.ReplicateApiToken]
+  const token = readApiframeApiKey()
   if (!token) {
-    return NextResponse.json({ error: API_ERROR.REPLICATE_TOKEN_NOT_CONFIGURED }, { status: 500 })
+    return NextResponse.json({ error: API_ERROR.APIFRAME_API_KEY_NOT_PROVIDED }, { status: 500 })
   }
   if (!isFeatureEnabled(FeatureFlag.CanvasGeminiUpscale)) {
     return { providerApiKey: token }

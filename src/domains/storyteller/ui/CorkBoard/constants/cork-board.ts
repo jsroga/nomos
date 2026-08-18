@@ -10,9 +10,13 @@ export const CORK_BOARD_DELETE_TITLE = 'Delete Beat'
 export const CORK_BOARD_DELETE_DESCRIPTION = 'Are you sure you want to delete this beat?'
 export const CORK_BOARD_DELETE_CONFIRM = 'Delete'
 export const CORK_BOARD_DELETE_CANCEL = 'Cancel'
+export const CORK_BOARD_IMAGES_CANCEL = CORK_BOARD_DELETE_CANCEL
+
+export const CORK_BOARD_STORY_STATE_RULE =
+  'storyStateChange describes solely a change in the world and must be quotable by a subsequent beat. Each successive revelation beat must introduce a new unknown rather than confirming the previous one.'
 
 export const CORK_BOARD_BEAT_SHORT_RULE =
-  'Keep every beat SHORT: logline max 20 words; visualHook, actionTaken, consequence, and storyStateChange each one short sentence. No paragraphs.'
+  `Keep every beat SHORT: logline max 20 words; visualHook, actionTaken, consequence, and storyStateChange each one short sentence. No paragraphs. ${CORK_BOARD_STORY_STATE_RULE}`
 
 export const CORK_BOARD_FULL_BEAT_COUNT = 30
 export const CORK_BOARD_LOADING_PLACEHOLDER_COUNT = 3
@@ -32,6 +36,11 @@ export enum CorkBoardExistingBeatsLabel {
   None = 'none yet — this is beat 1',
 }
 
+export enum CorkBoardBeatImagePolicy {
+  Override = 'override',
+  SkipExisting = 'skip-existing',
+}
+
 export enum CorkBoardBeatListSep {
   Join = '; ',
   Item = '. ',
@@ -48,11 +57,21 @@ export enum CorkBoardCopy {
   Generating = 'Generating…',
   EmptyTitle = 'No beat board yet',
   EmptyBody = 'Break the episode premise into 30 text beats. The premise needs a logline, Ozymandias pillars, and a 10-point plan.',
+  ReadyTitle = 'Your beats are generated',
+  ReadyBody = 'Add them to the beat board to review, reorder, and generate images.',
+  AddToWorld = 'Add to world',
+  ContinueToDraft = 'Continue to Draft',
   AddBeat = 'Add Beat',
   ReplaceTitle = 'Replace beat board',
   ReplaceDescription = 'This replaces the current beats with a new text board from the episode premise.',
   ReplaceConfirm = 'Replace',
   ReplaceCancel = 'Cancel',
+  ImagesExistTitle = 'Some beats already have images',
+  ImagesExistDescription = 'Override existing images, or skip those beats and only generate missing ones?',
+  ImagesOverride = 'Override existing',
+  ImagesSkip = 'Skip existing',
+  AllImagesExist = 'All beats already have images',
+  ImagesCancelled = 'Beat image generation cancelled',
 }
 
 export const CORK_BOARD_VISUAL_DIRECTOR_SENDER = 'VisualDirector'

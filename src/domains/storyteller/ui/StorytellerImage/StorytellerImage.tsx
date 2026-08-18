@@ -2,11 +2,11 @@ import React, { useState } from 'react'
 import { Sparkles, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
+import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
 import {
   STORYTELLER_IMAGE_ASPECT_SQUARE,
   STORYTELLER_IMAGE_EMPTY_LABEL,
 } from '@/domains/storyteller/ui/StorytellerImage/constants/storyteller-image'
-// LiquidGlass removed
 
 
 interface StorytellerImageProps {
@@ -35,6 +35,7 @@ export const StorytellerImage: React.FC<StorytellerImageProps> = ({
   isPrimary = false,
 }) => {
   const [imgError, setImgError] = useState(false)
+  const isChatBusy = useStorytellerChatBusy()
 
   // Resolve URL (handle local project paths)
   // Assuming usage context provides raw filename or full URL
@@ -92,6 +93,7 @@ export const StorytellerImage: React.FC<StorytellerImageProps> = ({
             variant="outline"
             size="sm"
             className="gap-2 text-xs hover:border-primary/50 hover:text-primary transition-all"
+            disabled={isChatBusy}
             onClick={e => {
               e.stopPropagation()
               onGenerate()

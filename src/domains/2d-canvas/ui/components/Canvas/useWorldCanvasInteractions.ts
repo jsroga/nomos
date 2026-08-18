@@ -82,7 +82,8 @@ export interface WorldCanvasInteractions {
 }
 
 export function useWorldCanvasInteractions(
-  containerRef: RefObject<HTMLDivElement | null>
+  containerRef: RefObject<HTMLDivElement | null>,
+  spacePanRef: RefObject<boolean>,
 ): WorldCanvasInteractions {
   const [isDragging, setIsDragging] = useState(false)
   const lastMousePosRef = useRef({ x: 0, y: 0 })
@@ -102,8 +103,14 @@ export function useWorldCanvasInteractions(
   const triggerSegmentation = async (box: PendingBox) => {
     if (!currentProject) return
 
-    const { selectTextPrompt: textPrompt, tiles, setSegmenting, setSelectedMask, setSelectDebugInfo } =
-      useWorldStore.getState()
+    const {
+      selectTextPrompt: textPrompt,
+      tiles,
+      setSegmenting,
+      setSelectedMask,
+      setSelectDebugInfo,
+      setShowAllAssetMasks,
+    } = useWorldStore.getState()
 
     setSegmenting(true)
     setSelectDebugInfo({
@@ -119,6 +126,7 @@ export function useWorldCanvasInteractions(
         textPrompt
       )
       setSelectedMask(result)
+      setShowAllAssetMasks(true)
 
       if (result.debugInfo) {
         setSelectDebugInfo(result.debugInfo)
@@ -143,6 +151,12 @@ export function useWorldCanvasInteractions(
       setSelectBox,
       setSelectedMask,
     } = useWorldStore.getState()
+
+    if (spacePanRef.current && e.button === 0) {
+      setIsDragging(true)
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY }
+      return
+    }
 
     if (selectMode && e.button === 0) {
       if (showPromptPopover) {

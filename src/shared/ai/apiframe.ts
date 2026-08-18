@@ -2,22 +2,29 @@ import { recordFromJson } from '@/shared/data/deep-merge'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import {
   APIFRAME_API_BASE_URL,
-  APIFRAME_ASPECT_RATIO_PATTERN,
   APIFRAME_HEADER_API_KEY,
+  APIFRAME_IMAGE_FILTER_RETRY_MAX,
   ApiframeApiPath,
   ApiframeEditModel,
   ApiframeErrorMessage,
   ApiframeFluxFillMode,
   ApiframeImageModel,
+  ApiframeJobErrorMatch,
   ApiframeJobStatus,
   ApiframeMidjourneyAction,
   APIFRAME_NANO_BANANA_PRO_TOKEN,
-  ApiframeImageField,
   ApiframeJobLabel,
   ApiframeParamsKey,
-  type ApiframeImageUrlField,
+  ApiframeTopazModelType,
+  ApiframeTopazOutputFormat,
+  ApiframeTopazParam,
+  ApiframeTopazUpscaleFactor,
   ApiframeUpscaleModel,
 } from '@/shared/ai/constants/apiframe'
+import { buildGenerateBody } from '@/shared/ai/apiframe-generate-body'
+import { nextMidjourneyPromptAfterImageDenial } from '@/shared/data/server/midjourney-params'
+
+export { extractApiframeAspectRatio } from '@/shared/ai/apiframe-generate-body'
 
 export interface ApiframeImageResult {
   images: string[]
@@ -113,83 +120,6 @@ async function postApiframeJob(
   return parseJobAccepted(data)
 }
 
-export function extractApiframeAspectRatio(prompt: string): string | undefined {
-  const match = APIFRAME_ASPECT_RATIO_PATTERN.exec(prompt)
-  return match?.[1]
-}
-
-function optionalAspectAndImages(
-  aspectRatio: string | undefined,
-  imageInputUrls: string[] | undefined,
-  imageField: ApiframeImageUrlField,
-): Record<string, unknown> {
-  const params: Record<string, unknown> = {}
-  if (aspectRatio) params[ApiframeImageField.AspectRatio] = aspectRatio
-  const [firstImageUrl] = imageInputUrls ?? []
-  if (firstImageUrl) {
-    params[imageField] =
-      imageField === ApiframeImageField.ImageInput ? imageInputUrls : firstImageUrl
-  }
-  return params
-}
-
-function attachParamsIfPresent(
-  body: Record<string, unknown>,
-  key: ApiframeParamsKey,
-  params: Record<string, unknown>,
-): void {
-  if (Object.keys(params).length > 0) body[key] = params
-}
-
-function buildGenerateBody(options: {
-  model: ApiframeImageModel
-  prompt: string
-  aspectRatio?: string
-  imageInputUrls?: string[]
-}): Record<string, unknown> {
-  const { model, prompt, aspectRatio, imageInputUrls } = options
-  const body: Record<string, unknown> = { model, prompt }
-
-  switch (model) {
-    case ApiframeImageModel.Midjourney: {
-      const ar = aspectRatio ?? extractApiframeAspectRatio(prompt)
-      if (ar) body[ApiframeParamsKey.Midjourney] = { aspect_ratio: ar }
-      return body
-    }
-    case ApiframeImageModel.NanoBanana:
-    case ApiframeImageModel.NanoBananaPro:
-      attachParamsIfPresent(
-        body,
-        ApiframeParamsKey.NanoBanana,
-        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.ImageInput),
-      )
-      return body
-    case ApiframeImageModel.GrokImagineImage:
-      attachParamsIfPresent(
-        body,
-        ApiframeParamsKey.GrokImagine,
-        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.Image),
-      )
-      return body
-    case ApiframeImageModel.GptImage15:
-      attachParamsIfPresent(
-        body,
-        ApiframeParamsKey.GptImage,
-        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.ImageInput),
-      )
-      return body
-    case ApiframeImageModel.Flux2Pro:
-      attachParamsIfPresent(
-        body,
-        ApiframeParamsKey.Flux,
-        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.ImagePrompt),
-      )
-      return body
-    default:
-      return body
-  }
-}
-
 export async function submitImageGenerate(
   options: Omit<ApiframeGenerateOptions, 'maxAttempts' | 'intervalMs'>,
 ): Promise<string> {
@@ -206,18 +136,24 @@ export async function submitImageUpscale(input: {
   model: ApiframeUpscaleModel
   imageUrl: string
   prompt?: string
-  upscaleFactor?: 2 | 4
+  upscaleFactor?: ApiframeTopazUpscaleFactor
+  modelType?: ApiframeTopazModelType
 }): Promise<string> {
   const body: Record<string, unknown> = { model: input.model }
   if (input.model === ApiframeUpscaleModel.TopazImageUpscale) {
     body[ApiframeParamsKey.TopazUpscale] = {
-      image: input.imageUrl,
-      upscale_factor: input.upscaleFactor ?? 2,
+      [ApiframeTopazParam.Image]: input.imageUrl,
+      [ApiframeTopazParam.UpscaleFactor]:
+        input.upscaleFactor ?? ApiframeTopazUpscaleFactor.Two,
+      [ApiframeTopazParam.ModelType]:
+        input.modelType ?? ApiframeTopazModelType.StandardV2,
+      [ApiframeTopazParam.FaceEnhance]: false,
+      [ApiframeTopazParam.OutputFormat]: ApiframeTopazOutputFormat.Png,
     }
   } else {
     const clarity: Record<string, unknown> = { image: input.imageUrl }
     if (input.prompt) clarity.prompt = input.prompt
-    if (input.upscaleFactor) clarity.scale_factor = input.upscaleFactor
+    if (input.upscaleFactor) clarity.scale_factor = Number(input.upscaleFactor)
     body[ApiframeParamsKey.ClarityUpscale] = clarity
   }
   return postApiframeJob(
@@ -333,19 +269,42 @@ export async function generateApiframeImage(
   return { ...result, jobId }
 }
 
+export function isApiframeImageFilterDenial(message: string): boolean {
+  return (
+    message.includes(ApiframeJobErrorMatch.ImageDenied) ||
+    message.includes(ApiframeJobErrorMatch.ImageFilters)
+  )
+}
+
+function apiframeErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
 export async function generateMidjourneyImages(
   prompt: string,
   apiKey: string,
   options?: { aspectRatio?: string; maxAttempts?: number; intervalMs?: number },
 ): Promise<ApiframeImageResult & { jobId: string }> {
-  return generateApiframeImage({
-    model: ApiframeImageModel.Midjourney,
-    prompt,
-    apiKey,
-    aspectRatio: options?.aspectRatio,
-    maxAttempts: options?.maxAttempts,
-    intervalMs: options?.intervalMs,
-  })
+  let promptToSend = prompt
+  for (let attempt = 0; attempt < APIFRAME_IMAGE_FILTER_RETRY_MAX; attempt += 1) {
+    try {
+      return await generateApiframeImage({
+        model: ApiframeImageModel.Midjourney,
+        prompt: promptToSend,
+        apiKey,
+        aspectRatio: options?.aspectRatio,
+        maxAttempts: options?.maxAttempts,
+        intervalMs: options?.intervalMs,
+      })
+    } catch (error: unknown) {
+      const next = isApiframeImageFilterDenial(apiframeErrorMessage(error))
+        ? nextMidjourneyPromptAfterImageDenial(promptToSend)
+        : undefined
+      if (!next) throw error
+      promptToSend = next
+    }
+  }
+  throw new Error(ApiframeErrorMessage.JobFailed)
 }
 
 export async function generateMidjourneyUpscaledImage(
@@ -380,7 +339,8 @@ export async function upscaleApiframeImage(input: {
   model: ApiframeUpscaleModel
   imageUrl: string
   prompt?: string
-  upscaleFactor?: 2 | 4
+  upscaleFactor?: ApiframeTopazUpscaleFactor
+  modelType?: ApiframeTopazModelType
   maxAttempts?: number
 }): Promise<{ imageUrl: string; jobId: string }> {
   const jobId = await submitImageUpscale(input)

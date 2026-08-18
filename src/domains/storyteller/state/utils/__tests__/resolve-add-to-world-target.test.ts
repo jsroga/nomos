@@ -11,28 +11,14 @@ const SOUNDTRACK_PROSE = `
 https://youtu.be/M6W4uhrLA7g
 `
 
-const INSPIRATION_PROSE = `
-🎬 MOVIES
-1. The Third Man (1949) — Carol Reed's noir masterpiece.
-
-📚 BOOKS
-2. Dune — Desert power politics.
-`
-
 describe('resolveAddToWorldTarget', () => {
-  it('prefers soundtrack extract even when Overview was the last panel', () => {
+  it('does not mine soundtrack-shaped chat into the soundtrack panel', () => {
     const target = resolveAddToWorldTarget(SOUNDTRACK_PROSE, BibleSection.WORLD_DESCRIPTION)
-    expect(target.section).toBe(BibleSection.SOUNDTRACKS)
-    expect(target.actionType).toBe(ActionType.UPDATE_SOUNDTRACKS)
+    expect(target.section).toBe(BibleSection.WORLD_DESCRIPTION)
+    expect(target.actionType).toBe(ActionType.UPDATE_WORLD_DESCRIPTION)
   })
 
-  it('prefers inspirations extract even when Overview was the last panel', () => {
-    const target = resolveAddToWorldTarget(INSPIRATION_PROSE, BibleSection.WORLD_DESCRIPTION)
-    expect(target.section).toBe(BibleSection.INSPIRATIONS)
-    expect(target.actionType).toBe(ActionType.UPDATE_INSPIRATIONS)
-  })
-
-  it('dumps to Overview for Overview requests without structured shape', () => {
+  it('dumps to Overview for Overview requests without a tool overlay', () => {
     const target = resolveAddToWorldTarget(
       'A rewritten world overview paragraph.',
       BibleSection.WORLD_DESCRIPTION
@@ -52,7 +38,7 @@ describe('resolveAddToWorldTarget', () => {
     })
   })
 
-  it('uses moodSoundtrack when Soundtrack panel asked but extract found nothing', () => {
+  it('uses moodSoundtrack when the Soundtrack panel is the requested section', () => {
     const target = resolveAddToWorldTarget('A rainy nocturne mood.', BibleSection.SOUNDTRACKS)
     expect(target).toEqual({
       section: BibleSection.SOUNDTRACKS,

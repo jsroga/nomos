@@ -1,5 +1,11 @@
 /** Root layout font, metadata, and OpenGraph constants. */
 
+export const ROOT_LAYOUT_BRAND_PREFIX = '/nomos/'
+
+export const ROOT_LAYOUT_TITLE_DEFAULT = `${ROOT_LAYOUT_BRAND_PREFIX} Build Worlds`
+
+export const ROOT_LAYOUT_TITLE_TEMPLATE = `${ROOT_LAYOUT_BRAND_PREFIX} %s`
+
 export const ROOT_LAYOUT_DESCRIPTION =
   'AI-powered infinite canvas for world generation and game development' as const
 

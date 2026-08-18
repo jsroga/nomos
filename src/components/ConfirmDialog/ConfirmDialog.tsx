@@ -15,6 +15,8 @@ import {
   CONFIRM_DIALOG_CANCEL_LABEL,
   CONFIRM_DIALOG_CONFIRM_LABEL,
   CONFIRM_DIALOG_DEFAULT_VARIANT,
+  ConfirmDialogChoice,
+  ConfirmDialogVariant,
 } from './constants/confirm-dialog-copy'
 
 interface ConfirmDialogProps {
@@ -24,8 +26,10 @@ interface ConfirmDialogProps {
   description: string
   confirmLabel?: string
   cancelLabel?: string
-  variant?: 'default' | 'destructive'
+  secondaryLabel?: string
+  variant?: ConfirmDialogVariant
   onConfirm: () => void | Promise<void>
+  onSecondary?: () => void
 }
 
 export function ConfirmDialog({
@@ -35,8 +39,10 @@ export function ConfirmDialog({
   description,
   confirmLabel = CONFIRM_DIALOG_CONFIRM_LABEL,
   cancelLabel = CONFIRM_DIALOG_CANCEL_LABEL,
+  secondaryLabel,
   variant = CONFIRM_DIALOG_DEFAULT_VARIANT,
   onConfirm,
+  onSecondary,
 }: ConfirmDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false)
 
@@ -61,8 +67,13 @@ export function ConfirmDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             {cancelLabel}
           </Button>
+          {secondaryLabel ? (
+            <Button variant="secondary" onClick={onSecondary} disabled={isLoading}>
+              {secondaryLabel}
+            </Button>
+          ) : null}
           <Button
-            variant={variant === 'destructive' ? 'destructive' : 'default'}
+            variant={variant === ConfirmDialogVariant.Destructive ? 'destructive' : 'default'}
             onClick={handleConfirm}
             disabled={isLoading}
           >
@@ -80,45 +91,59 @@ interface UseConfirmOptions {
   description: string
   confirmLabel?: string
   cancelLabel?: string
-  variant?: 'default' | 'destructive'
+  secondaryLabel?: string
+  variant?: ConfirmDialogVariant
 }
 
 export function useConfirmDialog() {
   const [state, setState] = React.useState<{
     open: boolean
     options: UseConfirmOptions | null
-    resolve: ((value: boolean) => void) | null
   }>({
     open: false,
     options: null,
-    resolve: null,
   })
+  const resolveRef = React.useRef<((value: ConfirmDialogChoice) => void) | null>(null)
 
-  const confirm = React.useCallback((options: UseConfirmOptions): Promise<boolean> => {
+  const settle = React.useCallback((choice: ConfirmDialogChoice) => {
+    const resolve = resolveRef.current
+    resolveRef.current = null
+    setState(prev => ({ ...prev, open: false }))
+    resolve?.(choice)
+  }, [])
+
+  const choose = React.useCallback((options: UseConfirmOptions): Promise<ConfirmDialogChoice> => {
     return new Promise(resolve => {
+      resolveRef.current = resolve
       setState({
         open: true,
         options,
-        resolve,
       })
     })
   }, [])
 
+  const confirm = React.useCallback(
+    async (options: UseConfirmOptions): Promise<boolean> => {
+      const result = await choose(options)
+      return result === ConfirmDialogChoice.Confirm
+    },
+    [choose]
+  )
+
   const handleOpenChange = React.useCallback(
     (open: boolean) => {
-      if (!open && state.resolve) {
-        state.resolve(false)
-      }
-      setState(prev => ({ ...prev, open, resolve: open ? prev.resolve : null }))
+      if (!open) settle(ConfirmDialogChoice.Dismissed)
     },
-    [state]
+    [settle]
   )
 
   const handleConfirm = React.useCallback(() => {
-    if (state.resolve) {
-      state.resolve(true)
-    }
-  }, [state])
+    settle(ConfirmDialogChoice.Confirm)
+  }, [settle])
+
+  const handleSecondary = React.useCallback(() => {
+    settle(ConfirmDialogChoice.Secondary)
+  }, [settle])
 
   const ConfirmDialogComponent = React.useMemo(() => {
     if (!state.options) return null
@@ -130,11 +155,13 @@ export function useConfirmDialog() {
         description={state.options.description}
         confirmLabel={state.options.confirmLabel}
         cancelLabel={state.options.cancelLabel}
+        secondaryLabel={state.options.secondaryLabel}
         variant={state.options.variant}
         onConfirm={handleConfirm}
+        onSecondary={handleSecondary}
       />
     )
-  }, [state.open, state.options, handleOpenChange, handleConfirm])
+  }, [state.open, state.options, handleOpenChange, handleConfirm, handleSecondary])
 
-  return { confirm, ConfirmDialogComponent }
+  return { confirm, choose, ConfirmDialogComponent }
 }

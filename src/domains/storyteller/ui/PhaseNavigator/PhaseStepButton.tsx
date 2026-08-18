@@ -7,6 +7,8 @@ import {
   PhaseNavigatorState,
 } from '@/domains/storyteller/ui/PhaseNavigator/constants/phase-navigator'
 
+export const PHASE_COMPLETE_CHECK_CLASS = 'text-[#4ade80]'
+
 interface PhaseConfig {
   id: string
   label: string
@@ -26,10 +28,10 @@ interface PhaseStepIconProps {
 
 export const PhaseStepIcon: React.FC<PhaseStepIconProps> = ({ state, phase, isWorking }) => {
   if (state === PhaseNavigatorState.Completed) {
-    return <Check size={12} className="text-green-400" />
+    return <Check size={12} strokeWidth={2.6} className={PHASE_COMPLETE_CHECK_CLASS} />
   }
   if (state === PhaseNavigatorState.Locked) {
-    return <Lock size={10} className="opacity-50" />
+    return <Lock size={12} strokeWidth={1.8} />
   }
   if (isWorking && state === PhaseNavigatorState.Active) {
     return <Loader2 size={12} className="animate-spin" />
@@ -45,7 +47,7 @@ interface PhaseFullStepIconProps {
 
 export const PhaseFullStepIcon: React.FC<PhaseFullStepIconProps> = ({ state, phase, isWorking }) => {
   if (state === PhaseNavigatorState.Completed) {
-    return <Check size={14} className="text-green-400" />
+    return <Check size={14} strokeWidth={2.6} className={PHASE_COMPLETE_CHECK_CLASS} />
   }
   if (state === PhaseNavigatorState.Locked) {
     return <Lock size={12} />
@@ -57,17 +59,18 @@ export const PhaseFullStepIcon: React.FC<PhaseFullStepIconProps> = ({ state, pha
 }
 
 export const getCompactPhaseButtonClass = (
-  phase: PhaseConfig,
+  _phase: PhaseConfig,
   state: `${PhaseNavigatorState}`,
   canNav: boolean
 ): string =>
   cn(
     PhaseNavigatorCompactButtonClass.Base,
-    state === PhaseNavigatorState.Active && phase.activeColor,
-    state === PhaseNavigatorState.Completed && phase.completedColor,
+    state === PhaseNavigatorState.Active && PhaseNavigatorCompactButtonClass.Current,
+    state === PhaseNavigatorState.Ready && PhaseNavigatorCompactButtonClass.Ready,
+    state === PhaseNavigatorState.Completed && PhaseNavigatorCompactButtonClass.Complete,
+    state === PhaseNavigatorState.Unlocked && PhaseNavigatorCompactButtonClass.Upcoming,
     state === PhaseNavigatorState.Locked && PhaseNavigatorCompactButtonClass.Locked,
-    canNav && state !== PhaseNavigatorState.Active && PhaseNavigatorCompactButtonClass.HoverScale,
-    PhaseNavigatorCompactButtonClass.Border
+    canNav && PhaseNavigatorFullButtonClass.CompletedPointer
   )
 
 export const getFullPhaseButtonClass = (
@@ -85,6 +88,15 @@ export const getFullPhaseButtonClass = (
     state === PhaseNavigatorState.Completed && [
       'bg-zinc-800/60 border-zinc-700/80 text-zinc-300',
       'hover:bg-zinc-700/60 hover:border-zinc-600',
+      PhaseNavigatorFullButtonClass.CompletedPointer,
+    ],
+    state === PhaseNavigatorState.Unlocked && [
+      'bg-zinc-800/40 border-zinc-700/60 text-zinc-400',
+      'hover:bg-zinc-700/60 hover:border-zinc-600',
+      PhaseNavigatorFullButtonClass.CompletedPointer,
+    ],
+    state === PhaseNavigatorState.Ready && [
+      phase.activeColor,
       PhaseNavigatorFullButtonClass.CompletedPointer,
     ],
     state === PhaseNavigatorState.Locked && [

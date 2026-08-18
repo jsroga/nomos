@@ -27,6 +27,8 @@ export const workspaceProjectResponseSchema = z
     canvas_master_prompt: z.string().nullable().optional(),
     styleAnchorUrl: z.string().nullable().optional(),
     style_anchor_url: z.string().nullable().optional(),
+    styleReferenceUrls: z.array(z.string()).nullable().optional(),
+    style_reference_urls: z.array(z.string()).nullable().optional(),
     createdAt: dateLikeSchema.optional(),
     created_at: dateLikeSchema.optional(),
   })
@@ -43,6 +45,7 @@ export const workspaceProjectResponseSchema = z
     generationMode: row.generationMode ?? row.generation_mode ?? null,
     canvasMasterPrompt: row.canvasMasterPrompt ?? row.canvas_master_prompt ?? '',
     styleAnchorUrl: row.styleAnchorUrl ?? row.style_anchor_url ?? null,
+    styleReferenceUrls: row.styleReferenceUrls ?? row.style_reference_urls ?? [],
     createdAt: row.createdAt ?? row.created_at,
   }))
 
@@ -58,6 +61,7 @@ export function toWorkspaceProject(row: z.infer<typeof workspaceProjectResponseS
     generationMode: row.generationMode,
     canvasMasterPrompt: row.canvasMasterPrompt,
     styleAnchorUrl: row.styleAnchorUrl,
+    styleReferenceUrls: row.styleReferenceUrls,
     description: row.description,
     created_at: row.createdAt,
   }

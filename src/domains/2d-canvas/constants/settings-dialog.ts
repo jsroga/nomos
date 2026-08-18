@@ -19,3 +19,33 @@ export const SETTINGS_MCP_REVOKE_KEY_FAILED = 'Failed to revoke key'
 export const SETTINGS_MCP_KEY_REVOKED_TOAST = 'API key revoked'
 export const SETTINGS_COPIED_TOAST = 'Copied to clipboard!'
 export const SETTINGS_CLOSE_LABEL = 'Close'
+
+export const SETTINGS_PROJECT_NAME_INPUT_ID = 'settings-project-name' as const
+
+export const SETTINGS_PROJECT_COPY = {
+  Title: 'Project',
+  NameLabel: 'Project name',
+  NamePlaceholder: 'Project name',
+  Save: 'Save name',
+  SavedToast: 'Project renamed',
+  SaveFailedToast: 'Failed to rename project',
+  NoProject: 'No project selected',
+} as const
+
+export const SETTINGS_PROVIDER_COPY = {
+  Title: 'Provider Status',
+  Loading: 'Loading provider status...',
+  Failed: 'Failed to load provider status',
+  EnvHintBefore: 'API keys are managed via environment variables. See',
+  EnvFile: '.env.local',
+  EnvHintAfter: 'for configuration.',
+  SectionOpenRouter: 'OpenRouter',
+  SectionApiFrame: 'ApiFrame',
+  SectionTools: 'Tools',
+  Section3d: '3D providers',
+  LabelApiFrame: 'ApiFrame',
+  LabelHyper3d: 'Hyper3D',
+  LabelMeshy: 'Meshy',
+  LabelFal: 'Fal.ai',
+  LabelVoyage: 'Voyage AI',
+} as const

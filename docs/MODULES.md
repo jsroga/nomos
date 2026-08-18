@@ -22,11 +22,11 @@ Virtual writers’ room on **Mastra v1**: chat SSE, beat-draft workflow (plan �
 
 ## Loop Creator
 
-AI game-design assistant. Orchestrator in `loop-creator/core/graph/`; agents under `ai/`. Optional Mastra chat: `FF_LOOP_CREATOR_MASTRA=true`.
+AI game-design assistant. Orchestrator in `loop-creator/core/graph/`; agents under `ai/`. Optional Mastra chat: `FF_LOOP_CREATOR_MASTRA=true`. Sidebar/hub icon: `NEXT_PUBLIC_FF_LOOP_CREATOR=true` — [DEVELOPMENT.md](./DEVELOPMENT.md).
 
 ## 2D Canvas (`2d-canvas`)
 
-Infinite tile canvas (product name **Infinite Canvas**). Tile generation (OpenRouter/Grok, Gemini, LegNext), upscale (Stability / LegNext), fidelity enhance. Workspace route `/{projectId}/2d-canvas`. Client canvas + Trigger tasks under `tasks/`. Server writes via `/api/world` + Drizzle — not privileged browser Supabase writes.
+Infinite tile canvas (product name **Infinite Canvas**). Follow-up tiles pack all eight neighbors around a grey hole (cardinals and diagonals); crop keeps the hole. Optional `FF_TILE_SEAM_COLOR_FADE=true` adds a 16px edge color fade. Tile generation (OpenRouter/Grok, Gemini, LegNext), upscale (Stability / LegNext), fidelity enhance. Workspace route `/{projectId}/2d-canvas`. Client canvas + Trigger tasks under `tasks/`. Server writes via `/api/world` + Drizzle — not privileged browser Supabase writes.
 
 ## 3D Asset Exporter
 
@@ -34,7 +34,7 @@ Workspace for GLB/GLTF prep and text/image-to-3D providers. Heavy work in `tasks
 
 ## 3D Canvas (`3d-canvas`)
 
-R3F sculpt/paint/place. Workspace route `/{projectId}/3d-canvas`; API under `/api/3d-canvas`. Scene undo is separate from high-frequency heightmaps; Low/Medium/High render-quality presets (adaptive while orbiting/sculpting). Perf HUD when `NEXT_PUBLIC_FF_PERF_DEBUG=true` — [DEVELOPMENT.md](./DEVELOPMENT.md).
+R3F sculpt/paint/place. Workspace route `/{projectId}/3d-canvas`; API under `/api/3d-canvas`. Sidebar/hub icon: `NEXT_PUBLIC_FF_3D_CANVAS=true`. Scene undo is separate from high-frequency heightmaps; Low/Medium/High render-quality presets (adaptive while orbiting/sculpting). Perf HUD when `NEXT_PUBLIC_FF_PERF_DEBUG=true` — [DEVELOPMENT.md](./DEVELOPMENT.md).
 
 ## Marketing
 

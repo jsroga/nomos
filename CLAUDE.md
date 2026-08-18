@@ -117,13 +117,17 @@ Shared prompts: **`.agents/execute/`** · skills: **`.agents/skills/`** (Cursor/
 **During agent work** — use scoped `qualitygate:file` for the fast loop. `npm run typecheck` now runs with an 8 GB heap and excludes `ds-bundle` (fixed 2026-07-14) so it no longer OOMs (~20s warm) — run it after changing any `shared/**` or `core/types` type to catch cross-file cascades that `qualitygate:file` (single-file scoped) misses:
 
 ```bash
-npm run qualitygate:file -- src/path/to/file.ts   # TSC + ESLint + metrics (~5s)
+npm run qualitygate:file -- src/path/to/file.ts   # TSC + ESLint + metrics (~5s); OpenAPI coverage on API routes
 npm run qualitygate:changed                          # every 5 completed todos
 npm run qualitygate:capture                       # scan once → .local/quality-backlog.md
 npm run qualitygate:backlog                       # next fix without rescanning
 npm run qualitygate:tsc -- --files src/path/to/file.ts
 npm run qualitygate:tsc -- --changed
+npm run openapi:generate                          # after new/changed src/app/api/**/route.ts
+npm run openapi:check                             # spec drift + every route.ts is in public/openapi.json or omitted
 ```
+
+**New/changed `src/app/api/**/route.ts`:** register Zod + path in `domains/*/core/io/openapi-routes.ts` (or `src/shared/openapi/`), then `npm run openapi:generate`. SSE/admin/workspace-only → omit prefix in `scripts/openapi/route-coverage-omit.ts`. `qualitygate:file` on those routes and `openapi:check` fail if the path is missing from `public/openapi.json`.
 
 **Many gate failures:** fix one item at a time from `.local/quality-backlog.md`; rescan every **5** fixes — `.agents/execute/partials/quality-backlog.md`.
 

@@ -10,6 +10,10 @@ import {
   StorytellerQueryParam,
 } from '@/domains/storyteller/core/storyteller-page-wire'
 import { storytellerSearchParams } from '@/domains/storyteller/state/utils/strip-bible-search-params'
+import {
+  episodeDisplayOrdinal,
+  sortEpisodesForDisplay,
+} from '@/domains/storyteller/state/utils/episode-list'
 
 interface EpisodeBasic {
   id: string
@@ -34,18 +38,19 @@ export function useEpisodeData(projectId: string | undefined) {
   const episodesQuery = useEpisodes(projectId)
   const episodeQuery = useEpisode(currentEpisodeId)
 
+  const episodes = useMemo(() => {
+    if (!Array.isArray(episodesQuery.data)) return []
+    return sortEpisodesForDisplay(episodesQuery.data.filter(episode => episode.id.length > 0))
+  }, [episodesQuery.data])
+
   const hasEpisodes = useMemo(() => {
     if (!projectId) return false
     if (overrideState === StorytellerOverrideState.HasEpisodes) return true
     if (overrideState === StorytellerOverrideState.NoEpisodes) return false
-    if (Array.isArray(episodesQuery.data)) return episodesQuery.data.length > 0
-    return false
-  }, [projectId, overrideState, episodesQuery.data])
+    return episodes.length > 0
+  }, [projectId, overrideState, episodes.length])
 
-  const firstEpisodeId = useMemo(() => {
-    if (!hasEpisodes || !Array.isArray(episodesQuery.data)) return null
-    return episodesQuery.data[0]?.id ?? null
-  }, [hasEpisodes, episodesQuery.data])
+  const firstEpisodeId = useMemo(() => episodes[0]?.id ?? null, [episodes])
 
   const currentEpisode = useMemo((): EpisodeBasic | null => {
     if (!currentEpisodeId || !episodeQuery.data) return null
@@ -59,12 +64,17 @@ export function useEpisodeData(projectId: string | undefined) {
 
   const episodeTitleFromQuery = episodeQuery.data?.title ?? ''
   const resolvedEpisodeTitle = currentEpisodeTitle || episodeTitleFromQuery
+  const headerEpisodeId = currentEpisodeId ?? firstEpisodeId
+  const headerEpisodeTitle = currentEpisodeId
+    ? resolvedEpisodeTitle
+    : (episodes[0]?.title ?? '')
+  const episodeOrdinal = episodeDisplayOrdinal(episodes, headerEpisodeId)
 
-  // Sync Episode ID from URL if it changes
+  // Follow the URL only. Do not depend on local id — selectEpisode sets state
+  // before router.push, and treating that gap as "URL won" cleared the selection.
   useEffect(() => {
-    if (episodeParam === currentEpisodeId) return
     queueMicrotask(() => setCurrentEpisodeId(episodeParam))
-  }, [episodeParam, currentEpisodeId])
+  }, [episodeParam])
 
   const selectEpisode = useCallback(
     (id: string) => {
@@ -80,6 +90,8 @@ export function useEpisodeData(projectId: string | undefined) {
     currentEpisodeId,
     setCurrentEpisodeId,
     currentEpisodeTitle: resolvedEpisodeTitle,
+    headerEpisodeTitle,
+    episodeOrdinal,
     setCurrentEpisodeTitle,
     currentEpisode,
     hasEpisodes,

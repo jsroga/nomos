@@ -11,7 +11,7 @@ import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
 import { useConfirmNewCastMembers } from '@/domains/storyteller/state/hooks/useConfirmNewCastMembers'
 import { useStorytellerChatModel } from '@/domains/storyteller/state/hooks/useStorytellerChatModel'
-import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { getStorytellerUiStore, useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { type ProposedBibleSectionUpdate } from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
 import {
@@ -38,6 +38,8 @@ import {
   omitSectionKey,
   proposalsFromCompletedToolCall,
   extraPendingSectionsMessage,
+  pendingBeatArgsFromToolCalls,
+  isBeatCreateToolArgs,
 } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-tool-helpers'
 import { commitWritersRoomAddToWorld } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-add-to-world'
 import { WritersRoomAssistantChat } from '@/domains/storyteller/ui/StorytellerLayout/panels/WritersRoomAssistantChat'
@@ -172,15 +174,18 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
       }),
     [currentEpisodeId, settledSections],
   )
+  const beatAddsCommitted = useStorytellerUiStore(state => state.beatAddsCommitted)
   const isAddToWorldSettled = useCallback(
-    (toolArgs: readonly Record<string, unknown>[]) =>
-      areAddToWorldSectionsSettled({
+    (toolArgs: readonly Record<string, unknown>[]) => {
+      if (isBeatCreateToolArgs(toolArgs)) return beatAddsCommitted
+      return areAddToWorldSectionsSettled({
         toolArgs,
         episodeId: currentEpisodeId,
         requestedSection: answeredSectionRef.current,
         settledSections,
-      }),
-    [currentEpisodeId, settledSections],
+      })
+    },
+    [beatAddsCommitted, currentEpisodeId, settledSections],
   )
   const handleAddToWorld = useCallback(
     async (payload: AddToWorldPayload): Promise<boolean> =>
@@ -248,6 +253,10 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
           })
           const extrasMessage = extraPendingSectionsMessage(proposals)
           if (extrasMessage) toast.message(extrasMessage)
+        }
+        const beatArgs = pendingBeatArgsFromToolCalls(calls)
+        if (beatArgs.length > 0) {
+          getStorytellerUiStore().appendPendingBeatAdds(beatArgs)
         }
       })()
     },

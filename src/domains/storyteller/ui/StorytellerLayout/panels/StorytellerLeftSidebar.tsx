@@ -11,21 +11,29 @@ import {
 } from '@/components/DomainSidebar'
 import { EpisodeManager, MasterPromptEditor } from '../storyteller-dynamic-imports'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
-import { StorybibleToggleButton } from './StorybibleToggleButton'
 import { MasterPromptScope } from '@/domains/storyteller/ui/MasterPromptEditor/constants/master-prompt-editor'
+import {
+  StorytellerSidebarCopy,
+  StorytellerSidebarStorageKey,
+} from '../constants/storyteller-sidebar-footer'
+import { StorytellerHeaderCopy } from '../constants/storyteller-module-header'
+import { StorytellerSidebarFooter } from './StorytellerSidebarFooter'
 
-export function StorytellerLeftSidebar(props: StorytellerPageSlices) {
+interface StorytellerLeftSidebarProps extends StorytellerPageSlices {
+  onFixInconsistencies: () => void
+}
+
+export function StorytellerLeftSidebar(props: StorytellerLeftSidebarProps) {
   const { core, episode, agents } = props
   const {
     currentProject,
     isWorldBibleOpen,
-    isBibleLocked,
-    bibleLockedBy,
-    toggleBible,
     characters,
     selectedBeatId,
     currentEpisodeId,
     currentEpisodeTitle,
+    currentPhase,
+    hasBible,
     selectEpisode,
     setCurrentEpisodeTitle,
   } = core
@@ -41,19 +49,12 @@ export function StorytellerLeftSidebar(props: StorytellerPageSlices) {
 
   return (
     <DomainSidebar
-      header={
-        <div className="flex items-center gap-3 group cursor-default">
-          <SidebarHeader>Storyteller</SidebarHeader>
-          <StorybibleToggleButton
-            isWorldBibleOpen={isWorldBibleOpen}
-            isBibleLocked={isBibleLocked}
-            bibleLockedBy={bibleLockedBy}
-            isSending={isSending}
-            onToggle={toggleBible}
-          />
-        </div>
-      }
-      storageKey="storyteller"
+      header={<SidebarHeader>{StorytellerHeaderCopy.Wordmark}</SidebarHeader>}
+      storageKey={StorytellerSidebarStorageKey.Panel}
+      collapsible
+      wordmark={StorytellerHeaderCopy.Wordmark}
+      collapseStorageId={currentProject?.id}
+      footer={<StorytellerSidebarFooter hasBible={hasBible} onFix={props.onFixInconsistencies} />}
     >
       {currentProject ? (
         <div className="space-y-6">
@@ -64,6 +65,28 @@ export function StorytellerLeftSidebar(props: StorytellerPageSlices) {
                 initialPrompt={currentProject.master_prompt || ''}
                 onSave={handleSaveProjectPrompt}
               />
+            </SidebarSection>
+          </div>
+
+          <div id={TOUR_STEP_IDS.STORYTELLER_EPISODES}>
+            <SidebarSection separator>
+              <div className={isSending ? 'opacity-50 pointer-events-none' : ''}>
+                <EpisodeManager
+                  projectId={currentProject.id}
+                  currentEpisodeId={currentEpisodeId}
+                  currentEpisodeTitle={currentEpisodeTitle}
+                  currentPhase={currentPhase}
+                  isWorldBibleOpen={isWorldBibleOpen}
+                  onEpisodeChange={selectEpisode}
+                  onEpisodeTitleChange={title => setCurrentEpisodeTitle(title)}
+                />
+                {isSending && (
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <AlertCircle size={12} />
+                    {StorytellerSidebarCopy.BusyEpisode}
+                  </div>
+                )}
+              </div>
             </SidebarSection>
           </div>
 
@@ -81,31 +104,11 @@ export function StorytellerLeftSidebar(props: StorytellerPageSlices) {
               />
             </SidebarSection>
           </div>
-
-          <div id={TOUR_STEP_IDS.STORYTELLER_EPISODES}>
-            <SidebarSection separator>
-              <div className={isSending ? 'opacity-50 pointer-events-none' : ''}>
-                <EpisodeManager
-                  projectId={currentProject.id}
-                  currentEpisodeId={currentEpisodeId}
-                  currentEpisodeTitle={currentEpisodeTitle}
-                  onEpisodeChange={selectEpisode}
-                  onEpisodeTitleChange={title => setCurrentEpisodeTitle(title)}
-                />
-                {isSending && (
-                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} />
-                    Can&apos;t change episode while agents are working
-                  </div>
-                )}
-              </div>
-            </SidebarSection>
-          </div>
         </div>
       ) : (
         <SidebarEmptyState
           icon={<Users size={24} className="opacity-50" />}
-          message="Please select a project to start."
+          message={StorytellerSidebarCopy.SelectProject}
         />
       )}
     </DomainSidebar>

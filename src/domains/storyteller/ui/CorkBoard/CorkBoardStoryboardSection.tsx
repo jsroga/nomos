@@ -6,6 +6,7 @@ import { CorkBoardUrlScheme } from './constants/cork-board'
 interface CorkBoardStoryboardSectionProps {
   storyboardUrl?: string | null
   isGeneratingCombined?: boolean
+  isChatBusy?: boolean
   onGenerateCombined?: () => void
   beatCount: number
   onExpandStoryboard: () => void
@@ -15,6 +16,7 @@ interface CorkBoardStoryboardSectionProps {
 export const CorkBoardStoryboardSection: React.FC<CorkBoardStoryboardSectionProps> = ({
   storyboardUrl,
   isGeneratingCombined,
+  isChatBusy = false,
   onGenerateCombined,
   beatCount,
   onExpandStoryboard,
@@ -35,7 +37,7 @@ export const CorkBoardStoryboardSection: React.FC<CorkBoardStoryboardSectionProp
             variant="outline"
             size="sm"
             onClick={onGenerateCombined}
-            disabled={isGeneratingCombined || beatCount === 0}
+            disabled={isGeneratingCombined || isChatBusy || beatCount === 0}
             className="gap-2 rounded-md"
           >
             {isGeneratingCombined ? (

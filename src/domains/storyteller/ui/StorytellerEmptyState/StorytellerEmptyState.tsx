@@ -5,6 +5,7 @@ import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { Film, BookOpen, FilePlus } from 'lucide-react'
 import { Button } from '@/components/Button'
+import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
 
 interface StorytellerEmptyStateProps {
   hasBible: boolean
@@ -27,6 +28,8 @@ export const StorytellerEmptyState = React.memo(function StorytellerEmptyState({
   onSelectFirstEpisode,
   onOpenBible,
 }: StorytellerEmptyStateProps) {
+  const isChatBusy = useStorytellerChatBusy()
+  const generateDisabled = isSending || isChatBusy
   return (
     <div className="flex-1 overflow-hidden flex items-center justify-center p-12 z-10 relative">
       <div className="max-w-2xl w-full text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
@@ -59,10 +62,10 @@ export const StorytellerEmptyState = React.memo(function StorytellerEmptyState({
                 size="lg"
                 variant="outline"
                 onClick={onGenerateBible}
-                disabled={isSending}
+                disabled={generateDisabled}
                 className="gap-2 text-base px-8 font-bold text-yellow-500 transition-all duration-300 rounded-lg overflow-hidden border border-yellow-500/50 hover:border-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(234,179,8,0.5)] hover:scale-[1.02]"
               >
-                {isSending ? (
+                {generateDisabled ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <BookOpen className="w-5 h-5" />
@@ -98,10 +101,10 @@ export const StorytellerEmptyState = React.memo(function StorytellerEmptyState({
                   size="lg"
                   variant="outline"
                   onClick={onDraftFirstEpisode}
-                  disabled={isSending}
+                  disabled={generateDisabled}
                   className="gap-2 text-base px-8 font-bold text-primary transition-all duration-300 rounded-lg overflow-hidden border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm hover:shadow-[0_0_20px_-5px_rgba(92,124,250,0.5)] hover:scale-[1.02]"
                 >
-                  {isSending ? (
+                  {generateDisabled ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <Sparkles className="w-5 h-5" />

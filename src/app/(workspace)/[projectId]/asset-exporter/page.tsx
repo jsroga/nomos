@@ -2,11 +2,7 @@
 
 import { useState } from 'react'
 import { AssetExporterLayout } from '@/domains/3d-asset-exporter'
-import {
-  AssetsPanel,
-  SettingsDialog,
-  useWorldStore,
-} from '@/domains/2d-canvas'
+import { SettingsDialog, useThreeDAssetsLibrary, useWorldStore } from '@/domains/2d-canvas'
 import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { useAuthStore } from '@/shared/auth/useAuthStore'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
@@ -18,12 +14,11 @@ export default function AssetExporterPage() {
   const assets = useWorldStore(state => state.assets)
   const previewAssetId = useWorldStore(state => state.previewAssetId)
   const setPreviewAssetId = useWorldStore(state => state.setPreviewAssetId)
-  const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
-  const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
   const updateAsset = useWorldStore(state => state.updateAsset)
   const fetchAssets = useWorldStore(state => state.fetchAssets)
   const user = useAuthStore(state => state.user)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const assetsBind = useThreeDAssetsLibrary()
 
   return (
     <AssetExporterLayout
@@ -31,12 +26,10 @@ export default function AssetExporterPage() {
       assets={assets}
       previewAssetId={previewAssetId}
       setPreviewAssetId={setPreviewAssetId}
-      showAllAssetMasks={showAllAssetMasks}
-      setShowAllAssetMasks={setShowAllAssetMasks}
       updateAsset={updateAsset}
       fetchAssets={fetchAssets}
       user={user}
-      assetsPanel={<AssetsPanel showHelpText={false} />}
+      assetsBind={assetsBind}
       settingsDialog={
         <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       }

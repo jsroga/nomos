@@ -6,6 +6,7 @@ import {
   tilePromptLayersFrom,
 } from '@/shared/data/server/prompts'
 import { buildMidjourneyTilePromptText } from '@/shared/data/server/midjourney-params'
+import { FollowUpApiframeCopy } from '@/shared/data/server/constants/generation-prompts'
 
 const MASTER_PROMPT = 'a drowned trade city under permanent rain'
 const TILE_PROMPT = 'a collapsed lighthouse on a shingle beach'
@@ -67,6 +68,8 @@ describe('tile prompt contract', () => {
       expect(apiframe.toLowerCase(), mode.id).not.toContain('central gray')
       expect(apiframe.toLowerCase(), mode.id).not.toContain('central grey')
       expect(midjourney.toLowerCase(), mode.id).toContain('grey cell')
+      expect(midjourney, mode.id).toContain(FollowUpApiframeCopy.PackedKeepNeighbors)
+      expect(midjourney, mode.id).toContain(FollowUpApiframeCopy.MatchContract)
     }
   })
 })

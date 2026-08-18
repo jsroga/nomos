@@ -6,3 +6,20 @@ export const WORLD_CANVAS_APPLY_REPAINT_FAILED_LOG = 'Apply repaint failed:'
 export const WORLD_CANVAS_ORIGIN_TILE_COORD = '0,0'
 
 export { DomEventType as WorldCanvasDomEvent, DomTagName as WorldCanvasDomTag, KeyboardKey as WorldCanvasKey }
+
+export enum WorldCanvasWindowEvent {
+  KeyUp = 'keyup',
+}
+
+export enum WorldCanvasToolShortcut {
+  Pan = 'v',
+  Select = 's',
+  Paint = 'b',
+  Space = ' ',
+}
+
+export enum WorldCanvasCursor {
+  Grab = 'grab',
+  Grabbing = 'grabbing',
+  Crosshair = 'crosshair',
+}

@@ -21,6 +21,36 @@ export enum ApiframeUpscaleModel {
   ClarityUpscale = 'clarity-upscale',
 }
 
+/** https://apiframe.ai/models/topaz-image-upscale */
+export enum ApiframeTopazModelType {
+  StandardV2 = 'standard-v2',
+  LowResV2 = 'low-res-v2',
+  Cgi = 'cgi',
+  HighFidelityV2 = 'high-fidelity-v2',
+  TextRefine = 'text-refine',
+  Redefine = 'redefine',
+}
+
+export enum ApiframeTopazUpscaleFactor {
+  One = 1,
+  Two = 2,
+  Four = 4,
+  Six = 6,
+}
+
+export enum ApiframeTopazOutputFormat {
+  Png = 'png',
+  Jpg = 'jpg',
+}
+
+export enum ApiframeTopazParam {
+  Image = 'image',
+  UpscaleFactor = 'upscale_factor',
+  ModelType = 'model_type',
+  FaceEnhance = 'face_enhance',
+  OutputFormat = 'output_format',
+}
+
 export enum ApiframeEditModel {
   FluxFillPro = 'flux-fill-pro',
 }
@@ -44,6 +74,13 @@ export enum ApiframeErrorMessage {
   NoImages = 'Apiframe result missing images',
   JobFailed = 'Apiframe job failed',
 }
+
+export enum ApiframeJobErrorMatch {
+  ImageDenied = 'Image denied',
+  ImageFilters = 'image filters',
+}
+
+export const APIFRAME_IMAGE_FILTER_RETRY_MAX = 3
 
 /** Apiframe v2 — https://apiframe.ai/docs */
 export const APIFRAME_API_BASE_URL = 'https://api.apiframe.ai/v2'

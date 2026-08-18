@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { AIProvider } from '@/shared/types/enums'
+import { HttpStatus } from '@/shared/data/constants/protocol'
+import { ClientFetchError } from '@/shared/data/fetch-json-record'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { patchAsset, fetchAsset } from '../core/io/asset-exporter.api'
 import {
@@ -92,6 +94,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({
     let cancelled = false
 
     const loadAssetData = async () => {
+      if (!assetId) return
       try {
         const data = await fetchAsset(assetId)
         if (cancelled) return
@@ -125,6 +128,7 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({
           setIsRemeshing(true)
         }
       } catch (err) {
+        if (err instanceof ClientFetchError && err.status === HttpStatus.NOT_FOUND) return
         console.error(ThreeDPanelLog.LoadAssetFailed, err)
       }
     }

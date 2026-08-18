@@ -27,6 +27,7 @@ export enum LocalStorageKeys {
 
   // UI Layout
   SIDEBAR_WIDTH = 'sidebar-width',
+  SIDEBAR_COLLAPSED = 'sidebar-collapsed',
 
   // Temporary / Legacy
   STABILITY_API_KEY_LEGACY = 'STABILITY_API_KEY',

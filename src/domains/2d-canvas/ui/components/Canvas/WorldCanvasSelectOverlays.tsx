@@ -17,12 +17,14 @@ interface WorldCanvasSelectOverlaysProps {
   previewBox: ScreenRect | null
   finalizedBox: ScreenRect | null
   selectedMask: SelectedMaskOverlay | null
+  showSelectedMask?: boolean
 }
 
 export const WorldCanvasSelectOverlays: React.FC<WorldCanvasSelectOverlaysProps> = ({
   previewBox,
   finalizedBox,
   selectedMask,
+  showSelectedMask = true,
 }) => (
   <>
     {previewBox && (
@@ -49,7 +51,7 @@ export const WorldCanvasSelectOverlays: React.FC<WorldCanvasSelectOverlaysProps>
       />
     )}
 
-    {selectedMask?.imageUrl && (
+    {showSelectedMask && selectedMask?.imageUrl && (
       <div
         className="absolute pointer-events-none z-10"
         style={{

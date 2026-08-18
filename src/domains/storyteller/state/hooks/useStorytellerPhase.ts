@@ -16,15 +16,18 @@ import {
   StorytellerPhaseLabel,
   StorytellerEpisodeSeed,
   StorytellerQueryParam,
-  StorytellerConfirmVariant,
   StorytellerConfirmCopy,
 } from '@/domains/storyteller/core/storyteller-page-wire'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { ConfirmDialogVariant } from '@/components/ConfirmDialog/constants/confirm-dialog-copy'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { storytellerSearchParams } from '@/domains/storyteller/state/utils/strip-bible-search-params'
+import {
+  resolveStorytellerPhaseClick,
+  STORYTELLER_PHASE_ORDER,
+  StorytellerPhaseClick,
+} from '@/domains/storyteller/state/utils/resolve-storyteller-phase-click'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
-
-const PHASE_ORDER: PhaseId[] = [Phase.PREMISE, Phase.BREAKING, Phase.WRITING, Phase.COMPLETE]
 
 const phaseDisplayName: Record<PhaseId, string> = {
   [Phase.PREMISE]: StorytellerPhaseLabel.Premise,
@@ -181,19 +184,26 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore) {
   /** Soft view navigation — unlocked phases only, no data wipe. */
   const handlePhaseChange = useCallback(
     (targetPhase: PhaseId) => {
-      const progressIdx = PHASE_ORDER.indexOf(currentPhase)
-      const targetIdx = PHASE_ORDER.indexOf(targetPhase)
-      if (targetIdx < 0 || targetIdx > progressIdx) return
+      const click = resolveStorytellerPhaseClick({
+        currentPhase,
+        targetPhase,
+        beatCount: beats.length,
+      })
+      if (click === StorytellerPhaseClick.Ignore) return
+      if (click === StorytellerPhaseClick.Advance) {
+        void advanceProgress(targetPhase)
+        return
+      }
 
       setViewPhase(targetPhase)
       setActiveTab(tabForPhase(targetPhase))
     },
-    [currentPhase, setViewPhase, setActiveTab]
+    [advanceProgress, beats.length, currentPhase, setViewPhase, setActiveTab]
   )
 
   /** Explicit go-back that clears later-phase data (destructive). */
   const handlePreviousPhase = useCallback(async () => {
-    const idx = PHASE_ORDER.indexOf(currentPhase)
+    const idx = STORYTELLER_PHASE_ORDER.indexOf(currentPhase)
     if (idx <= 0) return
 
     const confirmed = await confirmPhaseBack({
@@ -201,7 +211,7 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore) {
       description: `Going back will erase all data from the current "${phaseDisplayName[currentPhase]}" phase. This action cannot be undone.`,
       confirmLabel: StorytellerConfirmCopy.GoBackLabel,
       cancelLabel: StorytellerConfirmCopy.StayHereLabel,
-      variant: StorytellerConfirmVariant.Destructive,
+      variant: ConfirmDialogVariant.Destructive,
     })
 
     if (!confirmed) return
@@ -212,11 +222,11 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore) {
       setBeats([])
     }
 
-    const prevPhase = PHASE_ORDER[idx - 1]
+    const prevPhase = STORYTELLER_PHASE_ORDER[idx - 1]
     await advanceProgress(prevPhase)
   }, [currentPhase, confirmPhaseBack, setScript, setBeats, advanceProgress])
 
-  const canGoBack = PHASE_ORDER.indexOf(currentPhase) > 0
+  const canGoBack = STORYTELLER_PHASE_ORDER.indexOf(currentPhase) > 0
 
   return {
     savePhaseToDb: advanceProgress,

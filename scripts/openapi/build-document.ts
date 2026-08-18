@@ -11,10 +11,12 @@ import { registerWorldPublicRoutes } from '@/domains/2d-canvas/core/io/openapi-r
 import { registerStorytellerPublicRoutes } from '@/domains/storyteller/core/io/openapi-routes'
 import { ensureZodOpenApi } from '@/shared/openapi/ensure-zod-openapi'
 import {
+  OpenApiDocContact,
   OpenApiDocInfo,
   OpenApiServerDescription,
   OpenApiServerUrl,
   OpenApiTag,
+  OpenApiTagDescription,
 } from '@/shared/openapi/constants/openapi-wire'
 import { registerSharedPublicRoutes } from '@/shared/openapi/register-shared-routes'
 import { registerSharedComponents } from '@/shared/openapi/shared-components'
@@ -37,18 +39,23 @@ export function buildPublicOpenApiDocument(): OpenApiDocument {
       title: OpenApiDocInfo.Title,
       version: OpenApiDocInfo.Version,
       description: OpenApiDocInfo.Description,
+      termsOfService: OpenApiDocContact.TermsUrl,
+      contact: {
+        name: OpenApiDocContact.Name,
+        url: OpenApiDocContact.Url,
+      },
     },
     servers: [
+      { url: OpenApiServerUrl.Production, description: OpenApiServerDescription.Production },
       { url: OpenApiServerUrl.RelativeApi, description: OpenApiServerDescription.Relative },
-      { url: OpenApiServerUrl.LocalhostApi, description: OpenApiServerDescription.Localhost },
     ],
     tags: [
-      { name: OpenApiTag.Mcp },
-      { name: OpenApiTag.ApiKeys },
-      { name: OpenApiTag.Entities },
-      { name: OpenApiTag.Storyteller },
-      { name: OpenApiTag.World },
-      { name: OpenApiTag.Canvas3d },
+      { name: OpenApiTag.Mcp, description: OpenApiTagDescription.Mcp },
+      { name: OpenApiTag.ApiKeys, description: OpenApiTagDescription.ApiKeys },
+      { name: OpenApiTag.Entities, description: OpenApiTagDescription.Entities },
+      { name: OpenApiTag.Storyteller, description: OpenApiTagDescription.Storyteller },
+      { name: OpenApiTag.World, description: OpenApiTagDescription.World },
+      { name: OpenApiTag.Canvas3d, description: OpenApiTagDescription.Canvas3d },
     ],
   })
 }

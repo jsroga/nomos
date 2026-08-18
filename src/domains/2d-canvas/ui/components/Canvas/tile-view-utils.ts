@@ -16,11 +16,7 @@ export function tileBorderClassName(input: TileBorderClassInput): string {
 
   return cn(
     TileBorderClass.Base,
-    isSelected && TileBorderClass.Selected,
-    isGenerating && TileBorderClass.Generating,
-    isUpscaling && TileBorderClass.Upscaling,
-    isRepainting && TileBorderClass.Repainting,
-    isEnhancing && TileBorderClass.Enhancing,
+    isBusy ? TileBorderClass.Busy : isSelected && TileBorderClass.Selected,
     tileError && !isBusy && TileBorderClass.Error,
   )
 }

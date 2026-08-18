@@ -17,3 +17,4 @@ export {
   type CriticFinding,
   type CriticReport,
 } from './critic-schema'
+export { generateStructured } from './generate-structured'

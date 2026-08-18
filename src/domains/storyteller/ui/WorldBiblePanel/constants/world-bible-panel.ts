@@ -41,17 +41,13 @@ export enum WorldBiblePanelLazyPlaceholder {
   MinHeightPx = 160,
 }
 
+export enum WorldBiblePanelBodyClass {
+  Content = 'flex-1 min-h-0 overflow-y-auto px-5 pt-5 pb-8',
+  Relationships = 'flex-1 min-h-0 overflow-hidden px-5 pt-5 pb-5',
+}
+
 export enum WorldBiblePanelUiCopy {
   StorybibleTitle = 'Storybible',
   ContentTab = 'Content',
   RelationshipsTab = 'Relationships',
-}
-
-export enum WorldBiblePanelLockButtonClass {
-  Base = 'gap-2 h-8 border transition-colors',
-  DisabledCursor = 'cursor-default opacity-70',
-  Locked = 'border-amber-500/50 text-amber-500',
-  Unlocked = 'border-muted-foreground/30 text-muted-foreground',
-  LockedHover = 'hover:bg-amber-500/10 hover:border-amber-500',
-  UnlockedHover = 'hover:bg-muted/50 hover:border-muted-foreground/50',
 }

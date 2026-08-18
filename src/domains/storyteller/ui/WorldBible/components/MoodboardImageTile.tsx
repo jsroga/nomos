@@ -3,6 +3,7 @@ import { Sparkles, Star, Loader2, Trash2, Plus } from 'lucide-react'
 import { StorytellerImage } from '../../StorytellerImage'
 import { BibleOverviewMoodboardCopy } from '../constants/bible-overview'
 import { resolveMoodboardImageUrl } from '../utils/bible-overview-moodboard'
+import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
 import {
   addMoodboardImage,
   regenerateMoodboardImage,
@@ -42,6 +43,8 @@ export const MoodboardImageTile: React.FC<MoodboardImageTileProps> = ({
   onRefetchMoodboardData,
   confirmDelete,
 }) => {
+  const isChatBusy = useStorytellerChatBusy()
+  const generateDisabled = isGenerating || isChatBusy
   const imageUrl = resolveMoodboardImageUrl(imagePath, projectId)
   const loadingLabel = progressPercent
     ? `${progressPercent}%`
@@ -73,15 +76,15 @@ export const MoodboardImageTile: React.FC<MoodboardImageTileProps> = ({
                 e.stopPropagation()
                 await regenerateMoodboardImage({
                   projectId,
-                  isGenerating,
+                  isGenerating: generateDisabled,
                   config: providerConfig,
                   legnextFromServer,
                   promptIndex: index,
                   onRefetchMoodboardData,
                 })
               }}
-              disabled={isGenerating}
-              className={`p-2 rounded-full text-white transition-colors ${isGenerating ? 'bg-pink-500/50 cursor-not-allowed' : 'bg-pink-500/80 hover:bg-pink-500 backdrop-blur-md'}`}
+              disabled={generateDisabled}
+              className={`p-2 rounded-full text-white transition-colors ${generateDisabled ? 'bg-pink-500/50 cursor-not-allowed' : 'bg-pink-500/80 hover:bg-pink-500 backdrop-blur-md'}`}
               title="Regenerate"
             >
               <Sparkles size={16} />

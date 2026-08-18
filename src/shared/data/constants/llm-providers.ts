@@ -4,18 +4,14 @@
  * Keys mirror the providers map returned by the GET route.
  */
 
-export type TestableLlmProviderKey = 'openai' | 'anthropic' | 'google' | 'zhipu' | 'moonshot'
+export type TestableLlmProviderKey = 'openrouter'
 
 export interface TestableLlmProvider {
   key: TestableLlmProviderKey
   label: string
 }
 
-/** LLM providers with a live-testable chat model (PLAN-V2 1.4). */
+/** Chat LLMs route through OpenRouter (`OPENROUTER_API_KEY`). */
 export const TESTABLE_LLM_PROVIDERS: readonly TestableLlmProvider[] = [
-  { key: 'openai', label: 'OpenAI' },
-  { key: 'anthropic', label: 'Anthropic' },
-  { key: 'google', label: 'Google / Gemini' },
-  { key: 'zhipu', label: 'Z.AI (GLM)' },
-  { key: 'moonshot', label: 'Moonshot (Kimi)' },
+  { key: 'openrouter', label: 'OpenRouter' },
 ]

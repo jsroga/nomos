@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import { TileTriggerProvider } from '@/shared/data/constants/trigger-tile-route'
-import { ImageEnvVar, ImageGenerateModelId, ImageUpscaleMode, ImageUpscaleModelId } from '@/shared/ai/constants/image-env'
+import { FidelityEngine, ImageEnvVar, ImageFidelityMode, ImageFidelityModeAlias, ImageGenerateModelId, ImageModelAlias, ImageUpscaleMode, ImageUpscaleModelId } from '@/shared/ai/constants/image-env'
 import { resolveFollowUpImageProviderFromEnv } from '../follow-up-provider'
 import {
   resolveTileFirstModel,
   resolveTileFollowUpModel,
+  resolveTileGenerationModel,
   resolveUpscaleModelId,
   resolveDefaultUpscaleProvider,
   resolveImageUpscaleMode,
+  resolveImageFidelityMode,
+  resolveFidelityEngine,
+  resolveFidelityModel,
+  resolveMoodboardModel,
+  resolveEpisodePosterModel,
+  resolveSeriesPosterModel,
+  resolvePosterGenerateModel,
+  ImagePosterSurface,
 } from '@/shared/ai/image-model-env'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
@@ -62,7 +71,20 @@ describe('image model env resolvers', () => {
         [ImageEnvVar.TileFirstModel]: ImageGenerateModelId.NanoBanana,
       }),
     ).toBe(ApiframeImageModel.NanoBanana)
-    expect(resolveTileFirstModel({})).toBe(ApiframeImageModel.GrokImagineImage)
+    expect(resolveTileFirstModel({})).toBe(ApiframeImageModel.Midjourney)
+    expect(resolveTileGenerationModel(true, {})).toBe(ApiframeImageModel.Midjourney)
+    expect(
+      resolveTileGenerationModel(true, {
+        [ImageEnvVar.TileFollowUpModel]: ImageGenerateModelId.GrokImagineImage,
+        [ImageEnvVar.ApiKey]: 'afk_test',
+      }),
+    ).toBe(ApiframeImageModel.Midjourney)
+  })
+
+  it('keeps follow-up tiles on Grok when first tile is Midjourney', () => {
+    expect(
+      resolveTileGenerationModel(false, { [ImageEnvVar.ApiKey]: 'afk_test' }),
+    ).toBe(ApiframeImageModel.GrokImagineImage)
   })
 
   it('resolves upscale model aliases', () => {
@@ -85,11 +107,74 @@ describe('image model env resolvers', () => {
     ).toBe(ImageUpscaleMode.Standard)
   })
 
+  it('resolves IMAGE_FIDELITY_MODE and defaults to redefine', () => {
+    expect(resolveImageFidelityMode({})).toBe(ImageFidelityMode.Redefine)
+    expect(
+      resolveImageFidelityMode({ [ImageEnvVar.FidelityMode]: ImageFidelityMode.Standard }),
+    ).toBe(ImageFidelityMode.Standard)
+    expect(
+      resolveImageFidelityMode({ [ImageEnvVar.FidelityMode]: ImageFidelityModeAlias.Wonder }),
+    ).toBe(ImageFidelityMode.Redefine)
+  })
+
+  it('routes IMAGE_FIDELITY_MODEL to Topaz or generate', () => {
+    expect(resolveFidelityEngine({})).toBe(FidelityEngine.Generate)
+    expect(resolveFidelityModel({})).toBe(ApiframeImageModel.GrokImagineImage)
+    expect(
+      resolveFidelityEngine({ [ImageEnvVar.FidelityModel]: ImageModelAlias.Topaz }),
+    ).toBe(FidelityEngine.Topaz)
+    expect(
+      resolveFidelityEngine({
+        [ImageEnvVar.FidelityModel]: ImageUpscaleModelId.TopazImageUpscale,
+      }),
+    ).toBe(FidelityEngine.Topaz)
+    expect(
+      resolveFidelityModel({ [ImageEnvVar.FidelityModel]: ImageGenerateModelId.NanoBanana }),
+    ).toBe(ApiframeImageModel.NanoBanana)
+    expect(
+      resolveFidelityModel({ [ImageEnvVar.FidelityModel]: ImageModelAlias.Grok }),
+    ).toBe(ApiframeImageModel.GrokImagineImage)
+    expect(
+      resolveFidelityModel({ [ImageEnvVar.FidelityModel]: ImageGenerateModelId.Midjourney }),
+    ).toBe(ApiframeImageModel.GrokImagineImage)
+  })
+
   it('prefers IMAGE_TILE_FOLLOW_UP_MODEL over legacy', () => {
     expect(
       resolveTileFollowUpModel({
         [ImageEnvVar.TileFollowUpModel]: ImageGenerateModelId.Midjourney,
         [ImageEnvVar.LegacyFollowUpProvider]: 'grok',
+      }),
+    ).toBe(ApiframeImageModel.Midjourney)
+  })
+
+  it('resolves moodboard, episode poster, and series poster including Midjourney', () => {
+    expect(resolveMoodboardModel({})).toBe(ApiframeImageModel.NanoBanana)
+    expect(
+      resolveMoodboardModel({
+        [ImageEnvVar.MoodboardModel]: ImageGenerateModelId.Midjourney,
+      }),
+    ).toBe(ApiframeImageModel.Midjourney)
+    expect(resolveEpisodePosterModel({})).toBe(ApiframeImageModel.NanoBanana)
+    expect(
+      resolveEpisodePosterModel({
+        [ImageEnvVar.EpisodePosterModel]: ImageGenerateModelId.Midjourney,
+      }),
+    ).toBe(ApiframeImageModel.Midjourney)
+    expect(resolveSeriesPosterModel({})).toBe(ApiframeImageModel.Midjourney)
+    expect(
+      resolveSeriesPosterModel({
+        [ImageEnvVar.SeriesPosterModel]: ImageGenerateModelId.NanoBanana,
+      }),
+    ).toBe(ApiframeImageModel.NanoBanana)
+    expect(
+      resolvePosterGenerateModel(ImagePosterSurface.Episode, {
+        [ImageEnvVar.EpisodePosterModel]: ImageGenerateModelId.Midjourney,
+      }),
+    ).toBe(ApiframeImageModel.Midjourney)
+    expect(
+      resolvePosterGenerateModel(ImagePosterSurface.Series, {
+        [ImageEnvVar.SeriesPosterModel]: ImageGenerateModelId.Midjourney,
       }),
     ).toBe(ApiframeImageModel.Midjourney)
   })

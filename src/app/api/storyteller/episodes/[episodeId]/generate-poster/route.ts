@@ -6,7 +6,7 @@ import { tasks } from '@trigger.dev/sdk/v3'
 import type { generatePoster } from '@/domains/storyteller/tasks/generate-poster.task'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
-import { resolveApiframeApiKey } from '@/shared/ai/image-model-env'
+import { resolveApiframeApiKey, resolveEpisodePosterModel } from '@/shared/ai/image-model-env'
 
 export async function POST(req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
@@ -63,6 +63,7 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       episodeId,
       apiKey,
       styleReferenceUrls: styleReferenceUrls ?? [],
+      modelId: resolveEpisodePosterModel(),
     })
 
     return NextResponse.json({

@@ -5,7 +5,11 @@ import { cn } from '@/shared/data/utils'
 import { Slider } from '@/components/Slider'
 import { Switch } from '@/components/Switch'
 import { ChevronRight } from 'lucide-react'
-import { SidebarLabelVariant } from '@/components/DomainSidebar/constants/domain-sidebar'
+import {
+  SidebarHeaderClass,
+  SidebarLabelVariant,
+  SidebarSectionClass,
+} from '@/components/DomainSidebar/constants/domain-sidebar'
 
 interface SidebarSectionProps {
   title?: string
@@ -42,7 +46,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = ({
     <div
       className={cn(
         'space-y-2',
-        separator && 'py-4 border-t border-border first:py-0 first:border-0 first:mb-4',
+        separator && 'pt-[22px] first:pt-0',
         className
       )}
     >
@@ -51,7 +55,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = ({
           {collapsible ? (
             <button
               onClick={handleToggle}
-              className="text-xs font-mono font-bold text-indigo-400/90 uppercase tracking-widest flex items-center gap-1.5 hover:text-indigo-400 transition-colors w-full text-left"
+              className={SidebarSectionClass.TitleButton}
             >
               <div className={cn('transition-transform duration-200', isOpen ? 'rotate-90' : '')}>
                 <ChevronRight size={12} />
@@ -61,7 +65,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = ({
               {rightContent}
             </button>
           ) : (
-            <h3 className="text-xs font-mono font-bold text-indigo-400/90 uppercase tracking-widest flex items-center gap-1.5 flex-1">
+            <h3 className={cn(SidebarSectionClass.Title, 'flex-1')}>
               {icon}
               {title}
               {rightContent && <div className="ml-auto">{rightContent}</div>}
@@ -110,10 +114,7 @@ export const SidebarHeader: React.FC<React.PropsWithChildren<{ className?: strin
 }) => {
   return (
     <h2
-      className={cn(
-        'text-sm font-mono font-bold uppercase tracking-widest text-muted-foreground',
-        className
-      )}
+      className={cn(SidebarHeaderClass.Wordmark, className)}
     >
       {children}
     </h2>
@@ -230,10 +231,10 @@ export const SidebarSliderRow: React.FC<SidebarSliderRowProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-sm">
-        <span className="font-medium font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span className="font-medium font-mono text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
           {label}
         </span>
-        <span className="text-muted-foreground font-mono text-xs">{displayValue}</span>
+        <span className="text-foreground font-mono text-[11px]">{displayValue}</span>
       </div>
       <Slider
         min={min}

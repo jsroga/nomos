@@ -7,6 +7,9 @@ import {
 } from '@/shared/ai/constants/apiframe'
 import {
   ImageEnvVar,
+  ImageFidelityMode,
+  ImageFidelityModeAlias,
+  FidelityEngine,
   ImageGenerateModelId,
   ImageModelAlias,
   ImageRepaintModelId,
@@ -135,9 +138,16 @@ export function resolveImageModel(
 export function resolveTileFirstModel(source?: Record<string, string | undefined>): ImageGenerateModel {
   return resolveImageModel(
     ImageEnvVar.TileFirstModel,
-    ApiframeImageModel.GrokImagineImage,
+    ApiframeImageModel.Midjourney,
     source,
   )
+}
+
+export function resolveTileGenerationModel(
+  isFirstTile: boolean,
+  source?: Record<string, string | undefined>,
+): ImageGenerateModel {
+  return isFirstTile ? resolveTileFirstModel(source) : resolveTileFollowUpModel(source)
 }
 
 export function resolveTileFollowUpModel(
@@ -179,12 +189,43 @@ export function resolveSeriesPosterModel(
   return resolveImageModel(ImageEnvVar.SeriesPosterModel, ApiframeImageModel.Midjourney, source)
 }
 
+export enum ImagePosterSurface {
+  Episode = 'episode',
+  Series = 'series',
+}
+
+export function resolvePosterGenerateModel(
+  surface: ImagePosterSurface,
+  source?: Record<string, string | undefined>,
+): ImageGenerateModel {
+  return surface === ImagePosterSurface.Series
+    ? resolveSeriesPosterModel(source)
+    : resolveEpisodePosterModel(source)
+}
+
 export function resolvePortraitModel(source?: Record<string, string | undefined>): ImageGenerateModel {
   return resolveImageModel(ImageEnvVar.PortraitModel, ApiframeImageModel.Midjourney, source)
 }
 
 export function resolveFidelityModel(source?: Record<string, string | undefined>): ImageGenerateModel {
-  return resolveImageModel(ImageEnvVar.FidelityModel, ApiframeImageModel.NanoBanana, source)
+  const raw = readEnv(ImageEnvVar.FidelityModel, source)
+  if (!raw || isTopazFidelityToken(raw)) return ApiframeImageModel.GrokImagineImage
+  const model = parseImageGenerateModel(raw, ApiframeImageModel.GrokImagineImage)
+  if (model === ApiframeImageModel.Midjourney) return ApiframeImageModel.GrokImagineImage
+  return model
+}
+
+function isTopazFidelityToken(raw: string): boolean {
+  const value = raw.trim().toLowerCase()
+  return value === ImageModelAlias.Topaz || value === ImageUpscaleModelId.TopazImageUpscale
+}
+
+export function resolveFidelityEngine(
+  source?: Record<string, string | undefined>,
+): FidelityEngine {
+  const raw = readEnv(ImageEnvVar.FidelityModel, source)
+  if (raw && isTopazFidelityToken(raw)) return FidelityEngine.Topaz
+  return FidelityEngine.Generate
 }
 
 export function resolveUpscaleModelId(
@@ -212,6 +253,39 @@ export function resolveImageUpscaleMode(
   const normalized = normalizeUpscaleModeToken(raw)
   if (normalized === ImageUpscaleMode.Creative) return ImageUpscaleMode.Creative
   return ImageUpscaleMode.Standard
+}
+
+function parseImageFidelityMode(raw: string): ImageFidelityMode | undefined {
+  const value = raw.trim().toLowerCase()
+  switch (value) {
+    case ImageFidelityMode.Standard:
+      return ImageFidelityMode.Standard
+    case ImageFidelityMode.Creative:
+      return ImageFidelityMode.Creative
+    case ImageFidelityMode.LowResolution:
+      return ImageFidelityMode.LowResolution
+    case ImageFidelityMode.Cgi:
+      return ImageFidelityMode.Cgi
+    case ImageFidelityMode.TextRefine:
+      return ImageFidelityMode.TextRefine
+    case ImageFidelityMode.Redefine:
+    case ImageFidelityModeAlias.Wonder:
+    case ImageFidelityModeAlias.Wonder35:
+    case ImageFidelityModeAlias.Wonder35Compact:
+    case ImageFidelityModeAlias.Wonder35Spaced:
+      return ImageFidelityMode.Redefine
+    default:
+      return undefined
+  }
+}
+
+/** Used when IMAGE_FIDELITY_MODEL is Topaz; picks Apiframe model_type. */
+export function resolveImageFidelityMode(
+  source?: Record<string, string | undefined>,
+): ImageFidelityMode {
+  const raw = readEnv(ImageEnvVar.FidelityMode, source)
+  if (!raw) return ImageFidelityMode.Redefine
+  return parseImageFidelityMode(raw) ?? ImageFidelityMode.Redefine
 }
 
 /** Maps IMAGE_UPSCALE_MODEL → UpscaleProvider wire ids used by /api/trigger-upscale. */

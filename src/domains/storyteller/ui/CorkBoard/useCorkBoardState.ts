@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { ConfirmDialogChoice, ConfirmDialogVariant } from '@/components/ConfirmDialog/constants/confirm-dialog-copy'
 import { BeatCard as BeatData, beatCardFromJson } from '@/domains/storyteller/core/types/story-types'
 import { validatePremiseForBeatboard } from '@/domains/storyteller/core/utils/validate-premise-for-beatboard'
 import {
@@ -10,7 +11,6 @@ import {
   fetchEpisodeBeatsList,
   patchBeat,
 } from '@/domains/storyteller/core/io/storyteller.api'
-import { StorytellerConfirmVariant } from '@/domains/storyteller/core/storyteller-page-wire'
 import type { Message } from '@/shared/chat'
 import {
   CORK_BOARD_DELETE_CANCEL,
@@ -18,18 +18,29 @@ import {
   CORK_BOARD_DELETE_DESCRIPTION,
   CORK_BOARD_DELETE_TITLE,
   CORK_BOARD_GENERATE_BEATS_PROMPT,
+  CORK_BOARD_IMAGES_CANCEL,
   CORK_BOARD_NEW_BEAT_LOGLINE,
   CORK_BOARD_NEW_BEAT_TYPE,
   CORK_BOARD_UNKNOWN_PROJECT,
+  CorkBoardBeatImagePolicy,
   CorkBoardCopy,
 } from './constants/cork-board'
 import { resolveCorkBoardUrl } from './CorkBoardStoryboardSection'
+import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
+  beatsForImageGeneration,
+  beatsHaveExistingImages,
   preferRicherBeats,
   requestCorkBoardNextBeat,
   runCorkBoardBeatImageGeneration,
 } from './cork-board-generation'
 import { useCorkBoardDragDrop } from './useCorkBoardDragDrop'
+import {
+  applyBeatImagePatches,
+  getBeatImageBatchStore,
+  isBeatImageBatchBusy,
+  useBeatImageBatchStore,
+} from '@/domains/storyteller/state/useBeatImageBatchStore'
 
 function beatsFromListPayload(data: unknown): BeatData[] {
   if (!Array.isArray(data)) return []
@@ -58,19 +69,32 @@ export const useCorkBoardState = ({
   propProjectId,
 }: UseCorkBoardStateParams) => {
   const [beats, setBeats] = useState<BeatData[]>(initialBeats)
-  const [isGeneratingBeats, setIsGeneratingBeats] = useState(false)
   const [awaitingBoardRefresh, setAwaitingBoardRefresh] = useState(false)
   const [expandedBeatId, setExpandedBeatId] = useState<string | null>(null)
-  const { confirm, ConfirmDialogComponent } = useConfirmDialog()
+  const { confirm, choose, ConfirmDialogComponent } = useConfirmDialog()
   const params = useParams<{ projectId: string }>()
+  const imagePatches = useBeatImageBatchStore(state => state.patches)
+  const pendingImageBeatIds = useBeatImageBatchStore(state => state.pendingBeatIds)
+  const batchEpisodeId = useBeatImageBatchStore(state => state.episodeId)
+  const isGeneratingBeats =
+    isBeatImageBatchBusy(pendingImageBeatIds) &&
+    (batchEpisodeId === null || batchEpisodeId === episodeId)
   const projectId = propProjectId || params.projectId || CORK_BOARD_UNKNOWN_PROJECT
   const { onDragStart, onDragOver, onDrop } = useCorkBoardDragDrop(beats, setBeats)
 
   useEffect(() => {
     queueMicrotask(() => {
-      setBeats(prev => preferRicherBeats(prev, initialBeats || []))
+      setBeats(prev =>
+        applyBeatImagePatches(preferRicherBeats(prev, initialBeats || []), getBeatImageBatchStore().patches)
+      )
     })
   }, [initialBeats])
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setBeats(prev => applyBeatImagePatches(prev, imagePatches))
+    })
+  }, [imagePatches])
 
   useEffect(() => {
     if (isChatBusy || !episodeId) return
@@ -79,7 +103,12 @@ export const useCorkBoardState = ({
       onRefreshBeats?.()
     }
     fetchEpisodeBeatsList(episodeId).then(data => {
-      setBeats(prev => preferRicherBeats(prev, beatsFromListPayload(data)))
+      setBeats(prev =>
+        applyBeatImagePatches(
+          preferRicherBeats(prev, beatsFromListPayload(data)),
+          getBeatImageBatchStore().patches,
+        ),
+      )
     })
   }, [isChatBusy, awaitingBoardRefresh, episodeId, onRefreshBeats])
 
@@ -109,7 +138,7 @@ export const useCorkBoardState = ({
       description: CORK_BOARD_DELETE_DESCRIPTION,
       confirmLabel: CORK_BOARD_DELETE_CONFIRM,
       cancelLabel: CORK_BOARD_DELETE_CANCEL,
-      variant: StorytellerConfirmVariant.Destructive,
+      variant: ConfirmDialogVariant.Destructive,
     })
     if (!confirmed) return
     setBeats(beats.filter(b => b.id !== id))
@@ -128,13 +157,14 @@ export const useCorkBoardState = ({
         description: CorkBoardCopy.ReplaceDescription,
         confirmLabel: CorkBoardCopy.ReplaceConfirm,
         cancelLabel: CorkBoardCopy.ReplaceCancel,
-        variant: StorytellerConfirmVariant.Destructive,
+        variant: ConfirmDialogVariant.Destructive,
       })
       if (!confirmed) return
       await Promise.all(beats.map(beat => deleteBeat(beat.id)))
       setBeats([])
     }
     onSendMessage?.(CORK_BOARD_GENERATE_BEATS_PROMPT)
+    getStorytellerUiStore().clearPendingBeatAdds(false)
     setAwaitingBoardRefresh(true)
   }
 
@@ -143,15 +173,38 @@ export const useCorkBoardState = ({
     setAwaitingBoardRefresh(true)
   }
 
-  const handleGenerateImages = () => {
+  const handleGenerateImages = async () => {
     if (!projectId || beats.length === 0) return
+    let policy = CorkBoardBeatImagePolicy.Override
+    if (beatsHaveExistingImages(beats)) {
+      const choice = await choose({
+        title: CorkBoardCopy.ImagesExistTitle,
+        description: CorkBoardCopy.ImagesExistDescription,
+        confirmLabel: CorkBoardCopy.ImagesOverride,
+        secondaryLabel: CorkBoardCopy.ImagesSkip,
+        cancelLabel: CORK_BOARD_IMAGES_CANCEL,
+      })
+      if (choice === ConfirmDialogChoice.Dismissed) return
+      policy =
+        choice === ConfirmDialogChoice.Secondary
+          ? CorkBoardBeatImagePolicy.SkipExisting
+          : CorkBoardBeatImagePolicy.Override
+    }
+    const targets = beatsForImageGeneration(beats, policy)
+    if (targets.length === 0) {
+      toast.error(CorkBoardCopy.AllImagesExist)
+      return
+    }
     void runCorkBoardBeatImageGeneration({
       projectId,
-      beats,
+      episodeId,
+      beats: targets,
       onAddMessage,
-      setBeats,
-      setIsGeneratingBeats,
     })
+  }
+
+  const handleCancelImages = () => {
+    getBeatImageBatchStore().cancel()
   }
 
   const handleNextBeat = () => {
@@ -170,6 +223,7 @@ export const useCorkBoardState = ({
     beats,
     projectId,
     isGeneratingBeats,
+    pendingImageBeatIds,
     isChatBusy,
     expandedBeatId,
     setExpandedBeatId,
@@ -185,6 +239,7 @@ export const useCorkBoardState = ({
     handleGenerateTextBeats,
     handleGenerateNextBeat,
     handleGenerateImages,
+    handleCancelImages,
     handleNextBeat,
     handlePrevBeat,
     ConfirmDialogComponent,

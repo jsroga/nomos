@@ -1,6 +1,8 @@
 import React, { memo, useEffect } from 'react'
+import { CheckCircle } from 'lucide-react'
 import { BeatCard as BeatData } from '@/domains/storyteller/core/types/story-types'
 import type { Message } from '@/shared/chat'
+import { Button } from '@/components/Button'
 import { ImageLightbox } from '@/components/ImageLightbox'
 import { CorkBoardStoryboardSection } from './CorkBoardStoryboardSection'
 import { CorkBoardBeatGrid } from './CorkBoardBeatGrid'
@@ -24,6 +26,8 @@ interface CorkBoardProps {
   onAddMessage?: (message: Message) => void
   onSendMessage?: (message: string) => void
   onRefreshBeats?: () => void
+  onAddGeneratedBeats?: () => void | Promise<void>
+  onContinueToDraft?: () => void
   premise?: unknown
   isChatBusy?: boolean
   storyboardUrl?: string | null
@@ -38,6 +42,8 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   onAddMessage,
   onSendMessage,
   onRefreshBeats,
+  onAddGeneratedBeats,
+  onContinueToDraft,
   premise,
   isChatBusy,
   storyboardUrl,
@@ -46,6 +52,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   projectId: propProjectId,
 }) {
   const pendingBoardHydration = useStorytellerUiStore(state => state.pendingBoardHydration)
+  const pendingBeatAdds = useStorytellerUiStore(state => state.pendingBeatAdds)
   const board = useCorkBoardState({
     initialBeats,
     episodeId,
@@ -63,10 +70,12 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
   }, [board.beats.length])
 
   return (
-    <div className="space-y-4 pb-20">
-      <CorkBoardStoryboardSection
+    <div className="h-full min-h-0 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-4 p-4">
+        <CorkBoardStoryboardSection
         storyboardUrl={storyboardUrl}
         isGeneratingCombined={isGeneratingCombined}
+        isChatBusy={board.isChatBusy}
         onGenerateCombined={onGenerateCombined}
         beatCount={board.beats.length}
         onExpandStoryboard={() => board.setExpandedBeatId('storyboard_view')}
@@ -86,16 +95,21 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
         <h3 className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
           {CorkBoardCopy.BeatBoardHeading}
         </h3>
-        <CorkBoardBeatActions
-          beatCount={board.beats.length}
-          isGeneratingImages={board.isGeneratingBeats}
-          isChatBusy={board.isChatBusy}
-          onGenerateText={() => {
-            void board.handleGenerateTextBeats()
-          }}
-          onGenerateNext={board.handleGenerateNextBeat}
-          onGenerateImages={board.handleGenerateImages}
-        />
+        {pendingBeatAdds.length === 0 ? (
+          <CorkBoardBeatActions
+            beatCount={board.beats.length}
+            isGeneratingImages={board.isGeneratingBeats}
+            isChatBusy={board.isChatBusy}
+            onGenerateText={() => {
+              void board.handleGenerateTextBeats()
+            }}
+            onGenerateNext={board.handleGenerateNextBeat}
+            onGenerateImages={() => {
+              void board.handleGenerateImages()
+            }}
+            onCancelImages={board.handleCancelImages}
+          />
+        ) : null}
       </div>
 
       {corkBoardListMode({
@@ -105,7 +119,8 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
       }) === CorkBoardListMode.Empty ? (
         <>
           <CorkBoardEmptyState
-            isBusy={board.isChatBusy}
+            isBusy={board.isChatBusy || pendingBoardHydration}
+            readyToAdd={pendingBeatAdds.length > 0}
             onGenerate={() => {
               void board.handleGenerateTextBeats()
             }}
@@ -113,6 +128,13 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
             onAddBeat={() => {
               void board.handleCreate()
             }}
+            onAddToWorld={
+              onAddGeneratedBeats
+                ? () => {
+                    void onAddGeneratedBeats()
+                  }
+                : undefined
+            }
           />
           {board.ConfirmDialogComponent}
         </>
@@ -126,7 +148,6 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
           onDragOver={board.onDragOver}
           onDrop={board.onDrop}
           onExpand={board.setExpandedBeatId}
-          onSendMessage={onSendMessage}
           onCreate={board.handleCreate}
           confirmDialog={board.ConfirmDialogComponent}
           isChatBusy={board.isChatBusy}
@@ -134,6 +155,7 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
             isChatBusy: Boolean(board.isChatBusy),
             pendingBoardHydration,
           })}
+          generatingBeatIds={new Set(board.pendingImageBeatIds)}
         />
       )}
 
@@ -151,6 +173,20 @@ export const CorkBoard: React.FC<CorkBoardProps> = memo(function CorkBoard({
         hasNext={board.expandedBeatIndex < board.beats.length - 1}
         hasPrev={board.expandedBeatIndex > 0}
       />
+      </div>
+      {board.beats.length > 0 && onContinueToDraft ? (
+        <div className="p-4 border-t border-border bg-background/95 backdrop-blur">
+          <Button
+            onClick={onContinueToDraft}
+            disabled={board.isChatBusy}
+            className="w-full gap-2 rounded-md font-medium"
+            size="lg"
+          >
+            <CheckCircle className="w-4 h-4" />
+            {CorkBoardCopy.ContinueToDraft}
+          </Button>
+        </div>
+      ) : null}
     </div>
   )
 })

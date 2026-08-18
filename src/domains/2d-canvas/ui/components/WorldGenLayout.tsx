@@ -3,6 +3,7 @@
 import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { useTileReviewQueue } from '../../state/hooks/useTileReviewQueue'
+import { useWorldGenSidebar } from '../../state/hooks/useWorldGenSidebar'
 import { RepaintToolbar } from './RepaintToolbar'
 import { SelectModeToolbar } from './SelectModeToolbar'
 import { Sidebar } from './Sidebar/Sidebar'
@@ -12,21 +13,22 @@ import { WorldGenToolbar } from './WorldGenToolbar'
 
 function WorldGenWorkspace() {
   const { currentReview, isDialogOpen, handleClose, queueLength } = useTileReviewQueue()
+  const sidebar = useWorldGenSidebar()
+  const { fileInputRef, ...tileBar } = sidebar
 
   return (
     <>
       <div className="flex h-full w-full overflow-hidden bg-black text-zinc-200 font-sans selection:bg-indigo-500/30">
         <div id={TOUR_STEP_IDS.WORLD_GEN_NAV}>
-          <Sidebar />
-        </div>
-
-        <div className="w-16 border-r border-border/70 bg-background z-10">
-          <WorldGenToolbar />
+          <Sidebar sidebar={sidebar} />
         </div>
 
         <div className="flex-1 relative">
           <div id={TOUR_STEP_IDS.WORLDGEN_CANVAS} className="w-full h-full">
-            <WorldCanvas />
+            <WorldCanvas tileBar={tileBar} fileInputRef={fileInputRef} />
+          </div>
+          <div className="absolute top-4 left-4 z-20">
+            <WorldGenToolbar />
           </div>
           <div id={TOUR_STEP_IDS.WORLDGEN_REPAINT}>
             <RepaintToolbar />

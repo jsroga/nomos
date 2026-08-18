@@ -5,7 +5,6 @@ import { Button } from '@/components/Button'
 import { ScrollArea } from '@/components/ScrollArea'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { TESTABLE_LLM_PROVIDERS } from '@/shared/data/constants/llm-providers'
 import {
   settingsApi,
   type McpApiKey,
@@ -63,15 +62,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       }))
     } finally {
       setTestingProvider(null)
-    }
-  }
-
-  const runAllProviderTests = async (): Promise<void> => {
-    if (!providers) return
-    for (const { key } of TESTABLE_LLM_PROVIDERS) {
-      if (providers[key]) {
-        await runProviderTest(key)
-      }
     }
   }
 
@@ -172,7 +162,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   providerTests={providerTests}
                   testingProvider={testingProvider}
                   onRunProviderTest={runProviderTest}
-                  onRunAllProviderTests={runAllProviderTests}
                 />
               )}
 

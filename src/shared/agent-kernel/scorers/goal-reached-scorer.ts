@@ -1,6 +1,6 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
-import { inputRecord, normalizeScore, outputToString, toMastraJudgingModel } from './shared'
+import { inputRecord, normalizeScore, outputToString, toMastraJudgingLanguageModel } from './shared'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 /**
@@ -32,7 +32,7 @@ export const goalReachedScorer = createScorer({
   name: 'Goal Reached',
   description: 'Whether the assistant achieved the stated conversation goal',
   judge: {
-    model: toMastraJudgingModel(),
+    model: toMastraJudgingLanguageModel(),
     instructions: JUDGE_INSTRUCTIONS,
   },
 })

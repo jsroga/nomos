@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { GripVertical, Loader2 } from 'lucide-react'
 import { Textarea } from '@/components/Textarea'
+import { BeatCard as BeatCardData } from '@/domains/storyteller/core/types/story-types'
+import { beatImageService } from '@/domains/storyteller/services/beat-image-service'
 import {
   BEAT_TYPE_BORDER_CLASS,
   BeatCardCopy,
@@ -31,9 +33,9 @@ interface BeatCardProps {
   onDragOver: (e: React.DragEvent, id: string) => void
   onDrop: (e: React.DragEvent, id: string) => void
   onExpand?: (id: string) => void
-  onSendMessage?: (message: string) => void
   projectId: string
   isChatBusy?: boolean
+  isBatchGenerating?: boolean
 }
 
 const getTypeColor = (type: string) => {
@@ -41,6 +43,19 @@ const getTypeColor = (type: string) => {
     return BEAT_TYPE_BORDER_CLASS[type]
   }
   return BEAT_TYPE_BORDER_CLASS[BeatCardType.Default]
+}
+
+function toImageBeatCard(beat: Beat): BeatCardData {
+  return {
+    id: beat.id,
+    sequence: beat.sequence,
+    logline: beat.logline,
+    beatType: beat.beatType || beat.type || BeatCardType.Default,
+    content: beat.content,
+    status: beat.status,
+    imageUrl: beat.imageUrl,
+    imagePrompt: beat.imagePrompt,
+  }
 }
 
 export const BeatCard: React.FC<BeatCardProps> = ({
@@ -51,31 +66,31 @@ export const BeatCard: React.FC<BeatCardProps> = ({
   onDragOver,
   onDrop,
   onExpand,
-  onSendMessage,
   projectId,
   isChatBusy = false,
+  isBatchGenerating = false,
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editState, setEditState] = useState(beat)
   const [isGenerating, setIsGenerating] = useState<BeatGenerationMode | null>(null)
 
   const beatType = beat.beatType || beat.type || BeatCardType.Default
+  const imageBusy = isGenerating !== null || isChatBusy || isBatchGenerating
 
-  useEffect(() => {
-    if (!isChatBusy) setIsGenerating(null)
-  }, [isChatBusy])
-
-  const triggerGeneration = (mode: BeatGenerationMode, message: string) => {
-    if (!onSendMessage) return
-    setIsGenerating(mode)
-    onSendMessage(message)
+  const handleGenerateImage = async () => {
+    if (imageBusy) return
+    setIsGenerating(BeatGenerationMode.Image)
+    try {
+      await beatImageService.generateImageForBeat(projectId, toImageBeatCard(beat), (id, updates) => {
+        onUpdate(id, {
+          imageUrl: updates.imageUrl,
+          imagePrompt: updates.imagePrompt,
+        })
+      })
+    } finally {
+      setIsGenerating(null)
+    }
   }
-
-  const handleGenerateImage = () =>
-    triggerGeneration(
-      BeatGenerationMode.Image,
-      `Generate a storyboard image for beat #${beat.sequence} "${beat.logline}". Create a cinematic visual that captures the mood and action.`
-    )
 
   const handleSave = () => {
     onUpdate(beat.id, {
@@ -94,7 +109,7 @@ export const BeatCard: React.FC<BeatCardProps> = ({
       onDrop={e => onDrop(e, beat.id)}
       className={`min-h-[120px] border border-border text-foreground p-4 rounded-md border-l-[3px] ${getTypeColor(beatType)} flex flex-col group relative transition-colors ${!isEditing ? 'cursor-grab active:cursor-grabbing hover:border-l-opacity-100' : ''}`}
     >
-      {isGenerating ? (
+      {isGenerating || isBatchGenerating ? (
         <div className="absolute inset-0 z-10 rounded-md bg-background/70 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2">
           <Loader2 size={18} className="animate-spin text-primary" />
           <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -162,18 +177,16 @@ export const BeatCard: React.FC<BeatCardProps> = ({
         />
       )}
 
-      <div className="mt-3 flex justify-between items-center pt-3 border-t border-border">
-        <div className="flex gap-1" aria-hidden>
-          <div className="w-4 h-4 rounded-md bg-muted border border-border" />
-        </div>
+      <div className="mt-3 flex justify-end items-center pt-3 border-t border-border">
         <BeatCardActions
           isEditing={isEditing}
-          isGenerating={isGenerating}
+          isGenerating={isGenerating ?? (isBatchGenerating ? BeatGenerationMode.Image : null)}
+          imageDisabled={imageBusy}
           onSave={handleSave}
           onCancelEdit={() => setIsEditing(false)}
           onStartEdit={() => setIsEditing(true)}
           onDelete={() => onDelete(beat.id)}
-          onGenerateImage={onSendMessage ? handleGenerateImage : undefined}
+          onGenerateImage={handleGenerateImage}
         />
       </div>
     </div>

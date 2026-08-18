@@ -10,7 +10,7 @@
  */
 
 import { namedRecordsFromJson, readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
-import { parseStoryPlanRecord, parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
+import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import {
   AutoLinkerEntityType,
   ENTITY_AUTO_LINKER_MIN_STRING_LENGTH,
@@ -19,7 +19,6 @@ import {
   EntityAutoLinkerLog,
   EntityAutoLinkerRegexFlag,
   EntityAutoLinkerRegexReplacement,
-  EntityAutoLinkerStopWord,
 } from '@/domains/storyteller/services/constants/entity-auto-linker'
 import { mapLinkedValue } from '@/domains/storyteller/services/entity-auto-linker-map'
 
@@ -120,48 +119,8 @@ function addNamedEntities(
   }
 }
 
-function addPlaces(
-  map: Map<string, EntityRef>,
-  storyPlan: Record<string, unknown>,
-  seriesBible: Record<string, unknown>
-): void {
-  const worldDesc =
-    readString(storyPlan.worldDescription) ?? readString(seriesBible.worldDescription) ?? ''
-  if (!worldDesc) return
-
-  const placePattern = /\b(The\s+)?([A-Z][a-z]+(?:\s+(?:of|the)\s+[A-Z][a-z]+|\s+[A-Z][a-z]+)*)\b/g
-  const stopWords = [
-    EntityAutoLinkerArticlePrefix.TheCapital,
-    EntityAutoLinkerStopWord.A,
-    EntityAutoLinkerStopWord.An,
-    EntityAutoLinkerStopWord.In,
-    EntityAutoLinkerStopWord.On,
-    EntityAutoLinkerStopWord.At,
-  ]
-  const potentialPlaces = new Set<string>()
-  let match
-  while ((match = placePattern.exec(worldDesc)) !== null) {
-    const placeName = match[0].trim()
-    if (placeName.length > 5 && !stopWords.some(word => word === placeName)) {
-      potentialPlaces.add(placeName)
-    }
-  }
-
-  for (const placeName of Array.from(potentialPlaces).slice(0, 20)) {
-    const lowerName = placeName.toLowerCase()
-    if (map.has(lowerName)) continue
-    const ref: EntityRef = {
-      id: `${EntityAutoLinkerIdPrefix.Place}-${slugify(placeName)}`,
-      type: AutoLinkerEntityType.Place,
-    }
-    map.set(lowerName, ref)
-    addArticleVariant(map, placeName, ref, { guard: true })
-  }
-}
-
 function buildEntityMap(
   storyPlan: Record<string, unknown>,
-  seriesBible: Record<string, unknown>,
   cast: Record<string, unknown>[]
 ): Map<string, EntityRef> {
   const entityMap = new Map<string, EntityRef>()
@@ -180,7 +139,6 @@ function buildEntityMap(
     EntityAutoLinkerIdPrefix.Event,
     AutoLinkerEntityType.Event
   )
-  addPlaces(entityMap, storyPlan, seriesBible)
   return entityMap
 }
 
@@ -276,12 +234,11 @@ async function loadProjectEntityMap(projectId: string): Promise<Map<string, Enti
     }
   }
 
-  const seriesBible = parseSeriesBibleRecord(project.seriesBible)
   const projectCharacters = await db.query.characters.findMany({
     where: eq(characters.projectId, projectId),
   })
   const cast = (projectCharacters || []).map(recordFromJson)
-  const entityMap = buildEntityMap(storyPlan, seriesBible, cast)
+  const entityMap = buildEntityMap(storyPlan, cast)
   return entityMap.size === 0 ? null : entityMap
 }
 

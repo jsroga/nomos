@@ -4,18 +4,20 @@
 
 import React from 'react'
 import { cn } from '@/shared/data/utils'
-import { Sparkles, LayoutGrid, PenTool, ChevronRight } from 'lucide-react'
+import { HtmlElementType } from '@/shared/data/constants/protocol'
+import { FileText, Pencil, ChevronRight } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import type { PhaseId } from '@/domains/storyteller/core/types/enums'
 import {
-  PhaseNavigatorActiveStyle,
   PhaseNavigatorColor,
-  PhaseNavigatorCompletedStyle,
   PhaseNavigatorDescription,
   PhaseNavigatorLabel,
+  PhaseNavigatorLockedHint,
   PhaseNavigatorPhase,
   PhaseNavigatorShortLabel,
   PhaseNavigatorState,
+  PHASE_NAVIGATOR_ACTIVE_STYLE,
+  PHASE_NAVIGATOR_COMPLETED_STYLE,
 } from '@/domains/storyteller/ui/PhaseNavigator/constants/phase-navigator'
 import {
   getCompactPhaseButtonClass,
@@ -23,6 +25,11 @@ import {
   PhaseFullStepIcon,
   PhaseStepIcon,
 } from './PhaseStepButton'
+import {
+  canNavigatePhase,
+  getPhaseNavigatorState,
+  phaseNavigatorProgressIndex,
+} from './get-phase-state'
 
 interface PhaseConfig {
   id: PhaseId
@@ -35,35 +42,43 @@ interface PhaseConfig {
   description: string
 }
 
+function BeatsGlyph() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M4 5.5h4.5v13H4zM9.75 5.5h4.5v8.5h-4.5zM15.5 5.5H20v16h-4.5z" />
+    </svg>
+  )
+}
+
 const PHASES: PhaseConfig[] = [
   {
     id: PhaseNavigatorPhase.PREMISE,
     label: PhaseNavigatorLabel.Premise,
     shortLabel: PhaseNavigatorShortLabel.Premise,
-    icon: <Sparkles size={14} />,
+    icon: <FileText size={13} strokeWidth={1.7} />,
     color: PhaseNavigatorColor.Premise,
-    activeColor: PhaseNavigatorActiveStyle.Premise,
-    completedColor: PhaseNavigatorCompletedStyle.Premise,
+    activeColor: PHASE_NAVIGATOR_ACTIVE_STYLE,
+    completedColor: PHASE_NAVIGATOR_COMPLETED_STYLE,
     description: PhaseNavigatorDescription.Premise,
   },
   {
     id: PhaseNavigatorPhase.BREAKING,
     label: PhaseNavigatorLabel.Break,
     shortLabel: PhaseNavigatorShortLabel.Break,
-    icon: <LayoutGrid size={14} />,
+    icon: <BeatsGlyph />,
     color: PhaseNavigatorColor.Break,
-    activeColor: PhaseNavigatorActiveStyle.Break,
-    completedColor: PhaseNavigatorCompletedStyle.Break,
+    activeColor: PHASE_NAVIGATOR_ACTIVE_STYLE,
+    completedColor: PHASE_NAVIGATOR_COMPLETED_STYLE,
     description: PhaseNavigatorDescription.Break,
   },
   {
     id: PhaseNavigatorPhase.WRITING,
     label: PhaseNavigatorLabel.Write,
     shortLabel: PhaseNavigatorShortLabel.Write,
-    icon: <PenTool size={14} />,
+    icon: <Pencil size={13} strokeWidth={1.7} />,
     color: PhaseNavigatorColor.Write,
-    activeColor: PhaseNavigatorActiveStyle.Write,
-    completedColor: PhaseNavigatorCompletedStyle.Write,
+    activeColor: PHASE_NAVIGATOR_ACTIVE_STYLE,
+    completedColor: PHASE_NAVIGATOR_COMPLETED_STYLE,
     description: PhaseNavigatorDescription.Write,
   },
 ]
@@ -72,6 +87,8 @@ interface PhaseNavigatorProps {
   currentPhase: PhaseId
   /** Furthest unlocked phase (progress). Defaults to currentPhase. */
   progressPhase?: PhaseId
+  /** Next phase the user can enter (e.g. Draft after beats exist). */
+  advanceablePhase?: PhaseId
   completedPhases?: PhaseId[]
   isWorking?: boolean
   onPhaseChange?: (phase: PhaseId) => void
@@ -80,66 +97,73 @@ interface PhaseNavigatorProps {
   episodeTitle?: string
 }
 
-const getPhaseState = (
-  phase: PhaseConfig,
-  index: number,
-  viewPhase: PhaseId,
-  progressIndex: number
-): `${PhaseNavigatorState}` => {
-  if (phase.id === viewPhase) return PhaseNavigatorState.Active
-  if (index <= progressIndex) return PhaseNavigatorState.Completed
-  return PhaseNavigatorState.Locked
-}
-
-const canNavigateTo = (
+function compactPhaseAriaLabel(
   state: `${PhaseNavigatorState}`,
-  isWorking: boolean
-): boolean => {
-  if (isWorking) return false
-  return state === PhaseNavigatorState.Completed || state === PhaseNavigatorState.Active
+  label: string,
+  lockedHint: string,
+): string {
+  if (state === PhaseNavigatorState.Locked) return lockedHint
+  if (state === PhaseNavigatorState.Ready) return PhaseNavigatorLockedHint.ContinueToDraft
+  return label
 }
 
 const CompactPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
   currentPhase,
   progressPhase,
+  advanceablePhase,
   isWorking = false,
   onPhaseChange,
 }) => {
-  const progressIndex = PHASES.findIndex(p => p.id === (progressPhase ?? currentPhase))
+  const progressIndex = phaseNavigatorProgressIndex(progressPhase ?? currentPhase)
 
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-1 bg-zinc-900/80 backdrop-blur-sm rounded-md p-0.5 border border-zinc-800">
+      <div className="flex items-center gap-0.5" role="list">
         {PHASES.map((phase, index) => {
-          const state = getPhaseState(phase, index, currentPhase, progressIndex)
-          const canNav = canNavigateTo(state, isWorking)
+          const state = getPhaseNavigatorState({
+            phaseId: phase.id,
+            index,
+            viewPhase: currentPhase,
+            progressIndex,
+            advanceablePhase,
+          })
+          const canNav = canNavigatePhase(state, isWorking)
+          const lockedHint =
+            phase.id === PhaseNavigatorPhase.WRITING
+              ? PhaseNavigatorLockedHint.Draft
+              : PhaseNavigatorLockedHint.Default
 
           return (
-            <Tooltip key={phase.id}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => canNav && onPhaseChange?.(phase.id)}
-                  disabled={!canNav}
-                  className={getCompactPhaseButtonClass(phase, state, canNav)}
-                >
-                  <PhaseStepIcon state={state} phase={phase} isWorking={isWorking} />
-                  <span>{phase.shortLabel}</span>
-                  {state === PhaseNavigatorState.Active && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-current animate-pulse" />
+            <React.Fragment key={phase.id}>
+              {index > 0 ? <span aria-hidden className="w-3 h-px bg-border mx-0.5" /> : null}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type={HtmlElementType.Button}
+                    onClick={() => canNav && onPhaseChange?.(phase.id)}
+                    disabled={!canNav}
+                    aria-current={state === PhaseNavigatorState.Active ? 'step' : undefined}
+                    aria-disabled={state === PhaseNavigatorState.Locked}
+                    aria-label={compactPhaseAriaLabel(state, phase.label, lockedHint)}
+                    title={state === PhaseNavigatorState.Locked ? lockedHint : undefined}
+                    className={getCompactPhaseButtonClass(phase, state, canNav)}
+                  >
+                    <PhaseStepIcon state={state} phase={phase} isWorking={isWorking} />
+                    <span>{phase.shortLabel}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[200px]">
+                  <p className="font-medium">{phase.label}</p>
+                  <p className="text-xs text-zinc-300">{phase.description}</p>
+                  {state === PhaseNavigatorState.Locked && (
+                    <p className="text-xs text-amber-300 mt-1">{lockedHint}</p>
                   )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[200px]">
-                <p className="font-medium">{phase.label}</p>
-                <p className="text-xs text-zinc-300">{phase.description}</p>
-                {state === PhaseNavigatorState.Locked && (
-                  <p className="text-xs text-amber-300 mt-1">Complete previous phases first</p>
-                )}
-                {state === PhaseNavigatorState.Completed && (
-                  <p className="text-xs text-green-300 mt-1">Click to view</p>
-                )}
-              </TooltipContent>
-            </Tooltip>
+                  {state === PhaseNavigatorState.Ready && (
+                    <p className="text-xs text-primary mt-1">{PhaseNavigatorLockedHint.ContinueToDraft}</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </React.Fragment>
           )
         })}
       </div>
@@ -150,11 +174,12 @@ const CompactPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
 const FullPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
   currentPhase,
   progressPhase,
+  advanceablePhase,
   isWorking = false,
   onPhaseChange,
   episodeTitle,
 }) => {
-  const progressIndex = PHASES.findIndex(p => p.id === (progressPhase ?? currentPhase))
+  const progressIndex = phaseNavigatorProgressIndex(progressPhase ?? currentPhase)
 
   return (
     <TooltipProvider>
@@ -165,8 +190,14 @@ const FullPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
 
         <div className="flex items-center gap-0">
           {PHASES.map((phase, index) => {
-            const state = getPhaseState(phase, index, currentPhase, progressIndex)
-            const canNav = canNavigateTo(state, isWorking)
+            const state = getPhaseNavigatorState({
+              phaseId: phase.id,
+              index,
+              viewPhase: currentPhase,
+              progressIndex,
+              advanceablePhase,
+            })
+            const canNav = canNavigatePhase(state, isWorking)
             const isLast = index === PHASES.length - 1
 
             return (
@@ -202,10 +233,13 @@ const FullPhaseNavigator: React.FC<PhaseNavigatorProps> = ({
                     <p className="font-medium">{phase.label}</p>
                     <p className="text-xs text-zinc-300 max-w-[180px]">{phase.description}</p>
                     {state === PhaseNavigatorState.Locked && (
-                      <p className="text-xs text-amber-300 mt-1">Complete previous phases first</p>
+                      <p className="text-xs text-amber-300 mt-1">{PhaseNavigatorLockedHint.Default}</p>
+                    )}
+                    {state === PhaseNavigatorState.Ready && (
+                      <p className="text-xs text-primary mt-1">{PhaseNavigatorLockedHint.ContinueToDraft}</p>
                     )}
                     {state === PhaseNavigatorState.Completed && (
-                      <p className="text-xs text-green-300 mt-1">Click to view</p>
+                      <p className="text-xs text-green-300 mt-1">{PhaseNavigatorLockedHint.ClickToView}</p>
                     )}
                   </TooltipContent>
                 </Tooltip>

@@ -38,21 +38,6 @@ export const storytellerTourSteps: TourStep[] = [
     content: (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-primary">
-          <Users className="w-5 h-5" />
-          <h3 className="font-bold">Add Characters</h3>
-        </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Define your cast here. The AI uses their profiles to maintain consistent behavior and dialogue when writing episodes.
-        </p>
-      </div>
-    ),
-    selectorId: TOUR_STEP_IDS.STORYTELLER_CHARACTERS,
-    position: TourStepPosition.Right,
-  },
-  {
-    content: (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-primary">
           <Layout className="w-5 h-5" />
           <h3 className="font-bold">Create Episodes</h3>
         </div>
@@ -62,6 +47,21 @@ export const storytellerTourSteps: TourStep[] = [
       </div>
     ),
     selectorId: TOUR_STEP_IDS.STORYTELLER_EPISODES,
+    position: TourStepPosition.Right,
+  },
+  {
+    content: (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-primary">
+          <Users className="w-5 h-5" />
+          <h3 className="font-bold">Add Characters</h3>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Define your cast here. The AI uses their profiles to maintain consistent behavior and dialogue when writing episodes.
+        </p>
+      </div>
+    ),
+    selectorId: TOUR_STEP_IDS.STORYTELLER_CHARACTERS,
     position: TourStepPosition.Right,
   },
   {

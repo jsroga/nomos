@@ -36,6 +36,11 @@ chose **[A] Approve & build** at Verification.
   `enum`, or a `constants/` module. Exempt paths (put the literal there): `constants/`, `*-wire.ts`,
   `enums.ts`, `*-schema.ts`, `*-scorer.ts`, domain `prompts/`, `agents/tools/*-tools.ts`,
   `mcp/domains/*/tools.ts`, tests. Comparison/`typeof` literals, paths (`/`), URLs, and JSX allowed.
+- **Public OpenAPI:** adding or changing `src/app/api/**/route.ts` (path, method, query, body,
+  response) requires registering the same Zod in `domains/*/core/io/openapi-routes.ts` or
+  `src/shared/openapi/`, then `npm run openapi:generate`. SSE/admin/workspace-only routes get an
+  omit prefix in `scripts/openapi/route-coverage-omit.ts`. `npm run openapi:check` and
+  `qualitygate:file` on API routes fail if the route is missing from `public/openapi.json`.
 - **Enums vs const maps:** prefer `enum` for pure string/number literals. But an enum member that
   **references another enum/const** (`A = Other.B`) or **duplicates a value** is illegal → use
   `export const X = { … } as const` (+ `export type X = (typeof X)[keyof typeof X]` if used as a

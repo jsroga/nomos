@@ -37,6 +37,7 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
   const [masterPrompt, setMasterPrompt] = useState('')
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [isUploadingStyleRefs, setIsUploadingStyleRefs] = useState(false)
+  const [isApplyingGenerationMode, setIsApplyingGenerationMode] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const projectRef = useRef(currentProject)
 
@@ -53,6 +54,7 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
       setStyleReferenceUrls([])
       return
     }
+    setStyleReferenceUrls(clampStyleReferenceUrls(currentProject.styleReferenceUrls ?? []))
     settingsApi
       .fetchProject(currentProject.id)
       .then(data => {
@@ -82,6 +84,9 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
         ...(fields.generationMode !== undefined ? { generationMode: fields.generationMode } : {}),
         ...(fields.styleAnchorUrl !== undefined ? { styleAnchorUrl: fields.styleAnchorUrl } : {}),
         ...(fields.stylePreset !== undefined ? { stylePreset: fields.stylePreset } : {}),
+        ...(fields.styleReferenceUrls !== undefined
+          ? { styleReferenceUrls: fields.styleReferenceUrls }
+          : {}),
       })
     } catch (error) {
       console.error(WorldGenSidebarLog.FailedToSaveWorldSettings, error)
@@ -106,9 +111,9 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
     const project = projectRef.current
     if (!project) return
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    setIsUploadingStyleRefs(true)
+    setIsApplyingGenerationMode(true)
     try {
-      const urls = await resolveGenerationModeSrefUrls(mode, window.location.origin)
+      const urls = resolveGenerationModeSrefUrls(mode)
       const fields = generationModePersistFields({ mode, styleReferenceUrls: urls })
       setMasterPrompt(fields.canvasMasterPrompt)
       setStyleReferenceUrls(fields.styleReferenceUrls)
@@ -117,7 +122,7 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
       console.error(WorldGenSidebarLog.FailedToUploadStyleRefs, error)
       toast.error(WorldGenSidebarToast.StyleRefUploadFailed)
     } finally {
-      setIsUploadingStyleRefs(false)
+      setIsApplyingGenerationMode(false)
     }
   }
 
@@ -150,6 +155,10 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
     toast.success(WorldGenSidebarToast.StyleRefsCleared)
   }
 
+  const handleRestoreStyleRefs = (urls: string[]) => {
+    void persistStyleUrls(urls)
+  }
+
   const handleResetStyleAnchor = () => {
     void persistProjectFields({ styleAnchorUrl: null })
   }
@@ -162,8 +171,10 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
     handleAddStyleRefFiles,
     handleRemoveStyleRef,
     handleClearStyleRefs,
+    handleRestoreStyleRefs,
     styleReferenceUrls,
     isUploadingStyleRefs,
+    isApplyingGenerationMode,
     generationMode: resolveGenerationMode(currentProject?.generationMode),
     styleAnchorUrl: currentProject?.styleAnchorUrl ?? null,
   }

@@ -145,7 +145,7 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
 
   return (
     <TooltipProvider delayDuration={100}>
-    <div className="h-full flex flex-col">
+    <div className="h-full min-h-0 flex flex-col overflow-hidden">
       <EpisodePremisePanel
         premise={episodePremise}
         episodeId={episodeId || storyPlanId}

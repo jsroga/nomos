@@ -11,10 +11,13 @@ vi.mock('react-hot-toast', () => ({
 import { BeatboardPremiseValidationCopy } from '@/domains/storyteller/core/constants/beatboard-premise-validation'
 import {
   CORK_BOARD_GENERATE_BEATS_PROMPT,
+  CORK_BOARD_STORY_STATE_RULE,
+  CorkBoardBeatImagePolicy,
   CorkBoardExistingBeatsLabel,
   CorkBoardPromptPlaceholder,
 } from '../constants/cork-board'
 import {
+  beatsForImageGeneration,
   corkBoardNextBeatPrompt,
   preferRicherBeats,
   requestCorkBoardNextBeat,
@@ -66,6 +69,7 @@ describe('requestCorkBoardTextBeats', () => {
       )
     ).toBe(true)
     expect(onSendMessage).toHaveBeenCalledWith(CORK_BOARD_GENERATE_BEATS_PROMPT)
+    expect(CORK_BOARD_GENERATE_BEATS_PROMPT).toContain(CORK_BOARD_STORY_STATE_RULE)
     expect(toastError).not.toHaveBeenCalled()
   })
 })
@@ -104,6 +108,7 @@ describe('requestCorkBoardNextBeat', () => {
     expect(requestCorkBoardNextBeat(premise, existing, onSendMessage)).toBe(true)
     const prompt = onSendMessage.mock.calls[0]?.[0]
     expect(prompt).toBe(corkBoardNextBeatPrompt(existing))
+    expect(prompt).toContain(CORK_BOARD_STORY_STATE_RULE)
     expect(prompt).toContain('2')
     expect(prompt).toContain(existing[0].logline)
     expect(prompt).not.toContain(CorkBoardPromptPlaceholder.Sequence)
@@ -112,6 +117,22 @@ describe('requestCorkBoardNextBeat', () => {
 
   it('labels an empty board as the first beat', () => {
     expect(corkBoardNextBeatPrompt([])).toContain(CorkBoardExistingBeatsLabel.None)
+  })
+})
+
+describe('beatsForImageGeneration', () => {
+  const beats = [
+    { id: 'a', imageUrl: 'one.png' },
+    { id: 'b' },
+    { id: 'c', imageUrl: 'three.png' },
+  ]
+
+  it('keeps every beat when overriding', () => {
+    expect(beatsForImageGeneration(beats, CorkBoardBeatImagePolicy.Override)).toEqual(beats)
+  })
+
+  it('drops beats that already have images when skipping', () => {
+    expect(beatsForImageGeneration(beats, CorkBoardBeatImagePolicy.SkipExisting)).toEqual([{ id: 'b' }])
   })
 })
 

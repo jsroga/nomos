@@ -29,6 +29,7 @@ import {
   stakesCritic,
 } from '@/domains/storyteller/ai/agents/critics'
 import { beatDraftWorkflow } from '@/domains/storyteller/ai/workflows/beat-draft-workflow'
+import { fixInconsistenciesWorkflow } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-workflow'
 // Tools come from their CONCRETE modules, never the tools barrel — the barrel
 // side-effect-imports this file (registration ordering), so importing it here
 // would create a cycle.
@@ -52,7 +53,7 @@ import {
 import { runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools/workflow-tool'
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
-import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import { resolveRoleModel, AGENT_MODEL_MATRIX } from '@/domains/storyteller/config/constants/model-config'
 import {
   STORYTELLER_CHAT_MODEL,
   requestContextString,
@@ -83,6 +84,10 @@ const CHAT_ADAPTER_SCORERS = {
   },
 } as const
 
+const CHAT_ADAPTER_MODEL_SETTINGS = {
+  maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
+} as const
+
 /**
  * The REAL chat adapter registered for Studio/observability parity: same
  * prompt builder, same 'chat' role slot, same 10 tools as the production
@@ -105,6 +110,9 @@ const chatAdapterAgent = new Agent({
   // returns undefined does not fall back to the global workspace.
   workspace: () => undefined,
   scorers: CHAT_ADAPTER_SCORERS,
+  defaultOptions: {
+    modelSettings: CHAT_ADAPTER_MODEL_SETTINGS,
+  },
   tools: {
     [manageBeatApprovalTool.id]: manageBeatApprovalTool,
     [listBeatsTool.id]: listBeatsTool,
@@ -134,6 +142,7 @@ export const storytellerRuntimeAgents: Record<string, Agent> = {
 /** Workflows registered on the production Mastra instance. */
 export const storytellerRuntimeWorkflows = {
   beatDraftWorkflow,
+  fixInconsistenciesWorkflow,
 }
 
 export {
@@ -141,6 +150,10 @@ export {
   RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
   VERDICT_STEP_ID,
 } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
+export {
+  FIX_INCONSISTENCIES_WORKFLOW_ID,
+  FIX_INCONSISTENCIES_VERDICT_STEP,
+} from '@/domains/storyteller/ai/workflows/fix-inconsistencies-contract'
 export {
   buildStorytellerRequestContext,
   STORYTELLER_PROJECT_ID,

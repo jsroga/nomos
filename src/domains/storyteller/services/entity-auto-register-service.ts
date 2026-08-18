@@ -309,36 +309,10 @@ async function tryRegisterRule(ctx: AutoRegisterContext): Promise<boolean> {
   return true
 }
 
-function extractPlaceDescription(
-  normalizedName: string,
-  storyPlan: Record<string, unknown>,
-  seriesBible: Record<string, unknown>
-): string {
-  const worldDesc =
-    readString(storyPlan.worldDescription) ?? readString(seriesBible.worldDescription) ?? ''
-
-  if (!worldDesc) {
-    return ''
-  }
-
-  const sentences = worldDesc.split(/[.!?]+/).map(s => s.trim())
-  const mentioningSentence = sentences.find(s =>
-    s.toLowerCase().includes(normalizedName.toLowerCase())
-  )
-
-  return mentioningSentence ? mentioningSentence.slice(0, 200) : ''
-}
-
 async function tryRegisterPlace(ctx: AutoRegisterContext): Promise<boolean> {
   console.log(`[AutoRegister] Registering place: ${ctx.normalizedName}`)
 
-  const fromWorld = extractPlaceDescription(
-    ctx.normalizedName,
-    ctx.storyPlan,
-    ctx.seriesBible
-  )
-  const placeDescription =
-    fromWorld || (await generatedStubDescription(ctx, StoryEntityType.Place))
+  const placeDescription = await generatedStubDescription(ctx, StoryEntityType.Place)
 
   await entityRegistry.registerWithId(ctx.refId, {
     name: ctx.normalizedName,

@@ -7,19 +7,21 @@ export { Phase as PhaseNavigatorPhase }
 export enum PhaseNavigatorState {
   Completed = 'completed',
   Active = 'active',
+  Unlocked = 'unlocked',
+  Ready = 'ready',
   Locked = 'locked',
 }
 
 export enum PhaseNavigatorLabel {
   Premise = 'Premise',
-  Break = 'Break',
-  Write = 'Write',
+  Break = 'Beats',
+  Write = 'Draft',
 }
 
 export enum PhaseNavigatorShortLabel {
   Premise = 'PREMISE',
-  Break = 'BREAK',
-  Write = 'WRITE',
+  Break = 'BEATS',
+  Write = 'DRAFT',
 }
 
 export enum PhaseNavigatorDescription {
@@ -34,23 +36,24 @@ export enum PhaseNavigatorColor {
   Write = 'text-emerald-400',
 }
 
-export enum PhaseNavigatorActiveStyle {
-  Premise = 'bg-transparent border-purple-400 text-white shadow-[0_0_15px_rgba(192,132,252,0.5)]',
-  Break = 'bg-transparent border-blue-400 text-white shadow-[0_0_15px_rgba(96,165,250,0.5)]',
-  Write = 'bg-transparent border-emerald-400 text-white shadow-[0_0_15px_rgba(52,211,153,0.5)]',
-}
+export const PHASE_NAVIGATOR_ACTIVE_STYLE =
+  'bg-primary/16 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.4)] text-primary'
+export const PHASE_NAVIGATOR_COMPLETED_STYLE = 'text-foreground/80'
 
-export enum PhaseNavigatorCompletedStyle {
-  Premise = 'bg-transparent border-purple-500/40 text-purple-400 hover:border-purple-500 shadow-[0_0_5px_rgba(168,85,247,0.2)]',
-  Break = 'bg-transparent border-blue-500/40 text-blue-400 hover:border-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.2)]',
-  Write = 'bg-transparent border-emerald-500/40 text-emerald-400 hover:border-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.2)]',
+export enum PhaseNavigatorLockedHint {
+  Default = 'Complete previous phases first',
+  Draft = 'Complete Beats to unlock Draft',
+  ContinueToDraft = 'Continue to Draft',
+  ClickToView = 'Click to view',
 }
 
 export enum PhaseNavigatorCompactButtonClass {
-  Base = 'relative flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200',
-  Locked = 'text-zinc-600 cursor-not-allowed border border-transparent',
-  HoverScale = 'hover:scale-105',
-  Border = 'border-2',
+  Base = 'relative flex items-center gap-[7px] px-[11px] py-[5px] rounded-[7px] font-mono text-[10.5px] tracking-[0.12em] uppercase transition-all duration-150 ease-in-out',
+  Locked = 'text-muted-foreground/45 cursor-not-allowed',
+  Current = 'bg-primary/16 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.4)] text-primary',
+  Ready = 'text-primary hover:bg-primary/10 cursor-pointer',
+  Complete = 'text-foreground/80',
+  Upcoming = 'text-muted-foreground/80',
 }
 
 export enum PhaseNavigatorFullButtonClass {

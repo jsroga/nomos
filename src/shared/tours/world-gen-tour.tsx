@@ -72,7 +72,7 @@ export const worldGenTourSteps: TourStep[] = [
           <h3 className="font-bold">Toolbar</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Use the toolbar to switch between tools: Grab (G) to move around, Select (S) to choose tiles, and Repaint (R) to modify existing tiles.
+          Use the toolbar to switch tools: Pan (V) to move around, Select (S) to choose objects, and Paint (B) to modify existing tiles. Escape returns to Pan. Hold Space to pan temporarily.
         </p>
       </div>
     ),

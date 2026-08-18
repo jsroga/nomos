@@ -1,0 +1,19 @@
+---
+description: Register new/changed API routes in public OpenAPI and regenerate the spec
+globs: src/app/api/**/route.ts,**/openapi-routes*.ts,**/openapi-schemas.ts,src/shared/openapi/**
+alwaysApply: false
+---
+
+# Public OpenAPI when adding routes
+
+Scalar `/api-docs` reads committed `public/openapi.json`. **Zod is the contract** — do not hand-edit the JSON.
+
+When you **add or change** `src/app/api/**/route.ts` (new path, method, query, body, or response):
+
+1. Parse the route with Zod (dto / `core/io`).
+2. Register path + method with `registerJsonRoute` in `src/domains/<module>/core/io/openapi-routes.ts` or `src/shared/openapi/register-shared-routes.ts`.
+3. Run `npm run openapi:generate` and keep `public/openapi.json` in the same change.
+
+SSE, admin, and workspace-only helpers stay off the public spec — add a prefix in `scripts/openapi/route-coverage-omit.ts` instead of silently skipping generate.
+
+`npm run openapi:check` (precommit) and `qualitygate:file` on API routes fail if the route is missing from the spec.

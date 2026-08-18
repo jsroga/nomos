@@ -7,7 +7,6 @@ import { WorldBiblePanelLoading } from './WorldBiblePanelLoading'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { isCentralUser, canEditBible } from '@/shared/auth/bible-permissions'
 import {
   MoodboardDefaultModelId,
   MoodboardModelStorageKey,
@@ -122,14 +121,14 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     setIsEditing,
     savePlan,
     cancelEdit,
-    toggleLock,
-    isLocked: isBibleLocked,
-    lockedBy,
-    lockedAt,
-    userEmail,
-    isLockLoading,
     isReadOnly: effectiveReadOnly,
   } = useBible()
+  const setBibleEditing = useStorytellerUiStore(state => state.setBibleEditing)
+
+  useEffect(() => {
+    setBibleEditing(isEditing)
+    return () => setBibleEditing(false)
+  }, [isEditing, setBibleEditing])
 
   const [primaryImageIndex, setPrimaryImageIndex] = useState<number | null>(null)
   const [focusEntityId, setFocusEntityId] = useState<string | null>(null)
@@ -148,9 +147,6 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     setBibleTab(StorytellerBibleTab.Relationships)
     clearEntityNavigation()
   }, [entityNavigation, setBibleTab, clearEntityNavigation])
-
-  const isUserCentralUser = isCentralUser(userEmail)
-  const canUserEditBible = canEditBible(userEmail, isBibleLocked)
 
   // Derive generating state from global operations
   const operations = useGlobalStatusStore(state => state.operations)
@@ -223,14 +219,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
       <WorldBiblePanelHeader
         activeTab={activeTab}
         onSwitchTab={setBibleTab}
-        isUserCentralUser={isUserCentralUser}
-        isBibleLocked={isBibleLocked}
-        lockedBy={lockedBy}
-        lockedAt={lockedAt}
-        isLockLoading={isLockLoading}
-        onToggleLock={toggleLock}
         effectiveReadOnly={effectiveReadOnly}
-        canUserEditBible={canUserEditBible}
         isEditing={isEditing}
         onStartEditing={() => setIsEditing(true)}
         onCancelEdit={cancelEdit}

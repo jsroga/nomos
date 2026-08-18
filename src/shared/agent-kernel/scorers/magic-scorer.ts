@@ -1,7 +1,7 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
-import { normalizeScore, outputToString, toMastraJudgingModel } from './shared'
+import { normalizeScore, outputToString, toMastraJudgingLanguageModel } from './shared'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 const magicAnalyzeSchema = z.object({
@@ -14,7 +14,7 @@ export const magicScorer = createScorer({
   name: 'Magic Score',
   description: 'Creative quality, originality, and anti-slop evaluation',
   judge: {
-    model: toMastraJudgingModel(),
+    model: toMastraJudgingLanguageModel(),
     instructions:
       'You are a ruthless creative writing critic. Respond with valid JSON matching the requested schema.',
   },

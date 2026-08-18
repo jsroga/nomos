@@ -22,6 +22,11 @@ import {
   SRC_TOP_LEVEL_FORBIDDEN,
 } from '../../scripts/structure-gates/src-topology'
 import { findNonTestFilesInTestDirs } from '../../scripts/structure-gates/test-folder-rules'
+import {
+  fileToOpenApiPath,
+  findOpenApiCoverageGaps,
+  formatOpenApiCoverageGaps,
+} from '../../scripts/openapi/route-coverage'
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..')
 const SRC_DIR = path.join(REPO_ROOT, 'src')
@@ -200,6 +205,17 @@ describe('__tests__ folder purity', () => {
   })
 })
 
+describe('public OpenAPI route coverage', () => {
+  it('documents every src/app/api route or lists it on the omit prefixes', () => {
+    const gaps = findOpenApiCoverageGaps(REPO_ROOT)
+    expect(gaps, formatOpenApiCoverageGaps(gaps)).toEqual([])
+  })
+
+  it('maps Next.js dynamic segments to OpenAPI params', () => {
+    expect(fileToOpenApiPath('src/app/api/entities/[entityId]/route.ts')).toBe('/entities/{entityId}')
+  })
+})
+
 describe('single-home invariants', () => {
   it('e2e lives only at repo root, not under src', () => {
     const strayE2e: string[] = []
@@ -219,6 +235,17 @@ describe('single-home invariants', () => {
   it('docs and evals each have exactly one home (repo root)', () => {
     expect(fs.existsSync(path.join(REPO_ROOT, 'docs')), 'root docs/ missing').toBe(true)
     expect(fs.existsSync(path.join(REPO_ROOT, 'evals')), 'root evals/ missing').toBe(true)
+  })
+})
+
+describe('public OpenAPI route coverage', () => {
+  it('maps App Router dynamic segments to OpenAPI params', () => {
+    expect(fileToOpenApiPath('src/app/api/entities/[entityId]/route.ts')).toBe('/entities/{entityId}')
+  })
+
+  it('every src/app/api route.ts is in public/openapi.json or omitted', () => {
+    const gaps = findOpenApiCoverageGaps(REPO_ROOT)
+    expect(gaps, formatOpenApiCoverageGaps(gaps)).toEqual([])
   })
 })
 

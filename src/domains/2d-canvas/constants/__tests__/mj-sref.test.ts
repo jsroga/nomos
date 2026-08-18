@@ -1,45 +1,35 @@
 import { describe, expect, it } from 'vitest'
 import { GenerationMode, GENERATION_MODES } from '../generation-modes'
+import { resolveGenerationModeSrefUrls } from '../../state/hooks/apply-generation-mode-srefs'
 import {
   absolutePublicStyleRefUrl,
   clampStyleReferenceUrls,
   confirmGenerationModeSwitch,
   generationModePersistFields,
-  mjSrefPathsThatExist,
-  mjSrefPublicPath,
+  generationModePresetSrefUrls,
   remainingStyleRefSlots,
   STYLE_REFERENCE_URL_MAX,
   takeStyleRefFiles,
-  MjSrefSlotFile,
+  PAINTED_ISOMETRIC_SREF_URLS,
 } from '../mj-sref'
 
 describe('mj-sref helpers', () => {
-  it('builds public paths for each slot', () => {
-    expect(mjSrefPublicPath(GenerationMode.PaintedIsometric, MjSrefSlotFile.One)).toBe(
-      '/2d-canvas/mj-sref/painted-isometric/1.png',
-    )
+  it('uses Disco Elysium blob URLs and does not look up public files', () => {
+    expect(generationModePresetSrefUrls(GenerationMode.PaintedIsometric)).toEqual([
+      ...PAINTED_ISOMETRIC_SREF_URLS,
+    ])
+    const mode = GENERATION_MODES.find(item => item.id === GenerationMode.PaintedIsometric)
+    expect(mode).toBeDefined()
+    if (!mode) return
+    expect(resolveGenerationModeSrefUrls(mode)).toEqual([...PAINTED_ISOMETRIC_SREF_URLS])
+    expect(generationModePresetSrefUrls(GenerationMode.PixelArt)).toEqual([])
+    expect(generationModePresetSrefUrls(GenerationMode.AnimeLineart)).toEqual([])
   })
 
-  it('turns repo public paths into origin URLs and leaves blob URLs alone', () => {
+  it('leaves already-absolute blob URLs alone', () => {
     expect(
-      absolutePublicStyleRefUrl(
-        '/2d-canvas/mj-sref/painted-isometric/1.png',
-        'https://nomos.gg/',
-      ),
-    ).toBe('https://nomos.gg/2d-canvas/mj-sref/painted-isometric/1.png')
-    expect(
-      absolutePublicStyleRefUrl(
-        'https://blob.vercel-storage.com/style-refs/a.png',
-        'https://nomos.gg',
-      ),
-    ).toBe('https://blob.vercel-storage.com/style-refs/a.png')
-  })
-
-  it('skips missing preset files', () => {
-    const paths = mjSrefPathsThatExist(GenerationMode.PixelArt, path =>
-      path.endsWith(MjSrefSlotFile.One),
-    )
-    expect(paths).toEqual(['/2d-canvas/mj-sref/pixel-art/1.png'])
+      absolutePublicStyleRefUrl(PAINTED_ISOMETRIC_SREF_URLS[0], 'https://nomos.gg'),
+    ).toBe(PAINTED_ISOMETRIC_SREF_URLS[0])
   })
 
   it('clamps style URLs to three', () => {

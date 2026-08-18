@@ -55,6 +55,39 @@ export interface CommitWritersRoomAddToWorldInput {
   setSectionPendingActions: WritersRoomCore['setSectionPendingActions']
 }
 
+export async function commitBeatCreatesToWorld(input: {
+  toolArgs: readonly Record<string, unknown>[]
+  currentEpisodeId: WritersRoomCore['currentEpisodeId']
+  executeAction: WritersRoomCore['executeAction']
+  setActiveTab: WritersRoomCore['setActiveTab']
+  closeBible: WritersRoomCore['closeBible']
+  refreshBeats: WritersRoomCore['refreshBeats']
+  confirmNewCastMembers?: (payload: ConfirmNewCastInput) => Promise<unknown>
+}): Promise<boolean> {
+  const beatActions = createBeatCommitActions(input.toolArgs)
+  if (beatActions.length === 0) return false
+  getStorytellerUiStore().setPendingBoardHydration(true)
+  for (const action of beatActions) {
+    await input.executeAction(action)
+  }
+  await input.confirmNewCastMembers?.({
+    beatPayloads: beatActions.map(action => recordFromJson(action.payload)),
+  })
+  if (
+    !showBeatOnBoard({
+      episodeId: input.currentEpisodeId,
+      setActiveTab: input.setActiveTab,
+      closeBible: input.closeBible,
+      refreshBeats: input.refreshBeats,
+    })
+  ) {
+    return false
+  }
+  toast.success(WritersRoomToast.BeatOnBoard)
+  getStorytellerUiStore().clearPendingBeatAdds(true)
+  return true
+}
+
 export async function commitWritersRoomAddToWorld(
   input: CommitWritersRoomAddToWorldInput,
 ): Promise<boolean> {
@@ -70,27 +103,16 @@ export async function commitWritersRoomAddToWorld(
   })
 
   if (targets.length === 0) {
-    const beatActions = createBeatCommitActions(input.payload.toolArgs)
-    if (beatActions.length > 0) {
-      getStorytellerUiStore().setPendingBoardHydration(true)
-      for (const action of beatActions) {
-        await input.executeAction(action)
-      }
-      await input.confirmNewCastMembers({
-        beatPayloads: beatActions.map(action => recordFromJson(action.payload)),
-      })
-      if (
-        showBeatOnBoard({
-          episodeId: input.currentEpisodeId,
-          setActiveTab: input.setActiveTab,
-          closeBible: input.closeBible,
-          refreshBeats: input.refreshBeats,
-        })
-      ) {
-        toast.success(WritersRoomToast.BeatOnBoard)
-        return true
-      }
-    }
+    const committedBeats = await commitBeatCreatesToWorld({
+      toolArgs: input.payload.toolArgs,
+      currentEpisodeId: input.currentEpisodeId,
+      executeAction: input.executeAction,
+      setActiveTab: input.setActiveTab,
+      closeBible: input.closeBible,
+      refreshBeats: input.refreshBeats,
+      confirmNewCastMembers: input.confirmNewCastMembers,
+    })
+    if (committedBeats) return true
     const fallbackTargets = chatFallbackAddToWorldTargets({
       toolArgs: input.payload.toolArgs,
       pending: input.sectionPendingActions,

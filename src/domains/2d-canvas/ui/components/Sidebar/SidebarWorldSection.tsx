@@ -1,56 +1,58 @@
 import React from 'react'
-import { Sparkles } from 'lucide-react'
-import { Button } from '@/components/Button'
-import { SidebarSection, SidebarLabel, SidebarTextarea } from '@/components/DomainSidebar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/DropdownMenu'
+import { Images, Scroll } from 'lucide-react'
+import { MasterPromptField, MasterPromptSuggestMode } from '@/components/MasterPromptField'
+import { FileUploader } from '@/components/FileUploader'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
-import { QuickActionLabel } from '@/shared/chat/core/constants/quick-actions'
-import { GENERATION_MODES, type GenerationModeDef } from '@/domains/2d-canvas/constants/generation-modes'
+import toast from 'react-hot-toast'
+import { GENERATION_MODES } from '@/domains/2d-canvas/constants/generation-modes'
+import {
+  STYLE_REF_FILE_ACCEPT,
+  STYLE_REFERENCE_URL_MAX,
+  confirmGenerationModeSwitch,
+} from '@/domains/2d-canvas/constants/mj-sref'
 import type { WorldGenSidebarState } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
 import {
   WorldGenSidebarWorldCopy,
+  WorldGenSidebarToast,
+  STYLE_REF_UNDO_TOAST_MS,
+  styleRefCaption,
+  styleRefCountLabel,
+  styleRefUploadingLabel,
   switchGenerationModeDescription,
+  WorldGenStyleRefsClass,
 } from '../../constants/sidebar'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
-import { confirmGenerationModeSwitch } from '@/domains/2d-canvas/constants/mj-sref'
-import { SidebarStyleRefs } from './SidebarStyleRefs'
+import { HtmlElementType } from '@/shared/data/constants/protocol'
 
 type SidebarWorldSectionProps = Pick<
   WorldGenSidebarState,
   | 'masterPrompt'
   | 'handleMasterPromptChange'
   | 'handleSelectGenerationMode'
-  | 'handleResetStyleAnchor'
   | 'handleAddStyleRefFiles'
   | 'handleRemoveStyleRef'
-  | 'handleClearStyleRefs'
+  | 'handleRestoreStyleRefs'
   | 'styleReferenceUrls'
   | 'isUploadingStyleRefs'
-  | 'generationMode'
-  | 'styleAnchorUrl'
+  | 'isApplyingGenerationMode'
 >
 
 export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
   masterPrompt,
   handleMasterPromptChange,
   handleSelectGenerationMode,
-  handleResetStyleAnchor,
   handleAddStyleRefFiles,
+  handleRestoreStyleRefs,
   handleRemoveStyleRef,
-  handleClearStyleRefs,
   styleReferenceUrls,
   isUploadingStyleRefs,
-  generationMode,
-  styleAnchorUrl,
+  isApplyingGenerationMode,
 }) => {
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
 
-  const onSelectMode = async (mode: GenerationModeDef) => {
+  const onSuggestPick = async (id: string) => {
+    const mode = GENERATION_MODES.find(entry => entry.id === id)
+    if (!mode) return
     const approved = await confirmGenerationModeSwitch(
       confirm,
       WorldGenSidebarWorldCopy.SwitchModeTitle,
@@ -60,68 +62,102 @@ export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
     await handleSelectGenerationMode(mode)
   }
 
+  const onRemoveStyleRef = (id: string) => {
+    const index = Number(id)
+    if (!Number.isInteger(index)) return
+    const snapshot = [...styleReferenceUrls]
+    handleRemoveStyleRef(index)
+    toast(
+      toastId => (
+        <span className="flex items-center gap-3">
+          <span>{WorldGenSidebarToast.ReferenceRemoved}</span>
+          <button
+            type={HtmlElementType.Button}
+            className="font-mono text-xs text-primary"
+            onClick={() => {
+              handleRestoreStyleRefs(snapshot)
+              toast.dismiss(toastId.id)
+            }}
+          >
+            {WorldGenSidebarToast.Undo}
+          </button>
+        </span>
+      ),
+      { duration: STYLE_REF_UNDO_TOAST_MS },
+    )
+  }
+
+  const items = [
+    ...styleReferenceUrls.map((src, index) => ({
+      id: String(index),
+      src,
+      caption: styleRefCaption(index),
+    })),
+    ...(isUploadingStyleRefs
+      ? [{ id: WorldGenSidebarWorldCopy.SrefCaption, uploading: true as const }]
+      : []),
+  ]
+  const uploadingCount = isUploadingStyleRefs ? 1 : 0
+  const isEmpty = styleReferenceUrls.length === 0 && !isUploadingStyleRefs
+
   return (
-    <SidebarSection title={WorldGenSidebarWorldCopy.Title}>
-      <div className="space-y-3" id={TOUR_STEP_IDS.WORLDGEN_STYLE_PROMPT}>
-        <div className="flex items-center justify-between gap-2">
-          <SidebarLabel>{WorldGenSidebarWorldCopy.PromptLabel}</SidebarLabel>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-6 text-xs gap-1 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground"
-              >
-                <Sparkles size={12} />
-                {QuickActionLabel.SuggestIdea}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              {GENERATION_MODES.map(mode => (
-                <DropdownMenuItem
-                  key={mode.id}
-                  className="flex flex-col items-start gap-0.5 py-2"
-                  onSelect={() => {
-                    void onSelectMode(mode)
-                  }}
-                  data-selected={mode.id === generationMode}
-                >
-                  <span className="text-sm font-medium">{mode.name}</span>
-                  <span className="text-xs text-muted-foreground whitespace-normal">
-                    {mode.hint}
-                  </span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <div id={TOUR_STEP_IDS.WORLDGEN_STYLE_PROMPT}>
+      <MasterPromptField
+        label={WorldGenSidebarWorldCopy.PromptLabel}
+        icon={<Scroll size={12} strokeWidth={1.7} />}
+        value={masterPrompt}
+        onChange={handleMasterPromptChange}
+        placeholder={WorldGenSidebarWorldCopy.Placeholder}
+        suggestMode={MasterPromptSuggestMode.Menu}
+        suggestItems={GENERATION_MODES.map(mode => ({
+          id: mode.id,
+          label: mode.name,
+          description: mode.hint,
+        }))}
+        onSuggestPick={id => {
+          void onSuggestPick(id)
+        }}
+        suggestBusy={isApplyingGenerationMode}
+      />
+      <div>
+        <div className={WorldGenStyleRefsClass.Header}>
+          <span className={WorldGenStyleRefsClass.Label}>
+            <Images size={12} strokeWidth={1.7} />
+            {WorldGenSidebarWorldCopy.StyleImagesLabel}
+          </span>
+          {uploadingCount > 0 ? (
+            <span className={WorldGenStyleRefsClass.Uploading}>{styleRefUploadingLabel(uploadingCount)}</span>
+          ) : styleReferenceUrls.length > 0 ? (
+            <span className={WorldGenStyleRefsClass.Count}>
+              {styleRefCountLabel(styleReferenceUrls.length, STYLE_REFERENCE_URL_MAX)}
+            </span>
+          ) : null}
         </div>
-        <SidebarTextarea
-          value={masterPrompt}
-          onChange={e => handleMasterPromptChange(e.target.value)}
-          placeholder={WorldGenSidebarWorldCopy.Placeholder}
-          className="h-32"
-        />
-        <SidebarStyleRefs
-          urls={styleReferenceUrls}
-          isUploading={isUploadingStyleRefs}
-          onAddFiles={files => {
+        {isEmpty ? (
+          <p className={WorldGenStyleRefsClass.Hint}>
+            {WorldGenSidebarWorldCopy.StyleImagesHintBefore}
+            <span className={WorldGenStyleRefsClass.HintFlag}>{WorldGenSidebarWorldCopy.SrefFlag}</span>
+            {WorldGenSidebarWorldCopy.StyleImagesHintAfter}
+          </p>
+        ) : null}
+        <FileUploader
+          items={items}
+          onPick={files => {
             void handleAddStyleRefFiles(files)
           }}
-          onRemove={handleRemoveStyleRef}
-          onClear={handleClearStyleRefs}
+          onRemove={onRemoveStyleRef}
+          accept={STYLE_REF_FILE_ACCEPT}
+          maxCount={STYLE_REFERENCE_URL_MAX}
+          emptyTitle={WorldGenSidebarWorldCopy.StyleImagesDrop}
+          emptyAction={WorldGenSidebarWorldCopy.StyleImagesChoose}
+          emptyMeta={isEmpty ? styleRefCountLabel(0, STYLE_REFERENCE_URL_MAX) : undefined}
+          addDisabled={isUploadingStyleRefs}
         />
-        {styleAnchorUrl ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-0 text-xs text-muted-foreground"
-            onClick={handleResetStyleAnchor}
-          >
-            {WorldGenSidebarWorldCopy.ResetStyleAnchor}
-          </Button>
+        {isApplyingGenerationMode ? (
+          <p className={WorldGenStyleRefsClass.Generating}>{WorldGenSidebarWorldCopy.PromptGenerating}</p>
         ) : null}
       </div>
       {ConfirmDialogComponent}
-    </SidebarSection>
+    </div>
   )
 }

@@ -11,9 +11,11 @@
     "scripts/**/*.{ts,js,mjs}",
     "e2e/**/*.ts",
     "evals/run.ts",
-    "src/shared/agent-kernel/scorers/**/*.ts"
+    "src/shared/agent-kernel/scorers/**/*.ts",
+    "stories/**/*.{ts,tsx}",
+    ".storybook/**/*.{ts,tsx}"
   ],
-  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,js,mjs}", "e2e/**/*.ts", "evals/**/*.ts"],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,js,mjs}", "e2e/**/*.ts", "evals/**/*.ts", "stories/**/*.{ts,tsx}", ".storybook/**/*.{ts,tsx}"],
   "ignore": [
     "**/*.test.ts",
     "**/*.spec.ts",

@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { Plus, Edit2, Check, Film, Trash2 } from 'lucide-react'
+import { Plus, Film } from 'lucide-react'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/Button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/Tooltip'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
-import { cachedFetch, clearFetchCache } from '@/shared/data/fetch-cache'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { ConfirmDialogVariant } from '@/components/ConfirmDialog/constants/confirm-dialog-copy'
 import {
   Dialog,
   DialogContent,
@@ -17,34 +18,40 @@ import {
 } from '@/components/Dialog'
 import { Input } from '@/components/Input'
 import {
+  createStorytellerEpisode,
+  deleteStorytellerEpisode,
+  patchStorytellerEpisode,
+} from '@/domains/storyteller/core/io/storyteller.api'
+import { storytellerKeys } from '@/domains/storyteller/core/io/storyteller.keys'
+import { useEpisodes } from '@/domains/storyteller/state/queries/useEpisodes'
+import { sortEpisodesForDisplay } from '@/domains/storyteller/state/utils/episode-list'
+import type { PhaseId } from '@/domains/storyteller/core/types/enums'
+import { EpisodeManagerRow } from './EpisodeManagerRow'
+import {
+  EPISODE_MANAGER_ADD,
+  EPISODE_MANAGER_CREATE_CONFIRM,
+  EPISODE_MANAGER_CREATE_DESCRIPTION,
+  EPISODE_MANAGER_CREATE_INPUT_ID,
+  EPISODE_MANAGER_CREATE_PLACEHOLDER,
+  EPISODE_MANAGER_CREATE_TITLE,
   EPISODE_MANAGER_DELETE_CANCEL,
   EPISODE_MANAGER_DELETE_CONFIRM,
   EPISODE_MANAGER_DELETE_ERROR_LOG,
   EPISODE_MANAGER_DELETE_FAILED,
   EPISODE_MANAGER_DELETE_TITLE,
-  EPISODE_MANAGER_FETCH_ERROR_LOG,
-  EPISODE_MANAGER_FETCH_FAILED_LOG,
-  EPISODE_MANAGER_UNTITLED,
+  EPISODE_MANAGER_EMPTY_HINT,
+  EPISODE_MANAGER_LOADING_COUNT,
+  EPISODE_MANAGER_NEW,
   EPISODE_MANAGER_RENAMED_TOAST,
+  EpisodeManagerEmptyClass,
   episodeDeleteDescription,
+  formatEpisodeIndex,
+  formatEpisodesHeading,
 } from './constants/episode-manager'
-import {
-  EpisodeTitleActionMode,
-  episodeTitleActionLabel,
-  episodeTitleActionMode,
-  shouldPersistEpisodeRename,
-} from './episode-title-action'
-import {
-  createStorytellerEpisode,
-  deleteStorytellerEpisode,
-  fetchStorytellerEpisodes,
-  patchStorytellerEpisode,
-} from '@/domains/storyteller/core/io/storyteller.api'
-import { readString, recordFromJson } from '@/shared/data/json-guards'
-import {
-  StorytellerConfirmVariant,
-  StorytellerQueryParam,
-} from '@/domains/storyteller/core/storyteller-page-wire'
+import { shouldPersistEpisodeRename } from './episode-title-action'
+import { KeyboardKey } from '@/shared/data/constants/protocol'
+import { readString } from '@/shared/data/json-guards'
+import { StorytellerQueryParam } from '@/domains/storyteller/core/storyteller-page-wire'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { storytellerSearchParams } from '@/domains/storyteller/state/utils/strip-bible-search-params'
 
@@ -58,6 +65,8 @@ interface EpisodeManagerProps {
   projectId: string
   currentEpisodeId: string | null
   currentEpisodeTitle?: string | null
+  currentPhase: PhaseId
+  isWorldBibleOpen?: boolean
   onEpisodeChange: (episodeId: string) => void
   onEpisodeTitleChange?: (title: string) => void
 }
@@ -66,51 +75,55 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
   projectId,
   currentEpisodeId,
   currentEpisodeTitle,
+  currentPhase,
+  isWorldBibleOpen = false,
   onEpisodeChange,
   onEpisodeTitleChange,
 }) => {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [episodes, setEpisodes] = useState<Episode[]>([])
+  const queryClient = useQueryClient()
+  const episodesQuery = useEpisodes(projectId)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftTitle, setDraftTitle] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
 
-  // Dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [newEpisodeTitle, setNewEpisodeTitle] = useState('')
 
-  // Update parent with current episode title when episodes or currentEpisodeId changes
-  // Note: onEpisodeTitleChange excluded from deps to prevent infinite loops
-  useEffect(() => {
-    if (currentEpisodeId && episodes.length > 0) {
-      const current = episodes.find(ep => ep.id === currentEpisodeId)
-      if (current && onEpisodeTitleChange) {
-        onEpisodeTitleChange(current.title || EPISODE_MANAGER_UNTITLED)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentEpisodeId, episodes])
-
-  // Sync episode list when title changes via workspace state (e.g. premise panel save)
-  useEffect(() => {
-    if (!currentEpisodeTitle || !currentEpisodeId) return
-    setEpisodes(prev =>
-      prev.map(ep => (ep.id === currentEpisodeId ? { ...ep, title: currentEpisodeTitle } : ep))
+  const episodes = useMemo<Episode[]>(() => {
+    const rows = episodesQuery.data ?? []
+    return sortEpisodesForDisplay(
+      rows
+        .filter(row => row.id.length > 0)
+        .map(row => ({
+          id: row.id,
+          title: row.title?.trim() ? row.title : '',
+          sequence: row.sequence ?? 0,
+        }))
     )
-  }, [currentEpisodeTitle, currentEpisodeId])
+  }, [episodesQuery.data])
+
+  const isLoading = episodesQuery.isPending && episodes.length === 0
+
+  const invalidateEpisodes = () =>
+    queryClient.invalidateQueries({ queryKey: storytellerKeys.episodes(projectId) })
+
+  useEffect(() => {
+    if (!currentEpisodeId || !onEpisodeTitleChange) return
+    const current = episodes.find(ep => ep.id === currentEpisodeId)
+    if (!current || !current.title || current.title === currentEpisodeTitle) return
+    onEpisodeTitleChange(current.title)
+  }, [currentEpisodeId, currentEpisodeTitle, episodes, onEpisodeTitleChange])
 
   const handleRename = async (id: string, newTitle: string) => {
     setEditingId(null)
     if (!shouldPersistEpisodeRename(newTitle)) return
 
-    // Optimistic update
-    setEpisodes(episodes.map(ep => (ep.id === id ? { ...ep, title: newTitle } : ep)))
-
     await patchStorytellerEpisode(id, { title: newTitle })
     toast.success(EPISODE_MANAGER_RENAMED_TOAST)
+    void invalidateEpisodes()
   }
 
   const handleDelete = async (id: string, title: string) => {
@@ -119,23 +132,16 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
       description: episodeDeleteDescription(title),
       confirmLabel: EPISODE_MANAGER_DELETE_CONFIRM,
       cancelLabel: EPISODE_MANAGER_DELETE_CANCEL,
-      variant: StorytellerConfirmVariant.Destructive,
+      variant: ConfirmDialogVariant.Destructive,
     })
 
     if (!confirmed) return
 
-    // Optimistic update
-    setEpisodes(prev => prev.filter(ep => ep.id !== id))
-
-    // If we deleted the current episode, redirect to Story Bible (clear prompt)
     if (currentEpisodeId === id) {
       const params = storytellerSearchParams(searchParams)
       params.delete(StorytellerQueryParam.EpisodeId)
       router.push(`${pathname}?${params.toString()}`)
       getStorytellerUiStore().setWorldBibleOpen(true)
-    } else {
-      // If we deleted a non-active episode, no nav change needed
-      // But if we want to be safe, we could check if any selection logic is needed
     }
 
     try {
@@ -143,61 +149,12 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
 
       if (!ok) throw new Error(EPISODE_MANAGER_DELETE_FAILED)
 
-      clearFetchCache(`episodes:${projectId}`)
+      void invalidateEpisodes()
     } catch (err) {
       console.error(EPISODE_MANAGER_DELETE_ERROR_LOG, err)
-      // Revert on error (could fetch fresh list instead)
-      // For now we just log, real app might want to show toast and revert state
     }
   }
 
-  // Fetch episodes - using cachedFetch to prevent infinite loops on remount
-  useEffect(() => {
-    let isMounted = true
-    if (!projectId) return
-
-    setIsLoading(true)
-
-    cachedFetch(
-      `episodes:${projectId}`,
-      () => fetchStorytellerEpisodes(projectId),
-      {
-        ttlMs: 60_000,
-        validate: (value): value is unknown[] => Array.isArray(value),
-      }
-    )
-      .then(data => {
-        if (!isMounted) return
-        if (Array.isArray(data)) {
-          setEpisodes(
-            data.map(row => {
-              const ep = recordFromJson(row)
-              return {
-                id: readString(ep.id) ?? '',
-                title: readString(ep.title) ?? EPISODE_MANAGER_UNTITLED,
-                sequence: typeof ep.sequence === 'number' ? ep.sequence : 0,
-              }
-            })
-          )
-        } else {
-          console.error(EPISODE_MANAGER_FETCH_FAILED_LOG, data)
-          setEpisodes([])
-        }
-      })
-      .catch(err => {
-        console.error(EPISODE_MANAGER_FETCH_ERROR_LOG, err)
-        if (isMounted) setEpisodes([])
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false)
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [projectId])
-
-  // Open dialog instead of prompt
   const handleCreateClick = () => {
     setNewEpisodeTitle('')
     setIsCreateDialogOpen(true)
@@ -212,15 +169,7 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
       sequence: episodes.length + 1,
     })
     if (readString(newEpisode.id)) {
-      clearFetchCache(`episodes:${projectId}`)
-      setEpisodes([
-        ...episodes,
-        {
-          id: readString(newEpisode.id) ?? '',
-          title: readString(newEpisode.title) ?? newEpisodeTitle.trim(),
-          sequence: episodes.length + 1,
-        },
-      ])
+      void invalidateEpisodes()
       setIsCreateDialogOpen(false)
     }
   }
@@ -228,127 +177,73 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
   return (
     <>
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2" id={TOUR_STEP_IDS.STORYTELLER_EPISODES}>
-          <span className="flex items-center gap-1.5">
-            <Film size={12} />
-            Episodes
+        <div className="flex items-center justify-between mb-2.5" id={TOUR_STEP_IDS.STORYTELLER_EPISODES}>
+          <span className="font-mono text-[10.5px] tracking-[0.16em] uppercase text-muted-foreground/80 flex items-center gap-2">
+            <Film size={12} strokeWidth={1.7} />
+            {formatEpisodesHeading(isLoading ? 1 : episodes.length)}
           </span>
-          <div className="flex items-center gap-1">
+          {!isLoading && episodes.length > 0 ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-6 w-6 p-0"
+                  className="h-6 w-6 p-0 rounded-[7px] shadow-[inset_0_0_0_1px_hsl(var(--border)/0.8)] border-0 text-muted-foreground"
                   onClick={handleCreateClick}
                 >
                   <Plus size={14} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Add episode</p>
+                <p>{EPISODE_MANAGER_ADD}</p>
               </TooltipContent>
             </Tooltip>
-          </div>
+          ) : null}
         </div>
 
-        <div className="space-y-1">
+        <div className="flex flex-col gap-[3px]">
           {isLoading
-            ? // Shimmer loading state
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="px-3 py-2 rounded text-sm flex items-center gap-2">
-                <span className="text-xs font-mono text-muted-foreground/30">#{i + 1}</span>
+            ? Array.from({ length: EPISODE_MANAGER_LOADING_COUNT }).map((_, i) => (
+              <div key={i} className="px-3 py-2 rounded-[9px] text-sm flex items-center gap-2">
+                <span className="text-[10.5px] font-mono text-muted-foreground/30">{formatEpisodeIndex(i + 1)}</span>
                 <div
                   className="h-4 bg-muted/20 rounded animate-pulse flex-1"
                   style={{ maxWidth: `${100 + i * 30}px` }}
                 />
               </div>
             ))
-            : episodes.map(ep => (
-              <div
+            : episodes.map((ep, index) => (
+              <EpisodeManagerRow
                 key={ep.id}
-                className={`px-3 py-2 rounded text-sm cursor-pointer flex items-center justify-between group ${currentEpisodeId === ep.id ? 'bg-primary/20 text-primary' : 'hover:bg-accent'
-                  }`}
-                onClick={() => onEpisodeChange(ep.id)}
-              >
-                <div className="flex-1 flex items-center gap-2">
-                  <span className="text-xs font-mono opacity-50">#{ep.sequence}</span>
-                  {editingId === ep.id ? (
-                    <input
-                      autoFocus
-                      className="bg-transparent border-b-2 border-primary focus:outline-none w-full text-sm"
-                      value={draftTitle}
-                      onChange={e => setDraftTitle(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') void handleRename(ep.id, draftTitle)
-                      }}
-                      onClick={e => e.stopPropagation()}
-                    />
-                  ) : (
-                    <span
-                      onDoubleClick={e => {
-                        e.stopPropagation()
-                        setEditingId(ep.id)
-                      }}
-                    >
-                      {ep.title || 'Untitled Episode'}
-                    </span>
-                  )}
-                </div>
-                <div
-                  className={`flex gap-1 ${
-                    editingId === ep.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                  }`}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 w-6 p-0"
-                        onClick={e => {
-                          e.stopPropagation()
-                          if (editingId === ep.id) {
-                            void handleRename(ep.id, draftTitle)
-                            return
-                          }
-                          setDraftTitle(ep.title)
-                          setEditingId(ep.id)
-                        }}
-                      >
-                        {episodeTitleActionMode(editingId, ep.id) ===
-                        EpisodeTitleActionMode.Save ? (
-                          <Check size={12} />
-                        ) : (
-                          <Edit2 size={12} />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{episodeTitleActionLabel(episodeTitleActionMode(editingId, ep.id))}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                        onClick={e => {
-                          e.stopPropagation()
-                          handleDelete(ep.id, ep.title)
-                        }}
-                      >
-                        <Trash2 size={12} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete episode</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
+                episode={ep}
+                displayIndex={index + 1}
+                isSelected={!isWorldBibleOpen && currentEpisodeId === ep.id}
+                editingId={editingId}
+                draftTitle={draftTitle}
+                currentPhase={currentPhase}
+                onSelect={onEpisodeChange}
+                onDraftTitleChange={setDraftTitle}
+                onRename={(id, title) => {
+                  void handleRename(id, title)
+                }}
+                onStartRename={(id, title) => {
+                  setDraftTitle(title)
+                  setEditingId(id)
+                }}
+                onDelete={(id, title) => {
+                  void handleDelete(id, title)
+                }}
+              />
             ))}
+          {!isLoading && episodes.length === 0 && (
+            <div>
+              <Button className={EpisodeManagerEmptyClass.Cta} onClick={handleCreateClick}>
+                <Plus size={14} strokeWidth={1.9} />
+                {EPISODE_MANAGER_NEW}
+              </Button>
+              <p className={EpisodeManagerEmptyClass.Hint}>{EPISODE_MANAGER_EMPTY_HINT}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -356,32 +251,32 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>New Episode</DialogTitle>
+            <DialogTitle>{EPISODE_MANAGER_CREATE_TITLE}</DialogTitle>
             <DialogDescription>
-              Enter a title for the new episode. You can change this later.
+              {EPISODE_MANAGER_CREATE_DESCRIPTION}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="flex items-center gap-4">
               <Input
-                id="name"
+                id={EPISODE_MANAGER_CREATE_INPUT_ID}
                 value={newEpisodeTitle}
                 onChange={e => setNewEpisodeTitle(e.target.value)}
-                placeholder="e.g. The Call to Adventure"
+                placeholder={EPISODE_MANAGER_CREATE_PLACEHOLDER}
                 className="col-span-3"
                 autoFocus
                 onKeyDown={e => {
-                  if (e.key === 'Enter') handleCreateEpisode()
+                  if (e.key === KeyboardKey.Enter) void handleCreateEpisode()
                 }}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
+              {EPISODE_MANAGER_DELETE_CANCEL}
             </Button>
             <Button onClick={handleCreateEpisode} disabled={!newEpisodeTitle.trim()}>
-              Create Episode
+              {EPISODE_MANAGER_CREATE_CONFIRM}
             </Button>
           </DialogFooter>
         </DialogContent>

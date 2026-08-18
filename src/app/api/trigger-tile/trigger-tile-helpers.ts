@@ -5,8 +5,7 @@ import {
   hasApiframeApiKey,
   imageGenerateModelToTileProvider,
   readApiframeApiKey,
-  resolveTileFirstModel,
-  resolveTileFollowUpModel,
+  resolveTileGenerationModel,
 } from '@/shared/ai/image-model-env'
 
 interface TileProviderEnv {
@@ -32,7 +31,7 @@ function apiframeConfig(provider: TileAIProvider, model: string): TileProviderCh
 }
 
 function choiceFromModel(
-  model: ReturnType<typeof resolveTileFirstModel>,
+  model: ReturnType<typeof resolveTileGenerationModel>,
 ): TileProviderChoice {
   return apiframeConfig(imageGenerateModelToTileProvider(model), model)
 }
@@ -40,6 +39,7 @@ function choiceFromModel(
 export function resolveTileAiProvider(input: {
   isFirstTile: boolean
   env: TileProviderEnv
+  models?: Record<string, string | undefined>
 }): NextResponse | TileProviderChoice {
   if (!input.env.hasApiframe) {
     return NextResponse.json(
@@ -48,9 +48,5 @@ export function resolveTileAiProvider(input: {
     )
   }
 
-  if (input.isFirstTile) {
-    return choiceFromModel(resolveTileFirstModel())
-  }
-
-  return choiceFromModel(resolveTileFollowUpModel())
+  return choiceFromModel(resolveTileGenerationModel(input.isFirstTile, input.models))
 }

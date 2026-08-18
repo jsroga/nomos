@@ -9,6 +9,7 @@ import {
 } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
 import { LandingNavUiCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
 import { handleLandingNavSelect } from '@/domains/marketing/ui/LandingPage/constants/landing-nav'
+import { LandingGitHubLink } from './LandingGitHubLink'
 
 type LandingNavProps = {
   isLoggedIn: boolean
@@ -61,6 +62,8 @@ export function LandingNav({
               <Menu className="h-5 w-5 text-white" />
             </button>
 
+            <LandingGitHubLink className="flex items-center text-white/50 transition-colors duration-200 hover:text-white" />
+
             {!isLoggedIn ? (
               <Link
                 prefetch={false}
@@ -106,6 +109,11 @@ export function LandingNav({
               </div>
 
               <div className="space-y-3 border-b border-white/[0.06] p-6">
+                <LandingGitHubLink
+                  showLabel
+                  onClick={onMobileMenuClose}
+                  className="flex w-full items-center justify-center gap-2 py-2 font-mono text-sm tracking-wider text-white/70 transition-colors hover:text-white"
+                />
                 {!isLoggedIn ? (
                   <Link
                     prefetch={false}

@@ -28,7 +28,7 @@ export enum PosterOperationLabel {
 
 export enum PosterOperationDetail {
   CreatingVisualScript = 'Creating visual script...',
-  CreatingCinematicPoster = 'Creating cinematic poster via Midjourney...',
+  CreatingCinematicPoster = 'Creating cinematic poster...',
   ResumingGeneration = 'Resuming generation...',
   StatusPrefix = 'Status: ',
 }

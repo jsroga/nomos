@@ -58,6 +58,7 @@ describe('commitWritersRoomAddToWorld', () => {
   beforeEach(() => {
     toastSuccess.mockReset()
     getStorytellerUiStore().setPendingBoardHydration(false)
+    getStorytellerUiStore().clearPendingBeatAdds(false)
   })
 
   it('commits each beat create, hydrates the board, and toasts once', async () => {
@@ -97,6 +98,8 @@ describe('commitWritersRoomAddToWorld', () => {
     })
     expect(toastSuccess).toHaveBeenCalledTimes(1)
     expect(toastSuccess).toHaveBeenCalledWith(WritersRoomToast.BeatOnBoard)
+    expect(getStorytellerUiStore().beatAddsCommitted).toBe(true)
+    expect(getStorytellerUiStore().pendingBeatAdds).toEqual([])
   })
 
   it('does not dump beat creates into Overview when no episode is selected', async () => {

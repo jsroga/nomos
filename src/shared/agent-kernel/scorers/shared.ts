@@ -1,9 +1,13 @@
-import { MODELS, toOpenRouterModel } from '@/shared/agent-kernel/models'
+import { wrapLanguageModel } from 'ai'
+import { MODELS, toOpenRouterModel, toOpenRouterModelId, createPureModel } from '@/shared/agent-kernel/models'
 import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
 import { isPlainObject } from '@/shared/data/json-guards'
-import { ScorerOutputField } from '@/shared/agent-kernel/scorers/constants/shared'
+import { ScorerOutputField, LanguageModelMiddlewareSpec } from '@/shared/agent-kernel/scorers/constants/shared'
 
 const JUDGING_ROLE = 'judging'
+
+/** OpenRouter reserves max_tokens against remaining credits; unbounded Sol is 65536. */
+export const JUDGING_MAX_OUTPUT_TOKENS = 1024
 
 export function toMastraJudgingModel(): string {
   // Read at call time so evals/run.ts can load .env.local before scorer modules import.
@@ -11,6 +15,19 @@ export function toMastraJudgingModel(): string {
   return toOpenRouterModel(
     getConfiguredModel(JUDGING_ROLE) || process.env.JUDGING_MODEL || MODELS.judging.primary
   )
+}
+
+export function toMastraJudgingLanguageModel() {
+  return wrapLanguageModel({
+    model: createPureModel(toOpenRouterModelId(toMastraJudgingModel())),
+    middleware: {
+      specificationVersion: LanguageModelMiddlewareSpec.V3,
+      transformParams: async ({ params }) => {
+        if (params.maxOutputTokens != null) return params
+        return { ...params, maxOutputTokens: JUDGING_MAX_OUTPUT_TOKENS }
+      },
+    },
+  })
 }
 
 export function normalizeScore(score: number): number {

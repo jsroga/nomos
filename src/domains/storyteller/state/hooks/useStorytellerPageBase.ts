@@ -67,18 +67,17 @@ export function useStorytellerPageBase() {
 
   const {
     isWorldBibleOpen,
-    isBibleLocked,
-    bibleLockedBy,
-    userEmail,
     setWorldBibleOpen,
     toggleBible,
     closeBible,
-  } = useBibleState(currentProject?.id)
+  } = useBibleState()
 
   const {
     currentEpisodeId,
     setCurrentEpisodeId,
     currentEpisodeTitle,
+    headerEpisodeTitle,
+    episodeOrdinal,
     setCurrentEpisodeTitle,
     currentEpisode,
     hasEpisodes,
@@ -232,15 +231,14 @@ export function useStorytellerPageBase() {
     currentProject,
     setCurrentProject: setCurrentProjectInStore,
     isWorldBibleOpen,
-    isBibleLocked,
-    bibleLockedBy,
-    userEmail,
     setWorldBibleOpen,
     toggleBible,
     closeBible,
     currentEpisodeId,
     setCurrentEpisodeId,
     currentEpisodeTitle,
+    headerEpisodeTitle,
+    episodeOrdinal,
     setCurrentEpisodeTitle,
     currentEpisode,
     hasEpisodes,

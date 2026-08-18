@@ -1,11 +1,12 @@
 import { logger } from '@trigger.dev/sdk/v3'
-import { ReplicateImageOutputType } from '@/shared/ai/constants/replicate-output'
 import { UpscaleStrategy } from '../constants/generation-modes'
-import { TOPAZ_REPLICATE_MODEL } from '../constants/topaz-upscale'
+import { topazEnhanceModelFromMode } from '../constants/topaz-upscale'
 import { runGeminiPreUpscaleStep } from './upscale-tile-gemini-step'
 import { upscaleNearestNeighbour } from './upscale-tile-nearest-provider'
-import { upscaleWithReplicate } from './upscale-tile-replicate-provider'
+import { upscaleWithApiframe } from './upscale-tile-apiframe-provider'
 import type { ProviderConfig } from './upscale-tile-provider-types'
+import { resolveImageUpscaleMode } from '@/shared/ai/image-model-env'
+import { ApiframeUpscaleModel } from '@/shared/ai/constants/apiframe'
 
 interface ModeUpscaleResult {
   finalImageUrl: string | null
@@ -48,15 +49,11 @@ export async function runModeUpscale(params: {
     stepImage = step.step1Image
   }
 
-  logger.info('Running Topaz upscale via Replicate', { model: TOPAZ_REPLICATE_MODEL })
-  const result = await upscaleWithReplicate(
-    stepImage,
-    prompt,
-    providerConfig.apiKey,
-    TOPAZ_REPLICATE_MODEL
-  )
-  if (result.type === ReplicateImageOutputType.Url) {
-    return { finalImageUrl: result.data, finalImageBase64: null }
-  }
-  return { finalImageUrl: null, finalImageBase64: result.data }
+  const modelType = topazEnhanceModelFromMode(resolveImageUpscaleMode())
+  logger.info('Running Topaz upscale via Apiframe', {
+    model: ApiframeUpscaleModel.TopazImageUpscale,
+    modelType,
+  })
+  const result = await upscaleWithApiframe(stepImage, providerConfig.apiKey, { modelType })
+  return { finalImageUrl: result.imageUrl, finalImageBase64: null }
 }

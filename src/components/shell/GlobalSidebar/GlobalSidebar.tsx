@@ -12,6 +12,7 @@ import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { readString } from '@/shared/data/json-guards'
 import { isValidProjectId } from '@/shared/auth/security'
 import { AUTH_ROUTE } from '@/shared/auth/constants/auth-messages'
+import { is3dCanvasEnabled, isLoopCreatorEnabled } from '@/shared/data/constants/feature-flags'
 
 export const GlobalSidebar = () => {
   const pathname = usePathname()
@@ -86,27 +87,31 @@ export const GlobalSidebar = () => {
         </Button>
       </Link>
 
-      <Link href={interiorHref}>
-        <Button
-          variant={isActive(interiorHref) ? 'default' : 'ghost'}
-          size="icon"
-          title="3D Canvas"
-          className="w-10 h-10"
-        >
-          <Home size={20} />
-        </Button>
-      </Link>
+      {is3dCanvasEnabled() ? (
+        <Link href={interiorHref}>
+          <Button
+            variant={isActive(interiorHref) ? 'default' : 'ghost'}
+            size="icon"
+            title="3D Canvas"
+            className="w-10 h-10"
+          >
+            <Home size={20} />
+          </Button>
+        </Link>
+      ) : null}
 
-      <Link href={loopCreatorHref}>
-        <Button
-          variant={isActive(loopCreatorHref) ? 'default' : 'ghost'}
-          size="icon"
-          title="Loop Creator"
-          className="w-10 h-10"
-        >
-          <Repeat size={20} />
-        </Button>
-      </Link>
+      {isLoopCreatorEnabled() ? (
+        <Link href={loopCreatorHref}>
+          <Button
+            variant={isActive(loopCreatorHref) ? 'default' : 'ghost'}
+            size="icon"
+            title="Loop Creator"
+            className="w-10 h-10"
+          >
+            <Repeat size={20} />
+          </Button>
+        </Link>
+      ) : null}
 
       <div className="mt-auto flex flex-col items-center gap-4">
         {user && (

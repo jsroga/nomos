@@ -1,53 +1,64 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "World Building Kit API",
+    "title": "nomos.gg API",
     "version": "1.0.0",
-    "description": "Public REST + MCP HTTP surface. Zod schemas are the contract — regenerate with `npm run openapi:generate`. Agent/tool details: docs/MCP_API.md. SSE chat streams are out of scope."
+    "description": "HTTP API for the nomos.gg game-dev toolkit — narrative, worlds, entities, and 3D generation.\n\n## Authentication\n\nCreate a key with `POST /api-keys`, then send:\n\n`Authorization: Bearer YOUR_API_KEY`\n\nSigned-in workspace sessions also work with Try it in this browser.\n\n## Base URL\n\nAll paths are relative to `/api`. Production: `https://nomos.gg/api`.\n\n## What’s in this reference\n\n- **API Keys** — issue and revoke bearer keys\n- **MCP** — Model Context Protocol over HTTP for agents and automations\n- **Storyteller** — projects, characters, episodes, beats, bible, plan, and generation jobs\n- **Entities** — shared characters, locations, and items\n- **World** — tile map read and write\n- **3D Canvas** — text-to-3D jobs\n\nStreaming chat and autonomous draft are not part of this REST reference.",
+    "termsOfService": "https://nomos.gg/terms",
+    "contact": {
+      "name": "nomos.gg",
+      "url": "https://nomos.gg"
+    }
   },
   "servers": [
     {
-      "url": "/api",
-      "description": "Same-origin API base"
+      "url": "https://nomos.gg/api",
+      "description": "Production"
     },
     {
-      "url": "http://localhost:3000/api",
-      "description": "Local development"
+      "url": "/api",
+      "description": "This origin"
     }
   ],
   "tags": [
     {
-      "name": "MCP"
+      "name": "MCP",
+      "description": "JSON-RPC 2.0 over HTTP for AI agents and automations."
     },
     {
-      "name": "API Keys"
+      "name": "API Keys",
+      "description": "Issue and revoke bearer API keys."
     },
     {
-      "name": "Entities"
+      "name": "Entities",
+      "description": "Characters, locations, and items shared across modules."
     },
     {
-      "name": "Storyteller"
+      "name": "Storyteller",
+      "description": "Projects, characters, episodes, beats, bible, plan, and generation jobs."
     },
     {
-      "name": "World"
+      "name": "World",
+      "description": "Tile map read and write."
     },
     {
-      "name": "3D Canvas"
+      "name": "3D Canvas",
+      "description": "Text-to-3D generation jobs."
     }
   ],
   "components": {
     "securitySchemes": {
-      "BearerApiKey": {
+      "Bearer": {
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "API Key",
-        "description": "MCP / automation API key from POST /api-keys (Authorization: Bearer …)"
+        "description": "Create a key with POST /api-keys, then send it as a Bearer token in the Authorization header."
       },
-      "SessionCookie": {
+      "Session": {
         "type": "apiKey",
         "in": "cookie",
         "name": "sb-access-token",
-        "description": "Supabase session cookie used by the workspace UI (withAuth). Exact cookie names vary by Supabase project."
+        "description": "Signed-in workspace session. Try it works in this browser after you log in."
       }
     },
     "responses": {
@@ -63,6 +74,16 @@
       },
       "Unauthorized": {
         "description": "Authentication required",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorBody"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden",
         "content": {
           "application/json": {
             "schema": {
@@ -647,6 +668,286 @@
           "relationshipType"
         ]
       },
+      "StorytellerProject": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "StorytellerProjectList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StorytellerProject"
+        }
+      },
+      "StorytellerCreateProjectRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string"
+          },
+          "seriesBible": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "StorytellerPatchProjectRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "seriesBible": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          },
+          "storyPlan": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          }
+        }
+      },
+      "StorytellerCharacter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "portraitUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "name"
+        ]
+      },
+      "StorytellerCharacterList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StorytellerCharacter"
+        }
+      },
+      "StorytellerCreateCharacterRequest": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "characterPrompt": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "portraitUrl": {
+            "type": "string"
+          },
+          "mbti": {
+            "type": "string"
+          },
+          "voiceSignature": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "name"
+        ]
+      },
+      "StorytellerPatchCharacterRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "portraitUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "StorytellerBibleResponse": {
+        "type": "object",
+        "properties": {
+          "bible": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          },
+          "seriesBible": {
+            "nullable": true
+          },
+          "storyPlan": {
+            "nullable": true
+          }
+        },
+        "required": [
+          "bible"
+        ]
+      },
+      "StorytellerRelationshipGraph": {
+        "type": "object",
+        "properties": {
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "character",
+                    "place",
+                    "event",
+                    "faction",
+                    "rule",
+                    "beat",
+                    "episode",
+                    "item"
+                  ]
+                },
+                "metadata": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "nullable": true
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "type",
+                "metadata"
+              ]
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "target": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "weight": {
+                  "type": "number"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "evidence": {
+                  "type": "string"
+                },
+                "llmGrounded": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "source",
+                "target",
+                "weight",
+                "type"
+              ]
+            }
+          },
+          "centralCharacter": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "nodes",
+          "edges"
+        ]
+      },
       "StorytellerEpisodesResponse": {
         "type": "array",
         "items": {
@@ -717,6 +1018,98 @@
           "sequence"
         ]
       },
+      "StorytellerPatchEpisodeRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "masterPrompt": {
+            "type": "string"
+          },
+          "posterUrl": {
+            "type": "string"
+          },
+          "premise": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          }
+        }
+      },
+      "StorytellerBeat": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "episodeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sequence": {
+            "type": "number"
+          },
+          "logline": {
+            "type": "string",
+            "nullable": true
+          },
+          "beatType": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "visualHook": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "episodeId"
+        ]
+      },
+      "StorytellerBeatList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StorytellerBeat"
+        }
+      },
+      "StorytellerCreateBeatRequest": {
+        "type": "object",
+        "properties": {
+          "logline": {
+            "type": "string"
+          },
+          "beatType": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "visualHook": {
+            "type": "string"
+          }
+        }
+      },
+      "StorytellerPatchBeatRequest": {
+        "type": "object",
+        "additionalProperties": {
+          "nullable": true
+        }
+      },
       "StorytellerBibleLockResponse": {
         "type": "object",
         "properties": {
@@ -736,6 +1129,457 @@
           "isLocked",
           "lockedBy",
           "lockedAt"
+        ]
+      },
+      "StorytellerBibleLockPostResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "lock",
+              "unlock"
+            ]
+          },
+          "lockedBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lockedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "action",
+          "lockedBy",
+          "lockedAt"
+        ]
+      },
+      "StorytellerBibleLockPostRequest": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "lock",
+              "unlock"
+            ]
+          }
+        },
+        "required": [
+          "projectId",
+          "action"
+        ]
+      },
+      "StorytellerPlanResponse": {
+        "type": "object",
+        "properties": {
+          "storyPlan": {
+            "nullable": true
+          },
+          "planApproved": {
+            "type": "boolean"
+          },
+          "currentPhase": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "StorytellerSavePlanResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "episode": {
+            "nullable": true
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "StorytellerSavePlanRequest": {
+        "type": "object",
+        "properties": {
+          "episodeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "storyPlan": {
+            "nullable": true
+          },
+          "approved": {
+            "type": "boolean"
+          },
+          "currentPhase": {
+            "type": "string"
+          }
+        }
+      },
+      "StorytellerTimelineResponse": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": {
+            "nullable": true
+          }
+        }
+      },
+      "StorytellerWorldSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "summarize": {
+            "nullable": true
+          },
+          "worldGenPrompt": {
+            "type": "string"
+          }
+        }
+      },
+      "StorytellerSnapshot": {
+        "type": "object",
+        "properties": {
+          "beatId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "characterId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "beatId",
+          "characterId"
+        ]
+      },
+      "StorytellerSnapshotList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/StorytellerSnapshot"
+        }
+      },
+      "StorytellerUpsertSnapshotRequest": {
+        "type": "object",
+        "properties": {
+          "beatId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "characterId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stressLevel": {
+            "type": "number"
+          },
+          "emotionalState": {
+            "type": "string"
+          },
+          "transformationProgress": {
+            "type": "number"
+          },
+          "goals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fears": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "beatId",
+          "characterId"
+        ]
+      },
+      "StorytellerActionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "StorytellerActionRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "payload": {
+                "nullable": true
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "episodeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "traceId": {
+            "type": "string"
+          },
+          "reasoning": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "StorytellerJobQueuedResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "handleId": {
+            "type": "string"
+          },
+          "characterId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "handleId"
+        ]
+      },
+      "StorytellerGeneratePortraitRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "characterId": {
+            "type": "string"
+          },
+          "apiKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt",
+          "projectId"
+        ]
+      },
+      "StorytellerJobStatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "output": {
+            "nullable": true
+          },
+          "error": {
+            "nullable": true
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "StorytellerGeneratePosterRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "apiKey": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      },
+      "StorytellerMoodboardTriggerRequest": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "providerConfig": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          },
+          "styleReference": {
+            "type": "string"
+          },
+          "promptIndex": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "projectId"
+        ]
+      },
+      "StorytellerGenerateBeatImageRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "apiKey": {
+                "type": "string"
+              },
+              "modelId": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      },
+      "StorytellerConsistencyCheckResponse": {
+        "type": "object",
+        "properties": {
+          "inconsistencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "nullable": true
+              }
+            }
+          },
+          "fixes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "StorytellerConsistencyCheckRequest": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "episodeId": {
+            "type": "string"
+          },
+          "trigger": {
+            "type": "object",
+            "properties": {
+              "context": {
+                "nullable": true
+              }
+            }
+          }
+        },
+        "required": [
+          "projectId",
+          "trigger"
+        ]
+      },
+      "StorytellerConsistencyApplyRequest": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "episodeId": {
+            "type": "string"
+          },
+          "fixes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "nullable": true
+              }
+            }
+          }
+        },
+        "required": [
+          "projectId",
+          "fixes"
+        ]
+      },
+      "StorytellerConsistencyUndoRequest": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "episodeId": {
+            "type": "string"
+          },
+          "undoId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId"
         ]
       },
       "TileListResponse": {
@@ -1046,10 +1890,10 @@
           "MCP"
         ],
         "summary": "MCP JSON-RPC over HTTP",
-        "description": "Model Context Protocol endpoint. Tool catalog and auth: docs/MCP_API.md. Requires Bearer API key.",
+        "description": "JSON-RPC 2.0 endpoint for MCP tools. Authenticate with a bearer API key.",
         "security": [
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "requestBody": {
@@ -1088,7 +1932,7 @@
         "description": "Lists the callers MCP API keys (hashes only).",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           }
         ],
         "responses": {
@@ -1118,7 +1962,7 @@
         "description": "Creates a key. Plaintext key is returned once.",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           }
         ],
         "requestBody": {
@@ -1160,7 +2004,7 @@
         "summary": "Revoke API key",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           }
         ],
         "parameters": [
@@ -1205,10 +2049,10 @@
         "summary": "List entities",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "parameters": [
@@ -1292,10 +2136,10 @@
         "summary": "Create entity",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "requestBody": {
@@ -1342,10 +2186,10 @@
         "summary": "Get entity",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "parameters": [
@@ -1388,10 +2232,10 @@
         "summary": "Update entity",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "parameters": [
@@ -1447,10 +2291,10 @@
         "summary": "Delete entity",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "parameters": [
@@ -1498,10 +2342,10 @@
         "summary": "List entity relationships",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "parameters": [
@@ -1556,10 +2400,10 @@
         "summary": "Create entity relationship",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "requestBody": {
@@ -1598,6 +2442,596 @@
         }
       }
     },
+    "/storyteller/projects": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "List projects",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerProjectList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Create project",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerCreateProjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerProject"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/projects/{id}": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Get project",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerProject"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Update project",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerPatchProjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerProject"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/characters": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "List characters",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Character list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerCharacterList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Create character",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerCreateCharacterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Character",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerCharacter"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Update character",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerPatchCharacterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Character",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerCharacter"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Delete character",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/characters/{characterId}": {
+      "patch": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Update character by id",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "characterId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerPatchCharacterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Character",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerCharacter"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/bible": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Get series bible",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Series bible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerBibleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/relationships": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Get relationship graph",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Relationship graph",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerRelationshipGraph"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/storyteller/episodes": {
       "get": {
         "tags": [
@@ -1606,10 +3040,10 @@
         "summary": "List episodes",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "parameters": [
@@ -1639,6 +3073,15 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
         }
       },
@@ -1649,10 +3092,10 @@
         "summary": "Create episode",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "requestBody": {
@@ -1681,6 +3124,415 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/episodes/{episodeId}": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Get episode",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "episodeId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Episode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerEpisodeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Update episode",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "episodeId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerPatchEpisodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Episode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerEpisodeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Delete episode",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "episodeId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/episodes/{episodeId}/beats": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "List episode beats",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "episodeId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Beat list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerBeatList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Create beat",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "episodeId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerCreateBeatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Beat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerBeat"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/beats/{beatId}": {
+      "patch": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Update beat",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "beatId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerPatchBeatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Beat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerBeat"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Delete beat",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "beatId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
         }
       }
@@ -1693,10 +3545,10 @@
         "summary": "Get World Bible lock status",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "parameters": [
@@ -1726,6 +3578,1124 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Lock or unlock series bible",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerBibleLockPostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bible lock updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerBibleLockPostResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/plan": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Get story plan",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "episodeId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "projectId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Story plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerPlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Save story plan",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerSavePlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Story plan saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerSavePlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Patch story plan sequence",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerSavePlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Story plan saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerSavePlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/timeline": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Get episode timeline",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "episodeId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "beatId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Timeline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerTimelineResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/world-summary": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Get world summary",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "World summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerWorldSummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/snapshots": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "List character snapshots",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "beatId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "characterId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerSnapshotList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Upsert character snapshot",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerUpsertSnapshotRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerSnapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/actions": {
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Dispatch storyteller action",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Action result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/generate-portrait": {
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Generate character portrait",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerGeneratePortraitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Background job queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerJobQueuedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/generate-portrait/status": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Poll portrait job",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "runId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerJobStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/episodes/{episodeId}/generate-poster": {
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Generate episode poster",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "episodeId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerGeneratePosterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Background job queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerJobQueuedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/episodes/poster/status": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Poll poster job",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "runId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerJobStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/moodboard/trigger": {
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Trigger moodboard generation",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerMoodboardTriggerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Background job queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerJobQueuedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/moodboard/status": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Poll moodboard job",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "runId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerJobStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/beats/{beatId}/generate-image": {
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Generate beat image",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "beatId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerGenerateBeatImageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Background job queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerJobQueuedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/beats/status": {
+      "get": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Poll beat image job",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "runId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerJobStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/consistency/check": {
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Run consistency check",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerConsistencyCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Consistency check result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerConsistencyCheckResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/consistency/apply": {
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Apply consistency fixes",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerConsistencyApplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Consistency check result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/consistency/undo": {
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Undo consistency fixes",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerConsistencyUndoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Consistency check result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
           }
         }
       }
@@ -1738,10 +4708,10 @@
         "summary": "List tiles",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "parameters": [
@@ -1781,10 +4751,10 @@
         "summary": "Upsert tile",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "requestBody": {
@@ -1823,10 +4793,10 @@
         "summary": "Delete tile",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "requestBody": {
@@ -1867,10 +4837,10 @@
         "summary": "Start text-to-3D generation",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "requestBody": {
@@ -1911,10 +4881,10 @@
         "summary": "Poll text-to-3D status",
         "security": [
           {
-            "SessionCookie": []
+            "Session": []
           },
           {
-            "BearerApiKey": []
+            "Bearer": []
           }
         ],
         "parameters": [

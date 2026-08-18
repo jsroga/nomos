@@ -126,6 +126,11 @@ export enum LandingNavUiCopy {
   CloseDetails = 'Close Details',
 }
 
+export enum LandingExternalLinkAttr {
+  TargetBlank = '_blank',
+  RelNoopener = 'noopener noreferrer',
+}
+
 export enum LandingToolsCopy {
   Eyebrow = 'TOOLCHAIN',
   TitleKeep = 'Keep Your Tools.',

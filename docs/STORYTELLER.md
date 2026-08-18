@@ -15,6 +15,7 @@ Virtual **writers’ room**: series bible, characters, episodes, beats, script d
 | AgentController chat | `FF_STORYTELLER_CONTROLLER=true` — plan-first modes |
 | Autonomous draft | `FF_STORYTELLER_AUTONOMOUS=true` — durable agent + goals |
 | Beat-draft workflow | Mastra workflow: plan → draft → critics → revise; editorial **suspend/resume** HITL |
+| Fix inconsistencies | Mastra workflow: scan World Bible + all episodes → propose field patches → **apply all / discard all** suspend |
 | CLI probe | `npm run storyteller:controller` — interactive plan→approve→build REPL |
 | Live tests | `npm run test:live` — `*.e2e.test.ts` against real agents/models/DB |
 
@@ -46,11 +47,24 @@ Durable Mastra workflow (not the chat AgentController):
 
 Wire contract for chat frames: skill `sse-wire-contract` + e2e smoke.
 
+## Fix inconsistencies
+
+Blocking HITL pass over the **whole project** (World Bible, characters, every episode and beat). Not the chat AgentController and not Writers Room SSE.
+
+1. Assemble canon from the database  
+2. Structural setup/payoff **ID join** (`setupId` / `payoffFor`)  
+3. Chunked continuity critic via Mastra `structuredOutput` (`ContinuityScanReportSchema`)  
+4. Author-tier patches via `ConsistencyFixBatchSchema`  
+5. Suspend with findings + diffs — **Apply all** or **Discard all**  
+6. Cascade-apply through the existing editor + undo manager, or no-op on discard  
+
+Start: `POST /api/storyteller/consistency/fix-run` (SSE until suspend/complete). Resume: `POST /api/storyteller/consistency/fix-run/resume` with `{ runId, action: apply | discard, projectId }`. Existing `/consistency/check|apply|undo` stay. Linguistic regex scanners are not used; world-rule findings come from the critic, not keyword harvest.
+
 ## Layout (domain)
 
 ```
 ai/agents/     # Muse, author, critics, chat adapter, …
-ai/workflows/  # beat-draft, …
+ai/workflows/  # beat-draft, fix-inconsistencies, …
 ai/controller/ # AgentController
 services/      # CRUD, context assembly, RAG helpers
 tasks/         # moodboard, storyboard, poster, …

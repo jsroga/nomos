@@ -1,11 +1,13 @@
-import React, { useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { EpisodePremise, StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { ImageVariantSelector } from '../ImageVariantSelector'
 import { EpisodePremiseBibleContext } from './components/EpisodePremiseBibleContext'
 import { EpisodePremiseEmptyState } from './components/EpisodePremiseEmptyState'
-import { EpisodePremiseHero, EpisodePremiseToolbar } from './components/EpisodePremiseHero'
+import { EpisodePremiseHeader } from './components/EpisodePremiseHeader'
+import { EpisodePremiseHero } from './components/EpisodePremiseHero'
 import { OzymandiasSections } from './components/OzymandiasSection'
 import { TenPointsPlanSection } from './components/TenPointsPlanSection'
+import { EpisodePremisePanelClass } from './constants/episode-premise-panel'
 import { EpisodePremiseSectionKey, OZYMANSIAS_SECTIONS } from './constants/ozymandias-sections'
 import { useEpisodePremiseLocalState } from './hooks/useEpisodePremiseLocalState'
 import { usePosterVariantPicker } from './hooks/usePosterVariantPicker'
@@ -77,34 +79,12 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
   const { showVariantPicker, gridImageUrl, setShowVariantPicker, setGridImageUrl } =
     usePosterVariantPicker(posterUrl, isGeneratingPoster, fullPosterUrl, posterIsVariantGrid)
 
-  if (!premise && !isEditing) {
-    return (
-      <div
-        className={cn(
-          'h-full',
-          pendingReviewHostClass(Boolean(pendingAction)) || SectionPendingOverlayClass.HostRelative
-        )}
-      >
-        {pendingAction ? (
-          <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
-        ) : null}
-        <div className="h-full overflow-y-auto p-6 md:p-8">
-          <EpisodePremiseEmptyState
-            isGenerating={isGenerating}
-            onGenerate={onGenerate}
-            episodeTitle={episodeTitle}
-            episodePrompt={episodePrompt}
-            onSaveEpisodePrompt={onSaveEpisodePrompt}
-          />
-        </div>
-      </div>
-    )
-  }
-
-  const onSave = () => {
+  const onStartEdit = useCallback(() => setIsEditing(true), [])
+  const onCancelEdit = useCallback(() => setIsEditing(false), [])
+  const onSave = useCallback(() => {
     handleSave(onUpdate)
     setIsEditing(false)
-  }
+  }, [handleSave, onUpdate])
 
   const onVariantSelect = (variantIndex: number, croppedDataUrl: string) =>
     void handleEpisodePosterVariantSelect({
@@ -119,76 +99,90 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
       onUpdate,
     })
 
+  const scrollHostClass = cn(
+    EpisodePremisePanelClass.ScrollBody,
+    pendingReviewHostClass(Boolean(pendingAction)) || SectionPendingOverlayClass.HostRelative
+  )
+
   return (
-    <>
-      <div className="flex h-full overflow-hidden">
-        <div
-          className={cn(
-            'flex-1 min-h-0 overflow-y-auto p-6 md:p-8',
-            pendingReviewHostClass(Boolean(pendingAction)) ||
-              SectionPendingOverlayClass.HostRelative
-          )}
-        >
+    <div className={EpisodePremisePanelClass.Root}>
+      <EpisodePremiseHeader
+        isEditing={isEditing}
+        isGenerating={isGenerating}
+        onStartEdit={onStartEdit}
+        onCancelEdit={onCancelEdit}
+        onSave={onSave}
+      />
+
+      {!premise && !isEditing ? (
+        <div className={scrollHostClass}>
           {pendingAction ? (
             <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
           ) : null}
-          <EpisodePremiseToolbar
-            isEditing={isEditing}
+          <EpisodePremiseEmptyState
             isGenerating={isGenerating}
-            generatingSection={generatingSection}
-            hasLogline={Boolean(localPremise.logline)}
-            onGenerateSection={onGenerateSection}
-            onStartEdit={() => setIsEditing(true)}
-            onCancelEdit={() => setIsEditing(false)}
-            onSave={onSave}
-          />
-
-          <EpisodePremiseHero
-            localPremise={localPremise}
-            isEditing={isEditing}
-            isGeneratingPoster={isGeneratingPoster}
-            generatingSection={generatingSection}
-            fullPosterUrl={fullPosterUrl}
-            posterPrompt={posterPrompt}
-            projectId={projectId}
-            onGeneratePoster={onGeneratePoster}
-            onTitleChange={value => handleChange('title', value)}
-            onThematicFocusChange={value => handleChange('thematicFocus', value)}
+            onGenerate={onGenerate}
+            episodeTitle={episodeTitle}
             episodePrompt={episodePrompt}
             onSaveEpisodePrompt={onSaveEpisodePrompt}
           />
-
-          <OzymandiasSections
-            localPremise={localPremise}
-            isEditing={isEditing}
-            isGenerating={isGenerating}
-            generatingSection={generatingSection}
-            projectId={projectId}
-            onGenerate={onGenerate}
-            onGenerateSection={onGenerateSection}
-            onFieldChange={(field, value) => handleChange(field, value)}
-            sections={OZYMANSIAS_SECTIONS}
-          />
-
-          <TenPointsPlanSection
-            tenPointsPlan={localPremise.tenPointsPlan}
-            isEditing={isEditing}
-            isGenerating={isGenerating}
-            generatingSection={generatingSection}
-            projectId={projectId}
-            onGenerateSection={onGenerateSection}
-            onChange={plan => handleChange('tenPointsPlan', plan)}
-          />
         </div>
+      ) : (
+        <>
+          <div className={scrollHostClass}>
+            {pendingAction ? (
+              <SectionPendingOverlay pendingAction={pendingAction} onReview={pendingAction.onReview} />
+            ) : null}
+            <EpisodePremiseHero
+              localPremise={localPremise}
+              isEditing={isEditing}
+              isGenerating={isGenerating}
+              isGeneratingPoster={isGeneratingPoster}
+              generatingSection={generatingSection}
+              fullPosterUrl={fullPosterUrl}
+              posterPrompt={posterPrompt}
+              projectId={projectId}
+              onGeneratePoster={onGeneratePoster}
+              onGenerateSection={onGenerateSection}
+              onTitleChange={value => handleChange('title', value)}
+              onThematicFocusChange={value => handleChange('thematicFocus', value)}
+              onLoglineChange={value => handleChange('logline', value)}
+              episodePrompt={episodePrompt}
+              onSaveEpisodePrompt={onSaveEpisodePrompt}
+            />
 
-        {showBibleContext && globalBible && (
-          <EpisodePremiseBibleContext globalBible={globalBible} />
-        )}
-      </div>
+            <OzymandiasSections
+              localPremise={localPremise}
+              isEditing={isEditing}
+              isGenerating={isGenerating}
+              generatingSection={generatingSection}
+              projectId={projectId}
+              onGenerate={onGenerate}
+              onGenerateSection={onGenerateSection}
+              onFieldChange={(field, value) => handleChange(field, value)}
+              sections={OZYMANSIAS_SECTIONS}
+            />
+
+            <TenPointsPlanSection
+              tenPointsPlan={localPremise.tenPointsPlan}
+              isEditing={isEditing}
+              isGenerating={isGenerating}
+              generatingSection={generatingSection}
+              projectId={projectId}
+              onGenerateSection={onGenerateSection}
+              onChange={plan => handleChange('tenPointsPlan', plan)}
+            />
+          </div>
+
+          {showBibleContext && globalBible && (
+            <EpisodePremiseBibleContext globalBible={globalBible} />
+          )}
+        </>
+      )}
 
       {showVariantPicker && gridImageUrl && (
         <ImageVariantSelector gridImageUrl={gridImageUrl} onSelect={onVariantSelect} />
       )}
-    </>
+    </div>
   )
 }

@@ -1,6 +1,6 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
-import { extractProse, normalizeScore, toMastraJudgingModel } from './shared'
+import { extractProse, normalizeScore, toMastraJudgingLanguageModel } from './shared'
 
 /**
  * Story-motion (stasis) scorer — PLAN-V2 5.4.
@@ -42,7 +42,7 @@ export const storyMotionScorer = createScorer({
   description:
     'Law of Motion: the ratio of state-changing beats to static beats, with a hard zero for prose that ENDS on stasis.',
   judge: {
-    model: toMastraJudgingModel(),
+    model: toMastraJudgingLanguageModel(),
     instructions:
       'You are a structural referee. You inventory story motion precisely: who acted, what changed, what cannot be undone. Mood is not motion. Respond with valid JSON matching the requested schema.',
   },

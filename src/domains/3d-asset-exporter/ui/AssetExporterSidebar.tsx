@@ -1,121 +1,128 @@
 'use client'
 
-import React, { useState, type ReactNode } from 'react'
-import { AssetUploadZone } from './AssetUploadZone'
-import { Plus, Palette, Package, Info, Eye, EyeOff } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { Plus, Scroll } from 'lucide-react'
+import { DomainSidebar, SidebarEmptyState } from '@/components/DomainSidebar'
+import {
+  MasterPromptField,
+  MasterPromptSuggestMode,
+  MasterPromptSuggestion,
+} from '@/components/MasterPromptField'
+import { ThreeDAssets, type ThreeDAssetsProps } from '@/components/ThreeDAssets'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { DomainSidebar, SidebarSection, SidebarEmptyState } from '@/components/DomainSidebar'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
+import { getRandomWorldPromptIdea } from '@/shared/data/constants/worldPromptIdeas'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { AssetExporterFooter } from './AssetExporterFooter'
+import {
+  AssetExporterSidebarClass,
+  AssetExporterSidebarCopy,
+  AssetExporterSidebarStorage,
+} from './constants/asset-exporter-sidebar'
+
+export type AssetExporterAssetsBind = ThreeDAssetsProps & {
+  selectedCount: number
+  readyCount: number
+  selectAll: () => void
+  clearSelection: () => void
+  exportSelected: () => void
+  exportingCount: number | null
+  hasSelection: boolean
+}
 
 export interface AssetExporterSidebarProps {
   currentProject: { id: string } | null
-  assetCount: number
-  showAllAssetMasks: boolean
-  onToggleAssetMasks: () => void
-  onUploadComplete: () => void
-  assetsPanel: ReactNode
+  assetsBind: AssetExporterAssetsBind
   settingsDialog: ReactNode
 }
 
-export const AssetExporterSidebar: React.FC<AssetExporterSidebarProps> = ({
+export function AssetExporterSidebar({
   currentProject,
-  assetCount,
-  showAllAssetMasks,
-  onToggleAssetMasks,
-  onUploadComplete,
-  assetsPanel,
+  assetsBind,
   settingsDialog,
-}) => {
-  const defaultMasterPrompt = ''
-
+}: AssetExporterSidebarProps) {
   const [masterPrompt, setMasterPrompt] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return browserStorage.getString(LocalStorageKeys.MASTER_PROMPT) || defaultMasterPrompt
-    }
-    return defaultMasterPrompt
+    if (typeof window === 'undefined') return ''
+    return browserStorage.getString(LocalStorageKeys.MASTER_PROMPT) || ''
   })
+  const [suggestedIdea, setSuggestedIdea] = useState<string | null>(null)
 
-  const handleMasterPromptChange = (value: string) => {
-    setMasterPrompt(value)
-    if (typeof window !== 'undefined') {
-      browserStorage.setString(LocalStorageKeys.MASTER_PROMPT, value)
-    }
+  const persistPrompt = (value: string) => {
+    browserStorage.setString(LocalStorageKeys.MASTER_PROMPT, value)
   }
 
+  const {
+    selectedCount,
+    readyCount,
+    selectAll,
+    clearSelection,
+    exportSelected,
+    exportingCount,
+    hasSelection,
+    ...assetsProps
+  } = assetsBind
+
   return (
-    <TooltipProvider>
-      <DomainSidebar header="Asset Exporter" storageKey="asset-exporter">
-        {currentProject ? (
-          <div className="space-y-6">
-            <div id={TOUR_STEP_IDS.ASSET_MASTER_PROMPT}>
-              <SidebarSection
-                title="Master Prompt (Style)"
-                icon={<Palette size={12} />}
-                rightContent={
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info size={12} className="text-muted-foreground/60 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p className="max-w-[200px]">
-                        Define the overall art style that will be applied to all generated 3D assets
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                }
-              >
-                <textarea
-                  value={masterPrompt}
-                  onChange={e => handleMasterPromptChange(e.target.value)}
-                  placeholder="Define the overall art style and aesthetic..."
-                  className="w-full h-24 bg-background/50 border-2 border-border/60 rounded-md p-3 text-sm resize-none hover:border-border transition-colors focus:border-primary focus:ring-1 focus:ring-primary/30 focus:outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/30"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  This style will be applied to generated assets
-                </p>
-              </SidebarSection>
-            </div>
-
-            <SidebarSection
-              separator
-              title="Assets"
-              icon={<Package size={12} />}
-              rightContent={
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-muted-foreground">{assetCount}</span>
-                  <button
-                    onClick={e => {
-                      e.stopPropagation()
-                      onToggleAssetMasks()
-                    }}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showAllAssetMasks ? <EyeOff size={12} /> : <Eye size={12} />}
-                  </button>
-                </div>
-              }
-            >
-              <div className="mb-4" id={TOUR_STEP_IDS.ASSET_UPLOAD_ZONE}>
-                <AssetUploadZone
-                  projectId={currentProject.id}
-                  onUploadComplete={() => onUploadComplete()}
-                />
-              </div>
-
-              {assetsPanel}
-            </SidebarSection>
-          </div>
-        ) : (
-          <SidebarEmptyState
-            icon={<Plus size={24} className="opacity-50" />}
-            message="Please select or create a project to start."
+    <DomainSidebar
+      header={AssetExporterSidebarCopy.Wordmark}
+      wordmark={AssetExporterSidebarCopy.Wordmark}
+      storageKey={AssetExporterSidebarStorage.Panel}
+      collapsible
+      collapseStorageId={currentProject?.id}
+      footer={
+        currentProject ? (
+          <AssetExporterFooter
+            readyCount={readyCount}
+            selectedCount={selectedCount}
+            hasSelection={hasSelection}
+            exportingCount={exportingCount}
+            onSelectAll={selectAll}
+            onClearSelection={clearSelection}
+            onExport={exportSelected}
           />
-        )}
-
-        {settingsDialog}
-      </DomainSidebar>
-    </TooltipProvider>
+        ) : null
+      }
+    >
+      {currentProject ? (
+        <div className={AssetExporterSidebarClass.Body}>
+          <div id={TOUR_STEP_IDS.ASSET_MASTER_PROMPT}>
+            <MasterPromptField
+              label={AssetExporterSidebarCopy.PromptLabel}
+              icon={<Scroll size={12} strokeWidth={1.7} />}
+              value={masterPrompt}
+              onChange={setMasterPrompt}
+              onBlur={() => persistPrompt(masterPrompt)}
+              placeholder={AssetExporterSidebarCopy.PromptPlaceholder}
+              suggestMode={MasterPromptSuggestMode.Iterate}
+              onSuggest={() => setSuggestedIdea(getRandomWorldPromptIdea())}
+              suggestion={
+                suggestedIdea ? (
+                  <MasterPromptSuggestion
+                    idea={suggestedIdea}
+                    onAccept={() => {
+                      setMasterPrompt(suggestedIdea)
+                      persistPrompt(suggestedIdea)
+                      setSuggestedIdea(null)
+                    }}
+                    onReject={() => setSuggestedIdea(null)}
+                    onNext={() => setSuggestedIdea(getRandomWorldPromptIdea())}
+                  />
+                ) : undefined
+              }
+            />
+          </div>
+          <div className={AssetExporterSidebarClass.Divider} />
+          <div id={TOUR_STEP_IDS.ASSET_UPLOAD_ZONE}>
+            <ThreeDAssets {...assetsProps} />
+          </div>
+        </div>
+      ) : (
+        <SidebarEmptyState
+          icon={<Plus size={24} className="opacity-50" />}
+          message={AssetExporterSidebarCopy.EmptyProject}
+        />
+      )}
+      {settingsDialog}
+    </DomainSidebar>
   )
 }

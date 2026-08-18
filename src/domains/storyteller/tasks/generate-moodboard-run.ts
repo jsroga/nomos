@@ -41,7 +41,7 @@ export interface GenerateMoodboardPayload {
   styleReference?: string
   replaceIndex?: number
   providerConfig: {
-    provider: typeof ImageGenProvider.NanoBanana | typeof ImageGenProvider.Midjourney
+    provider: ImageGenProvider
     apiKey: string
     modelId?: string
     styleReferenceUrls?: string[]
@@ -174,21 +174,27 @@ async function generateNanoBananaImage(
   }
 }
 
+function isMidjourneyMoodboard(
+  provider: ImageGenProvider,
+  modelId: string | undefined,
+): boolean {
+  return (
+    provider === ImageGenProvider.Midjourney || modelId === ApiframeImageModel.Midjourney
+  )
+}
+
 async function generateMoodboardImage(
-  provider: GenerateMoodboardPayload['providerConfig']['provider'],
+  provider: ImageGenProvider,
   prompt: string,
   apiKey: string,
   modelId: string | undefined,
   allStyleRefs: string[],
   promptIndex: number,
 ): Promise<string | null> {
-  if (provider === ImageGenProvider.Midjourney) {
+  if (isMidjourneyMoodboard(provider, modelId)) {
     return generateMidjourneyImage(prompt, apiKey, allStyleRefs, promptIndex)
   }
-  if (provider === ImageGenProvider.NanoBanana) {
-    return generateNanoBananaImage(prompt, apiKey, modelId, allStyleRefs, promptIndex)
-  }
-  return null
+  return generateNanoBananaImage(prompt, apiKey, modelId, allStyleRefs, promptIndex)
 }
 
 function saveMoodboardImage(projectId: string, imageBase64: string): string {

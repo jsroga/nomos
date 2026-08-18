@@ -6,7 +6,7 @@ import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { resolveProjectAssetUrl } from '@/shared/workspace/io/project-assets-api'
 import { AssetEditor } from './AssetEditor'
-import { AssetExporterSidebar } from './AssetExporterSidebar'
+import { AssetExporterSidebar, type AssetExporterAssetsBind } from './AssetExporterSidebar'
 import { ThreeDPanel } from './ThreeDPanel'
 
 export interface AssetExporterLayoutAsset {
@@ -21,12 +21,10 @@ export interface AssetExporterLayoutProps {
   assets: AssetExporterLayoutAsset[]
   previewAssetId: string | null
   setPreviewAssetId: (id: string | null) => void
-  showAllAssetMasks: boolean
-  setShowAllAssetMasks: (show: boolean) => void
   updateAsset: (id: string, updates: Partial<AssetExporterLayoutAsset>) => void
   fetchAssets: () => Promise<void>
   user: unknown
-  assetsPanel: ReactNode
+  assetsBind: AssetExporterAssetsBind
   settingsDialog: ReactNode
 }
 
@@ -35,12 +33,10 @@ export function AssetExporterLayout({
   assets,
   previewAssetId,
   setPreviewAssetId,
-  showAllAssetMasks,
-  setShowAllAssetMasks,
   updateAsset,
   fetchAssets,
   user,
-  assetsPanel,
+  assetsBind,
   settingsDialog,
 }: AssetExporterLayoutProps) {
   useEffect(() => {
@@ -56,13 +52,7 @@ export function AssetExporterLayout({
       <div id={TOUR_STEP_IDS.EXPORTED_ASSETS_LIST}>
         <AssetExporterSidebar
           currentProject={currentProject}
-          assetCount={assets.length}
-          showAllAssetMasks={showAllAssetMasks}
-          onToggleAssetMasks={() => setShowAllAssetMasks(!showAllAssetMasks)}
-          onUploadComplete={() => {
-            void fetchAssets()
-          }}
-          assetsPanel={assetsPanel}
+          assetsBind={assetsBind}
           settingsDialog={settingsDialog}
         />
       </div>

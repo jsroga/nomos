@@ -2,18 +2,19 @@
 
 import * as React from 'react'
 import { cn } from '@/shared/data/utils'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { ScrollArea } from '@/components/ScrollArea'
 import {
-  DomMouseEvent,
+  SIDEBAR_COLLAPSED_WIDTH,
+  SIDEBAR_DEFAULT_WIDTH,
+  SidebarHeaderClass,
   SidebarPosition,
+  SidebarShellClass,
 } from '@/components/DomainSidebar/constants/domain-sidebar'
+import { DomainSidebarCollapseButton } from './DomainSidebarCollapseButton'
+import { useDomainSidebarCollapsed } from './use-domain-sidebar-collapsed'
+import { useDomainSidebarWidth } from './use-domain-sidebar-width'
 
 export * from './DomainSidebarControls'
-
-const DEFAULT_WIDTH = 320
-const MIN_WIDTH = 280
-const MAX_WIDTH = 500
 
 interface DomainSidebarProps {
   header: React.ReactNode
@@ -23,6 +24,16 @@ interface DomainSidebarProps {
   defaultWidth?: number
   position?: `${SidebarPosition}`
   rawContent?: boolean
+  collapsible?: boolean
+  collapseStorageId?: string
+  wordmark?: string
+  footer?: React.ReactNode
+}
+
+function resolveWordmark(header: React.ReactNode, wordmark?: string): string | undefined {
+  if (wordmark) return wordmark
+  if (typeof header === 'string') return header
+  return undefined
 }
 
 export const DomainSidebar: React.FC<DomainSidebarProps> = ({
@@ -30,103 +41,134 @@ export const DomainSidebar: React.FC<DomainSidebarProps> = ({
   children,
   className,
   storageKey,
-  defaultWidth = DEFAULT_WIDTH,
+  defaultWidth = SIDEBAR_DEFAULT_WIDTH,
   position = SidebarPosition.Left,
   rawContent = false,
+  collapsible = false,
+  collapseStorageId,
+  wordmark,
+  footer,
 }) => {
-  const [width, setWidth] = React.useState(defaultWidth)
-  const [isResizing, setIsResizing] = React.useState(false)
   const sidebarRef = React.useRef<HTMLDivElement>(null)
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return
-    const key = storageKey
-      ? `${LocalStorageKeys.SIDEBAR_WIDTH}-${storageKey}`
-      : LocalStorageKeys.SIDEBAR_WIDTH
-    const saved = localStorage.getItem(key)
-    if (saved) {
-      const parsed = parseInt(saved, 10)
-      if (!isNaN(parsed) && parsed >= MIN_WIDTH && parsed <= MAX_WIDTH) {
-        setWidth(parsed)
-      }
-    }
-  }, [storageKey])
-
-  const saveWidth = React.useCallback(
-    (newWidth: number) => {
-      if (typeof window === 'undefined') return
-      const key = storageKey
-        ? `${LocalStorageKeys.SIDEBAR_WIDTH}-${storageKey}`
-        : LocalStorageKeys.SIDEBAR_WIDTH
-      localStorage.setItem(key, newWidth.toString())
-    },
-    [storageKey]
-  )
-
-  const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsResizing(true)
-  }, [])
-
-  React.useEffect(() => {
-    if (!isResizing) return
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!sidebarRef.current) return
-      const rect = sidebarRef.current.getBoundingClientRect()
-      const newWidth =
-        position === SidebarPosition.Left ? e.clientX - rect.left : rect.right - e.clientX
-      setWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, newWidth)))
-    }
-
-    const handleMouseUp = () => {
-      setIsResizing(false)
-      saveWidth(width)
-    }
-
-    document.addEventListener(DomMouseEvent.MouseMove, handleMouseMove)
-    document.addEventListener(DomMouseEvent.MouseUp, handleMouseUp)
-
-    return () => {
-      document.removeEventListener(DomMouseEvent.MouseMove, handleMouseMove)
-      document.removeEventListener(DomMouseEvent.MouseUp, handleMouseUp)
-    }
-  }, [isResizing, width, saveWidth, position])
+  const { width, isResizing, handleMouseDown } = useDomainSidebarWidth({
+    storageKey,
+    defaultWidth,
+    position,
+    sidebarRef,
+  })
+  const { collapsed, toggleCollapsed } = useDomainSidebarCollapsed({
+    enabled: collapsible,
+    storageKey,
+    collapseStorageId,
+  })
+  const resolvedWordmark = resolveWordmark(header, wordmark)
+  const displayWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : width
+  const borderClass =
+    position === SidebarPosition.Left ? 'border-r border-border/70' : 'border-l border-border/70'
 
   return (
     <div
       ref={sidebarRef}
       className={cn(
-        'h-full bg-background/60 backdrop-blur-xl flex flex-col relative shrink-0',
-        position === SidebarPosition.Left ? 'border-r border-border/50' : 'border-l border-border/50',
+        SidebarShellClass.Root,
+        borderClass,
         isResizing && 'select-none',
         className
       )}
-      style={{ width }}
+      style={{ width: displayWidth }}
     >
-      {header && (
-        <div className="p-4 border-b border-border shrink-0">
-          {typeof header === 'string' ? <h1 className="font-bold text-xl">{header}</h1> : header}
-        </div>
+      {collapsed ? (
+        <DomainSidebarCollapsedRail
+          wordmark={resolvedWordmark}
+          onExpand={toggleCollapsed}
+        />
+      ) : (
+        <DomainSidebarExpanded
+          header={header}
+          collapsible={collapsible}
+          onCollapse={toggleCollapsed}
+          rawContent={rawContent}
+          footer={footer}
+        >
+          {children}
+        </DomainSidebarExpanded>
       )}
 
+      {!collapsed && (
+        <div
+          className={cn(
+            'absolute top-0 w-1 h-full cursor-ew-resize transition-all duration-150 ease-in-out z-10',
+            'hover:bg-primary/30',
+            isResizing && 'bg-primary/50',
+            position === SidebarPosition.Left ? 'right-0' : 'left-0'
+          )}
+          onMouseDown={handleMouseDown}
+        />
+      )}
+    </div>
+  )
+}
+
+interface DomainSidebarCollapsedRailProps {
+  wordmark?: string
+  onExpand: () => void
+}
+
+function DomainSidebarCollapsedRail({ wordmark, onExpand }: DomainSidebarCollapsedRailProps) {
+  return (
+    <>
+      <div className="h-[50px] shrink-0 w-full flex items-center justify-center border-b border-border/70">
+        <DomainSidebarCollapseButton collapsed onClick={onExpand} />
+      </div>
+      <div className="flex-1 flex items-start justify-center pt-[22px]">
+        {wordmark ? <span className={SidebarShellClass.CollapsedWordmark}>{wordmark}</span> : null}
+      </div>
+    </>
+  )
+}
+
+interface DomainSidebarExpandedProps {
+  header: React.ReactNode
+  collapsible: boolean
+  onCollapse: () => void
+  rawContent: boolean
+  footer?: React.ReactNode
+  children: React.ReactNode
+}
+
+function DomainSidebarExpanded({
+  header,
+  collapsible,
+  onCollapse,
+  rawContent,
+  footer,
+  children,
+}: DomainSidebarExpandedProps) {
+  return (
+    <>
+      {header ? (
+        <div className={SidebarShellClass.HeaderBand}>
+          {typeof header === 'string' ? (
+            <h2 className={SidebarHeaderClass.Wordmark}>{header}</h2>
+          ) : (
+            header
+          )}
+          <span className="flex-1 min-w-0" />
+          {collapsible ? (
+            <DomainSidebarCollapseButton collapsed={false} onClick={onCollapse} />
+          ) : null}
+        </div>
+      ) : null}
+
       {rawContent ? (
-        <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">{children}</div>
       ) : (
-        <ScrollArea className="flex-1">
-          <div className="p-4">{children}</div>
+        <ScrollArea className="flex-1 min-h-0">
+          <div className={SidebarShellClass.Body}>{children}</div>
         </ScrollArea>
       )}
 
-      <div
-        className={cn(
-          'absolute top-0 w-1 h-full cursor-ew-resize transition-colors z-10',
-          'hover:bg-primary/30',
-          isResizing && 'bg-primary/50',
-          position === SidebarPosition.Left ? 'right-0' : 'left-0'
-        )}
-        onMouseDown={handleMouseDown}
-      />
-    </div>
+      {footer ? <div className="shrink-0">{footer}</div> : null}
+    </>
   )
 }

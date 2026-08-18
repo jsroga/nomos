@@ -4,6 +4,7 @@
  */
 
 export { ApiDocsPage } from './ui/ApiDocs/components/ApiDocsPage'
+export { ApiDocsPageMeta } from './ui/ApiDocs/constants/api-docs'
 export { GlobalLiquidLoader } from './ui/GlobalLiquidLoader'
 export { LandingPage } from './ui/LandingPage'
 export { Liquid } from './ui/Liquid'

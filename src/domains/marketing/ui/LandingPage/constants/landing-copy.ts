@@ -15,18 +15,15 @@ export const LANDING_SUBTITLES: readonly string[] = [
 
 export enum LandingNavItem {
   Systems = 'SYSTEMS',
-  Docs = 'DOCS',
   Api = 'API',
 }
 
 export const LANDING_NAV_ITEMS: readonly LandingNavItem[] = [
   LandingNavItem.Systems,
-  LandingNavItem.Docs,
   LandingNavItem.Api,
 ]
 
 export enum LandingExternalUrl {
-  DocsReadme = 'https://github.com/jsroga/nomos#readme',
   ApiDocs = '/api-docs',
   GitHubRepo = 'https://github.com/jsroga/nomos',
   Login = '/login',

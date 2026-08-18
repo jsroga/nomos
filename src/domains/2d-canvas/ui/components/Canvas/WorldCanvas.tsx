@@ -10,6 +10,10 @@ import { WorldCanvasTilesLayer } from './world-canvas-tiles'
 import { WorldCanvasAssetOverlays } from './WorldCanvasAssetOverlays'
 import { WorldCanvasPromptPopover } from './WorldCanvasPromptPopover'
 import { WorldCanvasSelectOverlays } from './WorldCanvasSelectOverlays'
+import type { WorldGenSidebarState } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
+import { WorldCanvasCursor } from './constants/world-canvas'
+import { TileActionBar } from './TileActionBar'
+import { TileActionBarAccept, TileActionBarClass } from '@/domains/2d-canvas/ui/constants/tile-action-bar'
 
 const WorldCanvasViewportTransform = memo(function WorldCanvasViewportTransform({
   children,
@@ -42,8 +46,13 @@ const WorldCanvasZoomBadge = memo(function WorldCanvasZoomBadge() {
   )
 })
 
-export const WorldCanvas: React.FC = () => {
+export const WorldCanvas: React.FC<{
+  tileBar: Omit<WorldGenSidebarState, 'fileInputRef'>
+  fileInputRef: React.RefObject<HTMLInputElement | null>
+}> = ({ tileBar, fileInputRef }) => {
   const containerRef = useRef<HTMLDivElement>(null)
+  const spacePanRef = useRef(false)
+  const [spacePan, setSpacePan] = useState(false)
   const [viewSize, setViewSize] = useState({ width: 1920, height: 1080 })
 
   const isRepaintMode = useWorldStore(state => state.isRepaintMode)
@@ -77,7 +86,7 @@ export const WorldCanvas: React.FC = () => {
   useWorldCanvasTour()
   useWorldCanvasWheelZoom(containerRef)
 
-  const interactions = useWorldCanvasInteractions(containerRef)
+  const interactions = useWorldCanvasInteractions(containerRef, spacePanRef)
 
   useWorldCanvasKeyboard({
     isRepaintMode,
@@ -91,19 +100,23 @@ export const WorldCanvas: React.FC = () => {
     setDebugInfo,
     clearSelectBox,
     setSelectedMask,
+    spacePanRef,
+    setSpacePan,
   })
+
+  const panCursor = interactions.isDragging ? WorldCanvasCursor.Grabbing : WorldCanvasCursor.Grab
+  const toolCursor = spacePan
+    ? panCursor
+    : isRepaintMode || isSelectMode
+      ? WorldCanvasCursor.Crosshair
+      : panCursor
 
   return (
     <div
       ref={containerRef}
       className="w-full h-full bg-background overflow-hidden relative"
       style={{
-        cursor:
-          isRepaintMode || isSelectMode
-            ? 'crosshair'
-            : interactions.isDragging
-              ? 'grabbing'
-              : 'grab',
+        cursor: toolCursor,
       }}
       onMouseDown={interactions.handleMouseDown}
       onMouseMove={interactions.handleMouseMove}
@@ -119,6 +132,7 @@ export const WorldCanvas: React.FC = () => {
             previewBox={interactions.previewBox}
             finalizedBox={interactions.finalizedBox}
             selectedMask={selectedMask}
+            showSelectedMask={showAllAssetMasks}
           />
         )}
 
@@ -131,6 +145,45 @@ export const WorldCanvas: React.FC = () => {
           />
         )}
       </WorldCanvasViewportTransform>
+
+      <TileActionBar
+        selectedTile={tileBar.selectedTile}
+        tiles={tileBar.tiles}
+        generatingTiles={tileBar.generatingTiles}
+        upscalingTiles={tileBar.upscalingTiles}
+        enhancingTiles={tileBar.enhancingTiles}
+        tilePrompt={tileBar.tilePrompt}
+        setTilePrompt={tileBar.setTilePrompt}
+        generationMode={tileBar.generationMode}
+        fidelityCreativity={tileBar.fidelityCreativity}
+        setFidelityCreativity={tileBar.setFidelityCreativity}
+        isUploading={tileBar.isUploading}
+        onGenerate={() => {
+          void tileBar.handleGenerate()
+        }}
+        onUpscale={() => {
+          void tileBar.handleUpscale()
+        }}
+        onUploadClick={() => fileInputRef.current?.click()}
+        onDelete={() => {
+          void tileBar.handleDeleteTile()
+        }}
+        onCancelBusy={tileBar.handleCancelBusy}
+        onEnhance={creativity => {
+          void tileBar.handleEnhanceFidelity(creativity)
+        }}
+        viewWidth={viewSize.width}
+        viewHeight={viewSize.height}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={TileActionBarAccept.Image}
+        onChange={event => {
+          void tileBar.handleUploadTile(event)
+        }}
+        className={TileActionBarClass.HiddenInput}
+      />
 
       <WorldCanvasZoomBadge />
 

@@ -3,7 +3,7 @@ import { runEnhanceFidelity, type EnhanceFidelityPayload } from './enhance-fidel
 
 export const enhanceFidelityTask = task({
   id: 'enhance-fidelity',
-  maxDuration: 300,
+  maxDuration: 1200,
   retry: {
     maxAttempts: 2,
   },

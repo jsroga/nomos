@@ -374,6 +374,8 @@ module.exports = [
       '**/*.test.{ts,tsx}',
       '**/*.e2e.test.{ts,tsx}',
       'e2e/**/*.{ts,tsx}',
+      'stories/**/*.{ts,tsx}',
+      '.storybook/**/*.{ts,tsx}',
     ],
     rules: {
       'local/no-magic-string': 'off',

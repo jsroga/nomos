@@ -15,6 +15,8 @@ import { CharacterDialogMode } from '@/domains/storyteller/ui/CharacterCreationD
 import {
   CHARACTER_PANEL_LOG_FETCH_FAILED,
   CharacterMetricKey,
+  CharacterPanelCopy,
+  formatCastHeading,
 } from './constants/character-panel-metrics'
 import { CharacterCard } from './CharacterCard'
 import { CharacterPanelLoading } from './CharacterPanelLoading'
@@ -119,29 +121,29 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        <div className="flex items-center justify-between" id={TOUR_STEP_IDS.STORYTELLER_CHARACTERS}>
-          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Users size={12} />
-            Cast ({characters.length})
+        <div className="flex items-center justify-between mb-2.5" id={TOUR_STEP_IDS.STORYTELLER_CHARACTERS}>
+          <h3 className="font-mono text-[10.5px] tracking-[0.16em] uppercase text-muted-foreground/80 flex items-center gap-2">
+            <Users size={12} strokeWidth={1.7} />
+            {formatCastHeading(characters.length)}
           </h3>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 size="sm"
                 variant="outline"
-                className="h-6 w-6 p-0"
+                className="h-6 w-6 p-0 rounded-[7px] shadow-[inset_0_0_0_1px_hsl(var(--border)/0.8)] border-0 text-muted-foreground"
                 onClick={() => setIsCreationOpen(true)}
               >
                 <Plus size={14} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Add new character</p>
+              <p>{CharacterPanelCopy.Add}</p>
             </TooltipContent>
           </Tooltip>
         </div>
 
-        <div className="space-y-3">
+        <div className="flex flex-col gap-[7px]">
           {characters.map(char => (
             <CharacterCard
               key={char.id}
@@ -152,9 +154,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
             />
           ))}
           {characters.length === 0 && (
-            <div className="text-center py-4 text-muted-foreground text-xs flex flex-col items-center gap-2">
-              <Users size={20} className="opacity-30" />
-              No characters yet. Click + to add one.
+            <div className="flex flex-col items-center gap-2.5 px-3 py-[26px] text-muted-foreground/70">
+              <Users size={20} strokeWidth={1.5} />
+              <span className="text-xs">{CharacterPanelCopy.Empty}</span>
             </div>
           )}
         </div>

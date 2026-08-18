@@ -15,7 +15,6 @@ import {
   ConsistencyCheckKind,
   setupsPayoffsFromJson,
   shouldRunCheck,
-  worldRulesFromStoryPlan,
 } from './consistency-types'
 import {
   CONSISTENCY_SEVERITY_ORDER,
@@ -143,10 +142,6 @@ export async function runConsistencyCheck(
       // Run checks
       const allIssues: ContinuityIssue[] = []
 
-      if (shouldRunCheck(checkTypes, ConsistencyCheckKind.WORLD_RULES)) {
-        allIssues.push(...checkWorldRuleViolations(beatsToCheck, project.storyPlan))
-      }
-
       if (shouldRunCheck(checkTypes, ConsistencyCheckKind.SETUP_PAYOFF)) {
         allIssues.push(...checkSetupPayoffs(beatsToCheck))
       }
@@ -180,54 +175,6 @@ export async function runConsistencyCheck(
         error: error instanceof Error ? error.message : ConsistencyServiceError.UnknownCheckError,
       }
     }
-}
-
-// ==========================================
-// HELPER FUNCTIONS (extracted from ConsistencyAgent)
-// ==========================================
-
-function extractViolationKeywords(ruleText: string): { term: string; violation: boolean }[] {
-  const negativePatterns = [
-    /cannot\s+(\w+)/gi,
-    /never\s+(\w+)/gi,
-    /must not\s+(\w+)/gi,
-    /forbidden to\s+(\w+)/gi,
-  ]
-  const keywords: { term: string; violation: boolean }[] = []
-  negativePatterns.forEach(pattern => {
-    let match
-    while ((match = pattern.exec(ruleText)) !== null) {
-      keywords.push({ term: match[1].toLowerCase(), violation: true })
-    }
-  })
-  return keywords
-}
-
-function checkWorldRuleViolations(beatsToCheck: BeatRow[], storyPlan: unknown): ContinuityIssue[] {
-  const issues: ContinuityIssue[] = []
-  const worldRules = worldRulesFromStoryPlan(storyPlan)
-  if (worldRules.length === 0) return issues
-
-  beatsToCheck.forEach(beat => {
-    const content = ((beat.logline || '') + ' ' + (beat.content || '')).toLowerCase()
-    worldRules.forEach(rule => {
-      const ruleText = rule.rule
-      const violationKeywords = extractViolationKeywords(ruleText)
-      violationKeywords.forEach(keyword => {
-        if (content.includes(keyword.term) && keyword.violation) {
-          issues.push({
-            type: ConsistencyIssueType.Contradiction,
-            severity: ConsistencySeverity.Critical,
-            description: `Beat [${beat.sequence}] may violate: "${ruleText}"`,
-            location: beat.id,
-            affectedElements: [ruleText],
-            suggestion: rule.consequence || ConsistencySuggestion.ReviseBeatWorldRules,
-          })
-        }
-      })
-    })
-  })
-  return issues
 }
 
 function checkSetupPayoffs(beatsToCheck: BeatRow[]): ContinuityIssue[] {

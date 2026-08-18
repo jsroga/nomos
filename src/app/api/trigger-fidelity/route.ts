@@ -14,11 +14,11 @@ import {
   TRIGGER_TASK_TTL,
 } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
-import { resolveFidelityModel, readApiframeApiKey } from '@/shared/ai/image-model-env'
+import { readApiframeApiKey } from '@/shared/ai/image-model-env'
 
 /**
  * POST /api/trigger-fidelity
- * Trigger fidelity enhancement task (Apiframe Nano Banana img2img)
+ * Trigger fidelity enhancement task (Topaz via Apiframe)
  */
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
@@ -28,17 +28,11 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.FIDELITY_FIELDS_REQUIRED }, { status: 400 })
     }
 
-    const apiKey = readApiframeApiKey()
-    if (!apiKey) {
+    if (!readApiframeApiKey()) {
       return NextResponse.json(
         { error: API_ERROR.APIFRAME_API_KEY_NOT_PROVIDED },
         { status: 500 }
       )
-    }
-
-    const apiframeConfig = {
-      apiKey,
-      model: resolveFidelityModel(),
     }
 
     const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
@@ -68,7 +62,6 @@ export const POST = withRateLimit(
         imageBase64: payload.imageBase64,
         stylePrompt: payload.stylePrompt,
         creativity: payload.creativity || 0.3,
-        apiframeConfig,
         styleReferenceUrls,
       },
       {

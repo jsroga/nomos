@@ -10,6 +10,7 @@ export type WorkspaceProject = {
   generationMode?: string | null
   canvasMasterPrompt?: string | null
   styleAnchorUrl?: string | null
+  styleReferenceUrls?: string[]
   description?: string | null
   created_at?: string
 }

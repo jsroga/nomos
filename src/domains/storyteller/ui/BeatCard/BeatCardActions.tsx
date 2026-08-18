@@ -8,6 +8,7 @@ import { BeatCardActionLabel, BeatGenerationMode } from './constants/beat-card'
 interface BeatCardActionsProps {
   isEditing: boolean
   isGenerating: BeatGenerationMode | null
+  imageDisabled?: boolean
   onSave: () => void
   onCancelEdit: () => void
   onStartEdit: () => void
@@ -18,6 +19,7 @@ interface BeatCardActionsProps {
 export const BeatCardActions: React.FC<BeatCardActionsProps> = ({
   isEditing,
   isGenerating,
+  imageDisabled = false,
   onSave,
   onCancelEdit,
   onStartEdit,
@@ -57,7 +59,7 @@ export const BeatCardActions: React.FC<BeatCardActionsProps> = ({
                   isGenerating === BeatGenerationMode.Image && 'animate-pulse text-cyan-400'
                 )}
                 onClick={onGenerateImage}
-                disabled={isGenerating !== null}
+                disabled={imageDisabled}
               >
                 {isGenerating === BeatGenerationMode.Image ? (
                   <Loader2 size={12} className="animate-spin" />

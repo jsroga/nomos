@@ -1,4 +1,4 @@
-import { Edit2, RefreshCw, Save, Sparkles } from 'lucide-react'
+import { RefreshCw, Sparkles } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Skeleton } from '@/components/Skeleton'
 import { StorytellerImage } from '../../StorytellerImage'
@@ -12,76 +12,62 @@ import {
   MasterPromptSurface,
 } from '../../MasterPromptEditor'
 import { EpisodePremiseCopy } from '../../StoryPlanBoard/constants/episode-premise-fields'
+import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
 
 type PremiseSectionKey = EpisodePremiseSectionKey
 
-interface EpisodePremiseToolbarProps {
+interface EpisodePremiseDescriptionProps {
   isEditing: boolean
   isGenerating: boolean
   generatingSection: string | null
-  hasLogline: boolean
+  logline: string | undefined
+  projectId: string
   onGenerateSection?: (section: PremiseSectionKey) => void
-  onStartEdit: () => void
-  onCancelEdit: () => void
-  onSave: () => void
+  onLoglineChange: (value: string) => void
 }
 
-export function EpisodePremiseToolbar({
+function EpisodePremiseDescription({
   isEditing,
   isGenerating,
   generatingSection,
-  hasLogline,
+  logline,
+  projectId,
   onGenerateSection,
-  onStartEdit,
-  onCancelEdit,
-  onSave,
-}: EpisodePremiseToolbarProps) {
+  onLoglineChange,
+}: EpisodePremiseDescriptionProps) {
+  const isGeneratingLogline = generatingSection === EpisodePremiseSectionKey.Logline
+  const showRefresh = !isEditing && Boolean(onGenerateSection)
+
   return (
-    <div className="w-full flex justify-end mb-6">
-      <div className="flex items-center gap-1.5 opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity">
-        {!isEditing && onGenerateSection && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onGenerateSection(EpisodePremiseSectionKey.Logline)}
-            disabled={isGenerating}
-            className="gap-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-            title="Regenerate Description (Logline)"
-          >
-            <RefreshCw
-              className={cn('w-3.5 h-3.5', generatingSection === EpisodePremiseSectionKey.Logline && 'animate-spin')}
-            />
-            {generatingSection === EpisodePremiseSectionKey.Logline
-              ? 'Generating…'
-              : hasLogline
-                ? 'Regenerate Description'
-                : 'Generate Description'}
-          </Button>
-        )}
-        {isEditing ? (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onCancelEdit}
-              className="rounded-md text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-            >
-              Cancel
-            </Button>
-            <Button size="sm" onClick={onSave} className="gap-1.5 rounded-md text-xs h-7 px-2">
-              <Save className="w-3.5 h-3.5" /> Save
-            </Button>
-          </>
+    <div className="relative">
+      {showRefresh && onGenerateSection ? (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="absolute top-0 right-0 z-10 h-7 w-7 rounded-md text-muted-foreground hover:text-primary"
+          onClick={() => onGenerateSection(EpisodePremiseSectionKey.Logline)}
+          disabled={isGenerating}
+          title={EpisodePremiseCopy.RegenerateDescription}
+        >
+          <RefreshCw className={cn('w-3.5 h-3.5', isGeneratingLogline && 'animate-spin')} />
+        </Button>
+      ) : null}
+      <div className={cn(showRefresh && 'pr-8')}>
+        {isGeneratingLogline ? (
+          <Skeleton className="h-10 w-full rounded-md bg-muted" />
+        ) : isEditing ? (
+          <textarea
+            className="w-full min-h-[88px] p-3 bg-muted/30 border border-border text-foreground rounded-md text-sm italic focus:border-primary outline-none resize-y"
+            value={logline || ''}
+            onChange={e => onLoglineChange(e.target.value)}
+            placeholder={EpisodePremiseCopy.DescriptionPlaceholder}
+          />
+        ) : logline ? (
+          <blockquote className="text-sm border-l-2 border-primary/50 pl-4 text-foreground/90 break-words italic">
+            <RichText text={logline} projectId={projectId} markdown />
+          </blockquote>
         ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onStartEdit}
-            className="gap-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-            disabled={isGenerating}
-          >
-            <Edit2 className="w-3.5 h-3.5" /> Edit
-          </Button>
+          <p className="text-sm text-muted-foreground">{EpisodePremiseCopy.NoDescription}</p>
         )}
       </div>
     </div>
@@ -91,14 +77,17 @@ export function EpisodePremiseToolbar({
 interface EpisodePremiseHeroProps {
   localPremise: LocalPremise
   isEditing: boolean
+  isGenerating: boolean
   isGeneratingPoster: boolean
   generatingSection: string | null
   fullPosterUrl: string | null
   posterPrompt?: string | null
   projectId: string
   onGeneratePoster?: () => void
+  onGenerateSection?: (section: PremiseSectionKey) => void
   onTitleChange: (value: string) => void
   onThematicFocusChange: (value: string) => void
+  onLoglineChange: (value: string) => void
   episodePrompt?: string
   onSaveEpisodePrompt?: (prompt: string) => void
 }
@@ -106,17 +95,21 @@ interface EpisodePremiseHeroProps {
 export function EpisodePremiseHero({
   localPremise,
   isEditing,
+  isGenerating,
   isGeneratingPoster,
   generatingSection,
   fullPosterUrl,
   posterPrompt,
   projectId,
   onGeneratePoster,
+  onGenerateSection,
   onTitleChange,
   onThematicFocusChange,
+  onLoglineChange,
   episodePrompt,
   onSaveEpisodePrompt,
 }: EpisodePremiseHeroProps) {
+  const isChatBusy = useStorytellerChatBusy()
   return (
     <>
       <header className="w-full border-b border-border pb-4 mb-6">
@@ -167,6 +160,7 @@ export function EpisodePremiseHero({
                     variant="secondary"
                     size="sm"
                     className="w-full gap-2 text-xs rounded-md"
+                    disabled={isChatBusy}
                     onClick={onGeneratePoster}
                   >
                     <Sparkles className="w-3 h-3" /> Regenerate
@@ -184,30 +178,27 @@ export function EpisodePremiseHero({
         <div className="flex-1 min-w-[14rem] flex flex-col gap-3">
           {isEditing ? (
             <input
-              className="px-2 py-1 bg-muted border border-border text-foreground rounded-md text-xs font-mono uppercase tracking-wider focus:border-primary outline-none w-full mb-2"
+              className="px-2 py-1 bg-muted border border-border text-foreground rounded-md text-xs font-mono uppercase tracking-wider focus:border-primary outline-none w-full"
               value={localPremise.thematicFocus || ''}
               onChange={e => onThematicFocusChange(e.target.value)}
-              placeholder="THEME"
+              placeholder={EpisodePremiseCopy.ThemePlaceholder}
             />
           ) : (
             localPremise.thematicFocus && (
-              <span className="px-2 py-1 bg-muted border border-border text-foreground rounded-md text-xs font-mono uppercase tracking-wider shrink-0 mb-2">
+              <span className="px-2 py-1 bg-muted border border-border text-foreground rounded-md text-xs font-mono uppercase tracking-wider shrink-0">
                 <RichText text={localPremise.thematicFocus} projectId={projectId} inline />
               </span>
             )
           )}
-          {generatingSection === EpisodePremiseSectionKey.Logline ? (
-            <Skeleton className="h-10 w-full rounded-md bg-muted mb-4" />
-          ) : !localPremise.logline ? (
-            <p className="text-sm text-muted-foreground mb-4">
-              No description yet. Use Regenerate Description to generate a logline.
-            </p>
-          ) : null}
-          {localPremise.logline && (
-            <blockquote className="text-sm border-l-2 border-primary/50 pl-4 text-foreground/90 break-words italic">
-              <RichText text={localPremise.logline} projectId={projectId} markdown />
-            </blockquote>
-          )}
+          <EpisodePremiseDescription
+            isEditing={isEditing}
+            isGenerating={isGenerating}
+            generatingSection={generatingSection}
+            logline={localPremise.logline}
+            projectId={projectId}
+            onGenerateSection={onGenerateSection}
+            onLoglineChange={onLoglineChange}
+          />
         </div>
       </div>
     </>

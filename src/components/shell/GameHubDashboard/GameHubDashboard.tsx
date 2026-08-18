@@ -33,6 +33,7 @@ import {
   GameHubEntityStatsSuffix,
   GameHubRouteId,
 } from '@/components/shell/GameHubDashboard/constants/game-hub-dashboard'
+import { is3dCanvasEnabled, isLoopCreatorEnabled } from '@/shared/data/constants/feature-flags'
 
 interface GameHubDashboardProps {
   projectId: string
@@ -76,15 +77,19 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
       href: `/${projectId}/${GameHubRouteId.Storyteller}`,
       stats: `${domainStats[AppModuleId.Storyteller]} ${GameHubEntityStatsSuffix.Entities}`,
     },
-    {
-      id: GameHubRouteId.LoopCreator,
-      name: GameHubDomainLabel.LoopCreator,
-      description: GameHubDomainDescription.LoopCreator,
-      icon: <Gamepad2 className="w-5 h-5" />,
-      color: GameHubDomainGradient.LoopCreator,
-      href: `/${projectId}/${GameHubRouteId.LoopCreator}`,
-      stats: `${domainStats[AppModuleId.LoopCreator]} ${GameHubEntityStatsSuffix.Entities}`,
-    },
+    ...(isLoopCreatorEnabled()
+      ? [
+          {
+            id: GameHubRouteId.LoopCreator,
+            name: GameHubDomainLabel.LoopCreator,
+            description: GameHubDomainDescription.LoopCreator,
+            icon: <Gamepad2 className="w-5 h-5" />,
+            color: GameHubDomainGradient.LoopCreator,
+            href: `/${projectId}/${GameHubRouteId.LoopCreator}`,
+            stats: `${domainStats[AppModuleId.LoopCreator]} ${GameHubEntityStatsSuffix.Entities}`,
+          },
+        ]
+      : []),
     {
       id: GameHubRouteId.WorldGen,
       name: GameHubDomainLabel.WorldBuilder,
@@ -94,15 +99,19 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
       href: `/${projectId}/${GameHubRouteId.WorldGen}`,
       stats: `${domainStats[AppModuleId.WorldBuilding]} ${GameHubEntityStatsSuffix.Entities}`,
     },
-    {
-      id: GameHubRouteId.InteriorDesign,
-      name: GameHubDomainLabel.InteriorDesigner,
-      description: GameHubDomainDescription.InteriorDesigner,
-      icon: <Home className="w-5 h-5" />,
-      color: GameHubDomainGradient.InteriorDesigner,
-      href: `/${projectId}/${GameHubRouteId.InteriorDesign}`,
-      stats: `${domainStats[AppModuleId.InteriorDesigner]} ${GameHubEntityStatsSuffix.Entities}`,
-    },
+    ...(is3dCanvasEnabled()
+      ? [
+          {
+            id: GameHubRouteId.InteriorDesign,
+            name: GameHubDomainLabel.InteriorDesigner,
+            description: GameHubDomainDescription.InteriorDesigner,
+            icon: <Home className="w-5 h-5" />,
+            color: GameHubDomainGradient.InteriorDesigner,
+            href: `/${projectId}/${GameHubRouteId.InteriorDesign}`,
+            stats: `${domainStats[AppModuleId.InteriorDesigner]} ${GameHubEntityStatsSuffix.Entities}`,
+          },
+        ]
+      : []),
     {
       id: GameHubRouteId.AssetExporter,
       name: GameHubDomainLabel.AssetExporter,
@@ -311,12 +320,14 @@ export function GameHubDashboard({ projectId }: GameHubDashboardProps) {
                 >
                   <span className="font-medium">→</span> Create a character
                 </Link>
-                <Link
-                  href={`/${projectId}/${GameHubRouteId.LoopCreator}`}
-                  className="block p-3 bg-gray-900/50 hover:bg-gray-900/70 rounded-lg transition-colors text-sm text-gray-300"
-                >
-                  <span className="font-medium">→</span> Design a game loop
-                </Link>
+                {isLoopCreatorEnabled() ? (
+                  <Link
+                    href={`/${projectId}/${GameHubRouteId.LoopCreator}`}
+                    className="block p-3 bg-gray-900/50 hover:bg-gray-900/70 rounded-lg transition-colors text-sm text-gray-300"
+                  >
+                    <span className="font-medium">→</span> Design a game loop
+                  </Link>
+                ) : null}
                 <Link
                   href={`/${projectId}/${GameHubRouteId.WorldGen}`}
                   className="block p-3 bg-gray-900/50 hover:bg-gray-900/70 rounded-lg transition-colors text-sm text-gray-300"

@@ -10,7 +10,8 @@ Single CLI: `node scripts/qualitygate.mjs` · implementation: `scripts/qualityga
 
 | npm script | When |
 |------------|------|
-| `qualitygate:file -- <path>` | After each extract / focused edit (TSC + ESLint + metrics) |
+| `qualitygate:file -- <path>` | After each extract / focused edit (TSC + ESLint + metrics; OpenAPI coverage on `src/app/api/**/route.ts`) |
+| `openapi:check` | After adding/changing `src/app/api/**/route.ts` — spec drift + route coverage (also in precommit) |
 | `qualitygate:changed` | Every **5** completed todos; git-changed `src/**` |
 | `qualitygate:capture` | Start fix loop — cache failures → `.local/quality-backlog.md` |
 | `qualitygate:backlog` | Show backlog without rescanning |

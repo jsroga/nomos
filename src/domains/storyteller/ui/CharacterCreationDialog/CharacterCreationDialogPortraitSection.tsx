@@ -1,6 +1,7 @@
 import { Button } from '@/components/Button'
 import { Wand2 } from 'lucide-react'
 import { StorytellerImage } from '../StorytellerImage'
+import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
 import {
   CHARACTER_DIALOG_PORTRAIT_STATUS_PICK,
   CHARACTER_DIALOG_PORTRAIT_STATUS_POWERED_BY,
@@ -41,6 +42,8 @@ export function CharacterCreationDialogPortraitSection({
   onSetGridImageUrl,
 }: CharacterCreationDialogPortraitSectionProps) {
   const showVariantPicker = canPickPortraitVariant(gridImageUrl)
+  const isChatBusy = useStorytellerChatBusy()
+  const generateDisabled = isGeneratingPortrait || isChatBusy
 
   return (
     <div className="space-y-2">
@@ -76,7 +79,7 @@ export function CharacterCreationDialogPortraitSection({
                 variant="secondary"
                 className="w-full text-xs backdrop-blur-md bg-white/20 hover:bg-white/40 border-white/20 text-white"
                 onClick={onGeneratePortrait}
-                disabled={isGeneratingPortrait}
+                disabled={generateDisabled}
               >
                 <Wand2 className="w-3 h-3 mr-1" />
                 Regenerate

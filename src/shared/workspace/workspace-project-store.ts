@@ -9,7 +9,7 @@ import {
   deleteWorkspaceProject,
   fetchWorkspaceProjects,
 } from './io/projects.api'
-import { fetchWorkspaceProject } from './io/project-session.api'
+import { fetchWorkspaceProject, renameWorkspaceProject } from './io/project-session.api'
 import type { WorkspaceProject } from './types'
 
 const WORKSPACE_PROJECT_LOAD_FAILED = 'Failed to load workspace project:'
@@ -22,6 +22,7 @@ interface WorkspaceProjectState {
   clearCurrentProject: () => void
   fetchAllProjects: () => Promise<void>
   createProject: (name: string, masterPrompt: string) => Promise<string | null>
+  renameProject: (projectId: string, name: string) => Promise<boolean>
   deleteProject: (projectId: string) => Promise<void>
   loadProject: (projectId: string) => Promise<WorkspaceProject | null>
 }
@@ -62,7 +63,26 @@ export const useWorkspaceProjectStore = create<WorkspaceProjectState>((set, get)
     }
   },
 
-  deleteProject: async (projectId: string) => {
+  renameProject: async (projectId, name) => {
+    try {
+      await renameWorkspaceProject(projectId, name)
+      set(state => ({
+        projects: state.projects.map(project =>
+          project.id === projectId ? { ...project, name } : project
+        ),
+        currentProject:
+          state.currentProject?.id === projectId
+            ? { ...state.currentProject, name }
+            : state.currentProject,
+      }))
+      return true
+    } catch (error) {
+      console.error(WorkspaceProjectsLog.ErrorRenamingProject, error)
+      return false
+    }
+  },
+
+  deleteProject: async projectId => {
     try {
       await deleteWorkspaceProject(projectId)
       set(state => ({

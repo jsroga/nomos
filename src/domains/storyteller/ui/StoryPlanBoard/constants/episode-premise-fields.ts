@@ -14,6 +14,10 @@ export enum EpisodePremiseField {
 
 export enum EpisodePremiseCopy {
   UntitledEpisode = 'Untitled Episode',
+  RegenerateDescription = 'Regenerate description',
+  NoDescription = 'No description yet.',
+  DescriptionPlaceholder = 'Episode description (logline)…',
+  ThemePlaceholder = 'THEME',
 }
 
 export const EPISODE_PREMISE_RICH_TEXT_FIELDS = [

@@ -5,6 +5,7 @@ import { browserStorage } from '@/shared/data/browser-storage'
 import {
   AsyncOperationStatus,
   OperationTypeId,
+  TileProgressStage,
   UpscaleOperationIdPrefix,
   UpscaleOperationLabel,
 } from '../../constants/upscale-service'
@@ -24,6 +25,7 @@ export function trackUpscaleStart(
   providerLabel: string
 ): string {
   useWorldStore.getState().addUpscalingTile(tileX, tileY)
+  useWorldStore.getState().setTileProgress(tileX, tileY, 0, TileProgressStage.Initializing)
   const opId = buildUpscaleOpId(tileX, tileY)
   useGlobalStatusStore.getState().addOperation({
     id: opId,
@@ -37,6 +39,12 @@ export function trackUpscaleStart(
 
 export function trackUpscaleResume(runState: UpscaleRunState): string {
   useWorldStore.getState().addUpscalingTile(runState.tileX, runState.tileY)
+  useWorldStore.getState().setTileProgress(
+    runState.tileX,
+    runState.tileY,
+    0,
+    TileProgressStage.Initializing,
+  )
   const opId = buildUpscaleOpId(runState.tileX, runState.tileY)
   useGlobalStatusStore.getState().addOperation({
     id: opId,
@@ -58,11 +66,13 @@ export function updateUpscalePollStatus(
   useGlobalStatusStore.getState().updateOperation(opId, {
     details: `(${tileX}, ${tileY}) ${stage} ${progress}%`,
   })
+  useWorldStore.getState().setTileProgress(tileX, tileY, progress, stage)
 }
 
 export function clearUpscaleRunState(runState: UpscaleRunState, opId: string): void {
   browserStorage.remove(DynamicLocalStorageKeys.upscaleRun(runState.tileId))
   useWorldStore.getState().removeUpscalingTile(runState.tileX, runState.tileY)
+  useWorldStore.getState().clearTileProgress(runState.tileX, runState.tileY)
   useGlobalStatusStore.getState().removeOperation(opId)
 }
 
@@ -83,6 +93,7 @@ export function handleUpscaleStartError(
     error instanceof Error ? error.message : fallbackMessage
   )
   useWorldStore.getState().removeUpscalingTile(tileX, tileY)
+  useWorldStore.getState().clearTileProgress(tileX, tileY)
   useGlobalStatusStore.getState().removeOperation(opId)
 }
 

@@ -14,34 +14,12 @@ import {
   buildMoodboardProjectContext,
   generateMoodboardPrompts,
 } from '../_lib/moodboard-trigger-prompts'
-import {
-  imageGenerateModelToImageGenProvider,
-  readApiframeApiKey,
-  resolveMoodboardModel,
-} from '@/shared/ai/image-model-env'
+import { resolveMoodboardProviderConfig } from '../_lib/moodboard-provider-config'
 
 function getOpenRouterClient() {
   const { apiKey, baseURL } = openRouterClientConfig()
   if (!apiKey) return null
   return new OpenAI({ apiKey, baseURL })
-}
-
-function resolveMoodboardProviderConfig(
-  providerConfig: Record<string, unknown> | undefined,
-  styleReferenceUrls: string[],
-) {
-  const moodboardModel = resolveMoodboardModel()
-  const apiKey =
-    (typeof providerConfig?.apiKey === 'string' ? providerConfig.apiKey : undefined) ||
-    readApiframeApiKey()
-  return {
-    ...providerConfig,
-    styleReferenceUrls,
-    provider:
-      providerConfig?.provider ?? imageGenerateModelToImageGenProvider(moodboardModel),
-    modelId: providerConfig?.modelId ?? moodboardModel,
-    apiKey,
-  }
 }
 
 export async function POST(req: NextRequest) {

@@ -13,3 +13,8 @@ export const EPISODE_PREMISE_LOG_SAVED = '[EpisodePremise] Saved successfully, n
 export const EPISODE_PREMISE_LOG_SAVE_FAILED = '[EpisodePremise] Failed to save poster variant:'
 export const EPISODE_PREMISE_LOG_SAVE_ERROR = '[EpisodePremise] Error saving poster variant:'
 export const EPISODE_PREMISE_LOG_NO_EPISODE = '[EpisodePremise] No episodeId, skipping DB save'
+
+export enum EpisodePremisePanelClass {
+  Root = 'flex flex-1 min-h-0 overflow-hidden',
+  ScrollBody = 'flex-1 min-h-0 overflow-y-auto px-5 pt-5 pb-8',
+}

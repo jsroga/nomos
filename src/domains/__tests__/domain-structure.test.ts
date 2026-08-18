@@ -123,6 +123,8 @@ const PURE_AI_MODULES: Record<string, readonly string[]> = {
     'ai/request-context.ts',
     'ai/tracing.ts',
     'ai/workflows/beat-draft-contract.ts',
+    'ai/workflows/fix-inconsistencies-contract.ts',
+    'ai/workflows/fix-inconsistencies-schema.ts',
     'ai/workflows/beat-draft-default-deps.ts',
     'ai/workflows/beat-draft-deps-types.ts',
     'ai/agents/Muse/wild-idea-schema.ts',

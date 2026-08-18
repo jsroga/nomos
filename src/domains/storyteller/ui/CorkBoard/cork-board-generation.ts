@@ -1,4 +1,3 @@
-import type { Dispatch, SetStateAction } from 'react'
 import toast from 'react-hot-toast'
 import { BeatCard as BeatData } from '@/domains/storyteller/core/types/story-types'
 import { beatImageService } from '@/domains/storyteller/services/beat-image-service'
@@ -12,18 +11,20 @@ import {
   CORK_BOARD_STORYBOARD_FAILED_LOG,
   CORK_BOARD_STORYBOARD_STARTED_CONTENT,
   CORK_BOARD_VISUAL_DIRECTOR_SENDER,
+  CorkBoardBeatImagePolicy,
   CorkBoardBeatListSep,
+  CorkBoardCopy,
   CorkBoardExistingBeatsLabel,
   CorkBoardPromptPlaceholder,
 } from './constants/cork-board'
 import { StorytellerMessageType } from '@/domains/storyteller/core/storyteller-page-wire'
+import { getBeatImageBatchStore } from '@/domains/storyteller/state/useBeatImageBatchStore'
 
 interface GenerateBeatImagesParams {
   projectId: string
+  episodeId?: string
   beats: BeatData[]
   onAddMessage?: (message: Message) => void
-  setBeats: Dispatch<SetStateAction<BeatData[]>>
-  setIsGeneratingBeats: (value: boolean) => void
 }
 
 function sendIfPremiseReady(
@@ -91,14 +92,35 @@ export function requestCorkBoardNextBeat(
   return sendIfPremiseReady(premise, onSendMessage, corkBoardNextBeatPrompt(beats))
 }
 
+export function beatsHaveExistingImages(beats: ReadonlyArray<{ imageUrl?: string }>): boolean {
+  return beats.some(beat => Boolean(beat.imageUrl))
+}
+
+export function beatsForImageGeneration<T extends { imageUrl?: string }>(
+  beats: readonly T[],
+  policy: CorkBoardBeatImagePolicy,
+): T[] {
+  if (policy === CorkBoardBeatImagePolicy.SkipExisting) {
+    return beats.filter(beat => !beat.imageUrl)
+  }
+  return [...beats]
+}
+
+let corkBoardImageBatchSeq = 0
+
 export const runCorkBoardBeatImageGeneration = async ({
   projectId,
+  episodeId,
   beats,
   onAddMessage,
-  setBeats,
-  setIsGeneratingBeats,
 }: GenerateBeatImagesParams): Promise<void> => {
-  setIsGeneratingBeats(true)
+  const seq = corkBoardImageBatchSeq + 1
+  corkBoardImageBatchSeq = seq
+  const batch = getBeatImageBatchStore()
+  batch.start(
+    episodeId ?? null,
+    beats.map(beat => beat.id),
+  )
   onAddMessage?.({
     sender: CORK_BOARD_VISUAL_DIRECTOR_SENDER,
     content: CORK_BOARD_STORYBOARD_STARTED_CONTENT.replace(
@@ -110,9 +132,20 @@ export const runCorkBoardBeatImageGeneration = async ({
 
   try {
     for (const beat of beats) {
-      await beatImageService.generateImageForBeat(projectId, beat, (id, updates) => {
-        setBeats(prev => prev.map(b => (b.id === id ? { ...b, ...updates } : b)))
-      })
+      const live = getBeatImageBatchStore()
+      if (seq !== corkBoardImageBatchSeq || live.cancelled) break
+      await beatImageService.generateImageForBeat(
+        projectId,
+        beat,
+        (id, updates) => {
+          getBeatImageBatchStore().applyPatch(id, {
+            imageUrl: updates.imageUrl,
+            imagePrompt: updates.imagePrompt,
+          })
+        },
+        { shouldAbort: () => seq !== corkBoardImageBatchSeq || getBeatImageBatchStore().cancelled },
+      )
+      getBeatImageBatchStore().markDone(beat.id)
     }
   } catch (e) {
     console.error(CORK_BOARD_STORYBOARD_FAILED_LOG, e)
@@ -122,6 +155,10 @@ export const runCorkBoardBeatImageGeneration = async ({
         : CORK_BOARD_BEAT_IMAGES_FAILED_TOAST
     )
   } finally {
-    setIsGeneratingBeats(false)
+    if (seq === corkBoardImageBatchSeq) {
+      const live = getBeatImageBatchStore()
+      if (live.cancelled) toast(CorkBoardCopy.ImagesCancelled)
+      live.clear()
+    }
   }
 }

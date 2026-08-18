@@ -9,6 +9,7 @@ import {
   MIDJOURNEY_STYLIZE,
   buildMidjourneyParamSuffix,
   buildMidjourneyTilePromptText,
+  nextMidjourneyPromptAfterImageDenial,
 } from '../midjourney-params'
 import { tilePromptLayersFrom } from '../prompts'
 
@@ -87,5 +88,38 @@ describe('Apiframe and LegNext Midjourney params', () => {
     })
     expect(prompt).toContain(`${MidjourneyParamFlag.StyleRef} ${preset}`)
     expect(prompt).not.toContain(`${MidjourneyParamFlag.StyleRef} ${anchor}`)
+  })
+})
+
+describe('nextMidjourneyPromptAfterImageDenial', () => {
+  it('strips --sref urls first', () => {
+    const prompt = [
+      'shop isometric',
+      `${MidjourneyParamFlag.StyleRef} ${SREF_URLS.join(' ')}`,
+      `${MidjourneyParamFlag.No} ${MidjourneyBaseNegative.Text}`,
+    ].join(' ')
+    expect(nextMidjourneyPromptAfterImageDenial(prompt)).toBe(
+      `shop isometric ${MidjourneyParamFlag.No} ${MidjourneyBaseNegative.Text}`
+    )
+  })
+
+  it('strips a packed follow-up image url after srefs are gone', () => {
+    const packed = 'https://cdn.example.com/packed.png'
+    const prompt = `${packed} rainy harbour ${MidjourneyParamFlag.Stylize} ${MIDJOURNEY_STYLIZE}`
+    expect(nextMidjourneyPromptAfterImageDenial(prompt)).toBe(
+      `rainy harbour ${MidjourneyParamFlag.Stylize} ${MIDJOURNEY_STYLIZE}`
+    )
+  })
+
+  it('strips sref before the leading packed image url', () => {
+    const packed = 'https://cdn.example.com/packed.png'
+    const withBoth = `${packed} quay ${MidjourneyParamFlag.StyleRef} ${SREF_URLS[0]}`
+    const afterSref = nextMidjourneyPromptAfterImageDenial(withBoth)
+    expect(afterSref).toBe(`${packed} quay`)
+    expect(nextMidjourneyPromptAfterImageDenial(afterSref ?? '')).toBe('quay')
+  })
+
+  it('returns undefined when nothing to strip', () => {
+    expect(nextMidjourneyPromptAfterImageDenial('a rainy harbour quay')).toBeUndefined()
   })
 })
