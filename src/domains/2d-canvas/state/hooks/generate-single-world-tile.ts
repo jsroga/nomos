@@ -89,7 +89,6 @@ export async function generateSingleWorldTile(params: {
     y,
     tiles,
     tilePrompt,
-    masterPrompt,
     effectiveStyleUrls,
     setError,
     setGenerationDebugInfo,
@@ -101,10 +100,13 @@ export async function generateSingleWorldTile(params: {
       tiles[`${x},${y + 1}`],
       tiles[`${x - 1},${y}`],
       tiles[`${x + 1},${y}`],
+      tiles[`${x - 1},${y - 1}`],
+      tiles[`${x + 1},${y - 1}`],
+      tiles[`${x - 1},${y + 1}`],
+      tiles[`${x + 1},${y + 1}`],
     ].some(Boolean)
 
-    const effectiveTilePrompt = tilePrompt.trim() || masterPrompt
-    const fullPrompt = effectiveTilePrompt
+    const fullPrompt = tilePrompt.trim()
 
     let followUpContext: FollowUpContextPayload | undefined
 

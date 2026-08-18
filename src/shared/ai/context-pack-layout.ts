@@ -11,12 +11,43 @@ export const PACKED_CANVAS_RGB = { r: 0, g: 0, b: 0 } as const
 export const PACKED_HOLE_CSS = '#808080'
 export const PACKED_CANVAS_CSS = '#000000'
 
-export interface CardinalPresence {
+export enum PackedNeighborSlot {
+  Left = 'left',
+  Right = 'right',
+  Up = 'up',
+  Down = 'down',
+  TopLeft = 'topLeft',
+  TopRight = 'topRight',
+  BottomLeft = 'bottomLeft',
+  BottomRight = 'bottomRight',
+}
+
+export interface NeighborPresence {
   left: boolean
   right: boolean
   up: boolean
   down: boolean
+  topLeft: boolean
+  topRight: boolean
+  bottomLeft: boolean
+  bottomRight: boolean
 }
+
+export type CardinalPresence = Pick<NeighborPresence, 'left' | 'right' | 'up' | 'down'> &
+  Partial<Pick<NeighborPresence, 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'>>
+
+export const PACKED_NEIGHBOR_KEYS = [
+  PackedNeighborSlot.Left,
+  PackedNeighborSlot.Right,
+  PackedNeighborSlot.Up,
+  PackedNeighborSlot.Down,
+  PackedNeighborSlot.TopLeft,
+  PackedNeighborSlot.TopRight,
+  PackedNeighborSlot.BottomLeft,
+  PackedNeighborSlot.BottomRight,
+] as const
+
+export type PackedNeighborKey = PackedNeighborSlot
 
 export interface PackedCropRect {
   x: number
@@ -39,6 +70,10 @@ export interface PackedCanvasLayout {
   right?: PackedCellDest
   up?: PackedCellDest
   down?: PackedCellDest
+  topLeft?: PackedCellDest
+  topRight?: PackedCellDest
+  bottomLeft?: PackedCellDest
+  bottomRight?: PackedCellDest
 }
 
 export interface PackedCropSpec {
@@ -65,6 +100,34 @@ function cellFlag(present: boolean): number {
   return present ? 1 : 0
 }
 
+export function neighborPresenceFromLoaded(
+  loaded: Partial<Record<PackedNeighborKey, unknown>>,
+): NeighborPresence {
+  return {
+    left: Boolean(loaded.left),
+    right: Boolean(loaded.right),
+    up: Boolean(loaded.up),
+    down: Boolean(loaded.down),
+    topLeft: Boolean(loaded.topLeft),
+    topRight: Boolean(loaded.topRight),
+    bottomLeft: Boolean(loaded.bottomLeft),
+    bottomRight: Boolean(loaded.bottomRight),
+  }
+}
+
+export function neighborPresenceFrom(input: CardinalPresence): NeighborPresence {
+  return {
+    left: input.left,
+    right: input.right,
+    up: input.up,
+    down: input.down,
+    topLeft: input.topLeft === true,
+    topRight: input.topRight === true,
+    bottomLeft: input.bottomLeft === true,
+    bottomRight: input.bottomRight === true,
+  }
+}
+
 export function cardinalCount(presence: CardinalPresence): number {
   return (
     cellFlag(presence.left) +
@@ -74,24 +137,62 @@ export function cardinalCount(presence: CardinalPresence): number {
   )
 }
 
-/** Tight pack: full 512 cardinals, grey hole only. Missing sides omitted. */
+export function neighborCount(presence: CardinalPresence): number {
+  const n = neighborPresenceFrom(presence)
+  return PACKED_NEIGHBOR_KEYS.reduce((sum, key) => sum + cellFlag(n[key]), 0)
+}
+
+interface PackedOccupancy {
+  leftCol: boolean
+  rightCol: boolean
+  upRow: boolean
+  downRow: boolean
+}
+
+function packedOccupancy(n: NeighborPresence): PackedOccupancy {
+  return {
+    leftCol: n.left || n.topLeft || n.bottomLeft,
+    rightCol: n.right || n.topRight || n.bottomRight,
+    upRow: n.up || n.topLeft || n.topRight,
+    downRow: n.down || n.bottomLeft || n.bottomRight,
+  }
+}
+
+function assignPackedDests(
+  layout: PackedCanvasLayout,
+  n: NeighborPresence,
+  holeX: number,
+  holeY: number,
+): void {
+  const farX = holeX + PACKED_TILE_SIZE
+  const farY = holeY + PACKED_TILE_SIZE
+  if (n.left) layout.left = { x: 0, y: holeY }
+  if (n.right) layout.right = { x: farX, y: holeY }
+  if (n.up) layout.up = { x: holeX, y: 0 }
+  if (n.down) layout.down = { x: holeX, y: farY }
+  if (n.topLeft) layout.topLeft = { x: 0, y: 0 }
+  if (n.topRight) layout.topRight = { x: farX, y: 0 }
+  if (n.bottomLeft) layout.bottomLeft = { x: 0, y: farY }
+  if (n.bottomRight) layout.bottomRight = { x: farX, y: farY }
+}
+
+/** Tight pack: full 512 neighbors around a grey hole. Unused rows/cols omitted. */
 export function tightPackedCanvasLayout(presence: CardinalPresence): PackedCanvasLayout {
-  const holeX = presence.left ? PACKED_TILE_SIZE : 0
-  const holeY = presence.up ? PACKED_TILE_SIZE : 0
+  const n = neighborPresenceFrom(presence)
+  const occ = packedOccupancy(n)
+  const holeX = occ.leftCol ? PACKED_TILE_SIZE : 0
+  const holeY = occ.upRow ? PACKED_TILE_SIZE : 0
   const width =
-    PACKED_TILE_SIZE + PACKED_TILE_SIZE * (cellFlag(presence.left) + cellFlag(presence.right))
+    PACKED_TILE_SIZE + PACKED_TILE_SIZE * (cellFlag(occ.leftCol) + cellFlag(occ.rightCol))
   const height =
-    PACKED_TILE_SIZE + PACKED_TILE_SIZE * (cellFlag(presence.up) + cellFlag(presence.down))
+    PACKED_TILE_SIZE + PACKED_TILE_SIZE * (cellFlag(occ.upRow) + cellFlag(occ.downRow))
   const layout: PackedCanvasLayout = {
     width,
     height,
     cellSize: PACKED_TILE_SIZE,
     hole: { x: holeX, y: holeY, width: PACKED_TILE_SIZE, height: PACKED_TILE_SIZE },
   }
-  if (presence.left) layout.left = { x: 0, y: holeY }
-  if (presence.right) layout.right = { x: holeX + PACKED_TILE_SIZE, y: holeY }
-  if (presence.up) layout.up = { x: holeX, y: 0 }
-  if (presence.down) layout.down = { x: holeX, y: holeY + PACKED_TILE_SIZE }
+  assignPackedDests(layout, n, holeX, holeY)
   return layout
 }
 
@@ -201,6 +302,10 @@ function offsetLayout(
     right: offsetDest(layout.right, dx, dy),
     up: offsetDest(layout.up, dx, dy),
     down: offsetDest(layout.down, dx, dy),
+    topLeft: offsetDest(layout.topLeft, dx, dy),
+    topRight: offsetDest(layout.topRight, dx, dy),
+    bottomLeft: offsetDest(layout.bottomLeft, dx, dy),
+    bottomRight: offsetDest(layout.bottomRight, dx, dy),
   }
 }
 
@@ -226,6 +331,10 @@ function applyPackedLongSideCap(layout: PackedCanvasLayout): PackedCanvasLayout 
     right: scaleDest(layout.right, scale),
     up: scaleDest(layout.up, scale),
     down: scaleDest(layout.down, scale),
+    topLeft: scaleDest(layout.topLeft, scale),
+    topRight: scaleDest(layout.topRight, scale),
+    bottomLeft: scaleDest(layout.bottomLeft, scale),
+    bottomRight: scaleDest(layout.bottomRight, scale),
   }
 }
 

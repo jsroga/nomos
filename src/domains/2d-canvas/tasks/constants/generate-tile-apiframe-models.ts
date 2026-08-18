@@ -22,8 +22,8 @@ import {
 } from '@/shared/ai/apiframe'
 import { ContentType, BufferEncoding } from '@/shared/data/constants/protocol'
 import { v4 as uuidv4 } from 'uuid'
-import { downloadTileAsBase64, assertTilePngSize } from './generate-tile-output'
-import { fillWhiteCornerTriangles } from './generate-tile-white-corners'
+import { assertTilePngSize } from './generate-tile-output'
+import { downloadTileWithFollowUpSeams } from './generate-tile-seams'
 import {
   apiframeFollowUpImageUrls,
   composeNonMidjourneyTilePrompt,
@@ -40,13 +40,17 @@ async function downloadGeneratedTile(
   imageUrl: string,
   isFirstTile: boolean,
   packedCrop: PackedCropSpec | undefined,
+  contextImageBase64: string | undefined,
 ): Promise<string> {
-  const downloaded = await downloadTileAsBase64(imageUrl, isFirstTile, packedCrop)
-  const tileBuffer = Buffer.from(downloaded, BufferEncoding.Base64)
+  const tile = await downloadTileWithFollowUpSeams(
+    imageUrl,
+    isFirstTile,
+    contextImageBase64,
+    packedCrop,
+  )
+  const tileBuffer = Buffer.from(tile, BufferEncoding.Base64)
   await assertTilePngSize(tileBuffer)
-  const filled = await fillWhiteCornerTriangles(tileBuffer)
-  await assertTilePngSize(filled)
-  return filled.toString(BufferEncoding.Base64)
+  return tile
 }
 
 async function uploadContextIfPresent(
@@ -183,7 +187,7 @@ export async function generateTileViaApiframeModel(
         prompt: text,
         outputImageUrls: [result.imageUrl],
       })
-      return downloadGeneratedTile(result.imageUrl, isFirstTile, packedCrop)
+      return downloadGeneratedTile(result.imageUrl, isFirstTile, packedCrop, contextImageBase64)
     }
 
     logLLMRequestStart({
@@ -217,7 +221,7 @@ export async function generateTileViaApiframeModel(
       GenerateTileProgress.Downloaded,
       GenerateTileStage.DownloadingResult,
     )
-    return downloadGeneratedTile(imageUrl, isFirstTile, packedCrop)
+    return downloadGeneratedTile(imageUrl, isFirstTile, packedCrop, contextImageBase64)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     logLLMRequestError({ provider, model, prompt: text, error: message })

@@ -7,6 +7,10 @@ import {
   FOLLOW_UP_SEAM_BLEND_PX,
   TILE_CROP_SIZE,
 } from '../generate-tile'
+import {
+  packedCanvasLayout,
+  packedCropSpecFromLayout,
+} from '@/shared/ai/context-pack-layout'
 
 const GREY = { r: 128, g: 128, b: 128, alpha: 1 }
 const NEIGHBOR = { r: 220, g: 30, b: 20, alpha: 1 }
@@ -75,5 +79,49 @@ describe('blendFollowUpSeams', () => {
     const out = await blendFollowUpSeams(tile, grey)
     near(await pixelAt(out, 0, 0), GENERATED)
     near(await pixelAt(out, 256, 256), GENERATED)
+  })
+
+  it('color-matches left and down packed neighbors for an L-shape hole', async () => {
+    const left = { r: 20, g: 180, b: 40, alpha: 1 }
+    const down = { r: 240, g: 200, b: 20, alpha: 1 }
+    const black = { r: 0, g: 0, b: 0, alpha: 1 }
+    const layout = packedCanvasLayout({
+      left: true,
+      right: false,
+      up: false,
+      down: true,
+    })
+    const spec = packedCropSpecFromLayout(layout)
+    const packed = await sharp({
+      create: {
+        width: layout.width,
+        height: layout.height,
+        channels: 4,
+        background: black,
+      },
+    })
+      .composite([
+        { input: await solidPng(TILE_CROP_SIZE, TILE_CROP_SIZE, left), left: 0, top: 0 },
+        {
+          input: await solidPng(TILE_CROP_SIZE, TILE_CROP_SIZE, GREY),
+          left: layout.hole.x,
+          top: layout.hole.y,
+        },
+        {
+          input: await solidPng(TILE_CROP_SIZE, TILE_CROP_SIZE, down),
+          left: layout.hole.x,
+          top: layout.hole.y + TILE_CROP_SIZE,
+        },
+      ])
+      .png()
+      .toBuffer()
+
+    const tile = await solidPng(TILE_CROP_SIZE, TILE_CROP_SIZE, GENERATED)
+    const out = await blendFollowUpSeams(tile, packed, spec)
+    near(await pixelAt(out, 0, 256), left)
+    near(await pixelAt(out, 256, TILE_CROP_SIZE - 1), down)
+    near(await pixelAt(out, 256, 256), GENERATED)
+    near(await pixelAt(out, TILE_CROP_SIZE - 1, 256), GENERATED)
+    near(await pixelAt(out, 256, 0), GENERATED)
   })
 })

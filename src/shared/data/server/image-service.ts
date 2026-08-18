@@ -32,7 +32,7 @@ export class ImageService {
   }
 
   /**
-   * Tight-pack full 512 cardinal neighbors around a grey hole.
+   * Tight-pack full 512 cardinal and diagonal neighbors around a grey hole.
    * Layout must match contextAssembler.ts. `size` is ignored (kept for callers).
    */
   async assembleContext(

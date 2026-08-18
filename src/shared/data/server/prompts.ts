@@ -47,33 +47,50 @@ function joinPromptParts(parts: Array<string | undefined | null>): string {
   return kept.join(' ')
 }
 
+export function tileDescriptionDirective(description: string): string | undefined {
+  const trimmed = description.trim()
+  if (trimmed.length === 0) return undefined
+  return `${GenerationPromptCopy.TileDescriptionDirectivePrefix} ${trimmed}${GenerationPromptCopy.TileDescriptionDirectiveSuffix}`
+}
+
+function withTileDescriptionDirective(description: string, body: string): string {
+  const directive = tileDescriptionDirective(description)
+  if (!directive) return body
+  return `${directive}${StringSeparator.DoubleNewline}${body}`
+}
+
 export function composeFirstTilePrompt(layers: TilePromptLayers): string {
-  const description = layers.tileDescription.trim()
   const styleContext = layers.styleContext?.trim() || DEFAULT_STYLE_CONTEXT
   const modeFragment = layers.modePromptFragment?.trim() ?? ''
   // The mode fragment states the camera; only fall back to overhead without one.
   const subject = modeFragment
-    ? `${description}, ${GenerationPromptCopy.FirstTileCroppedFragment}`
-    : `${GenerationPromptCopy.FirstTileOverheadPrefix} ${description}, ${GenerationPromptCopy.FirstTileCroppedFragment}`
-  return joinPromptParts([
-    subject,
-    layers.masterPrompt,
-    GenerationPromptCopy.FirstTileFrameFill,
-    modeFragment,
-    styleContext,
-  ])
+    ? GenerationPromptCopy.FirstTileCroppedFragment
+    : `${GenerationPromptCopy.FirstTileOverheadPrefix} ${GenerationPromptCopy.FirstTileCroppedFragment}`
+  return withTileDescriptionDirective(
+    layers.tileDescription,
+    joinPromptParts([
+      subject,
+      layers.masterPrompt,
+      GenerationPromptCopy.FirstTileFrameFill,
+      modeFragment,
+      styleContext,
+    ]),
+  )
 }
 
 export function composeFollowUpPrompt(layers: TilePromptLayers): string {
-  const description = layers.tileDescription.trim()
   const styleContext = layers.styleContext?.trim() || DEFAULT_STYLE_CONTEXT
-  return joinPromptParts([
-    FollowUpApiframeCopy.PackedWorld,
-    description,
-    layers.masterPrompt,
-    layers.modePromptFragment,
-    styleContext,
-  ])
+  return withTileDescriptionDirective(
+    layers.tileDescription,
+    joinPromptParts([
+      FollowUpApiframeCopy.PackedWorld,
+      layers.masterPrompt,
+      layers.modePromptFragment,
+      styleContext,
+      FollowUpApiframeCopy.PackedKeepNeighbors,
+      FollowUpApiframeCopy.MatchContract,
+    ]),
+  )
 }
 
 function followUpAvoidLine(modeNegatives?: string[]): string {
@@ -86,18 +103,19 @@ export function composeApiframeFollowUpPrompt(
   layers: TilePromptLayers,
   modeNegatives?: string[],
 ): string {
-  const description = layers.tileDescription.trim()
   const styleContext = layers.styleContext?.trim() || DEFAULT_STYLE_CONTEXT
-  return joinPromptParts([
-    FollowUpApiframeCopy.PackedWorld,
-    description,
-    layers.masterPrompt,
-    layers.modePromptFragment,
-    styleContext,
-    FollowUpApiframeCopy.PackedKeepNeighbors,
-    FollowUpApiframeCopy.MatchContract,
-    followUpAvoidLine(modeNegatives),
-  ])
+  return withTileDescriptionDirective(
+    layers.tileDescription,
+    joinPromptParts([
+      FollowUpApiframeCopy.PackedWorld,
+      layers.masterPrompt,
+      layers.modePromptFragment,
+      styleContext,
+      FollowUpApiframeCopy.PackedKeepNeighbors,
+      FollowUpApiframeCopy.MatchContract,
+      followUpAvoidLine(modeNegatives),
+    ]),
+  )
 }
 
 export function tilePromptLayersFrom(input: {
@@ -130,54 +148,69 @@ export const GENERATION_PROMPTS = {
   FOLLOW_UP: {
     /** Master template for inpainting follow-up tiles */
     MASTER: (layers: TilePromptLayers) =>
-      joinPromptParts([
-        `Inpaint the central gray square to connect with the surrounding edge context. Fill the gray area with: ${layers.tileDescription.trim()}.`,
-        layers.masterPrompt,
-        layers.modePromptFragment,
-        layers.styleContext,
-        GenerationPromptStyle.ConsistentArtStyle,
-        GenerationPromptCopy.FollowUpNoBorders,
-      ]),
+      withTileDescriptionDirective(
+        layers.tileDescription,
+        joinPromptParts([
+          GenerationPromptCopy.FollowUpInpaintGraySquare,
+          layers.masterPrompt,
+          layers.modePromptFragment,
+          layers.styleContext,
+          GenerationPromptStyle.ConsistentArtStyle,
+          GenerationPromptCopy.FollowUpNoBorders,
+        ]),
+      ),
 
     GEMINI: (layers: TilePromptLayers) =>
-      joinPromptParts([
-        `Inpaint the bright magenta/pink square in the center of this image. The magenta marks exactly where new content must go — replace ONLY the magenta pixels with: ${layers.tileDescription.trim()}.`,
-        layers.masterPrompt,
-        layers.modePromptFragment,
-        layers.styleContext,
-        GenerationPromptCopy.FollowUpGeminiConstraints,
-      ]),
+      withTileDescriptionDirective(
+        layers.tileDescription,
+        joinPromptParts([
+          GenerationPromptCopy.FollowUpInpaintMagenta,
+          layers.masterPrompt,
+          layers.modePromptFragment,
+          layers.styleContext,
+          GenerationPromptCopy.FollowUpGeminiConstraints,
+        ]),
+      ),
 
     GEMINI_MASKED: (_layers?: TilePromptLayers) => GenerationPromptCopy.MaskedCenterTile,
 
     GEMINI_EDGE_GUIDED: (layers: TilePromptLayers, edgeLabels: string[]) => {
       const edgeList = edgeLabels.join(StringSeparator.CommaSpace)
-      return joinPromptParts([
-        `Generate an image that continues the neighboring world: ${layers.tileDescription.trim()}.`,
-        layers.masterPrompt,
-        layers.modePromptFragment,
-        layers.styleContext,
-        `The image MUST blend with its neighbors. Edge strips of adjacent images (${edgeList}) are provided. Edges must visually continue from these neighbor edges with matching colors, lines, shapes, and lighting. Do not add borders or frames.`,
-      ])
+      return withTileDescriptionDirective(
+        layers.tileDescription,
+        joinPromptParts([
+          GenerationPromptCopy.FollowUpContinueNeighborWorld,
+          layers.masterPrompt,
+          layers.modePromptFragment,
+          layers.styleContext,
+          `The image MUST blend with its neighbors. Edge strips of adjacent images (${edgeList}) are provided. Edges must visually continue from these neighbor edges with matching colors, lines, shapes, and lighting. Do not add borders or frames.`,
+        ]),
+      )
     },
 
     MIDJOURNEY: (layers: TilePromptLayers) => composeFollowUpPrompt(layers),
 
     OPENAI: (layers: TilePromptLayers) =>
-      joinPromptParts([
-        `Fill to match surrounding edges: ${layers.tileDescription.trim()}.`,
-        layers.masterPrompt,
-        layers.modePromptFragment,
-        layers.styleContext,
-      ]),
+      withTileDescriptionDirective(
+        layers.tileDescription,
+        joinPromptParts([
+          GenerationPromptCopy.FollowUpFillMatchEdges,
+          layers.masterPrompt,
+          layers.modePromptFragment,
+          layers.styleContext,
+        ]),
+      ),
 
     STABILITY: (layers: TilePromptLayers) =>
-      joinPromptParts([
-        `Fill to match surrounding edges: ${layers.tileDescription.trim()}.`,
-        layers.masterPrompt,
-        layers.modePromptFragment,
-        layers.styleContext,
-      ]),
+      withTileDescriptionDirective(
+        layers.tileDescription,
+        joinPromptParts([
+          GenerationPromptCopy.FollowUpFillMatchEdges,
+          layers.masterPrompt,
+          layers.modePromptFragment,
+          layers.styleContext,
+        ]),
+      ),
   },
 } as const
 

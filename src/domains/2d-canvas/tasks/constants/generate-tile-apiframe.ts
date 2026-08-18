@@ -12,7 +12,7 @@ import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { ApiframeGenerateAspectRatio, ApiframeImageModel } from '@/shared/ai/constants/apiframe'
 import { generateMidjourneyUpscaledImage } from '@/shared/ai/apiframe'
 import { v4 as uuidv4 } from 'uuid'
-import { downloadTileAsBase64 } from './generate-tile-output'
+import { downloadTileWithFollowUpSeams } from './generate-tile-seams'
 import { packedAspectRatio, type PackedCropSpec } from '@/shared/ai/context-pack-layout'
 import {
   GenerateTileProgress,
@@ -122,7 +122,12 @@ export async function generateWithApiframeMidjourney(
       outputImageUrls: [result.imageUrl],
     })
 
-    return downloadTileAsBase64(result.imageUrl, isFirstTile, packedCrop)
+    return downloadTileWithFollowUpSeams(
+      result.imageUrl,
+      isFirstTile,
+      contextImageBase64,
+      packedCrop,
+    )
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     logLLMRequestError({

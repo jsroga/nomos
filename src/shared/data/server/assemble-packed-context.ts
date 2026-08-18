@@ -3,12 +3,14 @@ import { TileContext } from '@/shared/ai/types'
 import {
   packedCanvasLayout,
   packedCropSpecFromLayout,
-  cardinalCount,
+  neighborCount,
   PACKED_CANVAS_RGB,
   PACKED_HOLE_RGB,
-  type CardinalPresence,
+  PACKED_NEIGHBOR_KEYS,
+  neighborPresenceFromLoaded,
   type PackedCanvasLayout,
   type PackedCellDest,
+  type PackedNeighborKey,
 } from '@/shared/ai/context-pack-layout'
 import { BufferEncoding, SharpFit, UrlScheme } from '@/shared/data/constants/protocol'
 import {
@@ -63,42 +65,30 @@ async function compositeCell(
   layers.push({ input: tile, left: dest.x, top: dest.y })
 }
 
-function presenceFromLoaded(loaded: {
-  left: Buffer | null
-  right: Buffer | null
-  up: Buffer | null
-  down: Buffer | null
-}): CardinalPresence {
-  return {
-    left: !!loaded.left,
-    right: !!loaded.right,
-    up: !!loaded.up,
-    down: !!loaded.down,
-  }
+function presenceFromLoaded(
+  loaded: Partial<Record<PackedNeighborKey, Buffer | null>>,
+) {
+  return neighborPresenceFromLoaded(loaded)
 }
 
-async function loadCardinals(
+type LoadedNeighbors = Partial<Record<PackedNeighborKey, Buffer | null>>
+
+async function loadNeighbors(
   context: TileContext,
   cellSize: number,
-): Promise<{
-  left: Buffer | null
-  right: Buffer | null
-  up: Buffer | null
-  down: Buffer | null
-}> {
-  const { left, right, up, down } = context.neighbors
-  const [leftTile, rightTile, upTile, downTile] = await Promise.all([
-    neighborTile(left?.imageUrl, cellSize),
-    neighborTile(right?.imageUrl, cellSize),
-    neighborTile(up?.imageUrl, cellSize),
-    neighborTile(down?.imageUrl, cellSize),
-  ])
-  return { left: leftTile, right: rightTile, up: upTile, down: downTile }
+): Promise<LoadedNeighbors> {
+  const loaded: LoadedNeighbors = {}
+  await Promise.all(
+    PACKED_NEIGHBOR_KEYS.map(async key => {
+      loaded[key] = await neighborTile(context.neighbors[key]?.imageUrl, cellSize)
+    }),
+  )
+  return loaded
 }
 
 async function paintPackedImage(
   layout: PackedCanvasLayout,
-  loaded: Awaited<ReturnType<typeof loadCardinals>>,
+  loaded: LoadedNeighbors,
 ): Promise<Buffer> {
   const holeFill = await sharp({
     create: {
@@ -111,10 +101,9 @@ async function paintPackedImage(
     .png()
     .toBuffer()
   const layers: sharp.OverlayOptions[] = []
-  await compositeCell(layers, loaded.left, layout.left)
-  await compositeCell(layers, loaded.right, layout.right)
-  await compositeCell(layers, loaded.up, layout.up)
-  await compositeCell(layers, loaded.down, layout.down)
+  for (const key of PACKED_NEIGHBOR_KEYS) {
+    await compositeCell(layers, loaded[key] ?? null, layout[key])
+  }
   layers.push({
     input: holeFill,
     left: layout.hole.x,
@@ -168,14 +157,18 @@ async function paintHoleMask(layout: PackedCanvasLayout): Promise<Buffer> {
 }
 
 export async function assemblePackedContext(context: TileContext): Promise<AssembledPackedContext> {
-  const requested: CardinalPresence = {
-    left: !!context.neighbors.left?.imageUrl,
-    right: !!context.neighbors.right?.imageUrl,
-    up: !!context.neighbors.up?.imageUrl,
-    down: !!context.neighbors.down?.imageUrl,
-  }
+  const requested = neighborPresenceFromLoaded({
+    left: context.neighbors.left?.imageUrl,
+    right: context.neighbors.right?.imageUrl,
+    up: context.neighbors.up?.imageUrl,
+    down: context.neighbors.down?.imageUrl,
+    topLeft: context.neighbors.topLeft?.imageUrl,
+    topRight: context.neighbors.topRight?.imageUrl,
+    bottomLeft: context.neighbors.bottomLeft?.imageUrl,
+    bottomRight: context.neighbors.bottomRight?.imageUrl,
+  })
   const probeLayout = packedCanvasLayout(requested)
-  const loaded = await loadCardinals(context, probeLayout.cellSize)
+  const loaded = await loadNeighbors(context, probeLayout.cellSize)
   const layout = packedCanvasLayout(presenceFromLoaded(loaded))
   const spec = packedCropSpecFromLayout(layout)
   const [image, mask] = await Promise.all([paintPackedImage(layout, loaded), paintHoleMask(layout)])
@@ -185,6 +178,6 @@ export async function assemblePackedContext(context: TileContext): Promise<Assem
     cropRect: spec.cropRect,
     packedWidth: spec.packedWidth,
     packedHeight: spec.packedHeight,
-    loadedNeighborCount: cardinalCount(presenceFromLoaded(loaded)),
+    loadedNeighborCount: neighborCount(presenceFromLoaded(loaded)),
   }
 }

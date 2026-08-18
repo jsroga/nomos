@@ -11,10 +11,12 @@ import { buildHoleMask } from './contextAssembler-mask'
 import {
   packedCanvasLayout,
   packedCropSpecFromLayout,
-  cardinalCount,
+  neighborCount,
   PACKED_CANVAS_CSS,
   PACKED_HOLE_CSS,
-  type CardinalPresence,
+  PACKED_NEIGHBOR_KEYS,
+  neighborPresenceFromLoaded,
+  type PackedNeighborKey,
 } from './context-pack-layout'
 
 interface NeighborUrls {
@@ -27,8 +29,6 @@ interface NeighborUrls {
   bottomLeft?: string
   bottomRight?: string
 }
-
-const CARDINAL_DIRS = ['up', 'down', 'left', 'right'] as const
 
 interface WorkerInput {
   id: number
@@ -90,10 +90,10 @@ function drawNeighbor(
 
 async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
   const { id, neighborUrls, variant = 'canonicalFullContext' } = input
-  const bitmaps: Partial<Record<(typeof CARDINAL_DIRS)[number], ImageBitmap>> = {}
+  const bitmaps: Partial<Record<PackedNeighborKey, ImageBitmap>> = {}
 
   await Promise.all(
-    CARDINAL_DIRS.map(async dir => {
+    PACKED_NEIGHBOR_KEYS.map(async dir => {
       const url = neighborUrls[dir]
       if (!url) return
       try {
@@ -104,15 +104,10 @@ async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
     })
   )
 
-  const presence: CardinalPresence = {
-    up: !!bitmaps.up,
-    down: !!bitmaps.down,
-    left: !!bitmaps.left,
-    right: !!bitmaps.right,
-  }
+  const presence = neighborPresenceFromLoaded(bitmaps)
   const layout = packedCanvasLayout(presence)
   const spec = packedCropSpecFromLayout(layout)
-  const directNeighborCount = cardinalCount(presence)
+  const directNeighborCount = neighborCount(presence)
   const strategy = resolveContextFramingStrategy(variant, presence)
 
   const canvas = new OffscreenCanvas(layout.width, layout.height)
@@ -121,10 +116,9 @@ async function assemble(input: WorkerInput): Promise<WorkerOutputSuccess> {
 
   ctx.fillStyle = PACKED_CANVAS_CSS
   ctx.fillRect(0, 0, layout.width, layout.height)
-  drawNeighbor(ctx, bitmaps.left, layout.left, layout.cellSize)
-  drawNeighbor(ctx, bitmaps.right, layout.right, layout.cellSize)
-  drawNeighbor(ctx, bitmaps.up, layout.up, layout.cellSize)
-  drawNeighbor(ctx, bitmaps.down, layout.down, layout.cellSize)
+  for (const key of PACKED_NEIGHBOR_KEYS) {
+    drawNeighbor(ctx, bitmaps[key], layout[key], layout.cellSize)
+  }
   ctx.fillStyle = PACKED_HOLE_CSS
   ctx.fillRect(layout.hole.x, layout.hole.y, layout.hole.width, layout.hole.height)
 

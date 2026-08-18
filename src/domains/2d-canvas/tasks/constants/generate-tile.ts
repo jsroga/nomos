@@ -80,7 +80,7 @@ export const CONTEXT_CANONICAL_VARIANT = 'canonicalFullContext'
 export const TILE_CROP_SIZE = 512
 export const CONTEXT_CANVAS_SIZE = 1024
 export const CENTER_CROP_OFFSET = 256
-/** Follow-up seam color-fade width in px. Unused on the packed-crop path. */
+/** Follow-up seam color-fade width in px. Packed-crop path blends against neighbor edges. */
 export const FOLLOW_UP_SEAM_BLEND_PX = 16
 
 export function packedCropFromContext(

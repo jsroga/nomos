@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { StringSeparator } from '@/shared/data/constants/protocol'
 import {
   GENERATION_PROMPTS,
   composeApiframeFollowUpPrompt,
   composeFirstTilePrompt,
   composeFollowUpPrompt,
+  tileDescriptionDirective,
 } from '../prompts'
 import {
   FollowUpApiframeCopy,
@@ -54,6 +56,23 @@ describe('composeFirstTilePrompt', () => {
     })
     expect(prompt.split(LAYERS.modePromptFragment)).toHaveLength(2)
   })
+
+  it('puts a filled tile description only in the imporant directive', () => {
+    const prompt = composeFirstTilePrompt({ ...LAYERS, tileDescription: 'shop' })
+    const marked = tileDescriptionDirective('shop')
+    expect(marked).toBeDefined()
+    expect(prompt.startsWith(`${marked}${StringSeparator.DoubleNewline}`)).toBe(true)
+    expect(prompt).not.toContain('shop, rendered as a cropped fragment')
+    expect(prompt).toContain(GenerationPromptCopy.FirstTileCroppedFragment)
+    expect(prompt.indexOf(LAYERS.masterPrompt)).toBeGreaterThan(prompt.indexOf('shop'))
+  })
+
+  it('omits the imporant line when the tile description is empty', () => {
+    const prompt = composeFirstTilePrompt({ ...LAYERS, tileDescription: '   ' })
+    expect(prompt).not.toContain(GenerationPromptCopy.TileDescriptionDirectivePrefix)
+    expect(prompt).not.toContain('shop, rendered as a cropped fragment')
+    expect(prompt.startsWith(GenerationPromptCopy.FirstTileCroppedFragment)).toBe(true)
+  })
 })
 
 describe('composeFollowUpPrompt', () => {
@@ -69,6 +88,14 @@ describe('composeFollowUpPrompt', () => {
     expect(prompt.toLowerCase()).toMatch(/gr[ae]y/)
     expect(prompt.toLowerCase()).not.toContain('magenta')
   })
+
+  it('keeps packed neighbors when the tile description is empty', () => {
+    const prompt = composeFollowUpPrompt({ ...LAYERS, tileDescription: '' })
+    expect(prompt).toContain(FollowUpApiframeCopy.PackedWorld)
+    expect(prompt).toContain(FollowUpApiframeCopy.PackedKeepNeighbors)
+    expect(prompt).toContain(FollowUpApiframeCopy.MatchContract)
+    expect(prompt).not.toContain(GenerationPromptCopy.TileDescriptionDirectivePrefix)
+  })
 })
 
 describe('composeApiframeFollowUpPrompt', () => {
@@ -83,5 +110,21 @@ describe('composeApiframeFollowUpPrompt', () => {
     expect(prompt.toLowerCase()).not.toContain('magenta')
     expect(prompt).toContain('Avoid:')
     expect(prompt).toContain('diamond shape')
+  })
+
+  it('marks the tile description when the user provided one', () => {
+    const marked = tileDescriptionDirective(LAYERS.tileDescription)
+    expect(marked).toBeDefined()
+    expect(composeApiframeFollowUpPrompt(LAYERS)).toContain(marked)
+    expect(composeFirstTilePrompt(LAYERS)).toContain(marked)
+    expect(composeFollowUpPrompt(LAYERS)).toContain(marked)
+  })
+
+  it('omits the tile-description marker when the field is empty', () => {
+    const empty = { ...LAYERS, tileDescription: '   ' }
+    const prefix = GenerationPromptCopy.TileDescriptionDirectivePrefix
+    expect(composeApiframeFollowUpPrompt(empty)).not.toContain(prefix)
+    expect(composeFirstTilePrompt(empty)).not.toContain(prefix)
+    expect(composeFollowUpPrompt(empty)).not.toContain(prefix)
   })
 })

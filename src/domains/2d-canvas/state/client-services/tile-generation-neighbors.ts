@@ -37,12 +37,7 @@ export function buildNeighborUrls(
     bottomRight: toAbsoluteUrl(tiles[`${x + 1},${y + 1}`]),
   }
 
-  const hasNeighbors = !!(
-    neighborUrls.up ||
-    neighborUrls.down ||
-    neighborUrls.left ||
-    neighborUrls.right
-  )
+  const hasNeighbors = Object.values(neighborUrls).some(Boolean)
 
   return { neighborUrls, hasNeighbors }
 }

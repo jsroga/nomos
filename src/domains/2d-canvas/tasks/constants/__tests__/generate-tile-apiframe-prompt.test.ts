@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { tilePromptLayersFrom } from '@/shared/data/server/prompts'
+import { tileDescriptionDirective, tilePromptLayersFrom } from '@/shared/data/server/prompts'
 import { FollowUpApiframeCopy } from '@/shared/data/server/constants/generation-prompts'
 import {
   apiframeFollowUpImageUrls,
@@ -36,6 +36,7 @@ describe('composeNonMidjourneyTilePrompt', () => {
     expect(prompt).toContain('diamond shape')
     expect(prompt).toContain('pixel art')
     expect(prompt).toContain(LAYERS.masterPrompt)
+    expect(prompt).toContain(tileDescriptionDirective(LAYERS.tileDescription))
     expect(prompt.toLowerCase()).not.toContain('inpaint')
     expect(prompt.toLowerCase()).not.toContain('magenta')
     expect(prompt.toLowerCase()).not.toContain('grey 1024')

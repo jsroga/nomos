@@ -1,18 +1,21 @@
 /**
  * Context Assembler
  *
- * Packs full 512 cardinal neighbors around a grey target hole on a tight canvas.
+ * Packs full 512 neighbors (cardinals and diagonals) around a grey target hole.
  * Heavy work runs in a Web Worker; main thread is the fallback.
  */
 import { resolveContextFramingStrategy } from './contextAssembler-framing-strategy'
 import {
   packedCanvasLayout,
   packedCropSpecFromLayout,
-  cardinalCount,
+  neighborCount,
   PACKED_CANVAS_CSS,
   PACKED_HOLE_CSS,
+  PACKED_NEIGHBOR_KEYS,
+  neighborPresenceFromLoaded,
   type CardinalPresence,
   type PackedCropRect,
+  type PackedNeighborKey,
 } from './context-pack-layout'
 import { TileContext } from './types'
 
@@ -90,7 +93,7 @@ function extractNeighborUrls(context: TileContext): Record<string, string | unde
   }
 }
 
-function getDirectNeighborPresence(neighborUrls: Record<string, string | undefined>): CardinalPresence {
+function getDirectNeighborPresence(neighborUrls: Record<string, string | undefined>) {
   return {
     up: !!neighborUrls.up,
     down: !!neighborUrls.down,
@@ -152,7 +155,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
-async function loadCardinalImage(
+async function loadNeighborImage(
   neighbor: TileContext['neighbors']['up']
 ): Promise<HTMLImageElement | undefined> {
   if (!neighbor?.imageUrl) return undefined
@@ -200,19 +203,15 @@ async function assembleOnMainThread(
   context: TileContext,
   variant: ContextImageVariant
 ): Promise<AssembleContextImageResult> {
-  const { up, down, left, right } = context.neighbors
-  const [upImg, downImg, leftImg, rightImg] = await Promise.all([
-    loadCardinalImage(up),
-    loadCardinalImage(down),
-    loadCardinalImage(left),
-    loadCardinalImage(right),
-  ])
-  const presence: CardinalPresence = {
-    up: !!upImg,
-    down: !!downImg,
-    left: !!leftImg,
-    right: !!rightImg,
-  }
+  const neighbors = context.neighbors
+  const loaded: Partial<Record<PackedNeighborKey, HTMLImageElement>> = {}
+  await Promise.all(
+    PACKED_NEIGHBOR_KEYS.map(async key => {
+      const img = await loadNeighborImage(neighbors[key])
+      if (img) loaded[key] = img
+    }),
+  )
+  const presence = neighborPresenceFromLoaded(loaded)
   const layout = packedCanvasLayout(presence)
   const spec = packedCropSpecFromLayout(layout)
   const strategy = getContextFramingStrategy(variant, presence)
@@ -225,10 +224,9 @@ async function assembleOnMainThread(
 
   ctx.fillStyle = PACKED_CANVAS_CSS
   ctx.fillRect(0, 0, layout.width, layout.height)
-  drawHtmlNeighbor(ctx, leftImg, layout.left, layout.cellSize)
-  drawHtmlNeighbor(ctx, rightImg, layout.right, layout.cellSize)
-  drawHtmlNeighbor(ctx, upImg, layout.up, layout.cellSize)
-  drawHtmlNeighbor(ctx, downImg, layout.down, layout.cellSize)
+  for (const key of PACKED_NEIGHBOR_KEYS) {
+    drawHtmlNeighbor(ctx, loaded[key], layout[key], layout.cellSize)
+  }
   ctx.fillStyle = PACKED_HOLE_CSS
   ctx.fillRect(layout.hole.x, layout.hole.y, layout.hole.width, layout.hole.height)
 
@@ -244,7 +242,7 @@ async function assembleOnMainThread(
     cropRect: spec.cropRect,
     packedWidth: spec.packedWidth,
     packedHeight: spec.packedHeight,
-    directNeighborCount: cardinalCount(presence),
+    directNeighborCount: neighborCount(presence),
     variant,
     strategy,
   }
