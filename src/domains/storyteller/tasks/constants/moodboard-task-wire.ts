@@ -39,6 +39,7 @@ export enum MoodboardStage {
   Submitting = 'submitting_diffusion',
   Waiting = 'waiting_diffusion',
   Saving = 'saving_image',
+  BuildingPrompt = 'building_prompt',
   UpdatingDb = 'updating_database',
   Completed = 'completed',
   Initializing = 'initializing',
@@ -48,27 +49,57 @@ export const MOODBOARD_STAGE_DOWNLOADING = MoodboardStage.Downloading
 export const MOODBOARD_STAGE_SUBMITTING = MoodboardStage.Submitting
 export const MOODBOARD_STAGE_WAITING = MoodboardStage.Waiting
 export const MOODBOARD_STAGE_SAVING = MoodboardStage.Saving
+export const MOODBOARD_STAGE_BUILDING_PROMPT = MoodboardStage.BuildingPrompt
 export const MOODBOARD_STAGE_UPDATING_DB = MoodboardStage.UpdatingDb
 export const MOODBOARD_STAGE_COMPLETED = MoodboardStage.Completed
 export const MOODBOARD_STAGE_INITIALIZING = MoodboardStage.Initializing
 
 export const MOODBOARD_LLM_TASK = 'moodboard-generation'
+export const MOODBOARD_SCENE_MAX_WORDS = 5
 export const MOODBOARD_PROMPT_SUFFIX =
-  '. Concept art, high fidelity, moody, cinematic lighting.'
+  'concept art in the style of dan mumford, nicholas roerich, tivadar csontváry kosztka'
+
+export {
+  firstMoodboardStyleRefUrl,
+  isMoodboardStyleRefUrl,
+  moodboardStyleReferenceForPrompt,
+} from '../../core/moodboard-style-ref'
+
+export enum MoodboardSceneWrap {
+  Open = '>',
+  Close = '<',
+}
+
+export function clampMoodboardSceneWords(scene: string): string {
+  const words = scene.trim().split(/\s+/).filter(word => word.length > 0)
+  if (words.length === 0) return ''
+  return words.slice(0, MOODBOARD_SCENE_MAX_WORDS).join(' ')
+}
+
+export function wrapMoodboardScene(scene: string): string {
+  const clamped = clampMoodboardSceneWords(scene)
+  return `${MoodboardSceneWrap.Open}${clamped}${MoodboardSceneWrap.Close} ${MOODBOARD_PROMPT_SUFFIX}`
+}
+
 export const MOODBOARD_BASE64_LABEL = '[Base64 Image Data]'
 export const MOODBOARD_APPEND_INDEX = 'append'
 export const MOODBOARD_PROJECT_NOT_FOUND = 'Project not found'
 export const MOODBOARD_DB_UPDATED = 'Updated DB with moodImages (Synced both tables)'
+export const MOODBOARD_DB_UPDATE_FAILED = 'Failed to persist moodboard moodImages'
+export const MOODBOARD_DB_FAILED = 'Failed to update moodboard in DB'
 export const MOODBOARD_APIFRAME_NO_JOB = 'No jobId returned'
 export const MOODBOARD_APIFRAME_NO_IMAGE = 'Result missing images'
+export const MOODBOARD_DOWNLOAD_FAILED = 'Failed to download moodboard image'
 export const MOODBOARD_GEMINI_NO_IMAGE = 'No image returned in response'
 export const MOODBOARD_UNKNOWN_ERROR = 'Unknown error'
 export const MOODBOARD_TABLE_PROJECTS = 'projects'
 export const MOODBOARD_TABLE_STORY_PLANS = 'story_plans'
+export const MOODBOARD_TABLE_SERIES_BIBLES = 'series_bibles'
 export const MOODBOARD_COL_ID = 'id'
 export const MOODBOARD_COL_PROJECT_ID = 'project_id'
 export const MOODBOARD_COL_CONTENT = 'content'
 export const MOODBOARD_COL_STORY_PLAN = 'story_plan'
+export const MOODBOARD_COL_SERIES_BIBLE = 'series_bible'
 export const MOODBOARD_COL_UPDATED_AT = 'updated_at'
 export const MOODBOARD_METADATA_PROGRESS = 'progress'
 export const MOODBOARD_METADATA_STAGE = 'stage'

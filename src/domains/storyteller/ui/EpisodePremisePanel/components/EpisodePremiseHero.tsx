@@ -12,7 +12,6 @@ import {
   MasterPromptSurface,
 } from '../../MasterPromptEditor'
 import { EpisodePremiseCopy } from '../../StoryPlanBoard/constants/episode-premise-fields'
-import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
 
 type PremiseSectionKey = EpisodePremiseSectionKey
 
@@ -109,7 +108,6 @@ export function EpisodePremiseHero({
   episodePrompt,
   onSaveEpisodePrompt,
 }: EpisodePremiseHeroProps) {
-  const isChatBusy = useStorytellerChatBusy()
   return (
     <>
       <header className="w-full border-b border-border pb-4 mb-6">
@@ -160,7 +158,6 @@ export function EpisodePremiseHero({
                     variant="secondary"
                     size="sm"
                     className="w-full gap-2 text-xs rounded-md"
-                    disabled={isChatBusy}
                     onClick={onGeneratePoster}
                   >
                     <Sparkles className="w-3 h-3" /> Regenerate

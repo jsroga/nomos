@@ -74,13 +74,20 @@ export const WorldCanvas: React.FC<{
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
+    let frame = 0
     const update = () => {
       setViewSize({ width: el.clientWidth || 1920, height: el.clientHeight || 1080 })
     }
     update()
-    const ro = new ResizeObserver(update)
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(update)
+    })
     ro.observe(el)
-    return () => ro.disconnect()
+    return () => {
+      cancelAnimationFrame(frame)
+      ro.disconnect()
+    }
   }, [])
 
   useWorldCanvasTour()

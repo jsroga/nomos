@@ -1,5 +1,6 @@
+import type { ScorerJudgeConfig } from '@mastra/core/evals'
 import { wrapLanguageModel } from 'ai'
-import { MODELS, toOpenRouterModel, toOpenRouterModelId, createPureModel } from '@/shared/agent-kernel/models'
+import { MODELS, toOpenRouterModel, toOpenRouterModelId, createPureChatModel } from '@/shared/agent-kernel/models'
 import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
 import { isPlainObject } from '@/shared/data/json-guards'
 import { ScorerOutputField, LanguageModelMiddlewareSpec } from '@/shared/agent-kernel/scorers/constants/shared'
@@ -19,7 +20,7 @@ export function toMastraJudgingModel(): string {
 
 export function toMastraJudgingLanguageModel() {
   return wrapLanguageModel({
-    model: createPureModel(toOpenRouterModelId(toMastraJudgingModel())),
+    model: createPureChatModel(toOpenRouterModelId(toMastraJudgingModel())),
     middleware: {
       specificationVersion: LanguageModelMiddlewareSpec.V3,
       transformParams: async ({ params }) => {
@@ -28,6 +29,18 @@ export function toMastraJudgingLanguageModel() {
       },
     },
   })
+}
+
+/**
+ * OpenRouter chat completions cannot host Mastra's Responses-API tool schema
+ * for structured output. Inject the JSON schema in the judge prompt instead.
+ */
+export function createJudgingConfig(instructions: string): ScorerJudgeConfig {
+  return {
+    model: toMastraJudgingLanguageModel(),
+    instructions,
+    jsonPromptInjection: true,
+  }
 }
 
 export function normalizeScore(score: number): number {

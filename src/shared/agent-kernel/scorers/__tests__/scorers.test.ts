@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { consistencyScorer } from '../consistency-scorer'
-import { inputRecord, normalizeScore, outputToString, JUDGING_MAX_OUTPUT_TOKENS } from '../shared'
+import { createJudgingConfig, inputRecord, normalizeScore, outputToString, JUDGING_MAX_OUTPUT_TOKENS } from '../shared'
 
 describe('eval scorers shared', () => {
   it('normalizes scores to 0-1', () => {
@@ -21,6 +21,10 @@ describe('eval scorers shared', () => {
   it('caps judging output below OpenRouter unbounded reservation', () => {
     expect(JUDGING_MAX_OUTPUT_TOKENS).toBeGreaterThan(0)
     expect(JUDGING_MAX_OUTPUT_TOKENS).toBeLessThan(65536)
+  })
+
+  it('injects JSON schema for OpenRouter judges instead of Responses tools', () => {
+    expect(createJudgingConfig('score this').jsonPromptInjection).toBe(true)
   })
 })
 

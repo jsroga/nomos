@@ -77,6 +77,8 @@ export function TileActionBar({
   viewHeight,
 }: TileActionBarProps) {
   const viewport = useWorldStore(state => state.viewport)
+  const isRepaintMode = useWorldStore(state => state.isRepaintMode)
+  const isSelectMode = useWorldStore(state => state.isSelectMode)
   const barRef = useRef<HTMLDivElement>(null)
   const [barWidth, setBarWidth] = useState(320)
   const [enhanceOpen, setEnhanceOpen] = useState(false)
@@ -93,6 +95,7 @@ export function TileActionBar({
     hasSelection: Boolean(selectedTile),
     hasArt,
     busy,
+    isPanMode: !isRepaintMode && !isSelectMode,
   })
 
   useLayoutEffect(() => {

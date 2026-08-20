@@ -4,35 +4,23 @@ import { db } from '@/db/client'
 import { projects } from '@/db'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
 import { eq } from 'drizzle-orm'
-import OpenAI from 'openai'
 import { requireAuth } from '@/shared/auth/auth'
-import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
-import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { recordFromJson } from '@/shared/data/json-guards'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
-import { openRouterClientConfig } from '@/shared/agent-kernel/models'
-import {
-  buildMoodboardProjectContext,
-  generateMoodboardPrompts,
-} from '../_lib/moodboard-trigger-prompts'
+import { moodboardReplaceStyleRef } from '@/domains/storyteller/tasks/build-moodboard-locked-prompts'
 import { resolveMoodboardProviderConfig } from '../_lib/moodboard-provider-config'
-
-function getOpenRouterClient() {
-  const { apiKey, baseURL } = openRouterClientConfig()
-  if (!apiKey) return null
-  return new OpenAI({ apiKey, baseURL })
-}
+import {
+  isVisualOverviewReady,
+  loadVisualOverviewContext,
+} from '@/domains/storyteller/services/visual-overview-context'
+import type { generateMoodboard } from '@/domains/storyteller/tasks/generate-moodboard.task'
 
 export async function POST(req: NextRequest) {
   try {
-    const openai = getOpenRouterClient()
-    if (!openai) {
-      return NextResponse.json({ error: API_ERROR.OPENROUTER_API_KEY_NOT_CONFIGURED_SERVER }, { status: 500 })
-    }
-
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
-    const { projectId, providerConfig, styleReference, promptIndex } = await req.json()
+    const { projectId, providerConfig, promptIndex } = await req.json()
 
     if (!projectId) {
       return NextResponse.json({ error: API_ERROR.MISSING_PROJECT_ID_PARAM }, { status: 400 })
@@ -50,39 +38,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: API_ERROR.PROJECT_NOT_FOUND }, { status: 404 })
     }
 
-    const styleReferenceUrls = resolveStyleReferenceUrls(project)
-    if (styleReference) {
-      styleReferenceUrls.push(styleReference)
+    const { context, pack } = await loadVisualOverviewContext(projectId)
+    if (!isVisualOverviewReady(context)) {
+      return NextResponse.json({ error: API_ERROR.OVERVIEW_REQUIRED }, { status: 400 })
     }
 
-    const bible = recordFromJson(project.seriesBible)
-    const context = buildMoodboardProjectContext({
-      projectName: project.name,
-      projectDescription: project.description,
-      bibleTitle: readString(bible.title),
-      bibleGenre: readString(bible.genre),
-      bibleTone: readString(bible.tone),
-      bibleWorldDescription: readString(bible.worldDescription),
-    })
-
-    const prompts = await generateMoodboardPrompts(openai, context, promptIndex)
-    const resolvedProviderConfig = resolveMoodboardProviderConfig(
-      providerConfig,
-      styleReferenceUrls,
-    )
-    if (!resolvedProviderConfig.apiKey) {
+    const resolvedProviderConfig = resolveMoodboardProviderConfig(providerConfig)
+    const apiKey = resolvedProviderConfig.apiKey
+    if (!apiKey) {
       return NextResponse.json(
         { error: API_ERROR.APIFRAME_API_KEY_NOT_PROVIDED },
         { status: 500 },
       )
     }
 
-    const handle = await tasks.trigger(TRIGGER_TASK_ID.GENERATE_MOODBOARD, {
+    const bible = recordFromJson(project.seriesBible)
+    const { replaceIndex, styleReferenceUrl } = moodboardReplaceStyleRef(
+      bible,
+      pack?.storyPlan,
+      promptIndex,
+    )
+    const handle = await tasks.trigger<typeof generateMoodboard>(TRIGGER_TASK_ID.GENERATE_MOODBOARD, {
       projectId,
-      prompts,
-      styleReference: undefined,
-      replaceIndex: typeof promptIndex === 'number' ? promptIndex : undefined,
-      providerConfig: resolvedProviderConfig,
+      promptIndex: typeof promptIndex === 'number' ? promptIndex : undefined,
+      worldDesc: context.worldDesc,
+      overview: context.overview,
+      replaceIndex,
+      styleReferenceUrl,
+      providerConfig: {
+        provider: resolvedProviderConfig.provider,
+        modelId: resolvedProviderConfig.modelId,
+        apiKey,
+      },
     })
 
     return NextResponse.json({

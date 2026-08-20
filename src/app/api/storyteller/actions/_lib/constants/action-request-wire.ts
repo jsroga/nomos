@@ -26,7 +26,6 @@ export enum CharacterPayloadField {
   Name = 'name',
   Role = 'role',
   Description = 'description',
-  Archetype = 'archetype',
   CharacterId = 'characterId',
   Updates = 'updates',
 }

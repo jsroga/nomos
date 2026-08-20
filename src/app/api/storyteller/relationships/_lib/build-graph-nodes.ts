@@ -56,7 +56,6 @@ function addCharacterTableNodes(
     const charRecord = recordFromJson(char)
     addNode(nodes, nodeIds, id, char.name, StoryEntityType.Character, {
       role: char.role,
-      archetype: readString(charRecord.archetype),
       motivation: readString(charRecord.motivation),
       source: GraphNodeSource.CharactersTable,
     })

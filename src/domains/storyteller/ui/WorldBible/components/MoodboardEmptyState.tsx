@@ -3,7 +3,7 @@ import { Sparkles, Loader2 } from 'lucide-react'
 import { BibleOverviewMoodboardCopy } from '../constants/bible-overview'
 import { clampProgressBarWidth } from '../utils/bible-overview-moodboard'
 import { generateInitialMoodboard } from '../utils/bible-overview-moodboard-actions'
-import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
+import { formatMoodboardGeneratingCopy } from '@/domains/storyteller/services/constants/moodboard-generation-service'
 
 interface MoodboardEmptyStateProps {
   isReadOnly: boolean
@@ -11,8 +11,7 @@ interface MoodboardEmptyStateProps {
   isAddingNew: boolean
   progressPercent: string | null
   projectId: string
-  legnextFromServer: boolean
-  hasWorldDescription: boolean
+  hasOverviewContext: boolean
   getProviderConfig: () => Record<string, unknown>
   onRefetchMoodboardData: () => Promise<void>
 }
@@ -23,44 +22,36 @@ export const MoodboardEmptyState: React.FC<MoodboardEmptyStateProps> = ({
   isAddingNew,
   progressPercent,
   projectId,
-  legnextFromServer,
-  hasWorldDescription,
+  hasOverviewContext,
   getProviderConfig,
   onRefetchMoodboardData,
-}) => {
-  const isChatBusy = useStorytellerChatBusy()
-  const generateDisabled = isGenerating || isChatBusy
-
-  return (
+}) => (
     <div className="space-y-3">
       <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
         {BibleOverviewMoodboardCopy.NoMoodVisuals}
       </div>
       {!isReadOnly ? (
         <button
-          onClick={async () => {
-            await generateInitialMoodboard({
+          onClick={() => {
+            void generateInitialMoodboard({
               projectId,
-              isGenerating: generateDisabled,
-              hasWorldDescription,
+              isGenerating,
+              hasOverviewContext,
               config: getProviderConfig(),
-              legnextFromServer,
               onRefetchMoodboardData,
             })
           }}
-          disabled={generateDisabled}
-          className={`w-full p-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-3 transition-all ${generateDisabled
+          disabled={isGenerating}
+          className={`w-full p-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-3 transition-all ${isGenerating
             ? 'border-muted-foreground/20 bg-muted/5 cursor-not-allowed opacity-50'
             : 'border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60 hover:bg-pink-500/10 cursor-pointer'
             }`}
         >
           {isAddingNew || isGenerating ? (
             <>
-              <Loader2 className="w-5 h-5 text-pink-500 animate-spin" />
-              <span className="text-sm text-pink-500">
-                {progressPercent
-                  ? `Generating (${progressPercent}%)`
-                  : BibleOverviewMoodboardCopy.Generating}
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                {formatMoodboardGeneratingCopy(progressPercent)}
               </span>
             </>
           ) : (
@@ -75,7 +66,6 @@ export const MoodboardEmptyState: React.FC<MoodboardEmptyStateProps> = ({
       ) : null}
     </div>
   )
-}
 
 interface MoodboardProgressBarProps {
   progressPercent: string | null

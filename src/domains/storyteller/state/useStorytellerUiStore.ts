@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { StorytellerBibleTab } from '@/domains/storyteller/core/storyteller-page-wire'
 import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 import {
+  CharacterDraftResolution,
   GenerationActivityPhase,
   isGenerationActivityBusy,
   type EntityNavigationPayload,
@@ -16,9 +17,15 @@ import {
 import type { ConsistencyFixItem, ContinuityFinding } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-schema'
 import type { SkippedFinding } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-contract'
 import { mergePendingBeatArgs } from '@/domains/storyteller/state/utils/pending-beat-adds'
+import type {
+  CharacterFilledDraft,
+  GeneratedCharacterFields,
+} from '@/domains/storyteller/core/character-missing-fields'
+import { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
 
 enum GenerationActivityBootstrapLabel {
   SendingToWritersRoom = 'Sending to Writers Room…',
+  WaitingForWritersRoom = 'Waiting for Writers Room',
 }
 
 const IDLE_GENERATION_ACTIVITY: GenerationActivityState = {
@@ -37,6 +44,12 @@ interface StorytellerUiState {
   moodboardPrimaryVersion: number
   pendingChatPrompt: PendingChatPromptPayload | null
   pendingChatPromptSeq: number
+  characterDraftFields: GeneratedCharacterFields | null
+  characterDraftFieldsSeq: number
+  characterDraftResolvedSeq: number
+  characterDraftResolution: CharacterDraftResolution
+  characterDraftTargetId: string | null
+  characterDraftFilledSnapshot: CharacterFilledDraft | null
   generationActivity: GenerationActivityState
   pendingBoardHydration: boolean
   pendingBeatAdds: Record<string, unknown>[]
@@ -56,6 +69,11 @@ interface StorytellerUiState {
   notifyMoodboardPrimaryChanged: () => void
   requestChatPrompt: (message: string, section?: string) => void
   clearPendingChatPrompt: () => void
+  beginCharacterDraft: (targetId: string, snapshot: CharacterFilledDraft) => void
+  notifyCharacterDraftFields: (fields: GeneratedCharacterFields) => void
+  acceptCharacterDraftFields: () => void
+  rejectCharacterDraftFields: () => void
+  clearCharacterDraft: () => void
   setGenerationActivity: (patch: Partial<GenerationActivityState> & { phase: GenerationActivityPhase }) => void
   clearGenerationActivity: () => void
   setPendingBoardHydration: (pending: boolean) => void
@@ -107,6 +125,12 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
   moodboardPrimaryVersion: 0,
   pendingChatPrompt: null,
   pendingChatPromptSeq: 0,
+  characterDraftFields: null,
+  characterDraftFieldsSeq: 0,
+  characterDraftResolvedSeq: 0,
+  characterDraftResolution: CharacterDraftResolution.Idle,
+  characterDraftTargetId: null,
+  characterDraftFilledSnapshot: null,
   generationActivity: IDLE_GENERATION_ACTIVITY,
   pendingBoardHydration: false,
   pendingBeatAdds: [],
@@ -149,7 +173,10 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
         pendingChatPrompt: { id, message, section },
         generationActivity: {
           phase: GenerationActivityPhase.Submitted,
-          label: GenerationActivityBootstrapLabel.SendingToWritersRoom,
+          label:
+            section === CharacterDraftChatSection.Form
+              ? GenerationActivityBootstrapLabel.WaitingForWritersRoom
+              : GenerationActivityBootstrapLabel.SendingToWritersRoom,
           section,
           agentId: StorytellerAgentId.Storyteller,
           updatedAt: Date.now(),
@@ -157,6 +184,53 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
       }
     }),
   clearPendingChatPrompt: () => set({ pendingChatPrompt: null }),
+  beginCharacterDraft: (targetId, snapshot) =>
+    set({
+      characterDraftTargetId: targetId,
+      characterDraftFilledSnapshot: snapshot,
+      characterDraftResolution: CharacterDraftResolution.Idle,
+    }),
+  notifyCharacterDraftFields: fields =>
+    set(state => ({
+      characterDraftFields: fields,
+      characterDraftFieldsSeq: state.characterDraftFieldsSeq + 1,
+      characterDraftResolution: CharacterDraftResolution.Idle,
+    })),
+  acceptCharacterDraftFields: () =>
+    set(state => {
+      if (state.characterDraftFieldsSeq <= state.characterDraftResolvedSeq) return state
+      return {
+        characterDraftResolvedSeq: state.characterDraftFieldsSeq,
+        characterDraftResolution: CharacterDraftResolution.Accepted,
+      }
+    }),
+  rejectCharacterDraftFields: () =>
+    set(state => {
+      if (state.characterDraftFieldsSeq <= state.characterDraftResolvedSeq && !state.characterDraftTargetId) {
+        return state
+      }
+      return {
+        characterDraftResolvedSeq: Math.max(
+          state.characterDraftFieldsSeq,
+          state.characterDraftResolvedSeq,
+        ),
+        characterDraftResolution: CharacterDraftResolution.Rejected,
+        characterDraftTargetId: null,
+        characterDraftFilledSnapshot: null,
+        characterDraftFields: null,
+      }
+    }),
+  clearCharacterDraft: () =>
+    set(state => ({
+      characterDraftResolvedSeq: Math.max(
+        state.characterDraftFieldsSeq,
+        state.characterDraftResolvedSeq,
+      ),
+      characterDraftResolution: CharacterDraftResolution.Idle,
+      characterDraftTargetId: null,
+      characterDraftFilledSnapshot: null,
+      characterDraftFields: null,
+    })),
   setGenerationActivity: (patch) =>
     set((state) => ({
       generationActivity: {

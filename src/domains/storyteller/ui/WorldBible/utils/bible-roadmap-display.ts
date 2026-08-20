@@ -1,9 +1,6 @@
 import type { SeasonStructure, StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
+import { resolveRoadmapList, type RoadmapSlot } from '@/domains/storyteller/core/utils/roadmap-slot'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
-
-function nonEmptyList<T>(items: T[] | undefined | null): T[] | undefined {
-  return items && items.length > 0 ? items : undefined
-}
 
 function isSeasonStructure(value: unknown): value is SeasonStructure {
   const record = recordFromJson(value)
@@ -24,15 +21,9 @@ export function resolveRoadmapSequences(
   isEditing: boolean,
   localPlan: Partial<StoryPlan>,
   storyPlan: StoryPlan
-) {
-  if (isEditing) return localPlan.sequences || []
-  return (
-    nonEmptyList(localPlan.sequences) ||
-    storyPlan.episodeRoadmap?.episodes ||
-    storyPlan.episodeRoadmap?.sequences ||
-    nonEmptyList(storyPlan.sequences) ||
-    []
-  )
+): RoadmapSlot[] {
+  if (isEditing) return resolveRoadmapList({}, localPlan.sequences || [])
+  return resolveRoadmapList(storyPlan, localPlan.sequences)
 }
 
 export function resolveRoadmapSeasonStructure(

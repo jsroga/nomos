@@ -18,6 +18,7 @@ export const OPENAPI_COVERAGE_OMIT_PREFIXES: readonly string[] = [
   '/projects',
   '/proxy-model',
   '/repaint',
+  '/segment',
   '/save-image',
   '/save-model',
   '/settings',

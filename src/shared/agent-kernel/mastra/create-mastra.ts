@@ -6,6 +6,7 @@ import { PostgresStore, PostgresStoreVNext } from '@mastra/pg'
 import { createObservability } from './observability-config'
 import { PinoLogger } from '@mastra/loggers'
 import { STORYTELLER_SCORERS } from '../scorers'
+import { registerCorePrompts } from '@/shared/agent-kernel/prompts/registry'
 import { Workspace, LocalFilesystem } from '@mastra/core/workspace'
 import path from 'path'
 import { SKILLS_DIR } from '../skills/skill-loader'
@@ -77,6 +78,7 @@ export function createMastra(
   },
 ): Mastra {
   configureSerializationLimits()
+  registerCorePrompts()
 
   const projectRoot = resolveProjectRoot()
 

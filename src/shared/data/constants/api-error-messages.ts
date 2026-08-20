@@ -19,6 +19,11 @@ export const API_ERROR = {
   OPENROUTER_API_KEY_NOT_CONFIGURED_SERVER:
     'OPENROUTER_API_KEY not configured on server',
   MISSING_REPAINT_FIELDS: 'Missing required fields: projectId, base64Image, maskBase64',
+  REPAINT_TRIGGER_FAILED: 'Failed to trigger repaint task',
+  MISSING_SEGMENT_FIELDS:
+    'Missing required fields: projectId, base64Image, box, mosaicWidth, mosaicHeight',
+  SEGMENT_TRIGGER_FAILED: 'Failed to trigger segment task',
+  FAL_KEY_NOT_PROVIDED: 'FAL_KEY not provided',
   NO_AI_PROVIDER_CONFIGURED:
     'No AI provider configured (APIFRAME_API_KEY required for image generation)',
   MISSING_TILE_TRIGGER_FIELDS: 'Missing required fields: projectId, x, y, prompt',
@@ -57,6 +62,8 @@ export const API_ERROR = {
   MISSING_PROMPT_OR_API_KEY: 'Missing prompt or API key',
   BEAT_PROJECT_NOT_FOUND: 'Beat/Project not found',
   MISSING_BEATS_OR_API_KEY: 'Missing beats or API key',
+  BEATS_REQUIRED: 'At least one beat with a logline or visual hook is required',
+  BEAT_IMAGES_REQUIRED: 'Generate beat images first',
   EPISODE_PROJECT_NOT_FOUND: 'Episode/Project not found',
   MISSING_SELECTION_OR_INSTRUCTION: 'Missing selection or instruction',
   FAILED_EDIT_SCRIPT: 'Failed to edit script',
@@ -119,8 +126,13 @@ export const API_ERROR = {
   MISSING_BEAT_DATA: 'Missing beat data',
   FAILED_GENERATE_PROMPT: 'Failed to generate prompt',
   DESCRIPTION_REQUIRED: 'Description is required',
+  OVERVIEW_REQUIRED: 'Generate the overview first.',
+  MOODBOARD_OVERVIEW_REQUIRED: 'Generate the overview first.',
   NO_CONTENT_GENERATED: 'No content generated',
   FAILED_GENERATE_METRICS: 'Failed to generate metrics',
+  FAILED_GENERATE_CHARACTER_FIELDS: 'Failed to generate missing character fields',
+  CHARACTER_FIELDS_INSUFFICIENT_CONTEXT:
+    'Add a name or description, or fill the series bible / episodes first',
   FAILED_UPDATE_BEAT: 'Failed to update beat',
   FAILED_DELETE_BEAT: 'Failed to delete beat',
   EPISODE_NOT_FOUND: 'Episode not found',

@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/Avatar'
-import { TroubleshootIndicator } from '@/components/shell/TroubleshootIndicator'
 import {
   PROJECT_SELECTION_FOCUS_RING_VISIBLE,
   PROJECT_SELECTION_LOGO_ALT,
@@ -38,7 +37,6 @@ export function ProjectSelectionTopBar({
         </Link>
 
         <div className="flex items-center gap-5">
-          <TroubleshootIndicator />
           <button
             type="button"
             onClick={onSignOut}

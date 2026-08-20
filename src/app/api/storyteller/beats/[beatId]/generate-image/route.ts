@@ -3,6 +3,7 @@ import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import { generateStoryboard } from '@/domains/storyteller/tasks/generate-storyboard.task'
+import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { resolveApiframeApiKey, resolveStoryboardModel } from '@/shared/ai/image-model-env'
 
@@ -45,9 +46,9 @@ export async function POST(req: Request, props: { params: Promise<{ beatId: stri
       projectId,
       prompt,
       providerConfig: {
-        ...config,
+        provider: ImageGenProvider.NanoBanana,
         apiKey,
-        modelId: config?.modelId || resolveStoryboardModel(),
+        modelId: typeof config?.modelId === 'string' ? config.modelId : resolveStoryboardModel(),
       },
     })
 

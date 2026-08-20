@@ -50,21 +50,27 @@ export const WorldGenToolbar: React.FC = () => {
   const setSelectMode = useWorldStore(state => state.setSelectMode)
   const isRepaintMode = useWorldStore(state => state.isRepaintMode)
   const setRepaintMode = useWorldStore(state => state.setRepaintMode)
+  const clearSelectBox = useWorldStore(state => state.clearSelectBox)
+  const setSelectedMask = useWorldStore(state => state.setSelectedMask)
 
   const isPanMode = !isSelectMode && !isRepaintMode
 
   const handlePanMode = () => {
     setSelectMode(false)
+    clearSelectBox()
+    setSelectedMask(null)
     setRepaintMode(false)
   }
 
   const handleSelectMode = () => {
-    setSelectMode(true)
     setRepaintMode(false)
+    setSelectMode(true)
   }
 
   const handlePaintMode = () => {
     setSelectMode(false)
+    clearSelectBox()
+    setSelectedMask(null)
     setRepaintMode(true)
   }
 

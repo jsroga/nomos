@@ -5,6 +5,7 @@ import { YouTubePlayer, YouTubeEmbedPlayer } from '../../YouTubePlayer'
 import { extractVideoId } from '@/domains/storyteller/core/utils/youtube-utils'
 import { useBible } from './BibleContext'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
+import { bibleSectionItems } from '../utils/bible-section-items'
 
 interface BibleSoundtracksProps {}
 
@@ -149,7 +150,11 @@ export const BibleSoundtracks: FC<BibleSoundtracksProps> = () => {
       ) : (
         <SoundtrackDisplay
           moodSoundtrack={localPlan.moodSoundtrack || storyPlan.moodSoundtrack || ''}
-          tracks={localPlan.soundtracks || storyPlan.soundtracks || []}
+          tracks={bibleSectionItems<SoundtrackTrack>(
+            localPlan.soundtracks,
+            storyPlan.soundtracks,
+            isEditing,
+          )}
           playingTrackIndex={playingTrackIndex}
           playingVideoId={playingVideoId}
           onPlay={handlePlayTrack}

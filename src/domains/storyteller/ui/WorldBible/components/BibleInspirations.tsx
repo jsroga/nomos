@@ -11,6 +11,7 @@ import {
   BibleInspirationCategoryKey,
 } from '../constants/bible-section-ui'
 import {
+  bibleDisplayInspirations,
   inspirationEditValue,
   normalizeInspirations,
 } from '../utils/bible-inspiration-normalize'
@@ -106,7 +107,7 @@ export const BibleInspirations: FC<BibleInspirationsProps> = () => {
   const pendingAction = pendingActions?.inspirations
 
   const normalizedInspirations = useMemo(() => {
-    const raw = isEditing ? localPlan.inspirations : localPlan.inspirations || storyPlan.inspirations
+    const raw = bibleDisplayInspirations(localPlan.inspirations, storyPlan.inspirations, isEditing)
     return normalizeInspirations(raw)
   }, [isEditing, localPlan.inspirations, storyPlan.inspirations])
 

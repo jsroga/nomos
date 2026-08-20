@@ -10,6 +10,7 @@ import { Sidebar } from './Sidebar/Sidebar'
 import { WorldCanvas } from './Canvas/WorldCanvas'
 import { TileReviewDialog } from './TileReviewDialog'
 import { WorldGenToolbar } from './WorldGenToolbar'
+import { WorldGenToolbarClass } from '../constants/world-gen-toolbar'
 
 function WorldGenWorkspace() {
   const { currentReview, isDialogOpen, handleClose, queueLength } = useTileReviewQueue()
@@ -27,7 +28,7 @@ function WorldGenWorkspace() {
           <div id={TOUR_STEP_IDS.WORLDGEN_CANVAS} className="w-full h-full">
             <WorldCanvas tileBar={tileBar} fileInputRef={fileInputRef} />
           </div>
-          <div className="absolute top-4 left-4 z-20">
+          <div className={WorldGenToolbarClass.Anchor}>
             <WorldGenToolbar />
           </div>
           <div id={TOUR_STEP_IDS.WORLDGEN_REPAINT}>

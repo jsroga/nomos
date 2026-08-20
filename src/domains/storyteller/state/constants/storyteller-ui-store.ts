@@ -53,6 +53,14 @@ export interface GenerationActivityState {
   updatedAt: number
 }
 
+export enum CharacterDraftResolution {
+  Idle = 'idle',
+  Accepted = 'accepted',
+  Rejected = 'rejected',
+}
+
+export { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
+
 export enum StorytellerUiSignal {
   EntityNavigation = 'entityNavigation',
   BibleTabRequest = 'bibleTabRequest',

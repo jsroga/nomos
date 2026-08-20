@@ -59,4 +59,5 @@ export enum SidebarShellClass {
   Body = 'px-3.5 pt-4 pb-[18px]',
   CollapseButton = 'w-8 h-[30px] rounded-lg shadow-[inset_0_0_0_1px_hsl(var(--border)/0.8)] text-muted-foreground/80 flex items-center justify-center transition-all duration-150 ease-in-out hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
   CollapsedWordmark = 'font-mono text-[10px] tracking-[0.22em] text-muted-foreground/45 [writing-mode:vertical-rl]',
+  Resizing = 'select-none overflow-hidden [&_[data-radix-scroll-area-scrollbar]]:hidden [&_[data-radix-scroll-area-corner]]:hidden',
 }

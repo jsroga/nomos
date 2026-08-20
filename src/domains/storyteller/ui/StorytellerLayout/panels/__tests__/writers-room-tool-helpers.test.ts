@@ -9,9 +9,11 @@ import {
   isBeatCreateToolArgs,
   isSuccessfulBeatWrite,
   pendingBeatArgsFromToolCalls,
+  shouldShowAddToWorld,
   showBeatOnBoard,
 } from '../writers-room-tool-helpers'
-import { StorytellerChatTool, StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
+import { CharacterDraftChatSection, StorytellerChatTool, StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
+import { ChatMessageRole } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { BibleSectionDisplayName, SectionListJoin } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
 import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
 import type { ProposedBibleSectionUpdate } from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
@@ -161,5 +163,57 @@ describe('showBeatOnBoard', () => {
     expect(setActiveTab).toHaveBeenCalledWith(StorytellerTab.Board)
     expect(closeBible).toHaveBeenCalled()
     expect(refreshBeats).toHaveBeenCalledWith('ep-1')
+  })
+})
+
+describe('shouldShowAddToWorld', () => {
+  const factionsArgs = [
+    { factions: [{ name: 'Keepers', description: 'Wardens of the marsh.' }] },
+  ]
+
+  it('hides the button for user role, bible writes on a character-form turn, and empty tools', () => {
+    expect(
+      shouldShowAddToWorld({
+        role: ChatMessageRole.User,
+        toolNames: [StorytellerChatTool.UpdateWorldBible],
+        toolArgs: factionsArgs,
+      }),
+    ).toBe(false)
+    expect(
+      shouldShowAddToWorld({
+        role: ChatMessageRole.Assistant,
+        requestedSection: CharacterDraftChatSection.Form,
+        toolNames: [StorytellerChatTool.UpdateWorldBible],
+        toolArgs: factionsArgs,
+      }),
+    ).toBe(false)
+    expect(
+      shouldShowAddToWorld({
+        role: ChatMessageRole.Assistant,
+        toolNames: [],
+        toolArgs: [],
+      }),
+    ).toBe(false)
+  })
+
+  it('shows the button after propose_character_fields', () => {
+    expect(
+      shouldShowAddToWorld({
+        role: ChatMessageRole.Assistant,
+        requestedSection: CharacterDraftChatSection.Form,
+        toolNames: [StorytellerChatTool.ProposeCharacterFields],
+        toolArgs: [{ name: 'Vera', description: 'A warden.' }],
+      }),
+    ).toBe(true)
+  })
+
+  it('shows the button for a successful bible factions write', () => {
+    expect(
+      shouldShowAddToWorld({
+        role: ChatMessageRole.Assistant,
+        toolNames: [StorytellerChatTool.UpdateWorldBible],
+        toolArgs: factionsArgs,
+      }),
+    ).toBe(true)
   })
 })

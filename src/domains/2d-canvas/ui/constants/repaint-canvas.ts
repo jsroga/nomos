@@ -7,7 +7,7 @@ export enum CanvasLineStyle {
 }
 
 export enum RepaintCanvasColor {
-  StrokeFill = 'rgba(255, 0, 0, 0.5)',
+  StrokeFill = '#ef4444',
   CursorOuter = 'rgba(255, 255, 255, 0.9)',
   CursorInner = 'rgba(0, 0, 0, 0.6)',
 }

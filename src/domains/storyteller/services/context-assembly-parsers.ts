@@ -112,6 +112,24 @@ function inspirationTitle(item: unknown): string {
   if (typeof item === 'string') return item
   return readString(recordFromJson(item).title) ?? ContextAssemblyFallback.NoneLabel
 }
+export interface EpisodeIndexRow {
+  sequence: number
+  title: string
+  logline: string
+}
+
+export function episodeIndexLogline(row: {
+  premise?: string | null
+  storyPlan?: unknown
+}): string {
+  const fromPlan = episodePremiseFromPlan(row.storyPlan)
+  return (
+    readString(fromPlan?.[BeatboardPremiseFieldKey.Logline]) ||
+    readString(row.premise) ||
+    ''
+  )
+}
+
 export function storyPlanFromJson(content: unknown): Record<string, unknown> {
   const parsed = parseStoryPlanJson(content)
   if (parsed) return { ...parsed }
@@ -119,12 +137,14 @@ export function storyPlanFromJson(content: unknown): Record<string, unknown> {
   const r = recordFromJson(content)
   const cast = charactersFromJson(r.cast)
   const keyCharacters = charactersFromJson(r.keyCharacters)
+  const episodeRoadmap = recordFromJson(r.episodeRoadmap)
 
   return {
     cast: cast.length > 0 ? cast : undefined,
     keyCharacters: keyCharacters.length > 0 ? keyCharacters : undefined,
     premise: recordFromJson(r.premise),
     episodePremise: recordFromJson(r.episodePremise),
+    episodeRoadmap: Object.keys(episodeRoadmap).length > 0 ? episodeRoadmap : undefined,
     worldDescription: readString(r.worldDescription),
     genre: Array.isArray(r.genre)
       ? r.genre.filter((g): g is string => typeof g === 'string')

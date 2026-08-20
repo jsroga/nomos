@@ -8,7 +8,6 @@ export interface StorytellerCharacter {
   role: string
   gender?: string
   description?: string
-  archetype?: string
   characterPrompt?: string
   psychology?: Record<string, unknown>
   valence?: number
@@ -22,7 +21,6 @@ export interface StorytellerCharacter {
   moralAlignment?: number
   transformation?: number
   mbti?: string
-  voiceSignature?: string
   portraitUrl?: string
 }
 
@@ -34,8 +32,6 @@ export interface CharacterDialogInitial {
   gender?: string
   mbti?: string
   portraitUrl?: string
-  voiceSignature?: string
-  archetype?: string
   psychology?: Record<string, unknown>
   valence?: number
   arousal?: number
@@ -88,7 +84,6 @@ export function storytellerCharacterFromRow(row: unknown): StorytellerCharacter 
     role: readString(record.role) ?? '',
     gender: readString(record.gender),
     description: readString(record.description) ?? readString(record.character_prompt),
-    archetype: readString(record.archetype),
     characterPrompt: readString(record.characterPrompt) ?? readString(record.character_prompt),
     psychology: psychologyValue,
     valence: readCharacterMetric(record, 'valence'),
@@ -105,7 +100,6 @@ export function storytellerCharacterFromRow(row: unknown): StorytellerCharacter 
       readNumber(record.transformationProgress) ??
       readNumber(record.transformation_progress),
     mbti: readString(record.mbti),
-    voiceSignature: readString(record.voiceSignature) ?? readString(record.voice_signature),
     portraitUrl: characterPortraitUrl(record),
   }
 }
@@ -118,9 +112,7 @@ export function characterToDialogInitial(character: StorytellerCharacter): Chara
     gender: character.gender,
     mbti: character.mbti,
     description: character.description ?? character.characterPrompt,
-    portraitUrl: character.portraitUrl,
-    voiceSignature: character.voiceSignature,
-    archetype: character.archetype,
+    portraitUrl: characterPortraitUrl(character),
     psychology: character.psychology,
     valence: character.valence,
     arousal: character.arousal,

@@ -157,13 +157,15 @@ export async function resumeChatWorkflow(
 
 export async function fetchGameEntitiesForMentions(
   projectId: string,
-  search?: string
+  search?: string,
+  signal?: AbortSignal
 ): Promise<GameEntity[]> {
   const data = await fetchJsonRecord(
     buildUrl(ENTITIES_API_PATH, {
       [GameEntityQueryParam.ProjectId]: projectId,
       [EntityApiQueryParam.Search]: search,
-    })
+    }),
+    signal ? { signal } : undefined
   )
 
   if (!Array.isArray(data.entities)) {

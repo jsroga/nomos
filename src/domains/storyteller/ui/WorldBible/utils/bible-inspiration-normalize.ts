@@ -1,4 +1,5 @@
 import { InspirationItem } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
+import { inspirationsHaveItems } from '@/domains/storyteller/core/utils/bible-populated-fields'
 import { recordArrayFromJson, recordFromJson, readString } from '@/shared/data/json-guards'
 import { BIBLE_INSPIRATION_TITLE_SEPARATOR } from '../constants/bible-inspirations'
 
@@ -29,6 +30,17 @@ function categorizedInspirationsFromObject(raw: unknown): InspirationCategories 
     movies: inspirationItemsFromJson(categorized.movies),
     games: inspirationItemsFromJson(categorized.games),
   }
+}
+
+/** Viewing: empty local buckets fall back to saved inspirations. */
+export function bibleDisplayInspirations(
+  local: unknown,
+  saved: unknown,
+  editing: boolean,
+): unknown {
+  if (editing) return local
+  if (inspirationsHaveItems(local)) return local
+  return saved
 }
 
 export function normalizeInspirations(raw: unknown): InspirationCategories {

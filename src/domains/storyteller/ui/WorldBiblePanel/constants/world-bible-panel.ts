@@ -42,8 +42,8 @@ export enum WorldBiblePanelLazyPlaceholder {
 }
 
 export enum WorldBiblePanelBodyClass {
-  Content = 'flex-1 min-h-0 overflow-y-auto px-5 pt-5 pb-8',
-  Relationships = 'flex-1 min-h-0 overflow-hidden px-5 pt-5 pb-5',
+  Content = 'flex-1 min-h-0 overflow-y-auto px-[22px] pt-[22px] pb-8',
+  Relationships = 'flex-1 min-h-0 overflow-hidden px-[22px] pt-[22px] pb-[22px]',
 }
 
 export enum WorldBiblePanelUiCopy {

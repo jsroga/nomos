@@ -112,6 +112,12 @@ export enum StorytellerChatTool {
   UpdateWorldBible = 'update_world_bible',
   UpdateStoryPhase = 'update_story_phase',
   ManageBeat = 'manage_beat',
+  ProposeCharacterFields = 'propose_character_fields',
+}
+
+/** Writers Room section id for unsaved character create/edit form fill. */
+export enum CharacterDraftChatSection {
+  Form = 'character-draft',
 }
 
 export enum StorytellerGlobalOperation {
@@ -338,6 +344,7 @@ export enum StorytellerPromptTemplateToken {
   Characters = '{characters}',
   VisualHook = '{visualHook}',
   Setting = '{setting}',
+  CanonLock = '{canonLock}',
 }
 
 export enum StorytellerBeatTypeFallback {

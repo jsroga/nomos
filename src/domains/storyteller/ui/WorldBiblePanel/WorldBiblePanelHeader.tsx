@@ -62,7 +62,7 @@ export function WorldBiblePanelHeader(props: WorldBiblePanelHeaderProps) {
 
   const chrome = <WorldBiblePanelHeaderChrome {...props} />
   if (host) return createPortal(chrome, host)
-  return <div className="flex h-[50px] items-center gap-3.5 px-5 border-b border-border/70">{chrome}</div>
+  return <div className="flex h-[50px] items-center gap-3.5 px-[22px] border-b border-border/70">{chrome}</div>
 }
 
 function WorldBiblePanelHeaderChrome({

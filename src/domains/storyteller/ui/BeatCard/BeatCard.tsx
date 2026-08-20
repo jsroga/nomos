@@ -6,12 +6,14 @@ import { beatImageService } from '@/domains/storyteller/services/beat-image-serv
 import {
   BEAT_TYPE_BORDER_CLASS,
   BeatCardCopy,
+  BeatCardShellClass,
   BeatCardType,
   BeatGenerationMode,
   isBeatCardType,
 } from './constants/beat-card'
 import { BeatCardActions } from './BeatCardActions'
 import { BeatCardImageSection } from './BeatCardImageSection'
+import { BeatImageBatchOverlay } from '@/domains/storyteller/state/useBeatImageBatchStore'
 
 interface Beat {
   id: string
@@ -34,8 +36,7 @@ interface BeatCardProps {
   onDrop: (e: React.DragEvent, id: string) => void
   onExpand?: (id: string) => void
   projectId: string
-  isChatBusy?: boolean
-  isBatchGenerating?: boolean
+  batchOverlay?: BeatImageBatchOverlay | null
 }
 
 const getTypeColor = (type: string) => {
@@ -45,17 +46,107 @@ const getTypeColor = (type: string) => {
   return BEAT_TYPE_BORDER_CLASS[BeatCardType.Default]
 }
 
+function beatCardType(beat: Beat): string {
+  if (beat.beatType) return beat.beatType
+  if (beat.type) return beat.type
+  return BeatCardType.Default
+}
+
+export function beatImageBusy(
+  isGenerating: BeatGenerationMode | null,
+  isBatchGenerating: boolean,
+): boolean {
+  if (isGenerating !== null) return true
+  return isBatchGenerating
+}
+
+function beatOverlayCopy(
+  batchOverlay: BeatImageBatchOverlay | null,
+  isGenerating: BeatGenerationMode | null,
+): string {
+  if (batchOverlay === BeatImageBatchOverlay.Pending && isGenerating === null) {
+    return BeatCardCopy.Pending
+  }
+  return BeatCardCopy.Generating
+}
+
+function beatActionsGenerating(
+  isGenerating: BeatGenerationMode | null,
+  isBatchGenerating: boolean,
+): BeatGenerationMode | null {
+  if (isGenerating) return isGenerating
+  if (isBatchGenerating) return BeatGenerationMode.Image
+  return null
+}
+
+function beatShowsBusyOverlay(
+  isGenerating: BeatGenerationMode | null,
+  isBatchGenerating: boolean,
+): boolean {
+  if (isGenerating !== null) return true
+  return isBatchGenerating
+}
+
+function beatEditType(editState: Beat): string {
+  if (editState.type) return editState.type
+  if (editState.beatType) return editState.beatType
+  return BeatCardType.Default
+}
+
+function beatCardShellClass(beatType: string, isEditing: boolean): string {
+  const grab = isEditing ? '' : BeatCardShellClass.Grab
+  return `min-h-[120px] border border-border text-foreground p-4 rounded-md border-l-[3px] ${getTypeColor(beatType)} flex flex-col group relative transition-colors ${grab}`
+}
+
 function toImageBeatCard(beat: Beat): BeatCardData {
   return {
     id: beat.id,
     sequence: beat.sequence,
     logline: beat.logline,
-    beatType: beat.beatType || beat.type || BeatCardType.Default,
+    beatType: beatCardType(beat),
     content: beat.content,
     status: beat.status,
     imageUrl: beat.imageUrl,
     imagePrompt: beat.imagePrompt,
   }
+}
+
+function BeatCardBusyOverlay({ visible, label }: { visible: boolean; label: string }) {
+  if (!visible) return null
+  return (
+    <div className="absolute inset-0 z-10 rounded-md bg-background/70 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2">
+      <Loader2 size={18} className="animate-spin text-primary" />
+      <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
+    </div>
+  )
+}
+
+function BeatCardTypePicker({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <select
+      className="bg-muted border border-border rounded-md px-2 py-1.5 text-xs font-mono uppercase tracking-wider text-foreground focus:border-primary outline-none"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+    >
+      <option value={BeatCardType.Setup}>Setup</option>
+      <option value={BeatCardType.Complication}>Complication</option>
+      <option value={BeatCardType.Revelation}>Revelation</option>
+      <option value={BeatCardType.Confrontation}>Confrontation</option>
+      <option value={BeatCardType.Transition}>Transition</option>
+      <option value={BeatCardType.Decision}>Decision</option>
+      <option value={BeatCardType.Consequence}>Consequence</option>
+      <option value={BeatCardType.Climax}>Climax</option>
+      <option value={BeatCardType.Resolution}>Resolution</option>
+    </select>
+  )
 }
 
 export const BeatCard: React.FC<BeatCardProps> = ({
@@ -67,15 +158,19 @@ export const BeatCard: React.FC<BeatCardProps> = ({
   onDrop,
   onExpand,
   projectId,
-  isChatBusy = false,
-  isBatchGenerating = false,
+  batchOverlay = null,
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editState, setEditState] = useState(beat)
   const [isGenerating, setIsGenerating] = useState<BeatGenerationMode | null>(null)
 
-  const beatType = beat.beatType || beat.type || BeatCardType.Default
-  const imageBusy = isGenerating !== null || isChatBusy || isBatchGenerating
+  const beatType = beatCardType(beat)
+  const isBatchGenerating = batchOverlay !== null
+  const imageBusy = beatImageBusy(isGenerating, isBatchGenerating)
+  const overlayLabel = beatOverlayCopy(batchOverlay, isGenerating)
+  const actionsGenerating = beatActionsGenerating(isGenerating, isBatchGenerating)
+  const showBusyOverlay = beatShowsBusyOverlay(isGenerating, isBatchGenerating)
+  const editType = beatEditType(editState)
 
   const handleGenerateImage = async () => {
     if (imageBusy) return
@@ -107,16 +202,9 @@ export const BeatCard: React.FC<BeatCardProps> = ({
       onDragStart={e => onDragStart(e, beat.id)}
       onDragOver={e => onDragOver(e, beat.id)}
       onDrop={e => onDrop(e, beat.id)}
-      className={`min-h-[120px] border border-border text-foreground p-4 rounded-md border-l-[3px] ${getTypeColor(beatType)} flex flex-col group relative transition-colors ${!isEditing ? 'cursor-grab active:cursor-grabbing hover:border-l-opacity-100' : ''}`}
+      className={beatCardShellClass(beatType, isEditing)}
     >
-      {isGenerating || isBatchGenerating ? (
-        <div className="absolute inset-0 z-10 rounded-md bg-background/70 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2">
-          <Loader2 size={18} className="animate-spin text-primary" />
-          <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            {BeatCardCopy.Generating}
-          </span>
-        </div>
-      ) : null}
+      <BeatCardBusyOverlay visible={showBusyOverlay} label={overlayLabel} />
 
       {!isEditing && (
         <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity pointer-events-none">
@@ -126,23 +214,10 @@ export const BeatCard: React.FC<BeatCardProps> = ({
 
       <div className="flex justify-between items-center mb-2 gap-2">
         {isEditing ? (
-          <select
-            className="bg-muted border border-border rounded-md px-2 py-1.5 text-xs font-mono uppercase tracking-wider text-foreground focus:border-primary outline-none"
-            value={editState.type || editState.beatType}
-            onChange={e =>
-              setEditState({ ...editState, type: e.target.value, beatType: e.target.value })
-            }
-          >
-            <option value={BeatCardType.Setup}>Setup</option>
-            <option value={BeatCardType.Complication}>Complication</option>
-            <option value={BeatCardType.Revelation}>Revelation</option>
-            <option value={BeatCardType.Confrontation}>Confrontation</option>
-            <option value={BeatCardType.Transition}>Transition</option>
-            <option value={BeatCardType.Decision}>Decision</option>
-            <option value={BeatCardType.Consequence}>Consequence</option>
-            <option value={BeatCardType.Climax}>Climax</option>
-            <option value={BeatCardType.Resolution}>Resolution</option>
-          </select>
+          <BeatCardTypePicker
+            value={editType}
+            onChange={value => setEditState({ ...editState, type: value, beatType: value })}
+          />
         ) : (
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
@@ -180,7 +255,7 @@ export const BeatCard: React.FC<BeatCardProps> = ({
       <div className="mt-3 flex justify-end items-center pt-3 border-t border-border">
         <BeatCardActions
           isEditing={isEditing}
-          isGenerating={isGenerating ?? (isBatchGenerating ? BeatGenerationMode.Image : null)}
+          isGenerating={actionsGenerating}
           imageDisabled={imageBusy}
           onSave={handleSave}
           onCancelEdit={() => setIsEditing(false)}

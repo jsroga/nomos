@@ -808,9 +808,6 @@
           },
           "mbti": {
             "type": "string"
-          },
-          "voiceSignature": {
-            "type": "string"
           }
         },
         "required": [
@@ -1388,7 +1385,7 @@
       "StorytellerGeneratePortraitRequest": {
         "type": "object",
         "properties": {
-          "prompt": {
+          "description": {
             "type": "string",
             "minLength": 1
           },
@@ -1397,6 +1394,13 @@
             "minLength": 1
           },
           "characterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mbti": {
+            "type": "string"
+          },
+          "motivation": {
             "type": "string"
           },
           "apiKey": {
@@ -1404,7 +1408,7 @@
           }
         },
         "required": [
-          "prompt",
+          "description",
           "projectId"
         ]
       },
@@ -1423,6 +1427,233 @@
         },
         "required": [
           "status"
+        ]
+      },
+      "StorytellerGenerateCharacterFieldsResponse": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "gender": {
+                "type": "string",
+                "enum": [
+                  "Male",
+                  "Female",
+                  "Non-binary",
+                  "Other"
+                ]
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "Protagonist",
+                  "Antagonist",
+                  "Supporting"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "mbti": {
+                "type": "string",
+                "enum": [
+                  "INTJ",
+                  "INTP",
+                  "ENTJ",
+                  "ENTP",
+                  "INFJ",
+                  "INFP",
+                  "ENFJ",
+                  "ENFP",
+                  "ISTJ",
+                  "ISFJ",
+                  "ESTJ",
+                  "ESFJ",
+                  "ISTP",
+                  "ISFP",
+                  "ESTP",
+                  "ESFP"
+                ]
+              },
+              "motivation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fatalFlaw": {
+                "type": "string",
+                "minLength": 1
+              },
+              "secrets": {
+                "type": "string",
+                "minLength": 1
+              },
+              "metrics": {
+                "type": "object",
+                "properties": {
+                  "valence": {
+                    "type": "number",
+                    "minimum": -100,
+                    "maximum": 100
+                  },
+                  "arousal": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "autonomy": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "competence": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "relatedness": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "cognitiveClarity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "perceivedStakes": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "socialSafety": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "moralAlignment": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "fields"
+        ]
+      },
+      "StorytellerGenerateCharacterFieldsRequest": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "filled": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "gender": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "mbti": {
+                "type": "string"
+              },
+              "motivation": {
+                "type": "string"
+              },
+              "fatalFlaw": {
+                "type": "string"
+              },
+              "secrets": {
+                "type": "string"
+              },
+              "metrics": {
+                "type": "object",
+                "properties": {
+                  "valence": {
+                    "type": "number"
+                  },
+                  "arousal": {
+                    "type": "number"
+                  },
+                  "autonomy": {
+                    "type": "number"
+                  },
+                  "competence": {
+                    "type": "number"
+                  },
+                  "relatedness": {
+                    "type": "number"
+                  },
+                  "cognitiveClarity": {
+                    "type": "number"
+                  },
+                  "perceivedStakes": {
+                    "type": "number"
+                  },
+                  "socialSafety": {
+                    "type": "number"
+                  },
+                  "moralAlignment": {
+                    "type": "number"
+                  }
+                },
+                "default": {
+                  "valence": 0,
+                  "arousal": 50,
+                  "autonomy": 60,
+                  "competence": 60,
+                  "relatedness": 50,
+                  "cognitiveClarity": 70,
+                  "perceivedStakes": 40,
+                  "socialSafety": 60,
+                  "moralAlignment": 70
+                },
+                "required": [
+                  "valence",
+                  "arousal",
+                  "autonomy",
+                  "competence",
+                  "relatedness",
+                  "cognitiveClarity",
+                  "perceivedStakes",
+                  "socialSafety",
+                  "moralAlignment"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "gender",
+              "role",
+              "description",
+              "mbti",
+              "motivation",
+              "fatalFlaw",
+              "secrets"
+            ]
+          }
+        },
+        "required": [
+          "projectId",
+          "filled"
         ]
       },
       "StorytellerGeneratePosterRequest": {
@@ -1457,9 +1688,6 @@
             "additionalProperties": {
               "nullable": true
             }
-          },
-          "styleReference": {
-            "type": "string"
           },
           "promptIndex": {
             "type": "number"
@@ -4198,6 +4426,59 @@
         }
       }
     },
+    "/storyteller/generate-character-fields": {
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Generate missing character fields",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerGenerateCharacterFieldsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Generated missing character fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerGenerateCharacterFieldsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/storyteller/episodes/{episodeId}/generate-poster": {
       "post": {
         "tags": [
@@ -4519,6 +4800,58 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StorytellerJobStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Cancel beat image job",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "runId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessage"
                 }
               }
             }

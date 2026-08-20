@@ -1,10 +1,13 @@
 import {
   FAL_API_ERROR_LOG_PREFIX,
   FAL_HTTP_METHOD_POST,
-  FAL_NONE_PLACEHOLDER,
   FAL_RAW_OUTPUT_LOG_PREFIX,
   FAL_SAM_CALL_LOG_PREFIX,
+  FalSamEndpoint,
+  FalSamInputField,
+  resolveSamPrompt,
 } from '@/shared/ai/constants/fal'
+import { ContentType } from '@/shared/data/constants/protocol'
 
 export interface BoxPrompt {
   x_min: number
@@ -19,6 +22,8 @@ export interface SamParams {
   includeBoxes?: boolean
 }
 
+export { resolveSamPrompt }
+
 export class FalClient {
   private apiKey: string
 
@@ -27,10 +32,10 @@ export class FalClient {
   }
 
   async segmentObject(
-    imageDataUri: string, // data:image/png;base64,...
-    box: { x1: number; y1: number; x2: number; y2: number }, // pixel coordinates
-    textPrompt?: string, // optional text prompt like "car", "person", etc.
-    params?: SamParams // optional SAM parameters
+    imageDataUri: string,
+    box: { x1: number; y1: number; x2: number; y2: number },
+    textPrompt?: string,
+    params?: SamParams
   ): Promise<unknown> {
     const boxPrompt: BoxPrompt = {
       x_min: Math.floor(Math.min(box.x1, box.x2)),
@@ -39,34 +44,31 @@ export class FalClient {
       y_max: Math.floor(Math.max(box.y1, box.y2)),
     }
 
+    const prompt = resolveSamPrompt(textPrompt)
     const input: Record<string, unknown> = {
-      image_url: imageDataUri,
-      box_prompts: [boxPrompt],
-      apply_mask: false, // We want the RLE, not the masked image
-      return_multiple_masks: params?.returnMultipleMasks ?? false,
-      include_scores: params?.includeScores ?? true,
-      include_boxes: params?.includeBoxes ?? true,
-    }
-
-    // Add text prompt if provided
-    if (textPrompt && textPrompt.trim()) {
-      input.text_prompt = textPrompt.trim()
+      [FalSamInputField.ImageUrl]: imageDataUri,
+      [FalSamInputField.BoxPrompts]: [boxPrompt],
+      [FalSamInputField.ApplyMask]: false,
+      [FalSamInputField.ReturnMultipleMasks]: params?.returnMultipleMasks ?? false,
+      [FalSamInputField.IncludeScores]: params?.includeScores ?? true,
+      [FalSamInputField.IncludeBoxes]: params?.includeBoxes ?? true,
+      [FalSamInputField.Prompt]: prompt,
     }
 
     console.log(FAL_SAM_CALL_LOG_PREFIX, {
       imageLength: imageDataUri.length,
       box: boxPrompt,
-      textPrompt: textPrompt || FAL_NONE_PLACEHOLDER,
+      textPrompt: prompt,
       params,
     })
 
-    const response = await fetch('https://fal.run/fal-ai/sam-3/image-rle', {
+    const response = await fetch(FalSamEndpoint.ImageRle, {
       method: FAL_HTTP_METHOD_POST,
       headers: {
         Authorization: `Key ${this.apiKey}`,
-        'Content-Type': 'application/json',
+        'Content-Type': ContentType.Json,
       },
-      body: JSON.stringify({ ...input }),
+      body: JSON.stringify(input),
     })
 
     if (!response.ok) {

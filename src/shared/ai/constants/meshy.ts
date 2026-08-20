@@ -55,6 +55,11 @@ export enum MeshyResponseField {
   Result = 'result',
   Output = 'output',
   Message = 'message',
+  Progress = 'progress',
+  ThumbnailUrl = 'thumbnail_url',
+  TaskError = 'task_error',
+  PrecedingTasks = 'preceding_tasks',
+  Id = 'id',
 }
 
 export enum Hyper3dResponseField {

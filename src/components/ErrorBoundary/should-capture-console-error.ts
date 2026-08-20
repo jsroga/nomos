@@ -1,4 +1,5 @@
 import {
+  BrowserConsoleNoise,
   ErrorBoundaryLog,
   ReactConsoleNoise,
 } from '@/components/ErrorBoundary/constants/error-boundary'
@@ -8,6 +9,7 @@ export function shouldCaptureConsoleError(message: string): boolean {
   if (message.includes(ReactConsoleNoise.GetSnapshotCached)) return false
   if (message.includes(ReactConsoleNoise.CannotUpdateWhileRendering)) return false
   if (message.includes(ReactConsoleNoise.MaxUpdateDepth)) return false
+  if (message.includes(BrowserConsoleNoise.ResizeObserverLoop)) return false
   return true
 }
 

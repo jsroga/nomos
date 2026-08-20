@@ -25,6 +25,8 @@ export const SkippedFindingSchema = z.object({
 export const CanonEpisodeChunkSchema = z.object({
   episodeId: z.string().min(1),
   title: z.string(),
+  sequence: z.number().int().nonnegative(),
+  premiseJson: z.string(),
   beatsJson: z.string(),
 })
 
@@ -34,6 +36,7 @@ export const AssembledCanonSchema = z.object({
   bibleJson: z.string(),
   charactersJson: z.string(),
   worldRulesJson: z.string(),
+  sectionsJson: z.record(z.string()),
   episodes: z.array(CanonEpisodeChunkSchema),
   bibleLocked: z.boolean(),
   lockedBeatIds: z.array(z.string()),

@@ -36,6 +36,10 @@ export enum SelectModeLogLabel {
 
 export enum SelectModeLogMessage {
   CouldNotDetectTileResolution = '[SelectModeService] Could not detect tile resolution',
+  DetectedMaxTileResolution = '[SelectModeService] Max tile resolution:',
+  TileNotInStore = '[SelectModeService] Tile not found in store',
+  FailedToLoadTile = '[SelectModeService] Failed to load tile',
+  MosaicLayout = '[SelectModeService] Mosaic layout:',
   CanvasDimensions = '[SelectModeService] Canvas dimensions:',
   CanvasCreated = '[SelectModeService] Canvas created:',
   CanvasStateBeforeToDataUrl = '[SelectModeService] Canvas state before toDataURL:',
@@ -76,6 +80,14 @@ export enum SelectModeErrorMessage {
 export enum SelectModeApiRoute {
   Segment = '/api/ai/segment',
   FalSegment = '/api/ai/fal-segment',
+  Enqueue = '/api/segment',
+  Status = '/api/segment/status',
+}
+
+export enum SegmentOutputField {
+  Rle = 'rle',
+  Width = 'width',
+  Height = 'height',
 }
 
 export enum HttpHeaderName {

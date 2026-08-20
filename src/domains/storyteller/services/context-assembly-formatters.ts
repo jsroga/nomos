@@ -7,7 +7,10 @@ import {
 } from '@/domains/storyteller/core/storyteller-page-wire'
 import { Phase, type PhaseId } from '@/domains/storyteller/core/types/enums'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
-import { ContextAssemblyFallback } from '@/domains/storyteller/services/constants/context-assembly'
+import {
+  ContextAssemblyFallback,
+  ContextAssemblyHeading,
+} from '@/domains/storyteller/services/constants/context-assembly'
 import { BibleCategoryKey } from '@/shared/data/constants/protocol'
 import {
   namedRecordsFromJson,
@@ -15,7 +18,13 @@ import {
   recordArrayFromJson,
   recordFromJson,
 } from '@/shared/data/json-guards'
-import type { Character, ProjectMeta } from './context-assembly-parsers'
+import {
+  formatRoadmapList,
+  formatRoadmapSlotBrief,
+  resolveRoadmapList,
+  resolveRoadmapSlot,
+} from '@/domains/storyteller/core/utils/roadmap-slot'
+import type { Character, EpisodeIndexRow, ProjectMeta } from './context-assembly-parsers'
 
 type BeatRow = typeof beats.$inferSelect
 
@@ -169,6 +178,30 @@ export function formatSequencesBlock(sequences: unknown): string {
   return parsedSequences.map((s, i) => `${i + 1}. ${s.name}: ${s.description || ''}`).join('\n')
 }
 
+export function formatSeasonRoadmapBlock(storyPlan: Record<string, unknown>): string {
+  const slots = resolveRoadmapList(storyPlan)
+  if (slots.length === 0) return ContextAssemblyFallback.None
+  return formatRoadmapList(slots)
+}
+
+export function formatRoadmapSlotContextBlock(
+  storyPlan: Record<string, unknown>,
+  episodeSequence: number
+): string {
+  return formatRoadmapSlotBrief(resolveRoadmapSlot(storyPlan, episodeSequence), episodeSequence)
+}
+
+export function formatEpisodeIndexBlock(rows: EpisodeIndexRow[]): string {
+  if (rows.length === 0) return ContextAssemblyFallback.None
+  return rows
+    .map(row => {
+      const title = row.title.trim() || ContextAssemblyFallback.UntitledEpisode
+      const logline = row.logline.trim()
+      return logline ? `${row.sequence}. ${title}: ${logline}` : `${row.sequence}. ${title}`
+    })
+    .join('\n')
+}
+
 export function formatCharactersBlock(sortedChars: Character[]): string {
   if (sortedChars.length === 0) return ''
   const lines = sortedChars
@@ -232,9 +265,15 @@ export function buildProjectContextBlock(params: {
   meta: ProjectMeta
   storyPlan: Record<string, unknown>
   bible: Record<string, unknown>
+  episodeSequence?: number
+  episodeIndex: EpisodeIndexRow[]
 }): string {
-  const { projectName, meta, storyPlan, bible } = params
+  const { projectName, meta, storyPlan, bible, episodeSequence, episodeIndex } = params
   const { genre, tone, theme, premise } = meta
+  const slotBlock =
+    episodeSequence === undefined
+      ? ''
+      : `\n${ContextAssemblyHeading.RoadmapSlot}\n${formatRoadmapSlotContextBlock(storyPlan, episodeSequence)}\n`
 
   return `=== PROJECT ===
 Title: ${projectName || StorytellerDefaultTitle.Untitled} | Genre: ${genre} | Tone: ${tone} | Theme: ${theme}
@@ -263,6 +302,10 @@ ${formatWorldRulesLinkedBlock(storyPlan.worldRules)}
 === INSPIRATIONS ===
 ${formatInspirationsBlock(storyPlan.inspirations)}
 
-=== SEQUENCES ===
-${formatSequencesBlock(storyPlan.sequences)}`
+${ContextAssemblyHeading.SeasonRoadmap}
+${formatSeasonRoadmapBlock(storyPlan)}
+
+${ContextAssemblyHeading.EpisodeIndex}
+${formatEpisodeIndexBlock(episodeIndex)}
+${slotBlock}`
 }

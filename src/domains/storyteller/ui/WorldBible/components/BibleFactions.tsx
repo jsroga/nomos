@@ -1,8 +1,7 @@
 import type { FC } from 'react'
 import { Crown } from 'lucide-react'
-import { FactionSchema } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { BibleEntityTileClass } from '../../BibleEntityTile'
-import { FactionCard } from '../../FactionCard'
+import { FactionCard, factionCardFromUnknown } from '../../FactionCard'
 import { useBible } from './BibleContext'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
 import { FactionEditList } from './FactionEditList'
@@ -25,6 +24,10 @@ export const BibleFactions: FC = () => {
 
   const localFactions = localPlan.factions || []
   const displayFactions = bibleMergedDisplayList(isEditing, localPlan.factions, storyPlan.factions)
+  const displayCards = displayFactions.flatMap(faction => {
+    const card = factionCardFromUnknown(faction)
+    return card ? [card] : []
+  })
   const isLoading = loadingSections?.factions?.loading ?? false
   const pendingAction = pendingActions?.factions
 
@@ -59,17 +62,15 @@ export const BibleFactions: FC = () => {
           onChange={updateFaction}
           onRemove={removeFaction}
         />
-      ) : displayFactions.length === 0 ? (
+      ) : displayCards.length === 0 ? (
         <div className="p-4 border border-dashed border-border rounded-lg text-muted-foreground text-sm italic">
           No factions defined. Power is a vacuum.
         </div>
       ) : (
         <div className={BibleEntityTileClass.Grid}>
-          {displayFactions.map((faction, idx) => {
-            const parsed = FactionSchema.safeParse(faction)
-            if (!parsed.success) return null
-            return <FactionCard key={idx} faction={parsed.data} projectId={projectId} />
-          })}
+          {displayCards.map((faction, idx) => (
+            <FactionCard key={idx} faction={faction} projectId={projectId} />
+          ))}
         </div>
       )}
     </BibleSectionShell>

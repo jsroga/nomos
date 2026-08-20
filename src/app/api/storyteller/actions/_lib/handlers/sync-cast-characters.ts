@@ -6,7 +6,6 @@ import { CharacterRole } from '@/shared/data/constants/protocol'
 import { recordFromJson } from '@/shared/data/deep-merge'
 import { SyncCastFallbackName } from '../constants/action-request-wire'
 import {
-  optionalCastString,
   resolveInsertMbti,
 } from '@/domains/storyteller/services/cast-field-normalize'
 
@@ -33,8 +32,6 @@ function normalizeCastEntry(rawCastEntry: unknown): Record<string, unknown> {
     description: stripEntityLinks(rawChar.description),
     motivation: stripEntityLinks(rawChar.motivation),
     fatalFlaw: stripEntityLinks(rawChar.fatalFlaw),
-    voiceSignature: stripEntityLinks(rawChar.voiceSignature || rawChar.voice_signature),
-    archetype: stripEntityLinks(rawChar.archetype),
     role: stripEntityLinks(rawChar.role),
     gender: stripEntityLinks(rawChar.gender),
     mbti: stripEntityLinks(rawChar.mbti),
@@ -48,7 +45,6 @@ function buildExistingCharacterPsychology(
 ) {
   return {
     ...existingPsych,
-    ...(char.archetype ? { archetype: char.archetype } : {}),
     ...(char.motivation ? { actualMotivation: char.motivation } : {}),
     ...(char.fatalFlaw ? { fatalFlaw: char.fatalFlaw } : {}),
     ...(char.psychology && typeof char.psychology === 'object' ? char.psychology : {}),
@@ -57,7 +53,6 @@ function buildExistingCharacterPsychology(
 
 function buildNewCharacterPsychology(char: Record<string, unknown>) {
   return {
-    ...(char.archetype ? { archetype: char.archetype } : {}),
     ...(char.motivation ? { actualMotivation: char.motivation } : {}),
     ...(char.fatalFlaw ? { fatalFlaw: char.fatalFlaw } : {}),
     ...(char.psychology && typeof char.psychology === 'object' ? char.psychology : {}),
@@ -75,8 +70,6 @@ async function syncExistingCharacter(
       description: typeof char.description === 'string' ? char.description : current.description,
       gender: typeof char.gender === 'string' ? char.gender : current.gender,
       mbti: typeof char.mbti === 'string' ? char.mbti : current.mbti,
-      voiceSignature:
-        typeof char.voiceSignature === 'string' ? char.voiceSignature : current.voiceSignature,
       psychology: buildExistingCharacterPsychology(char, recordFromJson(current.psychology)),
       updatedAt: new Date(),
     })
@@ -95,7 +88,6 @@ async function insertNewCharacter(projectId: string, char: Record<string, unknow
     description,
     gender: typeof char.gender === 'string' ? char.gender : undefined,
     mbti,
-    voiceSignature: optionalCastString(char.voiceSignature),
     psychology: buildNewCharacterPsychology(char),
     valence: 0,
     arousal: 50,

@@ -1,11 +1,14 @@
 import {
+  isPlainObject,
   recordFromJson,
   readRowNumber,
   readRowString,
 } from '@/shared/data/json-guards'
+import { MeshyResponseField } from '@/shared/ai/constants/meshy'
 
 export enum MeshyTaskStatusValue {
   Pending = 'PENDING',
+  InProgress = 'IN_PROGRESS',
   Succeeded = 'SUCCEEDED',
   Failed = 'FAILED',
 }
@@ -19,8 +22,10 @@ export interface MeshyModelUrls {
 }
 
 export interface MeshyTaskResult {
+  id?: string
   status: string
   progress?: number
+  preceding_tasks?: number
   model_url?: string
   model_urls?: MeshyModelUrls
   texture_urls?: unknown
@@ -36,6 +41,35 @@ export interface Hyper3dTaskResult {
   output?: { model_url?: string }
   error?: string
   message?: string
+}
+
+const MESHY_PROGRESS_MAX = 100
+
+export function meshyProgressPercent(
+  progress: number | undefined,
+  status: string,
+): number {
+  if (progress === undefined || !Number.isFinite(progress)) return 0
+  if (progress > 1) {
+    return Math.min(MESHY_PROGRESS_MAX, Math.max(0, Math.round(progress)))
+  }
+  if (progress === 1) {
+    return status === MeshyTaskStatusValue.Succeeded ? MESHY_PROGRESS_MAX : 0
+  }
+  if (progress === 0) return 0
+  return Math.min(MESHY_PROGRESS_MAX, Math.max(0, Math.round(progress * MESHY_PROGRESS_MAX)))
+}
+
+function unwrapMeshyTaskRecord(json: unknown): Record<string, unknown> {
+  const record = recordFromJson(json)
+  if (readRowString(record, MeshyResponseField.Status) !== undefined) {
+    return record
+  }
+  const nested = record[MeshyResponseField.Result]
+  if (isPlainObject(nested)) {
+    return nested
+  }
+  return record
 }
 
 function readMeshyModelUrls(value: unknown): MeshyModelUrls | undefined {
@@ -57,40 +91,51 @@ function readMeshyTaskError(value: unknown): { message?: string } | undefined {
   if (Object.keys(record).length === 0) {
     return undefined
   }
-  const message = readRowString(record, 'message')
+  const message = readRowString(record, MeshyResponseField.Message)
   return message ? { message } : undefined
 }
 
+function readMeshyProgress(record: Record<string, unknown>): number | undefined {
+  const numeric = readRowNumber(record, MeshyResponseField.Progress)
+  if (numeric !== undefined) return numeric
+  const asString = readRowString(record, MeshyResponseField.Progress)
+  if (asString === undefined) return undefined
+  const parsed = Number(asString)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
 export function parseMeshyTaskResult(json: unknown): MeshyTaskResult {
-  const record = recordFromJson(json)
-  const modelUrls = readMeshyModelUrls(record.model_urls)
-  const taskError = readMeshyTaskError(record.task_error)
+  const record = unwrapMeshyTaskRecord(json)
+  const modelUrls = readMeshyModelUrls(record[MeshyResponseField.ModelUrls])
+  const taskError = readMeshyTaskError(record[MeshyResponseField.TaskError])
 
   return {
-    status: readRowString(record, 'status') ?? MeshyTaskStatusValue.Pending,
-    progress: readRowNumber(record, 'progress'),
-    model_url: readRowString(record, 'model_url'),
+    id: readRowString(record, MeshyResponseField.Id),
+    status: readRowString(record, MeshyResponseField.Status) ?? MeshyTaskStatusValue.Pending,
+    progress: readMeshyProgress(record),
+    preceding_tasks: readRowNumber(record, MeshyResponseField.PrecedingTasks),
+    model_url: readRowString(record, MeshyResponseField.ModelUrl),
     model_urls: modelUrls,
     texture_urls: record.texture_urls,
-    thumbnail_url: readRowString(record, 'thumbnail_url'),
+    thumbnail_url: readRowString(record, MeshyResponseField.ThumbnailUrl),
     error: readRowString(record, 'error'),
-    message: readRowString(record, 'message'),
+    message: readRowString(record, MeshyResponseField.Message),
     task_error: taskError,
   }
 }
 
 export function parseHyper3dTaskResult(json: unknown): Hyper3dTaskResult {
   const record = recordFromJson(json)
-  const outputRecord = recordFromJson(record.output)
+  const outputRecord = recordFromJson(record[MeshyResponseField.Output])
 
   return {
-    status: readRowString(record, 'status') ?? 'processing',
-    model_url: readRowString(record, 'model_url'),
+    status: readRowString(record, MeshyResponseField.Status) ?? 'processing',
+    model_url: readRowString(record, MeshyResponseField.ModelUrl),
     output: Object.keys(outputRecord).length
-      ? { model_url: readRowString(outputRecord, 'model_url') }
+      ? { model_url: readRowString(outputRecord, MeshyResponseField.ModelUrl) }
       : undefined,
     error: readRowString(record, 'error'),
-    message: readRowString(record, 'message'),
+    message: readRowString(record, MeshyResponseField.Message),
   }
 }
 

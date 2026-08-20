@@ -2,6 +2,7 @@ import {
   EPISODE_PREMISE_PROJECTS_PATH_PREFIX,
   EpisodePremiseUrlScheme,
 } from '../constants/episode-premise-panel'
+import { preferLatestPosterUrl } from '@/domains/storyteller/services/poster-url-from-episode'
 
 function resolvePosterSegment(url: string, projectId: string): string {
   if (
@@ -22,11 +23,9 @@ export function resolveFullPosterUrl(
   posterUrl: string | null | undefined,
   projectId: string
 ): string | null {
-  if (localPoster) {
-    return resolvePosterSegment(localPoster, projectId)
-  }
-  if (!posterUrl) {
+  const preferred = preferLatestPosterUrl(posterUrl, localPoster)
+  if (!preferred) {
     return null
   }
-  return resolvePosterSegment(posterUrl, projectId)
+  return resolvePosterSegment(preferred, projectId)
 }

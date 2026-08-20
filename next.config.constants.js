@@ -8,6 +8,8 @@ const LUCIDE_REACT = 'lucide-react'
 const LODASH = 'lodash'
 const ZUSTAND = 'zustand'
 const ASYNC_HOOKS = 'async_hooks'
+const FFMPEG_STATIC = 'ffmpeg-static'
+const FFPROBE_STATIC = 'ffprobe-static'
 
 const TRANSPILE_PACKAGES = [
   '@react-three/fiber',
@@ -56,6 +58,8 @@ const SERVER_EXTERNAL_PACKAGES = [
   '@mastra/memory',
   '@mastra/observability',
   '@mastra/pg',
+  FFMPEG_STATIC,
+  FFPROBE_STATIC,
 ]
 
 const CONSOLE_ERROR = 'error'

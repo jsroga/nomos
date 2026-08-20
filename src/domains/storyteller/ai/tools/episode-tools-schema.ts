@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ManageToolOperation } from './manage-tools-wire'
+import { INJECTED_PROJECT_ID_DESC, ManageToolOperation } from './manage-tools-wire'
 
 export const EpisodePremiseSchema = z
   .object({
@@ -47,7 +47,7 @@ export const ManageEpisodeInputSchema = z.object({
 })
 
 export const ListEpisodesInputSchema = z.object({
-  projectId: z.string().uuid().describe('Project ID to filter episodes'),
+  projectId: z.string().uuid().optional().describe(INJECTED_PROJECT_ID_DESC),
   sequence: z.number().int().positive().optional().describe('Filter by sequence number'),
 })
 
@@ -73,6 +73,7 @@ export const ListEpisodesOutputSchema = z.object({
   success: z.boolean(),
   episodes: z.array(EpisodeOutputSchema),
   count: z.number(),
+  error: z.string().optional(),
 })
 
 export type EpisodeData = z.infer<typeof EpisodeDataSchema>

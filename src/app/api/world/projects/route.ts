@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/shared/auth'
+import { requireAuthedSession } from '@/app/api/world/_lib/require-authed-session'
 import { createProjectRequestSchema } from '@/domains/2d-canvas/core/io/world.dto'
 import { worldProjectService } from '@/domains/2d-canvas/services/world-data-service'
 import { WORLD_QUERY_PARAM } from '@/domains/2d-canvas/constants/world-query-params'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 
 export async function GET() {
-  const { session, error } = await requireAuth()
+  const { session, error } = await requireAuthedSession()
   if (error || !session) {
     return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
   }
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { session, error } = await requireAuth()
+  const { session, error } = await requireAuthedSession()
   if (error || !session) {
     return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
   }
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const { session, error } = await requireAuth()
+  const { session, error } = await requireAuthedSession()
   if (error || !session) {
     return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
   }

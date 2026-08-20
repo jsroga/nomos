@@ -1,127 +1,119 @@
-import { task } from '@trigger.dev/sdk/v3'
-import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
-import fs from 'fs'
-import path from 'path'
-import { generateApiframeSurfaceImage } from '@/shared/ai/generate-apiframe-surface-image'
+import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { ApiframeGenerateAspectRatio } from '@/shared/ai/constants/apiframe'
+import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'
+import { persistEpisodePosterToDatabase } from './persist-episode-poster-db'
+import { generateSelectedMjImage } from './generate-selected-mj-image'
+import { buildPosterMidjourneyLockFlags } from './constants/locked-visual-prompt'
 import {
-  ApiframeGenerateAspectRatio,
-  ApiframeImageModel,
-} from '@/shared/ai/constants/apiframe'
+  buildLockedEpisodePosterPrompt,
+  lockedPosterPromptOrNull,
+} from './build-episode-poster-locked-prompt'
 import {
-  ImagePosterSurface,
-  parseImageGenerateModel,
-  resolvePosterGenerateModel,
-} from '@/shared/ai/image-model-env'
-import { FsDirectory } from '@/shared/data/constants/protocol'
-
-enum PosterAssetDir {
-  Posters = 'posters',
-}
-
-enum PosterPrompt {
-  Midjourney = 'movie poster for ',
-  MidjourneySuffix = ', cinematic lighting, high resolution, detailed, textless',
-  GenericSuffix = '. Movie poster style, cinematic composition, dramatic lighting, high resolution, highly detailed, vertical aspect ratio.',
-}
+  EpisodePosterVariantCopy,
+  GeneratePosterError,
+  GeneratePosterFilename,
+  GeneratePosterLog,
+  GeneratePosterMetadataKey,
+  GeneratePosterProgress,
+  GeneratePosterStage,
+  POSTER_LLM_TASK,
+} from './constants/generate-poster-wire'
 
 interface GeneratePosterPayload {
-  prompt: string
   projectId: string
   episodeId: string
   apiKey: string
-  styleReferenceUrls?: string[]
-  modelId?: string
+  extraPrompt?: string
+  worldDesc?: string
+  overview?: string
+  prompt?: string
 }
 
-function posterPromptForModel(prompt: string, model: ApiframeImageModel): string {
-  if (model === ApiframeImageModel.Midjourney) {
-    return `${PosterPrompt.Midjourney}${prompt}${PosterPrompt.MidjourneySuffix}`
-  }
-  return `${prompt}${PosterPrompt.GenericSuffix}`
+async function setPosterStage(
+  progress: GeneratePosterProgress,
+  stage: GeneratePosterStage,
+): Promise<void> {
+  await metadata.set(GeneratePosterMetadataKey.Progress, progress)
+  await metadata.set(GeneratePosterMetadataKey.Stage, stage)
 }
 
-async function downloadImageBuffer(imageUrl: string): Promise<Buffer> {
-  const imgResponse = await fetch(imageUrl)
-  if (!imgResponse.ok) {
-    throw new Error(`Failed to download image from URL: ${imgResponse.status}`)
-  }
-  return Buffer.from(await imgResponse.arrayBuffer())
+async function resolveLockedPosterPrompt(payload: GeneratePosterPayload): Promise<string> {
+  const existing = lockedPosterPromptOrNull(payload.prompt)
+  if (existing) return existing
+  return buildLockedEpisodePosterPrompt({
+    context: {
+      worldDesc: payload.worldDesc ?? '',
+      overview: payload.overview ?? '',
+    },
+    extraPrompt: payload.extraPrompt ?? payload.prompt ?? '',
+  })
 }
 
 export const generatePoster = task({
   id: 'generate-poster',
   maxDuration: 600,
   run: async (payload: GeneratePosterPayload) => {
-    const { prompt, projectId, episodeId, apiKey, styleReferenceUrls } = payload
-
-    console.log(
-      `Starting poster generation for episode ${episodeId}, prompt: ${prompt.substring(0, 50)}...`
-    )
+    const { projectId, episodeId, apiKey } = payload
 
     if (!apiKey) {
-      throw new Error('Apiframe API key is required')
+      throw new Error(GeneratePosterError.ApiframeKeyRequired)
     }
-
     if (!projectId || !episodeId) {
-      throw new Error('projectId and episodeId are required')
+      throw new Error(GeneratePosterError.ProjectIdRequired)
     }
 
-    const model = parseImageGenerateModel(
-      payload.modelId,
-      resolvePosterGenerateModel(ImagePosterSurface.Series),
-    )
-    const generated = await generateApiframeSurfaceImage({
-      model,
-      prompt: posterPromptForModel(prompt, model),
+    await metadata.set(GeneratePosterMetadataKey.ProjectId, projectId)
+    await metadata.set(GeneratePosterMetadataKey.EpisodeId, episodeId)
+    await setPosterStage(GeneratePosterProgress.Init, GeneratePosterStage.Initializing)
+    logger.info(GeneratePosterLog.Starting, { projectId, episodeId })
+
+    await setPosterStage(GeneratePosterProgress.BuildingPrompt, GeneratePosterStage.BuildingPrompt)
+    logger.info(GeneratePosterLog.BuildingPrompt, { episodeId })
+    const lockedPrompt = await resolveLockedPosterPrompt(payload)
+    await metadata.set(GeneratePosterMetadataKey.Prompt, lockedPrompt)
+
+    const fullPrompt = buildPosterMidjourneyLockFlags(lockedPrompt)
+    const generated = await generateSelectedMjImage({
+      prompt: fullPrompt,
+      subject: lockedPrompt,
       apiKey,
       aspectRatio: ApiframeGenerateAspectRatio.PortraitTwoThree,
-      styleReferenceUrls,
+      task: POSTER_LLM_TASK,
+      variantInstruction: EpisodePosterVariantCopy.Instruction,
     })
 
-    console.log('Generation successful:', generated.imageUrl)
+    await setPosterStage(GeneratePosterProgress.Downloading, GeneratePosterStage.Downloading)
+    const imgResponse = await fetch(generated.imageUrl)
+    if (!imgResponse.ok) {
+      throw new Error(`${GeneratePosterError.DownloadFailedPrefix} ${imgResponse.status}`)
+    }
 
-    const buffer = await downloadImageBuffer(generated.imageUrl)
-    const filename = `poster_${episodeId}_${Date.now()}.png`
-    const projectDir = path.join(
-      process.cwd(),
-      FsDirectory.Public,
-      FsDirectory.Projects,
+    await setPosterStage(GeneratePosterProgress.Saving, GeneratePosterStage.Saving)
+    const filename = `${GeneratePosterFilename.Prefix}_${episodeId}_${Date.now()}.png`
+    const persistedUrl = await persistGeneratedImage({
       projectId,
-      PosterAssetDir.Posters,
-    )
+      filename,
+      bytes: Buffer.from(await imgResponse.arrayBuffer()),
+    })
+    const storedUrl = resolveDurablePublicImageUrl(persistedUrl, generated.imageUrl)
+    logger.info(GeneratePosterLog.Saved, { storedUrl, filename })
 
-    if (!fs.existsSync(projectDir)) {
-      fs.mkdirSync(projectDir, { recursive: true })
-    }
+    await setPosterStage(GeneratePosterProgress.UpdatingDb, GeneratePosterStage.UpdatingDb)
+    await persistEpisodePosterToDatabase({
+      episodeId,
+      posterUrl: storedUrl,
+      posterPrompt: fullPrompt,
+    })
 
-    const filePath = path.join(projectDir, filename)
-    fs.writeFileSync(filePath, buffer)
-    console.log(`Poster saved to ${filePath}`)
-
-    const localPath = `${PosterAssetDir.Posters}/${filename}`
-
-    const supabase = createSupabaseServiceClient()
-
-    const { error: dbError } = await supabase
-      .from('episodes')
-      .update({
-        poster_url: localPath,
-        poster_prompt: prompt,
-      })
-      .eq('id', episodeId)
-
-    if (dbError) {
-      console.error('Failed to update episode in DB:', dbError)
-    } else {
-      console.log(`Episode ${episodeId} poster_url updated to ${localPath}`)
-    }
+    await setPosterStage(GeneratePosterProgress.Completed, GeneratePosterStage.Completed)
 
     return {
       success: true,
-      imageUrl: localPath,
-      isVariantGrid: generated.isVariantGrid,
+      imageUrl: storedUrl,
+      isVariantGrid: false,
       jobId: generated.jobId,
-      episodeId: episodeId,
+      variantIndex: generated.variantIndex,
+      episodeId,
     }
   },
 })

@@ -35,6 +35,10 @@ export enum BeatDraftVerdictAction {
   Kill = 'kill',
 }
 
+export enum BeatDraftCanonHeading {
+  RoadmapSlot = 'ROADMAP SLOT (high-level brief for this episode — expand, do not contradict):',
+}
+
 export const BEAT_DRAFT_NO_FINDINGS = 'NO FINDINGS.'
 export const BEAT_DRAFT_CRITIQUE_JOIN = '\n\n'
 export const BEAT_DRAFT_CHARACTERS_JOIN = ', '

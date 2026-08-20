@@ -1,14 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import type { Faction } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
-import { factionTileCopy } from '../faction-card-helpers'
+import {
+  factionCardFromUnknown,
+  factionTileCopy,
+  type FactionCardData,
+} from '../faction-card-helpers'
 
-function faction(overrides: Partial<Faction>): Faction {
+const KEEPERS = 'Keepers'
+const KEEPERS_DESC = 'They tally every death in the city.'
+
+function faction(overrides: Partial<FactionCardData> = {}): FactionCardData {
   return {
-    name: 'Keepers',
-    description: 'They tally every death in the city.',
+    name: KEEPERS,
+    description: KEEPERS_DESC,
     ideology: 'Count what remains.',
     goals: ['Balance the books'],
     resources: 'Ledgers',
+    politicalForces: '',
+    weaknesses: '',
+    rivals: [],
     ...overrides,
   }
 }
@@ -17,7 +26,7 @@ describe('factionTileCopy', () => {
   it('keeps a short name and the description', () => {
     expect(factionTileCopy(faction({ name: 'Glass Choir' }))).toEqual({
       title: 'Glass Choir',
-      description: 'They tally every death in the city.',
+      description: KEEPERS_DESC,
     })
   })
 
@@ -33,5 +42,20 @@ describe('factionTileCopy', () => {
       title: 'The Ledger Keepers',
       description: 'They tally every death. Clerks in black ink.',
     })
+  })
+})
+
+describe('factionCardFromUnknown', () => {
+  it('keeps name and description without ideology', () => {
+    const card = factionCardFromUnknown({ name: KEEPERS, description: KEEPERS_DESC })
+    expect(card).not.toBeNull()
+    expect(card?.name).toBe(KEEPERS)
+    expect(card?.description).toBe(KEEPERS_DESC)
+    expect(card?.ideology).toBe('')
+  })
+
+  it('returns null when name is missing', () => {
+    expect(factionCardFromUnknown({ description: KEEPERS_DESC })).toBeNull()
+    expect(factionCardFromUnknown({ name: '  ' })).toBeNull()
   })
 })

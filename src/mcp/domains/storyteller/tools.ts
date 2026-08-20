@@ -53,7 +53,7 @@ const getCharacter = createTool({
 const createCharacter = createTool({
   id: 'create_character',
   description:
-    'Create a new character in a project. Characters have personality metrics, MBTI types, and voice signatures.',
+    'Create a new character in a project. Characters have personality metrics and MBTI types.',
   inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to create the character in'),
     name: z.string().describe('The character name'),
@@ -65,7 +65,6 @@ const createCharacter = createTool({
     characterPrompt: z.string().optional().describe('AI prompt for generating this character'),
     description: z.string().optional().describe('Character description'),
     mbti: z.string().optional().describe('MBTI personality type (e.g., INTJ, ENFP)'),
-    voiceSignature: z.string().optional().describe('Description of how the character speaks'),
     stress: z.number().min(0).max(100).optional().describe('Stress level (0-100, default: 30)'),
     trust: z.number().min(0).max(100).optional().describe('Trust level (0-100, default: 50)'),
     power: z.number().min(0).max(100).optional().describe('Power level (0-100, default: 30)'),
@@ -102,7 +101,6 @@ const updateCharacter = createTool({
     characterPrompt: z.string().optional(),
     description: z.string().optional(),
     mbti: z.string().optional(),
-    voiceSignature: z.string().optional(),
     psychology: z.string().optional(),
     stress: z.number().min(0).max(100).optional(),
     trust: z.number().min(0).max(100).optional(),

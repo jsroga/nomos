@@ -6,17 +6,18 @@ import {
   WorldCanvasToolShortcut,
   WorldCanvasWindowEvent,
 } from '@/domains/2d-canvas/ui/components/Canvas/constants/world-canvas'
+import {
+  REPAINT_APPLY_FAILED_TOAST,
+  REPAINT_CHANGES_APPLIED_TOAST,
+} from '@/domains/2d-canvas/ui/constants/repaint-toolbar'
+import toast from 'react-hot-toast'
+import type { RepaintResult } from '@/domains/2d-canvas/constants/repaint-service'
 import type { SelectResult } from '@/domains/2d-canvas/state/client-services/select-mode-service'
 import {
   isWorldCanvasTypingTarget,
   worldCanvasEventKey,
   isWorldCanvasSpaceRelease,
 } from '@/domains/2d-canvas/ui/components/Canvas/world-canvas-keyboard'
-
-interface RepaintResult {
-  imageUrl: string
-  bounds: { x: number; y: number; width: number; height: number }
-}
 
 interface DebugInfo {
   image: string
@@ -45,17 +46,14 @@ async function applyRepaintResult(repaintResult: RepaintResult): Promise<void> {
   await repaintService.applyRepaint(repaintResult)
 }
 
-function enterPanMode(params: UseWorldCanvasKeyboardParams): void {
-  params.setRepaintResult(null)
+export function enterPanMode(params: UseWorldCanvasKeyboardParams): void {
   params.setRepaintMode(false)
   params.setSelectMode(false)
   params.setSelectedMask(null)
-  params.clearRepaintStrokes()
-  params.setDebugInfo(null)
   params.clearSelectBox()
 }
 
-function handleEscapeKey(params: UseWorldCanvasKeyboardParams): void {
+export function handleEscapeKey(params: UseWorldCanvasKeyboardParams): void {
   if (params.repaintResult) {
     params.setRepaintResult(null)
     params.clearRepaintStrokes()
@@ -63,7 +61,6 @@ function handleEscapeKey(params: UseWorldCanvasKeyboardParams): void {
   }
   if (params.isRepaintMode) {
     params.setRepaintMode(false)
-    params.clearRepaintStrokes()
     params.setDebugInfo(null)
   }
   if (params.isSelectMode) {
@@ -141,6 +138,8 @@ export function useWorldCanvasKeyboard(params: UseWorldCanvasKeyboardParams): vo
       if (key === WorldCanvasToolShortcut.Paint) {
         e.preventDefault()
         setSelectMode(false)
+        clearSelectBox()
+        setSelectedMask(null)
         setRepaintMode(true)
         return
       }
@@ -154,11 +153,14 @@ export function useWorldCanvasKeyboard(params: UseWorldCanvasKeyboardParams): vo
         e.preventDefault()
         try {
           await applyRepaintResult(repaintResult)
+          toast.success(REPAINT_CHANGES_APPLIED_TOAST)
           setRepaintResult(null)
           clearRepaintStrokes()
           setDebugInfo(null)
+          setRepaintMode(false)
         } catch (error) {
           console.error(WORLD_CANVAS_APPLY_REPAINT_FAILED_LOG, error)
+          toast.error(REPAINT_APPLY_FAILED_TOAST)
         }
       }
     }

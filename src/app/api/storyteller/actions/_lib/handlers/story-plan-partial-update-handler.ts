@@ -5,10 +5,21 @@ import { NextResponse } from 'next/server'
 import { ActionType } from '@/domains/storyteller/core/types/enums'
 import { ActionApiResultType } from '@/shared/data/constants/protocol'
 import { recordFromJson } from '@/shared/data/deep-merge'
+import { inspirationsHaveItems } from '@/domains/storyteller/core/utils/bible-populated-fields'
 import type { ActionHandler, StorytellerAction } from '../action-handler-context'
 import { readSqlId } from '../read-payload-fields'
 
-function buildStoryPlanPartialUpdates(action: StorytellerAction): Record<string, unknown> {
+function nonEmptyArray(value: unknown): unknown[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined
+  return value
+}
+
+function inspirationsIfPopulated(value: unknown): Record<string, unknown> | undefined {
+  const inspirations = recordFromJson(value)
+  return inspirationsHaveItems(inspirations) ? inspirations : undefined
+}
+
+export function buildStoryPlanPartialUpdates(action: StorytellerAction): Record<string, unknown> {
   const { type, payload } = action
 
   if (type === ActionType.UPDATE_WORLD_RULES) {
@@ -18,7 +29,8 @@ function buildStoryPlanPartialUpdates(action: StorytellerAction): Record<string,
     return { factions: payload.factions }
   }
   if (type === ActionType.UPDATE_INSPIRATIONS) {
-    return { inspirations: payload.inspirations }
+    const inspirations = inspirationsIfPopulated(payload.inspirations)
+    return inspirations ? { inspirations } : {}
   }
   if (type === ActionType.UPDATE_WORLD_DESCRIPTION) {
     return { worldDescription: payload.worldDescription || payload.description }
@@ -30,7 +42,8 @@ function buildStoryPlanPartialUpdates(action: StorytellerAction): Record<string,
     return { keyCharacters: payload.keyCharacters || payload.characters }
   }
   if (type === ActionType.UPDATE_SOUNDTRACKS) {
-    return { soundtracks: payload.soundtracks }
+    const soundtracks = nonEmptyArray(payload.soundtracks)
+    return soundtracks ? { soundtracks } : {}
   }
   if (type === ActionType.SET_GENRE_AND_TONE) {
     return {

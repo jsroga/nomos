@@ -23,6 +23,11 @@ export enum ReactConsoleNoise {
   MaxUpdateDepth = 'Maximum update depth exceeded',
 }
 
+/** Chromium reports this when a ResizeObserver callback is deferred to the next frame. */
+export enum BrowserConsoleNoise {
+  ResizeObserverLoop = 'ResizeObserver loop',
+}
+
 export enum HmrErrorFragment {
   Lower = 'hmr',
   Upper = 'HMR',

@@ -1,4 +1,5 @@
-import { recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
+import { recordArrayFromJson, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
+import { storyPlanPosterUrl } from '@/domains/storyteller/core/entities/story-plan-wire'
 import {
   parseSeriesBibleRecord,
   parseStoryPlanRecord,
@@ -17,6 +18,10 @@ import {
 } from '@/domains/storyteller/state/constants/merge-episode-plan'
 import { hydratePlanFromBibleSources } from '@/domains/storyteller/state/utils/hydrate-plan-from-bible'
 import { projectHasStoredPlan } from '@/domains/storyteller/state/utils/episode-route'
+import {
+  inspirationsHaveItems,
+  omitVacantSoundtrackInspirations,
+} from '@/domains/storyteller/core/utils/bible-populated-fields'
 
 function firstNonEmptyArray(...candidates: unknown[]) {
   for (const candidate of candidates) {
@@ -24,6 +29,21 @@ function firstNonEmptyArray(...candidates: unknown[]) {
     if (arr.length > 0) return arr
   }
   return []
+}
+
+function firstNonEmptyStringArray(...candidates: unknown[]) {
+  for (const candidate of candidates) {
+    const arr = stringArrayFromJson(candidate)
+    if (arr.length > 0) return arr
+  }
+  return []
+}
+
+function firstNonEmptyInspirations(...candidates: unknown[]) {
+  for (const candidate of candidates) {
+    if (inspirationsHaveItems(candidate)) return recordFromJson(candidate)
+  }
+  return undefined
 }
 
 function unpackBibleCategories(bible: Record<string, unknown>) {
@@ -66,7 +86,9 @@ export function buildMergedEpisodePlan(
   const seasonRoadmap = recordFromJson(seasonPlan[EpisodePlanMergeField.EpisodeRoadmap])
   const bibleUpdated = recordFromJson(bible[ToolResultPayloadField.UpdatedFields])
 
-  return applyUpdatesToStoryPlan<StoryPlan>(null, {
+  const merged = applyUpdatesToStoryPlan<StoryPlan>(
+    null,
+    omitVacantSoundtrackInspirations({
     ...bible,
     ...seasonPlan,
     ...episodePlan,
@@ -105,9 +127,16 @@ export function buildMergedEpisodePlan(
       seasonPlan[StoryPlanMergeField.Soundtracks],
       bible[StoryPlanMergeField.Soundtracks],
     ),
-    [StoryPlanMergeField.MoodImages]: recordArrayFromJson(episodePlan[StoryPlanMergeField.MoodImages]).length
-      ? recordArrayFromJson(episodePlan[StoryPlanMergeField.MoodImages])
-      : recordArrayFromJson(bible[StoryPlanMergeField.MoodImages]),
+    [StoryPlanMergeField.Inspirations]: firstNonEmptyInspirations(
+      episodePlan[StoryPlanMergeField.Inspirations],
+      seasonPlan[StoryPlanMergeField.Inspirations],
+      bible[StoryPlanMergeField.Inspirations],
+    ),
+    [StoryPlanMergeField.MoodImages]: firstNonEmptyStringArray(
+      bible[StoryPlanMergeField.MoodImages],
+      episodePlan[StoryPlanMergeField.MoodImages],
+      seasonPlan[StoryPlanMergeField.MoodImages],
+    ),
     [EpisodePlanMergeField.ImagePrompts]: recordFromJson(
       episodePlan[EpisodePlanMergeField.ImagePrompts] ?? bible[EpisodePlanMergeField.ImagePrompts],
     ),
@@ -117,7 +146,10 @@ export function buildMergedEpisodePlan(
         bible[StoryPlanMergeField.SeasonStructure],
     ),
     projectId: currentProject?.id,
-  })
+  }),
+  )
+  const posterUrl = storyPlanPosterUrl(episodePlan)
+  return posterUrl ? { ...merged, posterUrl } : merged
 }
 
 export function buildFallbackBiblePlan(
@@ -140,7 +172,9 @@ export function buildFallbackBiblePlan(
     }
   }
 
-  return applyUpdatesToStoryPlan<StoryPlan>(null, {
+  return applyUpdatesToStoryPlan<StoryPlan>(
+    null,
+    omitVacantSoundtrackInspirations({
     ...processedBible,
     [StoryPlanMergeField.WorldRules]: firstNonEmptyArray(
       rawStoryPlan[StoryPlanMergeField.WorldRules],
@@ -166,6 +200,11 @@ export function buildFallbackBiblePlan(
       rawStoryPlan[StoryPlanMergeField.Soundtracks],
       rawBible[StoryPlanMergeField.Soundtracks],
     ),
+    [StoryPlanMergeField.Inspirations]: firstNonEmptyInspirations(
+      rawStoryPlan[StoryPlanMergeField.Inspirations],
+      rawBible[StoryPlanMergeField.Inspirations],
+      rawBibleUpdated[StoryPlanMergeField.Inspirations],
+    ),
     [StoryPlanMergeField.Sequences]: firstNonEmptyArray(
       rawStoryPlan[StoryPlanMergeField.Sequences],
       rawBible[StoryPlanMergeField.Sequences],
@@ -173,7 +212,8 @@ export function buildFallbackBiblePlan(
     [StoryPlanMergeField.SeasonStructure]: recordFromJson(
       rawStoryPlan[StoryPlanMergeField.SeasonStructure] ?? rawBible[StoryPlanMergeField.SeasonStructure],
     ),
-  })
+  }),
+  )
 }
 
 export function buildManualHydratedPlan(

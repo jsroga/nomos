@@ -1,4 +1,5 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
@@ -26,7 +27,7 @@ async function fetchTriggerRunStatus(
   statusRoute: string,
   runId: string
 ): Promise<WorldGenTriggerStatusResult> {
-  const response = await fetch(buildUrl(statusRoute, { [QueryParam.RunId]: runId }))
+  const response = await fetch(buildUrl(statusRoute, { [QueryParam.RunId]: runId }), TRIGGER_STATUS_FETCH_INIT)
   const body = recordFromJson(await response.json().catch(() => ({})))
   return {
     statusCode: response.status,

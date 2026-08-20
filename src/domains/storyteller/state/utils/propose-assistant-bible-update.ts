@@ -14,6 +14,7 @@ import {
 import { UPDATE_WORLD_BIBLE_TOOL_ID } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
+import { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
 import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
 import {
   WorldDescriptionFieldAlias,
@@ -38,9 +39,7 @@ export interface ProposedBibleSectionUpdate {
 
 function isSuccessfulResult(result: unknown): boolean {
   const record = recordFromJson(result)
-  if (Object.keys(record).length === 0) return false
-  if (record.success === false) return false
-  return true
+  return record.success === true
 }
 
 /** Fields the bible tool may write — taken from tool args for the pending draft. */
@@ -64,7 +63,9 @@ export function bibleFieldsFromToolArgs(args: Record<string, unknown>): Record<s
     args[CastFieldAlias.KeyCharacters]
   if (Array.isArray(cast)) fields.cast = cast
   if (Array.isArray(args.plotTwists)) fields.plotTwists = args.plotTwists
-  if (Array.isArray(args.soundtracks)) fields.soundtracks = args.soundtracks
+  if (Array.isArray(args.soundtracks) && args.soundtracks.length > 0) {
+    fields.soundtracks = args.soundtracks
+  }
   const moodSoundtrack = readString(args.moodSoundtrack)
   if (moodSoundtrack) fields.moodSoundtrack = moodSoundtrack
   const inspirations = recordFromJson(args.inspirations)
@@ -154,6 +155,7 @@ export function proposalsFromWrittenBibleFields(
   episodeId?: string | null,
   requestedSection?: string,
 ): ProposedBibleSectionUpdate[] {
+  if (requestedSection === CharacterDraftChatSection.Form) return []
   if (Object.keys(written).length === 0) return []
 
   if (requestedSection) {
@@ -183,6 +185,7 @@ export function proposeAssistantBibleUpdates(
   episodeId?: string | null,
   requestedSection?: string,
 ): ProposedBibleSectionUpdate[] {
+  if (requestedSection === CharacterDraftChatSection.Form) return []
   if (call.toolName !== UPDATE_WORLD_BIBLE_TOOL_ID) return []
   if (!isSuccessfulResult(call.result)) return []
   return proposalsFromWrittenBibleFields(

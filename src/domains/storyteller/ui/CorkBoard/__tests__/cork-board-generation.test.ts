@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { toastError } = vi.hoisted(() => ({
   toastError: vi.fn(),
@@ -9,10 +9,13 @@ vi.mock('react-hot-toast', () => ({
 }))
 
 import { BeatboardPremiseValidationCopy } from '@/domains/storyteller/core/constants/beatboard-premise-validation'
+import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   CORK_BOARD_GENERATE_BEATS_PROMPT,
   CORK_BOARD_STORY_STATE_RULE,
   CorkBoardBeatImagePolicy,
+  CorkBoardCopy,
   CorkBoardExistingBeatsLabel,
   CorkBoardPromptPlaceholder,
 } from '../constants/cork-board'
@@ -37,9 +40,22 @@ const TEN_POINTS = [
   'The clinic is no longer theirs',
 ]
 
+const RICH_PREMISE = {
+  logline: 'A night clerk must hide a body that ages backward before dawn.',
+  protagonistHook: 'Mara opens the clinic and finds a patient younger than last night.',
+  fatalFlaw: 'She trusts the ledger more than her own eyes.',
+  stakes: 'If the board learns, the clinic is seized and her sister stays missing.',
+  inevitableConsequence: 'The ledger writes her name and the clinic belongs to the board.',
+  tenPointsPlan: TEN_POINTS,
+}
+
 describe('requestCorkBoardTextBeats', () => {
   beforeEach(() => {
     toastError.mockReset()
+  })
+
+  afterEach(() => {
+    getStorytellerUiStore().clearGenerationActivity()
   })
 
   it('blocks a thin premise and does not send a chat prompt', () => {
@@ -56,27 +72,31 @@ describe('requestCorkBoardTextBeats', () => {
   it('sends the text-only beat-board prompt when the premise is detailed', () => {
     const onSendMessage = vi.fn()
     expect(
-      requestCorkBoardTextBeats(
-        {
-          logline: 'A night clerk must hide a body that ages backward before dawn.',
-          protagonistHook: 'Mara opens the clinic and finds a patient younger than last night.',
-          fatalFlaw: 'She trusts the ledger more than her own eyes.',
-          stakes: 'If the board learns, the clinic is seized and her sister stays missing.',
-          inevitableConsequence: 'The ledger writes her name and the clinic belongs to the board.',
-          tenPointsPlan: TEN_POINTS,
-        },
-        onSendMessage
-      )
+      requestCorkBoardTextBeats(RICH_PREMISE, onSendMessage)
     ).toBe(true)
     expect(onSendMessage).toHaveBeenCalledWith(CORK_BOARD_GENERATE_BEATS_PROMPT)
     expect(CORK_BOARD_GENERATE_BEATS_PROMPT).toContain(CORK_BOARD_STORY_STATE_RULE)
     expect(toastError).not.toHaveBeenCalled()
+  })
+
+  it('leaves image controls free and toasts instead of sending while chat is busy', () => {
+    getStorytellerUiStore().setGenerationActivity({
+      phase: GenerationActivityPhase.Streaming,
+    })
+    const onSendMessage = vi.fn()
+    expect(requestCorkBoardTextBeats(RICH_PREMISE, onSendMessage)).toBe(false)
+    expect(onSendMessage).not.toHaveBeenCalled()
+    expect(toastError).toHaveBeenCalledWith(CorkBoardCopy.WritersRoomBusy)
   })
 })
 
 describe('requestCorkBoardNextBeat', () => {
   beforeEach(() => {
     toastError.mockReset()
+  })
+
+  afterEach(() => {
+    getStorytellerUiStore().clearGenerationActivity()
   })
 
   it('blocks a thin premise and does not send a chat prompt', () => {
@@ -96,16 +116,8 @@ describe('requestCorkBoardNextBeat', () => {
 
   it('asks for exactly the next beat and keeps existing cards', () => {
     const onSendMessage = vi.fn()
-    const premise = {
-      logline: 'A night clerk must hide a body that ages backward before dawn.',
-      protagonistHook: 'Mara opens the clinic and finds a patient younger than last night.',
-      fatalFlaw: 'She trusts the ledger more than her own eyes.',
-      stakes: 'If the board learns, the clinic is seized and her sister stays missing.',
-      inevitableConsequence: 'The ledger writes her name and the clinic belongs to the board.',
-      tenPointsPlan: TEN_POINTS,
-    }
     const existing = [{ sequence: 1, logline: 'Mara opens the clinic.' }]
-    expect(requestCorkBoardNextBeat(premise, existing, onSendMessage)).toBe(true)
+    expect(requestCorkBoardNextBeat(RICH_PREMISE, existing, onSendMessage)).toBe(true)
     const prompt = onSendMessage.mock.calls[0]?.[0]
     expect(prompt).toBe(corkBoardNextBeatPrompt(existing))
     expect(prompt).toContain(CORK_BOARD_STORY_STATE_RULE)

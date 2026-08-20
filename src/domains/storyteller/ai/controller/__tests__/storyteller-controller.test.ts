@@ -9,10 +9,12 @@ import {
   updateWorldBibleTool,
   checkContinuityTool,
 } from '@/domains/storyteller/ai/tools/bible-tools'
+import { checkSectionAlignmentTool } from '@/domains/storyteller/ai/tools/section-alignment-tool'
 import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/ai/tools/beat-tools'
 import { manageCharacterTool, listCharactersTool } from '@/domains/storyteller/ai/tools/character-tools'
 import { manageEpisodeTool, listEpisodesTool } from '@/domains/storyteller/ai/tools/episode-tools'
 import { runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools/workflow-tool'
+import { proposeCharacterFieldsTool } from '@/domains/storyteller/ai/tools/propose-character-fields-tool'
 
 describe('storyteller controller modes (plan-first)', () => {
   const modes = buildStorytellerControllerModes()
@@ -40,6 +42,8 @@ describe('storyteller controller modes (plan-first)', () => {
     expect(allow).toContain(listCharactersTool.id)
     expect(allow).toContain(listEpisodesTool.id)
     expect(allow).toContain(checkContinuityTool.id)
+    expect(allow).toContain(checkSectionAlignmentTool.id)
+    expect(allow).toContain(proposeCharacterFieldsTool.id)
     expect(allow).toContain('submit_plan')
     // The plan-first invariant: mutating tools are invisible until an approved plan.
     for (const mutating of [

@@ -1,16 +1,7 @@
 import toast from 'react-hot-toast'
-import { readString } from '@/shared/data/json-guards'
 import { moodboardGenerationService } from '@/domains/storyteller/services/moodboard-generation-service'
 import { patchStorytellerProject } from '@/domains/storyteller/core/io/storyteller.api'
 import { BibleOverviewToast } from '../constants/bible-overview'
-import { hasMoodboardApiKey } from './bible-overview-moodboard'
-
-function reportMissingApiKey(config: Record<string, unknown>) {
-  const provider = readString(config.provider) ?? BibleOverviewToast.UnknownProvider
-  toast.error(
-    `${BibleOverviewToast.MissingApiKeyPrefix}${provider}${BibleOverviewToast.MissingApiKeySuffix}`
-  )
-}
 
 function reportMoodboardPollFailure(error: unknown): void {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -20,26 +11,30 @@ function reportMoodboardPollFailure(error: unknown): void {
   toast.error(BibleOverviewToast.GenerationFailed)
 }
 
+function assertMoodboardOverviewReady(hasOverviewContext: boolean): boolean {
+  if (hasOverviewContext) return true
+  toast.error(BibleOverviewToast.OverviewRequired)
+  return false
+}
+
 export async function regenerateMoodboardImage(input: {
   projectId: string | undefined
   isGenerating: boolean
+  hasOverviewContext: boolean
   config: Record<string, unknown>
-  legnextFromServer: boolean
   promptIndex: number
   onRefetchMoodboardData: () => Promise<void>
 }) {
   if (input.isGenerating || !input.projectId) {
     return
   }
-  if (!hasMoodboardApiKey(input.config, input.legnextFromServer)) {
-    reportMissingApiKey(input.config)
+  if (!assertMoodboardOverviewReady(input.hasOverviewContext)) {
     return
   }
   try {
     await moodboardGenerationService.generate(
       input.projectId,
       [],
-      undefined,
       input.config,
       input.onRefetchMoodboardData,
       input.promptIndex,
@@ -82,29 +77,29 @@ export async function removeMoodboardImage(input: {
 export async function addMoodboardImage(input: {
   projectId: string | undefined
   isGenerating: boolean
+  hasOverviewContext: boolean
   config: Record<string, unknown>
-  legnextFromServer: boolean
   nextIndex: number
   onRefetchMoodboardData: () => Promise<void>
 }) {
   if (input.isGenerating || !input.projectId) {
     return
   }
-  if (!hasMoodboardApiKey(input.config, input.legnextFromServer)) {
-    reportMissingApiKey(input.config)
+  if (!assertMoodboardOverviewReady(input.hasOverviewContext)) {
     return
   }
   try {
-    await moodboardGenerationService.generate(
+    const handleId = await moodboardGenerationService.generate(
       input.projectId,
       [],
-      undefined,
       input.config,
       input.onRefetchMoodboardData,
       input.nextIndex,
       reportMoodboardPollFailure,
     )
-    toast.success(BibleOverviewToast.NewImageGenerating)
+    if (handleId) {
+      toast.success(BibleOverviewToast.NewImageGenerating)
+    }
   } catch (err) {
     console.error(err)
     toast.error(BibleOverviewToast.GenerationError)
@@ -114,36 +109,31 @@ export async function addMoodboardImage(input: {
 export async function generateInitialMoodboard(input: {
   projectId: string | undefined
   isGenerating: boolean
-  hasWorldDescription: boolean
+  hasOverviewContext: boolean
   config: Record<string, unknown>
-  legnextFromServer: boolean
   onRefetchMoodboardData: () => Promise<void>
 }) {
   if (input.isGenerating) {
     return
   }
-  if (!input.hasWorldDescription) {
-    toast.error(BibleOverviewToast.WorldDescriptionRequired)
+  if (!assertMoodboardOverviewReady(input.hasOverviewContext)) {
     return
   }
   if (!input.projectId) {
     return
   }
-  if (!hasMoodboardApiKey(input.config, input.legnextFromServer)) {
-    reportMissingApiKey(input.config)
-    return
-  }
   try {
-    await moodboardGenerationService.generate(
+    const handleId = await moodboardGenerationService.generate(
       input.projectId,
       [],
-      undefined,
       input.config,
       input.onRefetchMoodboardData,
       undefined,
       reportMoodboardPollFailure,
     )
-    toast.success(BibleOverviewToast.InitialMoodboardGenerating)
+    if (handleId) {
+      toast.success(BibleOverviewToast.InitialMoodboardGenerating)
+    }
   } catch (err) {
     console.error(err)
     toast.error(BibleOverviewToast.GenerationError)

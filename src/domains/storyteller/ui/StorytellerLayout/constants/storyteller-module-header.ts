@@ -27,9 +27,9 @@ export enum StorytellerHeaderKey {
 }
 
 export enum StorytellerHeaderClass {
-  Root = 'h-[50px] shrink-0 flex items-center gap-3.5 px-5 bg-background border-b border-border/70 z-40 relative',
-  RootEditing = 'h-[50px] shrink-0 flex items-center gap-3.5 px-5 border-b border-border/70 z-40 relative bg-gradient-to-b from-primary/[0.06] to-primary/[0.02]',
-  Switch = 'flex gap-[3px] p-[3px] border border-border/70 rounded-[9px] bg-card/70',
+  Root = 'h-[50px] shrink-0 flex items-center gap-3.5 px-[22px] bg-background border-b border-border/70 z-40 relative',
+  RootEditing = 'h-[50px] shrink-0 flex items-center gap-3.5 px-[22px] border-b border-border/70 z-40 relative bg-gradient-to-b from-primary/[0.06] to-primary/[0.02]',
+  Switch = 'flex gap-[3px] border border-border/70 rounded-[9px] bg-card/70',
   SwitchDisabled = 'opacity-50 pointer-events-none',
   Segment = 'flex items-center gap-[7px] px-[11px] py-[5px] rounded-md font-mono text-[11px] tracking-[0.1em] uppercase transition-all duration-150 ease-in-out',
   SegmentActive = 'bg-background shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.45)] text-foreground',

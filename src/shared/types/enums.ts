@@ -29,6 +29,7 @@ export enum JobType {
   GenerateTile = 'generate-tile',
   UpscaleTile = 'upscale-tile',
   RepaintTile = 'repaint-tile',
+  SegmentObject = 'segment-object',
   Generate3D = 'generate-3d',
 }
 

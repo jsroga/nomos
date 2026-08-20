@@ -1,9 +1,13 @@
 import React from 'react'
-import { Sparkles, Star, Loader2, Trash2, Plus } from 'lucide-react'
+import { Sparkles, Star, Trash2, Plus, Loader2 } from 'lucide-react'
 import { StorytellerImage } from '../../StorytellerImage'
 import { BibleOverviewMoodboardCopy } from '../constants/bible-overview'
-import { resolveMoodboardImageUrl } from '../utils/bible-overview-moodboard'
-import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
+import {
+  moodboardImageAlt,
+  moodboardImageClickHandler,
+  resolveMoodboardImageUrl,
+} from '../utils/bible-overview-moodboard'
+import { formatMoodboardGeneratingCopy } from '@/domains/storyteller/services/constants/moodboard-generation-service'
 import {
   addMoodboardImage,
   regenerateMoodboardImage,
@@ -18,13 +22,15 @@ interface MoodboardImageTileProps {
   isLoading: boolean
   isReadOnly: boolean
   isGenerating: boolean
+  isFullBoardGenerating: boolean
   progressPercent: string | null
-  legnextFromServer: boolean
   displayMoodImages: string[]
   providerConfig: Record<string, unknown>
+  hasOverviewContext: boolean
   onSetPrimaryImage: (index: number) => void
   onRefetchMoodboardData: () => Promise<void>
   confirmDelete: () => Promise<boolean>
+  onExpand?: (index: number) => void
 }
 
 export const MoodboardImageTile: React.FC<MoodboardImageTileProps> = ({
@@ -35,29 +41,32 @@ export const MoodboardImageTile: React.FC<MoodboardImageTileProps> = ({
   isLoading,
   isReadOnly,
   isGenerating,
+  isFullBoardGenerating,
   progressPercent,
-  legnextFromServer,
   displayMoodImages,
   providerConfig,
+  hasOverviewContext,
   onSetPrimaryImage,
   onRefetchMoodboardData,
   confirmDelete,
+  onExpand,
 }) => {
-  const isChatBusy = useStorytellerChatBusy()
-  const generateDisabled = isGenerating || isChatBusy
+  const generateDisabled = isLoading || isFullBoardGenerating
   const imageUrl = resolveMoodboardImageUrl(imagePath, projectId)
-  const loadingLabel = progressPercent
-    ? `${progressPercent}%`
-    : BibleOverviewMoodboardCopy.Generating
 
   return (
     <StorytellerImage
       src={imageUrl}
-      alt={`Mood ${index + 1}`}
+      alt={moodboardImageAlt(index)}
       isLoading={isLoading}
       isPrimary={isPrimary}
       className="group relative"
-      emptyLabel={isLoading ? loadingLabel : BibleOverviewMoodboardCopy.NoImage}
+      emptyLabel={
+        isLoading
+          ? formatMoodboardGeneratingCopy(progressPercent)
+          : BibleOverviewMoodboardCopy.NoImage
+      }
+      onImageClick={moodboardImageClickHandler(onExpand, isLoading, index)}
       overlay={
         !isReadOnly && !isLoading ? (
           <div className="flex gap-2">
@@ -77,8 +86,8 @@ export const MoodboardImageTile: React.FC<MoodboardImageTileProps> = ({
                 await regenerateMoodboardImage({
                   projectId,
                   isGenerating: generateDisabled,
+                  hasOverviewContext,
                   config: providerConfig,
-                  legnextFromServer,
                   promptIndex: index,
                   onRefetchMoodboardData,
                 })
@@ -114,15 +123,9 @@ export const MoodboardImageTile: React.FC<MoodboardImageTileProps> = ({
         ) : undefined
       }
     >
-      {isPrimary ? (
+      {isPrimary && !isLoading ? (
         <div className="absolute top-1 left-1 z-20">
           <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 drop-shadow-md" />
-        </div>
-      ) : null}
-      {isLoading ? (
-        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex flex-col items-center justify-center z-30">
-          <Loader2 className="w-8 h-8 text-pink-500 animate-spin mb-2" />
-          <span className="text-xs font-bold text-pink-500">{loadingLabel}</span>
         </div>
       ) : null}
     </StorytellerImage>
@@ -131,27 +134,29 @@ export const MoodboardImageTile: React.FC<MoodboardImageTileProps> = ({
 
 interface MoodboardAddTileProps {
   isReadOnly: boolean
-  isGenerating: boolean
+  isFullBoardGenerating: boolean
   isAddingNew: boolean
   progressPercent: string | null
   projectId: string
-  legnextFromServer: boolean
   nextIndex: number
   providerConfig: Record<string, unknown>
+  hasOverviewContext: boolean
   onRefetchMoodboardData: () => Promise<void>
 }
 
 export const MoodboardAddTile: React.FC<MoodboardAddTileProps> = ({
   isReadOnly,
-  isGenerating,
+  isFullBoardGenerating,
   isAddingNew,
   progressPercent,
   projectId,
-  legnextFromServer,
   nextIndex,
   providerConfig,
+  hasOverviewContext,
   onRefetchMoodboardData,
 }) => {
+  const addDisabled = isAddingNew || isFullBoardGenerating
+
   if (isReadOnly) {
     return null
   }
@@ -161,33 +166,33 @@ export const MoodboardAddTile: React.FC<MoodboardAddTileProps> = ({
       onClick={async () => {
         await addMoodboardImage({
           projectId,
-          isGenerating,
+          isGenerating: addDisabled,
+          hasOverviewContext,
           config: providerConfig,
-          legnextFromServer,
           nextIndex,
           onRefetchMoodboardData,
         })
       }}
-      disabled={isGenerating}
-      className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${isGenerating
+      disabled={addDisabled}
+      className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${addDisabled
         ? 'border-muted-foreground/20 bg-muted/5 cursor-not-allowed opacity-50'
         : 'border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60 hover:bg-pink-500/10 cursor-pointer'
         }`}
       title="Add new moodboard image"
     >
       {isAddingNew ? (
-        <div className="flex flex-col items-center gap-2 animate-pulse">
-          <Loader2 className="w-6 h-6 text-pink-500 animate-spin" />
-          <span className="text-[10px] text-pink-400 font-medium">
-            {progressPercent ? `${progressPercent}%` : BibleOverviewMoodboardCopy.Generating}
+        <>
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            {formatMoodboardGeneratingCopy(progressPercent)}
           </span>
-        </div>
+        </>
       ) : (
         <>
           <Plus
-            className={`w-8 h-8 ${isGenerating ? 'text-muted-foreground/30' : 'text-pink-500/60'}`}
+            className={`w-8 h-8 ${addDisabled ? 'text-muted-foreground/30' : 'text-pink-500/60'}`}
           />
-          <span className={`text-xs ${isGenerating ? 'text-muted-foreground/30' : 'text-pink-500/60'}`}>
+          <span className={`text-xs ${addDisabled ? 'text-muted-foreground/30' : 'text-pink-500/60'}`}>
             Add Image
           </span>
         </>

@@ -19,6 +19,7 @@ import {
   readWorldBibleTool,
   checkContinuityTool,
 } from './bible-tools'
+import { checkSectionAlignmentTool } from './section-alignment-tool'
 
 export { manageBeatTool, listBeatsTool } from './beat-tools'
 
@@ -30,6 +31,8 @@ export { manageEpisodeTool, listEpisodesTool } from './episode-tools'
 
 // World Bible + Continuity (3 tools)
 export { updateWorldBibleTool, readWorldBibleTool, checkContinuityTool } from './bible-tools'
+export { checkSectionAlignmentTool } from './section-alignment-tool'
+export { proposeCharacterFieldsTool } from './propose-character-fields-tool'
 
 // Workflow entry (tool #10) — for the CHAT adapter only, never the author
 // (the author runs inside the workflow; recursion guard).
@@ -37,7 +40,7 @@ export { runBeatDraftWorkflowTool } from './workflow-tool'
 
 /**
  * All tools for the GRRM Agent
- * Total: 9 tools (down from ~57)
+ * Total: 10 tools (CRUD + continuity + section alignment)
  */
 export const grrmTools = [
   // Beat CRUD
@@ -53,4 +56,5 @@ export const grrmTools = [
   updateWorldBibleTool,
   readWorldBibleTool,
   checkContinuityTool,
+  checkSectionAlignmentTool,
 ]

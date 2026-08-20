@@ -15,6 +15,7 @@ export const TRIGGER_TASK_ID = {
   REMESH_3D_MODEL: 'remesh-3d-model',
   SELECT_MJ_VARIANT: 'select-mj-variant',
   GENERATE_MOODBOARD: 'generate-moodboard',
+  GENERATE_COMBINED_STORYBOARD: 'generate-combined-storyboard',
   GENERATE_PORTRAIT: 'generate-portrait',
   SURFACE_MATERIAL: 'surface-material',
   TEXT_TO_3D: 'text-to-3d',
@@ -22,6 +23,8 @@ export const TRIGGER_TASK_ID = {
   GENERATE_3D_MODEL: 'generate-3d-model',
   ENHANCE_FIDELITY: 'enhance-fidelity',
   GENERATE_TILE: 'generate-tile',
+  REPAINT_TILE: 'repaint-tile',
+  SEGMENT_OBJECT: 'segment-object',
 } as const
 
 export const TRIGGER_TOKEN_EXPIRY = '1h' as const
@@ -33,6 +36,8 @@ export const TRIGGER_TASK_TTL = {
   GENERATE_3D: '30m',
   FIDELITY: '10m',
   GENERATE_TILE: '10m',
+  REPAINT: '10m',
+  SEGMENT: '10m',
 } as const
 
 export const RATE_LIMIT = {

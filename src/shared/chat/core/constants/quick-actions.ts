@@ -75,7 +75,7 @@ export enum SmartQuickActionPhase {
 
 export enum SmartQuickActionPrompt {
   ProposeNextStep = 'Propose the next logical step for this story.',
-  GeneratePremise = 'Generate an episode premise using the Ozymandias framework.',
+  GeneratePremise = 'Generate an episode premise using the Ozymandias framework. Expand ROADMAP SLOT (see system context) into Ozymandias + a 10-point plan. Stay at episode detail, not season spine. If that block is absent, generate from the open episode only.',
   SuggestTheme = 'Suggest some thematic ideas for this episode.',
   GenerateStoryBeats = 'Break this premise into detailed story beats.',
   AddPlotTwist = 'Suggest a surprising plot twist for this story.',
@@ -83,7 +83,8 @@ export enum SmartQuickActionPrompt {
   ImproveDialogue = 'Help me improve the dialogue in the current scene.',
   CreateFaction = 'Create a new faction for this world.',
   AddWorldRule = 'Add a new rule or constraint to this world.',
-  GenerateSeasonRoadmap = 'Generate an episode roadmap for the season.',
+  GenerateSeasonRoadmap =
+    'Generate a high-level episode roadmap for the season (8-12 slots: title, logline, inciting/midpoint/finale). Not a 10-point plan. If existing episodes are listed, slot N restates episode N at that altitude.',
   DesignCoreMechanics =
     'Design the core mechanics for this game loop. Focus on genre-defining innovation.',
   GenerateLoopNodes = 'Generate game loop nodes based on my game concept.',

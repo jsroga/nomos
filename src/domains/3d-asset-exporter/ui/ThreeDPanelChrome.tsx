@@ -4,6 +4,7 @@ import React from 'react'
 import { Box, Layers, Upload } from 'lucide-react'
 import { AIProvider } from '@/shared/types/enums'
 import { MeshyTopology } from '../core/types/three-d-generation'
+import { AssetExporterPanelClass, AssetExporterPanelCopy } from './constants/asset-exporter-panel'
 import { ThreeDGenerationSettings, ThreeDRemeshSettings } from './ThreeDSettingsPanels'
 import { ThreeDToolbarActions } from './ThreeDToolbarActions'
 
@@ -107,10 +108,10 @@ export function ThreeDPanelChrome(props: ThreeDPanelChromeProps) {
 
   return (
     <>
-      <div className="p-3 border-b border-border flex items-center justify-between bg-muted/30">
+      <div className={AssetExporterPanelClass.Header}>
         <div className="flex items-center gap-2">
           <Box size={16} className="text-muted-foreground" />
-          <h3 className="font-medium text-sm">3D Preview</h3>
+          <h3 className="font-medium text-sm">{AssetExporterPanelCopy.ThreeDPreview}</h3>
         </div>
         <ThreeDToolbarActions
           modelUrl={modelUrl}

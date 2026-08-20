@@ -42,7 +42,11 @@ export interface MentionProvider {
   /** Category this provider handles */
   category: MentionCategory
   /** Get items matching the filter string (sync or async — consumers await via Promise.all) */
-  getItems: (filter: string, projectContext: ProjectContext) => MentionItem[] | Promise<MentionItem[]>
+  getItems: (
+    filter: string,
+    projectContext: ProjectContext,
+    signal?: AbortSignal,
+  ) => MentionItem[] | Promise<MentionItem[]>
 }
 
 /**

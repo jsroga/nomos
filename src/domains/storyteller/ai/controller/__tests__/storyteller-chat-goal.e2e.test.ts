@@ -10,8 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import type {
   AgentControllerEvent,
-  AgentControllerMessage,
-  AgentControllerMessageContent,
+  MastraDBMessage,
   Session,
 } from '@mastra/core/agent-controller'
 import { getStorytellerController } from '@/domains/storyteller/core/io/mastra-runtime'
@@ -43,16 +42,14 @@ interface Harness {
   events: AgentControllerEvent[]
 }
 
-function textFromContent(content: AgentControllerMessageContent[]): string {
+function textFromMessage(message: MastraDBMessage): string {
   let text = ''
-  for (const part of content) {
-    if (part.type === 'text') text += part.text
+  for (const part of message.content.parts) {
+    if (part.type === 'text' && 'text' in part && typeof part.text === 'string') {
+      text += part.text
+    }
   }
   return text
-}
-
-function textFromMessage(message: AgentControllerMessage): string {
-  return textFromContent(message.content)
 }
 
 function collectAssistantText(events: AgentControllerEvent[]): string {

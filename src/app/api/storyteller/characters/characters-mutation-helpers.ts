@@ -33,7 +33,6 @@ interface CreateCharacterBody {
   isolation?: number
   transformation?: number
   mbti?: string
-  voiceSignature?: string
 }
 
 export async function createCharacterRecord(body: CreateCharacterBody, userId: string) {
@@ -51,7 +50,6 @@ export async function createCharacterRecord(body: CreateCharacterBody, userId: s
     isolation,
     transformation,
     mbti,
-    voiceSignature,
     description,
     portraitUrl,
   } = body
@@ -91,7 +89,6 @@ export async function createCharacterRecord(body: CreateCharacterBody, userId: s
       moralAlignment: morality ?? 70,
       transformationProgress: transformation ?? 0,
       mbti,
-      voiceSignature,
       valence: 0,
       arousal: stress ?? 50,
       autonomy: power ? power * 0.6 + 20 : 60,
@@ -111,7 +108,6 @@ export async function createCharacterRecord(body: CreateCharacterBody, userId: s
     role,
     gender,
     mbti,
-    voiceSignature,
     description,
     characterPrompt,
     portraitUrl,
@@ -138,7 +134,6 @@ async function createCharacterGameEntity(input: {
   role?: string
   gender?: string
   mbti?: string
-  voiceSignature?: string
   description?: string
   characterPrompt?: string
   portraitUrl?: string
@@ -162,7 +157,6 @@ async function createCharacterGameEntity(input: {
             role: input.role,
             gender: input.gender,
             mbti: input.mbti,
-            voiceSignature: input.voiceSignature,
             metrics: input.metrics,
           },
           imageUrl: input.portraitUrl,
@@ -223,7 +217,6 @@ function assignDirectCharacterFields(
   if (body.gender !== undefined) dbUpdates.gender = body.gender
   if (body.characterPrompt !== undefined) dbUpdates.characterPrompt = body.characterPrompt
   if (body.mbti !== undefined) dbUpdates.mbti = body.mbti
-  if (body.voiceSignature !== undefined) dbUpdates.voiceSignature = body.voiceSignature
   if (body.psychology !== undefined) dbUpdates.psychology = body.psychology
   if (body.description !== undefined) dbUpdates.description = body.description
   if (body.portraitUrl !== undefined) dbUpdates.portraitUrl = body.portraitUrl

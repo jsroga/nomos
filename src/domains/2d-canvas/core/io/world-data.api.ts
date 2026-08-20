@@ -1,4 +1,4 @@
-import { ContentType, FetchCache, HttpMethod } from '@/shared/data/constants/protocol'
+import { ContentType, FetchCache, HttpMethod, JsonField } from '@/shared/data/constants/protocol'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { joinUrlPath } from '@/shared/data/url-builder'
@@ -21,16 +21,22 @@ export async function fetchStorytellerProject(projectId: string): Promise<WorldP
   return worldProjectSchema.parse(data)
 }
 
+export function readSaveImageResponseUrl(data: Record<string, unknown>): string | undefined {
+  return readString(data[JsonField.Url])
+}
+
 export async function saveProjectImage(input: {
   projectId: string
   filename: string
   imageData: string
-}): Promise<void> {
-  await fetchJsonRecord(WorldDataApiRoute.SaveImage, {
+}): Promise<{ url?: string }> {
+  const data = await fetchJsonRecord(WorldDataApiRoute.SaveImage, {
     method: HttpMethod.Post,
     headers: JSON_HEADERS,
     body: JSON.stringify(input),
   })
+  const url = readSaveImageResponseUrl(data)
+  return url ? { url } : {}
 }
 
 export async function deleteProjectImage(input: {

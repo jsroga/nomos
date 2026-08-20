@@ -1,6 +1,6 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
-import { extractProse, normalizeScore, toMastraJudgingLanguageModel } from './shared'
+import { createJudgingConfig, extractProse, normalizeScore } from './shared'
 
 /**
  * Structural stakes scorer (StoryForge port): every beat must cost something;
@@ -24,11 +24,9 @@ export const stakesCostScorer = createScorer({
   id: 'stakes-cost',
   name: 'Stakes Cost',
   description: 'Structural stakes: every beat must cost something; victories must be earned.',
-  judge: {
-    model: toMastraJudgingLanguageModel(),
-    instructions:
-      'You are a structural editor evaluating narrative stakes. You judge coldly and cite evidence. Respond with valid JSON matching the requested schema.',
-  },
+  judge: createJudgingConfig(
+    'You are a structural editor evaluating narrative stakes. You judge coldly and cite evidence. Respond with valid JSON matching the requested schema.',
+  ),
 })
   .analyze({
     description: 'Assess beats, costs, and earned outcomes',

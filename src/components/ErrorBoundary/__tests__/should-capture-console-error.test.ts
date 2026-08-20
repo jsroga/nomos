@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ReactConsoleNoise } from '../constants/error-boundary'
+import { BrowserConsoleNoise, ReactConsoleNoise } from '../constants/error-boundary'
 import { shouldCaptureConsoleError } from '../should-capture-console-error'
 
 describe('shouldCaptureConsoleError', () => {
@@ -18,6 +18,14 @@ describe('shouldCaptureConsoleError', () => {
       ),
     ).toBe(false)
     expect(shouldCaptureConsoleError(ReactConsoleNoise.MaxUpdateDepth)).toBe(false)
+  })
+
+  it('skips Chromium ResizeObserver loop notifications', () => {
+    expect(
+      shouldCaptureConsoleError(
+        `${BrowserConsoleNoise.ResizeObserverLoop} completed with undelivered notifications.`,
+      ),
+    ).toBe(false)
   })
 
   it('captures real console errors', () => {

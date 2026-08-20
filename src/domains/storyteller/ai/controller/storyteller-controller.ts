@@ -17,8 +17,10 @@ import type { AgentControllerConfig, AgentControllerMode } from '@mastra/core/ag
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 import { readWorldBibleTool, checkContinuityTool } from '@/domains/storyteller/ai/tools/bible-tools'
+import { checkSectionAlignmentTool } from '@/domains/storyteller/ai/tools/section-alignment-tool'
 import { listBeatsTool } from '@/domains/storyteller/ai/tools/beat-tools'
 import { listCharactersTool } from '@/domains/storyteller/ai/tools/character-tools'
+import { proposeCharacterFieldsTool } from '@/domains/storyteller/ai/tools/propose-character-fields-tool'
 import { listEpisodesTool } from '@/domains/storyteller/ai/tools/episode-tools'
 
 export const STORYTELLER_CONTROLLER_ID = 'storyteller-chat'
@@ -46,9 +48,10 @@ type ControllerStorage = NonNullable<ControllerConfig['storage']>
 type ControllerWorkspace = NonNullable<ControllerConfig['workspace']>
 
 /**
- * Read-only tools visible in `chat` mode. Mutating tools (`update_world_bible`,
- * `manage_beat`, `manage_character`, `manage_episode`, `run_beat_draft_workflow`)
- * are absent, so the model cannot even see them until a plan is approved.
+ * Tools visible in `chat` mode: reads, non-persisting `propose_character_fields`,
+ * and `submit_plan`. Mutating tools (`update_world_bible`, `manage_beat`,
+ * `manage_character`, `manage_episode`, `run_beat_draft_workflow`) are absent,
+ * so the model cannot persist until a plan is approved.
  */
 const CHAT_MODE_TOOLS: string[] = [
   readWorldBibleTool.id,
@@ -56,6 +59,8 @@ const CHAT_MODE_TOOLS: string[] = [
   listCharactersTool.id,
   listEpisodesTool.id,
   checkContinuityTool.id,
+  checkSectionAlignmentTool.id,
+  proposeCharacterFieldsTool.id,
   SUBMIT_PLAN_TOOL_NAME,
   // `submit_plan` suspends with a plan FILE path — the host reads the body off
   // disk. Without a write tool in this allowlist the model has no way to
@@ -74,7 +79,12 @@ const CHAT_MODE_TOOLS: string[] = [
  * isn't available" instead of submitting a plan. The allowlist enforces the
  * invariant; this explains it.
  */
-const CHAT_MODE_INSTRUCTIONS = `You are in PLAN mode. You can read freely, but you cannot change anything yet.
+const CHAT_MODE_INSTRUCTIONS = `You are in PLAN mode. You can read freely. You cannot persist changes yet.
+
+Exception: filling the unsaved character create/edit form is not a persist.
+When the user asks to generate missing character fields, call
+\`propose_character_fields\` with only the empty fields. Do not call
+\`submit_plan\` for that. Do not call \`manage_character\`.
 
 Any instruction in your system prompt that names a mutating tool
 (update_world_bible, manage_beat, manage_character, manage_episode,
@@ -83,10 +93,10 @@ deliberately withheld in this mode. Their absence is expected, NOT a
 misconfiguration, and you must never report it to the user as a broken tool, a
 missing integration, or a reason the request cannot be done.
 
-When the user asks for ANY change, call \`submit_plan\` describing what you
-would do. The user approves or rejects it. On approval you are moved to BUILD
-mode with the mutating tools available, and you carry the plan out then. On
-rejection you stay here and revise.
+When the user asks for ANY persisted change, call \`submit_plan\` describing
+what you would do. The user approves or rejects it. On approval you are moved
+to BUILD mode with the mutating tools available, and you carry the plan out
+then. On rejection you stay here and revise.
 
 Answer read-only questions directly — never make the user approve a plan just
 to be told something.`

@@ -1,7 +1,6 @@
 import { TileTriggerProvider } from '@/shared/data/constants/trigger-tile-route'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import {
-  ApiframeEditModel,
   ApiframeImageModel,
   ApiframeUpscaleModel,
 } from '@/shared/ai/constants/apiframe'
@@ -99,6 +98,7 @@ export function imageGenerateModelToTileProvider(model: ImageGenerateModel): Fol
     case ApiframeImageModel.GrokImagineImage:
       return TileTriggerProvider.Grok
     case ApiframeImageModel.GptImage15:
+    case ApiframeImageModel.GptImage2:
       return TileTriggerProvider.OpenAi
     case ApiframeImageModel.Flux2Pro:
       return TileTriggerProvider.Stability
@@ -116,6 +116,7 @@ export function imageGenerateModelToImageGenProvider(model: ImageGenerateModel):
     case ApiframeImageModel.GrokImagineImage:
       return ImageGenProvider.Grok
     case ApiframeImageModel.GptImage15:
+    case ApiframeImageModel.GptImage2:
       return ImageGenProvider.OpenAi
     case ApiframeImageModel.Flux2Pro:
       return ImageGenProvider.Stability
@@ -170,11 +171,21 @@ export function resolveTileFollowUpModel(
 }
 
 export function resolveMoodboardModel(source?: Record<string, string | undefined>): ImageGenerateModel {
-  return resolveImageModel(ImageEnvVar.MoodboardModel, ApiframeImageModel.NanoBanana, source)
+  return resolveImageModel(ImageEnvVar.MoodboardModel, ApiframeImageModel.Midjourney, source)
 }
 
 export function resolveStoryboardModel(source?: Record<string, string | undefined>): ImageGenerateModel {
   return resolveImageModel(ImageEnvVar.StoryboardModel, ApiframeImageModel.NanoBanana, source)
+}
+
+export function resolveCombinedStoryboardModel(
+  source?: Record<string, string | undefined>,
+): ImageGenerateModel {
+  return resolveImageModel(
+    ImageEnvVar.CombinedStoryboardModel,
+    ApiframeImageModel.NanoBananaPro,
+    source,
+  )
 }
 
 export function resolveEpisodePosterModel(
@@ -322,12 +333,12 @@ export function resolveDefaultUpscaleProvider(
 
 export function resolveRepaintModel(
   source?: Record<string, string | undefined>,
-): ApiframeEditModel {
+): ApiframeImageModel {
   const raw = readEnv(ImageEnvVar.RepaintModel, source)
-  if (!raw) return ApiframeEditModel.FluxFillPro
+  if (!raw) return ApiframeImageModel.GptImage2
   const normalized = raw.trim().toLowerCase()
-  if (!REPAINT_MODELS.has(normalized)) return ApiframeEditModel.FluxFillPro
-  return ApiframeEditModel.FluxFillPro
+  if (!REPAINT_MODELS.has(normalized)) return ApiframeImageModel.GptImage2
+  return ApiframeImageModel.GptImage2
 }
 
 export function hasApiframeApiKey(source?: Record<string, string | undefined>): boolean {

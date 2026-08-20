@@ -139,7 +139,9 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
             episodeId={currentEpisodeId || undefined}
             storyboardUrl={storyPlan?.storyboardUrl}
             isGeneratingCombined={isGeneratingStoryboard}
-            onGenerateCombined={handleStoryboardTrigger}
+            onGenerateCombined={(model, look) =>
+              void handleStoryboardTrigger(undefined, model, look)
+            }
             projectId={routeProjectId ?? ''}
             premise={episodePremiseFromPlan(storyPlan)}
             isChatBusy={isChatBusy}

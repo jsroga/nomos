@@ -8,6 +8,7 @@ import {
   type MjGridPayload,
   type WorldGenReviewPayload,
 } from '@/domains/2d-canvas/state/constants/world-ui-store'
+import type { RepaintResult } from '@/domains/2d-canvas/constants/repaint-service'
 import type { SelectResult } from './client-services/select-mode-service'
 import { omitRecordKey } from './utils/omit-record-key'
 
@@ -49,10 +50,7 @@ export interface WorldUiState {
   isRepaintMode: boolean
   brushSize: number
   repaintStrokes: Array<{ x: number; y: number; radius?: number }>
-  repaintResult: {
-    imageUrl: string
-    bounds: { x: number; y: number; width: number; height: number }
-  } | null
+  repaintResult: RepaintResult | null
   repaintPrompt: string
   debugInfo: { image: string; mask: string } | null
   generationDebugInfo: Record<string, unknown> | null
@@ -91,12 +89,7 @@ export interface WorldUiState {
   setBrushSize: (size: number) => void
   addRepaintStroke: (point: { x: number; y: number; radius?: number }) => void
   clearRepaintStrokes: () => void
-  setRepaintResult: (
-    result: {
-      imageUrl: string
-      bounds: { x: number; y: number; width: number; height: number }
-    } | null
-  ) => void
+  setRepaintResult: (result: RepaintResult | null) => void
   setRepaintPrompt: (prompt: string) => void
   setDebugInfo: (info: { image: string; mask: string } | null) => void
   setGenerationDebugInfo: (info: Record<string, unknown> | null) => void

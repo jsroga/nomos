@@ -3,9 +3,10 @@ import { useWorldStore } from '@/domains/2d-canvas'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { getSupabaseClient } from '@/shared/data/storage/supabaseClient'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
-import { UrlScheme } from '@/shared/data/constants/protocol'
+import { FsDirectory, UrlScheme } from '@/shared/data/constants/protocol'
 import { deleteProjectImage } from '@/domains/2d-canvas/core/io/world-data.api'
 import { ASSETS_PANEL_COPY } from '@/domains/2d-canvas/ui/constants/assets-panel'
+import { shouldDeleteLocalAssetImage } from './should-delete-local-asset-image'
 import { Loader2, Trash2, AlertTriangle, Cuboid } from 'lucide-react'
 import { Button } from '@/components/Button'
 import {
@@ -64,11 +65,12 @@ export const AssetsPanel: React.FC<AssetsPanelProps> = ({ showHelpText = true, o
       const { error } = await supabase.from(DB_TABLE.ASSETS).delete().eq(DB_COLUMN.ID, assetToDelete.id)
       if (error) throw error
 
-      // Delete file via API
-      await deleteProjectImage({
-        projectId: currentProject?.id ?? '',
-        filename: `assets/${assetToDelete.filename}`,
-      })
+      if (shouldDeleteLocalAssetImage(assetToDelete.filename)) {
+        await deleteProjectImage({
+          projectId: currentProject?.id ?? '',
+          filename: `${FsDirectory.Assets}/${assetToDelete.filename}`,
+        })
+      }
 
       // Update local state
       removeAsset(assetToDelete.id)

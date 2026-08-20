@@ -1,11 +1,12 @@
 import { proposeAssistantEpisodeUpdate } from '@/domains/storyteller/state/utils/propose-assistant-episode-update'
 import {
   proposeAssistantBibleUpdates,
+  proposalsFromWrittenBibleFields,
   type ProposedBibleSectionUpdate,
 } from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
 import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
 import { AssistantGenerationPhase } from '@/shared/chat/assistant/derive-assistant-generation-activity'
-import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { CharacterDraftChatSection, GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import {
   recordArrayFromJson,
   recordFromJson,
@@ -17,14 +18,16 @@ import type { ProjectContext } from '@/shared/chat'
 import {
   formatBibleSectionList,
   isNonBibleToolPayload,
+  mergeToolArgFields,
 } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
 import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
 import { resolveAddToWorldCommit } from '@/domains/storyteller/state/utils/resolve-add-to-world-target'
+import { characterDraftFieldsFromToolArgs } from '@/domains/storyteller/state/utils/character-draft-fields-from-tool'
 import { StorytellerChatTool, StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { ActionType } from '@/domains/storyteller/core/types/enums'
 import type { StreamAgentAction } from '@/domains/storyteller/core/types/action-types'
-import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { AssistantChatBodyKey, ChatMessageRole } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import {
   episodePremiseFromToolArgs,
@@ -119,6 +122,8 @@ export function proposalsFromCompletedToolCall(
   episodeId?: string | null,
   requestedSection?: string,
 ): ProposedBibleSectionUpdate[] {
+  if (requestedSection === CharacterDraftChatSection.Form) return []
+  if (call.toolName === StorytellerChatTool.ProposeCharacterFields) return []
   const bibleProposals = proposeAssistantBibleUpdates(call, episodeId, requestedSection)
   if (bibleProposals.length > 0) return bibleProposals
   const episodeProposal = proposeAssistantEpisodeUpdate(call, episodeId)
@@ -213,6 +218,7 @@ export function chatFallbackAddToWorldTargets(input: {
   chatText: string
   requestedSection?: string
 }): ProposedBibleSectionUpdate[] | null {
+  if (input.requestedSection === CharacterDraftChatSection.Form) return null
   if (isNonBibleToolPayload(input.toolArgs)) return null
   const lastPreview = recordFromJson(input.lastPreview)
   const episodePremise = pickEpisodePremise([
@@ -262,4 +268,54 @@ export function mapAssistantPhase(phase: AssistantGenerationPhase): GenerationAc
     case AssistantGenerationPhase.Error:
       return GenerationActivityPhase.Error
   }
+}
+
+export interface ShouldShowAddToWorldInput {
+  role: string
+  requestedSection?: string
+  toolNames: readonly string[]
+  toolArgs: readonly Record<string, unknown>[]
+}
+
+enum EpisodeManageToolId {
+  ManageEpisode = 'manage_episode',
+}
+
+function isProposeCharacterFieldsTurn(toolNames: readonly string[]): boolean {
+  return toolNames.some(name => name === StorytellerChatTool.ProposeCharacterFields)
+}
+
+function hasCommittableBibleOrBeatWrite(
+  toolNames: readonly string[],
+  toolArgs: readonly Record<string, unknown>[],
+): boolean {
+  if (toolNames.includes(StorytellerChatTool.UpdateWorldBible)) return true
+  if (toolNames.includes(EpisodeManageToolId.ManageEpisode)) return true
+  if (toolNames.includes(StorytellerChatTool.ManageBeat) && isBeatCreateToolArgs(toolArgs)) {
+    return true
+  }
+  if (isBeatCreateToolArgs(toolArgs)) return true
+  return proposalsFromWrittenBibleFields(mergeToolArgFields(toolArgs)).length > 0
+}
+
+export function shouldShowAddToWorld(input: ShouldShowAddToWorldInput): boolean {
+  if (input.role !== ChatMessageRole.Assistant) return false
+  if (isCharacterDraftAddToWorldTurn(input)) return true
+  if (input.requestedSection === CharacterDraftChatSection.Form) return false
+  return hasCommittableBibleOrBeatWrite(input.toolNames, input.toolArgs)
+}
+
+export function isCharacterDraftAddToWorldTurn(input: {
+  requestedSection?: string
+  toolNames?: readonly string[]
+  toolArgs?: readonly Record<string, unknown>[]
+}): boolean {
+  if (isProposeCharacterFieldsTurn(input.toolNames ?? [])) return true
+  if (input.requestedSection !== CharacterDraftChatSection.Form) return false
+  if (characterDraftFieldsFromToolArgs(input.toolArgs ?? []) !== null) return true
+  const store = getStorytellerUiStore()
+  return (
+    store.characterDraftFields !== null &&
+    store.characterDraftFieldsSeq > store.characterDraftResolvedSeq
+  )
 }

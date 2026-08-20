@@ -1,6 +1,4 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
-import fs from 'fs'
-import path from 'path'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import {
   logLLMRequestStart,
@@ -8,27 +6,35 @@ import {
   logLLMRequestError,
 } from '@/trigger/utils/llm-logger'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
 import {
   generateMidjourneyImages,
   pickApiframeImageUrl,
 } from '@/shared/ai/apiframe'
-import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
 import {
-  BufferEncoding,
-  FsDirectory,
-} from '@/shared/data/constants/protocol'
+  ApiframeGenerateAspectRatio,
+  ApiframeImageField,
+  ApiframeImageModel,
+  MIDJOURNEY_VERSION,
+} from '@/shared/ai/constants/apiframe'
+import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
+import { BufferEncoding } from '@/shared/data/constants/protocol'
+import { MidjourneyParamFlag } from '@/shared/data/server/midjourney-params'
+import { appendStorytellerLookSref } from './constants/storyteller-look-sref'
+import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'
 import {
   MOODBOARD_BASE64_LABEL,
   MOODBOARD_GEMINI_NO_IMAGE,
   MOODBOARD_IMAGE_GEN_FAILED,
   MOODBOARD_APIFRAME_NO_IMAGE,
   MOODBOARD_APIFRAME_NO_JOB,
+  MOODBOARD_DOWNLOAD_FAILED,
   MOODBOARD_LLM_TASK,
   MOODBOARD_METADATA_DIFFUSION_JOB_ID,
   MOODBOARD_METADATA_PROGRESS,
   MOODBOARD_METADATA_STAGE,
-  MOODBOARD_PROMPT_SUFFIX,
+  wrapMoodboardScene,
+  isMoodboardStyleRefUrl,
+  moodboardStyleReferenceForPrompt,
   MOODBOARD_STAGE_DOWNLOADING,
   MOODBOARD_STAGE_SAVING,
   MOODBOARD_STAGE_SUBMITTING,
@@ -37,55 +43,54 @@ import {
 
 export interface GenerateMoodboardPayload {
   projectId: string
-  prompts: string[]
-  styleReference?: string
+  prompts?: string[]
+  promptIndex?: number
+  worldDesc?: string
+  overview?: string
   replaceIndex?: number
+  styleReferenceUrl?: string
   providerConfig: {
     provider: ImageGenProvider
     apiKey: string
     modelId?: string
-    styleReferenceUrls?: string[]
   }
 }
 
-function collectStyleReferences(
-  styleReference?: string,
-  styleReferenceUrls?: string[],
-): string[] {
-  return [...(styleReference ? [styleReference] : []), ...(styleReferenceUrls || [])].filter(Boolean)
+interface MoodboardGeneratedImage {
+  base64: string
+  publicUrl?: string
 }
 
-function buildMidjourneyPrompt(enhancedPrompt: string, allStyleRefs: string[]): string {
-  const imagePromptPart = allStyleRefs.length > 0 ? `${allStyleRefs[0]} ` : ''
-  let fullPrompt = `${imagePromptPart}${enhancedPrompt} --v 7 --ar 16:9`
-  if (allStyleRefs.length > 0) fullPrompt += ` --sref ${allStyleRefs.join(' ')}`
-  return fullPrompt
+export function buildMoodboardMidjourneyPrompt(scene: string, styleReferenceUrl?: string): string {
+  const base = `${wrapMoodboardScene(scene)} ${MidjourneyParamFlag.Version} ${MIDJOURNEY_VERSION} ${MidjourneyParamFlag.AspectRatio} ${ApiframeGenerateAspectRatio.Widescreen}`
+  return appendStorytellerLookSref(base, styleReferenceUrl ? [styleReferenceUrl] : [])
 }
 
-async function downloadImageAsBase64(imageUrl: string): Promise<string | null> {
+async function downloadImageAsBase64(imageUrl: string): Promise<string> {
   await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_DOWNLOADING)
   const imgRes = await fetch(imageUrl)
-  if (!imgRes.ok) return null
+  if (!imgRes.ok) {
+    throw new Error(`${MOODBOARD_DOWNLOAD_FAILED}: ${imgRes.status}`)
+  }
   return Buffer.from(await imgRes.arrayBuffer()).toString(BufferEncoding.Base64)
 }
 
 async function generateMidjourneyImage(
   prompt: string,
   apiKey: string,
-  allStyleRefs: string[],
   promptIndex: number,
-): Promise<string | null> {
-  const fullPrompt = buildMidjourneyPrompt(`${prompt}${MOODBOARD_PROMPT_SUFFIX}`, allStyleRefs)
+  styleReferenceUrl?: string,
+): Promise<MoodboardGeneratedImage> {
+  const fullPrompt = buildMoodboardMidjourneyPrompt(prompt, styleReferenceUrl)
   const requestPayload = {
     model: ApiframeImageModel.Midjourney,
     prompt: fullPrompt,
-    midjourneyParams: { aspect_ratio: '16:9' },
+    midjourneyParams: { [ApiframeImageField.AspectRatio]: ApiframeGenerateAspectRatio.Widescreen },
   }
   logLLMRequestStart({
     provider: ImageGenProvider.Midjourney,
     model: ApiframeImageModel.Midjourney,
     prompt: fullPrompt,
-    inputImageUrls: allStyleRefs.length > 0 ? allStyleRefs : undefined,
     input: requestPayload,
     metadata: { task: MOODBOARD_LLM_TASK, promptIndex },
   })
@@ -93,7 +98,7 @@ async function generateMidjourneyImage(
   try {
     await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_WAITING)
     const result = await generateMidjourneyImages(fullPrompt, apiKey, {
-      aspectRatio: '16:9',
+      aspectRatio: ApiframeGenerateAspectRatio.Widescreen,
       maxAttempts: 90,
       intervalMs: 3000,
     })
@@ -109,7 +114,7 @@ async function generateMidjourneyImage(
         input: requestPayload,
         output: result,
       })
-      return null
+      throw new Error(MOODBOARD_APIFRAME_NO_IMAGE)
     }
     logLLMRequestComplete({
       provider: ImageGenProvider.Midjourney,
@@ -118,7 +123,10 @@ async function generateMidjourneyImage(
       outputImageUrls: [imageUrl],
       output: result,
     })
-    return downloadImageAsBase64(imageUrl)
+    return {
+      base64: await downloadImageAsBase64(imageUrl),
+      publicUrl: imageUrl,
+    }
   } catch (error: unknown) {
     logLLMRequestError({
       provider: ImageGenProvider.Midjourney,
@@ -127,7 +135,9 @@ async function generateMidjourneyImage(
       error: getErrorMessage(error) || MOODBOARD_APIFRAME_NO_JOB,
       input: requestPayload,
     })
-    return null
+    throw error instanceof Error
+      ? error
+      : new Error(getErrorMessage(error) || MOODBOARD_APIFRAME_NO_JOB)
   }
 }
 
@@ -135,16 +145,14 @@ async function generateNanoBananaImage(
   prompt: string,
   apiKey: string,
   modelId: string | undefined,
-  allStyleRefs: string[],
   promptIndex: number,
-): Promise<string | null> {
-  const enhancedPrompt = `${prompt}${MOODBOARD_PROMPT_SUFFIX}`
+): Promise<MoodboardGeneratedImage> {
+  const enhancedPrompt = wrapMoodboardScene(prompt)
   const model = modelId || ApiframeImageModel.NanoBanana
   logLLMRequestStart({
     provider: ImageGenProvider.NanoBanana,
     model,
     prompt: enhancedPrompt,
-    inputImageUrls: allStyleRefs.length > 0 ? allStyleRefs : undefined,
     metadata: { task: MOODBOARD_LLM_TASK, promptIndex, provider: ImageGenProvider.NanoBanana },
   })
   try {
@@ -152,8 +160,7 @@ async function generateNanoBananaImage(
       prompt: enhancedPrompt,
       apiKey,
       modelId,
-      imageInputUrls: allStyleRefs.length > 0 ? allStyleRefs : undefined,
-      aspectRatio: '16:9',
+      aspectRatio: ApiframeGenerateAspectRatio.Widescreen,
     })
     logLLMRequestComplete({
       provider: ImageGenProvider.NanoBanana,
@@ -162,7 +169,7 @@ async function generateNanoBananaImage(
       outputImageUrls: [MOODBOARD_BASE64_LABEL],
       output: { hasImage: true },
     })
-    return imageBase64
+    return { base64: imageBase64 }
   } catch (error: unknown) {
     logLLMRequestError({
       provider: ImageGenProvider.NanoBanana,
@@ -170,7 +177,9 @@ async function generateNanoBananaImage(
       prompt: enhancedPrompt,
       error: getErrorMessage(error) || MOODBOARD_GEMINI_NO_IMAGE,
     })
-    return null
+    throw error instanceof Error
+      ? error
+      : new Error(getErrorMessage(error) || MOODBOARD_GEMINI_NO_IMAGE)
   }
 }
 
@@ -188,60 +197,76 @@ async function generateMoodboardImage(
   prompt: string,
   apiKey: string,
   modelId: string | undefined,
-  allStyleRefs: string[],
   promptIndex: number,
-): Promise<string | null> {
+  styleReferenceUrl?: string,
+): Promise<MoodboardGeneratedImage> {
   if (isMidjourneyMoodboard(provider, modelId)) {
-    return generateMidjourneyImage(prompt, apiKey, allStyleRefs, promptIndex)
+    return generateMidjourneyImage(prompt, apiKey, promptIndex, styleReferenceUrl)
   }
-  return generateNanoBananaImage(prompt, apiKey, modelId, allStyleRefs, promptIndex)
+  return generateNanoBananaImage(prompt, apiKey, modelId, promptIndex)
 }
 
-function saveMoodboardImage(projectId: string, imageBase64: string): string {
+async function saveMoodboardImage(
+  projectId: string,
+  image: MoodboardGeneratedImage,
+): Promise<string> {
   const filename = `mood_${Date.now()}_${Math.random().toString(36).substring(7)}.png`
-  const projectDir = path.join(
-    process.cwd(),
-    FsDirectory.Public,
-    FsDirectory.Projects,
+  const persistedUrl = await persistGeneratedImage({
     projectId,
-  )
-  if (!fs.existsSync(projectDir)) fs.mkdirSync(projectDir, { recursive: true })
-  fs.writeFileSync(
-    path.join(projectDir, filename),
-    Buffer.from(imageBase64, BufferEncoding.Base64),
-  )
-  return filename
+    filename,
+    bytes: Buffer.from(image.base64, BufferEncoding.Base64),
+  })
+  return resolveDurablePublicImageUrl(persistedUrl, image.publicUrl ?? persistedUrl)
 }
 
 export async function generateAllMoodboardImages(
-  payload: GenerateMoodboardPayload,
-  allStyleRefs: string[],
+  payload: GenerateMoodboardPayload & { prompts: string[] },
 ): Promise<string[]> {
-  const { projectId, prompts, providerConfig } = payload
+  const { projectId, prompts, providerConfig, replaceIndex } = payload
   const generatedFilenames: string[] = []
+  let keyImageUrl = payload.styleReferenceUrl
+  let lastError: unknown
   for (let i = 0; i < prompts.length; i++) {
     await metadata.set(MOODBOARD_METADATA_STAGE, `generating_image_${i + 1}_of_${prompts.length}`)
-    await metadata.set(MOODBOARD_METADATA_PROGRESS, Math.round((i / prompts.length) * 70))
+    await metadata.set(
+      MOODBOARD_METADATA_PROGRESS,
+      Math.round(((i + 1) / (prompts.length + 1)) * 80),
+    )
     try {
-      const imageBase64 = await generateMoodboardImage(
+      const styleReferenceUrl = moodboardStyleReferenceForPrompt({
+        replaceIndex,
+        promptOffset: i,
+        keyImageUrl,
+      })
+      const generated = await generateMoodboardImage(
         providerConfig.provider,
         prompts[i],
         providerConfig.apiKey,
         providerConfig.modelId,
-        allStyleRefs,
         i,
+        styleReferenceUrl,
       )
-      if (imageBase64) {
-        await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_SAVING)
-        generatedFilenames.push(saveMoodboardImage(projectId, imageBase64))
+      await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_SAVING)
+      generatedFilenames.push(await saveMoodboardImage(projectId, generated))
+      if (
+        replaceIndex === undefined &&
+        i === 0 &&
+        generated.publicUrl &&
+        isMoodboardStyleRefUrl(generated.publicUrl)
+      ) {
+        keyImageUrl = generated.publicUrl
       }
     } catch (error) {
-      logger.error(MOODBOARD_IMAGE_GEN_FAILED, { prompt: prompts[i], error })
+      lastError = error
+      logger.error(MOODBOARD_IMAGE_GEN_FAILED, {
+        prompt: prompts[i],
+        error: getErrorMessage(error),
+      })
     }
   }
+  if (generatedFilenames.length === 0) {
+    if (lastError instanceof Error) throw lastError
+    throw new Error(getErrorMessage(lastError) || MOODBOARD_IMAGE_GEN_FAILED)
+  }
   return generatedFilenames
-}
-
-export function collectMoodboardStyleReferences(payload: GenerateMoodboardPayload): string[] {
-  return collectStyleReferences(payload.styleReference, payload.providerConfig.styleReferenceUrls)
 }

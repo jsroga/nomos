@@ -35,9 +35,20 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
     // Start with whatever is in rest
     const updateData: Record<string, unknown> = { ...rest }
 
-    // Explicitly map posterUrl to match schema key (though usually same)
     if (posterUrl) {
       updateData.posterUrl = posterUrl
+      const currentEpisode = await db.query.episodes.findFirst({
+        where: eq(episodes.id, episodeId),
+      })
+      if (currentEpisode) {
+        const currentPlan = storyPlanRecordFromJson(
+          updateData.storyPlan ?? currentEpisode.storyPlan,
+        )
+        updateData.storyPlan = {
+          ...currentPlan,
+          posterUrl,
+        }
+      }
     }
 
     // Map episode_prompt or master_prompt to schema's masterPrompt
@@ -57,7 +68,9 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
       })
 
       if (currentEpisode) {
-        const currentPlan = storyPlanRecordFromJson(currentEpisode.storyPlan)
+        const currentPlan = storyPlanRecordFromJson(
+          updateData.storyPlan ?? currentEpisode.storyPlan,
+        )
         const existingPremise = recordFromJson(currentPlan.premise)
         updateData.storyPlan = {
           ...currentPlan,

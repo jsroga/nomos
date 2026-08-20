@@ -22,6 +22,7 @@ export {
 
 export enum RepaintApiRoute {
   Repaint = '/api/repaint',
+  Status = '/api/repaint/status',
 }
 
 export enum RepaintServiceLog {
@@ -43,10 +44,12 @@ export enum RepaintServiceError {
   FailedToCreateMaskCanvas = 'Failed to create mask canvas',
   FailedToAcquireCanvasContext = 'Failed to acquire 2D canvas context for tile repaint',
   RepaintApiFailed = 'Repaint API failed',
+  RepaintTriggerFailed = 'Failed to trigger repaint task',
+  RepaintOutputMissing = 'Repaint run completed without an image',
 }
 
 export enum RepaintDefaultPrompt {
-  SeamlessBlend = 'High quality, detailed, seamless blend',
+  SeamlessBlend = 'a detailed object matching the surrounding scene',
 }
 
 export enum RepaintTilePrompt {
@@ -74,4 +77,56 @@ export enum RepaintDataUrlPrefix {
 
 export enum RepaintImageMime {
   Png = 'image/png',
+}
+
+/** Soft edge in crop pixels so GPT fill blends into unpainted tiles. */
+export const REPAINT_MASK_FEATHER_PX = 8
+
+export enum RepaintCompositeOp {
+  DestinationIn = 'destination-in',
+}
+
+export enum RepaintCanvasFilter {
+  None = 'none',
+}
+
+export enum RepaintRgba {
+  Red = 0,
+  Green = 1,
+  Blue = 2,
+  Alpha = 3,
+  Stride = 4,
+}
+
+export interface RepaintBounds {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface RepaintResult {
+  imageUrl: string
+  bounds: RepaintBounds
+  paintBounds: RepaintBounds
+}
+
+export function canvasBlurFilter(radiusPx: number): string {
+  return `blur(${radiusPx}px)`
+}
+
+export enum RepaintOutputField {
+  ImageBase64 = 'imageBase64',
+}
+
+export enum RepaintOperationId {
+  Generate = 'repaint-generate',
+}
+
+export enum RepaintOperationLabel {
+  Painting = 'Painting',
+}
+
+export enum RepaintOperationDetail {
+  Inpaint = 'Inpaint',
 }

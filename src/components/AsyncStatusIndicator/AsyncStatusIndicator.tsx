@@ -6,12 +6,12 @@ import { useGlobalStatusStore, type OperationType } from '@/shared/jobs/useGloba
 import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
-import { QueryParam } from '@/shared/data/constants/protocol'
+import { HttpStatus, QueryParam } from '@/shared/data/constants/protocol'
+import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
 import {
   TRIGGER_ACTIVE_STATUSES,
   TriggerTerminalStatus,
 } from '@/shared/jobs/constants/trigger-active-status'
-import { HttpStatus } from '@/shared/data/constants/protocol'
 import { cn } from '@/shared/data/utils'
 import { Button } from '@/components/Button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
@@ -174,7 +174,10 @@ export const AsyncStatusIndicator: React.FC = () => {
       console.log(`${AsyncStatusIndicatorLog.Checking3d} ${operation.id} with runId ${runId}`)
 
       try {
-        const res = await fetch(buildUrl('/api/trigger-3d/status', { [QueryParam.RunId]: runId }))
+        const res = await fetch(
+          buildUrl('/api/trigger-3d/status', { [QueryParam.RunId]: runId }),
+          TRIGGER_STATUS_FETCH_INIT,
+        )
 
         if (!res.ok) {
           if (res.status === HttpStatus.NOT_FOUND) {
@@ -222,7 +225,10 @@ export const AsyncStatusIndicator: React.FC = () => {
       console.log(`${AsyncStatusIndicatorLog.CheckingPortrait} ${operation.id} with taskId ${taskId}`)
 
       try {
-        const res = await fetch(buildUrl('/api/storyteller/generate-portrait/status', { taskId: taskId }))
+        const res = await fetch(
+          buildUrl('/api/storyteller/generate-portrait/status', { [QueryParam.RunId]: taskId }),
+          TRIGGER_STATUS_FETCH_INIT,
+        )
 
         if (!res.ok) {
           if (res.status === HttpStatus.NOT_FOUND) {

@@ -1,6 +1,6 @@
-import { readString } from '@/shared/data/json-guards'
+import { readNumber, readString } from '@/shared/data/json-guards'
+import { CHARACTER_DIALOG_METRIC_KEYS } from '@/domains/storyteller/core/character-missing-fields'
 import {
-  CHARACTER_DIALOG_DEFAULT_ROLE,
   CHARACTER_DIALOG_SUBMIT_CONVERT,
   CHARACTER_DIALOG_SUBMIT_CREATE,
   CHARACTER_DIALOG_SUBMIT_SAVE,
@@ -22,12 +22,22 @@ export interface CharacterFormFields {
   description: string
   mbti: string
   portraitUrl: string
-  voiceSignature: string
-  archetype: string
   motivation: string
   fatalFlaw: string
   secrets: string
   metrics: CharacterMetrics
+}
+
+export function mergeCharacterMetrics(
+  prev: CharacterMetrics,
+  patch: Record<string, unknown>,
+): CharacterMetrics {
+  const next = { ...prev }
+  for (const key of CHARACTER_DIALOG_METRIC_KEYS) {
+    const value = readNumber(patch[key])
+    if (value !== undefined) next[key] = value
+  }
+  return next
 }
 
 export function metricsFromInitialData(
@@ -57,7 +67,6 @@ export function metricsFromInitialData(
 export function psychologyFieldsFromInitialData(initialData: InitialCharacterData) {
   const psych = initialData.psychology ?? {}
   return {
-    archetype: initialData.archetype || readString(psych.archetype) || '',
     motivation: initialData.motivation || readString(psych.actualMotivation) || '',
     fatalFlaw: initialData.fatalFlaw || readString(psych.fatalFlaw) || '',
     secrets: initialData.secrets || readString(psych.secrets) || '',
@@ -72,8 +81,6 @@ export function buildCharacterPayload(fields: CharacterFormFields): Record<strin
     description,
     mbti,
     portraitUrl,
-    voiceSignature,
-    archetype,
     motivation,
     fatalFlaw,
     secrets,
@@ -86,13 +93,11 @@ export function buildCharacterPayload(fields: CharacterFormFields): Record<strin
     description,
     mbti,
     portraitUrl,
-    voiceSignature,
     ...metrics,
-    role: role || CHARACTER_DIALOG_DEFAULT_ROLE,
+    role,
     transformation: 0,
     characterPrompt: `You are ${name}. ${description}`,
     psychology: {
-      ...(archetype ? { archetype } : {}),
       ...(motivation ? { actualMotivation: motivation } : {}),
       ...(fatalFlaw ? { fatalFlaw } : {}),
       ...(secrets ? { secrets } : {}),
@@ -122,12 +127,10 @@ export function resetFormFields(): CharacterFormFields {
   return {
     name: '',
     gender: '',
-    role: CHARACTER_DIALOG_DEFAULT_ROLE,
+    role: '',
     description: '',
     mbti: '',
     portraitUrl: '',
-    voiceSignature: '',
-    archetype: '',
     motivation: '',
     fatalFlaw: '',
     secrets: '',

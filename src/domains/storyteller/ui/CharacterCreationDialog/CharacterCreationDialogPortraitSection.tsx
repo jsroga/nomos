@@ -1,7 +1,6 @@
 import { Button } from '@/components/Button'
 import { Wand2 } from 'lucide-react'
 import { StorytellerImage } from '../StorytellerImage'
-import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
 import {
   CHARACTER_DIALOG_PORTRAIT_STATUS_PICK,
   CHARACTER_DIALOG_PORTRAIT_STATUS_POWERED_BY,
@@ -42,8 +41,8 @@ export function CharacterCreationDialogPortraitSection({
   onSetGridImageUrl,
 }: CharacterCreationDialogPortraitSectionProps) {
   const showVariantPicker = canPickPortraitVariant(gridImageUrl)
-  const isChatBusy = useStorytellerChatBusy()
-  const generateDisabled = isGeneratingPortrait || isChatBusy
+  const hasDescription = description.trim().length > 0
+  const generateDisabled = isGeneratingPortrait || !hasDescription
 
   return (
     <div className="space-y-2">
@@ -54,8 +53,8 @@ export function CharacterCreationDialogPortraitSection({
           alt={name || 'Character Portrait'}
           isLoading={isGeneratingPortrait}
           aspectRatio="aspect-square"
-          emptyLabel={description ? 'Ready to Imagine' : 'Describe character first'}
-          onGenerate={!name && !description ? undefined : onGeneratePortrait}
+          emptyLabel={hasDescription ? 'Ready to Imagine' : 'Describe character first'}
+          onGenerate={hasDescription ? onGeneratePortrait : undefined}
           overlay={
             <div className="flex flex-col gap-2 w-full px-2">
               {showVariantPicker && (

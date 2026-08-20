@@ -13,7 +13,11 @@ export enum BibleToolError {
   NoFields = 'No bible fields to update',
   NoFieldsForSectionPrefix = 'No fields allowed for section "',
   NoFieldsForSectionSuffix = '" in this tool call',
+  ProjectIdRequired = 'projectId is required from the open workspace',
 }
+
+/** Omit from tool args — the authenticated request injects it. */
+export { INJECTED_PROJECT_ID_DESC as BIBLE_TOOL_PROJECT_ID_DESC } from './manage-tools-wire'
 
 export enum BibleToolMessage {
   ProposedPrefix = 'Proposed Story Plan updates (',

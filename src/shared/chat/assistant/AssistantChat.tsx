@@ -34,7 +34,7 @@ import { isPlainObject } from '@/shared/data/json-guards'
 import { AssistantThread } from './AssistantThread'
 import { AskUserToolUI } from './AssistantHumanTool'
 import { useAssistantMentions } from './useAssistantMentions'
-import { AssistantAddToWorldProvider, type AddToWorldPayload } from './AssistantAddToWorldContext'
+import { AssistantAddToWorldProvider, type AddToWorldPayload, type CanAddToWorldInput } from './AssistantAddToWorldContext'
 import {
   AssistantChatStreamStatus,
   isAssistantTurnBusy,
@@ -143,6 +143,8 @@ interface AssistantChatProps {
   sectionLabelsFromToolArgs?: (toolArgs: readonly Record<string, unknown>[]) => string[]
   /** True after Accept / reject leaves nothing for this message to commit. */
   isAddToWorldSettled?: (toolArgs: readonly Record<string, unknown>[]) => boolean
+  /** When set, Add to World is hidden unless this returns true. */
+  canAddToWorld?: (input: CanAddToWorldInput) => boolean
   /** Domain-injected markdown/chip renderers (Writers Room entity links). */
   chatRenderers?: ChatRenderers
 }
@@ -206,6 +208,7 @@ export function AssistantChat({
   onAddToWorld,
   sectionLabelsFromToolArgs,
   isAddToWorldSettled,
+  canAddToWorld,
   chatRenderers,
 }: AssistantChatProps) {
   const history = useMemo(
@@ -386,6 +389,7 @@ export function AssistantChat({
       onAddToWorld={onAddToWorld}
       sectionLabelsFromToolArgs={sectionLabelsFromToolArgs}
       isAddToWorldSettled={isAddToWorldSettled}
+      canAddToWorld={canAddToWorld}
     >
       <AskUserToolUI />
       <AssistantChatBody

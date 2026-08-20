@@ -10,6 +10,7 @@ import { MentionCategoryId } from '../constants/mention-types'
 import {
   GAME_ENTITY_LOG_PREFIX,
   iconForEntityType,
+  isIgnorableGameEntityFetchError,
   labelForSourceDomain,
 } from '../constants/game-entity-mentions'
 import { fetchGameEntitiesForMentions } from '../io/chat-ui.api'
@@ -21,14 +22,20 @@ import { fetchGameEntitiesForMentions } from '../io/chat-ui.api'
  */
 export const gameEntityProvider: MentionProvider = {
   category: MentionCategoryId.Entity,
-  getItems: async (filter: string, context: ProjectContext): Promise<MentionItem[]> => {
+  getItems: async (
+    filter: string,
+    context: ProjectContext,
+    signal?: AbortSignal,
+  ): Promise<MentionItem[]> => {
     if (!context.projectId) return []
 
     let entities
     try {
-      entities = await fetchGameEntitiesForMentions(context.projectId, filter)
+      entities = await fetchGameEntitiesForMentions(context.projectId, filter, signal)
     } catch (error) {
-      console.error(GAME_ENTITY_LOG_PREFIX, error)
+      if (!isIgnorableGameEntityFetchError(error)) {
+        console.error(GAME_ENTITY_LOG_PREFIX, error)
+      }
       return []
     }
 

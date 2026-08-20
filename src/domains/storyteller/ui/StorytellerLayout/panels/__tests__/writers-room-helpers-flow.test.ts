@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AssistantGenerationPhase } from '@/shared/chat/assistant/derive-assistant-generation-activity'
 import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums'
+import { CharacterDraftChatSection, StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page-wire'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page-wire'
 import { UPDATE_WORLD_BIBLE_TOOL_ID } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { EPISODE_TOOL_ID, ManageToolOperation } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { recordFromJson } from '@/shared/data/json-guards'
@@ -301,6 +301,30 @@ describe('proposalsFromCompletedToolCall', () => {
     })
 
     expect(proposals.map(item => item.section)).toEqual([BibleSection.WORLD_DESCRIPTION])
+  })
+
+  it('does not propose Overview on a character-draft turn', () => {
+    const proposals = proposalsFromCompletedToolCall(
+      {
+        toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+        args: { worldDescription: OVERVIEW },
+        result: { success: true, updatedFields: ['worldDescription'] },
+      },
+      undefined,
+      CharacterDraftChatSection.Form,
+    )
+
+    expect(proposals).toEqual([])
+  })
+
+  it('does not propose bible sections from propose_character_fields', () => {
+    const proposals = proposalsFromCompletedToolCall({
+      toolName: StorytellerChatTool.ProposeCharacterFields,
+      args: { description: OVERVIEW, motivation: 'stay alive' },
+      result: { success: true, fields: { description: OVERVIEW } },
+    })
+
+    expect(proposals).toEqual([])
   })
 
   it('proposes episode premise from manage_episode when bible fields are absent', () => {

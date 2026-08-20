@@ -21,8 +21,22 @@ export enum CharacterPanelCopy {
   Empty = 'No characters yet. Click + to add one.',
   Add = 'Add new character',
   Edit = 'Edit character',
+  GeneratingFields = 'Generating character fields',
+  GeneratingPortrait = 'Generating portrait',
   Toggle = 'Toggle character details',
   UnknownInitial = '?',
+}
+
+export enum CharacterExpandFieldLabel {
+  Description = 'Description',
+  Role = 'Role',
+  Gender = 'Gender',
+  Mbti = 'MBTI',
+  Motivation = 'Motivation',
+}
+
+export enum CharacterPsychologyField {
+  ActualMotivation = 'actualMotivation',
 }
 
 export function formatCastHeading(count: number): string {

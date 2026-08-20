@@ -181,7 +181,7 @@ const StoryPlanBoard: React.FC<StoryPlanBoardProps> = ({
             size="lg"
           >
             <CheckCircle className="w-4 h-4" />
-            Plan Ready — Proceed to Beats
+            Premise Ready -wh Proceed to Beats
           </Button>
         </div>
       )}

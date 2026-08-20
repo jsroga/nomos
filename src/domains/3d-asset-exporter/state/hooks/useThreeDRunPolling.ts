@@ -12,6 +12,13 @@ import {
   type MeshyResult,
 } from '../../core/types/three-d-generation'
 import { pollTrigger3dRun } from '../utils/poll-trigger-3d-run'
+import { logPollErrorUnlessAborted } from '../utils/log-poll-error-unless-aborted'
+import { readRunProgress } from '../utils/read-run-progress'
+import {
+  THREE_D_TRIGGER_MAX_POLLS,
+  THREE_D_TRIGGER_POLL_INTERVAL_MS,
+} from '../../constants/three-d-polling'
+import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
 import { ThreeDPollCopy, ThreeDPollToast } from '../../constants/three-d-poll-copy'
 
 export interface ThreeDPollSaveMetadata {
@@ -61,17 +68,18 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
     paramsRef.current = params
   })
 
-  const { currentRunId, remeshRunId, uploadRunId, assetId, meshyTaskId } = params
+  const { currentRunId, remeshRunId, uploadRunId, assetId } = params
 
   useEffect(() => {
     if (!currentRunId) return
+    let aborted = false
     const p = () => paramsRef.current
 
     void pollTrigger3dRun(
       currentRunId,
       fetchTrigger3dRunStatus,
       {
-        shouldAbort: () => !p().isMounted.current,
+        shouldAbort: () => aborted || !p().isMounted.current,
         onPoll: statusData => {
           const metadata = statusData.metadata ?? {}
           const taskId = readMeshyTaskId(metadata)
@@ -79,8 +87,9 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
             p().setMeshyTaskId(taskId)
             void p().saveMetadata({ meshy_task_id: taskId })
           }
-          if (typeof metadata.progress === 'number' && p().isMounted.current) {
-            p().setProgress(metadata.progress)
+          const progress = readRunProgress(metadata)
+          if (progress !== undefined && p().isMounted.current) {
+            p().setProgress(progress)
           }
         },
         on404: async () => {
@@ -142,24 +151,30 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
           useGlobalStatusStore.getState().removeOperation(`3d-${assetId}`)
         },
       },
-      { intervalMs: 15000, maxPolls: 120 }
+      { intervalMs: THREE_D_TRIGGER_POLL_INTERVAL_MS, maxPolls: THREE_D_TRIGGER_MAX_POLLS }
     ).catch(error => {
-      console.error(ThreeDPollCopy.PollGenError, error)
+      logPollErrorUnlessAborted(ThreeDPollCopy.PollGenError, error)
     })
-  }, [currentRunId, assetId, meshyTaskId])
+
+    return () => {
+      aborted = true
+    }
+  }, [currentRunId, assetId])
 
   useEffect(() => {
     if (!remeshRunId) return
+    let aborted = false
     const p = () => paramsRef.current
 
     void pollTrigger3dRun(
       remeshRunId,
       fetchTrigger3dRunStatus,
       {
-        shouldAbort: () => !p().isMounted.current,
+        shouldAbort: () => aborted || !p().isMounted.current,
         onPoll: statusData => {
-          if (typeof statusData.metadata?.progress === 'number' && p().isMounted.current) {
-            p().setRemeshProgress(statusData.metadata.progress)
+          const progress = readRunProgress(statusData.metadata)
+          if (progress !== undefined && p().isMounted.current) {
+            p().setRemeshProgress(progress)
           }
         },
         on404: async () => {
@@ -188,24 +203,30 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
           await p().clearRemeshState(ThreeDPollCopy.Failed)
         },
       },
-      { intervalMs: 15000, maxPolls: 120 }
+      { intervalMs: THREE_D_TRIGGER_POLL_INTERVAL_MS, maxPolls: THREE_D_TRIGGER_MAX_POLLS }
     ).catch(error => {
-      console.error(ThreeDPollCopy.PollRemeshError, error)
+      logPollErrorUnlessAborted(ThreeDPollCopy.PollRemeshError, error)
     })
+
+    return () => {
+      aborted = true
+    }
   }, [remeshRunId, assetId])
 
   useEffect(() => {
     if (!uploadRunId) return
+    let aborted = false
     const p = () => paramsRef.current
 
     void pollTrigger3dRun(
       uploadRunId,
       fetchTrigger3dRunStatus,
       {
-        shouldAbort: () => !p().isMounted.current,
+        shouldAbort: () => aborted || !p().isMounted.current,
         onPoll: statusData => {
-          if (typeof statusData.metadata?.progress === 'number' && p().isMounted.current) {
-            p().setUploadProgress(statusData.metadata.progress)
+          const progress = readRunProgress(statusData.metadata)
+          if (progress !== undefined && p().isMounted.current) {
+            p().setUploadProgress(progress)
           }
         },
         on404: async () => {
@@ -235,9 +256,13 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
           await p().clearUploadState(ThreeDPollCopy.Failed)
         },
       },
-      { intervalMs: 5000, maxPolls: 120 }
+      { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
     ).catch(error => {
-      console.error(ThreeDPollCopy.PollUploadError, error)
+      logPollErrorUnlessAborted(ThreeDPollCopy.PollUploadError, error)
     })
+
+    return () => {
+      aborted = true
+    }
   }, [uploadRunId, assetId])
 }

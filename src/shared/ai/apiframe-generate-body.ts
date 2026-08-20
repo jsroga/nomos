@@ -1,5 +1,8 @@
 import {
   APIFRAME_ASPECT_RATIO_PATTERN,
+  ApiframeGptImage2OutputFormat,
+  ApiframeGptImage2Param,
+  ApiframeGptImage2Quality,
   ApiframeImageField,
   ApiframeImageModel,
   ApiframeParamsKey,
@@ -20,8 +23,10 @@ function optionalAspectAndImages(
   if (aspectRatio) params[ApiframeImageField.AspectRatio] = aspectRatio
   const [firstImageUrl] = imageInputUrls ?? []
   if (firstImageUrl) {
-    params[imageField] =
-      imageField === ApiframeImageField.ImageInput ? imageInputUrls : firstImageUrl
+    const useUrlArray =
+      imageField === ApiframeImageField.ImageInput ||
+      imageField === ApiframeImageField.InputImages
+    params[imageField] = useUrlArray ? imageInputUrls : firstImageUrl
   }
   return params
 }
@@ -71,6 +76,17 @@ export function buildGenerateBody(options: {
         optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.ImageInput),
       )
       return body
+    case ApiframeImageModel.GptImage2: {
+      const params = optionalAspectAndImages(
+        aspectRatio,
+        imageInputUrls,
+        ApiframeImageField.InputImages,
+      )
+      params[ApiframeGptImage2Param.Quality] = ApiframeGptImage2Quality.High
+      params[ApiframeGptImage2Param.OutputFormat] = ApiframeGptImage2OutputFormat.Png
+      attachParamsIfPresent(body, ApiframeParamsKey.GptImage2, params)
+      return body
+    }
     case ApiframeImageModel.Flux2Pro:
       attachParamsIfPresent(
         body,

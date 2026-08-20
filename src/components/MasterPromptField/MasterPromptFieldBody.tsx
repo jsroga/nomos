@@ -1,16 +1,11 @@
 'use client'
 
-import { useLayoutEffect, useRef } from 'react'
 import { HtmlElementType } from '@/shared/data/constants/protocol'
 import { cn } from '@/shared/data/utils'
-import {
-  MASTER_PROMPT_CLAMP_MAX_PX,
-  MASTER_PROMPT_FADE_HEIGHT_PX,
-  MASTER_PROMPT_HEIGHT_AUTO,
-  MasterPromptFieldClass,
-  MasterPromptFieldCopy,
-} from './constants/master-prompt-field'
+import { MasterPromptFieldClass, MasterPromptFieldCopy } from './constants/master-prompt-field'
 import { formatMasterPromptCharCount } from './format-master-prompt-char-count'
+import { masterPromptBodyClassName } from './master-prompt-body-class-name'
+import { MasterPromptCollapsedFade } from './master-prompt-collapsed-mask'
 
 interface MasterPromptFieldBodyProps {
   value: string
@@ -45,37 +40,25 @@ export function MasterPromptFieldBody({
   loading,
   onBlur,
 }: MasterPromptFieldBodyProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const filled = value.trim().length > 0
-  const collapsedFill = clamp && filled && !expanded
-
-  useLayoutEffect(() => {
-    const node = textareaRef.current
-    if (!node) return
-    if (!clamp || !expanded) {
-      node.style.height = ''
-      return
-    }
-    node.style.height = MASTER_PROMPT_HEIGHT_AUTO
-    node.style.height = `${node.scrollHeight}px`
-  }, [clamp, expanded, value])
+  const collapsed = clamp && !expanded
+  const collapsedFill = collapsed && filled
 
   if (loading) return <MasterPromptLoadingSkeleton />
 
   const textarea = (
     <textarea
-      ref={textareaRef}
       value={value}
       onChange={event => onChange(event.target.value)}
       onBlur={onBlur}
       placeholder={placeholder}
-      className={cn(
-        MasterPromptFieldClass.Body,
-        !clamp && minRowsClassName,
-        collapsedFill && MasterPromptFieldClass.BodyClamped,
-        clamp && expanded && filled && MasterPromptFieldClass.BodyExpanded,
-      )}
-      style={collapsedFill ? { height: MASTER_PROMPT_CLAMP_MAX_PX } : undefined}
+      className={masterPromptBodyClassName({
+        clamp,
+        collapsedFill,
+        expanded,
+        filled,
+        minRowsClassName,
+      })}
     />
   )
 
@@ -83,11 +66,15 @@ export function MasterPromptFieldBody({
 
   return (
     <>
-      <div className={collapsedFill ? MasterPromptFieldClass.ClampFrame : undefined}>
+      <div
+        className={cn(
+          MasterPromptFieldClass.Frame,
+          collapsed && MasterPromptFieldClass.FrameClamped,
+          clamp && expanded && MasterPromptFieldClass.FrameExpanded,
+        )}
+      >
+        {collapsedFill ? <MasterPromptCollapsedFade value={value} /> : null}
         {textarea}
-        {collapsedFill ? (
-          <span className={MasterPromptFieldClass.Fade} style={{ height: MASTER_PROMPT_FADE_HEIGHT_PX }} />
-        ) : null}
       </div>
       {filled ? (
         <div className={MasterPromptFieldClass.Footer}>

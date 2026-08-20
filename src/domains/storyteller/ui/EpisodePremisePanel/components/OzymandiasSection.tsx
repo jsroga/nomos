@@ -34,7 +34,7 @@ interface OzymandiasSectionProps {
 function OzymandiasSkeleton({ config }: { config: OzymandiasSectionConfig }) {
   const skeletonTone = ozymandiasSkeletonClass(config.tone)
   return (
-    <div className={cn('p-4 bg-card rounded-md h-[100px] space-y-2', ozymandiasBorderClass(config.tone))}>
+    <div className={cn('p-4 bg-card border rounded-md h-[100px] space-y-2', ozymandiasBorderClass(config.tone))}>
       <Skeleton className={cn('h-3 w-3/4 rounded-md', skeletonTone)} />
       <Skeleton className={cn('h-3 w-full rounded-md', skeletonTone)} />
       {config.key === EpisodePremiseSectionKey.InevitableConsequence && (
@@ -76,7 +76,7 @@ function OzymandiasReadView({
   projectId: string
 }) {
   return (
-    <div className={cn('p-4 bg-card rounded-md', ozymandiasBorderClass(config.tone))}>
+    <div className={cn('p-4 bg-card border rounded-md', ozymandiasBorderClass(config.tone))}>
       <RichText
         text={value}
         projectId={projectId}

@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { submitImageGenerate, submitImageUpscale } from '../apiframe'
+import { submitImageGenerate, submitImageUpscale, submitImageEdit } from '../apiframe'
 import {
+  APIFRAME_FLUX_FILL_GUIDANCE,
+  ApiframeEditModel,
+  ApiframeFluxFillMode,
+  ApiframeGptImage2OutputFormat,
+  ApiframeGptImage2Quality,
+  ApiframeImageField,
   ApiframeImageModel,
   ApiframeParamsKey,
   ApiframeTopazModelType,
@@ -13,6 +19,7 @@ import { recordFromJson } from '@/shared/data/deep-merge'
 const API_KEY = 'afk_test'
 const PROMPT = 'a rainy harbour quay'
 const CONTEXT_URL = 'https://cdn.example.com/context.png'
+const MASK_URL = 'https://cdn.example.com/mask.png'
 const STYLE_URL = 'https://cdn.example.com/style.png'
 const ASPECT_RATIO = '1:1'
 
@@ -69,6 +76,16 @@ describe('Apiframe generate body', () => {
     })
   })
 
+  it('sends the full URL array under gptImage2Params.input_images', async () => {
+    const body = await generateWith(ApiframeImageModel.GptImage2)
+    expect(recordFromJson(body[ApiframeParamsKey.GptImage2])).toEqual({
+      aspect_ratio: ASPECT_RATIO,
+      [ApiframeImageField.InputImages]: [CONTEXT_URL, STYLE_URL],
+      quality: ApiframeGptImage2Quality.High,
+      output_format: ApiframeGptImage2OutputFormat.Png,
+    })
+  })
+
   it('omits the image field entirely for text-to-image', async () => {
     await submitImageGenerate({
       model: ApiframeImageModel.GrokImagineImage,
@@ -101,5 +118,25 @@ describe('Apiframe Topaz upscale body', () => {
       output_format: ApiframeTopazOutputFormat.Png,
     })
     expect(typeof params.upscale_factor).toBe('number')
+  })
+})
+
+describe('Apiframe Flux Fill edit body', () => {
+  it('sends the fill prompt only inside fluxFillParams', async () => {
+    await submitImageEdit({
+      apiKey: API_KEY,
+      imageUrl: CONTEXT_URL,
+      maskUrl: MASK_URL,
+      prompt: PROMPT,
+    })
+    expect(sentBody.model).toBe(ApiframeEditModel.FluxFillPro)
+    expect(sentBody).not.toHaveProperty('prompt')
+    expect(recordFromJson(sentBody[ApiframeParamsKey.FluxFill])).toEqual({
+      image: CONTEXT_URL,
+      prompt: PROMPT,
+      mask: MASK_URL,
+      mode: ApiframeFluxFillMode.Inpaint,
+      guidance: APIFRAME_FLUX_FILL_GUIDANCE,
+    })
   })
 })

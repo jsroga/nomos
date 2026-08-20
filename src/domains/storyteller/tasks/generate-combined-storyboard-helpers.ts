@@ -1,114 +1,148 @@
-import fs from 'fs'
-import path from 'path'
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
-import { BufferEncoding, FsDirectory } from '@/shared/data/constants/protocol'
-import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
+import { getErrorMessage } from '@/shared/errors/error-utils'
+import { recordFromJson } from '@/shared/data/json-guards'
+import { ContentType } from '@/shared/data/constants/protocol'
+import { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import type { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
+import type { KlingMultiPromptShot } from '@/shared/ai/apiframe-video'
+import { persistGeneratedMedia } from './persist-generated-image'
+import { beatHasImageUrl } from './constants/storyboard-video-sheet'
+import {
+  buildStoryboardMultiPrompt,
+  storyboardLookNegative,
+} from './constants/storyboard-video-prompt'
 
-interface StoryboardBeat {
+export enum CombinedStoryboardStage {
+  Summarizing = 'summarizing_prompt',
+  Composing = 'composing_sheet',
+  Uploading = 'uploading_sheet',
+  Generating = 'generating_video',
+  Voiceover = 'mixing_voiceover',
+  Saving = 'saving_video',
+  Updating = 'updating_database',
+}
+
+export enum CombinedStoryboardMetadataKey {
+  EpisodeId = 'episode_id',
+  ProjectId = 'project_id',
+  Stage = 'stage',
+  Prompt = 'prompt',
+  CorePromptSource = 'core_prompt_source',
+  Model = 'model',
+  Look = 'look',
+  Duration = 'duration',
+  StartImage = 'start_image',
+  JobId = 'apiframe_job_id',
+  BeatCount = 'beat_count',
+  VoiceoverSource = 'voiceover_source',
+  VoiceoverSkip = 'voiceover_skip',
+}
+
+export enum CombinedStoryboardLog {
+  Starting = 'Starting storyboard video generation',
+  CorePrompt = 'Storyboard core prompt',
+  Composing = 'Composing contact sheet from beat stills',
+  SheetReady = 'Contact sheet composed',
+  SheetUploaded = 'Contact sheet uploaded',
+  Prompt = 'Storyboard video prompt',
+  JobAccepted = 'Apiframe video job accepted',
+  Voiceover = 'Storyboard voice-over mix',
+  DbUpdated = 'Episode story_plan updated with storyboardUrl',
+  Completed = 'Storyboard video generation completed',
+  Failed = 'Storyboard video generation failed',
+}
+
+export const COMBINED_STORYBOARD_ERROR = {
+  FetchEpisode: 'Failed to fetch episode for storyboard update',
+  UpdatePlan: 'Failed to update episode story_plan with storyboardUrl',
+  DownloadVideo: 'Failed to download storyboard video',
+  MissingApiKey: 'Apiframe API key not provided',
+  DownloadBeatImage: 'Failed to download beat image',
+  MissingBeatFile: 'Beat image file not found',
+  MissingBeatUrl: 'Beat image URL missing after filter',
+} as const
+
+const STORY_PLAN_COL = 'story_plan'
+const STORY_PLAN_JSON_KEY = 'storyPlan'
+const EPISODES_TABLE = 'episodes'
+
+export interface CombinedStoryboardBeat {
   logline: string
   visualHook?: string
   imagePrompt?: string
+  imageUrl?: string
 }
 
-export function buildCombinedStoryboardPrompt(beats: StoryboardBeat[]): string {
-  const scenesDescription = beats
-    .map((b, i) => {
-      const desc = b.imagePrompt || b.visualHook || b.logline
-      return `[Panel ${i + 1}]: ${desc}`
-    })
-    .join('\n')
-
-  return `
-Role: You are a technical artist creating a single "Story Book Wireframe" or "Visual Script" layout.
-Task: Create ONE large image that acts as a wireframe summary of the entire episode's visual flow.
-
-Style & Format:
-- STYLE: Wireframe / Sketch / Architectural Storyboard.
-- FORMAT: A single image containing multiple "panels" or "vignettes" arranged in a logical flow (e.g., a grid, a winding path, or a comic-book layout).
-- CONTENT: You MUST include a distinct visual representation for EACH of the beat descriptions provided below.
-- LOOK: Clean lines, blueprint aesthetic or rough pencil sketch. Not a realistic movie poster.
-- DIRECTIVE: Do it like Christopher Nolan would do. Complex, non-linear, cerebral, and visually grand.
-
-Input Beat Descriptions (Visualize ALL of these in the single image):
-${scenesDescription}
-
-Execution:
-- Do not make separate images.
-- Bundle all these scenes into one cohesive "Story Map" or "Wireframe" image.
-- Labeling or numbering the beats visually within the image is encouraged.
-
-Output: A single high-resolution Board/Map image.
-`.trim()
+export function beatsHaveImageUrl(beats: CombinedStoryboardBeat[]): boolean {
+  return beats.some(beat => beatHasImageUrl(beat.imageUrl))
 }
 
-export async function fetchGeminiStoryboardImage(
-  apiKey: string,
-  prompt: string,
-  modelId?: string,
-): Promise<string> {
-  logger.info('Generating combined storyboard via Apiframe Nano Banana')
-  return generateNanoBananaBase64({
-    prompt,
-    apiKey,
-    modelId,
-    aspectRatio: '16:9',
-  })
+export function beatsWithImageUrl(
+  beats: CombinedStoryboardBeat[],
+): CombinedStoryboardBeat[] {
+  return beats.filter(beat => beatHasImageUrl(beat.imageUrl))
 }
 
-export function saveStoryboardImage(projectId: string, episodeId: string, imageBase64: string): string {
-  const filename = `combined_storyboard_${episodeId}_${Date.now()}.png`
-  const projectDir = path.join(
-    process.cwd(),
-    FsDirectory.Public,
-    FsDirectory.Projects,
-    projectId,
-  )
-
-  if (!fs.existsSync(projectDir)) {
-    fs.mkdirSync(projectDir, { recursive: true })
+export function storyboardKlingDirectorFields(
+  model: ApiframeVideoModel,
+  beats: CombinedStoryboardBeat[],
+  duration: number,
+  look: StoryboardVideoLook,
+): { negativePrompt?: string; multiPrompt?: KlingMultiPromptShot[] } {
+  if (model === ApiframeVideoModel.Seedance25) return {}
+  return {
+    negativePrompt: storyboardLookNegative(look),
+    multiPrompt: buildStoryboardMultiPrompt(beats, duration, look),
   }
+}
 
-  const buffer = Buffer.from(imageBase64, BufferEncoding.Base64)
-  fs.writeFileSync(path.join(projectDir, filename), buffer)
-  logger.info('Combined image saved to disk', { filename })
-  return filename
+export async function persistCombinedStoryboardMedia(
+  projectId: string,
+  filename: string,
+  bytes: Buffer,
+  contentType: ContentType,
+): Promise<string> {
+  const url = await persistGeneratedMedia({ projectId, filename, bytes, contentType })
+  logger.info('Combined storyboard media persisted', { url, contentType })
+  return url
 }
 
 export async function persistEpisodeStoryboardUrl(
   episodeId: string,
-  filename: string,
-  prompt: string
+  imageUrl: string,
+  prompt: string,
 ): Promise<void> {
   const supabase = createSupabaseServiceClient()
 
   const { data: episodeData, error: fetchError } = await supabase
-    .from('episodes')
-    .select('story_plan')
+    .from(EPISODES_TABLE)
+    .select(STORY_PLAN_COL)
     .eq('id', episodeId)
     .single()
 
   if (fetchError || !episodeData) {
-    logger.error(`Failed to fetch episode for update: ${fetchError?.message}`)
-    return
+    throw new Error(
+      `${COMBINED_STORYBOARD_ERROR.FetchEpisode}: ${fetchError?.message ?? getErrorMessage(fetchError)}`,
+    )
   }
 
-  const currentPlan = episodeData.story_plan || {}
-  const updatedPlan = {
-    ...currentPlan,
-    storyboardUrl: filename,
-    storyboardPrompt: prompt,
-  }
-
+  const row = recordFromJson(episodeData)
+  const currentPlan = recordFromJson(row[STORY_PLAN_COL] ?? row[STORY_PLAN_JSON_KEY])
   const { error: updateError } = await supabase
-    .from('episodes')
-    .update({ story_plan: updatedPlan })
+    .from(EPISODES_TABLE)
+    .update({
+      [STORY_PLAN_COL]: {
+        ...currentPlan,
+        storyboardUrl: imageUrl,
+        storyboardPrompt: prompt,
+      },
+    })
     .eq('id', episodeId)
 
   if (updateError) {
-    logger.error(`Failed to update episode story_plan: ${updateError.message}`)
-    return
+    throw new Error(`${COMBINED_STORYBOARD_ERROR.UpdatePlan}: ${updateError.message}`)
   }
 
-  logger.info('Episode story_plan updated with storyboardUrl')
+  logger.info(CombinedStoryboardLog.DbUpdated, { episodeId, storyboardUrl: imageUrl })
 }

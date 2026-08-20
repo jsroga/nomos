@@ -5,20 +5,24 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { DomainSidebar } from '@/components/DomainSidebar'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
-import type { AddToWorldPayload } from '@/shared/chat/assistant/AssistantAddToWorldContext'
+import type { AddToWorldPayload, CanAddToWorldInput } from '@/shared/chat/assistant/AssistantAddToWorldContext'
 import type { AssistantGenerationActivity } from '@/shared/chat/assistant/derive-assistant-generation-activity'
 import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
 import { useConfirmNewCastMembers } from '@/domains/storyteller/state/hooks/useConfirmNewCastMembers'
 import { useStorytellerChatModel } from '@/domains/storyteller/state/hooks/useStorytellerChatModel'
 import { getStorytellerUiStore, useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import {
+  CharacterDraftChatSection,
+  GenerationActivityPhase,
+} from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { type ProposedBibleSectionUpdate } from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
 import {
   addToWorldSectionLabels,
   areAddToWorldSectionsSettled,
 } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
 import { parseCreatedEpisodeFromToolCall } from '@/domains/storyteller/state/utils/parse-created-episode-from-tool'
+import { characterDraftFieldsFromToolCall } from '@/domains/storyteller/state/utils/character-draft-fields-from-tool'
 import {
   narrowEpisodePremiseProposal,
   requestedEpisodePremiseField,
@@ -31,8 +35,8 @@ import {
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
-import { StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
-import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
+import { StorytellerChatTool, StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
+import { WritersRoomAddToWorldLabel, WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
 import {
   mapAssistantPhase,
   omitSectionKey,
@@ -40,6 +44,8 @@ import {
   extraPendingSectionsMessage,
   pendingBeatArgsFromToolCalls,
   isBeatCreateToolArgs,
+  isCharacterDraftAddToWorldTurn,
+  shouldShowAddToWorld,
 } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-tool-helpers'
 import { commitWritersRoomAddToWorld } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-add-to-world'
 import { WritersRoomAssistantChat } from '@/domains/storyteller/ui/StorytellerLayout/panels/WritersRoomAssistantChat'
@@ -165,18 +171,37 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
   )
 
   const sectionLabelsFromToolArgs = useCallback(
-    (toolArgs: readonly Record<string, unknown>[]) =>
-      addToWorldSectionLabels({
+    (toolArgs: readonly Record<string, unknown>[]) => {
+      if (
+        isCharacterDraftAddToWorldTurn({
+          requestedSection: answeredSectionRef.current,
+          toolArgs,
+        })
+      ) {
+        return [WritersRoomAddToWorldLabel.CharacterForm]
+      }
+      return addToWorldSectionLabels({
         toolArgs,
         episodeId: currentEpisodeId,
         requestedSection: answeredSectionRef.current,
         rejectedSections: settledSections,
-      }),
+      })
+    },
     [currentEpisodeId, settledSections],
   )
   const beatAddsCommitted = useStorytellerUiStore(state => state.beatAddsCommitted)
+  const characterDraftFieldsSeq = useStorytellerUiStore(state => state.characterDraftFieldsSeq)
+  const characterDraftResolvedSeq = useStorytellerUiStore(state => state.characterDraftResolvedSeq)
   const isAddToWorldSettled = useCallback(
     (toolArgs: readonly Record<string, unknown>[]) => {
+      if (
+        isCharacterDraftAddToWorldTurn({
+          requestedSection: answeredSectionRef.current,
+          toolArgs,
+        })
+      ) {
+        return characterDraftFieldsSeq > 0 && characterDraftFieldsSeq <= characterDraftResolvedSeq
+      }
       if (isBeatCreateToolArgs(toolArgs)) return beatAddsCommitted
       return areAddToWorldSectionsSettled({
         toolArgs,
@@ -185,7 +210,23 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
         settledSections,
       })
     },
-    [beatAddsCommitted, currentEpisodeId, settledSections],
+    [
+      beatAddsCommitted,
+      characterDraftFieldsSeq,
+      characterDraftResolvedSeq,
+      currentEpisodeId,
+      settledSections,
+    ],
+  )
+  const canAddToWorld = useCallback(
+    (input: CanAddToWorldInput) =>
+      shouldShowAddToWorld({
+        role: input.role,
+        requestedSection: answeredSectionRef.current,
+        toolNames: input.toolNames,
+        toolArgs: input.toolArgs,
+      }),
+    [],
   )
   const handleAddToWorld = useCallback(
     async (payload: AddToWorldPayload): Promise<boolean> =>
@@ -225,10 +266,20 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
 
   const handleCompletedToolCalls = useCallback(
     (calls: readonly AssistantCompletedToolCall[], userText?: string) => {
+      for (const call of calls) {
+        const draftFields = characterDraftFieldsFromToolCall(call)
+        if (draftFields) {
+          getStorytellerUiStore().notifyCharacterDraftFields(draftFields)
+        }
+      }
       const premiseField =
         requestedEpisodePremiseField(userText ?? '') ?? requestedPremiseFieldRef.current
       if (premiseField) requestedPremiseFieldRef.current = premiseField
+      const skipBibleWrites =
+        requestedSectionRef.current === CharacterDraftChatSection.Form ||
+        calls.some(call => call.toolName === StorytellerChatTool.ProposeCharacterFields)
       void (async () => {
+        if (skipBibleWrites) return
         for (const call of calls) {
           const created = parseCreatedEpisodeFromToolCall(call)
           if (created) {
@@ -322,6 +373,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
         onAddToWorld={handleAddToWorld}
         sectionLabelsFromToolArgs={sectionLabelsFromToolArgs}
         isAddToWorldSettled={isAddToWorldSettled}
+        canAddToWorld={canAddToWorld}
       />
       {ConfirmDialogComponent}
     </DomainSidebar>

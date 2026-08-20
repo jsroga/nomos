@@ -70,7 +70,16 @@ const CANON: AssembledCanon = {
   bibleJson: '{}',
   charactersJson: '[]',
   worldRulesJson: '[]',
-  episodes: [{ episodeId: 'ep-1', title: 'One', beatsJson: '[{}]' }],
+  sectionsJson: {},
+  episodes: [
+    {
+      episodeId: 'ep-1',
+      title: 'One',
+      sequence: 1,
+      premiseJson: '{}',
+      beatsJson: '[{}]',
+    },
+  ],
   bibleLocked: false,
   lockedBeatIds: [],
   lockedCharacterIds: [],

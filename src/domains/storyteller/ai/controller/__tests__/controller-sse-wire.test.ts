@@ -1,15 +1,21 @@
 import { describe, it, expect } from 'vitest'
-import type { AgentControllerEvent, AgentControllerMessage } from '@mastra/core/agent-controller'
+import type { AgentControllerEvent, MastraDBMessage } from '@mastra/core/agent-controller'
 import {
   createControllerStreamContext,
   mapControllerEvent,
 } from '../controller-sse-wire'
 
-function assistantMessage(id: string, text: string, thinking = ''): AgentControllerMessage {
-  const content: AgentControllerMessage['content'] = []
-  if (thinking) content.push({ type: 'thinking', thinking })
-  if (text) content.push({ type: 'text', text })
-  return { id, role: 'assistant', content, createdAt: new Date() }
+function assistantMessage(id: string, text: string, thinking = ''): MastraDBMessage {
+  const parts: MastraDBMessage['content']['parts'] = []
+  if (thinking) {
+    parts.push({
+      type: 'reasoning',
+      reasoning: thinking,
+      details: [{ type: 'text', text: thinking }],
+    })
+  }
+  if (text) parts.push({ type: 'text', text })
+  return { id, role: 'assistant', createdAt: new Date(), content: { format: 2, parts } }
 }
 
 describe('mapControllerEvent — SSE frame intents', () => {

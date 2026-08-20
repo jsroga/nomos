@@ -13,6 +13,8 @@ import {
   stConsistencyUndoRequest,
   stEpisodeIdParams,
   stGenerateBeatImageRequest,
+  stGenerateCharacterFieldsRequest,
+  stGenerateCharacterFieldsResponse,
   stGeneratePortraitRequest,
   stGeneratePosterRequest,
   stJobQueuedResponse,
@@ -46,6 +48,17 @@ export function registerStorytellerJobRoutes(registry: OpenAPIRegistry): void {
     successStatus: 200,
     successSchema: stJobStatusResponse,
     successDescription: OpenApiStorytellerDescription.JobStatus,
+  })
+
+  registerJsonRoute(registry, {
+    method: OpenApiHttpMethod.Post,
+    path: OpenApiStorytellerPath.GenerateCharacterFields,
+    tags,
+    summary: OpenApiStorytellerSummary.CharacterFieldsGenerate,
+    body: stGenerateCharacterFieldsRequest,
+    successStatus: 200,
+    successSchema: stGenerateCharacterFieldsResponse,
+    successDescription: OpenApiStorytellerDescription.CharacterFields,
   })
 
   registerJsonRoute(registry, {
@@ -113,6 +126,17 @@ export function registerStorytellerJobRoutes(registry: OpenAPIRegistry): void {
     query: stRunIdQuery,
     successStatus: 200,
     successSchema: stJobStatusResponse,
+    successDescription: OpenApiStorytellerDescription.JobStatus,
+  })
+
+  registerJsonRoute(registry, {
+    method: OpenApiHttpMethod.Post,
+    path: OpenApiStorytellerPath.BeatStatus,
+    tags,
+    summary: OpenApiStorytellerSummary.BeatImageCancel,
+    query: stRunIdQuery,
+    successStatus: 200,
+    successSchema: openApiSuccessMessageSchema,
     successDescription: OpenApiStorytellerDescription.JobStatus,
   })
 

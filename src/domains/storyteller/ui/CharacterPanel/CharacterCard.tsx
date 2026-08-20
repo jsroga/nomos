@@ -9,6 +9,8 @@ import {
   characterPortraitUrl,
   type StorytellerCharacter,
 } from '@/domains/storyteller/core/entities/character-wire'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
+import { isCharacterPortraitGenerating } from '@/domains/storyteller/ui/CharacterCreationDialog/character-portrait-operation'
 import {
   CharacterPanelConfirmCopy,
   CharacterPanelCopy,
@@ -22,6 +24,41 @@ interface CharacterCardProps {
   onDelete?: (characterId: string) => void
   onEdit?: (character: StorytellerCharacter) => void
   isDeleting?: boolean
+  isGeneratingFields?: boolean
+}
+
+function CharacterCardAvatar({
+  character,
+  isGeneratingPortrait,
+}: {
+  character: StorytellerCharacter
+  isGeneratingPortrait: boolean
+}) {
+  const portraitUrl = characterPortraitUrl(character)
+  if (isGeneratingPortrait) {
+    return (
+      <div
+        className="w-[30px] h-[30px] rounded-full bg-primary/16 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.3)] text-primary flex items-center justify-center shrink-0"
+        aria-label={CharacterPanelCopy.GeneratingPortrait}
+      >
+        <Loader2 size={14} className="animate-spin" />
+      </div>
+    )
+  }
+  if (portraitUrl) {
+    return (
+      <img
+        src={portraitUrl}
+        alt={character.name}
+        className="w-[30px] h-[30px] rounded-full object-cover shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.3)] shrink-0"
+      />
+    )
+  }
+  return (
+    <div className="w-[30px] h-[30px] rounded-full bg-primary/16 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.3)] text-primary flex items-center justify-center font-mono text-xs shrink-0">
+      {character.name?.[0] || CharacterPanelCopy.UnknownInitial}
+    </div>
+  )
 }
 
 export const CharacterCard: React.FC<CharacterCardProps> = ({
@@ -29,9 +66,13 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
   onDelete,
   onEdit,
   isDeleting,
+  isGeneratingFields,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
+  const isGeneratingPortrait = useGlobalStatusStore(state =>
+    isCharacterPortraitGenerating(state.operations, character.id),
+  )
 
   const handleDelete = async () => {
     const confirmed = await confirm({
@@ -53,17 +94,10 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
           className="flex items-center gap-[11px] min-w-0 flex-1 cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          {characterPortraitUrl(character) ? (
-            <img
-              src={characterPortraitUrl(character)}
-              alt={character.name}
-              className="w-[30px] h-[30px] rounded-full object-cover shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.3)] shrink-0"
-            />
-          ) : (
-            <div className="w-[30px] h-[30px] rounded-full bg-primary/16 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.3)] text-primary flex items-center justify-center font-mono text-xs shrink-0">
-              {character.name?.[0] || CharacterPanelCopy.UnknownInitial}
-            </div>
-          )}
+          <CharacterCardAvatar
+            character={character}
+            isGeneratingPortrait={isGeneratingPortrait}
+          />
           <div className="min-w-0 flex-1">
             <div className="text-[13.5px] font-semibold text-foreground/95 truncate">{character.name}</div>
             <div className="font-mono text-[9.5px] tracking-[0.16em] uppercase text-muted-foreground/75 mt-[3px]">
@@ -72,6 +106,13 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-[9px] text-muted-foreground/65 shrink-0">
+          {isGeneratingFields && (
+            <Loader2
+              size={13}
+              className="animate-spin"
+              aria-label={CharacterPanelCopy.GeneratingFields}
+            />
+          )}
           {onEdit && (
             <button
               type={HtmlElementType.Button}

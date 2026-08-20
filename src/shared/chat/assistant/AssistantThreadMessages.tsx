@@ -31,11 +31,12 @@ import { Button } from '@/components/Button'
 import { useChatRenderers } from '../core/renderers'
 import { AssistantToolFallback } from './AssistantToolFallback'
 import { useAssistantAddToWorld } from './AssistantAddToWorldContext'
-import { createToolArgsSnapshotSelector } from './tool-args-from-assistant-content'
+import { createToolArgsSnapshotSelector, createToolNamesSnapshotSelector } from './tool-args-from-assistant-content'
 import {
   ASSISTANT_THREAD_COPY,
   CHAT_ENTITY_KIND_STYLE,
   ChatEntityKind,
+  ChatMessageRole,
   ChatMessageStatus,
   ChatPartType,
   parseAssistantEntities,
@@ -134,11 +135,14 @@ function assistantPlainText(
 
 function AddToWorldButton() {
   const messageRuntime = useMessageRuntime()
-  const { onAddToWorld, sectionLabelsFromToolArgs, isAddToWorldSettled } =
+  const { onAddToWorld, sectionLabelsFromToolArgs, isAddToWorldSettled, canAddToWorld } =
     useAssistantAddToWorld()
   const fallbackText = useMessage(m => assistantPlainText(m.content))
+  const role = useMessage(m => m.role)
   const selectToolArgs = useMemo(() => createToolArgsSnapshotSelector(), [])
+  const selectToolNames = useMemo(() => createToolNamesSnapshotSelector(), [])
   const toolArgs = useMessage(m => selectToolArgs(m.content))
+  const toolNames = useMessage(m => selectToolNames(m.content))
   const sectionLabels = useMemo(
     () => sectionLabelsFromToolArgs?.(toolArgs) ?? [],
     [sectionLabelsFromToolArgs, toolArgs],
@@ -146,6 +150,13 @@ function AddToWorldButton() {
   const [added, setAdded] = useState(false)
   const [busy, setBusy] = useState(false)
   const settled = isAddToWorldSettled?.(toolArgs) ?? false
+  const visible =
+    role === ChatMessageRole.Assistant &&
+    (canAddToWorld
+      ? canAddToWorld({ role, toolNames, toolArgs })
+      : Boolean(onAddToWorld))
+
+  if (!visible) return null
 
   if (added || settled) {
     return (

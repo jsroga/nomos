@@ -99,6 +99,7 @@ export function useGlobalErrorListener() {
       if (event.message?.includes(HmrErrorFragment.Lower) || event.message?.includes(HmrErrorFragment.Upper)) {
         return
       }
+      if (!shouldCaptureConsoleError(event.message || '')) return
 
       useErrorStore.getState().addError({
         message: event.message || ErrorBoundaryMessage.Unknown,

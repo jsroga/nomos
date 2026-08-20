@@ -1,6 +1,6 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
-import { extractProse, normalizeScore, toMastraJudgingLanguageModel } from './shared'
+import { createJudgingConfig, extractProse, normalizeScore } from './shared'
 
 /**
  * Line-level craft scorer (StoryForge port): counts stated emotion, clichés,
@@ -23,11 +23,9 @@ export const proseCraftScorer = createScorer({
   name: 'Prose Craft',
   description:
     'Line-level craft: penalizes stated emotion, clichés, and POV breaks per 1000 words.',
-  judge: {
-    model: toMastraJudgingLanguageModel(),
-    instructions:
-      'You are a strict line-editor. You count craft violations precisely and never invent them. Respond with valid JSON matching the requested schema.',
-  },
+  judge: createJudgingConfig(
+    'You are a strict line-editor. You count craft violations precisely and never invent them. Respond with valid JSON matching the requested schema.',
+  ),
 })
   .analyze({
     description: 'Count line-level craft violations',

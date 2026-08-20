@@ -7,14 +7,18 @@ import { continuityCritic } from '@/domains/storyteller/ai/agents/critics'
 import { applyCascadingFixes } from '@/domains/storyteller/core/editing/cascade-editor'
 import { getUndoManager } from '@/domains/storyteller/core/editing/undo-manager'
 import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
+import { AlignmentSection } from '@/domains/storyteller/core/constants/alignment-registry'
+import { resolveRoadmapList } from '@/domains/storyteller/core/utils/roadmap-slot'
+import { episodePremiseFromPlan } from '@/domains/storyteller/core/utils/validate-premise-for-beatboard'
+import { BeatboardPremiseFieldKey } from '@/domains/storyteller/core/constants/beatboard-premise-validation'
 import type { ConsistencyFix } from '@/domains/storyteller/core/types/consistency-types'
 import { BeatStatus } from '@/domains/storyteller/core/types/enums'
-import { recordFromJson } from '@/shared/data/json-guards'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { ConsistencyCheckKind, worldRulesFromStoryPlan } from '@/domains/storyteller/services/consistency-types'
 import { statelessGrrmAuthor } from './stateless-agents'
 import { filterLockedFixes } from './collapse-consistency-fixes'
+import { buildAlignmentScanJobs, collectAlignmentFindings } from './alignment-scan'
 import {
-  FIX_INCONSISTENCIES_AGENTIC_SCAN_PROMPT,
   FIX_INCONSISTENCIES_CANON_CHAR_BUDGET,
   FIX_INCONSISTENCIES_CANON_TRUNCATED,
   FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY,
@@ -60,6 +64,7 @@ function emptyCanon(projectId: string): AssembledCanon {
     bibleJson: FIX_INCONSISTENCIES_EMPTY_JSON_OBJECT,
     charactersJson: FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY,
     worldRulesJson: FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY,
+    sectionsJson: {},
     episodes: [],
     bibleLocked: false,
     lockedBeatIds: [],
@@ -71,7 +76,82 @@ function hasJsonContent(value: unknown): boolean {
   return Object.keys(recordFromJson(value)).length > 0
 }
 
-async function assembleCanon(projectId: string): Promise<AssembledCanon> {
+function episodePremiseJson(episode: {
+  storyPlan: unknown
+  premise: string | null
+}): string {
+  const fromPlan = episodePremiseFromPlan(episode.storyPlan) ?? {}
+  const logline =
+    readString(fromPlan[BeatboardPremiseFieldKey.Logline]) || readString(episode.premise)
+  if (logline && !readString(fromPlan[BeatboardPremiseFieldKey.Logline])) {
+    return stringifyJson(
+      { ...fromPlan, [BeatboardPremiseFieldKey.Logline]: logline },
+      FIX_INCONSISTENCIES_EMPTY_JSON_OBJECT
+    )
+  }
+  return stringifyJson(fromPlan, FIX_INCONSISTENCIES_EMPTY_JSON_OBJECT)
+}
+
+function buildSectionsJson(input: {
+  storyPlan: Record<string, unknown>
+  bibleContent: unknown
+  charactersJson: string
+  worldRulesJson: string
+  episodes: AssembledCanon['episodes']
+}): Record<string, string> {
+  const bible = recordFromJson(input.bibleContent)
+  const emptyObj = FIX_INCONSISTENCIES_EMPTY_JSON_OBJECT
+  const emptyArr = FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY
+  return {
+    [AlignmentSection.WorldDescription]: stringifyJson(
+      input.storyPlan.worldDescription ?? bible.worldDescription,
+      emptyObj
+    ),
+    [AlignmentSection.WorldRules]: input.worldRulesJson,
+    [AlignmentSection.Factions]: stringifyJson(
+      input.storyPlan.factions ?? bible.factions,
+      emptyArr
+    ),
+    [AlignmentSection.Inspirations]: stringifyJson(
+      input.storyPlan.inspirations ?? bible.inspirations,
+      emptyObj
+    ),
+    [AlignmentSection.PlotTwists]: stringifyJson(
+      input.storyPlan.plotTwists ?? bible.plotTwists,
+      emptyArr
+    ),
+    [AlignmentSection.EpisodeRoadmap]: stringifyJson(
+      resolveRoadmapList(input.storyPlan),
+      emptyArr
+    ),
+    [AlignmentSection.Cast]: input.charactersJson,
+    [AlignmentSection.Items]: stringifyJson(input.storyPlan.items ?? bible.items, emptyArr),
+    [AlignmentSection.Events]: stringifyJson(input.storyPlan.events ?? bible.events, emptyArr),
+    [AlignmentSection.Soundtracks]: stringifyJson(
+      input.storyPlan.soundtracks ?? bible.soundtracks,
+      emptyArr
+    ),
+    [AlignmentSection.EpisodePremise]: stringifyJson(
+      input.episodes.map(row => jsonValue(row.premiseJson)),
+      emptyArr
+    ),
+    [AlignmentSection.Beats]: stringifyJson(
+      input.episodes.map(row => jsonValue(row.beatsJson)),
+      emptyArr
+    ),
+  }
+}
+
+function jsonValue(text: string): unknown {
+  try {
+    const value: unknown = JSON.parse(text)
+    return value
+  } catch {
+    return null
+  }
+}
+
+export async function assembleCanon(projectId: string): Promise<AssembledCanon> {
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
   if (!project) return emptyCanon(projectId)
 
@@ -101,6 +181,8 @@ async function assembleCanon(projectId: string): Promise<AssembledCanon> {
     chunks.push({
       episodeId: episode.id,
       title: episode.title ?? FIX_INCONSISTENCIES_UNTITLED_EPISODE,
+      sequence: episode.sequence,
+      premiseJson: episodePremiseJson(episode),
       beatsJson: stringifyJson(episodeBeats, FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY),
     })
   }
@@ -111,15 +193,25 @@ async function assembleCanon(projectId: string): Promise<AssembledCanon> {
   const empty =
     !hasBeats && projectCharacters.length === 0 && !hasJsonContent(bibleContent)
 
+  const charactersJson = stringifyJson(projectCharacters, FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY)
+  const worldRulesJson = stringifyJson(
+    worldRulesFromStoryPlan(storyPlan),
+    FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY
+  )
+
   return {
     empty,
     projectId,
     bibleJson: stringifyJson(bibleContent, FIX_INCONSISTENCIES_EMPTY_JSON_OBJECT),
-    charactersJson: stringifyJson(projectCharacters, FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY),
-    worldRulesJson: stringifyJson(
-      worldRulesFromStoryPlan(storyPlan),
-      FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY
-    ),
+    charactersJson,
+    worldRulesJson,
+    sectionsJson: buildSectionsJson({
+      storyPlan,
+      bibleContent,
+      charactersJson,
+      worldRulesJson,
+      episodes: chunks,
+    }),
     episodes: chunks,
     bibleLocked: Boolean(bibleRow?.isLocked),
     lockedBeatIds,
@@ -149,30 +241,9 @@ async function scanChunk(prompt: string): Promise<ContinuityFinding[]> {
 }
 
 async function agenticScan(canon: AssembledCanon): Promise<ContinuityFinding[]> {
-  const findings: ContinuityFinding[] = []
-  const bibleVsCast = joinPrompt([
-    FIX_INCONSISTENCIES_AGENTIC_SCAN_PROMPT,
-    FixInconsistenciesCanonSection.Bible,
-    truncateCanon(canon.bibleJson),
-    FixInconsistenciesCanonSection.Characters,
-    truncateCanon(canon.charactersJson),
-    FixInconsistenciesCanonSection.WorldRules,
-    truncateCanon(canon.worldRulesJson),
-  ])
-  findings.push(...(await scanChunk(bibleVsCast)))
-
-  for (const episode of canon.episodes) {
-    const prompt = joinPrompt([
-      FIX_INCONSISTENCIES_AGENTIC_SCAN_PROMPT,
-      FixInconsistenciesCanonSection.Bible,
-      truncateCanon(canon.bibleJson),
-      FixInconsistenciesCanonSection.Episode,
-      episode.title,
-      truncateCanon(episode.beatsJson),
-    ])
-    findings.push(...(await scanChunk(prompt)))
-  }
-  return findings
+  return collectAlignmentFindings(buildAlignmentScanJobs(canon), prompt =>
+    scanChunk(truncateCanon(prompt))
+  )
 }
 
 async function proposeFixes(

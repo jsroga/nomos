@@ -1,41 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
-import { browserStorage } from '@/shared/data/browser-storage'
-import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
-import { waitForTriggerRun, TriggerRunPollAbortedError } from '@/shared/data/polling/wait-for-trigger-run'
 import {
   fetchCharacterMetrics,
-  fetchCharacterPortraitRunStatus,
   saveCharacterPortraitVariant,
-  startCharacterPortraitGeneration,
 } from '@/domains/storyteller/core/io/character.api'
-import { recordFromJson, readString } from '@/shared/data/json-guards'
 import {
   CHARACTER_DIALOG_ERROR_GENERATE_METRICS,
-  CHARACTER_DIALOG_ERROR_GENERATE_PORTRAIT,
-  CHARACTER_DIALOG_ERROR_NO_HANDLE,
   CHARACTER_DIALOG_ERROR_SAVE_CHARACTER,
   CHARACTER_DIALOG_ERROR_SAVE_VARIANT,
   CHARACTER_DIALOG_LOG_INIT,
-  CHARACTER_DIALOG_LOG_POLL_CANCELLED,
   CHARACTER_DIALOG_LOG_VARIANT_SAVED,
   CHARACTER_DIALOG_NEW_ID,
   CHARACTER_DIALOG_TOAST_METRICS_FAILED,
-  CHARACTER_DIALOG_TOAST_PORTRAIT_FAILED,
+  CHARACTER_DIALOG_TOAST_DESCRIPTION_REQUIRED,
   CharacterDialogMode,
 } from './constants/character-creation-dialog'
 import {
   buildCharacterPayload,
+  mergeCharacterMetrics,
   metricsFromInitialData,
   psychologyFieldsFromInitialData,
   resetFormFields,
 } from './character-creation-dialog-helpers'
+import { runCharacterPortraitGeneration } from './character-creation-dialog-portrait'
+import { useGenerateMissingCharacterFields } from './useGenerateMissingCharacterFields'
 import {
   EMPTY_PORTRAIT_GEN_STATE,
   InitialCharacterData,
   INITIAL_METRICS,
-  PortraitGenState,
+  type CharacterMetrics,
+  type PortraitGenState,
 } from './character-creation-dialog-types'
 
 interface UseCharacterCreationDialogOptions {
@@ -59,16 +53,14 @@ export function useCharacterCreationDialog({
 }: UseCharacterCreationDialogOptions) {
   const [name, setName] = useState('')
   const [gender, setGender] = useState('')
-  const [role, setRole] = useState(resetFormFields().role)
+  const [role, setRole] = useState('')
   const [description, setDescription] = useState('')
   const [mbti, setMbti] = useState('')
   const [portraitUrl, setPortraitUrl] = useState('')
-  const [voiceSignature, setVoiceSignature] = useState('')
-  const [archetype, setArchetype] = useState('')
   const [motivation, setMotivation] = useState('')
   const [fatalFlaw, setFatalFlaw] = useState('')
   const [secrets, setSecrets] = useState('')
-  const [metrics, setMetrics] = useState(INITIAL_METRICS)
+  const [metrics, setMetrics] = useState<CharacterMetrics>(INITIAL_METRICS)
 
   const [isGeneratingMetrics, setIsGeneratingMetrics] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -105,18 +97,18 @@ export function useCharacterCreationDialog({
     if (initialData.role) setRole(initialData.role)
     if (initialData.gender) setGender(initialData.gender)
     if (initialData.mbti) setMbti(initialData.mbti)
-    if (initialData.portraitUrl) setPortraitUrl(initialData.portraitUrl)
-    if (initialData.voiceSignature) setVoiceSignature(initialData.voiceSignature)
+    const completedPortrait =
+      genStates[charId]?.completedPortraitUrl ?? genStates[charId]?.portraitUrlOverride
+    setPortraitUrl(initialData.portraitUrl || completedPortrait || '')
 
     const psychology = psychologyFieldsFromInitialData(initialData)
-    setArchetype(psychology.archetype)
     setMotivation(psychology.motivation)
     setFatalFlaw(psychology.fatalFlaw)
     setSecrets(psychology.secrets)
 
     hasInitializedRef.current = charId
-    setMetrics(prev => metricsFromInitialData(initialData, prev))
-  }, [isOpen, initialData])
+    setMetrics((prev: CharacterMetrics) => metricsFromInitialData(initialData, prev))
+  }, [genStates, initialData, isOpen])
 
   useEffect(() => {
     if (!activeGenState.portraitUrlOverride) return
@@ -144,8 +136,6 @@ export function useCharacterCreationDialog({
     setDescription(fields.description)
     setMbti(fields.mbti)
     setPortraitUrl(fields.portraitUrl)
-    setVoiceSignature(fields.voiceSignature)
-    setArchetype(fields.archetype)
     setMotivation(fields.motivation)
     setFatalFlaw(fields.fatalFlaw)
     setSecrets(fields.secrets)
@@ -160,7 +150,10 @@ export function useCharacterCreationDialog({
   }, [onClose, resetForm])
 
   const handleGeneratePortrait = useCallback(async () => {
-    if (!description && !name) return
+    if (!description.trim()) {
+      toast.error(CHARACTER_DIALOG_TOAST_DESCRIPTION_REQUIRED)
+      return
+    }
 
     const targetCharId = activeCharId
     updateGenState(targetCharId, {
@@ -171,86 +164,63 @@ export function useCharacterCreationDialog({
     })
 
     generationIdsRef.current[targetCharId] = (generationIdsRef.current[targetCharId] ?? 0) + 1
-    const currentGenId = generationIdsRef.current[targetCharId]
-
-    if (!projectId) {
-      updateGenState(targetCharId, { isGenerating: false })
-      return
-    }
-
-    try {
-      const apiKey =
-        browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) || undefined
-      const { handleId } = await startCharacterPortraitGeneration({
-        prompt: description || `A portrait of ${name}, ${gender}`,
-        projectId,
-        ...(apiKey ? { apiKey } : {}),
-      })
-
-      if (!handleId) {
-        console.error(CHARACTER_DIALOG_ERROR_NO_HANDLE)
-        updateGenState(targetCharId, { isGenerating: false })
-        toast.error(CHARACTER_DIALOG_TOAST_PORTRAIT_FAILED)
-        return
-      }
-
-      const run = await waitForTriggerRun(
-        async () => {
-          const status = await fetchCharacterPortraitRunStatus(handleId)
-          return {
-            status: status.status,
-            output: status.imageUrl ? { imageUrl: status.imageUrl } : {},
-            error: status.error,
+    await runCharacterPortraitGeneration({
+      description,
+      projectId,
+      targetCharId,
+      mbti,
+      motivation,
+      currentGenId: generationIdsRef.current[targetCharId],
+      generationIds: generationIdsRef.current,
+      updateGenState,
+      onPortraitReady: onUpdate
+        ? (characterId, url) => {
+            void onUpdate(characterId, { portraitUrl: url })
           }
-        },
-        {
-          intervalMs: POLLING_INTERVALS.DEFAULT,
-          maxPolls: 60,
-          shouldAbort: () => currentGenId !== generationIdsRef.current[targetCharId],
-        }
-      )
-
-      const imageUrl = readString(recordFromJson(run.output).imageUrl)
-      const isVariantGrid = recordFromJson(run.output).isVariantGrid === true
-      if (imageUrl) {
-        updateGenState(targetCharId, {
-          isGenerating: false,
-          gridImageUrl: isVariantGrid ? imageUrl : null,
-          needsVariantPick: isVariantGrid,
-          portraitUrlOverride: imageUrl,
-        })
-      } else {
-        updateGenState(targetCharId, { isGenerating: false })
-        toast.error(CHARACTER_DIALOG_TOAST_PORTRAIT_FAILED)
-      }
-    } catch (error) {
-      if (error instanceof TriggerRunPollAbortedError) {
-        console.log(CHARACTER_DIALOG_LOG_POLL_CANCELLED, targetCharId)
-        return
-      }
-      console.error(CHARACTER_DIALOG_ERROR_GENERATE_PORTRAIT, error)
-      updateGenState(targetCharId, { isGenerating: false })
-      toast.error(
-        error instanceof Error && error.message.trim().length > 0
-          ? error.message
-          : CHARACTER_DIALOG_TOAST_PORTRAIT_FAILED,
-      )
-    }
-  }, [activeCharId, description, gender, name, projectId, updateGenState])
+        : undefined,
+    })
+  }, [activeCharId, description, mbti, motivation, onUpdate, projectId, updateGenState])
 
   const handleGenerateMetrics = useCallback(async () => {
     if (!description) return
     setIsGeneratingMetrics(true)
     try {
       const generated = await fetchCharacterMetrics(description)
-      setMetrics(prev => ({ ...prev, ...generated }))
-    } catch (error) {
+      setMetrics((prev: CharacterMetrics) => mergeCharacterMetrics(prev, generated))
+    } catch (error: unknown) {
       console.error(CHARACTER_DIALOG_ERROR_GENERATE_METRICS, error)
       toast.error(CHARACTER_DIALOG_TOAST_METRICS_FAILED)
     } finally {
       setIsGeneratingMetrics(false)
     }
   }, [description])
+
+  const missingFields = useGenerateMissingCharacterFields({
+    name,
+    gender,
+    role,
+    description,
+    mbti,
+    portraitUrl,
+    motivation,
+    fatalFlaw,
+    secrets,
+    metrics,
+    projectId,
+    activeCharId,
+    isOpen,
+    isSaving,
+    isGeneratingPortrait: activeGenState.isGenerating,
+    setName,
+    setGender,
+    setRole,
+    setDescription,
+    setMbti,
+    setMotivation,
+    setFatalFlaw,
+    setSecrets,
+    setMetrics,
+  })
 
   const handleVariantSelect = useCallback(
     async (croppedDataUrl: string, variantIndex: number) => {
@@ -272,7 +242,7 @@ export function useCharacterCreationDialog({
           console.log(CHARACTER_DIALOG_LOG_VARIANT_SAVED, savedUrl)
           setPortraitUrl(savedUrl)
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(CHARACTER_DIALOG_ERROR_SAVE_VARIANT, error)
       }
     },
@@ -292,8 +262,6 @@ export function useCharacterCreationDialog({
       description,
       mbti,
       portraitUrl,
-      voiceSignature,
-      archetype,
       motivation,
       fatalFlaw,
       secrets,
@@ -308,13 +276,12 @@ export function useCharacterCreationDialog({
         await onCreate(characterData)
       }
       handleClose()
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(CHARACTER_DIALOG_ERROR_SAVE_CHARACTER, error)
     } finally {
       setIsSaving(false)
     }
   }, [
-    archetype,
     description,
     fatalFlaw,
     gender,
@@ -330,11 +297,10 @@ export function useCharacterCreationDialog({
     portraitUrl,
     role,
     secrets,
-    voiceSignature,
   ])
 
   const markTouched = useCallback((field: string) => {
-    setTouched(prev => ({ ...prev, [field]: true }))
+    setTouched((prev: Record<string, boolean>) => ({ ...prev, [field]: true }))
   }, [])
 
   return {
@@ -350,10 +316,6 @@ export function useCharacterCreationDialog({
       mbti,
       setMbti,
       portraitUrl,
-      voiceSignature,
-      setVoiceSignature,
-      archetype,
-      setArchetype,
       motivation,
       setMotivation,
       fatalFlaw,
@@ -366,6 +328,9 @@ export function useCharacterCreationDialog({
     touched,
     markTouched,
     isGeneratingMetrics,
+    isGeneratingMissing: missingFields.isGeneratingMissing,
+    canGenerateMissing: missingFields.canGenerateMissing,
+    generateDisabledReason: missingFields.disableReason,
     isSaving,
     showVariantPicker,
     setShowVariantPicker,
@@ -375,6 +340,8 @@ export function useCharacterCreationDialog({
     handleClose,
     handleGeneratePortrait,
     handleGenerateMetrics,
+    handleGenerateMissingFields: missingFields.handleGenerateMissingFields,
+    pendingAction: missingFields.pendingAction,
     handleVariantSelect,
     handleSubmit,
   }

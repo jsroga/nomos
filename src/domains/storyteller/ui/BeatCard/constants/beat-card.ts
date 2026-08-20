@@ -6,6 +6,7 @@ export enum BeatGenerationMode {
 
 export enum BeatCardCopy {
   Generating = 'Generating…',
+  Pending = 'Pending',
 }
 
 export enum BeatCardActionLabel {
@@ -56,6 +57,10 @@ export const BEAT_STATUS_BADGE_CLASS: Record<BeatCardStatus, string> = {
 
 export const BEAT_STATUS_DEFAULT_BADGE =
   'bg-muted text-muted-foreground border border-border'
+
+export enum BeatCardShellClass {
+  Grab = 'cursor-grab active:cursor-grabbing hover:border-l-opacity-100',
+}
 
 const BEAT_TYPE_VALUES = new Set<string>(Object.values(BeatCardType))
 const BEAT_STATUS_VALUES = new Set<string>(Object.values(BeatCardStatus))

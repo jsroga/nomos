@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  TriggerRunPollAbortedError,
   TriggerRunPollFailedError,
   TriggerRunPollTimeoutError,
   waitForTriggerRun,
@@ -45,6 +46,26 @@ describe('waitForTriggerRun', () => {
     await vi.runAllTimersAsync()
     await expectation
     expect(fetchStatus).toHaveBeenCalledTimes(2)
+
+    vi.useRealTimers()
+  })
+
+  it('aborts during the poll interval when shouldAbort becomes true', async () => {
+    vi.useFakeTimers()
+
+    let aborted = false
+    const fetchStatus = vi.fn().mockResolvedValue({ status: 'EXECUTING' })
+    const resultPromise = waitForTriggerRun(fetchStatus, {
+      intervalMs: 5000,
+      maxPolls: 5,
+      shouldAbort: () => aborted,
+    })
+    const expectation = expect(resultPromise).rejects.toBeInstanceOf(TriggerRunPollAbortedError)
+
+    await Promise.resolve()
+    aborted = true
+    await vi.advanceTimersByTimeAsync(50)
+    await expectation
 
     vi.useRealTimers()
   })

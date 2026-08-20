@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs'
 import path from 'path'
 import {
   withAuth,
@@ -8,10 +7,15 @@ import {
   type AuthenticatedRequest,
 } from '@/shared/data/api-utils'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { FsDirectory, HttpStatus, JsonField } from '@/shared/data/constants/protocol'
 import {
-  BufferEncoding,
-  FsDirectory,
-} from '@/shared/data/constants/protocol'
+  decodeSaveImageBuffer,
+  isAssetsSaveFilename,
+  localProjectImagePath,
+  persistAssetsImageToBlob,
+  SaveImageDecodeKind,
+  writeLocalProjectImage,
+} from './save-image-persist'
 
 export const maxDuration = 60
 
@@ -21,54 +25,58 @@ export const POST = withRateLimit(
     const { projectId, filename, imageData } = body
 
     if (!projectId || !filename) {
-      return NextResponse.json({ error: API_ERROR.MISSING_PROJECT_ID_OR_FILENAME }, { status: 400 })
+      return NextResponse.json(
+        { error: API_ERROR.MISSING_PROJECT_ID_OR_FILENAME },
+        { status: HttpStatus.BAD_REQUEST },
+      )
     }
 
     if (!imageData) {
-      return NextResponse.json({ error: API_ERROR.MISSING_IMAGE_DATA }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.MISSING_IMAGE_DATA }, { status: HttpStatus.BAD_REQUEST })
     }
 
     const hasAccess = await verifyProjectAccess(supabase, projectId)
     if (!hasAccess) {
-      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: HttpStatus.NOT_FOUND })
     }
 
     const sanitizedFilename = path.basename(filename)
-    if (sanitizedFilename !== filename && !filename.startsWith('assets/')) {
-      return NextResponse.json({ error: API_ERROR.INVALID_FILENAME }, { status: 400 })
+    if (sanitizedFilename !== filename && !isAssetsSaveFilename(filename)) {
+      return NextResponse.json({ error: API_ERROR.INVALID_FILENAME }, { status: HttpStatus.BAD_REQUEST })
     }
 
     const projectDir = path.join(process.cwd(), FsDirectory.Public, FsDirectory.Projects, projectId)
     const filePath = path.resolve(projectDir, filename)
 
     if (!filePath.startsWith(projectDir + path.sep) && filePath !== projectDir) {
-      return NextResponse.json({ error: API_ERROR.INVALID_FILENAME }, { status: 400 })
+      return NextResponse.json({ error: API_ERROR.INVALID_FILENAME }, { status: HttpStatus.BAD_REQUEST })
     }
 
-    const fileDir = path.dirname(filePath)
-
-    if (!fs.existsSync(fileDir)) {
-      fs.mkdirSync(fileDir, { recursive: true })
+    const decoded = decodeSaveImageBuffer(imageData)
+    if (!decoded.ok) {
+      const error =
+        decoded.kind === SaveImageDecodeKind.Empty
+          ? API_ERROR.EMPTY_IMAGE_DATA
+          : API_ERROR.INVALID_BASE64_DATA
+      return NextResponse.json({ error }, { status: HttpStatus.BAD_REQUEST })
     }
 
-    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '')
-
-    if (!base64Data || base64Data.length === 0) {
-      return NextResponse.json({ error: API_ERROR.EMPTY_IMAGE_DATA }, { status: 400 })
+    if (isAssetsSaveFilename(filename)) {
+      const url = await persistAssetsImageToBlob(projectId, filename, decoded.buffer)
+      if (!url) {
+        return NextResponse.json(
+          { error: API_ERROR.BLOB_TOKEN_NOT_CONFIGURED },
+          { status: HttpStatus.INTERNAL },
+        )
+      }
+      return NextResponse.json({ success: true, [JsonField.Url]: url })
     }
 
-    const buffer = Buffer.from(base64Data, BufferEncoding.Base64)
-    if (buffer.length === 0) {
-      return NextResponse.json({ error: API_ERROR.INVALID_BASE64_DATA }, { status: 400 })
-    }
-
-    fs.writeFileSync(filePath, buffer)
-
-    const stats = fs.statSync(filePath)
+    const { size } = writeLocalProjectImage(filePath, decoded.buffer)
     return NextResponse.json({
       success: true,
-      path: `/projects/${projectId}/${filename}`,
-      size: stats.size,
+      path: localProjectImagePath(projectId, filename),
+      size,
     })
   }),
   { maxRequests: 60, windowMs: 60000 }

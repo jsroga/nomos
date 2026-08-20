@@ -1,94 +1,100 @@
-import { task } from '@trigger.dev/sdk/v3'
-import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
-import fs from 'fs'
-import path from 'path'
-import { generateMidjourneyImages, resolveApiframeImageSelection } from '@/shared/ai/apiframe'
+import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'
+import { persistCharacterPortraitToDatabase } from './persist-character-portrait-db'
+import { generateSelectedPortraitImage } from './generate-portrait-run'
+import {
+  GeneratePortraitDir,
+  GeneratePortraitError,
+  GeneratePortraitFilename,
+  GeneratePortraitLog,
+  GeneratePortraitMetadataKey,
+  GeneratePortraitProgress,
+  GeneratePortraitStage,
+  isPortraitCharacterUuid,
+} from './constants/generate-portrait-wire'
 
 interface GeneratePortraitPayload {
   prompt: string
   projectId: string
-  characterId: string
+  characterId?: string
   apiKey: string
-  styleReferenceUrls?: string[]
+}
+
+async function setPortraitStage(
+  progress: GeneratePortraitProgress,
+  stage: GeneratePortraitStage,
+): Promise<void> {
+  await metadata.set(GeneratePortraitMetadataKey.Progress, progress)
+  await metadata.set(GeneratePortraitMetadataKey.Stage, stage)
 }
 
 export const generatePortrait = task({
   id: 'generate-portrait',
-  maxDuration: 300,
+  maxDuration: 600,
   run: async (payload: GeneratePortraitPayload) => {
-    const { prompt, projectId, characterId, apiKey, styleReferenceUrls } = payload
-
-    console.log(
-      `Starting portrait generation for character ${characterId}, prompt: ${prompt.substring(0, 50)}...`
-    )
+    const { prompt, projectId, characterId, apiKey } = payload
 
     if (!apiKey) {
-      throw new Error('Apiframe API key is required')
+      throw new Error(GeneratePortraitError.ApiframeKeyRequired)
     }
 
-    if (!projectId || !characterId) {
-      throw new Error('projectId and characterId are required')
+    if (!projectId) {
+      throw new Error(GeneratePortraitError.ProjectIdRequired)
     }
 
-    let imagePromptPart = ''
-    let srefParam = ''
-    if (styleReferenceUrls && styleReferenceUrls.length > 0) {
-      imagePromptPart = `${styleReferenceUrls[0]} `
-      srefParam = ` --sref ${styleReferenceUrls.join(' ')}`
+    await metadata.set(GeneratePortraitMetadataKey.ProjectId, projectId)
+    await metadata.set(GeneratePortraitMetadataKey.Prompt, prompt)
+    if (characterId) {
+      await metadata.set(GeneratePortraitMetadataKey.CharacterId, characterId)
     }
+    await setPortraitStage(GeneratePortraitProgress.Init, GeneratePortraitStage.Initializing)
 
-    const fullPrompt = `${imagePromptPart}portrait of ${prompt}, professional headshot, high quality, detailed --ar 1:1${srefParam}`
+    logger.info(GeneratePortraitLog.Starting, {
+      projectId,
+      characterId,
+      prompt,
+    })
 
-    console.log('Submitting Midjourney imagine via Apiframe...')
-    const result = await generateMidjourneyImages(fullPrompt, apiKey, { aspectRatio: '1:1' })
-    const { imageUrl: targetImageUrl, isVariantGrid } = resolveApiframeImageSelection(result)
+    const generated = await generateSelectedPortraitImage(prompt, apiKey)
 
-    if (!targetImageUrl) {
-      console.error('Apiframe output:', result)
-      throw new Error('No image URL found in Apiframe output')
-    }
-
-    console.log('Generation successful:', targetImageUrl)
-
-    const imgResponse = await fetch(targetImageUrl)
+    await setPortraitStage(GeneratePortraitProgress.Downloading, GeneratePortraitStage.Downloading)
+    const imgResponse = await fetch(generated.imageUrl)
     if (!imgResponse.ok) {
-      throw new Error(`Failed to download image: ${imgResponse.status}`)
+      throw new Error(`${GeneratePortraitError.DownloadFailedPrefix} ${imgResponse.status}`)
     }
-    const arrayBuffer = await imgResponse.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const buffer = Buffer.from(await imgResponse.arrayBuffer())
 
-    const filename = `portrait_${characterId}_${Date.now()}.png`
-    const projectDir = path.join(process.cwd(), 'public', 'projects', projectId, 'portraits')
+    await setPortraitStage(GeneratePortraitProgress.Saving, GeneratePortraitStage.Saving)
+    const idPart = isPortraitCharacterUuid(characterId)
+      ? characterId
+      : GeneratePortraitFilename.Draft
+    const filename = `${GeneratePortraitDir.Portraits}/${GeneratePortraitFilename.Prefix}_${idPart}_${Date.now()}.png`
+    const persistedUrl = await persistGeneratedImage({
+      projectId,
+      filename,
+      bytes: buffer,
+    })
+    const storedUrl = resolveDurablePublicImageUrl(persistedUrl, generated.imageUrl)
+    logger.info(GeneratePortraitLog.Saved, { storedUrl, filename })
 
-    if (!fs.existsSync(projectDir)) {
-      fs.mkdirSync(projectDir, { recursive: true })
-    }
-
-    const filePath = path.join(projectDir, filename)
-    fs.writeFileSync(filePath, buffer)
-    console.log(`Portrait saved to ${filePath}`)
-
-    const localPath = `/projects/${projectId}/portraits/${filename}`
-    const supabase = createSupabaseServiceClient()
-
-    const { error: dbError } = await supabase
-      .from('characters')
-      .update({
-        portrait_url: localPath,
-      })
-      .eq('id', characterId)
-
-    if (dbError) {
-      console.error('Failed to update character in DB:', dbError)
+    if (!isPortraitCharacterUuid(characterId)) {
+      logger.info(GeneratePortraitLog.DbSkipped, { characterId })
     } else {
-      console.log(`Character ${characterId} portrait_url updated to ${localPath}`)
+      await setPortraitStage(GeneratePortraitProgress.UpdatingDb, GeneratePortraitStage.UpdatingDb)
+      await persistCharacterPortraitToDatabase({
+        characterId,
+        portraitUrl: storedUrl,
+      })
     }
+
+    await setPortraitStage(GeneratePortraitProgress.Completed, GeneratePortraitStage.Completed)
 
     return {
       success: true,
-      imageUrl: localPath,
-      isVariantGrid,
-      jobId: result.jobId,
+      imageUrl: storedUrl,
+      isVariantGrid: false,
+      jobId: generated.jobId,
+      variantIndex: generated.variantIndex,
       characterId: characterId,
     }
   },

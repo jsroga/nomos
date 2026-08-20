@@ -3,6 +3,13 @@ import {
   fieldBorderClass,
 } from './CharacterCreationDialogField'
 import { CharacterCreationDialogPortraitSection } from './CharacterCreationDialogPortraitSection'
+import { CharacterDialogSelect } from './CharacterDialogSelect'
+import {
+  CHARACTER_DIALOG_GENDER_OPTIONS,
+  CHARACTER_DIALOG_MBTI_GROUPS,
+  CHARACTER_DIALOG_ROLE_OPTIONS,
+} from './character-dialog-select-options'
+import { CharacterDialogSelectPlaceholder } from './constants/character-creation-dialog'
 
 interface CharacterCreationDialogBasicFieldsProps {
   name: string
@@ -72,16 +79,15 @@ export function CharacterCreationDialogBasicFields({
             isValid={Boolean(role)}
             errorMessage="Role is required"
           >
-            <select
-              className={`w-full bg-background border rounded-md px-3 py-2 text-sm focus:outline-none ${fieldBorderClass(Boolean(touched.role && !role))}`}
+            <CharacterDialogSelect
               value={role}
-              onChange={e => setRole(e.target.value)}
+              placeholder={CharacterDialogSelectPlaceholder.Role}
+              ariaLabel={CharacterDialogSelectPlaceholder.Role}
+              invalid={Boolean(touched.role && !role)}
+              options={CHARACTER_DIALOG_ROLE_OPTIONS}
+              onChange={setRole}
               onBlur={() => markTouched('role')}
-            >
-              <option value="Protagonist">Protagonist</option>
-              <option value="Antagonist">Antagonist</option>
-              <option value="Supporting">Supporting</option>
-            </select>
+            />
           </CharacterCreationDialogField>
 
           <CharacterCreationDialogField
@@ -91,18 +97,15 @@ export function CharacterCreationDialogBasicFields({
             isValid={Boolean(gender)}
             errorMessage="Gender is required"
           >
-            <select
-              className={`w-full bg-background border rounded-md px-3 py-2 text-sm focus:outline-none ${fieldBorderClass(Boolean(touched.gender && !gender))}`}
+            <CharacterDialogSelect
               value={gender}
-              onChange={e => setGender(e.target.value)}
+              placeholder={CharacterDialogSelectPlaceholder.Gender}
+              ariaLabel={CharacterDialogSelectPlaceholder.Gender}
+              invalid={Boolean(touched.gender && !gender)}
+              options={CHARACTER_DIALOG_GENDER_OPTIONS}
+              onChange={setGender}
               onBlur={() => markTouched('gender')}
-            >
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Non-binary">Non-binary</option>
-              <option value="Other">Other</option>
-            </select>
+            />
           </CharacterCreationDialogField>
         </div>
       </div>
@@ -132,38 +135,15 @@ export function CharacterCreationDialogBasicFields({
             isValid={Boolean(mbti)}
             errorMessage="MBTI is required"
           >
-            <select
-              className={`w-full bg-background border rounded-md px-3 py-2 text-sm focus:outline-none ${fieldBorderClass(Boolean(touched.mbti && !mbti))}`}
+            <CharacterDialogSelect
               value={mbti}
-              onChange={e => setMbti(e.target.value)}
+              placeholder={CharacterDialogSelectPlaceholder.Mbti}
+              ariaLabel={CharacterDialogSelectPlaceholder.Mbti}
+              invalid={Boolean(touched.mbti && !mbti)}
+              groups={CHARACTER_DIALOG_MBTI_GROUPS}
+              onChange={setMbti}
               onBlur={() => markTouched('mbti')}
-            >
-              <option value="">Select MBTI Type</option>
-              <optgroup label="Analysts">
-                <option value="INTJ">INTJ - Architect</option>
-                <option value="INTP">INTP - Logician</option>
-                <option value="ENTJ">ENTJ - Commander</option>
-                <option value="ENTP">ENTP - Debater</option>
-              </optgroup>
-              <optgroup label="Diplomats">
-                <option value="INFJ">INFJ - Advocate</option>
-                <option value="INFP">INFP - Mediator</option>
-                <option value="ENFJ">ENFJ - Protagonist</option>
-                <option value="ENFP">ENFP - Campaigner</option>
-              </optgroup>
-              <optgroup label="Sentinels">
-                <option value="ISTJ">ISTJ - Logistician</option>
-                <option value="ISFJ">ISFJ - Defender</option>
-                <option value="ESTJ">ESTJ - Executive</option>
-                <option value="ESFJ">ESFJ - Consul</option>
-              </optgroup>
-              <optgroup label="Explorers">
-                <option value="ISTP">ISTP - Virtuoso</option>
-                <option value="ISFP">ISFP - Adventurer</option>
-                <option value="ESTP">ESTP - Entrepreneur</option>
-                <option value="ESFP">ESFP - Entertainer</option>
-              </optgroup>
-            </select>
+            />
           </CharacterCreationDialogField>
         </div>
 

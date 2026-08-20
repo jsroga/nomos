@@ -16,8 +16,8 @@
 import '@/shared/data/server-guard'
 import type {
   AgentControllerEvent,
-  AgentControllerMessage,
-  AgentControllerMessageContent,
+  MastraDBMessage,
+  MastraMessagePart,
 } from '@mastra/core/agent-controller'
 
 /** Per-stream mutable state: how much of each message's text/thinking was already emitted. */
@@ -47,15 +47,18 @@ export type ControllerFrameIntent =
   | { kind: 'complete' }
 
 /** Single pass over message parts: accumulate text and reasoning separately. */
-function extractMessageStreams(content: AgentControllerMessageContent[]): {
+function extractMessageStreams(parts: MastraMessagePart[]): {
   text: string
   thinking: string
 } {
   let text = ''
   let thinking = ''
-  for (const part of content) {
-    if (part.type === 'text') text += part.text
-    else if (part.type === 'thinking') thinking += part.thinking
+  for (const part of parts) {
+    if (part.type === 'text' && 'text' in part && typeof part.text === 'string') {
+      text += part.text
+    } else if (part.type === 'reasoning' && 'reasoning' in part && typeof part.reasoning === 'string') {
+      thinking += part.reasoning
+    }
   }
   return { text, thinking }
 }
@@ -69,11 +72,11 @@ function deltaFor(seen: Map<string, number>, id: string, full: string): string |
 }
 
 function mapMessageSnapshot(
-  message: AgentControllerMessage,
+  message: MastraDBMessage,
   ctx: ControllerStreamContext
 ): ControllerFrameIntent[] {
   const intents: ControllerFrameIntent[] = []
-  const { text, thinking } = extractMessageStreams(message.content)
+  const { text, thinking } = extractMessageStreams(message.content.parts)
 
   const thinkingDelta = deltaFor(ctx.emittedThinking, message.id, thinking)
   if (thinkingDelta) intents.push({ kind: 'thinking', thinking: thinkingDelta })

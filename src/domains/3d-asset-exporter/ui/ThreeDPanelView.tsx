@@ -6,6 +6,12 @@ import { AIProvider } from '@/shared/types/enums'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import type { MeshyResult } from '../core/types/three-d-generation'
 import { MeshyTopology } from '../core/types/three-d-generation'
+import { AssetPanelCheckerboard, AssetPanelEmptyState } from './AssetPanelEmptyState'
+import {
+  AssetExporterPanelClass,
+  AssetExporterPanelCopy,
+  resolveNoModelDescription,
+} from './constants/asset-exporter-panel'
 import { ThreeDDownloadsSection } from './ThreeDDownloadsSection'
 import { ThreeDPanelChrome } from './ThreeDPanelChrome'
 
@@ -145,30 +151,19 @@ export function ThreeDPanelView(props: ThreeDPanelViewProps) {
         handleStopUpload={handleStopUpload}
       />
 
-      <div
-        className="flex-1 relative bg-[#1a1a1a] flex flex-col items-center justify-center min-h-0"
-        id={TOUR_STEP_IDS.ASSET_3D_PREVIEW}
-      >
+      <div className={AssetExporterPanelClass.PreviewStage} id={TOUR_STEP_IDS.ASSET_3D_PREVIEW}>
+        <AssetPanelCheckerboard />
         {modelUrl ? (
-          <ThreeDViewer modelUrl={showRemeshed && remeshModelUrl ? remeshModelUrl : modelUrl} />
-        ) : (
-          <div className="text-center p-8 text-muted-foreground space-y-3">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center mx-auto mb-4 border border-primary/20">
-              {isGenerating ? (
-                <Loader2 size={36} className="animate-spin text-primary/60" />
-              ) : (
-                <Box size={36} className="text-primary/60" />
-              )}
-            </div>
-            <h4 className="font-semibold text-lg text-foreground">No 3D Model</h4>
-            <p className="text-sm max-w-[240px] mx-auto leading-relaxed">
-              {isGenerating
-                ? 'Generation is running in the background. This may take up to 10 minutes.'
-                : meshyTaskId
-                  ? 'Previous generation may have data. Click Recover to check.'
-                  : 'Select a provider and click Generate to create a 3D model from your 2D asset.'}
-            </p>
+          <div className={AssetExporterPanelClass.Viewer}>
+            <ThreeDViewer modelUrl={showRemeshed && remeshModelUrl ? remeshModelUrl : modelUrl} />
           </div>
+        ) : (
+          <AssetPanelEmptyState
+            icon={Box}
+            title={AssetExporterPanelCopy.NoModelTitle}
+            description={resolveNoModelDescription(isGenerating, meshyTaskId)}
+            isBusy={isGenerating}
+          />
         )}
       </div>
 

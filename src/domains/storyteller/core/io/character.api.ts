@@ -1,26 +1,44 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
-import { fetchJson } from '@/shared/data/fetch-json-record'
+import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
+import { ClientFetchError, fetchJson } from '@/shared/data/fetch-json-record'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
+import {
+  generatedCharacterFieldsFromUnknown,
+  type CharacterFilledDraft,
+  type GeneratedCharacterFields,
+} from '@/domains/storyteller/core/character-missing-fields'
 
 const PORTRAIT_ROUTE = '/api/storyteller/generate-portrait'
 const PORTRAIT_STATUS_ROUTE = '/api/storyteller/generate-portrait/status'
 const METRICS_ROUTE = '/api/storyteller/generate-metrics'
+const CHARACTER_FIELDS_ROUTE = '/api/storyteller/generate-character-fields'
 const SAVE_VARIANT_ROUTE = '/api/storyteller/save-portrait-variant'
 const CHARACTERS_ROUTE = '/api/storyteller/characters'
 
 const JSON_HEADERS = { 'Content-Type': ContentType.Json }
 
 export async function startCharacterPortraitGeneration(input: {
-  prompt: string
+  description: string
   projectId: string
+  characterId?: string
+  mbti?: string
+  motivation?: string
   apiKey?: string
 }): Promise<{ handleId: string | null }> {
-  const data = recordFromJson(await fetchJson(PORTRAIT_ROUTE, {
+  const response = await fetch(PORTRAIT_ROUTE, {
     method: HttpMethod.Post,
     headers: { 'Content-Type': ContentType.Json },
     body: JSON.stringify(input),
-  }))
+  })
+  const data = recordFromJson(await response.json().catch(() => ({})))
+  if (!response.ok) {
+    throw new ClientFetchError(
+      readString(data.error) ?? API_ERROR.UNKNOWN_ERROR,
+      response.status,
+    )
+  }
   return { handleId: readString(data.handleId) ?? null }
 }
 
@@ -29,7 +47,12 @@ export async function fetchCharacterPortraitRunStatus(runId: string): Promise<{
   imageUrl: string | null
   error: unknown
 }> {
-  const data = recordFromJson(await fetchJson(buildUrl(PORTRAIT_STATUS_ROUTE, { [QueryParam.RunId]: runId })))
+  const data = recordFromJson(
+    await fetchJson(
+      buildUrl(PORTRAIT_STATUS_ROUTE, { [QueryParam.RunId]: runId }),
+      TRIGGER_STATUS_FETCH_INIT,
+    ),
+  )
   const output = recordFromJson(data.output)
   return {
     status: readString(data.status) ?? null,
@@ -45,6 +68,25 @@ export async function fetchCharacterMetrics(description: string): Promise<Record
     body: JSON.stringify({ description }),
   }))
   return recordFromJson(data.metrics)
+}
+
+export async function generateCharacterMissingFields(input: {
+  projectId: string
+  filled: CharacterFilledDraft
+}): Promise<GeneratedCharacterFields> {
+  const response = await fetch(CHARACTER_FIELDS_ROUTE, {
+    method: HttpMethod.Post,
+    headers: JSON_HEADERS,
+    body: JSON.stringify(input),
+  })
+  const data = recordFromJson(await response.json().catch(() => ({})))
+  if (!response.ok) {
+    throw new ClientFetchError(
+      readString(data.error) ?? API_ERROR.FAILED_GENERATE_CHARACTER_FIELDS,
+      response.status
+    )
+  }
+  return generatedCharacterFieldsFromUnknown(data.fields)
 }
 
 export async function saveCharacterPortraitVariant(input: {

@@ -72,7 +72,7 @@ export const DomainSidebar: React.FC<DomainSidebarProps> = ({
       className={cn(
         SidebarShellClass.Root,
         borderClass,
-        isResizing && 'select-none',
+        isResizing && SidebarShellClass.Resizing,
         className
       )}
       style={{ width: displayWidth }}

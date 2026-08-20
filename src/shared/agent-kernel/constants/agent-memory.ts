@@ -2,6 +2,10 @@ export enum MastraStoreName {
   Memory = 'memory',
 }
 
+export enum MastraUiMessagePartType {
+  Text = 'text',
+}
+
 export enum AgentMemoryVectorIndex {
   Messages = 'messages',
 }

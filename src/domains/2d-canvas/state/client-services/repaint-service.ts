@@ -3,6 +3,9 @@ import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-s
 import type { Tile } from '../../core/world-types'
 import { TILE_COORD_SEPARATOR } from '../../ui/constants/tile-stage-labels'
 import { postRepaint } from '../../core/io/repaint.api'
+import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
+import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 import {
   CanvasContextType,
   CanvasLineStyle,
@@ -12,11 +15,16 @@ import {
   RepaintDataUrlPrefix,
   RepaintDefaultPrompt,
   RepaintImageMime,
+  REPAINT_MASK_FEATHER_PX,
   RepaintMaskColor,
+  RepaintOperationDetail,
+  RepaintOperationId,
+  RepaintOperationLabel,
   RepaintServiceError,
   RepaintServiceLog,
   RepaintTilePrompt,
   UrlScheme,
+  type RepaintResult,
 } from '../../constants/repaint-service'
 import {
   collectAffectedTiles,
@@ -24,6 +32,7 @@ import {
   getTileRangeForBounds,
   loadImageFromUrl,
 } from './repaint-tile-composite'
+import { punchRepaintMaskAlpha } from './repaint-mask-alpha'
 
 interface Point {
   x: number
@@ -31,9 +40,21 @@ interface Point {
   radius?: number
 }
 
-interface RepaintResult {
-  imageUrl: string
-  bounds: { x: number; y: number; width: number; height: number }
+export function trackRepaintGenerateStart(prompt?: string): string {
+  const opId = RepaintOperationId.Generate
+  const trimmed = prompt?.trim() ?? ''
+  useGlobalStatusStore.getState().addOperation({
+    id: opId,
+    type: OperationTypeId.WorldGen,
+    label: RepaintOperationLabel.Painting,
+    details: trimmed.length > 0 ? trimmed : RepaintOperationDetail.Inpaint,
+    status: AsyncOperationStatus.InProgress,
+  })
+  return opId
+}
+
+export function clearRepaintGenerate(opId: string): void {
+  useGlobalStatusStore.getState().removeOperation(opId)
 }
 
 export class RepaintService {
@@ -46,8 +67,9 @@ export class RepaintService {
     const currentProject = useWorkspaceProjectStore.getState().currentProject
     if (!currentProject) throw new Error(RepaintServiceError.NoProjectSelected)
 
+    const writeBounds = result.paintBounds
     const { minTileX, maxTileX, minTileY, maxTileY } = getTileRangeForBounds(
-      result.bounds,
+      writeBounds,
       this.TILE_SIZE
     )
 
@@ -66,7 +88,7 @@ export class RepaintService {
       maxTileX,
       minTileY,
       maxTileY,
-      result.bounds,
+      writeBounds,
       this.TILE_SIZE
     )
 
@@ -120,6 +142,29 @@ export class RepaintService {
     const currentProject = useWorkspaceProjectStore.getState().currentProject
     if (!currentProject) throw new Error(RepaintServiceError.NoProjectSelected)
 
+    const opId = trackRepaintGenerateStart(prompt)
+    try {
+      return await this.executeGenerateRepaint(
+        currentProject.id,
+        strokes,
+        tiles,
+        brushSize,
+        prompt,
+        styleReferenceUrls
+      )
+    } finally {
+      clearRepaintGenerate(opId)
+    }
+  }
+
+  private async executeGenerateRepaint(
+    projectId: string,
+    strokes: Point[],
+    tiles: Record<string, Tile>,
+    brushSize: number,
+    prompt?: string,
+    styleReferenceUrls?: string[]
+  ): Promise<RepaintResult> {
     console.log(RepaintServiceLog.UsingStyleReferences, styleReferenceUrls)
 
     let minX = Infinity,
@@ -139,6 +184,13 @@ export class RepaintService {
     minY -= padding
     maxX += padding
     maxY += padding
+
+    const paintBounds = {
+      x: Math.floor(minX - REPAINT_MASK_FEATHER_PX),
+      y: Math.floor(minY - REPAINT_MASK_FEATHER_PX),
+      width: Math.ceil(maxX - minX + REPAINT_MASK_FEATHER_PX * 2),
+      height: Math.ceil(maxY - minY + REPAINT_MASK_FEATHER_PX * 2),
+    }
 
     const width = maxX - minX
     const height = maxY - minY
@@ -231,16 +283,25 @@ export class RepaintService {
     console.log(RepaintServiceLog.CallingServerSideApi, { styleReferenceUrls })
 
     const { imageBase64 } = await postRepaint({
-      projectId: currentProject.id,
+      projectId,
       base64Image,
       maskBase64,
       prompt: prompt || RepaintDefaultPrompt.SeamlessBlend,
       styleReferenceUrls,
     })
 
+    const gptImageUrl = `${RepaintDataUrlPrefix.PngBase64}${imageBase64}`
+    const maskUrl = `${RepaintDataUrlPrefix.PngBase64}${maskBase64}`
+    const imageUrl = await punchRepaintMaskAlpha({
+      imageUrl: gptImageUrl,
+      maskUrl,
+      featherPx: REPAINT_MASK_FEATHER_PX,
+    })
+
     return {
-      imageUrl: `${RepaintDataUrlPrefix.PngBase64}${imageBase64}`,
+      imageUrl,
       bounds,
+      paintBounds,
     }
   }
 

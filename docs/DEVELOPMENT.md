@@ -76,7 +76,7 @@ Two systems (not correlated today):
 | Mastra AI tracing | Agents, tools, workflows, scorers | Mastra Postgres store → Studio; optional Cloud |
 | Sentry / `@vercel/otel` | HTTP, RSC, errors | Sentry |
 
-Config: `src/shared/agent-kernel/mastra/observability-config.ts`. Spans in app code: `withMastraSpan()` from `@/shared/observability/mastra-tracing`. Storage uses `PostgresStoreVNext` so Studio discovery/feedback endpoints work (optional `OBSERVABILITY_DATABASE_URL`, else `DATABASE_URL`).
+Config: `src/shared/agent-kernel/mastra/observability-config.ts`. Spans in app code: `withMastraSpan()` from `@/shared/observability/mastra-tracing`. Storage uses `PostgresStoreVNext` so Studio discovery/feedback endpoints work (optional `OBSERVABILITY_DATABASE_URL`, else `DATABASE_URL`). `public.mastra_*` tables (including observability partitions) have RLS enabled and no PostgREST policies; Mastra talks to them over `DATABASE_URL`, not the anon key. New `mastra_*` tables inherit that lock via event trigger `enable_rls_on_mastra_tables`.
 
 ```bash
 MASTRA_TRACE_CONSOLE=true
@@ -86,6 +86,17 @@ npm run mastra:dev   # Traces tab
 ```
 
 `MODEL_CHUNK` spans dropped by default (`MASTRA_TRACE_MODEL_CHUNKS=true` to keep).
+
+Studio **Scores** on a chat trace: the `storyteller` agent writes `goal-reached` every turn and samples `hallucination` / `magic` / `prose-craft` at rate `0.2`. Trace **Evaluate** lists the same judges from `createMastra({ scorers: STORYTELLER_SCORERS })` for spans that were not sampled.
+
+Studio **Experiments**:
+
+| Dataset | Publisher | Task |
+|---|---|---|
+| `aeternum-episode-01` | `npx tsx evals/scripts/publish-aeternum-studio.ts` | Frozen beats (structural identity, no LLM) |
+| `storyteller-golden-quality` | `npx tsx evals/scripts/publish-golden-quality-studio.ts` | Frozen golden `referenceOutput` (hallucination + magic judges) |
+
+`npm run eval` remains the file report (`evals/results/latest.json`).
 
 ## Perf debug (opt-in)
 
@@ -160,7 +171,7 @@ Every model resolves through the OpenRouter gateway on `OPENROUTER_API_KEY`. Def
 
 **Writers Room vs orchestration.** The composer offers three catalog models (Kimi / GLM / Opus). That choice only overrides the **chat adapter**. Beat-draft author, planner, critics, muse, and premise use their own matrix rows and `STORYTELLER_*_MODEL` pins — never the picker. `STORYTELLER_CHAT_MODEL` is the server default when the client sends no picker id.
 
-**Image models (Apiframe)** — pixel paths use `APIFRAME_API_KEY` only. Pin a surface with `IMAGE_*_MODEL` (see `.env.local.example`). First tile defaults to `midjourney`. Moodboard, episode posters, and series posters honor `IMAGE_MOODBOARD_MODEL`, `IMAGE_EPISODE_POSTER_MODEL`, and `IMAGE_SERIES_POSTER_MODEL` (including `midjourney`). Generate values: `midjourney` · `nano-banana` · `nano-banana-pro` · `grok-imagine-image` · `gpt-image-1.5` · `flux-2-pro`. Upscale: `topaz-image-upscale` · `clarity-upscale` · `midjourney`. Repaint: `flux-fill-pro`. Resolvers live in `src/shared/ai/image-model-env.ts`.
+**Image models (Apiframe)** — pixel paths use `APIFRAME_API_KEY` only. Pin a surface with `IMAGE_*_MODEL` (see `.env.local.example`). First tile defaults to `midjourney`. Moodboard defaults to `midjourney` (`IMAGE_MOODBOARD_MODEL`). Combined episode storyboard video defaults to Kling 3.0 storyboard look (`IMAGE_STORYBOARD_VIDEO_MODEL`); CorkBoard offers Kling/Seedance × film-like/storyboard-like. Duration is hardcoded to 15s. Kling sends `klingParams.multi_prompt` as a JSON string of `[{prompt, duration}, …]` (max 6 shots, each 1–12s, summing to the clip) plus a look-specific `negative_prompt`. Seedance has neither field — look is locked in the prompt (`Avoid: …`). Native `generate_audio` is a sound bed. Every preset then gets one continuous spoken voice-over (Luna script → OpenRouter `/audio/speech` with look + opening-beat `instructions` → ffmpeg mix) on `OPENROUTER_API_KEY`. Mix uses `FFMPEG_PATH`/`FFPROBE_PATH` when set (Trigger cloud ffmpeg extension), otherwise `ffmpeg-static`/`ffprobe-static` — local `trigger dev` does not install apt ffmpeg. Missing binaries skip VO and still save the video. Episode posters and series posters honor `IMAGE_EPISODE_POSTER_MODEL` and `IMAGE_SERIES_POSTER_MODEL`. Generate values: `midjourney` · `nano-banana` · `nano-banana-pro` · `grok-imagine-image` · `gpt-image-1.5` · `flux-2-pro`. Video: `kling-3.0` · `seedance-2.5`. Upscale: `topaz-image-upscale` · `clarity-upscale` · `midjourney`. Repaint: `gpt-image-2`. Resolvers live in `src/shared/ai/image-model-env.ts` and `src/shared/ai/storyboard-video-env.ts`.
 
 Overrides are read at call time, not module load, so dotenv scripts and per-environment rollbacks work regardless of import order. `GET /api/settings/models` prints the resolved role→model table with provenance.
 

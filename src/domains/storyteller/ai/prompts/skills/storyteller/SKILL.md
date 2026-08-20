@@ -42,8 +42,9 @@ When working on storytelling tasks, you have access to these tools:
 1. `manage_beat` - Create, update, or delete story beats
 2. `list_beats` - View the current beat board
 3. `analyze_relationships` - Examine character dynamics
-4. `check_continuity` - Verify story logic and consistency
-5. `update_world_bible` - Add to the world-building database
+4. `check_continuity` - Verify setup/payoff IDs
+5. `check_section_alignment` - Check a generated section against related canon
+6. `update_world_bible` - Add to the world-building database
 
 ## Story Phases
 

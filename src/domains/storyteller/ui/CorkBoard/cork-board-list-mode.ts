@@ -5,22 +5,25 @@ export enum CorkBoardListMode {
   Grid = 'grid',
 }
 
+export function corkBoardIsAwaitingBeats(input: {
+  awaitingBoardRefresh: boolean
+  pendingBoardHydration: boolean
+}): boolean {
+  return input.awaitingBoardRefresh || input.pendingBoardHydration
+}
+
 export function corkBoardListMode(input: {
   beatCount: number
-  isChatBusy: boolean
-  pendingBoardHydration: boolean
+  isAwaitingBeats: boolean
 }): CorkBoardListMode {
-  if (input.beatCount === 0 && !input.isChatBusy && !input.pendingBoardHydration) {
+  if (input.beatCount === 0 && !input.isAwaitingBeats) {
     return CorkBoardListMode.Empty
   }
   return CorkBoardListMode.Grid
 }
 
-export function corkBoardShowsLoadingPlaceholders(input: {
-  isChatBusy: boolean
-  pendingBoardHydration: boolean
-}): boolean {
-  return input.isChatBusy || input.pendingBoardHydration
+export function corkBoardShowsLoadingPlaceholders(isAwaitingBeats: boolean): boolean {
+  return isAwaitingBeats
 }
 
 export function corkBoardLoadingPlaceholderCount(showLoadingCard: boolean): number {

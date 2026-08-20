@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { proposeAssistantBibleUpdate, proposeAssistantBibleUpdates } from '../propose-assistant-bible-update'
+import { proposeAssistantBibleUpdate, proposeAssistantBibleUpdates, bibleFieldsFromToolArgs } from '../propose-assistant-bible-update'
 import { UPDATE_WORLD_BIBLE_TOOL_ID } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums'
+import { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
 
 describe('proposeAssistantBibleUpdate', () => {
   it('proposes Overview only when Overview was the requested section', () => {
@@ -178,6 +179,119 @@ describe('proposeAssistantBibleUpdate', () => {
     ).toBeNull()
   })
 
+  it('returns null when tool-input validation failed', () => {
+    expect(
+      proposeAssistantBibleUpdate({
+        toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+        args: {},
+        result: {
+          error: true,
+          message: 'Tool input validation failed for update_world_bible.',
+        },
+      })
+    ).toBeNull()
+  })
+
+  it.each([
+    {
+      section: BibleSection.WORLD_DESCRIPTION,
+      actionType: ActionType.UPDATE_WORLD_DESCRIPTION,
+      args: { worldDescription: 'A salt-marsh city lit by bioluminescent kelp.' },
+      previewKey: 'worldDescription',
+    },
+    {
+      section: BibleSection.ITEMS,
+      actionType: ActionType.UPDATE_ITEMS,
+      args: { items: [{ name: 'The Pale Ledger', description: 'A living record of every death.' }] },
+      previewKey: 'items',
+    },
+    {
+      section: BibleSection.EVENTS,
+      actionType: ActionType.UPDATE_EVENTS,
+      args: { events: [{ name: 'The Stillness', description: 'Aging stopped.' }] },
+      previewKey: 'events',
+    },
+    {
+      section: BibleSection.FACTIONS,
+      actionType: ActionType.UPDATE_FACTIONS,
+      args: { factions: [{ name: 'The Ledger Keepers', description: 'They tally every death.' }] },
+      previewKey: 'factions',
+    },
+    {
+      section: BibleSection.WORLD_RULES,
+      actionType: ActionType.UPDATE_WORLD_RULES,
+      args: { worldRules: [{ rule: 'No Natural Death', consequence: 'Only killing ends life.' }] },
+      previewKey: 'worldRules',
+    },
+    {
+      section: BibleSection.PLOT_TWISTS,
+      actionType: ActionType.UPDATE_PLOT_TWISTS,
+      args: { plotTwists: [{ title: 'The clerk wrote her own name.', description: 'She always had.' }] },
+      previewKey: 'plotTwists',
+    },
+    {
+      section: BibleSection.SOUNDTRACKS,
+      actionType: ActionType.UPDATE_SOUNDTRACKS,
+      args: {
+        soundtracks: [
+          { title: 'Pyramid Song', artist: 'Radiohead', youtubeUrl: 'https://youtu.be/M6W4uhrLA7g' },
+        ],
+      },
+      previewKey: 'soundtracks',
+    },
+    {
+      section: BibleSection.INSPIRATIONS,
+      actionType: ActionType.UPDATE_INSPIRATIONS,
+      args: {
+        inspirations: {
+          books: [{ title: 'Dune', description: 'Desert power politics.' }],
+          movies: [],
+          games: [],
+        },
+      },
+      previewKey: 'inspirations',
+    },
+    {
+      section: BibleSection.EPISODE_ROADMAP,
+      actionType: ActionType.UPDATE_EPISODE_ROADMAP,
+      args: {
+        episodeRoadmap: {
+          episodes: [{ title: 'The First Bell', summary: 'A clerk hides a name.' }],
+        },
+      },
+      previewKey: 'episodeRoadmap',
+    },
+    {
+      section: BibleSection.EPISODE_PREMISE,
+      actionType: ActionType.UPDATE_EPISODE_PREMISE,
+      args: {
+        episodePremise: {
+          logline: 'A clerk discovers the ledger writes her name in advance.',
+        },
+      },
+      previewKey: 'premise',
+    },
+  ])('overlays $section when projectId is omitted from tool args', ({
+    section,
+    actionType,
+    args,
+    previewKey,
+  }) => {
+    const field = Object.keys(args)[0]
+    const proposal = proposeAssistantBibleUpdate(
+      {
+        toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+        args,
+        result: { success: true, updatedFields: field ? [field] : [] },
+      },
+      null,
+      section,
+    )
+    expect(proposal?.section).toBe(section)
+    expect(proposal?.action.type).toBe(actionType)
+    expect(proposal?.preview[previewKey]).toEqual(Object.values(args)[0])
+  })
+
   it('ignores chat wrap-up dumped into worldDescription', () => {
     expect(
       proposeAssistantBibleUpdate({
@@ -274,5 +388,29 @@ describe('proposeAssistantBibleUpdate', () => {
     expect(proposals[0]?.preview.factions).toBeUndefined()
     expect(proposals[1]?.preview.factions).toEqual(factions)
     expect(proposals[2]?.preview.plotTwists).toEqual(plotTwists)
+  })
+
+  it('returns no proposals when the turn is character-draft', () => {
+    const proposals = proposeAssistantBibleUpdates(
+      {
+        toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
+        args: { worldDescription: 'Bot missing-field ramble overwrites Overview.' },
+        result: { success: true, updatedFields: ['worldDescription'] },
+      },
+      null,
+      CharacterDraftChatSection.Form,
+    )
+    expect(proposals).toEqual([])
+  })
+})
+
+describe('bibleFieldsFromToolArgs', () => {
+  it('omits empty soundtracks so they cannot become an Accept overlay', () => {
+    const fields = bibleFieldsFromToolArgs({
+      soundtracks: [],
+      worldDescription: 'A salt-marsh city lit by bioluminescent kelp.',
+    })
+    expect(fields.soundtracks).toBeUndefined()
+    expect(fields.worldDescription).toContain('salt-marsh')
   })
 })

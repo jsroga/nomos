@@ -16,6 +16,7 @@ import {
 import {
   MoodboardGenerationError,
   MoodboardGenerationLog,
+  formatMoodboardGeneratingCopy,
   MoodboardOperationDetail,
   MoodboardOperationLabel,
   MoodboardOperationStatus,
@@ -24,7 +25,6 @@ import {
   MoodboardTriggerStatus,
 } from '@/domains/storyteller/services/constants/moodboard-generation-service'
 
-const MOODBOARD_UNKNOWN_STATUS = 'unknown'
 const MOODBOARD_METADATA_KEY = 'metadata'
 
 const DynamicLocalStorageKeys = {
@@ -60,33 +60,19 @@ function moodboardRunStateFromJson(raw: string): MoodboardGenRunState | null {
   }
 }
 
-function formatMoodboardStatusDetail(
-  status: string | null | undefined,
-  metadata?: Record<string, unknown>
-): string {
-  let statusDetail = `Status: ${status ?? MOODBOARD_UNKNOWN_STATUS}`
-  const progressVal = typeof metadata?.progress === 'number' ? metadata.progress : 0
-  const stage = readString(metadata?.stage)
-  if (stage) {
-    const formattedStage = stage
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
-    statusDetail = `${formattedStage} (${progressVal}%)`
-  } else {
-    statusDetail = `${statusDetail} (${progressVal}%)`
-  }
-  return statusDetail
+function formatMoodboardStatusDetail(metadata?: Record<string, unknown>): string {
+  return formatMoodboardGeneratingCopy(readNumber(metadata?.progress))
 }
 
 export class MoodboardGenerationService {
+  private readonly activeOpIds = new Set<string>()
+
   /**
    * Generate moodboard using Trigger.dev background task
    */
   async generate(
     projectId: string,
     prompts: string[],
-    styleReference: string | undefined,
     providerConfig: Record<string, unknown>,
     onComplete?: () => void,
     promptIndex?: number,
@@ -95,6 +81,10 @@ export class MoodboardGenerationService {
     console.log(`Starting moodboard generation via Trigger.dev for project ${projectId}`)
 
     const opId = DynamicLocalStorageKeys.moodboardGen(projectId, promptIndex)
+    if (this.activeOpIds.has(opId) || browserStorage.has(opId)) {
+      return null
+    }
+    this.activeOpIds.add(opId)
 
     useGlobalStatusStore.getState().addOperation({
       id: opId,
@@ -103,7 +93,7 @@ export class MoodboardGenerationService {
         promptIndex !== undefined
           ? MoodboardOperationLabel.Regenerating
           : MoodboardOperationLabel.Generating,
-      details: MoodboardOperationDetail.Initializing,
+        details: MoodboardOperationDetail.Generating,
       status: MoodboardOperationStatus.InProgress,
     })
 
@@ -111,7 +101,6 @@ export class MoodboardGenerationService {
       const { handleId, error } = await triggerMoodboardGeneration({
         projectId,
         prompts,
-        styleReference,
         providerConfig,
         promptIndex,
       })
@@ -136,6 +125,7 @@ export class MoodboardGenerationService {
       return handleId
     } catch (error) {
       console.error(MoodboardGenerationLog.GenerationError, error)
+      this.activeOpIds.delete(opId)
       useGlobalStatusStore.getState().removeOperation(opId)
       throw error
     }
@@ -159,7 +149,7 @@ export class MoodboardGenerationService {
               ? recordFromJson(data.metadata)
               : undefined
           useGlobalStatusStore.getState().updateOperation(opId, {
-            details: formatMoodboardStatusDetail(data.status, metadata),
+            details: formatMoodboardStatusDetail(metadata),
           })
         },
       })
@@ -219,6 +209,7 @@ export class MoodboardGenerationService {
   }
 
   private clearRunState(_runState: MoodboardGenRunState, opId: string) {
+    this.activeOpIds.delete(opId)
     browserStorage.remove(opId)
     useGlobalStatusStore.getState().removeOperation(opId)
   }
@@ -236,6 +227,8 @@ export class MoodboardGenerationService {
       try {
         const runState = moodboardRunStateFromJson(raw)
         if (!runState?.runId) return
+        if (this.activeOpIds.has(key)) return
+        this.activeOpIds.add(key)
 
         console.log(MoodboardGenerationLog.ResumingPolling, runState.runId)
 
@@ -252,6 +245,7 @@ export class MoodboardGenerationService {
 
         void this.pollRun(runState, key, onComplete, onError)
       } catch {
+        this.activeOpIds.delete(key)
         console.warn(MoodboardGenerationLog.ParseStateFailed, key)
       }
     })

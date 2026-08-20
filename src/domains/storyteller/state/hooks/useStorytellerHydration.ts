@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from 'react'
 import type { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
+import { StoryPlanMergeField } from '@/domains/storyteller/config/constants/bible-wire-fields'
 import {
   dedupeCastByName,
   mergeCastFromSource,
@@ -12,7 +13,11 @@ import {
   parseSeriesBibleRecord,
   parseStoryPlanRecord,
 } from '@/domains/storyteller/core/io/project-jsonb'
-import { recordArrayFromJson, recordFromJson, stringRecordFromJson } from '@/shared/data/json-guards'
+import { recordArrayFromJson, recordFromJson, stringArrayFromJson, stringRecordFromJson } from '@/shared/data/json-guards'
+import {
+  isVacantHydrationValue,
+  omitVacantSoundtrackInspirations,
+} from '@/domains/storyteller/core/utils/bible-populated-fields'
 import {
   HYDRATION_BIBLE_CATEGORIES,
   HYDRATION_PLAN_FIELDS,
@@ -40,8 +45,8 @@ function mergePlanFields(
 
   for (const field of HYDRATION_PLAN_FIELDS) {
     const value = source[field]
-    if (value === undefined || value === null) continue
-    if (onlyIfMissing && target[field] !== undefined && target[field] !== null) continue
+    if (isVacantHydrationValue(field, value)) continue
+    if (onlyIfMissing && !isVacantHydrationValue(field, target[field])) continue
     target[field] = value
   }
 
@@ -117,6 +122,11 @@ export function useStorytellerHydration({
 
     mergePlanFields(initialPlan, bible, true)
 
+    const bibleMoodImages = stringArrayFromJson(bible[StoryPlanMergeField.MoodImages])
+    if (bibleMoodImages.length > 0) {
+      initialPlan[StoryPlanMergeField.MoodImages] = bibleMoodImages
+    }
+
     const cast = readCastFromPlan(initialPlan)
     if (cast.length > 0) {
       const merged = dedupeCastByName(cast)
@@ -128,7 +138,9 @@ export function useStorytellerHydration({
       initialPlan.worldRules = dedupeWorldRules(initialPlan.worldRules)
     }
 
-    setStoryPlan(prev => applyUpdatesToStoryPlan(prev, initialPlan))
+    setStoryPlan(prev =>
+      applyUpdatesToStoryPlan(prev, omitVacantSoundtrackInspirations(initialPlan)),
+    )
     console.log(StorytellerHydrationLog.HydratedKeys, Object.keys(initialPlan))
     console.log(
       StorytellerHydrationLog.WorldRulesCount,

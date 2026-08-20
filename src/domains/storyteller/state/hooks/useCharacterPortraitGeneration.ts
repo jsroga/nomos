@@ -40,15 +40,23 @@ export function useCharacterPortraitGeneration({
   const [activeGenerationId, setActiveGenerationId] = useState(0)
 
   const startMutation = useMutation({
-    mutationFn: async (input: { prompt: string; name: string; gender: string }) => {
+    mutationFn: async (input: {
+      description: string
+      characterId?: string
+      mbti?: string
+      motivation?: string
+    }) => {
       if (!projectId) throw new Error(PROJECT_ID_REQUIRED_ERROR)
 
       const apiKey =
         browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) || undefined
 
       return startCharacterPortraitGeneration({
-        prompt: input.prompt || `A portrait of ${input.name}, ${input.gender}`,
+        description: input.description,
         projectId,
+        ...(input.characterId ? { characterId: input.characterId } : {}),
+        ...(input.mbti ? { mbti: input.mbti } : {}),
+        ...(input.motivation ? { motivation: input.motivation } : {}),
         ...(apiKey ? { apiKey } : {}),
       })
     },
@@ -108,7 +116,12 @@ export function useCharacterPortraitGeneration({
   ])
 
   const generatePortrait = useCallback(
-    (input: { prompt: string; name: string; gender: string }) => {
+    (input: {
+      description: string
+      characterId?: string
+      mbti?: string
+      motivation?: string
+    }) => {
       const nextId = (generationIdsRef.current[charId] ?? 0) + 1
       generationIdsRef.current[charId] = nextId
       setActiveGenerationId(nextId)

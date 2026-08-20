@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
+import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
 import { buildUrl } from '@/shared/data/url-builder'
 import { INTERIOR_DESIGNER_API_BASE_PATH } from '../../config/module'
 import {
@@ -178,7 +179,10 @@ export const interiorDesignerApi = {
 
     getStatus: async (runId: string): Promise<InteriorRetextureStatusResponse> =>
       parseResponse(
-        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/retexture/${runId}`),
+        await fetch(
+          `${INTERIOR_DESIGNER_API_BASE_PATH}/retexture/${runId}`,
+          TRIGGER_STATUS_FETCH_INIT,
+        ),
         interiorRetextureStatusResponseSchema
       ),
   },
@@ -199,7 +203,10 @@ export const interiorDesignerApi = {
 
     getStatus: async (taskId: string): Promise<InteriorTextTo3DStatusResponse> =>
       parseResponse(
-        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/text-to-3d/${taskId}`),
+        await fetch(
+          `${INTERIOR_DESIGNER_API_BASE_PATH}/text-to-3d/${taskId}`,
+          TRIGGER_STATUS_FETCH_INIT,
+        ),
         interiorTextTo3DStatusResponseSchema
       ),
   },
@@ -220,7 +227,10 @@ export const interiorDesignerApi = {
 
     getStatus: async (taskId: string): Promise<InteriorMaterialStatusResponse> =>
       parseResponse(
-        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/material/${taskId}`),
+        await fetch(
+          `${INTERIOR_DESIGNER_API_BASE_PATH}/material/${taskId}`,
+          TRIGGER_STATUS_FETCH_INIT,
+        ),
         interiorMaterialStatusResponseSchema
       ),
   },

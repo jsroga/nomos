@@ -14,6 +14,8 @@ import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/us
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
+import { CharacterDraftChatSection } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { characterDraftFieldsFromToolArgs } from '@/domains/storyteller/state/utils/character-draft-fields-from-tool'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   WritersRoomConfirm,
@@ -22,6 +24,7 @@ import {
 import {
   chatFallbackAddToWorldTargets,
   createBeatCommitActions,
+  isCharacterDraftAddToWorldTurn,
   omitSectionKey,
   previewAlreadyInPlan,
   showBeatOnBoard,
@@ -88,9 +91,36 @@ export async function commitBeatCreatesToWorld(input: {
   return true
 }
 
+function commitCharacterDraftAddToWorld(
+  toolArgs: readonly Record<string, unknown>[],
+): boolean {
+  const store = getStorytellerUiStore()
+  const fromArgs = characterDraftFieldsFromToolArgs(toolArgs)
+  if (fromArgs && store.characterDraftFieldsSeq <= store.characterDraftResolvedSeq) {
+    store.notifyCharacterDraftFields(fromArgs)
+  }
+  const live = getStorytellerUiStore()
+  if (!live.characterDraftFields || live.characterDraftFieldsSeq <= live.characterDraftResolvedSeq) {
+    toast.success(WritersRoomToast.NoCharacterForm)
+    return false
+  }
+  live.acceptCharacterDraftFields()
+  toast.success(WritersRoomToast.CharacterForm)
+  return true
+}
+
 export async function commitWritersRoomAddToWorld(
   input: CommitWritersRoomAddToWorldInput,
 ): Promise<boolean> {
+  if (
+    isCharacterDraftAddToWorldTurn({
+      requestedSection: input.answeredSection,
+      toolArgs: input.payload.toolArgs,
+    }) ||
+    input.answeredSection === CharacterDraftChatSection.Form
+  ) {
+    return commitCharacterDraftAddToWorld(input.payload.toolArgs)
+  }
   const toolProposals = proposalsFromWrittenBibleFields(
     mergeToolArgFields(input.payload.toolArgs),
     input.currentEpisodeId,

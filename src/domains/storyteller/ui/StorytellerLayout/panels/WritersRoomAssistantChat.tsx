@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
-import type { AddToWorldPayload } from '@/shared/chat/assistant/AssistantAddToWorldContext'
+import type { AddToWorldPayload, CanAddToWorldInput } from '@/shared/chat/assistant/AssistantAddToWorldContext'
 import type { AssistantGenerationActivity } from '@/shared/chat/assistant/derive-assistant-generation-activity'
 import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
 import type { AssistantPendingPrompt } from '@/shared/chat/assistant/AssistantChat'
@@ -45,6 +45,7 @@ interface WritersRoomAssistantChatProps {
   onAddToWorld: (payload: AddToWorldPayload) => boolean | Promise<boolean>
   sectionLabelsFromToolArgs: (toolArgs: readonly Record<string, unknown>[]) => string[]
   isAddToWorldSettled: (toolArgs: readonly Record<string, unknown>[]) => boolean
+  canAddToWorld: (input: CanAddToWorldInput) => boolean
 }
 
 export function WritersRoomAssistantChat({
@@ -67,6 +68,7 @@ export function WritersRoomAssistantChat({
   onAddToWorld,
   sectionLabelsFromToolArgs,
   isAddToWorldSettled,
+  canAddToWorld,
 }: WritersRoomAssistantChatProps) {
   const mentionProviders = useMemo(
     () => [...getStorytellerMentionProviders(), getGameEntityProvider()],
@@ -118,6 +120,7 @@ export function WritersRoomAssistantChat({
         onAddToWorld={onAddToWorld}
         sectionLabelsFromToolArgs={sectionLabelsFromToolArgs}
         isAddToWorldSettled={isAddToWorldSettled}
+        canAddToWorld={canAddToWorld}
         chatRenderers={chatRenderers}
       />
     </div>

@@ -1,10 +1,37 @@
-import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
+import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
-import { readString } from '@/shared/data/json-guards'
-import { RepaintApiRoute } from '../../constants/repaint-service'
+import { recordFromJson, readString } from '@/shared/data/json-guards'
+import { buildUrl } from '@/shared/data/url-builder'
+import { POLLING_INTERVALS, TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
+import { createTriggerRunStatusFetch } from '@/shared/data/polling/trigger-run-status-fetcher'
+import {
+  readTriggerRunOutputField,
+} from '@/shared/data/polling/trigger-run-polling'
+import { waitForTriggerRun } from '@/shared/data/polling/wait-for-trigger-run'
+import {
+  RepaintApiRoute,
+  RepaintOutputField,
+  RepaintServiceError,
+} from '../../constants/repaint-service'
+import type { WorldGenTriggerStatusResult } from './world-gen-trigger.api'
 
 const JSON_HEADERS = { 'Content-Type': ContentType.Json }
-const REPAINT_API_FAILED_ERROR = 'Repaint API failed'
+const REPAINT_MAX_POLLS = 120
+
+async function fetchRepaintRunStatus(runId: string): Promise<WorldGenTriggerStatusResult> {
+  const response = await fetch(
+    buildUrl(RepaintApiRoute.Status, { [QueryParam.RunId]: runId }),
+    TRIGGER_STATUS_FETCH_INIT,
+  )
+  const body = recordFromJson(await response.json().catch(() => ({})))
+  return {
+    statusCode: response.status,
+    status: readString(body.status),
+    output: recordFromJson(body.output),
+    error: body.error,
+    metadata: recordFromJson(body.metadata),
+  }
+}
 
 export async function postRepaint(input: {
   projectId: string
@@ -18,9 +45,22 @@ export async function postRepaint(input: {
     headers: JSON_HEADERS,
     body: JSON.stringify(input),
   })
-  const imageBase64 = readString(data.imageBase64)
+  const runId = readString(data.runId)
+  if (!runId) {
+    throw new Error(readString(data.error) ?? RepaintServiceError.RepaintTriggerFailed)
+  }
+
+  const result = await waitForTriggerRun(
+    createTriggerRunStatusFetch(fetchRepaintRunStatus, runId),
+    {
+      intervalMs: POLLING_INTERVALS.DEFAULT,
+      maxPolls: REPAINT_MAX_POLLS,
+    },
+  )
+
+  const imageBase64 = readTriggerRunOutputField(result, RepaintOutputField.ImageBase64)
   if (!imageBase64) {
-    throw new Error(readString(data.error) ?? REPAINT_API_FAILED_ERROR)
+    throw new Error(RepaintServiceError.RepaintOutputMissing)
   }
   return { imageBase64 }
 }

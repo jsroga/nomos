@@ -6,14 +6,11 @@ import {
 
 export function resolveMoodboardProviderConfig(
   providerConfig: Record<string, unknown> | undefined,
-  styleReferenceUrls: string[],
   source?: Record<string, string | undefined>,
 ) {
   const moodboardModel = resolveMoodboardModel(source)
   const clientKey = typeof providerConfig?.apiKey === 'string' ? providerConfig.apiKey : undefined
   return {
-    ...providerConfig,
-    styleReferenceUrls,
     provider: imageGenerateModelToImageGenProvider(moodboardModel),
     modelId: moodboardModel,
     apiKey: resolveApiframeApiKey(clientKey),

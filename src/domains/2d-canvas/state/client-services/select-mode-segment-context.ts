@@ -1,4 +1,5 @@
 import type { Tile } from '../../core/world-types'
+import { TILE_COORD_SEPARATOR } from '../../ui/constants/tile-stage-labels'
 import {
   CanvasContextType,
   ContentType,
@@ -10,55 +11,68 @@ import {
   SelectModePixelSample,
   UrlScheme,
 } from '../../constants/select-mode-service'
-import type { PixelBounds, TileRange, WorldBounds } from './select-mode-segment-bounds'
+import type { TileRange } from './select-mode-segment-bounds'
+import { cellDrawOrigin } from './select-mode-segment-bounds'
 
 type LoadImageFn = (url: string) => Promise<HTMLImageElement>
+
+function tileImagePath(filename: string, projectId: string, tileProjectId: string): string {
+  if (filename.startsWith(UrlScheme.Http)) return filename
+  const pid = projectId || tileProjectId
+  return `/projects/${pid}/${filename}`
+}
 
 export async function buildContextCanvasBase64(params: {
   tiles: Record<string, Tile>
   projectId: string
   tileRange: TileRange
-  worldBounds: WorldBounds
-  pixelBounds: PixelBounds
-  effectiveTileSize: number
+  cellSize: number
+  mosaicWidth: number
+  mosaicHeight: number
   loadImage: LoadImageFn
 }): Promise<string> {
-  const { tiles, projectId, tileRange, pixelBounds, effectiveTileSize, loadImage } = params
+  const { tiles, projectId, tileRange, cellSize, mosaicWidth, mosaicHeight, loadImage } = params
 
   const canvas = document.createElement(HtmlElementTag.Canvas)
-  canvas.width = pixelBounds.width
-  canvas.height = pixelBounds.height
+  canvas.width = mosaicWidth
+  canvas.height = mosaicHeight
   const ctx = canvas.getContext(CanvasContextType.TwoD)
   if (!ctx) throw new Error(SelectModeErrorMessage.FailedToCreateCanvas)
 
   ctx.fillStyle = SelectModeCanvasFill.DebugGray
-  ctx.fillRect(0, 0, pixelBounds.width, pixelBounds.height)
+  ctx.fillRect(0, 0, mosaicWidth, mosaicHeight)
 
   const imagePromises: Promise<void>[] = []
 
   for (let tx = tileRange.startTileX; tx <= tileRange.endTileX; tx++) {
     for (let ty = tileRange.startTileY; ty <= tileRange.endTileY; ty++) {
-      const tileKey = `${tx},${ty}`
+      const tileKey = `${tx}${TILE_COORD_SEPARATOR}${ty}`
       const tile = tiles[tileKey]
 
       if (!tile?.image_filename) {
-        console.warn(`[SelectModeService] Tile ${tileKey} not found in store`)
+        console.warn(SelectModeLogMessage.TileNotInStore, tileKey)
         continue
       }
 
-      const pid = projectId || tile.project_id
-      const imagePath = tile.image_filename.startsWith(UrlScheme.Http)
-        ? tile.image_filename
-        : `/projects/${pid}/${tile.image_filename}`
+      const imagePath = tileImagePath(tile.image_filename, projectId, tile.project_id)
+      const origin = cellDrawOrigin(tx, ty, tileRange, cellSize)
 
       const promise = loadImage(imagePath)
         .then(img => {
-          const drawX = Math.round(tx * effectiveTileSize - pixelBounds.x)
-          const drawY = Math.round(ty * effectiveTileSize - pixelBounds.y)
-          ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, effectiveTileSize, effectiveTileSize)
+          ctx.drawImage(
+            img,
+            0,
+            0,
+            img.width,
+            img.height,
+            origin.x,
+            origin.y,
+            cellSize,
+            cellSize,
+          )
         })
         .catch(err => {
-          console.error(`[SelectModeService] Failed to load tile ${tileKey} from ${imagePath}`, err)
+          console.error(SelectModeLogMessage.FailedToLoadTile, tileKey, imagePath, err)
         })
 
       imagePromises.push(promise)
@@ -97,7 +111,7 @@ export async function buildContextCanvasBase64(params: {
   return base64Image
 }
 
-export async function detectTileResolution(params: {
+export async function detectMaxTileResolution(params: {
   tileRange: TileRange
   tiles: Record<string, Tile>
   projectId: string
@@ -105,30 +119,24 @@ export async function detectTileResolution(params: {
   loadImage: LoadImageFn
 }): Promise<number> {
   const { tileRange, tiles, projectId, defaultTileSize, loadImage } = params
-  let tileResolution = defaultTileSize
+  let maxResolution = defaultTileSize
 
-  for (let tx = tileRange.startTileX; tx <= tileRange.endTileX && tileResolution === defaultTileSize; tx++) {
-    for (let ty = tileRange.startTileY; ty <= tileRange.endTileY && tileResolution === defaultTileSize; ty++) {
-      const tile = tiles[`${tx},${ty}`]
+  for (let tx = tileRange.startTileX; tx <= tileRange.endTileX; tx++) {
+    for (let ty = tileRange.startTileY; ty <= tileRange.endTileY; ty++) {
+      const tile = tiles[`${tx}${TILE_COORD_SEPARATOR}${ty}`]
       if (!tile?.image_filename) continue
 
       try {
-        const pid = projectId || tile.project_id
-        const imgUrl = tile.image_filename.startsWith(UrlScheme.Http)
-          ? tile.image_filename
-          : `/projects/${pid}/${tile.image_filename}`
-        const img = await loadImage(imgUrl)
-        tileResolution = img.naturalWidth
-        console.log(`[SelectModeService] Detected tile resolution: ${tileResolution}px`)
+        const img = await loadImage(tileImagePath(tile.image_filename, projectId, tile.project_id))
+        if (img.naturalWidth > maxResolution) {
+          maxResolution = img.naturalWidth
+        }
       } catch {
         console.warn(SelectModeLogMessage.CouldNotDetectTileResolution)
       }
     }
   }
 
-  return tileResolution
-}
-
-export function computeEffectiveTileSize(tileSize: number, finalScale: number): number {
-  return Math.round(tileSize * finalScale)
+  console.log(SelectModeLogMessage.DetectedMaxTileResolution, maxResolution)
+  return maxResolution
 }

@@ -1,9 +1,8 @@
 import { z } from 'zod'
-import { ManageToolOperation } from './manage-tools-wire'
+import { INJECTED_PROJECT_ID_DESC, ManageToolOperation } from './manage-tools-wire'
 
 export const CharacterPsychologySchema = z
   .object({
-    archetype: z.string().optional(),
     actualMotivation: z.string().optional(),
     fears: z.string().optional(),
     desires: z.string().optional(),
@@ -25,7 +24,6 @@ export const CharacterDataSchema = z.object({
   shortDescription: z.string().optional().describe('Brief one-line description'),
   gender: z.string().optional().describe('Gender identity'),
   mbti: z.string().optional().describe('MBTI personality type'),
-  voiceSignature: z.string().optional().describe('Distinctive speaking style'),
   portraitUrl: z.string().url().optional().describe('Character portrait image URL'),
   characterPrompt: z.string().optional().describe('Internal character prompt'),
   psychology: CharacterPsychologySchema,
@@ -57,7 +55,7 @@ export const ManageCharacterInputSchema = z.object({
 })
 
 export const ListCharactersInputSchema = z.object({
-  projectId: z.string().uuid().describe('Project ID to filter characters'),
+  projectId: z.string().uuid().optional().describe(INJECTED_PROJECT_ID_DESC),
   role: z
     .enum(['Protagonist', 'Antagonist', 'Supporting', 'Background', 'Lead'])
     .optional()
@@ -73,7 +71,6 @@ export const CharacterOutputSchema = z.object({
   shortDescription: z.string().optional(),
   gender: z.string().optional(),
   mbti: z.string().optional(),
-  voiceSignature: z.string().optional(),
   portraitUrl: z.string().optional(),
   psychology: z.record(z.unknown()).optional(),
   valence: z.number().optional(),
@@ -94,6 +91,7 @@ export const ListCharactersOutputSchema = z.object({
   success: z.boolean(),
   characters: z.array(CharacterOutputSchema),
   count: z.number(),
+  error: z.string().optional(),
 })
 
 export type CharacterData = z.infer<typeof CharacterDataSchema>

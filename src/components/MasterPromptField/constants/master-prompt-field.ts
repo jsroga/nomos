@@ -25,9 +25,9 @@ export interface MasterPromptSuggestItem {
   description?: string
 }
 
-export const MASTER_PROMPT_CLAMP_MAX_PX = 132
-export const MASTER_PROMPT_FADE_HEIGHT_PX = 34
-export const MASTER_PROMPT_HEIGHT_AUTO = 'auto'
+export const MASTER_PROMPT_CLAMP_MAX_PX = 100
+export const MASTER_PROMPT_EXPAND_PX = 240
+export const MASTER_PROMPT_FADE_HEIGHT_PX = 48
 export const MASTER_PROMPT_IDEA_PREVIEW_MAX = 88
 export const MASTER_PROMPT_IDEA_PREVIEW_SUFFIX = '…'
 
@@ -37,9 +37,18 @@ export enum MasterPromptFieldClass {
   Label = 'inline-flex items-center gap-2 font-mono text-[10.5px] tracking-[0.16em] uppercase text-muted-foreground/80 whitespace-nowrap shrink-0',
   Actions = 'flex shrink-0 items-center gap-1.5',
   Suggest = 'inline-flex items-center gap-1.5 px-[9px] py-1 rounded-[7px] shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.35)] text-primary text-[11.5px] whitespace-nowrap transition-all duration-150 ease-in-out hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-  Body = 'w-full resize-none px-3.5 py-3 border border-border/70 rounded-[9px] bg-card/40 font-mono text-xs leading-[1.7] text-foreground/85 placeholder:text-muted-foreground/55 focus:outline-none focus:border-primary/70 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.12)] transition-all duration-150 ease-in-out',
-  BodyClamped = 'overflow-hidden',
-  BodyExpanded = 'min-h-[132px] overflow-hidden',
+  Body = 'w-full appearance-none resize-none px-3.5 py-3 font-mono text-xs leading-[1.7] placeholder:text-muted-foreground/55 focus:outline-none',
+  BodyText = 'text-foreground/85',
+  BodyChrome = 'border border-border/70 rounded-[9px] bg-card/40 focus:border-primary/70 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.12)] transition-all duration-150 ease-in-out',
+  Frame = 'relative isolate rounded-[9px] border border-border/70 bg-card/40 transition-all duration-150 ease-in-out focus-within:border-primary/70 focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.12)]',
+  BodyOnFrame = 'bg-transparent rounded-[9px]',
+  BodyCollapsed = 'absolute inset-0 z-[2] h-full bg-transparent text-transparent caret-[hsl(var(--foreground))] [-webkit-text-fill-color:transparent]',
+  FrameClamped = 'overflow-hidden w-full shrink-0 h-[100px] min-h-[100px] max-h-[100px]',
+  FrameExpanded = 'overflow-hidden w-full shrink-0 h-[240px] min-h-[240px] max-h-[240px]',
+  Preview = 'h-full overflow-hidden px-3.5 py-3 font-mono text-xs leading-[1.7] text-foreground/85 whitespace-pre-wrap break-words [mask-image:linear-gradient(to_bottom,#000_calc(100%-48px),transparent)] [-webkit-mask-image:linear-gradient(to_bottom,#000_calc(100%-48px),transparent)]',
+  Fade = 'pointer-events-none absolute inset-x-px bottom-0 z-[3] h-[48px] rounded-b-[8px] bg-gradient-to-b from-transparent to-black/80',
+  BodyFillFrame = 'h-full',
+  BodyExpanded = 'h-full overflow-y-auto',
   MinRowsDefault = 'min-h-[88px]',
   MinRowsPage = 'min-h-[72px]',
   Suggestion = 'px-3.5 py-3 border border-primary/35 rounded-[9px] bg-card/40 space-y-3',
@@ -51,8 +60,6 @@ export enum MasterPromptFieldClass {
   SuggestSpinner = 'h-[11px] w-[11px] shrink-0 rounded-full shadow-[inset_0_0_0_2px_hsl(var(--primary)/0.3)] border-t-2 border-primary animate-spin',
   BodyLoading = 'flex flex-col gap-2 px-3.5 py-3 border border-primary/35 rounded-[9px] bg-card/40',
   SkeletonBar = 'h-[9px] rounded-[3px] bg-muted/75',
-  ClampFrame = 'relative',
-  Fade = 'pointer-events-none absolute left-px right-px bottom-[7px] rounded-[9px] bg-gradient-to-b from-card/0 to-background',
   Footer = 'mt-[7px] flex items-center gap-2',
   CharCount = 'font-mono text-[10px] tracking-[0.1em] text-muted-foreground/60 whitespace-nowrap',
   ShowAll = 'ml-auto shrink-0 whitespace-nowrap text-[11.5px] text-primary transition-all duration-150 ease-in-out hover:text-primary/80',

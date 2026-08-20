@@ -8,8 +8,11 @@ import { DB_TABLE } from '@/shared/data/constants/db-tables'
 import { saveProjectImage } from '@/domains/2d-canvas/core/io/world-data.api'
 import { SELECT_MODE_TOOLBAR_COPY } from '@/domains/2d-canvas/ui/constants/select-mode-toolbar'
 import { selectModeService } from '@/domains/2d-canvas/state/client-services/select-mode-service'
+import { shouldShowSelectModeToolbar } from './should-show-select-mode-toolbar'
+import { requireSavedAssetImageUrl } from './select-mode-save-asset-url'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { FsDirectory } from '@/shared/data/constants/protocol'
 
 export const SelectModeToolbar: React.FC = () => {
   const isSelectMode = useWorldStore(state => state.isSelectMode)
@@ -23,6 +26,7 @@ export const SelectModeToolbar: React.FC = () => {
   const setSelectTextPrompt = useWorldStore(state => state.setSelectTextPrompt)
   const addAsset = useWorldStore(state => state.addAsset)
   const [isSaving, setIsSaving] = useState(false)
+  const hasMask = Boolean(selectedMask?.imageUrl)
 
   const handleSaveAsset = async () => {
     if (!selectedMask || !currentProject || !selectedMask.debugInfo?.contextImage) return
@@ -31,8 +35,6 @@ export const SelectModeToolbar: React.FC = () => {
     const filename = `asset_${Date.now()}.png`
 
     try {
-      // 1. Extract the segmented object with transparent background
-      // Pass the original bounds so we can calculate the actual world position
       const { dataUrl: extractedAsset, bounds: actualBounds } =
         await selectModeService.extractAsset(
           selectedMask.debugInfo.contextImage,
@@ -40,22 +42,21 @@ export const SelectModeToolbar: React.FC = () => {
           selectedMask.bounds
         )
 
-      // 2. Save Image Locally
-      await saveProjectImage({
+      const saved = await saveProjectImage({
         projectId: currentProject.id,
-        filename: `assets/${filename}`,
+        filename: `${FsDirectory.Assets}/${filename}`,
         imageData: extractedAsset,
       })
+      const imageFilename = requireSavedAssetImageUrl(saved.url)
 
-      // 3. Save Metadata to Supabase with the actual cropped bounds
       const supabase = getSupabaseClient()
       const { data: newAsset, error } = await supabase
         .from(DB_TABLE.ASSETS)
         .insert({
           project_id: currentProject.id,
-          image_filename: filename,
+          image_filename: imageFilename,
           metadata: {
-            bounds: actualBounds, // Use the actual cropped bounds
+            bounds: actualBounds,
             box: selectBox,
           },
         })
@@ -64,7 +65,6 @@ export const SelectModeToolbar: React.FC = () => {
 
       if (error) throw error
 
-      // 4. Add to local state immediately (no refresh needed)
       if (newAsset) {
         addAsset(newAsset)
       }
@@ -87,7 +87,15 @@ export const SelectModeToolbar: React.FC = () => {
     setSelectTextPrompt('')
   }
 
-  if (!isSelectMode) return null
+  if (
+    !shouldShowSelectModeToolbar({
+      isSelectMode,
+      isSegmenting,
+      hasMask,
+    })
+  ) {
+    return null
+  }
 
   return (
     <div className="fixed bottom-8 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-2xl border border-border bg-background/95 px-4 py-3 shadow-2xl">
@@ -97,29 +105,23 @@ export const SelectModeToolbar: React.FC = () => {
 
       <div className="h-8 w-px bg-border/70" />
 
-      {/* Status */}
       <div className="flex min-w-[180px] items-center gap-2 px-1">
         {isSegmenting ? (
           <>
             <Loader2 size={14} className="animate-spin text-primary" />
-            <span className="text-xs font-mono text-foreground/90">Segmenting...</span>
+            <span className="text-xs font-mono text-foreground/90">
+              {SELECT_MODE_TOOLBAR_COPY.SEGMENTING}
+            </span>
           </>
-        ) : selectedMask?.imageUrl ? (
-          <span className="flex items-center gap-1.5 text-xs font-mono text-green-400">
-            <Check size={12} /> Object selected
-          </span>
-        ) : selectBox ? (
-          <span className="text-xs font-mono text-foreground/80">
-            Enter prompt...
-          </span>
         ) : (
-          <span className="text-xs font-mono text-foreground/80">Draw box on map</span>
+          <span className="flex items-center gap-1.5 text-xs font-mono text-green-400">
+            <Check size={12} /> {SELECT_MODE_TOOLBAR_COPY.OBJECT_SELECTED}
+          </span>
         )}
       </div>
 
       <div className="h-8 w-px bg-border/70" />
 
-      {/* Actions */}
       <div className="flex items-center gap-2">
         <Button
           variant="secondary"
@@ -127,10 +129,10 @@ export const SelectModeToolbar: React.FC = () => {
           onClick={handleCancel}
           className="h-8 border border-border px-4 text-[10px] font-bold uppercase tracking-widest"
         >
-          Exit
+          {SELECT_MODE_TOOLBAR_COPY.EXIT}
         </Button>
 
-        {selectedMask && selectedMask.imageUrl && (
+        {hasMask && (
           <Button
             size="sm"
             onClick={handleSaveAsset}
@@ -139,11 +141,11 @@ export const SelectModeToolbar: React.FC = () => {
           >
             {isSaving ? (
               <>
-                <Loader2 size={14} className="animate-spin mr-1.5" /> Saving
+                <Loader2 size={14} className="animate-spin mr-1.5" /> {SELECT_MODE_TOOLBAR_COPY.SAVING}
               </>
             ) : (
               <>
-                <Save size={14} className="mr-1.5" /> Save Asset
+                <Save size={14} className="mr-1.5" /> {SELECT_MODE_TOOLBAR_COPY.SAVE_ASSET}
               </>
             )}
           </Button>

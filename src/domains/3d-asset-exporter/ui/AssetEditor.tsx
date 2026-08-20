@@ -6,7 +6,8 @@ import { EditorTool } from '@/shared/types/enums'
 import { useAssetEditorImageUpload } from '../state/hooks/useAssetEditorImageUpload'
 import { useAssetEditorCanvas } from '../state/hooks/useAssetEditorCanvas'
 import { AssetEditorUploadZone } from './AssetEditorUploadZone'
-import { ASSET_EDITOR_CHECKERBOARD_BACKGROUND_STYLE } from '../constants/asset-editor'
+import { AssetPanelCheckerboard } from './AssetPanelEmptyState'
+import { AssetExporterPanelClass, AssetExporterPanelCopy } from './constants/asset-exporter-panel'
 
 interface AssetEditorProps {
   assetId: string
@@ -65,6 +66,7 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({
     clearCursorOverlay,
     handleSave,
   } = useAssetEditorCanvas({
+    assetId,
     projectId,
     assetImageFilename: imageFilename,
     loadedImageUrl,
@@ -74,6 +76,7 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({
     tool,
     brushSize,
     onImageLoadError: setImageLoadError,
+    onUpdateAsset,
   })
 
   const showUploadZone =
@@ -85,10 +88,10 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-      <div className="p-3 border-b border-border flex items-center justify-between bg-muted/30">
+      <div className={AssetExporterPanelClass.Header}>
         <div className="flex items-center gap-2">
           <ImageIcon size={16} className="text-muted-foreground" />
-          <h3 className="font-medium text-sm">2D Editor</h3>
+          <h3 className="font-medium text-sm">{AssetExporterPanelCopy.TwoDEditor}</h3>
         </div>
         {!showUploadZone && (
           <div className="flex items-center gap-2">
@@ -126,11 +129,8 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({
         )}
       </div>
 
-      <div className="flex-1 bg-[#1a1a1a] relative overflow-hidden flex items-center justify-center">
-        <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none"
-          style={ASSET_EDITOR_CHECKERBOARD_BACKGROUND_STYLE}
-        />
+      <div className={AssetExporterPanelClass.PreviewStage}>
+        <AssetPanelCheckerboard />
 
         {showUploadZone ? (
           <AssetEditorUploadZone

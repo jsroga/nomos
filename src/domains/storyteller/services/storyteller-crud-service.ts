@@ -59,7 +59,6 @@ export const createCharacterSchema = z.object({
   isolation: z.number().min(0).max(100).optional().default(20),
   transformation: z.number().min(0).max(100).optional().default(0),
   mbti: z.string().optional(),
-  voiceSignature: z.string().optional(),
 })
 
 export const listEpisodesSchema = z.object({
@@ -204,7 +203,6 @@ export class StorytellerService {
         socialSafety: 100 - validated.isolation,
         transformationProgress: validated.transformation,
         mbti: validated.mbti,
-        voiceSignature: validated.voiceSignature,
       })
       .returning()
 

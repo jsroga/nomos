@@ -2,7 +2,10 @@ import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { prepareImageUrl } from './lib/prepare-image-url'
 import { runHyper3dGeneration } from './lib/run-hyper3d-generation'
 import { runMeshyImageTo3d } from './lib/run-meshy-image-to-3d'
-import { MeshyGenerationTopology } from './constants/meshy-generation-wire'
+import {
+  MeshyGenerationMetadataKey,
+  MeshyGenerationTopology,
+} from './constants/meshy-generation-wire'
 
 function resolveMeshyTopology(
   topology: 'quad' | 'triangle' | undefined,
@@ -31,8 +34,8 @@ export const generate3DModelTask = task({
 
     logger.info(`Generating 3D model for asset ${assetId} using ${provider}`)
 
-    const finalImageUrl = await prepareImageUrl(imageUrl)
-    await metadata.set('progress', 0)
+    const finalImageUrl = await prepareImageUrl(imageUrl, assetId)
+    await metadata.set(MeshyGenerationMetadataKey.Progress, 0)
 
     if (provider === 'meshy') {
       return runMeshyImageTo3d({
@@ -41,6 +44,9 @@ export const generate3DModelTask = task({
         apiKey,
         targetPolycount,
         topology: resolveMeshyTopology(topology),
+        onProgress: async progress => {
+          await metadata.set(MeshyGenerationMetadataKey.Progress, progress)
+        },
       })
     }
 

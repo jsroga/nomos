@@ -22,3 +22,7 @@ export function resolveOverviewDisplayFields(
     worldDescription: localPlan.worldDescription || storyPlan.worldDescription || undefined,
   }
 }
+
+export function isOverviewReadyForMoodboard(fields: OverviewDisplayFields): boolean {
+  return Boolean(fields.worldDescription?.trim())
+}

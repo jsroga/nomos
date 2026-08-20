@@ -9,7 +9,7 @@
 // ai/ is a server-only layer (browser-bundle guard; node/Studio/evals safe)
 import '@/shared/data/server-guard'
 
-// Chat adapter (conversation glue; owns the 10-tool surface)
+// Chat adapter (conversation glue; owns the CRUD + alignment tool surface)
 export { StorytellerAgent, createStorytellerAgent } from './agents/StorytellerAgent/storyteller-agent'
 
 // GRRM solo agents (class wrappers for request-scoped, memory-backed use)

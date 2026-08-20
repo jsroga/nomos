@@ -11,6 +11,7 @@ import {
   fetchEpisodeBeatsList,
   patchBeat,
 } from '@/domains/storyteller/core/io/storyteller.api'
+import { cancelBeatImageRun } from '@/domains/storyteller/core/io/beat-image.api'
 import type { Message } from '@/shared/chat'
 import {
   CORK_BOARD_DELETE_CANCEL,
@@ -30,9 +31,11 @@ import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytelle
 import {
   beatsForImageGeneration,
   beatsHaveExistingImages,
+  cancelCorkBoardBeatImageBatch,
   preferRicherBeats,
   requestCorkBoardNextBeat,
   runCorkBoardBeatImageGeneration,
+  isCorkBoardChatBlocked,
 } from './cork-board-generation'
 import { useCorkBoardDragDrop } from './useCorkBoardDragDrop'
 import {
@@ -75,6 +78,7 @@ export const useCorkBoardState = ({
   const params = useParams<{ projectId: string }>()
   const imagePatches = useBeatImageBatchStore(state => state.patches)
   const pendingImageBeatIds = useBeatImageBatchStore(state => state.pendingBeatIds)
+  const activeImageBeatId = useBeatImageBatchStore(state => state.activeBeatId)
   const batchEpisodeId = useBeatImageBatchStore(state => state.episodeId)
   const isGeneratingBeats =
     isBeatImageBatchBusy(pendingImageBeatIds) &&
@@ -97,7 +101,8 @@ export const useCorkBoardState = ({
   }, [imagePatches])
 
   useEffect(() => {
-    if (isChatBusy || !episodeId) return
+    if (!episodeId) return
+    if (isChatBusy && awaitingBoardRefresh) return
     if (awaitingBoardRefresh) {
       queueMicrotask(() => setAwaitingBoardRefresh(false))
       onRefreshBeats?.()
@@ -151,6 +156,10 @@ export const useCorkBoardState = ({
       toast.error(result.message)
       return
     }
+    if (isCorkBoardChatBlocked()) {
+      toast.error(CorkBoardCopy.WritersRoomBusy)
+      return
+    }
     if (beats.length > 0) {
       const confirmed = await confirm({
         title: CorkBoardCopy.ReplaceTitle,
@@ -175,6 +184,11 @@ export const useCorkBoardState = ({
 
   const handleGenerateImages = async () => {
     if (!projectId || beats.length === 0) return
+    const batch = getBeatImageBatchStore()
+    batch.start(
+      episodeId ?? null,
+      beats.map(beat => beat.id),
+    )
     let policy = CorkBoardBeatImagePolicy.Override
     if (beatsHaveExistingImages(beats)) {
       const choice = await choose({
@@ -184,27 +198,42 @@ export const useCorkBoardState = ({
         secondaryLabel: CorkBoardCopy.ImagesSkip,
         cancelLabel: CORK_BOARD_IMAGES_CANCEL,
       })
-      if (choice === ConfirmDialogChoice.Dismissed) return
+      if (choice === ConfirmDialogChoice.Dismissed || getBeatImageBatchStore().cancelled) {
+        batch.clear()
+        return
+      }
       policy =
         choice === ConfirmDialogChoice.Secondary
           ? CorkBoardBeatImagePolicy.SkipExisting
           : CorkBoardBeatImagePolicy.Override
     }
+    if (getBeatImageBatchStore().cancelled) {
+      batch.clear()
+      return
+    }
     const targets = beatsForImageGeneration(beats, policy)
     if (targets.length === 0) {
       toast.error(CorkBoardCopy.AllImagesExist)
+      batch.clear()
       return
     }
+    batch.start(
+      episodeId ?? null,
+      targets.map(beat => beat.id),
+    )
     void runCorkBoardBeatImageGeneration({
       projectId,
       episodeId,
       beats: targets,
       onAddMessage,
+      alreadyStarted: true,
     })
   }
 
   const handleCancelImages = () => {
-    getBeatImageBatchStore().cancel()
+    const runId = cancelCorkBoardBeatImageBatch()
+    toast(CorkBoardCopy.ImagesCancelled)
+    if (runId) void cancelBeatImageRun(runId)
   }
 
   const handleNextBeat = () => {
@@ -224,6 +253,8 @@ export const useCorkBoardState = ({
     projectId,
     isGeneratingBeats,
     pendingImageBeatIds,
+    activeImageBeatId,
+    awaitingBoardRefresh,
     isChatBusy,
     expandedBeatId,
     setExpandedBeatId,

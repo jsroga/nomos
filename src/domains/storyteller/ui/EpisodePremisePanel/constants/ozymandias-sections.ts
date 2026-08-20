@@ -75,25 +75,25 @@ const TONE_LABEL_CLASS: Record<OzymandiasSectionTone, string> = {
 
 const TONE_BORDER_CLASS: Record<OzymandiasSectionTone, string> = {
   [OzymandiasSectionTone.Primary]: 'border-border',
-  [OzymandiasSectionTone.Red]: 'border-red-500/20',
-  [OzymandiasSectionTone.Orange]: 'border-orange-500/20',
-  [OzymandiasSectionTone.Purple]: 'border-purple-500/20',
+  [OzymandiasSectionTone.Red]: 'border-border',
+  [OzymandiasSectionTone.Orange]: 'border-border',
+  [OzymandiasSectionTone.Purple]: 'border-border',
 }
 
 const TONE_BG_CLASS: Record<OzymandiasSectionTone, string> = {
   [OzymandiasSectionTone.Primary]: 'bg-muted/50 border-border focus:border-primary focus:ring-primary/30',
-  [OzymandiasSectionTone.Red]: 'bg-red-500/5 border-red-500/20 focus:border-red-500 focus:ring-red-500/30',
+  [OzymandiasSectionTone.Red]: 'bg-red-500/5 border-border focus:border-red-500 focus:ring-red-500/30',
   [OzymandiasSectionTone.Orange]:
-    'bg-orange-500/5 border-orange-500/20 focus:border-orange-500 focus:ring-orange-500/30',
+    'bg-orange-500/5 border-border focus:border-orange-500 focus:ring-orange-500/30',
   [OzymandiasSectionTone.Purple]:
-    'bg-purple-500/5 border-purple-500/20 focus:border-purple-500 focus:ring-purple-500/30',
+    'bg-purple-500/5 border-border focus:border-purple-500 focus:ring-purple-500/30',
 }
 
 const TONE_DASHED_CLASS: Record<OzymandiasSectionTone, string> = {
   [OzymandiasSectionTone.Primary]: 'border-border hover:border-primary/50 hover:bg-muted/20',
-  [OzymandiasSectionTone.Red]: 'border-red-500/20 hover:border-red-500/50 hover:bg-red-500/5',
-  [OzymandiasSectionTone.Orange]: 'border-orange-500/20 hover:border-orange-500/50 hover:bg-orange-500/5',
-  [OzymandiasSectionTone.Purple]: 'border-purple-500/20 hover:border-purple-500/50 hover:bg-purple-500/5',
+  [OzymandiasSectionTone.Red]: 'border-border hover:border-primary/50 hover:bg-muted/20',
+  [OzymandiasSectionTone.Orange]: 'border-border hover:border-primary/50 hover:bg-muted/20',
+  [OzymandiasSectionTone.Purple]: 'border-border hover:border-primary/50 hover:bg-muted/20',
 }
 
 const TONE_SKELETON_CLASS: Record<OzymandiasSectionTone, string> = {

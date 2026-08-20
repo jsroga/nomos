@@ -30,7 +30,6 @@ export const handleCreateCharacter: ActionHandler = async (ctx, action) => {
     name: readStringField(payload, CharacterPayloadField.Name),
     role: readStringField(payload, CharacterPayloadField.Role, CharacterRole.SupportingLower),
     description: readStringField(payload, CharacterPayloadField.Description),
-    archetype: readStringField(payload, CharacterPayloadField.Archetype),
     psychology: {},
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -49,7 +48,6 @@ export const handleCreateCharacter: ActionHandler = async (ctx, action) => {
         readStringField(payload, CharacterPayloadField.Name),
       metadata: {
         role: payload.role,
-        archetype: payload.archetype,
         motivation: payload.motivation,
         fatalFlaw: payload.fatalFlaw,
       },

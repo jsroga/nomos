@@ -37,6 +37,7 @@ import {
   EPISODE_UPDATE_ID_REQUIRED,
   LIST_EPISODES_TOOL_DESC,
   LIST_EPISODES_TOOL_ID,
+  LIST_PROJECT_ID_REQUIRED,
   ManageToolOperation,
 } from './manage-tools-wire'
 
@@ -101,6 +102,9 @@ export const listEpisodesTool = createTool({
       requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
 
     try {
+      if (!projectId) {
+        return { success: false, episodes: [], count: 0, error: LIST_PROJECT_ID_REQUIRED }
+      }
       const conditions: SQL[] = [eq(episodes.projectId, projectId)]
       if (sequence !== undefined) conditions.push(eq(episodes.sequence, sequence))
 

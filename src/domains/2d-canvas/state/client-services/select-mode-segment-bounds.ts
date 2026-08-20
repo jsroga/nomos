@@ -1,8 +1,10 @@
-import type { SelectBox } from './select-mode-service'
+import type { SelectBox } from './select-mode-types'
 
-const MIN_WORLD_SIZE = 128
-const ALIGNMENT = 32
-const MAX_CANVAS_DIMENSION = 2048
+export const WORLD_TILE_SIZE = 512
+export const MAX_MOSAIC_DIMENSION = 2048
+
+const TILE_BOUNDARY_EPS = 1e-6
+const MIN_CELL_SIZE = 1
 
 export interface WorldBounds {
   x: number
@@ -25,76 +27,110 @@ export interface TileRange {
   endTileY: number
 }
 
-export interface PixelLayout {
+export interface MergedGridLayout {
+  cellSize: number
+  mosaicWidth: number
+  mosaicHeight: number
+  cols: number
+  rows: number
+  worldBounds: WorldBounds
   pixelBounds: PixelBounds
-  finalScale: number
-  alignedWidth: number
-  alignedHeight: number
+  relativeBox: SelectBox
 }
 
-export function computeWorldBoundsFromBox(box: SelectBox, padding: number): WorldBounds {
-  const boxMinX = Math.min(box.x1, box.x2)
-  const boxMinY = Math.min(box.y1, box.y2)
-  const boxMaxX = Math.max(box.x1, box.x2)
-  const boxMaxY = Math.max(box.y1, box.y2)
-
-  const worldBounds: WorldBounds = {
-    x: Math.floor(boxMinX - padding),
-    y: Math.floor(boxMinY - padding),
-    width: Math.ceil(boxMaxX - boxMinX + padding * 2),
-    height: Math.ceil(boxMaxY - boxMinY + padding * 2),
-  }
-
-  worldBounds.width = Math.max(worldBounds.width, MIN_WORLD_SIZE)
-  worldBounds.height = Math.max(worldBounds.height, MIN_WORLD_SIZE)
-
-  return worldBounds
-}
-
-export function computeTileRange(worldBounds: WorldBounds, tileSize: number): TileRange {
+function boxMinMax(box: SelectBox): {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+} {
   return {
-    startTileX: Math.floor(worldBounds.x / tileSize),
-    startTileY: Math.floor(worldBounds.y / tileSize),
-    endTileX: Math.floor((worldBounds.x + worldBounds.width) / tileSize),
-    endTileY: Math.floor((worldBounds.y + worldBounds.height) / tileSize),
+    minX: Math.min(box.x1, box.x2),
+    minY: Math.min(box.y1, box.y2),
+    maxX: Math.max(box.x1, box.x2),
+    maxY: Math.max(box.y1, box.y2),
   }
 }
 
-export function computePixelLayout(worldBounds: WorldBounds, scale: number): PixelLayout {
-  let rawWidth = Math.round(worldBounds.width * scale)
-  let rawHeight = Math.round(worldBounds.height * scale)
-  let effectiveScale = scale
-
-  if (rawWidth > MAX_CANVAS_DIMENSION || rawHeight > MAX_CANVAS_DIMENSION) {
-    const downscaleFactor = Math.max(rawWidth, rawHeight) / MAX_CANVAS_DIMENSION
-    effectiveScale = scale / downscaleFactor
-    rawWidth = Math.round(worldBounds.width * effectiveScale)
-    rawHeight = Math.round(worldBounds.height * effectiveScale)
-  }
-
-  const alignedWidth = rawWidth + ((ALIGNMENT - (rawWidth % ALIGNMENT)) % ALIGNMENT)
-  const alignedHeight = rawHeight + ((ALIGNMENT - (rawHeight % ALIGNMENT)) % ALIGNMENT)
-
-  const finalScale = effectiveScale
-  const pixelBounds: PixelBounds = {
-    x: Math.round(worldBounds.x * finalScale),
-    y: Math.round(worldBounds.y * finalScale),
-    width: alignedWidth,
-    height: alignedHeight,
-  }
-
-  return { pixelBounds, finalScale, alignedWidth, alignedHeight }
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
 }
 
-export function computeRelativeBox(
+export function computeCoveringTileRange(
   box: SelectBox,
-  worldBounds: WorldBounds,
-  finalScale: number,
-): SelectBox {
+  tileSize: number = WORLD_TILE_SIZE,
+): TileRange {
+  const { minX, minY, maxX, maxY } = boxMinMax(box)
+  const startTileX = Math.floor(minX / tileSize)
+  const startTileY = Math.floor(minY / tileSize)
+  const endTileX = Math.max(startTileX, Math.floor((maxX - TILE_BOUNDARY_EPS) / tileSize))
+  const endTileY = Math.max(startTileY, Math.floor((maxY - TILE_BOUNDARY_EPS) / tileSize))
+  return { startTileX, startTileY, endTileX, endTileY }
+}
+
+export function computeMergedWorldRect(
+  range: TileRange,
+  tileSize: number = WORLD_TILE_SIZE,
+): WorldBounds {
+  const cols = range.endTileX - range.startTileX + 1
+  const rows = range.endTileY - range.startTileY + 1
   return {
-    x1: (box.x1 - worldBounds.x) * finalScale,
-    y1: (box.y1 - worldBounds.y) * finalScale,
-    x2: (box.x2 - worldBounds.x) * finalScale,
-    y2: (box.y2 - worldBounds.y) * finalScale,
+    x: range.startTileX * tileSize,
+    y: range.startTileY * tileSize,
+    width: cols * tileSize,
+    height: rows * tileSize,
+  }
+}
+
+export function computeMergedGridLayout(input: {
+  range: TileRange
+  box: SelectBox
+  nativeCellSize: number
+  tileSize?: number
+  maxDimension?: number
+}): MergedGridLayout {
+  const tileSize = input.tileSize ?? WORLD_TILE_SIZE
+  const maxDimension = input.maxDimension ?? MAX_MOSAIC_DIMENSION
+  const cols = input.range.endTileX - input.range.startTileX + 1
+  const rows = input.range.endTileY - input.range.startTileY + 1
+  const rawWidth = cols * input.nativeCellSize
+  const rawHeight = rows * input.nativeCellSize
+  const longest = Math.max(rawWidth, rawHeight)
+  const cellSize =
+    longest > maxDimension
+      ? Math.max(MIN_CELL_SIZE, Math.floor((input.nativeCellSize * maxDimension) / longest))
+      : input.nativeCellSize
+  const mosaicWidth = cols * cellSize
+  const mosaicHeight = rows * cellSize
+  const worldBounds = computeMergedWorldRect(input.range, tileSize)
+  const scale = cellSize / tileSize
+  const relativeBox: SelectBox = {
+    x1: clamp((input.box.x1 - worldBounds.x) * scale, 0, mosaicWidth),
+    y1: clamp((input.box.y1 - worldBounds.y) * scale, 0, mosaicHeight),
+    x2: clamp((input.box.x2 - worldBounds.x) * scale, 0, mosaicWidth),
+    y2: clamp((input.box.y2 - worldBounds.y) * scale, 0, mosaicHeight),
+  }
+
+  return {
+    cellSize,
+    mosaicWidth,
+    mosaicHeight,
+    cols,
+    rows,
+    worldBounds,
+    pixelBounds: { x: 0, y: 0, width: mosaicWidth, height: mosaicHeight },
+    relativeBox,
+  }
+}
+
+export function cellDrawOrigin(
+  tileX: number,
+  tileY: number,
+  range: TileRange,
+  cellSize: number,
+): { x: number; y: number } {
+  return {
+    x: (tileX - range.startTileX) * cellSize,
+    y: (tileY - range.startTileY) * cellSize,
   }
 }

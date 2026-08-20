@@ -1,19 +1,16 @@
 import type { Tile } from '../../core/world-types'
 import { SelectModeLogLabel, SelectModeLogMessage } from '../../constants/select-mode-service'
 import {
-  computePixelLayout,
-  computeRelativeBox,
-  computeTileRange,
-  computeWorldBoundsFromBox,
+  computeCoveringTileRange,
+  computeMergedGridLayout,
+  WORLD_TILE_SIZE,
 } from './select-mode-segment-bounds'
 import {
   buildContextCanvasBase64,
-  computeEffectiveTileSize,
-  detectTileResolution,
+  detectMaxTileResolution,
 } from './select-mode-segment-context'
 import { runSegmentationRequest } from './select-mode-segment-api'
 import {
-  getFalApiKey,
   getReplicateApiKey,
   getSamParams,
   getSegmentationProvider,
@@ -31,7 +28,6 @@ declare global {
 }
 
 export class SelectModeService {
-  private TILE_SIZE = 512
   private abortController: AbortController | null = null
 
   async segmentObject(
@@ -45,42 +41,37 @@ export class SelectModeService {
     }
     this.abortController = new AbortController()
 
-    const PADDING = 32
-    const worldBounds = computeWorldBoundsFromBox(box, PADDING)
-    const tileRange = computeTileRange(worldBounds, this.TILE_SIZE)
-
-    const tileResolution = await detectTileResolution({
+    const tileRange = computeCoveringTileRange(box, WORLD_TILE_SIZE)
+    const nativeCellSize = await detectMaxTileResolution({
       tileRange,
       tiles,
       projectId,
-      defaultTileSize: this.TILE_SIZE,
+      defaultTileSize: WORLD_TILE_SIZE,
       loadImage,
     })
+    const layout = computeMergedGridLayout({
+      range: tileRange,
+      box,
+      nativeCellSize,
+    })
+    const { worldBounds, pixelBounds, relativeBox, cellSize } = layout
 
-    const scale = tileResolution / this.TILE_SIZE
-    const { pixelBounds, finalScale } = computePixelLayout(worldBounds, scale)
-    const effectiveTileSize = computeEffectiveTileSize(this.TILE_SIZE, finalScale)
-
-    console.log(
-      `[SelectModeService] Scale: ${finalScale} (original: ${scale}), World bounds:`,
+    console.log(SelectModeLogMessage.MosaicLayout, {
+      cellSize,
+      nativeCellSize,
       worldBounds,
-      SelectModeLogLabel.PixelBounds,
-      pixelBounds,
-      SelectModeLogLabel.EffectiveTileSize,
-      effectiveTileSize
-    )
+      [SelectModeLogLabel.PixelBounds]: pixelBounds,
+    })
 
     const base64Image = await buildContextCanvasBase64({
       tiles,
       projectId,
       tileRange,
-      worldBounds,
-      pixelBounds,
-      effectiveTileSize,
+      cellSize,
+      mosaicWidth: layout.mosaicWidth,
+      mosaicHeight: layout.mosaicHeight,
       loadImage,
     })
-
-    const relativeBox = computeRelativeBox(box, worldBounds, finalScale)
 
     let maskUrl = ''
     let apiResponse: unknown = null
@@ -88,12 +79,12 @@ export class SelectModeService {
     try {
       const segmentation = await runSegmentationRequest({
         provider: getSegmentationProvider(),
+        projectId,
         base64Image,
         relativeBox,
         pixelBounds,
         textPrompt,
         replicateApiKey: getReplicateApiKey(),
-        falApiKey: getFalApiKey(),
         samParams: getSamParams(),
         signal: this.abortController.signal,
         fetchMaskAsDataUrl,
@@ -105,18 +96,13 @@ export class SelectModeService {
 
       return {
         imageUrl: maskUrl,
-        bounds: {
-          x: worldBounds.x,
-          y: worldBounds.y,
-          width: worldBounds.width,
-          height: worldBounds.height,
-        },
+        bounds: worldBounds,
         debugInfo: {
           contextImage: base64Image,
           box: relativeBox,
           apiResponse,
           maskUrl,
-          scale: finalScale,
+          scale: cellSize / WORLD_TILE_SIZE,
           worldBounds,
           pixelBounds,
         },
@@ -125,12 +111,7 @@ export class SelectModeService {
       console.error(SelectModeLogMessage.ErrorDuringSegmentation, error)
       return {
         imageUrl: maskUrl,
-        bounds: {
-          x: worldBounds.x,
-          y: worldBounds.y,
-          width: worldBounds.width,
-          height: worldBounds.height,
-        },
+        bounds: worldBounds,
         debugInfo: {
           contextImage: base64Image,
           box: relativeBox,

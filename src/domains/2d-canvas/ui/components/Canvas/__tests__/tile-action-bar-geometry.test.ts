@@ -13,28 +13,64 @@ import {
 describe('resolveTileActionBarVariant', () => {
   it('hides when nothing is selected', () => {
     expect(
-      resolveTileActionBarVariant({ hasSelection: false, hasArt: true, busy: false }),
+      resolveTileActionBarVariant({
+        hasSelection: false,
+        hasArt: true,
+        busy: false,
+        isPanMode: true,
+      }),
+    ).toBe(TileActionBarVariant.Hidden)
+  })
+
+  it('hides in paint and fragment tools', () => {
+    expect(
+      resolveTileActionBarVariant({
+        hasSelection: true,
+        hasArt: true,
+        busy: false,
+        isPanMode: false,
+      }),
     ).toBe(TileActionBarVariant.Hidden)
   })
 
   it('uses busy over ready and empty', () => {
     expect(
-      resolveTileActionBarVariant({ hasSelection: true, hasArt: true, busy: true }),
+      resolveTileActionBarVariant({
+        hasSelection: true,
+        hasArt: true,
+        busy: true,
+        isPanMode: true,
+      }),
     ).toBe(TileActionBarVariant.Busy)
     expect(
-      resolveTileActionBarVariant({ hasSelection: true, hasArt: false, busy: true }),
+      resolveTileActionBarVariant({
+        hasSelection: true,
+        hasArt: false,
+        busy: true,
+        isPanMode: true,
+      }),
     ).toBe(TileActionBarVariant.Busy)
   })
 
   it('uses empty when the selected tile has no art', () => {
     expect(
-      resolveTileActionBarVariant({ hasSelection: true, hasArt: false, busy: false }),
+      resolveTileActionBarVariant({
+        hasSelection: true,
+        hasArt: false,
+        busy: false,
+        isPanMode: true,
+      }),
     ).toBe(TileActionBarVariant.Empty)
   })
 
   it('uses ready when the selected tile has art', () => {
     expect(
-      resolveTileActionBarVariant({ hasSelection: true, hasArt: true, busy: false }),
+      resolveTileActionBarVariant({
+        hasSelection: true,
+        hasArt: true,
+        busy: false,
+        isPanMode: true,
+      }),
     ).toBe(TileActionBarVariant.Ready)
   })
 })

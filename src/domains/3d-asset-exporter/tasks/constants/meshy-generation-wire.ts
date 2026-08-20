@@ -38,6 +38,18 @@ export enum MeshyGenerationApiUrl {
   OpenApiImageTo3d = 'https://api.meshy.ai/openapi/v1/image-to-3d',
 }
 
+export enum MeshyGenerationApiPath {
+  Stream = 'stream',
+}
+
+export function meshyImageTo3dTaskUrl(taskId: string): string {
+  return `${MeshyGenerationApiUrl.OpenApiImageTo3d}/${taskId}`
+}
+
+export function meshyImageTo3dStreamUrl(taskId: string): string {
+  return `${meshyImageTo3dTaskUrl(taskId)}/${MeshyGenerationApiPath.Stream}`
+}
+
 export enum Hyper3dGenerationApiUrl {
   Rodin = 'https://api.hyper3d.ai/v1/rodin',
   RodinStatus = 'https://api.hyper3d.ai/v1/rodin/status',
@@ -63,6 +75,7 @@ export enum MeshyGenerationHttpHeader {
 }
 
 export const MESHY_GENERATION_DB_COLUMN_MODEL_FILENAME = 'model_filename' as const
+export const MESHY_GENERATION_DB_COLUMN_IMAGE_FILENAME = 'image_filename' as const
 
 export enum MeshyGenerationMetadataKey {
   Progress = 'progress',
@@ -74,6 +87,9 @@ export enum MeshyGenerationLog {
   MeshyApiError = 'Meshy API error:',
   StatusCheckFailed = 'Status check failed:',
   MeshySucceeded = 'Meshy SUCCEEDED - returning result immediately',
+  MeshyRetrieve = 'Meshy retrieve',
+  MeshyProgress = 'Meshy progress',
+  MeshyStreamFallback = 'Meshy stream unavailable; polling retrieve',
   DbUpdateFailed = 'DB update failed but Meshy succeeded',
   StartingHyper3d = 'Starting Hyper3D API call',
   Hyper3dSubscriptionKey = 'Hyper3D subscription key:',
@@ -83,6 +99,8 @@ export enum MeshyGenerationLog {
 
 export enum MeshyGenerationError {
   FailedCheckStatus = 'Failed to check task status',
+  StreamUnavailable = 'Meshy progress stream is unavailable',
+  StreamEnded = 'Meshy progress stream ended before the task finished',
   NoTaskId = 'Meshy API did not return a task id',
   FailedCheckHyper3d = 'Failed to check Hyper3D task status',
   NoSubscriptionKey = 'Hyper3D API did not return a subscription key',
@@ -95,8 +113,8 @@ export enum MeshyGenerationErrorField {
 }
 
 export const MESHY_DEFAULT_POLYCOUNT = 30000
-export const MESHY_POLL_INTERVAL_MS = 15000
-export const MESHY_MAX_POLL_ATTEMPTS = 120
+export const MESHY_POLL_INTERVAL_MS = 20_000
+export const MESHY_MAX_POLL_ATTEMPTS = 90
 export const HYPER3D_POLL_INTERVAL_MS = 5000
 export const HYPER3D_MAX_POLL_ATTEMPTS = 180
 
@@ -110,6 +128,8 @@ export const PrepareImagePublicDir = {
 
 export enum PrepareImageError {
   NotFoundPrefix = 'Image file not found:',
+  NotPublic = 'Asset image is not a public URL; re-save the asset',
+  BlobUploadFailed = 'Failed to upload asset image to Vercel Blob',
 }
 
 export enum PrepareImageDataUrlSeparator {

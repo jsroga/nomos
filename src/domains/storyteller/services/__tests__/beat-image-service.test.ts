@@ -38,18 +38,24 @@ vi.mock('@/domains/storyteller/core/io/beat-image.api', () => ({
   triggerBeatImageGeneration: vi.fn(),
   fetchBeatImageRunStatus: vi.fn(),
   readBeatImageUrlFromRun: vi.fn(),
+  cancelBeatImageRun: vi.fn(),
 }))
 
-vi.mock('@/shared/data/polling/wait-for-trigger-run', () => ({
-  waitForTriggerRun: vi.fn(),
-}))
+vi.mock('@/shared/data/polling/wait-for-trigger-run', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/shared/data/polling/wait-for-trigger-run')>()
+  return {
+    ...actual,
+    waitForTriggerRun: vi.fn(),
+  }
+})
 
 import {
+  cancelBeatImageRun,
   fetchBeatImagePrompt,
   readBeatImageUrlFromRun,
   triggerBeatImageGeneration,
 } from '@/domains/storyteller/core/io/beat-image.api'
-import { waitForTriggerRun } from '@/shared/data/polling/wait-for-trigger-run'
+import { waitForTriggerRun, TriggerRunPollAbortedError } from '@/shared/data/polling/wait-for-trigger-run'
 import { beatImageService } from '../beat-image-service'
 
 describe('beatImageOperationId', () => {
@@ -67,6 +73,8 @@ describe('beatImageService.generateImageForBeat', () => {
     vi.mocked(fetchBeatImagePrompt).mockResolvedValue(IMAGE_PROMPT)
     vi.mocked(triggerBeatImageGeneration).mockResolvedValue({ handleId: HANDLE_ID })
     vi.mocked(readBeatImageUrlFromRun).mockReturnValue(IMAGE_URL)
+    vi.mocked(cancelBeatImageRun).mockReset()
+    vi.mocked(cancelBeatImageRun).mockResolvedValue(undefined)
     vi.mocked(waitForTriggerRun).mockImplementation(async (_fetch, options) => {
       options?.onPoll?.({ status: POLL_STATUS, output: {}, error: undefined }, 1)
       return { status: 'COMPLETED', output: {} }
@@ -97,6 +105,10 @@ describe('beatImageService.generateImageForBeat', () => {
       details: `${BeatImageOperationDetail.StatusPrefix}${POLL_STATUS}`,
     })
     expect(removeOperation).toHaveBeenCalledWith(beatImageOperationId(BEAT_ID))
+    expect(vi.mocked(fetchBeatImagePrompt)).toHaveBeenCalledWith(
+      expect.objectContaining({ id: BEAT_ID }),
+      PROJECT_ID,
+    )
   })
 
   it('returns without generating when the batch is already aborted', async () => {
@@ -114,5 +126,27 @@ describe('beatImageService.generateImageForBeat', () => {
     )
     expect(vi.mocked(fetchBeatImagePrompt)).not.toHaveBeenCalled()
     expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('does not apply a finished image after the batch is cancelled', async () => {
+    const onUpdate = vi.fn()
+    let aborted = false
+    vi.mocked(waitForTriggerRun).mockImplementation(async () => {
+      aborted = true
+      throw new TriggerRunPollAbortedError()
+    })
+    await beatImageService.generateImageForBeat(
+      PROJECT_ID,
+      {
+        id: BEAT_ID,
+        sequence: 3,
+        logline: IMAGE_PROMPT,
+        beatType: 'setup',
+      },
+      onUpdate,
+      { shouldAbort: () => aborted },
+    )
+    expect(onUpdate).not.toHaveBeenCalledWith(BEAT_ID, { imageUrl: IMAGE_URL })
+    expect(vi.mocked(cancelBeatImageRun)).toHaveBeenCalledWith(HANDLE_ID)
   })
 })

@@ -13,12 +13,7 @@ export function useWorldCanvasWheelZoom(containerRef: RefObject<HTMLDivElement |
     if (!container) return
 
     const handleWheel = (e: WheelEvent) => {
-      const { viewport, setViewport, isRepaintMode } = useWorldStore.getState()
-
-      if (isRepaintMode) {
-        e.preventDefault()
-        return
-      }
+      const { viewport, setViewport } = useWorldStore.getState()
 
       e.preventDefault()
 

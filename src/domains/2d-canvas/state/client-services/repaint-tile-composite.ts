@@ -10,14 +10,10 @@ import {
   RepaintServiceLog,
   RepaintTileStatusLabel,
   UrlScheme,
+  type RepaintBounds,
 } from '../../constants/repaint-service'
 
-export interface RepaintBounds {
-  x: number
-  y: number
-  width: number
-  height: number
-}
+export type { RepaintBounds }
 
 export interface TileCoord {
   x: number

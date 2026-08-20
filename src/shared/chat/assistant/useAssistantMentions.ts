@@ -48,7 +48,12 @@ export function useAssistantMentions(
 
   useEffect(() => {
     let cancelled = false
-    void Promise.all(providers.map(provider => Promise.resolve(provider.getItems('', projectContext))))
+    const controller = new AbortController()
+    void Promise.all(
+      providers.map(provider =>
+        Promise.resolve(provider.getItems('', projectContext, controller.signal)),
+      ),
+    )
       .then(results => {
         if (!cancelled) setItems(results.flat())
       })
@@ -57,6 +62,7 @@ export function useAssistantMentions(
       })
     return () => {
       cancelled = true
+      controller.abort()
     }
   }, [providers, projectContext])
 

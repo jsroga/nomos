@@ -1,6 +1,7 @@
 /** Game entity mention provider icons, labels, and API wire constants. */
 
 import { EntityType, SourceDomain } from '@/shared/data/queries/useGameEntities'
+import { DomAbortErrorName } from '@/shared/data/constants/game-entities-wire'
 
 export enum GameEntityTypeId {
   Character = 'character',
@@ -50,6 +51,11 @@ export enum EntityApiQueryParam {
 
 export const GAME_ENTITY_FETCH_ERROR = 'Failed to fetch entities'
 export const GAME_ENTITY_LOG_PREFIX = '[GameEntityProvider] Fetch error:'
+
+export function isIgnorableGameEntityFetchError(error: unknown): boolean {
+  if (error instanceof TypeError) return true
+  return error instanceof Error && error.name === DomAbortErrorName.AbortError
+}
 
 export function iconForEntityType(entityType: EntityType): GameEntityIconName {
   switch (entityType) {

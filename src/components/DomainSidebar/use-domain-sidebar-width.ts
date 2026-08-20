@@ -8,6 +8,7 @@ import {
   SIDEBAR_MIN_WIDTH,
   SidebarPosition,
 } from '@/components/DomainSidebar/constants/domain-sidebar'
+import { sidebarWidthFromPointer } from './sidebar-width'
 
 function widthStorageKey(storageKey?: string): string {
   return storageKey
@@ -30,6 +31,12 @@ export function useDomainSidebarWidth({
 }: UseDomainSidebarWidthArgs) {
   const [width, setWidth] = React.useState(defaultWidth)
   const [isResizing, setIsResizing] = React.useState(false)
+  const widthRef = React.useRef(width)
+  const frameRef = React.useRef<number | null>(null)
+
+  React.useEffect(() => {
+    widthRef.current = width
+  }, [width])
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return
@@ -57,27 +64,53 @@ export function useDomainSidebarWidth({
   React.useEffect(() => {
     if (!isResizing) return
 
+    const applyWidth = (nextWidth: number) => {
+      widthRef.current = nextWidth
+      const node = sidebarRef.current
+      if (node) node.style.width = `${nextWidth}px`
+    }
+
     const handleMouseMove = (event: MouseEvent) => {
-      if (!sidebarRef.current) return
-      const rect = sidebarRef.current.getBoundingClientRect()
-      const nextWidth =
-        position === SidebarPosition.Left ? event.clientX - rect.left : rect.right - event.clientX
-      setWidth(Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, nextWidth)))
+      const node = sidebarRef.current
+      if (!node) return
+      const rect = node.getBoundingClientRect()
+      const nextWidth = sidebarWidthFromPointer({
+        position,
+        clientX: event.clientX,
+        left: rect.left,
+        right: rect.right,
+      })
+      applyWidth(nextWidth)
+      if (frameRef.current !== null) return
+      frameRef.current = window.requestAnimationFrame(() => {
+        frameRef.current = null
+        setWidth(widthRef.current)
+      })
     }
 
     const handleMouseUp = () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current)
+        frameRef.current = null
+      }
+      applyWidth(widthRef.current)
+      setWidth(widthRef.current)
       setIsResizing(false)
-      saveWidth(width)
+      saveWidth(widthRef.current)
     }
 
     document.addEventListener(DomMouseEvent.MouseMove, handleMouseMove)
     document.addEventListener(DomMouseEvent.MouseUp, handleMouseUp)
 
     return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current)
+        frameRef.current = null
+      }
       document.removeEventListener(DomMouseEvent.MouseMove, handleMouseMove)
       document.removeEventListener(DomMouseEvent.MouseUp, handleMouseUp)
     }
-  }, [isResizing, width, saveWidth, position, sidebarRef])
+  }, [isResizing, saveWidth, position, sidebarRef])
 
   return { width, isResizing, handleMouseDown }
 }

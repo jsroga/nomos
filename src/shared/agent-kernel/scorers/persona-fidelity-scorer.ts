@@ -1,7 +1,7 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
-import { inputRecord, normalizeScore, outputToString, toMastraJudgingLanguageModel } from './shared'
+import { createJudgingConfig, inputRecord, normalizeScore, outputToString } from './shared'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 const personaAnalyzeSchema = z.object({
@@ -13,11 +13,9 @@ export const personaFidelityScorer = createScorer({
   id: 'persona-fidelity',
   name: 'Persona Fidelity',
   description: 'How well output matches a requested creative persona',
-  judge: {
-    model: toMastraJudgingLanguageModel(),
-    instructions:
-      'You evaluate persona fidelity in creative writing. Respond with valid JSON containing score (0-100) and reasoning.',
-  },
+  judge: createJudgingConfig(
+    'You evaluate persona fidelity in creative writing. Respond with valid JSON containing score (0-100) and reasoning.',
+  ),
 })
   .analyze({
     description: 'Evaluate adherence to target persona style',

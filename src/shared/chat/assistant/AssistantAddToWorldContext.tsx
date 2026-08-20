@@ -7,10 +7,17 @@ export interface AddToWorldPayload {
   toolArgs: readonly Record<string, unknown>[]
 }
 
+export interface CanAddToWorldInput {
+  role: string
+  toolNames: readonly string[]
+  toolArgs: readonly Record<string, unknown>[]
+}
+
 export interface AssistantAddToWorldApi {
   onAddToWorld?: (payload: AddToWorldPayload) => boolean | Promise<boolean>
   sectionLabelsFromToolArgs?: (toolArgs: readonly Record<string, unknown>[]) => string[]
   isAddToWorldSettled?: (toolArgs: readonly Record<string, unknown>[]) => boolean
+  canAddToWorld?: (input: CanAddToWorldInput) => boolean
 }
 
 const AssistantAddToWorldContext = createContext<AssistantAddToWorldApi>({})
@@ -19,11 +26,12 @@ export function AssistantAddToWorldProvider({
   onAddToWorld,
   sectionLabelsFromToolArgs,
   isAddToWorldSettled,
+  canAddToWorld,
   children,
 }: AssistantAddToWorldApi & { children: ReactNode }) {
   return (
     <AssistantAddToWorldContext.Provider
-      value={{ onAddToWorld, sectionLabelsFromToolArgs, isAddToWorldSettled }}
+      value={{ onAddToWorld, sectionLabelsFromToolArgs, isAddToWorldSettled, canAddToWorld }}
     >
       {children}
     </AssistantAddToWorldContext.Provider>

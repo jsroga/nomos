@@ -14,6 +14,8 @@ import {
   patchStorytellerProject,
 } from '@/domains/storyteller/core/io/storyteller.api'
 import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
+import { omitVacantSoundtrackInspirations } from '@/domains/storyteller/core/utils/bible-populated-fields'
+import { recordFromJson } from '@/shared/data/json-guards'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 export function useStorytellerAgentBible(core: StorytellerWorkspaceCore) {
   const {
@@ -89,13 +91,14 @@ export function useStorytellerAgentBible(core: StorytellerWorkspaceCore) {
         }
 
         const currentBible = parseSeriesBibleRecord(latestProject.series_bible)
-        const newBible = { ...currentBible, ...updates }
+        const safeUpdates = omitVacantSoundtrackInspirations(recordFromJson(updates))
+        const newBible = { ...currentBible, ...safeUpdates }
         useWorkspaceProjectStore.getState().setCurrentProject({
           ...latestProject,
           series_bible: newBible,
         })
         if (!currentEpisodeId) {
-          setStoryPlan(prev => applyUpdatesToStoryPlan(prev, updates))
+          setStoryPlan(prev => applyUpdatesToStoryPlan(prev, safeUpdates))
         }
         await patchStorytellerProject(latestProject.id, {
           series_bible: newBible,
@@ -113,15 +116,19 @@ export function useStorytellerAgentBible(core: StorytellerWorkspaceCore) {
   const handleUpdateBible = async (updates: Partial<StoryPlan>) => {
     setIsSending(true)
     try {
+      const safeUpdates = omitVacantSoundtrackInspirations(recordFromJson(updates))
       setStoryPlan(prev =>
         prev
-          ? { ...prev, ...updates }
-          : applyUpdatesToStoryPlan<StoryPlan>(null, updates)
+          ? { ...prev, ...safeUpdates }
+          : applyUpdatesToStoryPlan<StoryPlan>(null, safeUpdates)
       )
 
       if (!currentProject?.id) return
 
-      const mergedBible = { ...parseSeriesBibleRecord(currentProject.series_bible), ...updates }
+      const mergedBible = {
+        ...parseSeriesBibleRecord(currentProject.series_bible),
+        ...safeUpdates,
+      }
       useWorkspaceProjectStore.getState().setCurrentProject({
         ...currentProject,
         series_bible: mergedBible,

@@ -5,6 +5,7 @@ import { createTriggerRunStatusFetch } from '@/shared/data/polling/trigger-run-s
 import type { HttpTriggerRunStatus } from '@/shared/data/polling/trigger-run-status-fetcher'
 import {
   waitForTriggerRun,
+  TriggerRunPollAbortedError,
   TriggerRunPollFailedError,
   type WaitForTriggerRunOptions,
 } from '@/shared/data/polling/wait-for-trigger-run'
@@ -60,8 +61,18 @@ export async function pollTrigger3dRun(
       await handlers.onFailed(payload)
     }
   } catch (error) {
+    if (error instanceof TriggerRunPollAbortedError) {
+      return
+    }
     if (error instanceof TriggerRunPollFailedError && error.status === TRIGGER_RUN_NOT_FOUND_STATUS) {
       await handlers.on404()
+      return
+    }
+    if (error instanceof TriggerRunPollFailedError) {
+      await handlers.onFailed({
+        status: error.status,
+        error: error.runError,
+      })
       return
     }
     throw error

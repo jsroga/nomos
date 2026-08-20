@@ -14,6 +14,13 @@ export enum ContextAssemblyFallback {
   None = '(none)',
   NoneLabel = 'None',
   RuleLabel = 'Rule',
+  UntitledEpisode = 'Untitled',
+}
+
+export enum ContextAssemblyHeading {
+  SeasonRoadmap = '=== SEASON ROADMAP ===',
+  RoadmapSlot = '=== ROADMAP SLOT ===',
+  EpisodeIndex = '=== EPISODE INDEX ===',
 }
 
 export enum ContextPremiseExtraField {

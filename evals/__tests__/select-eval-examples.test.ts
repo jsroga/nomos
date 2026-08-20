@@ -1,0 +1,58 @@
+import { describe, expect, it } from 'vitest'
+import { STORYTELLER_GOLDEN_EXAMPLES } from '../datasets/storyteller-golden'
+import {
+  GoldenQualityError,
+  GoldenQualityItemMeta,
+  GoldenQualityScorerId,
+  goldenQualityTaskOutput,
+  selectGoldenQualityExamples,
+} from '../golden-quality-items'
+import { examplesMatchingScorers } from '../select-eval-examples'
+
+function example(id: string, scorers?: string[]) {
+  return { id, metadata: { scorers } }
+}
+
+describe('examplesMatchingScorers', () => {
+  it('returns the full pool when no scorer filter is set', () => {
+    const pool = [example('a', ['magic']), example('b', ['hallucination'])]
+    expect(examplesMatchingScorers(pool, undefined).map(row => row.id)).toEqual(['a', 'b'])
+  })
+
+  it('keeps only examples whose allowlist intersects the filter', () => {
+    const pool = [
+      example('beat', ['beat-plan-concreteness']),
+      example('grounded', ['hallucination']),
+      example('slop', ['magic']),
+    ]
+    expect(examplesMatchingScorers(pool, ['hallucination']).map(row => row.id)).toEqual(['grounded'])
+  })
+})
+
+describe('selectGoldenQualityExamples', () => {
+  it('keeps the golden hallucination and magic items', () => {
+    const selected = selectGoldenQualityExamples(STORYTELLER_GOLDEN_EXAMPLES)
+    expect(selected.map(row => row.id).sort()).toEqual([
+      'halluc-fabricated-01',
+      'halluc-grounded-01',
+      'halluc-partial-01',
+      'magic-motion-01',
+      'magic-slop-01',
+      'magic-strong-01',
+    ])
+    expect(
+      selected.every(row =>
+        row.metadata.scorers.some(
+          id => id === GoldenQualityScorerId.Hallucination || id === GoldenQualityScorerId.Magic,
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  it('returns frozen referenceOutput for the experiment task', () => {
+    expect(
+      goldenQualityTaskOutput({ [GoldenQualityItemMeta.ReferenceOutput]: 'the envoy waited' }),
+    ).toBe('the envoy waited')
+    expect(() => goldenQualityTaskOutput({})).toThrow(GoldenQualityError.MissingReferenceOutput)
+  })
+})

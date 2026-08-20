@@ -1,4 +1,5 @@
-import { ApiRoutePath, ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { ApiRoutePath, ContentType, HttpMethod, JsonField, QueryParam } from '@/shared/data/constants/protocol'
+import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import type { TriggerRunStatusPayload } from '@/shared/data/polling/wait-for-trigger-run'
@@ -29,7 +30,10 @@ export async function patchAsset(
 export async function fetchTrigger3dRunStatus(
   runId: string
 ): Promise<TriggerRunStatusPayload & { statusCode: number; metadata?: Record<string, unknown> }> {
-  const response = await fetch(buildUrl(AssetExporterApiRoute.Trigger3dStatus, { [QueryParam.RunId]: runId }))
+  const response = await fetch(
+    buildUrl(AssetExporterApiRoute.Trigger3dStatus, { [QueryParam.RunId]: runId }),
+    TRIGGER_STATUS_FETCH_INIT,
+  )
   const data = recordFromJson(await response.json().catch(() => ({})))
   return {
     statusCode: response.status,
@@ -111,12 +115,14 @@ export async function saveAssetImage(input: {
   projectId: string
   filename: string
   imageData: string
-}): Promise<void> {
-  await fetchJsonRecord(AssetExporterApiRoute.SaveImage, {
+}): Promise<{ url?: string }> {
+  const data = await fetchJsonRecord(AssetExporterApiRoute.SaveImage, {
     method: HttpMethod.Post,
     headers: JSON_HEADERS,
     body: JSON.stringify(input),
   })
+  const url = readString(data[JsonField.Url])
+  return url ? { url } : {}
 }
 
 export async function fetchProxiedModelBlob(url: string): Promise<Blob> {

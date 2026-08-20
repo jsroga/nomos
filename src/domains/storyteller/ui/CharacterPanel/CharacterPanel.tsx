@@ -20,6 +20,11 @@ import {
 } from './constants/character-panel-metrics'
 import { CharacterCard } from './CharacterCard'
 import { CharacterPanelLoading } from './CharacterPanelLoading'
+import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import {
+  isCharacterDraftPending,
+  isCharacterSidebarGeneratingFields,
+} from '../CharacterCreationDialog/character-creation-dialog-generate-missing'
 
 interface CharacterPanelProps {
   characters: StorytellerCharacter[]
@@ -79,6 +84,16 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
   const [snapshotCache, setSnapshotCache] = useState<
     Record<string, Record<string, Partial<CharacterMetrics>>>
   >({})
+  const characterDraftTargetId = useStorytellerUiStore(state => state.characterDraftTargetId)
+  const characterDraftFields = useStorytellerUiStore(state => state.characterDraftFields)
+  const characterDraftFieldsSeq = useStorytellerUiStore(state => state.characterDraftFieldsSeq)
+  const characterDraftResolvedSeq = useStorytellerUiStore(state => state.characterDraftResolvedSeq)
+  const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
+  const isDraftPending = isCharacterDraftPending({
+    fields: characterDraftFields,
+    fieldsSeq: characterDraftFieldsSeq,
+    resolvedSeq: characterDraftResolvedSeq,
+  })
 
   const snapshotKey =
     selectedBeatId && episodeId ? `${episodeId}:${selectedBeatId}` : null
@@ -151,6 +166,12 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
               onUpdate={onUpdate}
               onDelete={onDelete}
               onEdit={character => setEditingCharacter(character)}
+              isGeneratingFields={isCharacterSidebarGeneratingFields({
+                characterId: char.id,
+                targetId: characterDraftTargetId,
+                isPendingReview: isDraftPending,
+                phase: generationPhase,
+              })}
             />
           ))}
           {characters.length === 0 && (
@@ -181,7 +202,13 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
           }}
           projectId={projectId}
           mode={CharacterDialogMode.Edit}
-          initialData={editingCharacter ? characterToDialogInitial(editingCharacter) : undefined}
+          initialData={
+            editingCharacter
+              ? characterToDialogInitial(
+                  characters.find(c => c.id === editingCharacter.id) ?? editingCharacter,
+                )
+              : undefined
+          }
         />
       </div>
     </TooltipProvider>

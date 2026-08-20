@@ -5,6 +5,10 @@ import { eq } from 'drizzle-orm'
 import { firstNonEmptyRecord, readString, recordFromJson } from '@/shared/data/json-guards'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { StorytellerLegacyPlanField } from '@/domains/storyteller/core/storyteller-page-wire'
+import {
+  isPresentOverlapValue,
+  omitVacantSoundtrackInspirations,
+} from '@/domains/storyteller/core/utils/bible-populated-fields'
 
 const LEGACY_STORY_PLAN_FIELDS = [
   StorytellerLegacyPlanField.WorldDescription,
@@ -24,7 +28,11 @@ function withoutOverlappingLegacyFields(
   return Object.fromEntries(
     Object.entries(target).filter(([key]) => {
       const isLegacyField = LEGACY_STORY_PLAN_FIELDS.some(field => field === key)
-      return !(isLegacyField && storyPlan[key] && target[key])
+      return !(
+        isLegacyField &&
+        isPresentOverlapValue(storyPlan[key]) &&
+        isPresentOverlapValue(target[key])
+      )
     })
   )
 }
@@ -90,7 +98,10 @@ async function upsertMergedJsonContent(input: {
       input.projectForMerge.seriesBible,
       input.projectForMerge.seriesBibleTable?.content
     )
-    const mergedContent = { ...existingContent, ...recordFromJson(input.bibleUpdate) }
+    const mergedContent = {
+      ...existingContent,
+      ...omitVacantSoundtrackInspirations(recordFromJson(input.bibleUpdate)),
+    }
 
     await db
       .insert(seriesBibles)
@@ -106,7 +117,10 @@ async function upsertMergedJsonContent(input: {
       input.projectForMerge.storyPlan,
       input.projectForMerge.storyPlanTable?.content
     )
-    const mergedContent = { ...existingContent, ...recordFromJson(input.planUpdate) }
+    const mergedContent = {
+      ...existingContent,
+      ...omitVacantSoundtrackInspirations(recordFromJson(input.planUpdate)),
+    }
 
     await db
       .insert(storyPlans)

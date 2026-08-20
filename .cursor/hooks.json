@@ -7,6 +7,7 @@
     "afterFileEdit": [
       { "command": "./.cursor/hooks/record-src-edits.sh" },
       { "command": "./.cursor/hooks/record-mastra-edits.sh" },
+      { "command": "./.cursor/hooks/record-plan-edits.sh" },
       { "command": "./.cursor/hooks/format-on-edit.sh" }
     ],
     "beforeShellExecution": [
@@ -17,6 +18,7 @@
       { "command": "./.cursor/hooks/session-init.sh" }
     ],
     "stop": [
+      { "command": "./.cursor/hooks/plan-critique-on-stop.sh", "loop_limit": 1 },
       { "command": "./.cursor/hooks/fast-verify-on-stop.sh", "loop_limit": 2 },
       { "command": "./.cursor/hooks/mastra-smoke-on-stop.sh", "loop_limit": 2 }
     ]

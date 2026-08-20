@@ -44,6 +44,8 @@ export const STORYTELLER_SCORERS = {
   ...STRUCTURAL_MASTRA_SCORERS,
 } as const
 
+export { CHAT_LIVE_SCORERS, CHAT_LIVE_QUALITY_SAMPLE_RATE, CHAT_LIVE_GOAL_SAMPLE_RATE } from './chat-live-scorers'
+
 export {
   magicScorer,
   consistencyScorer,
@@ -58,4 +60,4 @@ export {
 }
 export { scoreIdeaDiversity } from './idea-diversity-metrics-wire'
 export type { IdeaDiversityMetrics } from './idea-diversity-metrics-wire'
-export { extractProse, inputRecord, normalizeScore, outputToString, toMastraJudgingLanguageModel, toMastraJudgingModel } from './shared'
+export { extractProse, inputRecord, normalizeScore, outputToString, createJudgingConfig, toMastraJudgingLanguageModel, toMastraJudgingModel } from './shared'

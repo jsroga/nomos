@@ -1,11 +1,11 @@
-import { recordFromJson, readString, readNumber } from '@/shared/data/json-guards'
+import { recordFromJson, readString } from '@/shared/data/json-guards'
 import {
   SegmentationProvider,
   SelectModeLogMessage,
 } from '../../constants/select-mode-service'
-import { postFalSegment, postReplicateSegment } from '../../core/io/select-mode.api'
+import { postReplicateSegment, postSegment } from '../../core/io/select-mode.api'
 import type { PixelBounds } from './select-mode-segment-bounds'
-import type { SelectBox } from './select-mode-service'
+import type { SelectBox } from './select-mode-types'
 
 type FetchMaskFn = (
   maskUrl: string,
@@ -23,12 +23,12 @@ type ResizeMaskFn = (
 
 export interface SegmentApiParams {
   provider: SegmentationProvider
+  projectId: string
   base64Image: string
   relativeBox: SelectBox
   pixelBounds: PixelBounds
   textPrompt?: string
   replicateApiKey: string
-  falApiKey: string
   samParams: {
     returnMultipleMasks?: boolean
     includeScores?: boolean
@@ -45,13 +45,12 @@ export async function runSegmentationRequest(params: SegmentApiParams): Promise<
 }> {
   const {
     provider,
+    projectId,
     base64Image,
     relativeBox,
     pixelBounds,
     textPrompt,
     replicateApiKey,
-    falApiKey,
-    samParams,
     signal,
     fetchMaskAsDataUrl,
     resizeMask,
@@ -98,24 +97,24 @@ export async function runSegmentationRequest(params: SegmentApiParams): Promise<
     return { maskUrl, apiResponse: data }
   }
 
-  const data = await postFalSegment({
-    image: base64Image,
+  const data = await postSegment({
+    projectId,
+    base64Image,
     box: relativeBox,
-    apiKey: falApiKey,
-    textPrompt,
-    samParams,
+    prompt: textPrompt,
+    mosaicWidth: pixelBounds.width,
+    mosaicHeight: pixelBounds.height,
     signal,
   })
-  const output = recordFromJson(data.output)
 
   let maskUrl = ''
-  const rle = readString(output.rle)
+  const rle = data.rle
   if (rle) {
-    const maskWidth = readNumber(output.width) ?? Math.round(pixelBounds.width)
-    const maskHeight = readNumber(output.height) ?? Math.round(pixelBounds.height)
+    const maskWidth = data.width
+    const maskHeight = data.height
 
     console.log(SelectModeLogMessage.RleDimensions, {
-      fromAPI: { width: readNumber(output.width), height: readNumber(output.height) },
+      fromAPI: { width: maskWidth, height: maskHeight },
       expected: { width: pixelBounds.width, height: pixelBounds.height },
       using: { width: maskWidth, height: maskHeight },
     })
@@ -139,5 +138,5 @@ export async function runSegmentationRequest(params: SegmentApiParams): Promise<
     console.warn(SelectModeLogMessage.NoRleMaskInResponse)
   }
 
-  return { maskUrl, apiResponse: data }
+  return { maskUrl, apiResponse: data.apiResponse }
 }

@@ -75,6 +75,13 @@ export function useThreeDAssetsLibrary() {
     if (projectId) void fetchAssets()
   }, [projectId, fetchAssets])
 
+  useEffect(() => {
+    return () => {
+      setSelectedIds([])
+      setPreviewAssetId(null)
+    }
+  }, [setPreviewAssetId])
+
   const persistDelete = useCallback(
     async (asset: Asset) => {
       if (!projectId) return

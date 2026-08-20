@@ -14,7 +14,10 @@ export function resolveEpisodeId(
 ): string | undefined {
   if (typeof eventOrEpisodeId === 'string') return eventOrEpisodeId
   if (eventOrEpisodeId) {
-    return readString(customEventDetailRecord(domEventFromInput(eventOrEpisodeId)).episodeId)
+    const fromEvent = readString(
+      customEventDetailRecord(domEventFromInput(eventOrEpisodeId)).episodeId,
+    )
+    if (fromEvent) return fromEvent
   }
   return fallback ?? undefined
 }

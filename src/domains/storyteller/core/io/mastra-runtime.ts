@@ -50,6 +50,8 @@ import {
   readWorldBibleTool,
   checkContinuityTool,
 } from '@/domains/storyteller/ai/tools/bible-tools'
+import { checkSectionAlignmentTool } from '@/domains/storyteller/ai/tools/section-alignment-tool'
+import { proposeCharacterFieldsTool } from '@/domains/storyteller/ai/tools/propose-character-fields-tool'
 import { runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools/workflow-tool'
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
@@ -64,7 +66,7 @@ import type { DurableAgent } from '@mastra/core/agent/durable'
 import { buildStorytellerControllerConfig } from '@/domains/storyteller/ai/controller/storyteller-controller'
 import { autonomousAuthorAgent } from '@/domains/storyteller/ai/agents/AutonomousAuthor/autonomous-author-agent'
 import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
-import { goalReachedScorer } from '@/shared/agent-kernel/scorers'
+import { CHAT_LIVE_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
 
 const CHAT_ADAPTER_ID = 'storyteller'
 const CHAT_ADAPTER_NAME = 'Storyteller'
@@ -72,25 +74,13 @@ const CHAT_ADAPTER_DESCRIPTION =
   'Chat adapter: converse, keep the world bible current via tools, delegate beat drafting to the beat-draft workflow.'
 const CHAT_ROLE: Parameters<typeof resolveRoleModel>[0] = 'chat'
 
-enum ScorerSamplingType {
-  Ratio = 'ratio',
-}
-
-/** Live Studio scores — every chat turn; async, never fails the run. */
-const CHAT_ADAPTER_SCORERS = {
-  goalReached: {
-    scorer: goalReachedScorer,
-    sampling: { type: ScorerSamplingType.Ratio, rate: 1 },
-  },
-} as const
-
 const CHAT_ADAPTER_MODEL_SETTINGS = {
   maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
 } as const
 
 /**
  * The REAL chat adapter registered for Studio/observability parity: same
- * prompt builder, same 'chat' role slot, same 10 tools as the production
+ * prompt builder, same 'chat' role slot, same tools as the production
  * per-request `StorytellerAgent`. Memory inherits Mastra instance storage
  * (parity with StorytellerAgent's lastMessages window). This replaces the
  * hardcoded Studio stub when registration loads (PLAN-V2 1.1).
@@ -109,7 +99,7 @@ const chatAdapterAgent = new Agent({
   // Opt out of Mastra-instance workspace (repo FS tools). A function that
   // returns undefined does not fall back to the global workspace.
   workspace: () => undefined,
-  scorers: CHAT_ADAPTER_SCORERS,
+  scorers: CHAT_LIVE_SCORERS,
   defaultOptions: {
     modelSettings: CHAT_ADAPTER_MODEL_SETTINGS,
   },
@@ -123,6 +113,8 @@ const chatAdapterAgent = new Agent({
     [updateWorldBibleTool.id]: updateWorldBibleTool,
     [readWorldBibleTool.id]: readWorldBibleTool,
     [checkContinuityTool.id]: checkContinuityTool,
+    [checkSectionAlignmentTool.id]: checkSectionAlignmentTool,
+    [proposeCharacterFieldsTool.id]: proposeCharacterFieldsTool,
     [runBeatDraftWorkflowTool.id]: runBeatDraftWorkflowTool,
   },
 })

@@ -18,7 +18,6 @@ export const updateCharacterSchema = z.object({
   isolation: z.number().min(0).max(100).optional(),
   transformation: z.number().min(0).max(100).optional(),
   mbti: z.string().optional(),
-  voiceSignature: z.string().optional(),
   psychology: z.string().optional(),
 })
 

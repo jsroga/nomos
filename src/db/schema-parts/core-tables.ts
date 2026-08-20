@@ -53,7 +53,6 @@ export const characters = pgTable('characters', {
   socialSafety: integer('social_safety').default(60),
   moralAlignment: integer('moral_alignment').default(70),
   transformationProgress: integer('transformation_progress').default(0),
-  voiceSignature: text('voice_signature'),
   psychology: jsonb('psychology').notNull().default({}),
   arcStatus: jsonb('arc_status').notNull().default({}),
   createdAt: timestamp('created_at').defaultNow().notNull(),

@@ -62,6 +62,10 @@ export enum ImageFileExtension {
   Png = '.png',
 }
 
+export enum VideoFileExtension {
+  Mp4 = '.mp4',
+}
+
 export enum JsonImageUrlType {
   Base64 = 'base64',
   Url = 'url',

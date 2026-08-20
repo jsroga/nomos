@@ -16,5 +16,5 @@ export const EPISODE_PREMISE_LOG_NO_EPISODE = '[EpisodePremise] No episodeId, sk
 
 export enum EpisodePremisePanelClass {
   Root = 'flex flex-1 min-h-0 overflow-hidden',
-  ScrollBody = 'flex-1 min-h-0 overflow-y-auto px-5 pt-5 pb-8',
+  ScrollBody = 'flex-1 min-h-0 overflow-y-auto px-[22px] pt-[22px] pb-8',
 }

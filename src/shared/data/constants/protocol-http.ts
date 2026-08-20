@@ -51,6 +51,14 @@ export enum NextDynamic {
   ForceDynamic = 'force-dynamic',
 }
 
+export enum NextFetchCache {
+  ForceNoStore = 'force-no-store',
+}
+
+export enum NextRevalidate {
+  Disabled = 0,
+}
+
 export enum NodeEnv {
   Development = 'development',
   Test = 'test',
@@ -72,6 +80,7 @@ export enum HttpAuthScheme {
 
 export enum HttpHeaderName {
   Authorization = 'authorization',
+  CacheControl = 'Cache-Control',
 }
 
 export enum SseHeader {
@@ -86,6 +95,7 @@ export enum BlobAccess {
 
 export enum SharpFit {
   Cover = 'cover',
+  Contain = 'contain',
   Fill = 'fill',
 }
 
@@ -109,10 +119,12 @@ export enum ContentType {
   Usdz = 'model/vnd.usdz+zip',
   PlainText = 'text/plain',
   Png = 'image/png',
+  Mp4 = 'video/mp4',
 }
 
 export enum CacheControl {
   PublicMaxAge86400 = 'public, max-age=86400',
+  NoStore = 'no-store',
 }
 
 export enum ModelFileExtension {
@@ -234,6 +246,9 @@ export enum EnvVarName {
   Hyper3dApiKey = 'HYPER3D_API_KEY',
   GoogleApiKey = 'GOOGLE_API_KEY',
   OpenRouterApiKey = 'OPENROUTER_API_KEY',
+  BlobReadWriteToken = 'BLOB_READ_WRITE_TOKEN',
+  FfmpegPath = 'FFMPEG_PATH',
+  FfprobePath = 'FFPROBE_PATH',
   ReplicateApiToken = 'REPLICATE_API_TOKEN',
   E2eBypassAuthSecret = 'E2E_BYPASS_AUTH_SECRET',
   BasicAuthUser = 'BASIC_AUTH_USER',

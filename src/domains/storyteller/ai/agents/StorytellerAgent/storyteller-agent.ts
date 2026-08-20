@@ -28,10 +28,11 @@ import {
   requestContextString,
 } from '@/domains/storyteller/ai/request-context'
 
-// Import consolidated GRRM tools (9 CRUD) + the workflow entry tool (#10)
-import { grrmTools, runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools'
+// Import consolidated GRRM tools + the workflow entry tool
+import { grrmTools, runBeatDraftWorkflowTool, proposeCharacterFieldsTool } from '@/domains/storyteller/ai/tools'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
+import { CHAT_LIVE_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
 import {
   AgentModelRole,
   BeatPlannerCopy,
@@ -48,7 +49,10 @@ interface StorytellerConfig {
   mastra?: Mastra
 }
 
-type ChatTool = (typeof grrmTools)[number] | typeof runBeatDraftWorkflowTool
+type ChatTool =
+  | (typeof grrmTools)[number]
+  | typeof runBeatDraftWorkflowTool
+  | typeof proposeCharacterFieldsTool
 
 export class StorytellerAgent {
   private agent: Agent
@@ -57,7 +61,11 @@ export class StorytellerAgent {
   private constructor(config: StorytellerConfig, instructions: string) {
     // 9 GRRM CRUD tools + the single workflow entry tool (chat adapter only —
     // the author inside the workflow never gets this tool; recursion guard)
-    const tools: ChatTool[] = [...grrmTools, runBeatDraftWorkflowTool]
+    const tools: ChatTool[] = [
+      ...grrmTools,
+      runBeatDraftWorkflowTool,
+      proposeCharacterFieldsTool,
+    ]
 
     // Store tools for direct execution
     this.toolsMap = tools.reduce<Record<string, ChatTool>>((acc, tool) => {
@@ -99,6 +107,7 @@ export class StorytellerAgent {
       mastra: m,
       memory,
       workspace: () => undefined,
+      scorers: CHAT_LIVE_SCORERS,
       defaultOptions: {
         modelSettings: {
           maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,

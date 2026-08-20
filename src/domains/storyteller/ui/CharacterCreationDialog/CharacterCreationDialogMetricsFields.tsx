@@ -2,7 +2,22 @@ import React from 'react'
 import { Button } from '@/components/Button'
 import { Slider } from '@/components/Slider'
 import { Loader2, Wand2 } from 'lucide-react'
+import {
+  CHARACTER_DIALOG_METRIC_KEYS,
+  CharacterMetricFieldKey,
+} from '@/domains/storyteller/core/character-missing-fields'
 import { CharacterMetrics } from './character-creation-dialog-types'
+import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
+import {
+  CHARACTER_DIALOG_METRIC_SLIDER_MAX,
+  CHARACTER_DIALOG_METRIC_SLIDER_STEP,
+  CHARACTER_DIALOG_VALENCE_SLIDER_MAX,
+  CHARACTER_DIALOG_VALENCE_SLIDER_OFFSET,
+  CharacterDialogMetricBoundLabel,
+  CharacterDialogMetricLabel,
+  CharacterDialogMetricsCopy,
+  CharacterDialogMetricTitle,
+} from './constants/character-creation-dialog'
 
 interface CharacterCreationDialogMetricsFieldsProps {
   metrics: CharacterMetrics
@@ -19,8 +34,16 @@ interface MetricSliderProps {
   max: number
   onChange: (value: number) => void
   displayValue: string
-  minLabel?: string
-  maxLabel?: string
+  minLabel: string
+  maxLabel: string
+}
+
+function signedMetricDisplay(value: number): string {
+  return value > 0 ? `+${value}` : `${value}`
+}
+
+function percentMetricDisplay(value: number): string {
+  return `${value}%`
 }
 
 function MetricSlider({
@@ -41,14 +64,82 @@ function MetricSlider({
         </span>
         <span className="font-mono">{displayValue}</span>
       </div>
-      <Slider value={[value]} max={max} step={1} onValueChange={([val]) => onChange(val)} />
-      {minLabel && maxLabel && (
-        <div className="flex justify-between text-[10px] text-muted-foreground/60">
-          <span>{minLabel}</span>
-          <span>{maxLabel}</span>
-        </div>
-      )}
+      <Slider
+        value={[value]}
+        max={max}
+        step={CHARACTER_DIALOG_METRIC_SLIDER_STEP}
+        onValueChange={([val]) => onChange(val)}
+      />
+      <div className="flex justify-between text-[10px] text-muted-foreground/60">
+        <span>{minLabel}</span>
+        <span>{maxLabel}</span>
+      </div>
     </div>
+  )
+}
+
+function DialogMetricSlider({
+  metricKey,
+  metrics,
+  onChange,
+}: {
+  metricKey: CharacterMetricFieldKey
+  metrics: CharacterMetrics
+  onChange: (key: CharacterMetricFieldKey, value: number) => void
+}) {
+  if (metricKey === CharacterMetricFieldKey.Valence) {
+    return (
+      <MetricSlider
+        label={CharacterDialogMetricLabel.Valence}
+        title={CharacterDialogMetricTitle.Valence}
+        value={metrics.valence + CHARACTER_DIALOG_VALENCE_SLIDER_OFFSET}
+        max={CHARACTER_DIALOG_VALENCE_SLIDER_MAX}
+        onChange={val => onChange(metricKey, val - CHARACTER_DIALOG_VALENCE_SLIDER_OFFSET)}
+        displayValue={signedMetricDisplay(metrics.valence)}
+        minLabel={CharacterDialogMetricBoundLabel.Negative}
+        maxLabel={CharacterDialogMetricBoundLabel.Positive}
+      />
+    )
+  }
+  if (metricKey === CharacterMetricFieldKey.Arousal) {
+    return (
+      <MetricSlider
+        label={CharacterDialogMetricLabel.Arousal}
+        title={CharacterDialogMetricTitle.Arousal}
+        value={metrics.arousal}
+        max={CHARACTER_DIALOG_METRIC_SLIDER_MAX}
+        onChange={val => onChange(metricKey, val)}
+        displayValue={percentMetricDisplay(metrics.arousal)}
+        minLabel={CharacterDialogMetricBoundLabel.Lethargic}
+        maxLabel={CharacterDialogMetricBoundLabel.Energized}
+      />
+    )
+  }
+  if (metricKey === CharacterMetricFieldKey.PerceivedStakes) {
+    return (
+      <MetricSlider
+        label={CharacterDialogMetricLabel.PerceivedStakes}
+        title={CharacterDialogMetricTitle.PerceivedStakes}
+        value={metrics.perceivedStakes}
+        max={CHARACTER_DIALOG_METRIC_SLIDER_MAX}
+        onChange={val => onChange(metricKey, val)}
+        displayValue={percentMetricDisplay(metrics.perceivedStakes)}
+        minLabel={CharacterDialogMetricBoundLabel.Low}
+        maxLabel={CharacterDialogMetricBoundLabel.Critical}
+      />
+    )
+  }
+  return (
+    <MetricSlider
+      label={CharacterDialogMetricLabel.MoralAlignment}
+      title={CharacterDialogMetricTitle.MoralAlignment}
+      value={metrics.moralAlignment}
+      max={CHARACTER_DIALOG_METRIC_SLIDER_MAX}
+      onChange={val => onChange(metricKey, val)}
+      displayValue={percentMetricDisplay(metrics.moralAlignment)}
+      minLabel={CharacterDialogMetricBoundLabel.Compromised}
+      maxLabel={CharacterDialogMetricBoundLabel.Aligned}
+    />
   )
 }
 
@@ -59,136 +150,40 @@ export function CharacterCreationDialogMetricsFields({
   hasDescription,
   onGenerateMetrics,
 }: CharacterCreationDialogMetricsFieldsProps) {
-  const updateMetric = (key: keyof CharacterMetrics, value: number) => {
+  const isChatBusy = useStorytellerChatBusy()
+  const updateMetric = (key: CharacterMetricFieldKey, value: number) => {
     setMetrics(prev => ({ ...prev, [key]: value }))
   }
 
   return (
     <div className="space-y-4 pt-4 border-t border-border">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold">Baseline Psychological Metrics</h3>
+        <h3 className="text-sm font-bold">{CharacterDialogMetricsCopy.Heading}</h3>
         <Button
           size="sm"
           variant="outline"
           className="text-xs h-7"
           onClick={onGenerateMetrics}
-          disabled={isGeneratingMetrics || !hasDescription}
+          disabled={isGeneratingMetrics || isChatBusy || !hasDescription}
         >
           {isGeneratingMetrics ? (
             <Loader2 className="animate-spin w-3 h-3 mr-1" />
           ) : (
             <Wand2 className="w-3 h-3 mr-1" />
           )}
-          Auto-set from Description
+          {CharacterDialogMetricsCopy.AutoSet}
         </Button>
       </div>
 
-      <div className="space-y-3">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Emotional State
-        </h4>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-          <MetricSlider
-            label="Valence"
-            title="Emotional tone from very negative to very positive"
-            value={metrics.valence + 100}
-            max={200}
-            onChange={val => updateMetric('valence', val - 100)}
-            displayValue={`${metrics.valence > 0 ? '+' : ''}${metrics.valence}`}
-            minLabel="Negative"
-            maxLabel="Positive"
+      <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+        {CHARACTER_DIALOG_METRIC_KEYS.map(metricKey => (
+          <DialogMetricSlider
+            key={metricKey}
+            metricKey={metricKey}
+            metrics={metrics}
+            onChange={updateMetric}
           />
-          <MetricSlider
-            label="Arousal"
-            title="Energy and activation level"
-            value={metrics.arousal}
-            max={100}
-            onChange={val => updateMetric('arousal', val)}
-            displayValue={`${metrics.arousal}%`}
-            minLabel="Lethargic"
-            maxLabel="Energized"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 pt-2">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Core Needs
-        </h4>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-          <MetricSlider
-            label="Autonomy"
-            title="Perceived freedom and self-direction"
-            value={metrics.autonomy}
-            max={100}
-            onChange={val => updateMetric('autonomy', val)}
-            displayValue={`${metrics.autonomy}%`}
-          />
-          <MetricSlider
-            label="Competence"
-            title="Belief in capability to handle challenges"
-            value={metrics.competence}
-            max={100}
-            onChange={val => updateMetric('competence', val)}
-            displayValue={`${metrics.competence}%`}
-          />
-          <MetricSlider
-            label="Relatedness"
-            title="Sense of connection to others"
-            value={metrics.relatedness}
-            max={100}
-            onChange={val => updateMetric('relatedness', val)}
-            displayValue={`${metrics.relatedness}%`}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 pt-2">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Mental State
-        </h4>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-          <MetricSlider
-            label="Cognitive Clarity"
-            title="Mental sharpness and decision-making capacity"
-            value={metrics.cognitiveClarity}
-            max={100}
-            onChange={val => updateMetric('cognitiveClarity', val)}
-            displayValue={`${metrics.cognitiveClarity}%`}
-          />
-          <MetricSlider
-            label="Perceived Stakes"
-            title="How much they believe is on the line"
-            value={metrics.perceivedStakes}
-            max={100}
-            onChange={val => updateMetric('perceivedStakes', val)}
-            displayValue={`${metrics.perceivedStakes}%`}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 pt-2">
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Social & Moral
-        </h4>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-          <MetricSlider
-            label="Social Safety"
-            title="Perceived safety in current social context"
-            value={metrics.socialSafety}
-            max={100}
-            onChange={val => updateMetric('socialSafety', val)}
-            displayValue={`${metrics.socialSafety}%`}
-          />
-          <MetricSlider
-            label="Moral Alignment"
-            title="Alignment between actions and values"
-            value={metrics.moralAlignment}
-            max={100}
-            onChange={val => updateMetric('moralAlignment', val)}
-            displayValue={`${metrics.moralAlignment}%`}
-          />
-        </div>
+        ))}
       </div>
     </div>
   )

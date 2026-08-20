@@ -52,7 +52,9 @@ export function resolveTileActionBarVariant(input: {
   hasSelection: boolean
   hasArt: boolean
   busy: boolean
+  isPanMode: boolean
 }): TileActionBarVariant {
+  if (!input.isPanMode) return TileActionBarVariant.Hidden
   if (!input.hasSelection) return TileActionBarVariant.Hidden
   if (input.busy) return TileActionBarVariant.Busy
   if (!input.hasArt) return TileActionBarVariant.Empty

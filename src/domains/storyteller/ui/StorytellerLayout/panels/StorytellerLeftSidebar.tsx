@@ -2,14 +2,15 @@
 
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { CharacterPanel } from '../../CharacterPanel'
-import { Users, AlertCircle, Scroll } from 'lucide-react'
+import { Users, AlertCircle } from 'lucide-react'
 import {
   DomainSidebar,
   SidebarSection,
   SidebarEmptyState,
   SidebarHeader,
 } from '@/components/DomainSidebar'
-import { EpisodeManager, MasterPromptEditor } from '../storyteller-dynamic-imports'
+import { EpisodeManager } from '../storyteller-dynamic-imports'
+import { MasterPromptEditor } from '../../MasterPromptEditor'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 import { MasterPromptScope } from '@/domains/storyteller/ui/MasterPromptEditor/constants/master-prompt-editor'
 import {
@@ -59,13 +60,11 @@ export function StorytellerLeftSidebar(props: StorytellerLeftSidebarProps) {
       {currentProject ? (
         <div className="space-y-6">
           <div id={TOUR_STEP_IDS.STORYTELLER_MASTER_PROMPT}>
-            <SidebarSection icon={<Scroll size={12} />}>
-              <MasterPromptEditor
-                scope={MasterPromptScope.Project}
-                initialPrompt={currentProject.master_prompt || ''}
-                onSave={handleSaveProjectPrompt}
-              />
-            </SidebarSection>
+            <MasterPromptEditor
+              scope={MasterPromptScope.Project}
+              initialPrompt={currentProject.master_prompt || ''}
+              onSave={handleSaveProjectPrompt}
+            />
           </div>
 
           <div id={TOUR_STEP_IDS.STORYTELLER_EPISODES}>

@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import { BeatCard } from '../BeatCard'
 import { BeatCardLoading } from '../BeatCard/BeatCardLoading'
 import { BeatCard as BeatData } from '@/domains/storyteller/core/types/story-types'
+import { beatImageBatchOverlay } from '@/domains/storyteller/state/useBeatImageBatchStore'
 import { CorkBoardLoadingKey } from './constants/cork-board'
 import { corkBoardLoadingPlaceholderCount } from './cork-board-list-mode'
 
@@ -17,9 +18,9 @@ interface CorkBoardBeatGridProps {
   onExpand: (id: string) => void
   onCreate: () => void
   confirmDialog: React.ReactNode
-  isChatBusy?: boolean
   showLoadingCard?: boolean
-  generatingBeatIds?: ReadonlySet<string>
+  pendingImageBeatIds?: readonly string[]
+  activeGeneratingBeatId?: string | null
 }
 
 export const CorkBoardBeatGrid: React.FC<CorkBoardBeatGridProps> = ({
@@ -33,9 +34,9 @@ export const CorkBoardBeatGrid: React.FC<CorkBoardBeatGridProps> = ({
   onExpand,
   onCreate,
   confirmDialog,
-  isChatBusy = false,
   showLoadingCard = false,
-  generatingBeatIds,
+  pendingImageBeatIds = [],
+  activeGeneratingBeatId = null,
 }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
     {beats
@@ -51,8 +52,12 @@ export const CorkBoardBeatGrid: React.FC<CorkBoardBeatGridProps> = ({
           onDrop={onDrop}
           onExpand={onExpand}
           projectId={projectId}
-          isChatBusy={isChatBusy}
-          isBatchGenerating={generatingBeatIds?.has(beat.id) === true}
+          batchOverlay={beatImageBatchOverlay({
+            beatId: beat.id,
+            imageUrl: beat.imageUrl,
+            pendingBeatIds: pendingImageBeatIds,
+            activeBeatId: activeGeneratingBeatId,
+          })}
         />
       ))}
 

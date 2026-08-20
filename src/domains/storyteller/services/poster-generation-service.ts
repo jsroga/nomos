@@ -3,20 +3,23 @@ import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
 import { browserStorage } from '@/shared/data/browser-storage'
 import {
   waitForTriggerRun,
+  TriggerRunPollAbortedError,
   TriggerRunPollFailedError,
+  TriggerRunPollTimeoutError,
+  type TriggerRunStatusPayload,
 } from '@/shared/data/polling/wait-for-trigger-run'
 import { readTriggerRunOutputField } from '@/shared/data/polling/trigger-run-polling'
-import { readString, recordFromJson } from '@/shared/data/json-guards'
-import { patchStorytellerEpisode } from '@/domains/storyteller/core/io/storyteller.api'
-
-const POSTER_UNKNOWN_STATUS = 'unknown'
-const POSTER_IMAGE_URL_FIELD = 'imageUrl'
-const POSTER_IS_VARIANT_GRID_FIELD = 'isVariantGrid'
+import {
+  fetchStorytellerEpisode,
+  patchStorytellerEpisode,
+} from '@/domains/storyteller/core/io/storyteller.api'
 import {
   fetchPosterRunStatus,
   triggerCombinedStoryboard,
   triggerEpisodePoster,
 } from '@/domains/storyteller/core/io/poster.api'
+import type { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import type { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 import {
   PosterGenerationError,
   PosterGenerationLog,
@@ -27,64 +30,38 @@ import {
   PosterOperationTypeId,
   PosterPersistField,
   PosterStorageKeyPrefix,
-  PosterTriggerStatus,
   PosterUnknownLabel,
+  POSTER_RUN_MAX_POLLS,
+  STORYBOARD_VIDEO_MAX_POLLS,
 } from '@/domains/storyteller/services/constants/poster-generation-service'
+import { isNewerPosterUrl, preferLatestPosterUrl, readEpisodePosterUrl } from '@/domains/storyteller/services/poster-url-from-episode'
+import {
+  failPosterRun,
+  resumePendingPosterGenerations,
+  type PosterGenCallbacks,
+  type PosterGenRunState,
+  type PosterResumeHost,
+} from '@/domains/storyteller/services/poster-generation-resume'
 
-interface PosterGenRunState {
-  runId: string
-  projectId: string
-  episodeId: string
-  prompt: string
-  startedAt: string
-  type?: `${PosterGenerationType}`
-}
+export {
+  isNewerPosterUrl,
+  readEpisodePosterUrl,
+  shouldSettleStoredPosterRun,
+} from '@/domains/storyteller/services/poster-url-from-episode'
 
-type PosterGenCallbacks = {
-  onComplete?: (url: string, meta?: { isVariantGrid: boolean }) => void
-  onError?: (error: unknown) => void
-}
-
-/** Parse a persisted poster run-state blob from browser storage without `as` casts. */
-function posterRunStateFromJson(raw: string): PosterGenRunState | null {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return null
-  }
-  const rec = recordFromJson(parsed)
-  const runId = readString(rec.runId)
-  if (!runId) return null
-  const typeValue = readString(rec.type)
-  return {
-    runId,
-    projectId: readString(rec.projectId) ?? '',
-    episodeId: readString(rec.episodeId) ?? '',
-    prompt: readString(rec.prompt) ?? '',
-    startedAt: readString(rec.startedAt) ?? '',
-    type: Object.values(PosterGenerationType).find(t => t === typeValue),
-  }
-}
-
-function failRun(
-  callbacks: PosterGenCallbacks | undefined,
-  error: unknown,
-  clear: () => void,
-): void {
-  clear()
-  callbacks?.onError?.(error)
-}
+const POSTER_UNKNOWN_STATUS = 'unknown'
+const POSTER_IMAGE_URL_FIELD = 'imageUrl'
+const POSTER_IS_VARIANT_GRID_FIELD = 'isVariantGrid'
 
 export class PosterGenerationService {
   async generateStoryboard(
     projectId: string,
     episodeId: string,
     prompt: string,
-    beatsPayload: Record<string, unknown>[],
-    config: Record<string, unknown>,
     onComplete?: (url: string, meta?: { isVariantGrid: boolean }) => void,
     onError?: (error: unknown) => void,
+    model?: ApiframeVideoModel,
+    look?: StoryboardVideoLook,
   ): Promise<string | null> {
     console.log(`${PosterGenerationLog.StoryboardStart}${episodeId}`)
 
@@ -100,10 +77,7 @@ export class PosterGenerationService {
     })
 
     try {
-      const { handleId, error } = await triggerCombinedStoryboard(episodeId, {
-        beats: beatsPayload,
-        config,
-      })
+      const { handleId, error } = await triggerCombinedStoryboard(episodeId, model, look)
 
       if (!handleId) {
         throw new Error(error || PosterGenerationError.StoryboardTriggerFailed)
@@ -151,6 +125,7 @@ export class PosterGenerationService {
     })
 
     try {
+      const episodePromise = fetchStorytellerEpisode(episodeId).catch(() => null)
       const { handleId, error } = await triggerEpisodePoster(episodeId, { prompt, config })
 
       if (!handleId) {
@@ -163,6 +138,7 @@ export class PosterGenerationService {
         episodeId,
         prompt,
         startedAt: new Date().toISOString(),
+        baselinePosterUrl: readEpisodePosterUrl(await episodePromise) ?? '',
         type: PosterGenerationType.Poster,
       }
 
@@ -181,50 +157,135 @@ export class PosterGenerationService {
     runState: PosterGenRunState,
     opId: string,
     callbacks?: PosterGenCallbacks,
+    retryOnTimeout = true,
   ): Promise<void> {
     console.log(
       `${PosterGenerationLog.PollingStart}${runState.runId} (${runState.type || PosterUnknownLabel.Unknown})`,
     )
 
     const clear = () => this.clearRunState(runState, opId)
+    let newerFromDb: string | null = null
 
     try {
       const result = await waitForTriggerRun(() => fetchPosterRunStatus(runState.runId), {
         intervalMs: POLLING_INTERVALS.DEFAULT,
-        maxPolls: 120,
+        maxPolls:
+          runState.type === PosterGenerationType.Storyboard
+            ? STORYBOARD_VIDEO_MAX_POLLS
+            : POSTER_RUN_MAX_POLLS,
         onPoll: data => {
           useGlobalStatusStore.getState().updateOperation(opId, {
             details: `${PosterOperationDetail.StatusPrefix}${data.status ?? POSTER_UNKNOWN_STATUS}`,
           })
+          void this.readNewerPosterUrl(runState).then(url => {
+            if (url) newerFromDb = url
+          })
         },
+        shouldAbort: () => newerFromDb !== null,
       })
 
-      if (result.status === PosterTriggerStatus.Completed) {
-        const imageUrl = readTriggerRunOutputField(result, POSTER_IMAGE_URL_FIELD)
-        if (imageUrl) {
-          const isVariantGrid = result.output?.[POSTER_IS_VARIANT_GRID_FIELD] === true
-          await this.handleCompletion(runState, imageUrl, opId, callbacks?.onComplete, isVariantGrid)
-          return
-        }
-        console.warn(PosterGenerationLog.NoImageUrl)
-        failRun(callbacks, new Error(PosterGenerationError.NoImageUrl), clear)
+      await this.finishPosterPoll(runState, opId, callbacks, clear, newerFromDb, result)
+    } catch (error) {
+      if (newerFromDb || error instanceof TriggerRunPollAbortedError) {
+        await this.finishPosterPoll(runState, opId, callbacks, clear, newerFromDb, null)
         return
       }
-
-      console.error(PosterGenerationLog.Failed, result.error || result.status)
-      failRun(
-        callbacks,
-        result.error ?? new Error(PosterGenerationError.GenerationFailed),
-        clear,
-      )
-    } catch (error) {
       if (error instanceof TriggerRunPollFailedError) {
         console.error(PosterGenerationLog.Failed, error.runError || error.status)
-      } else {
-        console.error(PosterGenerationLog.PollingError, error)
+        failPosterRun(callbacks, error, clear)
+        return
       }
-      failRun(callbacks, error, clear)
+      console.error(PosterGenerationLog.PollingError, error)
+      if (error instanceof TriggerRunPollTimeoutError) {
+        await this.recoverPosterOrPark(runState, opId, callbacks, clear, retryOnTimeout)
+        return
+      }
+      failPosterRun(callbacks, error, clear)
     }
+  }
+
+  private async finishPosterPoll(
+    runState: PosterGenRunState,
+    opId: string,
+    callbacks: PosterGenCallbacks | undefined,
+    clear: () => void,
+    newerFromDb: string | null,
+    result: TriggerRunStatusPayload | null,
+  ): Promise<void> {
+    if (newerFromDb) {
+      await this.handleCompletion(runState, newerFromDb, opId, callbacks?.onComplete, false)
+      return
+    }
+    const saved = await this.readNewerPosterUrl(runState)
+    if (saved) {
+      await this.handleCompletion(runState, saved, opId, callbacks?.onComplete, false)
+      return
+    }
+    if (result) {
+      await this.applyCompletedRun(runState, result, opId, callbacks, clear)
+      return
+    }
+    failPosterRun(callbacks, new Error(PosterGenerationError.NoImageUrl), clear)
+  }
+
+  private async applyCompletedRun(
+    runState: PosterGenRunState,
+    result: TriggerRunStatusPayload,
+    opId: string,
+    callbacks: PosterGenCallbacks | undefined,
+    clear: () => void,
+  ): Promise<void> {
+    const imageUrl = preferLatestPosterUrl(
+      await this.readCurrentPosterUrl(runState),
+      readTriggerRunOutputField(result, POSTER_IMAGE_URL_FIELD),
+    )
+    if (imageUrl) {
+      const isVariantGrid = result.output?.[POSTER_IS_VARIANT_GRID_FIELD] === true
+      await this.handleCompletion(runState, imageUrl, opId, callbacks?.onComplete, isVariantGrid)
+      return
+    }
+    console.warn(PosterGenerationLog.NoImageUrl)
+    failPosterRun(callbacks, new Error(PosterGenerationError.NoImageUrl), clear)
+  }
+
+  private async readCurrentPosterUrl(runState: PosterGenRunState): Promise<string | null> {
+    if (runState.type === PosterGenerationType.Storyboard) return null
+    try {
+      return readEpisodePosterUrl(await fetchStorytellerEpisode(runState.episodeId))
+    } catch {
+      return null
+    }
+  }
+
+  private async readNewerPosterUrl(runState: PosterGenRunState): Promise<string | null> {
+    const saved = await this.readCurrentPosterUrl(runState)
+    if (!isNewerPosterUrl(saved, runState.baselinePosterUrl)) return null
+    console.log(PosterGenerationLog.RecoveredFromDb, runState.episodeId)
+    return saved
+  }
+
+  private async recoverPosterOrPark(
+    runState: PosterGenRunState,
+    opId: string,
+    callbacks: PosterGenCallbacks | undefined,
+    clear: () => void,
+    retryOnTimeout: boolean,
+  ): Promise<void> {
+    const saved = await this.readNewerPosterUrl(runState)
+    if (saved) {
+      await this.handleCompletion(runState, saved, opId, callbacks?.onComplete, false)
+      return
+    }
+    if (runState.type === PosterGenerationType.Poster && retryOnTimeout) {
+      void this.pollRun(runState, opId, callbacks, false)
+      return
+    }
+    if (runState.type === PosterGenerationType.Poster) {
+      console.warn(PosterGenerationLog.ParkedForResume, runState.runId)
+      useGlobalStatusStore.getState().removeOperation(opId)
+      return
+    }
+    failPosterRun(callbacks, new Error(PosterGenerationError.GenerationFailed), clear)
   }
 
   private async handleCompletion(
@@ -233,27 +294,18 @@ export class PosterGenerationService {
     opId: string,
     onComplete?: (url: string, meta?: { isVariantGrid: boolean }) => void,
     isVariantGrid = false,
-  ) {
+  ): Promise<void> {
     try {
-      console.log(PosterGenerationLog.Persisting)
-
-      try {
-        const payload =
-          runState.type === PosterGenerationType.Storyboard
-            ? { [PosterPersistField.StoryboardUrl]: imageUrl }
-            : {
-                [PosterPersistField.PosterUrl]: imageUrl,
-                [PosterPersistField.PosterPrompt]: runState.prompt,
-              }
-
-        await patchStorytellerEpisode(runState.episodeId, payload)
-        console.log(
-          runState.type === PosterGenerationType.Storyboard
-            ? PosterGenerationLog.PersistedStoryboard
-            : PosterGenerationLog.PersistedPoster,
-        )
-      } catch (dbErr) {
-        console.error(`${PosterGenerationLog.PersistFailed}${runState.type} URL:`, dbErr)
+      if (runState.type === PosterGenerationType.Storyboard) {
+        console.log(PosterGenerationLog.Persisting)
+        try {
+          await patchStorytellerEpisode(runState.episodeId, {
+            [PosterPersistField.StoryboardUrl]: imageUrl,
+          })
+          console.log(PosterGenerationLog.PersistedStoryboard)
+        } catch (dbErr) {
+          console.error(`${PosterGenerationLog.PersistFailed}${runState.type} URL:`, dbErr)
+        }
       }
 
       onComplete?.(imageUrl, { isVariantGrid })
@@ -269,6 +321,19 @@ export class PosterGenerationService {
     useGlobalStatusStore.getState().removeOperation(opId)
   }
 
+  private resumeHost(): PosterResumeHost {
+    return {
+      readCurrentPosterUrl: runState => this.readCurrentPosterUrl(runState),
+      handleCompletion: (runState, imageUrl, opId, onComplete, isVariantGrid) =>
+        this.handleCompletion(runState, imageUrl, opId, onComplete, isVariantGrid),
+      applyCompletedRun: (runState, result, opId, callbacks, clear) =>
+        this.applyCompletedRun(runState, result, opId, callbacks, clear),
+      clearRunState: (runState, opId) => this.clearRunState(runState, opId),
+      pollRun: (runState, opId, callbacks, retryOnTimeout) =>
+        this.pollRun(runState, opId, callbacks, retryOnTimeout),
+    }
+  }
+
   resumePendingGenerations(
     projectId: string,
     onComplete?: (
@@ -278,41 +343,9 @@ export class PosterGenerationService {
       meta?: { isVariantGrid: boolean },
     ) => void,
     onError?: (error: unknown, episodeId: string, type?: `${PosterGenerationType}`) => void,
+    onResumed?: (episodeId: string, type?: `${PosterGenerationType}`) => void,
   ) {
-    if (typeof window === 'undefined') return
-
-    browserStorage.forEachPrefixed(PosterStorageKeyPrefix.PosterGen, (key, raw) => {
-      try {
-        const runState = posterRunStateFromJson(raw)
-        if (!runState || runState.projectId !== projectId) return
-
-        console.log(PosterGenerationLog.ResumingPolling, runState.runId)
-
-        const label =
-          runState.type === PosterGenerationType.Poster
-            ? PosterOperationLabel.GeneratingEpisodePosterResumed
-            : PosterOperationLabel.GeneratingStoryboardResumed
-
-        useGlobalStatusStore.getState().addOperation({
-          id: key,
-          type: PosterOperationTypeId.StoryAgent,
-          label,
-          details: PosterOperationDetail.ResumingGeneration,
-          status: PosterOperationStatus.InProgress,
-        })
-
-        void this.pollRun(runState, key, {
-          onComplete: onComplete
-            ? (url, meta) => onComplete(url, runState.episodeId, runState.type, meta)
-            : undefined,
-          onError: onError
-            ? error => onError(error, runState.episodeId, runState.type)
-            : undefined,
-        })
-      } catch {
-        console.warn(PosterGenerationLog.ParseStateFailed, key)
-      }
-    })
+    resumePendingPosterGenerations(this.resumeHost(), projectId, onComplete, onError, onResumed)
   }
 }
 

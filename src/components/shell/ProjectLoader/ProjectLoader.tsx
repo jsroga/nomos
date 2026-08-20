@@ -2,6 +2,7 @@
 
 import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { Loader2 } from 'lucide-react'
+import { ProjectLoaderClass } from '@/shared/data/constants/project-loader'
 
 export function ProjectLoader({ children }: { children: React.ReactNode }) {
   const { isLoading, error, hasProject } = useProjectFromUrl()
@@ -26,10 +27,10 @@ export function ProjectLoader({ children }: { children: React.ReactNode }) {
   // IMPORTANT: Always render children to preserve their state!
   // Show loading overlay instead of unmounting children
   return (
-    <div className="relative h-full w-full">
+    <div className={ProjectLoaderClass.Root}>
       {children}
       {isLoading && (
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className={ProjectLoaderClass.Overlay}>
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <span className="ml-2 text-muted-foreground">Loading project...</span>
         </div>

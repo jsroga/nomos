@@ -2,14 +2,13 @@
 
 import { useEffect, useCallback, useRef } from 'react'
 import { ActionHistoryStatus, ActionType } from '@/domains/storyteller/core/types/enums'
-import type { BeatCard as Beat } from '@/domains/storyteller/core/types/story-types'
 import { resolveEpisodeId } from '@/domains/storyteller/state/utils/episode-route'
+import type { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import type { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import { readString, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { UrlScheme } from '@/shared/data/constants/protocol'
-import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   StorytellerGenerationAgentName,
@@ -26,14 +25,22 @@ import {
 } from '@/domains/storyteller/services/constants/moodboard-generation-service'
 import {
   PosterPersistField,
+  PosterStorageKeyPrefix,
   PosterUserToast,
 } from '@/domains/storyteller/services/constants/poster-generation-service'
 import {
-  patchStorytellerEpisode,
+  fetchStorytellerEpisode,
   fetchStorytellerProjectOptional,
+  patchStorytellerEpisode,
 } from '@/domains/storyteller/core/io/storyteller.api'
 import { BrowserStorageEventName } from '@/shared/chat/core/constants/chat-interface'
 import { toastGenerationError } from '@/domains/storyteller/state/utils/toast-generation-error'
+import {
+  applyMoodboardImagesToPlan,
+  resolvePrimaryMoodboardUrl,
+  syncProjectMoodImages,
+} from '@/domains/storyteller/state/utils/moodboard-plan-sync'
+import { assignLatestPosterUrl, readEpisodePosterUrl } from '@/domains/storyteller/services/poster-url-from-episode'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 
 export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
@@ -47,12 +54,17 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
     setIsGeneratingStoryboard,
     storyPlan,
     setStoryPlan,
-    beats,
     setPrimaryMoodboardUrl,
     setActionHistory,
   } = core
 
   const lastResumedProjectId = useRef<string | null>(null)
+  const lastHandledMoodboardCompleteVersion = useRef(0)
+  const currentEpisodeIdRef = useRef(currentEpisodeId)
+
+  useEffect(() => {
+    currentEpisodeIdRef.current = currentEpisodeId
+  }, [currentEpisodeId])
 
   // Resume pending poster generations on mount
   useEffect(() => {
@@ -65,35 +77,37 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
         posterGenerationService.resumePendingGenerations(
           projectId,
           async (url, episodeId, type, meta) => {
-            if (episodeId === currentEpisodeId) {
-              if (type === StorytellerPosterType.Poster) {
-                setIsGeneratingPoster(false)
-                setPosterIsVariantGrid(Boolean(meta?.isVariantGrid))
-                setStoryPlan(prev => (prev ? { ...prev, posterUrl: url } : null))
-              } else {
-                setIsGeneratingStoryboard(false)
-                setStoryPlan(prev => (prev ? { ...prev, storyboardUrl: url } : null))
+            if (type === StorytellerPosterType.Poster) {
+              setIsGeneratingPoster(false)
+              setPosterIsVariantGrid(Boolean(meta?.isVariantGrid))
+              if (episodeId === currentEpisodeIdRef.current) {
+                setStoryPlan(prev => assignLatestPosterUrl(prev, url))
               }
+            } else if (episodeId === currentEpisodeIdRef.current) {
+              setIsGeneratingStoryboard(false)
+              setStoryPlan(prev => (prev ? { ...prev, storyboardUrl: url } : null))
             }
 
             try {
-              const payload =
-                type === StorytellerPosterType.Poster
-                  ? { [PosterPersistField.PosterUrl]: url }
-                  : { [PosterPersistField.StoryboardUrl]: url }
-              await patchStorytellerEpisode(episodeId, payload)
+              if (type === StorytellerPosterType.Poster) {
+                await patchStorytellerEpisode(episodeId, {
+                  [PosterPersistField.PosterUrl]: url,
+                })
+              } else {
+                await patchStorytellerEpisode(episodeId, {
+                  [PosterPersistField.StoryboardUrl]: url,
+                })
+              }
             } catch (e) {
               console.error(StorytellerLogMessage.FailedSaveResumedGeneration, e)
             }
           },
           (error, episodeId, type) => {
-            if (episodeId === currentEpisodeId) {
-              if (type === StorytellerPosterType.Poster) {
-                setIsGeneratingPoster(false)
-                setPosterIsVariantGrid(false)
-              } else {
-                setIsGeneratingStoryboard(false)
-              }
+            if (type === StorytellerPosterType.Poster) {
+              setIsGeneratingPoster(false)
+              setPosterIsVariantGrid(false)
+            } else if (episodeId === currentEpisodeIdRef.current) {
+              setIsGeneratingStoryboard(false)
             }
             toastGenerationError(
               type === StorytellerPosterType.Storyboard
@@ -102,21 +116,55 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
               error,
             )
           },
+          (episodeId, type) => {
+            if (episodeId !== currentEpisodeIdRef.current) return
+            if (type === StorytellerPosterType.Poster) {
+              setIsGeneratingPoster(true)
+              return
+            }
+            setIsGeneratingStoryboard(true)
+          },
         )
       )
     }
   }, [
     currentProject?.id,
-    currentEpisodeId,
     setIsGeneratingPoster,
     setIsGeneratingStoryboard,
     setPosterIsVariantGrid,
     setStoryPlan,
   ])
 
-  // Storyboard Trigger (Gemini)
+  useEffect(() => {
+    if (!currentEpisodeId) return
+    const storyboardOpId = `${PosterStorageKeyPrefix.StoryboardGen}${currentEpisodeId}`
+    if (browserStorage.has(storyboardOpId)) {
+      setIsGeneratingStoryboard(true)
+    }
+  }, [currentEpisodeId, setIsGeneratingStoryboard])
+
+  useEffect(() => {
+    if (!currentEpisodeId) return
+    let cancelled = false
+    void fetchStorytellerEpisode(currentEpisodeId)
+      .then(episode => {
+        if (cancelled) return
+        const url = readEpisodePosterUrl(episode)
+        if (!url) return
+        setStoryPlan(prev => assignLatestPosterUrl(prev, url))
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [currentEpisodeId, setStoryPlan])
+
   const handleStoryboardTrigger = useCallback(
-    async (eventOrEpisodeId?: Event | string | React.MouseEvent) => {
+    async (
+      eventOrEpisodeId?: Event | string | React.MouseEvent,
+      model?: ApiframeVideoModel,
+      look?: StoryboardVideoLook,
+    ) => {
       let episodeId = resolveEpisodeId(eventOrEpisodeId, currentEpisodeId)
 
       if (!episodeId || !currentProject?.id) return
@@ -129,41 +177,23 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
         const premise = recordFromJson(recordFromJson(storyPlan).premise)
         const prompt = `A visual storyboard for an episode titled "${readString(premise.title) ?? readString(storyPlan?.title) ?? StorytellerUnknownLabel.Unknown}".`
 
-        const beatsPayload = beats.map((b: Beat) => ({
-          logline: b.logline,
-          visualHook: b.content,
-          imagePrompt: b.imagePrompt,
-        }))
-
         const { posterGenerationService } = await import(
           '@/domains/storyteller/services/poster-generation-service'
         )
-        const apiKey =
-          browserStorage.getAiApiKey(LocalStorageKeys.AI_CONFIG_APIFRAME) || undefined
         await posterGenerationService.generateStoryboard(
           currentProject.id,
           episodeId,
           prompt,
-          beatsPayload,
-          apiKey ? { apiKey } : {},
           async url => {
             setIsGeneratingStoryboard(false)
             setStoryPlan(prev => (prev ? { ...prev, storyboardUrl: url } : null))
-
-            if (episodeId) {
-              try {
-                await patchStorytellerEpisode(episodeId, {
-                  [PosterPersistField.StoryboardUrl]: url,
-                })
-              } catch (e) {
-                console.error(StorytellerLogMessage.FailedSaveStoryboardUrl, e)
-              }
-            }
           },
           error => {
             setIsGeneratingStoryboard(false)
             toastGenerationError(PosterUserToast.StoryboardFailed, error)
           },
+          model,
+          look,
         )
       } catch (error) {
         console.error(StorytellerGenerationLog.StoryboardFailed, error)
@@ -175,7 +205,6 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       currentProject?.id,
       currentEpisodeId,
       isGeneratingStoryboard,
-      beats,
       storyPlan,
       setIsGeneratingStoryboard,
       setStoryPlan,
@@ -224,7 +253,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
           async (url, meta) => {
             setIsGeneratingPoster(false)
             setPosterIsVariantGrid(Boolean(meta?.isVariantGrid))
-            setStoryPlan(prev => (prev ? { ...prev, posterUrl: url } : null))
+            setStoryPlan(prev => assignLatestPosterUrl(prev, url))
 
             if (episodeId) {
               try {
@@ -311,7 +340,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       const { moodboardGenerationService } = await import(
         '@/domains/storyteller/services/moodboard-generation-service'
       )
-      await moodboardGenerationService.generate(projectId, [], undefined, {}, async () => {
+      await moodboardGenerationService.generate(projectId, [], {}, async () => {
         // Refetch project data when generation completes
         try {
           const data = await fetchStorytellerProjectOptional(projectId)
@@ -322,17 +351,7 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
               setStoryPlan(prev =>
                 prev ? { ...prev, moodImages } : prev
               )
-              // Also update the store - get fresh reference from store
-              const latestProject = useWorkspaceProjectStore.getState().currentProject
-              if (latestProject) {
-                useWorkspaceProjectStore.getState().setCurrentProject({
-                  ...latestProject,
-                  series_bible: {
-                    ...parseSeriesBibleRecord(latestProject.series_bible),
-                    moodImages,
-                  },
-                })
-              }
+              syncProjectMoodImages(moodImages)
             }
           }
         } catch (error) {
@@ -343,23 +362,18 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
     [currentProject?.id, setStoryPlan]
   )
 
-  // Update primary moodboard background
+  const projectId = currentProject?.id
+  const moodImages = storyPlan?.moodImages
+
   const updatePrimaryMoodboard = useCallback(() => {
-    if (!currentProject?.id) return
-    const savedPrimary = browserStorage.getString(moodboardPrimaryStorageKey(currentProject.id))
-    const primaryIdx = savedPrimary !== null ? parseInt(savedPrimary) : null
-    if (primaryIdx !== null && storyPlan?.moodImages?.[primaryIdx]) {
-      const img = storyPlan.moodImages[primaryIdx]
-      // Handle both local filenames and absolute URLs
-      if (img.startsWith(UrlScheme.Http)) {
-        setPrimaryMoodboardUrl(img)
-      } else {
-        setPrimaryMoodboardUrl(`/projects/${currentProject.id}/${img}`)
-      }
-    } else {
-      setPrimaryMoodboardUrl(null)
-    }
-  }, [currentProject, storyPlan?.moodImages, setPrimaryMoodboardUrl])
+    if (!projectId) return
+    const next = resolvePrimaryMoodboardUrl(
+      projectId,
+      moodImages,
+      browserStorage.getString(moodboardPrimaryStorageKey(projectId)),
+    )
+    setPrimaryMoodboardUrl(prev => (prev === next ? prev : next))
+  }, [projectId, moodImages, setPrimaryMoodboardUrl])
 
   // Listen for primary moodboard changes and generation completion
   useEffect(() => {
@@ -387,53 +401,38 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
 
   useEffect(() => {
     if (!moodboardComplete || moodboardCompleteVersion === 0) return
-    const detail = moodboardComplete
-    if (detail.projectId !== currentProject?.id) return
+    if (lastHandledMoodboardCompleteVersion.current === moodboardCompleteVersion) return
+    if (moodboardComplete.projectId !== currentProject?.id) return
+    lastHandledMoodboardCompleteVersion.current = moodboardCompleteVersion
 
+    const detail = moodboardComplete
     console.log(StorytellerLogMessage.MoodboardGenerationComplete, detail)
 
     void (async () => {
       const images = detail.images.filter((url): url is string => !!url)
       if (images.length > 0) {
-        setStoryPlan(prev => {
-          if (!prev) return prev
-          const currentImages = prev.moodImages ?? []
-          const promptIndex = detail.promptIndex
-
-          if (promptIndex !== undefined) {
-            const updated = [...currentImages]
-            updated[promptIndex] = images[0]
-            return { ...prev, moodImages: updated }
-          }
-
-          return { ...prev, moodImages: [...currentImages, ...images] }
-        })
+        setStoryPlan(prev => applyMoodboardImagesToPlan(prev, images, detail.promptIndex))
       }
 
       try {
         const data = await fetchStorytellerProjectOptional(detail.projectId)
         if (data) {
           const bible = parseSeriesBibleRecord(data.seriesBible ?? data.series_bible)
-          const moodImages = stringArrayFromJson(bible.moodImages)
-          if (moodImages.length > 0) {
-            setStoryPlan(prev =>
-              prev ? { ...prev, moodImages } : prev
-            )
+          const nextImages = stringArrayFromJson(bible.moodImages)
+          const generated = images[0]
+          if (
+            nextImages.length > 0 &&
+            (!generated || nextImages.includes(generated))
+          ) {
+            setStoryPlan(prev => applyMoodboardImagesToPlan(prev, nextImages, detail.promptIndex))
+            syncProjectMoodImages(nextImages)
           }
         }
       } catch (error) {
         console.error(StorytellerLogMessage.FailedRefetchMoodboard, error)
       }
-
-      updatePrimaryMoodboard()
     })()
-  }, [
-    moodboardComplete,
-    moodboardCompleteVersion,
-    currentProject?.id,
-    setStoryPlan,
-    updatePrimaryMoodboard,
-  ])
+  }, [moodboardComplete, moodboardCompleteVersion, currentProject?.id, setStoryPlan])
 
   return {
     handleStoryboardTrigger,

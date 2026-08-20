@@ -14,6 +14,7 @@ import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 import * as path from 'path'
 import { inputRecord } from '@/shared/agent-kernel/scorers/shared'
+import { examplesMatchingScorers } from './select-eval-examples'
 import type {
   ExampleLog,
   MultiVariantReport,
@@ -158,12 +159,18 @@ async function runEval(): Promise<MultiVariantReport> {
     )
   }
 
-  const examples = sampleArray(allExamples, samples)
+  const eligible = examplesMatchingScorers(allExamples, scorerFilter)
+  if (eligible.length === 0) {
+    throw new Error(
+      `No golden examples allow scorers: ${scorerFilter?.join(', ') ?? '(none)'}`
+    )
+  }
+  const examples = sampleArray(eligible, samples)
   const results: ScorerRunResult[] = []
 
   console.log('\n🧪 Mastra Eval Runner')
   console.log(`   Dataset: ${dataset}`)
-  console.log(`   Examples: ${examples.length}\n`)
+  console.log(`   Examples: ${examples.length} of ${eligible.length} eligible\n`)
 
   for (const example of examples) {
     const start = Date.now()

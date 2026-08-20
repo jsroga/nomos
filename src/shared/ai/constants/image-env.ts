@@ -5,7 +5,7 @@
  * Available upscale modes: standard | creative
  * Available fidelity models: grok-imagine-image | topaz-image-upscale | nano-banana | nano-banana-pro | gpt-image-1.5 | flux-2-pro
  * Available fidelity modes (Topaz only): redefine | standard | creative | cgi | low-resolution | text-refine
- * Available repaint values: flux-fill-pro
+ * Available repaint values: gpt-image-2
  */
 
 export enum ImageEnvVar {
@@ -14,6 +14,9 @@ export enum ImageEnvVar {
   TileFollowUpModel = 'IMAGE_TILE_FOLLOW_UP_MODEL',
   MoodboardModel = 'IMAGE_MOODBOARD_MODEL',
   StoryboardModel = 'IMAGE_STORYBOARD_MODEL',
+  CombinedStoryboardModel = 'IMAGE_COMBINED_STORYBOARD_MODEL',
+  StoryboardVideoModel = 'IMAGE_STORYBOARD_VIDEO_MODEL',
+  StoryboardVideoDuration = 'IMAGE_STORYBOARD_VIDEO_DURATION',
   EpisodePosterModel = 'IMAGE_EPISODE_POSTER_MODEL',
   SeriesPosterModel = 'IMAGE_SERIES_POSTER_MODEL',
   PortraitModel = 'IMAGE_PORTRAIT_MODEL',
@@ -44,7 +47,7 @@ export enum ImageUpscaleModelId {
 }
 
 export enum ImageRepaintModelId {
-  FluxFillPro = 'flux-fill-pro',
+  GptImage2 = 'gpt-image-2',
 }
 
 /** Topaz enhance preset for canvas tile upscale. */

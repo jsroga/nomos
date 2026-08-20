@@ -13,6 +13,8 @@ export enum ContinuityFindingType {
   Tone = 'tone',
   MissingPayoff = 'missing_payoff',
   OrphanedSetup = 'orphaned_setup',
+  SectionAlignment = 'section_alignment',
+  GranularityDrift = 'granularity_drift',
 }
 
 export enum ContinuityFindingSeverity {

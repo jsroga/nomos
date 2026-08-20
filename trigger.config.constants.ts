@@ -10,6 +10,9 @@ export enum TriggerLogLevel {
 
 export enum TriggerBuildExternal {
   DrizzleOrm = 'drizzle-orm',
+  Sharp = 'sharp',
+  FfmpegStatic = 'ffmpeg-static',
+  FfprobeStatic = 'ffprobe-static',
 }
 
 export enum TriggerEnvFile {

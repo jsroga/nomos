@@ -1,59 +1,221 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { task, logger, metadata } from '@trigger.dev/sdk'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { ContentType, ImageFileExtension, VideoFileExtension } from '@/shared/data/constants/protocol'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
+import { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import { resolveApiframeApiKey } from '@/shared/ai/image-model-env'
+import { buildVideoGenerateBody, generateApiframeVideo } from '@/shared/ai/apiframe-video'
 import {
-  buildCombinedStoryboardPrompt,
-  fetchGeminiStoryboardImage,
+  resolveStoryboardVideoDuration,
+  resolveStoryboardVideoLook,
+  resolveStoryboardVideoModel,
+  type StoryboardVideoLook,
+} from '@/shared/ai/storyboard-video-env'
+import {
+  logLLMRequestComplete,
+  logLLMRequestError,
+  logLLMRequestStart,
+} from '@/trigger/utils/llm-logger'
+import { isPublicHttpsUrl } from './persist-generated-image'
+import { composeStoryboardContactSheet } from './compose-storyboard-contact-sheet'
+import { generateStoryboardVideoCorePrompt } from './storyboard-video-core-prompt'
+import { mixStoryboardVoiceover } from './storyboard-video-voiceover'
+import { CONTACT_SHEET_HTTPS_REQUIRED } from './constants/storyboard-video-sheet'
+import {
+  CombinedStoryboardLog,
+  CombinedStoryboardMetadataKey,
+  CombinedStoryboardStage,
+  COMBINED_STORYBOARD_ERROR,
+  persistCombinedStoryboardMedia,
   persistEpisodeStoryboardUrl,
-  saveStoryboardImage,
+  beatsWithImageUrl,
+  storyboardKlingDirectorFields,
+  type CombinedStoryboardBeat,
 } from './generate-combined-storyboard-helpers'
 
-interface GenerateCombinedStoryboardPayload {
+export interface GenerateCombinedStoryboardPayload {
   episodeId: string
   projectId: string
-  beats: { logline: string; visualHook?: string; imagePrompt?: string }[]
-  providerConfig: {
-    provider: typeof ImageGenProvider.NanoBanana
-    apiKey: string
-    modelId?: string
-  }
+  beats: CombinedStoryboardBeat[]
+  model?: ApiframeVideoModel
+  look?: StoryboardVideoLook
 }
 
 export const generateCombinedStoryboard = task({
-  id: 'generate-combined-storyboard',
-  maxDuration: 600,
+  id: TRIGGER_TASK_ID.GENERATE_COMBINED_STORYBOARD,
+  maxDuration: 900,
+  retry: { maxAttempts: 1 },
   run: async (payload: GenerateCombinedStoryboardPayload) => {
-    const { episodeId, projectId, beats, providerConfig } = payload
-    const { apiKey, modelId } = providerConfig
+    const { episodeId, projectId, beats } = payload
+    const apiKey = resolveApiframeApiKey()
+    if (!apiKey) {
+      throw new Error(COMBINED_STORYBOARD_ERROR.MissingApiKey)
+    }
 
-    logger.info(
-      `Starting combined storyboard generation for episode ${episodeId} with ${beats.length} beats.`
-    )
+    const imaged = beatsWithImageUrl(beats)
+    if (imaged.length === 0) {
+      throw new Error(API_ERROR.BEAT_IMAGES_REQUIRED)
+    }
 
-    await metadata.set('episode_id', episodeId)
-    await metadata.set('project_id', projectId)
-    await metadata.set('stage', 'prompting')
+    const model = resolveStoryboardVideoModel(undefined, payload.model)
+    const look = resolveStoryboardVideoLook(payload.look)
+    const duration = resolveStoryboardVideoDuration(undefined, model)
+    const director = storyboardKlingDirectorFields(model, imaged, duration, look)
+
+    logger.info(CombinedStoryboardLog.Starting, {
+      episodeId,
+      projectId,
+      beatCount: imaged.length,
+      model,
+      look,
+      duration,
+    })
+
+    await metadata.set(CombinedStoryboardMetadataKey.EpisodeId, episodeId)
+    await metadata.set(CombinedStoryboardMetadataKey.ProjectId, projectId)
+    await metadata.set(CombinedStoryboardMetadataKey.BeatCount, imaged.length)
+    await metadata.set(CombinedStoryboardMetadataKey.Model, model)
+    await metadata.set(CombinedStoryboardMetadataKey.Look, look)
+    await metadata.set(CombinedStoryboardMetadataKey.Duration, duration)
+    await metadata.set(CombinedStoryboardMetadataKey.Stage, CombinedStoryboardStage.Summarizing)
+
+    const core = await generateStoryboardVideoCorePrompt(imaged, undefined, look, model)
+    const prompt = core.prompt
+    await metadata.set(CombinedStoryboardMetadataKey.Prompt, prompt)
+    await metadata.set(CombinedStoryboardMetadataKey.CorePromptSource, core.source)
+    logger.info(CombinedStoryboardLog.CorePrompt, {
+      source: core.source,
+      prompt,
+      multiPrompt: director.multiPrompt,
+    })
+
+    logger.info(CombinedStoryboardLog.Composing, {
+      beatCount: imaged.length,
+      imageUrls: imaged.map(beat => beat.imageUrl),
+    })
 
     try {
-      const prompt = buildCombinedStoryboardPrompt(beats)
-      const imageBase64 = await fetchGeminiStoryboardImage(apiKey, prompt, modelId)
+      await metadata.set(CombinedStoryboardMetadataKey.Stage, CombinedStoryboardStage.Composing)
+      const sheetBytes = await composeStoryboardContactSheet(projectId, imaged)
+      logger.info(CombinedStoryboardLog.SheetReady, { bytes: sheetBytes.length })
 
-      await metadata.set('stage', 'saving_image')
-      const filename = saveStoryboardImage(projectId, episodeId, imageBase64)
+      await metadata.set(CombinedStoryboardMetadataKey.Stage, CombinedStoryboardStage.Uploading)
+      const sheetUrl = await persistCombinedStoryboardMedia(
+        projectId,
+        `storyboard_sheet_${episodeId}_${Date.now()}${ImageFileExtension.Png}`,
+        sheetBytes,
+        ContentType.Png,
+      )
+      if (!isPublicHttpsUrl(sheetUrl)) {
+        throw new Error(CONTACT_SHEET_HTTPS_REQUIRED)
+      }
+      await metadata.set(CombinedStoryboardMetadataKey.StartImage, sheetUrl)
+      logger.info(CombinedStoryboardLog.SheetUploaded, { sheetUrl })
 
-      await metadata.set('stage', 'updating_database')
-      await persistEpisodeStoryboardUrl(episodeId, filename, prompt)
+      const videoOptions = {
+        apiKey,
+        prompt,
+        startImageUrl: sheetUrl,
+        model,
+        duration,
+        generateAudio: true,
+        ...director,
+      }
+      const requestBody = buildVideoGenerateBody(videoOptions)
+      logger.info(CombinedStoryboardLog.Prompt, {
+        model,
+        look,
+        duration,
+        generateAudio: true,
+        startImageUrl: sheetUrl,
+        prompt,
+        requestBody,
+        ...director,
+      })
+      logLLMRequestStart({
+        provider: ImageGenProvider.Apiframe,
+        model,
+        prompt,
+        inputImageUrls: [sheetUrl],
+        input: requestBody,
+        metadata: {
+          task: TRIGGER_TASK_ID.GENERATE_COMBINED_STORYBOARD,
+          episodeId,
+          duration,
+          generateAudio: true,
+          ...director,
+        },
+      })
 
-      logger.info('Combined storyboard generation completed successfully', { episodeId, filename })
+      await metadata.set(CombinedStoryboardMetadataKey.Stage, CombinedStoryboardStage.Generating)
+      const generated = await generateApiframeVideo({
+        ...videoOptions,
+        onJobAccepted: async jobId => {
+          await metadata.set(CombinedStoryboardMetadataKey.JobId, jobId)
+          logger.info(CombinedStoryboardLog.JobAccepted, { jobId, model, startImageUrl: sheetUrl })
+        },
+      })
+
+      logLLMRequestComplete({
+        provider: ImageGenProvider.Apiframe,
+        model,
+        prompt,
+        outputImageUrls: [generated.videoUrl],
+        output: { jobId: generated.jobId, videoUrl: generated.videoUrl },
+      })
+
+      const videoResponse = await fetch(generated.videoUrl)
+      if (!videoResponse.ok) {
+        throw new Error(`${COMBINED_STORYBOARD_ERROR.DownloadVideo}: ${videoResponse.status}`)
+      }
+      const videoBytes = Buffer.from(await videoResponse.arrayBuffer())
+
+      await metadata.set(CombinedStoryboardMetadataKey.Stage, CombinedStoryboardStage.Voiceover)
+      const voiced = await mixStoryboardVoiceover({
+        videoBytes,
+        beats: imaged,
+        duration,
+        look,
+      })
+      await metadata.set(CombinedStoryboardMetadataKey.VoiceoverSource, voiced.source)
+      if (voiced.skip) {
+        await metadata.set(CombinedStoryboardMetadataKey.VoiceoverSkip, voiced.skip)
+      }
+      logger.info(CombinedStoryboardLog.Voiceover, {
+        source: voiced.source,
+        skip: voiced.skip,
+        script: voiced.script,
+      })
+
+      await metadata.set(CombinedStoryboardMetadataKey.Stage, CombinedStoryboardStage.Saving)
+      const imageUrl = await persistCombinedStoryboardMedia(
+        projectId,
+        `storyboard_video_${episodeId}_${Date.now()}${VideoFileExtension.Mp4}`,
+        voiced.bytes,
+        ContentType.Mp4,
+      )
+
+      await metadata.set(CombinedStoryboardMetadataKey.Stage, CombinedStoryboardStage.Updating)
+      await persistEpisodeStoryboardUrl(episodeId, imageUrl, prompt)
+
+      logger.info(CombinedStoryboardLog.Completed, { episodeId, imageUrl, jobId: generated.jobId })
 
       return {
         success: true,
         episodeId,
-        imageUrl: filename,
-        fullUrl: `/projects/${projectId}/${filename}`,
+        imageUrl,
+        fullUrl: imageUrl,
       }
     } catch (error: unknown) {
-      logger.error('Combined storyboard generation failed', { error: getErrorMessage(error) })
+      const message = getErrorMessage(error)
+      logLLMRequestError({
+        provider: ImageGenProvider.Apiframe,
+        model,
+        prompt,
+        error: message,
+      })
+      logger.error(CombinedStoryboardLog.Failed, { error: message })
       throw error
     }
   },

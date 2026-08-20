@@ -13,6 +13,7 @@ import {
   ApiframeJobStatus,
   ApiframeMidjourneyAction,
   APIFRAME_NANO_BANANA_PRO_TOKEN,
+  APIFRAME_FLUX_FILL_GUIDANCE,
   ApiframeJobLabel,
   ApiframeParamsKey,
   ApiframeTopazModelType,
@@ -164,6 +165,25 @@ export async function submitImageUpscale(input: {
   )
 }
 
+export function buildFluxFillEditBody(input: {
+  imageUrl: string
+  prompt: string
+  maskUrl?: string
+  mode?: ApiframeFluxFillMode
+}): Record<string, unknown> {
+  const fluxFill: Record<string, unknown> = {
+    image: input.imageUrl,
+    prompt: input.prompt,
+    mode: input.mode ?? ApiframeFluxFillMode.Inpaint,
+    guidance: APIFRAME_FLUX_FILL_GUIDANCE,
+  }
+  if (input.maskUrl) fluxFill.mask = input.maskUrl
+  return {
+    model: ApiframeEditModel.FluxFillPro,
+    [ApiframeParamsKey.FluxFill]: fluxFill,
+  }
+}
+
 export async function submitImageEdit(input: {
   apiKey: string
   imageUrl: string
@@ -171,19 +191,10 @@ export async function submitImageEdit(input: {
   maskUrl?: string
   mode?: ApiframeFluxFillMode
 }): Promise<string> {
-  const fluxFill: Record<string, unknown> = {
-    image: input.imageUrl,
-    prompt: input.prompt,
-    mode: input.mode ?? ApiframeFluxFillMode.Inpaint,
-  }
-  if (input.maskUrl) fluxFill.mask = input.maskUrl
   return postApiframeJob(
     ApiframeApiPath.ImagesEdit,
     input.apiKey,
-    {
-      model: ApiframeEditModel.FluxFillPro,
-      [ApiframeParamsKey.FluxFill]: fluxFill,
-    },
+    buildFluxFillEditBody(input),
     ApiframeJobLabel.Edit,
   )
 }

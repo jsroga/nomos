@@ -29,6 +29,8 @@ export const TEXT_GEN_PRIMARY_MODEL = 'moonshotai/kimi-k3'
 export const TEXT_GEN_SHORT_IMPACT_MODEL = 'openai/gpt-5.6-sol'
 /** Fastest responses (autocomplete, glue, low-effort). */
 export const TEXT_GEN_FAST_MODEL = 'openai/gpt-5.6-luna'
+/** CorkBoard storyboard voice-over via OpenRouter `/audio/speech`. */
+export const TEXT_TO_SPEECH_MODEL = 'x-ai/grok-voice-tts-1.0'
 
 /**
  * OpenRouter MODEL ID for the app default — what OpenRouter's API expects, and
@@ -154,11 +156,21 @@ export const IMPROVEMENT_LOOP = {
 // MODEL FACTORY - Creates model instances
 // =============================================================================
 
+function openAiCompatibleModel(
+  modelId: string,
+  apiKey: string | undefined,
+  baseURL: string | undefined,
+  chatCompletions: boolean,
+) {
+  const openai = createOpenAI({ apiKey, baseURL })
+  return chatCompletions ? openai.chat(modelId) : openai(modelId)
+}
+
 /**
  * Create model for pure AI SDK usage (generateObject, generateText)
  * Does NOT set specificationVersion - uses native AI SDK behavior
  */
-export function createPureModel(modelName: string) {
+export function createPureModel(modelName: string, chatCompletions = false) {
   const enforced = enforceTextGenModelPolicy(modelName.replace(PROVIDER_COLON, PROVIDER_SLASH))
   const colonForm = enforced.includes(PROVIDER_SLASH)
     ? enforced.replace(PROVIDER_SLASH, PROVIDER_COLON)
@@ -170,28 +182,36 @@ export function createPureModel(modelName: string) {
     const modelId = useOpenRouter
       ? colonForm.replace(PROVIDER_COLON, PROVIDER_SLASH)
       : colonForm.replace('openai:', '')
-    const openai = createOpenAI({
-      apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
-      baseURL: useOpenRouter ? OPENROUTER_BASE_URL : undefined,
-    })
-    return openai(modelId)
+    return openAiCompatibleModel(
+      modelId,
+      process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
+      useOpenRouter ? OPENROUTER_BASE_URL : undefined,
+      chatCompletions,
+    )
   }
 
   // Google / Moonshot — OpenRouter only (no direct vendor key required)
   if (colonForm.startsWith('google:') || colonForm.startsWith('moonshotai:')) {
-    const openai = createOpenAI({
-      apiKey: process.env.OPENROUTER_API_KEY,
-      baseURL: OPENROUTER_BASE_URL,
-    })
-    return openai(colonForm.replace(PROVIDER_COLON, PROVIDER_SLASH))
+    return openAiCompatibleModel(
+      colonForm.replace(PROVIDER_COLON, PROVIDER_SLASH),
+      process.env.OPENROUTER_API_KEY,
+      OPENROUTER_BASE_URL,
+      chatCompletions,
+    )
   }
 
   // Default: Kimi latest via OpenRouter
-  const openai = createOpenAI({
-    apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENROUTER_API_KEY ? OPENROUTER_BASE_URL : undefined,
-  })
-  return openai(TEXT_GEN_PRIMARY_MODEL)
+  return openAiCompatibleModel(
+    TEXT_GEN_PRIMARY_MODEL,
+    process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
+    process.env.OPENROUTER_API_KEY ? OPENROUTER_BASE_URL : undefined,
+    chatCompletions,
+  )
+}
+
+/** Chat Completions (not Responses) — required for OpenRouter LLM-as-judge. */
+export function createPureChatModel(modelName: string) {
+  return createPureModel(modelName, true)
 }
 
 // =============================================================================

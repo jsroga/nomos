@@ -36,7 +36,23 @@ export enum MoodboardOperationLabel {
 
 export enum MoodboardOperationDetail {
   Initializing = 'Initializing...',
+  Generating = 'Generating...',
+  GeneratingOpen = 'Generating (',
+  GeneratingClose = '%)',
   ProjectPrefix = 'Project: ',
+}
+
+export function formatMoodboardGeneratingCopy(
+  progress: number | string | null | undefined,
+): string {
+  if (progress === null || progress === undefined || progress === '') {
+    return MoodboardOperationDetail.Generating
+  }
+  const numeric = typeof progress === 'number' ? progress : Number(progress)
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return MoodboardOperationDetail.Generating
+  }
+  return `${MoodboardOperationDetail.GeneratingOpen}${Math.round(numeric)}${MoodboardOperationDetail.GeneratingClose}`
 }
 
 export enum MoodboardGenerationError {
@@ -59,10 +75,6 @@ export enum MoodboardGenerationLog {
   CompletionError = 'Error handling moodboard completion:',
   ResumingPolling = 'Resuming moodboard generation polling for:',
   ParseStateFailed = 'Failed to parse moodboard generation run state:',
-}
-
-export enum MoodboardTriggerStage {
-  WaitingDiffusion = 'waiting_diffusion',
 }
 
 export const moodboardPrimaryStorageKey = (projectId: string) =>

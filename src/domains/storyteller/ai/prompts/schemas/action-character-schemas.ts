@@ -8,7 +8,6 @@ export const CreateCharacterActionSchema = z.object({
     name: z.string().min(2),
     role: z.string().min(3),
     description: z.string().min(50).nullable().optional().describe('Min 50 chars — include physical details AND personality contradiction.'),
-    archetype: z.string().min(3).nullable().optional(),
   }),
 })
 

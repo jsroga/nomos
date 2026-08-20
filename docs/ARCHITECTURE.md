@@ -129,7 +129,7 @@ Two tiers. Supabase Auth + RLS decides *whether you are signed in and which rows
 | `/api/admin/modules`, `/api/admin/tests` | `isAdminUser` |
 | World Bible lock, onboarding bypass | `shared/auth/bible-permissions` |
 
-The `NEXT_PUBLIC_` prefix inlines the list into the client bundle so the UI can hide admin affordances. It is **not** a security boundary — treat it as public and keep every real check server-side, as the routes above do. Anything genuinely secret stays in RLS policies or server-only env.
+The `NEXT_PUBLIC_` prefix inlines the list into the client bundle so the UI can hide admin affordances. It is **not** a security boundary — treat it as public and keep every real check server-side, as the routes above do. Anything genuinely secret stays in RLS policies or server-only env. The `anon` role has no table grants in `public`, so the public API key cannot enumerate relations via PostgREST or GraphQL; signed-in browser clients use `authenticated`, and server jobs use `service_role`. `pg_graphql` is not installed.
 
 ## Core patterns
 

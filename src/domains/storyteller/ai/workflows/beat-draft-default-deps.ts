@@ -17,6 +17,11 @@ import {
 } from '@/domains/storyteller/ai/agents/critics'
 import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/ai/tools/beat-tools'
 import { readWorldBibleTool } from '@/domains/storyteller/ai/tools/bible-tools'
+import { listEpisodesTool } from '@/domains/storyteller/ai/tools/episode-tools'
+import {
+  formatRoadmapSlotBrief,
+  resolveRoadmapSlot,
+} from '@/domains/storyteller/core/utils/roadmap-slot'
 import { statelessGrrmAuthor, statelessBeatPlanner } from './stateless-agents'
 import {
   BEAT_DRAFT_AUTHOR_CANON_CHAR_BUDGET,
@@ -27,6 +32,7 @@ import {
   BEAT_DRAFT_CRITIQUE_JOIN,
   BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
   BEAT_DRAFT_NO_FINDINGS,
+  BeatDraftCanonHeading,
   BeatDraftCriticName,
   BeatDraftStructuredOutputErrorStrategy,
   BeatDraftToolChoice,
@@ -138,7 +144,19 @@ export const defaultBeatDraftDeps: BeatDraftDeps = {
       episodeId: ctx.episodeId,
       includeContent: false,
     })
-    return `WORLD BIBLE (canon — do not contradict):\n${JSON.stringify(bible, null, 2)}\n\nEXISTING BEATS:\n${JSON.stringify(beats, null, 2)}`
+    const listed = await invokeTool(listEpisodesTool, { projectId: ctx.projectId })
+    const listedValue = listed ?? undefined
+    const bibleValue = bible ?? undefined
+    const current = listedValue?.episodes.find(episode => episode.id === ctx.episodeId)
+    const slot =
+      current === undefined
+        ? undefined
+        : resolveRoadmapSlot({ episodeRoadmap: bibleValue?.episodeRoadmap }, current.sequence)
+    const slotBlock =
+      current === undefined
+        ? ''
+        : `\n\n${BeatDraftCanonHeading.RoadmapSlot}\n${formatRoadmapSlotBrief(slot, current.sequence)}`
+    return `WORLD BIBLE (canon — do not contradict):\n${JSON.stringify(bible, null, 2)}\n\nEXISTING BEATS:\n${JSON.stringify(beats, null, 2)}${slotBlock}`
   },
 
   planBeat: async (ctx, canon, retryFeedback, sparksBlock) => {

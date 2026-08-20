@@ -7,12 +7,19 @@ import { ClientFetchError } from '@/shared/data/fetch-json-record'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { patchAsset, fetchAsset } from '../core/io/asset-exporter.api'
 import {
+  parseGenerationMetadata,
   type GenerationMetadata,
   type MeshyResult,
   MeshyTopology,
 } from '../core/types/three-d-generation'
 import { useThreeDRunPolling } from '../state/hooks/useThreeDRunPolling'
 import { hydrateThreeDAsset } from '../state/utils/hydrate-three-d-asset'
+import { readAssetModelFilename } from '../state/utils/read-asset-model-filename'
+import {
+  applyHydratedStaticFields,
+  resolveHydratedGenerationRun,
+  shouldResumeGeneration,
+} from '../state/utils/apply-hydrated-three-d-asset'
 import { createThreeDPanelActions } from '../state/hooks/create-three-d-panel-actions'
 import { ThreeDPanelView } from './ThreeDPanelView'
 import { ThreeDOperationIdPrefix } from '../constants/three-d-operation-wire'
@@ -99,11 +106,17 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({
         const data = await fetchAsset(assetId)
         if (cancelled) return
 
+        const existingMetadata = parseGenerationMetadata(data?.metadata)
+        const optimisticRunId = shouldResumeGeneration(existingMetadata)
+        if (optimisticRunId) {
+          setIsGenerating(true)
+        }
+
         const hydrated = await hydrateThreeDAsset({
           assetId,
           hasModelUrl: Boolean(initialModelUrl),
           metadataRaw: data?.metadata,
-          modelFilenameRaw: data.model_filename,
+          modelFilenameRaw: readAssetModelFilename(data),
           saveMetadata: async newMetadata => {
             try {
               await patchAsset(assetId, { metadata: newMetadata })
@@ -114,14 +127,20 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({
         })
         if (cancelled) return
 
-        if (hydrated.modelFilename) setModelUrl(hydrated.modelFilename)
-        if (hydrated.generationResult) setGenerationResult(hydrated.generationResult)
-        if (hydrated.meshyTaskId) setMeshyTaskId(hydrated.meshyTaskId)
-        if (hydrated.remeshResult) setRemeshResult(hydrated.remeshResult)
-        if (hydrated.remeshModelUrl) setRemeshModelUrl(hydrated.remeshModelUrl)
-        if (hydrated.resumeGenerationRunId) {
-          setCurrentRunId(hydrated.resumeGenerationRunId)
-          setIsGenerating(true)
+        applyHydratedStaticFields(hydrated, {
+          setModelUrl,
+          setGenerationResult,
+          setMeshyTaskId,
+          setRemeshResult,
+          setRemeshModelUrl,
+        })
+        const generationRun = resolveHydratedGenerationRun(
+          hydrated.resumeGenerationRunId,
+          Boolean(optimisticRunId),
+        )
+        if (generationRun) {
+          setCurrentRunId(generationRun.runId)
+          setIsGenerating(generationRun.isGenerating)
         }
         if (hydrated.resumeRemeshRunId) {
           setRemeshRunId(hydrated.resumeRemeshRunId)

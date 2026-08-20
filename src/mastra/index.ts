@@ -7,12 +7,12 @@
  * import side-effect in a parent re-export.
  */
 import dotenv from 'dotenv'
-import { storytellerRuntimeAgents, storytellerRuntimeWorkflows } from '@/domains/storyteller/core/io/mastra-runtime'
+import { storytellerRuntimeAgents, storytellerRuntimeWorkflows } from '../domains/storyteller/core/io/mastra-runtime'
 import {
   gameDesignRuntimeAgents,
   gameDesignRuntimeWorkflows,
-} from '@/domains/game-design/core/io/mastra-runtime'
-import { loopCreatorRuntimeAgents } from '@/domains/loop-creator/core/io/mastra-runtime'
+} from '../domains/game-design/core/io/mastra-runtime'
+import { loopCreatorRuntimeAgents } from '../domains/loop-creator/core/io/mastra-runtime'
 import { createMastra, createPostgresStore } from '../shared/agent-kernel/mastra/create-mastra'
 import { studioAgents } from '../shared/agent-kernel/mastra/agents/constants/registry'
 import { studioMcpServers } from '../shared/agent-kernel/mastra/mcp/studio-servers'

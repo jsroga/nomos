@@ -1,4 +1,4 @@
-// Centralized constants for polling intervals
+import { FetchCache } from '@/shared/data/constants/protocol'
 
 /**
  * Minimum polling interval for API status checks (in milliseconds)
@@ -21,6 +21,11 @@ export const POLLING_INTERVALS = {
    * Used by: 3D model generation, remeshing, etc.
    */
   SLOW: 15000,
+} as const
+
+/** Client fetch init for Trigger run status GETs — never cache while a spinner is showing. */
+export const TRIGGER_STATUS_FETCH_INIT = {
+  cache: FetchCache.NoStore,
 } as const
 
 /**
@@ -56,10 +61,10 @@ export const FAILED_STATUSES = [
 ] as const
 
 export const isActiveTaskStatus = (status: string): boolean =>
-  ACTIVE_TASK_STATUSES.some(activeStatus => activeStatus === status)
+  ACTIVE_TASK_STATUSES.some(activeStatus => activeStatus === status.toUpperCase())
 
 export const isSuccessTaskStatus = (status: string): boolean =>
-  SUCCESS_STATUSES.some(successStatus => successStatus === status)
+  SUCCESS_STATUSES.some(successStatus => successStatus === status.toUpperCase())
 
 export const isFailedTaskStatus = (status: string): boolean =>
-  FAILED_STATUSES.some(failedStatus => failedStatus === status)
+  FAILED_STATUSES.some(failedStatus => failedStatus === status.toUpperCase())

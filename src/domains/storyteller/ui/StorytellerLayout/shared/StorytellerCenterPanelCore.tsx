@@ -110,7 +110,7 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
         )}
 
         {isWorldBibleOpen && (
-          <div className="absolute inset-0 z-20 bg-background overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute inset-0 z-20 bg-background overflow-hidden min-h-0 flex flex-col animate-in fade-in zoom-in-95 duration-200">
             <WorldBiblePanel
               storyPlan={worldBiblePanelStoryPlan}
               projectId={currentProject?.id || ''}

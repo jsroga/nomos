@@ -1,7 +1,6 @@
 import React from 'react'
 import { Target, Zap, ShieldAlert } from 'lucide-react'
 import { Badge } from '@/components/Badge'
-import { Faction } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { BibleEntityTile, BibleEntityTileClass } from '../BibleEntityTile'
 import { RichText } from '../RichText'
@@ -10,10 +9,11 @@ import {
   normalizeFactionGoals,
   normalizeFactionRivals,
   resolveFactionResources,
+  type FactionCardData,
 } from './faction-card-helpers'
 
 interface FactionCardProps {
-  faction: Faction
+  faction: FactionCardData
   projectId?: string
   className?: string
 }
@@ -88,9 +88,11 @@ export const FactionCard: React.FC<FactionCardProps> = ({ faction, projectId, cl
           ) : null
         }
         meta={
-          <p className={FactionCardClass.Ideology}>
-            "<RichText text={faction.ideology} projectId={projectId} inline />"
-          </p>
+          faction.ideology ? (
+            <p className={FactionCardClass.Ideology}>
+              "<RichText text={faction.ideology} projectId={projectId} inline />"
+            </p>
+          ) : undefined
         }
       >
         <div>

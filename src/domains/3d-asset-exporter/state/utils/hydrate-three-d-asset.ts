@@ -1,4 +1,3 @@
-import { isActiveTaskStatus } from '@/shared/data/constants/polling'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { fetchTrigger3dRunStatus } from '../../core/io/asset-exporter.api'
 import {
@@ -15,9 +14,10 @@ import {
   ThreeDOperationType,
   ThreeDProviderFallback,
   ThreeDRunKind,
-  TriggerCompletedStatus,
+  TriggerRunOutputKey,
 } from '../../constants/three-d-operation-wire'
 import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { decideResumeRun, ResumeRunDecision } from './decide-resume-run'
 
 export interface ThreeDHydrationResult {
   modelFilename?: string
@@ -37,17 +37,10 @@ function failedStatusPatch(kind: ThreeDRunKind): Partial<GenerationMetadata> {
     : { remesh_status: GenerationStatus.Failed }
 }
 
-function terminalStatusPatch(
-  kind: ThreeDRunKind,
-  status: string | null | undefined
-): Partial<GenerationMetadata> {
-  const next =
-    status === TriggerCompletedStatus.Completed
-      ? GenerationStatus.Completed
-      : GenerationStatus.Failed
+function completedStatusPatch(kind: ThreeDRunKind): Partial<GenerationMetadata> {
   return kind === ThreeDRunKind.Generation
-    ? { generation_status: next }
-    : { remesh_status: next }
+    ? { generation_status: GenerationStatus.Completed }
+    : { remesh_status: GenerationStatus.Completed }
 }
 
 function addResumeOperation(params: {
@@ -75,32 +68,41 @@ function addResumeOperation(params: {
   })
 }
 
+interface ResumeOrClearResult {
+  resume: boolean
+  completedModelUrl?: string
+}
+
 async function resumeOrClearRun(params: {
   runId: string
   assetId: string
   kind: ThreeDRunKind
   providerLabel: string
   saveMetadata: SaveMetadata
-}): Promise<boolean> {
+}): Promise<ResumeOrClearResult> {
   const { runId, assetId, kind, providerLabel, saveMetadata } = params
   try {
     const statusData = await fetchTrigger3dRunStatus(runId)
-    if (statusData.statusCode === 404) {
-      await saveMetadata(failedStatusPatch(kind))
-      return false
-    }
+    const decision = decideResumeRun(statusData)
 
-    const status = statusData.status
-    if (status && isActiveTaskStatus(status)) {
+    if (decision === ResumeRunDecision.Resume) {
       addResumeOperation({ assetId, kind, providerLabel })
-      return true
+      return { resume: true }
     }
 
-    await saveMetadata(terminalStatusPatch(kind, status))
-    return false
-  } catch {
+    if (decision === ResumeRunDecision.Completed) {
+      await saveMetadata(completedStatusPatch(kind))
+      return {
+        resume: false,
+        completedModelUrl: readString(statusData.output?.[TriggerRunOutputKey.ModelUrl]),
+      }
+    }
+
     await saveMetadata(failedStatusPatch(kind))
-    return false
+    return { resume: false }
+  } catch {
+    addResumeOperation({ assetId, kind, providerLabel })
+    return { resume: true }
   }
 }
 
@@ -137,25 +139,31 @@ export async function hydrateThreeDAsset(params: {
   applyStaticMetadata(result, metadata)
 
   if (metadata.trigger_run_id && metadata.generation_status === GenerationStatus.Processing) {
-    const resume = await resumeOrClearRun({
+    const decision = await resumeOrClearRun({
       runId: metadata.trigger_run_id,
       assetId: params.assetId,
       kind: ThreeDRunKind.Generation,
       providerLabel: metadata.provider || ThreeDProviderFallback.Meshy,
       saveMetadata: params.saveMetadata,
     })
-    if (resume) result.resumeGenerationRunId = metadata.trigger_run_id
+    if (decision.resume) result.resumeGenerationRunId = metadata.trigger_run_id
+    if (decision.completedModelUrl && !result.modelFilename) {
+      result.modelFilename = decision.completedModelUrl
+    }
   }
 
   if (metadata.remesh_run_id && metadata.remesh_status === GenerationStatus.Processing) {
-    const resume = await resumeOrClearRun({
+    const decision = await resumeOrClearRun({
       runId: metadata.remesh_run_id,
       assetId: params.assetId,
       kind: ThreeDRunKind.Remesh,
       providerLabel: ThreeDProviderFallback.Meshy,
       saveMetadata: params.saveMetadata,
     })
-    if (resume) result.resumeRemeshRunId = metadata.remesh_run_id
+    if (decision.resume) result.resumeRemeshRunId = metadata.remesh_run_id
+    if (decision.completedModelUrl && !result.remeshModelUrl) {
+      result.remeshModelUrl = decision.completedModelUrl
+    }
   }
 
   return result

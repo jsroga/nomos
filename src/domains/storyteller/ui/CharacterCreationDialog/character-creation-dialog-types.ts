@@ -1,4 +1,8 @@
 import { CharacterDialogMode } from './constants/character-creation-dialog'
+import {
+  DEFAULT_CHARACTER_METRICS,
+  type CharacterMetricDefaults,
+} from '@/domains/storyteller/core/character-missing-fields'
 
 export interface InitialCharacterData {
   id?: string
@@ -8,8 +12,6 @@ export interface InitialCharacterData {
   gender?: string
   mbti?: string
   portraitUrl?: string
-  voiceSignature?: string
-  archetype?: string
   motivation?: string
   fatalFlaw?: string
   secrets?: string
@@ -35,25 +37,15 @@ export interface CharacterCreationDialogProps {
   mode?: CharacterDialogMode
 }
 
-export const INITIAL_METRICS = {
-  valence: 0,
-  arousal: 50,
-  autonomy: 60,
-  competence: 60,
-  relatedness: 50,
-  cognitiveClarity: 70,
-  perceivedStakes: 40,
-  socialSafety: 60,
-  moralAlignment: 70,
-}
-
-export type CharacterMetrics = typeof INITIAL_METRICS
+export const INITIAL_METRICS = DEFAULT_CHARACTER_METRICS
+export type CharacterMetrics = CharacterMetricDefaults
 
 export interface PortraitGenState {
   isGenerating: boolean
   gridImageUrl: string | null
   needsVariantPick: boolean
   portraitUrlOverride: string | null
+  completedPortraitUrl: string | null
 }
 
 export const EMPTY_PORTRAIT_GEN_STATE: PortraitGenState = {
@@ -61,4 +53,5 @@ export const EMPTY_PORTRAIT_GEN_STATE: PortraitGenState = {
   gridImageUrl: null,
   needsVariantPick: false,
   portraitUrlOverride: null,
+  completedPortraitUrl: null,
 }

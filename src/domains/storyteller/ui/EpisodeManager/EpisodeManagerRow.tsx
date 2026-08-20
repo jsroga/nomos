@@ -73,7 +73,7 @@ export function EpisodeManagerRow({
       {editingId === episode.id ? (
         <input
           autoFocus
-          className="bg-transparent border-b-2 border-primary focus:outline-none w-full text-[13.5px]"
+          className={EpisodeManagerRowClass.TitleInput}
           value={draftTitle}
           onChange={e => onDraftTitleChange(e.target.value)}
           onKeyDown={e => {
@@ -82,23 +82,32 @@ export function EpisodeManagerRow({
           onClick={e => e.stopPropagation()}
         />
       ) : (
-        <span
-          className={cn(
-            EpisodeManagerRowClass.Title,
-            isSelected && EpisodeManagerRowClass.TitleSelected
-          )}
-          onDoubleClick={e => {
-            e.stopPropagation()
-            onStartRename(episode.id, episode.title)
-          }}
-        >
-          {episode.title || EPISODE_MANAGER_UNTITLED}
-        </span>
+        <div className={EpisodeManagerRowClass.TitleCluster}>
+          <span
+            className={cn(
+              EpisodeManagerRowClass.Title,
+              isSelected && EpisodeManagerRowClass.TitleSelected
+            )}
+            onDoubleClick={e => {
+              e.stopPropagation()
+              onStartRename(episode.id, episode.title)
+            }}
+          >
+            {episode.title || EPISODE_MANAGER_UNTITLED}
+          </span>
+          {isSelected ? (
+            <span className={EpisodeManagerRowClass.Chip}>{episodePhaseChipLabel(currentPhase)}</span>
+          ) : null}
+        </div>
       )}
-      {isSelected ? (
-        <span className={EpisodeManagerRowClass.Chip}>{episodePhaseChipLabel(currentPhase)}</span>
-      ) : null}
-      <div className={EpisodeManagerRowClass.Actions}>
+      <div
+        className={cn(
+          EpisodeManagerRowClass.Actions,
+          editingId === episode.id
+            ? EpisodeManagerRowClass.ActionsEditing
+            : EpisodeManagerRowClass.ActionsIdle
+        )}
+      >
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

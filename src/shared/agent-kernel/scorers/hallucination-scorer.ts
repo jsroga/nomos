@@ -1,7 +1,7 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
-import { inputRecord, normalizeScore, outputToString, toMastraJudgingLanguageModel } from './shared'
+import { createJudgingConfig, inputRecord, normalizeScore, outputToString } from './shared'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 const hallucinationAnalyzeSchema = z.object({
@@ -13,11 +13,9 @@ export const hallucinationScorer = createScorer({
   id: 'hallucination',
   name: 'Hallucination',
   description: 'Grounding check against established canon',
-  judge: {
-    model: toMastraJudgingLanguageModel(),
-    instructions:
-      'You are a ruthless fact-checker. Respond with valid JSON containing score (0-1) and reasoning.',
-  },
+  judge: createJudgingConfig(
+    'You are a ruthless fact-checker. Respond with valid JSON containing score (0-1) and reasoning.',
+  ),
 })
   .analyze({
     description: 'Detect fabricated content against canon',

@@ -31,6 +31,7 @@ import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assi
 import { requireAuth } from '@/shared/auth/auth'
 import { ApiErrorMessage } from '@/shared/data/constants/protocol'
 import { requestedEpisodePremiseField } from '@/domains/storyteller/core/utils/requested-episode-premise-field'
+import { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
 import { readString } from '@/shared/data/json-guards'
 import {
   BEAT_TOOL_ID,
@@ -42,6 +43,8 @@ import {
   UPDATE_WORLD_BIBLE_TOOL_ID,
   READ_WORLD_BIBLE_TOOL_ID,
   CHECK_CONTINUITY_TOOL_ID,
+  CHECK_SECTION_ALIGNMENT_TOOL_ID,
+  PROPOSE_CHARACTER_FIELDS_TOOL_ID,
 } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
 
@@ -56,6 +59,8 @@ const STORYTELLER_CHAT_ACTIVE_TOOLS = [
   UPDATE_WORLD_BIBLE_TOOL_ID,
   READ_WORLD_BIBLE_TOOL_ID,
   CHECK_CONTINUITY_TOOL_ID,
+  CHECK_SECTION_ALIGNMENT_TOOL_ID,
+  PROPOSE_CHARACTER_FIELDS_TOOL_ID,
   RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
 ] as const
 
@@ -113,6 +118,8 @@ enum StorytellerOpenWorkspaceCopy {
     'Use ONLY these IDs for tool calls. Never call workspace filesystem tools (list/grep/read repo files).',
   GenerateViaTool =
     'For GENERATE / REGENERATE world description or bible sections: call update_world_bible immediately with these IDs — do not browse the codebase.',
+  CharacterDraftViaTool =
+    'This turn fills an unsaved character create/edit form. Call propose_character_fields only. Never call update_world_bible. Never call manage_character. Do not write worldDescription or any bible section.',
   EpisodeDescriptionOnly =
     'Latest user request is episode description (logline) only. Write episodePremise: { logline }. Do not fill other Ozymandias fields.',
   RememberProjectIdMid = 'Remember: Use projectId=',
@@ -197,11 +204,19 @@ function readModelNameError(body: AssistantChatBody): string | null {
   return null
 }
 
+function storytellerChatActiveTools(bibleSection?: string): string[] {
+  if (bibleSection !== CharacterDraftChatSection.Form) {
+    return [...STORYTELLER_CHAT_ACTIVE_TOOLS]
+  }
+  return STORYTELLER_CHAT_ACTIVE_TOOLS.filter(tool => tool !== UPDATE_WORLD_BIBLE_TOOL_ID)
+}
+
 function buildStorytellerSystemContext(opts: {
   contextPrompt: string
   projectId?: string
   episodeId?: string
   userMessage?: string
+  bibleSection?: string
 }): string {
   const projectId = readString(opts.projectId) ?? ''
   const episodeId = readString(opts.episodeId)
@@ -218,7 +233,9 @@ function buildStorytellerSystemContext(opts: {
   }
   lines.push(
     StorytellerOpenWorkspaceCopy.NoWorkspaceTools,
-    StorytellerOpenWorkspaceCopy.GenerateViaTool
+    opts.bibleSection === CharacterDraftChatSection.Form
+      ? StorytellerOpenWorkspaceCopy.CharacterDraftViaTool
+      : StorytellerOpenWorkspaceCopy.GenerateViaTool,
   )
   if (requestedEpisodePremiseField(opts.userMessage ?? '')) {
     lines.push(StorytellerOpenWorkspaceCopy.EpisodeDescriptionOnly)
@@ -237,6 +254,7 @@ async function resolveStorytellerSystem(opts: {
   episodeId?: string
   messages: UIMessage[]
   userId: string
+  bibleSection?: string
 }): Promise<string | undefined> {
   if (opts.agentId !== StorytellerAgentId.Storyteller || !opts.projectId) return undefined
   const { assembleStorytellerContext } = await import(
@@ -254,6 +272,7 @@ async function resolveStorytellerSystem(opts: {
     projectId: opts.projectId,
     episodeId: opts.episodeId,
     userMessage,
+    bibleSection: opts.bibleSection,
   })
 }
 
@@ -309,12 +328,14 @@ export async function POST(req: Request, { params }: RouteContext) {
       writer.write({ type: UiMessageStreamChunkType.Start, messageId: generateId() })
 
       const turnStartedAt = Date.now()
+      const bibleSection = raw[AssistantChatBodyKey.BibleSection]
       const system = await resolveStorytellerSystem({
         agentId,
         projectId,
         episodeId,
         messages: raw.messages,
         userId,
+        bibleSection,
       })
       console.log(`${AssistantTurnLog.ContextReady}${Date.now() - turnStartedAt}ms`)
       const agentStream = await handleChatStream({
@@ -326,7 +347,7 @@ export async function POST(req: Request, { params }: RouteContext) {
           requestContext,
           toolChoice: TOOL_CHOICE_AUTO,
           ...(system ? { system } : {}),
-          ...(isStoryteller ? { activeTools: [...STORYTELLER_CHAT_ACTIVE_TOOLS] } : {}),
+          ...(isStoryteller ? { activeTools: storytellerChatActiveTools(bibleSection) } : {}),
         },
         sendStart: false,
         sendFinish: true,

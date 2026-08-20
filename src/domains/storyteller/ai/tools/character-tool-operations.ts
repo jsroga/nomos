@@ -22,7 +22,6 @@ export function characterResponse(character: CharacterRow) {
     shortDescription: character.description ?? undefined,
     gender: character.gender ?? undefined,
     mbti: character.mbti ?? undefined,
-    voiceSignature: character.voiceSignature ?? undefined,
     portraitUrl: character.portraitUrl ?? undefined,
     psychology: psychologyRecord(character.psychology),
     valence: character.valence ?? undefined,
@@ -57,7 +56,6 @@ function buildCharacterInsertValues(projectId: string, data: CharacterData) {
     description: data.shortDescription ?? data.description ?? null,
     gender: data.gender ?? null,
     mbti: data.mbti ?? null,
-    voiceSignature: data.voiceSignature ?? null,
     portraitUrl: data.portraitUrl ?? null,
     characterPrompt: data.characterPrompt ?? null,
     psychology: data.psychology ?? null,
@@ -75,7 +73,6 @@ function applyCharacterProfileFields(
   if (data.shortDescription !== undefined) updateFields.description = data.shortDescription
   if (data.gender !== undefined) updateFields.gender = data.gender
   if (data.mbti !== undefined) updateFields.mbti = data.mbti
-  if (data.voiceSignature !== undefined) updateFields.voiceSignature = data.voiceSignature
   if (data.portraitUrl !== undefined) updateFields.portraitUrl = data.portraitUrl
   if (data.characterPrompt !== undefined) updateFields.characterPrompt = data.characterPrompt
 }

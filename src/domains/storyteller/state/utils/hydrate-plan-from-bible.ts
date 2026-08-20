@@ -1,11 +1,11 @@
 import { recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
 import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import { ToolResultPayloadField } from '@/domains/storyteller/config/constants/tool-result-wire'
+import {
+  isVacantHydrationValue,
+  omitVacantSoundtrackInspirations,
+} from '@/domains/storyteller/core/utils/bible-populated-fields'
 import { HYDRATION_CATEGORY_KEYS, HYDRATION_PLAN_FIELDS } from '@/domains/storyteller/state/constants/merge-episode-plan'
-
-function isEmptyFieldValue(value: unknown): boolean {
-  return value === undefined || value === null || (Array.isArray(value) && value.length === 0)
-}
 
 function resolveHydrationFieldValue(
   field: string,
@@ -13,14 +13,9 @@ function resolveHydrationFieldValue(
   rawBibleUpdated: Record<string, unknown>,
   rawBible: Record<string, unknown>
 ): unknown {
-  if (rawStoryPlan[field] !== undefined && rawStoryPlan[field] !== null) {
-    return rawStoryPlan[field]
-  }
-  if (rawBibleUpdated[field] !== undefined) {
-    return rawBibleUpdated[field]
-  }
-  if (rawBible[field] !== undefined) {
-    return rawBible[field]
+  for (const source of [rawStoryPlan, rawBibleUpdated, rawBible]) {
+    const value = source[field]
+    if (!isVacantHydrationValue(field, value)) return value
   }
   return undefined
 }
@@ -40,7 +35,7 @@ export function hydratePlanFromBibleSources(
   }
 
   for (const field of HYDRATION_PLAN_FIELDS) {
-    if (isEmptyFieldValue(initialPlan[field])) {
+    if (isVacantHydrationValue(field, initialPlan[field])) {
       const resolved = resolveHydrationFieldValue(field, rawStoryPlan, rawBibleUpdated, rawBible)
       if (resolved !== undefined) {
         initialPlan[field] = resolved
@@ -55,5 +50,5 @@ export function hydratePlanFromBibleSources(
     initialPlan[CastFieldAlias.KeyCharacters] = rawBibleUpdated[CastFieldAlias.Characters]
   }
 
-  return initialPlan
+  return omitVacantSoundtrackInspirations(initialPlan)
 }

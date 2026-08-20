@@ -18,6 +18,7 @@ import {
   isConsistencyCheckKind,
 } from '@/domains/storyteller/services/consistency-types'
 import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
+import { resolveRoadmapList } from '@/domains/storyteller/core/utils/roadmap-slot'
 import {
   STORYTELLER_PROJECT_ID,
   STORYTELLER_EPISODE_ID,
@@ -25,12 +26,13 @@ import {
   STORYTELLER_PREMISE_FIELD,
   requestContextString,
 } from '@/domains/storyteller/ai/request-context'
-import { filterUpdatesForBibleSection } from '@/domains/storyteller/ai/tools/bible-section-allowlist'
+import { filterUpdatesForBibleSection, emptyBibleSectionError } from '@/domains/storyteller/ai/tools/bible-section-allowlist'
 import {
   BibleToolError,
   BibleToolLog,
   BibleToolMessage,
   BibleEpisodePremiseError,
+  BIBLE_TOOL_PROJECT_ID_DESC,
   proposedFieldsFromInput,
   applyPremiseFieldNarrowing,
 } from '@/domains/storyteller/ai/tools/bible-tools-update'
@@ -40,7 +42,7 @@ import {
 // ==========================================
 
 const UpdateWorldBibleInputSchema = z.object({
-  projectId: z.string().uuid().describe('Project ID'),
+  projectId: z.string().uuid().optional().describe(BIBLE_TOOL_PROJECT_ID_DESC),
   worldDescription: z.string().optional().describe('Narrative description of the world setting'),
   items: z
     .array(
@@ -131,7 +133,7 @@ const UpdateWorldBibleInputSchema = z.object({
 })
 
 const ReadWorldBibleInputSchema = z.object({
-  projectId: z.string().uuid().describe('Project ID'),
+  projectId: z.string().uuid().optional().describe(BIBLE_TOOL_PROJECT_ID_DESC),
   sections: z
     .array(
       z.enum([
@@ -143,6 +145,7 @@ const ReadWorldBibleInputSchema = z.object({
         'plotTwists',
         'soundtracks',
         'inspirations',
+        'episodeRoadmap',
         'all',
       ])
     )
@@ -152,7 +155,7 @@ const ReadWorldBibleInputSchema = z.object({
 })
 
 const CheckContinuityInputSchema = z.object({
-  projectId: z.string().uuid().describe('Project ID'),
+  projectId: z.string().uuid().optional().describe(BIBLE_TOOL_PROJECT_ID_DESC),
   episodeId: z.string().uuid().optional().describe('Episode ID to check (optional)'),
   beatIds: z.array(z.string().uuid()).optional().describe('Specific beat IDs to check'),
   checkTypes: z
@@ -183,6 +186,7 @@ const ReadWorldBibleOutputSchema = z.object({
   plotTwists: z.array(z.record(z.unknown())).optional(),
   soundtracks: z.array(z.record(z.unknown())).optional(),
   inspirations: z.record(z.unknown()).optional(),
+  episodeRoadmap: z.record(z.unknown()).optional(),
 })
 
 const ContinuityIssueSchema = z.object({
@@ -246,6 +250,9 @@ export const updateWorldBibleTool = createTool({
     const episodeId = requestContextString(context.requestContext, STORYTELLER_EPISODE_ID)
 
     try {
+      if (!projectId) {
+        return { success: false, error: BibleToolError.ProjectIdRequired }
+      }
       const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
 
       if (!project) {
@@ -269,9 +276,7 @@ export const updateWorldBibleTool = createTool({
       if (updatedFields.length === 0) {
         return {
           success: false,
-          error: bibleSection
-            ? `${BibleToolError.NoFieldsForSectionPrefix}${bibleSection}${BibleToolError.NoFieldsForSectionSuffix}`
-            : BibleToolError.NoFields,
+          error: emptyBibleSectionError(bibleSection),
         }
       }
 
@@ -320,6 +325,9 @@ export const readWorldBibleTool = createTool({
       requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
 
     try {
+      if (!projectId) {
+        return { success: false }
+      }
       const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
 
       if (!project) {
@@ -345,6 +353,9 @@ export const readWorldBibleTool = createTool({
       if (shouldInclude('soundtracks')) result.soundtracks = recordArray(storyPlan.soundtracks)
       if (shouldInclude('inspirations') && isObjectLike(storyPlan.inspirations)) {
         result.inspirations = storyPlan.inspirations
+      }
+      if (shouldInclude('episodeRoadmap')) {
+        result.episodeRoadmap = { episodes: resolveRoadmapList(storyPlan) }
       }
 
       return result
@@ -376,6 +387,9 @@ export const checkContinuityTool = createTool({
       requestContextString(context.requestContext, STORYTELLER_EPISODE_ID) ?? inputData.episodeId
 
     try {
+      if (!projectId) {
+        return { success: false, issues: [], message: BibleToolError.ProjectIdRequired }
+      }
       // Import ConsistencyService dynamically to avoid circular deps
       const { runConsistencyCheck } = await import(
         '@/domains/storyteller/services/consistency-service'

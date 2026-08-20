@@ -1,16 +1,34 @@
-import type { Faction } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
-import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { readString, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 
-export function normalizeFactionGoals(faction: Faction): string[] {
-  if (Array.isArray(faction.goals)) return faction.goals
-  if (typeof faction.goals === 'string' && faction.goals) return [faction.goals]
-  return []
+export interface FactionCardData {
+  name: string
+  description: string
+  ideology: string
+  goals: string[]
+  resources: string
+  politicalForces: string
+  weaknesses: string
+  rivals: string[]
 }
 
-export function normalizeFactionRivals(faction: Faction): string[] {
-  if (Array.isArray(faction.rivals)) return faction.rivals
-  if (typeof faction.rivals === 'string' && faction.rivals) return [faction.rivals]
-  return []
+function nonBlank(value: string | undefined): string {
+  return value?.trim() ?? ''
+}
+
+function stringListFromUnknown(value: unknown): string[] {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? [trimmed] : []
+  }
+  return stringArrayFromJson(value).map(item => item.trim()).filter(item => item.length > 0)
+}
+
+export function normalizeFactionGoals(faction: FactionCardData): string[] {
+  return faction.goals
+}
+
+export function normalizeFactionRivals(faction: FactionCardData): string[] {
+  return faction.rivals
 }
 
 export enum FactionTitleSeparator {
@@ -19,9 +37,9 @@ export enum FactionTitleSeparator {
   Hyphen = ' - ',
 }
 
-export function factionTileCopy(faction: Faction): { title: string; description: string } {
-  const name = faction.name?.trim() ?? ''
-  const description = faction.description?.trim() ?? ''
+export function factionTileCopy(faction: FactionCardData): { title: string; description: string } {
+  const name = faction.name.trim()
+  const description = faction.description.trim()
   for (const separator of Object.values(FactionTitleSeparator)) {
     const index = name.indexOf(separator)
     if (index > 0) {
@@ -35,14 +53,28 @@ export function factionTileCopy(faction: Faction): { title: string; description:
   return { title: name, description }
 }
 
-export function resolveFactionResources(faction: Faction): {
+export function resolveFactionResources(faction: FactionCardData): {
   resources: string
   politicalForces: string | undefined
 } {
-  const factionRecord = recordFromJson(faction)
-  const politicalForces = readString(factionRecord.politicalForces)
   return {
-    resources: faction.resources || politicalForces || '',
-    politicalForces,
+    resources: faction.resources || faction.politicalForces,
+    politicalForces: faction.politicalForces || undefined,
+  }
+}
+
+export function factionCardFromUnknown(value: unknown): FactionCardData | null {
+  const record = recordFromJson(value)
+  const name = nonBlank(readString(record.name))
+  if (!name) return null
+  return {
+    name,
+    description: nonBlank(readString(record.description)),
+    ideology: nonBlank(readString(record.ideology)),
+    goals: stringListFromUnknown(record.goals),
+    resources: nonBlank(readString(record.resources)),
+    politicalForces: nonBlank(readString(record.politicalForces)),
+    weaknesses: nonBlank(readString(record.weaknesses)),
+    rivals: stringListFromUnknown(record.rivals),
   }
 }

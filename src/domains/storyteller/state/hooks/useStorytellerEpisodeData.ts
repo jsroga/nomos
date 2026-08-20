@@ -40,6 +40,7 @@ import {
   patchStorytellerEpisode,
 } from '@/domains/storyteller/core/io/storyteller.api'
 import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
+import { preferLatestPosterUrl } from '@/domains/storyteller/services/poster-url-from-episode'
 import type { BeatCard } from '@/domains/storyteller/core/types/story-types'
 import type { StorytellerWorkspaceCore } from './useStorytellerPageBase'
 
@@ -196,7 +197,17 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
           const inferred = inferEpisodePhase(planRecord)
 
           if (mergedPlan) {
-            setStoryPlan(mergedPlan)
+            setStoryPlan(prev => {
+              const posterUrl = preferLatestPosterUrl(prev?.posterUrl, mergedPlan.posterUrl)
+              const mergedMood = stringArrayFromJson(mergedPlan.moodImages)
+              const prevMood = stringArrayFromJson(prev?.moodImages)
+              const moodImages = mergedMood.length > 0 ? mergedMood : prevMood
+              return {
+                ...mergedPlan,
+                ...(posterUrl ? { posterUrl } : {}),
+                ...(moodImages.length > 0 ? { moodImages } : {}),
+              }
+            })
             setIsPlanApproved(!!planRecord.planApproved)
             setCurrentPhase(inferred)
             setViewPhase(inferred)
@@ -253,6 +264,12 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
   }
 
   const handleUpdateCharacter = async (id: string, updates: Record<string, unknown>) => {
+    const nextPortraitUrl = readString(updates.portraitUrl)
+    if (nextPortraitUrl) {
+      setCharacters(prev =>
+        prev.map(c => (c.id === id ? { ...c, portraitUrl: nextPortraitUrl } : c)),
+      )
+    }
     try {
       const updated = await updateStorytellerCharacter({ id, ...updates })
       const updatedId = readString(updated.id)

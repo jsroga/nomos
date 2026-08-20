@@ -169,7 +169,7 @@ export function TextTo3DControls({
           })
         },
       },
-      { intervalMs: POLLING_INTERVALS.SLOW, maxPolls: 120 }
+      { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
     ).catch(err => {
       console.error(PropertiesPanelLog.PollError, err)
     })

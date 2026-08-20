@@ -11,7 +11,6 @@ function assignCharacterIdentityFields(
   if (validated.description !== undefined) dbUpdates.description = validated.description
   if (validated.portraitUrl !== undefined) dbUpdates.portraitUrl = validated.portraitUrl
   if (validated.mbti !== undefined) dbUpdates.mbti = validated.mbti
-  if (validated.voiceSignature !== undefined) dbUpdates.voiceSignature = validated.voiceSignature
   if (validated.psychology !== undefined) dbUpdates.psychology = validated.psychology
 }
 

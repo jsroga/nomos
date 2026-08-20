@@ -1,5 +1,5 @@
 import { defineConfig } from '@trigger.dev/sdk/v3'
-import { syncEnvVars } from '@trigger.dev/build/extensions/core'
+import { ffmpeg, syncEnvVars } from '@trigger.dev/build/extensions/core'
 import { config } from 'dotenv'
 import {
   TRIGGER_DIRS,
@@ -27,8 +27,14 @@ export default defineConfig({
   },
   dirs: [...TRIGGER_DIRS],
   build: {
-    external: [TriggerBuildExternal.DrizzleOrm],
+    external: [
+      TriggerBuildExternal.DrizzleOrm,
+      TriggerBuildExternal.Sharp,
+      TriggerBuildExternal.FfmpegStatic,
+      TriggerBuildExternal.FfprobeStatic,
+    ],
     extensions: [
+      ffmpeg(),
       syncEnvVars(async () => {
         const result = config({ path: TriggerEnvFile.Local })
         if (!result.parsed) return []

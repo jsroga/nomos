@@ -9,8 +9,6 @@ import {
   HttpMethod,
   MESHY_DEFAULT_POLYCOUNT,
   MESHY_GENERATION_DB_COLUMN_MODEL_FILENAME,
-  MESHY_MAX_POLL_ATTEMPTS,
-  MESHY_POLL_INTERVAL_MS,
   MeshyAiModelId,
   MeshyGenerationApiUrl,
   MeshyGenerationError,
@@ -21,13 +19,13 @@ import {
   MeshyGenerationRequestField,
   MeshyGenerationTopology,
   MeshyResponseField,
-  MeshyTaskStatusValue,
 } from '../constants/meshy-generation-wire'
 import {
-  parseMeshyTaskResult,
   resolveMeshyModelUrl,
   type MeshyTaskResult,
 } from '../constants/meshy-task-types'
+import { pollMeshyImageTo3dTask } from './poll-meshy-image-to-3d'
+import { MeshyStreamFallbackError, streamMeshyImageTo3dTask } from './stream-meshy-image-to-3d'
 
 interface RunMeshyImageTo3dParams {
   assetId: string
@@ -35,6 +33,20 @@ interface RunMeshyImageTo3dParams {
   apiKey: string
   targetPolycount?: number
   topology?: MeshyGenerationTopology
+  onProgress?: (progress: number) => Promise<void>
+}
+
+const MESHY_PROGRESS_COMPLETE = 100
+
+async function reportMeshyProgress(
+  onProgress: ((progress: number) => Promise<void>) | undefined,
+  progress: number,
+): Promise<void> {
+  if (onProgress) {
+    await onProgress(progress)
+    return
+  }
+  await metadata.set(MeshyGenerationMetadataKey.Progress, progress)
 }
 
 function parseMeshyErrorMessage(errText: string, fallback: string): string {
@@ -50,68 +62,34 @@ function parseMeshyErrorMessage(errText: string, fallback: string): string {
   }
 }
 
-async function pollMeshyImageTo3dTask(
+async function persistMeshyModelUrl(assetId: string, result: MeshyTaskResult): Promise<void> {
+  const modelUrl = resolveMeshyModelUrl(result)
+  try {
+    await supabaseAdmin
+      .from(DB_TABLE.ASSETS)
+      .update({ [MESHY_GENERATION_DB_COLUMN_MODEL_FILENAME]: modelUrl })
+      .eq(DB_COLUMN.ID, assetId)
+  } catch (dbErr) {
+    logger.error(MeshyGenerationLog.DbUpdateFailed, { dbErr })
+  }
+}
+
+async function awaitMeshyImageTo3dTask(
   taskId: string,
   apiKey: string,
-  assetId: string,
+  onProgress: (progress: number) => Promise<void>,
 ): Promise<MeshyTaskResult> {
-  let status: string = MeshyTaskStatusValue.Pending
-  let result: MeshyTaskResult | null = null
-
-  for (let attempts = 0; attempts < MESHY_MAX_POLL_ATTEMPTS; attempts++) {
-    await new Promise(resolve => setTimeout(resolve, MESHY_POLL_INTERVAL_MS))
-
-    const statusResponse = await fetch(`${MeshyGenerationApiUrl.OpenApiImageTo3d}/${taskId}`, {
-      headers: {
-        [MeshyGenerationHttpHeader.Authorization]: `${HttpAuthScheme.Bearer}${apiKey}`,
-      },
-    })
-
-    if (!statusResponse.ok) {
-      logger.error(MeshyGenerationLog.StatusCheckFailed, { status: statusResponse.status })
-      throw new Error(MeshyGenerationError.FailedCheckStatus)
-    }
-
-    result = parseMeshyTaskResult(await statusResponse.json())
-    status = result.status
-
-    await metadata.set(MeshyGenerationMetadataKey.Progress, result.progress ?? 0)
-
-    logger.info(
-      `Meshy status: ${status}, Progress: ${result.progress ?? 0}% (attempt ${attempts + 1}/${MESHY_MAX_POLL_ATTEMPTS})`,
-      { result },
-    )
-
-    if (status === MeshyTaskStatusValue.Succeeded) {
-      logger.info(MeshyGenerationLog.MeshySucceeded, { result })
-
-      const modelUrl = resolveMeshyModelUrl(result)
-      try {
-        await supabaseAdmin
-          .from(DB_TABLE.ASSETS)
-          .update({ [MESHY_GENERATION_DB_COLUMN_MODEL_FILENAME]: modelUrl })
-          .eq(DB_COLUMN.ID, assetId)
-      } catch (dbErr) {
-        logger.error(MeshyGenerationLog.DbUpdateFailed, { dbErr })
-      }
-
-      return result
-    }
-
-    if (status === MeshyTaskStatusValue.Failed) {
-      throw new Error(
-        `Meshy 3D generation failed: ${result.error ?? result.message ?? MeshyGenerationError.Unknown}`,
-      )
-    }
+  try {
+    return await streamMeshyImageTo3dTask(taskId, apiKey, onProgress)
+  } catch (error) {
+    if (!(error instanceof MeshyStreamFallbackError)) throw error
+    logger.warn(MeshyGenerationLog.MeshyStreamFallback)
+    return pollMeshyImageTo3dTask(taskId, apiKey, onProgress)
   }
-
-  throw new Error(
-    `Meshy 3D generation timed out after 30 minutes. Last status: ${status}, Progress: ${result?.progress ?? 0}%`,
-  )
 }
 
 export async function runMeshyImageTo3d(params: RunMeshyImageTo3dParams) {
-  const { assetId, finalImageUrl, apiKey, targetPolycount, topology } = params
+  const { assetId, finalImageUrl, apiKey, targetPolycount, topology, onProgress } = params
 
   logger.info(MeshyGenerationLog.StartingMeshy)
 
@@ -151,7 +129,13 @@ export async function runMeshyImageTo3d(params: RunMeshyImageTo3dParams) {
   logger.info(`Meshy task created: ${taskId}`, { topology, targetPolycount, shouldRemesh })
   await metadata.set(MeshyGenerationMetadataKey.MeshyTaskId, taskId)
 
-  const result = await pollMeshyImageTo3dTask(taskId, apiKey, assetId)
+  const result = await awaitMeshyImageTo3dTask(taskId, apiKey, progress =>
+    reportMeshyProgress(onProgress, progress),
+  )
+
+  logger.info(MeshyGenerationLog.MeshySucceeded, { result })
+  await reportMeshyProgress(onProgress, MESHY_PROGRESS_COMPLETE)
+  await persistMeshyModelUrl(assetId, result)
 
   return {
     success: true,

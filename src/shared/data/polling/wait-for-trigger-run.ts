@@ -52,6 +52,22 @@ function sleep(ms: number): Promise<void> {
   })
 }
 
+const TRIGGER_POLL_ABORT_SLICE_MS = 50
+
+async function sleepUntilInterval(
+  intervalMs: number,
+  shouldAbort?: () => boolean
+): Promise<void> {
+  const deadline = Date.now() + intervalMs
+  while (Date.now() < deadline) {
+    if (shouldAbort?.()) {
+      throw new TriggerRunPollAbortedError()
+    }
+    const remaining = deadline - Date.now()
+    await sleep(Math.min(TRIGGER_POLL_ABORT_SLICE_MS, remaining))
+  }
+}
+
 export interface WaitForTriggerRunOptions {
   intervalMs?: number
   maxPolls?: number
@@ -83,12 +99,17 @@ export async function waitForTriggerRun(
       data = await fetchStatus()
       options.onPoll?.(data, nextPollCount)
     } catch (error) {
+      if (error instanceof TriggerRunPollAbortedError) throw error
       options.onFetchError?.(error, nextPollCount)
       if (nextPollCount >= maxPolls) {
         throw new TriggerRunPollTimeoutError()
       }
-      await sleep(intervalMs)
+      await sleepUntilInterval(intervalMs, options.shouldAbort)
       return poll(nextPollCount)
+    }
+
+    if (options.shouldAbort?.()) {
+      throw new TriggerRunPollAbortedError()
     }
 
     if (shouldStopTriggerRunPolling(data, nextPollCount, maxPolls)) {
@@ -101,7 +122,7 @@ export async function waitForTriggerRun(
       throw new TriggerRunPollTimeoutError()
     }
 
-    await sleep(intervalMs)
+    await sleepUntilInterval(intervalMs, options.shouldAbort)
     return poll(nextPollCount)
   }
 

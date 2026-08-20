@@ -19,12 +19,14 @@ import {
   characterFromDbRow,
   charactersFromJson,
   deriveProjectMeta,
+  episodeIndexLogline,
   flattenSeriesBible,
   resolveContextEpisodePremise,
   mergeCharactersFromPlanAndDb,
   sortCharactersByRole,
   storyPlanFromJson,
   type BeatRow,
+  type EpisodeIndexRow,
 } from './context-assembly-parsers'
 import {
   buildProjectContextBlock,
@@ -63,9 +65,7 @@ async function loadContextSourceData(
   return Promise.all([
     db.select().from(projects).where(eq(projects.id, projectId)).then(r => r[0]),
     db.select().from(storyPlans).where(eq(storyPlans.projectId, projectId)).then(r => r[0]),
-    episodeId
-      ? db.select().from(episodes).where(eq(episodes.id, episodeId)).then(r => r[0])
-      : Promise.resolve(undefined),
+    db.select().from(episodes).where(eq(episodes.projectId, projectId)),
     import('./storyteller-crud-service').then(async m => {
       const [charsReq, beatsReq] = await Promise.all([
         m.storytellerService
@@ -89,7 +89,7 @@ function buildContextParts(params: {
   message: string
   projectData: Awaited<ReturnType<typeof loadContextSourceData>>[0]
   storyPlanData: Awaited<ReturnType<typeof loadContextSourceData>>[1]
-  episodeData: Awaited<ReturnType<typeof loadContextSourceData>>[2]
+  projectEpisodes: Awaited<ReturnType<typeof loadContextSourceData>>[2]
   serviceData: Awaited<ReturnType<typeof loadContextSourceData>>[3]
 }): { contextPrompt: string; existingBibleData: Record<string, unknown> } {
   const {
@@ -99,9 +99,10 @@ function buildContextParts(params: {
     message,
     projectData,
     storyPlanData,
-    episodeData,
+    projectEpisodes,
     serviceData,
   } = params
+  const episodeData = projectEpisodes.find(row => row.id === episodeId)
 
   const rawBible = parseSeriesBibleRecord(projectData?.seriesBible)
   const storyPlan = storyPlanFromJson(storyPlanData?.content)
@@ -137,11 +138,20 @@ function buildContextParts(params: {
     StorytellerAnswerSeparator.CommaSpace,
     episodePremise
   )
+  const episodeIndex: EpisodeIndexRow[] = [...projectEpisodes]
+    .sort((left, right) => left.sequence - right.sequence)
+    .map(row => ({
+      sequence: row.sequence,
+      title: row.title ?? '',
+      logline: episodeIndexLogline(row),
+    }))
   const projectCtx = buildProjectContextBlock({
     projectName: projectData?.name,
     meta,
     storyPlan,
     bible,
+    episodeSequence: episodeData?.sequence,
+    episodeIndex,
   })
 
   const sortedChars = sortCharactersByRole(characters)
@@ -175,7 +185,7 @@ export async function assembleStorytellerContext(
 
   try {
     const startedAt = Date.now()
-    const [projectData, storyPlanData, episodeData, serviceData] = await loadContextSourceData(
+    const [projectData, storyPlanData, projectEpisodes, serviceData] = await loadContextSourceData(
       projectId,
       episodeId,
       userId
@@ -189,7 +199,7 @@ export async function assembleStorytellerContext(
       message,
       projectData,
       storyPlanData,
-      episodeData,
+      projectEpisodes,
       serviceData,
     })
   } catch (err) {

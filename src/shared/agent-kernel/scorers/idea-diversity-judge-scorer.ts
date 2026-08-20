@@ -1,6 +1,6 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
-import { normalizeScore, toMastraJudgingLanguageModel } from './shared'
+import { createJudgingConfig, normalizeScore } from './shared'
 import { extractIdeaSet } from './idea-set-extract-wire'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
@@ -36,10 +36,7 @@ export const ideaDiversityJudgeScorer = createScorer({
   id: 'idea-diversity-judge',
   name: 'Idea Diversity (LLM Judge)',
   description: 'LLM-judged uniqueness and randomness of a generated idea set',
-  judge: {
-    model: toMastraJudgingLanguageModel(),
-    instructions: JUDGE_INSTRUCTIONS,
-  },
+  judge: createJudgingConfig(JUDGE_INSTRUCTIONS),
 })
   .analyze({
     description: 'Judge idea-set uniqueness and randomness',

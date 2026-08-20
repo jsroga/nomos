@@ -19,6 +19,8 @@ import {
   type CommitWritersRoomAddToWorldInput,
 } from '../writers-room-add-to-world'
 import { ManageToolOperation } from '@/domains/storyteller/ai/tools/manage-tools-wire'
+import { CharacterDraftChatSection } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { CharacterTextFieldKey } from '@/domains/storyteller/core/character-missing-fields'
 
 const EPISODE_ID = '8db804d0-1c39-498e-97a5-dfd7eb828789'
 const OVERVIEW = 'A salt-marsh city lit by bioluminescent kelp.'
@@ -59,6 +61,10 @@ describe('commitWritersRoomAddToWorld', () => {
     toastSuccess.mockReset()
     getStorytellerUiStore().setPendingBoardHydration(false)
     getStorytellerUiStore().clearPendingBeatAdds(false)
+    const store = getStorytellerUiStore()
+    if (store.characterDraftFieldsSeq > store.characterDraftResolvedSeq) {
+      store.rejectCharacterDraftFields()
+    }
   })
 
   it('commits each beat create, hydrates the board, and toasts once', async () => {
@@ -308,5 +314,43 @@ describe('commitWritersRoomAddToWorld', () => {
     expect(toastSuccess).toHaveBeenCalledWith(
       `${WritersRoomToast.SectionAddedPrefix}${BibleSectionDisplayName.Overview}`,
     )
+  })
+
+  it('does not write chat text to Overview on a character-form turn', async () => {
+    const input = commitInput({
+      answeredSection: CharacterDraftChatSection.Form,
+      payload: {
+        text: OVERVIEW,
+        toolArgs: [],
+      },
+    })
+
+    const committed = await commitWritersRoomAddToWorld(input)
+
+    expect(committed).toBe(false)
+    expect(input.executeAction).not.toHaveBeenCalled()
+    expect(toastSuccess).toHaveBeenCalledWith(WritersRoomToast.NoCharacterForm)
+  })
+
+  it('applies character-form fields from Add to World', async () => {
+    const store = getStorytellerUiStore()
+    store.notifyCharacterDraftFields({
+      [CharacterTextFieldKey.Motivation]: 'Protect the wardens.',
+    })
+    const seq = getStorytellerUiStore().characterDraftFieldsSeq
+    const input = commitInput({
+      answeredSection: CharacterDraftChatSection.Form,
+      payload: {
+        text: '',
+        toolArgs: [{ [CharacterTextFieldKey.Motivation]: 'Protect the wardens.' }],
+      },
+    })
+
+    const committed = await commitWritersRoomAddToWorld(input)
+
+    expect(committed).toBe(true)
+    expect(input.executeAction).not.toHaveBeenCalled()
+    expect(getStorytellerUiStore().characterDraftResolvedSeq).toBe(seq)
+    expect(toastSuccess).toHaveBeenCalledWith(WritersRoomToast.CharacterForm)
   })
 })

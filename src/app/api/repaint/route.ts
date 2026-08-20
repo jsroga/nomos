@@ -6,7 +6,7 @@ import { handleRepaintRequest } from './repaint-handler'
 
 /**
  * POST /api/repaint
- * Server-side Gemini inpainting for the repaint tool.
+ * Enqueue Flux Fill inpainting on Trigger.dev.
  */
 export const POST = withRateLimit(withAuth(handleRepaintRequest), {
   maxRequests: 10,

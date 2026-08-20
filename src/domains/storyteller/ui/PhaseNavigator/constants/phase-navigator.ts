@@ -48,12 +48,12 @@ export enum PhaseNavigatorLockedHint {
 }
 
 export enum PhaseNavigatorCompactButtonClass {
-  Base = 'relative flex items-center gap-[7px] px-[11px] py-[5px] rounded-[7px] font-mono text-[10.5px] tracking-[0.12em] uppercase transition-all duration-150 ease-in-out',
-  Locked = 'text-muted-foreground/45 cursor-not-allowed',
-  Current = 'bg-primary/16 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.4)] text-primary',
-  Ready = 'text-primary hover:bg-primary/10 cursor-pointer',
-  Complete = 'text-foreground/80',
-  Upcoming = 'text-muted-foreground/80',
+  Base = 'relative flex items-center gap-[7px] px-[11px] py-[5px] rounded-[7px] font-mono text-[10.5px] tracking-[0.12em] uppercase transition-all duration-150 ease-in-out disabled:cursor-default',
+  Locked = 'text-muted-foreground/45 cursor-default',
+  Current = 'bg-primary/16 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.4)]',
+  Ready = 'hover:bg-primary/10',
+  Reachable = 'text-foreground',
+  IdleCursor = 'cursor-default',
 }
 
 export enum PhaseNavigatorFullButtonClass {

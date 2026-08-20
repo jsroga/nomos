@@ -9,6 +9,8 @@ export * from '@/domains/2d-canvas/tasks/generate-tile.task'
 export * from '@/domains/2d-canvas/tasks/upscale-tile.task'
 export * from '@/domains/2d-canvas/tasks/enhance-fidelity.task'
 export * from '@/domains/2d-canvas/tasks/select-mj-variant.task'
+export * from '@/domains/2d-canvas/tasks/repaint-tile.task'
+export * from '@/domains/2d-canvas/tasks/segment-object.task'
 
 // 3D Asset Exporter
 export * from '@/domains/3d-asset-exporter/tasks/generate-3d-model.task'

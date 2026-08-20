@@ -67,10 +67,10 @@ export const getCompactPhaseButtonClass = (
     PhaseNavigatorCompactButtonClass.Base,
     state === PhaseNavigatorState.Active && PhaseNavigatorCompactButtonClass.Current,
     state === PhaseNavigatorState.Ready && PhaseNavigatorCompactButtonClass.Ready,
-    state === PhaseNavigatorState.Completed && PhaseNavigatorCompactButtonClass.Complete,
-    state === PhaseNavigatorState.Unlocked && PhaseNavigatorCompactButtonClass.Upcoming,
-    state === PhaseNavigatorState.Locked && PhaseNavigatorCompactButtonClass.Locked,
-    canNav && PhaseNavigatorFullButtonClass.CompletedPointer
+    state === PhaseNavigatorState.Locked
+      ? PhaseNavigatorCompactButtonClass.Locked
+      : PhaseNavigatorCompactButtonClass.Reachable,
+    canNav ? PhaseNavigatorFullButtonClass.CompletedPointer : PhaseNavigatorCompactButtonClass.IdleCursor
   )
 
 export const getFullPhaseButtonClass = (

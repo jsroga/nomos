@@ -215,7 +215,7 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
   }
 
   return (
-    <div className="h-full min-h-0 relative flex flex-col">
+    <div className="h-full min-h-0 flex-1 relative flex flex-col">
       <WorldBiblePanelHeader
         activeTab={activeTab}
         onSwitchTab={setBibleTab}

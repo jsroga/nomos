@@ -30,6 +30,10 @@ export enum TriggerCompletedStatus {
   Completed = 'COMPLETED',
 }
 
+export enum TriggerRunOutputKey {
+  ModelUrl = 'modelUrl',
+}
+
 export enum ModelFormatKey {
   Glb = 'glb',
   Fbx = 'fbx',

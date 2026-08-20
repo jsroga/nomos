@@ -75,6 +75,8 @@ export enum StoryPlanMergeField {
   EpisodeRoadmap = 'episodeRoadmap',
   Items = 'items',
   Events = 'events',
+  StoryboardUrl = 'storyboardUrl',
+  StoryboardPrompt = 'storyboardPrompt',
 }
 
 export const STORY_PLAN_MERGE_FIELDS: StoryPlanMergeField[] = [
@@ -97,6 +99,8 @@ export const STORY_PLAN_MERGE_FIELDS: StoryPlanMergeField[] = [
   StoryPlanMergeField.EpisodeRoadmap,
   StoryPlanMergeField.Items,
   StoryPlanMergeField.Events,
+  StoryPlanMergeField.StoryboardUrl,
+  StoryPlanMergeField.StoryboardPrompt,
 ]
 
 /** Section keys recognised in update_world_bible tool args (shimmer + detection). */

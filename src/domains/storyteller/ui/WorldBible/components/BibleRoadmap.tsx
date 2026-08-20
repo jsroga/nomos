@@ -1,9 +1,11 @@
 import type { FC } from 'react'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { Route } from 'lucide-react'
 import { SeasonOverviewCard } from '../../SeasonOverviewCard'
 import { EpisodeRoadmapCard } from '../../EpisodeRoadmapCard'
 import { useBible } from './BibleContext'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
+import { BIBLE_ROADMAP_GENERATE_PROMPT } from '../constants/bible-roadmap'
 import {
   resolveRoadmapSeasonStructure,
   resolveRoadmapSequences,
@@ -90,10 +92,7 @@ export const BibleRoadmap: FC<BibleRoadmapProps> = () => {
         onGenerate={
           onSendMessage
             ? () =>
-                onSendMessage(
-                  'Break the season into a completely BRAND NEW roadmap of 8-12 episodes. Use a professional showrunner approach: define the inciting incident, midpoint, and finale first, then fill in the connective tissue. IMPORTANT: Take a completely new creative direction and do NOT repeat previous episodes.',
-                  'episodeRoadmap'
-                )
+                onSendMessage(BIBLE_ROADMAP_GENERATE_PROMPT, BibleSection.EPISODE_ROADMAP)
             : undefined
         }
         generateTitle="Generate Roadmap"

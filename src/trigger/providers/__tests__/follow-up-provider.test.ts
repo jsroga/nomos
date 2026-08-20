@@ -149,7 +149,7 @@ describe('image model env resolvers', () => {
   })
 
   it('resolves moodboard, episode poster, and series poster including Midjourney', () => {
-    expect(resolveMoodboardModel({})).toBe(ApiframeImageModel.NanoBanana)
+    expect(resolveMoodboardModel({})).toBe(ApiframeImageModel.Midjourney)
     expect(
       resolveMoodboardModel({
         [ImageEnvVar.MoodboardModel]: ImageGenerateModelId.Midjourney,

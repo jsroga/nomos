@@ -27,12 +27,21 @@ export const LIST_CHARACTERS_TOOL_ID = 'list_characters'
 export const LIST_CHARACTERS_TOOL_DESC =
   'List all characters in a project, optionally filtered by role.'
 
+/** Omit from tool args — the authenticated request injects it. */
+export const INJECTED_PROJECT_ID_DESC =
+  'Project ID — omit; injected from the open workspace'
+export const LIST_PROJECT_ID_REQUIRED = 'projectId is required from the open workspace'
+
 export const CHARACTER_CREATE_PROJECT_ID_REQUIRED = 'projectId is required for create operation'
 export const CHARACTER_CREATE_NAME_REQUIRED = 'data.name is required for create operation'
 export const CHARACTER_UPDATE_ID_REQUIRED = 'characterId is required for update operation'
 export const CHARACTER_UPDATE_DATA_REQUIRED = 'data is required for update operation'
 export const CHARACTER_DELETE_ID_REQUIRED = 'characterId is required for delete operation'
 export const CHARACTER_GET_ID_REQUIRED = 'characterId is required for get operation'
+
+export const PROPOSE_CHARACTER_FIELDS_TOOL_ID = 'propose_character_fields'
+export const PROPOSE_CHARACTER_FIELDS_TOOL_DESC =
+  'Fill missing fields on the unsaved character create/edit form. Does not save. Call this instead of manage_character when the user asks to generate missing character fields. Include only empty fields. Never overwrite filled values.'
 
 export const EPISODE_TOOL_ID = 'manage_episode'
 export const EPISODE_TOOL_DESC =
@@ -50,6 +59,9 @@ export const EPISODE_GET_ID_REQUIRED = 'episodeId is required for get operation'
 export const UPDATE_WORLD_BIBLE_TOOL_ID = 'update_world_bible'
 export const READ_WORLD_BIBLE_TOOL_ID = 'read_world_bible'
 export const CHECK_CONTINUITY_TOOL_ID = 'check_continuity'
+export const CHECK_SECTION_ALIGNMENT_TOOL_ID = 'check_section_alignment'
+export const CHECK_SECTION_ALIGNMENT_TOOL_DESC =
+  'Check one generated section against related canon (roadmap vs episode vs beats, bible vs cast, and other registry pairs). Use when the user asks about contradictions. Do not call on every beat-board create.'
 
 export const DEFAULT_CHARACTER_ROLE = 'Supporting'
 

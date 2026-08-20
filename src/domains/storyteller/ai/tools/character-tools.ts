@@ -36,6 +36,7 @@ import {
   CHARACTER_UPDATE_ID_REQUIRED,
   LIST_CHARACTERS_TOOL_DESC,
   LIST_CHARACTERS_TOOL_ID,
+  LIST_PROJECT_ID_REQUIRED,
   ManageToolOperation,
 } from './manage-tools-wire'
 
@@ -98,6 +99,9 @@ export const listCharactersTool = createTool({
       requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
 
     try {
+      if (!projectId) {
+        return { success: false, characters: [], count: 0, error: LIST_PROJECT_ID_REQUIRED }
+      }
       const conditions: SQL[] = [eq(characters.projectId, projectId)]
       if (role) conditions.push(eq(characters.role, role))
 

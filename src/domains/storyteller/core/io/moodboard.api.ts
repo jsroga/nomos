@@ -1,4 +1,5 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
 import { fetchJson, fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
@@ -13,7 +14,6 @@ const JSON_HEADERS = { 'Content-Type': ContentType.Json }
 export async function triggerMoodboardGeneration(input: {
   projectId: string
   prompts: string[]
-  styleReference?: string
   providerConfig: Record<string, unknown>
   promptIndex?: number
 }): Promise<{ handleId: string | null; error: string | null }> {
@@ -33,7 +33,9 @@ export async function triggerMoodboardGeneration(input: {
 export async function fetchMoodboardRunStatus(
   runId: string
 ): Promise<TriggerRunStatusPayload & { metadata?: Record<string, unknown> }> {
-  const data = recordFromJson(await fetchJson(buildUrl(MOODBOARD_STATUS_ROUTE, { [QueryParam.RunId]: runId })))
+  const data = recordFromJson(
+    await fetchJson(buildUrl(MOODBOARD_STATUS_ROUTE, { [QueryParam.RunId]: runId }), TRIGGER_STATUS_FETCH_INIT),
+  )
   return {
     status: readString(data.status),
     output: recordFromJson(data.output),

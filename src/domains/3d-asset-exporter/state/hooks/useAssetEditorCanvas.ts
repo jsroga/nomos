@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { EditorTool } from '@/shared/types/enums'
 import { saveAssetImage } from '@/domains/3d-asset-exporter/core/io/asset-exporter.api'
+import { assetEditorSaveFilename } from './asset-editor-save-filename'
 import {
-  ASSET_EDITOR_ASSETS_PATH_PREFIX,
   ASSET_EDITOR_CACHE_BUSTER_PARAM,
   ASSET_EDITOR_ERASER_CURSOR_STROKE_INNER,
   ASSET_EDITOR_ERASER_CURSOR_STROKE_OUTER,
@@ -18,6 +18,7 @@ import {
 } from '@/domains/3d-asset-exporter/constants/asset-editor'
 
 interface UseAssetEditorCanvasParams {
+  assetId: string
   projectId: string | undefined
   assetImageFilename: string | undefined
   loadedImageUrl: string
@@ -27,9 +28,11 @@ interface UseAssetEditorCanvasParams {
   tool: EditorTool
   brushSize: number
   onImageLoadError: (hasError: boolean) => void
+  onUpdateAsset?: (assetId: string, updates: { image_filename: string }) => void
 }
 
 export function useAssetEditorCanvas({
+  assetId,
   projectId,
   assetImageFilename,
   loadedImageUrl,
@@ -39,6 +42,7 @@ export function useAssetEditorCanvas({
   tool,
   brushSize,
   onImageLoadError,
+  onUpdateAsset,
 }: UseAssetEditorCanvasParams) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const cursorCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -218,11 +222,14 @@ export function useAssetEditorCanvas({
     try {
       const imageData = canvas.toDataURL(ASSET_EDITOR_SAVE_IMAGE_FORMAT).split(',')[1]
 
-      await saveAssetImage({
+      const saved = await saveAssetImage({
         projectId,
-        filename: `${ASSET_EDITOR_ASSETS_PATH_PREFIX}${assetImageFilename}`,
+        filename: assetEditorSaveFilename(assetImageFilename),
         imageData,
       })
+      if (saved.url) {
+        onUpdateAsset?.(assetId, { image_filename: saved.url })
+      }
 
       toast.success(ASSET_EDITOR_SAVE_SUCCESS)
     } catch (e) {

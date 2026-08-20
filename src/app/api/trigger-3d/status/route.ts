@@ -1,22 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { runs } from '@trigger.dev/sdk/v3'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { ErrorFragment, QueryParam, TriggerRunStatus } from '@/shared/data/constants/protocol'
+import { noStoreJson } from '@/shared/data/polling/no-store-json'
 
 export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
   const { searchParams } = new URL(request.url)
   const runId = searchParams.get(QueryParam.RunId)
 
   if (!runId) {
-    return NextResponse.json({ error: API_ERROR.MISSING_RUN_ID }, { status: 400 })
+    return noStoreJson({ error: API_ERROR.MISSING_RUN_ID }, 400)
   }
 
   try {
     const run = await runs.retrieve(runId)
 
-    return NextResponse.json({
+    return noStoreJson({
       id: run.id,
       status: run.status,
       output: run.output,
@@ -31,12 +32,12 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
     console.error(API_LOG_PREFIX.PROXY_RUN_RETRIEVE_ERROR, error)
 
     if (getErrorMessage(error)?.includes(ErrorFragment.NotFound)) {
-      return NextResponse.json(
+      return noStoreJson(
         { error: API_ERROR.RUN_NOT_FOUND, status: TriggerRunStatus.NotFound },
-        { status: 404 }
+        404,
       )
     }
 
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
+    return noStoreJson({ error: getErrorMessage(error) }, 500)
   }
 })

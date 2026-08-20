@@ -1,12 +1,17 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useLayoutEffect, type ReactNode } from 'react'
 import { Image as ImageIcon, Box } from 'lucide-react'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { resolveProjectAssetUrl } from '@/shared/workspace/io/project-assets-api'
 import { AssetEditor } from './AssetEditor'
 import { AssetExporterSidebar, type AssetExporterAssetsBind } from './AssetExporterSidebar'
+import { AssetPanelCheckerboard, AssetPanelEmptyState } from './AssetPanelEmptyState'
+import {
+  AssetExporterPanelClass,
+  AssetExporterPanelCopy,
+} from './constants/asset-exporter-panel'
 import { ThreeDPanel } from './ThreeDPanel'
 
 export interface AssetExporterLayoutAsset {
@@ -39,7 +44,8 @@ export function AssetExporterLayout({
   assetsBind,
   settingsDialog,
 }: AssetExporterLayoutProps) {
-  useEffect(() => {
+  useLayoutEffect(() => {
+    setPreviewAssetId(null)
     return () => {
       setPreviewAssetId(null)
     }
@@ -75,43 +81,20 @@ export function AssetExporterLayout({
               />
             ) : (
               <div className="flex flex-col h-full bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-                <div className="p-3 border-b border-border flex items-center justify-between bg-muted/30">
+                <div className={AssetExporterPanelClass.Header}>
                   <div className="flex items-center gap-2">
                     <ImageIcon size={16} className="text-muted-foreground" />
-                    <h3 className="font-medium text-sm">2D Editor</h3>
+                    <h3 className="font-medium text-sm">{AssetExporterPanelCopy.TwoDEditor}</h3>
                   </div>
                 </div>
-                <div className="flex-1 bg-[#1a1a1a] relative overflow-hidden flex items-center justify-center">
-                  <div
-                    className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                    style={{
-                      backgroundImage:
-                        'linear-gradient(45deg, #808080 25%, transparent 25%), linear-gradient(-45deg, #808080 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #808080 75%), linear-gradient(-45deg, transparent 75%, #808080 75%)',
-                      backgroundSize: '20px 20px',
-                      backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-                    }}
+                <div className={AssetExporterPanelClass.PreviewStage}>
+                  <AssetPanelCheckerboard />
+                  <AssetPanelEmptyState
+                    icon={ImageIcon}
+                    title={AssetExporterPanelCopy.NoAssetTitle}
+                    description={AssetExporterPanelCopy.NoAssetDescription}
+                    tip={AssetExporterPanelCopy.NoAssetTip}
                   />
-                  <div
-                    className="
-                      relative z-10 w-full max-w-md mx-4 border-2 border-dashed rounded-xl p-8 transition-all
-                      border-muted-foreground/30 bg-background/5
-                    "
-                  >
-                    <div className="flex flex-col items-center gap-4 text-center">
-                      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                        <ImageIcon size={32} className="text-muted-foreground opacity-50" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-foreground mb-1">No Asset Selected</h4>
-                        <p className="text-sm text-muted-foreground mb-1">
-                          Select an asset from the sidebar to start editing and generating 3D models.
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          💡 Tip: Upload images or export tiles from World Gen to get started
-                        </p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}

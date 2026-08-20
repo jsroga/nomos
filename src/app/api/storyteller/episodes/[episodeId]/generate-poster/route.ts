@@ -4,9 +4,13 @@ import { episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
 import { tasks } from '@trigger.dev/sdk/v3'
 import type { generatePoster } from '@/domains/storyteller/tasks/generate-poster.task'
-import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
-import { resolveApiframeApiKey, resolveEpisodePosterModel } from '@/shared/ai/image-model-env'
+import { resolveApiframeApiKey } from '@/shared/ai/image-model-env'
+import { readString } from '@/shared/data/json-guards'
+import {
+  isVisualOverviewReady,
+  loadVisualOverviewContext,
+} from '@/domains/storyteller/services/visual-overview-context'
 
 export async function POST(req: Request, props: { params: Promise<{ episodeId: string }> }) {
   const params = await props.params
@@ -20,10 +24,6 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       `${API_LOG_PREFIX.POSTER_GEN_CONFIG} ${Boolean(clientKey)}, Env Key present: ${Boolean(process.env.APIFRAME_API_KEY)}`
     )
 
-    if (!prompt) {
-      return NextResponse.json({ error: API_ERROR.PROMPT_REQUIRED }, { status: 400 })
-    }
-
     if (!apiKey) {
       return NextResponse.json(
         {
@@ -34,12 +34,9 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       )
     }
 
-    // 1. Get Project ID and Style References
     const episodeData = await db
       .select({
         projectId: projects.id,
-        styleReferenceUrls: projects.styleReferenceUrls,
-        stylePreset: projects.stylePreset,
       })
       .from(episodes)
       .innerJoin(projects, eq(episodes.projectId, projects.id))
@@ -52,18 +49,20 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
     }
 
     const { projectId } = episodeData
-    const styleReferenceUrls = resolveStyleReferenceUrls(episodeData)
+    const { context } = await loadVisualOverviewContext(projectId)
+    if (!isVisualOverviewReady(context)) {
+      return NextResponse.json({ error: API_ERROR.OVERVIEW_REQUIRED }, { status: 400 })
+    }
 
-    // 2. Trigger Background Task
     console.log(`${API_LOG_PREFIX.POSTER_TRIGGER} ${episodeId}`)
 
     const handle = await tasks.trigger<typeof generatePoster>(TRIGGER_TASK_ID.GENERATE_POSTER, {
-      prompt,
+      extraPrompt: readString(prompt) ?? '',
+      worldDesc: context.worldDesc,
+      overview: context.overview,
       projectId,
       episodeId,
       apiKey,
-      styleReferenceUrls: styleReferenceUrls ?? [],
-      modelId: resolveEpisodePosterModel(),
     })
 
     return NextResponse.json({

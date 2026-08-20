@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CORK_BOARD_LOADING_PLACEHOLDER_COUNT } from '../constants/cork-board'
 import {
   CorkBoardListMode,
+  corkBoardIsAwaitingBeats,
   corkBoardListMode,
   corkBoardLoadingPlaceholderCount,
   corkBoardShowsLoadingPlaceholders,
@@ -11,28 +12,46 @@ describe('corkBoardListMode', () => {
   it('shows the empty screen only when the board is idle and has no beats', () => {
     const mode = corkBoardListMode({
       beatCount: 0,
-      isChatBusy: false,
-      pendingBoardHydration: false,
+      isAwaitingBeats: false,
     })
 
     expect(mode).toBe(CorkBoardListMode.Empty)
   })
 
+  it('keeps the empty Generate Beat Board CTAs while unrelated chat is busy', () => {
+    expect(
+      corkBoardIsAwaitingBeats({
+        awaitingBoardRefresh: false,
+        pendingBoardHydration: false,
+      }),
+    ).toBe(false)
+    expect(
+      corkBoardListMode({
+        beatCount: 0,
+        isAwaitingBeats: false,
+      }),
+    ).toBe(CorkBoardListMode.Empty)
+  })
+
   it('keeps the grid during Add-to-world hydration so placeholders can render', () => {
     const mode = corkBoardListMode({
       beatCount: 0,
-      isChatBusy: false,
-      pendingBoardHydration: true,
+      isAwaitingBeats: corkBoardIsAwaitingBeats({
+        awaitingBoardRefresh: false,
+        pendingBoardHydration: true,
+      }),
     })
 
     expect(mode).toBe(CorkBoardListMode.Grid)
   })
 
-  it('keeps the grid while chat is busy even with no beats yet', () => {
+  it('keeps the grid while this board is waiting for beat text', () => {
     const mode = corkBoardListMode({
       beatCount: 0,
-      isChatBusy: true,
-      pendingBoardHydration: false,
+      isAwaitingBeats: corkBoardIsAwaitingBeats({
+        awaitingBoardRefresh: true,
+        pendingBoardHydration: false,
+      }),
     })
 
     expect(mode).toBe(CorkBoardListMode.Grid)
@@ -41,8 +60,7 @@ describe('corkBoardListMode', () => {
   it('keeps the grid once beats exist, even if hydration is still flagged', () => {
     const mode = corkBoardListMode({
       beatCount: 2,
-      isChatBusy: false,
-      pendingBoardHydration: true,
+      isAwaitingBeats: true,
     })
 
     expect(mode).toBe(CorkBoardListMode.Grid)
@@ -50,31 +68,9 @@ describe('corkBoardListMode', () => {
 })
 
 describe('corkBoardShowsLoadingPlaceholders', () => {
-  it('shows placeholders while chat is writing beats', () => {
-    const show = corkBoardShowsLoadingPlaceholders({
-      isChatBusy: true,
-      pendingBoardHydration: false,
-    })
-
-    expect(show).toBe(true)
-  })
-
-  it('shows placeholders while Add to world is committing the board', () => {
-    const show = corkBoardShowsLoadingPlaceholders({
-      isChatBusy: false,
-      pendingBoardHydration: true,
-    })
-
-    expect(show).toBe(true)
-  })
-
-  it('hides placeholders when the board is idle', () => {
-    const show = corkBoardShowsLoadingPlaceholders({
-      isChatBusy: false,
-      pendingBoardHydration: false,
-    })
-
-    expect(show).toBe(false)
+  it('shows placeholders only while this board is writing or hydrating beats', () => {
+    expect(corkBoardShowsLoadingPlaceholders(true)).toBe(true)
+    expect(corkBoardShowsLoadingPlaceholders(false)).toBe(false)
   })
 })
 

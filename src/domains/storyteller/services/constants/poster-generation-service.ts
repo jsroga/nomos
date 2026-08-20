@@ -20,21 +20,21 @@ export enum PosterStorageKeyPrefix {
 }
 
 export enum PosterOperationLabel {
-  GeneratingStoryboard = 'Generating Storyboard',
+  GeneratingStoryboard = 'Generating storyboard video',
   GeneratingEpisodePoster = 'Generating Episode Poster',
   GeneratingEpisodePosterResumed = 'Generating Episode Poster (resumed)',
-  GeneratingStoryboardResumed = 'Generating Storyboard (resumed)',
+  GeneratingStoryboardResumed = 'Generating storyboard video (resumed)',
 }
 
 export enum PosterOperationDetail {
-  CreatingVisualScript = 'Creating visual script...',
+  CreatingVisualScript = 'Composing beat sheet and generating video...',
   CreatingCinematicPoster = 'Creating cinematic poster...',
   ResumingGeneration = 'Resuming generation...',
   StatusPrefix = 'Status: ',
 }
 
 export enum PosterGenerationError {
-  StoryboardTriggerFailed = 'Failed to trigger storyboard generation task',
+  StoryboardTriggerFailed = 'Failed to trigger storyboard video generation',
   PosterTriggerFailed = 'Failed to trigger poster generation task',
   NoImageUrl = 'Generation completed but no image was returned',
   GenerationFailed = 'Image generation failed',
@@ -42,7 +42,7 @@ export enum PosterGenerationError {
 
 export enum PosterUserToast {
   PosterFailed = 'Poster generation failed',
-  StoryboardFailed = 'Storyboard generation failed',
+  StoryboardFailed = 'Storyboard video generation failed',
 }
 
 export enum PosterGenerationLog {
@@ -60,6 +60,8 @@ export enum PosterGenerationLog {
   PersistedStoryboard = '✅ Storyboard URL persisted to DB',
   PersistedPoster = '✅ Poster URL persisted to DB',
   PersistFailed = '❌ Failed to persist ',
+  RecoveredFromDb = 'Poster recovered from episode row after poll loss',
+  ParkedForResume = 'Poster poll parked; Trigger job remains the DB writer',
   CompletionError = 'Error handling poster completion:',
   ResumingPolling = 'Resuming poster generation polling for:',
   ParseStateFailed = 'Failed to parse poster generation run state:',
@@ -75,10 +77,25 @@ export enum PosterPersistField {
   PosterPrompt = 'posterPrompt',
 }
 
+export enum PosterEpisodeUrlField {
+  Camel = 'posterUrl',
+  Snake = 'poster_url',
+}
+
+/** `Date.now()` millis embedded in poster / mood filenames (`poster_<id>_<ms>.png`). */
+export const GENERATED_ASSET_TIMESTAMP_PATTERN = /_(\d{13})\.(?:png|jpe?g|webp)/i
+
+export enum PosterRunStateField {
+  BaselinePosterUrl = 'baselinePosterUrl',
+}
+
 export enum PosterPersistLabel {
   Storyboard = 'Storyboard',
   Poster = 'Poster',
 }
+
+export const POSTER_RUN_MAX_POLLS = 120
+export const STORYBOARD_VIDEO_MAX_POLLS = 180
 
 export enum PosterUnknownLabel {
   Unknown = 'unknown',

@@ -58,8 +58,3 @@ export const EpisodeManager = dynamic(
   () => import('../EpisodeManager').then(m => m.EpisodeManager),
   { ssr: false }
 )
-
-export const MasterPromptEditor = dynamic(
-  () => import('../MasterPromptEditor').then(m => m.MasterPromptEditor),
-  { ssr: false }
-)

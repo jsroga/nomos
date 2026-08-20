@@ -5,6 +5,7 @@ import {
   CanvasLineStyle,
   RepaintCanvasColor,
 } from '@/domains/2d-canvas/ui/constants/repaint-canvas'
+import { RepaintReviewOverlay } from './RepaintReviewOverlay'
 
 // Helper: World -> Screen (for rendering)
 const worldToScreen = (
@@ -197,28 +198,6 @@ export const RepaintCanvas: React.FC = () => {
     addRepaintStroke({ x: worldPos.x, y: worldPos.y, radius: brushSize / 2 })
   }
 
-  const renderResultImage = () => {
-    if (!repaintResult) return null
-
-    // Note: We use the same transform logic here for CSS
-    // We need to ensure viewport.x/y matches the visual transform
-
-    return (
-      <img
-        src={repaintResult.imageUrl}
-        alt="Repaint Result"
-        className="absolute z-40 pointer-events-none origin-top-left"
-        style={{
-          left: '50%',
-          top: '50%',
-          transform: `translate(${viewport.x + repaintResult.bounds.x * viewport.scale}px, ${viewport.y + repaintResult.bounds.y * viewport.scale}px)`,
-          width: repaintResult.bounds.width * viewport.scale,
-          height: repaintResult.bounds.height * viewport.scale,
-        }}
-      />
-    )
-  }
-
   if (!isRepaintMode) return null
 
   return (
@@ -235,7 +214,7 @@ export const RepaintCanvas: React.FC = () => {
           pointerEvents: 'all', // Critical
         }}
       />
-      {renderResultImage()}
+      <RepaintReviewOverlay />
     </>
   )
 }

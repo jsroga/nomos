@@ -14,7 +14,19 @@ import {
   AgentMemoryMessage,
   AgentMemoryVectorIndex,
   MastraStoreName,
+  MastraUiMessagePartType,
 } from '@/shared/agent-kernel/constants/agent-memory'
+
+function mastraMessageIndexText(message: MastraDBMessage): string | undefined {
+  let text = ''
+  for (const part of message.content.parts) {
+    if (part.type !== MastraUiMessagePartType.Text) continue
+    const value = Reflect.get(part, MastraUiMessagePartType.Text)
+    if (typeof value === 'string') text += value
+  }
+  const trimmed = text.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
 
 export class AgentMemory extends MastraMemory {
   constructor(config: { name: string; storage?: MastraStorage; vector?: MastraVector }) {
@@ -63,13 +75,11 @@ export class AgentMemory extends MastraMemory {
     const saved = await memory.saveMessages({ messages: args.messages })
 
     if (this.vector && this.embedder) {
-      const inputs = saved.messages
-        .filter((m): m is MastraDBMessage & { content: string } => typeof m.content === 'string')
-        .map(m => ({
-          id: m.id,
-          text: m.content,
-          metadata: { threadId: m.threadId },
-        }))
+      const inputs = saved.messages.flatMap(m => {
+        const text = mastraMessageIndexText(m)
+        if (!text) return []
+        return [{ id: m.id, text, metadata: { threadId: m.threadId } }]
+      })
 
       if (inputs.length > 0) {
         try {

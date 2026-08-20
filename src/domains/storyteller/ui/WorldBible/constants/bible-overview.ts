@@ -16,7 +16,7 @@ export enum BibleOverviewToast {
   NewImageGenerating = 'Generating new moodboard image...',
   GenerationError = 'Error starting generation',
   GenerationFailed = 'Moodboard generation failed',
-  WorldDescriptionRequired = 'Please add a world description first.',
+  OverviewRequired = 'Generate the overview first.',
   InitialMoodboardGenerating = 'Generating moodboard images...',
 }
 
@@ -25,7 +25,6 @@ export enum BibleOverviewConfirm {
   DeleteImageDescription =
     'Are you sure you want to remove this moodboard image? This cannot be undone.',
   DeleteLabel = 'Delete',
-  DestructiveVariant = 'destructive',
 }
 
 export enum BibleOverviewMoodboardCopy {
@@ -35,6 +34,7 @@ export enum BibleOverviewMoodboardCopy {
   NoMoodVisuals = 'No mood visuals generated yet.',
   GenerateWithMidjourney = 'Generate Moodboard with Midjourney',
   RefreshMoodboard = 'Generate or refresh moodboard',
+  MoodImageAltPrefix = 'Mood',
 }
 
 export enum BibleOverviewSectionTitle {

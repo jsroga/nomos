@@ -10,6 +10,7 @@ import {
   storytellerEpisodesQuerySchema,
   storytellerEpisodesResponseSchema,
 } from '@/domains/storyteller/core/io/storyteller.dto'
+import { generateCharacterFieldsRequestSchema, generateCharacterFieldsResponseSchema } from '@/domains/storyteller/services/constants/generate-character-fields'
 import { ensureZodOpenApi } from '@/shared/openapi/ensure-zod-openapi'
 import { OpenApiSchemaName } from '@/shared/openapi/constants/openapi-wire'
 import { openApiSuccessMessageSchema } from '@/shared/openapi/shared-components'
@@ -101,7 +102,6 @@ export const stCreateCharacterRequest = z
     description: z.string().optional(),
     portraitUrl: z.string().optional(),
     mbti: z.string().optional(),
-    voiceSignature: z.string().optional(),
   })
   .passthrough()
   .openapi(OpenApiStorytellerSchemaName.CreateCharacterRequest)
@@ -327,9 +327,11 @@ export const stActionResponse = z
 
 export const stGeneratePortraitRequest = z
   .object({
-    prompt: z.string().min(1),
+    description: z.string().min(1),
     projectId: idString,
-    characterId: z.string().optional(),
+    characterId: z.string().uuid().optional(),
+    mbti: z.string().optional(),
+    motivation: z.string().optional(),
     apiKey: z.string().optional(),
   })
   .openapi(OpenApiStorytellerSchemaName.GeneratePortraitRequest)
@@ -367,7 +369,6 @@ export const stMoodboardTriggerRequest = z
   .object({
     projectId: idString,
     providerConfig: z.record(z.unknown()).optional(),
-    styleReference: z.string().optional(),
     promptIndex: z.number().optional(),
   })
   .openapi(OpenApiStorytellerSchemaName.MoodboardTriggerRequest)
@@ -418,5 +419,13 @@ export const stConsistencyUndoRequest = z
     undoId: z.string().optional(),
   })
   .openapi(OpenApiStorytellerSchemaName.ConsistencyUndoRequest)
+
+export const stGenerateCharacterFieldsRequest = generateCharacterFieldsRequestSchema.openapi(
+  OpenApiStorytellerSchemaName.GenerateCharacterFieldsRequest
+)
+
+export const stGenerateCharacterFieldsResponse = generateCharacterFieldsResponseSchema.openapi(
+  OpenApiStorytellerSchemaName.GenerateCharacterFieldsResponse
+)
 
 export { openApiSuccessMessageSchema }

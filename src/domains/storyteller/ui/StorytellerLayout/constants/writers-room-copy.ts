@@ -4,9 +4,11 @@ export enum WritersRoomToast {
   AlreadyInWorld = 'Already in the world bible',
   AlreadyQueued = 'Already queued for review',
   AddedToWorld = 'Added to world',
+  CharacterForm = 'Applied to the character form',
   EpisodeCreated = 'Episode created',
   PendingExtrasPrefix = 'Also pending: ',
   NoBibleUpdates = 'No world bible updates in this message',
+  NoCharacterForm = 'No character fields to apply',
   BeatOnBoard = 'Beat is on the board',
   CastAdded = 'Added new characters to cast',
   SectionAddedPrefix = 'Added to world: ',
@@ -27,6 +29,10 @@ export enum WritersRoomCastConfirm {
   Confirm = 'Add to cast',
   Cancel = 'Skip',
   Prefix = 'These characters will be added to the cast: ',
+}
+
+export enum WritersRoomAddToWorldLabel {
+  CharacterForm = 'Character form',
 }
 
 export enum WritersRoomListJoin {
