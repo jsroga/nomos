@@ -23,12 +23,6 @@ cp .env.local.example .env.local   # fill in keys
 npm run dev
 ```
 
-```bash
-npm run test:unit
-npm run test:e2e full-loop
-npm run mastra:dev
-```
-
 ## Configuration
 
 One `OPENROUTER_API_KEY` routes every model; per-slot pins and the role→model table are in [docs/DEVELOPMENT.md § Model routing](docs/DEVELOPMENT.md). Feature flags are `FF_<NAME>=true` — opt-in, on only when the value is exactly `true` ([`src/shared/data/constants/feature-flags.ts`](src/shared/data/constants/feature-flags.ts)). Admin access comes from `NEXT_PUBLIC_CENTRAL_USERS` ([docs/ARCHITECTURE.md § Access control](docs/ARCHITECTURE.md)). Every variable is listed in [`.env.local.example`](.env.local.example).
@@ -45,31 +39,6 @@ One `OPENROUTER_API_KEY` routes every model; per-slot pins and the role→model 
 | MCP API | [docs/MCP_API.md](docs/MCP_API.md) |
 | Agent / Mastra rules | [AGENTS.md](AGENTS.md) |
 | Dev commands & repo ops | [CLAUDE.md](CLAUDE.md) |
-
-## Agents & local workspace
-
-The SDLC runs as a five-stage loop over one `src/domains/` module, with a human gate after clarify and again before any code is written. Start it with `/execute <module>` in Cursor; the same stages run sandboxed via `fabro run .fabro/workflows/execute/workflow.toml` or headless via `src/shared/agent-kernel/cursor-runner.ts`. Prompts live once in [`.agents/execute/`](.agents/execute/) — the per-runner agent files are thin pointers.
-
-| Agent | Stage | Produces |
-|-------|-------|----------|
-| [`scope-runner`](.cursor/agents/scope-runner.md) | Inventory the module and name the decision axes | `.local/findings/scope.md` |
-| [`clarify-facilitator`](.cursor/agents/clarify-facilitator.md) | Turn scope into module-specific A/B/C options | `CLARIFY.md`, `DECISIONS.md` |
-| [`plan-author`](.cursor/agents/plan-author.md) | Turn the chosen option into a prioritized plan | `PLAN.md` (+ `STRUCTURE.md`) |
-| [`developer`](.cursor/agents/developer.md) | Implement the approved first increment | Code — self-verified with `fabro-verify.mjs` |
-| [`retro-author`](.cursor/agents/retro-author.md) | Report what actually landed, checked against the diff | `RETRO.md` |
-
-Reusable skills sit in [`.agents/skills/`](.agents/skills/) and are symlinked into `.cursor/skills/` and `.claude/skills/`: workflow skills (`/execute`, `/commit`, `/review`, `/docs`, `/pr-description`) and repo-specific ones (`supabase`, `trigger-dev`, `mastra-workflow`, `shadcn`, `sse-wire-contract`, `typecheck-scoped`, `component-audit`, `accessibility-audit`). Runner and configuration map: [`.agents/README.md`](.agents/README.md) and [`.agents/CONFIGURATION.md`](.agents/CONFIGURATION.md).
-
-`.local/` is **gitignored** and holds everything an agent writes for itself — plans, audits, trackers, findings, quality backlogs, throwaway recon, and **multi-request session tracking**:
-
-```
-.local/sessions/YYYY-MM-DD_<shortId>_<slug>/
-  REQUESTS.md  TODOS.md  PLAN.md  MEMORY.md  STATUS.md
-```
-
-Templates: [`.agents/templates/session/`](.agents/templates/session/). Rule: [`.cursor/rules/session-tracking.mdc`](.cursor/rules/session-tracking.mdc). Fabro/Cursor/Claude include: [`.agents/execute/partials/session-tracking.md`](.agents/execute/partials/session-tracking.md).
-
-No agent markdown lands at the repo root or beside the code it describes — [`scripts/check-agent-artifacts.mjs`](scripts/check-agent-artifacts.mjs) blocks it at commit and a `preToolUse` hook blocks it at write time ([`.cursor/rules/agent-artifacts.mdc`](.cursor/rules/agent-artifacts.mdc)). Durable documentation extends an existing page in `docs/` via the `/docs` skill rather than adding files.
 
 ## Quality gates
 
