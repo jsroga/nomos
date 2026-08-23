@@ -36,29 +36,24 @@ import { AskUserToolUI } from './AssistantHumanTool'
 import { useAssistantMentions } from './useAssistantMentions'
 import { AssistantAddToWorldProvider, type AddToWorldPayload, type CanAddToWorldInput } from './AssistantAddToWorldContext'
 import {
-  AssistantChatStreamStatus,
-  isAssistantTurnBusy,
-  shouldEmitCompletedToolCalls,
-} from './assistant-turn-phase'
-import {
   AssistantGenerationLabel,
   AssistantGenerationPhase,
-  deriveAssistantGenerationActivity,
   type AssistantGenerationActivity,
 } from './derive-assistant-generation-activity'
 import {
   extractCompletedAssistantToolCalls,
   type AssistantCompletedToolCall,
 } from './extract-completed-assistant-tool-calls'
+import { AssistantPendingPromptBridge } from './AssistantPendingPromptBridge'
+import { useAssistantTurnSettle } from './use-assistant-turn-settle'
+import type { AssistantPendingPrompt } from './use-assistant-pending-prompt'
+
+export type { AssistantPendingPrompt } from './use-assistant-pending-prompt'
 
 const DEFAULT_AGENT_ID = 'storyteller'
 const ASSISTANT_API_BASE = '/api/assistant/'
 const EMPTY_PROVIDERS: readonly MentionProvider[] = []
 const EMPTY_PROJECT_CONTEXT: ProjectContext = { projectId: '' }
-/** Clear stuck overlays if the stream dies without an idle transition (e.g. server restart). */
-const GENERATION_STUCK_TIMEOUT_MS = 180_000
-/** Context assembly runs before the stream opens — show a slower hint after this. */
-const GENERATION_SLOW_HINT_MS = 12_000
 
 enum WarmHttpMethod {
   Get = 'GET',
@@ -99,10 +94,6 @@ function emitFreshCompletedTools(
   if (fresh.length > 0) onCompleted(fresh, lastUserTextFromMessages(messages))
 }
 
-export interface AssistantPendingPrompt {
-  id: number
-  text: string
-}
 
 interface AssistantChatProps {
   /** Explicit Mastra agent id (reachable via /api/assistant/<agentId>). */
@@ -224,21 +215,31 @@ export function AssistantChat({
     return { ...base, [AssistantChatBodyKey.ModelName]: chatModelId }
   }, [body, chatModelId])
 
+  // A fresh transport per body change is safe: useChat reads the latest
+  // transport at send time and only recreates the Chat when `id` changes.
   const transport = useMemo(
     () => new DefaultChatTransport({ api, body: chatBody }),
-    [api, chatBody],
+    [api, chatBody]
   )
-  const chat = useChat({ transport })
+  const chat = useChat({ transport, experimental_throttle: 50 })
   const adapters = useMemo(() => (history ? { history } : undefined), [history])
   const runtime = useAISDKRuntime(chat, { adapters })
-  const lastHandledPromptId = useRef<number | null>(null)
   const wasBusy = useRef(false)
   const stuckTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const proposedToolKeys = useRef(new Set<string>())
+  const lastActivityFingerprint = useRef<string>('')
   const onStreamIdleRef = useRef(onStreamIdle)
   const onGenerationActivityRef = useRef(onGenerationActivity)
   const onPendingPromptHandledRef = useRef(onPendingPromptHandled)
   const onCompletedToolCallsRef = useRef(onCompletedToolCalls)
+  const sendMessageRef = useRef(chat.sendMessage)
+  const stopRef = useRef(chat.stop)
+  const statusRef = useRef(chat.status)
+  const messagesRef = useRef<Parameters<typeof extractCompletedAssistantToolCalls>[0]>(
+    chat.messages,
+  )
+  const errorRef = useRef(chat.error)
 
   useEffect(() => {
     onStreamIdleRef.current = onStreamIdle
@@ -256,14 +257,30 @@ export function AssistantChat({
     onCompletedToolCallsRef.current = onCompletedToolCalls
   }, [onCompletedToolCalls])
 
+  useEffect(() => {
+    sendMessageRef.current = chat.sendMessage
+    stopRef.current = chat.stop
+    statusRef.current = chat.status
+    messagesRef.current = chat.messages
+    errorRef.current = chat.error
+  }, [chat.sendMessage, chat.stop, chat.status, chat.messages, chat.error])
+
   const clearStuckTimer = useCallback(() => {
     if (!stuckTimer.current) return
     clearTimeout(stuckTimer.current)
     stuckTimer.current = null
   }, [])
 
+  const clearSettleTimer = useCallback(() => {
+    if (!settleTimer.current) return
+    clearTimeout(settleTimer.current)
+    settleTimer.current = null
+  }, [])
+
   const finishGeneration = useCallback((opts?: { error?: string }) => {
     clearStuckTimer()
+    clearSettleTimer()
+    lastActivityFingerprint.current = ''
     if (opts?.error) {
       onGenerationActivityRef.current?.({
         phase: AssistantGenerationPhase.Error,
@@ -279,96 +296,34 @@ export function AssistantChat({
       })
     }
     onStreamIdleRef.current?.()
-  }, [clearStuckTimer, resolvedAgentId])
+  }, [clearStuckTimer, clearSettleTimer, resolvedAgentId])
 
-  useEffect(() => {
-    if (!pendingPrompt) return
-    if (lastHandledPromptId.current === pendingPrompt.id) return
-    lastHandledPromptId.current = pendingPrompt.id
-
-    // One in-flight turn only — a second sendMessage while busy duplicates
-    // message ids in assistant-ui's MessageRepository and crashes the chat.
-    if (isAssistantTurnBusy(chat.status)) {
-      onPendingPromptHandledRef.current?.(pendingPrompt.id)
-      return
-    }
-
-    onGenerationActivityRef.current?.({
-      phase: AssistantGenerationPhase.Submitted,
-      label: AssistantGenerationLabel.Submitted,
-      agentId: resolvedAgentId,
-    })
-    clearStuckTimer()
-    const slowHintTimer = setTimeout(() => {
-      onGenerationActivityRef.current?.({
-        phase: AssistantGenerationPhase.Submitted,
-        label: AssistantGenerationLabel.SubmittedSlow,
-        agentId: resolvedAgentId,
-      })
-    }, GENERATION_SLOW_HINT_MS)
-    stuckTimer.current = setTimeout(() => {
-      clearTimeout(slowHintTimer)
-      finishGeneration({ error: AssistantGenerationLabel.TimedOut })
-    }, GENERATION_STUCK_TIMEOUT_MS)
-
-    // Capture section refs / clear the queued prompt before the stream so
-    // completed tools still know which bible panel started this turn.
-    onPendingPromptHandledRef.current?.(pendingPrompt.id)
-
-    void chat
-      .sendMessage({ text: pendingPrompt.text })
-      .catch((err: unknown) => {
-        clearTimeout(slowHintTimer)
-        const message = err instanceof Error ? err.message : AssistantGenerationLabel.Error
-        finishGeneration({ error: message })
-      })
-      .finally(() => {
-        clearTimeout(slowHintTimer)
-      })
-  }, [pendingPrompt, chat, resolvedAgentId, clearStuckTimer, finishGeneration])
-
-  useEffect(() => {
-    const busy = isAssistantTurnBusy(chat.status)
-
-    if (busy) {
-      const derived = deriveAssistantGenerationActivity(chat.messages, resolvedAgentId)
-      if (derived) {
-        onGenerationActivityRef.current?.(derived)
-      } else if (chat.status === AssistantChatStreamStatus.Submitted) {
-        onGenerationActivityRef.current?.({
-          phase: AssistantGenerationPhase.Submitted,
-          label: AssistantGenerationLabel.Submitted,
-          agentId: resolvedAgentId,
-        })
-      } else {
-        onGenerationActivityRef.current?.({
-          phase: AssistantGenerationPhase.Streaming,
-          label: AssistantGenerationLabel.Streaming,
-          agentId: resolvedAgentId,
-        })
-      }
-    }
-
-    if (shouldEmitCompletedToolCalls(chat.status)) {
+  const emitFreshTools = useCallback(
+    (messages: Parameters<typeof extractCompletedAssistantToolCalls>[0]) => {
       emitFreshCompletedTools(
-        chat.messages,
+        messages,
         proposedToolKeys.current,
         onCompletedToolCallsRef.current,
       )
-    }
+    },
+    [],
+  )
 
-    if (wasBusy.current && !busy) {
-      if (chat.status === AssistantChatStreamStatus.Error || chat.error) {
-        finishGeneration({
-          error:
-            chat.error instanceof Error ? chat.error.message : AssistantGenerationLabel.Error,
-        })
-      } else {
-        finishGeneration()
-      }
-    }
-    wasBusy.current = busy
-  }, [chat.status, chat.messages, chat.error, resolvedAgentId, finishGeneration])
+  useAssistantTurnSettle({
+    status: chat.status,
+    error: chat.error,
+    resolvedAgentId,
+    wasBusy,
+    settleTimer,
+    lastActivityFingerprint,
+    statusRef,
+    messagesRef,
+    errorRef,
+    onGenerationActivityRef,
+    finishGeneration,
+    clearSettleTimer,
+    emitFreshTools,
+  })
 
   useEffect(() => {
     const controller = new AbortController()
@@ -379,7 +334,13 @@ export function AssistantChat({
     return () => controller.abort()
   }, [api])
 
-  useEffect(() => () => clearStuckTimer(), [clearStuckTimer])
+  useEffect(
+    () => () => {
+      clearStuckTimer()
+      clearSettleTimer()
+    },
+    [clearStuckTimer, clearSettleTimer]
+  )
 
   const resolvedSuggestions =
     suggestions ?? (moduleKey ? getCanvasModuleSuggestions(moduleKey) : [])
@@ -405,6 +366,10 @@ export function AssistantChat({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
+      <AssistantPendingPromptBridge
+        pendingPrompt={pendingPrompt}
+        onHandled={onPendingPromptHandled}
+      />
       {chatRenderers ? (
         <ChatRenderersProvider renderers={chatRenderers}>{chatBodyUi}</ChatRenderersProvider>
       ) : (

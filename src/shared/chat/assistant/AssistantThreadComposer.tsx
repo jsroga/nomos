@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
+  createThreadIsEmptySelector,
+  createThreadIsRunningSelector,
+  createThreadLastAssistantTextSelector,
+} from './assistant-thread-selectors'
+import {
   ArrowUp,
   // AtSign,
   Braces,
@@ -28,8 +33,6 @@ import { useAssistantChatDetails } from './AssistantChatDetailsContext'
 import {
   ASSISTANT_THREAD_COPY,
   ASSISTANT_THREAD_WIRE,
-  ChatMessageRole,
-  ChatPartType,
   deriveFollowUpChips,
   shortModelLabel,
   type AssistantChatModelOption,
@@ -52,20 +55,12 @@ function autoGrow(el: HTMLTextAreaElement | null) {
 }
 
 function FollowUpChips() {
-  const lastAssistantText = useThread(t => {
-    const messages = t.messages
-    for (let i = messages.length - 1; i >= 0; i -= 1) {
-      const message = messages[i]
-      if (!message || message.role !== ChatMessageRole.Assistant) continue
-      return message.content
-        .filter(part => part.type === ChatPartType.Text)
-        .map(part => (part.type === ChatPartType.Text ? part.text : ''))
-        .join('\n')
-    }
-    return ''
-  })
-  const isEmpty = useThread(t => t.messages.length === 0)
-  const isRunning = useThread(t => t.isRunning)
+  const lastAssistantTextSelector = useMemo(() => createThreadLastAssistantTextSelector(), [])
+  const isEmptySelector = useMemo(() => createThreadIsEmptySelector(), [])
+  const isRunningSelector = useMemo(() => createThreadIsRunningSelector(), [])
+  const lastAssistantText = useThread(lastAssistantTextSelector)
+  const isEmpty = useThread(isEmptySelector)
+  const isRunning = useThread(isRunningSelector)
   const chips = useMemo(
     () => (lastAssistantText ? deriveFollowUpChips(lastAssistantText) : []),
     [lastAssistantText],

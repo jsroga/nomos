@@ -386,9 +386,9 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
     model: DEFAULT_CHAT_MODEL,
     temperature: 0.7,
     topP: 0.9,
-    maxOutputTokens: 2000,
+    maxOutputTokens: 8000,
     rationale:
-      'Writers Room chat adapter. Per-request picker (Kimi / GLM / Opus) wins; else STORYTELLER_CHAT_MODEL; else this matrix default. Orchestration roles (author/planner/critic/muse/premise) use their own slots — not the chat picker.',
+      'Writers Room chat adapter. Per-request picker (Kimi / GLM / Opus) wins; else STORYTELLER_CHAT_MODEL; else this matrix default. Orchestration roles (author/planner/critic/muse/premise) use their own slots — not the chat picker. Headroom is set well above answer length because reasoning draws from this same budget: measured by chat-model-output-budget.e2e, a one-sentence answer costs 463-779 reasoning tokens on Kimi / GLM / Opus (up to 98% of the spend). The old 2000 left too little for a full bible section once reasoning is paid.',
   },
 }
 

@@ -19,12 +19,18 @@ export const WorldDescriptionLoading: React.FC<WorldDescriptionLoadingProps> = (
   isWorldDescLoading,
   pendingAction,
 }) => {
-  const activity = useStorytellerUiStore(state => state.generationActivity)
+  const phase = useStorytellerUiStore(state => state.generationActivity.phase)
+  const label = useStorytellerUiStore(state => state.generationActivity.label)
+  const toolName = useStorytellerUiStore(state => state.generationActivity.toolName)
+  const toolComplete = useStorytellerUiStore(state => state.generationActivity.toolComplete)
+  const agentId = useStorytellerUiStore(state => state.generationActivity.agentId)
+  const preview = useStorytellerUiStore(state => state.generationActivity.preview)
+  const error = useStorytellerUiStore(state => state.generationActivity.error)
   const showActivity =
     isWorldDescLoading &&
     !pendingAction &&
-    activity.phase !== GenerationActivityPhase.Idle
-  const showSpinner = showActivity && !activity.toolComplete
+    phase !== GenerationActivityPhase.Idle
+  const showSpinner = showActivity && !toolComplete
 
   return (
     <>
@@ -38,20 +44,20 @@ export const WorldDescriptionLoading: React.FC<WorldDescriptionLoadingProps> = (
               <Loader2 className="w-4 h-4 animate-spin text-indigo-400 shrink-0" />
             ) : null}
             <span>
-              {showActivity && activity.label ? activity.label : 'Painting your world…'}
+              {showActivity && label ? label : 'Painting your world…'}
             </span>
           </div>
-          {showActivity && activity.toolName ? (
+          {showActivity && toolName ? (
             <div className="text-[11px] font-mono text-indigo-300/80">
-              agent: {activity.agentId ?? StorytellerAgentId.Storyteller} · {activity.toolName}
+              agent: {agentId ?? StorytellerAgentId.Storyteller} · {toolName}
             </div>
           ) : null}
           <ToolActivityMarkdownPreview
-            preview={showActivity ? activity.preview : undefined}
+            preview={showActivity ? preview : undefined}
             className="max-h-40 max-w-xl p-3 leading-relaxed"
           />
-          {activity.phase === GenerationActivityPhase.Error && activity.error ? (
-            <p className="text-xs text-red-400 max-w-md text-center">{activity.error}</p>
+          {phase === GenerationActivityPhase.Error && error ? (
+            <p className="text-xs text-red-400 max-w-md text-center">{error}</p>
           ) : null}
         </div>
       ) : null}

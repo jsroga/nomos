@@ -56,6 +56,18 @@ describe('mergeStoryPlanPosterUrl', () => {
     expect(next[GeneratePosterPlanField.PosterUrl]).toBe(`${UrlScheme.Https}://blob.example/new.png`)
     expect(next.title).toBe('Ep 1')
   })
+
+  it('does not copy soundtrack onto the episode story plan', () => {
+    const next = mergeStoryPlanPosterUrl(
+      {
+        title: 'Ep 1',
+        soundtracks: [{ title: 'Theme', artist: 'A', youtubeUrl: `${UrlScheme.Https}://youtu.be/M6W4uhrLA7g` }],
+      },
+      `${UrlScheme.Https}://blob.example/new.png`,
+    )
+    expect(next.soundtracks).toBeUndefined()
+    expect(next.title).toBe('Ep 1')
+  })
 })
 
 describe('lockedPosterPromptOrNull', () => {

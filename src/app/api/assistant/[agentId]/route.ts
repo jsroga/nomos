@@ -19,7 +19,8 @@ import { RequestContext } from '@mastra/core/di'
 import { handleChatStream } from '@mastra/ai-sdk'
 import { createUIMessageStream, createUIMessageStreamResponse, generateId } from 'ai'
 import type { UIMessage } from 'ai'
-import { getMastraInstance } from '@/shared/agent-kernel/mastra-instance'
+import { getMastraInstance, warmMastraStorage } from '@/shared/agent-kernel/mastra-instance'
+import { withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
 import { buildStorytellerRequestContext } from '@/domains/storyteller/ai/request-context'
 import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 import {
@@ -87,27 +88,18 @@ enum UiMessageStreamChunkType {
 
 enum AssistantTurnLog {
   ContextReady = '[Stream] World context ready in ',
-  FirstChunk = '[Stream] First agent chunk after ',
+  StreamError = '[Stream] agent stream error after ',
+  Model = '[Stream] chat model=',
 }
 
-/** Logs time-to-first-chunk so a slow turn can be attributed to context vs model. */
-function withFirstChunkTiming<T>(
-  source: ReadableStream<T>,
-  startedAt: number
-): ReadableStream<T> {
-  let logged = false
-  return source.pipeThrough(
-    new TransformStream<T, T>({
-      transform(chunk, controller) {
-        if (!logged) {
-          logged = true
-          console.log(`${AssistantTurnLog.FirstChunk}${Date.now() - startedAt}ms`)
-        }
-        controller.enqueue(chunk)
-      },
-    })
-  )
+
+enum ChatModelSource {
+  Picker = 'picker',
+  EnvDefault = 'env/default',
 }
+
+/** Empty override — live LLM scorers must not hold the SSE open after the model turn. */
+const CHAT_ROUTE_SCORERS = {} as const
 
 enum StorytellerOpenWorkspaceCopy {
   Header = '=== OPEN WORKSPACE (authoritative — do not invent or scrape IDs from the repo) ===',
@@ -329,31 +321,53 @@ export async function POST(req: Request, { params }: RouteContext) {
 
       const turnStartedAt = Date.now()
       const bibleSection = raw[AssistantChatBodyKey.BibleSection]
-      const system = await resolveStorytellerSystem({
-        agentId,
-        projectId,
-        episodeId,
-        messages: raw.messages,
-        userId,
-        bibleSection,
-      })
-      console.log(`${AssistantTurnLog.ContextReady}${Date.now() - turnStartedAt}ms`)
-      const agentStream = await handleChatStream({
-        mastra,
-        agentId,
-        version: AiSdkUiMessageVersion.V6,
-        params: {
+      if (isStoryteller) {
+        const picked = raw[AssistantChatBodyKey.ModelName]
+        const source =
+          typeof picked === 'string' && picked.trim()
+            ? ChatModelSource.Picker
+            : ChatModelSource.EnvDefault
+        console.log(`${AssistantTurnLog.Model}${resolveChatModelId(picked)} (${source})`)
+      }
+      try {
+        const system = await resolveStorytellerSystem({
+          agentId,
+          projectId,
+          episodeId,
           messages: raw.messages,
-          requestContext,
-          toolChoice: TOOL_CHOICE_AUTO,
-          ...(system ? { system } : {}),
-          ...(isStoryteller ? { activeTools: storytellerChatActiveTools(bibleSection) } : {}),
-        },
-        sendStart: false,
-        sendFinish: true,
-        sendReasoning: false,
-      })
-      writer.merge(withFirstChunkTiming(agentStream, turnStartedAt))
+          userId,
+          bibleSection,
+        })
+        console.log(`${AssistantTurnLog.ContextReady}${Date.now() - turnStartedAt}ms`)
+        const agentStream = await handleChatStream({
+          mastra,
+          agentId,
+          version: AiSdkUiMessageVersion.V6,
+          params: {
+            messages: raw.messages,
+            requestContext,
+            toolChoice: TOOL_CHOICE_AUTO,
+            // Override agent live scorers — goalReached LLM judges were holding
+            // the SSE open ~30s after first chunk with nothing for the UI.
+            scorers: CHAT_ROUTE_SCORERS,
+            ...(system ? { system } : {}),
+            ...(isStoryteller ? { activeTools: storytellerChatActiveTools(bibleSection) } : {}),
+          },
+          sendStart: false,
+          sendFinish: true,
+          // Reasoning models spend most of a turn thinking (measured: 60-98% of
+          // output tokens, ~57s before the first tool frame). Suppressing it
+          // left the thread with nothing to render for that whole window.
+          sendReasoning: true,
+        })
+        writer.merge(withStreamTiming(agentStream, turnStartedAt))
+      } catch (error) {
+        console.error(
+          `${AssistantTurnLog.StreamError}${Date.now() - turnStartedAt}ms`,
+          error
+        )
+        throw error
+      }
     },
   })
 
@@ -367,5 +381,8 @@ export async function GET(_req: Request, { params }: RouteContext) {
   if (!mastra.getAgentById(agentId)) {
     return new Response(JSON.stringify({ error: AGENT_NOT_FOUND_MESSAGE }), { status: STATUS_NOT_FOUND })
   }
+  // Not awaited: schema setup is ~30s cold and would otherwise be paid by the
+  // user's first turn. Returning now lets the composer mount immediately.
+  void warmMastraStorage()
   return Response.json({ ok: true, agentId })
 }

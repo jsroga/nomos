@@ -21,6 +21,8 @@ export enum ReactConsoleNoise {
   GetSnapshotCached = 'getSnapshot should be cached',
   CannotUpdateWhileRendering = 'Cannot update a component',
   MaxUpdateDepth = 'Maximum update depth exceeded',
+  /** assistant-ui tap: Next.js Activity can hide then unmount the same chat fiber. */
+  FiberAlreadyUnmounted = 'Tried to unmount a fiber that is already unmounted',
 }
 
 /** Chromium reports this when a ResizeObserver callback is deferred to the next frame. */

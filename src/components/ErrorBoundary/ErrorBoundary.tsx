@@ -13,6 +13,7 @@ import {
 import { DomEventType } from '@/shared/data/constants/protocol'
 import {
   formatConsoleErrorMessage,
+  isBenignUnmountRace,
   shouldCaptureConsoleError,
   stackFromConsoleErrorArgs,
 } from '@/components/ErrorBoundary/should-capture-console-error'
@@ -42,11 +43,13 @@ class ErrorBoundaryClass extends Component<Props, State> {
   private hmrRetryTimer: ReturnType<typeof setTimeout> | undefined
   private hmrRetryUsed = false
 
-  public static getDerivedStateFromError(): State {
-    return { hasError: true } // Block rendering to prevent infinite error loops
+  public static getDerivedStateFromError(error: Error): State {
+    if (isBenignUnmountRace(error.message)) return { hasError: false }
+    return { hasError: true }
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (isBenignUnmountRace(error.message)) return
     console.error(ErrorBoundaryLog.CaughtError, error, errorInfo)
     addErrorToStore(error, ErrorBoundarySource.React)
 

@@ -5,7 +5,8 @@
   "types": ".design-sync/.cache/types/.design-sync/ds-entry.d.ts",
   "overrides": {
     "require-in-the-middle": "8.0.1",
-    "import-in-the-middle": "2.0.6"
+    "import-in-the-middle": "2.0.6",
+    "@assistant-ui/tap": "0.9.4"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.23",
@@ -15,7 +16,7 @@
     "@asteasolutions/zod-to-openapi": "^7.3.4",
     "@cursor/sdk": "^1.0.23",
     "@langchain/core": "^1.1.12",
-    "@langchain/openai": "^1.2.1",
+    "@langchain/openai": "1.2.1",
     "@mastra/ai-sdk": "^1.9.0",
     "@mastra/core": "^1.60.0",
     "@mastra/loggers": "^1.2.0",
@@ -82,6 +83,7 @@
     "use-sync-external-store": "^1.6.0",
     "uuid": "^13.0.0",
     "web-vitals": "^6.0.1",
+    "youtube-search-api": "^2.0.1",
     "yup": "^1.7.1",
     "zod": "^3.25.76",
     "zundo": "^2.3.0",

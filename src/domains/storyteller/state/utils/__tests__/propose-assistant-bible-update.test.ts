@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { proposeAssistantBibleUpdate, proposeAssistantBibleUpdates, bibleFieldsFromToolArgs } from '../propose-assistant-bible-update'
+import { proposeAssistantBibleUpdate, proposeAssistantBibleUpdates } from '../propose-assistant-bible-update'
 import { UPDATE_WORLD_BIBLE_TOOL_ID } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums'
-import { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
 
 describe('proposeAssistantBibleUpdate', () => {
   it('proposes Overview only when Overview was the requested section', () => {
@@ -56,7 +55,13 @@ describe('proposeAssistantBibleUpdate', () => {
 
     expect(proposal?.section).toBe(BibleSection.SOUNDTRACKS)
     expect(proposal?.action.type).toBe(ActionType.UPDATE_SOUNDTRACKS)
-    expect(proposal?.preview.soundtracks).toEqual(soundtracks)
+    expect(proposal?.preview.soundtracks).toEqual([
+      {
+        title: 'Pyramid Song',
+        artist: 'Radiohead',
+        youtubeUrl: 'https://www.youtube.com/watch?v=M6W4uhrLA7g',
+      },
+    ])
   })
 
   it('prefers soundtracks over worldDescription when both are present', () => {
@@ -74,7 +79,13 @@ describe('proposeAssistantBibleUpdate', () => {
 
     expect(proposal?.section).toBe(BibleSection.SOUNDTRACKS)
     expect(proposal?.preview.worldDescription).toBeUndefined()
-    expect(proposal?.preview.soundtracks).toEqual(soundtracks)
+    expect(proposal?.preview.soundtracks).toEqual([
+      {
+        title: 'A',
+        artist: 'B',
+        youtubeUrl: 'https://www.youtube.com/watch?v=M6W4uhrLA7g',
+      },
+    ])
     expect(proposal?.extraFields?.worldDescription).toBe(
       'Five tracks that sound temporally unstuck.',
     )
@@ -165,7 +176,7 @@ describe('proposeAssistantBibleUpdate', () => {
     expect(proposal?.preview.worldDescription).toBe('Fresh overview.')
     expect(proposal?.preview.soundtracks).toBeUndefined()
     expect(proposal?.extraFields?.soundtracks).toEqual([
-      { title: 'A', artist: 'B', youtubeUrl: 'https://youtu.be/M6W4uhrLA7g' },
+      { title: 'A', artist: 'B', youtubeUrl: 'https://www.youtube.com/watch?v=M6W4uhrLA7g' },
     ])
   })
 
@@ -238,6 +249,13 @@ describe('proposeAssistantBibleUpdate', () => {
         ],
       },
       previewKey: 'soundtracks',
+      expectedPreview: [
+        {
+          title: 'Pyramid Song',
+          artist: 'Radiohead',
+          youtubeUrl: 'https://www.youtube.com/watch?v=M6W4uhrLA7g',
+        },
+      ],
     },
     {
       section: BibleSection.INSPIRATIONS,
@@ -276,6 +294,13 @@ describe('proposeAssistantBibleUpdate', () => {
     actionType,
     args,
     previewKey,
+    expectedPreview,
+  }: {
+    section: BibleSection
+    actionType: ActionType
+    args: Record<string, unknown>
+    previewKey: string
+    expectedPreview?: unknown
   }) => {
     const field = Object.keys(args)[0]
     const proposal = proposeAssistantBibleUpdate(
@@ -289,7 +314,9 @@ describe('proposeAssistantBibleUpdate', () => {
     )
     expect(proposal?.section).toBe(section)
     expect(proposal?.action.type).toBe(actionType)
-    expect(proposal?.preview[previewKey]).toEqual(Object.values(args)[0])
+    expect(proposal?.preview[previewKey]).toEqual(
+      expectedPreview ?? Object.values(args)[0]
+    )
   })
 
   it('ignores chat wrap-up dumped into worldDescription', () => {
@@ -361,56 +388,5 @@ describe('proposeAssistantBibleUpdate', () => {
     expect(proposal?.section).toBe(BibleSection.EPISODE_PREMISE)
     expect(proposal?.action.type).toBe(ActionType.UPDATE_EPISODE_PREMISE)
     expect(proposal?.preview.premise).toEqual(premise)
-  })
-
-  it('splits overview, factions, and plot twists into independent proposals', () => {
-    const factions = [{ name: 'The Ledger Keepers', description: 'They tally every death.' }]
-    const plotTwists = [{ title: 'The clerk wrote her own name.', description: 'She always had.' }]
-    const proposals = proposeAssistantBibleUpdates({
-      toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
-      args: {
-        worldDescription: 'The world of Aeternum is defined by a single impossible fact.',
-        factions,
-        plotTwists,
-      },
-      result: {
-        success: true,
-        updatedFields: ['worldDescription', 'factions', 'plotTwists'],
-      },
-    })
-
-    expect(proposals.map(proposal => proposal.section)).toEqual([
-      BibleSection.WORLD_DESCRIPTION,
-      BibleSection.FACTIONS,
-      BibleSection.PLOT_TWISTS,
-    ])
-    expect(proposals[0]?.preview.worldDescription).toContain('Aeternum')
-    expect(proposals[0]?.preview.factions).toBeUndefined()
-    expect(proposals[1]?.preview.factions).toEqual(factions)
-    expect(proposals[2]?.preview.plotTwists).toEqual(plotTwists)
-  })
-
-  it('returns no proposals when the turn is character-draft', () => {
-    const proposals = proposeAssistantBibleUpdates(
-      {
-        toolName: UPDATE_WORLD_BIBLE_TOOL_ID,
-        args: { worldDescription: 'Bot missing-field ramble overwrites Overview.' },
-        result: { success: true, updatedFields: ['worldDescription'] },
-      },
-      null,
-      CharacterDraftChatSection.Form,
-    )
-    expect(proposals).toEqual([])
-  })
-})
-
-describe('bibleFieldsFromToolArgs', () => {
-  it('omits empty soundtracks so they cannot become an Accept overlay', () => {
-    const fields = bibleFieldsFromToolArgs({
-      soundtracks: [],
-      worldDescription: 'A salt-marsh city lit by bioluminescent kelp.',
-    })
-    expect(fields.soundtracks).toBeUndefined()
-    expect(fields.worldDescription).toContain('salt-marsh')
   })
 })

@@ -515,3 +515,52 @@
     opacity: 1;
   }
 }
+
+/* Streamed model thinking — quiet by default so it never competes with the
+   answer, but visibly moving while the turn has nothing else to show. */
+.aui-reasoning {
+  margin: 2px 0 8px;
+  padding: 7px 9px;
+  border-left: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0 6px 6px 0;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.aui-reasoning--live {
+  border-left-color: hsl(235 88% 65%);
+}
+
+.aui-reasoning-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.aui-reasoning-toggle:hover {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.aui-reasoning-text {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.aui-reasoning-text--peek {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

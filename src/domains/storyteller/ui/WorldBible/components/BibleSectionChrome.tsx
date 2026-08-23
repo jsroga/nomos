@@ -7,7 +7,6 @@ import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   GenerationActivityPhase,
-  isGenerationActivityBusy,
 } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 import { BibleMarkdown } from '@/domains/storyteller/ui/RichText/BibleMarkdown'
@@ -44,12 +43,15 @@ export const BibleSectionLoadingOverlay: FC<{ message: string; spinnerClassName?
   message,
   spinnerClassName = BibleSectionChromeClass.DefaultSpinner,
 }) => {
-  const activity = useStorytellerUiStore(state => state.generationActivity)
+  const phase = useStorytellerUiStore(state => state.generationActivity.phase)
+  const label = useStorytellerUiStore(state => state.generationActivity.label)
+  const toolName = useStorytellerUiStore(state => state.generationActivity.toolName)
+  const toolComplete = useStorytellerUiStore(state => state.generationActivity.toolComplete)
+  const agentId = useStorytellerUiStore(state => state.generationActivity.agentId)
+  const preview = useStorytellerUiStore(state => state.generationActivity.preview)
   const liveLabel =
-    activity.phase !== GenerationActivityPhase.Idle && activity.label
-      ? activity.label
-      : message
-  const showSpinner = !activity.toolComplete
+    phase !== GenerationActivityPhase.Idle && label ? label : message
+  const showSpinner = !toolComplete
 
   return (
     <div className="absolute inset-0 z-10 bg-background/70 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2 p-4">
@@ -59,12 +61,12 @@ export const BibleSectionLoadingOverlay: FC<{ message: string; spinnerClassName?
         ) : null}
         <span>{liveLabel}</span>
       </div>
-      {activity.toolName ? (
+      {toolName ? (
         <div className="text-[11px] font-mono text-muted-foreground/80">
-          agent: {activity.agentId ?? StorytellerAgentId.Storyteller} · {activity.toolName}
+          agent: {agentId ?? StorytellerAgentId.Storyteller} · {toolName}
         </div>
       ) : null}
-      <ToolActivityMarkdownPreview preview={activity.preview} className="max-h-32 max-w-lg" />
+      <ToolActivityMarkdownPreview preview={preview} className="max-h-32 max-w-lg" />
     </div>
   )
 }
@@ -92,8 +94,7 @@ export const BibleSectionHeader: FC<{
   generateTitle,
   trailingActions,
 }) => {
-  const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
-  const generateDisabled = isLoading || isGenerationActivityBusy(generationPhase)
+  const generateDisabled = isLoading
 
   return (
     <div className="flex items-center justify-between mb-4">

@@ -25,6 +25,7 @@ import {
   PlotTwistFieldAlias,
   SoundtrackFieldAlias,
   STORY_PLAN_MERGE_FIELDS,
+  STORY_PLAN_REPLACE_FIELDS,
   WorldDescriptionFieldAlias,
   WorldRulesFieldAlias,
 } from './constants/bible-wire-fields'
@@ -309,6 +310,18 @@ export const STORY_PLAN_FIELDS = STORY_PLAN_MERGE_FIELDS
 /**
  * Apply updates to a story plan state, handling merging correctly
  */
+/** One plan field: replace-on-regenerate, smart-merge, deep-merge, or overwrite. */
+function mergePlanField(field: string, currentValue: unknown, update: unknown): unknown {
+  if (Array.isArray(update)) {
+    if (STORY_PLAN_REPLACE_FIELDS.some(replaceField => replaceField === field)) return update
+    return smartMergeArray(Array.isArray(currentValue) ? currentValue : [], update)
+  }
+  if (typeof update === 'object' && update !== null) {
+    return deepMerge(recordFromJson(currentValue), recordFromJson(update))
+  }
+  return update
+}
+
 export function applyUpdatesToStoryPlan<T extends object>(
   currentPlan: T | null,
   updates: Record<string, unknown>
@@ -322,14 +335,7 @@ export function applyUpdatesToStoryPlan<T extends object>(
   for (const field of STORY_PLAN_FIELDS) {
     const update = normalizedUpdates[field]
     if (update === undefined) continue
-    if (Array.isArray(update)) {
-      const currentArr = current[field]
-      result[field] = smartMergeArray(Array.isArray(currentArr) ? currentArr : [], update)
-    } else if (typeof update === 'object' && update !== null) {
-      result[field] = deepMerge(recordFromJson(current[field]), recordFromJson(update))
-    } else {
-      result[field] = update
-    }
+    result[field] = mergePlanField(field, current[field], update)
   }
 
   const cast = extractCastFromUpdates(normalizedUpdates)

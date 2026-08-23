@@ -77,11 +77,11 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
   const clearPendingChatPrompt = useStorytellerUiStore(state => state.clearPendingChatPrompt)
   const setGenerationActivity = useStorytellerUiStore(state => state.setGenerationActivity)
   const clearGenerationActivity = useStorytellerUiStore(state => state.clearGenerationActivity)
-  const bibleSection = useStorytellerUiStore(state => state.generationActivity.section)
   const proposedKeysRef = useRef(new Set<string>())
   const lastBibleProposalRef = useRef<ProposedBibleSectionUpdate | null>(null)
   const rejectedSectionsRef = useRef(new Set<string>())
   const [settledSections, setSettledSections] = useState<ReadonlySet<string>>(() => new Set())
+  const [pinnedChatSection, setPinnedChatSection] = useState<string | undefined>(undefined)
   const requestedSectionRef = useRef<string | undefined>(undefined)
   const answeredSectionRef = useRef<string | undefined>(undefined)
   const requestedPremiseFieldRef = useRef<string | undefined>(undefined)
@@ -94,10 +94,15 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
     () => (pendingChatPrompt ? { id: pendingChatPrompt.id, text: pendingChatPrompt.message } : null),
     [pendingChatPrompt]
   )
+  // Pin section on the chat body for the whole turn — never tie to live generationActivity.section.
+  const chatBibleSection = pendingChatPrompt?.section ?? pinnedChatSection
 
   const handlePendingPromptHandled = useCallback(() => {
     requestedSectionRef.current = pendingChatPrompt?.section
     answeredSectionRef.current = pendingChatPrompt?.section
+    if (pendingChatPrompt?.section !== undefined) {
+      setPinnedChatSection(pendingChatPrompt.section)
+    }
     requestedPremiseFieldRef.current = requestedEpisodePremiseField(
       pendingChatPrompt?.message ?? '',
     )
@@ -106,17 +111,12 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
 
   const handleStreamIdle = useCallback(() => {
     requestedSectionRef.current = undefined
+    answeredSectionRef.current = undefined
     requestedPremiseFieldRef.current = undefined
+    setPinnedChatSection(undefined)
     setLoadingSections({})
     clearGenerationActivity()
   }, [setLoadingSections, clearGenerationActivity])
-
-  useEffect(() => {
-    if (!pendingChatPrompt) return
-    requestedSectionRef.current = pendingChatPrompt.section
-    answeredSectionRef.current = pendingChatPrompt.section
-    requestedPremiseFieldRef.current = requestedEpisodePremiseField(pendingChatPrompt.message)
-  }, [pendingChatPrompt])
 
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
   const confirmNewCastMembers = useConfirmNewCastMembers({
@@ -319,6 +319,11 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
       selectEpisode,
     ]
   )
+  const pendingChatSectionRef = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    pendingChatSectionRef.current = pendingChatPrompt?.section
+  }, [pendingChatPrompt?.section])
+
   const handleGenerationActivity = useCallback(
     (activity: AssistantGenerationActivity) => {
       const phase = mapAssistantPhase(activity.phase)
@@ -329,34 +334,22 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
       }
       if (phase === GenerationActivityPhase.Error) {
         setLoadingSections({})
+        setGenerationActivity({
+          phase,
+          label: activity.label,
+          error: activity.error,
+          agentId: activity.agentId,
+        })
       }
-      setGenerationActivity({
-        phase,
-        label: activity.label,
-        toolName: activity.toolName,
-        preview: activity.preview,
-        toolComplete: activity.toolComplete,
-        error: activity.error,
-        agentId: activity.agentId,
-        section:
-          pendingChatPrompt?.section ??
-          requestedSectionRef.current ??
-          useStorytellerUiStore.getState().generationActivity.section,
-      })
     },
-    [
-      clearGenerationActivity,
-      setGenerationActivity,
-      setLoadingSections,
-      pendingChatPrompt?.section,
-    ]
+    [clearGenerationActivity, setGenerationActivity, setLoadingSections],
   )
   return (
     <DomainSidebar header={null} position="right" storageKey="writers-room" defaultWidth={384} rawContent>
       <WritersRoomAssistantChat
         projectId={projectId}
         currentEpisodeId={currentEpisodeId}
-        bibleSection={bibleSection}
+        bibleSection={chatBibleSection}
         characters={characters}
         beats={beats}
         storyPlan={storyPlan}

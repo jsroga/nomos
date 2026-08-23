@@ -3,6 +3,7 @@ import { db } from '@/db/client'
 import { episodes } from '@/db'
 import { eq } from 'drizzle-orm'
 import { recordFromJson } from '@/shared/data/json-guards'
+import { omitBibleOwnedPlanFields } from '@/domains/storyteller/core/utils/bible-populated-fields'
 import { storyPlanRecordFromJson } from '@/domains/storyteller/core/entities/story-plan-wire'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
@@ -44,10 +45,10 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
         const currentPlan = storyPlanRecordFromJson(
           updateData.storyPlan ?? currentEpisode.storyPlan,
         )
-        updateData.storyPlan = {
+        updateData.storyPlan = omitBibleOwnedPlanFields({
           ...currentPlan,
           posterUrl,
-        }
+        })
       }
     }
 
@@ -72,13 +73,13 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
           updateData.storyPlan ?? currentEpisode.storyPlan,
         )
         const existingPremise = recordFromJson(currentPlan.premise)
-        updateData.storyPlan = {
+        updateData.storyPlan = omitBibleOwnedPlanFields({
           ...currentPlan,
           premise: {
             ...existingPremise,
             ...recordFromJson(body.premise),
           },
-        }
+        })
       }
       delete updateData.premise
     }
@@ -94,11 +95,15 @@ export async function PATCH(req: Request, props: { params: Promise<{ episodeId: 
         const currentPlan = storyPlanRecordFromJson(
           updateData.storyPlan ?? currentEpisode.storyPlan
         )
-        updateData.storyPlan = {
+        updateData.storyPlan = omitBibleOwnedPlanFields({
           ...currentPlan,
           storyboardUrl,
-        }
+        })
       }
+    }
+
+    if (updateData.storyPlan !== undefined) {
+      updateData.storyPlan = omitBibleOwnedPlanFields(recordFromJson(updateData.storyPlan))
     }
 
     // Ensure we actually have something to update

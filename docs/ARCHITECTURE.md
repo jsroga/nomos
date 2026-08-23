@@ -114,6 +114,7 @@ sequenceDiagram
 | Embeddings | OpenRouter | RAG (`/embeddings`; optional Cohere rerank) |
 | Images | Gemini / Grok / Stability / LegNext | Tiles & media |
 | 3D | Meshy / Hyper3D / … | Asset exporter tasks |
+| Music links | YouTube public search (`youtube-search-api`, unauthenticated scrape) | Resolves soundtrack video ids from title/artist — a model cannot recall a video id, so it is never trusted to supply one |
 | Observability | Mastra store + Sentry/OTel | AI spans vs HTTP |
 
 ## Access control

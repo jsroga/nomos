@@ -4,12 +4,17 @@ import {
   ReactConsoleNoise,
 } from '@/components/ErrorBoundary/constants/error-boundary'
 
+export function isBenignUnmountRace(message: string): boolean {
+  return message.includes(ReactConsoleNoise.FiberAlreadyUnmounted)
+}
+
 export function shouldCaptureConsoleError(message: string): boolean {
   if (message.includes(ErrorBoundaryLog.CaughtPrefix)) return false
   if (message.includes(ReactConsoleNoise.GetSnapshotCached)) return false
   if (message.includes(ReactConsoleNoise.CannotUpdateWhileRendering)) return false
   if (message.includes(ReactConsoleNoise.MaxUpdateDepth)) return false
   if (message.includes(BrowserConsoleNoise.ResizeObserverLoop)) return false
+  if (isBenignUnmountRace(message)) return false
   return true
 }
 

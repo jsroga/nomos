@@ -6,8 +6,10 @@ import { firstNonEmptyRecord, readString, recordFromJson } from '@/shared/data/j
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { StorytellerLegacyPlanField } from '@/domains/storyteller/core/storyteller-page-wire'
 import {
+  bibleOwnedFieldsMissingFromCanon,
   isPresentOverlapValue,
   omitVacantSoundtrackInspirations,
+  populatedSoundtrackInspirations,
 } from '@/domains/storyteller/core/utils/bible-populated-fields'
 
 const LEGACY_STORY_PLAN_FIELDS = [
@@ -167,17 +169,31 @@ export async function patchStorytellerProject(projectId: string, req: NextReques
   return NextResponse.json({ success: true })
 }
 
-export function cleanProjectResponse(project: {
-  seriesBible: unknown
-  storyPlan: unknown
-  seriesBibleTable?: { content: unknown } | null
-  storyPlanTable?: { content: unknown } | null
-}) {
+export function cleanProjectResponse(
+  project: {
+    seriesBible: unknown
+    storyPlan: unknown
+    seriesBibleTable?: { content: unknown } | null
+    storyPlanTable?: { content: unknown } | null
+  },
+  episodePlans: unknown[] = [],
+) {
   const seriesBible = firstNonEmptyRecord(project.seriesBibleTable?.content, project.seriesBible)
   const storyPlan = firstNonEmptyRecord(project.storyPlanTable?.content, project.storyPlan)
+  const canon = [
+    project.seriesBible,
+    project.storyPlan,
+    project.seriesBibleTable?.content,
+    project.storyPlanTable?.content,
+  ]
+  const media = populatedSoundtrackInspirations(...episodePlans, ...canon)
+  const withMedia = (record: Record<string, unknown>) => ({
+    ...omitVacantSoundtrackInspirations(record),
+    ...media,
+  })
 
   if (Object.keys(storyPlan).length === 0) {
-    return { seriesBible, storyPlan }
+    return { seriesBible: withMedia(seriesBible), storyPlan: withMedia(storyPlan) }
   }
 
   const cleanedSeriesBible = withoutOverlappingLegacyFields(seriesBible, storyPlan)
@@ -191,5 +207,25 @@ export function cleanProjectResponse(project: {
         }
       : cleanedSeriesBible
 
-  return { seriesBible: seriesBibleClean, storyPlan }
+  return { seriesBible: withMedia(seriesBibleClean), storyPlan: withMedia(storyPlan) }
+}
+
+export function bibleOwnedBackfillFromEpisodes(
+  project: {
+    seriesBible: unknown
+    storyPlan: unknown
+    seriesBibleTable?: { content: unknown } | null
+    storyPlanTable?: { content: unknown } | null
+  },
+  episodePlans: unknown[],
+): Record<string, unknown> {
+  return bibleOwnedFieldsMissingFromCanon(
+    [
+      project.seriesBible,
+      project.storyPlan,
+      project.seriesBibleTable?.content,
+      project.storyPlanTable?.content,
+    ],
+    episodePlans,
+  )
 }

@@ -103,6 +103,17 @@ export const STORY_PLAN_MERGE_FIELDS: StoryPlanMergeField[] = [
   StoryPlanMergeField.StoryboardPrompt,
 ]
 
+/**
+ * Array fields a regenerate REPLACES rather than accumulates.
+ *
+ * Most collections are additive — "add a faction" should keep the existing
+ * ones. A soundtrack regenerate is a fresh curated set, so smart-merging it by
+ * `title` grows the list on every Add to World instead of swapping it.
+ */
+export const STORY_PLAN_REPLACE_FIELDS: StoryPlanMergeField[] = [
+  StoryPlanMergeField.Soundtracks,
+]
+
 /** Section keys recognised in update_world_bible tool args (shimmer + detection). */
 export const BIBLE_SECTION_UPDATE_KEYS: string[] = [
   BibleSection.SOUNDTRACKS,

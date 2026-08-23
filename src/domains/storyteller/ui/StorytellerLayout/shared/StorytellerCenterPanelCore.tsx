@@ -2,7 +2,6 @@
 
 import { useCallback } from 'react'
 import { StorytellerEmptyState } from '../../StorytellerEmptyState'
-import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { WorldBiblePanel } from '../storyteller-dynamic-imports'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
@@ -38,9 +37,6 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
 
   const handleBibleSendMessage = useCallback(
     (message: string, section?: string) => {
-      const { generationActivity } = useStorytellerUiStore.getState()
-      if (isGenerationActivityBusy(generationActivity.phase)) return
-
       if (section) {
         setLoadingSections(prev => ({
           ...prev,
