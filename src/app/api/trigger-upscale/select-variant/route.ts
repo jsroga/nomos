@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import type { selectMjVariantTask } from '@/trigger'
 import {
   API_ERROR,
@@ -22,7 +22,7 @@ export const POST = withAuth(
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
-    const handle = await tasks.trigger<typeof selectMjVariantTask>(
+    const handle = await triggerOwnedRun<typeof selectMjVariantTask>(
       TRIGGER_TASK_ID.SELECT_MJ_VARIANT,
       { tileId, projectId, gridImageUrl, variantIndex },
       { ttl: TRIGGER_TASK_TTL.SELECT_VARIANT }

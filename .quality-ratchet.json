@@ -1,0 +1,7 @@
+{
+  "_": "Counters that may only DECREASE. Replaces editable allowlists: an allowlist grows monotonically, a ratchet shrinks. See .local/final-review/05-quality-gates.md. Recompute with the commands in _commands.",
+  "untaggedRunGracePaths": 1,
+  "_commands": {
+    "untaggedRunGracePaths": "grep -c isWithinUntaggedGraceWindow src/shared/jobs/owned-run.ts  # remove the grace branch one deploy cycle after tagging ships, then set to 0"
+  }
+}

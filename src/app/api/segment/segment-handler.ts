@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import type { segmentObjectTask } from '@/trigger'
 import type { AuthenticatedRequest } from '@/shared/data/api-utils'
 import { verifyProjectAccess } from '@/shared/data/api-utils'
@@ -54,7 +54,7 @@ export async function handleSegmentRequest(
   }
 
   try {
-    const handle = await tasks.trigger<typeof segmentObjectTask>(
+    const handle = await triggerOwnedRun<typeof segmentObjectTask>(
       TRIGGER_TASK_ID.SEGMENT_OBJECT,
       {
         projectId,

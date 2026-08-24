@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { runs } from '@trigger.dev/sdk/v3'
+import { JobAccessError, retrieveOwnedRun } from '@/shared/jobs'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam } from '@/shared/data/constants/protocol'
@@ -17,11 +17,8 @@ export async function GET(req: NextRequest) {
       return noStoreJson({ error: API_ERROR.RUN_ID_PARAM_REQUIRED }, 400)
     }
 
-    const run = await runs.retrieve(runId)
+    const run = await retrieveOwnedRun(runId, session.user.id)
 
-    if (!run) {
-      return noStoreJson({ error: API_ERROR.RUN_NOT_FOUND }, 404)
-    }
 
     return noStoreJson({
       status: run.status,
@@ -30,6 +27,11 @@ export async function GET(req: NextRequest) {
       metadata: run.metadata,
     })
   } catch (error) {
+    // Missing, or owned by another tenant: same response either way, so a
+    // 404 never confirms that someone else's run id exists.
+    if (error instanceof JobAccessError) {
+      return noStoreJson({ error: API_ERROR.RUN_NOT_FOUND }, 404)
+    }
     console.error(API_LOG_PREFIX.TASK_STATUS_ERROR, error)
     return noStoreJson({ error: API_ERROR.INTERNAL_SERVER_ERROR }, 500)
   }

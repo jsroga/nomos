@@ -1,4 +1,4 @@
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import { NextRequest, NextResponse } from 'next/server'
 import {
   interiorTextTo3DRequestSchema,
@@ -43,7 +43,7 @@ export const POST = withRateLimit(
         return NextResponse.json({ error: API_ERROR.MESHY_API_KEY_NOT_CONFIGURED }, { status: 400 })
       }
 
-      const handle = await tasks.trigger<typeof textTo3DTask>(
+      const handle = await triggerOwnedRun<typeof textTo3DTask>(
         TRIGGER_TASK_ID.TEXT_TO_3D,
         {
           projectId,

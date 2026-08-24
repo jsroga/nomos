@@ -57,6 +57,7 @@ export enum OpenApiTag {
   Storyteller = 'Storyteller',
   World = 'World',
   Canvas3d = '3D Canvas',
+  Jobs = 'Jobs',
 }
 
 export enum OpenApiMediaType {
@@ -87,6 +88,7 @@ export enum OpenApiTagDescription {
   Storyteller = 'Projects, characters, episodes, beats, bible, plan, and generation jobs.',
   World = 'Tile map read and write.',
   Canvas3d = 'Text-to-3D generation jobs.',
+  Jobs = 'Background job runs. A run is readable only by the owner of the project it belongs to.',
 }
 
 export enum OpenApiRouteDescription {
@@ -112,6 +114,7 @@ export enum OpenApiRouteDescription {
   TileDeleted = 'Tile deleted',
   TextTo3dStarted = 'Generation started',
   TextTo3dStatus = 'Generation status',
+  JobRun = 'Run status, output and metadata — only for a run in a project the caller owns.',
 }
 
 export enum OpenApiRouteSummary {
@@ -134,6 +137,7 @@ export enum OpenApiRouteSummary {
   TilesDelete = 'Delete tile',
   TextTo3dStart = 'Start text-to-3D generation',
   TextTo3dPoll = 'Poll text-to-3D status',
+  JobRunGet = 'Get background job run',
 }
 
 /** OpenAPI path methods (lowercase — OpenAPI wire, not HTTP verb enums). */
@@ -156,6 +160,7 @@ export enum OpenApiPath {
   WorldTiles = '/world/tiles',
   Canvas3dTextTo3d = '/3d-canvas/text-to-3d',
   Canvas3dTextTo3dTask = '/3d-canvas/text-to-3d/{taskId}',
+  JobRun = '/jobs/{runId}',
 }
 
 export enum OpenApiSchemaName {
@@ -195,6 +200,8 @@ export enum OpenApiSchemaName {
   InteriorTextTo3DResponse = 'InteriorTextTo3DResponse',
   InteriorTaskParams = 'InteriorTaskParams',
   InteriorTextTo3DStatusResponse = 'InteriorTextTo3DStatusResponse',
+  JobRunParams = 'JobRunParams',
+  JobRunResponse = 'JobRunResponse',
 }
 
 export enum OpenApiComponentDescription {
@@ -208,6 +215,7 @@ export enum OpenApiComponentDescription {
 }
 
 export enum OpenApiSchemaFieldNote {
+  JobRunId = 'Trigger.dev run id (starts with run_)',
   ApiKeyPlaintextOnce = 'Plaintext key — shown only once',
 }
 

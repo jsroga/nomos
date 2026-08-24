@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { ConfirmDialogVariant, useConfirmDialog } from '@/components/ConfirmDialog'
 import { useAuthStore } from '@/shared/auth/useAuthStore'
-import { DialogConfirmVariant } from '@/shared/data/constants/protocol'
 import {
   PROJECT_SELECTION_DELETE_CANCEL,
   PROJECT_SELECTION_DELETE_CONFIRM,
@@ -83,7 +82,7 @@ export function useProjectSelection() {
       description: PROJECT_SELECTION_DELETE_DESCRIPTION,
       confirmLabel: PROJECT_SELECTION_DELETE_CONFIRM,
       cancelLabel: PROJECT_SELECTION_DELETE_CANCEL,
-      variant: DialogConfirmVariant.Destructive,
+      variant: ConfirmDialogVariant.Destructive,
     })
     if (confirmed) {
       await deleteProject(projectId)

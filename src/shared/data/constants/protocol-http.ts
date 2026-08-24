@@ -325,10 +325,6 @@ export enum AssetUploadFilename {
   ThumbSuffix = '_thumb.png',
 }
 
-export enum DialogConfirmVariant {
-  Destructive = 'destructive',
-}
-
 export enum ImageFileExtensionPattern {
   JpgJpegPngWebp = '.(jpg|jpeg|png|webp)$',
 }

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { runs } from '@trigger.dev/sdk/v3'
+import { JobAccessError, retrieveOwnedRun } from '@/shared/jobs'
 import { requireAuth } from '@/shared/auth/auth'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
@@ -19,11 +19,8 @@ export async function GET(request: NextRequest) {
       return noStoreJson({ error: API_ERROR.MISSING_RUN_ID }, 400)
     }
 
-    const run = await runs.retrieve(runId)
+    const run = await retrieveOwnedRun(runId, session.user.id)
 
-    if (!run) {
-      return noStoreJson({ error: API_ERROR.RUN_NOT_FOUND }, 404)
-    }
 
     return noStoreJson({
       id: run.id,
@@ -37,6 +34,11 @@ export async function GET(request: NextRequest) {
       finishedAt: run.finishedAt,
     })
   } catch (error: unknown) {
+    // Missing, or owned by another tenant: same response either way, so a
+    // 404 never confirms that someone else's run id exists.
+    if (error instanceof JobAccessError) {
+      return noStoreJson({ error: API_ERROR.RUN_NOT_FOUND }, 404)
+    }
     console.error(API_LOG_PREFIX.MOODBOARD_STATUS_ERROR, error)
 
     return noStoreJson(

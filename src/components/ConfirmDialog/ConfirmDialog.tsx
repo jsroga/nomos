@@ -19,6 +19,11 @@ import {
   ConfirmDialogVariant,
 } from './constants/confirm-dialog-copy'
 
+// Callers need the variant to type the `confirm({ variant })` argument. Without
+// it on the public surface, three call sites each declared a private duplicate
+// that TypeScript then rejected — enum members are not cross-assignable.
+export { ConfirmDialogVariant }
+
 interface ConfirmDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void

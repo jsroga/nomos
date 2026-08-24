@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import type { generatePortrait } from '@/domains/storyteller/tasks/generate-portrait.task'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
@@ -68,7 +68,7 @@ export const POST = withRateLimit(
 
     const persistedCharacterId = isPortraitCharacterUuid(characterId) ? characterId : undefined
 
-    const handle = await tasks.trigger<typeof generatePortrait>(TRIGGER_TASK_ID.GENERATE_PORTRAIT, {
+    const handle = await triggerOwnedRun<typeof generatePortrait>(TRIGGER_TASK_ID.GENERATE_PORTRAIT, {
       prompt,
       projectId,
       apiKey,

@@ -1,5 +1,5 @@
 import { retextureModelTask } from '@/trigger'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import { NextRequest, NextResponse } from 'next/server'
 import { recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import {
@@ -72,7 +72,7 @@ export const POST = withRateLimit(
         return NextResponse.json({ error: API_ERROR.MESHY_API_KEY_NOT_CONFIGURED }, { status: 400 })
       }
 
-      const handle = await tasks.trigger<typeof retextureModelTask>(TRIGGER_TASK_ID.RETEXTURE_MODEL, {
+      const handle = await triggerOwnedRun<typeof retextureModelTask>(TRIGGER_TASK_ID.RETEXTURE_MODEL, {
         modelBase64: modelUrlOrBase64,
         prompt,
         assetId: assetId || InteriorTempAssetId.TempAsset,

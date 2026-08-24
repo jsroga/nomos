@@ -2,6 +2,7 @@ const noMagicString = require('./no-magic-string')
 const maxLinesStrict = require('./max-lines-strict')
 const complexityStrict = require('./complexity-strict')
 const noRepeatedArrayFilter = require('./no-repeated-array-filter')
+const triggerRunsOwnership = require('./trigger-runs-ownership')
 
 module.exports = {
   rules: {
@@ -9,5 +10,6 @@ module.exports = {
     'max-lines-strict': maxLinesStrict,
     'complexity-strict': complexityStrict,
     'no-repeated-array-filter': noRepeatedArrayFilter,
+    'trigger-runs-ownership': triggerRunsOwnership,
   },
 }

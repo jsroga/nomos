@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import { db } from '@/db/client'
 import { projects } from '@/db'
 import { verifyProjectAccess } from '@/domains/storyteller/server'
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       pack?.storyPlan,
       promptIndex,
     )
-    const handle = await tasks.trigger<typeof generateMoodboard>(TRIGGER_TASK_ID.GENERATE_MOODBOARD, {
+    const handle = await triggerOwnedRun<typeof generateMoodboard>(TRIGGER_TASK_ID.GENERATE_MOODBOARD, {
       projectId,
       promptIndex: typeof promptIndex === 'number' ? promptIndex : undefined,
       worldDesc: context.worldDesc,

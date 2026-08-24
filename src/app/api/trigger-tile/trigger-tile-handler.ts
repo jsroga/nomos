@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import type { generateTileTask } from '@/trigger'
 import type { AuthenticatedRequest } from '@/shared/data/api-utils'
 import { verifyProjectAccess } from '@/shared/data/api-utils'
@@ -35,7 +35,7 @@ export async function handleTriggerTileRequest(
   const styleInputs = await resolveTileStyleInputs(supabase, payload)
   const taskPayload = buildGenerateTileTaskPayload(payload, providerResult, styleInputs)
 
-  const handle = await tasks.trigger<typeof generateTileTask>(
+  const handle = await triggerOwnedRun<typeof generateTileTask>(
     TRIGGER_TASK_ID.GENERATE_TILE,
     taskPayload,
     { ttl: TRIGGER_TASK_TTL.GENERATE_TILE }

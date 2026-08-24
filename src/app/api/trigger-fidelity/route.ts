@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import type { enhanceFidelityTask } from '@/trigger'
 import {
   withAuth,
@@ -54,7 +54,7 @@ export const POST = withRateLimit(
       })
     }
 
-    const handle = await tasks.trigger<typeof enhanceFidelityTask>(
+    const handle = await triggerOwnedRun<typeof enhanceFidelityTask>(
       TRIGGER_TASK_ID.ENHANCE_FIDELITY,
       {
         tileId: payload.tileId,

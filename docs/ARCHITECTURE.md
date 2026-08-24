@@ -129,6 +129,18 @@ Two tiers. Supabase Auth + RLS decides *whether you are signed in and which rows
 | `GET/PUT /api/admin/model-settings` (+ `/probe`) | `isAdminUser` before any write |
 | `/api/admin/modules`, `/api/admin/tests` | `isAdminUser` |
 | World Bible lock, onboarding bypass | `shared/auth/bible-permissions` |
+| Background job runs (read + cancel) | `shared/jobs/owned-run` — see below |
+
+### Background job runs
+
+A Trigger.dev run id is **not** a capability token: it is handed to the client on trigger and echoed in URLs and logs. Reading or cancelling a run therefore has to prove the caller owns the project the run belongs to, or any signed-in user can read any tenant's generation output.
+
+- **One owner module.** `shared/jobs/owned-run.ts` is the only legal caller of `runs.retrieve` / `runs.cancel` / `runs.subscribeToRun`. Use `retrieveOwnedRun(runId, userId)` and `cancelOwnedRun(runId, userId)`.
+- **Ownership travels on a run tag.** `triggerOwnedRun` stamps `project:<uuid>`, derived from the payload's `projectId`. Task-written *metadata* is not a reliable source — most tasks never set one. A run that cannot be tagged is refused rather than created unreadable.
+- **404, never 403.** A 403 confirms that someone else's run id exists.
+- **No user?** `retrieveSystemRun(runId, SystemRunReason)` — a named, countable reason, not a path exemption.
+
+Machine-checked by `local/trigger-runs-ownership` (`npm run lint`), which ships a deliberately-invalid fixture under `scripts/gate-fixtures/` that must fail; `scripts/__tests__/gate-fixtures.test.ts` asserts it still does, so the rule cannot be silently disabled.
 
 The `NEXT_PUBLIC_` prefix inlines the list into the client bundle so the UI can hide admin affordances. It is **not** a security boundary — treat it as public and keep every real check server-side, as the routes above do. Anything genuinely secret stays in RLS policies or server-only env. The `anon` role has no table grants in `public`, so the public API key cannot enumerate relations via PostgREST or GraphQL; signed-in browser clients use `authenticated`, and server jobs use `service_role`. `pg_graphql` is not installed.
 

@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { config as loadEnv } from 'dotenv'
-import { tasks, runs } from '@trigger.dev/sdk/v3'
+import { retrieveSystemRun, SystemRunReason, triggerOwnedRun } from '@/shared/jobs'
 import type { generateTileTask } from '@/domains/2d-canvas/tasks/generate-tile.task'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
@@ -50,7 +50,7 @@ function envOrSkip(name: string): string {
 async function waitForRunSuccess(runId: string): Promise<Record<string, unknown>> {
   const deadline = Date.now() + TIMEOUT_MS
   while (Date.now() < deadline) {
-    const run = await runs.retrieve(runId)
+    const run = await retrieveSystemRun(runId, SystemRunReason.ProviderSmoke)
     if (run.isCompleted) {
       expect(run.isSuccess, `run ${runId} failed: ${JSON.stringify(run.error ?? run.status)}`).toBe(
         true
@@ -77,7 +77,7 @@ describe.runIf(hasTrigger && hasBlob)('image providers (live Trigger)', () => {
     'generate-tile via Apiframe Grok Imagine',
     async () => {
       const apiframeKey = envOrSkip(TileProviderSmokeWire.EnvApiframeApiKey)
-      const handle = await tasks.trigger<typeof generateTileTask>(TRIGGER_TASK_ID.GENERATE_TILE, {
+      const handle = await triggerOwnedRun<typeof generateTileTask>(TRIGGER_TASK_ID.GENERATE_TILE, {
         projectId: TEST_PROJECT_ID,
         x: 90,
         y: 90,
@@ -102,7 +102,7 @@ describe.runIf(hasTrigger && hasBlob)('image providers (live Trigger)', () => {
     'generate-tile via Apiframe Midjourney',
     async () => {
       const apiframeKey = envOrSkip(TileProviderSmokeWire.EnvApiframeApiKey)
-      const handle = await tasks.trigger<typeof generateTileTask>(TRIGGER_TASK_ID.GENERATE_TILE, {
+      const handle = await triggerOwnedRun<typeof generateTileTask>(TRIGGER_TASK_ID.GENERATE_TILE, {
         projectId: TEST_PROJECT_ID,
         x: 92,
         y: 92,

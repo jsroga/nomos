@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import type { generatePoster } from '@/domains/storyteller/tasks/generate-poster.task'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { resolveApiframeApiKey } from '@/shared/ai/image-model-env'
@@ -56,7 +56,7 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
 
     console.log(`${API_LOG_PREFIX.POSTER_TRIGGER} ${episodeId}`)
 
-    const handle = await tasks.trigger<typeof generatePoster>(TRIGGER_TASK_ID.GENERATE_POSTER, {
+    const handle = await triggerOwnedRun<typeof generatePoster>(TRIGGER_TASK_ID.GENERATE_POSTER, {
       extraPrompt: readString(prompt) ?? '',
       worldDesc: context.worldDesc,
       overview: context.overview,

@@ -160,6 +160,9 @@ module.exports = [
       'dist/**',
       'build/**',
       'coverage/**',
+      // Built Storybook bundle (gitignored). Linting it produced ~133k errors
+      // and made `npm run lint` unusable repo-wide.
+      'storybook-static/**',
       '.trigger/**',
       '.cursor/**',
       '.claude/**',
@@ -169,6 +172,12 @@ module.exports = [
       'public/scripts/**/*.min.js',
       'public/scripts/**/*.js',
       '**/*.min.js',
+      // Deliberately-invalid files that prove each structural rule is switched
+      // on. They MUST fail lint, so they are excluded from the repo-wide run and
+      // asserted individually by scripts/__tests__/gate-fixtures.test.ts.
+      // Excluding the fixtures does not weaken any rule — the test is what
+      // guarantees the rules still fire.
+      'scripts/gate-fixtures/**',
     ],
   },
   js.configs.recommended,
@@ -280,6 +289,7 @@ module.exports = [
       complexity: ['warn', { max: codeMetricsLimits.complexity.warn }],
       'local/complexity-strict': ['error', { max: codeMetricsLimits.complexity.error }],
       'local/no-repeated-array-filter': 'error',
+      'local/trigger-runs-ownership': 'error',
       '@typescript-eslint/no-require-imports': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',

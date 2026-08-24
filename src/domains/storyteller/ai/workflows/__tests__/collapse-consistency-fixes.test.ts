@@ -41,6 +41,9 @@ const CANON: AssembledCanon = {
   bibleJson: '{}',
   charactersJson: '[]',
   worldRulesJson: '[]',
+  // Required by AssembledCanonSchema; empty here because these cases exercise
+  // fix collapsing, which never reads a section.
+  sectionsJson: {},
   episodes: [],
   bibleLocked: true,
   lockedBeatIds: ['beat-locked'],

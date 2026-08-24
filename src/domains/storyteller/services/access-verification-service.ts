@@ -8,11 +8,11 @@
 import { db } from '@/db/client'
 import { beats, episodes, projects, characters, gameLoops } from '@/db/schema'
 import { eq } from 'drizzle-orm'
-import { isValidProjectId } from '@/shared/auth/security'
-import {
-  E2E_BYPASS_NODE_ENVS,
-  E2E_TEST_USER_ID,
-} from '@/domains/storyteller/services/constants/access-verification'
+
+// Project ownership is platform-level: shared/jobs and shared/http need it too,
+// and shared/ may not import @/domains/*. Re-exported here so the ~69 existing
+// call sites keep their import path.
+export { verifyProjectAccess } from '@/shared/auth/project-access'
 
 // ============================================
 // TYPES
@@ -30,33 +30,6 @@ export interface BeatAccessResult extends AccessResult {
 // ============================================
 // PROJECT ACCESS
 // ============================================
-
-/**
- * Verify user has access to a project
- * Single query - most basic check
- */
-export async function verifyProjectAccess(projectId: string, userId: string): Promise<boolean> {
-  // Guard before Postgres — non-UUID ids (e.g. reserved path "projects") throw 22P02.
-  if (!isValidProjectId(projectId)) return false
-
-  const [project] = await db
-    .select({ userId: projects.userId })
-    .from(projects)
-    .where(eq(projects.id, projectId))
-    .limit(1)
-
-  if (!project) return false
-
-  // Allow E2E test user to bypass access checks in dev/test
-  if (
-    userId === E2E_TEST_USER_ID &&
-    E2E_BYPASS_NODE_ENVS.has(process.env.NODE_ENV || '')
-  ) {
-    return true
-  }
-
-  return project.userId === userId
-}
 
 // ============================================
 // EPISODE ACCESS

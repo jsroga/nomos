@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import type { upscaleTileTask } from '@/domains/2d-canvas/tasks/upscale-tile.task'
 import {
   withAuth,
@@ -65,7 +65,7 @@ export const POST = withRateLimit(
         : {}),
     }
 
-    const handle = await tasks.trigger<typeof upscaleTileTask>(
+    const handle = await triggerOwnedRun<typeof upscaleTileTask>(
       JobType.UpscaleTile,
       {
         tileId: payload.tileId,

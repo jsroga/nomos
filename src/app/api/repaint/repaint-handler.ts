@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import type { repaintTileTask } from '@/trigger'
 import type { AuthenticatedRequest } from '@/shared/data/api-utils'
 import { verifyProjectAccess } from '@/shared/data/api-utils'
@@ -41,7 +41,7 @@ export async function handleRepaintRequest(
   }
 
   try {
-    const handle = await tasks.trigger<typeof repaintTileTask>(
+    const handle = await triggerOwnedRun<typeof repaintTileTask>(
       TRIGGER_TASK_ID.REPAINT_TILE,
       {
         projectId,
