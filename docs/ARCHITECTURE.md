@@ -141,6 +141,10 @@ Two layers, deliberately unequal.
 
 **`PUBLIC_API_PATHS`** (`shared/auth/constants/public-api-paths`) is the one allowlist in the system, because it *is* the security decision rather than a way to avoid one. Every entry states why it is public. Adding one is a security review.
 
+**Using the session.** A handler that binds the authenticated session and never reads it is an error (`local/no-discarded-auth-context`): in an API route that usually means it proved *someone* is signed in, then acted on a caller-supplied id without checking *who*. Routes that genuinely need only session existence say so on the first line of the handler — `// auth-scope: session-existence-only — <reason>` — an explicit statement rather than a path exemption.
+
+**Reads through Drizzle are not protected.** RLS applies only on the request-scoped Supabase-client path. Anything reaching the database through Drizzle must verify ownership itself, and services that take a `projectId` take the caller's `userId` alongside it.
+
 **Status codes.** `401` no session · `404` authenticated but not the owner — **never `403`**, which confirms the resource exists · `400` schema failure.
 
 Machine-checked by `src/app/api/__tests__/route-auth-conformance.test.ts`, which enumerates the real route tree and asserts every handler — including its `_lib/` helpers — reaches an auth idiom, with `PUBLIC_API_PATHS` as the only exclusion. It also asserts every allowlist entry still maps to a live route, so the two cannot drift.

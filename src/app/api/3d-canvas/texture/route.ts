@@ -15,6 +15,7 @@ export const POST = withRateLimit(
       request: NextRequest,
       { session: _session }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorTextureResponse | { error: string }>> => {
+      // auth-scope: session-existence-only — generates a texture from a posted prompt.
       const body = await request.json()
       const parsedBody = interiorTextureRequestSchema.parse(body)
       const { prompt, apiKey, style, useSemanticSearch, width, height } = parsedBody

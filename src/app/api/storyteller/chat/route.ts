@@ -8,6 +8,8 @@ import { handleStorytellerChatPost } from './chat-post-handler'
  * Response contract preserved from the legacy StorytellerWorkflow:
  * `{ messages, beatBoard, status, continuityIssues, traceId }`.
  */
-export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest): Promise<NextResponse> => {
-  return handleStorytellerChatPost(req)
-})
+export const POST = withAuth(
+  async (req: NextRequest, { session }: AuthenticatedRequest): Promise<NextResponse> => {
+    return handleStorytellerChatPost(req, session.user.id)
+  }
+)

@@ -8,6 +8,7 @@ import {
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
+    // auth-scope: session-existence-only — generates from a posted image; assetId is validated but unused.
     const { assetId, imageUrl, provider, apiKey } = await request.json()
 
     if (!assetId || !imageUrl || !provider || !apiKey) {

@@ -16,6 +16,6 @@ export async function GET(req: Request) {
     projectId: searchParams.get(WORLD_QUERY_PARAM.PROJECT_ID),
   })
 
-  const assets = await worldAssetService.listForProject(projectId)
+  const assets = await worldAssetService.listForProject(projectId, session.user.id)
   return NextResponse.json(assets)
 }

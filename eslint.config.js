@@ -290,6 +290,7 @@ module.exports = [
       'local/complexity-strict': ['error', { max: codeMetricsLimits.complexity.error }],
       'local/no-repeated-array-filter': 'error',
       'local/trigger-runs-ownership': 'error',
+      'local/no-discarded-auth-context': 'error',
       '@typescript-eslint/no-require-imports': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',

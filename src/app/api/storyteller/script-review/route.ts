@@ -33,6 +33,7 @@ const VALID_SCRIPT_REVIEW_PERSONAS = [
 ] as const
 
 export const POST = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
+    // auth-scope: session-existence-only — reviews posted text; nothing is read or written.
   try {
     const body = await request.json()
     const { script, episodePremise, characters, focusAreas, quickMode, persona } = body

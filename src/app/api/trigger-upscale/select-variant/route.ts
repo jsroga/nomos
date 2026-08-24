@@ -9,7 +9,7 @@ import {
 import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const POST = withAuth(
-  async (request: NextRequest, { session: _session, supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const { tileId, projectId, gridImageUrl, variantIndex } = await request.json()
 
     if (!tileId || !projectId || !gridImageUrl || !variantIndex) {

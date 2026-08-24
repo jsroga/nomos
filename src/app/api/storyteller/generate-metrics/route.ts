@@ -13,6 +13,7 @@ function getOpenRouterClient() {
 }
 
 export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest) => {
+    // auth-scope: session-existence-only — scores a posted description; no stored data touched.
   try {
     const openai = getOpenRouterClient()
     if (!openai) {

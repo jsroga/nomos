@@ -14,6 +14,7 @@ export const POST = withRateLimit(
       request: NextRequest,
       { session: _session }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorTexturesResponse | { error: string }>> => {
+      // auth-scope: session-existence-only — lists generated textures for a posted prompt.
       const parsedBody = interiorTexturesRequestSchema.safeParse(await request.json())
       if (!parsedBody.success) {
         return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })

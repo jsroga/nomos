@@ -5,6 +5,7 @@ import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/dat
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session: _session }: AuthenticatedRequest) => {
+    // auth-scope: session-existence-only — segments an image posted in the request; no stored data touched.
     const { image, points, apiKey } = await request.json()
 
     if (!image || !points) {

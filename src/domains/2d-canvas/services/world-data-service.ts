@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { and, desc, eq } from 'drizzle-orm'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import { db } from '@/db'
 import { assets, projects, tiles } from '@/db/schema'
 import { recordFromJson } from '@/shared/data/json-guards'
@@ -85,7 +86,16 @@ export class WorldProjectService {
 }
 
 export class WorldTileService {
-  async listForProject(projectId: string): Promise<WorldTile[]> {
+  /**
+   * `userId` is required because this reads through Drizzle, which connects as a
+   * BYPASSRLS role — the database will happily return another tenant's tiles.
+   * Returns [] rather than throwing so list endpoints keep their shape.
+   *
+   * SPEC-06 replaces the pair with a single ProjectScope, which a caller cannot
+   * mismatch.
+   */
+  async listForProject(projectId: string, userId: string): Promise<WorldTile[]> {
+    if (!(await verifyProjectAccess(projectId, userId))) return []
     const rows = await db.select().from(tiles).where(eq(tiles.projectId, projectId))
     return rows.map(mapTile)
   }
@@ -125,7 +135,9 @@ export class WorldTileService {
 }
 
 export class WorldAssetService {
-  async listForProject(projectId: string): Promise<WorldAsset[]> {
+  /** See the tile service: Drizzle bypasses RLS, so ownership is explicit. */
+  async listForProject(projectId: string, userId: string): Promise<WorldAsset[]> {
+    if (!(await verifyProjectAccess(projectId, userId))) return []
     const rows = await db
       .select()
       .from(assets)

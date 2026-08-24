@@ -4,8 +4,16 @@ import { sql } from 'drizzle-orm'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { isAdminUser } from '@/shared/auth/admin-users'
+import { HttpStatus } from '@/shared/data/constants/protocol'
 
-export const POST = withAuth(async (_request: NextRequest, { session: _session }: AuthenticatedRequest) => {
+export const POST = withAuth(async (_request: NextRequest, { session }: AuthenticatedRequest) => {
+  // Running migrations is a platform operation, not a tenant one: 403 is correct
+  // here because a role failure confirms nothing about anyone's data.
+  if (!isAdminUser(session.user.email)) {
+    return NextResponse.json({ error: API_ERROR.FORBIDDEN }, { status: HttpStatus.FORBIDDEN })
+  }
+
   try {
     // Enable pgvector extension
     await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector`)

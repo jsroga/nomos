@@ -4,7 +4,7 @@ import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const POST = withAuth<{ runId: string } | { error: string }>(
-  async (request: NextRequest, { session: _session, supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     const body = await request.json()
     const { projectId, assetId, modelFilename } = body
 

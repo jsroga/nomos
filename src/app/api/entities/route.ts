@@ -16,7 +16,7 @@ import { GameEntityQueryParam } from '@/shared/data/constants/game-entities-wire
  * List entities for a project with optional filtering
  */
 export const GET = withAuth(
-  async (request: NextRequest, { session: _session, supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
     if (!supabase) {
       return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
     }

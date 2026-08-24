@@ -19,6 +19,11 @@ const FIXTURES = [
     ruleId: 'no-restricted-imports',
     minimumErrors: 2,
   },
+  {
+    file: 'scripts/gate-fixtures/src/app/api/route-discards-auth-context.ts',
+    ruleId: 'local/no-discarded-auth-context',
+    minimumErrors: 2,
+  },
 ]
 
 interface EslintMessage {
