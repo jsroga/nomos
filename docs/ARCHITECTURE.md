@@ -131,6 +131,22 @@ Two tiers. Supabase Auth + RLS decides *whether you are signed in and which rows
 | World Bible lock, onboarding bypass | `shared/auth/bible-permissions` |
 | Background job runs (read + cancel) | `shared/jobs/owned-run` — see below |
 
+### API authentication
+
+Two layers, deliberately unequal.
+
+**The edge proxy default-denies `/api/**`.** `src/proxy.ts` (Next 16's middleware) calls `denyAnonymousApiRequest`, which rejects any `/api` request carrying no Supabase session cookie. It is a coarse filter, not the authorization decision — it cannot do a database lookup — so it removes only the class where a route forgot to ask at all. Behind it, every handler still authenticates, and ownership checks still decide what a caller may touch.
+
+`MIDDLEWARE_DENY_MODE` selects `report` (log and allow) or `enforce` (401). Report exists so the deny list can be observed against real traffic before it bites; anything appearing in the log is either a missing allowlist entry or a real vulnerability.
+
+**`PUBLIC_API_PATHS`** (`shared/auth/constants/public-api-paths`) is the one allowlist in the system, because it *is* the security decision rather than a way to avoid one. Every entry states why it is public. Adding one is a security review.
+
+**Status codes.** `401` no session · `404` authenticated but not the owner — **never `403`**, which confirms the resource exists · `400` schema failure.
+
+Machine-checked by `src/app/api/__tests__/route-auth-conformance.test.ts`, which enumerates the real route tree and asserts every handler — including its `_lib/` helpers — reaches an auth idiom, with `PUBLIC_API_PATHS` as the only exclusion. It also asserts every allowlist entry still maps to a live route, so the two cannot drift.
+
+**Edge runtime.** `proxy.ts` and anything it imports run on the Edge. A `no-restricted-imports` block keeps `@/db`, drizzle, Node builtins and provider/job SDKs out of that bundle, with a fixture under `scripts/gate-fixtures/` that must fail.
+
 ### Background job runs
 
 A Trigger.dev run id is **not** a capability token: it is handed to the client on trigger and echoed in URLs and logs. Reading or cancelling a run therefore has to prove the caller owns the project the run belongs to, or any signed-in user can read any tenant's generation output.

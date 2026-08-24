@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/shared/auth/auth'
+import { verifyBeatAccess } from '@/domains/storyteller/server'
+import { HttpStatus } from '@/shared/data/constants/protocol'
 import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
@@ -11,6 +14,23 @@ export async function POST(req: Request, props: { params: Promise<{ beatId: stri
   const params = await props.params
   try {
     const { beatId } = params
+
+    // This endpoint spends money, so ownership gates the spend, not the response.
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json(
+        { error: API_ERROR.UNAUTHORIZED },
+        { status: HttpStatus.UNAUTHORIZED }
+      )
+    }
+    const access = await verifyBeatAccess(beatId, session.user.id)
+    if (!access.hasAccess) {
+      return NextResponse.json(
+        { error: API_ERROR.BEAT_PROJECT_NOT_FOUND },
+        { status: HttpStatus.NOT_FOUND }
+      )
+    }
+
     const body = await req.json()
     const { prompt, config } = body
     const clientKey = typeof config?.apiKey === 'string' ? config.apiKey : undefined

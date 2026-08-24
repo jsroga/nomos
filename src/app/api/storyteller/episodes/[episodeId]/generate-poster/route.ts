@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/shared/auth/auth'
+import { verifyEpisodeAccess } from '@/domains/storyteller/server'
+import { HttpStatus } from '@/shared/data/constants/protocol'
 import { db } from '@/db/client'
 import { episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
@@ -16,6 +19,24 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
   const params = await props.params
   try {
     const { episodeId } = params
+
+    // Ownership is checked before the key is resolved and before anything is
+    // queued: this endpoint spends money, so the check gates the spend.
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json(
+        { error: API_ERROR.UNAUTHORIZED },
+        { status: HttpStatus.UNAUTHORIZED }
+      )
+    }
+    const access = await verifyEpisodeAccess(episodeId, session.user.id)
+    if (!access.hasAccess) {
+      return NextResponse.json(
+        { error: API_ERROR.EPISODE_PROJECT_NOT_FOUND },
+        { status: HttpStatus.NOT_FOUND }
+      )
+    }
+
     const body = await req.json()
     const { prompt, config } = body
     const clientKey = typeof config?.apiKey === 'string' ? config.apiKey : undefined

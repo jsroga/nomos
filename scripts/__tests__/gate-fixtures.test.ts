@@ -14,6 +14,11 @@ const FIXTURES = [
     ruleId: 'local/trigger-runs-ownership',
     minimumErrors: 2,
   },
+  {
+    file: 'scripts/gate-fixtures/proxy-imports-node-only.ts',
+    ruleId: 'no-restricted-imports',
+    minimumErrors: 2,
+  },
 ]
 
 interface EslintMessage {

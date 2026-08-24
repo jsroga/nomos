@@ -67,11 +67,12 @@ export async function parseEntityResolveQuery(
   }
 
   if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    // 404, not 403: a 403 confirms the project exists.
     return {
       ok: false,
       response: NextResponse.json(
-        { error: API_ERROR.PROJECT_ACCESS_DENIED },
-        { status: HttpStatus.FORBIDDEN }
+        { error: API_ERROR.PROJECT_NOT_FOUND },
+        { status: HttpStatus.NOT_FOUND }
       ),
     }
   }

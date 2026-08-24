@@ -7,6 +7,9 @@ import {
 } from '@/domains/storyteller/core/io/mastra-runtime'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { requireAuth } from '@/shared/auth/auth'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { HttpStatus } from '@/shared/data/constants/protocol'
 import { MastraWorkflowStatus, QueryParam } from '@/shared/data/constants/protocol'
 import { StorytellerWorkflowVerdict } from '@/domains/storyteller/core/storyteller-page-wire'
 
@@ -41,6 +44,39 @@ function toVerdictAction(selectedOption: string): VerdictAction | null {
  * Runs are resolved from Mastra storage — a suspended verdict survives
  * server restarts and can be resumed from any instance.
  */
+/**
+ * A suspended run belongs to a tenant. `resourceId` is stamped with the
+ * project when the run is created (see ai/tools/workflow-tool.ts); a run
+ * without one cannot be attributed, so it is refused rather than resumed.
+ * Returns null when the caller may proceed.
+ */
+async function denyUnlessRunOwner(
+  resourceId: string | undefined,
+  runId: string
+): Promise<NextResponse | null> {
+  const { session } = await requireAuth()
+  if (!session) {
+    return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
+  }
+
+  if (!resourceId) {
+    console.warn(`${API_LOG_PREFIX.STORYTELLER_WORKFLOW_RESUME_ERROR} run ${runId} has no resourceId`)
+    return NextResponse.json(
+      { error: API_ERROR.WORKFLOW_NOT_FOUND_OR_COMPLETED, runId },
+      { status: HttpStatus.NOT_FOUND }
+    )
+  }
+
+  if (!(await verifyProjectAccess(resourceId, session.user.id))) {
+    return NextResponse.json(
+      { error: API_ERROR.WORKFLOW_NOT_FOUND_OR_COMPLETED, runId },
+      { status: HttpStatus.NOT_FOUND }
+    )
+  }
+
+  return null
+}
+
 export async function POST(req: NextRequest) {
   try {
     const json = await req.json()
@@ -82,6 +118,9 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       )
     }
+
+    const denied = await denyUnlessRunOwner(state.resourceId, runId)
+    if (denied) return denied
 
     const run = await workflow.createRun({ runId })
     const result = await run.resume({
@@ -138,6 +177,9 @@ export async function GET(req: NextRequest) {
   if (!state) {
     return NextResponse.json({ found: false, runId }, { status: 404 })
   }
+
+  const denied = await denyUnlessRunOwner(state.resourceId, runId)
+  if (denied) return denied
 
   return NextResponse.json({
     found: true,

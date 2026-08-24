@@ -430,6 +430,41 @@ module.exports = [
       ],
     },
   },
+  // Edge runtime: the proxy and anything it pulls in run on the Edge, where a
+  // Node-only import (pg, node:fs, a provider SDK) fails at build time with a
+  // message that does not name the cause. Catch it at lint instead.
+  {
+    files: [
+      'src/proxy.ts',
+      'src/shared/auth/api-default-deny.ts',
+      'src/shared/auth/constants/session-cookie.ts',
+      // Covered so the fixture proving this rule is on actually trips it.
+      'scripts/gate-fixtures/proxy-imports-node-only.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/db', '@/db/*', 'pg', 'postgres', 'drizzle-orm', 'drizzle-orm/*'],
+              message:
+                'Edge runtime: the proxy cannot open a database connection. Do the lookup in the route handler.',
+            },
+            {
+              group: ['node:*', 'fs', 'path', 'crypto', 'child_process'],
+              message: 'Edge runtime: Node builtins are unavailable in the proxy.',
+            },
+            {
+              group: ['@trigger.dev/*', 'openai', '@ai-sdk/*', '@mastra/*', 'replicate', 'sharp'],
+              message: 'Edge runtime: provider and job SDKs are Node-only. Keep the proxy to routing decisions.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Boundary rule: shared MAY NOT import domains or app (Item 1)
   {
     files: ['src/shared/**/*.{ts,tsx}'],
