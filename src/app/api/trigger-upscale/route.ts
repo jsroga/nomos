@@ -4,9 +4,8 @@ import type { upscaleTileTask } from '@/domains/2d-canvas/tasks/upscale-tile.tas
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { TriggerTaskTtl } from '@/shared/data/constants/protocol'
@@ -26,14 +25,14 @@ import {
 import type { ProviderConfig } from '@/domains/2d-canvas/tasks/upscale-tile-providers'
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const payload = await request.json()
 
     if (!payload.tileId || !payload.projectId || !payload.imageBase64) {
       return NextResponse.json({ error: API_ERROR.MISSING_UPSCALE_FIELDS }, { status: 400 })
     }
 
-    const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
+    const hasAccess = await verifyProjectAccess(payload.projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }

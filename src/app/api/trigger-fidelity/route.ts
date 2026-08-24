@@ -4,9 +4,8 @@ import type { enhanceFidelityTask } from '@/trigger'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 import {
   API_ERROR,
@@ -21,7 +20,7 @@ import { readApiframeApiKey } from '@/shared/ai/image-model-env'
  * Trigger fidelity enhancement task (Topaz via Apiframe)
  */
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const payload = await request.json()
 
     if (!payload.tileId || !payload.projectId || !payload.imageBase64 || !payload.stylePrompt) {
@@ -35,7 +34,7 @@ export const POST = withRateLimit(
       )
     }
 
-    const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
+    const hasAccess = await verifyProjectAccess(payload.projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }

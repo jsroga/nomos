@@ -3,9 +3,8 @@ import path from 'path'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { FsDirectory, HttpStatus, JsonField } from '@/shared/data/constants/protocol'
 import {
@@ -20,7 +19,7 @@ import {
 export const maxDuration = 60
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
     const body = await request.json()
     const { projectId, filename, imageData } = body
 
@@ -35,7 +34,7 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.MISSING_IMAGE_DATA }, { status: HttpStatus.BAD_REQUEST })
     }
 
-    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: HttpStatus.NOT_FOUND })
     }

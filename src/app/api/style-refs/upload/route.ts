@@ -4,16 +4,15 @@ import sharp from 'sharp'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import { formFile, formString } from '@/shared/data/form-data-guards'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { BlobAccess, ContentType, FormField } from '@/shared/data/constants/protocol'
 import { isAllowedStyleRefMime, STYLE_REF_BLOB_PREFIX } from '@/domains/2d-canvas/constants/mj-sref'
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
     const formData = await request.formData()
     const file = formFile(formData, FormField.File)
     const projectId = formString(formData, FormField.ProjectId)
@@ -22,7 +21,7 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.MISSING_FILE_OR_PROJECT_ID }, { status: 400 })
     }
 
-    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }

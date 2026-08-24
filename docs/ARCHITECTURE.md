@@ -131,6 +131,14 @@ Two tiers. Supabase Auth + RLS decides *whether you are signed in and which rows
 | World Bible lock, onboarding bypass | `shared/auth/bible-permissions` |
 | Background job runs (read + cancel) | `shared/jobs/owned-run` — see below |
 
+### Persistence
+
+`shared/persistence/` is the one home for database access: the Drizzle client, and `serviceRoleClient(reason)` for the deliberate RLS bypass that tasks need. Every service-role acquisition names a reason and is logged, so "who bypasses RLS and why" is a query rather than an archaeology exercise.
+
+`@/db/client` remains as a deprecated re-export for one release; the importer count is tracked as `directDbClientImporters` in `.quality-ratchet.json`.
+
+**Tenancy is a type.** Services that read tenant data take a `ProjectScope` — a branded token whose only constructor verifies ownership — not a bare `projectId: string`. A caller that has not done the check has nothing to pass, so the omission is a build error. `local/no-bare-project-id-param` reports the remaining bare signatures (report-only while the baseline burns down). See docs/DECISIONS.md ADR 0002.
+
 ### API authentication
 
 Two layers, deliberately unequal.

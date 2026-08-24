@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadAssetTask } from '@/domains/storyteller/tasks/upload-asset.task'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
-import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 
 export const POST = withAuth<{ runId: string } | { error: string }>(
-  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { session }: AuthenticatedRequest) => {
     const body = await request.json()
     const { projectId, assetId, modelFilename } = body
 
@@ -13,7 +14,7 @@ export const POST = withAuth<{ runId: string } | { error: string }>(
     }
 
     // Verify project access
-    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }

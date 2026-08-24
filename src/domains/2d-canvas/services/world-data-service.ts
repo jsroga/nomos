@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { and, desc, eq } from 'drizzle-orm'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { db } from '@/db'
 import { assets, projects, tiles } from '@/db/schema'
 import { recordFromJson } from '@/shared/data/json-guards'
@@ -87,16 +87,13 @@ export class WorldProjectService {
 
 export class WorldTileService {
   /**
-   * `userId` is required because this reads through Drizzle, which connects as a
-   * BYPASSRLS role — the database will happily return another tenant's tiles.
-   * Returns [] rather than throwing so list endpoints keep their shape.
-   *
-   * SPEC-06 replaces the pair with a single ProjectScope, which a caller cannot
-   * mismatch.
+   * Takes a verified scope, not a bare id: this reads through Drizzle, which
+   * connects as a BYPASSRLS role, so the database will return another tenant's
+   * tiles for the asking. The caller cannot construct a ProjectScope without
+   * having passed the ownership check.
    */
-  async listForProject(projectId: string, userId: string): Promise<WorldTile[]> {
-    if (!(await verifyProjectAccess(projectId, userId))) return []
-    const rows = await db.select().from(tiles).where(eq(tiles.projectId, projectId))
+  async listForProject(scope: ProjectScope): Promise<WorldTile[]> {
+    const rows = await db.select().from(tiles).where(eq(tiles.projectId, scope.projectId))
     return rows.map(mapTile)
   }
 
@@ -135,13 +132,12 @@ export class WorldTileService {
 }
 
 export class WorldAssetService {
-  /** See the tile service: Drizzle bypasses RLS, so ownership is explicit. */
-  async listForProject(projectId: string, userId: string): Promise<WorldAsset[]> {
-    if (!(await verifyProjectAccess(projectId, userId))) return []
+  /** See the tile service: Drizzle bypasses RLS, so the scope is the proof. */
+  async listForProject(scope: ProjectScope): Promise<WorldAsset[]> {
     const rows = await db
       .select()
       .from(assets)
-      .where(eq(assets.projectId, projectId))
+      .where(eq(assets.projectId, scope.projectId))
       .orderBy(desc(assets.createdAt))
     return rows.map(mapAsset)
   }

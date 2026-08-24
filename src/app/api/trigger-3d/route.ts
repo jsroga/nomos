@@ -3,9 +3,8 @@ import type { generate3DModelTask } from '@/trigger'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import {
   API_ERROR,
   TRIGGER_TASK_ID,
@@ -15,7 +14,7 @@ import { EnvVarName, ModelProvider } from '@/shared/data/constants/protocol'
 import { triggerOwnedRun } from '@/shared/jobs'
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
     const payload = await request.json()
 
     // Use env API keys when client did not send one
@@ -43,7 +42,7 @@ export const POST = withRateLimit(
     if (!payload.projectId) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ID_IS_REQUIRED }, { status: 400 })
     }
-    const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
+    const hasAccess = await verifyProjectAccess(payload.projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }

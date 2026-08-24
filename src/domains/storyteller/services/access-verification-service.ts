@@ -13,6 +13,7 @@ import { eq } from 'drizzle-orm'
 // and shared/ may not import @/domains/*. Re-exported here so the ~69 existing
 // call sites keep their import path.
 export { verifyProjectAccess } from '@/shared/auth/project-access'
+import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 
 // ============================================
 // TYPES
@@ -184,3 +185,48 @@ export async function verifyGameLoopAccess(loopId: string, userId: string): Prom
 // BULK ACCESS (for lists)
 // ============================================
 
+
+// ============================================
+// DERIVED SCOPES
+// ============================================
+
+/**
+ * Episode/beat/character scopes extend ProjectScope, so anything accepting a
+ * project scope accepts these — and the JOIN that resolves the owning project
+ * is not repeated. Each throws ProjectForbidden, which routes map to 404.
+ */
+export interface EpisodeScope extends ProjectScope {
+  readonly episodeId: string
+}
+
+export interface BeatScope extends EpisodeScope {
+  readonly beatId: string
+}
+
+export interface CharacterScope extends ProjectScope {
+  readonly characterId: string
+}
+
+export async function episodeScope(episodeId: string, userId: string): Promise<EpisodeScope> {
+  const access = await verifyEpisodeAccess(episodeId, userId)
+  if (!access.hasAccess || !access.projectId) throw new ProjectForbidden()
+  const scope = await projectScope(access.projectId, userId)
+  return { ...scope, episodeId }
+}
+
+export async function beatScope(beatId: string, userId: string): Promise<BeatScope> {
+  const access = await verifyBeatAccess(beatId, userId)
+  if (!access.hasAccess || !access.projectId || !access.episodeId) throw new ProjectForbidden()
+  const scope = await projectScope(access.projectId, userId)
+  return { ...scope, episodeId: access.episodeId, beatId }
+}
+
+export async function characterScope(
+  characterId: string,
+  userId: string
+): Promise<CharacterScope> {
+  const access = await verifyCharacterAccess(characterId, userId)
+  if (!access.hasAccess || !access.projectId) throw new ProjectForbidden()
+  const scope = await projectScope(access.projectId, userId)
+  return { ...scope, characterId }
+}

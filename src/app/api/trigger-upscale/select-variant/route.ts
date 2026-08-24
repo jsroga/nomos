@@ -6,10 +6,11 @@ import {
   TRIGGER_TASK_ID,
   TRIGGER_TASK_TTL,
 } from '@/shared/data/constants/api-errors'
-import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 
 export const POST = withAuth(
-  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { session }: AuthenticatedRequest) => {
     const { tileId, projectId, gridImageUrl, variantIndex } = await request.json()
 
     if (!tileId || !projectId || !gridImageUrl || !variantIndex) {
@@ -17,7 +18,7 @@ export const POST = withAuth(
     }
 
     // Verify project access
-    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }

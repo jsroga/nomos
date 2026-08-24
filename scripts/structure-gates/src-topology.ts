@@ -66,6 +66,7 @@ export const SHARED_TOP_LEVEL_TARGET = new Set([
   'jobs',
   'observability',
   'openapi', // Zod → OpenAPI registry for public /api-docs
+  'persistence', // the one home for DB access — docs/DECISIONS.md ADR 0001
 ])
 
 /** Present during P1 migration — no new siblings until absorbed into target */

@@ -9,9 +9,8 @@ import type { textTo3DTask } from '@/trigger'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import {
   API_ERROR,
   TRIGGER_TASK_ID,
@@ -23,7 +22,7 @@ export const POST = withRateLimit(
   withAuth(
     async (
       request: NextRequest,
-      { supabase }: AuthenticatedRequest
+      { session }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorTextTo3DResponse | { error: string }>> => {
       const parsedBody = interiorTextTo3DRequestSchema.safeParse(await request.json())
       if (!parsedBody.success) {
@@ -33,7 +32,7 @@ export const POST = withRateLimit(
       const { projectId, prompt, seed, apiKey, artStyle, enablePbr, targetPolycount, topology } =
         parsedBody.data
 
-      const hasAccess = await verifyProjectAccess(supabase, projectId)
+      const hasAccess = await verifyProjectAccess(projectId, session.user.id)
       if (!hasAccess) {
         return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }

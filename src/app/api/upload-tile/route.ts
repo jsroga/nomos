@@ -4,15 +4,14 @@ import path from 'path'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE, DB_UPSERT } from '@/shared/data/constants/db-tables'
 import { BufferEncoding, FsDirectory } from '@/shared/data/constants/protocol'
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const { projectId, x, y, imageBase64, prompt } = await request.json()
 
     if (!projectId || x === undefined || y === undefined || !imageBase64) {
@@ -20,7 +19,7 @@ export const POST = withRateLimit(
     }
 
     // Verify project access
-    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }

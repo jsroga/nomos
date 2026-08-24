@@ -291,6 +291,9 @@ module.exports = [
       'local/no-repeated-array-filter': 'error',
       'local/trigger-runs-ownership': 'error',
       'local/no-discarded-auth-context': 'error',
+      // Report-only: the baseline is tracked as bareProjectIdExports in
+      // .quality-ratchet.json and burned down seam by seam (SPEC-06).
+      'local/no-bare-project-id-param': 'warn',
       '@typescript-eslint/no-require-imports': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',

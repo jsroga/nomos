@@ -8,7 +8,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserSession } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX, RATE_LIMIT } from '@/shared/data/constants/api-errors'
-import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 
 // Re-exported so existing `@/shared/data/api-utils` importers keep working.
 // Canonical implementation (incl. E2E bypass) lives in @/shared/auth/auth.
@@ -193,23 +192,7 @@ export function withRateLimit<T = unknown>(
   }
 }
 
-// ============================================
-// PROJECT ACCESS VERIFICATION
-// ============================================
-
-/**
- * Verify user has access to a project
- * Uses authenticated Supabase client (RLS enforced)
- */
-export async function verifyProjectAccess(
-  supabase: SupabaseClient,
-  projectId: string
-): Promise<boolean> {
-  const { data, error } = await supabase
-    .from(DB_TABLE.PROJECTS)
-    .select(DB_COLUMN.ID)
-    .eq(DB_COLUMN.ID, projectId)
-    .single()
-
-  return !error && !!data
-}
+// Project access lives in @/shared/auth/project-access — one implementation,
+// one meaning. The copy that used to live here relied on RLS, which does not
+// apply to the Drizzle path most callers reach.
+// See docs/decisions/0001-data-access-and-rls.md.

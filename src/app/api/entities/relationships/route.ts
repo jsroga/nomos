@@ -3,9 +3,8 @@ import { z } from 'zod'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam, SupabaseColumn, SupabaseTable } from '@/shared/data/constants/protocol'
 import { openApiCreateRelationshipRequestSchema } from '@/shared/openapi/schemas/entities'
@@ -17,7 +16,7 @@ import { openApiCreateRelationshipRequestSchema } from '@/shared/openapi/schemas
  *   - projectId: UUID (optional) - filter by project
  */
 export const GET = withAuth(
-  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const { searchParams } = new URL(request.url)
     const entityId = searchParams.get(QueryParam.EntityId)
     const projectId = searchParams.get(QueryParam.ProjectId)
@@ -33,7 +32,7 @@ export const GET = withAuth(
 
     // If projectId provided, verify access
     if (projectId) {
-      const hasAccess = await verifyProjectAccess(supabase, projectId)
+      const hasAccess = await verifyProjectAccess(projectId, session.user.id)
       if (!hasAccess) {
         return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
@@ -71,7 +70,7 @@ export const GET = withAuth(
  * Create a new relationship between entities
  */
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const body = await request.json()
 
     try {
@@ -86,7 +85,7 @@ export const POST = withRateLimit(
       }
 
       // Verify project access via RLS
-      const hasAccess = await verifyProjectAccess(supabase, validated.projectId)
+      const hasAccess = await verifyProjectAccess(validated.projectId, session.user.id)
       if (!hasAccess) {
         return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
@@ -143,7 +142,9 @@ export const DELETE = withAuth(
       return NextResponse.json({ error: API_ERROR.RELATIONSHIP_ID_REQUIRED }, { status: 400 })
     }
 
-    // RLS will ensure user can only delete relationships in their projects
+    // Deliberately the Supabase-client path: entity_relationships has RLS, and
+    // RLS applies here where it does not on the Drizzle path.
+    // See docs/decisions/0001-data-access-and-rls.md.
     const { error } = await supabase
       .from(SupabaseTable.EntityRelationships)
       .delete()

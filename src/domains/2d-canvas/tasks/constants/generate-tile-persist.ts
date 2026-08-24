@@ -10,6 +10,9 @@ import { CONTEXT_CANONICAL_VARIANT } from './generate-tile'
 import type { PackedCropSpec } from '@/shared/ai/context-pack-layout'
 import { assertTilePngSize } from './generate-tile-output'
 
+const SUPABASE_SERVICE_ENV_MISSING =
+  'SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL are required for service-role writes'
+
 export function extractContextImageBase64(payload: GenerateTilePayload): string | undefined {
   if (payload.contextImageBase64) {
     return payload.contextImageBase64
@@ -79,10 +82,12 @@ export async function uploadTileToBlob(
 
 export function createSupabaseServiceClient(): SupabaseClient {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  // No anon-key fallback: this client exists to bypass RLS, and silently
+  // downgrading to the anon key turns a config error into a confusing write
+  // failure deep inside a task.
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase environment variables not configured')
+    throw new Error(SUPABASE_SERVICE_ENV_MISSING)
   }
   return createClient(supabaseUrl, supabaseKey)
 }

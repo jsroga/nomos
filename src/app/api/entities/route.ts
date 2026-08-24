@@ -3,9 +3,8 @@ import { z } from 'zod'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import { createEntitySchema, listEntitiesSchema } from '@/shared/data/entities-service'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
@@ -16,7 +15,7 @@ import { GameEntityQueryParam } from '@/shared/data/constants/game-entities-wire
  * List entities for a project with optional filtering
  */
 export const GET = withAuth(
-  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     if (!supabase) {
       return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
     }
@@ -38,7 +37,7 @@ export const GET = withAuth(
 
     const { projectId, entityType, sourceDomain, search } = parsed.data
 
-    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
@@ -88,7 +87,7 @@ export const POST = withRateLimit(
     try {
       const validated = createEntitySchema.parse(body)
 
-      const hasAccess = await verifyProjectAccess(supabase, validated.projectId)
+      const hasAccess = await verifyProjectAccess(validated.projectId, session.user.id)
       if (!hasAccess) {
         return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }

@@ -10,9 +10,8 @@ import {
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 import { EnvVarName, HttpMethod } from '@/shared/data/constants/protocol'
@@ -25,7 +24,7 @@ export const POST = withRateLimit(
   withAuth(
     async (
       request: NextRequest,
-      { supabase }: AuthenticatedRequest
+      { session, supabase }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorRetextureResponse | { error: string }>> => {
       const parsedBody = interiorRetextureRequestSchema.safeParse(await request.json())
       if (!parsedBody.success) {
@@ -35,7 +34,7 @@ export const POST = withRateLimit(
       const { modelUrlOrBase64, prompt, assetId, projectId, apiKey } = parsedBody.data
 
       if (projectId !== InteriorDefaultProjectId.Default) {
-        const hasAccess = await verifyProjectAccess(supabase, projectId)
+        const hasAccess = await verifyProjectAccess(projectId, session.user.id)
         if (!hasAccess) {
           return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
         }

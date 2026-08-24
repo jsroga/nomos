@@ -8,7 +8,12 @@ import { describe, expect, it } from 'vitest'
  * guard that way, silently, for an unknown length of time. Every structural rule
  * therefore ships a fixture that must fail, and this test asserts it still does.
  */
-const FIXTURES = [
+const FIXTURES: {
+  file: string
+  ruleId: string
+  minimumErrors: number
+  severity?: number
+}[] = [
   {
     file: 'scripts/gate-fixtures/runs-retrieve-outside-platform.ts',
     ruleId: 'local/trigger-runs-ownership',
@@ -24,12 +29,22 @@ const FIXTURES = [
     ruleId: 'local/no-discarded-auth-context',
     minimumErrors: 2,
   },
+  {
+    file: 'scripts/gate-fixtures/src/services/bare-project-id.ts',
+    ruleId: 'local/no-bare-project-id-param',
+    minimumErrors: 1,
+    // Report-only while the 57-site baseline is burned down (SPEC-06 seams 2–5).
+    severity: 1,
+  },
 ]
 
 interface EslintMessage {
   ruleId: string | null
   severity: number
 }
+
+/** Fixtures default to error; report-only rules declare severity 1. */
+const DEFAULT_SEVERITY = 2
 interface EslintResult {
   messages: EslintMessage[]
 }
@@ -58,11 +73,12 @@ function lint(file: string): EslintResult[] {
 }
 
 describe('gate fixtures still fail', () => {
-  it.each(FIXTURES)('$file trips $ruleId', ({ file, ruleId, minimumErrors }) => {
+  it.each(FIXTURES)('$file trips $ruleId', ({ file, ruleId, minimumErrors, severity }) => {
     const results = lint(file)
+    const expected = severity ?? DEFAULT_SEVERITY
     const errors = results
       .flatMap(result => result.messages)
-      .filter(message => message.ruleId === ruleId && message.severity === 2)
+      .filter(message => message.ruleId === ruleId && message.severity === expected)
 
     expect(
       errors.length,

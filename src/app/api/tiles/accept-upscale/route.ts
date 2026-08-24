@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { verifyProjectAccess } from '@/shared/auth/project-access'
 import { Database } from '@/shared/data/storage/database.types'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
@@ -7,7 +8,7 @@ import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 type TileUpdate = Database['public']['Tables']['tiles']['Update']
 
 export const POST = withAuth(
-  async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const { projectId, x, y, upscaledUrl } = await request.json()
 
     if (!projectId || x === undefined || y === undefined || !upscaledUrl) {
@@ -15,7 +16,7 @@ export const POST = withAuth(
     }
 
     // Verify project access
-    const hasAccess = await verifyProjectAccess(supabase, projectId)
+    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }

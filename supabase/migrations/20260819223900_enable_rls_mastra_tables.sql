@@ -1,3 +1,8 @@
+-- NOTE: RLS applies only to queries made through the request-scoped Supabase
+-- client. The application's Drizzle path connects as a BYPASSRLS role, so these
+-- policies do NOT protect it — tenancy there is enforced in application code.
+-- See docs/DECISIONS.md ADR 0001.
+
 -- Lock down Mastra store tables in public (PostgresStoreVNext + Studio).
 -- RLS on with no anon/authenticated policies: PostgREST cannot read rows.
 -- Table owner / service_role still access (Mastra uses DATABASE_URL, not PostgREST).
