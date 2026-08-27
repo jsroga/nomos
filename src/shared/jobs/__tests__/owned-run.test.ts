@@ -20,7 +20,6 @@ vi.mock('@/shared/auth/project-access', () => ({
 import {
   JobAccessError,
   OWNED_RUN_SUMMARY_KEYS,
-  UNTAGGED_RUN_GRACE_MS,
   projectIdFromRun,
   projectTag,
   retrieveOwnedRun,
@@ -89,22 +88,11 @@ describe('retrieveOwnedRun', () => {
     expect(verifyProjectAccessMock).not.toHaveBeenCalled()
   })
 
-  it('throws for an untagged run created outside the grace window', async () => {
-    const old = new Date(Date.now() - UNTAGGED_RUN_GRACE_MS - 1000)
-    retrieveMock.mockResolvedValue(runFixture({ tags: [], metadata: {}, createdAt: old }))
+  it('refuses an untagged run however recent, now the grace window is gone', async () => {
+    retrieveMock.mockResolvedValue(runFixture({ tags: [], metadata: {}, createdAt: new Date() }))
 
     await expect(retrieveOwnedRun(RUN_ID, OWNER)).rejects.toBeInstanceOf(JobAccessError)
     expect(verifyProjectAccessMock).not.toHaveBeenCalled()
-  })
-
-  it('allows an untagged run still inside the grace window, and warns', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    retrieveMock.mockResolvedValue(runFixture({ tags: [], metadata: {}, createdAt: new Date() }))
-
-    const summary = await retrieveOwnedRun(RUN_ID, OWNER)
-    expect(summary.id).toBe(RUN_ID)
-    expect(warn).toHaveBeenCalled()
-    warn.mockRestore()
   })
 
   it('falls back to metadata.projectId when the run predates tagging', async () => {

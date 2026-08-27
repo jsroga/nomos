@@ -22,14 +22,12 @@ import { readString, recordFromJson } from '@/shared/data/json-guards'
 import {
   SystemRunReason,
   JOB_ACCESS_MESSAGE,
-  JOB_LOG,
   OWNED_RUN_SUMMARY_KEYS,
   PROJECT_METADATA_KEY,
   PROJECT_TAG_PREFIX,
-  UNTAGGED_RUN_GRACE_MS,
 } from '@/shared/jobs/constants/owned-run'
 
-export { OWNED_RUN_SUMMARY_KEYS, SystemRunReason, UNTAGGED_RUN_GRACE_MS }
+export { OWNED_RUN_SUMMARY_KEYS, SystemRunReason }
 
 /**
  * Raised for a missing run, an unreadable run, and a run the caller does not
@@ -52,9 +50,12 @@ interface RunOwnershipSource {
   metadata?: unknown
 }
 
-/** Every task payload in this repo carries the project the work belongs to. */
+/**
+ * Every task payload carries the project the work belongs to. Required, so a
+ * task that would produce an unreadable run fails to compile.
+ */
 interface OwnedPayload {
-  projectId?: unknown
+  projectId: string
 }
 
 export function projectTag(projectId: string): string {
@@ -94,15 +95,6 @@ function summarise(run: RetrievedRun): OwnedRunSummary {
   }
 }
 
-function isWithinUntaggedGraceWindow(createdAt: unknown): boolean {
-  if (createdAt instanceof Date) return Date.now() - createdAt.getTime() < UNTAGGED_RUN_GRACE_MS
-  const iso = readString(createdAt)
-  if (!iso) return false
-  const created = Date.parse(iso)
-  if (Number.isNaN(created)) return false
-  return Date.now() - created < UNTAGGED_RUN_GRACE_MS
-}
-
 /** Retrieve a run only if the caller owns the project it belongs to. */
 export async function retrieveOwnedRun(runId: string, userId: string): Promise<OwnedRunSummary> {
   const run = await runs.retrieve(runId)
@@ -110,14 +102,9 @@ export async function retrieveOwnedRun(runId: string, userId: string): Promise<O
 
   const projectId = projectIdFromRun({ tags: run.tags, metadata: run.metadata })
 
-  if (!projectId) {
-    // Pre-tagging runs still in flight. Time-boxed; remove with the grace window.
-    if (isWithinUntaggedGraceWindow(run.createdAt)) {
-      console.warn(`${JOB_LOG.UNTAGGED_GRACE}${runId}`)
-      return summarise(run)
-    }
-    throw new JobAccessError(JOB_ACCESS_MESSAGE.NOT_FOUND)
-  }
+  // No tag, no owner, no read. The grace window for pre-tagging runs is gone:
+  // every payload now carries a project id, so every run is tagged.
+  if (!projectId) throw new JobAccessError(JOB_ACCESS_MESSAGE.NOT_FOUND)
 
   if (!(await tryProjectScope(projectId, userId))) {
     throw new JobAccessError(JOB_ACCESS_MESSAGE.NOT_FOUND)

@@ -1,6 +1,6 @@
 {
   "_": "Counters that may only DECREASE. Replaces editable allowlists: an allowlist grows monotonically, a ratchet shrinks. Recompute with the commands in _commands. See .local/final-review/05-quality-gates.md.",
-  "untaggedRunGracePaths": 1,
+  "untaggedRunGracePaths": 0,
   "routesTakingProjectIdWithoutOwnershipCheck": 0,
   "sessionExistenceOnlyRoutes": 12,
   "directDbClientImporters": 70,
@@ -8,7 +8,7 @@
   "bareProjectIdExports": 0,
   "systemScopeSites": 0,
   "_commands": {
-    "untaggedRunGracePaths": "grep -c 'isWithinUntaggedGraceWindow(run.createdAt)' src/shared/jobs/owned-run.ts   # remove the grace branch one deploy cycle after tagging ships, then 0",
+    "untaggedRunGracePaths": "grep -c 'isWithinUntaggedGraceWindow(run.createdAt)' src/shared/jobs/owned-run.ts   # removed; every payload carries a project id, so every run is tagged",
     "routesTakingProjectIdWithoutOwnershipCheck": "for f in $(find src/app/api -name route.ts); do grep -qE 'projectId|project_id' \"$f\" && ! grep -rqE 'projectScope|episodeScope|beatScope|characterScope|withProjectScope|verifyProjectAccess|verifyEpisodeAccess|verifyBeatAccess|verifyCharacterAccess|verifyProjectOwnership|listForUser|session\\.user\\.id|isAdminUser' \"$(dirname \"$f\")\" && echo \"$f\"; done | wc -l",
     "sessionExistenceOnlyRoutes": "grep -rl 'auth-scope: session-existence-only' src/app/api --include='*.ts' | wc -l   # each is a reviewed decision; the number should not grow",
     "directDbClientImporters": "grep -rln \"from '@/db/client'|from '@/db'\" src --include='*.ts' --include='*.tsx' | grep -v __tests__ | grep -v shared/persistence | wc -l",

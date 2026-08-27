@@ -9,6 +9,8 @@ import {
 } from './constants/meshy-task-types'
 
 interface RemeshRunPayload {
+  /** The project the run belongs to; `triggerOwnedRun` tags the run with it. */
+  projectId: string
   assetId: string
   meshyTaskId: string
   apiKey: string
