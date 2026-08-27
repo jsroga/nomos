@@ -1,28 +1,17 @@
 /** Storyteller hydration — plan field keys and bible category keys. */
 
-import { StoryPlanMergeField } from '@/domains/storyteller/config/constants/bible-wire-fields'
-import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import { ToolResultPayloadField } from '@/domains/storyteller/config/constants/tool-result-wire'
 import { BibleCategoryKey } from '@/shared/data/constants/protocol'
+import { hydrationPlanFields } from '@/domains/storyteller/core/bible/section-registry'
 
-export const HYDRATION_PLAN_FIELDS = [
-  StoryPlanMergeField.Soundtracks,
-  StoryPlanMergeField.WorldRules,
-  StoryPlanMergeField.Factions,
-  CastFieldAlias.KeyCharacters,
-  StoryPlanMergeField.PlotTwists,
-  StoryPlanMergeField.Inspirations,
-  StoryPlanMergeField.WorldDescription,
-  StoryPlanMergeField.Genre,
-  StoryPlanMergeField.Tone,
-  StoryPlanMergeField.Sequences,
-  StoryPlanMergeField.SeasonStructure,
-  StoryPlanMergeField.CentralTheme,
-  StoryPlanMergeField.MasterPrompt,
-  StoryPlanMergeField.MoodImages,
-  StoryPlanMergeField.ExecutiveSummary,
-  StoryPlanMergeField.EpisodeRoadmap,
-] as const
+/**
+ * Fields the hydration pass carries into UI state.
+ *
+ * Derived from SECTION_REGISTRY. There were two hand-kept copies of this list
+ * read by two different hydration paths; they drifted, and the roadmap and
+ * executive summary stopped hydrating through one of them.
+ */
+export const HYDRATION_PLAN_FIELDS: readonly string[] = hydrationPlanFields()
 
 export const HYDRATION_BIBLE_CATEGORIES = [
   BibleCategoryKey.General,

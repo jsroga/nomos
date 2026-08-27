@@ -1,8 +1,6 @@
-import {
-  SoundtrackFieldAlias,
-  StoryPlanMergeField,
-} from '@/domains/storyteller/config/constants/bible-wire-fields'
+import { StoryPlanMergeField } from '@/domains/storyteller/config/constants/bible-wire-fields'
 import { recordFromJson } from '@/shared/data/json-guards'
+import { bibleOwnedPlanFields } from '@/domains/storyteller/core/bible/section-registry'
 
 export enum InspirationBucket {
   Books = 'books',
@@ -13,36 +11,11 @@ export enum InspirationBucket {
 /**
  * World-bible fields that must not be stored on `episodes.story_plan`.
  *
- * This must cover EVERY world-level section. When it listed only soundtracks
- * and inspirations, factions / plot twists / roadmap kept being written onto an
- * episode row, so the bible panel rendered empty until an episode happened to
- * be opened. `bible-owned-coverage.test.ts` fails if a `BibleSection` is added
- * without landing here, so the gap cannot silently reopen.
- *
- * Storyboard fields are deliberately absent — they belong to a single episode.
+ * Derived from SECTION_REGISTRY, which is the single declaration of a section.
+ * This list used to be hand-kept, and every time a section was added and this
+ * was not, the bible panel rendered empty until an episode was opened.
  */
-export const BIBLE_OWNED_PLAN_FIELDS = [
-  StoryPlanMergeField.Soundtracks,
-  StoryPlanMergeField.Inspirations,
-  SoundtrackFieldAlias.MoodSoundtrack,
-  StoryPlanMergeField.WorldDescription,
-  StoryPlanMergeField.WorldRules,
-  StoryPlanMergeField.Factions,
-  StoryPlanMergeField.PlotTwists,
-  StoryPlanMergeField.Items,
-  StoryPlanMergeField.Events,
-  StoryPlanMergeField.Cast,
-  StoryPlanMergeField.EpisodeRoadmap,
-  StoryPlanMergeField.Moodboard,
-  StoryPlanMergeField.MoodImages,
-  StoryPlanMergeField.Genre,
-  StoryPlanMergeField.Tone,
-  StoryPlanMergeField.CentralTheme,
-  StoryPlanMergeField.MasterPrompt,
-  StoryPlanMergeField.Sequences,
-  StoryPlanMergeField.SeasonStructure,
-  StoryPlanMergeField.ExecutiveSummary,
-] as const
+export const BIBLE_OWNED_PLAN_FIELDS: readonly string[] = bibleOwnedPlanFields()
 
 const INSPIRATION_BUCKETS = [
   InspirationBucket.Books,
