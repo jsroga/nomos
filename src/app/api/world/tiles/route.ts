@@ -8,8 +8,8 @@ import {
 import { worldTileService } from '@/domains/2d-canvas/services/world-data-service'
 import { WORLD_QUERY_PARAM } from '@/domains/2d-canvas/constants/world-query-params'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
-import { ProjectForbidden, projectScope } from '@/shared/auth/project-scope'
-import { HttpStatus } from '@/shared/data/constants/protocol'
+import { projectScope } from '@/shared/auth/project-scope'
+import { toProjectNotFound } from '@/app/api/world/_lib/project-scope-response'
 
 export async function GET(req: Request) {
   const { session, error } = await requireAuthedSession()
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     projectId: searchParams.get(WORLD_QUERY_PARAM.PROJECT_ID),
   })
 
-  const scope = await projectScope(projectId, session.user.id).catch(toForbidden)
+  const scope = await projectScope(projectId, session.user.id).catch(toProjectNotFound)
   if (scope instanceof NextResponse) return scope
 
   const tiles = await worldTileService.listForProject(scope)
@@ -49,12 +49,4 @@ export async function DELETE(req: Request) {
   const body = deleteTileRequestSchema.parse(await req.json())
   await worldTileService.remove(body)
   return NextResponse.json({ success: true as const })
-}
-
-/** ProjectForbidden → 404; a 403 would confirm the project exists. */
-function toForbidden(error: unknown): NextResponse {
-  if (error instanceof ProjectForbidden) {
-    return NextResponse.json({ error: API_ERROR.PROJECT_NOT_FOUND }, { status: HttpStatus.NOT_FOUND })
-  }
-  throw error
 }
