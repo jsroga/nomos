@@ -5,7 +5,7 @@ import {
   withAuth,
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 import {
   API_ERROR,
@@ -34,8 +34,8 @@ export const POST = withRateLimit(
       )
     }
 
-    const hasAccess = await verifyProjectAccess(payload.projectId, session.user.id)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(payload.projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -44,7 +44,7 @@ export const POST = withRateLimit(
       const { data } = await supabase
         .from(DB_TABLE.PROJECTS)
         .select(DB_SELECT.PROJECT_STYLE_REFS)
-        .eq(DB_COLUMN.ID, payload.projectId)
+        .eq(DB_COLUMN.ID, scope.projectId)
         .single()
 
       styleReferenceUrls = resolveStyleReferenceUrls({
@@ -57,7 +57,7 @@ export const POST = withRateLimit(
       TRIGGER_TASK_ID.ENHANCE_FIDELITY,
       {
         tileId: payload.tileId,
-        projectId: payload.projectId,
+        projectId: scope.projectId,
         imageBase64: payload.imageBase64,
         stylePrompt: payload.stylePrompt,
         creativity: payload.creativity || 0.3,

@@ -19,7 +19,7 @@ import { HumanMessage, AIMessage, type BaseMessage } from '@langchain/core/messa
 // before the first getMastraInstance() call inside streamLoopCreator.
 import '@/domains/loop-creator/core/io/mastra-runtime'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { streamLoopCreator } from '@/domains/loop-creator/server'
 import { createInitialLoopState, type LoopCreatorState } from '@/domains/loop-creator'
 import { LoopOrchestratorEventType } from '@/domains/loop-creator/constants/loop-orchestrator'
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
   const record = isPlainObject(body) ? body : {}
   const projectId = readString(record.projectId) ?? ''
 
-  if (!(await verifyProjectAccess(projectId, session.user.id))) {
+  if (!(await tryProjectScope(projectId, session.user.id))) {
     return jsonError(API_ERROR.PROJECT_ACCESS_DENIED, STATUS_404)
   }
 

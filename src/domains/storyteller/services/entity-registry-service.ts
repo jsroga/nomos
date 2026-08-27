@@ -339,13 +339,7 @@ class EntityRegistryService {
     }
   }
 
-  /**
-   * Evicts this process's in-memory entries. It reads and returns no project
-   * data, so there is nothing here for a caller to reach that they could not
-   * reach by restarting the process.
-   *
-   * project-scope: none — evicts local cache entries, reads no project data.
-   */
+  /** project-scope: none — evicts local cache entries, reads no project data. */
   clearProjectCache(projectId: string): void {
     const refs = this.projectCaches.get(projectId)
     if (refs) {

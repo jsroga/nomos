@@ -29,10 +29,7 @@ function buildHandlerContext(
   }
 }
 
-/**
- * Establishes access and returns the proof of it, so handlers receive a scope
- * rather than a bare id that a later edit could forget to check.
- */
+/** Returns the proof of access, so handlers hold a scope rather than a bare id. */
 async function scopeActionAccess(
   projectId: string | undefined,
   episodeId: string | undefined,

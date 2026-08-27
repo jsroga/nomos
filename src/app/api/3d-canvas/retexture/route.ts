@@ -11,7 +11,7 @@ import {
   withAuth,
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 import { EnvVarName, HttpMethod } from '@/shared/data/constants/protocol'
@@ -33,19 +33,19 @@ export const POST = withRateLimit(
 
       const { modelUrlOrBase64, prompt, assetId, projectId, apiKey } = parsedBody.data
 
-      if (projectId !== InteriorDefaultProjectId.Default) {
-        const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-        if (!hasAccess) {
-          return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
-        }
+      // The shared default project belongs to nobody: no scope, no tenant data.
+      const isDefaultProject = projectId === InteriorDefaultProjectId.Default
+      const scope = isDefaultProject ? null : await tryProjectScope(projectId, session.user.id)
+      if (!isDefaultProject && !scope) {
+        return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
 
       let styleImageUrl: string | undefined
-      if (projectId !== InteriorDefaultProjectId.Default) {
+      if (scope) {
         const { data } = await supabase
           .from(DB_TABLE.PROJECTS)
           .select(DB_COLUMN.STYLE_REFERENCE_URLS)
-          .eq(DB_COLUMN.ID, projectId)
+          .eq(DB_COLUMN.ID, scope.projectId)
           .single()
 
         const projectRecord = recordFromJson(data)

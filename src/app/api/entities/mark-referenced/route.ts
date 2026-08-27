@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { entityReferences } from '@/db'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { HttpStatus } from '@/shared/data/constants/protocol'
 import { entityRegistry } from '@/domains/storyteller/server'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
@@ -33,7 +33,8 @@ export const POST = withAuth(async (request: NextRequest, { session }: Authentic
       .where(eq(entityReferences.id, id))
       .limit(1)
 
-    if (!reference || !(await verifyProjectAccess(reference.projectId, session.user.id))) {
+    const scope = reference ? await tryProjectScope(reference.projectId, session.user.id) : null
+    if (!scope) {
       return NextResponse.json(
         { error: API_ERROR.ENTITY_NOT_FOUND },
         { status: HttpStatus.NOT_FOUND }

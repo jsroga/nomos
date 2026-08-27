@@ -8,7 +8,7 @@ import {
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { HttpStatus } from '@/shared/data/constants/protocol'
 import { MastraWorkflowStatus, QueryParam } from '@/shared/data/constants/protocol'
 import { StorytellerWorkflowVerdict } from '@/domains/storyteller/core/storyteller-page-wire'
@@ -67,7 +67,7 @@ async function denyUnlessRunOwner(
     )
   }
 
-  if (!(await verifyProjectAccess(resourceId, session.user.id))) {
+  if (!(await tryProjectScope(resourceId, session.user.id))) {
     return NextResponse.json(
       { error: API_ERROR.WORKFLOW_NOT_FOUND_OR_COMPLETED, runId },
       { status: HttpStatus.NOT_FOUND }

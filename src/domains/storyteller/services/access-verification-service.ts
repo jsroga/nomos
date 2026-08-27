@@ -9,10 +9,6 @@ import { db } from '@/db/client'
 import { beats, episodes, projects, characters, gameLoops } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 
-// Project ownership is platform-level: shared/jobs and shared/http need it too,
-// and shared/ may not import @/domains/*. Re-exported here so the ~69 existing
-// call sites keep their import path.
-export { verifyProjectAccess } from '@/shared/auth/project-access'
 import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 
 // ============================================

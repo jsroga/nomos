@@ -4,7 +4,7 @@ import {
   withAuth,
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import {
   API_ERROR,
   TRIGGER_TASK_ID,
@@ -42,8 +42,8 @@ export const POST = withRateLimit(
     if (!payload.projectId) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ID_IS_REQUIRED }, { status: 400 })
     }
-    const hasAccess = await verifyProjectAccess(payload.projectId, session.user.id)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(payload.projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 

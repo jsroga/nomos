@@ -134,13 +134,7 @@ function compactEpisodeIndex(rows: StoryCanonEpisodeSource[]): StoryCanonEpisode
     }))
 }
 
-/**
- * Pure assembler over already-loaded rows: it performs no I/O, and the id is
- * only carried into the result's metadata. The ownership check belongs on
- * `loadStoryCanonPack`, which is what actually reads the database.
- *
- * project-scope: none — pure function over rows the caller already fetched.
- */
+/** project-scope: none — pure function over rows the caller already fetched. */
 export function assembleStoryCanonPack(
   projectId: string,
   sources: StoryCanonPackSources

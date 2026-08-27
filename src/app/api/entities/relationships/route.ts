@@ -4,7 +4,7 @@ import {
   withAuth,
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam, SupabaseColumn, SupabaseTable } from '@/shared/data/constants/protocol'
 import { openApiCreateRelationshipRequestSchema } from '@/shared/openapi/schemas/entities'
@@ -30,12 +30,8 @@ export const GET = withAuth(
       return NextResponse.json({ error: API_ERROR.INVALID_ENTITY_ID_FORMAT }, { status: 400 })
     }
 
-    // If projectId provided, verify access
-    if (projectId) {
-      const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-      if (!hasAccess) {
-        return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
-      }
+    if (projectId && !(await tryProjectScope(projectId, session.user.id))) {
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     // RLS will filter relationships based on project access
@@ -84,16 +80,15 @@ export const POST = withRateLimit(
         )
       }
 
-      // Verify project access via RLS
-      const hasAccess = await verifyProjectAccess(validated.projectId, session.user.id)
-      if (!hasAccess) {
+      const scope = await tryProjectScope(validated.projectId, session.user.id)
+      if (!scope) {
         return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
 
       const { data, error } = await supabase
         .from(SupabaseTable.EntityRelationships)
         .insert({
-          project_id: validated.projectId,
+          project_id: scope.projectId,
           from_entity_id: validated.fromEntityId,
           to_entity_id: validated.toEntityId,
           relationship_type: validated.relationshipType,

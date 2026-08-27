@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { episodes, projects, storyPlans } from '@/db'
 import { db } from '@/db/client'
-import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller/server'
+import { verifyEpisodeAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { eq } from 'drizzle-orm'
 import {
   storyPlanRecordFromJson,
@@ -33,7 +34,7 @@ async function loadExistingPlan(input: {
   }
 
   if (input.projectId) {
-    if (!(await verifyProjectAccess(input.projectId, input.userId))) {
+    if (!(await tryProjectScope(input.projectId, input.userId))) {
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 

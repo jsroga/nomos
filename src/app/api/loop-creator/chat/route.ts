@@ -12,7 +12,7 @@ import { NextRequest } from 'next/server'
 // flagged LOOP_CREATOR_MASTRA path).
 import '@/domains/loop-creator/core/io/mastra-runtime'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { streamLoopCreator } from '@/domains/loop-creator/server'
 import { type LoopCreatorState, createInitialLoopState } from '@/domains/loop-creator'
 import { HumanMessage, AIMessage } from '@langchain/core/messages'
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    if (!(await tryProjectScope(projectId, session.user.id))) {
       return new Response(JSON.stringify({ error: API_ERROR.PROJECT_ACCESS_DENIED }), {
         status: 404,
         headers: { 'Content-Type': ContentType.Json },

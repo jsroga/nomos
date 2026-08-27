@@ -14,7 +14,7 @@ import {
   StorytellerMessageType,
 } from '@/domains/storyteller/core/storyteller-page-wire'
 import { getMastraInstance } from '@/shared/agent-kernel'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { HttpStatus } from '@/shared/data/constants/protocol'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { HttpHeader } from '@/shared/data/constants/protocol'
@@ -110,7 +110,7 @@ export async function handleStorytellerChatPost(
 
     // The ids come from the request body, so ownership is checked before any
     // canon is read or any model is called — this endpoint spends money.
-    if (!(await verifyProjectAccess(projectId, userId))) {
+    if (!(await tryProjectScope(projectId, userId))) {
       // 404, not 403: a 403 confirms the project exists.
       return NextResponse.json(
         { error: API_ERROR.PROJECT_NOT_FOUND },

@@ -8,7 +8,7 @@ import {
   GameLoopWorkflow,
 } from '@/domains/game-design/ai/workflows/game-loop-workflow'
 import { requireAuth, checkRateLimit } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam, TriggerRunStatus } from '@/shared/data/constants/protocol'
@@ -94,7 +94,8 @@ export async function POST(req: NextRequest) {
     const { projectId, genre, loopType, targetAudience, theme, referenceGames } = parseResult.data
 
     // Verify project access
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     // Start the workflow
     const result = await workflow.run({
-      projectId,
+      projectId: scope.projectId,
       genre,
       loopType,
       targetAudience,

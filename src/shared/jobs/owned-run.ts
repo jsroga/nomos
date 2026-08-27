@@ -16,7 +16,7 @@
  */
 import { runs, tasks } from '@trigger.dev/sdk'
 import type { AnyTask, TaskIdentifier, TaskPayload, TriggerOptions } from '@trigger.dev/sdk'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { isValidProjectId } from '@/shared/auth/security'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 import {
@@ -119,7 +119,7 @@ export async function retrieveOwnedRun(runId: string, userId: string): Promise<O
     throw new JobAccessError(JOB_ACCESS_MESSAGE.NOT_FOUND)
   }
 
-  if (!(await verifyProjectAccess(projectId, userId))) {
+  if (!(await tryProjectScope(projectId, userId))) {
     throw new JobAccessError(JOB_ACCESS_MESSAGE.NOT_FOUND)
   }
 

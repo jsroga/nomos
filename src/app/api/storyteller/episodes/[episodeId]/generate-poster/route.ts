@@ -56,8 +56,7 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       )
     }
 
-    // The scope already resolved the owning project, so the JOIN that used to
-    // repeat that lookup is gone.
+    // The scope already resolved the owning project; the old JOIN is gone.
     const { projectId } = scope
     const { context } = await loadVisualOverviewContext(scope)
     if (!isVisualOverviewReady(context)) {

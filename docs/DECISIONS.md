@@ -123,7 +123,9 @@ Supporting rules:
 
 The rule's escape hatch (`// project-scope: none — <reason>`) applies to the one declaration it sits above, never to a file. Three kinds of use are legitimate and each must say which it is: code that runs in the browser and reaches data only through an authenticated route; cache eviction that reads no project data; and pure functions over rows the caller already fetched. Anything else takes a scope.
 
-`verifyProjectAccess` still has ~64 call sites in `src/app/api/**`. Those are routes rather than services, so the rule does not reach them; retiring it from the public surface is the one irreversible step and waits until the converted seams have run in production for a release.
+`verifyProjectAccess` is now internal to `shared/auth`. Every one of its ~64 former call sites establishes access through `projectScope()` or `tryProjectScope()`, and `no-restricted-imports` makes reaching past them a lint error, pinned by a fixture.
+
+`tryProjectScope` answers `null` rather than throwing, because each route refuses with its own status and message. That is not the boolean this ADR replaced: the scope *is* the return value, so a caller that skips the null check has nothing to pass onward and does not compile.
 
 **Accepted risk.** A raw SQL query that skips the repository layer is still unprotected. The SDK-ownership gate (ADR 0001) is what makes that hard to write.
 
@@ -135,5 +137,6 @@ The rule's escape hatch (`// project-scope: none — <reason>`) applies to the o
 #   → Argument of type 'string' is not assignable to parameter of type 'ProjectScope'
 npx vitest run src/shared/auth/__tests__/project-scope.test.ts
 npx eslint src 2>&1 | grep -c 'no-bare-project-id-param'   # 0; the rule is 'error'
+grep -rn 'verifyProjectAccess' src --include='*.ts' | grep -v src/shared/auth   # tests only
 npx vitest run scripts/__tests__/gate-fixtures.test.ts     # the rule still fails what it must
 ```

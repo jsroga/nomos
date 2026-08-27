@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { episodes, projects, storyPlans } from '@/db'
 import { db } from '@/db/client'
-import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller/server'
+import { verifyEpisodeAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 import { episodeStoryPlanResponse } from '@/domains/storyteller/core/entities/story-plan-wire'
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
         })
       )
     } else if (projectId) {
-      if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      if (!(await tryProjectScope(projectId, session.user.id))) {
         return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ success: true, episode: updated })
     } else if (projectId) {
-      if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      if (!(await tryProjectScope(projectId, session.user.id))) {
         return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 

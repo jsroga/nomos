@@ -35,6 +35,13 @@ const FIXTURES: {
     minimumErrors: 1,
   },
   {
+    // projectScope is the only way to establish access; the raw boolean check
+    // is unreachable from outside shared/auth.
+    file: 'scripts/gate-fixtures/src/services/imports-project-access.ts',
+    ruleId: 'no-restricted-imports',
+    minimumErrors: 1,
+  },
+  {
     // Pins the escape hatch to one declaration: if it goes file-wide again, the
     // un-exempt function beside it stops being reported and this fails.
     file: 'scripts/gate-fixtures/src/services/bare-project-id-escape-is-local.ts',

@@ -34,6 +34,7 @@ import { ApiErrorMessage } from '@/shared/data/constants/protocol'
 import { requestedEpisodePremiseField } from '@/domains/storyteller/core/utils/requested-episode-premise-field'
 import { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
 import { readString } from '@/shared/data/json-guards'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import {
   BEAT_TOOL_ID,
   LIST_BEATS_TOOL_ID,
@@ -291,11 +292,11 @@ export async function POST(req: Request, { params }: RouteContext) {
   const episodeId = raw[AssistantChatBodyKey.EpisodeId]
   const userId = session.user.id
 
-  const { verifyProjectAccess, verifyEpisodeAccess } = await import(
+  const { verifyEpisodeAccess } = await import(
     '@/domains/storyteller/services/access-verification-service'
   )
 
-  if (projectId && !(await verifyProjectAccess(projectId, userId))) {
+  if (projectId && !(await tryProjectScope(projectId, userId))) {
     return new Response(JSON.stringify({ error: PROJECT_ACCESS_DENIED }), { status: STATUS_FORBIDDEN })
   }
   if (episodeId && !(await verifyEpisodeAccess(episodeId, userId))) {

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { ContentType, SseHeader } from '@/shared/data/constants/protocol'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import '@/domains/storyteller/core/io/mastra-runtime'
 import { encodeFixInconsistenciesSse } from '@/domains/storyteller/core/io/fix-inconsistencies-sse'
 import {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { projectId } = payload.data
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    if (!(await tryProjectScope(projectId, session.user.id))) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 

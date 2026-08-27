@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { FsDirectory } from '@/shared/data/constants/protocol'
 
@@ -14,9 +14,8 @@ export const POST = withAuth(
       return NextResponse.json({ error: API_ERROR.MISSING_REQUIRED_FIELDS }, { status: 400 })
     }
 
-    // Verify project access
-    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -30,7 +29,7 @@ export const POST = withAuth(
       process.cwd(),
       FsDirectory.Public,
       FsDirectory.Projects,
-      projectId,
+      scope.projectId,
       filename
     )
 

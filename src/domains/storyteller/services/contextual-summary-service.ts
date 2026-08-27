@@ -320,11 +320,7 @@ export async function generateBatchContextualSummaries(
   return results
 }
 
-/**
- * Clear cached summaries for a project (call when project data changes).
- *
- * project-scope: none — evicts local cache entries, reads no project data.
- */
+/** project-scope: none — evicts local cache entries, reads no project data. */
 export function invalidateProjectSummaries(projectId: string): number {
   let cleared = 0
   for (const key of summaryCache.keys()) {

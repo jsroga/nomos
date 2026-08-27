@@ -10,7 +10,7 @@ import {
   withAuth,
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import {
   API_ERROR,
   TRIGGER_TASK_ID,
@@ -32,8 +32,8 @@ export const POST = withRateLimit(
       const { projectId, prompt, seed, apiKey, artStyle, enablePbr, targetPolycount, topology } =
         parsedBody.data
 
-      const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-      if (!hasAccess) {
+      const scope = await tryProjectScope(projectId, session.user.id)
+      if (!scope) {
         return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
 
@@ -45,7 +45,7 @@ export const POST = withRateLimit(
       const handle = await triggerOwnedRun<typeof textTo3DTask>(
         TRIGGER_TASK_ID.TEXT_TO_3D,
         {
-          projectId,
+          projectId: scope.projectId,
           prompt,
           seed: seed || Math.floor(Math.random() * 2147483647),
           apiKey: meshyApiKey,

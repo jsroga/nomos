@@ -5,7 +5,7 @@ import {
   withAuth,
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { formFile, formInt, formString } from '@/shared/data/form-data-guards'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
@@ -31,8 +31,8 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.MISSING_TILE_UPLOAD_FIELDS }, { status: 400 })
     }
 
-    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -49,7 +49,7 @@ export const POST = withRateLimit(
       .png()
       .toBuffer()
 
-    const filename = `${DB_TABLE.TILES}/${projectId}/${x}_${y}_${Date.now()}.png`
+    const filename = `${DB_TABLE.TILES}/${scope.projectId}/${x}_${y}_${Date.now()}.png`
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json({ error: API_ERROR.BLOB_TOKEN_NOT_CONFIGURED }, { status: 500 })
@@ -65,7 +65,7 @@ export const POST = withRateLimit(
       .from(DB_TABLE.TILES)
       .upsert(
         {
-          project_id: projectId,
+          project_id: scope.projectId,
           x,
           y,
           tile_prompt: `Uploaded tile at (${x}, ${y})`,

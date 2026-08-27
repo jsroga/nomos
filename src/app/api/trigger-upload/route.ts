@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { uploadAssetTask } from '@/domains/storyteller/tasks/upload-asset.task'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 
 export const POST = withAuth<{ runId: string } | { error: string }>(
   async (request: NextRequest, { session }: AuthenticatedRequest) => {
@@ -14,13 +14,13 @@ export const POST = withAuth<{ runId: string } | { error: string }>(
     }
 
     // Verify project access
-    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     const handle = await uploadAssetTask.trigger({
-      projectId,
+      projectId: scope.projectId,
       assetId,
       modelFilename,
     })

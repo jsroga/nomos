@@ -16,7 +16,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { HttpStatus } from '@/shared/data/constants/protocol'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import {
@@ -36,7 +36,7 @@ export const GET = withAuth(async (request: NextRequest, { session }: Authentica
       return NextResponse.json({ error: RelationshipsApiError.MissingProjectId }, { status: 400 })
     }
 
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    if (!(await tryProjectScope(projectId, session.user.id))) {
       // 404, not 403: a 403 confirms the project exists.
       return NextResponse.json(
         { error: API_ERROR.PROJECT_NOT_FOUND },

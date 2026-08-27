@@ -4,7 +4,7 @@ import {
   withAuth,
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { FsDirectory, HttpStatus, JsonField } from '@/shared/data/constants/protocol'
 import {
@@ -34,8 +34,8 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.MISSING_IMAGE_DATA }, { status: HttpStatus.BAD_REQUEST })
     }
 
-    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: HttpStatus.NOT_FOUND })
     }
 
@@ -44,7 +44,7 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.INVALID_FILENAME }, { status: HttpStatus.BAD_REQUEST })
     }
 
-    const projectDir = path.join(process.cwd(), FsDirectory.Public, FsDirectory.Projects, projectId)
+    const projectDir = path.join(process.cwd(), FsDirectory.Public, FsDirectory.Projects, scope.projectId)
     const filePath = path.resolve(projectDir, filename)
 
     if (!filePath.startsWith(projectDir + path.sep) && filePath !== projectDir) {
@@ -61,7 +61,7 @@ export const POST = withRateLimit(
     }
 
     if (isAssetsSaveFilename(filename)) {
-      const url = await persistAssetsImageToBlob(projectId, filename, decoded.buffer)
+      const url = await persistAssetsImageToBlob(scope.projectId, filename, decoded.buffer)
       if (!url) {
         return NextResponse.json(
           { error: API_ERROR.BLOB_TOKEN_NOT_CONFIGURED },
@@ -74,7 +74,7 @@ export const POST = withRateLimit(
     const { size } = writeLocalProjectImage(filePath, decoded.buffer)
     return NextResponse.json({
       success: true,
-      path: localProjectImagePath(projectId, filename),
+      path: localProjectImagePath(scope.projectId, filename),
       size,
     })
   }),

@@ -9,7 +9,7 @@ import {
   TRIGGER_TASK_TTL,
 } from '@/shared/data/constants/api-errors'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { triggerOwnedRun } from '@/shared/jobs'
 
 export const POST = withRateLimit(
@@ -35,13 +35,14 @@ export const POST = withRateLimit(
       .where(eq(assets.id, payload.assetId))
       .limit(1)
 
-    if (!asset || !(await verifyProjectAccess(asset.projectId, session.user.id))) {
+    const scope = asset ? await tryProjectScope(asset.projectId, session.user.id) : null
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.ASSET_NOT_FOUND }, { status: 404 })
     }
 
     const handle = await triggerOwnedRun<typeof remesh3DModelTask>(
       TRIGGER_TASK_ID.REMESH_3D_MODEL,
-      { ...payload, projectId: asset.projectId },
+      { ...payload, projectId: scope.projectId },
       {
         ttl: TRIGGER_TASK_TTL.REMESH,
       }

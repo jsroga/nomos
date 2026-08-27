@@ -413,11 +413,7 @@ class RelationshipEnricherService {
     enrichmentCache.clear()
   }
 
-  /**
-   * Clear cache for a specific project.
-   *
-   * project-scope: none — evicts local cache entries, reads no project data.
-   */
+  /** project-scope: none — evicts local cache entries, reads no project data. */
   clearProjectCache(projectId: string): void {
     for (const key of enrichmentCache.keys()) {
       if (key.startsWith(`${projectId}:`)) {

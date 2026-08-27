@@ -5,7 +5,7 @@ import {
   withAuth,
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { formFile, formString } from '@/shared/data/form-data-guards'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { BlobAccess, ContentType, FormField } from '@/shared/data/constants/protocol'
@@ -21,8 +21,8 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.MISSING_FILE_OR_PROJECT_ID }, { status: 400 })
     }
 
-    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -37,7 +37,7 @@ export const POST = withRateLimit(
     try {
       const buffer = Buffer.from(await file.arrayBuffer())
       const pngBuffer = await sharp(buffer).png().toBuffer()
-      const filename = `${STYLE_REF_BLOB_PREFIX}/${projectId}/${Date.now()}.png`
+      const filename = `${STYLE_REF_BLOB_PREFIX}/${scope.projectId}/${Date.now()}.png`
       const blob = await put(filename, pngBuffer, {
         access: BlobAccess.Public,
         token: process.env.BLOB_READ_WRITE_TOKEN,

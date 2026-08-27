@@ -8,7 +8,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
-import { getUndoManager, verifyProjectAccess } from '@/domains/storyteller/server'
+import { getUndoManager } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify project access
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    if (!(await tryProjectScope(projectId, session.user.id))) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 

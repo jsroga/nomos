@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { gameLoops } from '@/db/schema'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
   ApiRoutePath,
@@ -27,15 +27,15 @@ interface CreateLoopInput {
 }
 
 export async function createGameLoopRecord(input: CreateLoopInput) {
-  const accessDenied = !(await verifyProjectAccess(input.projectId, input.userId))
-  if (accessDenied) {
+  const scope = await tryProjectScope(input.projectId, input.userId)
+  if (!scope) {
     return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.FORBIDDEN })
   }
 
   const [newLoop] = await db
     .insert(gameLoops)
     .values({
-      projectId: input.projectId,
+      projectId: scope.projectId,
       userId: input.userId,
       name: input.name,
       nodes: input.nodes || [],

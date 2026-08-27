@@ -1,14 +1,6 @@
 /**
  * Exported service functions must take a `ProjectScope`, not a bare `projectId`.
- *
- * A `string` carries no evidence of having been checked, so a function that
- * accepts one relies on every caller remembering — which is how this codebase
- * accumulated cross-tenant reads. `ProjectScope` can only be produced by the
- * function that verifies ownership, so the check becomes a precondition of
- * calling rather than a line someone must write.
- *
- * Escape: a function that *creates* a project has no scope to take. Say so with
- * `// project-scope: none — <reason>` above it, rather than a path exemption.
+ * Escape one declaration with `// project-scope: none — <reason>` above it.
  */
 
 const ESCAPE_HATCH = 'project-scope: none'
@@ -48,11 +40,7 @@ module.exports = {
 
     const sourceCode = context.sourceCode ?? context.getSourceCode()
 
-    /**
-     * The escape applies to the one declaration it sits above, not the file.
-     * A file-wide opt-out would let a single legitimate exemption silently
-     * cover every future function added beside it.
-     */
+    /** The escape applies to the declaration it sits above, never the file. */
     function hasEscapeComment(node) {
       let current = node
       while (current) {
@@ -115,12 +103,7 @@ module.exports = {
       reportBareParams(init.params)
     }
 
-    /**
-     * Service classes are the surface even though the class is what's exported,
-     * so public methods count. A `private` method is the class equivalent of the
-     * unexported helper above: it cannot be reached from outside, so the caller
-     * that must hold the scope is the public method that calls it.
-     */
+    /** Public methods are the surface; a `private` one is an internal helper. */
     function checkMethod(node) {
       if (!node.value?.params) return
       if (node.accessibility === 'private' || node.key?.type === 'PrivateIdentifier') return

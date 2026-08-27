@@ -5,7 +5,7 @@ import {
   withAuth,
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE, DB_UPSERT } from '@/shared/data/constants/db-tables'
 import { BufferEncoding, FsDirectory } from '@/shared/data/constants/protocol'
@@ -18,9 +18,8 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.UPLOAD_TILE_FIELDS_REQUIRED }, { status: 400 })
     }
 
-    // Verify project access
-    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -28,7 +27,12 @@ export const POST = withRateLimit(
     const filename = `${x}_${y}_${Date.now()}.png`
 
     // Ensure project directory exists
-    const projectDir = path.join(process.cwd(), FsDirectory.Public, FsDirectory.Projects, projectId)
+    const projectDir = path.join(
+      process.cwd(),
+      FsDirectory.Public,
+      FsDirectory.Projects,
+      scope.projectId
+    )
     if (!fs.existsSync(projectDir)) {
       fs.mkdirSync(projectDir, { recursive: true })
     }
@@ -46,7 +50,7 @@ export const POST = withRateLimit(
       .from(DB_TABLE.TILES)
       .upsert(
         {
-          [DB_COLUMN.PROJECT_ID]: projectId,
+          [DB_COLUMN.PROJECT_ID]: scope.projectId,
           x,
           y,
           tile_prompt: prompt || `Uploaded tile at (${x}, ${y})`,
@@ -65,7 +69,7 @@ export const POST = withRateLimit(
     return NextResponse.json({
       success: true,
       filename,
-      imageUrl: `/projects/${projectId}/${filename}`,
+      imageUrl: `/projects/${scope.projectId}/${filename}`,
       tile: data,
     })
   }),

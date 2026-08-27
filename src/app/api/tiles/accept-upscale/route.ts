@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { Database } from '@/shared/data/storage/database.types'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
@@ -16,8 +16,8 @@ export const POST = withAuth(
     }
 
     // Verify project access
-    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -27,7 +27,7 @@ export const POST = withAuth(
     const { error } = await supabase
       .from(DB_TABLE.TILES)
       .update(updates)
-      .eq(DB_COLUMN.PROJECT_ID, projectId)
+      .eq(DB_COLUMN.PROJECT_ID, scope.projectId)
       .eq('x', x)
       .eq('y', y)
 

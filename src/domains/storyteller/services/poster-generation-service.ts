@@ -54,11 +54,7 @@ const POSTER_IMAGE_URL_FIELD = 'imageUrl'
 const POSTER_IS_VARIANT_GRID_FIELD = 'isVariantGrid'
 
 export class PosterGenerationService {
-  /**
-   * project-scope: none — runs in the browser and reaches the database only
-   * through authenticated API routes, which mint the scope server-side. A token
-   * minted here would prove nothing, since the client cannot do the check.
-   */
+  /** project-scope: none — browser-side; the API route it calls mints the scope. */
   async generateStoryboard(
     projectId: string,
     episodeId: string,
@@ -108,11 +104,7 @@ export class PosterGenerationService {
     }
   }
 
-  /**
-   * project-scope: none — runs in the browser and reaches the database only
-   * through authenticated API routes, which mint the scope server-side. A token
-   * minted here would prove nothing, since the client cannot do the check.
-   */
+  /** project-scope: none — browser-side; the API route it calls mints the scope. */
   async generatePoster(
     projectId: string,
     episodeId: string,
@@ -344,11 +336,7 @@ export class PosterGenerationService {
     }
   }
 
-  /**
-   * project-scope: none — runs in the browser and reaches the database only
-   * through authenticated API routes, which mint the scope server-side. A token
-   * minted here would prove nothing, since the client cannot do the check.
-   */
+  /** project-scope: none — browser-side; the API route it calls mints the scope. */
   resumePendingGenerations(
     projectId: string,
     onComplete?: (

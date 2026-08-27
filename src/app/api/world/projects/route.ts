@@ -40,9 +40,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED_LOWER }, { status: 400 })
   }
 
-  // Deleting a project the caller does not own used to report success: the
-  // owner filter matched no rows and nothing said so. It is now a 404, which
-  // is what the sibling world routes already return.
+  // Used to report success when the owner filter matched no rows. Now 404.
   const scope = await projectScope(projectId, session.user.id).catch(toProjectNotFound)
   if (scope instanceof NextResponse) return scope
 

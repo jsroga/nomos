@@ -3,7 +3,7 @@ import { triggerOwnedRun } from '@/shared/jobs'
 import type { repaintTileTask } from '@/trigger'
 import type { AuthenticatedRequest } from '@/shared/data/api-utils'
 import { } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import {
   API_ERROR,
   API_LOG_PREFIX,
@@ -29,8 +29,8 @@ export async function handleRepaintRequest(
     return NextResponse.json({ error: API_ERROR.MISSING_REPAINT_FIELDS }, { status: 400 })
   }
 
-  const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-  if (!hasAccess) {
+  const scope = await tryProjectScope(projectId, session.user.id)
+  if (!scope) {
     return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
   }
 
@@ -45,7 +45,7 @@ export async function handleRepaintRequest(
     const handle = await triggerOwnedRun<typeof repaintTileTask>(
       TRIGGER_TASK_ID.REPAINT_TILE,
       {
-        projectId,
+        projectId: scope.projectId,
         base64Image,
         maskBase64,
         ...(prompt ? { prompt } : {}),

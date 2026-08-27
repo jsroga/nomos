@@ -67,6 +67,17 @@ export async function projectScope(projectId: string, userId: string): Promise<P
 }
 
 /**
+ * `projectScope` answering `null` instead of throwing, for routes that each
+ * refuse with their own status. The scope is still the only way to proceed.
+ */
+export async function tryProjectScope(
+  projectId: string,
+  userId: string
+): Promise<ProjectScope | null> {
+  return (await verifyProjectAccess(projectId, userId)) ? brand(projectId, userId) : null
+}
+
+/**
  * A scope for work with no user behind it — a Trigger task persisting its own
  * output, or a smoke run. Requires a stated reason and logs every acquisition,
  * so the escape hatch is countable rather than invisible; `systemScopeSites` in

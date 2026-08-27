@@ -78,10 +78,7 @@ export class WorldProjectService {
     return mapProject(row)
   }
 
-  /**
-   * The scope carries both ids, so the owner filter cannot drift from the
-   * identity that was actually verified.
-   */
+  /** The scope carries both ids, so the owner filter cannot drift. */
   async deleteForUser(scope: ProjectScope): Promise<void> {
     await db
       .delete(projects)
@@ -90,12 +87,7 @@ export class WorldProjectService {
 }
 
 export class WorldTileService {
-  /**
-   * Takes a verified scope, not a bare id: this reads through Drizzle, which
-   * connects as a BYPASSRLS role, so the database will return another tenant's
-   * tiles for the asking. The caller cannot construct a ProjectScope without
-   * having passed the ownership check.
-   */
+  /** Drizzle connects as BYPASSRLS, so the scope is the only tenancy control. */
   async listForProject(scope: ProjectScope): Promise<WorldTile[]> {
     const rows = await db.select().from(tiles).where(eq(tiles.projectId, scope.projectId))
     return rows.map(mapTile)

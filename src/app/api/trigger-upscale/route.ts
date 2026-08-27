@@ -5,7 +5,7 @@ import {
   withAuth,
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { TriggerTaskTtl } from '@/shared/data/constants/protocol'
@@ -32,15 +32,15 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.MISSING_UPSCALE_FIELDS }, { status: 400 })
     }
 
-    const hasAccess = await verifyProjectAccess(payload.projectId, session.user.id)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(payload.projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     const { data } = await supabase
       .from(DB_TABLE.PROJECTS)
       .select(DB_SELECT.PROJECT_STYLE_REFS)
-      .eq(DB_COLUMN.ID, payload.projectId)
+      .eq(DB_COLUMN.ID, scope.projectId)
       .single()
 
     const mode = generationModeDef(resolveGenerationMode(data?.generation_mode))
@@ -68,7 +68,7 @@ export const POST = withRateLimit(
       JobType.UpscaleTile,
       {
         tileId: payload.tileId,
-        projectId: payload.projectId,
+        projectId: scope.projectId,
         imageBase64: payload.imageBase64,
         prompt: payload.prompt,
         creativity: payload.creativity,

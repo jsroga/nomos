@@ -3,7 +3,7 @@ import { triggerOwnedRun } from '@/shared/jobs'
 import type { segmentObjectTask } from '@/trigger'
 import type { AuthenticatedRequest } from '@/shared/data/api-utils'
 import { } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import {
   API_ERROR,
   API_LOG_PREFIX,
@@ -45,8 +45,8 @@ export async function handleSegmentRequest(
     return NextResponse.json({ error: API_ERROR.MISSING_SEGMENT_FIELDS }, { status: 400 })
   }
 
-  const hasAccess = await verifyProjectAccess(projectId, session.user.id)
-  if (!hasAccess) {
+  const scope = await tryProjectScope(projectId, session.user.id)
+  if (!scope) {
     return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
   }
 
@@ -58,7 +58,7 @@ export async function handleSegmentRequest(
     const handle = await triggerOwnedRun<typeof segmentObjectTask>(
       TRIGGER_TASK_ID.SEGMENT_OBJECT,
       {
-        projectId,
+        projectId: scope.projectId,
         base64Image,
         box,
         prompt,

@@ -6,7 +6,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
-import { verifyProjectAccess } from '@/shared/auth/project-access'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { z } from 'zod'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
@@ -111,7 +111,7 @@ export class EntitiesService {
 
     // Ownership is application-level: this reads through Drizzle-backed state
     // where RLS does not apply. See docs/decisions/0001-data-access-and-rls.md.
-    const hasAccess = await verifyProjectAccess(validated.projectId, context.userId)
+    const hasAccess = await tryProjectScope(validated.projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         ApiErrorMessage.PROJECT_NOT_FOUND,
@@ -165,7 +165,7 @@ export class EntitiesService {
     }
 
     // Verify project access
-    const hasAccess = await verifyProjectAccess(data.project_id, context.userId)
+    const hasAccess = await tryProjectScope(data.project_id, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         API_ERROR.ENTITY_ACCESS_DENIED,
@@ -184,7 +184,7 @@ export class EntitiesService {
 
     // Ownership is application-level: this reads through Drizzle-backed state
     // where RLS does not apply. See docs/decisions/0001-data-access-and-rls.md.
-    const hasAccess = await verifyProjectAccess(validated.projectId, context.userId)
+    const hasAccess = await tryProjectScope(validated.projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         ApiErrorMessage.PROJECT_NOT_FOUND,

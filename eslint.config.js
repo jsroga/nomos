@@ -467,6 +467,31 @@ module.exports = [
     },
   },
 
+  // `verifyProjectAccess` answers a boolean a caller can check and then ignore.
+  // `projectScope` returns proof that must be carried, so it is the only way in.
+  {
+    files: [
+      'src/**/*.{ts,tsx}',
+      'scripts/gate-fixtures/src/services/imports-project-access.ts',
+    ],
+    ignores: ['src/shared/auth/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/shared/auth/project-access'],
+              message:
+                'Establish project access with projectScope() / tryProjectScope() from ' +
+                '@/shared/auth/project-scope. verifyProjectAccess is internal to shared/auth.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Boundary rule: shared MAY NOT import domains or app (Item 1)
   {
     files: ['src/shared/**/*.{ts,tsx}'],

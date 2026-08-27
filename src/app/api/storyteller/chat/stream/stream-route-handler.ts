@@ -33,8 +33,7 @@ export async function handleStorytellerStreamPost(
     '@/domains/storyteller/services/access-verification-service'
   )
 
-  // The scope both proves access and is what downstream services require, so
-  // the check cannot be passed while the proof is left behind.
+  // The scope both proves access and is what downstream services require.
   let scope: ProjectScope | undefined
   if (projectId) {
     try {
