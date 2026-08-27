@@ -178,6 +178,24 @@ The `NEXT_PUBLIC_` prefix inlines the list into the client bundle so the UI can 
 2. **Async workers** — Frontend → API → Trigger → persist → poll/subscribe.
 3. **One Mastra instance / one Postgres store** — see AGENTS.md.
 4. **Quality gates** — `qualitygate:*`, metrics 400/800 lines, complexity 15/25 — [DEVELOPMENT.md](./DEVELOPMENT.md).
+5. **One declaration per world-bible section** — see below.
+
+### Adding a world-bible section
+
+Edit `src/domains/storyteller/core/bible/section-registry.ts` and run `npm run test:unit`. That is the whole procedure.
+
+`SECTION_REGISTRY` is typed `Record<WorldBibleSection, SectionSpec>`, so a new `BibleSection` member that is not declared **fails to compile**:
+
+```
+error TS2741: Property '[BibleSection.X]' is missing in type '{ … }'
+  but required in type 'Record<WorldBibleSection, SectionSpec>'.
+```
+
+Each entry carries `owner`, `merge`, `hydrates`, an optional `hydratesAs` (the spelling content reaches UI state under, when it differs), `aliases`, and `label`. **A section that does not hydrate must say `why`** — a defect and a decision look identical in code otherwise, and telling them apart is the point.
+
+`BIBLE_OWNED_PLAN_FIELDS` and `HYDRATION_PLAN_FIELDS` are derived. They were three hand-kept lists that had to agree; when one drifted, a section silently stopped appearing — soundtracks, then factions, then plot twists, then the roadmap and executive summary.
+
+Eight world-level fields (`genre`, `tone`, `sequences`, `seasonStructure`, `centralTheme`, `masterPrompt`, `moodImages`, `executiveSummary`) are story-plan scalars rather than `BibleSection` members, so the type cannot force them. They are declared in `WORLD_SCALAR_FIELDS`, and a coverage test fails if a wire plan field is neither a section, a scalar, nor episode-owned.
 
 ## Mastra Studio
 

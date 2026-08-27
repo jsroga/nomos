@@ -79,7 +79,7 @@ export const WORLD_SCALAR_FIELDS: Record<string, { hydrates: boolean }> = {
 export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   [BibleSection.WORLD_DESCRIPTION]: {
     owner: SectionOwner.Bible,
-    merge: MergeStrategy.Deep,
+    merge: MergeStrategy.Overwrite,
     hydrates: true,
     label: SectionLabel.WorldDescription,
   },
@@ -97,7 +97,7 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   },
   [BibleSection.INSPIRATIONS]: {
     owner: SectionOwner.Bible,
-    merge: MergeStrategy.Append,
+    merge: MergeStrategy.Deep,
     hydrates: true,
     label: SectionLabel.Inspirations,
   },
@@ -175,4 +175,14 @@ export function hydrationPlanFields(): string[] {
     .filter(([, spec]) => spec.hydrates)
     .map(([field]) => field)
   return [...sections, ...scalars]
+}
+
+/**
+ * How a regenerate combines with what is already stored, for the sections the
+ * registry declares. Returns undefined for the world-level scalars and the
+ * episode-owned fields, which keep the caller's type-based default.
+ */
+export function mergeStrategyFor(field: string): MergeStrategy | undefined {
+  const section = WORLD_BIBLE_SECTIONS.find(candidate => candidate === field)
+  return section ? SECTION_REGISTRY[section].merge : undefined
 }

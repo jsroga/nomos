@@ -12,8 +12,10 @@ export enum MergeStrategy {
   Replace = 'replace',
   /** A regenerate adds to what is there, keyed by identity. */
   Append = 'append',
-  /** Scalars and objects: the new value wins field by field. */
+  /** Objects: the new value wins field by field, untouched keys survive. */
   Deep = 'deep',
+  /** Scalars: the new value replaces the old outright. */
+  Overwrite = 'overwrite',
 }
 
 /** Human-facing name for each world section. */

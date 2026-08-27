@@ -14,6 +14,10 @@ import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page
 import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import { deepMerge, recordFromJson, smartMergeArray } from '@/shared/data/deep-merge'
 import {
+  MergeStrategy,
+  mergeStrategyFor,
+} from '@/domains/storyteller/core/bible/section-registry'
+import {
   extractCastFromUpdates,
   normalizeCastInUpdates,
   readCastFromPlan,
@@ -25,7 +29,6 @@ import {
   PlotTwistFieldAlias,
   SoundtrackFieldAlias,
   STORY_PLAN_MERGE_FIELDS,
-  STORY_PLAN_REPLACE_FIELDS,
   WorldDescriptionFieldAlias,
   WorldRulesFieldAlias,
 } from './constants/bible-wire-fields'
@@ -310,10 +313,16 @@ export const STORY_PLAN_FIELDS = STORY_PLAN_MERGE_FIELDS
 /**
  * Apply updates to a story plan state, handling merging correctly
  */
-/** One plan field: replace-on-regenerate, smart-merge, deep-merge, or overwrite. */
+/**
+ * One plan field: replace-on-regenerate, smart-merge, deep-merge, or overwrite.
+ *
+ * Only the replace decision is keyed on the field, and SECTION_REGISTRY is
+ * where that is now declared. Everything else follows the shape of the value,
+ * which is what the world-level scalars and episode fields rely on.
+ */
 function mergePlanField(field: string, currentValue: unknown, update: unknown): unknown {
   if (Array.isArray(update)) {
-    if (STORY_PLAN_REPLACE_FIELDS.some(replaceField => replaceField === field)) return update
+    if (mergeStrategyFor(field) === MergeStrategy.Replace) return update
     return smartMergeArray(Array.isArray(currentValue) ? currentValue : [], update)
   }
   if (typeof update === 'object' && update !== null) {
