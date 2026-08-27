@@ -4,6 +4,7 @@
 
 import type { DetectedSection } from '@/domains/storyteller/config/tool-result-mapper'
 import { ChatFrameType } from '@/shared/chat/core/protocol'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 
 export { ChatFrameType as ChatStreamFrameType }
 
@@ -38,7 +39,8 @@ export function emitFrame(writer: SseWriter, frame: unknown): boolean {
 export interface StreamSession {
   writer: SseWriter
   traceId: string
-  projectId: string | undefined
+  /** Present only when the request named a project the caller owns. */
+  scope: ProjectScope | undefined
   episodeId: string | undefined
   isSectionUpdate: boolean
   existingBibleData: Record<string, unknown>

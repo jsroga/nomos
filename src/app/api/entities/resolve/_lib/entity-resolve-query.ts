@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import {
   BooleanQueryValue,
@@ -11,7 +11,7 @@ const MAX_ENTITY_IDS = 50
 const VALID_ID_PATTERN = /^[a-z0-9-_.'’]+$/i
 
 export interface EntityResolveQuery {
-  projectId: string
+  scope: ProjectScope
   ids: string[]
   enrichRelationships: boolean
   context: string | null
@@ -66,7 +66,11 @@ export async function parseEntityResolveQuery(
     }
   }
 
-  if (!(await verifyProjectAccess(projectId, session.user.id))) {
+  let scope: ProjectScope
+  try {
+    scope = await projectScope(projectId, session.user.id)
+  } catch (error) {
+    if (!(error instanceof ProjectForbidden)) throw error
     // 404, not 403: a 403 confirms the project exists.
     return {
       ok: false,
@@ -109,7 +113,7 @@ export async function parseEntityResolveQuery(
   return {
     ok: true,
     query: {
-      projectId,
+      scope,
       ids,
       enrichRelationships,
       context,

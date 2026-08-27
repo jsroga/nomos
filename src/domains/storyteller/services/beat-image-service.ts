@@ -112,6 +112,11 @@ class BeatImageService {
     }
   }
 
+  /**
+   * project-scope: none — runs in the browser and reaches the database only
+   * through authenticated API routes, which mint the scope server-side. A token
+   * minted here would prove nothing, since the client cannot do the check.
+   */
   async generateImageForBeat(
     projectId: string,
     beat: BeatCard,

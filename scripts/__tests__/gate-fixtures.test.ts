@@ -33,8 +33,13 @@ const FIXTURES: {
     file: 'scripts/gate-fixtures/src/services/bare-project-id.ts',
     ruleId: 'local/no-bare-project-id-param',
     minimumErrors: 1,
-    // Report-only while the 57-site baseline is burned down (SPEC-06 seams 2–5).
-    severity: 1,
+  },
+  {
+    // Pins the escape hatch to one declaration: if it goes file-wide again, the
+    // un-exempt function beside it stops being reported and this fails.
+    file: 'scripts/gate-fixtures/src/services/bare-project-id-escape-is-local.ts',
+    ruleId: 'local/no-bare-project-id-param',
+    minimumErrors: 1,
   },
 ]
 

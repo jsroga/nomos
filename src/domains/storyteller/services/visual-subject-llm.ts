@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import { OpenAiChatRole } from '@/shared/data/constants/protocol'
 import { TEXT_GEN_FAST_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import {
   VisualOverviewLabel,
   VisualSubjectCopy,
@@ -134,11 +135,11 @@ export async function generateVisualSubjects(
 
 export async function generateOverviewVisualSubject(
   openai: OpenAI,
-  projectId: string,
+  scope: ProjectScope,
   extra?: string,
   kind: VisualSubjectKind = VisualSubjectKind.Scene,
 ): Promise<string | null> {
-  const { context } = await loadVisualOverviewContext(projectId)
+  const { context } = await loadVisualOverviewContext(scope)
   if (!isVisualOverviewReady(context)) return null
   const fallbackSource = extra?.trim() || context.worldDesc
   const [scene] = await generateVisualSubjects(openai, {

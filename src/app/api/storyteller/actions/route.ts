@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller/server'
+import { verifyEpisodeAccess } from '@/domains/storyteller/server'
+import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
@@ -16,30 +17,42 @@ import { dispatchStorytellerAction, parseStorytellerAction } from './_lib/dispat
 import { readOptionalStringField } from './_lib/read-payload-fields'
 
 function buildHandlerContext(
-  projectId: string | undefined,
+  scope: ProjectScope | undefined,
   episodeId: string | undefined
 ): ActionHandlerContext {
-  const helpers = createContentUpdateHelpers(projectId)
+  const helpers = createContentUpdateHelpers(scope?.projectId)
   return {
-    projectId,
+    scope,
     episodeId,
     updateSeriesBible: helpers.updateSeriesBible,
     updateStoryPlan: helpers.updateStoryPlan,
   }
 }
 
-async function verifyActionAccess(
+/**
+ * Establishes access and returns the proof of it, so handlers receive a scope
+ * rather than a bare id that a later edit could forget to check.
+ */
+async function scopeActionAccess(
   projectId: string | undefined,
   episodeId: string | undefined,
   userId: string
-): Promise<NextResponse | null> {
-  if (projectId && !(await verifyProjectAccess(projectId, userId))) {
-    return NextResponse.json({ error: ApiErrorMessage.PROJECT_NOT_FOUND }, { status: 404 })
+): Promise<{ scope: ProjectScope | undefined } | NextResponse> {
+  let scope: ProjectScope | undefined
+  if (projectId) {
+    try {
+      scope = await projectScope(projectId, userId)
+    } catch (error) {
+      if (error instanceof ProjectForbidden) {
+        return NextResponse.json({ error: ApiErrorMessage.PROJECT_NOT_FOUND }, { status: 404 })
+      }
+      throw error
+    }
   }
   if (episodeId && !(await verifyEpisodeAccess(episodeId, userId))) {
     return NextResponse.json({ error: ApiErrorMessage.EPISODE_NOT_FOUND }, { status: 404 })
   }
-  return null
+  return { scope }
 }
 
 function recordActionTrace(
@@ -76,8 +89,8 @@ export async function POST(req: NextRequest) {
     const projectId = readOptionalStringField(body, ActionRequestField.ProjectId)
     const episodeId = readOptionalStringField(body, ActionRequestField.EpisodeId)
 
-    const accessError = await verifyActionAccess(projectId, episodeId, session.user.id)
-    if (accessError) return accessError
+    const access = await scopeActionAccess(projectId, episodeId, session.user.id)
+    if (access instanceof NextResponse) return access
 
     console.log(`📥 Actions API: ${action.type} for project ${projectId}`)
 
@@ -87,7 +100,7 @@ export async function POST(req: NextRequest) {
       `action-${Date.now()}`
     recordActionTrace(traceId, action, body)
 
-    const ctx = buildHandlerContext(projectId, episodeId)
+    const ctx = buildHandlerContext(access.scope, episodeId)
     return await dispatchStorytellerAction(ctx, action)
   } catch (error) {
     console.error(API_LOG_PREFIX.ACTIONS_API_ERROR, error)

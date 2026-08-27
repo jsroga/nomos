@@ -11,6 +11,11 @@ export interface EntityLoadBatchItem {
   context?: string
 }
 
+/**
+ * project-scope: none — client-side batching queue; the id only groups pending
+ * requests before they reach `/api/entities/resolve`, which is where ownership
+ * is actually verified. No scope can be minted in the browser.
+ */
 export function enqueueEntityLoad(
   queue: Map<string, EntityLoadBatchItem>,
   key: string,

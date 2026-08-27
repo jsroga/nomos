@@ -32,6 +32,7 @@ import {
   formatResultsWithCitations,
 } from './rag-retrieve-helpers'
 import type { CitationInfo, RagResult, RetrieveOptions } from './rag-types'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 
 export type DocumentType = `${RagDocumentType}`
 export type { CitationInfo, RagResult, RetrieveOptions }
@@ -55,20 +56,20 @@ export class RagService {
     this.reranker = getReranker()
   }
 
-  async ingest(projectId: string, content: string, options: RagIngestOptions) {
+  async ingest(scope: ProjectScope, content: string, options: RagIngestOptions) {
     const shouldChunk = options.chunkDocument ?? shouldChunkDocumentType(options.documentType)
 
     if (shouldChunk) {
-      await ingestChunkedDocument(projectId, content, options, this.chunker, this.embeddings)
+      await ingestChunkedDocument(scope, content, options, this.chunker, this.embeddings)
     } else {
-      await ingestSingleDocument(projectId, content, options, this.embeddings)
+      await ingestSingleDocument(scope, content, options, this.embeddings)
     }
 
-    this.invalidateCacheForProject(projectId)
+    this.invalidateCacheForProject(scope.projectId)
   }
 
   async storeBeatDecision(
-    projectId: string,
+    scope: ProjectScope,
     beatLogline: string,
     decision: 'approved' | 'rejected' | 'revised',
     reasoning: string,
@@ -80,7 +81,7 @@ Decision: ${decision.toUpperCase()}
 Reasoning: ${reasoning}
 By: ${agentName}`
 
-    await this.ingest(projectId, content, {
+    await this.ingest(scope, content, {
       documentType: RagDocumentType.BeatDecision,
       beatId,
       agentName,
@@ -89,7 +90,7 @@ By: ${agentName}`
   }
 
   async storeCharacterArc(
-    projectId: string,
+    scope: ProjectScope,
     characterName: string,
     development: string,
     episodeId?: string,
@@ -98,28 +99,29 @@ By: ${agentName}`
     const content = `Character: ${characterName}
 Development: ${development}`
 
-    await this.ingest(projectId, content, {
+    await this.ingest(scope, content, {
       documentType: RagDocumentType.CharacterArc,
       characterId,
       episodeId,
     })
   }
 
-  async storeUserFeedback(projectId: string, feedback: string, context: string) {
+  async storeUserFeedback(scope: ProjectScope, feedback: string, context: string) {
     const content = `User Feedback: ${feedback}
 Context: ${context}`
 
-    await this.ingest(projectId, content, {
+    await this.ingest(scope, content, {
       documentType: RagDocumentType.UserFeedback,
       chunkDocument: false,
     })
   }
 
   async retrieve(
-    projectId: string,
+    scope: ProjectScope,
     query: string,
     options: RetrieveOptions = {}
   ): Promise<RagResult[]> {
+    const { projectId } = scope
     const {
       limit = 5,
       useQueryExpansion = STORYTELLER_CONFIG.features.ragEnabled,
@@ -135,7 +137,7 @@ Context: ${context}`
 
     try {
       const queries = await this.expandQueries(query, useQueryExpansion)
-      const allResults = await this.searchExpandedQueries(projectId, queries, documentType, limit, useReranking)
+      const allResults = await this.searchExpandedQueries(scope, queries, documentType, limit, useReranking)
       const uniqueResults = deduplicateSearchResults(allResults)
       const finalResults = await this.finalizeSearchResults(query, uniqueResults, limit, useReranking)
       const results = convertSearchResultsToRagResults(finalResults)
@@ -144,17 +146,17 @@ Context: ${context}`
       return results
     } catch (error) {
       console.warn(RagServiceLog.RetrievalFailed, error)
-      return fallbackVectorSearch(projectId, query, limit, q => this.embeddings.embedQuery(q))
+      return fallbackVectorSearch(scope, query, limit, q => this.embeddings.embedQuery(q))
     }
   }
 
   async retrieveByType(
-    projectId: string,
+    scope: ProjectScope,
     documentType: DocumentType,
     query: string,
     limit = 5
   ): Promise<RagResult[]> {
-    return this.retrieve(projectId, query, {
+    return this.retrieve(scope, query, {
       limit,
       documentType,
       useQueryExpansion: true,
@@ -162,25 +164,25 @@ Context: ${context}`
     })
   }
 
-  async retrieveCharacterHistory(projectId: string, characterName: string, limit = 10): Promise<RagResult[]> {
+  async retrieveCharacterHistory(scope: ProjectScope, characterName: string, limit = 10): Promise<RagResult[]> {
     return this.retrieveByType(
-      projectId,
+      scope,
       RagDocumentType.CharacterArc,
       `${characterName} character development arc`,
       limit
     )
   }
 
-  async retrieveSimilarBeatDecisions(projectId: string, beatLogline: string, limit = 5): Promise<RagResult[]> {
-    return this.retrieveByType(projectId, RagDocumentType.BeatDecision, beatLogline, limit)
+  async retrieveSimilarBeatDecisions(scope: ProjectScope, beatLogline: string, limit = 5): Promise<RagResult[]> {
+    return this.retrieveByType(scope, RagDocumentType.BeatDecision, beatLogline, limit)
   }
 
-  async retrieveUserPreferences(projectId: string, context: string, limit = 5): Promise<RagResult[]> {
-    return this.retrieveByType(projectId, RagDocumentType.UserFeedback, context, limit)
+  async retrieveUserPreferences(scope: ProjectScope, context: string, limit = 5): Promise<RagResult[]> {
+    return this.retrieveByType(scope, RagDocumentType.UserFeedback, context, limit)
   }
 
   async assembleAgentContext(
-    projectId: string,
+    scope: ProjectScope,
     _agentRole: string,
     currentContext: string
   ): Promise<{
@@ -190,9 +192,9 @@ Context: ${context}`
     citations: CitationInfo[]
   }> {
     const [generalHistory, pastDecisions, userPrefs] = await Promise.all([
-      this.retrieve(projectId, currentContext, { limit: 3 }),
-      this.retrieveByType(projectId, RagDocumentType.BeatDecision, currentContext, 3),
-      this.retrieveByType(projectId, RagDocumentType.UserFeedback, currentContext, 2),
+      this.retrieve(scope, currentContext, { limit: 3 }),
+      this.retrieveByType(scope, RagDocumentType.BeatDecision, currentContext, 3),
+      this.retrieveByType(scope, RagDocumentType.UserFeedback, currentContext, 2),
     ])
 
     const historyFormatted = formatResultsWithCitations(generalHistory)
@@ -245,12 +247,13 @@ Context: ${context}`
   }
 
   private async searchExpandedQueries(
-    projectId: string,
+    scope: ProjectScope,
     queries: string[],
     documentType: DocumentType | undefined,
     limit: number,
     useReranking: boolean
   ): Promise<SearchResult[]> {
+    const { projectId } = scope
     const fetchLimit = useReranking ? limit * 2 : limit
     const limitedQueries = queries.slice(0, 3)
 

@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyEpisodeAccess } from '@/domains/storyteller/server'
+import { episodeScope, type EpisodeScope } from '@/domains/storyteller/server'
+import { ProjectForbidden } from '@/shared/auth/project-scope'
 import { HttpStatus } from '@/shared/data/constants/protocol'
-import { db } from '@/db/client'
-import { episodes, projects } from '@/db'
-import { eq } from 'drizzle-orm'
 import { triggerOwnedRun } from '@/shared/jobs'
 import type { generatePoster } from '@/domains/storyteller/tasks/generate-poster.task'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
@@ -29,8 +27,11 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
         { status: HttpStatus.UNAUTHORIZED }
       )
     }
-    const access = await verifyEpisodeAccess(episodeId, session.user.id)
-    if (!access.hasAccess) {
+    let scope: EpisodeScope
+    try {
+      scope = await episodeScope(episodeId, session.user.id)
+    } catch (error) {
+      if (!(error instanceof ProjectForbidden)) throw error
       return NextResponse.json(
         { error: API_ERROR.EPISODE_PROJECT_NOT_FOUND },
         { status: HttpStatus.NOT_FOUND }
@@ -55,22 +56,10 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       )
     }
 
-    const episodeData = await db
-      .select({
-        projectId: projects.id,
-      })
-      .from(episodes)
-      .innerJoin(projects, eq(episodes.projectId, projects.id))
-      .where(eq(episodes.id, episodeId))
-      .execute()
-      .then(rows => rows[0])
-
-    if (!episodeData) {
-      return NextResponse.json({ error: API_ERROR.EPISODE_PROJECT_NOT_FOUND }, { status: 404 })
-    }
-
-    const { projectId } = episodeData
-    const { context } = await loadVisualOverviewContext(projectId)
+    // The scope already resolved the owning project, so the JOIN that used to
+    // repeat that lookup is gone.
+    const { projectId } = scope
+    const { context } = await loadVisualOverviewContext(scope)
     if (!isVisualOverviewReady(context)) {
       return NextResponse.json({ error: API_ERROR.OVERVIEW_REQUIRED }, { status: 400 })
     }

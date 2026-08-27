@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { projects } from '@/db'
 import { db } from '@/db/client'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
@@ -22,7 +22,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED }, { status: 400 })
     }
 
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    let scope: ProjectScope
+    try {
+      scope = await projectScope(projectId, session.user.id)
+    } catch (error) {
+      if (!(error instanceof ProjectForbidden)) throw error
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
@@ -40,7 +44,7 @@ export async function GET(req: NextRequest) {
 
     const bible = buildMergedBibleFromProject(project)
     const cast = await fetchProjectCast(projectId)
-    const { summary, fallbackPrompt } = await buildWorldSummaryContent(projectId, bible, cast)
+    const { summary, fallbackPrompt } = await buildWorldSummaryContent(scope, bible, cast)
     const worldGenPrompt = await generateWorldGenPrompt(bible, fallbackPrompt)
 
     return NextResponse.json({

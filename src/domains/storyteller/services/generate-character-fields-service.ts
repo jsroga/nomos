@@ -1,4 +1,5 @@
 import { generateObject } from 'ai'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { createPureModel, openRouterClientConfig } from '@/shared/agent-kernel/models'
 import {
   CharacterTextFieldKey,
@@ -42,12 +43,12 @@ export class GenerateCharacterFieldsError extends Error {
 }
 
 export interface GenerateCharacterMissingFieldsInput {
-  projectId: string
+  scope: ProjectScope
   filled: CharacterFilledDraft
 }
 
 export interface GenerateCharacterFieldsDeps {
-  loadCanonPack?: (projectId: string) => Promise<StoryCanonPack | null>
+  loadCanonPack?: (scope: ProjectScope) => Promise<StoryCanonPack | null>
   generate?: (input: {
     system: string
     prompt: string
@@ -110,7 +111,7 @@ export async function generateCharacterMissingFields(
 
   const loadCanonPack = deps.loadCanonPack ?? loadStoryCanonPack
   const generate = deps.generate ?? defaultGenerate
-  const pack = await loadCanonPack(input.projectId)
+  const pack = await loadCanonPack(input.scope)
   const usablePack = pack !== null && hasUsableCanonPack(pack)
 
   if (!hasUsableCharacterDraft(filled) && !usablePack) {

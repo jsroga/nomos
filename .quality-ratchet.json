@@ -5,7 +5,7 @@
   "sessionExistenceOnlyRoutes": 12,
   "directDbClientImporters": 70,
   "serviceRoleClientSites": 23,
-  "bareProjectIdExports": 57,
+  "bareProjectIdExports": 0,
   "systemScopeSites": 0,
   "_commands": {
     "untaggedRunGracePaths": "grep -c 'isWithinUntaggedGraceWindow(run.createdAt)' src/shared/jobs/owned-run.ts   # remove the grace branch one deploy cycle after tagging ships, then 0",
@@ -13,7 +13,7 @@
     "sessionExistenceOnlyRoutes": "grep -rl 'auth-scope: session-existence-only' src/app/api --include='*.ts' | wc -l   # each is a reviewed decision; the number should not grow",
     "directDbClientImporters": "grep -rln \"from '@/db/client'|from '@/db'\" src --include='*.ts' --include='*.tsx' | grep -v __tests__ | grep -v shared/persistence | wc -l",
     "serviceRoleClientSites": "grep -rln 'createSupabaseServiceClient()|supabaseAdmin' src --include='*.ts' | grep -v __tests__ | grep -v shared/persistence | wc -l   # each must move to serviceRoleClient(reason)",
-    "bareProjectIdExports": "npx eslint src 2>&1 | grep -c 'no-bare-project-id-param'   # SPEC-06 seams 2-5 burn this down; flip the rule to error at 0",
+    "bareProjectIdExports": "npx eslint src 2>&1 | grep -c 'no-bare-project-id-param'   # reached 0; the rule is now 'error', so this stays 0 by construction",
     "systemScopeSites": "grep -rn 'systemScope(' src --include='*.ts' | grep -v __tests__ | grep -v project-scope.ts | wc -l   # visible, countable RLS-free escapes"
   }
 }

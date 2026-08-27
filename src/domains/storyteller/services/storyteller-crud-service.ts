@@ -10,6 +10,8 @@ import 'server-only'
 import { db } from '@/db/client'
 import { characters, projects, episodes, beats } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
+import { verifyProjectAccess as sharedVerifyProjectAccess } from '@/shared/auth/project-access'
+import { projectScope, ProjectForbidden, type ProjectScope } from '@/shared/auth/project-scope'
 
 type CharacterRow = typeof characters.$inferSelect
 type EpisodeRow = typeof episodes.$inferSelect
@@ -98,17 +100,39 @@ export interface ServiceContext {
 
 export class StorytellerService {
   /**
-   * Verify project access for a user
+   * Verify project access for a user.
+   *
+   * Private: outside this class the way to establish project access is
+   * `projectScope()`, which returns proof rather than a boolean a caller can
+   * forget to read.
    */
-  async verifyProjectAccess(projectId: string, userId: string): Promise<boolean> {
-    const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
-    return !!project && project.userId === userId
+  private async verifyProjectAccess(projectId: string, userId: string): Promise<boolean> {
+    return sharedVerifyProjectAccess(projectId, userId)
+  }
+
+  /**
+   * Mint a scope, reporting failure as this service's `NotFound` rather than
+   * `ProjectForbidden`, so MCP consumers see the error shape they already
+   * handle. Both mean the same thing and both resolve to 404 at the edge.
+   */
+  private async requireScope(projectId: string, userId: string): Promise<ProjectScope> {
+    try {
+      return await projectScope(projectId, userId)
+    } catch (error) {
+      if (error instanceof ProjectForbidden) {
+        throw new ServiceError(
+          STORYTELLER_CRUD_ACCESS_ERRORS.project,
+          StorytellerCrudErrorCode.NotFound
+        )
+      }
+      throw error
+    }
   }
 
   /**
    * Verify character access for a user
    */
-  async verifyCharacterAccess(characterId: string, userId: string): Promise<boolean> {
+  private async verifyCharacterAccess(characterId: string, userId: string): Promise<boolean> {
     const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
     if (!character) return false
 
@@ -317,21 +341,13 @@ export class StorytellerService {
   }
 
   /**
-   * Get the series bible for a project
+   * Get the series bible for a project.
+   *
+   * Takes a scope rather than an id: ownership was proved to mint the scope, so
+   * there is no second check here that a caller could route around.
    */
-  async getSeriesBible(
-    projectId: string,
-    context: ServiceContext
-  ): Promise<{ seriesBible: unknown }> {
-    const hasAccess = await this.verifyProjectAccess(projectId, context.userId)
-    if (!hasAccess) {
-      throw new ServiceError(
-        STORYTELLER_CRUD_ACCESS_ERRORS.project,
-        StorytellerCrudErrorCode.NotFound
-      )
-    }
-
-    const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+  async getSeriesBible(scope: ProjectScope): Promise<{ seriesBible: unknown }> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, scope.projectId))
 
     return { seriesBible: project?.seriesBible || {} }
   }
@@ -350,13 +366,7 @@ export class StorytellerService {
   }> {
     const validated = chatMessageSchema.parse(input)
 
-    const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
-    if (!hasAccess) {
-      throw new ServiceError(
-        STORYTELLER_CRUD_ACCESS_ERRORS.project,
-        StorytellerCrudErrorCode.NotFound
-      )
-    }
+    const scope = await this.requireScope(validated.projectId, context.userId)
 
     // Dynamic import to avoid a static service ↔ agents cycle.
     const { createStorytellerAgent } = await import(
@@ -369,7 +379,7 @@ export class StorytellerService {
       validated.threadId || `thread_${Date.now()}_${Math.random().toString(36).slice(2)}`
 
     // Get series bible and characters for context
-    const { seriesBible } = await this.getSeriesBible(validated.projectId, context)
+    const { seriesBible } = await this.getSeriesBible(scope)
     const { characters: projectCharacters } = await this.listCharacters(
       { projectId: validated.projectId },
       context

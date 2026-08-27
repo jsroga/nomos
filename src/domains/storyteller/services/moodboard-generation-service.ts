@@ -70,6 +70,11 @@ export class MoodboardGenerationService {
   /**
    * Generate moodboard using Trigger.dev background task
    */
+  /**
+   * project-scope: none — runs in the browser and reaches the database only
+   * through authenticated API routes, which mint the scope server-side. A token
+   * minted here would prove nothing, since the client cannot do the check.
+   */
   async generate(
     projectId: string,
     prompts: string[],
@@ -214,6 +219,11 @@ export class MoodboardGenerationService {
     useGlobalStatusStore.getState().removeOperation(opId)
   }
 
+  /**
+   * project-scope: none — runs in the browser and reaches the database only
+   * through authenticated API routes, which mint the scope server-side. A token
+   * minted here would prove nothing, since the client cannot do the check.
+   */
   resumePendingGenerations(
     projectId: string,
     onComplete?: () => void,

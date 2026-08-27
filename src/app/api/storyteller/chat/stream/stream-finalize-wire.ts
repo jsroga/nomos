@@ -8,12 +8,13 @@ import { emitFrame, type StreamSession } from './stream-session-wire'
 export async function finalizeStream(session: StreamSession): Promise<void> {
   // Auto-link entity names in generated text before sending
   let finalText = session.fullText
-  if (session.projectId && session.fullText.length > 0) {
+  const scope = session.scope
+  if (scope && session.fullText.length > 0) {
     try {
       const { entityAutoLinker } = await import(
         '@/domains/storyteller/services/entity-auto-linker-service'
       )
-      finalText = await entityAutoLinker.autoLink(session.fullText, session.projectId)
+      finalText = await entityAutoLinker.autoLink(session.fullText, scope)
     } catch (err) {
       console.warn('[Stream] Entity auto-linking failed:', err)
       // Continue with original text

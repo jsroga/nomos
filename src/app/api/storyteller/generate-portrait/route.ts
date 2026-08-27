@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 import { triggerOwnedRun } from '@/shared/jobs'
 import type { generatePortrait } from '@/domains/storyteller/tasks/generate-portrait.task'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
@@ -31,7 +31,11 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED_LOWER }, { status: 400 })
     }
 
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    let scope: ProjectScope
+    try {
+      scope = await projectScope(projectId, session.user.id)
+    } catch (error) {
+      if (!(error instanceof ProjectForbidden)) throw error
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -42,7 +46,7 @@ export const POST = withRateLimit(
 
     const scene = await generateOverviewVisualSubject(
       openai,
-      projectId,
+      scope,
       description,
       VisualSubjectKind.Portrait,
     )

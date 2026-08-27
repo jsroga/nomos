@@ -74,7 +74,7 @@ export const handleStoryPlanPartialUpdate: ActionHandler = async (ctx, action) =
   let updates: Record<string, unknown> = {}
 
   if (action.type === ActionType.ADD_WORLD_RULE) {
-    updates = await buildAddWorldRuleUpdates(ctx.projectId, action.payload)
+    updates = await buildAddWorldRuleUpdates(ctx.scope?.projectId, action.payload)
   } else {
     updates = buildStoryPlanPartialUpdates(action)
   }

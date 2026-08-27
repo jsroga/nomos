@@ -6,6 +6,7 @@ import { readRowNumber, readRowString, sqlResultRows } from '@/shared/data/json-
 import { parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
 import { EntityGraphLog } from '@/domains/storyteller/services/constants/entity-graph-log'
 import { InferredRelationshipType } from '@/domains/storyteller/services/constants/entity-graph-wire'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import type { EntityType } from './entity-registry-service'
 import { vectorSql, HOP_DECAY_FACTOR, MIN_RELEVANCE_THRESHOLD } from './entity-graph-vector'
 import {
@@ -93,9 +94,10 @@ function registerHopEntity(
 
 export async function traverseRelatedEntities(
   seedIds: string[],
-  projectId: string,
+  scope: ProjectScope,
   options: GraphRAGOptions = {}
 ): Promise<ScoredEntity[]> {
+  const { projectId } = scope
   const opts = { ...DEFAULT_GRAPH_RAG_OPTIONS, ...options }
 
   if (seedIds.length === 0) return []
@@ -151,7 +153,7 @@ export async function traverseRelatedEntities(
 }
 
 export async function buildProjectGraphEdges(
-  projectId: string,
+  scope: ProjectScope,
   entities: DbEntityRow[],
   minStrength: number,
   inferType: (
@@ -160,6 +162,7 @@ export async function buildProjectGraphEdges(
     weight: number
   ) => InferredRelationshipType
 ): Promise<Array<{ source: string; target: string; weight: number; type: InferredRelationshipType }>> {
+  const { projectId } = scope
   const edges: Array<{ source: string; target: string; weight: number; type: InferredRelationshipType }> = []
 
   if (entities.length <= 1) return edges

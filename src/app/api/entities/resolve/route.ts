@@ -32,15 +32,15 @@ export async function GET(request: NextRequest) {
       return parsed.response
     }
 
-    const { projectId, ids, enrichRelationships, context } = parsed.query
+    const { scope, ids, enrichRelationships, context } = parsed.query
 
-    let entities = await resolveEntitiesWithAutoRegister(ids, projectId, context)
+    let entities = await resolveEntitiesWithAutoRegister(ids, scope, context)
 
     if (enrichRelationships) {
-      entities = await enrichEntitiesWithRelationships(entities, projectId)
+      entities = await enrichEntitiesWithRelationships(entities, scope)
     }
 
-    entities = await applyContextualSummaries(entities, projectId, context)
+    entities = await applyContextualSummaries(entities, scope, context)
 
     return NextResponse.json({ entities })
   } catch (error) {

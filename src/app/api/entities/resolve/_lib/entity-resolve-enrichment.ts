@@ -1,4 +1,5 @@
 import type { EntityReference } from '@/domains/storyteller/core/entities/entity-references'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import {
   contextualSummaryService,
   entityRegistry,
@@ -22,7 +23,7 @@ const MAX_CONTEXTUAL_SUMMARIES = 10
 async function registerMissingAsGeneratedStubs(
   ids: string[],
   resolved: Map<string, EntityReference>,
-  projectId: string,
+  scope: ProjectScope,
   context: string | null
 ): Promise<Map<string, EntityReference>> {
   const missing = ids.filter(id => !resolved.has(id))
@@ -37,13 +38,13 @@ async function registerMissingAsGeneratedStubs(
         name,
         type,
         surroundingText: context ?? '',
-        projectId,
+        projectId: scope.projectId,
       })
       await entityRegistry.registerWithId(id, {
         name,
         description,
         metadata: { inferredFromText: true },
-        projectId,
+        scope,
       })
     })
   )
@@ -52,7 +53,7 @@ async function registerMissingAsGeneratedStubs(
 
 export async function resolveEntitiesWithAutoRegister(
   ids: string[],
-  projectId: string,
+  scope: ProjectScope,
   context: string | null
 ): Promise<EntityReference[]> {
   let resolved = await entityRegistry.resolveMany(ids)
@@ -63,18 +64,18 @@ export async function resolveEntitiesWithAutoRegister(
       `[Entity Resolution] Attempting to auto-register ${unresolvedIds.length} unresolved entities`
     )
     await Promise.all(
-      unresolvedIds.map(id => tryAutoRegisterEntity(id, projectId, context))
+      unresolvedIds.map(id => tryAutoRegisterEntity(id, scope, context))
     )
     resolved = await entityRegistry.resolveMany(ids)
   }
 
-  resolved = await registerMissingAsGeneratedStubs(ids, resolved, projectId, context)
+  resolved = await registerMissingAsGeneratedStubs(ids, resolved, scope, context)
   return Array.from(resolved.values())
 }
 
 export async function enrichEntitiesWithRelationships(
   entities: EntityReference[],
-  projectId: string
+  scope: ProjectScope
 ): Promise<EntityReference[]> {
   return Promise.all(
     entities.map(async entity => {
@@ -82,7 +83,7 @@ export async function enrichEntitiesWithRelationships(
         entity.id,
         entity.type,
         entity.name,
-        projectId,
+        scope,
         entity.description
       )
 
@@ -113,7 +114,7 @@ function partitionEntitiesByDescription(
 async function enrichEntityWithContextualSummary(
   entity: EntityReference,
   safeContext: string,
-  projectId: string
+  scope: ProjectScope
 ): Promise<EntityReference> {
   try {
     const { contextualSummary } = await contextualSummaryService.generate({
@@ -122,7 +123,7 @@ async function enrichEntityWithContextualSummary(
       entityType: entity.type,
       entityDescription: entity.description || '',
       surroundingText: safeContext,
-      projectId,
+      scope,
     })
 
     return {
@@ -153,7 +154,7 @@ async function withFilledDescriptions(
 
 export async function applyContextualSummaries(
   entities: EntityReference[],
-  projectId: string,
+  scope: ProjectScope,
   context: string | null
 ): Promise<EntityReference[]> {
   const safeContext = context ? context.slice(0, MAX_CONTEXT_LENGTH) : ''
@@ -169,7 +170,7 @@ export async function applyContextualSummaries(
 
   const contextualEntities = await Promise.all(
     entitiesToEnrich.map(entity =>
-      enrichEntityWithContextualSummary(entity, safeContext, projectId)
+      enrichEntityWithContextualSummary(entity, safeContext, scope)
     )
   )
 

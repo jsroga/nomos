@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { HttpStatus } from '@/shared/data/constants/protocol'
@@ -46,14 +46,18 @@ export const POST = withRateLimit(
       }
 
       const { projectId, filled } = parsed.data
-      if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      let scope: ProjectScope
+      try {
+        scope = await projectScope(projectId, session.user.id)
+      } catch (scopeError) {
+        if (!(scopeError instanceof ProjectForbidden)) throw scopeError
         return NextResponse.json(
           { error: API_ERROR.PROJECT_ACCESS_DENIED },
           { status: HttpStatus.NOT_FOUND }
         )
       }
 
-      const fields = await generateCharacterMissingFields({ projectId, filled })
+      const fields = await generateCharacterMissingFields({ scope, filled })
       return NextResponse.json({ fields })
     } catch (error) {
       if (error instanceof GenerateCharacterFieldsError) return errorResponse(error)

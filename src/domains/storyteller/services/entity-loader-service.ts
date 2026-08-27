@@ -48,7 +48,11 @@ export class EntityLoader {
   }
 
   /**
-   * Load an entity by ID
+   * Load an entity by ID.
+   *
+   * project-scope: none — runs in the browser and batches into a `fetch` to
+   * `/api/entities/resolve`; that route mints the scope. A scope minted here
+   * would prove nothing, since the client cannot reach the database.
    */
   load(id: string, projectId: string, context?: string): Promise<EntityReference | null> {
     return new Promise((resolve, reject) => {

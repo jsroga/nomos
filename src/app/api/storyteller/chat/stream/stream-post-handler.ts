@@ -1,3 +1,4 @@
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { recordError } from '@/shared/observability/observability'
 import { parsePhaseId } from '@/domains/storyteller/core/types/enums'
 import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/constants/chat-model-catalog'
@@ -31,7 +32,7 @@ import {
 
 interface StreamRequestInput {
   message: string
-  projectId?: string
+  scope?: ProjectScope
   episodeId?: string
   traceId: string
   agenticMode?: boolean
@@ -50,7 +51,7 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
   }
 
   const { contextPrompt, existingBibleData } = await assembleStorytellerContext({
-    projectId: input.projectId,
+    projectId: input.scope?.projectId,
     episodeId: input.episodeId,
     message: input.message,
     currentPhase: parsePhaseId(input.currentPhase),
@@ -66,11 +67,11 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
   const agenticInstruction = input.agenticMode ? STORYTELLER_AGENTIC_MODE_INSTRUCTION : ''
 
   const promptWithContext = contextPrompt
-    ? `${contextPrompt}\n${sectionPrompt}\n${agenticInstruction}\nUSER REQUEST:\n${input.message}\n\nRemember: Use projectId="${input.projectId}" for all tool calls that require it.`
+    ? `${contextPrompt}\n${sectionPrompt}\n${agenticInstruction}\nUSER REQUEST:\n${input.message}\n\nRemember: Use projectId="${input.scope?.projectId}" for all tool calls that require it.`
     : `${sectionPrompt}\n${agenticInstruction}\n${input.message}`
 
   const requestContext = buildStorytellerRequestContext({
-    projectId: input.projectId,
+    projectId: input.scope?.projectId,
     episodeId: input.episodeId,
     chatModel: requestedModel,
   })
@@ -82,7 +83,7 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
       traceId: input.traceId,
       requestContext,
       userId: input.userId,
-      projectId: input.projectId,
+      projectId: input.scope?.projectId,
     })
   }
 
@@ -124,7 +125,7 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
       const session: StreamSession = {
         writer,
         traceId: input.traceId,
-        projectId: input.projectId,
+        scope: input.scope,
         episodeId: input.episodeId,
         isSectionUpdate,
         existingBibleData,

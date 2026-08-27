@@ -9,6 +9,7 @@ import {
 } from '@/domains/storyteller/core/utils/roadmap-slot'
 import { StorytellerAnswerSeparator } from '@/domains/storyteller/core/storyteller-page-wire'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import {
   BIBLE_CATEGORY_KEYS,
   ContextAssemblyFallback,
@@ -133,6 +134,13 @@ function compactEpisodeIndex(rows: StoryCanonEpisodeSource[]): StoryCanonEpisode
     }))
 }
 
+/**
+ * Pure assembler over already-loaded rows: it performs no I/O, and the id is
+ * only carried into the result's metadata. The ownership check belongs on
+ * `loadStoryCanonPack`, which is what actually reads the database.
+ *
+ * project-scope: none — pure function over rows the caller already fetched.
+ */
 export function assembleStoryCanonPack(
   projectId: string,
   sources: StoryCanonPackSources
@@ -226,20 +234,21 @@ async function defaultLoadSources(projectId: string): Promise<StoryCanonPackSour
 }
 
 export async function loadStoryCanonPack(
-  projectId: string,
+  scope: ProjectScope,
   deps: StoryCanonPackDeps = {}
 ): Promise<StoryCanonPack | null> {
   const loadSources = deps.loadSources ?? defaultLoadSources
-  const sources = await loadSources(projectId)
+  const sources = await loadSources(scope.projectId)
   if (!sources) return null
-  return assembleStoryCanonPack(projectId, sources)
+  return assembleStoryCanonPack(scope.projectId, sources)
 }
 
 export async function loadOpenEpisodeCanon(
-  projectId: string,
+  scope: ProjectScope,
   episodeId: string,
   deps: StoryCanonPackDeps = {}
 ): Promise<OpenEpisodeCanon | null> {
+  const { projectId } = scope
   const loadSources = deps.loadSources ?? defaultLoadSources
   const sources = await loadSources(projectId)
   if (!sources) return null

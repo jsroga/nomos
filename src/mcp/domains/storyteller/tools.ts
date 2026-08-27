@@ -13,6 +13,7 @@ import {
 } from '@/domains/storyteller/server'
 import { StorytellerCharacterRole } from '@/domains/storyteller/services/constants/storyteller-crud-service'
 import { validateApiKey, getServiceContext } from '../../core/auth'
+import { projectScope } from '@/shared/auth/project-scope'
 import type { MCPServiceContext } from '../../core/types'
 
 async function requireMcpServiceContext(): Promise<MCPServiceContext> {
@@ -168,7 +169,8 @@ const getSeriesBible = createTool({
   }),
   execute: async data => {
     const context = await requireMcpServiceContext()
-    return storytellerService.getSeriesBible(data.projectId, { userId: context.userId })
+    const scope = await projectScope(data.projectId, context.userId)
+    return storytellerService.getSeriesBible(scope)
   },
 })
 

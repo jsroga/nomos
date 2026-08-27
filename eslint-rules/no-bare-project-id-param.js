@@ -47,7 +47,32 @@ module.exports = {
     if (filename.includes('__tests__')) return {}
 
     const sourceCode = context.sourceCode ?? context.getSourceCode()
-    if (sourceCode.getText().includes(ESCAPE_HATCH)) return {}
+
+    /**
+     * The escape applies to the one declaration it sits above, not the file.
+     * A file-wide opt-out would let a single legitimate exemption silently
+     * cover every future function added beside it.
+     */
+    function hasEscapeComment(node) {
+      let current = node
+      while (current) {
+        for (const comment of sourceCode.getCommentsBefore(current)) {
+          if (comment.value.includes(ESCAPE_HATCH)) return true
+        }
+        // The comment may sit above `export`, `async`, or the JSDoc block.
+        if (
+          current.parent &&
+          (current.parent.type === 'ExportNamedDeclaration' ||
+            current.parent.type === 'ExportDefaultDeclaration' ||
+            current.parent.type === 'VariableDeclaration')
+        ) {
+          current = current.parent
+          continue
+        }
+        return false
+      }
+      return false
+    }
 
     /** Only exported declarations cross a boundary; private helpers are fine. */
     function isExported(node) {
@@ -76,6 +101,7 @@ module.exports = {
 
     function checkParams(node) {
       if (!isExported(node)) return
+      if (hasEscapeComment(node)) return
       reportBareParams(node.params)
     }
 
@@ -85,12 +111,20 @@ module.exports = {
       if (!init) return
       if (init.type !== 'ArrowFunctionExpression' && init.type !== 'FunctionExpression') return
       if (!isExported(node)) return
+      if (hasEscapeComment(node)) return
       reportBareParams(init.params)
     }
 
-    /** Service classes are the surface even though the class is what's exported. */
+    /**
+     * Service classes are the surface even though the class is what's exported,
+     * so public methods count. A `private` method is the class equivalent of the
+     * unexported helper above: it cannot be reached from outside, so the caller
+     * that must hold the scope is the public method that calls it.
+     */
     function checkMethod(node) {
       if (!node.value?.params) return
+      if (node.accessibility === 'private' || node.key?.type === 'PrivateIdentifier') return
+      if (hasEscapeComment(node)) return
       reportBareParams(node.value.params)
     }
 

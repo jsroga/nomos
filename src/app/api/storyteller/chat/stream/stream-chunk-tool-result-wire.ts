@@ -2,6 +2,7 @@
  * SSE tool-result chunk handler — parse results, verdict gate, action mapping.
  */
 
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import {
   RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
   VERDICT_STEP_ID,
@@ -93,7 +94,7 @@ function emitVerdictGateIfSuspended(
 /** Auto-link entity names in nested payload fields, then register unknown [Name][id] refs. */
 async function autoLinkActionPayload(
   actionPayload: Record<string, unknown>,
-  projectId: string
+  scope: ProjectScope
 ): Promise<Record<string, unknown>> {
   try {
     const { entityAutoLinker } = await import(
@@ -102,8 +103,8 @@ async function autoLinkActionPayload(
     const { validateReferencesInObject } = await import(
       '@/domains/storyteller/services/reference-validator-service'
     )
-    const linked = await entityAutoLinker.autoLinkUnknown(actionPayload, projectId)
-    const validated = await validateReferencesInObject(linked, projectId)
+    const linked = await entityAutoLinker.autoLinkUnknown(actionPayload, scope)
+    const validated = await validateReferencesInObject(linked, scope)
     if (isRecord(validated)) return validated
   } catch (err) {
     console.warn('[Stream] Entity auto-linking in payload failed:', err)
@@ -133,8 +134,8 @@ async function collectAction(
   session.emittedActionKeys.add(dedupeKey)
 
   // Auto-link entities in action payload fields before storing
-  const linkedPayload = session.projectId
-    ? await autoLinkActionPayload(actionPayload, session.projectId)
+  const linkedPayload = session.scope
+    ? await autoLinkActionPayload(actionPayload, session.scope)
     : { ...actionPayload }
 
   // Collect action to emit after final message

@@ -9,6 +9,7 @@ import { MCPServerResources } from '@mastra/mcp'
 import { entitiesService } from '@/shared/data/entities-service'
 import { storytellerService } from '@/domains/storyteller/server'
 import { validateApiKey, getServiceContext } from '../core/auth'
+import { projectScope } from '@/shared/auth/project-scope'
 import {
   ContentType,
   McpResourceAuthError,
@@ -159,9 +160,9 @@ export const mcpResources: MCPServerResources = {
       }
 
       case McpResourceType.SeriesBible: {
-        result = await storytellerService.getSeriesBible(params.projectId, {
-          userId: context.userId,
-        })
+        result = await storytellerService.getSeriesBible(
+          await projectScope(params.projectId, context.userId)
+        )
         break
       }
 

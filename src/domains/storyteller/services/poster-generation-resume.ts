@@ -217,6 +217,11 @@ async function resumeStoredPosterRun(
   }
 }
 
+/**
+ * project-scope: none — runs in the browser and reaches the database only
+ * through authenticated API routes, which mint the scope server-side. A token
+ * minted here would prove nothing, since the client cannot do the check.
+ */
 export function resumePendingPosterGenerations(
   host: PosterResumeHost,
   projectId: string,

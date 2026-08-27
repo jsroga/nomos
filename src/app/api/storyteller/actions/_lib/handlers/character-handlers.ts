@@ -16,7 +16,8 @@ import { readSqlId, readStringField } from '../read-payload-fields'
 import type { ActionHandler } from '../action-handler-context'
 
 export const handleCreateCharacter: ActionHandler = async (ctx, action) => {
-  if (!ctx.projectId) {
+  const scope = ctx.scope
+  if (!scope) {
     return NextResponse.json(
       { error: ApiErrorMessage.PROJECT_ID_REQUIRED },
       { status: HttpStatus.BAD_REQUEST }
@@ -26,7 +27,7 @@ export const handleCreateCharacter: ActionHandler = async (ctx, action) => {
   const payload = action.payload
   const newCharacter = {
     id: uuidv4(),
-    projectId: ctx.projectId,
+    projectId: scope.projectId,
     name: readStringField(payload, CharacterPayloadField.Name),
     role: readStringField(payload, CharacterPayloadField.Role, CharacterRole.SupportingLower),
     description: readStringField(payload, CharacterPayloadField.Description),
@@ -51,7 +52,7 @@ export const handleCreateCharacter: ActionHandler = async (ctx, action) => {
         motivation: payload.motivation,
         fatalFlaw: payload.fatalFlaw,
       },
-      projectId: ctx.projectId,
+      scope,
       sourceEntityId: newCharacter.id,
     })
     console.log(`✅ [Actions] Registered entity for character: char-${slugName}`)

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { VoyageEmbeddings } from '@/shared/ai/embeddings/voyage-embeddings'
 import type { SemanticChunker } from '@/shared/ai/rag/semantic-chunker'
 import { RagDocumentType } from '@/domains/storyteller/services/constants/rag-document-type'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 
 export type RagDocumentTypeValue = `${RagDocumentType}`
 
@@ -22,12 +23,13 @@ export function shouldChunkDocumentType(documentType: RagDocumentTypeValue): boo
 }
 
 export async function ingestChunkedDocument(
-  projectId: string,
+  scope: ProjectScope,
   content: string,
   options: RagIngestOptions,
   chunker: SemanticChunker,
   embeddings: VoyageEmbeddings
 ): Promise<void> {
+  const { projectId } = scope
   const documentId = uuidv4()
   const chunks = chunker.chunkDocument(content, {
     documentId,
@@ -64,11 +66,12 @@ export async function ingestChunkedDocument(
 }
 
 export async function ingestSingleDocument(
-  projectId: string,
+  scope: ProjectScope,
   content: string,
   options: RagIngestOptions,
   embeddings: VoyageEmbeddings
 ): Promise<void> {
+  const { projectId } = scope
   const embedding = await embeddings.embedQuery(content)
   const metadata = {
     documentType: options.documentType,

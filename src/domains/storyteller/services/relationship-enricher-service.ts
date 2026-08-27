@@ -22,6 +22,7 @@ import { InferredRelationshipType } from '@/domains/storyteller/services/constan
 import { recordFromJson } from '@/shared/data/deep-merge'
 import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import { StorytellerAnswerSeparator, StorytellerTextSeparator } from '@/domains/storyteller/core/storyteller-page-wire'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { EntityType } from './entity-registry-service'
 import { entityGraphService } from './entity-graph-service'
 
@@ -112,9 +113,11 @@ class RelationshipEnricherService {
     entityId: string,
     entityType: EntityType,
     entityName: string,
-    projectId: string,
+    scope: ProjectScope,
     baseDescription: string = ''
   ): Promise<EnrichedEntity> {
+    const { projectId } = scope
+
     // Check cache
     const cacheKey = `${projectId}:${entityId}`
     const cached = enrichmentCache.get(cacheKey)
@@ -143,7 +146,7 @@ class RelationshipEnricherService {
           relationships = await this.buildCharacterRelationships(
             entityId,
             entityName,
-            projectId,
+            scope,
             cast,
             storyPlan
           )
@@ -155,7 +158,7 @@ class RelationshipEnricherService {
         case StoryEntityType.Event:
         case StoryEntityType.Rule:
           // Use graph service for these types
-          relationships = await this.buildGraphBasedRelationships(entityId, projectId, entityType)
+          relationships = await this.buildGraphBasedRelationships(entityId, scope, entityType)
           break
         default:
           relationships = []
@@ -189,7 +192,7 @@ class RelationshipEnricherService {
   private async buildCharacterRelationships(
     characterId: string,
     characterName: string,
-    projectId: string,
+    scope: ProjectScope,
     cast: CharacterData[],
     storyPlan: Record<string, unknown>
   ): Promise<Relationship[]> {
@@ -230,7 +233,7 @@ class RelationshipEnricherService {
     }
 
     // 2. Find relationships with other characters via graph service
-    const graphRelations = await entityGraphService.getDirectRelationships(characterId, projectId, {
+    const graphRelations = await entityGraphService.getDirectRelationships(characterId, scope, {
       types: [StoryEntityType.Character],
       maxResults: 5,
       threshold: 0.6,
@@ -328,10 +331,10 @@ class RelationshipEnricherService {
    */
   private async buildGraphBasedRelationships(
     entityId: string,
-    projectId: string,
+    scope: ProjectScope,
     _entityType: EntityType
   ): Promise<Relationship[]> {
-    const graphRelations = await entityGraphService.getDirectRelationships(entityId, projectId, {
+    const graphRelations = await entityGraphService.getDirectRelationships(entityId, scope, {
       maxResults: 5,
       threshold: 0.5,
     })
@@ -411,7 +414,9 @@ class RelationshipEnricherService {
   }
 
   /**
-   * Clear cache for a specific project
+   * Clear cache for a specific project.
+   *
+   * project-scope: none — evicts local cache entries, reads no project data.
    */
   clearProjectCache(projectId: string): void {
     for (const key of enrichmentCache.keys()) {

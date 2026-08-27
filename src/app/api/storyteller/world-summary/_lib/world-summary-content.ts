@@ -8,6 +8,7 @@ import {
 } from '@/domains/storyteller/core/storyteller-page-wire'
 import { API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import type { WorldSummaryCastMember } from './fetch-project-cast'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 
 function worldRuleText(rule: WorldRule | string): string {
   if (typeof rule === 'string') return rule
@@ -29,10 +30,10 @@ export function buildContextSnippet(bible: SeriesBible): string {
     .join(StorytellerTextSeparator.PeriodSpace)
 }
 
-async function appendRagContext(projectId: string, summary: string): Promise<string> {
+async function appendRagContext(scope: ProjectScope, summary: string): Promise<string> {
   try {
     const ragResults = await ragService.retrieveByType(
-      projectId,
+      scope,
       StorytellerRagEntityType.WorldRule,
       StorytellerRagQuery.WorldLogic,
       3,
@@ -52,11 +53,11 @@ async function appendRagContext(projectId: string, summary: string): Promise<str
 }
 
 export async function buildWorldSummaryContent(
-  projectId: string,
+  scope: ProjectScope,
   bible: SeriesBible,
   cast: WorldSummaryCastMember[],
 ): Promise<{ summary: string; fallbackPrompt: string }> {
-  const summary = await appendRagContext(projectId, bibleToPrompt(bible, cast))
+  const summary = await appendRagContext(scope, bibleToPrompt(bible, cast))
   const fallbackPrompt = bibleToVisualPrompt(bible, cast)
   return { summary, fallbackPrompt }
 }

@@ -1,4 +1,5 @@
 import { normalizeMastraTraceId } from '@/domains/storyteller/ai/tracing'
+import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 import { recordStreamRouteError, jsonError, runStorytellerStream } from './stream-post-handler'
 import { STREAM_ROUTE_TEXT } from './stream-route-wire'
 
@@ -28,12 +29,22 @@ export async function handleStorytellerStreamPost(
     return jsonError(STREAM_ROUTE_TEXT.errMessageTooLong, 400)
   }
 
-  const { verifyProjectAccess, verifyEpisodeAccess } = await import(
+  const { verifyEpisodeAccess } = await import(
     '@/domains/storyteller/services/access-verification-service'
   )
 
-  if (projectId && !(await verifyProjectAccess(projectId, sessionUserId))) {
-    return jsonError(STREAM_ROUTE_TEXT.errProjectAccess, 403)
+  // The scope both proves access and is what downstream services require, so
+  // the check cannot be passed while the proof is left behind.
+  let scope: ProjectScope | undefined
+  if (projectId) {
+    try {
+      scope = await projectScope(projectId, sessionUserId)
+    } catch (error) {
+      if (error instanceof ProjectForbidden) {
+        return jsonError(STREAM_ROUTE_TEXT.errProjectAccess, 403)
+      }
+      throw error
+    }
   }
 
   if (episodeId && !(await verifyEpisodeAccess(episodeId, sessionUserId))) {
@@ -46,7 +57,7 @@ export async function handleStorytellerStreamPost(
 
   return runStorytellerStream({
     message,
-    projectId,
+    scope,
     episodeId,
     traceId,
     agenticMode,

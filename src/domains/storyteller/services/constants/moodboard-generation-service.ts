@@ -77,8 +77,14 @@ export enum MoodboardGenerationLog {
   ParseStateFailed = 'Failed to parse moodboard generation run state:',
 }
 
+/**
+ * project-scope: none — builds a browser-storage key; touches no project data.
+ */
 export const moodboardPrimaryStorageKey = (projectId: string) =>
   `${MoodboardStorageKey.PrimaryPrefix}${projectId}`
 
+/**
+ * project-scope: none — builds a browser-storage key; touches no project data.
+ */
 export const moodboardGenOperationPrefix = (projectId: string) =>
   `${MoodboardStorageKey.GenPrefix}${projectId}`

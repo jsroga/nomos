@@ -10,6 +10,7 @@ import {
   RagServiceLog,
 } from '@/domains/storyteller/services/constants/rag-document-type'
 import type { CitationInfo, RagResult } from './rag-types'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 
 export function deduplicateSearchResults(results: SearchResult[]): SearchResult[] {
   const byId = new Map<string, SearchResult>()
@@ -41,11 +42,12 @@ export function convertSearchResultsToRagResults(searchResults: SearchResult[]):
 }
 
 export async function fallbackVectorSearch(
-  projectId: string,
+  scope: ProjectScope,
   query: string,
   limit: number,
   embedQuery: (query: string) => Promise<number[]>
 ): Promise<RagResult[]> {
+  const { projectId } = scope
   try {
     const queryEmbedding = await embedQuery(query)
     const similarity = sql<number>`1 - (${documentEmbeddings.embedding} <=> ${JSON.stringify(queryEmbedding)})`

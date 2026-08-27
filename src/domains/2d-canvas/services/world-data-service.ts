@@ -78,10 +78,14 @@ export class WorldProjectService {
     return mapProject(row)
   }
 
-  async deleteForUser(userId: string, projectId: string): Promise<void> {
+  /**
+   * The scope carries both ids, so the owner filter cannot drift from the
+   * identity that was actually verified.
+   */
+  async deleteForUser(scope: ProjectScope): Promise<void> {
     await db
       .delete(projects)
-      .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
+      .where(and(eq(projects.id, scope.projectId), eq(projects.userId, scope.userId)))
   }
 }
 

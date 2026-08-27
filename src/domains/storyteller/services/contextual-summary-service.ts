@@ -15,6 +15,7 @@ import { generateText } from 'ai'
 import { entityGraphService } from './entity-graph-service'
 import { relationshipEnricher } from './relationship-enricher-service'
 import { parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import {
   CONTEXTUAL_SUMMARY_GENERATION_FAILED_LOG,
   CONTEXTUAL_SUMMARY_GRAPHRAG_FAILED_LOG,
@@ -29,7 +30,8 @@ interface ContextualSummaryRequest {
   entityType: string
   entityDescription: string // Base description from registry
   surroundingText: string // The sentence/paragraph containing the reference
-  projectId: string
+  /** Which project, and proof the caller may read it. */
+  scope: ProjectScope
 }
 
 interface ContextualSummaryResult {
@@ -77,13 +79,13 @@ async function buildGraphRAGContext(
   entityId: string,
   entityName: string,
   entityType: string,
-  projectId: string
+  scope: ProjectScope
 ): Promise<{ relationshipContext: string; relatedEntities: string[] }> {
   try {
     // Use GraphRAG to find related entities (1-2 hops)
     const relatedEntities = await entityGraphService.findRelatedEntitiesWithScoring(
       [entityId],
-      projectId,
+      scope,
       {
         maxDepth: 2,
         maxResults: 5,
@@ -109,7 +111,7 @@ async function buildGraphRAGContext(
       entityId,
       parsedEntityType,
       entityName,
-      projectId,
+      scope,
       ''
     )
 
@@ -166,7 +168,7 @@ export async function generateContextualSummary(
   }
 
   const cacheKey = getCacheKey(
-    safeRequest.projectId,
+    safeRequest.scope.projectId,
     safeRequest.entityId,
     safeRequest.surroundingText
   )
@@ -190,12 +192,14 @@ export async function generateContextualSummary(
 
   // Security: Rate limiting per project
   const now = Date.now()
-  const rateLimit = rateLimitMap.get(safeRequest.projectId)
+  const rateLimit = rateLimitMap.get(safeRequest.scope.projectId)
 
   if (rateLimit) {
     if (now - rateLimit.windowStart < RATE_LIMIT_WINDOW) {
       if (rateLimit.count >= RATE_LIMIT_PER_MINUTE) {
-        console.warn(`[ContextualSummary] Rate limit exceeded for project ${safeRequest.projectId}`)
+        console.warn(
+          `[ContextualSummary] Rate limit exceeded for project ${safeRequest.scope.projectId}`
+        )
         // Return base description instead of blocking completely
         return {
           contextualSummary:
@@ -212,7 +216,7 @@ export async function generateContextualSummary(
       rateLimit.windowStart = now
     }
   } else {
-    rateLimitMap.set(safeRequest.projectId, { count: 1, windowStart: now })
+    rateLimitMap.set(safeRequest.scope.projectId, { count: 1, windowStart: now })
   }
 
   try {
@@ -221,7 +225,7 @@ export async function generateContextualSummary(
       safeRequest.entityId,
       safeRequest.entityName,
       safeRequest.entityType,
-      safeRequest.projectId
+      safeRequest.scope
     )
 
     const openRouter = openRouterClientConfig()
@@ -289,7 +293,7 @@ export async function generateBatchContextualSummaries(
   const uncached: ContextualSummaryRequest[] = []
 
   for (const request of requests) {
-    const cacheKey = getCacheKey(request.projectId, request.entityId, request.surroundingText)
+    const cacheKey = getCacheKey(request.scope.projectId, request.entityId, request.surroundingText)
     const cached = summaryCache.get(cacheKey)
 
     if (cached && Date.now() - cached.timestamp < 1000 * 60 * 30) {
@@ -317,7 +321,9 @@ export async function generateBatchContextualSummaries(
 }
 
 /**
- * Clear cached summaries for a project (call when project data changes)
+ * Clear cached summaries for a project (call when project data changes).
+ *
+ * project-scope: none — evicts local cache entries, reads no project data.
  */
 export function invalidateProjectSummaries(projectId: string): number {
   let cleared = 0

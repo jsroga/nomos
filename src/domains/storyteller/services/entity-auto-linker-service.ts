@@ -21,6 +21,7 @@ import {
   EntityAutoLinkerRegexReplacement,
 } from '@/domains/storyteller/services/constants/entity-auto-linker'
 import { mapLinkedValue } from '@/domains/storyteller/services/entity-auto-linker-map'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 
 interface EntityMatch {
   name: string
@@ -267,18 +268,17 @@ async function createProjectTextLinker(
  * Auto-link entity names in text to entity references
  *
  * @param text - Generated text that may contain plain entity names
- * @param projectId - Project ID to fetch entities from
+ * @param scope - Verified project whose entities the text is linked against
  * @returns Text with entity names converted to references
  */
-export async function autoLinkEntities(text: string, projectId: string): Promise<string> {
-  if (!text || !projectId) return text
-  const linked = await autoLinkUnknown(text, projectId)
+export async function autoLinkEntities(text: string, scope: ProjectScope): Promise<string> {
+  if (!text) return text
+  const linked = await autoLinkUnknown(text, scope)
   return typeof linked === 'string' ? linked : text
 }
 
-export async function autoLinkUnknown(value: unknown, projectId: string): Promise<unknown> {
-  if (!projectId) return value
-  const linkText = await createProjectTextLinker(projectId)
+export async function autoLinkUnknown(value: unknown, scope: ProjectScope): Promise<unknown> {
+  const linkText = await createProjectTextLinker(scope.projectId)
   return mapLinkedValue(value, linkText, ENTITY_AUTO_LINKER_MIN_STRING_LENGTH)
 }
 
