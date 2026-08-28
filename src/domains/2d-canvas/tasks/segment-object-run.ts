@@ -1,3 +1,5 @@
+import { z } from 'zod'
+import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
 import { logger, metadata } from '@trigger.dev/sdk/v3'
 import { FalClient } from '@/shared/ai/fal'
 import { readFalApiKey, resolveSamPrompt } from '@/shared/ai/constants/fal'
@@ -28,14 +30,21 @@ export interface SegmentObjectBox {
   y2: number
 }
 
-export interface SegmentObjectPayload {
-  projectId: string
-  base64Image: string
-  box: SegmentObjectBox
-  prompt?: string
-  mosaicWidth: number
-  mosaicHeight: number
-}
+export const segmentObjectPayloadSchema = z.object({
+  ...OWNED_PAYLOAD_SHAPE,
+  base64Image: z.string().min(1),
+  box: z.object({
+    x1: z.number(),
+    y1: z.number(),
+    x2: z.number(),
+    y2: z.number(),
+  }),
+  prompt: z.string().optional(),
+  mosaicWidth: z.number(),
+  mosaicHeight: z.number(),
+})
+
+export type SegmentObjectPayload = z.infer<typeof segmentObjectPayloadSchema>
 
 export interface SegmentObjectOutput {
   rle: string

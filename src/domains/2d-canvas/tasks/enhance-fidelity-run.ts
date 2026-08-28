@@ -1,3 +1,5 @@
+import { z } from 'zod'
+import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
 import { env } from '@/shared/config/env'
 import { logger, metadata } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
@@ -31,14 +33,16 @@ export enum EnhanceFidelityError {
   NotAllowedForMode = 'Fidelity enhancement is not allowed for this generation mode',
 }
 
-export interface EnhanceFidelityPayload {
-  tileId: string
-  projectId: string
-  imageBase64: string
-  stylePrompt: string
-  creativity: number
-  styleReferenceUrls?: string[]
-}
+export const enhanceFidelityPayloadSchema = z.object({
+  ...OWNED_PAYLOAD_SHAPE,
+  tileId: z.string().min(1),
+  imageBase64: z.string().min(1),
+  stylePrompt: z.string(),
+  creativity: z.number(),
+  styleReferenceUrls: z.array(z.string()).optional(),
+})
+
+export type EnhanceFidelityPayload = z.infer<typeof enhanceFidelityPayloadSchema>
 
 export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
   const { tileId, projectId, imageBase64 } = payload

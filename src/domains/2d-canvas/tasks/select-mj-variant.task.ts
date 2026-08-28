@@ -1,16 +1,15 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import { createSupabaseServiceClient } from './constants/generate-tile-persist'
+import { selectMjVariantPayloadSchema } from './constants/select-mj-variant-payload'
 
-export const selectMjVariantTask = task({
+export const selectMjVariantTask = defineOwnedTask({
   id: 'select-mj-variant',
+  schema: selectMjVariantPayloadSchema,
+  queue: JobQueue.Storage,
   maxDuration: 120,
   retry: { maxAttempts: 1 },
-  run: async (payload: {
-    tileId: string
-    projectId: string
-    gridImageUrl: string
-    variantIndex: 1 | 2 | 3 | 4
-  }) => {
+  run: async payload => {
     const { tileId, projectId, gridImageUrl, variantIndex } = payload
 
     logger.info(`Cropping variant ${variantIndex} from grid`, { gridImageUrl })

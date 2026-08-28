@@ -1,32 +1,25 @@
 import { env } from '@/shared/config/env'
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { JobQueue, MachinePreset, defineOwnedTask } from '@/shared/jobs'
 import { put } from '@vercel/blob'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { BufferEncoding, ContentType } from '@/shared/data/constants/protocol'
-import { UpscaleProvider } from '../core/upscale-provider-wire'
 import { UpscaleStrategy } from '../constants/generation-modes'
-import type { ProviderConfig } from './upscale-tile-providers'
 import { runModeUpscale } from './upscale-tile-mode-run'
+import { upscaleTilePayloadSchema } from './constants/upscale-tile-payload'
 
-export const upscaleTileTask = task({
+export const upscaleTileTask = defineOwnedTask({
   id: 'upscale-tile',
-  machine: 'medium-1x',
+  schema: upscaleTilePayloadSchema,
+  queue: JobQueue.ImageProvider,
+  // The one preset with a reason behind it: sharp holds a decoded upscale in
+  // memory, and the default machine is not sized for it.
+  machine: MachinePreset.Medium1x,
   maxDuration: 1200,
   retry: {
     maxAttempts: 1,
   },
-  run: async (payload: {
-    tileId: string
-    projectId: string
-    imageBase64: string
-    prompt: string
-    creativity: number
-    provider: UpscaleProvider
-    providerConfig: ProviderConfig
-    styleReferenceUrls?: string[]
-    upscaleStrategy?: UpscaleStrategy
-    geminiConfig?: { apiKey: string; model?: string }
-  }) => {
+  run: async payload => {
     const {
       tileId,
       projectId,

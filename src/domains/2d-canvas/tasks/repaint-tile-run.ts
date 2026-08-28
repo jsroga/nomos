@@ -1,3 +1,5 @@
+import { z } from 'zod'
+import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
 import { logger, metadata } from '@trigger.dev/sdk/v3'
 import { generateApiframeImage } from '@/shared/ai/apiframe'
 import { buildGenerateBody } from '@/shared/ai/apiframe-generate-body'
@@ -42,13 +44,15 @@ export enum RepaintRunLog {
 
 const REPAINT_APIFRAME_MAX_ATTEMPTS = 90
 
-export interface RepaintTilePayload {
-  projectId: string
-  base64Image: string
-  maskBase64: string
-  prompt?: string
-  styleReferenceUrls?: string[]
-}
+export const repaintTilePayloadSchema = z.object({
+  ...OWNED_PAYLOAD_SHAPE,
+  base64Image: z.string().min(1),
+  maskBase64: z.string().min(1),
+  prompt: z.string().optional(),
+  styleReferenceUrls: z.array(z.string()).optional(),
+})
+
+export type RepaintTilePayload = z.infer<typeof repaintTilePayloadSchema>
 
 export interface RepaintTileOutput {
   imageBase64: string
