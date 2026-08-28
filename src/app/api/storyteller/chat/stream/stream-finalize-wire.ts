@@ -3,9 +3,14 @@
  */
 
 import { emitFrame, type StreamSession } from './stream-session-wire'
+import { recordStreamedCall } from './stream-usage-wire'
 
 /** Auto-link the final text, emit message + queued actions + complete, close. */
 export async function finalizeStream(session: StreamSession): Promise<void> {
+  // Before anything else: the stream is over and whatever it cost is known now.
+  // An abandoned stream still spent money, so this runs on every exit.
+  await recordStreamedCall(session)
+
   // Auto-link entity names in generated text before sending
   let finalText = session.fullText
   const scope = session.scope

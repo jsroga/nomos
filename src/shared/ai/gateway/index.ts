@@ -23,7 +23,13 @@ import {
   RETRYABLE_OUTCOMES,
   type LlmFeature,
 } from '@/shared/ai/gateway/constants/llm-call'
-import { OPENROUTER_BASE_URL, OPENROUTER_PROVIDER } from '@/shared/ai/gateway/constants/provider'
+import {
+  OPENROUTER_BASE_URL,
+  OPENROUTER_PROVIDER,
+  VOYAGE_PROVIDER,
+} from '@/shared/ai/gateway/constants/provider'
+import { lastEmbeddingTokenCount } from '@/shared/ai/embeddings/voyage-api-client'
+import { getVoyageEmbeddings } from '@/shared/ai/embeddings/voyage-embeddings'
 import { recordLlmCall } from '@/shared/ai/gateway/record'
 
 export interface GatewayRequest {
@@ -176,4 +182,55 @@ export async function completeStructured<T>(
       },
     }
   })
+}
+
+export interface EmbedRequest {
+  scope: ProjectScope
+  feature: LlmFeature
+  texts: string[]
+  traceId?: string
+}
+
+/**
+ * Embeddings, metered.
+ *
+ * They are billed and were entirely invisible: Voyage reports
+ * `usage.total_tokens` and the client discarded it. Recorded as prompt tokens,
+ * since an embedding has no completion.
+ */
+export async function embed(request: EmbedRequest): Promise<number[][]> {
+  const embeddings = getVoyageEmbeddings()
+  const model = embeddings.modelId()
+  const startedAt = Date.now()
+
+  try {
+    const vectors = await embeddings.embedDocuments(request.texts)
+    await recordLlmCall({
+      traceId: request.traceId,
+      projectId: request.scope.projectId,
+      userId: request.scope.userId,
+      feature: request.feature,
+      model,
+      provider: VOYAGE_PROVIDER,
+      promptTokens: lastEmbeddingTokenCount(),
+      completionTokens: 0,
+      latencyMs: Date.now() - startedAt,
+      outcome: LlmOutcome.Ok,
+    })
+    return vectors
+  } catch (error) {
+    await recordLlmCall({
+      traceId: request.traceId,
+      projectId: request.scope.projectId,
+      userId: request.scope.userId,
+      feature: request.feature,
+      model,
+      provider: VOYAGE_PROVIDER,
+      promptTokens: 0,
+      completionTokens: 0,
+      latencyMs: Date.now() - startedAt,
+      outcome: outcomeFor(error),
+    })
+    throw error
+  }
 }

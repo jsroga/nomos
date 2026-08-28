@@ -1,10 +1,11 @@
 import { documentEmbeddings } from '@/db'
 import { db } from '@/db/client'
 import { v4 as uuidv4 } from 'uuid'
-import type { VoyageEmbeddings } from '@/shared/ai/embeddings/voyage-embeddings'
 import type { SemanticChunker } from '@/shared/ai/rag/semantic-chunker'
 import { RagDocumentType } from '@/domains/storyteller/services/constants/rag-document-type'
 import type { ProjectScope } from '@/shared/auth/project-scope'
+import { embed } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 
 export type RagDocumentTypeValue = `${RagDocumentType}`
 
@@ -26,8 +27,7 @@ export async function ingestChunkedDocument(
   scope: ProjectScope,
   content: string,
   options: RagIngestOptions,
-  chunker: SemanticChunker,
-  embeddings: VoyageEmbeddings
+  chunker: SemanticChunker
 ): Promise<void> {
   const { projectId } = scope
   const documentId = uuidv4()
@@ -38,7 +38,11 @@ export async function ingestChunkedDocument(
   })
 
   const chunkContents = chunks.map(c => c.content)
-  const chunkEmbeddings = await embeddings.embedDocuments(chunkContents)
+  const chunkEmbeddings = await embed({
+    scope,
+    feature: LlmFeature.RagEmbedding,
+    texts: chunkContents,
+  })
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i]
@@ -68,11 +72,14 @@ export async function ingestChunkedDocument(
 export async function ingestSingleDocument(
   scope: ProjectScope,
   content: string,
-  options: RagIngestOptions,
-  embeddings: VoyageEmbeddings
+  options: RagIngestOptions
 ): Promise<void> {
   const { projectId } = scope
-  const embedding = await embeddings.embedQuery(content)
+  const [embedding] = await embed({
+    scope,
+    feature: LlmFeature.RagEmbedding,
+    texts: [content],
+  })
   const metadata = {
     documentType: options.documentType,
     episodeId: options.episodeId,

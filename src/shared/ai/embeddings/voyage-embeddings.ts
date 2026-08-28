@@ -141,6 +141,11 @@ export class VoyageEmbeddings implements IEmbeddings {
     this.truncation = config?.truncation ?? true
   }
 
+  /** Which model this instance bills against; the gateway records it. */
+  modelId(): string {
+    return this.model
+  }
+
   async embedDocuments(texts: string[]): Promise<number[][]> {
     return embedWithCache(texts, VoyageInputType.Document, this.model, this.truncation)
   }

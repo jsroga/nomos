@@ -3,10 +3,6 @@
  */
 
 import {
-  getVoyageEmbeddings,
-  VoyageEmbeddings,
-} from '@/shared/ai/embeddings/voyage-embeddings'
-import {
   getHybridSearchEngine,
   HybridSearchEngine,
   SearchResult,
@@ -42,14 +38,12 @@ const CACHE_TTL_MS = 5 * 60 * 1000
 const sessionCitations = new Map<string, CitationInfo[]>()
 
 export class RagService {
-  private embeddings: VoyageEmbeddings
   private searchEngine: HybridSearchEngine
   private chunker: SemanticChunker
   private queryExpander: QueryExpander
   private reranker: Reranker
 
   constructor() {
-    this.embeddings = getVoyageEmbeddings()
     this.searchEngine = getHybridSearchEngine()
     this.chunker = getSemanticChunker()
     this.queryExpander = getQueryExpander({ useLLM: false })
@@ -60,9 +54,9 @@ export class RagService {
     const shouldChunk = options.chunkDocument ?? shouldChunkDocumentType(options.documentType)
 
     if (shouldChunk) {
-      await ingestChunkedDocument(scope, content, options, this.chunker, this.embeddings)
+      await ingestChunkedDocument(scope, content, options, this.chunker)
     } else {
-      await ingestSingleDocument(scope, content, options, this.embeddings)
+      await ingestSingleDocument(scope, content, options)
     }
 
     this.invalidateCacheForProject(scope.projectId)
@@ -146,7 +140,7 @@ Context: ${context}`
       return results
     } catch (error) {
       console.warn(RagServiceLog.RetrievalFailed, error)
-      return fallbackVectorSearch(scope, query, limit, q => this.embeddings.embedQuery(q))
+      return fallbackVectorSearch(scope, query, limit)
     }
   }
 

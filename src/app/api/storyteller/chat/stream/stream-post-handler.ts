@@ -1,3 +1,7 @@
+import {
+  USAGE_COMPLETION_FIELDS,
+  USAGE_PROMPT_FIELDS,
+} from './constants/stream-usage'
 import { resolveChatModelId } from '@/domains/storyteller/config/resolve-chat-model'
 import type { ProjectScope } from '@/shared/auth/project-scope'
 import { recordError } from '@/shared/observability/observability'
@@ -127,6 +131,7 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
         writer,
         traceId: input.traceId,
         scope: input.scope,
+        model: requestedModel ?? resolveChatModelId(),
         episodeId: input.episodeId,
         isSectionUpdate,
         existingBibleData,
@@ -193,6 +198,41 @@ function handleReasoningDeltaChunk(session: StreamSession, payload: Record<strin
   }
 }
 
+/**
+ * Take the token counts off a finish chunk.
+ *
+ * Providers disagree on the shape — `usage` sits at the top level or under
+ * `payload`, and the fields are `inputTokens`/`promptTokens` depending on
+ * version — so this reads defensively and leaves `session.usage` unset when it
+ * finds nothing. An unset usage means the call goes unrecorded, which is the
+ * intended behaviour: a zero-token row would read as a free generation.
+ */
+function captureStreamUsage(session: StreamSession, chunk: Record<string, unknown>): void {
+  const payload = isRecord(chunk.payload) ? chunk.payload : chunk
+  const usage = isRecord(payload.usage) ? payload.usage : undefined
+  if (!usage) return
+
+  const promptTokens = readTokenCount(usage, USAGE_PROMPT_FIELDS)
+  const completionTokens = readTokenCount(usage, USAGE_COMPLETION_FIELDS)
+  if (promptTokens === undefined && completionTokens === undefined) return
+
+  session.usage = {
+    promptTokens: promptTokens ?? 0,
+    completionTokens: completionTokens ?? 0,
+  }
+}
+
+function readTokenCount(
+  usage: Record<string, unknown>,
+  names: readonly string[]
+): number | undefined {
+  for (const name of names) {
+    const value = usage[name]
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+  }
+  return undefined
+}
+
 async function handleStreamChunk(session: StreamSession, chunk: unknown) {
   if (!isRecord(chunk) || typeof chunk.type !== 'string') {
     return
@@ -228,6 +268,11 @@ async function handleStreamChunk(session: StreamSession, chunk: unknown) {
       toolName: typeof payload.toolName === 'string' ? payload.toolName : undefined,
       result: payload.result,
     })
+    return
+  }
+
+  if (chunk.type === MASTRA_CHUNK.finish || chunk.type === MASTRA_CHUNK.stepFinish) {
+    captureStreamUsage(session, chunk)
     return
   }
 

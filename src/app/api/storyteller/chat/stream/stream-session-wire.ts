@@ -49,4 +49,12 @@ export interface StreamSession {
   pendingActions: Record<string, unknown>[]
   detectedSection: DetectedSection
   fullText: string
+  /**
+   * Tokens the provider reported, which arrive in a `finish` chunk after the
+   * response has been streamed. Undefined means the stream ended without the
+   * provider saying — the call is then left unrecorded rather than written in
+   * at zero cost, which would read as "this was free".
+   */
+  usage?: { promptTokens: number; completionTokens: number }
+  model?: string
 }
