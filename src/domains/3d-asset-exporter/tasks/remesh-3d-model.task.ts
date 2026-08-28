@@ -1,4 +1,9 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import {
+  remesh3dModelPayloadSchema,
+  type Remesh3dModelPayload,
+} from './constants/meshy-payloads'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
@@ -8,18 +13,7 @@ import {
   type MeshyTaskResult,
 } from './constants/meshy-task-types'
 
-interface RemeshRunPayload {
-  /** The project the run belongs to; `triggerOwnedRun` tags the run with it. */
-  projectId: string
-  assetId: string
-  meshyTaskId: string
-  apiKey: string
-  topology: 'quad' | 'triangle'
-  targetPolycount: number
-  resizeHeight?: number
-}
-
-function buildRemeshBody(payload: RemeshRunPayload): Record<string, unknown> {
+function buildRemeshBody(payload: Remesh3dModelPayload): Record<string, unknown> {
   const body: Record<string, unknown> = {
     input_task_id: payload.meshyTaskId,
     target_formats: ['glb', 'fbx', 'obj', 'usdz'],
@@ -147,13 +141,15 @@ async function persistRemeshResult(
   }
 }
 
-export const remesh3DModelTask = task({
+export const remesh3DModelTask = defineOwnedTask({
   id: 'remesh-3d-model',
+  schema: remesh3dModelPayloadSchema,
+  queue: JobQueue.Meshy,
   maxDuration: 1800, // 30 minutes
   retry: {
     maxAttempts: 1, // Don't retry - costs money
   },
-  run: async (payload: RemeshRunPayload) => {
+  run: async payload => {
     const { assetId, meshyTaskId, apiKey } = payload
 
     logger.info(`Remeshing 3D model for asset ${assetId}, original task: ${meshyTaskId}`)

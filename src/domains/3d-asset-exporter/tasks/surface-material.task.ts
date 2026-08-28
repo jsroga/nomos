@@ -1,4 +1,7 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { MeshyArtStyle } from '@/shared/data/constants/protocol'
+import { surfaceMaterialPayloadSchema } from './constants/meshy-payloads'
 import { storageService } from '@/shared/data/storage/storage-service'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { v4 as uuidv4 } from 'uuid'
@@ -9,27 +12,23 @@ import {
 
 const MESHY_BASE_URL = 'https://api.meshy.ai/openapi/v2/text-to-3d'
 
-export const surfaceMaterialTask = task({
+export const surfaceMaterialTask = defineOwnedTask({
   id: 'surface-material',
+  schema: surfaceMaterialPayloadSchema,
+  queue: JobQueue.Meshy,
   maxDuration: 3600, // 1 hour - Text-to-3D can take a while (preview + refine)
   retry: {
     maxAttempts: 2,
   },
-  run: async (payload: {
-    projectId: string
-    surfaceId: string
-    prompt: string
-    apiKey: string
-    artStyle?: 'realistic' | 'sculpture'
-    // Surface bounds for reference (not used by Meshy, but useful for metadata)
-    surfaceBounds?: {
-      width: number
-      depth: number
-      centerX: number
-      centerZ: number
-    }
-  }) => {
-    const { projectId, surfaceId, prompt, apiKey, artStyle = 'realistic', surfaceBounds } = payload
+  run: async payload => {
+    const {
+      projectId,
+      surfaceId,
+      prompt,
+      apiKey,
+      artStyle = MeshyArtStyle.Realistic,
+      surfaceBounds,
+    } = payload
 
     logger.info('Starting surface material generation', { surfaceId, prompt, artStyle })
 

@@ -1,4 +1,7 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { MeshyArtStyle, MeshyTopology } from '@/shared/data/constants/protocol'
+import { textTo3dPayloadSchema } from './constants/meshy-payloads'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { storageService } from '@/shared/data/storage/storage-service'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
@@ -11,31 +14,26 @@ import {
 
 const MESHY_BASE_URL = 'https://api.meshy.ai/openapi/v2/text-to-3d'
 
-export const textTo3DTask = task({
+const TEXT_TO_3D_DEFAULT_POLYCOUNT = 30000
+
+export const textTo3DTask = defineOwnedTask({
   id: 'text-to-3d',
+  schema: textTo3dPayloadSchema,
+  queue: JobQueue.Meshy,
   maxDuration: 3600, // 1 hour - Text-to-3D can take a while (preview + refine)
   retry: {
     maxAttempts: 2,
   },
-  run: async (payload: {
-    projectId: string
-    prompt: string
-    seed: number
-    apiKey: string
-    artStyle?: 'realistic' | 'sculpture'
-    enablePbr?: boolean
-    targetPolycount?: number
-    topology?: 'quad' | 'triangle'
-  }) => {
+  run: async payload => {
     const {
       projectId,
       prompt,
       seed,
       apiKey,
-      artStyle = 'realistic',
+      artStyle = MeshyArtStyle.Realistic,
       enablePbr = true,
-      targetPolycount = 30000,
-      topology = 'triangle',
+      targetPolycount = TEXT_TO_3D_DEFAULT_POLYCOUNT,
+      topology = MeshyTopology.Triangle,
     } = payload
 
     logger.info('Starting Text-to-3D generation', { prompt, seed, artStyle })

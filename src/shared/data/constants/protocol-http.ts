@@ -257,10 +257,12 @@ export enum EnvVarName {
 
 export enum MeshyArtStyle {
   Realistic = 'realistic',
+  Sculpture = 'sculpture',
 }
 
 export enum MeshyTopology {
   Triangle = 'triangle',
+  Quad = 'quad',
 }
 
 export enum GoogleModelId {

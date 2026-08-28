@@ -12,10 +12,6 @@ export enum MaterialGenerationStage {
   Completed = 'completed',
 }
 
-export enum MaterialArtStyle {
-  Realistic = 'realistic',
-}
-
 export enum MaterialGenerationOperationType {
   MaterialGen = 'material-gen',
 }

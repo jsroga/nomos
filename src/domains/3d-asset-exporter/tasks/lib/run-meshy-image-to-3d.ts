@@ -1,4 +1,5 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { MeshyTopology } from '@/shared/data/constants/protocol'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { readRowString, recordFromJson } from '@/shared/data/json-guards'
 import {
@@ -17,7 +18,6 @@ import {
   MeshyGenerationLog,
   MeshyGenerationMetadataKey,
   MeshyGenerationRequestField,
-  MeshyGenerationTopology,
   MeshyResponseField,
 } from '../constants/meshy-generation-wire'
 import {
@@ -32,7 +32,7 @@ interface RunMeshyImageTo3dParams {
   finalImageUrl: string
   apiKey: string
   targetPolycount?: number
-  topology?: MeshyGenerationTopology
+  topology?: MeshyTopology
   onProgress?: (progress: number) => Promise<void>
 }
 
@@ -106,7 +106,7 @@ export async function runMeshyImageTo3d(params: RunMeshyImageTo3dParams) {
       [MeshyGenerationRequestField.ImageUrl]: finalImageUrl,
       [MeshyGenerationRequestField.AiModel]: MeshyAiModelId.Latest,
       [MeshyGenerationRequestField.EnablePbr]: true,
-      [MeshyGenerationRequestField.Topology]: topology ?? MeshyGenerationTopology.Triangle,
+      [MeshyGenerationRequestField.Topology]: topology ?? MeshyTopology.Triangle,
       [MeshyGenerationRequestField.TargetPolycount]: targetPolycount ?? MESHY_DEFAULT_POLYCOUNT,
       [MeshyGenerationRequestField.ShouldRemesh]: shouldRemesh,
     }),
