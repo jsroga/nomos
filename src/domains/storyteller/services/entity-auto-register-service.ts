@@ -125,7 +125,7 @@ async function generatedStubDescription(ctx: AutoRegisterContext, type: EntityTy
     name: ctx.normalizedName,
     type,
     surroundingText: ctx.context ?? '',
-    projectId: ctx.scope.projectId,
+    scope: ctx.scope,
   })
 }
 

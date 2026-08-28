@@ -9,9 +9,8 @@
  * her relationships discovered via graph traversal.
  */
 
-import { createOpenAI } from '@ai-sdk/openai'
-import { openRouterClientConfig } from '@/shared/agent-kernel/models'
-import { generateText } from 'ai'
+import { complete } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { entityGraphService } from './entity-graph-service'
 import { relationshipEnricher } from './relationship-enricher-service'
 import { parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
@@ -228,10 +227,10 @@ export async function generateContextualSummary(
       safeRequest.scope
     )
 
-    const openRouter = openRouterClientConfig()
-    const openrouter = createOpenAI({ apiKey: openRouter.apiKey, baseURL: openRouter.baseURL })
-    const { text } = await generateText({
-      model: openrouter(CONTEXTUAL_SUMMARY_MODEL),
+    const { text } = await complete({
+      scope: safeRequest.scope,
+      feature: LlmFeature.StorytellerContextualSummary,
+      model: CONTEXTUAL_SUMMARY_MODEL,
       system: `You are a story assistant that provides brief, contextual descriptions of story elements.
 Given an entity, its relationships, and the sentence where it appears, explain the entity's relevance in that specific context.
 
@@ -253,7 +252,6 @@ Sentence containing this entity (might be very short):
 "${safeRequest.surroundingText.slice(0, 500)}"
 
 Write a 1-2 sentence contextual description explaining ${safeRequest.entityName}'s relevance or baseline identity:`,
-      maxRetries: 1,
       temperature: 0.3,
     })
 

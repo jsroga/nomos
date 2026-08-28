@@ -34,3 +34,28 @@ export function classifyProcessEnvRead(line, file) {
   }
   return ProcessEnvBucket.Server
 }
+
+export const ProviderSdkBucket = {
+  Mastra: 'mastra',
+  LangChain: 'langchain',
+  AiSdk: 'ai-sdk',
+  AiSdkProvider: 'ai-sdk-provider',
+  OpenAi: 'openai',
+  Replicate: 'replicate',
+}
+
+const GATEWAY_MODULE = 'shared/ai/gateway'
+
+/** SPEC-13: every direct provider-SDK import, by which SDK it reaches for. */
+export function classifyProviderSdkImport(line, file) {
+  if (!line.includes('from \'')) return null
+  if (file.split('\\').join('/').includes(GATEWAY_MODULE)) return null
+
+  if (line.includes("from '@mastra/")) return ProviderSdkBucket.Mastra
+  if (line.includes("from '@langchain/")) return ProviderSdkBucket.LangChain
+  if (line.includes("from '@ai-sdk/")) return ProviderSdkBucket.AiSdkProvider
+  if (line.includes("from 'ai'")) return ProviderSdkBucket.AiSdk
+  if (line.includes("from 'openai'")) return ProviderSdkBucket.OpenAi
+  if (line.includes("from 'replicate'")) return ProviderSdkBucket.Replicate
+  return null
+}

@@ -6,6 +6,7 @@ import {
   jsonb,
   boolean,
   integer,
+  numeric,
   real,
   unique,
   vector,
@@ -124,6 +125,27 @@ export const documentEmbeddings = pgTable('document_embeddings', {
   metadata: jsonb('metadata').notNull(),
   embedding: vector('embedding', { dimensions: 1536 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+/**
+ * One row per paid model call. Append-only, and with no foreign key to
+ * `projects` on purpose: a deleted project keeps its cost history.
+ */
+export const llmCalls = pgTable('llm_calls', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  traceId: text('trace_id'),
+  projectId: uuid('project_id').notNull(),
+  userId: text('user_id').notNull(),
+  feature: text('feature').notNull(),
+  model: text('model').notNull(),
+  provider: text('provider').notNull(),
+  promptTokens: integer('prompt_tokens').notNull().default(0),
+  completionTokens: integer('completion_tokens').notNull().default(0),
+  cachedTokens: integer('cached_tokens').notNull().default(0),
+  costUsd: numeric('cost_usd', { precision: 12, scale: 6 }).notNull().default('0'),
+  latencyMs: integer('latency_ms').notNull().default(0),
+  outcome: text('outcome').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
 export const entityReferences = pgTable('entity_references', {

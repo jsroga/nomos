@@ -57,7 +57,7 @@ export async function validateReferences(text: string, scope: ProjectScope): Pro
         name: ref.displayName,
         type: ref.type,
         surroundingText: surroundingTextForRef(text, ref.startIndex, ref.endIndex),
-        projectId: scope.projectId,
+        scope,
       })
       newRefId = await entityRegistry.register({
         type: ref.type,

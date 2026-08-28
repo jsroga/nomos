@@ -1,6 +1,6 @@
-import { createOpenAI } from '@ai-sdk/openai'
-import { openRouterClientConfig } from '@/shared/agent-kernel/models'
-import { generateText } from 'ai'
+import type { ProjectScope } from '@/shared/auth/project-scope'
+import { complete } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import type { EntityReference } from '@/domains/storyteller/core/entities/entity-references'
 import {
   ENTITY_BASE_DESCRIPTION_FAILED_LOG,
@@ -22,7 +22,8 @@ export interface BaseEntityDescriptionRequest {
   name: string
   type: string
   surroundingText?: string | null
-  projectId: string
+  /** Which project this is billed to, and proof the caller may spend on it. */
+  scope: ProjectScope
 }
 
 export async function generateBaseEntityDescription(
@@ -36,13 +37,12 @@ export async function generateBaseEntityDescription(
   )
 
   try {
-    const openRouter = openRouterClientConfig()
-    const openrouter = createOpenAI({ apiKey: openRouter.apiKey, baseURL: openRouter.baseURL })
-    const { text } = await generateText({
-      model: openrouter(ENTITY_BASE_DESCRIPTION_MODEL),
+    const { text } = await complete({
+      scope: request.scope,
+      feature: LlmFeature.StorytellerEntityDescription,
+      model: ENTITY_BASE_DESCRIPTION_MODEL,
       system: EntityBaseDescriptionCopy.System,
       prompt: entityBaseDescriptionUserPrompt(name, type, surrounding),
-      maxRetries: 1,
       temperature: ENTITY_BASE_DESCRIPTION_TEMPERATURE,
     })
     const trimmed = text.trim()
@@ -64,6 +64,7 @@ export async function descriptionForNewReference(
 export async function fillMissingEntityDescriptions(
   entities: EntityReference[],
   context: string,
+  scope: ProjectScope,
   generate: (request: BaseEntityDescriptionRequest) => Promise<string>,
   persist: (id: string, description: string) => Promise<void>
 ): Promise<EntityReference[]> {
@@ -74,7 +75,7 @@ export async function fillMissingEntityDescriptions(
         name: entity.name,
         type: entity.type,
         surroundingText: context,
-        projectId: entity.projectId,
+        scope,
       })
       if (!description) return entity
       try {

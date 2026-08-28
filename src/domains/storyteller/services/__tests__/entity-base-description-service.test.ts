@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { SystemScopeReason, systemScope } from '@/shared/auth/project-scope'
 import {
   descriptionForNewReference,
   fillMissingEntityDescriptions,
@@ -11,6 +12,9 @@ import {
 import { EntityRegistryNote } from '@/domains/storyteller/services/constants/entity-registry-log'
 import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
 import type { EntityReference } from '@/domains/storyteller/core/entities/entity-references'
+
+/** A scope cannot be forged, so the test takes the system constructor. */
+const SCOPE = systemScope('11111111-1111-4111-8111-111111111111', SystemScopeReason.ProviderSmoke)
 
 function entity(overrides: Partial<EntityReference> & Pick<EntityReference, 'id' | 'description'>): EntityReference {
   return {
@@ -57,7 +61,7 @@ describe('descriptionForNewReference', () => {
       descriptionForNewReference('Already written.', {
         name: 'Marcus',
         type: StoryEntityType.Character,
-        projectId: 'proj-1',
+        scope: SCOPE,
       })
     ).resolves.toBe('Already written.')
   })
@@ -72,7 +76,7 @@ describe('fillMissingEntityDescriptions', () => {
       entity({ id: 'char-sera', name: 'Sera', description: 'Already known.' }),
     ]
 
-    const filled = await fillMissingEntityDescriptions(rows, 'Marcus finds the ledger.', generate, persist)
+    const filled = await fillMissingEntityDescriptions(rows, 'Marcus finds the ledger.', SCOPE, generate, persist)
 
     expect(generate).toHaveBeenCalledOnce()
     expect(persist).toHaveBeenCalledWith('char-marcus', 'Warden of the silent ledger.')
@@ -85,7 +89,7 @@ describe('fillMissingEntityDescriptions', () => {
     const persist = vi.fn(async () => undefined)
     const rows = [entity({ id: 'char-marcus', name: 'Marcus', description: 'Marcus' })]
 
-    const filled = await fillMissingEntityDescriptions(rows, '', generate, persist)
+    const filled = await fillMissingEntityDescriptions(rows, '', SCOPE, generate, persist)
 
     expect(generate).toHaveBeenCalledOnce()
     expect(filled[0]?.description).toBe('Warden of the silent ledger.')
@@ -98,7 +102,7 @@ describe('fillMissingEntityDescriptions', () => {
       entity({ id: `char-${index}`, name: `Char ${index}`, description: '' })
     )
 
-    const filled = await fillMissingEntityDescriptions(rows, '', generate, persist)
+    const filled = await fillMissingEntityDescriptions(rows, '', SCOPE, generate, persist)
 
     expect(generate).toHaveBeenCalledTimes(12)
     expect(filled.every(row => row.description.includes('is in the ward'))).toBe(true)
@@ -111,7 +115,7 @@ describe('fillMissingEntityDescriptions', () => {
     })
     const rows = [entity({ id: 'char-marcus', description: '' })]
 
-    const filled = await fillMissingEntityDescriptions(rows, '', generate, persist)
+    const filled = await fillMissingEntityDescriptions(rows, '', SCOPE, generate, persist)
 
     expect(filled[0]?.description).toBe('Warden of the silent ledger.')
   })

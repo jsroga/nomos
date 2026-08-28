@@ -38,7 +38,7 @@ async function registerMissingAsGeneratedStubs(
         name,
         type,
         surroundingText: context ?? '',
-        projectId: scope.projectId,
+        scope,
       })
       await entityRegistry.registerWithId(id, {
         name,
@@ -138,13 +138,15 @@ async function enrichEntityWithContextualSummary(
 
 async function withFilledDescriptions(
   entities: EntityReference[],
-  safeContext: string
+  safeContext: string,
+  scope: ProjectScope
 ): Promise<EntityReference[]> {
   const { withoutDescription } = partitionEntitiesByDescription(entities)
   if (withoutDescription.length === 0) return entities
   const filled = await fillMissingEntityDescriptions(
     withoutDescription,
     safeContext,
+    scope,
     generateBaseEntityDescription,
     (id, description) => entityRegistry.updateDescription(id, description)
   )
@@ -158,7 +160,7 @@ export async function applyContextualSummaries(
   context: string | null
 ): Promise<EntityReference[]> {
   const safeContext = context ? context.slice(0, MAX_CONTEXT_LENGTH) : ''
-  const withBase = await withFilledDescriptions(entities, safeContext)
+  const withBase = await withFilledDescriptions(entities, safeContext, scope)
 
   if (!hasUsefulResolveContext(safeContext)) {
     return withBase
