@@ -179,7 +179,9 @@ Every paid call goes through `@/shared/ai/gateway`, which writes one `llm_calls`
 
 **Bad.** One more module every model call passes through, and a price table that has to be maintained by hand as providers change rates.
 
-**Accepted risk.** The migration is partial. Twelve direct provider imports remain, gate A2 is **report-only** at that baseline, and the counts are in `.quality-ratchet.json`. Streaming, embeddings and the Mastra agents are not yet metered, so `llm_calls` currently under-reports total spend — it is not yet a complete picture, and should not be read as one until `providerSdkImportsOutsideGateway` reaches 0.
+**Accepted risk.** The migration is partial, and `llm_calls` therefore **under-reports total spend**. Direct completions, embeddings and the chat stream are metered; work inside a Mastra `agent.generate()` — beat planning, critics, the muse — is not, because those agents are called from sites that hold no `ProjectScope` and threading one through the agent layer is a migration in its own right. Attributing rows to the wrong project would be worse than having none.
+
+Six files still reach a provider directly, each named with its reason in `eslint-rules/provider-sdk-exemptions.js` and counted by `providerSdkImportsOutsideGateway`. **Read `npm run spend` as a floor, not a total,** until that reaches 0 and the Mastra agents are metered.
 
 ### Verification
 
