@@ -73,12 +73,14 @@ Mastra AI tracing (agent/tool/workflow spans + forwarded logs) is configured in 
 ## Evaluations
 
 ```bash
-npm run eval              # all 12 golden examples (Mastra scorers)
-npm run eval -- --samples=5
+npm run eval:gate         # run + compare to the dated baseline; exits 1 on a regression
+npm run eval              # run only, no comparison
+npm run eval:full         # both datasets — before a release, after a model change
+npm run eval:noise        # re-measure σ after changing a judge or the golden set
 npm run eval:dashboard    # generate + open HTML report
 ```
 
-Run evals after any change to agent prompts, tools, model config, or the storyteller generation flow. A change is an improvement only if no single scorer regresses below baseline (`evals/results/latest.json`). Scorers: `src/shared/agent-kernel/scorers/`; golden set: `evals/datasets/storyteller-golden.ts`. Details: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+**`npm run eval:gate` is enforced, not advisory.** Staging a change under `src/domains/*/ai/`, `src/shared/agent-kernel/` or `evals/datasets/` without a matching eval artifact is refused by `npm run precommit` (`scripts/check-eval-freshness.mjs`, <0.1s — it hashes sources, it never runs the evals). The gate compares against a **dated baseline** in `evals/baselines/`, not against `results/latest.json`, which is the artifact slot. A regression is a drop beyond `max(2σ, 0.02)`, σ measured and committed in `evals/constants/thresholds.ts`. Escape hatch: an `Eval-Skip: <reason>` commit trailer, counted by the `evalSkipCommits` ratchet. Judge cost never enters `llm_calls` (ADR 0003). Details: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) § The eval gate.
 
 ## MCP & Trigger
 

@@ -1,0 +1,67 @@
+{
+  "dataset": "storyteller",
+  "chosenAt": "2026-08-28T14:31:43.264Z",
+  "sourceRun": "eval_2026-08-28_14-31-05-669_l30t",
+  "examples": 24,
+  "judgeModel": "openai/gpt-5.6-sol",
+  "note": "Means over the whole golden set, which is deliberately half negative examples \u2014 a scorer average here is a regression reference, NOT a quality percentage. Means come from the 3-run noise measurement, so the reference is not one lucky run.",
+  "scorers": {
+    "magic": {
+      "mean": 0.3022222222222222,
+      "kind": "llm-judge",
+      "sigma": 0.021998877636914792,
+      "sigmaRuns": 3
+    },
+    "prose-craft": {
+      "mean": 0.3333333333333333,
+      "kind": "llm-judge",
+      "sigma": 0,
+      "sigmaRuns": 3
+    },
+    "persona-fidelity": {
+      "mean": 0.6022222222222222,
+      "kind": "llm-judge",
+      "sigma": 0.005665577237325309,
+      "sigmaRuns": 3
+    },
+    "hallucination": {
+      "mean": 0.49444444444444446,
+      "kind": "llm-judge",
+      "sigma": 0.01571348402636772,
+      "sigmaRuns": 3
+    },
+    "beat-plan-concreteness": {
+      "mean": 0.3333333333333333,
+      "kind": "deterministic",
+      "sigma": 0,
+      "sigmaRuns": 3
+    },
+    "story-motion": {
+      "mean": 0.26666666666666666,
+      "kind": "llm-judge",
+      "sigma": 0,
+      "sigmaRuns": 3
+    },
+    "consistency": {
+      "mean": 0.6666666666666666,
+      "kind": "deterministic",
+      "sigma": 0,
+      "sigmaRuns": 3
+    },
+    "critic-discipline": {
+      "mean": 0.3333333333333333,
+      "kind": "deterministic",
+      "sigma": 0,
+      "sigmaRuns": 3
+    }
+  },
+  "excluded": {
+    "stakes-cost": "No golden example scopes it (metadata.scorers), so it cannot run. Registered but uncovered.",
+    "goal-reached": "Live-chat scorer; not in the eval runner set.",
+    "idea-uniqueness": "Belongs to the idea-diversity dataset; baselined separately.",
+    "idea-diversity-judge": "Belongs to the idea-diversity dataset; baselined separately."
+  },
+  "judgeTokens": 10818,
+  "judgeCostUsd": null,
+  "costNote": "Not priced: the judging model 'openai/gpt-5.6-sol' has no row in src/shared/ai/gateway/constants/pricing.ts, and inventing a price would be worse than an honest gap. Tokens are recorded, the budget code is in place and tested, and it stays inert \u2014 compareCost withholds the comparison while any judge model is unpriced, so $0 can never read as a saving. Add the price row to arm it."
+}

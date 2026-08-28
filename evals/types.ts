@@ -68,15 +68,33 @@ export interface VariantReport {
   exampleLogs?: ExampleLog[]
 }
 
+/**
+ * A scorer that threw. Kept apart from the scores, because the runner used to
+ * record a failure as `0` — which is how a run where every judge failed on a
+ * missing API key became a committed baseline of all zeros.
+ */
+export interface ScorerFailure {
+  exampleId: string
+  scorerId: string
+  error: string
+}
+
 export interface MultiVariantReport {
   id: string
   timestamp: string
+  /** Hash of the prompts, agents and datasets this run scored. */
+  inputHash?: string
+  /** What the judges cost. Never recorded to `llm_calls` — see ADR 0003. */
+  judgeUsage?: { inputTokens: number; outputTokens: number; costUsd: number; unpricedModels: string[] }
   variants: VariantReport[]
   scenarios: string[]
+  /** Empty on a clean run. A non-empty list makes the run exit non-zero. */
+  failures: ScorerFailure[]
 }
 
 export interface ScorerRunResult {
   exampleId: string
+  /** Only scorers that actually produced a score. Failures are not zeros. */
   scores: Record<string, number>
   reasoning: Record<string, string>
   input: Record<string, unknown>

@@ -56,15 +56,65 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 - Colocate unit tests next to code. Exclude `*.e2e.test.ts` from default unit runs (need DB/LLM).
 - Coverage (`npm run test:coverage`) uses `@vitest/coverage-v8` on every `src` `.ts`/`.tsx` file (`all: true`). `test:unit` stays uninstrumented. HTML / LCOV / json-summary land in `coverage/` (gitignored); `npm run test:coverage:open` generates then opens the HTML report.
 - E2E needs `npm run dev` (or `dev:stack`) + `.env.local`.
-- Golden set: `evals/datasets/storyteller-golden.ts`. Baseline: `evals/results/latest.json` — **no scorer may regress** below baseline to ship.
+- Golden set: `evals/datasets/storyteller-golden.ts`.
 
-### Eval gating (short)
+### The eval gate
+
+**Two files, two jobs.** `evals/baselines/<dataset>.<date>.json` is the
+*reference* — a run someone inspected and chose, dated and never overwritten.
+`evals/results/latest.json` is the *last run*, overwritten every time, carrying
+the `inputHash` of the sources it scored. Comparison is always latest vs a named
+baseline; choosing a new one is a visible commit.
+
+```bash
+npm run eval:gate     # run, compare to the newest baseline, exit 1 on a regression
+npm run eval          # run only, no comparison
+npm run eval:full     # both datasets — before a release, after a model change
+npm run eval:noise    # re-measure σ after changing a judge or the golden set
+```
+
+**A regression is a drop beyond noise, not any drop.** LLM judges are
+stochastic; a hard `>=` on a mean of 24 examples fails constantly, and a gate
+that cries wolf gets disabled. The threshold is `max(2σ, 0.02)` per scorer,
+with σ measured over three unchanged runs and committed in
+`evals/constants/thresholds.ts` beside the number it came from.
+
+A σ of 0 from an **LLM judge** means "no variation observed in three runs", not
+"deterministic" — three scorers (`consistency`, `critic-discipline`,
+`beat-plan-concreteness`) are genuinely deterministic; the rest are judges whose
+golden examples happen to be unambiguous. The 0.02 floor is what stops those
+zeros becoming hair-triggers, and it is load-bearing for six of the eight.
+
+**The pre-commit hook is a reminder, not the gate.** `check-eval-freshness`
+hashes the watched sources and compares one string — under 0.1 s, and it never
+runs the evals. Staging a change under `src/domains/*/ai/`,
+`src/shared/agent-kernel/` or `evals/datasets/` without a matching artifact is
+refused. The escape hatch is an `Eval-Skip: <reason>` commit trailer, counted by
+the `evalSkipCommits` ratchet — a trailer is in the history, where an env var
+would be exported once in a shell profile and never seen again.
+
+**Judge cost is read off Mastra's scorer result, never out of `llm_calls`.**
+Judge calls score a golden set rather than a tenant's work, so ADR 0003 keeps
+them out of that table; only the committed price table is shared. A run costing
+more than 1.1× the baseline fails, because a prompt that doubled in length
+scores the same and bills twice.
+
+**Nothing runs any of this automatically.** There is no CI and no scheduler —
+`npm run eval:full` is a human cadence: before a release, and after any change
+to a judge model or the golden set.
 
 | Change touches… | Gate scorers |
 |-----------------|--------------|
 | Author prompt / draft-revise | `magic`, `prose-craft`, `stakes-cost`, `story-motion` |
 | Tools / context / canon | `consistency`, `hallucination` |
 | Critics | `prose-craft`, `stakes-cost` |
+
+`stakes-cost` is **registered but never runs** — no golden example scopes it in
+`metadata.scorers`, so it has no coverage and no baseline. Adding one is the
+smallest useful contribution to this suite.
+
+Enforced by: `npm run precommit` (eval freshness), `npm run eval:gate`,
+`npx vitest run evals/__tests__`.
 
 ## Quality gates
 

@@ -1,6 +1,6 @@
 {
-  "id": "eval_2026-07-21_08-32-34-886_tdx9",
-  "timestamp": "2026-07-21T08:32:34.887Z",
+  "id": "eval_2026-08-28_14-25-34-265_b6rn",
+  "timestamp": "2026-08-28T14:25:34.266Z",
   "variants": [
     {
       "name": "baseline",
@@ -26,7 +26,7 @@
         "consistency": 0,
         "hallucination": 0,
         "personaFidelity": 0,
-        "latencyMs": 55.75
+        "latencyMs": 3597.75
       },
       "scenarioMetrics": {
         "idea-diversity": {
@@ -34,58 +34,26 @@
           "consistency": 0,
           "hallucination": 0,
           "personaFidelity": 0,
-          "latencyMs": 55.75
+          "latencyMs": 3597.75
         }
       },
       "scorerAverages": {
-        "idea-uniqueness": 0.421701813179099,
-        "idea-diversity-judge": 0
+        "idea-uniqueness": 0.42170181317909894,
+        "idea-diversity-judge": 0.33
       },
       "exampleLogs": [
-        {
-          "id": "idea-seeded-sampler",
-          "scenario": "idea-diversity",
-          "input": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
-          "output": "Street musicians tune instruments that open doors to parallel alleys.\nA lighthouse keeper trades storm warnings for forbidden star charts.\nUnderground postal workers smuggle truths inside undeliverable letters.\nA ferry only appears for passengers who have forgotten their own names.\nStreet musicians tune instruments that open doors to parallel alleys.\nUnderground postal workers smuggle truths inside undeliverable letters.\nA ferry only appears for passengers who have forgotten their own names.\nStreet musicians tune instruments that open doors to parallel alleys.",
-          "score": 0.22482118326282474,
-          "reasoning": {
-            "idea-uniqueness": "Idea uniqueness overall 45: 4/8 unique after normalize; exactDup=50%; nearDup=50%; lexDiv=48%",
-            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-5.6-luna\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
-          },
-          "context": {
-            "latencyMs": 192,
-            "category": "idea-diversity",
-            "scenario": "idea-diversity"
-          }
-        },
-        {
-          "id": "idea-repetitive-echo",
-          "scenario": "idea-diversity",
-          "input": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
-          "output": "A hero finds a mysterious artifact that grants power but corrupts them.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.",
-          "score": 0.049350484640440104,
-          "reasoning": {
-            "idea-uniqueness": "Idea uniqueness overall 10: 2/8 unique after normalize; exactDup=75%; nearDup=88%; lexDiv=12%",
-            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-5.6-luna\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
-          },
-          "context": {
-            "latencyMs": 10,
-            "category": "idea-diversity",
-            "scenario": "idea-diversity"
-          }
-        },
         {
           "id": "idea-diverse-brainstormer",
           "scenario": "idea-diversity",
           "input": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
           "output": "A cartographer maps a city that redraws itself every midnight.\nA park ranger tags animals that migrate between video-game save states.\nRival chefs duel using recipes that rewrite customers memories.\nClockmakers repair timepieces that steal hours from their owners sleep.\nA lighthouse keeper trades storm warnings for forbidden star charts.\nA ferry only appears for passengers who have forgotten their own names.\nUnderground postal workers smuggle truths inside undeliverable letters.\nAn archivist must delete tomorrow headlines to keep yesterday stable.",
-          "score": 0.4109289169845915,
+          "score": 0.8084289169845915,
           "reasoning": {
             "idea-uniqueness": "Idea uniqueness overall 82: 8/8 unique after normalize; exactDup=0%; nearDup=0%; lexDiv=89%",
-            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-5.6-luna\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
+            "idea-diversity-judge": "The concepts are strongly differentiated in setting, supernatural mechanism, and implied conflict, with no clear duplicates. However, nearly every entry follows the same compact template: an occupation encounters or manages one surreal rule. Repeated occupational framing and consistently polished one-sentence structure reduce randomness despite good lexical variety."
           },
           "context": {
-            "latencyMs": 11,
+            "latencyMs": 3322,
             "category": "idea-diversity",
             "scenario": "idea-diversity"
           }
@@ -95,13 +63,45 @@
           "scenario": "idea-diversity",
           "input": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
           "output": "In a world where corps control weather, a pilot must steal the last seed.\nIn a world where corps control weather, a pilot must steal the last core.\nIn a world where guilds control dreams, a thief must protect the last relic.\nIn a world where guilds control dreams, a thief must protect the last key.\nIn a world where AIs control markets, a trader must sabotage the last ledger.\nIn a world where AIs control markets, a trader must sabotage the last token.\nIn a world where cults control tides, a sailor must recover the last compass.\nIn a world where cults control tides, a sailor must recover the last map.",
-          "score": 0.15830304147034158,
+          "score": 0.2408030414703416,
           "reasoning": {
             "idea-uniqueness": "Idea uniqueness overall 32: 8/8 unique after normalize; exactDup=0%; nearDup=50%; lexDiv=29%",
-            "idea-diversity-judge": "{\"message\":\"Scorer Run Failed: Could not find API key process.env.OPENAI_API_KEY for model id openai/gpt-5.6-luna\",\"domain\":\"SCORER\",\"category\":\"USER\",\"code\":\"MASTR_SCORER_FAILED_TO_RUN_WORKFLOW_FAILED\",\"details\":{\"scorerId\":\"idea-diversity-judge\",\"steps\":\"analyze, generateScore, generateReason\"}}"
+            "idea-diversity-judge": "Severe template spam: every idea uses the identical structure, and each premise appears as a near-duplicate pair with only the final object swapped. The four broader scenarios offer some thematic distinction, but repeated syntax, stakes, singular roles, and 'last object' MacGuffins create a strong echo-chamber effect."
           },
           "context": {
-            "latencyMs": 10,
+            "latencyMs": 4585,
+            "category": "idea-diversity",
+            "scenario": "idea-diversity"
+          }
+        },
+        {
+          "id": "idea-seeded-sampler",
+          "scenario": "idea-diversity",
+          "input": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
+          "output": "Street musicians tune instruments that open doors to parallel alleys.\nA lighthouse keeper trades storm warnings for forbidden star charts.\nUnderground postal workers smuggle truths inside undeliverable letters.\nA ferry only appears for passengers who have forgotten their own names.\nStreet musicians tune instruments that open doors to parallel alleys.\nUnderground postal workers smuggle truths inside undeliverable letters.\nA ferry only appears for passengers who have forgotten their own names.\nStreet musicians tune instruments that open doors to parallel alleys.",
+          "score": 0.39982118326282473,
+          "reasoning": {
+            "idea-uniqueness": "Idea uniqueness overall 45: 4/8 unique after normalize; exactDup=50%; nearDup=50%; lexDiv=48%",
+            "idea-diversity-judge": "Heavy exact duplication: the street-musician premise appears three times, while the postal-worker and ferry premises each appear twice. Only four of eight entries are distinct. The surviving concepts use varied imagery, but nearly all follow the same compact template: an evocative occupation or service paired with a surreal mechanism, trade, or condition. Strong atmosphere, weak set-level diversity."
+          },
+          "context": {
+            "latencyMs": 3766,
+            "category": "idea-diversity",
+            "scenario": "idea-diversity"
+          }
+        },
+        {
+          "id": "idea-repetitive-echo",
+          "scenario": "idea-diversity",
+          "input": "Generate distinct game-loop or story premises. Each idea must be a single concrete sentence.",
+          "output": "A hero finds a mysterious artifact that grants power but corrupts them.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.\nA hero finds a mysterious artifact that grants power but corrupts them.\nA hero finds a mysterious artifact that grants power but corrupts them slightly more.",
+          "score": 0.0543504846404401,
+          "reasoning": {
+            "idea-uniqueness": "Idea uniqueness overall 10: 2/8 unique after normalize; exactDup=75%; nearDup=88%; lexDiv=12%",
+            "idea-diversity-judge": "The set contains only two nearly identical phrasings, repeated multiple times. The sole variation—adding \"slightly more\"—does not create a meaningfully distinct idea, and every entry uses the exact same structure, characters, premise, and outcome. This is extreme template repetition with virtually no lexical or conceptual variety."
+          },
+          "context": {
+            "latencyMs": 2718,
             "category": "idea-diversity",
             "scenario": "idea-diversity"
           }
@@ -111,5 +111,6 @@
   ],
   "scenarios": [
     "idea-diversity"
-  ]
+  ],
+  "failures": []
 }

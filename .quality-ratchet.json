@@ -15,6 +15,7 @@
   "tasksWithoutQueue": 0,
   "tasksWithoutIdempotencyKey": 0,
   "triggerSdkV3Imports": 0,
+  "evalSkipCommits": 0,
   "_commands": {
     "untaggedRunGracePaths": "grep -c 'isWithinUntaggedGraceWindow(run.createdAt)' src/shared/jobs/owned-run.ts   # removed; every payload carries a project id, so every run is tagged",
     "routesTakingProjectIdWithoutOwnershipCheck": "for f in $(find src/app/api -name route.ts); do grep -qE 'projectId|project_id' \"$f\" && ! grep -rqE 'projectScope|episodeScope|beatScope|characterScope|withProjectScope|verifyProjectAccess|verifyEpisodeAccess|verifyBeatAccess|verifyCharacterAccess|verifyProjectOwnership|listForUser|session\\.user\\.id|isAdminUser' \"$(dirname \"$f\")\" && echo \"$f\"; done | wc -l",
@@ -30,6 +31,7 @@
     "rawTaskDefinitions": "npx vitest run scripts/__tests__/trigger-task-inventory.test.ts   # `task(`/`schemaTask(` outside shared/jobs/define-task.ts; SPEC-14 takes this to 0",
     "tasksWithoutQueue": "same test   # a *.task.ts with no `queue:`; the factory makes queue required, so 0 is structural",
     "tasksWithoutIdempotencyKey": "same test   # trigger calls bypassing triggerOwnedRun, the only caller that derives a key from the submission nonce",
-    "triggerSdkV3Imports": "same test   # files importing '@trigger.dev/sdk/v3'; CLAUDE.md mandates the v4 entrypoint"
+    "triggerSdkV3Imports": "same test   # files importing '@trigger.dev/sdk/v3'; CLAUDE.md mandates the v4 entrypoint",
+    "evalSkipCommits": "git log --grep='^Eval-Skip:' --oneline | wc -l   # each is a prompt change shipped without evidence the evals still pass"
   }
 }

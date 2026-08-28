@@ -27,6 +27,7 @@ function main() {
   run('architecture layout', 'node', ['scripts/check-architecture.mjs'])
   run('agent artifacts', 'node', ['scripts/check-agent-artifacts.mjs'])
   run('docs sync', 'node', ['scripts/check-docs-updated.mjs'])
+  run('eval freshness', 'node', ['scripts/check-eval-freshness.mjs'])
   run('openapi drift', 'npm', ['run', 'openapi:check'])
   run('env example', 'npm', ['run', 'env:check'])
   run('typecheck (staged)', 'node', ['scripts/pre-commit-typecheck.mjs'])
