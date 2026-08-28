@@ -10,6 +10,8 @@ export const BLUEPRINT_TOP_LEVEL = new Set([
   'ui',
   'state',
   'core',
+  // Zod schemas + mappers per aggregate; the only place snake_case lives.
+  'contracts',
   'services',
   'ai',
   'tasks',

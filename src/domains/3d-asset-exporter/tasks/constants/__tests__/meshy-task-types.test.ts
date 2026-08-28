@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   meshyProgressPercent,
   MeshyTaskStatusValue,
-  parseMeshyTaskResult,
+  parseMeshyTask,
 } from '../meshy-task-types'
 
-describe('parseMeshyTaskResult', () => {
+describe('parseMeshyTask', () => {
   it('reads a documented flat retrieve payload', () => {
-    const parsed = parseMeshyTaskResult({
+    const parsed = parseMeshyTask({
       id: 'task-1',
       status: MeshyTaskStatusValue.InProgress,
       progress: 41,
@@ -19,7 +19,7 @@ describe('parseMeshyTaskResult', () => {
   })
 
   it('unwraps progress from a nested result object when top-level has no status', () => {
-    const parsed = parseMeshyTaskResult({
+    const parsed = parseMeshyTask({
       result: {
         status: MeshyTaskStatusValue.InProgress,
         progress: 67,
@@ -32,7 +32,7 @@ describe('parseMeshyTaskResult', () => {
   })
 
   it('keeps top-level progress when a nested result object is also present', () => {
-    const parsed = parseMeshyTaskResult({
+    const parsed = parseMeshyTask({
       id: 'task-1',
       status: MeshyTaskStatusValue.Pending,
       progress: 0,
@@ -46,7 +46,7 @@ describe('parseMeshyTaskResult', () => {
   })
 
   it('does not treat a create-task id string as a nested payload', () => {
-    const parsed = parseMeshyTaskResult({ result: '018a210d-8ba4-705c-b111-1f1776f7f578' })
+    const parsed = parseMeshyTask({ result: '018a210d-8ba4-705c-b111-1f1776f7f578' })
     expect(parsed.status).toBe(MeshyTaskStatusValue.Pending)
     expect(parsed.progress).toBeUndefined()
   })

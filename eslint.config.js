@@ -198,6 +198,23 @@ const domainBoundaryConfigs = DOMAIN_MODULES.map(domain => ({
   },
 }))
 
+/**
+ * SPEC-16: scoped module by module as each one's `contracts/` lands.
+ *
+ * `warn` while a module still has sites, `error` once it reaches zero —
+ * flipping it repo-wide over a thousand guards would make `npm run lint`
+ * useless on day one. The pilot has 13 guard sites left (its own aggregate is
+ * done; what remains are trigger-status and API response shapes), so it is
+ * `warn`; the `snakeCaseReadsInConvertedModules` ratchet holds the half that
+ * is finished.
+ */
+const contractsConvertedModules = [
+  {
+    files: ['src/domains/3d-asset-exporter/**/*.{ts,tsx}'],
+    rules: { 'local/no-untyped-json-read': 'warn' },
+  },
+]
+
 module.exports = [
   {
     ignores: [
@@ -662,6 +679,12 @@ module.exports = [
         },
       ],
     },
+  },
+  ...contractsConvertedModules,
+  // The fixture proving the contracts gate is on.
+  {
+    files: ['scripts/gate-fixtures/src/services/reads-untyped-json.ts'],
+    rules: { 'local/no-untyped-json-read': 'error' },
   },
   // The fixture proving gate A2 is on. Last, so nothing overrides it.
   {

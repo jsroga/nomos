@@ -10,8 +10,8 @@ import {
 } from '../constants/meshy-generation-wire'
 import {
   meshyProgressPercent,
-  parseMeshyTaskResult,
-  type MeshyTaskResult,
+  parseMeshyTask,
+  type MeshyTask,
 } from '../constants/meshy-task-types'
 import { appendMeshySseChunk, MeshySseEventName, parseMeshySseFrame } from './parse-meshy-sse'
 import { readRowString, recordFromJson } from '@/shared/data/json-guards'
@@ -36,7 +36,7 @@ async function handleMeshyStreamFrame(
   frame: string,
   onProgress: (progress: number) => Promise<void>,
   lastProgress: number | undefined,
-): Promise<{ result: MeshyTaskResult; lastProgress: number } | null> {
+): Promise<{ result: MeshyTask; lastProgress: number } | null> {
   const parsed = parseMeshySseFrame(frame)
   if (!parsed) return null
 
@@ -46,7 +46,7 @@ async function handleMeshyStreamFrame(
     )
   }
 
-  const result = parseMeshyTaskResult(parsed.json)
+  const result = parseMeshyTask(parsed.json)
   const percent = meshyProgressPercent(result.progress, result.status)
   if (percent !== lastProgress) {
     logger.info(MeshyGenerationLog.MeshyProgress, {
@@ -70,7 +70,7 @@ export async function streamMeshyImageTo3dTask(
   taskId: string,
   apiKey: string,
   onProgress: (progress: number) => Promise<void>,
-): Promise<MeshyTaskResult> {
+): Promise<MeshyTask> {
   const response = await fetch(meshyImageTo3dStreamUrl(taskId), {
     headers: {
       [MeshyGenerationHttpHeader.Authorization]: `${HttpAuthScheme.Bearer}${apiKey}`,
@@ -84,7 +84,7 @@ export async function streamMeshyImageTo3dTask(
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
-  let lastResult: MeshyTaskResult | null = null
+  let lastResult: MeshyTask | null = null
   let lastProgress: number | undefined
 
   try {

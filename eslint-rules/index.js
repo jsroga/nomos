@@ -7,6 +7,7 @@ const noDiscardedAuthContext = require('./no-discarded-auth-context')
 const noBareProjectIdParam = require('./no-bare-project-id-param')
 const noBareProcessEnv = require('./no-bare-process-env')
 const noRawTriggerTask = require('./no-raw-trigger-task')
+const noUntypedJsonRead = require('./no-untyped-json-read')
 
 module.exports = {
   rules: {
@@ -19,5 +20,6 @@ module.exports = {
     'no-bare-project-id-param': noBareProjectIdParam,
     'no-bare-process-env': noBareProcessEnv,
     'no-raw-trigger-task': noRawTriggerTask,
+    'no-untyped-json-read': noUntypedJsonRead,
   },
 }

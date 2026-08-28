@@ -57,9 +57,9 @@ export interface UseThreeDRunPollingParams {
   saveMetadata: ThreeDPollSaveMetadata
   updateAssetViaApi: ThreeDPollUpdateAsset
   updateAsset?: (id: string, patch: { model_filename?: string }) => void
-  clearGenerationState: (status?: typeof ThreeDPollCopy.Completed | typeof ThreeDPollCopy.Failed) => Promise<void>
-  clearRemeshState: (status?: typeof ThreeDPollCopy.Completed | typeof ThreeDPollCopy.Failed) => Promise<void>
-  clearUploadState: (status?: typeof ThreeDPollCopy.Completed | typeof ThreeDPollCopy.Failed) => Promise<void>
+  clearGenerationState: (status?: GenerationStatus) => Promise<void>
+  clearRemeshState: (status?: GenerationStatus) => Promise<void>
+  clearUploadState: (status?: GenerationStatus) => Promise<void>
 }
 
 export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
@@ -127,7 +127,7 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
             }
             toast.success(ThreeDPollCopy.GenSuccess)
           }
-          await p().clearGenerationState(ThreeDPollCopy.Completed)
+          await p().clearGenerationState(GenerationStatus.Completed)
         },
         onFailed: async statusData => {
           const storedMeshyId = readMeshyTaskId(statusData.metadata) || p().meshyTaskId
@@ -178,7 +178,7 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
           }
         },
         on404: async () => {
-          await p().clearRemeshState(ThreeDPollCopy.Failed)
+          await p().clearRemeshState(GenerationStatus.Failed)
           toast(ThreeDPollCopy.RemeshNotFound, { icon: ThreeDPollCopy.InfoIcon })
         },
         onCompleted: async statusData => {
@@ -191,7 +191,7 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
             if (meshyResult) p().setRemeshResult(meshyResult)
             toast.success(ThreeDPollCopy.RemeshSuccess)
           }
-          await p().clearRemeshState(ThreeDPollCopy.Completed)
+          await p().clearRemeshState(GenerationStatus.Completed)
         },
         onFailed: async statusData => {
           toast.error(
@@ -200,7 +200,7 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
               `Remesh ended with status: ${statusData.status ?? ThreeDPollCopy.UnknownStatus}`
             )}`
           )
-          await p().clearRemeshState(ThreeDPollCopy.Failed)
+          await p().clearRemeshState(GenerationStatus.Failed)
         },
       },
       { intervalMs: THREE_D_TRIGGER_POLL_INTERVAL_MS, maxPolls: THREE_D_TRIGGER_MAX_POLLS }
@@ -230,7 +230,7 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
           }
         },
         on404: async () => {
-          await p().clearUploadState(ThreeDPollCopy.Failed)
+          await p().clearUploadState(GenerationStatus.Failed)
           toast(ThreeDPollCopy.UploadNotFound, { icon: ThreeDPollCopy.InfoIcon })
         },
         onCompleted: async statusData => {
@@ -244,7 +244,7 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
             }
             toast.success(ThreeDPollCopy.UploadSuccess)
           }
-          await p().clearUploadState(ThreeDPollCopy.Completed)
+          await p().clearUploadState(GenerationStatus.Completed)
         },
         onFailed: async statusData => {
           toast.error(
@@ -253,7 +253,7 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
               `Upload ended with status: ${statusData.status ?? ThreeDPollCopy.UnknownStatus}`
             )}`
           )
-          await p().clearUploadState(ThreeDPollCopy.Failed)
+          await p().clearUploadState(GenerationStatus.Failed)
         },
       },
       { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }

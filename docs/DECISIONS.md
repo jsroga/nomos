@@ -193,3 +193,77 @@ grep -rn '@langchain' src --include='*.ts'            # 0
 npx vitest run src/shared/ai/gateway
 npm run spend -- --days 7
 ```
+
+---
+
+## ADR 0004 — Contracts: parse once, at the edge
+
+**Status:** accepted, 2026-08-28 · **Supersedes:** nothing · **Related:** [ADR 0002](#adr-0002--projectscope-tenancy-as-a-type)
+
+### Context
+
+The codebase reads untyped JSON far more often than it parses it: over a
+thousand `recordFromJson` / `readString` calls against 62 `safeParse`. Those
+guards are not a mistake — this repo bans `as`, and they were the honest way to
+handle data whose shape nobody had declared.
+
+**The problem is where they run.** Guarding field by field at every reader means
+the shape is never established anywhere. Each reader re-derives it, and a
+payload that lost a field produces `undefined` at whichever of the thousand
+sites happens to touch it first — far from the cause, and only on the path that
+read it.
+
+Database and provider spellings leak the same way in the other direction.
+`image_filename` and `model_urls` reached UI components, so a column rename was
+a full-text search rather than an edit.
+
+### Decision
+
+One `contracts/` module per aggregate: the Zod schema, the inferred row type,
+the domain type, and the mappers. Parse once at the edge; pass typed values
+inward. **snake_case exists only inside a mapper.**
+
+`safeParse` at a boundary we do not control — a request body (answer 400), a
+provider response, a JSONB column written by older code (degrade rather than
+break). `parse` where a bad shape is a bug in this codebase and should throw
+loudly; a `safeParse` there invites a fallback that hides corruption.
+
+**Strip, strict and passthrough are three different things, and the default is
+strip.** `z.object()` drops an unknown key rather than rejecting it, which is
+usually right: it keeps what is known and refuses to carry what is not, so a
+stray spelling cannot spread. `.strict()` on a legacy column means one
+unrecognised key discards the whole record. `.passthrough()` belongs only at a
+provider or model boundary — a model can emit anything, and strictness there
+converts a bad generation into a crash — and every survivor carries a
+`contract-boundary:` marker naming why.
+
+A field the contract *forgot* is caught by a test asserting the mapper writes
+back exactly the keys the schema declares, not by strictness.
+
+### Consequences
+
+**Good.** A column rename is one file. A reader gets a type instead of a guard.
+A hand-written twenty-line field-by-field parser becomes a schema and a mapper,
+and the compiler names every site that has to move — which is how converting
+the pilot surfaced a duplicate `'completed'` enum that a loose union had been
+quietly accepting.
+
+**Bad, and stated plainly: this ends with the guard count still in four
+figures.** Six aggregates across three modules is what the spec converts; the
+rest is ordinary work under a gate. The ratchet stops the number growing and
+`local/no-untyped-json-read` stops new code adding to it, scoped module by
+module — `warn` while a module still has sites, `error` once it reaches zero.
+Half-done is therefore a **stable** state rather than a broken one: converted
+modules cannot regress, unconverted ones cannot grow.
+
+**Accepted risk.** A strict schema can reject real production data. The pilot
+parses production-shaped fixtures before the pattern spreads, and the stored
+shape uses strip precisely so a legacy key cannot discard a record.
+
+### Verification
+
+```bash
+npx vitest run scripts/__tests__/untyped-json-inventory.test.ts
+npx vitest run src/domains/3d-asset-exporter/contracts
+npx eslint src/domains/3d-asset-exporter   # local/no-untyped-json-read
+```

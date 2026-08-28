@@ -6,8 +6,8 @@ import { storageService } from '@/shared/data/storage/storage-service'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import {
-  parseMeshyTaskResult,
-  type MeshyTaskResult,
+  parseMeshyTask,
+  type MeshyTask,
 } from './constants/meshy-task-types'
 
 const MESHY_BASE_URL = 'https://api.meshy.ai/openapi/v2/text-to-3d'
@@ -130,7 +130,7 @@ export const surfaceMaterialTask = defineOwnedTask({
     // ============================================
     await metadata.set('stage', 'saving')
 
-    const modelUrl = refineResult.model_urls?.glb
+    const modelUrl = refineResult.modelUrls?.glb
     if (!modelUrl) {
       throw new Error('No GLB model URL in Meshy response')
     }
@@ -163,12 +163,12 @@ export const surfaceMaterialTask = defineOwnedTask({
       success: true,
       surfaceId,
       modelUrl: savedUrl,
-      thumbnailUrl: refineResult.thumbnail_url,
+      thumbnailUrl: refineResult.thumbnailUrl,
       surfaceBounds,
       meshyResult: {
         previewTaskId,
         refineTaskId,
-        textureUrls: refineResult.texture_urls,
+        textureUrls: refineResult.textureUrls,
       },
     }
   },
@@ -181,7 +181,7 @@ async function pollMeshyTask(
   taskId: string,
   apiKey: string,
   stage: 'preview' | 'refine'
-): Promise<MeshyTaskResult> {
+): Promise<MeshyTask> {
   const maxAttempts = 180 // 30 minutes (10s interval)
   let attempts = 0
 
@@ -200,7 +200,7 @@ async function pollMeshyTask(
       continue
     }
 
-    const result = parseMeshyTaskResult(await response.json())
+    const result = parseMeshyTask(await response.json())
     const progress = result.progress || 0
 
     // Update metadata with progress
@@ -217,7 +217,7 @@ async function pollMeshyTask(
     }
 
     if (result.status === 'FAILED') {
-      const errorMsg = result.task_error?.message || 'Unknown error'
+      const errorMsg = result.taskError?.message || 'Unknown error'
       throw new Error(`Meshy ${stage} task failed: ${errorMsg}`)
     }
 

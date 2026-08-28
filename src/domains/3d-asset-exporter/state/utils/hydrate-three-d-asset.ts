@@ -5,7 +5,7 @@ import {
   parseGenerationMetadata,
   type GenerationMetadata,
   type MeshyResult,
-} from '../../core/types/three-d-generation'
+} from '../../contracts'
 import { readString } from '@/shared/data/json-guards'
 import {
   ThreeDOperationDetails,
@@ -33,14 +33,14 @@ type SaveMetadata = (patch: Partial<GenerationMetadata>) => Promise<void>
 
 function failedStatusPatch(kind: ThreeDRunKind): Partial<GenerationMetadata> {
   return kind === ThreeDRunKind.Generation
-    ? { generation_status: GenerationStatus.Failed }
-    : { remesh_status: GenerationStatus.Failed }
+    ? { generationStatus: GenerationStatus.Failed }
+    : { remeshStatus: GenerationStatus.Failed }
 }
 
 function completedStatusPatch(kind: ThreeDRunKind): Partial<GenerationMetadata> {
   return kind === ThreeDRunKind.Generation
-    ? { generation_status: GenerationStatus.Completed }
-    : { remesh_status: GenerationStatus.Completed }
+    ? { generationStatus: GenerationStatus.Completed }
+    : { remeshStatus: GenerationStatus.Completed }
 }
 
 function addResumeOperation(params: {
@@ -110,12 +110,12 @@ function applyStaticMetadata(
   result: ThreeDHydrationResult,
   metadata: GenerationMetadata
 ): void {
-  if (metadata.generation_result) result.generationResult = metadata.generation_result
-  if (metadata.meshy_task_id) result.meshyTaskId = metadata.meshy_task_id
-  if (metadata.remesh_result) {
-    result.remeshResult = metadata.remesh_result
-    if (metadata.remesh_result.model_urls?.glb) {
-      result.remeshModelUrl = metadata.remesh_result.model_urls.glb
+  if (metadata.generationResult) result.generationResult = metadata.generationResult
+  if (metadata.meshyTaskId) result.meshyTaskId = metadata.meshyTaskId
+  if (metadata.remeshResult) {
+    result.remeshResult = metadata.remeshResult
+    if (metadata.remeshResult.modelUrls?.glb) {
+      result.remeshModelUrl = metadata.remeshResult.modelUrls.glb
     }
   }
 }
@@ -138,29 +138,29 @@ export async function hydrateThreeDAsset(params: {
 
   applyStaticMetadata(result, metadata)
 
-  if (metadata.trigger_run_id && metadata.generation_status === GenerationStatus.Processing) {
+  if (metadata.triggerRunId && metadata.generationStatus === GenerationStatus.Processing) {
     const decision = await resumeOrClearRun({
-      runId: metadata.trigger_run_id,
+      runId: metadata.triggerRunId,
       assetId: params.assetId,
       kind: ThreeDRunKind.Generation,
       providerLabel: metadata.provider || ThreeDProviderFallback.Meshy,
       saveMetadata: params.saveMetadata,
     })
-    if (decision.resume) result.resumeGenerationRunId = metadata.trigger_run_id
+    if (decision.resume) result.resumeGenerationRunId = metadata.triggerRunId
     if (decision.completedModelUrl && !result.modelFilename) {
       result.modelFilename = decision.completedModelUrl
     }
   }
 
-  if (metadata.remesh_run_id && metadata.remesh_status === GenerationStatus.Processing) {
+  if (metadata.remeshRunId && metadata.remeshStatus === GenerationStatus.Processing) {
     const decision = await resumeOrClearRun({
-      runId: metadata.remesh_run_id,
+      runId: metadata.remeshRunId,
       assetId: params.assetId,
       kind: ThreeDRunKind.Remesh,
       providerLabel: ThreeDProviderFallback.Meshy,
       saveMetadata: params.saveMetadata,
     })
-    if (decision.resume) result.resumeRemeshRunId = metadata.remesh_run_id
+    if (decision.resume) result.resumeRemeshRunId = metadata.remeshRunId
     if (decision.completedModelUrl && !result.remeshModelUrl) {
       result.remeshModelUrl = decision.completedModelUrl
     }

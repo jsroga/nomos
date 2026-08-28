@@ -11,17 +11,17 @@ import {
 } from '../constants/meshy-generation-wire'
 import {
   meshyProgressPercent,
-  parseMeshyTaskResult,
-  type MeshyTaskResult,
+  parseMeshyTask,
+  type MeshyTask,
 } from '../constants/meshy-task-types'
 
 export async function pollMeshyImageTo3dTask(
   taskId: string,
   apiKey: string,
   onProgress: (progress: number) => Promise<void>,
-): Promise<MeshyTaskResult> {
+): Promise<MeshyTask> {
   let status: string = MeshyTaskStatusValue.Pending
-  let result: MeshyTaskResult | null = null
+  let result: MeshyTask | null = null
   let lastLoggedProgress: number | undefined
 
   for (let attempts = 0; attempts < MESHY_MAX_POLL_ATTEMPTS; attempts++) {
@@ -40,7 +40,7 @@ export async function pollMeshyImageTo3dTask(
       throw new Error(MeshyGenerationError.FailedCheckStatus)
     }
 
-    result = parseMeshyTaskResult(await statusResponse.json())
+    result = parseMeshyTask(await statusResponse.json())
     status = result.status
     const percent = meshyProgressPercent(result.progress, status)
 

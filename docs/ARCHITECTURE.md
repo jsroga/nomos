@@ -48,6 +48,7 @@ index.ts          # ONLY public import target
 ui/               # React (PascalCase components)
 state/            # Zustand UI + TanStack queries/mutations
 core/             # pure types/logic; core/io/ = typed fetchers + DTOs
+contracts/        # Zod schemas + mappers; the ONLY place snake_case lives
 services/         # server-only Drizzle / external APIs
 ai/               # server-only Mastra (agents under ai/agents/)
 tasks/            # Trigger.dev schemaTask
@@ -62,6 +63,68 @@ tasks/            # Trigger.dev schemaTask
 - AI layer naming: domain folder is `ai/` (not `agents/`); packages live in `ai/agents/`.
 
 Conformance: domain-structure tests + ESLint (`.cursor/rules/eslint-boundaries.mdc`, `domain-structure.mdc`).
+
+## Contracts: parse once, at the edge
+
+A shape is established in exactly one place — a `contracts/` module per
+aggregate — and everything downstream reads a typed value.
+
+```
+src/domains/<module>/contracts/
+  <aggregate>.schema.ts    # Zod + the inferred row type + the domain type
+  <aggregate>.mapper.ts    # row <-> domain; the ONLY place snake_case appears
+  index.ts
+```
+
+**Why.** This repo bans `as`, so `recordFromJson` / `readString` were the honest
+way to handle untyped data — and there are over a thousand such calls. The
+problem is not the guards, it is *where they run*: guarding field by field at
+every reader means the shape is never established anywhere, and a payload that
+lost a field produces `undefined` at whichever reader touches it first, far from
+the cause. Database spellings leak the same way in the other direction, all the
+way into UI components.
+
+```ts
+// before — the shape is re-derived at every reader
+const row = recordFromJson(asset.metadata)
+const taskId = readString(row.meshy_task_id)
+
+// after — parsed once; downstream code has a type
+const metadata = parseGenerationMetadata(asset.metadata)
+const taskId = metadata?.meshyTaskId          // string | undefined, guaranteed
+```
+
+**Which parse belongs where.** `safeParse` at a boundary you do not control — a
+request body (answer 400), a provider response, a JSONB column written by older
+code (degrade rather than break). `parse` where a bad shape is a bug in this
+codebase and should throw loudly; a `safeParse` there invites a fallback that
+hides corruption.
+
+**Strip, strict, passthrough — they are three different things.**
+
+| | Behaviour | Use for |
+|---|---|---|
+| `z.object()` (default) | drops unknown keys | a stored shape we own, read from data older code wrote |
+| `.strict()` | rejects unknown keys | a shape whose every key is known now and forever |
+| `.passthrough()` | forwards unknown keys | a **provider or model** boundary only, with a comment saying so |
+
+Zod's default is *strip*, not strict. It is usually the right middle: it keeps
+what is known and refuses to carry what is not, so a stray spelling cannot
+spread the way `.passthrough()` lets one spread. `.strict()` on a legacy column
+means one unrecognised key discards the whole record.
+
+**A forgotten field is caught by a test, not by strictness** — assert that the
+mapper writes back exactly the keys the schema declares.
+
+**An alias is legitimate** only when a spelling exists in data you cannot
+rewrite. Declare it in the schema with a comment naming where it comes from;
+never let `.passthrough()` carry it implicitly.
+
+Worked example: `src/domains/3d-asset-exporter/contracts/`.
+
+Enforced by: `npx vitest run scripts/__tests__/untyped-json-inventory.test.ts`
+(ratchets `untypedJsonReads`, `snakeCaseReadsOutsideMappers`,
+`passthroughSchemas`, `zodAnyUses`; a converted module may not regress).
 
 ## TypeScript & ESLint (strict)
 

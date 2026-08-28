@@ -1,5 +1,6 @@
 import { logger, metadata } from '@trigger.dev/sdk'
 import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { remeshRequestToWire } from '../contracts'
 import {
   remesh3dModelPayloadSchema,
   type Remesh3dModelPayload,
@@ -9,22 +10,12 @@ import { recordFromJson } from '@/shared/data/json-guards'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import {
   MeshyTaskStatusValue,
-  parseMeshyTaskResult,
-  type MeshyTaskResult,
+  parseMeshyTask,
+  type MeshyTask,
 } from './constants/meshy-task-types'
 
 function buildRemeshBody(payload: Remesh3dModelPayload): Record<string, unknown> {
-  const body: Record<string, unknown> = {
-    input_task_id: payload.meshyTaskId,
-    target_formats: ['glb', 'fbx', 'obj', 'usdz'],
-    topology: payload.topology,
-    target_polycount: payload.targetPolycount,
-    origin_at: 'bottom',
-  }
-  if (payload.resizeHeight && payload.resizeHeight > 0) {
-    body.resize_height = payload.resizeHeight
-  }
-  return body
+  return remeshRequestToWire(payload)
 }
 
 function parseMeshyApiError(errText: string, statusText: string): string {
@@ -68,7 +59,7 @@ async function createRemeshTask(
   return remeshTaskId
 }
 
-async function fetchRemeshStatus(apiKey: string, remeshTaskId: string): Promise<MeshyTaskResult> {
+async function fetchRemeshStatus(apiKey: string, remeshTaskId: string): Promise<MeshyTask> {
   const statusResponse = await fetch(`https://api.meshy.ai/openapi/v1/remesh/${remeshTaskId}`, {
     headers: { Authorization: `Bearer ${apiKey}` },
   })
@@ -78,13 +69,13 @@ async function fetchRemeshStatus(apiKey: string, remeshTaskId: string): Promise<
     throw new Error('Failed to check remesh task status')
   }
 
-  return parseMeshyTaskResult(await statusResponse.json())
+  return parseMeshyTask(await statusResponse.json())
 }
 
-async function pollRemeshUntilDone(apiKey: string, remeshTaskId: string): Promise<MeshyTaskResult> {
+async function pollRemeshUntilDone(apiKey: string, remeshTaskId: string): Promise<MeshyTask> {
   const maxAttempts = 120
   let lastStatus: string = MeshyTaskStatusValue.Pending
-  let lastResult: MeshyTaskResult | null = null
+  let lastResult: MeshyTask | null = null
 
   for (let attempts = 0; attempts < maxAttempts; attempts++) {
     await new Promise(resolve => setTimeout(resolve, 15000))
@@ -102,7 +93,7 @@ async function pollRemeshUntilDone(apiKey: string, remeshTaskId: string): Promis
       return lastResult
     }
     if (lastStatus === MeshyTaskStatusValue.Failed) {
-      throw new Error(`Meshy remesh failed: ${lastResult.task_error?.message ?? 'Unknown error'}`)
+      throw new Error(`Meshy remesh failed: ${lastResult.taskError?.message ?? 'Unknown error'}`)
     }
   }
 
@@ -114,7 +105,7 @@ async function pollRemeshUntilDone(apiKey: string, remeshTaskId: string): Promis
 async function persistRemeshResult(
   assetId: string,
   remeshTaskId: string,
-  result: MeshyTaskResult,
+  result: MeshyTask,
 ): Promise<void> {
   try {
     const { data: asset } = await supabaseAdmin
@@ -171,7 +162,7 @@ export const remesh3DModelTask = defineOwnedTask({
 
     return {
       success: true,
-      modelUrl: result.model_urls?.glb,
+      modelUrl: result.modelUrls?.glb,
       result,
     }
   },

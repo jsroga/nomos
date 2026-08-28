@@ -22,7 +22,7 @@ import {
 } from '../constants/meshy-generation-wire'
 import {
   resolveMeshyModelUrl,
-  type MeshyTaskResult,
+  type MeshyTask,
 } from '../constants/meshy-task-types'
 import { pollMeshyImageTo3dTask } from './poll-meshy-image-to-3d'
 import { MeshyStreamFallbackError, streamMeshyImageTo3dTask } from './stream-meshy-image-to-3d'
@@ -62,7 +62,7 @@ function parseMeshyErrorMessage(errText: string, fallback: string): string {
   }
 }
 
-async function persistMeshyModelUrl(assetId: string, result: MeshyTaskResult): Promise<void> {
+async function persistMeshyModelUrl(assetId: string, result: MeshyTask): Promise<void> {
   const modelUrl = resolveMeshyModelUrl(result)
   try {
     await supabaseAdmin
@@ -78,7 +78,7 @@ async function awaitMeshyImageTo3dTask(
   taskId: string,
   apiKey: string,
   onProgress: (progress: number) => Promise<void>,
-): Promise<MeshyTaskResult> {
+): Promise<MeshyTask> {
   try {
     return await streamMeshyImageTo3dTask(taskId, apiKey, onProgress)
   } catch (error) {

@@ -7,10 +7,10 @@ import type { ThreeDHydrationResult } from './hydrate-three-d-asset'
 
 export function shouldResumeGeneration(metadata: GenerationMetadata | null): string | null {
   if (
-    metadata?.trigger_run_id &&
-    metadata.generation_status === GenerationStatus.Processing
+    metadata?.triggerRunId &&
+    metadata.generationStatus === GenerationStatus.Processing
   ) {
-    return metadata.trigger_run_id
+    return metadata.triggerRunId
   }
   return null
 }

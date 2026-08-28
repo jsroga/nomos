@@ -7,11 +7,12 @@ import { ClientFetchError } from '@/shared/data/fetch-json-record'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { patchAsset, fetchAsset } from '../core/io/asset-exporter.api'
 import {
+  GenerationStatus,
   parseGenerationMetadata,
   type GenerationMetadata,
   type MeshyResult,
   MeshyTopology,
-} from '../core/types/three-d-generation'
+} from '../contracts'
 import { useThreeDRunPolling } from '../state/hooks/useThreeDRunPolling'
 import { hydrateThreeDAsset } from '../state/utils/hydrate-three-d-asset'
 import { readAssetModelFilename } from '../state/utils/read-asset-model-filename'
@@ -24,7 +25,6 @@ import { createThreeDPanelActions } from '../state/hooks/create-three-d-panel-ac
 import { ThreeDPanelView } from './ThreeDPanelView'
 import { ThreeDOperationIdPrefix } from '../constants/three-d-operation-wire'
 import { ThreeDPanelLog } from '../constants/three-d-panel-log'
-import { ThreeDPollCopy } from '../constants/three-d-poll-copy'
 
 interface ThreeDPanelProps {
   assetId: string
@@ -159,27 +159,27 @@ export const ThreeDPanel: React.FC<ThreeDPanelProps> = ({
   }, [assetId, initialModelUrl])
 
   const clearGenerationState = async (
-    status: typeof ThreeDPollCopy.Completed | typeof ThreeDPollCopy.Failed = ThreeDPollCopy.Failed
+    status: GenerationStatus = GenerationStatus.Failed
   ) => {
     setIsGenerating(false)
     setCurrentRunId(null)
     setProgress(0)
     useGlobalStatusStore.getState().removeOperation(`${ThreeDOperationIdPrefix.Generation}${assetId}`)
-    await saveMetadata({ generation_status: status })
+    await saveMetadata({ generationStatus: status })
   }
 
   const clearRemeshState = async (
-    status: typeof ThreeDPollCopy.Completed | typeof ThreeDPollCopy.Failed = ThreeDPollCopy.Failed
+    status: GenerationStatus = GenerationStatus.Failed
   ) => {
     setIsRemeshing(false)
     setRemeshRunId(null)
     setRemeshProgress(0)
     useGlobalStatusStore.getState().removeOperation(`${ThreeDOperationIdPrefix.Remesh}${assetId}`)
-    await saveMetadata({ remesh_status: status })
+    await saveMetadata({ remeshStatus: status })
   }
 
   const clearUploadState = async (
-    _status: typeof ThreeDPollCopy.Completed | typeof ThreeDPollCopy.Failed = ThreeDPollCopy.Failed
+    _status: GenerationStatus = GenerationStatus.Failed
   ) => {
     setIsUploading(false)
     setUploadRunId(null)

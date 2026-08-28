@@ -16,6 +16,11 @@
   "tasksWithoutIdempotencyKey": 0,
   "triggerSdkV3Imports": 0,
   "evalSkipCommits": 0,
+  "untypedJsonReads": 1148,
+  "snakeCaseReadsOutsideMappers": 268,
+  "snakeCaseReadsInConvertedModules": 6,
+  "passthroughSchemas": 42,
+  "zodAnyUses": 12,
   "_commands": {
     "untaggedRunGracePaths": "grep -c 'isWithinUntaggedGraceWindow(run.createdAt)' src/shared/jobs/owned-run.ts   # removed; every payload carries a project id, so every run is tagged",
     "routesTakingProjectIdWithoutOwnershipCheck": "for f in $(find src/app/api -name route.ts); do grep -qE 'projectId|project_id' \"$f\" && ! grep -rqE 'projectScope|episodeScope|beatScope|characterScope|withProjectScope|verifyProjectAccess|verifyEpisodeAccess|verifyBeatAccess|verifyCharacterAccess|verifyProjectOwnership|listForUser|session\\.user\\.id|isAdminUser' \"$(dirname \"$f\")\" && echo \"$f\"; done | wc -l",
@@ -32,6 +37,11 @@
     "tasksWithoutQueue": "same test   # a *.task.ts with no `queue:`; the factory makes queue required, so 0 is structural",
     "tasksWithoutIdempotencyKey": "same test   # trigger calls bypassing triggerOwnedRun, the only caller that derives a key from the submission nonce",
     "triggerSdkV3Imports": "same test   # files importing '@trigger.dev/sdk/v3'; CLAUDE.md mandates the v4 entrypoint",
-    "evalSkipCommits": "git log --grep='^Eval-Skip:' --oneline | wc -l   # each is a prompt change shipped without evidence the evals still pass"
+    "evalSkipCommits": "git log --grep='^Eval-Skip:' --oneline | wc -l   # each is a prompt change shipped without evidence the evals still pass",
+    "untypedJsonReads": "npx vitest run scripts/__tests__/untyped-json-inventory.test.ts   # json-guard calls outside contracts/ and core/io/; SPEC-16 ends with this still in four figures, under a gate that stops it growing",
+    "snakeCaseReadsOutsideMappers": "same test   # database and provider spellings read outside a mapper; a converted module must stay at 0",
+    "passthroughSchemas": "same test   # schemas forwarding unknown keys; each survivor must name a model boundary or a specific field",
+    "zodAnyUses": "same test   # z.any() disables checking downstream of it; target 0",
+    "snakeCaseReadsInConvertedModules": "same test   # 3d-asset-exporter's residue: AssetExporterLayout reads 2d-canvas's snake_case `Asset` type through the shared world store, so these clear with SPEC-16 Task 6, not Task 3"
   }
 }
