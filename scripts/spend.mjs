@@ -88,6 +88,20 @@ async function main() {
     table('By feature', byFeature.rows, 'feature')
     table('By model', byModel.rows, 'model')
 
+    // A model with no price row records tokens at cost 0. Without this the
+    // total reads as complete when it is not — which is the failure the whole
+    // gateway exists to prevent, one level up.
+    const unpriced = byModel.rows.filter(row => (row.cost ?? 0) === 0 && row.tokens > 0)
+    if (unpriced.length > 0) {
+      console.log('\n⚠️  UNPRICED — the total above is a floor, not the bill')
+      for (const row of unpriced) {
+        console.log(
+          `  ${String(row.key).padEnd(34)} ${String(row.calls).padStart(6)} calls  ${row.tokens} tokens  cost NOT counted`
+        )
+      }
+      console.log('  Add a row for each in src/shared/ai/gateway/constants/pricing.ts')
+    }
+
     if (failures.rows.length > 0) {
       console.log('\nNon-ok outcomes')
       for (const row of failures.rows) console.log(`  ${row.outcome.padEnd(12)} ${row.calls}`)

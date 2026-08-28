@@ -10,7 +10,12 @@ vi.mock('@/shared/persistence/client', () => ({
 }))
 
 import { LlmFeature, LlmOutcome } from '@/shared/ai/gateway/constants/llm-call'
-import { costUsdFor, recordFailureCount, recordLlmCall } from '@/shared/ai/gateway/record'
+import {
+  costUsdFor,
+  recordFailureCount,
+  recordLlmCall,
+  unpricedModelsSeen,
+} from '@/shared/ai/gateway/record'
 
 const CALL = {
   projectId: '11111111-1111-4111-8111-111111111111',
@@ -70,12 +75,48 @@ describe('recordLlmCall', () => {
     warn.mockRestore()
   })
 
-  it('swallows an unknown model too, rather than throwing into the caller', async () => {
+  /**
+   * An earlier version discarded the whole row when the model had no price.
+   * That lost the tokens, the latency, the project and the outcome — all of
+   * them true — because one derived figure could not be computed, and it
+   * emptied `llm_calls` entirely once the app's real models turned out not to
+   * be in the table.
+   */
+  it('still records tokens and latency when the model has no price row', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
 
-    await expect(recordLlmCall({ ...CALL, model: 'nope/nope' })).resolves.toBeUndefined()
+    await recordLlmCall({ ...CALL, model: 'someone/unpriced-model' })
 
-    expect(insertMock).not.toHaveBeenCalled()
+    expect(insertMock).toHaveBeenCalledTimes(1)
+    expect(insertMock.mock.calls[0]?.[0]).toMatchObject({
+      model: 'someone/unpriced-model',
+      promptTokens: 1_000_000,
+      latencyMs: 1200,
+      costUsd: '0.000000',
+    })
+    warn.mockRestore()
+  })
+
+  it('names the unpriced model once, not once per call', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    await recordLlmCall({ ...CALL, model: 'someone/noisy-model' })
+    await recordLlmCall({ ...CALL, model: 'someone/noisy-model' })
+    await recordLlmCall({ ...CALL, model: 'someone/noisy-model' })
+
+    const forThisModel = warn.mock.calls.filter(call =>
+      String(call[0]).includes('someone/noisy-model')
+    )
+    expect(forThisModel).toHaveLength(1)
+    warn.mockRestore()
+  })
+
+  it('reports the unpriced model so `npm run spend` can say the total is a floor', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    await recordLlmCall({ ...CALL, model: 'someone/reported-model' })
+
+    expect(unpricedModelsSeen()).toContain('someone/reported-model')
     warn.mockRestore()
   })
 })

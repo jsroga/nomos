@@ -37,6 +37,9 @@ export const LLM_CALL_TABLE = 'llm_calls'
 export const GATEWAY_LOG = {
   RecordFailed: '[gateway] failed to record an llm call; generation was unaffected:',
   UnknownModel: '[gateway] no price for model',
+  UnpricedRecorded:
+    '[gateway] recorded with cost 0 — add a price row in ' +
+    'src/shared/ai/gateway/constants/pricing.ts for:',
 } as const
 
 /** Recording must never fail a generation — see ADR 0003. */
