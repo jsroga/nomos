@@ -7,6 +7,7 @@ import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   GenerationActivityPhase,
+  isGenerationActivityBusy,
 } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 import { BibleMarkdown } from '@/domains/storyteller/ui/RichText/BibleMarkdown'
@@ -94,7 +95,12 @@ export const BibleSectionHeader: FC<{
   generateTitle,
   trailingActions,
 }) => {
-  const generateDisabled = isLoading
+  // The Writers Room is a single conversation: a section refresh started while
+  // the assistant is mid-turn crashes the thread. `isLoading` only covers *this*
+  // section generating, so the chat's phase has to be read here too — which is
+  // what BiblePlotTwists already did on its own, and every other section did not.
+  const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
+  const generateDisabled = isLoading || isGenerationActivityBusy(generationPhase)
 
   return (
     <div className="flex items-center justify-between mb-4">
