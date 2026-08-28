@@ -1,16 +1,16 @@
-import { task, logger, metadata } from '@trigger.dev/sdk'
+import { logger, metadata } from '@trigger.dev/sdk'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { generateCombinedStoryboardPayloadSchema } from './constants/task-payloads'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { ContentType, ImageFileExtension, VideoFileExtension } from '@/shared/data/constants/protocol'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
 import { resolveApiframeApiKey } from '@/shared/ai/image-model-env'
 import { buildVideoGenerateBody, generateApiframeVideo } from '@/shared/ai/apiframe-video'
 import {
   resolveStoryboardVideoDuration,
   resolveStoryboardVideoLook,
   resolveStoryboardVideoModel,
-  type StoryboardVideoLook,
 } from '@/shared/ai/storyboard-video-env'
 import {
   logLLMRequestComplete,
@@ -31,22 +31,15 @@ import {
   persistEpisodeStoryboardUrl,
   beatsWithImageUrl,
   storyboardKlingDirectorFields,
-  type CombinedStoryboardBeat,
 } from './generate-combined-storyboard-helpers'
 
-export interface GenerateCombinedStoryboardPayload {
-  episodeId: string
-  projectId: string
-  beats: CombinedStoryboardBeat[]
-  model?: ApiframeVideoModel
-  look?: StoryboardVideoLook
-}
-
-export const generateCombinedStoryboard = task({
+export const generateCombinedStoryboard = defineOwnedTask({
   id: TRIGGER_TASK_ID.GENERATE_COMBINED_STORYBOARD,
+  schema: generateCombinedStoryboardPayloadSchema,
+  queue: JobQueue.Apiframe,
   maxDuration: 900,
   retry: { maxAttempts: 1 },
-  run: async (payload: GenerateCombinedStoryboardPayload) => {
+  run: async payload => {
     const { episodeId, projectId, beats } = payload
     const apiKey = resolveApiframeApiKey()
     if (!apiKey) {

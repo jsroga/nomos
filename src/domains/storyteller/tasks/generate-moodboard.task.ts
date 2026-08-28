@@ -1,4 +1,6 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { generateMoodboardPayloadSchema } from './constants/task-payloads'
 import {
   MOODBOARD_METADATA_PROGRESS,
   MOODBOARD_METADATA_PROJECT_ID,
@@ -13,15 +15,14 @@ import {
 } from './constants/moodboard-task-wire'
 import { syncMoodboardToDatabase } from './generate-moodboard-db'
 import { resolveMoodboardPrompts } from './build-moodboard-locked-prompts'
-import {
-  generateAllMoodboardImages,
-  type GenerateMoodboardPayload,
-} from './generate-moodboard-run'
+import { generateAllMoodboardImages } from './generate-moodboard-run'
 
-export const generateMoodboard = task({
+export const generateMoodboard = defineOwnedTask({
   id: MOODBOARD_TASK_ID,
+  schema: generateMoodboardPayloadSchema,
+  queue: JobQueue.ImageProvider,
   maxDuration: 600,
-  run: async (payload: GenerateMoodboardPayload) => {
+  run: async payload => {
     const { projectId, providerConfig, replaceIndex } = payload
 
     logger.info(`Starting moodboard generation for project ${projectId}`, {

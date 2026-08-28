@@ -1,10 +1,10 @@
 import { logger, metadata } from '@trigger.dev/sdk/v3'
+import type { GenerateStoryboardPayload } from './constants/task-payloads'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { BufferEncoding, FsDirectory } from '@/shared/data/constants/protocol'
-import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { ApiframeGenerateAspectRatio } from '@/shared/ai/constants/apiframe'
 import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
 import { StorytellerAnswerSeparator } from '@/domains/storyteller/core/storyteller-page-wire'
@@ -24,17 +24,6 @@ import {
   loadStoryboardBeatCast,
   resolveBeatCastRefs,
 } from './storyboard-beat-cast'
-
-interface GenerateStoryboardPayload {
-  beatId: string
-  projectId: string
-  prompt: string
-  providerConfig: {
-    provider: typeof ImageGenProvider.NanoBanana
-    apiKey: string
-    modelId?: string
-  }
-}
 
 export async function runStoryboardGeneration(payload: GenerateStoryboardPayload) {
   const { beatId, projectId, prompt, providerConfig } = payload

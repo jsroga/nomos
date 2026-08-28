@@ -1,4 +1,6 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { generatePortraitPayloadSchema } from './constants/task-payloads'
 import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'
 import { persistCharacterPortraitToDatabase } from './persist-character-portrait-db'
 import { generateSelectedPortraitImage } from './generate-portrait-run'
@@ -13,13 +15,6 @@ import {
   isPortraitCharacterUuid,
 } from './constants/generate-portrait-wire'
 
-interface GeneratePortraitPayload {
-  prompt: string
-  projectId: string
-  characterId?: string
-  apiKey: string
-}
-
 async function setPortraitStage(
   progress: GeneratePortraitProgress,
   stage: GeneratePortraitStage,
@@ -28,10 +23,12 @@ async function setPortraitStage(
   await metadata.set(GeneratePortraitMetadataKey.Stage, stage)
 }
 
-export const generatePortrait = task({
+export const generatePortrait = defineOwnedTask({
   id: 'generate-portrait',
+  schema: generatePortraitPayloadSchema,
+  queue: JobQueue.Apiframe,
   maxDuration: 600,
-  run: async (payload: GeneratePortraitPayload) => {
+  run: async payload => {
     const { prompt, projectId, characterId, apiKey } = payload
 
     if (!apiKey) {

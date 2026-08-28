@@ -1,5 +1,10 @@
 import { SystemScopeReason, systemScope } from '@/shared/auth/project-scope'
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import {
+  generatePosterPayloadSchema,
+  type GeneratePosterPayload,
+} from './constants/task-payloads'
 import { ApiframeGenerateAspectRatio } from '@/shared/ai/constants/apiframe'
 import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'
 import { persistEpisodePosterToDatabase } from './persist-episode-poster-db'
@@ -19,16 +24,6 @@ import {
   GeneratePosterStage,
   POSTER_LLM_TASK,
 } from './constants/generate-poster-wire'
-
-interface GeneratePosterPayload {
-  projectId: string
-  episodeId: string
-  apiKey: string
-  extraPrompt?: string
-  worldDesc?: string
-  overview?: string
-  prompt?: string
-}
 
 async function setPosterStage(
   progress: GeneratePosterProgress,
@@ -52,10 +47,12 @@ async function resolveLockedPosterPrompt(payload: GeneratePosterPayload): Promis
   })
 }
 
-export const generatePoster = task({
+export const generatePoster = defineOwnedTask({
   id: 'generate-poster',
+  schema: generatePosterPayloadSchema,
+  queue: JobQueue.Apiframe,
   maxDuration: 600,
-  run: async (payload: GeneratePosterPayload) => {
+  run: async payload => {
     const { projectId, episodeId, apiKey } = payload
 
     if (!apiKey) {
