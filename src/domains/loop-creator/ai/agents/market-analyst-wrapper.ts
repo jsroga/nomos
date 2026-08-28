@@ -4,7 +4,7 @@
  * Wraps the ReAct market analyst for integration with the loop-graph.
  */
 
-import { AIMessage } from '@langchain/core/messages'
+import { AIMessage } from '@/shared/chat/core/message'
 import { LoopAgentNode } from '@/domains/loop-creator/constants/agent-nodes'
 import { LoopAgentActionKind } from '@/domains/loop-creator/constants/loop-agent-actions'
 import {

@@ -26,6 +26,10 @@ export const LOOP_AGENT_DISPLAY_NAMES: Record<LoopAgentNode, LoopAgentDisplayNam
   [LoopAgentNode.MarketAnalyst]: LoopAgentDisplayName.MarketAnalyst,
 }
 
+/**
+ * Kept under the old name so call sites did not churn when LangChain went.
+ * The values are `ChatMessageRole`'s — see shared/chat/core/message.ts.
+ */
 export enum LangChainMessageWire {
   GetType = '_getType',
   Ai = 'ai',

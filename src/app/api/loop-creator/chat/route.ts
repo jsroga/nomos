@@ -15,7 +15,7 @@ import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { streamLoopCreator } from '@/domains/loop-creator/server'
 import { type LoopCreatorState, createInitialLoopState } from '@/domains/loop-creator'
-import { HumanMessage, AIMessage } from '@langchain/core/messages'
+import { HumanMessage, AIMessage } from '@/shared/chat/core/message'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
   ContentType,
@@ -135,7 +135,8 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    if (!(await tryProjectScope(projectId, session.user.id))) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return new Response(JSON.stringify({ error: API_ERROR.PROJECT_ACCESS_DENIED }), {
         status: 404,
         headers: { 'Content-Type': ContentType.Json },
@@ -176,7 +177,7 @@ export async function POST(req: NextRequest) {
           })
 
           const initialState: LoopCreatorState = {
-            ...createInitialLoopState(projectId, message, context),
+            ...createInitialLoopState(scope, message, context),
             // Seed the graph with the recent conversation history, not just the
             // latest turn that the factory defaults to.
             messages: [

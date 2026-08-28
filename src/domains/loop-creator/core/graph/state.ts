@@ -5,7 +5,8 @@
  * Based on LangChain/LangGraph 2025 patterns.
  */
 
-import { BaseMessage } from '@langchain/core/messages'
+import { BaseMessage, HumanMessage } from '@/shared/chat/core/message'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import type { MarketAnalysisReport } from '@/domains/loop-creator/ai/agents/market-analyst/types'
 import {
   CANVAS_NODE_TYPE_GROUP,
@@ -243,7 +244,8 @@ export interface LoopAgentQuestion {
  */
 export interface LoopCreatorState {
   // Session info
-  projectId: string
+  /** The project this run is for, and proof the caller may spend on it. */
+  scope: ProjectScope
   sessionId: string
 
   // Conversation
@@ -327,7 +329,7 @@ export interface LoopCreatorState {
  * Create initial state
  */
 export function createInitialLoopState(
-  projectId: string,
+  scope: ProjectScope,
   message: string,
   context?: {
     gameGenre?: string
@@ -338,8 +340,6 @@ export function createInitialLoopState(
     existingEdges?: Record<string, unknown>[]
   }
 ): LoopCreatorState {
-  const { HumanMessage } = require('@langchain/core/messages')
-
   // Convert canvas nodes to mechanics format
   const mechanics: MechanicNode[] = (context?.existingNodes || [])
     .filter((n: Record<string, unknown>) => n.type !== CANVAS_NODE_TYPE_GROUP)
@@ -350,7 +350,7 @@ export function createInitialLoopState(
   )
 
   return {
-    projectId,
+    scope,
     sessionId: `loop-${Date.now()}`,
     messages: [new HumanMessage(message)],
     currentPhase: LOOP_CREATOR_PHASE_INITIAL,

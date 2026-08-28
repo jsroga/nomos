@@ -3,7 +3,7 @@
  * Replaces LangGraph StateGraph while preserving streamLoopCreator API.
  */
 
-import { AIMessage } from '@langchain/core/messages'
+import { AIMessage, ChatMessageRole } from '@/shared/chat/core/message'
 import { LoopCreatorState, NextAgent } from './state'
 import { supervisorAgent } from '../../ai/agents/supervisor'
 import { loopPlannerAgent } from '../../ai/agents/loop-planner'
@@ -130,7 +130,7 @@ function isLangChainAIMessage(msg: unknown): boolean {
   if (msg instanceof AIMessage) return true
   if (typeof msg === 'object' && msg !== null && LangChainMessageWire.GetType in msg) {
     const getType = Reflect.get(msg, LangChainMessageWire.GetType)
-    return typeof getType === 'function' && getType() === LangChainMessageWire.Ai
+    return typeof getType === 'function' && getType() === ChatMessageRole.Ai
   }
   return false
 }

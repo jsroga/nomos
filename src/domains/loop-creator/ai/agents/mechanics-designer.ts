@@ -7,7 +7,7 @@
  * - Examples from reference games
  */
 
-import { AIMessage } from '@langchain/core/messages'
+import { AIMessage } from '@/shared/chat/core/message'
 import { LoopCreatorState } from '../../core/graph/state'
 import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
@@ -43,6 +43,7 @@ export async function mechanicsDesignerAgent(
   console.log(MechanicsDesignerLog.CallingLlm)
 
   const content = await runLoopCreatorCompletion({
+    scope: state.scope,
     agentId: LoopCreatorMastraAgentId.MechanicsDesigner,
     systemPrompt,
     history: state.messages.slice(-5),

@@ -1,4 +1,5 @@
-import { ChatOpenAI } from '@langchain/openai'
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateText } from 'ai'
 import { OPENROUTER_AUTO_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
 import {
   GameDesignLlmRole,
@@ -6,23 +7,25 @@ import {
   GameDesignToolCopy,
 } from '../../constants/game-design-tool-wire'
 
-/** ChatOpenAI pointed at OpenRouter (single OPENROUTER_API_KEY), default openrouter/auto-beta. */
-function createOpenRouterChat(temperature: number): ChatOpenAI {
-  const openRouter = openRouterClientConfig()
-  return new ChatOpenAI({
-    model: OPENROUTER_AUTO_MODEL,
-    temperature,
-    apiKey: openRouter.apiKey,
-    configuration: { baseURL: openRouter.baseURL },
-  })
+/**
+ * A temperature-bound handle on the OpenRouter model.
+ *
+ * **Not the gateway, and that is the open item here.** These run inside Mastra
+ * tools whose `execute` receives only schema-declared args, so there is no
+ * `ProjectScope` to bill against without changing every tool's input contract
+ * — a change a model can silently get wrong by omitting the field. LangChain
+ * is gone; the metering is recorded as remaining work in SPEC-13.
+ */
+export interface GameDesignModel {
+  temperature: number
 }
 
-export function createHauteGameModel() {
-  return createOpenRouterChat(GameDesignLlmTemperature.Creative)
+export function createHauteGameModel(): GameDesignModel {
+  return { temperature: GameDesignLlmTemperature.Creative }
 }
 
-export function createLogicToolModel() {
-  return createOpenRouterChat(GameDesignLlmTemperature.Analytical)
+export function createLogicToolModel(): GameDesignModel {
+  return { temperature: GameDesignLlmTemperature.Analytical }
 }
 
 export function extractJsonFromLlmContent(content: string): unknown {
@@ -33,11 +36,30 @@ export function extractJsonFromLlmContent(content: string): unknown {
   return JSON.parse(jsonMatch[0])
 }
 
-export async function invokeLlmJsonPrompt(prompt: string, model: ChatOpenAI): Promise<unknown> {
-  const response = await model.invoke([{ role: GameDesignLlmRole.User, content: prompt }])
-  const content =
-    typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
-  return extractJsonFromLlmContent(content)
+/** Raw text from the model, for callers that parse it themselves. */
+export async function invokeLlmTextPrompt(prompt: string, model: GameDesignModel): Promise<string> {
+  const openRouter = openRouterClientConfig()
+  const openrouter = createOpenAI({ apiKey: openRouter.apiKey, baseURL: openRouter.baseURL })
+  const { text } = await generateText({
+    model: openrouter(OPENROUTER_AUTO_MODEL),
+    temperature: model.temperature,
+    messages: [{ role: GameDesignLlmRole.User, content: prompt }],
+  })
+  return text
+}
+
+export async function invokeLlmJsonPrompt(
+  prompt: string,
+  model: GameDesignModel
+): Promise<unknown> {
+  const openRouter = openRouterClientConfig()
+  const openrouter = createOpenAI({ apiKey: openRouter.apiKey, baseURL: openRouter.baseURL })
+  const { text } = await generateText({
+    model: openrouter(OPENROUTER_AUTO_MODEL),
+    temperature: model.temperature,
+    messages: [{ role: GameDesignLlmRole.User, content: prompt }],
+  })
+  return extractJsonFromLlmContent(text)
 }
 
 export function parseLlmJsonOrError(content: string): { parsed?: unknown; error?: string } {

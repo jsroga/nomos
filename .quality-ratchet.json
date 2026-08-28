@@ -6,7 +6,7 @@
   "directDbClientImporters": 70,
   "serviceRoleClientSites": 23,
   "providerSdkImportsOutsideGateway": 26,
-  "langChainImports": 16,
+  "langChainImports": 0,
   "bareProcessEnvReads": 0,
   "processEnvReadsInModelConfig": 21,
   "bareProjectIdExports": 0,

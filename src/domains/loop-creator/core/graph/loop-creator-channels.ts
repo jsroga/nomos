@@ -1,4 +1,4 @@
-import { BaseMessage } from '@langchain/core/messages'
+import { BaseMessage } from '@/shared/chat/core/message'
 import {
   LOOP_CREATOR_PHASE_INITIAL,
   NEXT_AGENT_SUPERVISOR,

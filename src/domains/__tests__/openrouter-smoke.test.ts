@@ -67,18 +67,19 @@ describe('OpenRouter live smoke', () => {
   )
 
   it(
-    'LangChain ChatOpenAI via openRouterClientConfig returns text',
+    'the AI SDK via openRouterClientConfig returns text',
     async () => {
-      const { ChatOpenAI } = await import('@langchain/openai')
+      const { createOpenAI } = await import('@ai-sdk/openai')
+      const { generateText } = await import('ai')
       const openRouter = openRouterClientConfig()
-      const model = new ChatOpenAI({
-        model: OPENROUTER_AUTO_MODEL,
+      const openrouter = createOpenAI({
         apiKey: openRouter.apiKey,
-        configuration: { baseURL: openRouter.baseURL },
+        baseURL: openRouter.baseURL,
       })
-      const response = await model.invoke('Reply with one word.')
-      const text =
-        typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+      const { text } = await generateText({
+        model: openrouter(OPENROUTER_AUTO_MODEL),
+        prompt: 'Reply with one word.',
+      })
       expect(text.trim().length).toBeGreaterThan(0)
     },
     TIMEOUT_MS

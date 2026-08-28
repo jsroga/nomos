@@ -4,9 +4,9 @@ import { getErrorMessage } from '@/shared/errors/error-utils'
 import { AnalyzeMechanicBalanceInputSchema } from '../../constants/logic-tool-schemas'
 import { buildAnalyzeMechanicBalancePrompt } from '../../constants/logic-tool-prompts'
 import { LogicToolCopy, LogicToolId, TargetAudience } from '../../constants/logic-tool-wire'
-import { GameDesignLlmRole } from '../../constants/game-design-tool-wire'
 import {
   createLogicToolModel,
+  invokeLlmTextPrompt,
   parseLlmJsonOrError,
 } from './game-design-llm-shared'
 
@@ -37,9 +37,7 @@ Returns a comprehensive balance report with actionable recommendations.`,
         })
 
         const model = createLogicToolModel()
-        const response = await model.invoke([{ role: GameDesignLlmRole.User, content: prompt }])
-        const content =
-          typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+        const content = await invokeLlmTextPrompt(prompt, model)
 
         const { parsed, error } = parseLlmJsonOrError(content)
         if (!parsed) return { success: false, error }
