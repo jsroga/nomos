@@ -1,4 +1,4 @@
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { readRowString, recordFromJson } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'

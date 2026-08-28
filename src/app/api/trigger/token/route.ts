@@ -3,7 +3,7 @@
  * This enables frontend components to subscribe to run updates without polling
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@trigger.dev/sdk/v3'
+import { auth } from '@trigger.dev/sdk'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TOKEN_EXPIRY } from '@/shared/data/constants/api-errors'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 

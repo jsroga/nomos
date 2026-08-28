@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { FalClient } from '@/shared/ai/fal'
 import { readFalApiKey, resolveSamPrompt } from '@/shared/ai/constants/fal'
 import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'

@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import { MeshyArtStyle } from '@/shared/data/constants/protocol'
 import { surfaceMaterialPayloadSchema } from './constants/meshy-payloads'

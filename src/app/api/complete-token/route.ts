@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { wait } from '@trigger.dev/sdk/v3'
+import { wait } from '@trigger.dev/sdk'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 
 export async function POST(request: Request) {

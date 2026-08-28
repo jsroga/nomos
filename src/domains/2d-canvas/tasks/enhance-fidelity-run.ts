@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
 import { env } from '@/shared/config/env'
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { put } from '@vercel/blob'
 import {
   readApiframeApiKey,

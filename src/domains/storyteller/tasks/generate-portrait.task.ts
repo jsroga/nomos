@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import { generatePortraitPayloadSchema } from './constants/task-payloads'
 import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'

@@ -1,4 +1,4 @@
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { BufferEncoding } from '@/shared/data/constants/protocol'
 import { TOPAZ_MEGAPIXEL_DIVISOR, resolveNearestNeighbourSize } from '../constants/topaz-upscale'
 

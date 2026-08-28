@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import type { GenerateStoryboardPayload } from './constants/task-payloads'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'

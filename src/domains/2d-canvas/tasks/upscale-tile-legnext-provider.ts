@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { storageService } from '@/shared/data/storage/storage-service'
 import { UPSCALE_PROMPTS } from '@/shared/data/server/prompts'
 import { ContentType } from '@/shared/data/constants/protocol'

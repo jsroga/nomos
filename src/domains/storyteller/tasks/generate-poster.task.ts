@@ -1,5 +1,5 @@
 import { SystemScopeReason, systemScope } from '@/shared/auth/project-scope'
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import {
   generatePosterPayloadSchema,

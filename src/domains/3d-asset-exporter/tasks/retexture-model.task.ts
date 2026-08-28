@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import { retextureModelPayloadSchema } from './constants/meshy-payloads'
 import { MeshyClient } from '@/shared/ai/meshy'

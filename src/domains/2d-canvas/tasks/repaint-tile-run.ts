@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { generateApiframeImage } from '@/shared/ai/apiframe'
 import { buildGenerateBody } from '@/shared/ai/apiframe-generate-body'
 import { ApiframeErrorMessage } from '@/shared/ai/constants/apiframe'

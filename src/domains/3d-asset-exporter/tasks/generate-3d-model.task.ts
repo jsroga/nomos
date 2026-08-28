@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import { ModelProvider } from '@/shared/data/constants/protocol'
 import { generate3dModelPayloadSchema } from './constants/generate-3d-model-payload'

@@ -1,4 +1,4 @@
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { GENERATION_PROMPTS, tilePromptLayersFrom } from '@/shared/data/server/prompts'
 import {
   logLLMRequestError,

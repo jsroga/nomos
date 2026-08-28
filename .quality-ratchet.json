@@ -14,7 +14,7 @@
   "rawTaskDefinitions": 0,
   "tasksWithoutQueue": 0,
   "tasksWithoutIdempotencyKey": 0,
-  "triggerSdkV3Imports": 49,
+  "triggerSdkV3Imports": 0,
   "_commands": {
     "untaggedRunGracePaths": "grep -c 'isWithinUntaggedGraceWindow(run.createdAt)' src/shared/jobs/owned-run.ts   # removed; every payload carries a project id, so every run is tagged",
     "routesTakingProjectIdWithoutOwnershipCheck": "for f in $(find src/app/api -name route.ts); do grep -qE 'projectId|project_id' \"$f\" && ! grep -rqE 'projectScope|episodeScope|beatScope|characterScope|withProjectScope|verifyProjectAccess|verifyEpisodeAccess|verifyBeatAccess|verifyCharacterAccess|verifyProjectOwnership|listForUser|session\\.user\\.id|isAdminUser' \"$(dirname \"$f\")\" && echo \"$f\"; done | wc -l",

@@ -1,7 +1,7 @@
 import { env } from '@/shared/config/env'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { BufferEncoding, ContentType } from '@/shared/data/constants/protocol'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 import { readString, recordFromJson } from '@/shared/data/json-guards'

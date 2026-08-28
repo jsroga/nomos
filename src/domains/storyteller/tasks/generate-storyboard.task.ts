@@ -12,7 +12,7 @@ export const generateStoryboard = defineOwnedTask({
     try {
       return await runStoryboardGeneration(payload)
     } catch (error: unknown) {
-      const { logger } = await import('@trigger.dev/sdk/v3')
+      const { logger } = await import('@trigger.dev/sdk')
       logger.error('Storyboard generation failed', { error: getErrorMessage(error) })
       throw error
     }

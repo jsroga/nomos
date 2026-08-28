@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { MeshyTopology } from '@/shared/data/constants/protocol'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { readRowString, recordFromJson } from '@/shared/data/json-guards'

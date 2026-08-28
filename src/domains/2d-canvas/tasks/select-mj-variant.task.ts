@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import { createSupabaseServiceClient } from './constants/generate-tile-persist'
 import { selectMjVariantPayloadSchema } from './constants/select-mj-variant-payload'

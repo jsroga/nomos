@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { LegNextJobStatus } from '@/shared/ai/constants/legnext'
 import { HttpMethod } from '@/shared/data/constants/protocol'

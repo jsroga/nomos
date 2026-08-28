@@ -1,5 +1,5 @@
 import { env } from '@/shared/config/env'
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { JobQueue, MachinePreset, defineOwnedTask } from '@/shared/jobs'
 import { put } from '@vercel/blob'
 import { getErrorMessage } from '@/shared/errors/error-utils'

@@ -1,4 +1,4 @@
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
