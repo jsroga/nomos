@@ -1,7 +1,12 @@
+import {
+  SystemScopeReason,
+  systemScope,
+  type ProjectScope,
+} from '@/shared/auth/project-scope'
+import { createVisualSubjectClient } from '@/domains/storyteller/tasks/constants/visual-subject-client'
 import { stringArrayFromJson } from '@/shared/data/json-guards'
 import { firstMoodboardStyleRefUrl } from '@/domains/storyteller/core/moodboard-style-ref'
 import {
-  createVisualSubjectClient,
   generateVisualSubjects,
   type GenerateVisualSubjectInput,
 } from '@/domains/storyteller/services/visual-subject-llm'
@@ -56,12 +61,12 @@ export function buildFallbackPrompts(
 }
 
 export async function generateMoodboardPrompts(
+  scope: ProjectScope,
   context: MoodboardProjectContext,
   promptIndex?: number,
 ): Promise<string[]> {
-  const openai = createVisualSubjectClient()
-  if (!openai) return buildFallbackPrompts(context, promptIndex)
-  return generateVisualSubjects(openai, moodboardSubjectInput(context, promptIndex))
+  if (!createVisualSubjectClient()) return buildFallbackPrompts(context, promptIndex)
+  return generateVisualSubjects(scope, moodboardSubjectInput(context, promptIndex))
 }
 
 export function lockedMoodboardPromptsOrNull(prompts: string[] | undefined): string[] | null {
@@ -74,10 +79,14 @@ export async function resolveMoodboardPrompts(input: {
   promptIndex?: number
   worldDesc?: string
   overview?: string
+  projectId: string
 }): Promise<string[]> {
   const locked = lockedMoodboardPromptsOrNull(input.prompts)
   if (locked) return locked
   return generateMoodboardPrompts(
+    // No user behind a background job; the payload carries the project it bills
+    // to, and SPEC-06 made that field required on every task.
+    systemScope(input.projectId, SystemScopeReason.JobContext),
     {
       worldDesc: input.worldDesc ?? '',
       overview: input.overview ?? '',

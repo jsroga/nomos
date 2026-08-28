@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { SystemScopeReason, systemScope } from '@/shared/auth/project-scope'
 
 const { generateCharacterMbti } = vi.hoisted(() => ({
   generateCharacterMbti: vi.fn(),
@@ -18,6 +19,9 @@ const VERA = 'Vera'
 const VERA_DESC = 'Vera keeps the wardens at bay.'
 const INTJ = 'INTJ'
 const DRY_VOICE = 'dry, clipped'
+
+/** A scope cannot be forged, so the test takes the system constructor. */
+const SCOPE = systemScope('11111111-1111-4111-8111-111111111111', SystemScopeReason.ProviderSmoke)
 
 describe('optionalCastString', () => {
   it('drops a missing voice so the card can show dashes', () => {
@@ -60,6 +64,7 @@ describe('resolveInsertMbti', () => {
       provided: INTJ,
       name: VERA,
       description: VERA_DESC,
+      scope: SCOPE,
     })
 
     expect(mbti).toBe(INTJ)
@@ -73,10 +78,15 @@ describe('resolveInsertMbti', () => {
       provided: CharacterUnsetSentinel.QuestionMarks,
       name: VERA,
       description: VERA_DESC,
+      scope: SCOPE,
     })
 
     expect(mbti).toBe(INTJ)
-    expect(generateCharacterMbti).toHaveBeenCalledWith({ name: VERA, description: VERA_DESC })
+    expect(generateCharacterMbti).toHaveBeenCalledWith({
+      name: VERA,
+      description: VERA_DESC,
+      scope: SCOPE,
+    })
   })
 
   it('generates when MBTI is missing', async () => {
@@ -86,6 +96,7 @@ describe('resolveInsertMbti', () => {
       provided: undefined,
       name: VERA,
       description: VERA_DESC,
+      scope: SCOPE,
     })
 
     expect(mbti).toBe('ENTP')
@@ -99,6 +110,7 @@ describe('resolveInsertMbti', () => {
       provided: CharacterUnsetSentinel.QuestionMarksShort,
       name: VERA,
       description: VERA_DESC,
+      scope: SCOPE,
     })
 
     expect(mbti).toBeUndefined()

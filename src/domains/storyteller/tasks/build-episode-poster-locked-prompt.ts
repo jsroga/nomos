@@ -1,5 +1,6 @@
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import {
-  createVisualSubjectClient,
+  isVisualSubjectConfigured,
   generateVisualSubjects,
 } from '@/domains/storyteller/services/visual-subject-llm'
 import { VisualSubjectKind } from '@/domains/storyteller/services/constants/visual-overview'
@@ -22,15 +23,15 @@ export function lockedPosterPromptOrNull(prompt: string | undefined): string | n
 export async function buildLockedEpisodePosterPrompt(input: {
   context: VisualOverviewContext
   extraPrompt: string
+  scope: ProjectScope
 }): Promise<string> {
-  const openai = createVisualSubjectClient()
-  if (!openai) throw new Error(GeneratePosterError.OpenRouterRequired)
+  if (!isVisualSubjectConfigured()) throw new Error(GeneratePosterError.OpenRouterRequired)
   if (!isVisualOverviewReady(input.context)) {
     throw new Error(GeneratePosterError.OverviewRequired)
   }
   const extra = input.extraPrompt.trim()
   const fallbackSource = extra || input.context.worldDesc
-  const [scene] = await generateVisualSubjects(openai, {
+  const [scene] = await generateVisualSubjects(input.scope, {
     context: input.context,
     extra,
     kind: VisualSubjectKind.Poster,

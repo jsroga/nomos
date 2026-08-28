@@ -1,6 +1,6 @@
-import { createOpenAI } from '@ai-sdk/openai'
-import { openRouterClientConfig } from '@/shared/agent-kernel/models'
-import { generateText } from 'ai'
+import type { ProjectScope } from '@/shared/auth/project-scope'
+import { complete } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import {
   CHARACTER_MBTI_FAILED_LOG,
   CHARACTER_MBTI_MODEL,
@@ -20,15 +20,15 @@ export function isCharacterMbti(value: string | undefined): boolean {
 export async function generateCharacterMbti(input: {
   name: string
   description: string
+  scope: ProjectScope
 }): Promise<string | undefined> {
   try {
-    const openRouter = openRouterClientConfig()
-    const openrouter = createOpenAI({ apiKey: openRouter.apiKey, baseURL: openRouter.baseURL })
-    const { text } = await generateText({
-      model: openrouter(CHARACTER_MBTI_MODEL),
+    const { text } = await complete({
+      scope: input.scope,
+      feature: LlmFeature.StorytellerCharacterMbti,
+      model: CHARACTER_MBTI_MODEL,
       system: CharacterMbtiCopy.System,
       prompt: characterMbtiUserPrompt(input.name, input.description),
-      maxRetries: 1,
       temperature: CHARACTER_MBTI_TEMPERATURE,
     })
     return parseCharacterMbti(text)

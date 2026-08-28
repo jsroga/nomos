@@ -1,3 +1,4 @@
+import { createVisualSubjectClient } from '@/domains/storyteller/tasks/constants/visual-subject-client'
 import { spawn } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -7,7 +8,6 @@ import { OpenAiChatRole, EnvVarName } from '@/shared/data/constants/protocol'
 import { TEXT_GEN_FAST_MODEL, TEXT_TO_SPEECH_MODEL } from '@/shared/agent-kernel/models'
 import { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { createVisualSubjectClient } from '@/domains/storyteller/services/visual-subject-llm'
 import { buildStoryboardCorePromptUser, type StoryboardVideoBeatText } from './constants/storyboard-video-prompt'
 import {
   StoryboardFfmpegArg,

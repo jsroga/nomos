@@ -1,3 +1,4 @@
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { characters } from '@/db'
 import { db } from '@/db/client'
 import { eq, and } from 'drizzle-orm'
@@ -76,13 +77,13 @@ async function syncExistingCharacter(
     .where(eq(characters.id, current.id))
 }
 
-async function insertNewCharacter(projectId: string, char: Record<string, unknown>) {
+async function insertNewCharacter(scope: ProjectScope, char: Record<string, unknown>) {
   const name = typeof char.name === 'string' ? char.name : ''
   const description = typeof char.description === 'string' ? char.description : ''
   const providedMbti = typeof char.mbti === 'string' ? char.mbti : undefined
-  const mbti = await resolveInsertMbti({ provided: providedMbti, name, description })
+  const mbti = await resolveInsertMbti({ provided: providedMbti, name, description, scope })
   await db.insert(characters).values({
-    projectId,
+    projectId: scope.projectId,
     name,
     role: typeof char.role === 'string' ? char.role : CharacterRole.Supporting,
     description,
@@ -97,14 +98,14 @@ async function insertNewCharacter(projectId: string, char: Record<string, unknow
   })
 }
 
-async function syncSingleCastCharacter(projectId: string, rawCastEntry: unknown) {
+async function syncSingleCastCharacter(scope: ProjectScope, rawCastEntry: unknown) {
   const char = normalizeCastEntry(rawCastEntry)
   if (!char.name || typeof char.name !== 'string') return
 
   const existing = await db
     .select()
     .from(characters)
-    .where(and(eq(characters.projectId, projectId), eq(characters.name, char.name)))
+    .where(and(eq(characters.projectId, scope.projectId), eq(characters.name, char.name)))
     .limit(1)
 
   if (existing.length > 0) {
@@ -112,20 +113,20 @@ async function syncSingleCastCharacter(projectId: string, rawCastEntry: unknown)
     return
   }
 
-  await insertNewCharacter(projectId, char)
+  await insertNewCharacter(scope, char)
 }
 
 export async function syncCastToCharactersTable(
-  projectId: string | undefined,
+  scope: ProjectScope | undefined,
   castData: unknown
 ): Promise<void> {
-  if (!Array.isArray(castData) || !projectId) return
+  if (!Array.isArray(castData) || !scope) return
 
   console.log(`🔄 [API] UPDATE_CAST - Syncing ${castData.length} characters to characters table`)
 
   for (const rawCastEntry of castData) {
     try {
-      await syncSingleCastCharacter(projectId, rawCastEntry)
+      await syncSingleCastCharacter(scope, rawCastEntry)
     } catch (err) {
       const char = normalizeCastEntry(rawCastEntry)
       const name = typeof char.name === 'string' ? char.name : SyncCastFallbackName.Unknown

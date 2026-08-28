@@ -1,8 +1,8 @@
+import { createVisualSubjectClient } from '@/domains/storyteller/tasks/constants/visual-subject-client'
 import type { ChatCompletionContentPart } from 'openai/resources/chat/completions'
 import { OpenAiChatRole } from '@/shared/data/constants/protocol'
 import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
 import {
-  createVisualSubjectClient,
 } from '@/domains/storyteller/services/visual-subject-llm'
 import {
   PORTRAIT_VARIANT_FALLBACK,

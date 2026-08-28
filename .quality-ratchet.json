@@ -5,12 +5,12 @@
   "sessionExistenceOnlyRoutes": 12,
   "directDbClientImporters": 70,
   "serviceRoleClientSites": 23,
-  "providerSdkImportsOutsideGateway": 7,
+  "providerSdkImportsOutsideGateway": 6,
   "langChainImports": 0,
   "bareProcessEnvReads": 0,
   "processEnvReadsInModelConfig": 21,
   "bareProjectIdExports": 0,
-  "systemScopeSites": 0,
+  "systemScopeSites": 2,
   "_commands": {
     "untaggedRunGracePaths": "grep -c 'isWithinUntaggedGraceWindow(run.createdAt)' src/shared/jobs/owned-run.ts   # removed; every payload carries a project id, so every run is tagged",
     "routesTakingProjectIdWithoutOwnershipCheck": "for f in $(find src/app/api -name route.ts); do grep -qE 'projectId|project_id' \"$f\" && ! grep -rqE 'projectScope|episodeScope|beatScope|characterScope|withProjectScope|verifyProjectAccess|verifyEpisodeAccess|verifyBeatAccess|verifyCharacterAccess|verifyProjectOwnership|listForUser|session\\.user\\.id|isAdminUser' \"$(dirname \"$f\")\" && echo \"$f\"; done | wc -l",
@@ -22,6 +22,6 @@
     "bareProcessEnvReads": "npx vitest run scripts/__tests__/process-env-inventory.test.ts   # SPEC-12 burns this to 0",
     "processEnvReadsInModelConfig": "same test   # BLOCKED 2026-08-28 on SPEC-13 Task 13, which dissolves these six files into the gateway registry. Named in eslint.config.js ignores, not silently skipped. Not SPEC-12 work.",
     "bareProjectIdExports": "npx eslint src 2>&1 | grep -c 'no-bare-project-id-param'   # reached 0; the rule is now 'error', so this stays 0 by construction",
-    "systemScopeSites": "grep -rn 'systemScope(' src --include='*.ts' | grep -v __tests__ | grep -v project-scope.ts | wc -l   # visible, countable RLS-free escapes"
+    "systemScopeSites": "grep -rn 'systemScope(' src --include='*.ts' | grep -v __tests__ | grep -v project-scope.ts | wc -l   # background jobs billing a model with no user behind them; each names a SystemScopeReason"
   }
 }

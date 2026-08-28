@@ -1,8 +1,8 @@
+import { createVisualSubjectClient } from '@/domains/storyteller/tasks/constants/visual-subject-client'
 import { OpenAiChatRole } from '@/shared/data/constants/protocol'
 import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
 import { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
 import { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
-import { createVisualSubjectClient } from '@/domains/storyteller/services/visual-subject-llm'
 import {
   StoryboardCorePromptSource,
   STORYBOARD_CORE_PROMPT_TEMPERATURE,

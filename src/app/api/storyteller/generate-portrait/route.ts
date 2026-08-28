@@ -10,7 +10,7 @@ import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { buildCharacterPortraitPrompt } from '@/domains/storyteller/tasks/constants/character-portrait-prompt'
 import { isPortraitCharacterUuid } from '@/domains/storyteller/tasks/constants/generate-portrait-wire'
 import {
-  createVisualSubjectClient,
+  isVisualSubjectConfigured,
   generateOverviewVisualSubject,
 } from '@/domains/storyteller/services/visual-subject-llm'
 import { VisualSubjectKind } from '@/domains/storyteller/services/constants/visual-overview'
@@ -39,13 +39,11 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
-    const openai = createVisualSubjectClient()
-    if (!openai) {
+    if (!isVisualSubjectConfigured()) {
       return NextResponse.json({ error: API_ERROR.OPENROUTER_API_KEY_NOT_CONFIGURED_SERVER }, { status: 500 })
     }
 
     const scene = await generateOverviewVisualSubject(
-      openai,
       scope,
       description,
       VisualSubjectKind.Portrait,

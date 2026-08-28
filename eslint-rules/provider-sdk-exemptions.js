@@ -35,9 +35,12 @@ const DOMAIN_REMAINDER = [
   // is no ProjectScope to bill against without changing every tool's input
   // contract — a field a model can silently omit.
   'src/domains/game-design/ai/tools/v2/game-design-llm-shared.ts',
+  // The raw client for five task helpers that call
+  // `openai.chat.completions.create` directly with no scope in hand. Isolated
+  // in one module so the exemption names one file rather than five; deleting
+  // it is what closes the gap.
+  'src/domains/storyteller/tasks/constants/visual-subject-client.ts',
   // Reached without a scope in hand. Threading one is the remaining work.
-  'src/domains/storyteller/services/character-mbti-service.ts',
-  'src/domains/storyteller/services/visual-subject-llm.ts',
   'src/app/api/storyteller/generate-metrics/route.ts',
 ]
 

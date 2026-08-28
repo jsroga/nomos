@@ -1,3 +1,4 @@
+import { SystemScopeReason, systemScope } from '@/shared/auth/project-scope'
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { ApiframeGenerateAspectRatio } from '@/shared/ai/constants/apiframe'
 import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'
@@ -41,6 +42,8 @@ async function resolveLockedPosterPrompt(payload: GeneratePosterPayload): Promis
   const existing = lockedPosterPromptOrNull(payload.prompt)
   if (existing) return existing
   return buildLockedEpisodePosterPrompt({
+    // Background job: no user, but the payload names the project it bills to.
+    scope: systemScope(payload.projectId, SystemScopeReason.JobContext),
     context: {
       worldDesc: payload.worldDesc ?? '',
       overview: payload.overview ?? '',
