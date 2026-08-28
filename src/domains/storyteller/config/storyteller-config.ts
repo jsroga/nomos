@@ -6,10 +6,10 @@
  * Overridable via `setStorytellerConfig` at runtime.
  */
 
+import { flags } from '@/shared/config/flags'
 import { deepMerge } from '@/shared/data/deep-merge'
 import {
   ENTITY_LINK_MIN_COUNT,
-  EnvFlagValue,
   GuardrailSeverity,
 } from './constants/storyteller-config-defaults'
 
@@ -143,9 +143,9 @@ const DEFAULT_CONFIG: StorytellerConfig = {
   },
 
   debug: {
-    verboseLogging: process.env.STORYTELLER_VERBOSE === EnvFlagValue.True,
-    logAgentDecisions: process.env.STORYTELLER_LOG_DECISIONS === EnvFlagValue.True,
-    logRAGQueries: process.env.STORYTELLER_LOG_RAG === EnvFlagValue.True,
+    verboseLogging: flags.storytellerVerbose,
+    logAgentDecisions: flags.storytellerLogDecisions,
+    logRAGQueries: flags.storytellerLogRag,
   },
 }
 

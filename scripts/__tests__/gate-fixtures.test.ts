@@ -35,6 +35,12 @@ const FIXTURES: {
     minimumErrors: 1,
   },
   {
+    // Server configuration is read once, in one module, and validated there.
+    file: 'scripts/gate-fixtures/src/services/reads-bare-process-env.ts',
+    ruleId: 'local/no-bare-process-env',
+    minimumErrors: 1,
+  },
+  {
     // projectScope is the only way to establish access; the raw boolean check
     // is unreachable from outside shared/auth.
     file: 'scripts/gate-fixtures/src/services/imports-project-access.ts',

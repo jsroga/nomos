@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { PgVector } from '@mastra/pg'
 import { OpenAIEmbeddings } from '@langchain/openai'
 
@@ -226,7 +227,7 @@ export class GameDesignMemory {
  * Create a GameDesignMemory instance with default configuration
  */
 export function createGameDesignMemory(connectionString?: string): GameDesignMemory {
-  const connString = connectionString || process.env.DATABASE_URL
+  const connString = connectionString || env.DATABASE_URL
 
   if (!connString) {
     throw new Error(GameDesignMemoryError.DatabaseUrlRequired)

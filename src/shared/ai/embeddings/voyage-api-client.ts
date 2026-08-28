@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import {
   VOYAGE_API_URL,
   VOYAGE_CIRCUIT_BREAKER_MS,
@@ -100,7 +101,7 @@ async function handleRateLimitResponse(
 }
 
 function resolveEmbeddingModel(model: string | undefined): string {
-  const raw = (model || process.env.EMBEDDING_MODEL || VOYAGE_DEFAULT_MODEL).trim()
+  const raw = (model || env.EMBEDDING_MODEL || VOYAGE_DEFAULT_MODEL).trim()
   return raw.includes(':') && !raw.includes('/') ? raw.replace(':', '/') : raw
 }
 
@@ -110,7 +111,7 @@ export async function callVoyageAPI(
   retryCount: number,
   waitForRateLimit: () => Promise<void>
 ): Promise<number[][]> {
-  const apiKey = process.env.OPENROUTER_API_KEY
+  const apiKey = env.OPENROUTER_API_KEY
   const isEnabled = isFeatureEnabled(FeatureFlag.VoyageEmbeddings)
 
   if (shouldSkipVoyageCall(apiKey, isEnabled)) {

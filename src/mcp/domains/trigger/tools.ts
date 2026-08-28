@@ -4,6 +4,7 @@
  * Tools for tracking and managing Trigger.dev task runs.
  */
 
+import { env } from '@/shared/config/env'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { tilesService } from '@/shared/data/generation/tiles-service'
@@ -19,7 +20,7 @@ import { McpTriggerToolError } from './constants/tools'
  * belongs to a tenant, so "the key is valid" is not enough to read or cancel one.
  */
 async function requireMcpUser(): Promise<{ userId: string }> {
-  const apiKey = process.env.MCP_API_KEY
+  const apiKey = env.MCP_API_KEY
   if (!apiKey) throw new Error(McpTriggerToolError.MissingApiKeyEnv)
 
   const authResult = await validateApiKey(apiKey)

@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { AsyncLocalStorage } from 'async_hooks'
 import { MCPServiceContext } from './types'
 import { validateApiKey, getServiceContext } from './auth'
@@ -28,7 +29,7 @@ export async function getCurrentContext(): Promise<MCPServiceContext> {
   }
 
   // 2. Fallback to Environment (Stdio/Local)
-  const apiKey = process.env.MCP_API_KEY
+  const apiKey = env.MCP_API_KEY
   if (!apiKey) {
     throw new Error(MCP_AUTH_REQUIRED_MESSAGE)
   }

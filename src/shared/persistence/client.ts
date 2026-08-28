@@ -1,9 +1,10 @@
+import { env } from '@/shared/config/env'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import * as schema from '@/db/schema'
 import { NodeEnv } from '@/shared/data/constants/protocol'
 
-const connectionString = process.env.DATABASE_URL ?? ''
+const connectionString = env.DATABASE_URL ?? ''
 
 // TLS is on everywhere except local development. It was previously off
 // unconditionally ("SSL disabled for Supabase pooler"), which left the

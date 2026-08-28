@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
 import { getErrorMessage } from '@/shared/errors/error-utils'
@@ -69,14 +70,14 @@ export const upscaleTileTask = task({
 
     const imageData = await resolveUpscaledImageData(providerResult)
 
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    if (!env.BLOB_READ_WRITE_TOKEN) {
       throw new Error('BLOB_READ_WRITE_TOKEN not configured')
     }
 
     const upscaledBuffer = Buffer.from(imageData, BufferEncoding.Base64)
     const upscaledBlob = await put(`upscales/${projectId}/${upscaledFilename}`, upscaledBuffer, {
       access: 'public',
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      token: env.BLOB_READ_WRITE_TOKEN,
       contentType: ContentType.Png,
     })
 
@@ -86,7 +87,7 @@ export const upscaleTileTask = task({
     try {
       const originalBlob = await put(`upscales/${projectId}/${originalFilename}`, originalBuffer, {
         access: 'public',
-        token: process.env.BLOB_READ_WRITE_TOKEN,
+        token: env.BLOB_READ_WRITE_TOKEN,
         contentType: ContentType.Png,
       })
       originalUrl = originalBlob.url

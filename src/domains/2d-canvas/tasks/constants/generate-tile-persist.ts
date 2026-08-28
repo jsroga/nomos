@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
 import { logger } from '@trigger.dev/sdk/v3'
@@ -54,7 +55,7 @@ export async function assembleServerContextImage(
 }
 
 export function requireBlobToken(): string {
-  const token = process.env.BLOB_READ_WRITE_TOKEN
+  const token = env.BLOB_READ_WRITE_TOKEN
   if (!token) {
     throw new Error('BLOB_READ_WRITE_TOKEN not configured')
   }
@@ -85,7 +86,7 @@ export function createSupabaseServiceClient(): SupabaseClient {
   // No anon-key fallback: this client exists to bypass RLS, and silently
   // downgrading to the anon key turns a config error into a confusing write
   // failure deep inside a task.
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(SUPABASE_SERVICE_ENV_MISSING)
   }

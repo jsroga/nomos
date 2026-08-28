@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { task, logger, metadata } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
@@ -48,7 +49,7 @@ export const uploadAssetTask = task({
     try {
       const blob = await put(blobFilename, fileBuffer, {
         access: 'public',
-        token: process.env.BLOB_READ_WRITE_TOKEN,
+        token: env.BLOB_READ_WRITE_TOKEN,
         contentType: modelFilename.endsWith('.glb')
           ? 'model/gltf-binary'
           : modelFilename.endsWith('.gltf')

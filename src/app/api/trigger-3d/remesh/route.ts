@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import type { remesh3DModelTask } from '@/trigger'
@@ -19,8 +20,8 @@ export const POST = withRateLimit(
     if (!payload.assetId || !payload.meshyTaskId) {
       return NextResponse.json({ error: API_ERROR.MISSING_REMESH_FIELDS }, { status: 400 })
     }
-    if (!payload.apiKey && process.env.MESHY_API_KEY) {
-      payload.apiKey = process.env.MESHY_API_KEY
+    if (!payload.apiKey && env.MESHY_API_KEY) {
+      payload.apiKey = env.MESHY_API_KEY
     }
     if (!payload.apiKey) {
       return NextResponse.json({ error: API_ERROR.MESHY_API_KEY_MISSING }, { status: 400 })

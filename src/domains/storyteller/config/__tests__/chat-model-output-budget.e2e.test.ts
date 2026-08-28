@@ -10,12 +10,12 @@
  * exactly what the route logged as `count=3`.
  */
 
+import { resolveChatModelId } from '@/domains/storyteller/config/resolve-chat-model'
 import { describe, expect, it } from 'vitest'
 import { Agent } from '@mastra/core/agent'
 import { AGENT_MODEL_MATRIX, resolveStorytellerModel } from '../constants/model-config'
 import {
   USER_SELECTABLE_CHAT_MODELS,
-  resolveChatModelId,
 } from '../constants/chat-model-catalog'
 
 const ready = Boolean(process.env.OPENROUTER_API_KEY)

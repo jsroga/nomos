@@ -7,6 +7,7 @@
  * only (never in Edge/VITEST). Unset → the catalog default is used.
  */
 
+import { env } from '@/shared/config/env'
 import '@/shared/data/server-guard'
 import { getCanvasModule } from './module-registry'
 import { readString } from '@/shared/data/json-guards'
@@ -32,7 +33,7 @@ let warmStarted = false
 
 function maybeWarm(): void {
   if (warmStarted || loaded) return
-  if (!process.env.DATABASE_URL || process.env.VITEST) return
+  if (!env.DATABASE_URL || process.env.VITEST) return
   warmStarted = true
   void loadModuleSettings().catch(() => {})
 }
@@ -60,7 +61,7 @@ export function isModuleSettingsLoaded(): boolean {
 
 /** Load all module rows from the DB into the cache. No-op without DATABASE_URL. */
 export async function loadModuleSettings(): Promise<Record<string, ModuleSettingRow>> {
-  if (!process.env.DATABASE_URL) return {}
+  if (!env.DATABASE_URL) return {}
   const { db } = await import('@/db/client')
   const { moduleSettings } = await import('@/db/schema')
   const rows = await db.select().from(moduleSettings)

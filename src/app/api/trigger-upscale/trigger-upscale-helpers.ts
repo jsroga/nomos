@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { NextResponse } from 'next/server'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { EnvVarName } from '@/shared/data/constants/protocol'
@@ -16,7 +17,7 @@ export function isUpscaleMode(value: string | undefined): value is UpscaleMode {
 
 /** All upscale providers authenticate with Apiframe. */
 export function resolveUpscaleProviderKey(_provider: string): string | undefined {
-  return process.env.APIFRAME_API_KEY
+  return env.APIFRAME_API_KEY
 }
 
 export function buildUpscaleProviderConfig(payload: {

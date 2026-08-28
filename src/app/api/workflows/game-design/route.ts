@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 // Side-effect: register the game-design agent + workflow on the central Mastra
@@ -54,7 +55,7 @@ async function getWorkflow(): Promise<{ workflow: GameLoopWorkflow }> {
   if (!workflowInstance) {
     const created = await createGameLoopWorkflow({
       modelName: resolveGameDesignModel(),
-      connectionString: process.env.DATABASE_URL,
+      connectionString: env.DATABASE_URL,
     })
     workflowInstance = created.workflow
   }

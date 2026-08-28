@@ -1,8 +1,9 @@
+import { resolveChatModelId } from '@/domains/storyteller/config/resolve-chat-model'
 import { NextRequest, NextResponse } from 'next/server'
 import { normalizeMastraTraceId } from '@/domains/storyteller/ai/tracing'
 import { BEAT_DRAFT_WORKFLOW_ID } from '@/domains/storyteller/core/io/mastra-runtime'
 import { beatDraftOutputSchema } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
-import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/constants/chat-model-catalog'
+import { isKnownChatModel } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import {
   ChatContinuitySeverity,
   ChatPipelineRunStatus,

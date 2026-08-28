@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/shared/auth/auth'
 import { episodeScope, type EpisodeScope } from '@/domains/storyteller/server'
@@ -43,7 +44,7 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
     const clientKey = typeof config?.apiKey === 'string' ? config.apiKey : undefined
     const apiKey = resolveApiframeApiKey(clientKey)
     console.log(
-      `${API_LOG_PREFIX.POSTER_GEN_CONFIG} ${Boolean(clientKey)}, Env Key present: ${Boolean(process.env.APIFRAME_API_KEY)}`
+      `${API_LOG_PREFIX.POSTER_GEN_CONFIG} ${Boolean(clientKey)}, Env Key present: ${Boolean(env.APIFRAME_API_KEY)}`
     )
 
     if (!apiKey) {

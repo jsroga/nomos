@@ -2,6 +2,19 @@
 
 > Daily commands also live in root [CLAUDE.md](../CLAUDE.md).
 
+
+## Adding an environment variable
+
+1. Add it to `serverEnvSchema` in `src/shared/config/env.ts` — or to `clientEnv` in `env.client.ts` if it is `NEXT_PUBLIC_*`.
+2. Add it to `.env.local.example` with a one-line comment.
+3. `npm run env:check`.
+
+Required vs optional is read off the call sites, not judged: a bare use or an existing throw means required, a `??` default means optional with that default, and anything ambiguous resolves to **optional**. A wrong `optional` is a familiar late failure; a wrong `required` is an app that will not start.
+
+`NEXT_PUBLIC_*` values must stay literal member expressions in `env.client.ts` — Next substitutes them at build time only where the source reads `process.env.NEXT_PUBLIC_X` verbatim, so a loop or a helper ships `undefined` to the browser.
+
+`env.ts` imports `server-only`. A module that a client component can reach must not import it: split the server-reading function out, as `config/resolve-chat-model.ts` does for the chat model catalog.
+
 ## Test tiers
 
 | Tier | Command | Location |

@@ -5,6 +5,7 @@
  * Improves retrieval precision by better scoring query-document relevance.
  */
 
+import { env } from '@/shared/config/env'
 import { z } from 'zod'
 import { SearchResult } from './hybrid-search'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
@@ -142,7 +143,7 @@ async function rerankCohere(
   results: SearchResult[],
   config: RerankerConfig
 ): Promise<SearchResult[]> {
-  const apiKey = process.env.OPENROUTER_API_KEY
+  const apiKey = env.OPENROUTER_API_KEY
 
   if (!apiKey) {
     console.warn(RerankerLog.CohereKeyMissing)

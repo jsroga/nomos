@@ -4,6 +4,7 @@
  * Tools for generating tiles, 3D models, portraits via Trigger.dev tasks.
  */
 
+import { env } from '@/shared/config/env'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import {
@@ -51,7 +52,7 @@ const generateTile = createTool({
       .describe('URLs to style reference images (optional)'),
   }),
   execute: async data => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
@@ -76,7 +77,7 @@ const upscaleTile = createTool({
       .describe('Which upscale provider to use (default: midjourney)'),
   }),
   execute: async data => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
@@ -98,7 +99,7 @@ const generate3dModel = createTool({
     prompt: z.string().describe('The prompt describing the 3D model to generate'),
   }),
   execute: async data => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
@@ -128,7 +129,7 @@ const remesh3dModel = createTool({
       .describe('Target polygon count (optional)'),
   }),
   execute: async data => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
@@ -153,7 +154,7 @@ const generatePortrait = createTool({
     style: z.string().optional().describe('Art style for the portrait (optional)'),
   }),
   execute: async data => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)

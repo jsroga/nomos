@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import type { ScorerJudgeConfig } from '@mastra/core/evals'
 import { wrapLanguageModel } from 'ai'
 import { MODELS, toOpenRouterModel, toOpenRouterModelId, createPureChatModel } from '@/shared/agent-kernel/models'
@@ -14,7 +15,7 @@ export function toMastraJudgingModel(): string {
   // Read at call time so evals/run.ts can load .env.local before scorer modules import.
   // admin panel setting → JUDGING_MODEL env → default; routed through the OpenRouter gateway.
   return toOpenRouterModel(
-    getConfiguredModel(JUDGING_ROLE) || process.env.JUDGING_MODEL || MODELS.judging.primary
+    getConfiguredModel(JUDGING_ROLE) || env.JUDGING_MODEL || MODELS.judging.primary
   )
 }
 

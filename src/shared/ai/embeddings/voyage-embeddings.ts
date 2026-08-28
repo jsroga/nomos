@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import {
   VOYAGE_CACHE_MAX_SIZE,
   VOYAGE_CACHE_TTL_MS,
@@ -28,7 +29,7 @@ let requestCount = 0
 let windowStart = Date.now()
 
 function parseVoyageModel(value: unknown): VoyageModelId {
-  const raw = typeof value === 'string' ? value : process.env.EMBEDDING_MODEL
+  const raw = typeof value === 'string' ? value : env.EMBEDDING_MODEL
   if (!raw) return VOYAGE_DEFAULT_MODEL
   const normalized = raw.includes(':') && !raw.includes('/') ? raw.replace(':', '/') : raw
   for (const model of VOYAGE_MODEL_VALUES) {

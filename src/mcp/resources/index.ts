@@ -5,6 +5,7 @@
  * Unlike tools, resources are for data retrieval only.
  */
 
+import { env } from '@/shared/config/env'
 import { MCPServerResources } from '@mastra/mcp'
 import { entitiesService } from '@/shared/data/entities-service'
 import { storytellerService } from '@/domains/storyteller/server'
@@ -111,7 +112,7 @@ export const mcpResources: MCPServerResources = {
   },
 
   getResourceContent: async ({ uri }) => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error(McpResourceAuthError.ApiKeyNotSet)
 
     const authResult = await validateApiKey(apiKey)

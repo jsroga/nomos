@@ -11,6 +11,7 @@
  * getMastraInstance() in this route (ordering contract).
  */
 
+import { resolveChatModelId } from '@/domains/storyteller/config/resolve-chat-model'
 import '@/domains/storyteller/core/io/mastra-runtime'
 import '@/domains/game-design/core/io/mastra-runtime'
 import '@/domains/loop-creator/core/io/mastra-runtime'
@@ -25,7 +26,6 @@ import { buildStorytellerRequestContext } from '@/domains/storyteller/ai/request
 import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 import {
   isKnownChatModel,
-  resolveChatModelId,
 } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'

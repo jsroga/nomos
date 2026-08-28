@@ -179,6 +179,7 @@
     "storyteller:repl": "npx tsx scripts/storyteller-repl.ts",
     "storyteller:controller": "npx tsx scripts/storyteller-controller-cli.ts",
     "openapi:generate": "npx tsx scripts/openapi/generate-openapi.ts",
+    "env:check": "node scripts/check-env-example.mjs",
     "openapi:check": "npx tsx scripts/openapi/generate-openapi.ts --check",
     "audit:cwv": "node scripts/audit-cwv.mjs",
     "marketing:glb-lite": "node scripts/marketing-glb-lite.mjs",

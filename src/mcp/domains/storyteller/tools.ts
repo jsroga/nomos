@@ -4,6 +4,7 @@
  * Tools for interacting with the storyteller domain - characters, episodes, beats, and chat.
  */
 
+import { env } from '@/shared/config/env'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import {
@@ -17,7 +18,7 @@ import { projectScope } from '@/shared/auth/project-scope'
 import type { MCPServiceContext } from '../../core/types'
 
 async function requireMcpServiceContext(): Promise<MCPServiceContext> {
-  const apiKey = process.env.MCP_API_KEY
+  const apiKey = env.MCP_API_KEY
   if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
   const authResult = await validateApiKey(apiKey)
   if (!authResult.valid) throw new Error('Invalid API key')

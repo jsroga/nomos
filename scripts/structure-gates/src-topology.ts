@@ -60,6 +60,7 @@ export const SHARED_TOP_LEVEL_TARGET = new Set([
   'auth',
   'canvas', // workspace module registry / settings
   'chat', // chat platform (moved from src/domains/chat — PLAN-V2 3.1 / D7)
+  'config', // the one place process.env is read — SPEC-12
   'data',
   'debug', // client perf overlays (CWV HUD, React Scan)
   'errors',

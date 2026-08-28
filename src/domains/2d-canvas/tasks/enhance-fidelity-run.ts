@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { logger, metadata } from '@trigger.dev/sdk/v3'
 import { put } from '@vercel/blob'
 import {
@@ -94,14 +95,14 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
   const timestamp = Date.now()
   const filename = `fidelity/${projectId}/${tileId}_enhanced_${timestamp}.png`
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!env.BLOB_READ_WRITE_TOKEN) {
     throw new Error('BLOB_READ_WRITE_TOKEN not configured')
   }
 
   const buffer = Buffer.from(enhancedImageBase64, BufferEncoding.Base64)
   const blob = await put(filename, buffer, {
     access: BlobAccess.Public,
-    token: process.env.BLOB_READ_WRITE_TOKEN,
+    token: env.BLOB_READ_WRITE_TOKEN,
     contentType: ContentType.Png,
   })
 

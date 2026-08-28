@@ -4,6 +4,7 @@
  * Tools for managing game entities across all domains.
  */
 
+import { env } from '@/shared/config/env'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { entitiesService } from '@/shared/data/entities-service'
@@ -31,7 +32,7 @@ const listEntities = createTool({
       .describe('Search term to filter by name or description (optional)'),
   }),
   execute: async (input) => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
@@ -58,7 +59,7 @@ const getEntity = createTool({
     entityId: z.string().uuid().describe('The entity ID to retrieve'),
   }),
   execute: async (input) => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
@@ -93,7 +94,7 @@ const createEntity = createTool({
     imageUrl: z.string().url().optional().describe('URL to an image for the entity (optional)'),
   }),
   execute: async (input) => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
@@ -129,7 +130,7 @@ const updateEntity = createTool({
     imageUrl: z.string().url().optional().describe('Updated image URL (optional)'),
   }),
   execute: async (input) => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)
@@ -152,7 +153,7 @@ const deleteEntity = createTool({
     entityId: z.string().uuid().describe('The entity ID to delete'),
   }),
   execute: async (input) => {
-    const apiKey = process.env.MCP_API_KEY
+    const apiKey = env.MCP_API_KEY
     if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
 
     const authResult = await validateApiKey(apiKey)

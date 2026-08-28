@@ -467,6 +467,25 @@ module.exports = [
     },
   },
 
+  // Server configuration is read once, in `@/shared/config/env`, and validated
+  // there. Scoped to `src/**`: tooling, evals and e2e run outside the app and
+  // legitimately read the environment before any schema could parse it.
+  {
+    files: ['src/**/*.{ts,tsx}', 'scripts/gate-fixtures/src/services/reads-bare-process-env.ts'],
+    ignores: [
+      // Dissolved by SPEC-13 Task 13 into the model gateway's registry.
+      // Migrating them here would be work thrown away, so they are named
+      // rather than silently skipped, and `processEnvReadsInModelConfig`
+      // tracks the count.
+      'src/shared/agent-kernel/models.ts',
+      'src/shared/agent-kernel/model-settings.ts',
+      'src/shared/data/constants/llm-providers.ts',
+      'src/domains/*/config/model-config.ts',
+      'src/domains/*/config/constants/model-config.ts',
+    ],
+    rules: { 'local/no-bare-process-env': 'error' },
+  },
+
   // `verifyProjectAccess` answers a boolean a caller can check and then ignore.
   // `projectScope` returns proof that must be carried, so it is the only way in.
   {

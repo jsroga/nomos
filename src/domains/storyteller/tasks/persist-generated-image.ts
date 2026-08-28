@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { put } from '@vercel/blob'
 import fs from 'fs'
 import path from 'path'
@@ -25,7 +26,7 @@ export async function persistGeneratedMedia(input: {
   bytes: Buffer
   contentType: ContentType
 }): Promise<string> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN
+  const token = env.BLOB_READ_WRITE_TOKEN
   if (token) {
     const blob = await put(`${input.projectId}/${input.filename}`, input.bytes, {
       access: BlobAccess.Public,

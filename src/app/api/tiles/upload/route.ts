@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import sharp from 'sharp'
@@ -51,13 +52,13 @@ export const POST = withRateLimit(
 
     const filename = `${DB_TABLE.TILES}/${scope.projectId}/${x}_${y}_${Date.now()}.png`
 
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    if (!env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json({ error: API_ERROR.BLOB_TOKEN_NOT_CONFIGURED }, { status: 500 })
     }
 
     const blob = await put(filename, resizedBuffer, {
       access: BlobAccess.Public,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      token: env.BLOB_READ_WRITE_TOKEN,
       contentType: ContentType.Png,
     })
 
