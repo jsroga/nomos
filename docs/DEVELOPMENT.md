@@ -13,7 +13,23 @@ Required vs optional is read off the call sites, not judged: a bare use or an ex
 
 `NEXT_PUBLIC_*` values must stay literal member expressions in `env.client.ts` — Next substitutes them at build time only where the source reads `process.env.NEXT_PUBLIC_X` verbatim, so a loop or a helper ships `undefined` to the browser.
 
-`env.ts` imports `server-only`. A module that a client component can reach must not import it: split the server-reading function out, as `config/resolve-chat-model.ts` does for the chat model catalog.
+`env.ts` deliberately does **not** import `server-only`: `shared/persistence/client.ts` reads `DATABASE_URL`, and the OpenAPI generator loads that module under `tsx`, where the marker throws. The production build is what enforces the boundary — it fails on a client component reaching a server module and prints the import trace. A module that reads server configuration and is reachable from a client component should still split, as `config/resolve-chat-model.ts` does for the chat model catalog.
+
+### Verifying that public values are still inlined
+
+Two halves, because only one of them can be a unit test.
+
+`src/shared/config/__tests__/env-client.test.ts` protects the *precondition* — every read is a literal member expression, nothing is computed or looped. That is what a refactor would break.
+
+The *outcome* needs a build:
+
+```bash
+npm run build
+grep -rl "$(grep '^NEXT_PUBLIC_SUPABASE_URL=' .env.local | cut -d= -f2-)" .next/static/chunks/   # ≥ 1
+grep -rl 'process\.env\.NEXT_PUBLIC_SUPABASE_URL' .next/static/chunks/                          # 0
+```
+
+The value must appear in a client chunk and the expression must not survive. Run it after changing `env.client.ts`.
 
 ## Test tiers
 

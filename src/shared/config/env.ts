@@ -77,12 +77,23 @@ const serverEnvSchema = z.object({
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>
 
-function parseServerEnv(): ServerEnv {
-  const parsed = serverEnvSchema.safeParse(process.env)
+/**
+ * Parse a source against a schema, reporting **every** problem at once.
+ *
+ * Separated from the schema so its failure behaviour is testable: today no
+ * server key is required, so parsing the real environment cannot fail, and a
+ * test against `serverEnvSchema` would assert nothing. This is the part worth
+ * proving — that the first missing key does not hide the rest.
+ */
+export function parseEnv<TSchema extends z.ZodType>(
+  schema: TSchema,
+  source: unknown
+): z.infer<TSchema> {
+  const parsed = schema.safeParse(source)
   if (parsed.success) return parsed.data
 
-  const missing = parsed.error.issues.map(issue => `  ${issue.path.join('.')}: ${issue.message}`)
-  throw new Error(`${ENV_PARSE_FAILED}\n${missing.join('\n')}`)
+  const problems = parsed.error.issues.map(issue => `  ${issue.path.join('.')}: ${issue.message}`)
+  throw new Error(`${ENV_PARSE_FAILED}\n${problems.join('\n')}`)
 }
 
-export const env: ServerEnv = parseServerEnv()
+export const env: ServerEnv = parseEnv(serverEnvSchema, process.env)

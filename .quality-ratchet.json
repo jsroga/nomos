@@ -16,7 +16,7 @@
     "directDbClientImporters": "grep -rln \"from '@/db/client'|from '@/db'\" src --include='*.ts' --include='*.tsx' | grep -v __tests__ | grep -v shared/persistence | wc -l",
     "serviceRoleClientSites": "grep -rln 'createSupabaseServiceClient()|supabaseAdmin' src --include='*.ts' | grep -v __tests__ | grep -v shared/persistence | wc -l   # each must move to serviceRoleClient(reason)",
     "bareProcessEnvReads": "npx vitest run scripts/__tests__/process-env-inventory.test.ts   # SPEC-12 burns this to 0",
-    "processEnvReadsInModelConfig": "same test   # SPEC-13 Task 13 dissolves these files; not SPEC-12's work",
+    "processEnvReadsInModelConfig": "same test   # BLOCKED 2026-08-28 on SPEC-13 Task 13, which dissolves these six files into the gateway registry. Named in eslint.config.js ignores, not silently skipped. Not SPEC-12 work.",
     "bareProjectIdExports": "npx eslint src 2>&1 | grep -c 'no-bare-project-id-param'   # reached 0; the rule is now 'error', so this stays 0 by construction",
     "systemScopeSites": "grep -rn 'systemScope(' src --include='*.ts' | grep -v __tests__ | grep -v project-scope.ts | wc -l   # visible, countable RLS-free escapes"
   }
