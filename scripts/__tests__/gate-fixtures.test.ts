@@ -35,6 +35,12 @@ const FIXTURES: {
     minimumErrors: 1,
   },
   {
+    // A paid model call goes through the gateway, the only place that costs it.
+    file: 'scripts/gate-fixtures/src/services/imports-provider-sdk.ts',
+    ruleId: 'no-restricted-imports',
+    minimumErrors: 1,
+  },
+  {
     // Server configuration is read once, in one module, and validated there.
     file: 'scripts/gate-fixtures/src/services/reads-bare-process-env.ts',
     ruleId: 'local/no-bare-process-env',

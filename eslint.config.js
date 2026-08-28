@@ -7,6 +7,7 @@ const reactCompiler = require('eslint-plugin-react-compiler')
 const prettier = require('eslint-config-prettier')
 const unusedImports = require('eslint-plugin-unused-imports')
 const localRules = require('./eslint-rules')
+const providerSdkExemptions = require('./eslint-rules/provider-sdk-exemptions')
 const codeMetricsLimits = require('./scripts/code-metrics-limits.cjs')
 
 const strictTypeScriptRules = typescript.configs.strict.rules
@@ -81,6 +82,53 @@ const DOMAIN_LEGACY_RESTRICTED_PATTERNS = [
   },
 ]
 
+/**
+ * Gate A2 — a paid model call goes through `@/shared/ai/gateway`, the only
+ * place that knows what it cost.
+ *
+ * Spread into every `src`-wide restricted-imports block rather than declared in
+ * its own. ESLint flat config *replaces* a rule's options when a later config
+ * matches the same file, so a standalone block placed before the domain
+ * boundaries and the auth zone would be silently dropped for most of `src` —
+ * the exact failure mode action 8 calls the flat-config merge bug.
+ */
+const PROVIDER_SDK_MESSAGE =
+  'Call models through @/shared/ai/gateway (complete / completeStructured / embed). ' +
+  'A direct provider import is a call nobody can cost. Rule: A2 · SPEC-13.'
+
+/**
+ * Exact module names, via `paths` rather than `patterns`.
+ *
+ * `patterns.group` matches gitignore-style, so a bare `'ai'` matches any path
+ * *segment* named `ai` — it flagged 499 files including every
+ * `@/shared/ai/**` import. `paths` compares the specifier exactly.
+ *
+ * From `ai` only the functions that actually spend are banned. The package
+ * also exports utilities — `generateId`, `getToolName`, `isToolUIPart` — and
+ * the chat UI uses them without ever reaching a provider; banning the whole
+ * module called those "a call nobody can cost", which they are not.
+ */
+const SPENDING_AI_EXPORTS = [
+  'generateText',
+  'generateObject',
+  'streamText',
+  'streamObject',
+  'embed',
+  'embedMany',
+]
+
+const PROVIDER_SDK_RESTRICTED_PATHS = [
+  { name: 'ai', importNames: SPENDING_AI_EXPORTS, message: PROVIDER_SDK_MESSAGE },
+  { name: 'openai', message: PROVIDER_SDK_MESSAGE },
+  { name: 'replicate', message: PROVIDER_SDK_MESSAGE },
+]
+
+/** Scoped packages genuinely need a glob. */
+const PROVIDER_SDK_RESTRICTED_PATTERNS = [
+  // `@ai-sdk/react` is the client chat hook; it reaches a route, not a provider.
+  { group: ['@ai-sdk/*', '!@ai-sdk/react'], message: PROVIDER_SDK_MESSAGE },
+]
+
 const GLOBAL_LEGACY_RESTRICTED_PATTERNS = [
   {
     group: ['@/agent-core/*', '@/agent-core'],
@@ -141,8 +189,10 @@ const domainBoundaryConfigs = DOMAIN_MODULES.map(domain => ({
         patterns: [
           ...DOMAIN_LEGACY_RESTRICTED_PATTERNS,
           ...GLOBAL_LEGACY_RESTRICTED_PATTERNS,
+          ...PROVIDER_SDK_RESTRICTED_PATTERNS,
           ...crossDomainImportPatterns(domain),
         ],
+        paths: PROVIDER_SDK_RESTRICTED_PATHS,
       },
     ],
   },
@@ -427,7 +477,8 @@ module.exports = [
       'no-restricted-imports': [
         'error',
         {
-          patterns: GLOBAL_LEGACY_RESTRICTED_PATTERNS,
+          paths: PROVIDER_SDK_RESTRICTED_PATHS,
+          patterns: [...GLOBAL_LEGACY_RESTRICTED_PATTERNS, ...PROVIDER_SDK_RESTRICTED_PATTERNS],
         },
       ],
     },
@@ -498,7 +549,9 @@ module.exports = [
       'no-restricted-imports': [
         'error',
         {
+          paths: PROVIDER_SDK_RESTRICTED_PATHS,
           patterns: [
+            ...PROVIDER_SDK_RESTRICTED_PATTERNS,
             {
               group: ['@/shared/auth/project-access'],
               message:
@@ -518,7 +571,9 @@ module.exports = [
       'no-restricted-imports': [
         'error',
         {
+          paths: PROVIDER_SDK_RESTRICTED_PATHS,
           patterns: [
+            ...PROVIDER_SDK_RESTRICTED_PATTERNS,
             {
               group: ['@/domains/*', '@/domains'],
               message: 'shared/ MAY NOT import domains — dependency inversion required.',
@@ -577,6 +632,57 @@ module.exports = [
           name: 'encodeURIComponent',
           message:
             'Use encodePathSegment / buildUrl / appendQueryParams from @/shared/data/url-builder instead of raw encodeURIComponent.',
+        },
+      ],
+    },
+  },
+  // Gate A2 exemptions. A trailing block, because the provider patterns are
+  // merged into several earlier configs and flat config replaces rather than
+  // merges — so an `ignores` on any one of them would not cover the rest.
+  //
+  // The shared/ boundary patterns are restated here: dropping them would turn
+  // this exemption into a hole in a different rule.
+  {
+    files: [...providerSdkExemptions.NEVER_BILLS, ...providerSdkExemptions.SHARED_REMAINDER],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/domains/*', '@/domains'],
+              message: 'shared/ MAY NOT import domains — dependency inversion required.',
+            },
+            {
+              group: ['@/app/*', '@/app'],
+              message: 'shared/ MAY NOT import app routes — dependency inversion required.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // The fixture proving gate A2 is on. Last, so nothing overrides it.
+  {
+    files: ['scripts/gate-fixtures/src/services/imports-provider-sdk.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { paths: PROVIDER_SDK_RESTRICTED_PATHS }],
+    },
+  },
+  // Named remainder of the gateway migration, outside shared/. Each is a real
+  // gap rather than a decision, and `providerSdkImportsOutsideGateway` counts
+  // them. The domain patterns are restated so exempting the provider rule does
+  // not open a hole in the boundary rules.
+  {
+    files: providerSdkExemptions.DOMAIN_REMAINDER,
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            ...DOMAIN_LEGACY_RESTRICTED_PATTERNS,
+            ...GLOBAL_LEGACY_RESTRICTED_PATTERNS,
+          ],
         },
       ],
     },

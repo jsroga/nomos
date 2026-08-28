@@ -140,3 +140,52 @@ npx eslint src 2>&1 | grep -c 'no-bare-project-id-param'   # 0; the rule is 'err
 grep -rn 'verifyProjectAccess' src --include='*.ts' | grep -v src/shared/auth   # tests only
 npx vitest run scripts/__tests__/gate-fixtures.test.ts     # the rule still fails what it must
 ```
+
+---
+
+## ADR 0003 — One model gateway, and every call costed
+
+**Status:** accepted, 2026-08-28 · **Supersedes:** nothing · **Related:** [ADR 0002](#adr-0002--projectscope-tenancy-as-a-type)
+
+### Context
+
+Not one call site captured the `usage` object providers return. Everything the codebase called "tokens" was an estimate, in a single `console.log` of a context-window guess. There was no per-project, per-user or per-feature attribution, no budget, no anomaly detection, and no way to answer *"did that prompt change make generation three times more expensive?"* except by reading the invoice a month later.
+
+For a product whose unit economics **are** model spend, that was the largest missing instrument. It also compounded with the tenancy findings: `entities/resolve` triggers LLM summary generation, and had its auth hole stayed open, nothing would have shown the abuse until the bill arrived. Cost instrumentation is a security control here, not only a finance one.
+
+### Decision
+
+Every paid call goes through `@/shared/ai/gateway`, which writes one `llm_calls` row per call: tokens, cost, latency, feature, model, and outcome.
+
+**The gateway takes a `ProjectScope`, not a project id.** ADR 0002's guarantee extends to spend — you cannot bill a project you have not proved you own.
+
+**Cost is computed from a committed price table, never fetched.** `PROVIDER_PRICING` is versioned by `effectiveFrom`, so a historical row keeps the price that applied when it ran. An unknown model **throws**: a silent zero reads as "this was free", which is worse than no instrumentation.
+
+**Recording never fails the call.** Writes are fire-and-forget with the error caught and counted. A metering outage must not take generation down, and that trade is only defensible in this direction.
+
+**Retries live in the gateway; the SDK's own retry is off.** A retried call costs twice, so each attempt records separately. One merged result would hide the second charge.
+
+**Eval judges do not bill.** Scorers run against a golden set, not a tenant's work. Routing them through the gateway would enter judge calls as production spend, inflating per-project totals and corrupting the table the eval cost budget reads. They construct their own model, the A2 gate exempts them, and a test asserts they import no part of the gateway — because routing them through it would look like tidying up.
+
+**`llm_calls` has no foreign key to `projects`.** A deleted project keeps its cost history, or last month's spend changes when someone tidies up. No partitioning or retention at current volume; revisit both past ~1M rows.
+
+**Frameworks stay; only model construction moves.** Mastra keeps its tool-calling loop. Rewriting 115 call sites into a bespoke abstraction is a different and worse project.
+
+**LangChain is removed.** Twelve of its sixteen imports were message classes used as data, so the dependency was carrying a struct; only four constructed a model.
+
+### Consequences
+
+**Good.** Spend is answerable — `npm run spend -- --days 7`, by project, feature and model. A prompt change's cost is measurable rather than guessed. `outcome: schema_fail` gives action 18 the alias-retirement signal it needs.
+
+**Bad.** One more module every model call passes through, and a price table that has to be maintained by hand as providers change rates.
+
+**Accepted risk.** The migration is partial. Twelve direct provider imports remain, gate A2 is **report-only** at that baseline, and the counts are in `.quality-ratchet.json`. Streaming, embeddings and the Mastra agents are not yet metered, so `llm_calls` currently under-reports total spend — it is not yet a complete picture, and should not be read as one until `providerSdkImportsOutsideGateway` reaches 0.
+
+### Verification
+
+```bash
+npx eslint src 2>&1 | grep -c 'Call models through'   # ≤ providerSdkImportsOutsideGateway
+grep -rn '@langchain' src --include='*.ts'            # 0
+npx vitest run src/shared/ai/gateway
+npm run spend -- --days 7
+```

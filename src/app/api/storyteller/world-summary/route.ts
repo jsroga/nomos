@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     const bible = buildMergedBibleFromProject(project)
     const cast = await fetchProjectCast(projectId)
     const { summary, fallbackPrompt } = await buildWorldSummaryContent(scope, bible, cast)
-    const worldGenPrompt = await generateWorldGenPrompt(bible, fallbackPrompt)
+    const worldGenPrompt = await generateWorldGenPrompt(bible, fallbackPrompt, scope)
 
     return NextResponse.json({
       summarize: summary,

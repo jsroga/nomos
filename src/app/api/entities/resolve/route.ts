@@ -25,6 +25,13 @@ import {
 } from './_lib/entity-resolve-enrichment'
 import { parseEntityResolveQuery } from './_lib/entity-resolve-query'
 
+/**
+ * This route runs inference, so it needs longer than the platform default.
+ * `GATEWAY_TIMEOUT_MS` is 120s; this leaves headroom above it.
+ */
+export const maxDuration = 150
+
+
 export async function GET(request: NextRequest) {
   try {
     const parsed = await parseEntityResolveQuery(request)

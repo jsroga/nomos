@@ -12,6 +12,13 @@ import {
   generateCharacterMissingFields,
 } from '@/domains/storyteller/services/generate-character-fields-service'
 
+/**
+ * This route runs inference, so it needs longer than the platform default.
+ * `GATEWAY_TIMEOUT_MS` is 120s; this leaves headroom above it.
+ */
+export const maxDuration = 150
+
+
 const RATE_LIMIT_MAX_REQUESTS = 10
 const RATE_LIMIT_WINDOW_MS = 60_000
 
