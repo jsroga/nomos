@@ -40,8 +40,4 @@ export enum SectionLabel {
 export const SECTION_NOT_HYDRATED_REASON = {
   Moodboard:
     'No UI consumer reads `moodboard` off plan state as of 2026-08-27; MoodboardImagesSection reads `moodImages`, which does hydrate.',
-  Items:
-    'DEFECT, not a decision: BibleItems.tsx reads storyPlan.items but the field never hydrates. Same shape as the plot-twist bug. Flip to true and add a regression test.',
-  Events:
-    'DEFECT, not a decision: BibleEvents.tsx reads storyPlan.events but the field never hydrates.',
 } as const

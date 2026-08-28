@@ -49,8 +49,12 @@ export interface SectionSpec {
    * from the section key. `cast` hydrates as `keyCharacters`.
    */
   readonly hydratesAs?: string
-  /** Extra wire spellings that are also bible-owned. Retired on evidence. */
-  readonly aliases?: readonly string[]
+  /**
+   * Extra wire spellings that are also bible-owned. Each says whether it
+   * carries into UI state on its own — `moodSoundtrack` is a separate field of
+   * the soundtracks section, not another name for it. Retired on evidence.
+   */
+  readonly aliases?: Readonly<Record<string, { hydrates: boolean }>>
   readonly label: string
 }
 
@@ -124,7 +128,7 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Replace,
     hydrates: true,
-    aliases: [SoundtrackFieldAlias.MoodSoundtrack],
+    aliases: { [SoundtrackFieldAlias.MoodSoundtrack]: { hydrates: true } },
     label: SectionLabel.Soundtracks,
   },
   [BibleSection.MOODBOARD]: {
@@ -137,15 +141,13 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   [BibleSection.ITEMS]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Append,
-    hydrates: false,
-    why: SECTION_NOT_HYDRATED_REASON.Items,
+    hydrates: true,
     label: SectionLabel.Items,
   },
   [BibleSection.EVENTS]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Append,
-    hydrates: false,
-    why: SECTION_NOT_HYDRATED_REASON.Events,
+    hydrates: true,
     label: SectionLabel.Events,
   },
 }
@@ -162,7 +164,7 @@ function sectionsWhere(predicate: (spec: SectionSpec) => boolean): WorldBibleSec
  */
 export function bibleOwnedPlanFields(): string[] {
   const owned = sectionsWhere(spec => spec.owner === SectionOwner.Bible)
-  const aliases = owned.flatMap(section => [...(SECTION_REGISTRY[section].aliases ?? [])])
+  const aliases = owned.flatMap(section => Object.keys(SECTION_REGISTRY[section].aliases ?? {}))
   return [...owned, ...aliases, ...Object.keys(WORLD_SCALAR_FIELDS)]
 }
 
@@ -171,10 +173,15 @@ export function hydrationPlanFields(): string[] {
   const sections = sectionsWhere(spec => spec.hydrates).map(
     section => SECTION_REGISTRY[section].hydratesAs ?? section
   )
+  const aliases = WORLD_BIBLE_SECTIONS.flatMap(section =>
+    Object.entries(SECTION_REGISTRY[section].aliases ?? {})
+      .filter(([, alias]) => alias.hydrates)
+      .map(([field]) => field)
+  )
   const scalars = Object.entries(WORLD_SCALAR_FIELDS)
     .filter(([, spec]) => spec.hydrates)
     .map(([field]) => field)
-  return [...sections, ...scalars]
+  return [...sections, ...aliases, ...scalars]
 }
 
 /**

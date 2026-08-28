@@ -38,7 +38,9 @@ describe('SECTION_REGISTRY', () => {
   it('never declares an alias that is itself a section key', () => {
     const keys = new Set<string>(Object.keys(SECTION_REGISTRY))
     const collisions = Object.entries(SECTION_REGISTRY).flatMap(([section, spec]) =>
-      (spec.aliases ?? []).filter(alias => keys.has(alias)).map(alias => `${section} → ${alias}`)
+      Object.keys(spec.aliases ?? {})
+        .filter(alias => keys.has(alias))
+        .map(alias => `${section} → ${alias}`)
     )
 
     expect(collisions).toEqual([])

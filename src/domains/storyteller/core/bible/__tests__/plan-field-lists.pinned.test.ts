@@ -44,6 +44,12 @@ const BIBLE_OWNED_PINNED = [
   'executiveSummary',
 ]
 
+/**
+ * Three entries were added after this list was first pinned: `items`, `events`
+ * and `moodSoundtrack`. Each is a field a panel reads off plan state that no
+ * hydration path carried there — the defects SPEC-11 Task 3a found, fixed in
+ * `hydration-defects.test.ts`. The other sixteen are unchanged.
+ */
 const HYDRATION_PINNED = [
   'soundtracks',
   'worldRules',
@@ -61,6 +67,9 @@ const HYDRATION_PINNED = [
   'moodImages',
   'executiveSummary',
   'episodeRoadmap',
+  'items',
+  'events',
+  'moodSoundtrack',
 ]
 
 const STORY_PLAN_MERGE_PINNED = [
