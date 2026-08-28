@@ -10,6 +10,8 @@
  * bible). Orchestration lives in agents/workflows/beat-draft-workflow.ts.
  */
 
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { Memory } from '@mastra/memory'
@@ -131,14 +133,14 @@ export class GrrmAuthorAgent {
       async span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
         // Nest the generate span under this operation span explicitly (real span id).
-        const response = await this.agent.generate(prompt, {
+        const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => this.agent.generate(prompt, {
           toolChoice: options?.toolChoice || AgentModelRole.Auto,
           maxSteps: options?.maxSteps ?? 10,
           tracingOptions: {
             traceId: id,
             ...(span.spanId ? { parentSpanId: span.spanId } : {}),
           },
-        })
+        }))
         return response.text
       },
       { goal, context }

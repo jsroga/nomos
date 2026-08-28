@@ -179,9 +179,11 @@ Every paid call goes through `@/shared/ai/gateway`, which writes one `llm_calls`
 
 **Bad.** One more module every model call passes through, and a price table that has to be maintained by hand as providers change rates.
 
-**Accepted risk.** The migration is partial, and `llm_calls` therefore **under-reports total spend**. Direct completions, embeddings and the chat stream are metered; work inside a Mastra `agent.generate()` — beat planning, critics, the muse — is not, because those agents are called from sites that hold no `ProjectScope` and threading one through the agent layer is a migration in its own right. Attributing rows to the wrong project would be worse than having none.
+**The scope travels in `AsyncLocalStorage`, not in signatures.** Mastra agents are reached from twenty call sites holding no `ProjectScope`, but the scope is constant for a request — threading it would move a value that never changes. A boundary that has proved the project opens a context; the meter reads it.
 
-Six files still reach a provider directly, each named with its reason in `eslint-rules/provider-sdk-exemptions.js` and counted by `providerSdkImportsOutsideGateway`. **Read `npm run spend` as a floor, not a total,** until that reaches 0 and the Mastra agents are metered.
+The rule that makes that safe: **no context means no row.** A model call outside a billing boundary is left unrecorded rather than attributed to a guess, because a row against the wrong project is worse than a missing one.
+
+**Accepted risk.** `llm_calls` is a floor, not a guaranteed total. Six files still reach a provider directly — each named with its reason in `eslint-rules/provider-sdk-exemptions.js` and counted by `providerSdkImportsOutsideGateway` — and any call made outside a boundary records nothing by design. Reconcile against a provider dashboard before treating a total as exact.
 
 ### Verification
 

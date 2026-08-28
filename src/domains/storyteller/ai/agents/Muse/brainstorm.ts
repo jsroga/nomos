@@ -1,3 +1,5 @@
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import '@/shared/data/server-guard'
 import { z } from 'zod'
 import {
@@ -78,9 +80,9 @@ Produce 3-5 wild ideas as JSON. Each idea: hook (WHO does WHAT irreversible thin
 }
 
 const defaultMuseGenerate: MuseGenerate = async prompt => {
-  const response = await museAgent.generate(prompt, {
+  const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => museAgent.generate(prompt, {
     structuredOutput: { schema: WildIdeaBatchSchema },
-  })
+  }))
   return response.object
 }
 

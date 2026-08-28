@@ -3,6 +3,7 @@
  * Replaces LangGraph StateGraph while preserving streamLoopCreator API.
  */
 
+import { withGatewayContext } from '@/shared/ai/gateway/call-context'
 import { AIMessage, ChatMessageRole } from '@/shared/chat/core/message'
 import { LoopCreatorState, NextAgent } from './state'
 import { supervisorAgent } from '../../ai/agents/supervisor'
@@ -220,6 +221,17 @@ function emitNodeOutput(
 }
 
 export async function streamLoopCreator(
+  initialState: LoopCreatorState,
+  config: { configurable: { thread_id: string } },
+  onEvent: (event: StreamEvent) => void,
+): Promise<LoopCreatorState> {
+  // Every specialist this run reaches bills to the project the route verified.
+  return withGatewayContext({ scope: initialState.scope }, () =>
+    runLoopCreatorGraph(initialState, config, onEvent)
+  )
+}
+
+async function runLoopCreatorGraph(
   initialState: LoopCreatorState,
   _config: { configurable: { thread_id: string } },
   onEvent: (event: StreamEvent) => void,

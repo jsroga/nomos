@@ -1,3 +1,4 @@
+import { withGatewayContext } from '@/shared/ai/gateway/call-context'
 import {
   USAGE_COMPLETION_FIELDS,
   USAGE_PROMPT_FIELDS,
@@ -47,6 +48,16 @@ interface StreamRequestInput {
 }
 
 export async function runStorytellerStream(input: StreamRequestInput): Promise<Response> {
+  // Everything downstream — the agent, its tools, the services they reach —
+  // bills to this project. Established once here rather than threaded through
+  // twenty signatures; see shared/ai/gateway/call-context.ts.
+  if (!input.scope) return runStorytellerStreamInner(input)
+  return withGatewayContext({ scope: input.scope, traceId: input.traceId }, () =>
+    runStorytellerStreamInner(input)
+  )
+}
+
+async function runStorytellerStreamInner(input: StreamRequestInput): Promise<Response> {
   const requestedModel =
     typeof input.modelName === 'string' && input.modelName.trim()
       ? resolveChatModelId(input.modelName)

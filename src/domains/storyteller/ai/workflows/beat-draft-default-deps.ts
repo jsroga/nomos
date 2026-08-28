@@ -1,3 +1,5 @@
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import {
   isValidationError,
   noopObserve,
@@ -118,12 +120,12 @@ async function invokeTool<TInput, TOutput>(
 
 async function runCritic(critic: Agent, name: string, prompt: string): Promise<string> {
   try {
-    const response = await critic.generate(prompt, {
+    const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => critic.generate(prompt, {
       structuredOutput: {
         schema: CriticReportSchema,
         errorStrategy: BeatDraftStructuredOutputErrorStrategy.Warn,
       },
-    })
+    }))
     const parsed = CriticReportSchema.safeParse(response.object)
     if (!parsed.success) {
       return `## ${name} findings\n${response.text || BEAT_DRAFT_NO_FINDINGS}`
@@ -177,9 +179,9 @@ ${ctx.characters.length > 0 ? `Characters available: ${ctx.characters.join(BEAT_
 ${sparksBlock ?? ''}
 Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.${retryBlock}`
 
-    const response = await statelessBeatPlanner.generate(prompt, {
+    const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => statelessBeatPlanner.generate(prompt, {
       structuredOutput: { schema: BeatPlanSchema },
-    })
+    }))
     const plan = BeatPlanSchema.safeParse(response.object)
     if (!plan.success) {
       throw new Error(`Beat planner returned an invalid plan: ${plan.error.message}`)

@@ -1,3 +1,5 @@
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { Agent } from '@mastra/core/agent'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { registerCorePrompts, registerGameDesignPrompts } from '@/shared/agent-kernel/prompts/registry'
@@ -153,7 +155,7 @@ export class GameDesignAgent {
       GameDesignAgentSpan.Run,
       async () => {
         const prompt = `${GameDesignAgentPromptCopy.GoalPrefix}${goal}${NewlineSeparator.Double}${GameDesignAgentPromptCopy.ContextPrefix}${context}`
-        const response = await this.agent.generate(prompt)
+        const response = await meteredCall(LlmFeature.GameDesign, () => this.agent.generate(prompt))
         return response.text
       },
       { goal, context }
@@ -196,7 +198,7 @@ export class GameDesignAgent {
 
           prompt += `${GameDesignAgentPromptCopy.GoalCurrentPrefix}${goal}${NewlineSeparator.Double}${GameDesignAgentPromptCopy.ContextPrefix}${enrichedContext}${NewlineSeparator.Double}${GameDesignAgentPromptCopy.AnalyzeFooter}`
 
-          const response = await this.agent.generate(prompt)
+          const response = await meteredCall(LlmFeature.GameDesign, () => this.agent.generate(prompt))
           return parseGameDesignAgentResponse(response.text)
         } catch (error: unknown) {
           console.error(GameDesignAgentCopy.RunWithContextFailed, error)

@@ -65,3 +65,7 @@ export const PROVIDER_ERROR_MARKER = {
 
 /** Failures worth retrying. A refusal or a schema failure will not improve. */
 export const RETRYABLE_OUTCOMES = [LlmOutcome.Timeout, LlmOutcome.RateLimit] as const
+
+/** Token field names on a Mastra agent result. Same shape as the AI SDK's. */
+export const AGENT_USAGE_PROMPT_FIELDS = ['inputTokens', 'promptTokens'] as const
+export const AGENT_USAGE_COMPLETION_FIELDS = ['outputTokens', 'completionTokens'] as const

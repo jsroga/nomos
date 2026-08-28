@@ -1,3 +1,4 @@
+import { withGatewayContext } from '@/shared/ai/gateway/call-context'
 import { env } from '@/shared/config/env'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -104,14 +105,16 @@ export async function POST(req: NextRequest) {
     const { workflow } = await getWorkflow()
 
     // Start the workflow
-    const result = await workflow.run({
-      projectId: scope.projectId,
-      genre,
-      loopType,
-      targetAudience,
-      theme,
-      referenceGames,
-    })
+    const result = await withGatewayContext({ scope }, () =>
+      workflow.run({
+        projectId: scope.projectId,
+        genre,
+        loopType,
+        targetAudience,
+        theme,
+        referenceGames,
+      })
+    )
 
     console.log(`[Game Design Workflow] Started for project ${projectId}, genre: ${genre}`)
 

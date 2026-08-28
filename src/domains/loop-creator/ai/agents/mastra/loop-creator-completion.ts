@@ -12,11 +12,12 @@
  * history → the prompt messages (or `context` when a fixed `userPrompt` leads).
  */
 
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import '@/shared/data/server-guard'
 import type { BaseMessage } from '@/shared/chat/core/message'
 import type { ProjectScope } from '@/shared/auth/project-scope'
 import { complete } from '@/shared/ai/gateway'
-import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { v4 as uuidv4 } from 'uuid'
 import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
@@ -105,10 +106,10 @@ export async function runLoopCreatorMastraCompletion(
         ? `${params.systemPrompt}\n\n${JSON_ONLY_DIRECTIVE}`
         : params.systemPrompt
 
-      const response = await agent.generate(prompt, {
+      const response = await meteredCall(LlmFeature.LoopCreator, () => agent.generate(prompt, {
         instructions,
         modelSettings: { temperature: params.temperature },
-      })
+      }))
 
       return response.text
     },
