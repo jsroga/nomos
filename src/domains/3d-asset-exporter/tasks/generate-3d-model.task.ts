@@ -1,35 +1,21 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { ModelProvider } from '@/shared/data/constants/protocol'
+import { generate3dModelPayloadSchema } from './constants/generate-3d-model-payload'
 import { prepareImageUrl } from './lib/prepare-image-url'
 import { runHyper3dGeneration } from './lib/run-hyper3d-generation'
 import { runMeshyImageTo3d } from './lib/run-meshy-image-to-3d'
-import {
-  MeshyGenerationMetadataKey,
-  MeshyGenerationTopology,
-} from './constants/meshy-generation-wire'
+import { MeshyGenerationMetadataKey } from './constants/meshy-generation-wire'
 
-function resolveMeshyTopology(
-  topology: 'quad' | 'triangle' | undefined,
-): MeshyGenerationTopology | undefined {
-  if (topology === 'quad') return MeshyGenerationTopology.Quad
-  if (topology === 'triangle') return MeshyGenerationTopology.Triangle
-  return undefined
-}
-
-export const generate3DModelTask = task({
+export const generate3DModelTask = defineOwnedTask({
   id: 'generate-3d-model',
+  schema: generate3dModelPayloadSchema,
+  queue: JobQueue.Meshy,
   maxDuration: 1800, // 30 minutes
   retry: {
     maxAttempts: 2,
   },
-  run: async (payload: {
-    projectId: string
-    assetId: string
-    imageUrl: string
-    provider: 'meshy' | 'hyper3d'
-    apiKey: string
-    targetPolycount?: number
-    topology?: 'quad' | 'triangle'
-  }) => {
+  run: async payload => {
     const { assetId, imageUrl, provider, apiKey, targetPolycount, topology } = payload
 
     logger.info(`Generating 3D model for asset ${assetId} using ${provider}`)
@@ -37,13 +23,13 @@ export const generate3DModelTask = task({
     const finalImageUrl = await prepareImageUrl(imageUrl, assetId)
     await metadata.set(MeshyGenerationMetadataKey.Progress, 0)
 
-    if (provider === 'meshy') {
+    if (provider === ModelProvider.Meshy) {
       return runMeshyImageTo3d({
         assetId,
         finalImageUrl,
         apiKey,
         targetPolycount,
-        topology: resolveMeshyTopology(topology),
+        topology,
         onProgress: async progress => {
           await metadata.set(MeshyGenerationMetadataKey.Progress, progress)
         },

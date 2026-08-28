@@ -1,7 +1,7 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import { aiProviderConfigFromRecord } from '@/shared/ai/ai-provider-config'
-import type { GenerateTilePayload } from './constants/generate-tile'
-import { packedCropFromContext } from './constants/generate-tile'
+import { generateTilePayloadSchema, packedCropFromContext } from './constants/generate-tile'
 import { PackedCropError } from './constants/generate-tile-output'
 import {
   assembleServerContextImage,
@@ -23,13 +23,15 @@ enum GenerateTileCoordKey {
   TileY = 'tile_y',
 }
 
-export const generateTileTask = task({
+export const generateTileTask = defineOwnedTask({
   id: 'generate-tile',
+  schema: generateTilePayloadSchema,
+  queue: JobQueue.ImageProvider,
   maxDuration: 300,
   retry: {
     maxAttempts: 3,
   },
-  run: async (payload: GenerateTilePayload) =>
+  run: async payload =>
     runWithTileProgress(async () => {
     const {
       projectId,
