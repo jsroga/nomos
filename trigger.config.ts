@@ -1,4 +1,4 @@
-import { defineConfig } from '@trigger.dev/sdk/v3'
+import { defineConfig } from '@trigger.dev/sdk'
 import { ffmpeg, syncEnvVars } from '@trigger.dev/build/extensions/core'
 import { config } from 'dotenv'
 import {

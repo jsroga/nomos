@@ -20,6 +20,19 @@ const FIXTURES: {
     minimumErrors: 2,
   },
   {
+    // A background task is defined in one shape, and that shape requires a
+    // payload schema, a queue and a submission key.
+    file: 'scripts/gate-fixtures/raw-trigger-task.ts',
+    ruleId: 'local/no-raw-trigger-task',
+    minimumErrors: 2,
+  },
+  {
+    // CLAUDE.md mandates the v4 entrypoint; static and dynamic imports alike.
+    file: 'scripts/gate-fixtures/imports-trigger-sdk-v3.ts',
+    ruleId: 'local/no-raw-trigger-task',
+    minimumErrors: 2,
+  },
+  {
     file: 'scripts/gate-fixtures/proxy-imports-node-only.ts',
     ruleId: 'no-restricted-imports',
     minimumErrors: 2,

@@ -342,6 +342,7 @@ module.exports = [
       'local/trigger-runs-ownership': 'error',
       'local/no-discarded-auth-context': 'error',
       'local/no-bare-project-id-param': 'error',
+      'local/no-raw-trigger-task': 'error',
       '@typescript-eslint/no-require-imports': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',

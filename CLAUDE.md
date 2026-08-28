@@ -93,7 +93,8 @@ MCP reference: [docs/MCP_API.md](docs/MCP_API.md).
 
 ## Trigger.dev (v4)
 
-- Use `@trigger.dev/sdk` — **never** `client.defineJob`.
+- Use `@trigger.dev/sdk` — **never** `client.defineJob`, never the `/v3` subpath.
+- **Every background task is defined by `defineOwnedTask`** (`@/shared/jobs`). It requires a payload schema, a queue and — through the schema — a submission nonce, so an unhardened task does not compile. Raw `task(`/`schemaTask(` outside `src/shared/jobs/define-task.ts` is a lint error. Payload types derive from the schema (`z.infer`); types another module owns use `ownedElsewhere<T>()`. Queues name a **quota pool** (Meshy, Apiframe, Fal, …), never a task. The idempotency key is `<taskId>:<requestId>` from a client-minted nonce (`withSubmissionNonce`), **never** prompt content — a re-roll of the same prompt must buy a new image. Routes refuse a request with no nonce (`requireSubmissionNonce`) rather than minting one. Client code imports `@/shared/jobs/submission-nonce` directly; the barrel reaches `pg`. Enforced by `local/no-raw-trigger-task` and `npx vitest run src/shared/jobs scripts/__tests__/trigger-task-inventory.test.ts`. [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) § Adding a background task.
 - `triggerAndWait()` returns `{ ok, output, error }` — check `ok` before `output`.
 - Prod **PENDING_VERSION**: deploy and promote — `npx trigger.dev@latest deploy --env prod`.
 - OTEL deploy conflict: use `npm run trigger:deploy` or `OTEL_TRACES_EXPORTER=none`.

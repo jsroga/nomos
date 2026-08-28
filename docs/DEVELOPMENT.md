@@ -206,6 +206,64 @@ Overrides are read at call time, not module load, so dotenv scripts and per-envi
 
 The Writers Room picker offers three catalog models (Kimi / GLM / Opus); selection is chat-only. Orchestration pins use `STORYTELLER_{AUTHOR,PLANNER,CRITIC,MUSE,PREMISE}_MODEL`. Text LLMs, RAG embeddings, and Cohere rerank use `OPENROUTER_API_KEY` only — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` are optional legacy fallbacks. Image paths use Apiframe (`APIFRAME_API_KEY`).
 
+## Adding a background task
+
+Every background task is defined by `defineOwnedTask` from `@/shared/jobs`. It
+requires a payload schema, a queue, and — through the schema — a submission
+nonce, so a task that omits any of them does not compile. A raw `task(` or
+`schemaTask(` outside `src/shared/jobs/define-task.ts` is an ESLint error.
+
+```ts
+export const generateThing = defineOwnedTask({
+  id: 'generate-thing',
+  schema: generateThingPayloadSchema,   // spreads OWNED_PAYLOAD_SHAPE
+  queue: JobQueue.Apiframe,
+  run: async payload => { /* payload is already parsed */ },
+})
+```
+
+**Write the schema first.** Put it in a `constants/*-payload.ts` sibling and
+derive the payload type with `z.infer` — never maintain an interface beside the
+schema. A type another module owns (a crop spec, a tile's neighbours) is
+carried through with `ownedElsewhere<T>()` rather than mirrored, because a
+hand-written copy drifts from what it copies.
+
+**Pick a queue by quota pool, not by task.** The limit protects Meshy or
+Apiframe, not `generate-tile`; a per-task queue would give each task its own
+ceiling and no shared one. `JobQueue.ImageProvider` covers the tasks that
+choose their provider from the payload at run time.
+
+**State what makes a run the same run.** The idempotency key is
+`<taskId>:<requestId>`, derived by `triggerOwnedRun` — never from prompt
+content, because regenerating with the same prompt is expected to return a
+different image and a content hash would silently hand back the previous one.
+Client callers wrap the request in `withSubmissionNonce(intent, …)`, which
+holds one nonce per user intent while that submission is in flight: a
+double-click collapses into one run, a deliberate re-roll gets a new one.
+Routes read the nonce with `requireSubmissionNonce(body)` and answer 400 when
+it is missing rather than minting one — a server-side nonce is unique per
+request, so it would make every double-submit a second paid run while looking
+like the feature was on.
+
+Client modules import from `@/shared/jobs/submission-nonce` directly. The
+`@/shared/jobs` barrel reaches Trigger's SDK and the database client, and a
+component that pulls those in fails the browser build.
+
+**Machine presets are unset on purpose.** Eighteen of nineteen tasks run on the
+default, and a larger machine bills more per second — so a preset is set only
+where there is a reason behind it, which today is `upscale-tile` alone (sharp
+holds a decoded upscale in memory). There is no production traffic to size the
+rest from. Once there is, read Trigger's dashboard under **Runs → duration and
+memory** per task, and set presets from that rather than from a guess.
+
+**Concurrency limits are placeholders.** `JOB_QUEUE_CONCURRENCY_LIMIT` is a
+flat 4 because the real Meshy / Apiframe / Fal quotas are unknown and the app
+is low-volume; the cost of starting too low is a queue that never fills. Raise
+it from **Runs → Queues**, comparing concurrency against queued depth.
+
+Enforced by: `npm run lint` (`local/no-raw-trigger-task`),
+`npx vitest run src/shared/jobs scripts/__tests__/trigger-task-inventory.test.ts`.
+
 ## Mastra / agents
 
 See root [AGENTS.md](../AGENTS.md). Smoke: `npm run mastra:smoke`.

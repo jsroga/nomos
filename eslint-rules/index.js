@@ -6,6 +6,7 @@ const triggerRunsOwnership = require('./trigger-runs-ownership')
 const noDiscardedAuthContext = require('./no-discarded-auth-context')
 const noBareProjectIdParam = require('./no-bare-project-id-param')
 const noBareProcessEnv = require('./no-bare-process-env')
+const noRawTriggerTask = require('./no-raw-trigger-task')
 
 module.exports = {
   rules: {
@@ -17,5 +18,6 @@ module.exports = {
     'no-discarded-auth-context': noDiscardedAuthContext,
     'no-bare-project-id-param': noBareProjectIdParam,
     'no-bare-process-env': noBareProcessEnv,
+    'no-raw-trigger-task': noRawTriggerTask,
   },
 }
