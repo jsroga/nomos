@@ -66,10 +66,22 @@ const serverEnvSchema = z.object({
   MCP_API_KEY: z.string().min(1).optional(),
   DEV_USER_ID: z.string().min(1).optional(),
 
-  // Models still read here; SPEC-13 Task 13 moves model resolution wholesale.
+  // Model overrides. Each is an operator rollback lever; absent means the
+  // registry's default applies.
   EMBEDDING_MODEL: z.string().min(1).default(ENV_DEFAULT.EmbeddingModel),
   JUDGING_MODEL: z.string().min(1).optional(),
+  JUDGING_MODEL_FALLBACK: z.string().min(1).optional(),
   STORYTELLER_CHAT_MODEL: z.string().min(1).optional(),
+  GENERATION_MODEL: z.string().min(1).optional(),
+  GENERATION_MODEL_FAST: z.string().min(1).optional(),
+  GENERATION_MODEL_CREATIVE: z.string().min(1).optional(),
+  PLANNING_MODEL: z.string().min(1).optional(),
+  PLANNING_MODEL_REASONING: z.string().min(1).optional(),
+  STORYTELLER_AUTHOR_MODEL: z.string().min(1).optional(),
+
+  // Self-improvement loop bounds.
+  IMPROVEMENT_MAX_ITERATIONS: z.coerce.number().int().positive().optional(),
+  IMPROVEMENT_QUALITY_THRESHOLD: z.coerce.number().min(0).max(1).optional(),
 
   // Mastra.
   MASTRA_PROJECT_ROOT: z.string().min(1).optional(),

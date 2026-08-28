@@ -1,24 +1,26 @@
 /**
- * Game-design model resolution — single source of truth (was duplicated inline
- * in the route and the agent). Env override → default, normalized to the Mastra
- * `provider/model` form. A step toward the storyteller role-matrix convention;
- * game-design has one role today, so this stays a one-liner.
+ * Which model game-design uses. The precedence chain lives in the gateway's
+ * model registry; this file holds only the domain's choice.
  */
 
 import '@/shared/data/server-guard'
-import { toOpenRouterModel } from '@/shared/agent-kernel/models'
-import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
+import {
+  resolveGatewayModel,
+  type ModelRoleSpec,
+} from '@/shared/ai/gateway/model-registry'
 
-const GAME_DESIGN_MODEL_ENV = 'GAME_DESIGN_MODEL'
 const GAME_DESIGN_ROLE = 'game-design'
+const GAME_DESIGN_MODEL_ENV = 'GAME_DESIGN_MODEL'
+
+const GAME_DESIGN_SPEC: ModelRoleSpec = {
+  role: GAME_DESIGN_ROLE,
+  envVar: GAME_DESIGN_MODEL_ENV,
+}
 
 /**
- * Resolve the game-design model, routed through the OpenRouter gateway (single
- * OPENROUTER_API_KEY): `override` (per-request) → admin panel setting →
- * `GAME_DESIGN_MODEL` env → `openrouter/auto-beta`.
+ * Per-request override → admin panel setting → `GAME_DESIGN_MODEL` →
+ * `openrouter/auto-beta`, routed through the OpenRouter gateway.
  */
 export function resolveGameDesignModel(override?: string): string {
-  return toOpenRouterModel(
-    override || getConfiguredModel(GAME_DESIGN_ROLE) || process.env[GAME_DESIGN_MODEL_ENV]
-  )
+  return resolveGatewayModel(GAME_DESIGN_SPEC, override)
 }
