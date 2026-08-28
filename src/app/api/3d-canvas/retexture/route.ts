@@ -31,7 +31,7 @@ export const POST = withRateLimit(
         return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
       }
 
-      const { modelUrlOrBase64, prompt, assetId, projectId, apiKey } = parsedBody.data
+      const { modelUrlOrBase64, prompt, assetId, projectId, requestId, apiKey } = parsedBody.data
 
       // The shared default project belongs to nobody: no scope, no tenant data.
       const isDefaultProject = projectId === InteriorDefaultProjectId.Default
@@ -76,6 +76,7 @@ export const POST = withRateLimit(
         prompt,
         assetId: assetId || InteriorTempAssetId.TempAsset,
         projectId,
+        requestId,
         apiKey: meshyApiKey,
         styleImageUrl,
       })

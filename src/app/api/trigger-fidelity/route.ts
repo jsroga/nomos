@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { triggerOwnedRun } from '@/shared/jobs'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import type { enhanceFidelityTask } from '@/trigger'
 import {
   withAuth,
@@ -26,6 +26,9 @@ export const POST = withRateLimit(
     if (!payload.tileId || !payload.projectId || !payload.imageBase64 || !payload.stylePrompt) {
       return NextResponse.json({ error: API_ERROR.FIDELITY_FIELDS_REQUIRED }, { status: 400 })
     }
+
+    const requestId = requireSubmissionNonce(payload)
+    if (requestId instanceof NextResponse) return requestId
 
     if (!readApiframeApiKey()) {
       return NextResponse.json(
@@ -58,6 +61,7 @@ export const POST = withRateLimit(
       {
         tileId: payload.tileId,
         projectId: scope.projectId,
+        requestId,
         imageBase64: payload.imageBase64,
         stylePrompt: payload.stylePrompt,
         creativity: payload.creativity || 0.3,

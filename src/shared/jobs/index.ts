@@ -1,5 +1,17 @@
 // shared/jobs barrel
 // Cross-module job status types, hooks, and Trigger.dev utilities
+export { JobQueue, JOB_QUEUE_CONCURRENCY_LIMIT } from '@/shared/jobs/constants/job-queue'
+export { MachinePreset, defineOwnedTask, type OwnedTaskPayload } from '@/shared/jobs/define-task'
+export {
+  OWNED_PAYLOAD_SHAPE,
+  submissionNonceSchema,
+  newSubmissionNonce,
+  readSubmissionNonce,
+  withSubmissionNonce,
+  type Submitted,
+} from '@/shared/jobs/submission-nonce'
+export { SUBMISSION_NONCE_ERROR, SUBMISSION_NONCE_FIELD } from '@/shared/jobs/constants/submission-nonce'
+export { requireSubmissionNonce } from '@/shared/jobs/submission-nonce-http'
 export {
   JobAccessError,
   cancelOwnedRun,

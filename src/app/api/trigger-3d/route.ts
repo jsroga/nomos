@@ -11,7 +11,7 @@ import {
   TRIGGER_TASK_TTL,
 } from '@/shared/data/constants/api-errors'
 import { EnvVarName, ModelProvider } from '@/shared/data/constants/protocol'
-import { triggerOwnedRun } from '@/shared/jobs'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
@@ -47,9 +47,12 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
+    const requestId = requireSubmissionNonce(payload)
+    if (requestId instanceof NextResponse) return requestId
+
     const handle = await triggerOwnedRun<typeof generate3DModelTask>(
       TRIGGER_TASK_ID.GENERATE_3D_MODEL,
-      payload,
+      { ...payload, projectId: scope.projectId, requestId },
       {
         ttl: TRIGGER_TASK_TTL.GENERATE_3D,
       }

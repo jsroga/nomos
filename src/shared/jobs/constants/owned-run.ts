@@ -22,6 +22,7 @@ export const OWNED_RUN_SUMMARY_KEYS = [
 export const JOB_ACCESS_MESSAGE = {
   NOT_FOUND: 'Run not found',
   MISSING_PROJECT: 'Cannot trigger a run without a projectId — it would be unreadable',
+  MISSING_NONCE: 'Cannot trigger a run without a requestId — a double-submit would buy twice',
 } as const
 
 /**
@@ -36,3 +37,12 @@ export enum SystemRunReason {
 
 export const JOB_LOG = {
 } as const
+
+/**
+ * How long a replayed submission still collapses into the original run.
+ *
+ * The nonce is minted per user action, so this bounds only replays of *that*
+ * action — a retried request, a tab left open. An hour covers both without
+ * pinning keys indefinitely.
+ */
+export const SUBMISSION_IDEMPOTENCY_TTL = '1h'

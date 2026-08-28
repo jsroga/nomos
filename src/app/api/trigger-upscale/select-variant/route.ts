@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { triggerOwnedRun } from '@/shared/jobs'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import type { selectMjVariantTask } from '@/trigger'
 import {
   API_ERROR,
@@ -11,11 +11,15 @@ import { tryProjectScope } from '@/shared/auth/project-scope'
 
 export const POST = withAuth(
   async (request: NextRequest, { session }: AuthenticatedRequest) => {
-    const { tileId, projectId, gridImageUrl, variantIndex } = await request.json()
+    const body = await request.json()
+    const { tileId, projectId, gridImageUrl, variantIndex } = body
 
     if (!tileId || !projectId || !gridImageUrl || !variantIndex) {
       return NextResponse.json({ error: API_ERROR.MISSING_VARIANT_FIELDS }, { status: 400 })
     }
+
+    const requestId = requireSubmissionNonce(body)
+    if (requestId instanceof NextResponse) return requestId
 
     // Verify project access
     const scope = await tryProjectScope(projectId, session.user.id)
@@ -25,7 +29,7 @@ export const POST = withAuth(
 
     const handle = await triggerOwnedRun<typeof selectMjVariantTask>(
       TRIGGER_TASK_ID.SELECT_MJ_VARIANT,
-      { tileId, projectId: scope.projectId, gridImageUrl, variantIndex },
+      { tileId, projectId: scope.projectId, requestId, gridImageUrl, variantIndex },
       { ttl: TRIGGER_TASK_TTL.SELECT_VARIANT }
     )
 

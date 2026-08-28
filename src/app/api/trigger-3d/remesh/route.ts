@@ -11,7 +11,7 @@ import {
 } from '@/shared/data/constants/api-errors'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { tryProjectScope } from '@/shared/auth/project-scope'
-import { triggerOwnedRun } from '@/shared/jobs'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
@@ -20,6 +20,9 @@ export const POST = withRateLimit(
     if (!payload.assetId || !payload.meshyTaskId) {
       return NextResponse.json({ error: API_ERROR.MISSING_REMESH_FIELDS }, { status: 400 })
     }
+
+    const requestId = requireSubmissionNonce(payload)
+    if (requestId instanceof NextResponse) return requestId
     if (!payload.apiKey && env.MESHY_API_KEY) {
       payload.apiKey = env.MESHY_API_KEY
     }
@@ -43,7 +46,7 @@ export const POST = withRateLimit(
 
     const handle = await triggerOwnedRun<typeof remesh3DModelTask>(
       TRIGGER_TASK_ID.REMESH_3D_MODEL,
-      { ...payload, projectId: scope.projectId },
+      { ...payload, projectId: scope.projectId, requestId },
       {
         ttl: TRIGGER_TASK_TTL.REMESH,
       }

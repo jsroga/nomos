@@ -1,3 +1,5 @@
+import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { ApiRoutePath, ContentType, HttpMethod, JsonField, QueryParam } from '@/shared/data/constants/protocol'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
@@ -53,11 +55,15 @@ export async function trigger3dGeneration(input: {
   topology: 'quad' | 'triangle'
   targetPolycount: number
 }): Promise<{ runId: string }> {
-  const data = await fetchJsonRecord(AssetExporterApiRoute.Trigger3d, {
-    method: HttpMethod.Post,
-    headers: JSON_HEADERS,
-    body: JSON.stringify(input),
-  })
+  const data = await withSubmissionNonce(
+    `${TRIGGER_TASK_ID.GENERATE_3D_MODEL}:${input.assetId}`,
+    requestId =>
+      fetchJsonRecord(AssetExporterApiRoute.Trigger3d, {
+        method: HttpMethod.Post,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ...input, requestId }),
+      })
+  )
   const runId = readString(data.runId)
   if (!runId) {
     throw new Error(readString(data.error) ?? START_3D_GENERATION_ERROR)
@@ -73,11 +79,15 @@ export async function trigger3dRemesh(input: {
   targetPolycount: number
   resizeHeight?: number
 }): Promise<{ runId: string }> {
-  const data = await fetchJsonRecord(AssetExporterApiRoute.Trigger3dRemesh, {
-    method: HttpMethod.Post,
-    headers: JSON_HEADERS,
-    body: JSON.stringify(input),
-  })
+  const data = await withSubmissionNonce(
+    `${TRIGGER_TASK_ID.REMESH_3D_MODEL}:${input.assetId}:${input.targetPolycount}`,
+    requestId =>
+      fetchJsonRecord(AssetExporterApiRoute.Trigger3dRemesh, {
+        method: HttpMethod.Post,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ...input, requestId }),
+      })
+  )
   const runId = readString(data.runId)
   if (!runId) {
     throw new Error(readString(data.error) ?? START_REMESH_ERROR)
@@ -90,11 +100,15 @@ export async function triggerModelUpload(input: {
   assetId: string
   modelFilename: string
 }): Promise<{ runId: string }> {
-  const data = await fetchJsonRecord(AssetExporterApiRoute.TriggerUpload, {
-    method: HttpMethod.Post,
-    headers: JSON_HEADERS,
-    body: JSON.stringify(input),
-  })
+  const data = await withSubmissionNonce(
+    `${TRIGGER_TASK_ID.UPLOAD_ASSET}:${input.assetId}:${input.modelFilename}`,
+    requestId =>
+      fetchJsonRecord(AssetExporterApiRoute.TriggerUpload, {
+        method: HttpMethod.Post,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ...input, requestId }),
+      })
+  )
   const runId = readString(data.runId)
   if (!runId) {
     throw new Error(readString(data.error) ?? START_UPLOAD_ERROR)

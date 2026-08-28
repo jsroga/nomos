@@ -4,7 +4,7 @@ import { requireAuth } from '@/shared/auth/auth'
 import { episodeScope, type EpisodeScope } from '@/domains/storyteller/server'
 import { ProjectForbidden } from '@/shared/auth/project-scope'
 import { HttpStatus } from '@/shared/data/constants/protocol'
-import { triggerOwnedRun } from '@/shared/jobs'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import type { generatePoster } from '@/domains/storyteller/tasks/generate-poster.task'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { resolveApiframeApiKey } from '@/shared/ai/image-model-env'
@@ -57,6 +57,9 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       )
     }
 
+    const requestId = requireSubmissionNonce(body)
+    if (requestId instanceof NextResponse) return requestId
+
     // The scope already resolved the owning project; the old JOIN is gone.
     const { projectId } = scope
     const { context } = await loadVisualOverviewContext(scope)
@@ -71,6 +74,7 @@ export async function POST(req: Request, props: { params: Promise<{ episodeId: s
       worldDesc: context.worldDesc,
       overview: context.overview,
       projectId,
+      requestId,
       episodeId,
       apiKey,
     })

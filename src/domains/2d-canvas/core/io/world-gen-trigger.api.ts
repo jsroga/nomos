@@ -1,4 +1,6 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
@@ -46,23 +48,28 @@ export async function triggerFidelityEnhancement(input: {
   creativity: number
   styleReferenceUrls?: string[]
 }): Promise<{ runId: string }> {
-  const data = await fetchJsonRecord(FidelityApiRoute.Trigger, {
-    method: HttpMethod.Post,
-    headers: JSON_HEADERS,
-    body: JSON.stringify(input),
-  })
-  const runId = readString(data.runId)
-  if (!runId) {
-    throw new Error(readString(data.error) ?? TRIGGER_FIDELITY_ERROR)
-  }
-  return { runId }
+  return withSubmissionNonce(
+    `${TRIGGER_TASK_ID.ENHANCE_FIDELITY}:${input.tileId}`,
+    async requestId => {
+      const data = await fetchJsonRecord(FidelityApiRoute.Trigger, {
+        method: HttpMethod.Post,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ...input, requestId }),
+      })
+      const runId = readString(data.runId)
+      if (!runId) {
+        throw new Error(readString(data.error) ?? TRIGGER_FIDELITY_ERROR)
+      }
+      return { runId }
+    }
+  )
 }
 
 export async function fetchFidelityRunStatus(runId: string): Promise<WorldGenTriggerStatusResult> {
   return fetchTriggerRunStatus(FidelityApiRoute.Status, runId)
 }
 
-export async function triggerTileGeneration(input: {
+interface TileGenerationInput {
   projectId: string
   x: number
   y: number
@@ -72,8 +79,22 @@ export async function triggerTileGeneration(input: {
   contextPayload?: unknown
   styleReferenceUrls?: string[]
   neighborImageUrls?: NeighborImageUrls
-}): Promise<{ runId: string }> {
-  const body: Record<string, unknown> = {}
+}
+
+export async function triggerTileGeneration(
+  input: TileGenerationInput
+): Promise<{ runId: string }> {
+  return withSubmissionNonce(
+    `${TRIGGER_TASK_ID.GENERATE_TILE}:${input.projectId}:${input.x},${input.y}`,
+    requestId => postTileGeneration(input, requestId)
+  )
+}
+
+async function postTileGeneration(
+  input: TileGenerationInput,
+  requestId: string
+): Promise<{ runId: string }> {
+  const body: Record<string, unknown> = { requestId }
   if (input.packedCrop) body.packedCrop = input.packedCrop
   body.projectId = input.projectId
   body.x = input.x
@@ -125,16 +146,18 @@ export async function triggerUpscale(input: {
   skipGeminiPreUpscale?: boolean
   styleReferenceUrls?: string[]
 }): Promise<{ runId: string }> {
-  const data = await fetchJsonRecord(UpscaleApiRoute.Trigger, {
-    method: HttpMethod.Post,
-    headers: JSON_HEADERS,
-    body: JSON.stringify(input),
+  return withSubmissionNonce(`${TRIGGER_TASK_ID.UPSCALE_TILE}:${input.tileId}`, async requestId => {
+    const data = await fetchJsonRecord(UpscaleApiRoute.Trigger, {
+      method: HttpMethod.Post,
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ ...input, requestId }),
+    })
+    const runId = readString(data.runId)
+    if (!runId) {
+      throw new Error(readString(data.error) ?? TRIGGER_UPSCALE_ERROR)
+    }
+    return { runId }
   })
-  const runId = readString(data.runId)
-  if (!runId) {
-    throw new Error(readString(data.error) ?? TRIGGER_UPSCALE_ERROR)
-  }
-  return { runId }
 }
 
 export async function fetchUpscaleRunStatus(runId: string): Promise<WorldGenTriggerStatusResult> {
@@ -147,14 +170,19 @@ export async function triggerUpscaleVariantSelection(input: {
   gridImageUrl: string
   variantIndex: number
 }): Promise<{ runId: string }> {
-  const data = await fetchJsonRecord(UpscaleApiRoute.SelectVariant, {
-    method: HttpMethod.Post,
-    headers: JSON_HEADERS,
-    body: JSON.stringify(input),
-  })
-  const runId = readString(data.runId)
-  if (!runId) {
-    throw new Error(readString(data.error) ?? TRIGGER_VARIANT_SELECTION_ERROR)
-  }
-  return { runId }
+  return withSubmissionNonce(
+    `${TRIGGER_TASK_ID.SELECT_MJ_VARIANT}:${input.tileId}:${input.variantIndex}`,
+    async requestId => {
+      const data = await fetchJsonRecord(UpscaleApiRoute.SelectVariant, {
+        method: HttpMethod.Post,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ...input, requestId }),
+      })
+      const runId = readString(data.runId)
+      if (!runId) {
+        throw new Error(readString(data.error) ?? TRIGGER_VARIANT_SELECTION_ERROR)
+      }
+      return { runId }
+    }
+  )
 }

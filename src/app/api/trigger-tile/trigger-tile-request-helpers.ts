@@ -29,6 +29,7 @@ enum TileContextPayloadKey {
 
 export interface TileRequestPayload {
   projectId: string
+  requestId: string
   x: number
   y: number
   prompt: string
@@ -167,6 +168,7 @@ export function buildGenerateTileTaskPayload(
 ): GenerateTilePayload {
   const taskPayload: GenerateTilePayload = {
     projectId: payload.projectId,
+    requestId: payload.requestId,
     x: payload.x,
     y: payload.y,
     prompt: payload.prompt,

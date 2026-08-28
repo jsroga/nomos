@@ -1,3 +1,5 @@
+import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readNumber, readString } from '@/shared/data/json-guards'
@@ -80,17 +82,22 @@ export async function postSegment(input: {
   mosaicHeight: number
   signal: AbortSignal
 }): Promise<{ rle: string; width: number; height: number; apiResponse: unknown }> {
-  const data = await postSegmentation(
-    SelectModeApiRoute.Enqueue,
-    {
-      projectId: input.projectId,
-      base64Image: input.base64Image,
-      box: input.box,
-      prompt: input.prompt,
-      mosaicWidth: input.mosaicWidth,
-      mosaicHeight: input.mosaicHeight,
-    },
-    input.signal,
+  const data = await withSubmissionNonce(
+    `${TRIGGER_TASK_ID.SEGMENT_OBJECT}:${input.projectId}:${input.box.x1},${input.box.y1}`,
+    requestId =>
+      postSegmentation(
+        SelectModeApiRoute.Enqueue,
+        {
+          projectId: input.projectId,
+          requestId,
+          base64Image: input.base64Image,
+          box: input.box,
+          prompt: input.prompt,
+          mosaicWidth: input.mosaicWidth,
+          mosaicHeight: input.mosaicHeight,
+        },
+        input.signal,
+      )
   )
   const runId = readString(data.runId)
   if (!runId) {

@@ -10,7 +10,12 @@
  */
 import { describe, expect, it } from 'vitest'
 import { config as loadEnv } from 'dotenv'
-import { retrieveSystemRun, SystemRunReason, triggerOwnedRun } from '@/shared/jobs'
+import {
+  newSubmissionNonce,
+  retrieveSystemRun,
+  SystemRunReason,
+  triggerOwnedRun,
+} from '@/shared/jobs'
 import type { generateTileTask } from '@/domains/2d-canvas/tasks/generate-tile.task'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
@@ -79,6 +84,7 @@ describe.runIf(hasTrigger && hasBlob)('image providers (live Trigger)', () => {
       const apiframeKey = envOrSkip(TileProviderSmokeWire.EnvApiframeApiKey)
       const handle = await triggerOwnedRun<typeof generateTileTask>(TRIGGER_TASK_ID.GENERATE_TILE, {
         projectId: TEST_PROJECT_ID,
+        requestId: newSubmissionNonce(),
         x: 90,
         y: 90,
         prompt: TileProviderSmokeWire.GrokPrompt,
@@ -104,6 +110,7 @@ describe.runIf(hasTrigger && hasBlob)('image providers (live Trigger)', () => {
       const apiframeKey = envOrSkip(TileProviderSmokeWire.EnvApiframeApiKey)
       const handle = await triggerOwnedRun<typeof generateTileTask>(TRIGGER_TASK_ID.GENERATE_TILE, {
         projectId: TEST_PROJECT_ID,
+        requestId: newSubmissionNonce(),
         x: 92,
         y: 92,
         prompt: TileProviderSmokeWire.GrokPrompt,

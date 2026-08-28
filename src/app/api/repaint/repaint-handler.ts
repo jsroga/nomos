@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { triggerOwnedRun } from '@/shared/jobs'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import type { repaintTileTask } from '@/trigger'
 import type { AuthenticatedRequest } from '@/shared/data/api-utils'
 import { } from '@/shared/data/api-utils'
@@ -29,6 +29,9 @@ export async function handleRepaintRequest(
     return NextResponse.json({ error: API_ERROR.MISSING_REPAINT_FIELDS }, { status: 400 })
   }
 
+  const requestId = requireSubmissionNonce(body)
+  if (requestId instanceof NextResponse) return requestId
+
   const scope = await tryProjectScope(projectId, session.user.id)
   if (!scope) {
     return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
@@ -46,6 +49,7 @@ export async function handleRepaintRequest(
       TRIGGER_TASK_ID.REPAINT_TILE,
       {
         projectId: scope.projectId,
+        requestId,
         base64Image,
         maskBase64,
         ...(prompt ? { prompt } : {}),

@@ -29,8 +29,17 @@ export const POST = withRateLimit(
         return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
       }
 
-      const { projectId, prompt, seed, apiKey, artStyle, enablePbr, targetPolycount, topology } =
-        parsedBody.data
+      const {
+        projectId,
+        requestId,
+        prompt,
+        seed,
+        apiKey,
+        artStyle,
+        enablePbr,
+        targetPolycount,
+        topology,
+      } = parsedBody.data
 
       const scope = await tryProjectScope(projectId, session.user.id)
       if (!scope) {
@@ -46,6 +55,7 @@ export const POST = withRateLimit(
         TRIGGER_TASK_ID.TEXT_TO_3D,
         {
           projectId: scope.projectId,
+          requestId,
           prompt,
           seed: seed || Math.floor(Math.random() * 2147483647),
           apiKey: meshyApiKey,

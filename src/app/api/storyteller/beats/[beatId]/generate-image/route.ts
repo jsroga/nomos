@@ -5,9 +5,10 @@ import { HttpStatus } from '@/shared/data/constants/protocol'
 import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
-import { generateStoryboard } from '@/domains/storyteller/tasks/generate-storyboard.task'
+import type { generateStoryboard } from '@/domains/storyteller/tasks/generate-storyboard.task'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { resolveApiframeApiKey, resolveStoryboardModel } from '@/shared/ai/image-model-env'
 
 export async function POST(req: Request, props: { params: Promise<{ beatId: string }> }) {
@@ -40,6 +41,9 @@ export async function POST(req: Request, props: { params: Promise<{ beatId: stri
       return NextResponse.json({ error: API_ERROR.MISSING_PROMPT_OR_API_KEY }, { status: 400 })
     }
 
+    const requestId = requireSubmissionNonce(body)
+    if (requestId instanceof NextResponse) return requestId
+
     // 1. Get Project ID
     const beatData = await db
       .select({
@@ -61,16 +65,22 @@ export async function POST(req: Request, props: { params: Promise<{ beatId: stri
     // 2. Trigger Background Task
     console.log(`${API_LOG_PREFIX.BEAT_IMAGE_TRIGGER} ${beatId}`)
 
-    const handle = await generateStoryboard.trigger({
-      beatId,
-      projectId,
-      prompt,
-      providerConfig: {
-        provider: ImageGenProvider.NanoBanana,
-        apiKey,
-        modelId: typeof config?.modelId === 'string' ? config.modelId : resolveStoryboardModel(),
-      },
-    })
+    // Through triggerOwnedRun, not the task's own trigger: a run with no
+    // project tag cannot be read back by its owner.
+    const handle = await triggerOwnedRun<typeof generateStoryboard>(
+      TRIGGER_TASK_ID.GENERATE_STORYBOARD,
+      {
+        beatId,
+        projectId,
+        requestId,
+        prompt,
+        providerConfig: {
+          provider: ImageGenProvider.NanoBanana,
+          apiKey,
+          modelId: typeof config?.modelId === 'string' ? config.modelId : resolveStoryboardModel(),
+        },
+      }
+    )
 
     return NextResponse.json({
       success: true,

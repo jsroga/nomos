@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { triggerOwnedRun } from '@/shared/jobs'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import { db } from '@/db/client'
 import { projects } from '@/db'
 import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
@@ -20,11 +20,15 @@ export async function POST(req: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
-    const { projectId, providerConfig, promptIndex } = await req.json()
+    const body = await req.json()
+    const { projectId, providerConfig, promptIndex } = body
 
     if (!projectId) {
       return NextResponse.json({ error: API_ERROR.MISSING_PROJECT_ID_PARAM }, { status: 400 })
     }
+
+    const requestId = requireSubmissionNonce(body)
+    if (requestId instanceof NextResponse) return requestId
 
     let scope: ProjectScope
     try {
@@ -64,6 +68,7 @@ export async function POST(req: NextRequest) {
     )
     const handle = await triggerOwnedRun<typeof generateMoodboard>(TRIGGER_TASK_ID.GENERATE_MOODBOARD, {
       projectId,
+      requestId,
       promptIndex: typeof promptIndex === 'number' ? promptIndex : undefined,
       worldDesc: context.worldDesc,
       overview: context.overview,

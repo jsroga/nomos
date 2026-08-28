@@ -29,7 +29,8 @@ export const POST = withRateLimit(
         return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
       }
 
-      const { projectId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } = parsedBody.data
+      const { projectId, requestId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } =
+        parsedBody.data
 
       const scope = await tryProjectScope(projectId, session.user.id)
       if (!scope) {
@@ -45,6 +46,7 @@ export const POST = withRateLimit(
         TRIGGER_TASK_ID.SURFACE_MATERIAL,
         {
           projectId: scope.projectId,
+          requestId,
           surfaceId,
           prompt,
           apiKey: meshyApiKey,

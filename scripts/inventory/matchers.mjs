@@ -59,3 +59,37 @@ export function classifyProviderSdkImport(line, file) {
   if (line.includes("from 'replicate'")) return ProviderSdkBucket.Replicate
   return null
 }
+
+export const TriggerTaskBucket = {
+  /** A `task(` / `schemaTask(` call that did not go through the factory. */
+  RawTask: 'raw-task',
+  /** A task built by `defineOwnedTask` — schema, queue and nonce guaranteed. */
+  OwnedTask: 'owned-task',
+  /** A `queue:` declaration on a task. */
+  Queue: 'queue',
+  /** A trigger call that bypasses `triggerOwnedRun`, so it carries no key. */
+  UnkeyedTrigger: 'unkeyed-trigger',
+  /** An import of the v3 subpath; CLAUDE.md mandates the v4 entrypoint. */
+  SdkV3Import: 'sdk-v3-import',
+}
+
+const TASK_FACTORY_MODULE = 'shared/jobs/define-task'
+const OWNED_RUN_MODULE = 'shared/jobs/owned-run'
+const TASK_FILE_SUFFIX = '.task.ts'
+const RAW_TASK_CALL = /\b(?:schemaT|t)ask\(\{/
+const RAW_TRIGGER_CALL = /(?:\btasks\.trigger\b|\bTask\.trigger\(|[A-Za-z]\.trigger\()/
+
+/** SPEC-14: the shape of the 19 background tasks, one bucket per omission. */
+export function classifyTriggerTaskShape(line, file) {
+  const path = file.split('\\').join('/')
+  if (line.includes('@trigger.dev/sdk/v3')) return TriggerTaskBucket.SdkV3Import
+  if (line.includes('defineOwnedTask(')) return TriggerTaskBucket.OwnedTask
+  if (!path.includes(TASK_FACTORY_MODULE) && RAW_TASK_CALL.test(line)) {
+    return TriggerTaskBucket.RawTask
+  }
+  if (path.endsWith(TASK_FILE_SUFFIX) && /^\s*queue:/.test(line)) return TriggerTaskBucket.Queue
+  if (!path.includes(OWNED_RUN_MODULE) && RAW_TRIGGER_CALL.test(line)) {
+    return TriggerTaskBucket.UnkeyedTrigger
+  }
+  return null
+}

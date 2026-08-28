@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { triggerOwnedRun } from '@/shared/jobs'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import { eq, asc } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
@@ -104,11 +104,15 @@ export async function POST(
     )
     const look = resolveStoryboardVideoLook(body[StoryboardVideoRequestField.Look])
 
+    const requestId = requireSubmissionNonce(body)
+    if (requestId instanceof NextResponse) return requestId
+
     const handle = await triggerOwnedRun<typeof generateCombinedStoryboard>(
       TRIGGER_TASK_ID.GENERATE_COMBINED_STORYBOARD,
       {
         episodeId,
         projectId: episodeData.projectId,
+        requestId,
         beats: mappedBeats,
         model,
         look,

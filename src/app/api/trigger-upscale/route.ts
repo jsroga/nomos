@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { triggerOwnedRun } from '@/shared/jobs'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import type { upscaleTileTask } from '@/domains/2d-canvas/tasks/upscale-tile.task'
 import {
   withAuth,
@@ -31,6 +31,9 @@ export const POST = withRateLimit(
     if (!payload.tileId || !payload.projectId || !payload.imageBase64) {
       return NextResponse.json({ error: API_ERROR.MISSING_UPSCALE_FIELDS }, { status: 400 })
     }
+
+    const requestId = requireSubmissionNonce(payload)
+    if (requestId instanceof NextResponse) return requestId
 
     const scope = await tryProjectScope(payload.projectId, session.user.id)
     if (!scope) {
@@ -69,6 +72,7 @@ export const POST = withRateLimit(
       {
         tileId: payload.tileId,
         projectId: scope.projectId,
+        requestId,
         imageBase64: payload.imageBase64,
         prompt: payload.prompt,
         creativity: payload.creativity,

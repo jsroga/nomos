@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
-import { triggerOwnedRun } from '@/shared/jobs'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import type { generatePortrait } from '@/domains/storyteller/tasks/generate-portrait.task'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
@@ -26,6 +26,9 @@ export const POST = withRateLimit(
     if (!description) {
       return NextResponse.json({ error: API_ERROR.DESCRIPTION_REQUIRED }, { status: 400 })
     }
+
+    const requestId = requireSubmissionNonce(body)
+    if (requestId instanceof NextResponse) return requestId
 
     if (!projectId) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED_LOWER }, { status: 400 })
@@ -73,6 +76,7 @@ export const POST = withRateLimit(
     const handle = await triggerOwnedRun<typeof generatePortrait>(TRIGGER_TASK_ID.GENERATE_PORTRAIT, {
       prompt,
       projectId,
+      requestId,
       apiKey,
       ...(persistedCharacterId ? { characterId: persistedCharacterId } : {}),
     })

@@ -19,9 +19,11 @@ import type { AnyTask, TaskIdentifier, TaskPayload, TriggerOptions } from '@trig
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { isValidProjectId } from '@/shared/auth/security'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
+import type { OwnedTaskPayload } from '@/shared/jobs/define-task'
 import {
   SystemRunReason,
   JOB_ACCESS_MESSAGE,
+  SUBMISSION_IDEMPOTENCY_TTL,
   OWNED_RUN_SUMMARY_KEYS,
   PROJECT_METADATA_KEY,
   PROJECT_TAG_PREFIX,
@@ -48,14 +50,6 @@ export type OwnedRunSummary = Pick<RetrievedRun, (typeof OWNED_RUN_SUMMARY_KEYS)
 interface RunOwnershipSource {
   tags?: readonly string[]
   metadata?: unknown
-}
-
-/**
- * Every task payload carries the project the work belongs to. Required, so a
- * task that would produce an unreadable run fails to compile.
- */
-interface OwnedPayload {
-  projectId: string
 }
 
 export function projectTag(projectId: string): string {
@@ -137,16 +131,20 @@ export async function cancelOwnedRun(runId: string, userId: string): Promise<voi
 }
 
 /**
- * Trigger a task with its project stamped on the run.
+ * Trigger a task with its project stamped on the run and its submission keyed.
  *
- * The project comes from the payload, which every task already carries, so a
- * caller cannot pass a scope that disagrees with the work being queued. A
- * payload with no project id is refused: the run would be unreadable, and
- * silently producing an unreadable run is worse than failing here.
+ * Both come from the payload, which every task carries, so a caller cannot pass
+ * a scope that disagrees with the work being queued. A payload missing either
+ * is refused: without a project the run is unreadable, and without a nonce a
+ * double-submit buys the generation twice.
+ *
+ * The key is `<taskId>:<requestId>`, never prompt content — regenerating with
+ * the same prompt is expected to produce a different result, and a content hash
+ * would silently return the previous one.
  */
 export async function triggerOwnedRun<TTask extends AnyTask>(
   taskId: TaskIdentifier<TTask>,
-  payload: TaskPayload<TTask> & OwnedPayload,
+  payload: TaskPayload<TTask> & OwnedTaskPayload,
   options: TriggerOptions = {}
 ) {
   const projectId = readString(payload.projectId)
@@ -154,10 +152,20 @@ export async function triggerOwnedRun<TTask extends AnyTask>(
     throw new JobAccessError(JOB_ACCESS_MESSAGE.MISSING_PROJECT)
   }
 
+  const requestId = readString(payload.requestId)
+  if (!requestId) {
+    throw new JobAccessError(JOB_ACCESS_MESSAGE.MISSING_NONCE)
+  }
+
   const existingTags = options.tags
   const tags = [
     ...(Array.isArray(existingTags) ? existingTags : existingTags ? [existingTags] : []),
     projectTag(projectId),
   ]
-  return tasks.trigger<TTask>(taskId, payload, { ...options, tags })
+  return tasks.trigger<TTask>(taskId, payload, {
+    idempotencyKey: `${taskId}:${requestId}`,
+    idempotencyKeyTTL: SUBMISSION_IDEMPOTENCY_TTL,
+    ...options,
+    tags,
+  })
 }

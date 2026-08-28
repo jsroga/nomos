@@ -19,6 +19,7 @@ export interface GenerateTileContextPayload {
 
 export interface GenerateTilePayload {
   projectId: string
+  requestId: string
   x: number
   y: number
   prompt: string
