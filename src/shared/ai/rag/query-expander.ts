@@ -10,8 +10,11 @@
  * - Hypothetical: Generate hypothetical answers that might match documents
  */
 
-import { ChatOpenAI } from '@langchain/openai'
-import { OPENROUTER_AUTO_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
+import type { ProjectScope } from '@/shared/auth/project-scope'
+import { complete } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { QUERY_EXPANDER_SCOPE_REQUIRED } from '@/shared/ai/rag/constants/query-expander'
+import { OPENROUTER_AUTO_MODEL } from '@/shared/agent-kernel/models'
 
 // ============================================
 // TYPES
@@ -279,6 +282,7 @@ Respond with JSON only:
  */
 export async function expandQueryLLM(
   query: string,
+  scope: ProjectScope,
   config: Partial<QueryExpanderConfig> = {}
 ): Promise<QueryExpansion> {
   const fullConfig = { ...DEFAULT_CONFIG, ...config }
@@ -289,18 +293,13 @@ export async function expandQueryLLM(
   }
 
   try {
-    const openRouter = openRouterClientConfig()
-    const model = new ChatOpenAI({
+    const { text: responseText } = await complete({
+      scope,
+      feature: LlmFeature.RagQueryExpansion,
       model: OPENROUTER_AUTO_MODEL,
+      prompt: EXPANSION_PROMPT.replace('{query}', query),
       temperature: 0,
-      apiKey: openRouter.apiKey,
-      configuration: { baseURL: openRouter.baseURL },
     })
-
-    const prompt = EXPANSION_PROMPT.replace('{query}', query)
-    const response = await model.invoke(prompt)
-    const responseText =
-      typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
 
     const jsonMatch = responseText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
@@ -354,11 +353,16 @@ export class QueryExpander {
   }
 
   /**
-   * Expand a query using configured strategy
+   * Expand a query using the configured strategy.
+   *
+   * The LLM path bills, so it needs a scope. The only construction site today
+   * passes `useLLM: false`; a caller turning it on has to supply one, which is
+   * why the parameter is required rather than optional.
    */
-  async expand(query: string): Promise<QueryExpansion> {
+  async expand(query: string, scope?: ProjectScope): Promise<QueryExpansion> {
     if (this.config.useLLM) {
-      return expandQueryLLM(query, this.config)
+      if (!scope) throw new Error(QUERY_EXPANDER_SCOPE_REQUIRED)
+      return expandQueryLLM(query, scope, this.config)
     }
     return expandQueryHeuristic(query, this.config)
   }
@@ -366,8 +370,8 @@ export class QueryExpander {
   /**
    * Expand multiple queries
    */
-  async expandAll(queries: string[]): Promise<QueryExpansion[]> {
-    return Promise.all(queries.map(q => this.expand(q)))
+  async expandAll(queries: string[], scope?: ProjectScope): Promise<QueryExpansion[]> {
+    return Promise.all(queries.map(q => this.expand(q, scope)))
   }
 
   /**

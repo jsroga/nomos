@@ -1,10 +1,8 @@
 import { create } from 'zustand'
 import { StorytellerBibleTab } from '@/domains/storyteller/core/storyteller-page-wire'
-import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 import {
   CharacterDraftResolution,
   GenerationActivityPhase,
-  isGenerationActivityBusy,
   type EntityNavigationPayload,
   type GenerationActivityState,
   type MoodboardCompletePayload,
@@ -21,12 +19,6 @@ import type {
   CharacterFilledDraft,
   GeneratedCharacterFields,
 } from '@/domains/storyteller/core/character-missing-fields'
-import { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
-
-enum GenerationActivityBootstrapLabel {
-  SendingToWritersRoom = 'Sending to Writers Room…',
-  WaitingForWritersRoom = 'Waiting for Writers Room',
-}
 
 const IDLE_GENERATION_ACTIVITY: GenerationActivityState = {
   phase: GenerationActivityPhase.Idle,
@@ -161,26 +153,13 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
     set((state) => ({ moodboardPrimaryVersion: state.moodboardPrimaryVersion + 1 })),
   requestChatPrompt: (message, section) =>
     set((state) => {
-      if (
-        isGenerationActivityBusy(state.generationActivity.phase) ||
-        isConsistencyFixRunBusy(state.consistencyFixRun.phase)
-      ) {
+      if (isConsistencyFixRunBusy(state.consistencyFixRun.phase)) {
         return state
       }
       const id = state.pendingChatPromptSeq + 1
       return {
         pendingChatPromptSeq: id,
         pendingChatPrompt: { id, message, section },
-        generationActivity: {
-          phase: GenerationActivityPhase.Submitted,
-          label:
-            section === CharacterDraftChatSection.Form
-              ? GenerationActivityBootstrapLabel.WaitingForWritersRoom
-              : GenerationActivityBootstrapLabel.SendingToWritersRoom,
-          section,
-          agentId: StorytellerAgentId.Storyteller,
-          updatedAt: Date.now(),
-        },
       }
     }),
   clearPendingChatPrompt: () => set({ pendingChatPrompt: null }),
@@ -232,13 +211,30 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
       characterDraftFields: null,
     })),
   setGenerationActivity: (patch) =>
-    set((state) => ({
-      generationActivity: {
+    set((state) => {
+      const next = {
         ...state.generationActivity,
         ...patch,
-        updatedAt: Date.now(),
-      },
-    })),
+      }
+      if (
+        next.phase === state.generationActivity.phase &&
+        next.label === state.generationActivity.label &&
+        next.section === state.generationActivity.section &&
+        next.toolName === state.generationActivity.toolName &&
+        next.agentId === state.generationActivity.agentId &&
+        next.preview === state.generationActivity.preview &&
+        next.toolComplete === state.generationActivity.toolComplete &&
+        next.error === state.generationActivity.error
+      ) {
+        return state
+      }
+      return {
+        generationActivity: {
+          ...next,
+          updatedAt: Date.now(),
+        },
+      }
+    }),
   clearGenerationActivity: () => set({ generationActivity: IDLE_GENERATION_ACTIVITY }),
   setPendingBoardHydration: pending => set({ pendingBoardHydration: pending }),
   appendPendingBeatAdds: incoming =>

@@ -1,3 +1,5 @@
+import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import type { BeatCard } from '@/domains/storyteller/core/types/story-types'
 import { HttpMethod, QueryParam, ContentType } from '@/shared/data/constants/protocol'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
@@ -35,11 +37,15 @@ export async function triggerBeatImageGeneration(
     config: Record<string, unknown>
   }
 ): Promise<{ handleId: string | null }> {
-  const data = await fetchJsonRecord(joinUrlPath('/api/storyteller/beats', beatId, GENERATE_IMAGE_SEGMENT), {
-    method: HttpMethod.Post,
-    headers: { 'Content-Type': ContentType.Json },
-    body: JSON.stringify(input),
-  })
+  const data = await withSubmissionNonce(
+    `${TRIGGER_TASK_ID.GENERATE_STORYBOARD}:${beatId}:${input.prompt}`,
+    requestId =>
+      fetchJsonRecord(joinUrlPath('/api/storyteller/beats', beatId, GENERATE_IMAGE_SEGMENT), {
+        method: HttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
+        body: JSON.stringify({ ...input, requestId }),
+      })
+  )
   return { handleId: readString(data.handleId) ?? null }
 }
 

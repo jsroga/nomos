@@ -8,11 +8,8 @@
 import { db } from '@/db/client'
 import { beats, episodes, projects, characters, gameLoops } from '@/db/schema'
 import { eq } from 'drizzle-orm'
-import { isValidProjectId } from '@/shared/auth/security'
-import {
-  E2E_BYPASS_NODE_ENVS,
-  E2E_TEST_USER_ID,
-} from '@/domains/storyteller/services/constants/access-verification'
+
+import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 
 // ============================================
 // TYPES
@@ -30,33 +27,6 @@ export interface BeatAccessResult extends AccessResult {
 // ============================================
 // PROJECT ACCESS
 // ============================================
-
-/**
- * Verify user has access to a project
- * Single query - most basic check
- */
-export async function verifyProjectAccess(projectId: string, userId: string): Promise<boolean> {
-  // Guard before Postgres — non-UUID ids (e.g. reserved path "projects") throw 22P02.
-  if (!isValidProjectId(projectId)) return false
-
-  const [project] = await db
-    .select({ userId: projects.userId })
-    .from(projects)
-    .where(eq(projects.id, projectId))
-    .limit(1)
-
-  if (!project) return false
-
-  // Allow E2E test user to bypass access checks in dev/test
-  if (
-    userId === E2E_TEST_USER_ID &&
-    E2E_BYPASS_NODE_ENVS.has(process.env.NODE_ENV || '')
-  ) {
-    return true
-  }
-
-  return project.userId === userId
-}
 
 // ============================================
 // EPISODE ACCESS
@@ -211,3 +181,48 @@ export async function verifyGameLoopAccess(loopId: string, userId: string): Prom
 // BULK ACCESS (for lists)
 // ============================================
 
+
+// ============================================
+// DERIVED SCOPES
+// ============================================
+
+/**
+ * Episode/beat/character scopes extend ProjectScope, so anything accepting a
+ * project scope accepts these — and the JOIN that resolves the owning project
+ * is not repeated. Each throws ProjectForbidden, which routes map to 404.
+ */
+export interface EpisodeScope extends ProjectScope {
+  readonly episodeId: string
+}
+
+export interface BeatScope extends EpisodeScope {
+  readonly beatId: string
+}
+
+export interface CharacterScope extends ProjectScope {
+  readonly characterId: string
+}
+
+export async function episodeScope(episodeId: string, userId: string): Promise<EpisodeScope> {
+  const access = await verifyEpisodeAccess(episodeId, userId)
+  if (!access.hasAccess || !access.projectId) throw new ProjectForbidden()
+  const scope = await projectScope(access.projectId, userId)
+  return { ...scope, episodeId }
+}
+
+export async function beatScope(beatId: string, userId: string): Promise<BeatScope> {
+  const access = await verifyBeatAccess(beatId, userId)
+  if (!access.hasAccess || !access.projectId || !access.episodeId) throw new ProjectForbidden()
+  const scope = await projectScope(access.projectId, userId)
+  return { ...scope, episodeId: access.episodeId, beatId }
+}
+
+export async function characterScope(
+  characterId: string,
+  userId: string
+): Promise<CharacterScope> {
+  const access = await verifyCharacterAccess(characterId, userId)
+  if (!access.hasAccess || !access.projectId) throw new ProjectForbidden()
+  const scope = await projectScope(access.projectId, userId)
+  return { ...scope, characterId }
+}

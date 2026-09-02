@@ -1,18 +1,15 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
+import { selectPortraitVariantPayloadSchema } from './constants/task-payloads'
 
-interface SelectPortraitVariantPayload {
-  projectId: string
-  characterId: string
-  gridImageUrl: string
-  variantIndex: 1 | 2 | 3 | 4
-}
-
-export const selectPortraitVariant = task({
+export const selectPortraitVariant = defineOwnedTask({
   id: 'select-portrait-variant',
+  schema: selectPortraitVariantPayloadSchema,
+  queue: JobQueue.Storage,
   maxDuration: 120,
   retry: { maxAttempts: 1 },
-  run: async (payload: SelectPortraitVariantPayload) => {
+  run: async payload => {
     const { projectId, characterId, gridImageUrl, variantIndex } = payload
 
     logger.info(`Cropping portrait variant ${variantIndex} from grid`, {

@@ -9,6 +9,7 @@
  * every lookup returns undefined and the resolvers fall back to env → auto-beta.
  */
 
+import { env } from '@/shared/config/env'
 import '@/shared/data/server-guard'
 import { MODEL_SETTING_DEFAULT_ROLE } from './constants/model-settings'
 
@@ -25,7 +26,7 @@ let warmStarted = false
  */
 function maybeWarm(): void {
   if (warmStarted || loaded) return
-  if (!process.env.DATABASE_URL || process.env.VITEST) return
+  if (!env.DATABASE_URL || process.env.VITEST) return
   warmStarted = true
   void loadModelSettings().catch(() => {})
 }
@@ -45,7 +46,7 @@ export function isModelSettingsLoaded(): boolean {
 
 /** Load all slots from the DB into the cache. No-op without DATABASE_URL. */
 export async function loadModelSettings(): Promise<Record<string, string>> {
-  if (!process.env.DATABASE_URL) return {}
+  if (!env.DATABASE_URL) return {}
   const { db } = await import('@/db/client')
   const { modelSettings } = await import('@/db/schema')
   const rows = await db.select().from(modelSettings)

@@ -1,38 +1,29 @@
 /**
- * Loop-creator model resolution — single source of truth for the specialist
- * agents (supervisor, balance-analyst, concept-evaluator, loop-planner,
- * progression-architect, mechanics-designer) + the market-analyst.
- *
- * Everything routes through the OpenRouter gateway (single OPENROUTER_API_KEY):
- * `override` (per-request `state.modelConfig.model`) → `LOOP_CREATOR_MODEL` env
- * → `openrouter/auto-beta`. The LangChain (`ChatOpenAI`) fallback path talks to
- * OpenRouter's OpenAI-compatible endpoint (see `openRouterClientConfig`).
+ * Which model loop-creator's specialists use. The precedence chain lives in
+ * the gateway's model registry; this file holds only the domain's choice.
  */
 
 import '@/shared/data/server-guard'
-import { toOpenRouterModel, toOpenRouterModelId } from '@/shared/agent-kernel/models'
-import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
+import {
+  resolveGatewayModel,
+  resolveOpenRouterModelId,
+  type ModelRoleSpec,
+} from '@/shared/ai/gateway/model-registry'
 
-const LOOP_CREATOR_MODEL_ENV = 'LOOP_CREATOR_MODEL'
 const LOOP_CREATOR_ROLE = 'loop-creator'
+const LOOP_CREATOR_MODEL_ENV = 'LOOP_CREATOR_MODEL'
 
-function loopCreatorModelId(override?: string): string | undefined {
-  return override || getConfiguredModel(LOOP_CREATOR_ROLE) || process.env[LOOP_CREATOR_MODEL_ENV]
+const LOOP_CREATOR_SPEC: ModelRoleSpec = {
+  role: LOOP_CREATOR_ROLE,
+  envVar: LOOP_CREATOR_MODEL_ENV,
 }
 
-/**
- * OpenRouter model id for the LangChain `ChatOpenAI` path (client already points
- * at OpenRouter's endpoint): `override` → admin panel → env → `openrouter/auto-beta`.
- * NOT the Mastra gateway string.
- */
+/** A bare OpenRouter model id, for the direct-completion path. */
 export function resolveLoopCreatorModel(override?: string): string {
-  return toOpenRouterModelId(loopCreatorModelId(override))
+  return resolveOpenRouterModelId(LOOP_CREATOR_SPEC, override)
 }
 
-/**
- * Model string for the Mastra agents (`FF_LOOP_CREATOR_MASTRA=true` specialists +
- * market-analyst), routed through the OpenRouter gateway.
- */
+/** The Mastra gateway string, for the flag-on specialist agents. */
 export function resolveLoopCreatorMastraModel(override?: string): string {
-  return toOpenRouterModel(loopCreatorModelId(override))
+  return resolveGatewayModel(LOOP_CREATOR_SPEC, override)
 }

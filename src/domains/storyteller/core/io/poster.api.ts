@@ -1,4 +1,5 @@
-import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
 import { fetchJson } from '@/shared/data/fetch-json-record'
@@ -26,11 +27,18 @@ export async function triggerCombinedStoryboard(
   if (model) body[StoryboardVideoRequestField.Model] = model
   if (look) body[StoryboardVideoRequestField.Look] = look
   const data = recordFromJson(
-    await fetchJson(joinUrlPath('/api/storyteller/episodes', episodeId, GENERATE_COMBINED_SEGMENT), {
-      method: HttpMethod.Post,
-      headers: JSON_HEADERS,
-      body: JSON.stringify(body),
-    })
+    await withSubmissionNonce(
+      `${TRIGGER_TASK_ID.GENERATE_COMBINED_STORYBOARD}:${episodeId}`,
+      requestId =>
+        fetchJson(
+          joinUrlPath('/api/storyteller/episodes', episodeId, GENERATE_COMBINED_SEGMENT),
+          {
+            method: HttpMethod.Post,
+            headers: JSON_HEADERS,
+            body: JSON.stringify({ ...body, requestId }),
+          }
+        )
+    )
   )
   return {
     handleId: readString(data.handleId) ?? null,
@@ -42,11 +50,15 @@ export async function triggerEpisodePoster(
   episodeId: string,
   input: { prompt: string; config: Record<string, unknown> }
 ): Promise<{ handleId: string | null; error: string | null }> {
-  const response = await fetch(joinUrlPath('/api/storyteller/episodes', episodeId, GENERATE_POSTER_SEGMENT), {
-    method: HttpMethod.Post,
-    headers: JSON_HEADERS,
-    body: JSON.stringify(input),
-  })
+  const response = await withSubmissionNonce(
+    `${TRIGGER_TASK_ID.GENERATE_POSTER}:${episodeId}:${input.prompt}`,
+    requestId =>
+      fetch(joinUrlPath('/api/storyteller/episodes', episodeId, GENERATE_POSTER_SEGMENT), {
+        method: HttpMethod.Post,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ...input, requestId }),
+      })
+  )
   const data = recordFromJson(await response.json().catch(() => ({})))
   if (!response.ok) {
     return {

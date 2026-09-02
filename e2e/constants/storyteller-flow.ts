@@ -36,8 +36,10 @@ export enum FlowUiLabel {
 }
 
 export enum FlowSelector {
-  AssistantMessage = '.mr-auto.max-w-\\[80\\%\\]',
-  UserMessage = '.ml-auto.max-w-\\[80\\%\\]',
+  // Rotted: the chat markup moved to aui-* classes, so these Tailwind utility
+  // selectors matched nothing and every message assertion failed.
+  AssistantMessage = '.aui-assistant-body',
+  UserMessage = '.aui-user-bubble',
   Heading = 'h1',
   Button = 'button',
   Div = 'div',
@@ -100,4 +102,15 @@ export enum FlowCharacter {
 
 export enum FlowChatRole {
   User = 'user',
+}
+
+/** Empty-turn notice scenario: the model returns no text and no tool calls. */
+export enum EmptyTurnScenario {
+  TestName = 'shows a notice when the model returns an empty turn',
+  Prompt = 'Regenerate the soundtracks',
+  AssistantRoute = '**/api/assistant/storyteller',
+  SseContentType = 'text/event-stream',
+  DonePayload = 'data: [DONE]\n\n',
+  SuggestionChip = '.aui-chip',
+  AssistantPath = '/api/assistant/storyteller',
 }

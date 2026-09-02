@@ -7,7 +7,7 @@
  * - Creating high-level loop architecture
  */
 
-import { AIMessage } from '@langchain/core/messages'
+import { AIMessage } from '@/shared/chat/core/message'
 import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import { LoopCreatorState, LoopAgentAction } from '../../core/graph/state'
@@ -216,6 +216,7 @@ export async function loopPlannerAgent(
 
   console.log('[LoopPlanner] Calling LLM...')
   const content = await runLoopCreatorCompletion({
+    scope: state.scope,
     agentId: LoopCreatorMastraAgentId.LoopPlanner,
     systemPrompt,
     history: state.messages.slice(-5),

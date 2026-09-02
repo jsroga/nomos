@@ -1,4 +1,5 @@
-import { runs } from '@trigger.dev/sdk/v3'
+import { JobAccessError, retrieveOwnedRun } from '@/shared/jobs'
+import { HttpStatus } from '@/shared/data/constants/protocol'
 import { NextRequest, NextResponse } from 'next/server'
 import {
   interiorTaskParamsSchema,
@@ -20,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tas
 
     const { taskId } = parsedParams.data
 
-    const run = await runs.retrieve(taskId)
+    const run = await retrieveOwnedRun(taskId, session.user.id)
 
     return NextResponse.json(
       interiorTextTo3DStatusResponseSchema.parse({
@@ -31,6 +32,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tas
       })
     )
   } catch (error: unknown) {
+    // Missing, or owned by another tenant: same response either way, so a
+    // 404 never confirms that someone else's run id exists.
+    if (error instanceof JobAccessError) {
+      return NextResponse.json({ error: API_ERROR.RUN_NOT_FOUND }, { status: HttpStatus.NOT_FOUND })
+    }
     console.error(API_LOG_PREFIX.TEXT_TO_3D_STATUS_FAILED, error)
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
   }

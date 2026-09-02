@@ -189,6 +189,7 @@ export async function supervisorAgent(state: LoopCreatorState): Promise<Partial<
   )
 
   const content = await runLoopCreatorCompletion({
+    scope: state.scope,
     agentId: LoopCreatorMastraAgentId.Supervisor,
     systemPrompt,
     history: state.messages.slice(-10),

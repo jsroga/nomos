@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
-import { verifyProjectAccess } from '@/domains/storyteller/services/access-verification-service'
+import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 import { formatCanonEpisodeLock } from '@/domains/storyteller/services/story-canon-pack-format'
 import { loadOpenEpisodeCanon } from '@/domains/storyteller/services/story-canon-pack'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
@@ -44,10 +44,14 @@ export async function loadBeatEpisodeLock(input: {
   if (input.projectIdHint && input.projectIdHint !== row.projectId) {
     return { ok: false, error: BeatCanonLookupError.Forbidden }
   }
-  if (!(await verifyProjectAccess(row.projectId, input.userId))) {
+  let scope: ProjectScope
+  try {
+    scope = await projectScope(row.projectId, input.userId)
+  } catch (error) {
+    if (!(error instanceof ProjectForbidden)) throw error
     return { ok: false, error: BeatCanonLookupError.Forbidden }
   }
 
-  const canon = await loadOpenEpisodeCanon(row.projectId, row.episodeId)
+  const canon = await loadOpenEpisodeCanon(scope, row.episodeId)
   return { ok: true, lock: canon ? formatCanonEpisodeLock(canon) : '' }
 }

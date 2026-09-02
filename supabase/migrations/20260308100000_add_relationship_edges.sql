@@ -1,3 +1,8 @@
+-- NOTE: RLS applies only to queries made through the request-scoped Supabase
+-- client. The application's Drizzle path connects as a BYPASSRLS role, so these
+-- policies do NOT protect it — tenancy there is enforced in application code.
+-- See docs/DECISIONS.md ADR 0001.
+
 -- =============================================================================
 -- Add relationship_edges table
 -- 

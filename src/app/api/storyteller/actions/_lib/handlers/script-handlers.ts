@@ -42,7 +42,7 @@ export const handleUpdateScript: ActionHandler = async (ctx, action) => {
   const [project] = await db
     .select()
     .from(projects)
-    .where(eq(projects.id, readSqlId(ctx.projectId)))
+    .where(eq(projects.id, readSqlId(ctx.scope?.projectId)))
     .limit(1)
   const currentBible = recordFromJson(project?.seriesBible)
   const currentScript = typeof currentBible.script === 'string' ? currentBible.script : ''

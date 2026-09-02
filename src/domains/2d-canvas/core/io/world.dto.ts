@@ -96,7 +96,7 @@ export const worldAssetSchema = z
     project_id: z.string().uuid().optional(),
     userId: z.string().uuid().optional(),
     user_id: z.string().uuid().optional(),
-    imageFilename: z.string(),
+    imageFilename: z.string().optional(),
     image_filename: z.string().optional(),
     modelFilename: z.string().nullable().optional(),
     model_filename: z.string().nullable().optional(),

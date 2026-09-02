@@ -7,6 +7,8 @@
  * See: https://mastra.ai/docs/agents/agent-memory
  */
 
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { Mastra } from '@mastra/core/mastra'
@@ -169,7 +171,7 @@ export class StorytellerAgent {
       async span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
         // Nest the generate span under this operation span explicitly (real span id).
-        const response = await this.agent.generate(prompt, {
+        const response = await meteredCall(LlmFeature.StorytellerChat, () => this.agent.generate(prompt, {
           toolChoice,
           maxSteps: AGENT_RUNTIME_DEFAULTS.maxSteps,
           modelSettings: {
@@ -179,7 +181,7 @@ export class StorytellerAgent {
             traceId: id,
             ...(span.spanId ? { parentSpanId: span.spanId } : {}),
           },
-        })
+        }))
         return response.text
       },
       { goal, context }

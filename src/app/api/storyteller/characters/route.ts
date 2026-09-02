@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { characters } from '@/db'
-import { verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller/server'
+import { verifyCharacterAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { eq, desc } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
 
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    if (!(await tryProjectScope(projectId, session.user.id))) {
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.FORBIDDEN })
     }
 

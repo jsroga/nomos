@@ -14,12 +14,12 @@
  */
 
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
-import { HumanMessage, AIMessage, type BaseMessage } from '@langchain/core/messages'
+import { HumanMessage, AIMessage, type BaseMessage } from '@/shared/chat/core/message'
 // Side-effect: register the loop-creator Mastra agents on the central instance
 // before the first getMastraInstance() call inside streamLoopCreator.
 import '@/domains/loop-creator/core/io/mastra-runtime'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { streamLoopCreator } from '@/domains/loop-creator/server'
 import { createInitialLoopState, type LoopCreatorState } from '@/domains/loop-creator'
 import { LoopOrchestratorEventType } from '@/domains/loop-creator/constants/loop-orchestrator'
@@ -91,7 +91,8 @@ export async function POST(req: Request) {
   const record = isPlainObject(body) ? body : {}
   const projectId = readString(record.projectId) ?? ''
 
-  if (!(await verifyProjectAccess(projectId, session.user.id))) {
+  const scope = await tryProjectScope(projectId, session.user.id)
+  if (!scope) {
     return jsonError(API_ERROR.PROJECT_ACCESS_DENIED, STATUS_404)
   }
 
@@ -100,7 +101,7 @@ export async function POST(req: Request) {
   const context = isPlainObject(record.context) ? record.context : undefined
 
   const initialState: LoopCreatorState = {
-    ...createInitialLoopState(projectId, message, context),
+    ...createInitialLoopState(scope, message, context),
     // Seed the graph with the full conversation, not just the latest turn.
     messages: history.length > 0 ? history : [new HumanMessage(message)],
   }

@@ -22,6 +22,7 @@ import {
   StringSeparator,
 } from '@/shared/data/constants/protocol'
 import { eq } from 'drizzle-orm'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { entityRegistry } from './entity-registry-service'
 import {
   displayNameFromRefId,
@@ -43,7 +44,7 @@ interface AutoRegisterProjectRow {
 
 interface AutoRegisterContext extends AutoRegisterNameParts {
   refId: string
-  projectId: string
+  scope: ProjectScope
   context?: string | null
   storyPlan: Record<string, unknown>
   seriesBible: Record<string, unknown>
@@ -124,7 +125,7 @@ async function generatedStubDescription(ctx: AutoRegisterContext, type: EntityTy
     name: ctx.normalizedName,
     type,
     surroundingText: ctx.context ?? '',
-    projectId: ctx.projectId,
+    scope: ctx.scope,
   })
 }
 
@@ -134,7 +135,7 @@ async function registerGeneratedStub(ctx: AutoRegisterContext, type: EntityType)
     name: ctx.normalizedName,
     description,
     metadata: { status: EntityAutoRegisterStatus.Discovered, inferredFromText: true },
-    projectId: ctx.projectId,
+    scope: ctx.scope,
   })
   return true
 }
@@ -173,7 +174,7 @@ async function tryRegisterFaction(ctx: AutoRegisterContext): Promise<boolean> {
     name: faction.name,
     description: factionDescription,
     metadata: faction,
-    projectId: ctx.projectId,
+    scope: ctx.scope,
   })
   console.log(`✅ [AutoRegister] Registered faction with ID ${ctx.refId}: ${faction.name}`)
   console.log(`   Description: ${factionDescription.slice(0, 100)}`)
@@ -225,7 +226,7 @@ async function tryRegisterCharacterFromCast(
     name: character.name,
     description,
     metadata: character,
-    projectId: ctx.projectId,
+    scope: ctx.scope,
   })
   console.log(`✅ [AutoRegister] Registered character with ID ${ctx.refId}: ${character.name}`)
   console.log(`   Description: ${description.slice(0, 100)}`)
@@ -236,7 +237,7 @@ async function tryRegisterCharacterFromDb(ctx: AutoRegisterContext): Promise<boo
   const dbCharacters = await db
     .select()
     .from(characters)
-    .where(eq(characters.projectId, ctx.projectId))
+    .where(eq(characters.projectId, ctx.scope.projectId))
 
   const matchedChar = dbCharacters.find(
     c =>
@@ -262,7 +263,7 @@ async function tryRegisterCharacterFromDb(ctx: AutoRegisterContext): Promise<boo
       fatalFlaw: readString(psychology.fatalFlaw),
       traits: psychology.traits,
     },
-    projectId: ctx.projectId,
+    scope: ctx.scope,
     sourceEntityId: matchedChar.id,
   })
   console.log(
@@ -303,7 +304,7 @@ async function tryRegisterRule(ctx: AutoRegisterContext): Promise<boolean> {
     name: ruleText?.slice(0, 50) || EntityAutoRegisterFallback.Rule,
     description: readString(rule.consequence) || ruleText || '',
     metadata: rule,
-    projectId: ctx.projectId,
+    scope: ctx.scope,
   })
   console.log(`✅ [AutoRegister] Registered rule with ID ${ctx.refId}`)
   return true
@@ -318,7 +319,7 @@ async function tryRegisterPlace(ctx: AutoRegisterContext): Promise<boolean> {
     name: ctx.normalizedName,
     description: placeDescription,
     metadata: { inferredFromText: true },
-    projectId: ctx.projectId,
+    scope: ctx.scope,
   })
   console.log(`✅ [AutoRegister] Registered place with ID ${ctx.refId}: ${ctx.normalizedName}`)
   console.log(
@@ -357,7 +358,7 @@ async function registerByEntityType(
 /** Find entity from project data and auto-register it in the entity registry. */
 export async function tryAutoRegisterEntity(
   refId: string,
-  projectId: string,
+  scope: ProjectScope,
   context?: string | null
 ): Promise<boolean> {
   const type = getEntityTypeFromId(refId)
@@ -367,7 +368,7 @@ export async function tryAutoRegisterEntity(
   }
 
   try {
-    const project = await loadProjectForAutoRegister(projectId)
+    const project = await loadProjectForAutoRegister(scope.projectId)
     if (!project) {
       return false
     }
@@ -381,7 +382,7 @@ export async function tryAutoRegisterEntity(
 
     const ctx: AutoRegisterContext = {
       refId,
-      projectId,
+      scope,
       context,
       namePart,
       normalizedName,

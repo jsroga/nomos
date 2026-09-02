@@ -1,7 +1,5 @@
 /** Episode plan merge — bible categories and hydration field keys. */
 
-import { StoryPlanMergeField } from '@/domains/storyteller/config/constants/bible-wire-fields'
-import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import { ToolResultPayloadField } from '@/domains/storyteller/config/constants/tool-result-wire'
 import { BIBLE_CATEGORY_KEYS } from '@/domains/storyteller/services/constants/context-assembly'
 
@@ -12,22 +10,8 @@ export const HYDRATION_CATEGORY_KEYS = [
   ToolResultPayloadField.UpdatedFields,
 ] as const
 
-export const HYDRATION_PLAN_FIELDS = [
-  StoryPlanMergeField.Soundtracks,
-  StoryPlanMergeField.WorldRules,
-  StoryPlanMergeField.Factions,
-  CastFieldAlias.KeyCharacters,
-  StoryPlanMergeField.PlotTwists,
-  StoryPlanMergeField.Inspirations,
-  StoryPlanMergeField.WorldDescription,
-  StoryPlanMergeField.Genre,
-  StoryPlanMergeField.Tone,
-  StoryPlanMergeField.Sequences,
-  StoryPlanMergeField.SeasonStructure,
-  StoryPlanMergeField.CentralTheme,
-  StoryPlanMergeField.MasterPrompt,
-  StoryPlanMergeField.MoodImages,
-] as const
+/** One array, re-exported: two copies of this list drifted once already. */
+export { HYDRATION_PLAN_FIELDS } from '@/domains/storyteller/state/constants/hydration'
 
 export enum EpisodePlanMergeField {
   ImagePrompts = 'imagePrompts',

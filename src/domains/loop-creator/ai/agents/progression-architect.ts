@@ -8,7 +8,7 @@
  * - Connecting progression to core loops
  */
 
-import { AIMessage } from '@langchain/core/messages'
+import { AIMessage } from '@/shared/chat/core/message'
 import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import {
@@ -233,6 +233,7 @@ export async function progressionArchitectAgent(
   const systemPrompt = buildContext(state).replace('{{TASK}}', task)
 
   const content = await runLoopCreatorCompletion({
+    scope: state.scope,
     agentId: LoopCreatorMastraAgentId.ProgressionArchitect,
     systemPrompt,
     history: state.messages.slice(-5),

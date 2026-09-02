@@ -1,3 +1,9 @@
+import { env } from '@/shared/config/env'
+import { clientEnv } from '@/shared/config/env.client'
+import {
+  resolveConfiguredModelId,
+  type ModelRoleSpec,
+} from '@/shared/ai/gateway/model-registry'
 import { createOpenAI } from '@ai-sdk/openai'
 import {
   DEFAULT_CHAT_MODEL,
@@ -63,12 +69,12 @@ export function getAgentModel(modelName: string = TEXT_GEN_PRIMARY_MODEL) {
 
   // OpenAI — prefer OpenRouter; optional OPENAI_API_KEY direct fallback
   if (colonForm.startsWith('openai:')) {
-    const useOpenRouter = Boolean(process.env.OPENROUTER_API_KEY)
+    const useOpenRouter = Boolean(env.OPENROUTER_API_KEY)
     const modelId = useOpenRouter
       ? colonForm.replace(':', '/')
       : colonForm.replace('openai:', '')
     const openai = createOpenAI({
-      apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
+      apiKey: env.OPENROUTER_API_KEY || env.OPENAI_API_KEY,
       baseURL: useOpenRouter ? OPENROUTER_BASE_URL : undefined,
     })
     const model = openai(modelId)
@@ -79,7 +85,7 @@ export function getAgentModel(modelName: string = TEXT_GEN_PRIMARY_MODEL) {
   // Google / Moonshot — OpenRouter only
   if (colonForm.startsWith('google:') || colonForm.startsWith('moonshotai:')) {
     const openai = createOpenAI({
-      apiKey: process.env.OPENROUTER_API_KEY,
+      apiKey: env.OPENROUTER_API_KEY,
       baseURL: OPENROUTER_BASE_URL,
     })
     const model = openai(colonForm.replace(':', '/'))
@@ -97,7 +103,7 @@ export function getAgentModel(modelName: string = TEXT_GEN_PRIMARY_MODEL) {
  * Use this to switch the entire Council of Agents at once.
  */
 export const GLOBAL_AGENT_MODEL =
-  process.env.NEXT_PUBLIC_DEFAULT_AGENT_MODEL || OPENROUTER_AUTO_GATEWAY
+  clientEnv.defaultAgentModel || OPENROUTER_AUTO_GATEWAY
 
 /**
  * Model fallback configuration for resilience
@@ -386,9 +392,9 @@ export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
     model: DEFAULT_CHAT_MODEL,
     temperature: 0.7,
     topP: 0.9,
-    maxOutputTokens: 2000,
+    maxOutputTokens: 8000,
     rationale:
-      'Writers Room chat adapter. Per-request picker (Kimi / GLM / Opus) wins; else STORYTELLER_CHAT_MODEL; else this matrix default. Orchestration roles (author/planner/critic/muse/premise) use their own slots — not the chat picker.',
+      'Writers Room chat adapter. Per-request picker (Kimi / GLM / Opus) wins; else STORYTELLER_CHAT_MODEL; else this matrix default. Orchestration roles (author/planner/critic/muse/premise) use their own slots — not the chat picker. Headroom is set well above answer length because reasoning draws from this same budget: measured by chat-model-output-budget.e2e, a one-sentence answer costs 463-779 reasoning tokens on Kimi / GLM / Opus (up to 98% of the spend). The old 2000 left too little for a full bible section once reasoning is paid.',
   },
 }
 
@@ -411,11 +417,17 @@ function isStorytellerRole(agentId: string): agentId is StorytellerModelRole {
   return STORYTELLER_ROLES.has(agentId)
 }
 
-// Read at call time (not module load) so dotenv-loaded scripts and per-env
-// rollbacks work without import-order sensitivity.
+function roleSpec(role: StorytellerModelRole): ModelRoleSpec {
+  return { role, envVar: ROLE_ENV_VARS[role] }
+}
+
+/**
+ * The operator env override alone, for `getAgentModelConfig`, which wants only
+ * that layer of the chain. The full precedence lives in the gateway registry.
+ */
 function roleEnvOverride(agentId: string): string | undefined {
   if (!isStorytellerRole(agentId)) return undefined
-  return process.env[ROLE_ENV_VARS[agentId]]
+  return resolveConfiguredModelId({ role: '', envVar: ROLE_ENV_VARS[agentId] })
 }
 
 /**
@@ -453,7 +465,9 @@ export function resolveRoleModel(
   // Single-key OpenRouter: per-request picker → admin panel setting → operator
   // env override (STORYTELLER_<ROLE>_MODEL) → auto router. All routed through the
   // same gateway. The per-role matrix still supplies temperature/topP/rationale.
-  const explicit = validatedOverride ?? getConfiguredModel(role) ?? roleEnvOverride(role)
+  // The precedence chain itself is the gateway registry's; this file supplies
+  // the role's env var and decides what to do with the answer.
+  const explicit = resolveConfiguredModelId(roleSpec(role), validatedOverride)
   return explicit ? resolveStorytellerModel(explicit) : OPENROUTER_AUTO_GATEWAY
 }
 
@@ -468,7 +482,7 @@ export function resolveUserPickerOpenRouterModelId(overrideId?: string): string 
   const catalogOrOpenRouterId =
     validatedOverride ??
     getConfiguredModel('author') ??
-    process.env.STORYTELLER_AUTHOR_MODEL ??
+    env.STORYTELLER_AUTHOR_MODEL ??
     DEFAULT_CHAT_MODEL
   const option = getChatModelOption(catalogOrOpenRouterId)
   return toOpenRouterModelId(option?.openRouterId ?? catalogOrOpenRouterId)

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import { eq, asc } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import type { generateCombinedStoryboard } from '@/domains/storyteller/tasks/generate-combined-storyboard.task'
 import {
   beatsWithImageUrl,
@@ -69,7 +69,7 @@ export async function POST(
       return NextResponse.json({ error: API_ERROR.EPISODE_PROJECT_NOT_FOUND }, { status: 404 })
     }
 
-    if (!(await verifyProjectAccess(episodeData.projectId, session.user.id))) {
+    if (!(await tryProjectScope(episodeData.projectId, session.user.id))) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -104,11 +104,15 @@ export async function POST(
     )
     const look = resolveStoryboardVideoLook(body[StoryboardVideoRequestField.Look])
 
-    const handle = await tasks.trigger<typeof generateCombinedStoryboard>(
+    const requestId = requireSubmissionNonce(body)
+    if (requestId instanceof NextResponse) return requestId
+
+    const handle = await triggerOwnedRun<typeof generateCombinedStoryboard>(
       TRIGGER_TASK_ID.GENERATE_COMBINED_STORYBOARD,
       {
         episodeId,
         projectId: episodeData.projectId,
+        requestId,
         beats: mappedBeats,
         model,
         look,

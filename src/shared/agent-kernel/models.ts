@@ -5,6 +5,7 @@
  * Every model used anywhere in the system is configured here.
  */
 
+import { env } from '@/shared/config/env'
 import { createOpenAI } from '@ai-sdk/openai'
 
 // =============================================================================
@@ -102,7 +103,7 @@ export function toOpenRouterModel(id?: string): string {
 
 /** Config for LangChain `ChatOpenAI` / AI-SDK `createOpenAI` pointed at OpenRouter. */
 export function openRouterClientConfig(): { apiKey: string | undefined; baseURL: string } {
-  return { apiKey: process.env.OPENROUTER_API_KEY, baseURL: OPENROUTER_BASE_URL }
+  return { apiKey: env.OPENROUTER_API_KEY, baseURL: OPENROUTER_BASE_URL }
 }
 
 // =============================================================================
@@ -112,28 +113,28 @@ export function openRouterClientConfig(): { apiKey: string | undefined; baseURL:
 export const MODELS = {
   // === GENERATION MODELS (for creating content) ===
   generation: {
-    primary: process.env.GENERATION_MODEL || TEXT_GEN_PRIMARY_MODEL,
-    fast: process.env.GENERATION_MODEL_FAST || TEXT_GEN_FAST_MODEL,
-    creative: process.env.GENERATION_MODEL_CREATIVE || TEXT_GEN_PRIMARY_MODEL,
+    primary: env.GENERATION_MODEL || TEXT_GEN_PRIMARY_MODEL,
+    fast: env.GENERATION_MODEL_FAST || TEXT_GEN_FAST_MODEL,
+    creative: env.GENERATION_MODEL_CREATIVE || TEXT_GEN_PRIMARY_MODEL,
   },
 
   // === JUDGING MODELS (for evaluation - independent layer) ===
   judging: {
-    primary: process.env.JUDGING_MODEL || TEXT_GEN_SHORT_IMPACT_MODEL,
-    fallback: process.env.JUDGING_MODEL_FALLBACK || TEXT_GEN_PRIMARY_MODEL,
+    primary: env.JUDGING_MODEL || TEXT_GEN_SHORT_IMPACT_MODEL,
+    fallback: env.JUDGING_MODEL_FALLBACK || TEXT_GEN_PRIMARY_MODEL,
     // Low temperature for consistent judging
     temperature: 0.1,
   },
 
   // === PLANNING MODELS (for reasoning/planning) ===
   planning: {
-    primary: process.env.PLANNING_MODEL || TEXT_GEN_PRIMARY_MODEL,
-    reasoning: process.env.PLANNING_MODEL_REASONING || TEXT_GEN_PRIMARY_MODEL,
+    primary: env.PLANNING_MODEL || TEXT_GEN_PRIMARY_MODEL,
+    reasoning: env.PLANNING_MODEL_REASONING || TEXT_GEN_PRIMARY_MODEL,
   },
 
   // === EMBEDDING MODELS (OpenRouter `/embeddings` — same OPENROUTER_API_KEY) ===
   embedding: {
-    primary: process.env.EMBEDDING_MODEL || 'openai/text-embedding-3-small',
+    primary: env.EMBEDDING_MODEL || 'openai/text-embedding-3-small',
   },
 } as const
 
@@ -142,8 +143,8 @@ export const MODELS = {
 // =============================================================================
 
 export const IMPROVEMENT_LOOP = {
-  maxIterations: Number(process.env.IMPROVEMENT_MAX_ITERATIONS) || 5,
-  qualityThreshold: Number(process.env.IMPROVEMENT_QUALITY_THRESHOLD) || 0.85,
+  maxIterations: env.IMPROVEMENT_MAX_ITERATIONS ?? 5,
+  qualityThreshold: env.IMPROVEMENT_QUALITY_THRESHOLD ?? 0.85,
   minImprovementDelta: 0.02,
   earlyExitOnRegression: true,
   /** Exit if score doesn't improve by minDelta for this many consecutive iterations */
@@ -178,13 +179,13 @@ export function createPureModel(modelName: string, chatCompletions = false) {
 
   // OpenAI (Luna / Sol / …) — prefer OpenRouter; optional OPENAI_API_KEY direct fallback
   if (colonForm.startsWith('openai:')) {
-    const useOpenRouter = Boolean(process.env.OPENROUTER_API_KEY)
+    const useOpenRouter = Boolean(env.OPENROUTER_API_KEY)
     const modelId = useOpenRouter
       ? colonForm.replace(PROVIDER_COLON, PROVIDER_SLASH)
       : colonForm.replace('openai:', '')
     return openAiCompatibleModel(
       modelId,
-      process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
+      env.OPENROUTER_API_KEY || env.OPENAI_API_KEY,
       useOpenRouter ? OPENROUTER_BASE_URL : undefined,
       chatCompletions,
     )
@@ -194,7 +195,7 @@ export function createPureModel(modelName: string, chatCompletions = false) {
   if (colonForm.startsWith('google:') || colonForm.startsWith('moonshotai:')) {
     return openAiCompatibleModel(
       colonForm.replace(PROVIDER_COLON, PROVIDER_SLASH),
-      process.env.OPENROUTER_API_KEY,
+      env.OPENROUTER_API_KEY,
       OPENROUTER_BASE_URL,
       chatCompletions,
     )
@@ -203,8 +204,8 @@ export function createPureModel(modelName: string, chatCompletions = false) {
   // Default: Kimi latest via OpenRouter
   return openAiCompatibleModel(
     TEXT_GEN_PRIMARY_MODEL,
-    process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
-    process.env.OPENROUTER_API_KEY ? OPENROUTER_BASE_URL : undefined,
+    env.OPENROUTER_API_KEY || env.OPENAI_API_KEY,
+    env.OPENROUTER_API_KEY ? OPENROUTER_BASE_URL : undefined,
     chatCompletions,
   )
 }

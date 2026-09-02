@@ -1,3 +1,4 @@
+import { ChatMessageRole } from '@/shared/chat/core/message'
 import { v4 as uuidv4 } from 'uuid'
 import {
   readNumber,
@@ -9,7 +10,6 @@ import {
 } from '@/shared/data/json-guards'
 import { LoopAgentNode } from '@/domains/loop-creator/constants/agent-nodes'
 import { NEXT_AGENT_SUPERVISOR } from '@/domains/loop-creator/constants/graph-state-defaults'
-import { LangChainMessageWire } from '@/domains/loop-creator/constants/loop-orchestrator'
 import type { LoopCreatorState, MechanicEdge, MechanicNode } from '../../core/graph/state'
 import { parseMechanicEdgeType } from '../../core/graph/state'
 
@@ -352,7 +352,7 @@ export function parseMechanicsDesignerResponse(content: string): MechanicsDesign
 export function resolveMechanicsDesignerTask(state: LoopCreatorState): string {
   const lastHumanMsg = [...state.messages]
     .reverse()
-    .find(m => m._getType() === LangChainMessageWire.Human)
+    .find(m => m._getType() === ChatMessageRole.Human)
   if (!lastHumanMsg) return MechanicsDesignerDefaultTask.DesignCoreMechanics
   if (typeof lastHumanMsg.content === 'string') return lastHumanMsg.content
   return MechanicsDesignerDefaultTask.DesignGameMechanics

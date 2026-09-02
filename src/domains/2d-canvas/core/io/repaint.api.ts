@@ -1,4 +1,6 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
+import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
@@ -40,11 +42,15 @@ export async function postRepaint(input: {
   prompt: string
   styleReferenceUrls?: string[]
 }): Promise<{ imageBase64: string }> {
-  const data = await fetchJsonRecord(RepaintApiRoute.Repaint, {
-    method: HttpMethod.Post,
-    headers: JSON_HEADERS,
-    body: JSON.stringify(input),
-  })
+  const data = await withSubmissionNonce(
+    `${TRIGGER_TASK_ID.REPAINT_TILE}:${input.projectId}:${input.prompt}`,
+    requestId =>
+      fetchJsonRecord(RepaintApiRoute.Repaint, {
+        method: HttpMethod.Post,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ...input, requestId }),
+      })
+  )
   const runId = readString(data.runId)
   if (!runId) {
     throw new Error(readString(data.error) ?? RepaintServiceError.RepaintTriggerFailed)

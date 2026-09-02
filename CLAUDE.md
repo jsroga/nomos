@@ -49,7 +49,15 @@ npx vitest run src/domains/loop-creator            # whole directory
 
 Each `src/domains/<module>/` follows the blueprint in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): `ui/`, `state/`, `core/` (with `core/io/`), `services/`, `ai/`, `tasks/` + a **single public `index.ts` barrel**. Dependency rule: `ui → state → core → services → ai`; no cross-module deep imports, pure `core/` (outside `core/io/`) has no React/DB/fetch, server data lives in TanStack Query not Zustand. Enforced by `src/domains/__tests__/domain-structure.test.ts` and ESLint barrel guards. Asset modules (`2d-canvas`, `3d-canvas`, `3d-asset-exporter`) lean on `tasks/`, not `ai/`.
 
+**Every paid model call goes through `@/shared/ai/gateway`.** `complete`, `completeStructured` and `embed` take a `ProjectScope`, record tokens/cost/latency/outcome to `llm_calls`, and own the timeout and retry policy — a direct `ai` / `@ai-sdk/*` / `openai` / `replicate` import is a call nobody can cost. Cost comes from a committed price table and an unknown model throws rather than recording zero. Recording never fails a generation. Eval scorers deliberately do **not** route through it, so judge calls never enter `llm_calls` as production spend. Enforced by `no-restricted-imports` (gate A2, report-only at 12) and `npm run spend`. ADR 0003.
+
+**Server configuration is read in one place.** `src/shared/config/env.ts` parses `process.env` once at import with a Zod schema, so a missing variable fails at boot naming itself rather than surfacing later as `undefined`. Import `env` from it; never read `process.env.X` in `src/**`. Exempt: `NEXT_PUBLIC_*` (Next only inlines literal member expressions — use `env.client.ts`), runtime values (`NODE_ENV`, `NEXT_RUNTIME`, `VITEST`, `PORT`), assignments, and lookups by a variable key. Enforced by `local/no-bare-process-env` and `npm run env:check`, which fails when a schema key is undocumented in `.env.local.example`.
+
+**World-bible sections have one declaration.** `src/domains/storyteller/core/bible/section-registry.ts` is the single place a section is defined — ownership, merge strategy, whether it hydrates, its label and aliases. `BIBLE_OWNED_PLAN_FIELDS` and `HYDRATION_PLAN_FIELDS` are derived from it; never edit them by hand. Adding a `BibleSection` member without a registry entry is a **compile error**, and the eight world-level scalars that are not sections (`genre`, `tone`, `sequences`, …) live in `WORLD_SCALAR_FIELDS` beside it. Enforced by `npm run test:unit` — `core/bible/__tests__/section-registry.test.ts`.
+
 Two Mastra entries: `src/mastra.ts` is the Studio CLI entry (bundler-safe tool stubs in `src/shared/agent-kernel/mastra/tools/`); `src/shared/agent-kernel/MastraInstance.ts` is the production instance (Postgres memory, tracing). Production Mastra agents live in `src/domains/*/ai/agents/`. Never create a second Mastra instance or Postgres store.
+
+**Shapes are parsed once, at the edge.** A `contracts/` module per aggregate holds the Zod schema, the inferred type and the mappers; `recordFromJson`/`readString` guard a shape *at the boundary*, not at every reader, and **snake_case exists only inside a mapper** — a column rename must be a one-file change, not a full-text search. `safeParse` at a boundary you do not control (request body → 400, provider response, legacy JSONB → degrade); `parse` where a bad shape is a bug here. Zod's default is *strip*, not strict — `.strict()` on a legacy column discards a whole record over one stray key, and `.passthrough()` belongs only at a provider or model boundary, with a comment saying so. Enforced by `npx vitest run scripts/__tests__/untyped-json-inventory.test.ts`: four ratchets, and **a converted module may not regress**. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) § Contracts.
 
 **TypeScript is strict**: implicit `any` is a compile error; `@typescript-eslint/no-explicit-any` is `error`; **`as` type assertions are banned** (`assertionStyle: 'never'`, `as const` only); non-null `!` is banned (`no-non-null-assertion` — guard instead). Legacy `@ts-nocheck` files exist; don't add new ones. **Domains must not import each other**, and `shared/` must not import `@/domains/*` — lift shared code to `@/shared` (a re-export "seam" still trips `no-restricted-imports`). Magic-string values → an `enum` **or** a `SCREAMING` const / `constants/` module (`local/no-magic-string`); but an enum member that references another enum/const or duplicates a value is illegal → use `const X = { … } as const`. Also live: `local/no-repeated-array-filter` (partition in one pass). Full patterns: `.agents/execute/implement.md` § Code rules. See `.cursor/rules/eslint-boundaries.mdc`.
 
@@ -67,12 +75,14 @@ Mastra AI tracing (agent/tool/workflow spans + forwarded logs) is configured in 
 ## Evaluations
 
 ```bash
-npm run eval              # all 12 golden examples (Mastra scorers)
-npm run eval -- --samples=5
+npm run eval:gate         # run + compare to the dated baseline; exits 1 on a regression
+npm run eval              # run only, no comparison
+npm run eval:full         # both datasets — before a release, after a model change
+npm run eval:noise        # re-measure σ after changing a judge or the golden set
 npm run eval:dashboard    # generate + open HTML report
 ```
 
-Run evals after any change to agent prompts, tools, model config, or the storyteller generation flow. A change is an improvement only if no single scorer regresses below baseline (`evals/results/latest.json`). Scorers: `src/shared/agent-kernel/scorers/`; golden set: `evals/datasets/storyteller-golden.ts`. Details: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+**`npm run eval:gate` is enforced, not advisory.** Staging a change under `src/domains/*/ai/`, `src/shared/agent-kernel/` or `evals/datasets/` without a matching eval artifact is refused by `npm run precommit` (`scripts/check-eval-freshness.mjs`, <0.1s — it hashes sources, it never runs the evals). The gate compares against a **dated baseline** in `evals/baselines/`, not against `results/latest.json`, which is the artifact slot. A regression is a drop beyond `max(2σ, 0.02)`, σ measured and committed in `evals/constants/thresholds.ts`. Escape hatch: an `Eval-Skip: <reason>` commit trailer, counted by the `evalSkipCommits` ratchet. Judge cost never enters `llm_calls` (ADR 0003). Details: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) § The eval gate.
 
 ## MCP & Trigger
 
@@ -87,7 +97,8 @@ MCP reference: [docs/MCP_API.md](docs/MCP_API.md).
 
 ## Trigger.dev (v4)
 
-- Use `@trigger.dev/sdk` — **never** `client.defineJob`.
+- Use `@trigger.dev/sdk` — **never** `client.defineJob`, never the `/v3` subpath.
+- **Every background task is defined by `defineOwnedTask`** (`@/shared/jobs`). It requires a payload schema, a queue and — through the schema — a submission nonce, so an unhardened task does not compile. Raw `task(`/`schemaTask(` outside `src/shared/jobs/define-task.ts` is a lint error. Payload types derive from the schema (`z.infer`); types another module owns use `ownedElsewhere<T>()`. Queues name a **quota pool** (Meshy, Apiframe, Fal, …), never a task. The idempotency key is `<taskId>:<requestId>` from a client-minted nonce (`withSubmissionNonce`), **never** prompt content — a re-roll of the same prompt must buy a new image. Routes refuse a request with no nonce (`requireSubmissionNonce`) rather than minting one. Client code imports `@/shared/jobs/submission-nonce` directly; the barrel reaches `pg`. Enforced by `local/no-raw-trigger-task` and `npx vitest run src/shared/jobs scripts/__tests__/trigger-task-inventory.test.ts`. [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) § Adding a background task.
 - `triggerAndWait()` returns `{ ok, output, error }` — check `ok` before `output`.
 - Prod **PENDING_VERSION**: deploy and promote — `npx trigger.dev@latest deploy --env prod`.
 - OTEL deploy conflict: use `npm run trigger:deploy` or `OTEL_TRACES_EXPORTER=none`.

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { characters } from '@/db'
-import { verifyCharacterAccess, verifyProjectAccess } from '@/domains/storyteller/server'
+import { verifyCharacterAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { eq } from 'drizzle-orm'
 import fs from 'fs'
 import path from 'path'
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify access
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    if (!(await tryProjectScope(projectId, session.user.id))) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 

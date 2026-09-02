@@ -50,7 +50,6 @@ export function ModuleOnboardingController() {
             action,
             moduleId: moduleConfig?.id,
             route: pathname,
-            userId: user.id,
           }),
         })
 

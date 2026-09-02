@@ -96,7 +96,9 @@ export const runBeatDraftWorkflowTool = createTool({
     }
 
     try {
-      const run = await workflow.createRun()
+      // resourceId is the tenant the run belongs to. /workflow/resume reads it
+      // back to prove the caller owns the run before resuming it.
+      const run = await workflow.createRun({ resourceId: projectId })
       const result = await run.start({
         inputData: {
           projectId,

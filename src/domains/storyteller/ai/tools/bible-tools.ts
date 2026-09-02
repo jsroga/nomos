@@ -34,6 +34,7 @@ import {
   BibleEpisodePremiseError,
   BIBLE_TOOL_PROJECT_ID_DESC,
   proposedFieldsFromInput,
+  resolveSoundtrackLinks,
   applyPremiseFieldNarrowing,
 } from '@/domains/storyteller/ai/tools/bible-tools-update'
 
@@ -99,7 +100,9 @@ const UpdateWorldBibleInputSchema = z.object({
       })
     )
     .optional()
-    .describe('Real YouTube tracks scoring the world — use this for any soundtrack or music request'),
+    .describe(
+      'Give the real song title and artist — the YouTube link is resolved by searching for them, so youtubeUrl is replaced and does not need to be a real id. Regenerating REPLACES the whole soundtrack list.'
+    ),
   moodSoundtrack: z
     .string()
     .optional()
@@ -276,9 +279,11 @@ export const updateWorldBibleTool = createTool({
         })
       }
 
-      const proposed = applyPremiseFieldNarrowing(
-        proposedFieldsFromInput({ ...inputData }),
-        requestContextString(context.requestContext, STORYTELLER_PREMISE_FIELD),
+      const proposed = await resolveSoundtrackLinks(
+        applyPremiseFieldNarrowing(
+          proposedFieldsFromInput({ ...inputData }),
+          requestContextString(context.requestContext, STORYTELLER_PREMISE_FIELD),
+        )
       )
       const { updates, dropped } = filterUpdatesForBibleSection(proposed, bibleSection)
       if (dropped.length > 0) {

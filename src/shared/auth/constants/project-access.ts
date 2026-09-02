@@ -1,0 +1,13 @@
+import { E2E_MOCK_USER_ID } from '@/shared/auth/constants/e2e-auth'
+
+export const E2E_TEST_USER_ID = E2E_MOCK_USER_ID
+
+export enum ProjectAccessNodeEnv {
+  Development = 'development',
+  Test = 'test',
+}
+
+export const E2E_BYPASS_NODE_ENVS = new Set<string>([
+  ProjectAccessNodeEnv.Development,
+  ProjectAccessNodeEnv.Test,
+])

@@ -6,6 +6,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { z } from 'zod'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
@@ -108,8 +109,9 @@ export class EntitiesService {
   ): Promise<{ entities: GameEntity[] }> {
     const validated = listEntitiesSchema.parse(input)
 
-    // Verify project access via RLS
-    const hasAccess = await this.verifyProjectAccess(context.supabase, validated.projectId)
+    // Ownership is application-level: this reads through Drizzle-backed state
+    // where RLS does not apply. See docs/decisions/0001-data-access-and-rls.md.
+    const hasAccess = await tryProjectScope(validated.projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         ApiErrorMessage.PROJECT_NOT_FOUND,
@@ -163,7 +165,7 @@ export class EntitiesService {
     }
 
     // Verify project access
-    const hasAccess = await this.verifyProjectAccess(context.supabase, data.project_id)
+    const hasAccess = await tryProjectScope(data.project_id, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         API_ERROR.ENTITY_ACCESS_DENIED,
@@ -180,8 +182,9 @@ export class EntitiesService {
   async create(input: CreateEntityInput, context: ServiceContext): Promise<{ entity: GameEntity }> {
     const validated = createEntitySchema.parse(input)
 
-    // Verify project access via RLS
-    const hasAccess = await this.verifyProjectAccess(context.supabase, validated.projectId)
+    // Ownership is application-level: this reads through Drizzle-backed state
+    // where RLS does not apply. See docs/decisions/0001-data-access-and-rls.md.
+    const hasAccess = await tryProjectScope(validated.projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         ApiErrorMessage.PROJECT_NOT_FOUND,
@@ -283,15 +286,6 @@ export class EntitiesService {
   /**
    * Verify project access via RLS
    */
-  private async verifyProjectAccess(supabase: SupabaseClient, projectId: string): Promise<boolean> {
-    const { data, error } = await supabase
-      .from(DB_TABLE.PROJECTS)
-      .select(DB_COLUMN.ID)
-      .eq(DB_COLUMN.ID, projectId)
-      .single()
-
-    return !error && !!data
-  }
 }
 
 // ============================================

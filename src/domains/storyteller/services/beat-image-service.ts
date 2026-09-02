@@ -112,6 +112,7 @@ class BeatImageService {
     }
   }
 
+  /** project-scope: none — browser-side; the API route it calls mints the scope. */
   async generateImageForBeat(
     projectId: string,
     beat: BeatCard,

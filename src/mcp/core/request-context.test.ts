@@ -8,6 +8,19 @@ vi.mock('@/mcp/core/auth', () => ({
   getServiceContext: vi.fn(),
 }))
 
+/**
+ * `@/shared/config/env` parses once at import, which is the point — a
+ * misconfigured environment fails at boot rather than on whichever request
+ * reads the key first. So a test cannot set `process.env` and expect the
+ * module to notice; it mocks the config seam instead.
+ */
+const mockEnv: { MCP_API_KEY?: string } = {}
+vi.mock('@/shared/config/env', () => ({
+  get env() {
+    return mockEnv
+  },
+}))
+
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { validateApiKey, getServiceContext, type ApiKeyValidationResult } from '@/mcp/core/auth'
 
@@ -37,11 +50,11 @@ describe('Request Context (AsyncLocalStorage)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Clear any cached env vars by restoring originals if needed
-    delete process.env.MCP_API_KEY
+    delete mockEnv.MCP_API_KEY
   })
 
   afterEach(() => {
-    delete process.env.MCP_API_KEY
+    delete mockEnv.MCP_API_KEY
   })
 
   describe('requestContext.run()', () => {
@@ -92,7 +105,7 @@ describe('Request Context (AsyncLocalStorage)', () => {
     })
 
     it('should fallback to env var when outside of ALS', async () => {
-      process.env.MCP_API_KEY = 'test-env-key'
+      mockEnv.MCP_API_KEY = 'test-env-key'
 
       const mockAuthResult: ApiKeyValidationResult = { valid: true, userId: 'env-user' }
       const mockEnvContext: MCPServiceContext = {
@@ -118,7 +131,7 @@ describe('Request Context (AsyncLocalStorage)', () => {
     })
 
     it('should throw if env var key is invalid', async () => {
-      process.env.MCP_API_KEY = 'invalid-key'
+      mockEnv.MCP_API_KEY = 'invalid-key'
 
       vi.mocked(validateApiKey).mockResolvedValue({ valid: false, error: 'Invalid' })
 

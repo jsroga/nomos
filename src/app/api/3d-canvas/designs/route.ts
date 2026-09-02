@@ -12,7 +12,7 @@ import {
   interiorDesignResponseSchema,
   updateInteriorDesignRequestSchema,
 } from '@/domains/3d-canvas/core/io/interior-designer.dto'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { FormField, QueryParam } from '@/shared/data/constants/protocol'
 
@@ -78,14 +78,15 @@ export async function GET(req: NextRequest) {
       if (!projectId) {
         return NextResponse.json({ error: API_ERROR.MISSING_PROJECT_ID }, { status: 403 })
       }
-      if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      const scope = await tryProjectScope(projectId, session.user.id)
+      if (!scope) {
         return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
       const designs = await db
         .select()
         .from(interiorDesigns)
-        .where(eq(interiorDesigns.projectId, projectId))
+        .where(eq(interiorDesigns.projectId, scope.projectId))
         .orderBy(desc(interiorDesigns.updatedAt))
 
       return NextResponse.json(interiorDesignListResponseSchema.parse(designs))
@@ -114,13 +115,14 @@ export async function POST(req: NextRequest) {
 
     const { projectId, name, sceneData } = parsedBody.data
 
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
     const [newDesign] = await db
       .insert(interiorDesigns)
-      .values({ projectId, userId: session.user.id, name, sceneData })
+      .values({ projectId: scope.projectId, userId: scope.userId, name, sceneData })
       .returning()
 
     return NextResponse.json(interiorDesignResponseSchema.parse(newDesign))

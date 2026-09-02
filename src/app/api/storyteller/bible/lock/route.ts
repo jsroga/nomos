@@ -13,7 +13,7 @@ import {
   storytellerBibleLockResponseSchema,
 } from '@/domains/storyteller/core/io/storyteller.dto'
 import { isCentralUser } from '@/shared/auth/bible-permissions'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam, SupabaseColumn, SupabaseTable } from '@/shared/data/constants/protocol'
 import {
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify project access
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    if (!(await tryProjectScope(projectId, session.user.id))) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
     const { projectId } = parsedQuery.data
 
     // Verify project access
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    if (!(await tryProjectScope(projectId, session.user.id))) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 

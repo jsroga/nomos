@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -13,6 +13,7 @@ import {
   Plus,
   RefreshCw,
   ScrollText,
+  Brain,
   Sparkles,
   // ThumbsUp,
   User,
@@ -20,7 +21,10 @@ import {
   Waves,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { TextMessagePartComponent } from '@assistant-ui/react'
+import type {
+  ReasoningMessagePartComponent,
+  TextMessagePartComponent,
+} from '@assistant-ui/react'
 import {
   ActionBarPrimitive,
   MessagePrimitive,
@@ -29,16 +33,20 @@ import {
 } from '@assistant-ui/react'
 import { Button } from '@/components/Button'
 import { useChatRenderers } from '../core/renderers'
+import { describeThinkingProgress } from '../core/thinking-progress'
 import { AssistantToolFallback } from './AssistantToolFallback'
 import { useAssistantAddToWorld } from './AssistantAddToWorldContext'
 import { createToolArgsSnapshotSelector, createToolNamesSnapshotSelector } from './tool-args-from-assistant-content'
+import {
+  createAssistantPlainTextSelector,
+  createShowThinkingSelector,
+} from './assistant-message-selectors'
 import {
   ASSISTANT_THREAD_COPY,
   CHAT_ENTITY_KIND_STYLE,
   ChatEntityKind,
   ChatMessageRole,
   ChatMessageStatus,
-  ChatPartType,
   parseAssistantEntities,
   type ParsedChatEntity,
 } from '../core/constants/assistant-thread-ui'
@@ -114,8 +122,42 @@ const UserPlainText: TextMessagePartComponent = ({ text }) => (
   <p>{text}</p>
 )
 
+/**
+ * Streamed model thinking. assistant-ui's default Reasoning component renders
+ * `null`, so without this the reasoning frames arrive and vanish — which is the
+ * whole reason a turn could look frozen for a minute.
+ */
+const AssistantReasoning: ReasoningMessagePartComponent = ({ text, status }) => {
+  const [open, setOpen] = useState(false)
+  const streaming = status?.type === ChatMessageStatus.Running
+  const body = text.trim()
+  if (!body) return null
+
+  return (
+    <div className={streaming ? 'aui-reasoning aui-reasoning--live' : 'aui-reasoning'}>
+      <button
+        type="button"
+        className="aui-reasoning-toggle"
+        aria-expanded={open}
+        onClick={() => setOpen(value => !value)}
+      >
+        <Brain size={12} aria-hidden />
+        {streaming ? ASSISTANT_THREAD_COPY.ReasoningLive : ASSISTANT_THREAD_COPY.ReasoningDone}
+      </button>
+      {/* While streaming, show the tail so there is visible motion without
+          flooding the thread; expanded shows the whole trace. */}
+      <p className={open ? 'aui-reasoning-text' : 'aui-reasoning-text aui-reasoning-text--peek'}>
+        {open ? body : body.slice(-REASONING_PEEK_CHARS)}
+      </p>
+    </div>
+  )
+}
+
+const REASONING_PEEK_CHARS = 240
+
 const ASSISTANT_PART_COMPONENTS = {
   Text: AssistantMarkdownText,
+  Reasoning: AssistantReasoning,
   tools: { Fallback: AssistantToolFallback },
 }
 
@@ -123,26 +165,30 @@ const USER_PART_COMPONENTS = {
   Text: UserPlainText,
 }
 
-function assistantPlainText(
-  content: ReadonlyArray<{ type: string; text?: string }>,
-): string {
-  return content
-    .filter(part => part.type === ChatPartType.Text && typeof part.text === 'string')
-    .map(part => part.text ?? '')
-    .join('\n')
-    .trim()
-}
-
 function AddToWorldButton() {
   const messageRuntime = useMessageRuntime()
   const { onAddToWorld, sectionLabelsFromToolArgs, isAddToWorldSettled, canAddToWorld } =
     useAssistantAddToWorld()
-  const fallbackText = useMessage(m => assistantPlainText(m.content))
-  const role = useMessage(m => m.role)
-  const selectToolArgs = useMemo(() => createToolArgsSnapshotSelector(), [])
-  const selectToolNames = useMemo(() => createToolNamesSnapshotSelector(), [])
-  const toolArgs = useMessage(m => selectToolArgs(m.content))
-  const toolNames = useMessage(m => selectToolNames(m.content))
+  const plainTextSelector = useMemo(() => {
+    const select = createAssistantPlainTextSelector()
+    return (m: { content: ReadonlyArray<{ type: string; text?: string }> }) => select(m.content)
+  }, [])
+  const fallbackText = useMessage(plainTextSelector)
+  const roleSelector = useMemo(
+    () => (m: { role: string }) => m.role,
+    [],
+  )
+  const role = useMessage(roleSelector)
+  const toolArgsSelector = useMemo(() => {
+    const select = createToolArgsSnapshotSelector()
+    return (m: { content: readonly unknown[] }) => select(m.content)
+  }, [])
+  const toolNamesSelector = useMemo(() => {
+    const select = createToolNamesSnapshotSelector()
+    return (m: { content: readonly unknown[] }) => select(m.content)
+  }, [])
+  const toolArgs = useMessage(toolArgsSelector)
+  const toolNames = useMessage(toolNamesSelector)
   const sectionLabels = useMemo(
     () => sectionLabelsFromToolArgs?.(toolArgs) ?? [],
     [sectionLabelsFromToolArgs, toolArgs],
@@ -215,26 +261,49 @@ export function UserMessage() {
   )
 }
 
-const REASONING_PART_TYPE = 'reasoning'
+const THINKING_TICK_MS = 1000
 
-function hasRenderableAssistantContent(
-  content: ReadonlyArray<{ type: string; text?: string }>,
-): boolean {
-  return content.some(part => {
-    if (part.type === REASONING_PART_TYPE) return false
-    if (part.type === ChatPartType.Text) {
-      return typeof part.text === 'string' && part.text.trim().length > 0
-    }
-    return true
-  })
+/**
+ * Reasoning is not streamed, so a turn can sit with zero renderable frames for
+ * a minute. Elapsed time is the only honest progress signal the client has.
+ */
+function ThinkingIndicator() {
+  const [startedAt] = useState(() => Date.now())
+  const [elapsedMs, setElapsedMs] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => setElapsedMs(Date.now() - startedAt), THINKING_TICK_MS)
+    return () => clearInterval(timer)
+  }, [startedAt])
+
+  const progress = describeThinkingProgress(elapsedMs)
+
+  return (
+    <div className="aui-thinking" data-testid="assistant-running-status" aria-live="polite">
+      <span className="aui-thinking-dots" aria-hidden>
+        <span className="aui-thinking-dot" />
+        <span className="aui-thinking-dot" />
+        <span className="aui-thinking-dot" />
+      </span>
+      <span className="aui-thinking-label">
+        {progress.label}
+        {progress.showSeconds ? ` · ${progress.seconds}s` : ''}
+      </span>
+    </div>
+  )
 }
 
 export function AssistantMessage() {
-  const isLast = useMessage(m => m.isLast)
-  const showThinking = useMessage(m => {
-    if (m.status?.type !== ChatMessageStatus.Running) return false
-    return !hasRenderableAssistantContent(m.content)
-  })
+  const isLastSelector = useMemo(() => (m: { isLast: boolean }) => m.isLast, [])
+  const isLast = useMessage(isLastSelector)
+  const showThinkingSelector = useMemo(() => {
+    const select = createShowThinkingSelector()
+    return (m: {
+      status?: { type?: string } | null
+      content: ReadonlyArray<{ type: string; text?: string }>
+    }) => select({ status: m.status, content: m.content })
+  }, [])
+  const showThinking = useMessage(showThinkingSelector)
 
   return (
     <MessagePrimitive.Root
@@ -247,18 +316,7 @@ export function AssistantMessage() {
       </span>
       <div className="aui-assistant-body">
         {showThinking ? (
-          <div
-            className="aui-thinking"
-            data-testid="assistant-running-status"
-            aria-live="polite"
-          >
-            <span className="aui-thinking-dots" aria-hidden>
-              <span className="aui-thinking-dot" />
-              <span className="aui-thinking-dot" />
-              <span className="aui-thinking-dot" />
-            </span>
-            <span className="aui-thinking-label">{ASSISTANT_THREAD_COPY.Thinking}</span>
-          </div>
+          <ThinkingIndicator />
         ) : (
           <MessagePrimitive.Parts components={ASSISTANT_PART_COMPONENTS} />
         )}

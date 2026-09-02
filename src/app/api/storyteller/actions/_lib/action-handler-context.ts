@@ -1,5 +1,6 @@
 import type { NextResponse } from 'next/server'
 import { ActionType } from '@/domains/storyteller/core/types/enums'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 
 export interface StorytellerAction {
   type: ActionType
@@ -7,7 +8,8 @@ export interface StorytellerAction {
 }
 
 export interface ActionHandlerContext {
-  projectId: string | undefined
+  /** Present only when the request named a project the caller owns. */
+  scope: ProjectScope | undefined
   episodeId: string | undefined
   updateSeriesBible: (updates: Record<string, unknown>) => Promise<Record<string, unknown>>
   updateStoryPlan: (updates: Record<string, unknown>) => Promise<Record<string, unknown>>

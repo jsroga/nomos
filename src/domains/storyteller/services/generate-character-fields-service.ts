@@ -1,5 +1,7 @@
-import { generateObject } from 'ai'
-import { createPureModel, openRouterClientConfig } from '@/shared/agent-kernel/models'
+import type { ProjectScope } from '@/shared/auth/project-scope'
+import { env } from '@/shared/config/env'
+import { completeStructured } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import {
   CharacterTextFieldKey,
   DEFAULT_CHARACTER_METRICS,
@@ -14,7 +16,6 @@ import {
 } from '@/domains/storyteller/core/character-missing-fields'
 import {
   characterFieldsUserPrompt,
-  GENERATE_CHARACTER_FIELDS_MAX_RETRIES,
   GENERATE_CHARACTER_FIELDS_MODEL,
   GENERATE_CHARACTER_FIELDS_TEMPERATURE,
   GenerateCharacterFieldsCopy,
@@ -42,15 +43,16 @@ export class GenerateCharacterFieldsError extends Error {
 }
 
 export interface GenerateCharacterMissingFieldsInput {
-  projectId: string
+  scope: ProjectScope
   filled: CharacterFilledDraft
 }
 
 export interface GenerateCharacterFieldsDeps {
-  loadCanonPack?: (projectId: string) => Promise<StoryCanonPack | null>
+  loadCanonPack?: (scope: ProjectScope) => Promise<StoryCanonPack | null>
   generate?: (input: {
     system: string
     prompt: string
+    scope: ProjectScope
   }) => Promise<GeneratedCharacterFields>
 }
 
@@ -77,21 +79,22 @@ function filledSummary(filled: CharacterFilledDraft): string {
 async function defaultGenerate(input: {
   system: string
   prompt: string
+  scope: ProjectScope
 }): Promise<GeneratedCharacterFields> {
-  const { apiKey } = openRouterClientConfig()
-  if (!apiKey) {
+  if (!env.OPENROUTER_API_KEY) {
     throw new GenerateCharacterFieldsError(
       GenerateCharacterFieldsErrorCode.OpenRouterNotConfigured,
       GenerateCharacterFieldsErrorCode.OpenRouterNotConfigured
     )
   }
 
-  const { object } = await generateObject({
-    model: createPureModel(GENERATE_CHARACTER_FIELDS_MODEL),
+  const object = await completeStructured({
+    scope: input.scope,
+    feature: LlmFeature.StorytellerCharacterFields,
+    model: GENERATE_CHARACTER_FIELDS_MODEL,
     schema: generatedCharacterFieldsLlmSchema,
     system: input.system,
     prompt: input.prompt,
-    maxRetries: GENERATE_CHARACTER_FIELDS_MAX_RETRIES,
     temperature: GENERATE_CHARACTER_FIELDS_TEMPERATURE,
   })
   return generatedCharacterFieldsFromUnknown(object)
@@ -110,7 +113,7 @@ export async function generateCharacterMissingFields(
 
   const loadCanonPack = deps.loadCanonPack ?? loadStoryCanonPack
   const generate = deps.generate ?? defaultGenerate
-  const pack = await loadCanonPack(input.projectId)
+  const pack = await loadCanonPack(input.scope)
   const usablePack = pack !== null && hasUsableCanonPack(pack)
 
   if (!hasUsableCharacterDraft(filled) && !usablePack) {
@@ -122,6 +125,7 @@ export async function generateCharacterMissingFields(
 
   try {
     const generated = await generate({
+      scope: input.scope,
       system: GenerateCharacterFieldsCopy.System,
       prompt: characterFieldsUserPrompt({
         missingText: listMissingCharacterTextFields(filled),

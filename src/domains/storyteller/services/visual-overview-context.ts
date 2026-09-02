@@ -1,5 +1,6 @@
 import { readString } from '@/shared/data/json-guards'
 import { loadStoryCanonPack } from '@/domains/storyteller/services/story-canon-pack'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { VisualOverviewLabel } from '@/domains/storyteller/services/constants/visual-overview'
 
 export interface VisualOverviewContext {
@@ -58,11 +59,11 @@ export function visualOverviewFromCanon(
   })
 }
 
-export async function loadVisualOverviewContext(projectId: string): Promise<{
+export async function loadVisualOverviewContext(scope: ProjectScope): Promise<{
   context: VisualOverviewContext
   pack: Awaited<ReturnType<typeof loadStoryCanonPack>>
 }> {
-  const pack = await loadStoryCanonPack(projectId)
+  const pack = await loadStoryCanonPack(scope)
   return {
     context: visualOverviewFromCanon(pack?.bible ?? {}, pack),
     pack,

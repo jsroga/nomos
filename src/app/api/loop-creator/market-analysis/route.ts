@@ -19,12 +19,21 @@ import {
   MarketAnalysisStreamEvent,
 } from '@/domains/loop-creator/constants/market-analysis'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { ContentType } from '@/shared/data/constants/protocol'
+import { ContentType, HttpStatus } from '@/shared/data/constants/protocol'
+import { requireAuth } from '@/shared/auth/auth'
 
 export const maxDuration = 120 // 2 minutes max for thorough analysis
 
 export async function POST(req: NextRequest) {
   try {
+    // No tenant to scope to — the analysis input is self-contained — but this
+    // runs a model, so it must not be reachable anonymously.
+    // auth-scope: session-existence-only — input carries no project reference.
+    const { session } = await requireAuth()
+    if (!session) {
+      return Response.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
+    }
+
     const body = await req.json()
 
     const input: LoopAnalysisInput = {

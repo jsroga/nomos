@@ -1,3 +1,5 @@
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import '@/shared/data/server-guard'
 import type { WildIdea } from './wild-idea-schema'
 import {
@@ -64,9 +66,9 @@ Score EVERY idea (surprise, storyMotion, fit, cost — 0-10 each), give a keep/r
 }
 
 const defaultRankGenerate: RankGenerate = async prompt => {
-  const response = await museRankerAgent.generate(prompt, {
+  const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => museRankerAgent.generate(prompt, {
     structuredOutput: { schema: RankReportSchema },
-  })
+  }))
   return response.object
 }
 

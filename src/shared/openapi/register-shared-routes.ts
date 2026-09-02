@@ -28,6 +28,10 @@ import {
   openApiUpdateEntityRequestSchema,
 } from '@/shared/openapi/schemas/entities'
 import {
+  openApiJobRunParamsSchema,
+  openApiJobRunResponseSchema,
+} from '@/shared/openapi/schemas/jobs'
+import {
   openApiJsonRpcRequestSchema,
   openApiJsonRpcResponseSchema,
 } from '@/shared/openapi/schemas/mcp'
@@ -58,6 +62,24 @@ function jsonResponse(schema: z.ZodType, description: string) {
 }
 
 export function registerSharedPublicRoutes(registry: OpenAPIRegistry): void {
+  registry.registerPath({
+    method: OpenApiHttpMethod.Get,
+    path: OpenApiPath.JobRun,
+    tags: [OpenApiTag.Jobs],
+    summary: OpenApiRouteSummary.JobRunGet,
+    description: OpenApiRouteDescription.JobRun,
+    security: sessionSecurity,
+    request: {
+      params: openApiJobRunParamsSchema,
+    },
+    responses: {
+      200: jsonResponse(openApiJobRunResponseSchema, OpenApiRouteDescription.JobRun),
+      401: refResponse(OpenApiComponentResponse.Unauthorized),
+      // 404 also covers "exists but not yours" — a 403 would confirm the id.
+      404: refResponse(OpenApiComponentResponse.NotFound),
+    },
+  })
+
   registry.registerPath({
     method: OpenApiHttpMethod.Post,
     path: OpenApiPath.Mcp,

@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import { ImageFileExtension, UrlScheme } from '@/shared/data/constants/protocol'
 import { readString, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'

@@ -16,13 +16,14 @@ import {
 } from '../../core/io/asset-exporter.api'
 import {
   GenerationStatus,
-  isMeshyResult,
   MeshyTopology,
+  generationMetadataToRow,
+  meshyResultToDomain,
+  meshyResultWireSchema,
   type GenerationMetadata,
   type MeshyResult,
-} from '../../core/types/three-d-generation'
+} from '../../contracts'
 import {
-  ModelFormatKey,
   ThreeDOperationIdPrefix,
   ThreeDOperationLabel,
   ThreeDOperationType,
@@ -72,14 +73,9 @@ function providerConfigKey(provider: AIProvider): string {
     : LocalStorageKeys.AI_CONFIG_HYPER3D
 }
 
-function readGlbFromMeshyResult(result: Record<string, unknown>): string | undefined {
-  const modelUrls =
-    typeof result.model_urls === 'object' && result.model_urls !== null ? result.model_urls : null
-  if (modelUrls && ModelFormatKey.Glb in modelUrls) {
-    const glb = Reflect.get(modelUrls, ModelFormatKey.Glb)
-    if (typeof glb === 'string') return glb
-  }
-  return typeof result.model_url === 'string' ? result.model_url : undefined
+/** The GLB url a Meshy result carries, once the contract has parsed it. */
+function readGlbFromMeshyResult(result: MeshyResult | undefined): string | undefined {
+  return result?.modelUrls?.glb ?? result?.modelUrl
 }
 
 export interface ThreeDPanelActionsDeps {
@@ -115,9 +111,9 @@ export interface ThreeDPanelActionsDeps {
   setIsUploading: (v: boolean) => void
   setUploadProgress: (n: number) => void
   setUploadRunId: (id: string | null) => void
-  clearGenerationState: (status?: typeof ThreeDPollCopy.Completed | typeof ThreeDPollCopy.Failed) => Promise<void>
-  clearRemeshState: (status?: typeof ThreeDPollCopy.Completed | typeof ThreeDPollCopy.Failed) => Promise<void>
-  clearUploadState: (status?: typeof ThreeDPollCopy.Completed | typeof ThreeDPollCopy.Failed) => Promise<void>
+  clearGenerationState: (status?: GenerationStatus) => Promise<void>
+  clearRemeshState: (status?: GenerationStatus) => Promise<void>
+  clearUploadState: (status?: GenerationStatus) => Promise<void>
 }
 
 export function createThreeDPanelActions(deps: ThreeDPanelActionsDeps) {
@@ -140,17 +136,18 @@ export function createThreeDPanelActions(deps: ThreeDPanelActionsDeps) {
       toast.dismiss()
 
       if (result.status === MeshyTaskStatus.Succeeded) {
-        const recoveredUrl = readGlbFromMeshyResult(result)
+        const generationResult = meshyResultToDomain(meshyResultWireSchema.parse(result))
+        const recoveredUrl = readGlbFromMeshyResult(generationResult)
         deps.setModelUrl(recoveredUrl)
-        if (isMeshyResult(result)) deps.setGenerationResult(result)
+        if (generationResult) deps.setGenerationResult(generationResult)
 
         await deps.updateAssetViaApi({
           model_filename: recoveredUrl,
-          metadata: {
-            generation_status: GenerationStatus.Completed,
-            meshy_task_id: deps.meshyTaskId,
-            generation_result: isMeshyResult(result) ? result : undefined,
-          },
+          metadata: generationMetadataToRow({
+            generationStatus: GenerationStatus.Completed,
+            meshyTaskId: deps.meshyTaskId,
+            generationResult,
+          }),
         })
 
         if (deps.updateAsset && recoveredUrl) {
@@ -201,9 +198,9 @@ export function createThreeDPanelActions(deps: ThreeDPanelActionsDeps) {
       toast.success(ThreeDActionCopy.GenStarted)
 
       await deps.saveMetadata({
-        trigger_run_id: runId,
-        generation_status: GenerationStatus.Processing,
-        generation_started_at: new Date().toISOString(),
+        triggerRunId: runId,
+        generationStatus: GenerationStatus.Processing,
+        generationStartedAt: new Date().toISOString(),
         provider: deps.provider,
       })
 
@@ -260,7 +257,7 @@ export function createThreeDPanelActions(deps: ThreeDPanelActionsDeps) {
   }
 
   const handleStopGeneration = async () => {
-    await deps.clearGenerationState(ThreeDPollCopy.Failed)
+    await deps.clearGenerationState(GenerationStatus.Failed)
     toast(ThreeDActionCopy.GenStopped, { icon: ThreeDPollCopy.InfoIcon })
   }
 
@@ -291,8 +288,8 @@ export function createThreeDPanelActions(deps: ThreeDPanelActionsDeps) {
       toast.success(ThreeDActionCopy.RemeshStarted)
 
       await deps.saveMetadata({
-        remesh_run_id: runId,
-        remesh_status: GenerationStatus.Processing,
+        remeshRunId: runId,
+        remeshStatus: GenerationStatus.Processing,
       })
 
       deps.setRemeshRunId(runId)
@@ -312,7 +309,7 @@ export function createThreeDPanelActions(deps: ThreeDPanelActionsDeps) {
   }
 
   const handleStopRemesh = async () => {
-    await deps.clearRemeshState(ThreeDPollCopy.Failed)
+    await deps.clearRemeshState(GenerationStatus.Failed)
     toast(ThreeDActionCopy.RemeshStopped, { icon: ThreeDPollCopy.InfoIcon })
   }
 
@@ -359,7 +356,7 @@ export function createThreeDPanelActions(deps: ThreeDPanelActionsDeps) {
   }
 
   const handleStopUpload = async () => {
-    await deps.clearUploadState(ThreeDPollCopy.Failed)
+    await deps.clearUploadState(GenerationStatus.Failed)
     toast(ThreeDActionCopy.UploadStopped, { icon: ThreeDPollCopy.InfoIcon })
   }
 

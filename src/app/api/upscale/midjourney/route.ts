@@ -6,6 +6,7 @@ import { MIDJOURNEY_VERSION } from '@/shared/ai/constants/apiframe'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
+    // auth-scope: session-existence-only — upscales an image posted in the request.
     const body = await request.json()
     const { imageUrl, imageBase64, prompt, apiKey, styleReferenceUrls } = body
 

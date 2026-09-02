@@ -1,4 +1,4 @@
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { readRowString, recordFromJson } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
@@ -22,9 +22,9 @@ import {
   UrlScheme,
 } from '../constants/meshy-generation-wire'
 import {
-  parseHyper3dTaskResult,
+  parseHyper3dTask,
   resolveHyper3dModelUrl,
-  type Hyper3dTaskResult,
+  type Hyper3dTask,
 } from '../constants/meshy-task-types'
 
 interface RunHyper3dGenerationParams {
@@ -41,9 +41,9 @@ function parseHyper3dErrorMessage(json: unknown, fallback: string): string {
 async function pollHyper3dTask(
   subscriptionKey: string,
   apiKey: string,
-): Promise<Hyper3dTaskResult> {
+): Promise<Hyper3dTask> {
   let status: string = Hyper3dTaskStatus.Processing
-  let result: Hyper3dTaskResult | null = null
+  let result: Hyper3dTask | null = null
   let attempts = 0
 
   while (status === Hyper3dTaskStatus.Processing && attempts < HYPER3D_MAX_POLL_ATTEMPTS) {
@@ -62,7 +62,7 @@ async function pollHyper3dTask(
       throw new Error(MeshyGenerationError.FailedCheckHyper3d)
     }
 
-    result = parseHyper3dTaskResult(await statusResponse.json())
+    result = parseHyper3dTask(await statusResponse.json())
     status = result.status
     attempts++
 

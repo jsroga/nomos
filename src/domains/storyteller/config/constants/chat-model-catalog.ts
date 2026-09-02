@@ -11,6 +11,7 @@
  * picker can grey out models whose API key is not configured.
  */
 
+
 export interface ChatModelOption {
   /** Internal id, `provider:model` form. */
   id: string
@@ -114,19 +115,4 @@ export function getChatModelOption(id: string): ChatModelOption | undefined {
 
 export function isKnownChatModel(id: string): boolean {
   return CHAT_MODEL_BY_ID.has(id)
-}
-
-/**
- * Resolve the effective chat model id from an optional client override
- * (Writers Room picker). Falls back to `STORYTELLER_CHAT_MODEL`, then
- * `NEXT_PUBLIC_DEFAULT_AGENT_MODEL` when known, otherwise {@link DEFAULT_CHAT_MODEL}.
- */
-export function resolveChatModelId(modelName?: string | null): string {
-  const trimmed = typeof modelName === 'string' ? modelName.trim() : ''
-  if (trimmed) return trimmed
-  const fromChatEnv = process.env.STORYTELLER_CHAT_MODEL?.trim()
-  if (fromChatEnv && isKnownChatModel(fromChatEnv)) return fromChatEnv
-  const fromPublic = process.env.NEXT_PUBLIC_DEFAULT_AGENT_MODEL
-  if (fromPublic && isKnownChatModel(fromPublic)) return fromPublic
-  return DEFAULT_CHAT_MODEL
 }

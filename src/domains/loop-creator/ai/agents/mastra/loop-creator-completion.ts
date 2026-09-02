@@ -12,12 +12,14 @@
  * history → the prompt messages (or `context` when a fixed `userPrompt` leads).
  */
 
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import '@/shared/data/server-guard'
-import { ChatOpenAI } from '@langchain/openai'
-import { SystemMessage, HumanMessage, type BaseMessage } from '@langchain/core/messages'
+import type { BaseMessage } from '@/shared/chat/core/message'
+import type { ProjectScope } from '@/shared/auth/project-scope'
+import { complete } from '@/shared/ai/gateway'
 import { v4 as uuidv4 } from 'uuid'
 import { withMastraSpan } from '@/shared/observability/mastra-tracing'
-import { openRouterClientConfig } from '@/shared/agent-kernel/models'
 import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 import { resolveLoopCreatorModel } from '../../../config/model-config'
 import {
@@ -31,7 +33,6 @@ const HISTORY_HEADER = 'Recent conversation:'
 const ROLE_ASSISTANT = 'assistant'
 const ROLE_SYSTEM = 'system'
 const ROLE_USER = 'user'
-const JSON_OBJECT_FORMAT = 'json_object'
 const JSON_ONLY_DIRECTIVE = 'Respond ONLY with a single valid JSON object, no prose.'
 
 /** Whether the flagged Mastra path is active. */
@@ -78,6 +79,8 @@ export interface LoopCreatorCompletionParams {
   /** Force JSON-object output (loop-planner). */
   jsonMode?: boolean
   traceId?: string
+  /** The project this run bills to. */
+  scope: ProjectScope
 }
 
 /**
@@ -103,10 +106,10 @@ export async function runLoopCreatorMastraCompletion(
         ? `${params.systemPrompt}\n\n${JSON_ONLY_DIRECTIVE}`
         : params.systemPrompt
 
-      const response = await agent.generate(prompt, {
+      const response = await meteredCall(LlmFeature.LoopCreator, () => agent.generate(prompt, {
         instructions,
         modelSettings: { temperature: params.temperature },
-      })
+      }))
 
       return response.text
     },
@@ -115,28 +118,32 @@ export async function runLoopCreatorMastraCompletion(
 }
 
 /**
- * The default (flag-off) LangChain path — behaviorally identical to the inline
- * `new ChatOpenAI(...).invoke([SystemMessage(systemPrompt), ...history])` each
- * specialist used before; relocated here so both paths share one seam.
+ * The default (flag-off) path, now through the model gateway.
+ *
+ * It used to build a `ChatOpenAI` inline. The gateway takes a single prompt
+ * rather than a message array, so history is flattened here — the previous
+ * call passed the same content in the same order, and nothing downstream read
+ * the message boundaries.
  */
-async function runLoopCreatorLangChainCompletion(
+async function runLoopCreatorDirectCompletion(
   params: LoopCreatorCompletionParams
 ): Promise<string> {
-  const openRouter = openRouterClientConfig()
-  const model = new ChatOpenAI({
+  const history = params.userPrompt
+    ? params.userPrompt
+    : (params.history ?? [])
+        .map(message => `${message.role}: ${message.content}`)
+        .join('\n\n')
+
+  const { text } = await complete({
+    scope: params.scope,
+    feature: LlmFeature.LoopCreator,
     model: resolveLoopCreatorModel(params.modelOverride),
+    system: params.systemPrompt,
+    prompt: history,
     temperature: params.temperature,
-    apiKey: openRouter.apiKey,
-    configuration: { baseURL: openRouter.baseURL },
-    ...(params.jsonMode ? { modelKwargs: { response_format: { type: JSON_OBJECT_FORMAT } } } : {}),
+    traceId: params.traceId,
   })
-
-  const messages: BaseMessage[] = params.userPrompt
-    ? [new SystemMessage(params.systemPrompt), new HumanMessage(params.userPrompt)]
-    : [new SystemMessage(params.systemPrompt), ...(params.history ?? [])]
-
-  const response = await model.invoke(messages)
-  return typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+  return text
 }
 
 /**
@@ -149,5 +156,5 @@ export async function runLoopCreatorCompletion(
 ): Promise<string> {
   return isLoopCreatorMastraEnabled()
     ? runLoopCreatorMastraCompletion(params)
-    : runLoopCreatorLangChainCompletion(params)
+    : runLoopCreatorDirectCompletion(params)
 }

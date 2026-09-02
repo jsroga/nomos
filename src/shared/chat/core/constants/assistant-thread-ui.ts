@@ -57,6 +57,8 @@ export const ASSISTANT_THREAD_COPY = {
   InputPlaceholder: 'Ask anything about your world…',
   KeyboardHint: 'Enter to send · Shift+Enter for a new line',
   Thinking: 'Thinking',
+  ReasoningLive: 'Thinking…',
+  ReasoningDone: 'Thought process',
   Connecting: 'Connecting',
   Writing: 'Writing',
   AddToWorld: 'Add to world',

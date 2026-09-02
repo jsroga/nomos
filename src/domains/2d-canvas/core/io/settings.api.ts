@@ -93,7 +93,7 @@ function parseMcpApiKey(value: unknown): McpApiKey {
   return {
     id: readString(record.id) ?? '',
     name: readString(record.name) ?? '',
-    scopes: recordArrayFromJson(record.scopes).map(item => readString(item) ?? '').filter(Boolean),
+    scopes: stringArrayFromJson(record.scopes),
     created_at: readString(record.created_at) ?? '',
     last_used_at: readString(record.last_used_at) ?? null,
     revoked_at: readString(record.revoked_at) ?? null,

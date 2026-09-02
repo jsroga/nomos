@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import type { segmentObjectTask } from '@/trigger'
 import type { AuthenticatedRequest } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/shared/data/api-utils'
+import { } from '@/shared/data/api-utils'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import {
   API_ERROR,
   API_LOG_PREFIX,
@@ -30,7 +31,7 @@ function readSelectBox(value: unknown): {
 
 export async function handleSegmentRequest(
   request: NextRequest,
-  { supabase }: AuthenticatedRequest,
+  { session }: AuthenticatedRequest,
 ): Promise<NextResponse> {
   const body = recordFromJson(await request.json())
   const projectId = readString(body.projectId)
@@ -44,8 +45,11 @@ export async function handleSegmentRequest(
     return NextResponse.json({ error: API_ERROR.MISSING_SEGMENT_FIELDS }, { status: 400 })
   }
 
-  const hasAccess = await verifyProjectAccess(supabase, projectId)
-  if (!hasAccess) {
+  const requestId = requireSubmissionNonce(body)
+  if (requestId instanceof NextResponse) return requestId
+
+  const scope = await tryProjectScope(projectId, session.user.id)
+  if (!scope) {
     return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
   }
 
@@ -54,10 +58,11 @@ export async function handleSegmentRequest(
   }
 
   try {
-    const handle = await tasks.trigger<typeof segmentObjectTask>(
+    const handle = await triggerOwnedRun<typeof segmentObjectTask>(
       TRIGGER_TASK_ID.SEGMENT_OBJECT,
       {
-        projectId,
+        projectId: scope.projectId,
+        requestId,
         base64Image,
         box,
         prompt,

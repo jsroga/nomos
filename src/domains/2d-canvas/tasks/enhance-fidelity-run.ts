@@ -1,4 +1,7 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { z } from 'zod'
+import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
+import { env } from '@/shared/config/env'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { put } from '@vercel/blob'
 import {
   readApiframeApiKey,
@@ -30,14 +33,16 @@ export enum EnhanceFidelityError {
   NotAllowedForMode = 'Fidelity enhancement is not allowed for this generation mode',
 }
 
-export interface EnhanceFidelityPayload {
-  tileId: string
-  projectId: string
-  imageBase64: string
-  stylePrompt: string
-  creativity: number
-  styleReferenceUrls?: string[]
-}
+export const enhanceFidelityPayloadSchema = z.object({
+  ...OWNED_PAYLOAD_SHAPE,
+  tileId: z.string().min(1),
+  imageBase64: z.string().min(1),
+  stylePrompt: z.string(),
+  creativity: z.number(),
+  styleReferenceUrls: z.array(z.string()).optional(),
+})
+
+export type EnhanceFidelityPayload = z.infer<typeof enhanceFidelityPayloadSchema>
 
 export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
   const { tileId, projectId, imageBase64 } = payload
@@ -94,14 +99,14 @@ export async function runEnhanceFidelity(payload: EnhanceFidelityPayload) {
   const timestamp = Date.now()
   const filename = `fidelity/${projectId}/${tileId}_enhanced_${timestamp}.png`
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!env.BLOB_READ_WRITE_TOKEN) {
     throw new Error('BLOB_READ_WRITE_TOKEN not configured')
   }
 
   const buffer = Buffer.from(enhancedImageBase64, BufferEncoding.Base64)
   const blob = await put(filename, buffer, {
     access: BlobAccess.Public,
-    token: process.env.BLOB_READ_WRITE_TOKEN,
+    token: env.BLOB_READ_WRITE_TOKEN,
     contentType: ContentType.Png,
   })
 

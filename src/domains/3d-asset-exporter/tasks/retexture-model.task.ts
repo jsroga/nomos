@@ -1,25 +1,21 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { retextureModelPayloadSchema } from './constants/meshy-payloads'
 import { MeshyClient } from '@/shared/ai/meshy'
 import { storageService } from '@/shared/data/storage/storage-service'
 import { v4 as uuidv4 } from 'uuid'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
-export const retextureModelTask = task({
+export const retextureModelTask = defineOwnedTask({
   id: 'retexture-model',
+  schema: retextureModelPayloadSchema,
+  queue: JobQueue.Meshy,
   maxDuration: 3600, // 1 hour
   retry: {
     maxAttempts: 2,
   },
-  run: async (payload: {
-    projectId: string
-    assetId: string // The ID of the asset we are retexturing (or creating a version of)
-    modelBase64: string // Data URI or Base64
-    prompt: string
-    apiKey: string
-    aiModel?: 'latest' | 'meshy-4' | 'meshy-5'
-    styleImageUrl?: string // Style reference image URL from project settings
-  }) => {
+  run: async payload => {
     const { projectId, assetId, modelBase64, prompt, apiKey, aiModel, styleImageUrl } = payload
 
     logger.info(`Starting retexture for asset ${assetId}`, { prompt })

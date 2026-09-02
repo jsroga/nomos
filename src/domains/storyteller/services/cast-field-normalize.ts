@@ -1,3 +1,4 @@
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import {
   generateCharacterMbti,
   isCharacterMbti,
@@ -21,7 +22,12 @@ export async function resolveInsertMbti(input: {
   provided: string | undefined
   name: string
   description: string
+  scope: ProjectScope
 }): Promise<string | undefined> {
   if (isCharacterMbti(input.provided)) return input.provided
-  return generateCharacterMbti({ name: input.name, description: input.description })
+  return generateCharacterMbti({
+    name: input.name,
+    description: input.description,
+    scope: input.scope,
+  })
 }

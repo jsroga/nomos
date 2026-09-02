@@ -23,7 +23,3 @@ export const LOOP_SELECTOR_LOCALE_OPTIONS = {
   hour: '2-digit',
   minute: '2-digit',
 } as const
-
-export enum LoopSelectorConfirmVariant {
-  Destructive = 'destructive',
-}

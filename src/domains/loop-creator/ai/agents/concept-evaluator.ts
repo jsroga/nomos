@@ -164,6 +164,7 @@ export async function evaluateConceptAlignment(
     .replace('{{MECHANICS}}', formatMechanics(state))
 
   const content = await runLoopCreatorCompletion({
+    scope: state.scope,
     agentId: LoopCreatorMastraAgentId.ConceptEvaluator,
     systemPrompt: prompt,
     userPrompt: 'Evaluate the concept alignment and provide your assessment.',

@@ -7,6 +7,7 @@ const reactCompiler = require('eslint-plugin-react-compiler')
 const prettier = require('eslint-config-prettier')
 const unusedImports = require('eslint-plugin-unused-imports')
 const localRules = require('./eslint-rules')
+const providerSdkExemptions = require('./eslint-rules/provider-sdk-exemptions')
 const codeMetricsLimits = require('./scripts/code-metrics-limits.cjs')
 
 const strictTypeScriptRules = typescript.configs.strict.rules
@@ -81,6 +82,53 @@ const DOMAIN_LEGACY_RESTRICTED_PATTERNS = [
   },
 ]
 
+/**
+ * Gate A2 — a paid model call goes through `@/shared/ai/gateway`, the only
+ * place that knows what it cost.
+ *
+ * Spread into every `src`-wide restricted-imports block rather than declared in
+ * its own. ESLint flat config *replaces* a rule's options when a later config
+ * matches the same file, so a standalone block placed before the domain
+ * boundaries and the auth zone would be silently dropped for most of `src` —
+ * the exact failure mode action 8 calls the flat-config merge bug.
+ */
+const PROVIDER_SDK_MESSAGE =
+  'Call models through @/shared/ai/gateway (complete / completeStructured / embed). ' +
+  'A direct provider import is a call nobody can cost. Rule: A2 · SPEC-13.'
+
+/**
+ * Exact module names, via `paths` rather than `patterns`.
+ *
+ * `patterns.group` matches gitignore-style, so a bare `'ai'` matches any path
+ * *segment* named `ai` — it flagged 499 files including every
+ * `@/shared/ai/**` import. `paths` compares the specifier exactly.
+ *
+ * From `ai` only the functions that actually spend are banned. The package
+ * also exports utilities — `generateId`, `getToolName`, `isToolUIPart` — and
+ * the chat UI uses them without ever reaching a provider; banning the whole
+ * module called those "a call nobody can cost", which they are not.
+ */
+const SPENDING_AI_EXPORTS = [
+  'generateText',
+  'generateObject',
+  'streamText',
+  'streamObject',
+  'embed',
+  'embedMany',
+]
+
+const PROVIDER_SDK_RESTRICTED_PATHS = [
+  { name: 'ai', importNames: SPENDING_AI_EXPORTS, message: PROVIDER_SDK_MESSAGE },
+  { name: 'openai', message: PROVIDER_SDK_MESSAGE },
+  { name: 'replicate', message: PROVIDER_SDK_MESSAGE },
+]
+
+/** Scoped packages genuinely need a glob. */
+const PROVIDER_SDK_RESTRICTED_PATTERNS = [
+  // `@ai-sdk/react` is the client chat hook; it reaches a route, not a provider.
+  { group: ['@ai-sdk/*', '!@ai-sdk/react'], message: PROVIDER_SDK_MESSAGE },
+]
+
 const GLOBAL_LEGACY_RESTRICTED_PATTERNS = [
   {
     group: ['@/agent-core/*', '@/agent-core'],
@@ -141,12 +189,31 @@ const domainBoundaryConfigs = DOMAIN_MODULES.map(domain => ({
         patterns: [
           ...DOMAIN_LEGACY_RESTRICTED_PATTERNS,
           ...GLOBAL_LEGACY_RESTRICTED_PATTERNS,
+          ...PROVIDER_SDK_RESTRICTED_PATTERNS,
           ...crossDomainImportPatterns(domain),
         ],
+        paths: PROVIDER_SDK_RESTRICTED_PATHS,
       },
     ],
   },
 }))
+
+/**
+ * SPEC-16: scoped module by module as each one's `contracts/` lands.
+ *
+ * `warn` while a module still has sites, `error` once it reaches zero —
+ * flipping it repo-wide over a thousand guards would make `npm run lint`
+ * useless on day one. The pilot has 13 guard sites left (its own aggregate is
+ * done; what remains are trigger-status and API response shapes), so it is
+ * `warn`; the `snakeCaseReadsInConvertedModules` ratchet holds the half that
+ * is finished.
+ */
+const contractsConvertedModules = [
+  {
+    files: ['src/domains/3d-asset-exporter/**/*.{ts,tsx}'],
+    rules: { 'local/no-untyped-json-read': 'warn' },
+  },
+]
 
 module.exports = [
   {
@@ -160,6 +227,9 @@ module.exports = [
       'dist/**',
       'build/**',
       'coverage/**',
+      // Built Storybook bundle (gitignored). Linting it produced ~133k errors
+      // and made `npm run lint` unusable repo-wide.
+      'storybook-static/**',
       '.trigger/**',
       '.cursor/**',
       '.claude/**',
@@ -169,6 +239,12 @@ module.exports = [
       'public/scripts/**/*.min.js',
       'public/scripts/**/*.js',
       '**/*.min.js',
+      // Deliberately-invalid files that prove each structural rule is switched
+      // on. They MUST fail lint, so they are excluded from the repo-wide run and
+      // asserted individually by scripts/__tests__/gate-fixtures.test.ts.
+      // Excluding the fixtures does not weaken any rule — the test is what
+      // guarantees the rules still fire.
+      'scripts/gate-fixtures/**',
     ],
   },
   js.configs.recommended,
@@ -280,6 +356,10 @@ module.exports = [
       complexity: ['warn', { max: codeMetricsLimits.complexity.warn }],
       'local/complexity-strict': ['error', { max: codeMetricsLimits.complexity.error }],
       'local/no-repeated-array-filter': 'error',
+      'local/trigger-runs-ownership': 'error',
+      'local/no-discarded-auth-context': 'error',
+      'local/no-bare-project-id-param': 'error',
+      'local/no-raw-trigger-task': 'error',
       '@typescript-eslint/no-require-imports': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
@@ -415,11 +495,93 @@ module.exports = [
       'no-restricted-imports': [
         'error',
         {
-          patterns: GLOBAL_LEGACY_RESTRICTED_PATTERNS,
+          paths: PROVIDER_SDK_RESTRICTED_PATHS,
+          patterns: [...GLOBAL_LEGACY_RESTRICTED_PATTERNS, ...PROVIDER_SDK_RESTRICTED_PATTERNS],
         },
       ],
     },
   },
+  // Edge runtime: the proxy and anything it pulls in run on the Edge, where a
+  // Node-only import (pg, node:fs, a provider SDK) fails at build time with a
+  // message that does not name the cause. Catch it at lint instead.
+  {
+    files: [
+      'src/proxy.ts',
+      'src/shared/auth/api-default-deny.ts',
+      'src/shared/auth/constants/session-cookie.ts',
+      // Covered so the fixture proving this rule is on actually trips it.
+      'scripts/gate-fixtures/proxy-imports-node-only.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/db', '@/db/*', 'pg', 'postgres', 'drizzle-orm', 'drizzle-orm/*'],
+              message:
+                'Edge runtime: the proxy cannot open a database connection. Do the lookup in the route handler.',
+            },
+            {
+              group: ['node:*', 'fs', 'path', 'crypto', 'child_process'],
+              message: 'Edge runtime: Node builtins are unavailable in the proxy.',
+            },
+            {
+              group: ['@trigger.dev/*', 'openai', '@ai-sdk/*', '@mastra/*', 'replicate', 'sharp'],
+              message: 'Edge runtime: provider and job SDKs are Node-only. Keep the proxy to routing decisions.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // Server configuration is read once, in `@/shared/config/env`, and validated
+  // there. Scoped to `src/**`: tooling, evals and e2e run outside the app and
+  // legitimately read the environment before any schema could parse it.
+  {
+    files: ['src/**/*.{ts,tsx}', 'scripts/gate-fixtures/src/services/reads-bare-process-env.ts'],
+    ignores: [
+      // Dissolved by SPEC-13 Task 13 into the model gateway's registry.
+      // Migrating them here would be work thrown away, so they are named
+      // rather than silently skipped, and `processEnvReadsInModelConfig`
+      // tracks the count.
+      'src/shared/agent-kernel/models.ts',
+      'src/shared/agent-kernel/model-settings.ts',
+      'src/shared/data/constants/llm-providers.ts',
+      'src/domains/*/config/model-config.ts',
+      'src/domains/*/config/constants/model-config.ts',
+    ],
+    rules: { 'local/no-bare-process-env': 'error' },
+  },
+
+  // `verifyProjectAccess` answers a boolean a caller can check and then ignore.
+  // `projectScope` returns proof that must be carried, so it is the only way in.
+  {
+    files: [
+      'src/**/*.{ts,tsx}',
+      'scripts/gate-fixtures/src/services/imports-project-access.ts',
+    ],
+    ignores: ['src/shared/auth/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: PROVIDER_SDK_RESTRICTED_PATHS,
+          patterns: [
+            ...PROVIDER_SDK_RESTRICTED_PATTERNS,
+            {
+              group: ['@/shared/auth/project-access'],
+              message:
+                'Establish project access with projectScope() / tryProjectScope() from ' +
+                '@/shared/auth/project-scope. verifyProjectAccess is internal to shared/auth.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Boundary rule: shared MAY NOT import domains or app (Item 1)
   {
     files: ['src/shared/**/*.{ts,tsx}'],
@@ -427,7 +589,9 @@ module.exports = [
       'no-restricted-imports': [
         'error',
         {
+          paths: PROVIDER_SDK_RESTRICTED_PATHS,
           patterns: [
+            ...PROVIDER_SDK_RESTRICTED_PATTERNS,
             {
               group: ['@/domains/*', '@/domains'],
               message: 'shared/ MAY NOT import domains — dependency inversion required.',
@@ -486,6 +650,63 @@ module.exports = [
           name: 'encodeURIComponent',
           message:
             'Use encodePathSegment / buildUrl / appendQueryParams from @/shared/data/url-builder instead of raw encodeURIComponent.',
+        },
+      ],
+    },
+  },
+  // Gate A2 exemptions. A trailing block, because the provider patterns are
+  // merged into several earlier configs and flat config replaces rather than
+  // merges — so an `ignores` on any one of them would not cover the rest.
+  //
+  // The shared/ boundary patterns are restated here: dropping them would turn
+  // this exemption into a hole in a different rule.
+  {
+    files: [...providerSdkExemptions.NEVER_BILLS, ...providerSdkExemptions.SHARED_REMAINDER],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/domains/*', '@/domains'],
+              message: 'shared/ MAY NOT import domains — dependency inversion required.',
+            },
+            {
+              group: ['@/app/*', '@/app'],
+              message: 'shared/ MAY NOT import app routes — dependency inversion required.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  ...contractsConvertedModules,
+  // The fixture proving the contracts gate is on.
+  {
+    files: ['scripts/gate-fixtures/src/services/reads-untyped-json.ts'],
+    rules: { 'local/no-untyped-json-read': 'error' },
+  },
+  // The fixture proving gate A2 is on. Last, so nothing overrides it.
+  {
+    files: ['scripts/gate-fixtures/src/services/imports-provider-sdk.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { paths: PROVIDER_SDK_RESTRICTED_PATHS }],
+    },
+  },
+  // Named remainder of the gateway migration, outside shared/. Each is a real
+  // gap rather than a decision, and `providerSdkImportsOutsideGateway` counts
+  // them. The domain patterns are restated so exempting the provider rule does
+  // not open a hole in the boundary rules.
+  {
+    files: providerSdkExemptions.DOMAIN_REMAINDER,
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            ...DOMAIN_LEGACY_RESTRICTED_PATTERNS,
+            ...GLOBAL_LEGACY_RESTRICTED_PATTERNS,
+          ],
         },
       ],
     },

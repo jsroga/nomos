@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db/client'
-import { projects } from '@/db'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { episodes, projects } from '@/db'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 import { isValidProjectId } from '@/shared/auth/security'
+import { persistBibleOwnedPlanFields } from '@/domains/storyteller/core/io/persist-bible-owned-plan'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { cleanProjectResponse, patchStorytellerProject } from './project-route-helpers'
+import {
+  bibleOwnedBackfillFromEpisodes,
+  cleanProjectResponse,
+  patchStorytellerProject,
+} from './project-route-helpers'
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params
@@ -18,7 +23,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
-    if (!(await verifyProjectAccess(params.id, session.user.id))) {
+    if (!(await tryProjectScope(params.id, session.user.id))) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -34,7 +39,20 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       return NextResponse.json({ error: API_ERROR.PROJECT_NOT_FOUND }, { status: 404 })
     }
 
-    const { seriesBible, storyPlan } = cleanProjectResponse(project)
+    const episodeRows = await db
+      .select({ storyPlan: episodes.storyPlan })
+      .from(episodes)
+      .where(eq(episodes.projectId, params.id))
+    const episodePlans = episodeRows.map(row => row.storyPlan)
+    const backfill = bibleOwnedBackfillFromEpisodes(project, episodePlans)
+    if (Object.keys(backfill).length > 0) {
+      try {
+        await persistBibleOwnedPlanFields(params.id, backfill)
+      } catch (error) {
+        console.error(API_LOG_PREFIX.PROJECT_FETCH_ERROR, error)
+      }
+    }
+    const { seriesBible, storyPlan } = cleanProjectResponse(project, episodePlans)
 
     return NextResponse.json({
       ...project,
@@ -59,7 +77,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
-    if (!(await verifyProjectAccess(params.id, session.user.id))) {
+    if (!(await tryProjectScope(params.id, session.user.id))) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 

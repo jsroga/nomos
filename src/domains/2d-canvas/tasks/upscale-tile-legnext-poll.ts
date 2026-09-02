@@ -1,4 +1,4 @@
-import { logger, metadata, AbortTaskRunError } from '@trigger.dev/sdk/v3'
+import { logger, metadata, AbortTaskRunError } from '@trigger.dev/sdk'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import {
   readRowString,

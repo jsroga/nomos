@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import { db } from '@/db/client'
 import { projects } from '@/db'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 import { recordFromJson } from '@/shared/data/json-guards'
@@ -20,13 +20,21 @@ export async function POST(req: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
-    const { projectId, providerConfig, promptIndex } = await req.json()
+    const body = await req.json()
+    const { projectId, providerConfig, promptIndex } = body
 
     if (!projectId) {
       return NextResponse.json({ error: API_ERROR.MISSING_PROJECT_ID_PARAM }, { status: 400 })
     }
 
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    const requestId = requireSubmissionNonce(body)
+    if (requestId instanceof NextResponse) return requestId
+
+    let scope: ProjectScope
+    try {
+      scope = await projectScope(projectId, session.user.id)
+    } catch (error) {
+      if (!(error instanceof ProjectForbidden)) throw error
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -38,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: API_ERROR.PROJECT_NOT_FOUND }, { status: 404 })
     }
 
-    const { context, pack } = await loadVisualOverviewContext(projectId)
+    const { context, pack } = await loadVisualOverviewContext(scope)
     if (!isVisualOverviewReady(context)) {
       return NextResponse.json({ error: API_ERROR.OVERVIEW_REQUIRED }, { status: 400 })
     }
@@ -58,8 +66,9 @@ export async function POST(req: NextRequest) {
       pack?.storyPlan,
       promptIndex,
     )
-    const handle = await tasks.trigger<typeof generateMoodboard>(TRIGGER_TASK_ID.GENERATE_MOODBOARD, {
+    const handle = await triggerOwnedRun<typeof generateMoodboard>(TRIGGER_TASK_ID.GENERATE_MOODBOARD, {
       projectId,
+      requestId,
       promptIndex: typeof promptIndex === 'number' ? promptIndex : undefined,
       worldDesc: context.worldDesc,
       overview: context.overview,

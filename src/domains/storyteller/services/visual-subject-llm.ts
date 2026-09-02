@@ -1,6 +1,7 @@
-import OpenAI from 'openai'
-import { OpenAiChatRole } from '@/shared/data/constants/protocol'
+import { complete } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { TEXT_GEN_FAST_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import {
   VisualOverviewLabel,
   VisualSubjectCopy,
@@ -24,10 +25,12 @@ export interface GenerateVisualSubjectInput {
   fallbacks: readonly string[]
 }
 
-export function createVisualSubjectClient(): OpenAI | null {
-  const { apiKey, baseURL } = openRouterClientConfig()
-  if (!apiKey) return null
-  return new OpenAI({ apiKey, baseURL })
+/**
+ * Kept so routes can still refuse early when no key is configured. Returns a
+ * boolean now — the gateway owns the client.
+ */
+export function isVisualSubjectConfigured(): boolean {
+  return Boolean(openRouterClientConfig().apiKey)
 }
 
 function slotInstruction(slot: string): string {
@@ -105,17 +108,20 @@ function parseSubjectArray(content: string, input: GenerateVisualSubjectInput): 
 }
 
 export async function generateVisualSubjects(
-  openai: OpenAI,
+  scope: ProjectScope,
   input: GenerateVisualSubjectInput,
 ): Promise<string[]> {
   const fallbacks = fallbackVisualSubjects(input)
   try {
-    const gptResponse = await openai.chat.completions.create({
+    const { text } = await complete({
+      scope,
+      feature: LlmFeature.StorytellerVisualSubject,
       model: TEXT_GEN_FAST_MODEL,
-      messages: [{ role: OpenAiChatRole.System, content: buildVisualSubjectSystemPrompt(input) }],
+      system: buildVisualSubjectSystemPrompt(input),
+      prompt: VisualSubjectCopy.SlotRule,
       temperature: 0.7,
     })
-    const content = gptResponse.choices[0]?.message?.content?.trim() || ''
+    const content = text.trim()
     const slots = input.slots ?? []
     const slotIndex = input.slotIndex
     const isSingle =
@@ -133,15 +139,14 @@ export async function generateVisualSubjects(
 }
 
 export async function generateOverviewVisualSubject(
-  openai: OpenAI,
-  projectId: string,
+  scope: ProjectScope,
   extra?: string,
   kind: VisualSubjectKind = VisualSubjectKind.Scene,
 ): Promise<string | null> {
-  const { context } = await loadVisualOverviewContext(projectId)
+  const { context } = await loadVisualOverviewContext(scope)
   if (!isVisualOverviewReady(context)) return null
   const fallbackSource = extra?.trim() || context.worldDesc
-  const [scene] = await generateVisualSubjects(openai, {
+  const [scene] = await generateVisualSubjects(scope, {
     context,
     extra,
     kind,

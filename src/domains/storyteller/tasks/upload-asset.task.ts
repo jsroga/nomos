@@ -1,20 +1,21 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { env } from '@/shared/config/env'
+import { logger, metadata } from '@trigger.dev/sdk'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { uploadAssetPayloadSchema } from './constants/task-payloads'
 import { put } from '@vercel/blob'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import { promises as fs } from 'fs'
 import { join } from 'path'
 
-export const uploadAssetTask = task({
+export const uploadAssetTask = defineOwnedTask({
   id: 'upload-asset',
+  schema: uploadAssetPayloadSchema,
+  queue: JobQueue.Storage,
   maxDuration: 600, // 10 minutes
   retry: {
     maxAttempts: 1,
   },
-  run: async (payload: {
-    projectId: string
-    assetId: string
-    modelFilename: string // e.g., "asset_123.glb"
-  }) => {
+  run: async payload => {
     const { projectId, assetId, modelFilename } = payload
 
     logger.info(`Starting asset upload for ${assetId}`, { modelFilename })
@@ -48,7 +49,7 @@ export const uploadAssetTask = task({
     try {
       const blob = await put(blobFilename, fileBuffer, {
         access: 'public',
-        token: process.env.BLOB_READ_WRITE_TOKEN,
+        token: env.BLOB_READ_WRITE_TOKEN,
         contentType: modelFilename.endsWith('.glb')
           ? 'model/gltf-binary'
           : modelFilename.endsWith('.gltf')

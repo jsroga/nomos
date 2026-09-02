@@ -1,35 +1,34 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { MeshyArtStyle } from '@/shared/data/constants/protocol'
+import { surfaceMaterialPayloadSchema } from './constants/meshy-payloads'
 import { storageService } from '@/shared/data/storage/storage-service'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import {
-  parseMeshyTaskResult,
-  type MeshyTaskResult,
+  parseMeshyTask,
+  type MeshyTask,
 } from './constants/meshy-task-types'
 
 const MESHY_BASE_URL = 'https://api.meshy.ai/openapi/v2/text-to-3d'
 
-export const surfaceMaterialTask = task({
+export const surfaceMaterialTask = defineOwnedTask({
   id: 'surface-material',
+  schema: surfaceMaterialPayloadSchema,
+  queue: JobQueue.Meshy,
   maxDuration: 3600, // 1 hour - Text-to-3D can take a while (preview + refine)
   retry: {
     maxAttempts: 2,
   },
-  run: async (payload: {
-    projectId: string
-    surfaceId: string
-    prompt: string
-    apiKey: string
-    artStyle?: 'realistic' | 'sculpture'
-    // Surface bounds for reference (not used by Meshy, but useful for metadata)
-    surfaceBounds?: {
-      width: number
-      depth: number
-      centerX: number
-      centerZ: number
-    }
-  }) => {
-    const { projectId, surfaceId, prompt, apiKey, artStyle = 'realistic', surfaceBounds } = payload
+  run: async payload => {
+    const {
+      projectId,
+      surfaceId,
+      prompt,
+      apiKey,
+      artStyle = MeshyArtStyle.Realistic,
+      surfaceBounds,
+    } = payload
 
     logger.info('Starting surface material generation', { surfaceId, prompt, artStyle })
 
@@ -131,7 +130,7 @@ export const surfaceMaterialTask = task({
     // ============================================
     await metadata.set('stage', 'saving')
 
-    const modelUrl = refineResult.model_urls?.glb
+    const modelUrl = refineResult.modelUrls?.glb
     if (!modelUrl) {
       throw new Error('No GLB model URL in Meshy response')
     }
@@ -164,12 +163,12 @@ export const surfaceMaterialTask = task({
       success: true,
       surfaceId,
       modelUrl: savedUrl,
-      thumbnailUrl: refineResult.thumbnail_url,
+      thumbnailUrl: refineResult.thumbnailUrl,
       surfaceBounds,
       meshyResult: {
         previewTaskId,
         refineTaskId,
-        textureUrls: refineResult.texture_urls,
+        textureUrls: refineResult.textureUrls,
       },
     }
   },
@@ -182,7 +181,7 @@ async function pollMeshyTask(
   taskId: string,
   apiKey: string,
   stage: 'preview' | 'refine'
-): Promise<MeshyTaskResult> {
+): Promise<MeshyTask> {
   const maxAttempts = 180 // 30 minutes (10s interval)
   let attempts = 0
 
@@ -201,7 +200,7 @@ async function pollMeshyTask(
       continue
     }
 
-    const result = parseMeshyTaskResult(await response.json())
+    const result = parseMeshyTask(await response.json())
     const progress = result.progress || 0
 
     // Update metadata with progress
@@ -218,7 +217,7 @@ async function pollMeshyTask(
     }
 
     if (result.status === 'FAILED') {
-      const errorMsg = result.task_error?.message || 'Unknown error'
+      const errorMsg = result.taskError?.message || 'Unknown error'
       throw new Error(`Meshy ${stage} task failed: ${errorMsg}`)
     }
 

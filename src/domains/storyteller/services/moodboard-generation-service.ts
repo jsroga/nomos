@@ -70,6 +70,7 @@ export class MoodboardGenerationService {
   /**
    * Generate moodboard using Trigger.dev background task
    */
+  /** project-scope: none — browser-side; the API route it calls mints the scope. */
   async generate(
     projectId: string,
     prompts: string[],
@@ -214,6 +215,7 @@ export class MoodboardGenerationService {
     useGlobalStatusStore.getState().removeOperation(opId)
   }
 
+  /** project-scope: none — browser-side; the API route it calls mints the scope. */
   resumePendingGenerations(
     projectId: string,
     onComplete?: () => void,

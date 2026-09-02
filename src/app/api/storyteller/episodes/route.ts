@@ -12,7 +12,7 @@ import {
   storytellerEpisodesQuerySchema,
   storytellerEpisodesResponseSchema,
 } from '@/domains/storyteller/core/io/storyteller.dto'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { AuthBypassValue, HttpHeader, QueryParam } from '@/shared/data/constants/protocol'
 import { StorytellerEpisodeStatus } from '@/domains/storyteller/core/storyteller-page-wire'
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
     }
 
-    const hasAccess = await verifyProjectAccess(projectId, session.user.id)
+    const hasAccess = await tryProjectScope(projectId, session.user.id)
     if (!hasAccess) {
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED_PROJECT_ACCESS }, { status: 403 })
     }
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       parseCreateStorytellerEpisodeRequest(await req.json())
 
     if (!isSystem && session) {
-      const hasAccess = await verifyProjectAccess(projectId, session.user.id)
+      const hasAccess = await tryProjectScope(projectId, session.user.id)
       if (!hasAccess) {
         return NextResponse.json({ error: API_ERROR.UNAUTHORIZED_PROJECT_ACCESS }, { status: 403 })
       }

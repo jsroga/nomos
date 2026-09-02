@@ -11,6 +11,7 @@ export interface EntityLoadBatchItem {
   context?: string
 }
 
+/** project-scope: none — browser-side queue; the resolve route mints the scope. */
 export function enqueueEntityLoad(
   queue: Map<string, EntityLoadBatchItem>,
   key: string,

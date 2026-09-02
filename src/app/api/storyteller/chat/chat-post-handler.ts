@@ -1,8 +1,9 @@
+import { resolveChatModelId } from '@/domains/storyteller/config/resolve-chat-model'
 import { NextRequest, NextResponse } from 'next/server'
 import { normalizeMastraTraceId } from '@/domains/storyteller/ai/tracing'
 import { BEAT_DRAFT_WORKFLOW_ID } from '@/domains/storyteller/core/io/mastra-runtime'
 import { beatDraftOutputSchema } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
-import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/constants/chat-model-catalog'
+import { isKnownChatModel } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import {
   ChatContinuitySeverity,
   ChatPipelineRunStatus,
@@ -14,6 +15,8 @@ import {
   StorytellerMessageType,
 } from '@/domains/storyteller/core/storyteller-page-wire'
 import { getMastraInstance } from '@/shared/agent-kernel'
+import { tryProjectScope } from '@/shared/auth/project-scope'
+import { HttpStatus } from '@/shared/data/constants/protocol'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { HttpHeader } from '@/shared/data/constants/protocol'
 
@@ -89,7 +92,10 @@ function buildChatErrorResponse(error: unknown) {
   )
 }
 
-export async function handleStorytellerChatPost(req: NextRequest): Promise<NextResponse> {
+export async function handleStorytellerChatPost(
+  req: NextRequest,
+  userId: string
+): Promise<NextResponse> {
   try {
     const body: ChatRequestBody = await req.json()
     const { message, projectId, episodeId, characters, traceId: bodyTraceId, modelName } = body
@@ -103,6 +109,16 @@ export async function handleStorytellerChatPost(req: NextRequest): Promise<NextR
       return NextResponse.json({ error: API_ERROR.CHAT_FIELDS_REQUIRED }, { status: 400 })
     }
 
+    // The ids come from the request body, so ownership is checked before any
+    // canon is read or any model is called — this endpoint spends money.
+    if (!(await tryProjectScope(projectId, userId))) {
+      // 404, not 403: a 403 confirms the project exists.
+      return NextResponse.json(
+        { error: API_ERROR.PROJECT_NOT_FOUND },
+        { status: HttpStatus.NOT_FOUND }
+      )
+    }
+
     const traceId = normalizeMastraTraceId(req.headers.get(HttpHeader.TRACE_ID) || bodyTraceId)
 
     const workflow = getMastraInstance().getWorkflow(BEAT_DRAFT_WORKFLOW_ID)
@@ -110,7 +126,7 @@ export async function handleStorytellerChatPost(req: NextRequest): Promise<NextR
       return NextResponse.json({ error: API_ERROR.BEAT_PIPELINE_NOT_REGISTERED }, { status: 500 })
     }
 
-    const run = await workflow.createRun()
+    const run = await workflow.createRun({ resourceId: projectId })
     const result = await run.start({
       inputData: {
         projectId,

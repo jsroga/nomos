@@ -1,4 +1,5 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
+import { MeshyTopology } from '@/shared/data/constants/protocol'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { readRowString, recordFromJson } from '@/shared/data/json-guards'
 import {
@@ -17,12 +18,11 @@ import {
   MeshyGenerationLog,
   MeshyGenerationMetadataKey,
   MeshyGenerationRequestField,
-  MeshyGenerationTopology,
   MeshyResponseField,
 } from '../constants/meshy-generation-wire'
 import {
   resolveMeshyModelUrl,
-  type MeshyTaskResult,
+  type MeshyTask,
 } from '../constants/meshy-task-types'
 import { pollMeshyImageTo3dTask } from './poll-meshy-image-to-3d'
 import { MeshyStreamFallbackError, streamMeshyImageTo3dTask } from './stream-meshy-image-to-3d'
@@ -32,7 +32,7 @@ interface RunMeshyImageTo3dParams {
   finalImageUrl: string
   apiKey: string
   targetPolycount?: number
-  topology?: MeshyGenerationTopology
+  topology?: MeshyTopology
   onProgress?: (progress: number) => Promise<void>
 }
 
@@ -62,7 +62,7 @@ function parseMeshyErrorMessage(errText: string, fallback: string): string {
   }
 }
 
-async function persistMeshyModelUrl(assetId: string, result: MeshyTaskResult): Promise<void> {
+async function persistMeshyModelUrl(assetId: string, result: MeshyTask): Promise<void> {
   const modelUrl = resolveMeshyModelUrl(result)
   try {
     await supabaseAdmin
@@ -78,7 +78,7 @@ async function awaitMeshyImageTo3dTask(
   taskId: string,
   apiKey: string,
   onProgress: (progress: number) => Promise<void>,
-): Promise<MeshyTaskResult> {
+): Promise<MeshyTask> {
   try {
     return await streamMeshyImageTo3dTask(taskId, apiKey, onProgress)
   } catch (error) {
@@ -106,7 +106,7 @@ export async function runMeshyImageTo3d(params: RunMeshyImageTo3dParams) {
       [MeshyGenerationRequestField.ImageUrl]: finalImageUrl,
       [MeshyGenerationRequestField.AiModel]: MeshyAiModelId.Latest,
       [MeshyGenerationRequestField.EnablePbr]: true,
-      [MeshyGenerationRequestField.Topology]: topology ?? MeshyGenerationTopology.Triangle,
+      [MeshyGenerationRequestField.Topology]: topology ?? MeshyTopology.Triangle,
       [MeshyGenerationRequestField.TargetPolycount]: targetPolycount ?? MESHY_DEFAULT_POLYCOUNT,
       [MeshyGenerationRequestField.ShouldRemesh]: shouldRemesh,
     }),

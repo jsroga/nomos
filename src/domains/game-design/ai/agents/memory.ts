@@ -1,9 +1,9 @@
+import { env } from '@/shared/config/env'
 import { PgVector } from '@mastra/pg'
-import { OpenAIEmbeddings } from '@langchain/openai'
+import { getVoyageEmbeddings, type IEmbeddings } from '@/shared/ai/embeddings/voyage-embeddings'
 
 import { gameDesignPatternFromVectorRow } from './pattern-wire'
 import {
-  GAME_DESIGN_EMBEDDING_MODEL,
   GameDesignMemoryError,
   GameDesignPatternDelimiter,
   VectorIndexMetric,
@@ -34,7 +34,7 @@ const DEFAULT_DIMENSION = 1536 // OpenAI text-embedding-3-small
  */
 export class GameDesignMemory {
   private vector: PgVector
-  private embeddings: OpenAIEmbeddings
+  private embeddings: IEmbeddings
   private indexName: string
   private dimension: number
   private initialized = false
@@ -44,9 +44,9 @@ export class GameDesignMemory {
       id: config.indexName || DEFAULT_INDEX_NAME,
       connectionString: config.connectionString,
     })
-    this.embeddings = new OpenAIEmbeddings({
-      modelName: GAME_DESIGN_EMBEDDING_MODEL,
-    })
+    // Voyage rather than OpenAI: same `IEmbeddings` surface, and it is already
+    // the embedding provider everywhere else in the codebase.
+    this.embeddings = getVoyageEmbeddings()
     this.indexName = config.indexName || DEFAULT_INDEX_NAME
     this.dimension = config.dimension || DEFAULT_DIMENSION
   }
@@ -226,7 +226,7 @@ export class GameDesignMemory {
  * Create a GameDesignMemory instance with default configuration
  */
 export function createGameDesignMemory(connectionString?: string): GameDesignMemory {
-  const connString = connectionString || process.env.DATABASE_URL
+  const connString = connectionString || env.DATABASE_URL
 
   if (!connString) {
     throw new Error(GameDesignMemoryError.DatabaseUrlRequired)

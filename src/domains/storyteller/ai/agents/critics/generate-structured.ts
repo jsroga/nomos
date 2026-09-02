@@ -4,6 +4,8 @@
  * must never take down the caller.
  */
 
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import '@/shared/data/server-guard'
 import type { Agent } from '@mastra/core/agent'
 import type { z } from 'zod'
@@ -17,13 +19,13 @@ export async function generateStructured<T>(
   prompt: string,
   schema: z.ZodType<T>
 ): Promise<T | null> {
-  const response = await agent.generate(prompt, {
+  const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => agent.generate(prompt, {
     toolChoice: BeatDraftToolChoice.None,
     structuredOutput: {
       schema,
       errorStrategy: BeatDraftStructuredOutputErrorStrategy.Warn,
     },
-  })
+  }))
   const parsed = schema.safeParse(response.object)
   return parsed.success ? parsed.data : null
 }

@@ -49,6 +49,43 @@ describe('buildMergedEpisodePlan', () => {
     expect(merged?.posterUrl).toBe(poster)
   })
 
+  it('keeps bible soundtracks when the episode plan has a different list', () => {
+    const bibleTracks = [
+      { title: 'Theme', artist: 'A', youtubeUrl: `${UrlScheme.Https}://youtu.be/M6W4uhrLA7g` },
+    ]
+    const episodeTracks = [
+      { title: 'Other', artist: 'B', youtubeUrl: `${UrlScheme.Https}://youtu.be/abcdefghijk` },
+    ]
+    const merged = buildMergedEpisodePlan(
+      {
+        [EpisodePlanMergeField.StoryPlan]: {
+          [StoryPlanMergeField.Soundtracks]: episodeTracks,
+        },
+      },
+      {
+        id: 'proj-1',
+        series_bible: { [StoryPlanMergeField.Soundtracks]: bibleTracks },
+        story_plan: {},
+      },
+    )
+    expect(merged?.[StoryPlanMergeField.Soundtracks]).toEqual(bibleTracks)
+  })
+
+  it('uses leftover episode soundtracks only when the bible has none', () => {
+    const episodeTracks = [
+      { title: 'Theme', artist: 'A', youtubeUrl: `${UrlScheme.Https}://youtu.be/M6W4uhrLA7g` },
+    ]
+    const merged = buildMergedEpisodePlan(
+      {
+        [EpisodePlanMergeField.StoryPlan]: {
+          [StoryPlanMergeField.Soundtracks]: episodeTracks,
+        },
+      },
+      { id: 'proj-1', series_bible: {}, story_plan: {} },
+    )
+    expect(merged?.[StoryPlanMergeField.Soundtracks]).toEqual(episodeTracks)
+  })
+
   it('keeps bible inspirations when the episode plan has empty buckets', () => {
     const books = { books: [{ title: 'Dune', description: 'Sand.' }], movies: [], games: [] }
     const merged = buildMergedEpisodePlan(

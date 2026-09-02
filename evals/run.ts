@@ -10,16 +10,25 @@
  * Example: JUDGING_MODEL=openai/gpt-5.6-luna
  */
 
-import * as dotenv from 'dotenv'
+// First, and before every other import: `@/shared/config/env` parses
+// `process.env` at import time, so .env.local has to be loaded before any
+// module that reads it is evaluated.
+import './env-preload'
 import * as fs from 'fs'
 import * as path from 'path'
 import { inputRecord } from '@/shared/agent-kernel/scorers/shared'
+import { getErrorMessage } from '@/shared/errors/error-utils'
+// The .mjs module is shared with the pre-commit check, which runs under bare
+// node; it carries no types by design.
+import { inputHash } from './input-hash.mjs'
+import { addJudgeUsage, judgeUsageOf, EMPTY_JUDGE_USAGE, type JudgeUsage } from './judge-usage'
 import { examplesMatchingScorers } from './select-eval-examples'
 import type {
   ExampleLog,
   MultiVariantReport,
   RunnableEvalExample,
   ScenarioMetrics,
+  ScorerFailure,
   ScorerRunResult,
   VariantReport,
 } from './types'
@@ -28,15 +37,6 @@ const DEFAULT_DATASET = 'storyteller'
 const IDEA_DATASET = 'idea-diversity'
 const DEFAULT_OUTPUT_FILE = 'latest.json'
 const IDEA_OUTPUT_FILE = 'idea-diversity-latest.json'
-
-function loadEnv() {
-  const envPath = path.resolve(process.cwd(), '.env.local')
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath })
-  } else {
-    dotenv.config()
-  }
-}
 
 function parseArgs(totalExamples: number) {
   const args = process.argv.slice(2)
@@ -77,8 +77,14 @@ function average(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length
 }
 
+/**
+ * Averages over the results that *have* the scorer, not over every result with
+ * a missing one read as 0 — a scorer scoped to three examples used to be
+ * divided by the whole run.
+ */
 function buildScenarioMetrics(results: ScorerRunResult[]): ScenarioMetrics {
-  const collect = (key: string) => results.map(r => r.scores[key] ?? 0)
+  const collect = (key: string) =>
+    results.filter(r => key in r.scores).map(r => r.scores[key])
   return {
     magicScore: average(collect('magic')),
     consistency: average(collect('consistency')),
@@ -136,9 +142,35 @@ function scorerAverages(results: ScorerRunResult[]): Record<string, number> {
   return averages
 }
 
-async function runEval(): Promise<MultiVariantReport> {
-  loadEnv()
+function printSummary(
+  outPath: string,
+  averages: Record<string, number>,
+  judgeUsage: JudgeUsage,
+  failures: ScorerFailure[]
+): void {
+  console.log(`\n📊 Results saved to ${outPath}`)
+  console.log(
+    `   ${Object.entries(averages)
+      .map(([id, value]) => `${id}=${(value * 100).toFixed(0)}%`)
+      .join(' ')}`
+  )
+  console.log(
+    `   judges: ${judgeUsage.inputTokens + judgeUsage.outputTokens} tokens, $${judgeUsage.costUsd.toFixed(4)}`
+  )
+  if (judgeUsage.unpricedModels.length > 0) {
+    console.warn(
+      `   ⚠️  unpriced judge model(s), cost undercounted: ${judgeUsage.unpricedModels.join(', ')}`
+    )
+  }
+  if (failures.length === 0) return
 
+  console.error(`\n❌ ${failures.length} scorer failure(s) — this run is not a measurement.`)
+  for (const failure of failures) {
+    console.error(`   ${failure.scorerId} on ${failure.exampleId}: ${failure.error}`)
+  }
+}
+
+async function runEval(): Promise<MultiVariantReport> {
   const { registerCorePrompts } = await import('@/shared/agent-kernel/prompts/registry')
   registerCorePrompts()
 
@@ -167,6 +199,8 @@ async function runEval(): Promise<MultiVariantReport> {
   }
   const examples = sampleArray(eligible, samples)
   const results: ScorerRunResult[] = []
+  const failures: ScorerFailure[] = []
+  let judgeUsage: JudgeUsage = EMPTY_JUDGE_USAGE
 
   console.log('\n🧪 Mastra Eval Runner')
   console.log(`   Dataset: ${dataset}`)
@@ -187,10 +221,13 @@ async function runEval(): Promise<MultiVariantReport> {
         })
         scores[scorer.id] = result.score
         reasoning[scorer.id] = result.reason ?? ''
+        judgeUsage = addJudgeUsage(judgeUsage, judgeUsageOf(result, judgingModel))
       } catch (error) {
-        console.warn(`   ⚠️  Scorer ${scorer.id} failed for ${example.id}:`, error)
-        scores[scorer.id] = 0
-        reasoning[scorer.id] = String(error)
+        // Deliberately no score. A failure recorded as 0 is indistinguishable
+        // from a genuine zero, which is how the 2026-08-18 artifact came to
+        // read as a baseline when every judge had failed on a missing key.
+        failures.push({ exampleId: example.id, scorerId: scorer.id, error: getErrorMessage(error) })
+        console.warn(`   ⚠️  Scorer ${scorer.id} FAILED for ${example.id}: ${getErrorMessage(error)}`)
       }
     }
 
@@ -207,7 +244,9 @@ async function runEval(): Promise<MultiVariantReport> {
       },
     })
 
-    const scoreSummary = scorers.map(s => `${s.id}=${(scores[s.id] ?? 0).toFixed(2)}`).join(' ')
+    const scoreSummary = scorers
+      .map(s => (s.id in scores ? `${s.id}=${scores[s.id].toFixed(2)}` : `${s.id}=FAILED`))
+      .join(' ')
     console.log(`   ✓ ${example.id} — ${scoreSummary}`)
   }
 
@@ -245,8 +284,13 @@ async function runEval(): Promise<MultiVariantReport> {
   const report: MultiVariantReport = {
     id: generateRunId(),
     timestamp: new Date().toISOString(),
+    // The sources this run scored. `check-eval-freshness` compares it against
+    // the working tree, so a stale artifact cannot pass for a fresh one.
+    inputHash: inputHash(),
+    judgeUsage,
     variants: [variant],
     scenarios: scenarioNames,
+    failures,
   }
 
   const resultsDir = path.resolve(process.cwd(), 'evals/results')
@@ -260,20 +304,22 @@ async function runEval(): Promise<MultiVariantReport> {
   )
   fs.writeFileSync(outPath, JSON.stringify(report, null, 2))
 
-  console.log(`\n📊 Results saved to ${outPath}`)
-  const averageSummary = Object.entries(averages)
-    .map(([id, value]) => `${id}=${(value * 100).toFixed(0)}%`)
-    .join(' ')
-  console.log(`   ${averageSummary}`)
+  printSummary(outPath, averages, judgeUsage, failures)
 
   return report
 }
 
 if (require.main === module) {
-  runEval().catch(error => {
-    console.error('Eval failed:', error)
-    process.exit(1)
-  })
+  runEval()
+    .then(report => {
+      // A run with a failed scorer is not a measurement, and must never be
+      // mistaken for one by a caller reading the exit code.
+      if (report.failures.length > 0) process.exit(1)
+    })
+    .catch(error => {
+      console.error('Eval failed:', error)
+      process.exit(1)
+    })
 }
 
 export { runEval }

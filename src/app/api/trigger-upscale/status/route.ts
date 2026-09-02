@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server'
-import { runs } from '@trigger.dev/sdk/v3'
+import { JobAccessError, retrieveOwnedRun } from '@/shared/jobs'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { ErrorFragment, QueryParam } from '@/shared/data/constants/protocol'
 import { noStoreJson } from '@/shared/data/polling/no-store-json'
 
-export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
+export const GET = withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
   const { searchParams } = new URL(request.url)
   const runId = searchParams.get(QueryParam.RunId)
 
@@ -15,11 +15,8 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
   }
 
   try {
-    const run = await runs.retrieve(runId)
+    const run = await retrieveOwnedRun(runId, session.user.id)
 
-    if (!run) {
-      return noStoreJson({ error: API_ERROR.RUN_NOT_FOUND }, 404)
-    }
 
     return noStoreJson({
       id: run.id,
@@ -33,6 +30,11 @@ export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedReq
       finishedAt: run.finishedAt,
     })
   } catch (error: unknown) {
+    // Missing, or owned by another tenant: same response either way, so a
+    // 404 never confirms that someone else's run id exists.
+    if (error instanceof JobAccessError) {
+      return noStoreJson({ error: API_ERROR.RUN_NOT_FOUND }, 404)
+    }
     console.error(API_LOG_PREFIX.UPSCALE_STATUS_ERROR, error)
 
     if (getErrorMessage(error)?.includes(ErrorFragment.NotFound)) {

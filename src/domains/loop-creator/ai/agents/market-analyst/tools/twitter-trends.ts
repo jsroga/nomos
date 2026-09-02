@@ -10,6 +10,7 @@
  * - Emerging game comparisons (e.g., "the new CS2", "better than Vampire Survivors")
  */
 
+import { env } from '@/shared/config/env'
 import { createLoopStructuredTool } from './structured-tool'
 import { z } from 'zod'
 import {
@@ -274,7 +275,7 @@ Use this to understand current market buzz and player sentiment.`,
     const { topic, includeEmerging, sentimentFilter } = twitterTrendsSchema.parse(input)
     try {
       const topicLower = topic.toLowerCase()
-      const bearerToken = process.env.TWITTER_BEARER_TOKEN
+      const bearerToken = env.TWITTER_BEARER_TOKEN
       const results: TwitterTrendResult[] = []
 
       if (bearerToken) {

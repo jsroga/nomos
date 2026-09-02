@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { storageService } from '@/shared/data/storage/storage-service'
 import { BufferEncoding, ContentType, UrlScheme } from '@/shared/data/constants/protocol'
 import {

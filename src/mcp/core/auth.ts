@@ -4,6 +4,7 @@
  * API key validation and service context creation for MCP server.
  */
 
+import { env } from '@/shared/config/env'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import {
   MCP_API_KEY_LOOKUP_SELECT,
@@ -49,7 +50,7 @@ export interface ApiKeyValidationResult {
 
 function getSupabaseServiceClient(): SupabaseClient {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !supabaseServiceKey) {
     throw new Error(McpAuthError.MissingSupabaseConfig)
@@ -81,7 +82,7 @@ export async function validateApiKey(apiKey: string): Promise<ApiKeyValidationRe
       valid: true,
       keyId: McpAuthDevBypass.KeyId,
       keyName: McpAuthDevBypass.KeyName,
-      userId: process.env.DEV_USER_ID || McpAuthDevBypass.UserId,
+      userId: env.DEV_USER_ID || McpAuthDevBypass.UserId,
       scopes: [McpAuthScope.Wildcard],
     }
   }

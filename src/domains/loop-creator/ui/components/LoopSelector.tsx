@@ -6,7 +6,7 @@ import { Button } from '@/components/Button'
 import { cn } from '@/shared/data/utils'
 import { ScrollArea } from '@/components/ScrollArea'
 import { LoopSelectorNameDialog } from '@/domains/loop-creator/ui/components/LoopSelectorNameDialog'
-import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { ConfirmDialogVariant, useConfirmDialog } from '@/components/ConfirmDialog'
 import {
   deleteLoop,
   listProjectLoops,
@@ -26,7 +26,6 @@ import {
   LOOP_SELECTOR_RESET_TITLE,
   LOOP_SELECTOR_LOCALE_OPTIONS,
   LOOP_SELECTOR_LOCALE_TAG,
-  LoopSelectorConfirmVariant,
 } from '@/domains/loop-creator/constants/loop-selector'
 
 interface LoopSelectorProps {
@@ -153,7 +152,7 @@ export function LoopSelector({
       description: `Are you sure you want to delete "${loopName}"? This action cannot be undone.`,
       confirmLabel: LOOP_SELECTOR_DELETE_CONFIRM,
       cancelLabel: LOOP_SELECTOR_DELETE_CANCEL,
-      variant: LoopSelectorConfirmVariant.Destructive,
+      variant: ConfirmDialogVariant.Destructive,
     })
 
     if (!confirmed) return
@@ -181,7 +180,7 @@ export function LoopSelector({
       description: LOOP_SELECTOR_RESET_DESCRIPTION,
       confirmLabel: LOOP_SELECTOR_RESET_CONFIRM,
       cancelLabel: LOOP_SELECTOR_RESET_CANCEL,
-      variant: LoopSelectorConfirmVariant.Destructive,
+      variant: ConfirmDialogVariant.Destructive,
     })
 
     if (confirmed) {

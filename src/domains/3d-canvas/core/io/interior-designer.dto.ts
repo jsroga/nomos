@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { submissionNonceSchema } from '@/shared/jobs/submission-nonce'
+import { MeshyArtStyle, MeshyTopology } from '@/shared/data/constants/protocol'
 import { PROJECT_OR_DESIGN_ID_REQUIRED } from '@/domains/3d-canvas/constants/interior-designer-messages'
 
 const dateLikeSchema = z.union([z.string(), z.date()]).transform(value => {
@@ -32,8 +34,8 @@ const textureStyleSchema = z.enum([
   'metallic',
   'organic',
 ])
-const meshyArtStyleSchema = z.enum(['realistic', 'sculpture'])
-const topologySchema = z.enum(['triangle', 'quad'])
+const meshyArtStyleSchema = z.nativeEnum(MeshyArtStyle)
+const topologySchema = z.nativeEnum(MeshyTopology)
 
 export const interiorWallSchema = z
   .object({
@@ -200,6 +202,7 @@ export const interiorTexturesResponseSchema = z.object({
 
 export const interiorRetextureRequestSchema = z.object({
   modelUrlOrBase64: z.string().min(1),
+  requestId: submissionNonceSchema,
   prompt: z.string().min(1),
   assetId: z.string().optional(),
   projectId: z.string().min(1),
@@ -240,6 +243,7 @@ export const interiorRetextureStatusResponseSchema = z.object({
 
 export const interiorTextTo3DRequestSchema = z.object({
   projectId: z.string().min(1),
+  requestId: submissionNonceSchema,
   prompt: z.string().min(1),
   seed: z.number().int().optional(),
   apiKey: z.string().optional(),
@@ -275,6 +279,7 @@ export const interiorMaterialSurfaceBoundsSchema = z.object({
 
 export const interiorMaterialRequestSchema = z.object({
   projectId: z.string().min(1),
+  requestId: submissionNonceSchema,
   surfaceId: z.string().min(1),
   prompt: z.string().min(1),
   apiKey: z.string().optional(),

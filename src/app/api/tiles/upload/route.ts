@@ -1,12 +1,12 @@
+import { env } from '@/shared/config/env'
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import sharp from 'sharp'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { formFile, formInt, formString } from '@/shared/data/form-data-guards'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
@@ -21,7 +21,7 @@ import { DB_TABLE, DB_UPSERT } from '@/shared/data/constants/db-tables'
 const TILE_SIZE = 1024
 
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const formData = await request.formData()
     const file = formFile(formData, FormField.File)
     const projectId = formString(formData, FormField.ProjectId)
@@ -32,8 +32,8 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: API_ERROR.MISSING_TILE_UPLOAD_FIELDS }, { status: 400 })
     }
 
-    const hasAccess = await verifyProjectAccess(supabase, projectId)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -50,15 +50,15 @@ export const POST = withRateLimit(
       .png()
       .toBuffer()
 
-    const filename = `${DB_TABLE.TILES}/${projectId}/${x}_${y}_${Date.now()}.png`
+    const filename = `${DB_TABLE.TILES}/${scope.projectId}/${x}_${y}_${Date.now()}.png`
 
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    if (!env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json({ error: API_ERROR.BLOB_TOKEN_NOT_CONFIGURED }, { status: 500 })
     }
 
     const blob = await put(filename, resizedBuffer, {
       access: BlobAccess.Public,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      token: env.BLOB_READ_WRITE_TOKEN,
       contentType: ContentType.Png,
     })
 
@@ -66,7 +66,7 @@ export const POST = withRateLimit(
       .from(DB_TABLE.TILES)
       .upsert(
         {
-          project_id: projectId,
+          project_id: scope.projectId,
           x,
           y,
           tile_prompt: `Uploaded tile at (${x}, ${y})`,

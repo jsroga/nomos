@@ -17,7 +17,6 @@ interface ConversationMessage {
 
 interface EvaluationRequest {
   conversation: ConversationMessage[]
-  projectId?: string
 }
 
 interface CriteriaScore {
@@ -33,6 +32,7 @@ interface EvaluationResult {
 }
 
 export const POST = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
+    // auth-scope: session-existence-only — judges a conversation posted in the request; no stored data is read.
   try {
     const body: EvaluationRequest = await request.json()
     const { conversation } = body

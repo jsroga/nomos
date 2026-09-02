@@ -1,3 +1,5 @@
+import { withGatewayContext } from '@/shared/ai/gateway/call-context'
+import { env } from '@/shared/config/env'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 // Side-effect: register the game-design agent + workflow on the central Mastra
@@ -8,7 +10,7 @@ import {
   GameLoopWorkflow,
 } from '@/domains/game-design/ai/workflows/game-loop-workflow'
 import { requireAuth, checkRateLimit } from '@/shared/data/api-utils'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam, TriggerRunStatus } from '@/shared/data/constants/protocol'
@@ -54,7 +56,7 @@ async function getWorkflow(): Promise<{ workflow: GameLoopWorkflow }> {
   if (!workflowInstance) {
     const created = await createGameLoopWorkflow({
       modelName: resolveGameDesignModel(),
-      connectionString: process.env.DATABASE_URL,
+      connectionString: env.DATABASE_URL,
     })
     workflowInstance = created.workflow
   }
@@ -94,7 +96,8 @@ export async function POST(req: NextRequest) {
     const { projectId, genre, loopType, targetAudience, theme, referenceGames } = parseResult.data
 
     // Verify project access
-    if (!(await verifyProjectAccess(projectId, session.user.id))) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
     }
 
@@ -102,14 +105,16 @@ export async function POST(req: NextRequest) {
     const { workflow } = await getWorkflow()
 
     // Start the workflow
-    const result = await workflow.run({
-      projectId,
-      genre,
-      loopType,
-      targetAudience,
-      theme,
-      referenceGames,
-    })
+    const result = await withGatewayContext({ scope }, () =>
+      workflow.run({
+        projectId: scope.projectId,
+        genre,
+        loopType,
+        targetAudience,
+        theme,
+        referenceGames,
+      })
+    )
 
     console.log(`[Game Design Workflow] Started for project ${projectId}, genre: ${genre}`)
 

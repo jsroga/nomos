@@ -12,6 +12,7 @@
 | [DEVELOPMENT.md](./DEVELOPMENT.md) | Tests, evals, Storybook, observability, quality gates, perf debug |
 | [DESIGN.md](./DESIGN.md) | Product UI contract (tokens, projects, chat, marketing SSR) |
 | [MCP_API.md](./MCP_API.md) | MCP tools / auth for integrators |
+| [DECISIONS.md](./DECISIONS.md) | Architecture decision log — what was decided, what was rejected, and why |
 | [README.md](./README.md) | This index |
 
 ## Also at repo root

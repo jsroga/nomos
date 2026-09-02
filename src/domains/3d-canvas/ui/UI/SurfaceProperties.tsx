@@ -1,4 +1,5 @@
 'use client'
+import { MeshyArtStyle } from '@/shared/data/constants/protocol'
 
 import React, { useState, useEffect } from 'react'
 import { interiorDesignerApi } from '@/domains/3d-canvas/core/io/interior-designer.api'
@@ -21,7 +22,6 @@ import { DEFAULT_TEXTURE_STYLE } from '@/domains/3d-canvas/constants/texture-def
 import { SurfaceTypeValue } from '@/domains/3d-canvas/constants/terrain-defaults'
 import { InteriorDefaultProjectId } from '@/domains/3d-canvas/constants/interior-api-defaults'
 import {
-  MaterialArtStyle,
   MaterialGenerationMode,
   MaterialGenerationOperationType,
   MaterialGenerationStage,
@@ -280,7 +280,7 @@ export const SurfaceProperties: React.FC = () => {
         surfaceId: selectedSurface.id,
         prompt,
         apiKey,
-        artStyle: MaterialArtStyle.Realistic,
+        artStyle: MeshyArtStyle.Realistic,
         surfaceBounds,
       })
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   AssistantChatStreamStatus,
+  ASSISTANT_TURN_SETTLE_MS,
   isAssistantTurnBusy,
   shouldEmitCompletedToolCalls,
 } from '../assistant-turn-phase'
@@ -25,5 +26,9 @@ describe('assistant turn phase', () => {
   it('surfaces pending approvals once the turn has ended', () => {
     expect(shouldEmitCompletedToolCalls(AssistantChatStreamStatus.Ready)).toBe(true)
     expect(shouldEmitCompletedToolCalls(AssistantChatStreamStatus.Error)).toBe(true)
+  })
+
+  it('exposes a settle delay for ready blips between tool rounds', () => {
+    expect(ASSISTANT_TURN_SETTLE_MS).toBeGreaterThan(0)
   })
 })

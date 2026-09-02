@@ -1,4 +1,4 @@
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { UpscaleStrategy } from '../constants/generation-modes'
 import { topazEnhanceModelFromMode } from '../constants/topaz-upscale'
 import { runGeminiPreUpscaleStep } from './upscale-tile-gemini-step'

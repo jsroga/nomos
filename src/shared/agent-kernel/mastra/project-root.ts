@@ -3,6 +3,7 @@
  * `.mastra/output` or `src/mastra/public` (not the monorepo root).
  */
 
+import { env } from '@/shared/config/env'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import {
@@ -16,7 +17,7 @@ import { FileEncoding } from '@/shared/data/constants/protocol'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 
 export function resolveProjectRoot(): string {
-  const envRoot = process.env.MASTRA_PROJECT_ROOT?.trim()
+  const envRoot = env.MASTRA_PROJECT_ROOT?.trim()
   if (envRoot) {
     const resolved = path.resolve(envRoot)
     if (path.basename(resolved) === MASTRA_DIR_NAME) {

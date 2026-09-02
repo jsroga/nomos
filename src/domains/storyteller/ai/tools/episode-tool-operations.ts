@@ -2,6 +2,8 @@ import { episodes } from '@/db/schema'
 import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
+import { persistBibleOwnedPlanFields } from '@/domains/storyteller/core/io/persist-bible-owned-plan'
+import { omitBibleOwnedPlanFields } from '@/domains/storyteller/core/utils/bible-populated-fields'
 import { recordFromJson } from '@/shared/data/deep-merge'
 import type { EpisodeData } from './episode-tools-schema'
 import { episodeWriteDataWithoutPremise } from './episode-write-data'
@@ -20,14 +22,21 @@ export function episodeResponse(episode: EpisodeRow) {
     sequence: episode.sequence,
     thematicFocus: episode.thematicFocus ?? undefined,
     premise: episode.premise ?? undefined,
-    storyPlan: storyPlanRecord(episode.storyPlan),
+    storyPlan: storyPlanRecord(episode.storyPlan)
+      ? omitBibleOwnedPlanFields(recordFromJson(episode.storyPlan))
+      : undefined,
     thumbnailUrl: episode.posterUrl ?? undefined,
   }
 }
 
 function buildStoryPlanData(data: EpisodeData): Record<string, unknown> | null {
-  const storyPlanData: Record<string, unknown> = { ...(data.storyPlan ?? {}) }
+  const storyPlanData = omitBibleOwnedPlanFields(recordFromJson(data.storyPlan))
   return Object.keys(storyPlanData).length > 0 ? storyPlanData : null
+}
+
+async function persistIncomingBibleOwned(projectId: string, data: EpisodeData) {
+  if (data.storyPlan === undefined) return
+  await persistBibleOwnedPlanFields(projectId, recordFromJson(data.storyPlan))
 }
 
 async function resolveEpisodeSequence(projectId: string, sequence?: number) {
@@ -45,8 +54,9 @@ function buildEpisodeUpdateFields(
   if (data.sequence !== undefined) updateFields.sequence = data.sequence
   if (data.thematicFocus !== undefined) updateFields.thematicFocus = data.thematicFocus
   if (data.storyPlan !== undefined) {
-    const currentStoryPlan = recordFromJson(existing.storyPlan)
-    updateFields.storyPlan = { ...currentStoryPlan, ...data.storyPlan }
+    const currentStoryPlan = omitBibleOwnedPlanFields(recordFromJson(existing.storyPlan))
+    const incoming = omitBibleOwnedPlanFields(recordFromJson(data.storyPlan))
+    updateFields.storyPlan = { ...currentStoryPlan, ...incoming }
   }
   if (data.thumbnailUrl !== undefined) updateFields.posterUrl = data.thumbnailUrl
   return updateFields
@@ -54,6 +64,7 @@ function buildEpisodeUpdateFields(
 
 export async function createEpisodeOperation(projectId: string, data: EpisodeData) {
   const persistable = episodeWriteDataWithoutPremise(data)
+  await persistIncomingBibleOwned(projectId, persistable)
   const sequence = await resolveEpisodeSequence(projectId, persistable.sequence)
   const newEpisodeId = uuidv4()
   const storyPlan = buildStoryPlanData(persistable)
@@ -85,6 +96,7 @@ export async function updateEpisodeOperation(episodeId: string, data: EpisodeDat
   }
 
   const persistable = episodeWriteDataWithoutPremise(data)
+  await persistIncomingBibleOwned(existing.projectId, persistable)
   const updateFields = buildEpisodeUpdateFields(existing, persistable)
   const persistedKeys = Object.keys(updateFields).filter(key => key !== 'updatedAt')
   if (persistedKeys.length === 0) {

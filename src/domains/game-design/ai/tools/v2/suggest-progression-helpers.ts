@@ -1,3 +1,4 @@
+import { invokeLlmTextPrompt } from '@/domains/game-design/ai/tools/v2/game-design-llm-shared'
 import { SuggestProgressionOutputSchema } from '../../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { buildSuggestProgressionPrompt } from '../../constants/logic-tool-prompts'
@@ -8,7 +9,6 @@ import {
   LogicToolCopy,
   joinWithCommaSpace,
 } from '../../constants/logic-tool-wire'
-import { GameDesignLlmRole } from '../../constants/game-design-tool-wire'
 import type { GameResource } from '../../constants/logic-tool-schemas'
 import { createLogicToolModel, parseLlmJsonOrError } from './game-design-llm-shared'
 import type { z } from 'zod'
@@ -49,9 +49,7 @@ export function buildSuggestProgressionPromptFromLoop(
 export async function runSuggestProgressionLlm(prompt: string) {
   try {
     const model = createLogicToolModel()
-    const response = await model.invoke([{ role: GameDesignLlmRole.User, content: prompt }])
-    const content =
-      typeof response.content === 'string' ? response.content : JSON.stringify(response.content)
+    const content = await invokeLlmTextPrompt(prompt, model)
 
     const { parsed, error } = parseLlmJsonOrError(content)
     if (!parsed) return { success: false as const, error }

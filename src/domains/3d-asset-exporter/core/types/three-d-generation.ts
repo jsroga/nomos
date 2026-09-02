@@ -1,66 +1,48 @@
-/** Shared types for 3D asset exporter panel generation / remesh flows. */
+/**
+ * Shared types for the 3D asset exporter panel.
+ *
+ * The shapes themselves live in `contracts/` — parsed once at the edge, in
+ * camelCase, with the stored snake_case confined to the mapper. This file
+ * re-exports them so the module's existing import paths keep working, and
+ * holds the few helpers that read a Trigger run's output rather than the
+ * asset's own metadata.
+ */
 
-import { recordFromJson } from '@/shared/data/json-guards'
+import {
+  meshyResultToDomain,
+  meshyResultWireSchema,
+  type MeshyResult,
+} from '@/domains/3d-asset-exporter/contracts'
 
-export interface MeshyResult {
-  model_url?: string
-  model_urls?: {
-    glb?: string
-    fbx?: string
-    obj?: string
-    usdz?: string
-    mtl?: string
-  }
-  texture_urls?: Array<{
-    base_color?: string
-    metallic?: string
-    normal?: string
-    roughness?: string
-  }>
-  thumbnail_url?: string
-  progress?: number
-  status?: string
-  error?: string
-}
-
-export enum GenerationStatus {
-  Pending = 'pending',
-  Processing = 'processing',
-  Completed = 'completed',
-  Failed = 'failed',
-}
-
-export enum MeshyTopology {
-  Quad = 'quad',
-  Triangle = 'triangle',
-}
-
+/** Keys of a Trigger run's output for a Meshy task. */
 export enum MeshyOutputKey {
   Result = 'result',
   Message = 'message',
 }
 
-function parseGenerationStatus(value: unknown): GenerationStatus | undefined {
-  if (value === GenerationStatus.Pending) return GenerationStatus.Pending
-  if (value === GenerationStatus.Processing) return GenerationStatus.Processing
-  if (value === GenerationStatus.Completed) return GenerationStatus.Completed
-  if (value === GenerationStatus.Failed) return GenerationStatus.Failed
-  return undefined
-}
+/** The metadata key Trigger writes the Meshy task id under. */
+const MESHY_TASK_ID_KEY = 'meshy_task_id'
 
-export interface GenerationMetadata {
-  trigger_run_id?: string
-  meshy_task_id?: string
-  generation_status?: GenerationStatus | `${GenerationStatus}`
-  generation_started_at?: string
-  generation_result?: MeshyResult
-  provider?: string
-  topology?: MeshyTopology
-  target_polycount?: number
-  remesh_run_id?: string
-  remesh_status?: GenerationStatus | `${GenerationStatus}`
-  remesh_meshy_task_id?: string
-  remesh_result?: MeshyResult
+export {
+  GenerationStatus,
+  MeshyTopology,
+  generationMetadataToRow,
+  parseGenerationMetadata,
+  type GenerationMetadata,
+  type MeshyModelUrls,
+  type MeshyResult,
+  type MeshyTextureUrls,
+} from '@/domains/3d-asset-exporter/contracts'
+
+/**
+ * The Meshy task id off a Trigger run's metadata bag.
+ *
+ * The snake_case key is Trigger's, and it is named once here rather than read
+ * at each of the three polling sites that used to reach for it.
+ */
+export function readMeshyTaskId(metadata: Record<string, unknown> | undefined): string | undefined {
+  const value = metadata?.[MESHY_TASK_ID_KEY]
+  return typeof value === 'string' ? value : undefined
 }
 
 export function readStatusErrorMessage(error: unknown, fallback: string): string {
@@ -71,45 +53,16 @@ export function readStatusErrorMessage(error: unknown, fallback: string): string
   return fallback
 }
 
-export function isMeshyResult(value: unknown): value is MeshyResult {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
+/**
+ * A Trigger run's `output.result`, parsed into the domain shape.
+ *
+ * Returns undefined rather than throwing: a run whose output does not match is
+ * a run with no usable result, and the panel already handles that.
+ */
 export function readMeshyResultFromOutput(
   output: Record<string, unknown> | undefined
 ): MeshyResult | undefined {
   if (!output || !(MeshyOutputKey.Result in output)) return undefined
-  const result = Reflect.get(output, MeshyOutputKey.Result)
-  return isMeshyResult(result) ? result : undefined
-}
-
-export function readMeshyTaskId(metadata: Record<string, unknown> | undefined): string | undefined {
-  if (!metadata) return undefined
-  const value = metadata.meshy_task_id
-  return typeof value === 'string' ? value : undefined
-}
-
-export function parseGenerationMetadata(value: unknown): GenerationMetadata | null {
-  if (!isMeshyResult(value)) return null
-  const row = recordFromJson(value)
-  const result: GenerationMetadata = {}
-  if (typeof row.trigger_run_id === 'string') result.trigger_run_id = row.trigger_run_id
-  if (typeof row.meshy_task_id === 'string') result.meshy_task_id = row.meshy_task_id
-  const generationStatus = parseGenerationStatus(row.generation_status)
-  if (generationStatus) result.generation_status = generationStatus
-  if (typeof row.generation_started_at === 'string') {
-    result.generation_started_at = row.generation_started_at
-  }
-  if (isMeshyResult(row.generation_result)) result.generation_result = row.generation_result
-  if (typeof row.provider === 'string') result.provider = row.provider
-  if (row.topology === MeshyTopology.Quad || row.topology === MeshyTopology.Triangle) {
-    result.topology = row.topology
-  }
-  if (typeof row.target_polycount === 'number') result.target_polycount = row.target_polycount
-  if (typeof row.remesh_run_id === 'string') result.remesh_run_id = row.remesh_run_id
-  const remeshStatus = parseGenerationStatus(row.remesh_status)
-  if (remeshStatus) result.remesh_status = remeshStatus
-  if (typeof row.remesh_meshy_task_id === 'string') result.remesh_meshy_task_id = row.remesh_meshy_task_id
-  if (isMeshyResult(row.remesh_result)) result.remesh_result = row.remesh_result
-  return result
+  const parsed = meshyResultWireSchema.safeParse(Reflect.get(output, MeshyOutputKey.Result))
+  return parsed.success ? meshyResultToDomain(parsed.data) : undefined
 }

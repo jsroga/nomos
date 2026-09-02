@@ -1,41 +1,39 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { MeshyArtStyle, MeshyTopology } from '@/shared/data/constants/protocol'
+import { textTo3dPayloadSchema } from './constants/meshy-payloads'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { storageService } from '@/shared/data/storage/storage-service'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import {
   MeshyTaskStatusValue,
-  parseMeshyTaskResult,
-  type MeshyTaskResult,
+  parseMeshyTask,
+  type MeshyTask,
 } from './constants/meshy-task-types'
 
 const MESHY_BASE_URL = 'https://api.meshy.ai/openapi/v2/text-to-3d'
 
-export const textTo3DTask = task({
+const TEXT_TO_3D_DEFAULT_POLYCOUNT = 30000
+
+export const textTo3DTask = defineOwnedTask({
   id: 'text-to-3d',
+  schema: textTo3dPayloadSchema,
+  queue: JobQueue.Meshy,
   maxDuration: 3600, // 1 hour - Text-to-3D can take a while (preview + refine)
   retry: {
     maxAttempts: 2,
   },
-  run: async (payload: {
-    projectId: string
-    prompt: string
-    seed: number
-    apiKey: string
-    artStyle?: 'realistic' | 'sculpture'
-    enablePbr?: boolean
-    targetPolycount?: number
-    topology?: 'quad' | 'triangle'
-  }) => {
+  run: async payload => {
     const {
       projectId,
       prompt,
       seed,
       apiKey,
-      artStyle = 'realistic',
+      artStyle = MeshyArtStyle.Realistic,
       enablePbr = true,
-      targetPolycount = 30000,
-      topology = 'triangle',
+      targetPolycount = TEXT_TO_3D_DEFAULT_POLYCOUNT,
+      topology = MeshyTopology.Triangle,
     } = payload
 
     logger.info('Starting Text-to-3D generation', { prompt, seed, artStyle })
@@ -138,7 +136,7 @@ export const textTo3DTask = task({
     // ============================================
     await metadata.set('stage', 'saving')
 
-    const modelUrl = refineResult.model_urls?.glb
+    const modelUrl = refineResult.modelUrls?.glb
     if (!modelUrl) {
       throw new Error('No GLB model URL in Meshy response')
     }
@@ -175,7 +173,7 @@ export const textTo3DTask = task({
     const { error: insertError } = await supabase.from('assets').insert({
       id: assetId,
       project_id: projectId,
-      image_filename: refineResult.thumbnail_url || '', // Meshy provides a thumbnail
+      image_filename: refineResult.thumbnailUrl || '', // Meshy provides a thumbnail
       model_filename: savedUrl,
       metadata: {
         prompt,
@@ -201,11 +199,11 @@ export const textTo3DTask = task({
       success: true,
       assetId,
       modelUrl: savedUrl,
-      thumbnailUrl: refineResult.thumbnail_url,
+      thumbnailUrl: refineResult.thumbnailUrl,
       meshyResult: {
         previewTaskId,
         refineTaskId,
-        textureUrls: refineResult.texture_urls,
+        textureUrls: refineResult.textureUrls,
       },
     }
   },
@@ -218,7 +216,7 @@ async function pollMeshyTask(
   taskId: string,
   apiKey: string,
   stage: 'preview' | 'refine'
-): Promise<MeshyTaskResult> {
+): Promise<MeshyTask> {
   const maxAttempts = 180 // 30 minutes (10s interval)
   let attempts = 0
 
@@ -237,7 +235,7 @@ async function pollMeshyTask(
       continue
     }
 
-    const result = parseMeshyTaskResult(await response.json())
+    const result = parseMeshyTask(await response.json())
     const progress = result.progress ?? 0
 
     // Update metadata with progress
@@ -254,7 +252,7 @@ async function pollMeshyTask(
     }
 
     if (result.status === MeshyTaskStatusValue.Failed) {
-      const errorMsg = result.task_error?.message ?? 'Unknown error'
+      const errorMsg = result.taskError?.message ?? 'Unknown error'
       throw new Error(`Meshy ${stage} task failed: ${errorMsg}`)
     }
 

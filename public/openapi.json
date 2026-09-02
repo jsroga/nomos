@@ -145,6 +145,42 @@
           "success"
         ]
       },
+      "JobRunResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "output": {
+            "nullable": true
+          },
+          "error": {
+            "nullable": true
+          },
+          "metadata": {
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
       "McpJsonRpcResponse": {
         "type": "object",
         "properties": {
@@ -2021,6 +2057,10 @@
             "type": "string",
             "minLength": 1
           },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          },
           "prompt": {
             "type": "string",
             "minLength": 1
@@ -2056,6 +2096,7 @@
         },
         "required": [
           "projectId",
+          "requestId",
           "prompt"
         ]
       },
@@ -2112,6 +2153,50 @@
     "parameters": {}
   },
   "paths": {
+    "/jobs/{runId}": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get background job run",
+        "description": "Run status, output and metadata — only for a run in a project the caller owns.",
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Trigger.dev run id (starts with run_)"
+            },
+            "required": true,
+            "description": "Trigger.dev run id (starts with run_)",
+            "name": "runId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run status, output and metadata — only for a run in a project the caller owns.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRunResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/mcp": {
       "post": {
         "tags": [

@@ -3,9 +3,8 @@ import { z } from 'zod'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { createEntitySchema, listEntitiesSchema } from '@/shared/data/entities-service'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
@@ -16,7 +15,7 @@ import { GameEntityQueryParam } from '@/shared/data/constants/game-entities-wire
  * List entities for a project with optional filtering
  */
 export const GET = withAuth(
-  async (request: NextRequest, { session: _session, supabase }: AuthenticatedRequest) => {
+  async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     if (!supabase) {
       return NextResponse.json({ error: API_ERROR.INTERNAL_ERROR }, { status: 500 })
     }
@@ -38,15 +37,15 @@ export const GET = withAuth(
 
     const { projectId, entityType, sourceDomain, search } = parsed.data
 
-    const hasAccess = await verifyProjectAccess(supabase, projectId)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     let query = supabase
       .from(DB_TABLE.GAME_ENTITIES)
       .select('*')
-      .eq(DB_COLUMN.PROJECT_ID, projectId)
+      .eq(DB_COLUMN.PROJECT_ID, scope.projectId)
       .order(DB_COLUMN.CREATED_AT, { ascending: false })
 
     if (entityType) {
@@ -88,16 +87,16 @@ export const POST = withRateLimit(
     try {
       const validated = createEntitySchema.parse(body)
 
-      const hasAccess = await verifyProjectAccess(supabase, validated.projectId)
-      if (!hasAccess) {
+      const scope = await tryProjectScope(validated.projectId, session.user.id)
+      if (!scope) {
         return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
 
       const { data, error } = await supabase
         .from(DB_TABLE.GAME_ENTITIES)
         .insert({
-          [DB_COLUMN.PROJECT_ID]: validated.projectId,
-          [DB_COLUMN.USER_ID]: session.user.id,
+          [DB_COLUMN.PROJECT_ID]: scope.projectId,
+          [DB_COLUMN.USER_ID]: scope.userId,
           [DB_COLUMN.ENTITY_TYPE]: validated.entityType,
           [DB_COLUMN.NAME]: validated.name,
           description: validated.description,

@@ -8,6 +8,8 @@ import {
 import { worldTileService } from '@/domains/2d-canvas/services/world-data-service'
 import { WORLD_QUERY_PARAM } from '@/domains/2d-canvas/constants/world-query-params'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { projectScope } from '@/shared/auth/project-scope'
+import { toProjectNotFound } from '@/app/api/world/_lib/project-scope-response'
 
 export async function GET(req: Request) {
   const { session, error } = await requireAuthedSession()
@@ -20,7 +22,10 @@ export async function GET(req: Request) {
     projectId: searchParams.get(WORLD_QUERY_PARAM.PROJECT_ID),
   })
 
-  const tiles = await worldTileService.listForProject(projectId)
+  const scope = await projectScope(projectId, session.user.id).catch(toProjectNotFound)
+  if (scope instanceof NextResponse) return scope
+
+  const tiles = await worldTileService.listForProject(scope)
   return NextResponse.json(tiles)
 }
 

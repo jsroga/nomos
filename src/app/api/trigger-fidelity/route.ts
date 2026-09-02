@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import type { enhanceFidelityTask } from '@/trigger'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
 import {
   API_ERROR,
@@ -21,12 +20,15 @@ import { readApiframeApiKey } from '@/shared/ai/image-model-env'
  * Trigger fidelity enhancement task (Topaz via Apiframe)
  */
 export const POST = withRateLimit(
-  withAuth(async (request: NextRequest, { supabase }: AuthenticatedRequest) => {
+  withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {
     const payload = await request.json()
 
     if (!payload.tileId || !payload.projectId || !payload.imageBase64 || !payload.stylePrompt) {
       return NextResponse.json({ error: API_ERROR.FIDELITY_FIELDS_REQUIRED }, { status: 400 })
     }
+
+    const requestId = requireSubmissionNonce(payload)
+    if (requestId instanceof NextResponse) return requestId
 
     if (!readApiframeApiKey()) {
       return NextResponse.json(
@@ -35,8 +37,8 @@ export const POST = withRateLimit(
       )
     }
 
-    const hasAccess = await verifyProjectAccess(supabase, payload.projectId)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(payload.projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -45,7 +47,7 @@ export const POST = withRateLimit(
       const { data } = await supabase
         .from(DB_TABLE.PROJECTS)
         .select(DB_SELECT.PROJECT_STYLE_REFS)
-        .eq(DB_COLUMN.ID, payload.projectId)
+        .eq(DB_COLUMN.ID, scope.projectId)
         .single()
 
       styleReferenceUrls = resolveStyleReferenceUrls({
@@ -54,11 +56,12 @@ export const POST = withRateLimit(
       })
     }
 
-    const handle = await tasks.trigger<typeof enhanceFidelityTask>(
+    const handle = await triggerOwnedRun<typeof enhanceFidelityTask>(
       TRIGGER_TASK_ID.ENHANCE_FIDELITY,
       {
         tileId: payload.tileId,
-        projectId: payload.projectId,
+        projectId: scope.projectId,
+        requestId,
         imageBase64: payload.imageBase64,
         stylePrompt: payload.stylePrompt,
         creativity: payload.creativity || 0.3,

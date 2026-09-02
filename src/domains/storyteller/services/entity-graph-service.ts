@@ -13,6 +13,7 @@ import { InferredRelationshipType } from '@/domains/storyteller/services/constan
 import { EntityGraphLog } from '@/domains/storyteller/services/constants/entity-graph-log'
 import { SqlResultColumn } from '@/shared/data/constants/protocol'
 import { readRowNumber, sqlResultRows } from '@/shared/data/json-guards'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { EntityReference, EntityType } from './entity-registry-service'
 import {
   conciseErrorMessage,
@@ -65,18 +66,18 @@ function getEmbeddingColumnDim(): Promise<number> {
 class EntityGraphService {
   async findRelatedEntitiesWithScoring(
     seedIds: string[],
-    projectId: string,
+    scope: ProjectScope,
     options: GraphRAGOptions = {}
   ): Promise<ScoredEntity[]> {
-    return traverseRelatedEntities(seedIds, projectId, options)
+    return traverseRelatedEntities(seedIds, scope, options)
   }
 
   async findRelatedEntities(
     seedIds: string[],
-    projectId: string,
+    scope: ProjectScope,
     options: GraphRAGOptions = {}
   ): Promise<EntityReference[]> {
-    const scored = await this.findRelatedEntitiesWithScoring(seedIds, projectId, options)
+    const scored = await this.findRelatedEntitiesWithScoring(seedIds, scope, options)
     return scored.map(
       ({ relevance: _relevance, hopDistance: _hopDistance, discoveredVia: _discoveredVia, ...entity }) =>
         entity
@@ -107,9 +108,10 @@ class EntityGraphService {
 
   async semanticSearch(
     query: string,
-    projectId: string,
+    scope: ProjectScope,
     options: GraphRAGOptions = {}
   ): Promise<EntityReference[]> {
+    const { projectId } = scope
     const opts = { ...DEFAULT_GRAPH_RAG_OPTIONS, ...options }
 
     try {
@@ -189,9 +191,10 @@ class EntityGraphService {
 
   async getDirectRelationships(
     entityId: string,
-    projectId: string,
+    scope: ProjectScope,
     options: GraphRAGOptions = {}
   ): Promise<Array<ScoredEntity & { relationshipType: InferredRelationshipType }>> {
+    const { projectId } = scope
     const opts = { ...DEFAULT_GRAPH_RAG_OPTIONS, ...options }
 
     try {
@@ -256,12 +259,13 @@ class EntityGraphService {
   }
 
   async buildProjectGraph(
-    projectId: string,
+    scope: ProjectScope,
     options: { types?: EntityType[]; minStrength?: number } = {}
   ): Promise<{
     nodes: Array<{ id: string; name: string; type: EntityType; metadata: Record<string, unknown> }>
     edges: Array<{ source: string; target: string; weight: number; type: InferredRelationshipType }>
   }> {
+    const { projectId } = scope
     const { types = [StoryEntityType.Character, StoryEntityType.Faction], minStrength = 0.6 } =
       options
 
@@ -290,7 +294,7 @@ class EntityGraphService {
       })
 
       const edges = await buildProjectGraphEdges(
-        projectId,
+        scope,
         entities,
         minStrength,
         (sourceType, targetType, weight) => {

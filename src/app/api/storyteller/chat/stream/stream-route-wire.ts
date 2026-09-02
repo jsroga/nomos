@@ -13,6 +13,9 @@ export const STORYTELLER_AGENTIC_MODE_INSTRUCTION =
   '\n### AGENTIC MODE\nFor any request to write, draft, or generate a story beat or scene, call \'run_beat_draft_workflow\' rather than drafting in chat.\n'
 
 export enum MastraStreamChunkType {
+  /** Carries `usage`, which is how a streamed call gets costed. */
+  Finish = 'finish',
+  StepFinish = 'step-finish',
   Error = 'error',
   TextDelta = 'text-delta',
   ReasoningDelta = 'reasoning-delta',
@@ -28,6 +31,8 @@ export const MASTRA_CHUNK = {
   toolCall: MastraStreamChunkType.ToolCall,
   toolResult: MastraStreamChunkType.ToolResult,
   stepStart: MastraStreamChunkType.StepStart,
+  finish: MastraStreamChunkType.Finish,
+  stepFinish: MastraStreamChunkType.StepFinish,
 } as const
 
 export enum StorytellerStreamAgentName {

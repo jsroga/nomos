@@ -60,12 +60,14 @@ export const SHARED_TOP_LEVEL_TARGET = new Set([
   'auth',
   'canvas', // workspace module registry / settings
   'chat', // chat platform (moved from src/domains/chat — PLAN-V2 3.1 / D7)
+  'config', // the one place process.env is read — SPEC-12
   'data',
   'debug', // client perf overlays (CWV HUD, React Scan)
   'errors',
   'jobs',
   'observability',
   'openapi', // Zod → OpenAPI registry for public /api-docs
+  'persistence', // the one home for DB access — docs/DECISIONS.md ADR 0001
 ])
 
 /** Present during P1 migration — no new siblings until absorbed into target */

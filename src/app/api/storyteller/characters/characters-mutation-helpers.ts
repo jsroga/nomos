@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { characters } from '@/db'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { and, eq, sql } from 'drizzle-orm'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
@@ -61,7 +61,7 @@ export async function createCharacterRecord(body: CreateCharacterBody, userId: s
     )
   }
 
-  if (!(await verifyProjectAccess(projectId, userId))) {
+  if (!(await tryProjectScope(projectId, userId))) {
     return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.FORBIDDEN })
   }
 

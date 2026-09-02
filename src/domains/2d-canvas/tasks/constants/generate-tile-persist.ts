@@ -1,6 +1,7 @@
+import { env } from '@/shared/config/env'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { put } from '@vercel/blob'
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { BufferEncoding, ContentType } from '@/shared/data/constants/protocol'
 import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
@@ -9,6 +10,9 @@ import type { GenerateTilePayload, TileNeighborsPayload } from './generate-tile'
 import { CONTEXT_CANONICAL_VARIANT } from './generate-tile'
 import type { PackedCropSpec } from '@/shared/ai/context-pack-layout'
 import { assertTilePngSize } from './generate-tile-output'
+
+const SUPABASE_SERVICE_ENV_MISSING =
+  'SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL are required for service-role writes'
 
 export function extractContextImageBase64(payload: GenerateTilePayload): string | undefined {
   if (payload.contextImageBase64) {
@@ -51,7 +55,7 @@ export async function assembleServerContextImage(
 }
 
 export function requireBlobToken(): string {
-  const token = process.env.BLOB_READ_WRITE_TOKEN
+  const token = env.BLOB_READ_WRITE_TOKEN
   if (!token) {
     throw new Error('BLOB_READ_WRITE_TOKEN not configured')
   }
@@ -79,10 +83,12 @@ export async function uploadTileToBlob(
 
 export function createSupabaseServiceClient(): SupabaseClient {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  // No anon-key fallback: this client exists to bypass RLS, and silently
+  // downgrading to the anon key turns a config error into a confusing write
+  // failure deep inside a task.
+  const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase environment variables not configured')
+    throw new Error(SUPABASE_SERVICE_ENV_MISSING)
   }
   return createClient(supabaseUrl, supabaseKey)
 }

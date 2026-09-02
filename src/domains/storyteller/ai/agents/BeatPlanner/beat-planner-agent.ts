@@ -8,6 +8,8 @@
  * Tools: only listBeatsTool and manageBeatTool.
  */
 
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { Memory } from '@mastra/memory'
@@ -128,7 +130,7 @@ ${context.targetEmotion ? `Target emotion: ${context.targetEmotion}` : ''}
 
 Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.`
 
-        const response = await this.agent.generate(prompt, {
+        const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => this.agent.generate(prompt, {
           toolChoice: AgentModelRole.Auto,
           maxSteps: 5,
           structuredOutput: { schema: BeatPlanSchema },
@@ -136,7 +138,7 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
             traceId: id,
             ...(span.spanId ? { parentSpanId: span.spanId } : {}),
           },
-        })
+        }))
 
         const plan = BeatPlanSchema.safeParse(response.object)
         if (!plan.success) {
@@ -157,14 +159,14 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
       BeatPlannerAgentSpan.Run,
       async span => {
         const prompt = `Goal: ${goal}\n\nContext:\n${context}`
-        const response = await this.agent.generate(prompt, {
+        const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => this.agent.generate(prompt, {
           toolChoice: AgentModelRole.Auto,
           maxSteps: 5,
           tracingOptions: {
             traceId: id,
             ...(span.spanId ? { parentSpanId: span.spanId } : {}),
           },
-        })
+        }))
         return response.text
       },
       { goal, context }

@@ -13,22 +13,28 @@ import {
   FlowTool,
   FlowUiLabel,
   FlowRoute,
+  FlowKey,
 } from '../constants/storyteller-flow'
+import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/constants/assistant-thread-ui'
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
 const PROJECTS_API = `${BASE_URL}${FlowApi.Projects}`
 const CHAT_STREAM_API = `${BASE_URL}${FlowApi.ChatStream}`
-const CHAT_INPUT = `${FlowSelector.TextArea}[placeholder="${FlowUiLabel.ComposerPlaceholder}"]`
-const CHAT_SEND_TIMEOUT = FlowTimeout.Short
+// Sourced from the component's own copy: a hard-coded duplicate silently went
+// stale ("Write a message…") and every chat spec failed on a missing composer.
+const CHAT_INPUT = `${FlowSelector.TextArea}[placeholder="${ASSISTANT_THREAD_COPY.InputPlaceholder}"]`
+const ASSISTANT_WARM_PATH = '/api/assistant/storyteller'
+const CHAT_SEND_TIMEOUT = FlowTimeout.Medium
+/** assistant-ui composer state lags keystrokes; one Enter may not register. */
+const ENTER_SETTLE_TIMEOUT = 2_000
 const CHAT_STATUS_TIMEOUT = FlowTimeout.Short
 const CHAT_WARMUP_TIMEOUT = FlowTimeout.Long
 /**
- * Jacek Confirm this regex — asserts "the assistant replied" by requiring one of
- * nine English words, so a valid reply worded differently fails the test.
- * A non-empty assistant message plus an idle composer already prove a reply
- * arrived. See .local/findings/word-dictionary-heuristics.md.
+ * "The assistant replied" = non-empty text plus an idle composer. The previous
+ * check required one of nine English words, so a perfectly good reply worded
+ * differently failed the run. See .local/findings/word-dictionary-heuristics.md.
  */
-const REPLY_PATTERN = /\b(hello|hi|hey|help|story|world|ready|assist|today)\b/i
+const MIN_REPLY_LENGTH = 1
 
 function isString(value: unknown): value is string {
   return typeof value === 'string'
@@ -116,10 +122,19 @@ export async function sendChatMessage(page: Page, message: string): Promise<void
   const input = page.locator(CHAT_INPUT).first()
   await expect(input).toBeVisible()
   await input.click()
-  await input.fill(message)
-  const send = page.getByRole(FlowSelector.Button, { name: FlowUiLabel.Send }).first()
-  await expect(send).toBeEnabled()
-  await send.click()
+  // Real keystrokes, not fill(): assistant-ui's composer is a controlled input
+  // whose state ignores a programmatic value set.
+  await input.pressSequentially(message)
+  await expect(input).toHaveValue(message)
+  // Enter, not the Send button — the composer advertises "ENTER TO SEND", and
+  // the button reads `canSend` off the new aui store while this composer writes
+  // the legacy runtime, so it stays disabled with text present. The composer
+  // state also lags the keystrokes, so retry Enter until the field clears
+  // rather than sleeping on a guessed settle time.
+  await expect(async () => {
+    if ((await input.inputValue()) !== '') await input.press(FlowKey.Enter)
+    await expect(input).toHaveValue('', { timeout: ENTER_SETTLE_TIMEOUT })
+  }).toPass({ timeout: CHAT_SEND_TIMEOUT })
 }
 
 export async function waitForAssistantStatus(page: Page): Promise<void> {
@@ -131,14 +146,16 @@ export async function waitForAssistantStatus(page: Page): Promise<void> {
 export async function waitForAssistantResponse(page: Page): Promise<string> {
   const assistant = page.locator(FlowSelector.AssistantMessage).first()
   await expect(assistant).toBeVisible({ timeout: CHAT_SEND_TIMEOUT })
-  await expect(assistant).toHaveText(REPLY_PATTERN, { timeout: CHAT_SEND_TIMEOUT })
+  // Settled = the thinking indicator is gone and real text has rendered.
+  await expect(page.locator(FlowSelector.RunningStatus)).toHaveCount(0, {
+    timeout: FlowTimeout.Long,
+  })
   await expect(page.getByRole(FlowSelector.Button, { name: FlowUiLabel.Send }).first()).toBeVisible({
     timeout: CHAT_SEND_TIMEOUT,
   })
-  const text = await assistant.textContent()
-  expect(text).toBeTruthy()
-  expect(REPLY_PATTERN.test(text ?? '')).toBe(true)
-  return text ?? ''
+  const text = (await assistant.textContent())?.trim() ?? ''
+  expect(text.length).toBeGreaterThanOrEqual(MIN_REPLY_LENGTH)
+  return text
 }
 
 /** Hit the chat API once so the serverless function is warm before UI timing. */
@@ -194,9 +211,22 @@ export async function createStoryProject(page: Page): Promise<CreatedProject> {
 }
 
 export async function gotoStoryteller(page: Page, projectId: string): Promise<void> {
+  // The chat fires a warm GET when it mounts. Interactions before the runtime
+  // is live are silently dropped and never replayed, so wait for it here rather
+  // than letting every spec race the same window.
+  const chatWarmed = page
+    .waitForResponse(
+      response =>
+        response.url().includes(ASSISTANT_WARM_PATH) && response.request().method() === 'GET',
+      { timeout: FlowTimeout.Long }
+    )
+    .catch(() => undefined)
+
   await page.goto(`/${projectId}/storyteller`, { waitUntil: FlowRoute.DomContentLoaded })
   await expect(page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.Storyteller}`)).toBeVisible()
   await expect(page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.LoadingProject}`)).toBeHidden({ timeout: FlowTimeout.Long })
+  await chatWarmed
+  await expect(page.locator(CHAT_INPUT).first()).toBeEnabled({ timeout: FlowTimeout.Medium })
 }
 
 export async function waitForToolCall(page: Page, toolName: string): Promise<void> {

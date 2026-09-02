@@ -84,13 +84,9 @@ export function WorldBiblePanelBody({
             onRefetchMoodboardData={onRefetchMoodboardData}
           />
 
-          <LazyBibleSection>
-            <BibleSoundtracks />
-          </LazyBibleSection>
+          <BibleSoundtracks />
 
-          <LazyBibleSection>
-            <BibleInspirations />
-          </LazyBibleSection>
+          <BibleInspirations />
 
           <LazyBibleSection>
             <BibleWorldLogic />

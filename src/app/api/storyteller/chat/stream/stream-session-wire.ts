@@ -4,6 +4,7 @@
 
 import type { DetectedSection } from '@/domains/storyteller/config/tool-result-mapper'
 import { ChatFrameType } from '@/shared/chat/core/protocol'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 
 export { ChatFrameType as ChatStreamFrameType }
 
@@ -38,7 +39,8 @@ export function emitFrame(writer: SseWriter, frame: unknown): boolean {
 export interface StreamSession {
   writer: SseWriter
   traceId: string
-  projectId: string | undefined
+  /** Present only when the request named a project the caller owns. */
+  scope: ProjectScope | undefined
   episodeId: string | undefined
   isSectionUpdate: boolean
   existingBibleData: Record<string, unknown>
@@ -47,4 +49,12 @@ export interface StreamSession {
   pendingActions: Record<string, unknown>[]
   detectedSection: DetectedSection
   fullText: string
+  /**
+   * Tokens the provider reported, which arrive in a `finish` chunk after the
+   * response has been streamed. Undefined means the stream ended without the
+   * provider saying — the call is then left unrecorded rather than written in
+   * at zero cost, which would read as "this was free".
+   */
+  usage?: { promptTokens: number; completionTokens: number }
+  model?: string
 }

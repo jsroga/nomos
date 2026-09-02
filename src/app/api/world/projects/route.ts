@@ -4,6 +4,8 @@ import { createProjectRequestSchema } from '@/domains/2d-canvas/core/io/world.dt
 import { worldProjectService } from '@/domains/2d-canvas/services/world-data-service'
 import { WORLD_QUERY_PARAM } from '@/domains/2d-canvas/constants/world-query-params'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { projectScope } from '@/shared/auth/project-scope'
+import { toProjectNotFound } from '@/app/api/world/_lib/project-scope-response'
 
 export async function GET() {
   const { session, error } = await requireAuthedSession()
@@ -38,6 +40,10 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED_LOWER }, { status: 400 })
   }
 
-  await worldProjectService.deleteForUser(session.user.id, projectId)
+  // Used to report success when the owner filter matched no rows. Now 404.
+  const scope = await projectScope(projectId, session.user.id).catch(toProjectNotFound)
+  if (scope instanceof NextResponse) return scope
+
+  await worldProjectService.deleteForUser(scope)
   return NextResponse.json({ success: true as const })
 }

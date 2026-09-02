@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { HttpStatus, QueryParam } from '@/shared/data/constants/protocol'
-import { verifyProjectAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import '@/domains/storyteller/core/io/mastra-runtime'
 import {
   readFixInconsistenciesRun,
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error, runId: parsed.runId }, { status: parsed.status })
     }
 
-    if (!(await verifyProjectAccess(parsed.data.projectId, session.user.id))) {
+    if (!(await tryProjectScope(parsed.data.projectId, session.user.id))) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: HttpStatus.NOT_FOUND })
     }
 

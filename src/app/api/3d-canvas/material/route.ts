@@ -1,4 +1,4 @@
-import { tasks } from '@trigger.dev/sdk/v3'
+import { triggerOwnedRun } from '@/shared/jobs'
 import { NextRequest, NextResponse } from 'next/server'
 import {
   interiorMaterialRequestSchema,
@@ -9,9 +9,8 @@ import type { surfaceMaterialTask } from '@/trigger'
 import {
   withAuth,
   withRateLimit,
-  verifyProjectAccess,
-  type AuthenticatedRequest,
-} from '@/shared/data/api-utils'
+  type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import {
   API_ERROR,
   TRIGGER_TASK_ID,
@@ -23,17 +22,18 @@ export const POST = withRateLimit(
   withAuth(
     async (
       request: NextRequest,
-      { supabase }: AuthenticatedRequest
+      { session }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorMaterialResponse | { error: string }>> => {
       const parsedBody = interiorMaterialRequestSchema.safeParse(await request.json())
       if (!parsedBody.success) {
         return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
       }
 
-      const { projectId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } = parsedBody.data
+      const { projectId, requestId, surfaceId, prompt, apiKey, artStyle, surfaceBounds } =
+        parsedBody.data
 
-      const hasAccess = await verifyProjectAccess(supabase, projectId)
-      if (!hasAccess) {
+      const scope = await tryProjectScope(projectId, session.user.id)
+      if (!scope) {
         return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
       }
 
@@ -42,10 +42,11 @@ export const POST = withRateLimit(
         return NextResponse.json({ error: API_ERROR.MESHY_API_KEY_NOT_CONFIGURED }, { status: 400 })
       }
 
-      const handle = await tasks.trigger<typeof surfaceMaterialTask>(
+      const handle = await triggerOwnedRun<typeof surfaceMaterialTask>(
         TRIGGER_TASK_ID.SURFACE_MATERIAL,
         {
-          projectId,
+          projectId: scope.projectId,
+          requestId,
           surfaceId,
           prompt,
           apiKey: meshyApiKey,

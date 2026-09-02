@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { runs } from '@trigger.dev/sdk/v3'
+import { JobAccessError, cancelOwnedRun, retrieveOwnedRun } from '@/shared/jobs'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam } from '@/shared/data/constants/protocol'
@@ -19,11 +19,8 @@ export async function GET(req: NextRequest) {
       return noStoreJson({ error: API_ERROR.MISSING_RUN_ID }, 400)
     }
 
-    const run = await runs.retrieve(runId)
+    const run = await retrieveOwnedRun(runId, session.user.id)
 
-    if (!run) {
-      return noStoreJson({ status: TRIGGER_RUN_STATUS_NOT_FOUND }, 404)
-    }
 
     return noStoreJson({
       status: run.status,
@@ -32,6 +29,11 @@ export async function GET(req: NextRequest) {
       metadata: run.metadata,
     })
   } catch (error) {
+    // Missing, or owned by another tenant: same response either way, so a
+    // 404 never confirms that someone else's run id exists.
+    if (error instanceof JobAccessError) {
+      return noStoreJson({ status: TRIGGER_RUN_STATUS_NOT_FOUND }, 404)
+    }
     console.error(API_LOG_PREFIX.TASK_STATUS_ERROR, error)
     return noStoreJson({ error: API_ERROR.INTERNAL_ERROR }, 500)
   }
@@ -50,9 +52,13 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      await runs.cancel(runId)
-    } catch {
-      return NextResponse.json({ success: true })
+      await cancelOwnedRun(runId, session.user.id)
+    } catch (error) {
+      // A run the caller does not own must not be cancellable, and must not
+      // report success. Other cancel failures stay best-effort as before.
+      if (error instanceof JobAccessError) {
+        return NextResponse.json({ error: API_ERROR.RUN_NOT_FOUND }, { status: 404 })
+      }
     }
 
     return NextResponse.json({ success: true })

@@ -5,7 +5,7 @@ import { getErrorMessage } from '@/shared/errors/error-utils'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
-import { OnboardingAction, OnboardingQueryParam } from '@/shared/types/constants/onboarding'
+import { OnboardingAction } from '@/shared/types/constants/onboarding'
 
 function ensureRoutes(state: OnboardingState): void {
   if (!state.routes) {
@@ -162,13 +162,13 @@ export function readOnboardingState(user: { user_metadata?: Record<string, unkno
   return readOnboardingStateFromMetadata(rawOnboarding)
 }
 
-export async function handleOnboardingPost(req: NextRequest): Promise<NextResponse> {
+/** `userId` is the session's user — never a value taken from the request. */
+export async function handleOnboardingPost(
+  req: NextRequest,
+  userId: string
+): Promise<NextResponse> {
   try {
-    const { action, moduleId, route, userId } = await req.json()
-
-    if (!userId) {
-      return NextResponse.json({ error: API_ERROR.USER_ID_REQUIRED }, { status: 400 })
-    }
+    const { action, moduleId, route } = await req.json()
 
     const userResult = await loadOnboardingUser(userId)
     if (userResult instanceof NextResponse) return userResult
@@ -190,15 +190,9 @@ export async function handleOnboardingPost(req: NextRequest): Promise<NextRespon
   }
 }
 
-export async function handleOnboardingGet(req: NextRequest): Promise<NextResponse> {
+/** `userId` is the session's user — never a value taken from the request. */
+export async function handleOnboardingGet(userId: string): Promise<NextResponse> {
   try {
-    const { searchParams } = new URL(req.url)
-    const userId = searchParams.get(OnboardingQueryParam.UserId)
-
-    if (!userId) {
-      return NextResponse.json({ error: API_ERROR.USER_ID_REQUIRED }, { status: 400 })
-    }
-
     const userResult = await loadOnboardingUser(userId)
     if (userResult instanceof NextResponse) return userResult
 

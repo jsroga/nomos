@@ -1,3 +1,6 @@
+import { z } from 'zod'
+import { ownedElsewhere } from '@/shared/jobs/payload-schema'
+import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
 import type { TileContext } from '@/shared/ai/types'
 import type { ContextImageVariant } from '@/shared/ai/contextAssembler'
 import type { PackedCropRect, PackedCropSpec } from '@/shared/ai/context-pack-layout'
@@ -9,34 +12,38 @@ import type { NeighborImageUrls } from '../../core/neighbor-image-urls'
 
 export type TileNeighborsPayload = TileContext['neighbors']
 
-export interface GenerateTileContextPayload {
-  images: Partial<Record<ContextImageVariant, string>>
-  preferredVariant?: string
-  cropRect?: PackedCropRect
-  packedWidth?: number
-  packedHeight?: number
-}
+export const generateTileContextPayloadSchema = z.object({
+  images: ownedElsewhere<Partial<Record<ContextImageVariant, string>>>(),
+  preferredVariant: z.string().optional(),
+  cropRect: ownedElsewhere<PackedCropRect>().optional(),
+  packedWidth: z.number().optional(),
+  packedHeight: z.number().optional(),
+})
 
-export interface GenerateTilePayload {
-  projectId: string
-  x: number
-  y: number
-  prompt: string
-  aiProvider: string
-  aiConfig: Record<string, unknown>
-  isFirstTile?: boolean
-  styleReferenceUrls?: string[]
-  styleContext?: string
-  masterPrompt?: string
-  modePromptFragment?: string
-  modeNegatives?: string[]
-  styleAnchorUrl?: string
-  contextImageBase64?: string
-  contextPayload?: GenerateTileContextPayload
-  neighbors?: TileNeighborsPayload
-  neighborImageUrls?: NeighborImageUrls
-  packedCrop?: PackedCropSpec
-}
+export type GenerateTileContextPayload = z.infer<typeof generateTileContextPayloadSchema>
+
+export const generateTilePayloadSchema = z.object({
+  ...OWNED_PAYLOAD_SHAPE,
+  x: z.number(),
+  y: z.number(),
+  prompt: z.string(),
+  aiProvider: z.string(),
+  aiConfig: z.record(z.string(), z.unknown()),
+  isFirstTile: z.boolean().optional(),
+  styleReferenceUrls: z.array(z.string()).optional(),
+  styleContext: z.string().optional(),
+  masterPrompt: z.string().optional(),
+  modePromptFragment: z.string().optional(),
+  modeNegatives: z.array(z.string()).optional(),
+  styleAnchorUrl: z.string().optional(),
+  contextImageBase64: z.string().optional(),
+  contextPayload: generateTileContextPayloadSchema.optional(),
+  neighbors: ownedElsewhere<TileNeighborsPayload>().optional(),
+  neighborImageUrls: ownedElsewhere<NeighborImageUrls>().optional(),
+  packedCrop: ownedElsewhere<PackedCropSpec>().optional(),
+})
+
+export type GenerateTilePayload = z.infer<typeof generateTilePayloadSchema>
 
 export interface GenerateTileResult {
   success: boolean

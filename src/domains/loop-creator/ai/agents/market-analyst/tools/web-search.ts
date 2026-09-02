@@ -4,6 +4,7 @@
  * Searches the web for game industry information, trends, and reviews.
  */
 
+import { env } from '@/shared/config/env'
 import { z } from 'zod'
 import { WebSearchResult } from '../types'
 import { createLoopStructuredTool } from './structured-tool'
@@ -43,7 +44,7 @@ export const webSearchTool = createLoopStructuredTool({
       }
 
       // Use Tavily or similar search API if available
-      const apiKey = process.env.TAVILY_API_KEY
+      const apiKey = env.TAVILY_API_KEY
 
       if (apiKey) {
         const response = await fetch('https://api.tavily.com/search', {

@@ -1,8 +1,8 @@
-import { createOpenAI } from '@ai-sdk/openai'
-import { generateText } from 'ai'
+import type { ProjectScope } from '@/shared/auth/project-scope'
+import { complete } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import type { SeriesBible } from '@/domains/storyteller/services/context/series-bible'
 import { API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { openRouterClientConfig } from '@/shared/agent-kernel/models'
 import { resolveUserPickerOpenRouterModelId } from '@/domains/storyteller/config/constants/model-config'
 import { buildContextSnippet } from './world-summary-content'
 
@@ -17,13 +17,6 @@ Rules:
 - Do NOT use "isometric", "tilemap", "game", "2D", "tile" — those are added elsewhere.
 - Output ONLY the style sentences, nothing else.`
 
-function resolveWorldGenModel() {
-  const openRouter = openRouterClientConfig()
-  return createOpenAI({ apiKey: openRouter.apiKey, baseURL: openRouter.baseURL })(
-    resolveUserPickerOpenRouterModelId()
-  )
-}
-
 function cleanGeneratedPrompt(text: string): string {
   return text.trim().replace(/^["']|["']$/g, '')
 }
@@ -31,19 +24,21 @@ function cleanGeneratedPrompt(text: string): string {
 export async function generateWorldGenPrompt(
   bible: SeriesBible,
   fallbackPrompt: string,
+  scope: ProjectScope,
 ): Promise<string> {
   const contextSnippet = buildContextSnippet(bible)
   if (!contextSnippet.trim()) return fallbackPrompt
 
   try {
-    const { text } = await generateText({
-      model: resolveWorldGenModel(),
+    const { text } = await complete({
+      scope,
+      feature: LlmFeature.StorytellerWorldGenPrompt,
+      model: resolveUserPickerOpenRouterModelId(),
       system: WORLD_GEN_SYSTEM_PROMPT,
       prompt: `World context:
 ${contextSnippet}
 
 Write 1-2 sentences describing the small visual details and atmosphere that should define this world's art style.`,
-      maxOutputTokens: 120,
       temperature: 0.7,
     })
 

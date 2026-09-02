@@ -1,16 +1,10 @@
-import { drizzle } from 'drizzle-orm/node-postgres'
-import { Pool } from 'pg'
-import * as schema from './schema'
-
-const connectionString = process.env.DATABASE_URL ?? ''
-
-// SSL disabled for Supabase pooler
-const pool = new Pool({
-  connectionString,
-  ssl: false,
-  max: 20, // Increased for concurrent streams
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 20000,
-})
-
-export const db = drizzle(pool, { schema })
+/**
+ * @deprecated Import `db` from `@/shared/persistence` instead.
+ *
+ * The Drizzle client moved so that database access has one home and the SDK
+ * can be fenced to it. Kept as a re-export for one release; the importer count
+ * is tracked by `directDbClientImporters` in `.quality-ratchet.json`.
+ *
+ * See docs/DECISIONS.md ADR 0001.
+ */
+export { db } from '@/shared/persistence/client'

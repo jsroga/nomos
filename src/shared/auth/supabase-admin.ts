@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { SUPABASE_URL_REQUIRED_MESSAGE } from '@/shared/auth/constants/supabase-admin'
 
@@ -5,7 +6,7 @@ let _client: SupabaseClient | null = null
 function getClient(): SupabaseClient {
   if (!_client) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const key = env.SUPABASE_SERVICE_ROLE_KEY
     if (!url || !key) throw new Error(SUPABASE_URL_REQUIRED_MESSAGE)
     _client = createClient(url, key, {
       auth: {

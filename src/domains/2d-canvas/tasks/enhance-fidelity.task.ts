@@ -1,11 +1,13 @@
-import { task } from '@trigger.dev/sdk/v3'
-import { runEnhanceFidelity, type EnhanceFidelityPayload } from './enhance-fidelity-run'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { enhanceFidelityPayloadSchema, runEnhanceFidelity } from './enhance-fidelity-run'
 
-export const enhanceFidelityTask = task({
+export const enhanceFidelityTask = defineOwnedTask({
   id: 'enhance-fidelity',
+  schema: enhanceFidelityPayloadSchema,
+  queue: JobQueue.Apiframe,
   maxDuration: 1200,
   retry: {
     maxAttempts: 2,
   },
-  run: async (payload: EnhanceFidelityPayload) => runEnhanceFidelity(payload),
+  run: async payload => runEnhanceFidelity(payload),
 })

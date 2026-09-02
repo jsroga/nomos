@@ -1,30 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { tasks } from '@trigger.dev/sdk/v3'
+import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import type { selectMjVariantTask } from '@/trigger'
 import {
   API_ERROR,
   TRIGGER_TASK_ID,
   TRIGGER_TASK_TTL,
 } from '@/shared/data/constants/api-errors'
-import { withAuth, verifyProjectAccess, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 
 export const POST = withAuth(
-  async (request: NextRequest, { session: _session, supabase }: AuthenticatedRequest) => {
-    const { tileId, projectId, gridImageUrl, variantIndex } = await request.json()
+  async (request: NextRequest, { session }: AuthenticatedRequest) => {
+    const body = await request.json()
+    const { tileId, projectId, gridImageUrl, variantIndex } = body
 
     if (!tileId || !projectId || !gridImageUrl || !variantIndex) {
       return NextResponse.json({ error: API_ERROR.MISSING_VARIANT_FIELDS }, { status: 400 })
     }
 
+    const requestId = requireSubmissionNonce(body)
+    if (requestId instanceof NextResponse) return requestId
+
     // Verify project access
-    const hasAccess = await verifyProjectAccess(supabase, projectId)
-    if (!hasAccess) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
-    const handle = await tasks.trigger<typeof selectMjVariantTask>(
+    const handle = await triggerOwnedRun<typeof selectMjVariantTask>(
       TRIGGER_TASK_ID.SELECT_MJ_VARIANT,
-      { tileId, projectId, gridImageUrl, variantIndex },
+      { tileId, projectId: scope.projectId, requestId, gridImageUrl, variantIndex },
       { ttl: TRIGGER_TASK_TTL.SELECT_VARIANT }
     )
 

@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import { NextRequest, NextResponse } from 'next/server'
 import { ReplicateClient } from '@/shared/ai/replicate'
 import {
@@ -14,6 +15,7 @@ export const POST = withRateLimit(
       request: NextRequest,
       { session: _session }: AuthenticatedRequest
     ): Promise<NextResponse<InteriorTexturesResponse | { error: string }>> => {
+      // auth-scope: session-existence-only — lists generated textures for a posted prompt.
       const parsedBody = interiorTexturesRequestSchema.safeParse(await request.json())
       if (!parsedBody.success) {
         return NextResponse.json({ error: parsedBody.error.issues[0]?.message }, { status: 400 })
@@ -21,7 +23,7 @@ export const POST = withRateLimit(
 
       const { prompt } = parsedBody.data
 
-      const apiKey = process.env.REPLICATE_API_TOKEN
+      const apiKey = env.REPLICATE_API_TOKEN
       if (!apiKey) {
         return NextResponse.json({ error: API_ERROR.REPLICATE_TOKEN_NOT_CONFIGURED }, { status: 500 })
       }

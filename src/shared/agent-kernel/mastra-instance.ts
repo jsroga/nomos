@@ -8,6 +8,7 @@ import {
 import {
   LIST_JOIN_SEPARATOR,
   MASTRA_STORAGE_INITIALIZED_LOG,
+  MASTRA_STORAGE_WARM_FAILED_LOG,
 } from '@/shared/agent-kernel/constants/mastra-instance'
 
 let mastraInstance: Mastra | null = null
@@ -27,6 +28,26 @@ export function getStorageInstance(): PostgresStore {
     console.log(MASTRA_STORAGE_INITIALIZED_LOG)
   }
   return storageInstance
+}
+
+let storageWarmPromise: Promise<void> | null = null
+
+/**
+ * Run the Postgres schema/migration setup that Mastra otherwise defers to the
+ * first agent call. Measured at ~30s cold, which lands entirely on the user's
+ * first chat turn; after it, a turn costs ~3s. Memoized so concurrent callers
+ * share one init, and cleared on failure so a later attempt can retry.
+ */
+export function warmMastraStorage(): Promise<void> {
+  if (!storageWarmPromise) {
+    storageWarmPromise = Promise.resolve(getStorageInstance().init()).catch(
+      (err: unknown) => {
+        storageWarmPromise = null
+        console.warn(MASTRA_STORAGE_WARM_FAILED_LOG, err)
+      }
+    )
+  }
+  return storageWarmPromise
 }
 
 /**

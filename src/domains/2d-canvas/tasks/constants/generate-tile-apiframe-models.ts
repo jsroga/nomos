@@ -1,4 +1,4 @@
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { tilePromptLayersFrom } from '@/shared/data/server/prompts'
 import { buildMidjourneyTilePromptText } from '@/shared/data/server/midjourney-params'
 import { storageService } from '@/shared/data/storage/storage-service'

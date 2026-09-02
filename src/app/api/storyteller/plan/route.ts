@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { episodes, projects, storyPlans } from '@/db'
 import { db } from '@/db/client'
-import { verifyEpisodeAccess, verifyProjectAccess } from '@/domains/storyteller/server'
+import { verifyEpisodeAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
 import { episodeStoryPlanResponse } from '@/domains/storyteller/core/entities/story-plan-wire'
+import { persistBibleOwnedPlanFields } from '@/domains/storyteller/core/io/persist-bible-owned-plan'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { QueryParam } from '@/shared/data/constants/protocol'
-import { patchStoryPlanSequence } from './plan-patch-helpers'
+import { recordFromJson } from '@/shared/data/json-guards'
+import { patchStoryPlanSequence, splitStoryPlanForEpisodeWrite } from './plan-patch-helpers'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -54,7 +57,7 @@ export async function GET(req: NextRequest) {
         })
       )
     } else if (projectId) {
-      if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      if (!(await tryProjectScope(projectId, session.user.id))) {
         return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
@@ -102,7 +105,13 @@ export async function POST(req: NextRequest) {
       }
 
       const updateData: Record<string, unknown> = { updatedAt: new Date() }
-      if (storyPlan !== undefined) updateData.storyPlan = storyPlan
+      if (storyPlan !== undefined) {
+        updateData.storyPlan = await splitStoryPlanForEpisodeWrite({
+          episodeId,
+          projectId,
+          storyPlan,
+        })
+      }
       if (approved !== undefined) updateData.planApproved = approved
       if (currentPhase !== undefined) updateData.currentPhase = currentPhase
 
@@ -114,17 +123,21 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ success: true, episode: updated })
     } else if (projectId) {
-      if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      if (!(await tryProjectScope(projectId, session.user.id))) {
         return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 403 })
       }
 
-      await db
-        .insert(storyPlans)
-        .values({ projectId, content: storyPlan, updatedAt: new Date() })
-        .onConflictDoUpdate({
-          target: storyPlans.projectId,
-          set: { content: storyPlan, updatedAt: new Date() },
-        })
+      if (storyPlan !== undefined) {
+        const planRecord = recordFromJson(storyPlan)
+        await persistBibleOwnedPlanFields(projectId, planRecord)
+        await db
+          .insert(storyPlans)
+          .values({ projectId, content: planRecord, updatedAt: new Date() })
+          .onConflictDoUpdate({
+            target: storyPlans.projectId,
+            set: { content: planRecord, updatedAt: new Date() },
+          })
+      }
 
       return NextResponse.json({ success: true })
     } else {

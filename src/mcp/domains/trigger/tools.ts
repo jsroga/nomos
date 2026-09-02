@@ -4,10 +4,30 @@
  * Tools for tracking and managing Trigger.dev task runs.
  */
 
+import { env } from '@/shared/config/env'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { tilesService } from '@/shared/data/generation/tiles-service'
 import { validateApiKey } from '../../core/auth'
+import { McpTriggerToolError } from './constants/tools'
+
+// ============================================
+// AUTH
+// ============================================
+
+/**
+ * Resolve the MCP caller's user id. Every run-management tool needs it: a run
+ * belongs to a tenant, so "the key is valid" is not enough to read or cancel one.
+ */
+async function requireMcpUser(): Promise<{ userId: string }> {
+  const apiKey = env.MCP_API_KEY
+  if (!apiKey) throw new Error(McpTriggerToolError.MissingApiKeyEnv)
+
+  const authResult = await validateApiKey(apiKey)
+  if (!authResult.valid || !authResult.userId) throw new Error(McpTriggerToolError.InvalidApiKey)
+
+  return { userId: authResult.userId }
+}
 
 // ============================================
 // TOOL DEFINITIONS
@@ -21,14 +41,9 @@ const getRunStatus = createTool({
     runId: z.string().describe('The run ID returned from a generation task (starts with run_)'),
   }),
   execute: async (inputData) => {
-    // Auth check optional for status? Let's enforce it for consistency
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
+    const authResult = await requireMcpUser()
 
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    return tilesService.getRunStatus({ runId: inputData.runId })
+    return tilesService.getRunStatus({ runId: inputData.runId, userId: authResult.userId })
   },
 })
 
@@ -39,13 +54,9 @@ const cancelRun = createTool({
     runId: z.string().describe('The run ID to cancel'),
   }),
   execute: async (inputData) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
+    const authResult = await requireMcpUser()
 
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
-
-    return tilesService.cancelRun(inputData.runId)
+    return tilesService.cancelRun(inputData.runId, authResult.userId)
   },
 })
 
@@ -71,11 +82,7 @@ const waitForRun = createTool({
       .describe('How often to check status in seconds (default: 2)'),
   }),
   execute: async (inputData) => {
-    const apiKey = process.env.MCP_API_KEY
-    if (!apiKey) throw new Error('MCP_API_KEY environment variable not set')
-
-    const authResult = await validateApiKey(apiKey)
-    if (!authResult.valid) throw new Error('Invalid API key')
+    const authResult = await requireMcpUser()
 
     const timeoutSeconds = Math.min(inputData.timeoutSeconds || 60, 300)
     const pollIntervalSeconds = Math.min(inputData.pollIntervalSeconds || 2, 30)
@@ -95,7 +102,10 @@ const waitForRun = createTool({
     ]
 
     while (Date.now() - startTime < timeoutMs) {
-      const status = await tilesService.getRunStatus({ runId: inputData.runId })
+      const status = await tilesService.getRunStatus({
+        runId: inputData.runId,
+        userId: authResult.userId,
+      })
 
       if (terminalStatuses.includes(status.status)) {
         return {
@@ -110,7 +120,10 @@ const waitForRun = createTool({
     }
 
     // Timeout reached
-    const finalStatus = await tilesService.getRunStatus({ runId: inputData.runId })
+    const finalStatus = await tilesService.getRunStatus({
+      runId: inputData.runId,
+      userId: authResult.userId,
+    })
     return {
       ...finalStatus,
       waitDurationMs: Date.now() - startTime,

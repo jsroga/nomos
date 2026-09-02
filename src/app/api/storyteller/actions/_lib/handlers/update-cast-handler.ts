@@ -18,7 +18,7 @@ export const handleUpdateCast: ActionHandler = async (ctx, action) => {
   console.log(`💾 [API] UPDATE_CAST - Saving ${Array.isArray(updates.cast) ? updates.cast.length : 0} characters`)
   const updated = await ctx.updateStoryPlan(updates)
 
-  await syncCastToCharactersTable(ctx.projectId, castData)
+  await syncCastToCharactersTable(ctx.scope, castData)
 
   return NextResponse.json({
     success: true,

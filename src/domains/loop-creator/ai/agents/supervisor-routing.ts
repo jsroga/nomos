@@ -1,4 +1,4 @@
-import { AIMessage } from '@langchain/core/messages'
+import { AIMessage } from '@/shared/chat/core/message'
 import { buildCrossDomainContext } from '@/shared/agent-kernel/context/cross-domain-context'
 import { parseLoopAgentActionType } from '../../core/loop-agent-action-wire'
 import { parseNextAgent } from '../../core/graph/agent-nodes'
@@ -111,9 +111,9 @@ export async function buildSupervisorSystemPrompt(
 ): Promise<string> {
   let systemPrompt = basePrompt.replace('{{STATE_CONTEXT}}', buildStateContext(state))
 
-  if (state.projectId) {
+  if (state.scope) {
     try {
-      const crossDomainContext = await buildCrossDomainContext(state.projectId)
+      const crossDomainContext = await buildCrossDomainContext(state.scope.projectId)
       if (crossDomainContext) {
         systemPrompt += `\n\n## Cross-Domain Entities (From Other Tools)\n${crossDomainContext}\n\nNOTE: You can reference these entities when designing game loops. For example, if there's a character from Storyteller, you can design mechanics tailored to that character.`
         console.log('[Supervisor] Loaded cross-domain context')

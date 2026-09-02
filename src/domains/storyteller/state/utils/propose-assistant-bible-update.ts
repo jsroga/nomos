@@ -25,6 +25,7 @@ import {
   episodePremiseFromUnknown,
   isAssistantChatWrapUp,
 } from '@/domains/storyteller/state/utils/strip-assistant-bible-chat-chrome'
+import { filterValidSoundtrackTracks } from '@/domains/storyteller/core/utils/youtube-utils'
 
 export type AssistantBibleToolCall = AssistantCompletedToolCall
 
@@ -42,6 +43,39 @@ function isSuccessfulResult(result: unknown): boolean {
   return record.success === true
 }
 
+function applyAliasArrayField(
+  fields: Record<string, unknown>,
+  args: Record<string, unknown>,
+  outputKey: string,
+  aliasKeys: readonly string[],
+): void {
+  let value: unknown
+  for (const key of aliasKeys) {
+    if (args[key] !== undefined) {
+      value = args[key]
+      break
+    }
+  }
+  if (Array.isArray(value)) fields[outputKey] = value
+}
+
+function applySoundtrackAndInspirationFields(
+  fields: Record<string, unknown>,
+  args: Record<string, unknown>,
+): void {
+  if (Array.isArray(args.soundtracks) && args.soundtracks.length > 0) {
+    const { valid } = filterValidSoundtrackTracks(args.soundtracks)
+    if (valid.length > 0) fields.soundtracks = valid
+  }
+  const moodSoundtrack = readString(args.moodSoundtrack)
+  if (moodSoundtrack) fields.moodSoundtrack = moodSoundtrack
+  const inspirations = recordFromJson(args.inspirations)
+  const inspirationHasItems = [inspirations.books, inspirations.movies, inspirations.games].some(
+    bucket => Array.isArray(bucket) && bucket.length > 0,
+  )
+  if (inspirationHasItems) fields.inspirations = inspirations
+}
+
 /** Fields the bible tool may write — taken from tool args for the pending draft. */
 export function bibleFieldsFromToolArgs(args: Record<string, unknown>): Record<string, unknown> {
   const fields: Record<string, unknown> = {}
@@ -52,27 +86,18 @@ export function bibleFieldsFromToolArgs(args: Record<string, unknown>): Record<s
   if (Array.isArray(args.items)) fields.items = args.items
   if (Array.isArray(args.events)) fields.events = args.events
   if (Array.isArray(args.factions)) fields.factions = args.factions
-  const worldRules =
-    args[WorldRulesFieldAlias.WorldRules] ??
-    args[WorldRulesFieldAlias.Rules] ??
-    args[WorldRulesFieldAlias.WorldRulesSnake]
-  if (Array.isArray(worldRules)) fields.worldRules = worldRules
-  const cast =
-    args[CastFieldAlias.Cast] ??
-    args[CastFieldAlias.Characters] ??
-    args[CastFieldAlias.KeyCharacters]
-  if (Array.isArray(cast)) fields.cast = cast
+  applyAliasArrayField(fields, args, WorldRulesFieldAlias.WorldRules, [
+    WorldRulesFieldAlias.WorldRules,
+    WorldRulesFieldAlias.Rules,
+    WorldRulesFieldAlias.WorldRulesSnake,
+  ])
+  applyAliasArrayField(fields, args, CastFieldAlias.Cast, [
+    CastFieldAlias.Cast,
+    CastFieldAlias.Characters,
+    CastFieldAlias.KeyCharacters,
+  ])
   if (Array.isArray(args.plotTwists)) fields.plotTwists = args.plotTwists
-  if (Array.isArray(args.soundtracks) && args.soundtracks.length > 0) {
-    fields.soundtracks = args.soundtracks
-  }
-  const moodSoundtrack = readString(args.moodSoundtrack)
-  if (moodSoundtrack) fields.moodSoundtrack = moodSoundtrack
-  const inspirations = recordFromJson(args.inspirations)
-  const inspirationHasItems = [inspirations.books, inspirations.movies, inspirations.games].some(
-    bucket => Array.isArray(bucket) && bucket.length > 0,
-  )
-  if (inspirationHasItems) fields.inspirations = inspirations
+  applySoundtrackAndInspirationFields(fields, args)
   const episodeRoadmap = recordFromJson(args.episodeRoadmap)
   if (Object.keys(episodeRoadmap).length > 0) fields.episodeRoadmap = episodeRoadmap
   const episodePremise = episodePremiseFromUnknown(args.episodePremise)

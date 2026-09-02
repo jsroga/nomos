@@ -1,3 +1,5 @@
+import { env } from '@/shared/config/env'
+import { clientEnv } from '@/shared/config/env.client'
 import { put } from '@vercel/blob'
 import {
   StorageApiRoute,
@@ -139,7 +141,7 @@ export class StorageService {
   ): Promise<string | null> {
     try {
       // 1. Try Vercel Blob (Primary)
-      if (process.env.BLOB_READ_WRITE_TOKEN) {
+      if (env.BLOB_READ_WRITE_TOKEN) {
         return this.uploadToVercelBlob(filename, data, contentType)
       }
 
@@ -197,7 +199,7 @@ export class StorageService {
         body = data
       }
 
-      console.log(StorageLogMessage.VercelBlobTokenPresent, !!process.env.BLOB_READ_WRITE_TOKEN)
+      console.log(StorageLogMessage.VercelBlobTokenPresent, !!env.BLOB_READ_WRITE_TOKEN)
       console.log(
         StorageLogMessage.VercelBlobUploading,
         filename,
@@ -209,7 +211,7 @@ export class StorageService {
 
       const blob = await put(filename, body, {
         access: BlobAccess.Public,
-        token: process.env.BLOB_READ_WRITE_TOKEN || process.env.NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN,
+        token: env.BLOB_READ_WRITE_TOKEN || clientEnv.blobReadWriteToken,
         contentType,
         multipart: false,
       })

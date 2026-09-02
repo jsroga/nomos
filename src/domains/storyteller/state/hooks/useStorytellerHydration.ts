@@ -18,6 +18,7 @@ import {
   isVacantHydrationValue,
   omitVacantSoundtrackInspirations,
 } from '@/domains/storyteller/core/utils/bible-populated-fields'
+import { hydrationSignatureOf } from '@/domains/storyteller/state/utils/hydration-signature'
 import {
   HYDRATION_BIBLE_CATEGORIES,
   HYDRATION_PLAN_FIELDS,
@@ -73,17 +74,10 @@ export function useStorytellerHydration({
   setStoryPlan,
   setStoryDecisions,
 }: HydrationParams) {
-  const hydrationSignature = useMemo(() => {
-    if (!currentProject?.id) return null
-    const storyPlan = currentProject.story_plan ?? {}
-    const bible = currentProject.series_bible ?? {}
-    return JSON.stringify({
-      id: currentProject.id,
-      storyWorldDescription: storyPlan.worldDescription,
-      storyWorldRules: recordArrayFromJson(storyPlan.worldRules).length,
-      bibleWorldDescription: bible.worldDescription,
-    })
-  }, [currentProject])
+  const hydrationSignature = useMemo(
+    () => hydrationSignatureOf(currentProject),
+    [currentProject]
+  )
 
   useEffect(() => {
     if (!hydrationSignature || !currentProject?.id) return

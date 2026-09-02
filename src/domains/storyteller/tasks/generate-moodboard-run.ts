@@ -1,4 +1,5 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
+import type { GenerateMoodboardPayload } from './constants/task-payloads'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import {
   logLLMRequestStart,
@@ -40,21 +41,6 @@ import {
   MOODBOARD_STAGE_SUBMITTING,
   MOODBOARD_STAGE_WAITING,
 } from './constants/moodboard-task-wire'
-
-export interface GenerateMoodboardPayload {
-  projectId: string
-  prompts?: string[]
-  promptIndex?: number
-  worldDesc?: string
-  overview?: string
-  replaceIndex?: number
-  styleReferenceUrl?: string
-  providerConfig: {
-    provider: ImageGenProvider
-    apiKey: string
-    modelId?: string
-  }
-}
 
 interface MoodboardGeneratedImage {
   base64: string

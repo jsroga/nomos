@@ -1,4 +1,6 @@
-import { task, logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
+import { generateEpisodePosterPayloadSchema } from './constants/task-payloads'
 import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import fs from 'fs'
 import path from 'path'
@@ -17,16 +19,6 @@ enum PosterPrompt {
   GenericSuffix = '. Movie poster style, cinematic composition, dramatic lighting, high resolution, highly detailed, vertical aspect ratio.',
 }
 
-interface GenerateEpisodePosterPayload {
-  episodeId: string
-  projectId: string
-  prompt: string
-  providerConfig: {
-    apiKey: string
-    modelId?: string
-  }
-}
-
 function posterPromptForModel(prompt: string, model: ApiframeImageModel): string {
   if (model === ApiframeImageModel.Midjourney) {
     return `${PosterPrompt.Midjourney}${prompt}${PosterPrompt.MidjourneySuffix}`
@@ -34,10 +26,12 @@ function posterPromptForModel(prompt: string, model: ApiframeImageModel): string
   return `${prompt}${PosterPrompt.GenericSuffix}`
 }
 
-export const generateEpisodePoster = task({
+export const generateEpisodePoster = defineOwnedTask({
   id: 'generate-episode-poster',
+  schema: generateEpisodePosterPayloadSchema,
+  queue: JobQueue.Apiframe,
   maxDuration: 300,
-  run: async (payload: GenerateEpisodePosterPayload) => {
+  run: async payload => {
     const { episodeId, projectId, prompt, providerConfig } = payload
     const { apiKey } = providerConfig
     const model = resolveEpisodePosterModel()

@@ -13,6 +13,7 @@ import {
   EntityRegistryLog,
   EntityRegistryNote,
 } from '@/domains/storyteller/services/constants/entity-registry-log'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { LRUCache } from './entity-registry-lru-cache'
 import { generateEntityEmbedding } from './entity-registry-embedding'
 import {
@@ -44,7 +45,8 @@ export interface RegisterEntityInput {
   name: string
   description: string
   metadata?: Record<string, unknown>
-  projectId: string
+  /** Which project this entity belongs to, and proof the caller may write to it. */
+  scope: ProjectScope
   sourceEntityId?: string
 }
 
@@ -62,13 +64,13 @@ class EntityRegistryService {
       name: input.name,
       description: input.description,
       metadata: input.metadata || {},
-      projectId: input.projectId,
+      projectId: input.scope.projectId,
       sourceEntityId: input.sourceEntityId,
       createdAt: now,
       lastReferencedAt: now,
     }
 
-    this.cacheEntity(entity, input.projectId)
+    this.cacheEntity(entity, input.scope.projectId)
     this.persistEntity(entity).catch(err => {
       console.warn(EntityRegistryLog.PersistFailed, err)
     })
@@ -89,13 +91,13 @@ class EntityRegistryService {
       name: input.name,
       description: input.description,
       metadata: input.metadata || {},
-      projectId: input.projectId,
+      projectId: input.scope.projectId,
       sourceEntityId: input.sourceEntityId,
       createdAt: now,
       lastReferencedAt: now,
     }
 
-    this.cacheEntity(entity, input.projectId)
+    this.cacheEntity(entity, input.scope.projectId)
     this.persistEntity(entity).catch(err => {
       console.warn(EntityRegistryLog.PersistFailed, err)
     })
@@ -105,16 +107,17 @@ class EntityRegistryService {
   }
 
   async registerIfNotExists(input: RegisterEntityInput): Promise<string> {
-    const existing = await this.findByNameAndType(input.projectId, input.name, input.type)
+    const existing = await this.findByNameAndType(input.scope, input.name, input.type)
     if (existing) return existing.id
     return this.register(input)
   }
 
   async findByNameAndType(
-    projectId: string,
+    scope: ProjectScope,
     name: string,
     type: EntityType
   ): Promise<EntityReference | null> {
+    const { projectId } = scope
     const projectRefs = this.projectCaches.get(projectId)
     if (projectRefs) {
       for (const refId of projectRefs) {
@@ -227,7 +230,8 @@ class EntityRegistryService {
     return refs
   }
 
-  async getProjectEntities(projectId: string): Promise<EntityReference[]> {
+  async getProjectEntities(scope: ProjectScope): Promise<EntityReference[]> {
+    const { projectId } = scope
     try {
       const dbEntities = await db
         .select()
@@ -249,12 +253,14 @@ class EntityRegistryService {
     }
   }
 
-  async getEntitiesByType(projectId: string, type: EntityType): Promise<EntityReference[]> {
+  async getEntitiesByType(scope: ProjectScope, type: EntityType): Promise<EntityReference[]> {
     try {
       const dbEntities = await db
         .select()
         .from(entityReferences)
-        .where(and(eq(entityReferences.projectId, projectId), eq(entityReferences.type, type)))
+        .where(
+          and(eq(entityReferences.projectId, scope.projectId), eq(entityReferences.type, type))
+        )
 
       return dbEntities
         .map(e => this.dbToEntity(e))
@@ -314,25 +320,26 @@ class EntityRegistryService {
   }
 
   async syncFromSource(
-    projectId: string,
+    scope: ProjectScope,
     type: EntityType,
     entities: Array<{ id: string; name: string; description?: string; [key: string]: unknown }>
   ): Promise<void> {
     for (const entity of entities) {
-      const existing = await this.findByNameAndType(projectId, entity.name, type)
+      const existing = await this.findByNameAndType(scope, entity.name, type)
       if (!existing) {
         await this.register({
           type,
           name: entity.name,
           description: entity.description || '',
           metadata: entity,
-          projectId,
+          scope,
           sourceEntityId: entity.id,
         })
       }
     }
   }
 
+  /** project-scope: none — evicts local cache entries, reads no project data. */
   clearProjectCache(projectId: string): void {
     const refs = this.projectCaches.get(projectId)
     if (refs) {

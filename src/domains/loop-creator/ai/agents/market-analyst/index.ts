@@ -1,3 +1,5 @@
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { Agent } from '@mastra/core/agent'
 import { resolveLoopCreatorMastraModel } from '../../../config/model-config'
 import {
@@ -97,13 +99,13 @@ export async function runMarketAnalysis(
     const agent = marketAnalystAgent
     onProgress?.(MarketAnalysisProgressMessage.Researching)
 
-    const result = await agent.generate(
+    const result = await meteredCall(LlmFeature.LoopCreator, () => agent.generate(
       [
         { role: MastraMessageRole.System, content: buildMarketAnalysisPrompt(input) },
         { role: MastraMessageRole.User, content: buildMarketAnalysisUserMessage(input) },
       ],
       { maxSteps: 25 },
-    )
+    ))
 
     const agentMessages = result.response?.messages || []
     messages.push(...collectAssistantMessages(agentMessages))

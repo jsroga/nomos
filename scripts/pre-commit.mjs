@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Husky pre-commit entry: architecture → docs → typecheck → eslint → unit tests → prod build.
+ * Husky pre-commit entry: architecture → docs → env → typecheck → eslint → unit tests → prod build.
  */
 import { spawnSync } from 'node:child_process'
 
@@ -27,7 +27,9 @@ function main() {
   run('architecture layout', 'node', ['scripts/check-architecture.mjs'])
   run('agent artifacts', 'node', ['scripts/check-agent-artifacts.mjs'])
   run('docs sync', 'node', ['scripts/check-docs-updated.mjs'])
+  run('eval freshness', 'node', ['scripts/check-eval-freshness.mjs'])
   run('openapi drift', 'npm', ['run', 'openapi:check'])
+  run('env example', 'npm', ['run', 'env:check'])
   run('typecheck (staged)', 'node', ['scripts/pre-commit-typecheck.mjs'])
   run('eslint (staged)', 'node', ['scripts/pre-commit-lint.mjs'])
   run('unit tests', 'npm', ['run', 'test:unit'])

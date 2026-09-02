@@ -1,3 +1,4 @@
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { entityRegistry } from './entity-registry-service'
 import { parseReferences } from '@/domains/storyteller/core/entities/reference-parser'
 import { descriptionForNewReference } from '@/domains/storyteller/services/entity-base-description-service'
@@ -18,7 +19,7 @@ function surroundingTextForRef(
  * Validates references in the text.
  * Auto-resolves valid references, registers missing ones if name is new, and removes completely broken ones.
  */
-export async function validateReferences(text: string, projectId: string): Promise<string> {
+export async function validateReferences(text: string, scope: ProjectScope): Promise<string> {
   if (!text || typeof text !== 'string') return text
 
   const refs = parseReferences(text)
@@ -44,7 +45,7 @@ export async function validateReferences(text: string, projectId: string): Promi
     }
 
     // Check if it exists by name and type instead
-    const existingByName = await entityRegistry.findByNameAndType(projectId, ref.displayName, ref.type)
+    const existingByName = await entityRegistry.findByNameAndType(scope, ref.displayName, ref.type)
 
     let newRefId = ref.refId
 
@@ -56,13 +57,13 @@ export async function validateReferences(text: string, projectId: string): Promi
         name: ref.displayName,
         type: ref.type,
         surroundingText: surroundingTextForRef(text, ref.startIndex, ref.endIndex),
-        projectId,
+        scope,
       })
       newRefId = await entityRegistry.register({
         type: ref.type,
         name: ref.displayName,
         description,
-        projectId,
+        scope,
       })
     }
 
@@ -80,21 +81,21 @@ export async function validateReferences(text: string, projectId: string): Promi
  * Deep validates all string fields in an object that might contain references.
  * Recursively traverses objects and arrays.
  */
-export async function validateReferencesInObject(obj: unknown, projectId: string): Promise<unknown> {
+export async function validateReferencesInObject(obj: unknown, scope: ProjectScope): Promise<unknown> {
   if (!obj) return obj
 
   if (typeof obj === 'string') {
-    return await validateReferences(obj, projectId)
+    return await validateReferences(obj, scope)
   }
 
   if (Array.isArray(obj)) {
-    return Promise.all(obj.map(item => validateReferencesInObject(item, projectId)))
+    return Promise.all(obj.map(item => validateReferencesInObject(item, scope)))
   }
 
   if (typeof obj === 'object') {
     const validatedObj: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(obj)) {
-      validatedObj[key] = await validateReferencesInObject(value, projectId)
+      validatedObj[key] = await validateReferencesInObject(value, scope)
     }
     return validatedObj
   }

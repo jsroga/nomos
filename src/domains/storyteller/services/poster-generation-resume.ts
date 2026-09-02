@@ -217,6 +217,7 @@ async function resumeStoredPosterRun(
   }
 }
 
+/** project-scope: none — browser-side; the API route it calls mints the scope. */
 export function resumePendingPosterGenerations(
   host: PosterResumeHost,
   projectId: string,

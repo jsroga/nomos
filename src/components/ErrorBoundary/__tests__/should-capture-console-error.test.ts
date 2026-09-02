@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BrowserConsoleNoise, ReactConsoleNoise } from '../constants/error-boundary'
-import { shouldCaptureConsoleError } from '../should-capture-console-error'
+import { isBenignUnmountRace, shouldCaptureConsoleError } from '../should-capture-console-error'
 
 describe('shouldCaptureConsoleError', () => {
   it('skips React getSnapshot loops so TroubleshootPanel does not setState during render', () => {
@@ -26,6 +26,12 @@ describe('shouldCaptureConsoleError', () => {
         `${BrowserConsoleNoise.ResizeObserverLoop} completed with undelivered notifications.`,
       ),
     ).toBe(false)
+  })
+
+  it('skips assistant-ui tap double-unmount during fast route changes', () => {
+    expect(shouldCaptureConsoleError(ReactConsoleNoise.FiberAlreadyUnmounted)).toBe(false)
+    expect(isBenignUnmountRace(ReactConsoleNoise.FiberAlreadyUnmounted)).toBe(true)
+    expect(isBenignUnmountRace('Failed to save bible')).toBe(false)
   })
 
   it('captures real console errors', () => {

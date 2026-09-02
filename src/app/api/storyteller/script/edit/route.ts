@@ -4,6 +4,7 @@ import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 
 export const POST = withAuth(async (req: NextRequest, _auth: AuthenticatedRequest) => {
+    // auth-scope: session-existence-only — edits posted text; nothing is read or written.
   try {
     const { selection, instruction } = await req.json()
 

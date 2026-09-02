@@ -10,6 +10,12 @@ import 'server-only'
 import { db } from '@/db/client'
 import { characters, projects, episodes, beats } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
+import {
+  ProjectForbidden,
+  projectScope,
+  tryProjectScope,
+  type ProjectScope,
+} from '@/shared/auth/project-scope'
 
 type CharacterRow = typeof characters.$inferSelect
 type EpisodeRow = typeof episodes.$inferSelect
@@ -97,22 +103,34 @@ export interface ServiceContext {
 // ============================================
 
 export class StorytellerService {
-  /**
-   * Verify project access for a user
-   */
-  async verifyProjectAccess(projectId: string, userId: string): Promise<boolean> {
-    const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
-    return !!project && project.userId === userId
+  /** Private: outside this class, access is established by `projectScope()`. */
+  private async hasProjectAccess(projectId: string, userId: string): Promise<boolean> {
+    return Boolean(await tryProjectScope(projectId, userId))
+  }
+
+  /** Reports refusal as this service's `NotFound`, the shape MCP already handles. */
+  private async requireScope(projectId: string, userId: string): Promise<ProjectScope> {
+    try {
+      return await projectScope(projectId, userId)
+    } catch (error) {
+      if (error instanceof ProjectForbidden) {
+        throw new ServiceError(
+          STORYTELLER_CRUD_ACCESS_ERRORS.project,
+          StorytellerCrudErrorCode.NotFound
+        )
+      }
+      throw error
+    }
   }
 
   /**
    * Verify character access for a user
    */
-  async verifyCharacterAccess(characterId: string, userId: string): Promise<boolean> {
+  private async verifyCharacterAccess(characterId: string, userId: string): Promise<boolean> {
     const [character] = await db.select().from(characters).where(eq(characters.id, characterId))
     if (!character) return false
 
-    return this.verifyProjectAccess(character.projectId, userId)
+    return this.hasProjectAccess(character.projectId, userId)
   }
 
   /**
@@ -124,7 +142,7 @@ export class StorytellerService {
   ): Promise<{ characters: CharacterRow[] }> {
     const validated = listCharactersSchema.parse(input)
 
-    const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
+    const hasAccess = await this.hasProjectAccess(validated.projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         STORYTELLER_CRUD_ACCESS_ERRORS.project,
@@ -157,7 +175,7 @@ export class StorytellerService {
       )
     }
 
-    const hasAccess = await this.verifyProjectAccess(character.projectId, context.userId)
+    const hasAccess = await this.hasProjectAccess(character.projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         STORYTELLER_CRUD_ACCESS_ERRORS.character,
@@ -177,7 +195,7 @@ export class StorytellerService {
   ): Promise<{ character: CharacterRow }> {
     const validated = createCharacterSchema.parse(input)
 
-    const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
+    const hasAccess = await this.hasProjectAccess(validated.projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         STORYTELLER_CRUD_ACCESS_ERRORS.project,
@@ -267,7 +285,7 @@ export class StorytellerService {
   ): Promise<{ episodes: EpisodeRow[] }> {
     const validated = listEpisodesSchema.parse(input)
 
-    const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
+    const hasAccess = await this.hasProjectAccess(validated.projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         STORYTELLER_CRUD_ACCESS_ERRORS.project,
@@ -299,7 +317,7 @@ export class StorytellerService {
       )
     }
 
-    const hasAccess = await this.verifyProjectAccess(episode.projectId, context.userId)
+    const hasAccess = await this.hasProjectAccess(episode.projectId, context.userId)
     if (!hasAccess) {
       throw new ServiceError(
         STORYTELLER_CRUD_ACCESS_ERRORS.episodeAccess,
@@ -316,22 +334,9 @@ export class StorytellerService {
     return { beats: result }
   }
 
-  /**
-   * Get the series bible for a project
-   */
-  async getSeriesBible(
-    projectId: string,
-    context: ServiceContext
-  ): Promise<{ seriesBible: unknown }> {
-    const hasAccess = await this.verifyProjectAccess(projectId, context.userId)
-    if (!hasAccess) {
-      throw new ServiceError(
-        STORYTELLER_CRUD_ACCESS_ERRORS.project,
-        StorytellerCrudErrorCode.NotFound
-      )
-    }
-
-    const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
+  /** Takes a scope: ownership was proved to mint it, so there is no second check. */
+  async getSeriesBible(scope: ProjectScope): Promise<{ seriesBible: unknown }> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, scope.projectId))
 
     return { seriesBible: project?.seriesBible || {} }
   }
@@ -350,13 +355,7 @@ export class StorytellerService {
   }> {
     const validated = chatMessageSchema.parse(input)
 
-    const hasAccess = await this.verifyProjectAccess(validated.projectId, context.userId)
-    if (!hasAccess) {
-      throw new ServiceError(
-        STORYTELLER_CRUD_ACCESS_ERRORS.project,
-        StorytellerCrudErrorCode.NotFound
-      )
-    }
+    const scope = await this.requireScope(validated.projectId, context.userId)
 
     // Dynamic import to avoid a static service ↔ agents cycle.
     const { createStorytellerAgent } = await import(
@@ -369,7 +368,7 @@ export class StorytellerService {
       validated.threadId || `thread_${Date.now()}_${Math.random().toString(36).slice(2)}`
 
     // Get series bible and characters for context
-    const { seriesBible } = await this.getSeriesBible(validated.projectId, context)
+    const { seriesBible } = await this.getSeriesBible(scope)
     const { characters: projectCharacters } = await this.listCharacters(
       { projectId: validated.projectId },
       context

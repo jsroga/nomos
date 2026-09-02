@@ -14,6 +14,10 @@ import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page
 import { CastFieldAlias } from '@/domains/storyteller/core/formatting/constants/story-plan-fields'
 import { deepMerge, recordFromJson, smartMergeArray } from '@/shared/data/deep-merge'
 import {
+  MergeStrategy,
+  mergeStrategyFor,
+} from '@/domains/storyteller/core/bible/section-registry'
+import {
   extractCastFromUpdates,
   normalizeCastInUpdates,
   readCastFromPlan,
@@ -309,6 +313,24 @@ export const STORY_PLAN_FIELDS = STORY_PLAN_MERGE_FIELDS
 /**
  * Apply updates to a story plan state, handling merging correctly
  */
+/**
+ * One plan field: replace-on-regenerate, smart-merge, deep-merge, or overwrite.
+ *
+ * Only the replace decision is keyed on the field, and SECTION_REGISTRY is
+ * where that is now declared. Everything else follows the shape of the value,
+ * which is what the world-level scalars and episode fields rely on.
+ */
+function mergePlanField(field: string, currentValue: unknown, update: unknown): unknown {
+  if (Array.isArray(update)) {
+    if (mergeStrategyFor(field) === MergeStrategy.Replace) return update
+    return smartMergeArray(Array.isArray(currentValue) ? currentValue : [], update)
+  }
+  if (typeof update === 'object' && update !== null) {
+    return deepMerge(recordFromJson(currentValue), recordFromJson(update))
+  }
+  return update
+}
+
 export function applyUpdatesToStoryPlan<T extends object>(
   currentPlan: T | null,
   updates: Record<string, unknown>
@@ -322,14 +344,7 @@ export function applyUpdatesToStoryPlan<T extends object>(
   for (const field of STORY_PLAN_FIELDS) {
     const update = normalizedUpdates[field]
     if (update === undefined) continue
-    if (Array.isArray(update)) {
-      const currentArr = current[field]
-      result[field] = smartMergeArray(Array.isArray(currentArr) ? currentArr : [], update)
-    } else if (typeof update === 'object' && update !== null) {
-      result[field] = deepMerge(recordFromJson(current[field]), recordFromJson(update))
-    } else {
-      result[field] = update
-    }
+    result[field] = mergePlanField(field, current[field], update)
   }
 
   const cast = extractCastFromUpdates(normalizedUpdates)

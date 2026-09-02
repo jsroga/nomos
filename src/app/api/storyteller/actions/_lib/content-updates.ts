@@ -3,6 +3,7 @@ import { db } from '@/db/client'
 import { eq } from 'drizzle-orm'
 import { ApiErrorMessage } from '@/shared/data/constants/protocol'
 import { API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { persistBibleOwnedPlanFields } from '@/domains/storyteller/core/io/persist-bible-owned-plan'
 import { deepMergeRecords, recordFromJson } from '@/shared/data/deep-merge'
 
 export async function updateSeriesBibleContent(
@@ -82,6 +83,8 @@ export async function updateStoryPlanContent(
       target: storyPlans.projectId,
       set: { content: updatedContent, updatedAt: new Date() },
     })
+
+  await persistBibleOwnedPlanFields(projectId, updates)
 
   console.log(API_LOG_PREFIX.UPDATE_STORY_PLAN_WRITE_COMPLETE)
 

@@ -12,9 +12,12 @@ import {
   generateCharacterMissingFields,
 } from '../generate-character-fields-service'
 import { assembleStoryCanonPack } from '../story-canon-pack'
+import { SystemScopeReason, systemScope } from '@/shared/auth/project-scope'
 import { StoryCanonPackLabel } from '../constants/story-canon-pack'
 
 const PROJECT_ID = '11111111-1111-1111-1111-111111111111'
+/** A scope cannot be forged, so the test takes the system constructor. */
+const SCOPE = systemScope(PROJECT_ID, SystemScopeReason.ProviderSmoke)
 const VERA = 'Vera'
 const VERA_DESC = 'Vera keeps the wardens at bay.'
 const WORLD = 'A frozen ward holds the last ledger.'
@@ -75,7 +78,7 @@ describe('generateCharacterMissingFields', () => {
     loadCanonPack.mockResolvedValue(emptyPack)
 
     await expect(
-      generateCharacterMissingFields({ projectId: PROJECT_ID, filled: draft() }, { generate, loadCanonPack })
+      generateCharacterMissingFields({ scope: SCOPE, filled: draft() }, { generate, loadCanonPack })
     ).rejects.toMatchObject({ code: GenerateCharacterFieldsErrorCode.InsufficientContext })
     expect(generate).not.toHaveBeenCalled()
   })
@@ -103,7 +106,7 @@ describe('generateCharacterMissingFields', () => {
     })
 
     const result = await generateCharacterMissingFields(
-      { projectId: PROJECT_ID, filled },
+      { scope: SCOPE, filled },
       { generate, loadCanonPack }
     )
 
@@ -122,7 +125,7 @@ describe('generateCharacterMissingFields', () => {
     })
 
     const result = await generateCharacterMissingFields(
-      { projectId: PROJECT_ID, filled: draft({ name: VERA, description: VERA_DESC }) },
+      { scope: SCOPE, filled: draft({ name: VERA, description: VERA_DESC }) },
       { generate, loadCanonPack }
     )
 
@@ -141,7 +144,7 @@ describe('generateCharacterMissingFields', () => {
 
     await expect(
       generateCharacterMissingFields(
-        { projectId: PROJECT_ID, filled: draft({ name: VERA }) },
+        { scope: SCOPE, filled: draft({ name: VERA }) },
         { generate, loadCanonPack }
       )
     ).rejects.toBeInstanceOf(GenerateCharacterFieldsError)

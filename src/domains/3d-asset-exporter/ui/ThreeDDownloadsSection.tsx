@@ -2,7 +2,7 @@
 
 import { Download, Layers } from 'lucide-react'
 import { Button } from '@/components/Button'
-import type { MeshyResult } from '../core/types/three-d-generation'
+import type { MeshyResult } from '../contracts'
 import { ModelFormatKey, ModelFormatLabel } from '../constants/three-d-operation-wire'
 
 enum TextureDownloadLabel {
@@ -38,7 +38,7 @@ const MODEL_FORMATS: Array<{ key: ModelFormatKey; label: ModelFormatLabel }> = [
 ]
 
 function ModelFormatButtons(props: {
-  urls: NonNullable<MeshyResult['model_urls']>
+  urls: NonNullable<MeshyResult['modelUrls']>
   prefix: string
   handleDownload: (url: string, filename: string) => void
 }) {
@@ -66,12 +66,12 @@ function ModelFormatButtons(props: {
 }
 
 function TextureDownloadButtons(props: {
-  texture: NonNullable<MeshyResult['texture_urls']>[number]
+  texture: NonNullable<MeshyResult['textureUrls']>[number]
   handleDownload: (url: string, filename: string) => void
 }) {
   const { texture, handleDownload } = props
   const entries: Array<{ url?: string; label: TextureDownloadLabel; file: TextureDownloadFile }> = [
-    { url: texture.base_color, label: TextureDownloadLabel.BaseColor, file: TextureDownloadFile.BaseColor },
+    { url: texture.baseColor, label: TextureDownloadLabel.BaseColor, file: TextureDownloadFile.BaseColor },
     { url: texture.normal, label: TextureDownloadLabel.Normal, file: TextureDownloadFile.Normal },
     { url: texture.metallic, label: TextureDownloadLabel.Metallic, file: TextureDownloadFile.Metallic },
     { url: texture.roughness, label: TextureDownloadLabel.Roughness, file: TextureDownloadFile.Roughness },
@@ -143,9 +143,9 @@ export function ThreeDDownloadsSection({
   handleDownload,
   handleRegenerate,
 }: ThreeDDownloadsSectionProps) {
-  const texture = generationResult?.texture_urls?.[0]
-  const remeshUrls = remeshResult?.model_urls
-  const generationUrls = generationResult?.model_urls
+  const texture = generationResult?.textureUrls?.[0]
+  const remeshUrls = remeshResult?.modelUrls
+  const generationUrls = generationResult?.modelUrls
 
   return (
     <div className="p-3 border-t border-border bg-muted/10 space-y-3">

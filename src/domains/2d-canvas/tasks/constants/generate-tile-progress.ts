@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { metadata } from '@trigger.dev/sdk/v3'
+import { metadata } from '@trigger.dev/sdk'
 import { readNumber, recordFromJson } from '@/shared/data/json-guards'
 
 export enum GenerateTileStage {

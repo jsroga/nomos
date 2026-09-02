@@ -22,6 +22,26 @@ If those paths don't exist, `@trigger.dev/sdk` isn't installed yet — install i
 
 Always import from `@trigger.dev/sdk` — never `@trigger.dev/sdk/v3` (deprecated alias) or `@trigger.dev/core`.
 
+## In this repo: `defineOwnedTask`, not `task()`
+
+The vendor guide shows `task()` and `schemaTask()`. **Do not use them here.** Every
+background task in this repo is defined by `defineOwnedTask` from `@/shared/jobs`,
+which requires a payload schema, a queue and a submission nonce — so a task that
+omits any of them does not compile. A raw `task(`/`schemaTask(` outside
+`src/shared/jobs/define-task.ts` is a `local/no-raw-trigger-task` lint error.
+
+Trigger a task with `triggerOwnedRun` from `@/shared/jobs`, never `tasks.trigger`
+or `myTask.trigger` — it stamps the run with the project that owns it and derives
+the idempotency key from the payload's nonce. A run with no project tag cannot be
+read back by its owner.
+
+The key is `<taskId>:<requestId>` and never prompt content: regenerating with the
+same prompt is expected to return a different image, so a content hash would
+silently hand back the previous one.
+
+Full procedure — writing the schema, picking a queue, machine presets:
+[docs/DEVELOPMENT.md](../../../docs/DEVELOPMENT.md) § Adding a background task.
+
 ## Common mistakes
 
 1. **CRITICAL: Treating the wait result as the output.** `triggerAndWait` and `wait.forToken` return a Result object, not the raw output.

@@ -16,7 +16,7 @@ import { DB_COLUMN, DB_TABLE } from '@/shared/data/constants/db-tables'
 export const GET = withAuth(
   async (
     _request: NextRequest,
-    { session: _session, supabase }: AuthenticatedRequest,
+    { supabase }: AuthenticatedRequest,
     context: RouteHandlerContext
   ) => {
     if (!supabase) {
@@ -53,7 +53,7 @@ export const PATCH = withRateLimit(
   withAuth(
     async (
       request: NextRequest,
-      { session: _session, supabase }: AuthenticatedRequest,
+      { supabase }: AuthenticatedRequest,
       context: RouteHandlerContext
     ) => {
       if (!supabase) {
@@ -122,7 +122,7 @@ export const PATCH = withRateLimit(
 export const DELETE = withAuth(
   async (
     _request: NextRequest,
-    { session: _session, supabase }: AuthenticatedRequest,
+    { supabase }: AuthenticatedRequest,
     context: RouteHandlerContext
   ) => {
     if (!supabase) {

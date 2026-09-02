@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { UPSCALE_PROMPTS, getCreativityPrompt } from '@/shared/data/server/prompts'
 import { buildUrl } from '@/shared/data/url-builder'
 import {

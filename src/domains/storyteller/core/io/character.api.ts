@@ -1,7 +1,8 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
 import { ClientFetchError, fetchJson } from '@/shared/data/fetch-json-record'
-import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
+import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
 import {
@@ -27,11 +28,15 @@ export async function startCharacterPortraitGeneration(input: {
   motivation?: string
   apiKey?: string
 }): Promise<{ handleId: string | null }> {
-  const response = await fetch(PORTRAIT_ROUTE, {
-    method: HttpMethod.Post,
-    headers: { 'Content-Type': ContentType.Json },
-    body: JSON.stringify(input),
-  })
+  const response = await withSubmissionNonce(
+    `${TRIGGER_TASK_ID.GENERATE_PORTRAIT}:${input.projectId}:${input.characterId ?? input.description}`,
+    requestId =>
+      fetch(PORTRAIT_ROUTE, {
+        method: HttpMethod.Post,
+        headers: { 'Content-Type': ContentType.Json },
+        body: JSON.stringify({ ...input, requestId }),
+      })
+  )
   const data = recordFromJson(await response.json().catch(() => ({})))
   if (!response.ok) {
     throw new ClientFetchError(

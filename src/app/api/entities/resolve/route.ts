@@ -25,6 +25,13 @@ import {
 } from './_lib/entity-resolve-enrichment'
 import { parseEntityResolveQuery } from './_lib/entity-resolve-query'
 
+/**
+ * This route runs inference, so it needs longer than the platform default.
+ * `GATEWAY_TIMEOUT_MS` is 120s; this leaves headroom above it.
+ */
+export const maxDuration = 150
+
+
 export async function GET(request: NextRequest) {
   try {
     const parsed = await parseEntityResolveQuery(request)
@@ -32,15 +39,15 @@ export async function GET(request: NextRequest) {
       return parsed.response
     }
 
-    const { projectId, ids, enrichRelationships, context } = parsed.query
+    const { scope, ids, enrichRelationships, context } = parsed.query
 
-    let entities = await resolveEntitiesWithAutoRegister(ids, projectId, context)
+    let entities = await resolveEntitiesWithAutoRegister(ids, scope, context)
 
     if (enrichRelationships) {
-      entities = await enrichEntitiesWithRelationships(entities, projectId)
+      entities = await enrichEntitiesWithRelationships(entities, scope)
     }
 
-    entities = await applyContextualSummaries(entities, projectId, context)
+    entities = await applyContextualSummaries(entities, scope, context)
 
     return NextResponse.json({ entities })
   } catch (error) {

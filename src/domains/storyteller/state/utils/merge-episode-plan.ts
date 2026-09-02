@@ -20,6 +20,7 @@ import { hydratePlanFromBibleSources } from '@/domains/storyteller/state/utils/h
 import { projectHasStoredPlan } from '@/domains/storyteller/state/utils/episode-route'
 import {
   inspirationsHaveItems,
+  omitBibleOwnedPlanFields,
   omitVacantSoundtrackInspirations,
 } from '@/domains/storyteller/core/utils/bible-populated-fields'
 
@@ -82,7 +83,8 @@ export function buildMergedEpisodePlan(
 
   const bible = unpackBibleCategories(parseSeriesBibleRecord(currentProject?.series_bible))
   const seasonPlan = parseStoryPlanRecord(currentProject?.story_plan)
-  const episodePlan = recordFromJson(data[EpisodePlanMergeField.StoryPlan])
+  const rawEpisodePlan = recordFromJson(data[EpisodePlanMergeField.StoryPlan])
+  const episodePlan = omitBibleOwnedPlanFields(rawEpisodePlan)
   const seasonRoadmap = recordFromJson(seasonPlan[EpisodePlanMergeField.EpisodeRoadmap])
   const bibleUpdated = recordFromJson(bible[ToolResultPayloadField.UpdatedFields])
 
@@ -123,14 +125,14 @@ export function buildMergedEpisodePlan(
       bibleUpdated[CastFieldAlias.Characters],
     ),
     [StoryPlanMergeField.Soundtracks]: firstNonEmptyArray(
-      episodePlan[StoryPlanMergeField.Soundtracks],
-      seasonPlan[StoryPlanMergeField.Soundtracks],
       bible[StoryPlanMergeField.Soundtracks],
+      seasonPlan[StoryPlanMergeField.Soundtracks],
+      rawEpisodePlan[StoryPlanMergeField.Soundtracks],
     ),
     [StoryPlanMergeField.Inspirations]: firstNonEmptyInspirations(
-      episodePlan[StoryPlanMergeField.Inspirations],
-      seasonPlan[StoryPlanMergeField.Inspirations],
       bible[StoryPlanMergeField.Inspirations],
+      seasonPlan[StoryPlanMergeField.Inspirations],
+      rawEpisodePlan[StoryPlanMergeField.Inspirations],
     ),
     [StoryPlanMergeField.MoodImages]: firstNonEmptyStringArray(
       bible[StoryPlanMergeField.MoodImages],

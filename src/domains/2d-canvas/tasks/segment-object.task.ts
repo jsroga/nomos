@@ -1,12 +1,14 @@
-import { task } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
-import { runSegmentObject, type SegmentObjectPayload } from './segment-object-run'
+import { runSegmentObject, segmentObjectPayloadSchema } from './segment-object-run'
 
-export const segmentObjectTask = task({
+export const segmentObjectTask = defineOwnedTask({
   id: TRIGGER_TASK_ID.SEGMENT_OBJECT,
+  schema: segmentObjectPayloadSchema,
+  queue: JobQueue.Fal,
   maxDuration: 600,
   retry: {
     maxAttempts: 2,
   },
-  run: async (payload: SegmentObjectPayload) => runSegmentObject(payload),
+  run: async payload => runSegmentObject(payload),
 })

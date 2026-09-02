@@ -3,7 +3,8 @@ import { db } from '@/db/client'
 import { gameLoops } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { checkRateLimit, requireAuth } from '@/shared/data/api-utils'
-import { verifyGameLoopAccess, verifyProjectAccess } from '@/domains/storyteller/server'
+import { verifyGameLoopAccess } from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
   HttpStatus,
@@ -51,14 +52,15 @@ export async function GET(req: NextRequest) {
           { status: HttpStatus.BAD_REQUEST },
         )
       }
-      if (!(await verifyProjectAccess(projectId, session.user.id))) {
+      const scope = await tryProjectScope(projectId, session.user.id)
+      if (!scope) {
         return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.FORBIDDEN })
       }
 
       const loops = await db
         .select()
         .from(gameLoops)
-        .where(eq(gameLoops.projectId, projectId))
+        .where(eq(gameLoops.projectId, scope.projectId))
         .orderBy(desc(gameLoops.updatedAt))
       return NextResponse.json(loops)
     }

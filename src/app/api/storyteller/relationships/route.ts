@@ -16,6 +16,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
+import { tryProjectScope } from '@/shared/auth/project-scope'
+import { HttpStatus } from '@/shared/data/constants/protocol'
+import { API_ERROR } from '@/shared/data/constants/api-errors'
 import {
   RelationshipsApiError,
   RelationshipsApiLog,
@@ -24,13 +27,21 @@ import {
 import { buildRelationshipGraph } from './_lib/build-relationship-graph'
 import type { RelationshipResponse } from './_lib/graph-types'
 
-export const GET = withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {
+export const GET = withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get(RelationshipsQueryParam.ProjectId)
 
     if (!projectId) {
       return NextResponse.json({ error: RelationshipsApiError.MissingProjectId }, { status: 400 })
+    }
+
+    if (!(await tryProjectScope(projectId, session.user.id))) {
+      // 404, not 403: a 403 confirms the project exists.
+      return NextResponse.json(
+        { error: API_ERROR.PROJECT_NOT_FOUND },
+        { status: HttpStatus.NOT_FOUND }
+      )
     }
 
     const graph = await buildRelationshipGraph(projectId, request.url)

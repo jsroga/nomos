@@ -1,4 +1,4 @@
-import { logger } from '@trigger.dev/sdk/v3'
+import { logger } from '@trigger.dev/sdk'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
 import { isPublicHttpUrl } from '@/shared/data/is-public-http-url'
 import { storageService } from '@/shared/data/storage/storage-service'

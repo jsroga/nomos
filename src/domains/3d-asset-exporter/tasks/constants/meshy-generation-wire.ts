@@ -64,11 +64,6 @@ export enum MeshyGenerationRequestField {
   ShouldRemesh = 'should_remesh',
 }
 
-export enum MeshyGenerationTopology {
-  Triangle = 'triangle',
-  Quad = 'quad',
-}
-
 export enum MeshyGenerationHttpHeader {
   Authorization = 'Authorization',
   ContentType = 'Content-Type',

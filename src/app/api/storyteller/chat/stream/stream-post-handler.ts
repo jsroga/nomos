@@ -1,6 +1,13 @@
+import { withGatewayContext } from '@/shared/ai/gateway/call-context'
+import {
+  USAGE_COMPLETION_FIELDS,
+  USAGE_PROMPT_FIELDS,
+} from './constants/stream-usage'
+import { resolveChatModelId } from '@/domains/storyteller/config/resolve-chat-model'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { recordError } from '@/shared/observability/observability'
 import { parsePhaseId } from '@/domains/storyteller/core/types/enums'
-import { isKnownChatModel, resolveChatModelId } from '@/domains/storyteller/config/constants/chat-model-catalog'
+import { isKnownChatModel } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import { isStorytellerControllerEnabled } from '@/domains/storyteller/ai/controller/storyteller-controller'
 import { BibleSection } from '@/domains/storyteller/core'
 import { type DetectedSection } from '@/domains/storyteller/config/tool-result-mapper'
@@ -31,7 +38,7 @@ import {
 
 interface StreamRequestInput {
   message: string
-  projectId?: string
+  scope?: ProjectScope
   episodeId?: string
   traceId: string
   agenticMode?: boolean
@@ -41,6 +48,16 @@ interface StreamRequestInput {
 }
 
 export async function runStorytellerStream(input: StreamRequestInput): Promise<Response> {
+  // Everything downstream — the agent, its tools, the services they reach —
+  // bills to this project. Established once here rather than threaded through
+  // twenty signatures; see shared/ai/gateway/call-context.ts.
+  if (!input.scope) return runStorytellerStreamInner(input)
+  return withGatewayContext({ scope: input.scope, traceId: input.traceId }, () =>
+    runStorytellerStreamInner(input)
+  )
+}
+
+async function runStorytellerStreamInner(input: StreamRequestInput): Promise<Response> {
   const requestedModel =
     typeof input.modelName === 'string' && input.modelName.trim()
       ? resolveChatModelId(input.modelName)
@@ -50,7 +67,7 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
   }
 
   const { contextPrompt, existingBibleData } = await assembleStorytellerContext({
-    projectId: input.projectId,
+    projectId: input.scope?.projectId,
     episodeId: input.episodeId,
     message: input.message,
     currentPhase: parsePhaseId(input.currentPhase),
@@ -66,11 +83,11 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
   const agenticInstruction = input.agenticMode ? STORYTELLER_AGENTIC_MODE_INSTRUCTION : ''
 
   const promptWithContext = contextPrompt
-    ? `${contextPrompt}\n${sectionPrompt}\n${agenticInstruction}\nUSER REQUEST:\n${input.message}\n\nRemember: Use projectId="${input.projectId}" for all tool calls that require it.`
+    ? `${contextPrompt}\n${sectionPrompt}\n${agenticInstruction}\nUSER REQUEST:\n${input.message}\n\nRemember: Use projectId="${input.scope?.projectId}" for all tool calls that require it.`
     : `${sectionPrompt}\n${agenticInstruction}\n${input.message}`
 
   const requestContext = buildStorytellerRequestContext({
-    projectId: input.projectId,
+    projectId: input.scope?.projectId,
     episodeId: input.episodeId,
     chatModel: requestedModel,
   })
@@ -82,7 +99,7 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
       traceId: input.traceId,
       requestContext,
       userId: input.userId,
-      projectId: input.projectId,
+      projectId: input.scope?.projectId,
     })
   }
 
@@ -124,7 +141,8 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
       const session: StreamSession = {
         writer,
         traceId: input.traceId,
-        projectId: input.projectId,
+        scope: input.scope,
+        model: requestedModel ?? resolveChatModelId(),
         episodeId: input.episodeId,
         isSectionUpdate,
         existingBibleData,
@@ -191,6 +209,41 @@ function handleReasoningDeltaChunk(session: StreamSession, payload: Record<strin
   }
 }
 
+/**
+ * Take the token counts off a finish chunk.
+ *
+ * Providers disagree on the shape — `usage` sits at the top level or under
+ * `payload`, and the fields are `inputTokens`/`promptTokens` depending on
+ * version — so this reads defensively and leaves `session.usage` unset when it
+ * finds nothing. An unset usage means the call goes unrecorded, which is the
+ * intended behaviour: a zero-token row would read as a free generation.
+ */
+function captureStreamUsage(session: StreamSession, chunk: Record<string, unknown>): void {
+  const payload = isRecord(chunk.payload) ? chunk.payload : chunk
+  const usage = isRecord(payload.usage) ? payload.usage : undefined
+  if (!usage) return
+
+  const promptTokens = readTokenCount(usage, USAGE_PROMPT_FIELDS)
+  const completionTokens = readTokenCount(usage, USAGE_COMPLETION_FIELDS)
+  if (promptTokens === undefined && completionTokens === undefined) return
+
+  session.usage = {
+    promptTokens: promptTokens ?? 0,
+    completionTokens: completionTokens ?? 0,
+  }
+}
+
+function readTokenCount(
+  usage: Record<string, unknown>,
+  names: readonly string[]
+): number | undefined {
+  for (const name of names) {
+    const value = usage[name]
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+  }
+  return undefined
+}
+
 async function handleStreamChunk(session: StreamSession, chunk: unknown) {
   if (!isRecord(chunk) || typeof chunk.type !== 'string') {
     return
@@ -226,6 +279,11 @@ async function handleStreamChunk(session: StreamSession, chunk: unknown) {
       toolName: typeof payload.toolName === 'string' ? payload.toolName : undefined,
       result: payload.result,
     })
+    return
+  }
+
+  if (chunk.type === MASTRA_CHUNK.finish || chunk.type === MASTRA_CHUNK.stepFinish) {
+    captureStreamUsage(session, chunk)
     return
   }
 

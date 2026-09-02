@@ -1,27 +1,18 @@
-import { task } from '@trigger.dev/sdk/v3'
+import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { runStoryboardGeneration } from './run-storyboard-generation'
+import { generateStoryboardPayloadSchema } from './constants/task-payloads'
 
-interface GenerateStoryboardPayload {
-  beatId: string
-  projectId: string
-  prompt: string
-  providerConfig: {
-    provider: typeof ImageGenProvider.NanoBanana
-    apiKey: string
-    modelId?: string
-  }
-}
-
-export const generateStoryboard = task({
+export const generateStoryboard = defineOwnedTask({
   id: 'generate-storyboard',
+  schema: generateStoryboardPayloadSchema,
+  queue: JobQueue.ImageProvider,
   maxDuration: 300,
-  run: async (payload: GenerateStoryboardPayload) => {
+  run: async payload => {
     try {
       return await runStoryboardGeneration(payload)
     } catch (error: unknown) {
-      const { logger } = await import('@trigger.dev/sdk/v3')
+      const { logger } = await import('@trigger.dev/sdk')
       logger.error('Storyboard generation failed', { error: getErrorMessage(error) })
       throw error
     }

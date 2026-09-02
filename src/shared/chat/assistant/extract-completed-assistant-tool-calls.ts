@@ -23,17 +23,17 @@ export function extractCompletedAssistantToolCalls(
   const calls: AssistantCompletedToolCall[] = []
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i]
+    if (message?.role === ChatMessageRole.User) break
     if (message?.role !== ChatMessageRole.Assistant) continue
     for (const part of message.parts) {
       if (!isToolUIPart(part)) continue
       if (part.state !== ToolUiPartState.OutputAvailable) continue
-      calls.push({
+      calls.unshift({
         toolName: getToolName(part),
         args: part.input,
         result: part.output,
       })
     }
-    break
   }
   return calls
 }

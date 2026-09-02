@@ -12,6 +12,7 @@ import {
 } from '@/domains/marketing/core/hero-ab'
 import { AUTH_QUERY_PARAM } from '@/shared/auth/constants/auth-messages'
 import { enforceSiteBasicAuth } from '@/shared/auth/site-basic-auth'
+import { denyAnonymousApiRequest } from '@/shared/auth/api-default-deny'
 
 enum LandingProxyPath {
   Home = '/',
@@ -25,6 +26,10 @@ enum CookieSameSite {
 export function proxy(request: NextRequest) {
   const basicAuth = enforceSiteBasicAuth(request)
   if (basicAuth) return basicAuth
+
+  // Default-deny on /api/**: routes are protected before anyone writes one.
+  const denied = denyAnonymousApiRequest(request)
+  if (denied) return denied
 
   if (request.nextUrl.pathname !== LandingProxyPath.Home) {
     return NextResponse.next()

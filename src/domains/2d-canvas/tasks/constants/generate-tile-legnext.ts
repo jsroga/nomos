@@ -1,4 +1,4 @@
-import { logger, metadata } from '@trigger.dev/sdk/v3'
+import { logger, metadata } from '@trigger.dev/sdk'
 import { MASK_CONFIG, tilePromptLayersFrom } from '@/shared/data/server/prompts'
 import { buildMidjourneyTilePromptText } from '@/shared/data/server/midjourney-params'
 import { storageService } from '@/shared/data/storage/storage-service'
@@ -13,7 +13,7 @@ import { LegNextModelId } from '@/shared/ai/constants/legnext'
 import { BufferEncoding, ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
-import { wait } from '@trigger.dev/sdk/v3'
+import { wait } from '@trigger.dev/sdk'
 import {
   CONTEXT_CANVAS_SIZE,
   TILE_CROP_SIZE,

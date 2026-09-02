@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { PrepareImageError } from '../../constants/meshy-generation-wire'
 import { prepareImageUrl } from '../prepare-image-url'
 
-vi.mock('@trigger.dev/sdk/v3', () => ({
+vi.mock('@trigger.dev/sdk', () => ({
   logger: { error: vi.fn(), info: vi.fn() },
 }))
 

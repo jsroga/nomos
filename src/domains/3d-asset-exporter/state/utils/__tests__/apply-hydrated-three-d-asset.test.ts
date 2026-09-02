@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GenerationStatus } from '../../../core/types/three-d-generation'
+import { GenerationStatus } from '../../../contracts'
 import {
   resolveHydratedGenerationRun,
   shouldResumeGeneration,
@@ -9,8 +9,8 @@ describe('shouldResumeGeneration', () => {
   it('returns the trigger run id while generation is processing', () => {
     expect(
       shouldResumeGeneration({
-        trigger_run_id: 'run-1',
-        generation_status: GenerationStatus.Processing,
+        triggerRunId: 'run-1',
+        generationStatus: GenerationStatus.Processing,
       }),
     ).toBe('run-1')
   })
@@ -18,8 +18,8 @@ describe('shouldResumeGeneration', () => {
   it('returns null when generation is not processing', () => {
     expect(
       shouldResumeGeneration({
-        trigger_run_id: 'run-1',
-        generation_status: GenerationStatus.Completed,
+        triggerRunId: 'run-1',
+        generationStatus: GenerationStatus.Completed,
       }),
     ).toBeNull()
   })

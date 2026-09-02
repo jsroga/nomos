@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { and, desc, eq } from 'drizzle-orm'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import { db } from '@/db'
 import { assets, projects, tiles } from '@/db/schema'
 import { recordFromJson } from '@/shared/data/json-guards'
@@ -77,16 +78,18 @@ export class WorldProjectService {
     return mapProject(row)
   }
 
-  async deleteForUser(userId: string, projectId: string): Promise<void> {
+  /** The scope carries both ids, so the owner filter cannot drift. */
+  async deleteForUser(scope: ProjectScope): Promise<void> {
     await db
       .delete(projects)
-      .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
+      .where(and(eq(projects.id, scope.projectId), eq(projects.userId, scope.userId)))
   }
 }
 
 export class WorldTileService {
-  async listForProject(projectId: string): Promise<WorldTile[]> {
-    const rows = await db.select().from(tiles).where(eq(tiles.projectId, projectId))
+  /** Drizzle connects as BYPASSRLS, so the scope is the only tenancy control. */
+  async listForProject(scope: ProjectScope): Promise<WorldTile[]> {
+    const rows = await db.select().from(tiles).where(eq(tiles.projectId, scope.projectId))
     return rows.map(mapTile)
   }
 
@@ -125,11 +128,12 @@ export class WorldTileService {
 }
 
 export class WorldAssetService {
-  async listForProject(projectId: string): Promise<WorldAsset[]> {
+  /** See the tile service: Drizzle bypasses RLS, so the scope is the proof. */
+  async listForProject(scope: ProjectScope): Promise<WorldAsset[]> {
     const rows = await db
       .select()
       .from(assets)
-      .where(eq(assets.projectId, projectId))
+      .where(eq(assets.projectId, scope.projectId))
       .orderBy(desc(assets.createdAt))
     return rows.map(mapAsset)
   }

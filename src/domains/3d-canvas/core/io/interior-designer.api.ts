@@ -1,3 +1,5 @@
+import { withSubmissionNonce, type Submitted } from '@/shared/jobs/submission-nonce'
+import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { z } from 'zod'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
@@ -61,6 +63,11 @@ async function parseResponse<TSchema extends z.ZodTypeAny>(
 
   return schema.parse(json)
 }
+
+/** The three start calls mint their own nonce, so callers do not pass one. */
+type SubmittedRetexture = Submitted<InteriorRetextureRequest>
+type SubmittedTextTo3D = Submitted<InteriorTextTo3DRequest>
+type SubmittedMaterial = Submitted<InteriorMaterialRequest>
 
 export const interiorDesignerApi = {
   designs: {
@@ -164,18 +171,22 @@ export const interiorDesignerApi = {
   },
 
   retexture: {
-    start: async (input: InteriorRetextureRequest): Promise<InteriorRetextureResponse> => {
-      const parsed = interiorRetextureRequestSchema.parse(input)
+    start: async (input: SubmittedRetexture): Promise<InteriorRetextureResponse> =>
+      withSubmissionNonce(
+        `${TRIGGER_TASK_ID.RETEXTURE_MODEL}:${input.projectId}:${input.assetId ?? ''}`,
+        async requestId => {
+          const parsed = interiorRetextureRequestSchema.parse({ ...input, requestId })
 
-      return parseResponse(
-        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/retexture`, {
-          method: HttpMethod.Post,
-          headers: { 'Content-Type': ContentType.Json },
-          body: JSON.stringify(parsed),
-        }),
-        interiorRetextureResponseSchema
-      )
-    },
+          return parseResponse(
+            await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/retexture`, {
+              method: HttpMethod.Post,
+              headers: { 'Content-Type': ContentType.Json },
+              body: JSON.stringify(parsed),
+            }),
+            interiorRetextureResponseSchema
+          )
+        }
+      ),
 
     getStatus: async (runId: string): Promise<InteriorRetextureStatusResponse> =>
       parseResponse(
@@ -188,18 +199,22 @@ export const interiorDesignerApi = {
   },
 
   textTo3D: {
-    start: async (input: InteriorTextTo3DRequest): Promise<InteriorTextTo3DResponse> => {
-      const parsed = interiorTextTo3DRequestSchema.parse(input)
+    start: async (input: SubmittedTextTo3D): Promise<InteriorTextTo3DResponse> =>
+      withSubmissionNonce(
+        `${TRIGGER_TASK_ID.TEXT_TO_3D}:${input.projectId}:${input.prompt}`,
+        async requestId => {
+          const parsed = interiorTextTo3DRequestSchema.parse({ ...input, requestId })
 
-      return parseResponse(
-        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/text-to-3d`, {
-          method: HttpMethod.Post,
-          headers: { 'Content-Type': ContentType.Json },
-          body: JSON.stringify(parsed),
-        }),
-        interiorTextTo3DResponseSchema
-      )
-    },
+          return parseResponse(
+            await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/text-to-3d`, {
+              method: HttpMethod.Post,
+              headers: { 'Content-Type': ContentType.Json },
+              body: JSON.stringify(parsed),
+            }),
+            interiorTextTo3DResponseSchema
+          )
+        }
+      ),
 
     getStatus: async (taskId: string): Promise<InteriorTextTo3DStatusResponse> =>
       parseResponse(
@@ -212,18 +227,22 @@ export const interiorDesignerApi = {
   },
 
   material: {
-    start: async (input: InteriorMaterialRequest): Promise<InteriorMaterialResponse> => {
-      const parsed = interiorMaterialRequestSchema.parse(input)
+    start: async (input: SubmittedMaterial): Promise<InteriorMaterialResponse> =>
+      withSubmissionNonce(
+        `${TRIGGER_TASK_ID.SURFACE_MATERIAL}:${input.projectId}:${input.surfaceId}`,
+        async requestId => {
+          const parsed = interiorMaterialRequestSchema.parse({ ...input, requestId })
 
-      return parseResponse(
-        await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/material`, {
-          method: HttpMethod.Post,
-          headers: { 'Content-Type': ContentType.Json },
-          body: JSON.stringify(parsed),
-        }),
-        interiorMaterialResponseSchema
-      )
-    },
+          return parseResponse(
+            await fetch(`${INTERIOR_DESIGNER_API_BASE_PATH}/material`, {
+              method: HttpMethod.Post,
+              headers: { 'Content-Type': ContentType.Json },
+              body: JSON.stringify(parsed),
+            }),
+            interiorMaterialResponseSchema
+          )
+        }
+      ),
 
     getStatus: async (taskId: string): Promise<InteriorMaterialStatusResponse> =>
       parseResponse(

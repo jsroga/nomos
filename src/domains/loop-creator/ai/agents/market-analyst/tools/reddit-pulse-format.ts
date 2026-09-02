@@ -1,3 +1,4 @@
+import { env } from '@/shared/config/env'
 import type { RedditPost, SubredditPulse } from './reddit-pulse-data'
 import { buildRedditPulseInsights } from './reddit-pulse-query'
 
@@ -105,8 +106,8 @@ export function buildRedditPulsePayload(
   const totalUpvotes = uniquePosts.reduce((sum, post) => sum + post.upvotes, 0)
   const allMentionedGames = [...new Set(uniquePosts.flatMap(post => post.mentionedGames))]
   const allComments = uniquePosts.flatMap(post => post.topComments)
-  const clientId = process.env.REDDIT_CLIENT_ID
-  const clientSecret = process.env.REDDIT_CLIENT_SECRET
+  const clientId = env.REDDIT_CLIENT_ID
+  const clientSecret = env.REDDIT_CLIENT_SECRET
 
   return formatRedditPulseResult({
     topic,

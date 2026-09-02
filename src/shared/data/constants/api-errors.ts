@@ -25,6 +25,11 @@ export const TRIGGER_TASK_ID = {
   GENERATE_TILE: 'generate-tile',
   REPAINT_TILE: 'repaint-tile',
   SEGMENT_OBJECT: 'segment-object',
+  UPLOAD_ASSET: 'upload-asset',
+  UPSCALE_TILE: 'upscale-tile',
+  GENERATE_STORYBOARD: 'generate-storyboard',
+  GENERATE_EPISODE_POSTER: 'generate-episode-poster',
+  SELECT_PORTRAIT_VARIANT: 'select-portrait-variant',
 } as const
 
 export const TRIGGER_TOKEN_EXPIRY = '1h' as const

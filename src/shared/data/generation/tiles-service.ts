@@ -5,7 +5,7 @@
  * Wraps Trigger.dev tasks for both REST API and MCP server.
  */
 
-import { tasks, runs } from '@trigger.dev/sdk/v3'
+import { cancelOwnedRun, retrieveOwnedRun, triggerOwnedRun } from '@/shared/jobs'
 import { z } from 'zod'
 import {
   AiUpscaleProvider,
@@ -53,6 +53,8 @@ export const upscaleTileSchema = z.object({
 
 export const getRunStatusSchema = z.object({
   runId: z.string(),
+  // A run belongs to a tenant; reading one requires proving who is asking.
+  userId: z.string().uuid(),
 })
 
 // ============================================
@@ -98,7 +100,7 @@ export class TilesService {
 
     try {
       // Trigger the Trigger.dev task
-      const handle = await tasks.trigger(`${GenerationTriggerTaskId.GenerateTile}`, {
+      const handle = await triggerOwnedRun(`${GenerationTriggerTaskId.GenerateTile}`, {
         projectId: validated.projectId,
         x: validated.x,
         y: validated.y,
@@ -131,7 +133,7 @@ export class TilesService {
     const validated = upscaleTileSchema.parse(input)
 
     try {
-      const handle = await tasks.trigger(`${GenerationTriggerTaskId.UpscaleTile}`, {
+      const handle = await triggerOwnedRun(`${GenerationTriggerTaskId.UpscaleTile}`, {
         projectId: validated.projectId,
         tileId: validated.tileId,
         upscaleProvider: validated.upscaleProvider,
@@ -158,7 +160,7 @@ export class TilesService {
     const validated = getRunStatusSchema.parse(input)
 
     try {
-      const run = await runs.retrieve(validated.runId)
+      const run = await retrieveOwnedRun(validated.runId, validated.userId)
 
       return {
         runId: run.id,
@@ -181,9 +183,9 @@ export class TilesService {
   /**
    * Cancel a running Trigger.dev task
    */
-  async cancelRun(runId: string): Promise<{ success: boolean }> {
+  async cancelRun(runId: string, userId: string): Promise<{ success: boolean }> {
     try {
-      await runs.cancel(runId)
+      await cancelOwnedRun(runId, userId)
       return { success: true }
     } catch (error) {
       console.error(GenerationServiceLog.TilesCancelError, error)
@@ -225,7 +227,7 @@ export class ThreeDService {
     const validated = generate3DModelSchema.parse(input)
 
     try {
-      const handle = await tasks.trigger(`${GenerationTriggerTaskId.Generate3dModel}`, {
+      const handle = await triggerOwnedRun(`${GenerationTriggerTaskId.Generate3dModel}`, {
         projectId: validated.projectId,
         assetId: validated.assetId,
         prompt: validated.prompt,
@@ -255,7 +257,7 @@ export class ThreeDService {
     const validated = remesh3DModelSchema.parse(input)
 
     try {
-      const handle = await tasks.trigger(`${GenerationTriggerTaskId.Remesh3dModel}`, {
+      const handle = await triggerOwnedRun(`${GenerationTriggerTaskId.Remesh3dModel}`, {
         projectId: validated.projectId,
         assetId: validated.assetId,
         targetPolycount: validated.targetPolycount,
@@ -300,7 +302,7 @@ export class PortraitService {
     const validated = generatePortraitSchema.parse(input)
 
     try {
-      const handle = await tasks.trigger(`${GenerationTriggerTaskId.GeneratePortrait}`, {
+      const handle = await triggerOwnedRun(`${GenerationTriggerTaskId.GeneratePortrait}`, {
         projectId: validated.projectId,
         characterId: validated.characterId,
         prompt: validated.prompt,

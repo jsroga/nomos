@@ -5,11 +5,10 @@ import { DesignManagerCopy } from '@/domains/3d-canvas/constants/design-manager-
 import { useInteriorStore } from '@/domains/3d-canvas'
 import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { Button } from '@/components/Button'
-import { ButtonVariantKey } from '@/components/Button/constants/button-styles'
 import { CONFIRM_DIALOG_CANCEL_LABEL } from '@/components/ConfirmDialog/constants/confirm-dialog-copy'
 import { Trash2, FileText, Plus, Edit2 } from 'lucide-react'
 import { ScrollArea } from '@/components/ScrollArea'
-import { useConfirmDialog } from '@/components/ConfirmDialog'
+import { ConfirmDialogVariant, useConfirmDialog } from '@/components/ConfirmDialog'
 import { Input } from '@/components/Input'
 import {
   Dialog,
@@ -69,7 +68,7 @@ export const DesignManager: React.FC = () => {
       description: DesignManagerCopy.DeleteSceneDescription,
       confirmLabel: DesignManagerCopy.DeleteLabel,
       cancelLabel: CONFIRM_DIALOG_CANCEL_LABEL,
-      variant: ButtonVariantKey.Destructive,
+      variant: ConfirmDialogVariant.Destructive,
     })
     if (confirmed) {
       await deleteDesign(designId)

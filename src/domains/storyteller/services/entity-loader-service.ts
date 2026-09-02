@@ -47,9 +47,7 @@ export class EntityLoader {
     this.delay = delay
   }
 
-  /**
-   * Load an entity by ID
-   */
+  /** project-scope: none — browser-side; /api/entities/resolve mints the scope. */
   load(id: string, projectId: string, context?: string): Promise<EntityReference | null> {
     return new Promise((resolve, reject) => {
       enqueueEntityLoad(this.queue, `${projectId}:${id}`, projectId, context, {

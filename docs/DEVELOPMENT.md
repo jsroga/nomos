@@ -2,6 +2,35 @@
 
 > Daily commands also live in root [CLAUDE.md](../CLAUDE.md).
 
+
+## Adding an environment variable
+
+1. Add it to `serverEnvSchema` in `src/shared/config/env.ts` — or to `clientEnv` in `env.client.ts` if it is `NEXT_PUBLIC_*`.
+2. Add it to `.env.local.example` with a one-line comment.
+3. `npm run env:check`.
+
+Required vs optional is read off the call sites, not judged: a bare use or an existing throw means required, a `??` default means optional with that default, and anything ambiguous resolves to **optional**. A wrong `optional` is a familiar late failure; a wrong `required` is an app that will not start.
+
+`NEXT_PUBLIC_*` values must stay literal member expressions in `env.client.ts` — Next substitutes them at build time only where the source reads `process.env.NEXT_PUBLIC_X` verbatim, so a loop or a helper ships `undefined` to the browser.
+
+`env.ts` deliberately does **not** import `server-only`: `shared/persistence/client.ts` reads `DATABASE_URL`, and the OpenAPI generator loads that module under `tsx`, where the marker throws. The production build is what enforces the boundary — it fails on a client component reaching a server module and prints the import trace. A module that reads server configuration and is reachable from a client component should still split, as `config/resolve-chat-model.ts` does for the chat model catalog.
+
+### Verifying that public values are still inlined
+
+Two halves, because only one of them can be a unit test.
+
+`src/shared/config/__tests__/env-client.test.ts` protects the *precondition* — every read is a literal member expression, nothing is computed or looped. That is what a refactor would break.
+
+The *outcome* needs a build:
+
+```bash
+npm run build
+grep -rl "$(grep '^NEXT_PUBLIC_SUPABASE_URL=' .env.local | cut -d= -f2-)" .next/static/chunks/   # ≥ 1
+grep -rl 'process\.env\.NEXT_PUBLIC_SUPABASE_URL' .next/static/chunks/                          # 0
+```
+
+The value must appear in a client chunk and the expression must not survive. Run it after changing `env.client.ts`.
+
 ## Test tiers
 
 | Tier | Command | Location |
@@ -27,15 +56,65 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 - Colocate unit tests next to code. Exclude `*.e2e.test.ts` from default unit runs (need DB/LLM).
 - Coverage (`npm run test:coverage`) uses `@vitest/coverage-v8` on every `src` `.ts`/`.tsx` file (`all: true`). `test:unit` stays uninstrumented. HTML / LCOV / json-summary land in `coverage/` (gitignored); `npm run test:coverage:open` generates then opens the HTML report.
 - E2E needs `npm run dev` (or `dev:stack`) + `.env.local`.
-- Golden set: `evals/datasets/storyteller-golden.ts`. Baseline: `evals/results/latest.json` — **no scorer may regress** below baseline to ship.
+- Golden set: `evals/datasets/storyteller-golden.ts`.
 
-### Eval gating (short)
+### The eval gate
+
+**Two files, two jobs.** `evals/baselines/<dataset>.<date>.json` is the
+*reference* — a run someone inspected and chose, dated and never overwritten.
+`evals/results/latest.json` is the *last run*, overwritten every time, carrying
+the `inputHash` of the sources it scored. Comparison is always latest vs a named
+baseline; choosing a new one is a visible commit.
+
+```bash
+npm run eval:gate     # run, compare to the newest baseline, exit 1 on a regression
+npm run eval          # run only, no comparison
+npm run eval:full     # both datasets — before a release, after a model change
+npm run eval:noise    # re-measure σ after changing a judge or the golden set
+```
+
+**A regression is a drop beyond noise, not any drop.** LLM judges are
+stochastic; a hard `>=` on a mean of 24 examples fails constantly, and a gate
+that cries wolf gets disabled. The threshold is `max(2σ, 0.02)` per scorer,
+with σ measured over three unchanged runs and committed in
+`evals/constants/thresholds.ts` beside the number it came from.
+
+A σ of 0 from an **LLM judge** means "no variation observed in three runs", not
+"deterministic" — three scorers (`consistency`, `critic-discipline`,
+`beat-plan-concreteness`) are genuinely deterministic; the rest are judges whose
+golden examples happen to be unambiguous. The 0.02 floor is what stops those
+zeros becoming hair-triggers, and it is load-bearing for six of the eight.
+
+**The pre-commit hook is a reminder, not the gate.** `check-eval-freshness`
+hashes the watched sources and compares one string — under 0.1 s, and it never
+runs the evals. Staging a change under `src/domains/*/ai/`,
+`src/shared/agent-kernel/` or `evals/datasets/` without a matching artifact is
+refused. The escape hatch is an `Eval-Skip: <reason>` commit trailer, counted by
+the `evalSkipCommits` ratchet — a trailer is in the history, where an env var
+would be exported once in a shell profile and never seen again.
+
+**Judge cost is read off Mastra's scorer result, never out of `llm_calls`.**
+Judge calls score a golden set rather than a tenant's work, so ADR 0003 keeps
+them out of that table; only the committed price table is shared. A run costing
+more than 1.1× the baseline fails, because a prompt that doubled in length
+scores the same and bills twice.
+
+**Nothing runs any of this automatically.** There is no CI and no scheduler —
+`npm run eval:full` is a human cadence: before a release, and after any change
+to a judge model or the golden set.
 
 | Change touches… | Gate scorers |
 |-----------------|--------------|
 | Author prompt / draft-revise | `magic`, `prose-craft`, `stakes-cost`, `story-motion` |
 | Tools / context / canon | `consistency`, `hallucination` |
 | Critics | `prose-craft`, `stakes-cost` |
+
+`stakes-cost` is **registered but never runs** — no golden example scopes it in
+`metadata.scorers`, so it has no coverage and no baseline. Adding one is the
+smallest useful contribution to this suite.
+
+Enforced by: `npm run precommit` (eval freshness), `npm run eval:gate`,
+`npx vitest run evals/__tests__`.
 
 ## Quality gates
 
@@ -176,6 +255,64 @@ Every model resolves through the OpenRouter gateway on `OPENROUTER_API_KEY`. Def
 Overrides are read at call time, not module load, so dotenv scripts and per-environment rollbacks work regardless of import order. `GET /api/settings/models` prints the resolved role→model table with provenance.
 
 The Writers Room picker offers three catalog models (Kimi / GLM / Opus); selection is chat-only. Orchestration pins use `STORYTELLER_{AUTHOR,PLANNER,CRITIC,MUSE,PREMISE}_MODEL`. Text LLMs, RAG embeddings, and Cohere rerank use `OPENROUTER_API_KEY` only — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` are optional legacy fallbacks. Image paths use Apiframe (`APIFRAME_API_KEY`).
+
+## Adding a background task
+
+Every background task is defined by `defineOwnedTask` from `@/shared/jobs`. It
+requires a payload schema, a queue, and — through the schema — a submission
+nonce, so a task that omits any of them does not compile. A raw `task(` or
+`schemaTask(` outside `src/shared/jobs/define-task.ts` is an ESLint error.
+
+```ts
+export const generateThing = defineOwnedTask({
+  id: 'generate-thing',
+  schema: generateThingPayloadSchema,   // spreads OWNED_PAYLOAD_SHAPE
+  queue: JobQueue.Apiframe,
+  run: async payload => { /* payload is already parsed */ },
+})
+```
+
+**Write the schema first.** Put it in a `constants/*-payload.ts` sibling and
+derive the payload type with `z.infer` — never maintain an interface beside the
+schema. A type another module owns (a crop spec, a tile's neighbours) is
+carried through with `ownedElsewhere<T>()` rather than mirrored, because a
+hand-written copy drifts from what it copies.
+
+**Pick a queue by quota pool, not by task.** The limit protects Meshy or
+Apiframe, not `generate-tile`; a per-task queue would give each task its own
+ceiling and no shared one. `JobQueue.ImageProvider` covers the tasks that
+choose their provider from the payload at run time.
+
+**State what makes a run the same run.** The idempotency key is
+`<taskId>:<requestId>`, derived by `triggerOwnedRun` — never from prompt
+content, because regenerating with the same prompt is expected to return a
+different image and a content hash would silently hand back the previous one.
+Client callers wrap the request in `withSubmissionNonce(intent, …)`, which
+holds one nonce per user intent while that submission is in flight: a
+double-click collapses into one run, a deliberate re-roll gets a new one.
+Routes read the nonce with `requireSubmissionNonce(body)` and answer 400 when
+it is missing rather than minting one — a server-side nonce is unique per
+request, so it would make every double-submit a second paid run while looking
+like the feature was on.
+
+Client modules import from `@/shared/jobs/submission-nonce` directly. The
+`@/shared/jobs` barrel reaches Trigger's SDK and the database client, and a
+component that pulls those in fails the browser build.
+
+**Machine presets are unset on purpose.** Eighteen of nineteen tasks run on the
+default, and a larger machine bills more per second — so a preset is set only
+where there is a reason behind it, which today is `upscale-tile` alone (sharp
+holds a decoded upscale in memory). There is no production traffic to size the
+rest from. Once there is, read Trigger's dashboard under **Runs → duration and
+memory** per task, and set presets from that rather than from a guess.
+
+**Concurrency limits are placeholders.** `JOB_QUEUE_CONCURRENCY_LIMIT` is a
+flat 4 because the real Meshy / Apiframe / Fal quotas are unknown and the app
+is low-volume; the cost of starting too low is a queue that never fills. Raise
+it from **Runs → Queues**, comparing concurrency against queued depth.
+
+Enforced by: `npm run lint` (`local/no-raw-trigger-task`),
+`npx vitest run src/shared/jobs scripts/__tests__/trigger-task-inventory.test.ts`.
 
 ## Mastra / agents
 

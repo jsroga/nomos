@@ -3,7 +3,8 @@
  * Replaces LangGraph StateGraph while preserving streamLoopCreator API.
  */
 
-import { AIMessage } from '@langchain/core/messages'
+import { withGatewayContext } from '@/shared/ai/gateway/call-context'
+import { AIMessage, ChatMessageRole } from '@/shared/chat/core/message'
 import { LoopCreatorState, NextAgent } from './state'
 import { supervisorAgent } from '../../ai/agents/supervisor'
 import { loopPlannerAgent } from '../../ai/agents/loop-planner'
@@ -130,7 +131,7 @@ function isLangChainAIMessage(msg: unknown): boolean {
   if (msg instanceof AIMessage) return true
   if (typeof msg === 'object' && msg !== null && LangChainMessageWire.GetType in msg) {
     const getType = Reflect.get(msg, LangChainMessageWire.GetType)
-    return typeof getType === 'function' && getType() === LangChainMessageWire.Ai
+    return typeof getType === 'function' && getType() === ChatMessageRole.Ai
   }
   return false
 }
@@ -220,6 +221,17 @@ function emitNodeOutput(
 }
 
 export async function streamLoopCreator(
+  initialState: LoopCreatorState,
+  config: { configurable: { thread_id: string } },
+  onEvent: (event: StreamEvent) => void,
+): Promise<LoopCreatorState> {
+  // Every specialist this run reaches bills to the project the route verified.
+  return withGatewayContext({ scope: initialState.scope }, () =>
+    runLoopCreatorGraph(initialState, config, onEvent)
+  )
+}
+
+async function runLoopCreatorGraph(
   initialState: LoopCreatorState,
   _config: { configurable: { thread_id: string } },
   onEvent: (event: StreamEvent) => void,
