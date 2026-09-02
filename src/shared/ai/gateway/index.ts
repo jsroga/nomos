@@ -28,7 +28,6 @@ import {
   OPENROUTER_PROVIDER,
   VOYAGE_PROVIDER,
 } from '@/shared/ai/gateway/constants/provider'
-import { lastEmbeddingTokenCount } from '@/shared/ai/embeddings/voyage-api-client'
 import { getVoyageEmbeddings } from '@/shared/ai/embeddings/voyage-embeddings'
 import { recordLlmCall } from '@/shared/ai/gateway/record'
 
@@ -204,7 +203,7 @@ export async function embed(request: EmbedRequest): Promise<number[][]> {
   const startedAt = Date.now()
 
   try {
-    const vectors = await embeddings.embedDocuments(request.texts)
+    const { vectors, promptTokens } = await embeddings.embedDocumentsMetered(request.texts)
     await recordLlmCall({
       traceId: request.traceId,
       projectId: request.scope.projectId,
@@ -212,7 +211,7 @@ export async function embed(request: EmbedRequest): Promise<number[][]> {
       feature: request.feature,
       model,
       provider: VOYAGE_PROVIDER,
-      promptTokens: lastEmbeddingTokenCount(),
+      promptTokens,
       completionTokens: 0,
       latencyMs: Date.now() - startedAt,
       outcome: LlmOutcome.Ok,

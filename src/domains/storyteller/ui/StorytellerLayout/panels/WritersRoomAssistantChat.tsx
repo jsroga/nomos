@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
+import { BeatDraftVerdictToolUI } from '@/domains/storyteller/ui/QuestionCard/BeatDraftVerdictToolUI'
 import type { AddToWorldPayload, CanAddToWorldInput } from '@/shared/chat/assistant/AssistantAddToWorldContext'
 import type { AssistantGenerationActivity } from '@/shared/chat/assistant/derive-assistant-generation-activity'
 import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
@@ -122,6 +123,7 @@ export function WritersRoomAssistantChat({
         isAddToWorldSettled={isAddToWorldSettled}
         canAddToWorld={canAddToWorld}
         chatRenderers={chatRenderers}
+        extraToolUIs={<BeatDraftVerdictToolUI />}
       />
     </div>
   )

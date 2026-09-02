@@ -20,6 +20,7 @@ interface TileReviewDialogProps {
   type: TileReviewType
   queueLength?: number
   tokenId?: string
+  runId?: string
 }
 
 export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
@@ -33,6 +34,7 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
   type,
   queueLength = 0,
   tokenId,
+  runId,
 }) => {
   const {
     labels,
@@ -59,6 +61,7 @@ export const TileReviewDialog: React.FC<TileReviewDialogProps> = ({
     originalUrl,
     type,
     tokenId,
+    runId,
   })
 
   return (

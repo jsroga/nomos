@@ -338,6 +338,14 @@ export enum StorytellerWorkflowVerdict {
   Kill = 'kill',
 }
 
+export enum StorytellerWorkflowToolId {
+  RunBeatDraft = 'run_beat_draft_workflow',
+}
+
+export enum StorytellerWorkflowRunStatus {
+  Suspended = 'suspended',
+}
+
 export enum StorytellerPromptTemplateToken {
   BeatContent = '{beatContent}',
   BeatType = '{beatType}',

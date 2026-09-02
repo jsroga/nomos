@@ -24,7 +24,9 @@ export interface BeatDraftDeps {
   ) => Promise<BeatPlan>
   generateSparks: (ctx: BeatDraftContext, canon: string) => Promise<RankedIdea[]>
   draftBeat: (ctx: BeatDraftContext, canon: string, plan: BeatPlan) => Promise<string>
-  critique: (draft: string, canon: string) => Promise<string>
+  critiqueContinuity: (draft: string, canon: string) => Promise<string>
+  critiqueProse: (draft: string, canon: string) => Promise<string>
+  critiqueStakes: (draft: string, canon: string) => Promise<string>
   reviseBeat: (
     ctx: BeatDraftContext,
     canon: string,

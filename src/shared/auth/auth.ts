@@ -55,11 +55,24 @@ export async function getUserSession() {
   const cookieStore = await cookies()
   const supabase = createSupabaseRouteClient(cookieStore)
   const {
-    data: { session },
+    data: { user },
     error,
-  } = await supabase.auth.getSession()
+  } = await supabase.auth.getUser()
 
-  return { session, supabase, error }
+  if (error || !user) {
+    return { session: null, supabase, error: error ?? new Error(ApiErrorMessage.UNAUTHORIZED) }
+  }
+
+  const session: Session = {
+    user,
+    access_token: '',
+    refresh_token: '',
+    token_type: E2E_TOKEN_TYPE,
+    expires_in: 0,
+    expires_at: 0,
+  }
+
+  return { session, supabase, error: null }
 }
 
 export async function requireAuth() {

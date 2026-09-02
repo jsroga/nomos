@@ -8,6 +8,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Mastra } from '@mastra/core/mastra'
 import { recordFromJson } from '@/shared/data/deep-merge'
+import { RunTraceEventType, subscribeRunTrace, type RunTraceEvent } from '@/shared/agent-kernel'
 import {
   createBeatDraftWorkflow,
   type BeatDraftDeps,
@@ -48,7 +49,9 @@ function makeDeps(overrides: Partial<BeatDraftDeps> = {}) {
     assembleCanon: vi.fn(async () => 'CANON: the bells ring at dusk'),
     planBeat: vi.fn(async () => FAKE_PLAN),
     draftBeat: vi.fn(async () => 'INT. CHAPEL — DUSK\nVERA: You already know.'),
-    critique: vi.fn(async () => '## Prose findings\nNO FINDINGS.'),
+    critiqueContinuity: vi.fn(async () => '## Continuity\nNO FINDINGS.'),
+    critiqueProse: vi.fn(async () => '## Prose findings\nNO FINDINGS.'),
+    critiqueStakes: vi.fn(async () => '## Stakes\nNO FINDINGS.'),
     reviseBeat: vi.fn(async (_ctx, _canon, draft, _critiques, note) =>
       note ? `${draft}\n[revised per: ${note}]` : `${draft}\n[revised]`
     ),
@@ -261,5 +264,108 @@ describe('Muse sparks wiring (item 5.3)', () => {
     expect(result.status).toBe('suspended')
     const payload = suspendPayload(result.steps, VERDICT_STEP_ID)
     expect(payload?.sparks).toBeUndefined()
+  })
+})
+
+describe('beat-draft-workflow contracts', () => {
+  it('one run.start is one workflow and dispatches the planner once', async () => {
+    const events: RunTraceEvent[] = []
+    const stop = subscribeRunTrace(event => events.push(event))
+    const deps = makeDeps()
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    const result = await run.start({ inputData: INPUT })
+    stop()
+
+    expect(result.status).toBe('suspended')
+    expect(deps.planBeat).toHaveBeenCalledTimes(1)
+    expect(events.filter(event => event.type === RunTraceEventType.RoleDispatch).length).toBeGreaterThanOrEqual(1)
+    expect(events.some(event => event.type === RunTraceEventType.PersistCommit)).toBe(false)
+  })
+
+  it('invokes three critics in parallel before suspend', async () => {
+    const started: number[] = []
+    const ended: number[] = []
+    const delay = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+    const deps = makeDeps({
+      critiqueContinuity: vi.fn(async () => {
+        started.push(Date.now())
+        await delay(40)
+        ended.push(Date.now())
+        return 'c'
+      }),
+      critiqueProse: vi.fn(async () => {
+        started.push(Date.now())
+        await delay(40)
+        ended.push(Date.now())
+        return 'p'
+      }),
+      critiqueStakes: vi.fn(async () => {
+        started.push(Date.now())
+        await delay(40)
+        ended.push(Date.now())
+        return 's'
+      }),
+    })
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    await run.start({ inputData: INPUT })
+
+    expect(deps.critiqueContinuity).toHaveBeenCalledTimes(1)
+    expect(deps.critiqueProse).toHaveBeenCalledTimes(1)
+    expect(deps.critiqueStakes).toHaveBeenCalledTimes(1)
+    expect(started).toHaveLength(3)
+    expect(Math.max(...started)).toBeLessThanOrEqual(Math.min(...ended))
+  })
+
+  it('kill emits no persist.commit', async () => {
+    const events: RunTraceEvent[] = []
+    const stop = subscribeRunTrace(event => events.push(event))
+    const deps = makeDeps()
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    await run.start({ inputData: INPUT })
+    await run.resume({
+      step: VERDICT_STEP_ID,
+      resumeData: { action: 'kill' },
+    })
+    stop()
+
+    expect(deps.persistBeat).not.toHaveBeenCalled()
+    expect(events.some(event => event.type === RunTraceEventType.PersistCommit)).toBe(false)
+  })
+
+  it('persist throw fails the run', async () => {
+    const deps = makeDeps({
+      persistBeat: vi.fn(async () => {
+        throw new Error('save missed')
+      }),
+    })
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    await run.start({ inputData: INPUT })
+    const result = await run.resume({
+      step: VERDICT_STEP_ID,
+      resumeData: { action: 'approve' },
+    })
+
+    expect(result.status).toBe('failed')
+  })
+
+  it('approve path traces persist.commit', async () => {
+    const events: RunTraceEvent[] = []
+    const stop = subscribeRunTrace(event => events.push(event))
+    const deps = makeDeps()
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    await run.start({ inputData: INPUT })
+    const result = await run.resume({
+      step: VERDICT_STEP_ID,
+      resumeData: { action: 'approve' },
+    })
+    stop()
+
+    expect(result.status).toBe('success')
+    expect(events.some(event => event.type === RunTraceEventType.PersistCommit)).toBe(true)
   })
 })

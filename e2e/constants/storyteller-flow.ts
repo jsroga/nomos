@@ -9,7 +9,7 @@ export enum FlowTool {
 export enum FlowPrompt {
   Hello = 'Hello',
   ChatSuggestion = 'Add an interesting new character to the cast.',
-  GenerateBible = 'Update the world bible: set genre to cyberpunk noir and add one world rule that megacorps are above the law. Use the update_world_bible tool.',
+  GenerateBible = 'Update the world bible: set worldDescription to a rain-soaked cyberpunk noir city-state, and add one world rule that megacorps are above the law. Use the update_world_bible tool.',
   CreateCharacter = 'Create a protagonist named Vex. Use the manage_character tool.',
   GenerateFactions = 'Add one major faction to the world bible: the Neon Syndicate, an underground hacker collective. Use the update_world_bible tool.',
 }
@@ -21,7 +21,13 @@ export enum FlowUiLabel {
   ComposerPlaceholder = 'Write a message…',
   LoadingProject = 'Loading project...',
   OpenStorybible = 'Open Storybible',
+  CreateManually = 'Create Manually',
+  Accept = 'Accept',
+  AddToWorld = 'Add to world',
+  UpdateAll = 'Update all',
   BibleToggle = 'BIBLE',
+  Overview = 'Overview',
+  NoWorldDescription = 'No world description available.',
   WorldLogic = 'World Logic',
   Factions = 'Factions',
   NoWorldRules = 'No world rules defined yet',
@@ -32,6 +38,7 @@ export enum FlowUiLabel {
   Episodes = 'Episodes',
   UntitledEpisode = 'Untitled Episode',
   Storyteller = 'Storyteller',
+  StorybibleTab = 'STORYBIBLE',
   AssistantMessage = 'assistant-message',
 }
 
@@ -47,6 +54,13 @@ export enum FlowSelector {
   TextPrefix = 'text=',
   ToolPrefix = '🛠 ',
   RunningStatus = '[data-testid="assistant-running-status"]',
+  OverflowYAuto = 'div.overflow-y-auto',
+}
+
+export enum FlowRole {
+  Heading = 'heading',
+  Button = 'button',
+  Tab = 'tab',
 }
 
 export enum FlowApi {
@@ -81,9 +95,11 @@ export enum FlowTest {
 }
 
 export enum FlowTimeout {
+  Probe = 2_000,
   Short = 10_000,
   Medium = 15_000,
   Long = 30_000,
+  Generation = 360_000,
 }
 
 export enum FlowKey {

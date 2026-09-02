@@ -38,10 +38,13 @@ import {
   beatDraftInputSchema,
   beatDraftOutputSchema,
 } from './beat-draft-contract'
+import { emitRunTrace, RunTraceEventType } from '@/shared/agent-kernel'
 import {
+  BEAT_DRAFT_CRITIQUE_JOIN,
   BEAT_DRAFT_KILLED_MESSAGE,
   BEAT_DRAFT_VERDICT_NOTE_DESC,
   BEAT_DRAFT_VERDICT_SUSPEND_REASON,
+  BeatDraftCriticName,
   BeatDraftStepId,
   BeatDraftVerdictAction,
 } from './constants/beat-draft-workflow'
@@ -95,6 +98,11 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
     inputSchema: beatDraftInputSchema,
     outputSchema: planOutputSchema,
     execute: async ({ inputData }) => {
+      emitRunTrace({
+        type: RunTraceEventType.RoleDispatch,
+        stepId: BeatDraftStepId.PlanBeat,
+        role: BeatDraftStepId.PlanBeat,
+      })
       const ctx: BeatDraftContext = {
         projectId: inputData.projectId,
         episodeId: inputData.episodeId,
@@ -127,6 +135,11 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
         }
       }
 
+      emitRunTrace({
+        type: RunTraceEventType.RoleResult,
+        stepId: BeatDraftStepId.PlanBeat,
+        role: BeatDraftStepId.PlanBeat,
+      })
       return {
         ...inputData,
         canon,
@@ -142,6 +155,11 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
     inputSchema: planOutputSchema,
     outputSchema: draftOutputSchema,
     execute: async ({ inputData }) => {
+      emitRunTrace({
+        type: RunTraceEventType.RoleDispatch,
+        stepId: BeatDraftStepId.DraftScript,
+        role: BeatDraftStepId.DraftScript,
+      })
       const draft = await deps.draftBeat(
         {
           projectId: inputData.projectId,
@@ -152,6 +170,11 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
         inputData.canon,
         inputData.beatPlan
       )
+      emitRunTrace({
+        type: RunTraceEventType.RoleResult,
+        stepId: BeatDraftStepId.DraftScript,
+        role: BeatDraftStepId.DraftScript,
+      })
       return { ...inputData, draft }
     },
   })
@@ -161,8 +184,35 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
     inputSchema: draftOutputSchema,
     outputSchema: critiqueOutputSchema,
     execute: async ({ inputData }) => {
-      const critiques = await deps.critique(inputData.draft, inputData.canon)
-      return { ...inputData, critiques }
+      emitRunTrace({
+        type: RunTraceEventType.RoleDispatch,
+        stepId: BeatDraftStepId.Critique,
+        role: BeatDraftCriticName.Continuity,
+      })
+      emitRunTrace({
+        type: RunTraceEventType.RoleDispatch,
+        stepId: BeatDraftStepId.Critique,
+        role: BeatDraftCriticName.Prose,
+      })
+      emitRunTrace({
+        type: RunTraceEventType.RoleDispatch,
+        stepId: BeatDraftStepId.Critique,
+        role: BeatDraftCriticName.Stakes,
+      })
+      const [continuity, prose, stakes] = await Promise.all([
+        deps.critiqueContinuity(inputData.draft, inputData.canon),
+        deps.critiqueProse(inputData.draft, inputData.canon),
+        deps.critiqueStakes(inputData.draft, inputData.canon),
+      ])
+      emitRunTrace({
+        type: RunTraceEventType.RoleResult,
+        stepId: BeatDraftStepId.Critique,
+        role: BeatDraftStepId.Critique,
+      })
+      return {
+        ...inputData,
+        critiques: [continuity, prose, stakes].join(BEAT_DRAFT_CRITIQUE_JOIN),
+      }
     },
   })
 
@@ -211,6 +261,11 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
     outputSchema: beatDraftOutputSchema,
     execute: async ({ inputData }) => {
       if (inputData.action === BeatDraftVerdictAction.Kill) {
+        emitRunTrace({
+          type: RunTraceEventType.GateDecision,
+          stepId: BeatDraftStepId.Revise,
+          detail: BeatDraftVerdictAction.Kill,
+        })
         return {
           finalDraft: '',
           critiques: inputData.critiques,
@@ -220,6 +275,12 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
           message: BEAT_DRAFT_KILLED_MESSAGE,
         }
       }
+
+      emitRunTrace({
+        type: RunTraceEventType.GateDecision,
+        stepId: BeatDraftStepId.Revise,
+        detail: inputData.action,
+      })
 
       const ctx: BeatDraftContext = {
         projectId: inputData.projectId,
@@ -235,6 +296,10 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
         inputData.action === BeatDraftVerdictAction.Revise ? inputData.note : undefined
       )
       const persisted = await deps.persistBeat(ctx, inputData.beatPlan, finalDraft)
+      emitRunTrace({
+        type: RunTraceEventType.PersistCommit,
+        stepId: BeatDraftStepId.Revise,
+      })
 
       return {
         finalDraft,

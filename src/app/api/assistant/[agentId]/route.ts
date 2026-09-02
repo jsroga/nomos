@@ -35,6 +35,7 @@ import { requestedEpisodePremiseField } from '@/domains/storyteller/core/utils/r
 import { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
 import { readString } from '@/shared/data/json-guards'
 import { tryProjectScope } from '@/shared/auth/project-scope'
+import { withGatewayContext } from '@/shared/ai/gateway/call-context'
 import {
   BEAT_TOOL_ID,
   LIST_BEATS_TOOL_ID,
@@ -66,7 +67,8 @@ const STORYTELLER_CHAT_ACTIVE_TOOLS = [
   RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
 ] as const
 
-export const maxDuration = 300
+// Next.js rejects imported bindings for segment config; keep equal to CHAT_ROUTE_MAX_DURATION_SECONDS.
+export const maxDuration = 180
 
 const INVALID_BODY_MESSAGE = 'Invalid body'
 const AGENT_NOT_FOUND_MESSAGE = 'Agent not found'
@@ -303,7 +305,8 @@ export async function POST(req: Request, { params }: RouteContext) {
     '@/domains/storyteller/services/access-verification-service'
   )
 
-  if (projectId && !(await tryProjectScope(projectId, userId))) {
+  const projectScope = projectId ? await tryProjectScope(projectId, userId) : null
+  if (projectId && !projectScope) {
     return new Response(JSON.stringify({ error: PROJECT_ACCESS_DENIED }), { status: STATUS_FORBIDDEN })
   }
   if (episodeId && !(await verifyEpisodeAccess(episodeId, userId))) {
@@ -322,6 +325,7 @@ export async function POST(req: Request, { params }: RouteContext) {
   // the client leaves "submitted" while world context loads (not hung).
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
+      const runTurn = async () => {
       // A start chunk only flips useChat off "submitted" when it carries a
       // messageId; the agent stream therefore runs with sendStart: false so
       // exactly one start frame (this one) owns the assistant message id.
@@ -383,6 +387,9 @@ export async function POST(req: Request, { params }: RouteContext) {
         )
         throw error
       }
+      }
+      if (projectScope) return withGatewayContext({ scope: projectScope }, runTurn)
+      return runTurn()
     },
   })
 

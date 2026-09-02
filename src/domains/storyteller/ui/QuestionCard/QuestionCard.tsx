@@ -21,7 +21,7 @@ import { ChevronRight } from 'lucide-react'
 
 interface QuestionCardProps {
   question: AgentQuestion
-  onAnswer: (answer: string | string[]) => void
+  onAnswer: (answer: string | string[], additionalFeedback?: string) => void
   onSkip?: () => void
   disabled?: boolean
 }

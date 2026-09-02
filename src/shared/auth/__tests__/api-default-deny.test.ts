@@ -46,8 +46,13 @@ describe('denyAnonymousApiRequest', () => {
     expect(result).toBeNull()
   })
 
+  it('denies anonymous complete-token', () => {
+    const result = denyAnonymousApiRequest(request('/api/complete-token'))
+    expect(result?.status).toBe(HttpStatus.UNAUTHORIZED)
+  })
+
   it('allows every declared public path', () => {
-    for (const path of ['/api/auth/signin', '/api/waitlist', '/api/complete-token', '/api/mcp']) {
+    for (const path of ['/api/auth/signin', '/api/waitlist', '/api/mcp']) {
       expect(denyAnonymousApiRequest(request(path)), path).toBeNull()
     }
   })

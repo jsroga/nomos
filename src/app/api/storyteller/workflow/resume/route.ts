@@ -44,14 +44,36 @@ function toVerdictAction(selectedOption: string): VerdictAction | null {
  * Runs are resolved from Mastra storage — a suspended verdict survives
  * server restarts and can be resumed from any instance.
  */
+const NestedProjectIdSchema = z.object({ projectId: z.string().min(1) })
+const WorkflowRunStateSchema = z.object({
+  input: z.unknown().optional(),
+  inputData: z.unknown().optional(),
+  requestPayload: z.unknown().optional(),
+  resourceId: z.string().optional(),
+})
+
+function projectIdFromUnknown(value: unknown): string | undefined {
+  const parsed = NestedProjectIdSchema.safeParse(value)
+  return parsed.success ? parsed.data.projectId : undefined
+}
+
+function projectIdFromRunState(state: unknown): string | undefined {
+  const record = WorkflowRunStateSchema.safeParse(state)
+  if (!record.success) return undefined
+  return (
+    projectIdFromUnknown(record.data.input) ??
+    projectIdFromUnknown(record.data.inputData) ??
+    projectIdFromUnknown(record.data.requestPayload) ??
+    record.data.resourceId
+  )
+}
+
 /**
- * A suspended run belongs to a tenant. `resourceId` is stamped with the
- * project when the run is created (see ai/tools/workflow-tool.ts); a run
- * without one cannot be attributed, so it is refused rather than resumed.
- * Returns null when the caller may proceed.
+ * A suspended run belongs to a tenant. The run's input `projectId` is the
+ * ownership key (Mastra, not Trigger). A run without one cannot be attributed.
  */
 async function denyUnlessRunOwner(
-  resourceId: string | undefined,
+  state: unknown,
   runId: string
 ): Promise<NextResponse | null> {
   const { session } = await requireAuth()
@@ -59,15 +81,16 @@ async function denyUnlessRunOwner(
     return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
   }
 
-  if (!resourceId) {
-    console.warn(`${API_LOG_PREFIX.STORYTELLER_WORKFLOW_RESUME_ERROR} run ${runId} has no resourceId`)
+  const projectId = projectIdFromRunState(state)
+  if (!projectId) {
+    console.warn(`${API_LOG_PREFIX.STORYTELLER_WORKFLOW_RESUME_ERROR} run ${runId} has no projectId`)
     return NextResponse.json(
       { error: API_ERROR.WORKFLOW_NOT_FOUND_OR_COMPLETED, runId },
       { status: HttpStatus.NOT_FOUND }
     )
   }
 
-  if (!(await tryProjectScope(resourceId, session.user.id))) {
+  if (!(await tryProjectScope(projectId, session.user.id))) {
     return NextResponse.json(
       { error: API_ERROR.WORKFLOW_NOT_FOUND_OR_COMPLETED, runId },
       { status: HttpStatus.NOT_FOUND }
@@ -119,7 +142,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const denied = await denyUnlessRunOwner(state.resourceId, runId)
+    const denied = await denyUnlessRunOwner(state, runId)
     if (denied) return denied
 
     const run = await workflow.createRun({ runId })
@@ -178,7 +201,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ found: false, runId }, { status: 404 })
   }
 
-  const denied = await denyUnlessRunOwner(state.resourceId, runId)
+  const denied = await denyUnlessRunOwner(state, runId)
   if (denied) return denied
 
   return NextResponse.json({

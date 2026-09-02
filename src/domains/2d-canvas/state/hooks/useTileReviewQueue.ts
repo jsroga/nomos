@@ -14,6 +14,7 @@ export interface ReviewQueueItem {
   originalUrl?: string
   type: TileReviewType
   tokenId?: string
+  runId?: string
 }
 
 export function useTileReviewQueue() {
@@ -66,6 +67,7 @@ export function useTileReviewQueue() {
         originalUrl: item.originalUrl,
         type: item.type,
         tokenId: item.tokenId,
+        runId: item.runId,
       })
     })
   }, [addToQueue])

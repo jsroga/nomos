@@ -9,7 +9,8 @@ import {
   STREAM_ROUTE_TEXT,
 } from './stream-route-handler'
 
-export const maxDuration = 300
+// Next.js rejects imported bindings for segment config; keep equal to CHAT_ROUTE_MAX_DURATION_SECONDS.
+export const maxDuration = 180
 
 export async function POST(req: Request) {
   try {

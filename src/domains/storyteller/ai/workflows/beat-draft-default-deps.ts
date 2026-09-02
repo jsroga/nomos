@@ -31,7 +31,6 @@ import {
   BEAT_DRAFT_AUTHOR_CRITIQUES_CHAR_BUDGET,
   BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
   BEAT_DRAFT_CHARACTERS_JOIN,
-  BEAT_DRAFT_CRITIQUE_JOIN,
   BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
   BEAT_DRAFT_NO_FINDINGS,
   BeatDraftCanonHeading,
@@ -42,6 +41,7 @@ import {
 } from './constants/beat-draft-workflow'
 import { ManageToolOperation } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { ManageBeatOutputSchema } from '@/domains/storyteller/ai/tools/beat-tools-schema'
+import { nextBeatSequence } from '@/domains/storyteller/core/io/beat-sequence'
 import type { BeatDraftDeps } from './beat-draft-deps-types'
 
 function truncateForAuthor(text: string, budget: number): string {
@@ -207,15 +207,21 @@ Output ONLY the script beat — no preamble, no notes.`
     return generateAuthorDraft(prompt)
   },
 
-  critique: async (draft, canon) => {
+  critiqueContinuity: async (draft, canon) => {
     const canonBlock = `CANON:\n${canon}`
     const draftBlock = `DRAFT BEAT:\n${draft}`
-    const [continuity, prose, stakes] = await Promise.all([
-      runCritic(continuityCritic, BeatDraftCriticName.Continuity, `${canonBlock}\n\n${draftBlock}`),
-      runCritic(proseCritic, BeatDraftCriticName.Prose, draftBlock),
-      runCritic(stakesCritic, BeatDraftCriticName.Stakes, `${canonBlock}\n\n${draftBlock}`),
-    ])
-    return [continuity, prose, stakes].join(BEAT_DRAFT_CRITIQUE_JOIN)
+    return runCritic(continuityCritic, BeatDraftCriticName.Continuity, `${canonBlock}\n\n${draftBlock}`)
+  },
+
+  critiqueProse: async (draft, _canon) => {
+    const draftBlock = `DRAFT BEAT:\n${draft}`
+    return runCritic(proseCritic, BeatDraftCriticName.Prose, draftBlock)
+  },
+
+  critiqueStakes: async (draft, canon) => {
+    const canonBlock = `CANON:\n${canon}`
+    const draftBlock = `DRAFT BEAT:\n${draft}`
+    return runCritic(stakesCritic, BeatDraftCriticName.Stakes, `${canonBlock}\n\n${draftBlock}`)
   },
 
   reviseBeat: async (_ctx, canon, draft, critiques, editorNote) => {
@@ -248,10 +254,12 @@ Output the REVISED beat in full, in Script Beat Format. Script only — no pream
   },
 
   persistBeat: async (ctx, plan, finalDraft) => {
+    const sequence = await nextBeatSequence(ctx.episodeId)
     const result = await invokeTool(manageBeatTool, {
       operation: ManageToolOperation.Create,
       episodeId: ctx.episodeId,
       projectId: ctx.projectId,
+      sequence,
       data: {
         logline: plan.goal,
         content: finalDraft,
@@ -265,10 +273,13 @@ Output the REVISED beat in full, in Script Beat Format. Script only — no pream
     if (!parsed.success) {
       throw new Error(`Tool ${manageBeatTool.id} returned no result`)
     }
+    if (parsed.data.success !== true) {
+      throw new Error(parsed.data.error ?? parsed.data.message ?? BEAT_DRAFT_MANAGE_BEAT_COMPLETED)
+    }
     return {
-      saved: parsed.data.success,
+      saved: true,
       beatId: parsed.data.beat?.id,
-      message: parsed.data.message ?? parsed.data.error ?? BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
+      message: parsed.data.message ?? BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
     }
   },
 }

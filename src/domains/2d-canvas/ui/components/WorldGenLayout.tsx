@@ -51,6 +51,7 @@ function WorldGenWorkspace() {
           originalUrl={currentReview.originalUrl}
           type={currentReview.type}
           tokenId={currentReview.tokenId}
+          runId={currentReview.runId}
           queueLength={queueLength}
         />
       )}

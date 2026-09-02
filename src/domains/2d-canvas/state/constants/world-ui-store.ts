@@ -23,6 +23,7 @@ export interface WorldGenReviewPayload {
   variantUrls?: string[]
   originalUrl?: string
   tokenId?: string
+  runId?: string
 }
 
 export interface MjGridPayload {

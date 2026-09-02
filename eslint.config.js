@@ -693,6 +693,24 @@ module.exports = [
       'no-restricted-imports': ['error', { paths: PROVIDER_SDK_RESTRICTED_PATHS }],
     },
   },
+  {
+    files: [
+      'src/app/**/*.{ts,tsx}',
+      'src/shared/auth/**/*.{ts,tsx}',
+      'src/shared/data/api-utils.ts',
+      'scripts/gate-fixtures/src/app/api/uses-get-session.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'CallExpression[callee.property.name=\'getSession\']',
+          message:
+            'Server identity must use getUser() via getUserSession; getSession does not verify the JWT.',
+        },
+      ],
+    },
+  },
   // Named remainder of the gateway migration, outside shared/. Each is a real
   // gap rather than a decision, and `providerSdkImportsOutsideGateway` counts
   // them. The domain patterns are restated so exempting the provider rule does

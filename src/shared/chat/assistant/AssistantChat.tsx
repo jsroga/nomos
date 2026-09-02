@@ -11,7 +11,7 @@
  * "Rendered fewer hooks than expected".
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { useAISDKRuntime } from '@assistant-ui/react-ai-sdk'
@@ -138,6 +138,8 @@ interface AssistantChatProps {
   canAddToWorld?: (input: CanAddToWorldInput) => boolean
   /** Domain-injected markdown/chip renderers (Writers Room entity links). */
   chatRenderers?: ChatRenderers
+  /** Domain tool UIs registered beside AskUser (storyteller verdict card). */
+  extraToolUIs?: ReactNode
 }
 
 function resolveApi(agentId?: string, moduleKey?: string): string {
@@ -201,6 +203,7 @@ export function AssistantChat({
   isAddToWorldSettled,
   canAddToWorld,
   chatRenderers,
+  extraToolUIs,
 }: AssistantChatProps) {
   const history = useMemo(
     () => (persistKey ? createSessionThreadHistoryAdapter(persistKey) : undefined),
@@ -353,6 +356,7 @@ export function AssistantChat({
       canAddToWorld={canAddToWorld}
     >
       <AskUserToolUI />
+      {extraToolUIs}
       <AssistantChatBody
         suggestions={resolvedSuggestions}
         mentionProviders={mentionProviders}

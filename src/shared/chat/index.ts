@@ -22,3 +22,10 @@ export type { MentionProvider, MentionItem, ProjectContext } from './core/mentio
 export { ChatRenderersProvider, useChatRenderers } from './core/renderers'
 export type { ChatRenderers } from './core/renderers'
 export { ChatFrameType } from './core/protocol'
+export { resumeChatWorkflow } from './core/io/chat-ui.api'
+export { DEFAULT_RESUME_URL } from './core/constants/chat-stream'
+export {
+  CHAT_STUCK_TIMEOUT_MS,
+  CHAT_ROUTE_MAX_DURATION_SECONDS,
+  CHAT_AUTHOR_GENERATE_TIMEOUT_MS,
+} from './core/constants/chat-timeouts'

@@ -28,11 +28,24 @@ function readTokens(usage: Record<string, unknown>, names: readonly string[]): n
   return 0
 }
 
-/** Token counts, when the result reports them. */
+/** Token counts, when the result reports them. Prefer `totalUsage` over per-call `usage`. */
 function usageFrom(result: unknown): Record<string, unknown> | undefined {
   if (!isPlainObject(result)) return undefined
+  const total: unknown = result.totalUsage
+  if (isPlainObject(total)) return total
   const usage: unknown = result.usage
   return isPlainObject(usage) ? usage : undefined
+}
+
+function stepUsages(result: unknown): Record<string, unknown>[] {
+  if (!isPlainObject(result) || !Array.isArray(result.steps)) return []
+  const usages: Record<string, unknown>[] = []
+  for (const step of result.steps) {
+    if (!isPlainObject(step)) continue
+    const usage: unknown = step.usage
+    if (isPlainObject(usage)) usages.push(usage)
+  }
+  return usages
 }
 
 /** The model a Mastra agent resolved to, when the result reports it. */
@@ -73,6 +86,20 @@ export async function meteredCall<TResult>(
         latencyMs: Date.now() - startedAt,
         outcome: LlmOutcome.Ok,
       })
+      for (const stepUsage of stepUsages(result)) {
+        await recordLlmCall({
+          traceId: context.traceId,
+          projectId: context.scope.projectId,
+          userId: context.scope.userId,
+          feature,
+          model: modelFrom(result),
+          provider: OPENROUTER_PROVIDER,
+          promptTokens: readTokens(stepUsage, AGENT_USAGE_PROMPT_FIELDS),
+          completionTokens: readTokens(stepUsage, AGENT_USAGE_COMPLETION_FIELDS),
+          latencyMs: Date.now() - startedAt,
+          outcome: LlmOutcome.Ok,
+        })
+      }
     }
     return result
   } catch (error) {

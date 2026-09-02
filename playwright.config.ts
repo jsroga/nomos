@@ -33,10 +33,30 @@ const LOCAL_BASE_URL = `http://localhost:${DEV_SERVER_PORT}`
 const BUILD_COMMAND = 'npx next build'
 const START_COMMAND = `NODE_OPTIONS=--max-old-space-size=8192 npm run start -- -p ${DEV_SERVER_PORT}`
 const DEV_SERVER_COMMAND = `${BUILD_COMMAND} && ${START_COMMAND}`
-const EXTERNAL_URL_PATTERN = /^https?:\/\//
+
+enum LoopbackHost {
+  Localhost = 'localhost',
+  Ipv4 = '127.0.0.1',
+  Ipv6 = '::1',
+}
+
+const LOOPBACK_HOSTS = new Set<string>([
+  LoopbackHost.Localhost,
+  LoopbackHost.Ipv4,
+  LoopbackHost.Ipv6,
+])
+
+function isRemotePlaywrightUrl(url: string): boolean {
+  try {
+    return !LOOPBACK_HOSTS.has(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
 
 const BASE_URL = process.env.BASE_URL?.trim() || LOCAL_BASE_URL
-const IS_EXTERNAL_URL = EXTERNAL_URL_PATTERN.test(BASE_URL)
+process.env.BASE_URL = BASE_URL
+const IS_EXTERNAL_URL = isRemotePlaywrightUrl(BASE_URL)
 
 const BASIC_AUTH_USER = process.env.BASIC_AUTH_USER?.trim()
 const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD?.trim()
@@ -61,6 +81,7 @@ export default defineConfig({
 
   // Run tests in files in parallel
   fullyParallel: false, // Sequential for now due to shared state
+  workers: 1,
 
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,

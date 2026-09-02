@@ -71,4 +71,34 @@ describe('meteredCall', () => {
 
     expect(recordLlmCall).toHaveBeenCalledTimes(1)
   })
+
+  it('prefers totalUsage and still records each step', async () => {
+    const twoStep = {
+      text: 'revised beat',
+      usage: { inputTokens: 10, outputTokens: 5 },
+      totalUsage: { inputTokens: 30, outputTokens: 15 },
+      steps: [
+        { usage: { inputTokens: 10, outputTokens: 5 } },
+        { usage: { inputTokens: 20, outputTokens: 10 } },
+      ],
+    }
+
+    await withGatewayContext({ scope: SCOPE }, () =>
+      meteredCall(LlmFeature.StorytellerBeatPlan, async () => twoStep)
+    )
+
+    expect(recordLlmCall).toHaveBeenCalledTimes(3)
+    expect(recordLlmCall.mock.calls[0]?.[0]).toMatchObject({
+      promptTokens: 30,
+      completionTokens: 15,
+    })
+    expect(recordLlmCall.mock.calls[1]?.[0]).toMatchObject({
+      promptTokens: 10,
+      completionTokens: 5,
+    })
+    expect(recordLlmCall.mock.calls[2]?.[0]).toMatchObject({
+      promptTokens: 20,
+      completionTokens: 10,
+    })
+  })
 })

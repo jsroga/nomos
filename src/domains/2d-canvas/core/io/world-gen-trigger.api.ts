@@ -128,6 +128,7 @@ export async function completeTileVariantSelection(input: {
   tokenId: string
   action: VariantSelectionAction
   variantIndex: number
+  runId: string
 }): Promise<void> {
   await fetchJsonRecord(TileGenerationApiRoute.CompleteToken, {
     method: HttpMethod.Post,

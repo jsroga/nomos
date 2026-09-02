@@ -15,26 +15,29 @@ function hasOverrideBibleState(overrideState: string | null | undefined): boolea
   return null
 }
 
-function hasStoryPlanBibleSignals(storyPlan: StoryPlan | null | undefined): boolean {
-  const hasGenre =
-    !!storyPlan?.genre &&
-    storyPlan.genre !== StorytellerUnknownLabel.Unknown &&
-    storyPlan.genre !== ''
-  const hasTone =
-    !!storyPlan?.tone &&
-    storyPlan.tone !== StorytellerUnknownLabel.Unknown &&
-    storyPlan.tone !== ''
+function isFilledLabel(value: string | undefined): boolean {
+  return Boolean(value) && value !== StorytellerUnknownLabel.Unknown && value !== ''
+}
 
-  return !!(
-    storyPlan?.worldDescription ||
-    hasGenre ||
-    hasTone ||
-    (storyPlan?.themes && storyPlan.themes.length > 0)
-  )
+function hasItems(value: unknown): boolean {
+  return Array.isArray(value) && value.length > 0
+}
+
+function hasStoryPlanBibleSignals(storyPlan: Partial<StoryPlan> | null | undefined): boolean {
+  if (!storyPlan) return false
+  return [
+    Boolean(storyPlan.worldDescription),
+    isFilledLabel(storyPlan.genre),
+    isFilledLabel(storyPlan.tone),
+    hasItems(storyPlan.themes),
+    hasItems(storyPlan.worldRules),
+    hasItems(storyPlan.factions),
+    hasItems(storyPlan.plotTwists),
+  ].some(Boolean)
 }
 
 export function computeHasBible(
-  storyPlan: StoryPlan | null | undefined,
+  storyPlan: Partial<StoryPlan> | null | undefined,
   overrideState: string | null | undefined,
 ): boolean {
   const overrideResult = hasOverrideBibleState(overrideState)

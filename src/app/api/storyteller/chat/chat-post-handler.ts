@@ -133,7 +133,7 @@ export async function handleStorytellerChatPost(
         episodeId,
         brief: message,
         characters: Array.isArray(characters) ? characters : [],
-        autoApprove: true,
+        autoApprove: false,
       },
     })
 

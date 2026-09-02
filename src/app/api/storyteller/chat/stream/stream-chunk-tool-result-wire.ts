@@ -7,11 +7,20 @@ import {
   RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
   VERDICT_STEP_ID,
 } from '@/domains/storyteller/core/io/mastra-runtime'
+import { BeatDraftVerdictAction } from '@/domains/storyteller/ai/workflows/constants/beat-draft-workflow'
+import { BeatDraftWorkflowStatus } from '@/domains/storyteller/ai/constants/workflow-tool'
+import { BeatDraftVerdictCopy, BEAT_DRAFT_VERDICT_BLOCK_JOIN, BEAT_DRAFT_VERDICT_QUESTION_ID_PREFIX } from '@/domains/storyteller/core/constants/beat-draft-verdict-copy'
+import { QuestionType, QuestionUrgency } from '@/domains/storyteller/core/types/enums'
+import { ChatFrameType } from '@/shared/chat/core/protocol'
 import {
   mapToolResultToAction,
   getActionDedupeKey,
 } from '@/domains/storyteller/config/tool-result-mapper'
 import { emitFrame, isRecord, type StreamSession } from './stream-session-wire'
+
+function optionalText(value: unknown): string {
+  return typeof value === 'string' ? value : ''
+}
 
 /** Tool results arrive as strings or objects; parse leniently, never throw. */
 function parseToolResult(toolResult: unknown): {
@@ -33,6 +42,15 @@ function parseToolResult(toolResult: unknown): {
  * frames (published wire contract — no new frame types). The UI answers via
  * the existing POST /api/storyteller/workflow/resume.
  */
+function draftSummary(parsedRecord: Record<string, unknown>): string {
+  const draft = optionalText(parsedRecord.draft)
+  const critiques = optionalText(parsedRecord.critiques)
+  const trimmed = draft.trim()
+  const preview = trimmed.length > 240 ? `${trimmed.slice(0, 240)}…` : trimmed
+  if (preview && critiques) return `${preview}${BEAT_DRAFT_VERDICT_BLOCK_JOIN}${critiques}`
+  return preview || critiques
+}
+
 function emitVerdictGateIfSuspended(
   session: StreamSession,
   toolName: string,
@@ -41,51 +59,52 @@ function emitVerdictGateIfSuspended(
   if (
     toolName !== RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID ||
     !parsedRecord ||
-    parsedRecord.status !== 'suspended' ||
+    parsedRecord.status !== BeatDraftWorkflowStatus.Suspended ||
     typeof parsedRecord.runId !== 'string' ||
     parsedRecord.runId.length === 0
   ) {
     return
   }
   const workflowRunId = parsedRecord.runId
+  const draft = optionalText(parsedRecord.draft)
   const verdictQuestion = {
-    id: `q-editorial-verdict-${Date.now()}`,
-    agentName: 'Storyteller',
-    question: 'The draft and critiques are ready. What is your editorial verdict?',
-    questionType: 'single_choice' as const,
+    id: `${BEAT_DRAFT_VERDICT_QUESTION_ID_PREFIX}${Date.now()}`,
+    agentName: BeatDraftVerdictCopy.AgentName,
+    question: BeatDraftVerdictCopy.Question,
+    questionType: QuestionType.SINGLE_CHOICE,
     options: [
       {
-        id: 'approve',
-        label: 'Approve',
-        description: 'Revise against the critiques as-is',
+        id: BeatDraftVerdictAction.Approve,
+        label: BeatDraftVerdictCopy.ApproveLabel,
+        description: BeatDraftVerdictCopy.ApproveDescription,
         recommended: true,
       },
       {
-        id: 'revise',
-        label: 'Revise with note',
-        description: 'Add editorial direction (it outranks the critics)',
+        id: BeatDraftVerdictAction.Revise,
+        label: BeatDraftVerdictCopy.ReviseLabel,
+        description: BeatDraftVerdictCopy.ReviseDescription,
       },
       {
-        id: 'kill',
-        label: 'Kill',
-        description: 'Discard the draft entirely — nothing is saved',
+        id: BeatDraftVerdictAction.Kill,
+        label: BeatDraftVerdictCopy.KillLabel,
+        description: BeatDraftVerdictCopy.KillDescription,
       },
     ],
-    context: 'Beat-draft pipeline paused at the editorial verdict.',
-    urgency: 'blocking' as const,
-    defaultOption: 'approve',
-    timeout: 120,
+    context: BeatDraftVerdictCopy.Context,
+    urgency: QuestionUrgency.BLOCKING,
+    draft,
+    summary: draftSummary(parsedRecord),
   }
 
   emitFrame(session.writer, {
-    type: 'questions',
+    type: ChatFrameType.Questions,
     questions: [verdictQuestion],
     workflowStepId: VERDICT_STEP_ID,
     workflowRunId,
     traceId: session.traceId,
   })
   emitFrame(session.writer, {
-    type: 'awaiting_input',
+    type: ChatFrameType.AwaitingInput,
     reason: 'creative_decision',
     workflowRunId,
   })

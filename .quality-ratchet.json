@@ -2,7 +2,7 @@
   "_": "Counters that may only DECREASE. Replaces editable allowlists: an allowlist grows monotonically, a ratchet shrinks. Recompute with the commands in _commands. See .local/final-review/05-quality-gates.md.",
   "untaggedRunGracePaths": 0,
   "routesTakingProjectIdWithoutOwnershipCheck": 0,
-  "sessionExistenceOnlyRoutes": 12,
+  "sessionExistenceOnlyRoutes": 11,
   "directDbClientImporters": 70,
   "serviceRoleClientSites": 23,
   "providerSdkImportsOutsideGateway": 6,

@@ -6,6 +6,11 @@ export const PROJECT_TAG_PREFIX = 'project:'
 /** Metadata key some pre-tagging tasks wrote; read only as a fallback. */
 export const PROJECT_METADATA_KEY = 'projectId'
 
+/** Wait-token id stamped on a Trigger run while it is paused for variant selection. */
+export enum RunMetadataKey {
+  WaitTokenId = 'waitTokenId',
+}
+
 /** Fields of a Trigger run that may cross the HTTP boundary. */
 export const OWNED_RUN_SUMMARY_KEYS = [
   'id',

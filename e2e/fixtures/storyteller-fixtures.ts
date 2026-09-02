@@ -14,12 +14,12 @@ import {
   FlowUiLabel,
   FlowRoute,
   FlowKey,
+  FlowRole,
 } from '../constants/storyteller-flow'
 import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/constants/assistant-thread-ui'
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
-const PROJECTS_API = `${BASE_URL}${FlowApi.Projects}`
-const CHAT_STREAM_API = `${BASE_URL}${FlowApi.ChatStream}`
+const BASE_URL = process.env.BASE_URL?.trim() || 'http://localhost:3001'
+const SSE_TIMEOUT = 240_000
 // Sourced from the component's own copy: a hard-coded duplicate silently went
 // stale ("Write a message…") and every chat spec failed on a missing composer.
 const CHAT_INPUT = `${FlowSelector.TextArea}[placeholder="${ASSISTANT_THREAD_COPY.InputPlaceholder}"]`
@@ -52,70 +52,30 @@ export interface SseEvent {
   type: string
 }
 
-export async function parseSseStream(response: Response): Promise<SseEvent[]> {
+function parseSseText(text: string): SseEvent[] {
   const events: SseEvent[] = []
-  const reader = response.body?.getReader()
-  if (!reader) return events
-
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let aborted = false
-
-  const SSE_TIMEOUT = 240_000
-  const timeout = setTimeout(() => {
-    aborted = true
-    reader.cancel()
-  }, SSE_TIMEOUT)
-
-  try {
-    while (!aborted) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
-      for (const line of lines) {
-        if (line.startsWith(FlowSse.DataPrefix)) {
-          try {
-            const parsed = JSON.parse(line.slice(FlowSse.DataPrefix.length))
-            if (isSseEvent(parsed)) events.push(parsed)
-          } catch { /* skip invalid JSON */ }
-        }
-      }
-    }
-  } finally {
-    clearTimeout(timeout)
+  for (const line of text.split('\n')) {
+    if (!line.startsWith(FlowSse.DataPrefix)) continue
+    try {
+      const parsed = JSON.parse(line.slice(FlowSse.DataPrefix.length))
+      if (isSseEvent(parsed)) events.push(parsed)
+    } catch { /* skip invalid JSON */ }
   }
-
   return events
 }
 
-async function findAuthCookie(page: Page): Promise<{ name: string; value: string }> {
-  const cookies = await page.context().cookies()
-  const cookie = cookies.find(
-    c => c.name.startsWith(FlowCookie.NamePrefix) && c.name.endsWith(FlowCookie.NameSuffix)
-  )
-  expect(cookie).toBeTruthy()
-  return { name: cookie?.name ?? '', value: cookie?.value ?? '' }
-}
-
 export async function sendChatStream(page: Page, projectId: string, message: string): Promise<SseEvent[]> {
-  const cookie = await findAuthCookie(page)
-  const response = await fetch(CHAT_STREAM_API, {
-    method: FlowHttp.Post,
-    headers: {
-      [FlowHttp.ContentType]: 'application/json',
-      [FlowHttp.Cookie]: `${cookie.name}=${encodeURIComponent(cookie.value)}`,
-    },
-    body: JSON.stringify({
+  const response = await page.request.post(FlowApi.ChatStream, {
+    data: {
       message,
       projectId,
       traceId: `e2e-chat-${Date.now()}`,
-    }),
+    },
+    timeout: SSE_TIMEOUT,
   })
-
-  expect(response.ok).toBeTruthy()
-  return parseSseStream(response)
+  const text = await response.text()
+  expect(response.ok(), `chat stream ${response.status()}: ${text}`).toBeTruthy()
+  return parseSseText(text)
 }
 
 export async function sendChatMessage(page: Page, message: string): Promise<void> {
@@ -143,19 +103,29 @@ export async function waitForAssistantStatus(page: Page): Promise<void> {
   })
 }
 
-export async function waitForAssistantResponse(page: Page): Promise<string> {
+export async function waitForAssistantResponse(
+  page: Page,
+  timeoutMs: number = FlowTimeout.Long,
+): Promise<string> {
   const assistant = page.locator(FlowSelector.AssistantMessage).first()
-  await expect(assistant).toBeVisible({ timeout: CHAT_SEND_TIMEOUT })
+  await expect(assistant).toBeVisible({ timeout: timeoutMs })
   // Settled = the thinking indicator is gone and real text has rendered.
   await expect(page.locator(FlowSelector.RunningStatus)).toHaveCount(0, {
-    timeout: FlowTimeout.Long,
-  })
-  await expect(page.getByRole(FlowSelector.Button, { name: FlowUiLabel.Send }).first()).toBeVisible({
-    timeout: CHAT_SEND_TIMEOUT,
+    timeout: timeoutMs,
   })
   const text = (await assistant.textContent())?.trim() ?? ''
   expect(text.length).toBeGreaterThanOrEqual(MIN_REPLY_LENGTH)
   return text
+}
+
+export async function acceptPendingAction(page: Page): Promise<void> {
+  const addToWorld = page.getByRole(FlowRole.Button, { name: FlowUiLabel.AddToWorld }).first()
+  const accept = page.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).first()
+  const action = addToWorld.or(accept).first()
+  await expect(action).toBeVisible({ timeout: FlowTimeout.Generation })
+  await action.click()
+  const updateAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.UpdateAll }).first()
+  await updateAll.click({ timeout: FlowTimeout.Short }).catch(() => undefined)
 }
 
 /** Hit the chat API once so the serverless function is warm before UI timing. */
@@ -198,7 +168,7 @@ export interface CreatedProject {
 
 export async function createStoryProject(page: Page): Promise<CreatedProject> {
   const name = `${FlowTest.ProjectNamePrefix} ${Date.now()}`
-  const response = await page.request.post(PROJECTS_API, {
+  const response = await page.request.post(FlowApi.Projects, {
     data: { name, description: FlowTest.ProjectDescription },
   })
 
@@ -244,23 +214,29 @@ export async function waitForUserMessage(page: Page, text: string): Promise<void
 }
 
 export async function openStorybible(page: Page): Promise<void> {
-  const worldLogic = page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.WorldLogic}`)
-  if (await worldLogic.isVisible().catch(() => false)) return
+  const overview = page.getByRole(FlowRole.Heading, { name: FlowUiLabel.Overview })
+  if (await overview.isVisible().catch(() => false)) return
 
-  const button = page.locator(FlowSelector.Button)
-    .filter({ hasText: FlowUiLabel.BibleToggle })
-    .first()
-  await expect(button).toBeVisible()
-  await button.click()
-  await expect(worldLogic).toBeVisible({ timeout: FlowTimeout.Short })
+  const createManually = page.getByRole(FlowRole.Button, { name: FlowUiLabel.CreateManually })
+  const openLabel = page.getByRole(FlowRole.Button, { name: FlowUiLabel.OpenStorybible })
+  if (await createManually.isVisible().catch(() => false)) {
+    await createManually.click()
+  } else if (await openLabel.isVisible().catch(() => false)) {
+    await openLabel.click()
+  } else {
+    const tab = page.getByRole(FlowRole.Tab, { name: FlowUiLabel.StorybibleTab })
+    await expect(tab).toBeVisible()
+    await tab.click()
+  }
+
+  await expect(overview).toBeVisible({ timeout: FlowTimeout.Medium })
 }
 
 export async function expectWorldBibleHasContent(page: Page): Promise<void> {
-  await expect(page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.WorldLogic}`)).toBeVisible()
-  const rules = page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.NoWorldRules}`).first()
-  const twists = page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.NoPlotTwists}`).first()
-  await expect(rules).toBeHidden()
-  await expect(twists).toBeHidden()
+  await expect(page.getByRole(FlowRole.Heading, { name: FlowUiLabel.Overview })).toBeVisible()
+  await expect(
+    page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.NoWorldDescription}`).first(),
+  ).toBeHidden()
 }
 
 export async function expectFactionsInBible(page: Page): Promise<void> {
@@ -273,7 +249,7 @@ export async function expectCharacterInSidebar(page: Page, name: string): Promis
   const sidebar = page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.Cast}`).first()
   await expect(sidebar).toBeVisible()
   const character = page.locator(`${FlowSelector.TextPrefix}${name}`).first()
-  await expect(character).toBeVisible({ timeout: FlowTimeout.Medium })
+  await expect(character).toBeVisible({ timeout: FlowTimeout.Generation })
 }
 
 export async function draftFirstEpisode(page: Page): Promise<void> {

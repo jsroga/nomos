@@ -11,12 +11,16 @@ The eval system lives in `evals/` and uses **Mastra scorers** (not Confident AI 
 ## Run
 
 ```bash
-npm run eval                       # all 12 golden examples
-npm run eval -- --samples=5        # multiple samples per case
+npm run eval:scorer-fixture        # fixture-only; frozen referenceOutput (not live agent quality)
+npm run eval                       # documented alias of eval:scorer-fixture
+npm run eval:scorer-fixture -- --samples=5
+npm run eval:agent-contract        # beat-draft workflow contract tests (no live model)
 npm run eval:dashboard             # open dashboard (next dev)
 ```
 
 Judge: `OPENAI_API_KEY` or `JUDGING_MODEL` in `.env.local` (Mastra LLM-as-judge via `createScorer`).
+
+`eval:scorer-fixture` is **not** agent quality. Pre-commit requires `comparison.passed === true`; a missing `passed` key is skipped, and skipped is not a pass.
 
 ## Layout
 
@@ -29,7 +33,7 @@ Judge: `OPENAI_API_KEY` or `JUDGING_MODEL` in `.env.local` (Mastra LLM-as-judge 
 
 - Any change to a Mastra agent prompt, tool, or model config.
 - Any change to storyteller generation flow.
-- PRs that touch `src/domains/storyteller/` — automation `pr-verify` runs `--samples=3`.
+- Workflow contract changes: `npm run eval:agent-contract`.
 
 ## Interpreting results
 

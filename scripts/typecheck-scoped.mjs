@@ -8,14 +8,16 @@
  *   node scripts/typecheck-scoped.mjs --all-slices
  *   node scripts/typecheck-scoped.mjs --all-slices --json
  */
+import { randomBytes } from 'node:crypto'
 import { execSync, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=6144'
-const TSCONFIG = 'tsconfig.scoped.json'
+const LEGACY_TSCONFIG = 'tsconfig.scoped.json'
 /** Stale file from incremental scoped runs — must not be reused across slices (causes OOM/hangs). */
-const TSC_BUILDINFO = 'tsconfig.scoped.tsbuildinfo'
+const LEGACY_TSC_BUILDINFO = 'tsconfig.scoped.tsbuildinfo'
+const TSC_BIN = process.env.TSC_BIN ?? join(process.cwd(), 'node_modules/typescript/bin/tsc')
 const LOG_PATH = '.local/typecheck-latest.log'
 const FILES_CHUNK_SIZE = 8
 const MODULE_SUBDIR_CHUNK = 5
@@ -243,9 +245,39 @@ function isOom(combined, signal) {
   )
 }
 
-function cleanupScopedArtifacts() {
-  if (existsSync(TSCONFIG)) unlinkSync(TSCONFIG)
-  if (existsSync(TSC_BUILDINFO)) unlinkSync(TSC_BUILDINFO)
+function cleanupLegacyScopedArtifacts() {
+  if (existsSync(LEGACY_TSCONFIG)) unlinkSync(LEGACY_TSCONFIG)
+  if (existsSync(LEGACY_TSC_BUILDINFO)) unlinkSync(LEGACY_TSC_BUILDINFO)
+}
+
+function uniqueScopedConfigPath() {
+  return join(
+    process.cwd(),
+    `tsconfig.scoped.${process.pid}.${randomBytes(4).toString('hex')}.json`,
+  )
+}
+
+function tscMissingError(sliceId) {
+  return {
+    file: TSC_BIN,
+    line: 0,
+    col: 0,
+    code: 'TSC0',
+    message: `tsc binary missing: ${TSC_BIN}`,
+    raw: `typecheck-scoped: [${sliceId}] tsc binary missing: ${TSC_BIN}`,
+  }
+}
+
+function tscExitedUnparsedError(sliceId, status, signal, combined) {
+  const detail = `tsc exited ${status ?? 'null'} signal ${signal ?? 'none'}`
+  return {
+    file: TSC_BIN,
+    line: 0,
+    col: 0,
+    code: 'TSC1',
+    message: detail,
+    raw: `typecheck-scoped: [${sliceId}] ${detail}${combined.trim() ? `\n${combined.trim()}` : ''}`,
+  }
 }
 
 function scopedTsConfig(include) {
@@ -321,16 +353,28 @@ function runSlice(slice, { json, scopePaths, failOnOutside }) {
     return { id: slice.id, ms: 0, errors: [], oom: false, skipped: true }
   }
 
+  cleanupLegacyScopedArtifacts()
+  if (!existsSync(TSC_BIN)) {
+    const missing = tscMissingError(slice.id)
+    if (!json) console.error(missing.raw)
+    return { id: slice.id, ms: 0, errors: [missing], oom: false, skipped: false, exitCode: 1 }
+  }
+
+  const configPath = uniqueScopedConfigPath()
   const config = scopedTsConfig(include)
-  cleanupScopedArtifacts()
-  writeFileSync(TSCONFIG, `${JSON.stringify(config, null, 2)}\n`)
+  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`)
 
   const t0 = Date.now()
-  const result = spawnSync('npx', ['tsc', '--noEmit', '--incremental', 'false', '-p', TSCONFIG], {
-    encoding: 'utf8',
-    env: { ...process.env, NODE_OPTIONS: NODE_OPTS },
-    maxBuffer: 64 * 1024 * 1024,
-  })
+  let result
+  try {
+    result = spawnSync(process.execPath, [TSC_BIN, '--noEmit', '--incremental', 'false', '-p', configPath], {
+      encoding: 'utf8',
+      env: { ...process.env, NODE_OPTIONS: NODE_OPTS },
+      maxBuffer: 64 * 1024 * 1024,
+    })
+  } finally {
+    if (existsSync(configPath)) unlinkSync(configPath)
+  }
   const ms = Date.now() - t0
   const combined = `${result.stdout ?? ''}\n${result.stderr ?? ''}`
 
@@ -339,6 +383,11 @@ function runSlice(slice, { json, scopePaths, failOnOutside }) {
   }
 
   const allErrors = parseTscErrors(combined)
+  if (allErrors.length === 0 && (result.status !== 0 || result.signal || result.error)) {
+    allErrors.push(
+      tscExitedUnparsedError(slice.id, result.status, result.signal, combined),
+    )
+  }
   let errors = allErrors
   if (scopePaths?.length) {
     errors = filterErrorsByPaths(allErrors, scopePaths)
@@ -480,7 +529,7 @@ function main() {
     )
   }
 
-  cleanupScopedArtifacts()
+  cleanupLegacyScopedArtifacts()
 
   if (allErrors.length || oomSlice) {
     process.exit(1)

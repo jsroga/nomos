@@ -76,7 +76,7 @@ async function retryAfterDelay(
   retryCount: number,
   delayMs: number,
   waitForRateLimit: () => Promise<void>
-): Promise<number[][]> {
+): Promise<VoyageCallResult> {
   await new Promise(resolve => setTimeout(resolve, delayMs))
   return callVoyageAPI(texts, config, retryCount + 1, waitForRateLimit)
 }
@@ -87,11 +87,11 @@ async function handleRateLimitResponse(
   retryCount: number,
   retryAfterSec: number,
   waitForRateLimit: () => Promise<void>
-): Promise<number[][]> {
+): Promise<VoyageCallResult> {
   if (retryCount >= VOYAGE_MAX_RETRIES) {
     console.error(VOYAGE_LOG_RATE_LIMIT_CIRCUIT)
     rateLimitUntil = Date.now() + VOYAGE_CIRCUIT_BREAKER_MS
-    return createMockEmbeddings(texts.length)
+    return { embeddings: createMockEmbeddings(texts.length), promptTokens: 0 }
   }
 
   console.warn(
@@ -100,23 +100,14 @@ async function handleRateLimitResponse(
   return retryAfterDelay(texts, config, retryCount, retryAfterSec * 1000, waitForRateLimit)
 }
 
-/**
- * Tokens billed by the most recent successful call.
- *
- * A module-level value rather than a return-shape change: `callVoyageAPI` has
- * several callers and an `IEmbeddings` interface implemented elsewhere, and
- * widening all of them to carry usage would be a larger change than the
- * gateway needs. Read it immediately after the call.
- */
-let lastEmbeddingTokens = 0
-
-export function lastEmbeddingTokenCount(): number {
-  return lastEmbeddingTokens
-}
-
 function resolveEmbeddingModel(model: string | undefined): string {
   const raw = (model || env.EMBEDDING_MODEL || VOYAGE_DEFAULT_MODEL).trim()
   return raw.includes(':') && !raw.includes('/') ? raw.replace(':', '/') : raw
+}
+
+export interface VoyageCallResult {
+  embeddings: number[][]
+  promptTokens: number
 }
 
 export async function callVoyageAPI(
@@ -124,12 +115,12 @@ export async function callVoyageAPI(
   config: VoyageEmbeddingConfig,
   retryCount: number,
   waitForRateLimit: () => Promise<void>
-): Promise<number[][]> {
+): Promise<VoyageCallResult> {
   const apiKey = env.OPENROUTER_API_KEY
   const isEnabled = isFeatureEnabled(FeatureFlag.VoyageEmbeddings)
 
   if (shouldSkipVoyageCall(apiKey, isEnabled)) {
-    return createMockEmbeddings(texts.length)
+    return { embeddings: createMockEmbeddings(texts.length), promptTokens: 0 }
   }
 
   await waitForRateLimit()
@@ -173,10 +164,10 @@ export async function callVoyageAPI(
 
     const data: VoyageAPIResponse = await response.json()
     const sorted = data.data.sort((a, b) => a.index - b.index)
-    // The provider reports what it billed. It used to be dropped here, which
-    // is why embedding spend was invisible.
-    lastEmbeddingTokens = data.usage?.total_tokens ?? 0
-    return sorted.map(item => item.embedding)
+    return {
+      embeddings: sorted.map(item => item.embedding),
+      promptTokens: data.usage?.total_tokens ?? 0,
+    }
   } catch (error) {
     if (
       retryCount < VOYAGE_MAX_RETRIES &&

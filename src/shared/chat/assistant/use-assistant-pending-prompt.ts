@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, type MutableRefObject } from 'react'
+import { CHAT_STUCK_TIMEOUT_MS } from '@/shared/chat/core/constants/chat-timeouts'
 import {
   AssistantGenerationLabel,
   AssistantGenerationPhase,
@@ -14,7 +15,7 @@ export interface AssistantPendingPrompt {
 }
 
 /** Clear stuck overlays if the stream dies without an idle transition (e.g. server restart). */
-export const GENERATION_STUCK_TIMEOUT_MS = 180_000
+export const GENERATION_STUCK_TIMEOUT_MS = CHAT_STUCK_TIMEOUT_MS
 /** Context assembly runs before the stream opens — show a slower hint after this. */
 export const GENERATION_SLOW_HINT_MS = 12_000
 

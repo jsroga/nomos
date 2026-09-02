@@ -54,9 +54,10 @@ export class TileGenerationService {
   async completeVariantSelection(
     tokenId: string,
     action: VariantSelectionAction,
-    variantIndex: number
+    variantIndex: number,
+    runId: string
   ): Promise<void> {
-    await completeTileVariantSelection({ tokenId, action, variantIndex })
+    await completeTileVariantSelection({ tokenId, action, variantIndex, runId })
   }
 }
 

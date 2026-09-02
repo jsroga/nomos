@@ -38,7 +38,8 @@ The value must appear in a client chunk and the expression must not survive. Run
 | Unit | `npm run test:unit` | `src/**/__tests__/**` (Vitest) |
 | Coverage | `npm run test:coverage` | Vitest `@vitest/coverage-v8` · HTML at `coverage/index.html` |
 | E2E | `npm run test:e2e [scenario]` | Playwright via `scripts/run-e2e.ts` |
-| Eval | `npm run eval` | `evals/` + Mastra scorers |
+| Scorer fixture | `npm run eval:scorer-fixture` | `evals/` + Mastra scorers on frozen `referenceOutput` |
+| Agent contract | `npm run eval:agent-contract` | `beat-draft-workflow` mechanics + trace contracts |
 | Storybook | `npm run storybook` | `stories/` + `.storybook/` (Vite; `src/components/` primitives) |
 
 ```bash
@@ -47,7 +48,8 @@ npm run test:coverage
 npm run test:coverage:open
 npx vitest run src/domains/storyteller/ai/tools/__tests__/storytelling.test.ts
 npm run test:e2e smoke
-npm run eval -- --samples=5
+npm run eval:scorer-fixture -- --samples=5
+npm run eval:agent-contract
 npm run eval:dashboard
 npm run storybook   # Vite catalog of src/components primitives (:6006)
 npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
@@ -57,21 +59,27 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 - Coverage (`npm run test:coverage`) uses `@vitest/coverage-v8` on every `src` `.ts`/`.tsx` file (`all: true`). `test:unit` stays uninstrumented. HTML / LCOV / json-summary land in `coverage/` (gitignored); `npm run test:coverage:open` generates then opens the HTML report.
 - E2E needs `npm run dev` (or `dev:stack`) + `.env.local`.
 - Golden set: `evals/datasets/storyteller-golden.ts`.
+- `npm run eval` is a **fixture-only alias** of `eval:scorer-fixture`. It is not agent quality.
 
 ### The eval gate
 
 **Two files, two jobs.** `evals/baselines/<dataset>.<date>.json` is the
 *reference* — a run someone inspected and chose, dated and never overwritten.
-`evals/results/latest.json` is the *last run*, overwritten every time, carrying
-the `inputHash` of the sources it scored. Comparison is always latest vs a named
-baseline; choosing a new one is a visible commit.
+`evals/results/latest.json` is the *last run*, overwritten every time.
+Comparison is always latest vs a named baseline; choosing a new one is a
+visible commit.
 
 ```bash
-npm run eval:gate     # run, compare to the newest baseline, exit 1 on a regression
-npm run eval          # run only, no comparison
-npm run eval:full     # both datasets — before a release, after a model change
-npm run eval:noise    # re-measure σ after changing a judge or the golden set
+npm run eval:gate            # run scorer fixtures, compare to the newest baseline, exit 1 on a regression
+npm run eval:scorer-fixture  # run fixtures only, no comparison (`npm run eval` is the same)
+npm run eval:agent-contract  # workflow contract tests (no live model)
+npm run eval:full            # both fixture datasets — before a release, after a model change
+npm run eval:noise           # re-measure σ after changing a judge or the golden set
 ```
+
+**These fixture scorers are not agent quality.** They score frozen
+`referenceOutput` on golden examples. A green `eval:scorer-fixture` does not
+mean the live beat-draft agent improved.
 
 **A regression is a drop beyond noise, not any drop.** LLM judges are
 stochastic; a hard `>=` on a mean of 24 examples fails constantly, and a gate
@@ -85,13 +93,11 @@ A σ of 0 from an **LLM judge** means "no variation observed in three runs", not
 golden examples happen to be unambiguous. The 0.02 floor is what stops those
 zeros becoming hair-triggers, and it is load-bearing for six of the eight.
 
-**The pre-commit hook is a reminder, not the gate.** `check-eval-freshness`
-hashes the watched sources and compares one string — under 0.1 s, and it never
-runs the evals. Staging a change under `src/domains/*/ai/`,
-`src/shared/agent-kernel/` or `evals/datasets/` without a matching artifact is
-refused. The escape hatch is an `Eval-Skip: <reason>` commit trailer, counted by
-the `evalSkipCommits` ratchet — a trailer is in the history, where an env var
-would be exported once in a shell profile and never seen again.
+**The pre-commit hook checks comparison honesty, not freshness hashes.**
+`check-eval-freshness` reads `evals/results/latest.json` and treats
+`comparison.passed === true` as a pass. A missing `passed` key is **skipped**,
+and skipped is not a pass. `passed: false` fails the commit. It never runs the
+evals.
 
 **Judge cost is read off Mastra's scorer result, never out of `llm_calls`.**
 Judge calls score a golden set rather than a tenant's work, so ADR 0003 keeps
@@ -99,9 +105,12 @@ them out of that table; only the committed price table is shared. A run costing
 more than 1.1× the baseline fails, because a prompt that doubled in length
 scores the same and bills twice.
 
-**Nothing runs any of this automatically.** There is no CI and no scheduler —
-`npm run eval:full` is a human cadence: before a release, and after any change
-to a judge model or the golden set.
+**CI does not run live evals.** GitHub Actions (`.github/workflows/ci.yml`)
+runs architecture, scoped typecheck/eslint (`qualitygate:changed`), and
+`npm run test:unit`. Pass/fail is the process exit code. Local husky still
+runs full `precommit` (including unit + production build). `npm run eval:full`
+stays a human cadence: before a release, and after any change to a judge model
+or the golden set.
 
 | Change touches… | Gate scorers |
 |-----------------|--------------|
@@ -113,7 +122,7 @@ to a judge model or the golden set.
 `metadata.scorers`, so it has no coverage and no baseline. Adding one is the
 smallest useful contribution to this suite.
 
-Enforced by: `npm run precommit` (eval freshness), `npm run eval:gate`,
+Enforced by: `npm run precommit` (eval comparison honesty), `npm run eval:gate`,
 `npx vitest run evals/__tests__`.
 
 ## Quality gates
@@ -125,6 +134,7 @@ Enforced by: `npm run precommit` (eval freshness), `npm run eval:gate`,
 | Many failures | `npm run qualitygate:capture` → `.local/quality-backlog.md` |
 | Before “done” | `npm run typecheck` · `npm run lint` · `npm run test:unit` |
 | Commit | `npm run precommit` (never `--no-verify`) |
+| CI | `.github/workflows/ci.yml` — architecture + `qualitygate:changed` + `test:unit` (exit codes, not log greps) |
 | OpenAPI public docs | `npm run openapi:generate` · `npm run openapi:check` (drift + route coverage; also in precommit) |
 | Module handoff | `node scripts/fabro-verify.mjs` |
 
@@ -235,6 +245,18 @@ Opt-in flags are named `FF_<NAME>` and turn on with the exact value `true`; anyt
 ## Model routing
 
 Every model resolves through the OpenRouter gateway on `OPENROUTER_API_KEY`. Defaults live in `src/shared/agent-kernel/models.ts` and the per-domain `config/model-config.ts`; agents default to `openrouter/auto-beta`. Pin a slot by setting its env var to a `provider/model` id — the gateway prefix is added automatically.
+
+### OpenRouter account controls
+
+Operator-only. Do this in the OpenRouter dashboard, not in app code:
+
+| Control | Why |
+|---------|-----|
+| Zero Data Retention (ZDR) | Prompts and completions must not be retained by the provider. |
+| `limit_usd` | Hard spend ceiling so a runaway agent cannot empty the account. |
+| `allowed_models` | Only the models this product is priced and eval'd for. |
+
+Do **not** add an app-layer regex prompt-injection filter. Fiction dialogue will trip it. Do **not** enable OpenRouter `person-name` or `address` filters.
 
 | Slot | Env var | Resolver |
 |---|---|---|

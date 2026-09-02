@@ -78,7 +78,7 @@ async function waitForRateLimit(): Promise<void> {
   requestCount++
 }
 
-function invokeVoyageAPI(texts: string[], config: VoyageEmbeddingConfig): Promise<number[][]> {
+function invokeVoyageAPI(texts: string[], config: VoyageEmbeddingConfig) {
   return callVoyageAPI(texts, config, 0, waitForRateLimit)
 }
 
@@ -87,8 +87,8 @@ async function embedWithCache(
   inputType: VoyageInputType,
   model: VoyageModelId,
   truncation: boolean
-): Promise<number[][]> {
-  if (texts.length === 0) return []
+): Promise<{ vectors: number[][]; promptTokens: number }> {
+  if (texts.length === 0) return { vectors: [], promptTokens: 0 }
 
   const results: number[][] = []
   const uncachedTexts: string[] = []
@@ -105,6 +105,7 @@ async function embedWithCache(
     }
   }
 
+  let promptTokens = 0
   if (uncachedTexts.length > 0) {
     const batches: string[][] = []
     for (let i = 0; i < uncachedTexts.length; i += VOYAGE_MAX_BATCH_SIZE) {
@@ -113,11 +114,12 @@ async function embedWithCache(
 
     let embeddingIndex = 0
     for (const batch of batches) {
-      const embeddings = await invokeVoyageAPI(batch, {
+      const { embeddings, promptTokens: batchTokens } = await invokeVoyageAPI(batch, {
         model,
         inputType,
         truncation,
       })
+      promptTokens += batchTokens
 
       for (let i = 0; i < embeddings.length; i++) {
         const originalIndex = uncachedIndices[embeddingIndex]
@@ -129,7 +131,7 @@ async function embedWithCache(
     }
   }
 
-  return results
+  return { vectors: results, promptTokens }
 }
 
 export class VoyageEmbeddings implements IEmbeddings {
@@ -147,6 +149,13 @@ export class VoyageEmbeddings implements IEmbeddings {
   }
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
+    const { vectors } = await embedWithCache(texts, VoyageInputType.Document, this.model, this.truncation)
+    return vectors
+  }
+
+  async embedDocumentsMetered(
+    texts: string[]
+  ): Promise<{ vectors: number[][]; promptTokens: number }> {
     return embedWithCache(texts, VoyageInputType.Document, this.model, this.truncation)
   }
 
@@ -155,7 +164,7 @@ export class VoyageEmbeddings implements IEmbeddings {
     const cached = checkCache(cacheKey)
     if (cached) return cached
 
-    const embeddings = await invokeVoyageAPI([text], {
+    const { embeddings } = await invokeVoyageAPI([text], {
       model: this.model,
       inputType: VoyageInputType.Query,
       truncation: this.truncation,
@@ -167,7 +176,8 @@ export class VoyageEmbeddings implements IEmbeddings {
   }
 
   async embedQueries(texts: string[]): Promise<number[][]> {
-    return embedWithCache(texts, VoyageInputType.Query, this.model, this.truncation)
+    const { vectors } = await embedWithCache(texts, VoyageInputType.Query, this.model, this.truncation)
+    return vectors
   }
 }
 

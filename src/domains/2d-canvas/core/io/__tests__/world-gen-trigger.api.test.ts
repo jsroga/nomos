@@ -131,6 +131,7 @@ describe('world-gen-trigger.api', () => {
         tokenId: 'token-abc',
         action: VariantSelectionAction.Accept,
         variantIndex: 2,
+        runId: 'run-abc',
       })
 
       expect(fetchJsonRecord).toHaveBeenCalledWith(
@@ -141,6 +142,7 @@ describe('world-gen-trigger.api', () => {
             tokenId: 'token-abc',
             action: VariantSelectionAction.Accept,
             variantIndex: 2,
+            runId: 'run-abc',
           }),
         })
       )

@@ -38,9 +38,9 @@ const FIXTURES: {
     minimumErrors: 2,
   },
   {
-    file: 'scripts/gate-fixtures/src/app/api/route-discards-auth-context.ts',
-    ruleId: 'local/no-discarded-auth-context',
-    minimumErrors: 2,
+    file: 'scripts/gate-fixtures/src/app/api/uses-get-session.ts',
+    ruleId: 'no-restricted-syntax',
+    minimumErrors: 1,
   },
   {
     file: 'scripts/gate-fixtures/src/services/bare-project-id.ts',

@@ -83,26 +83,30 @@ export const episodes = pgTable('episodes', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
-export const beats = pgTable('beats', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  episodeId: uuid('episode_id')
-    .references(() => episodes.id)
-    .notNull(),
-  sequence: integer('sequence').notNull(),
-  logline: text('logline').notNull(),
-  beatType: text('beat_type').notNull(),
-  content: text('content'),
-  visualHook: text('visual_hook'),
-  charactersInvolved: jsonb('characters_involved').default([]),
-  emotionalShifts: jsonb('emotional_shifts').default({}),
-  causalDependencies: jsonb('causal_dependencies').default([]),
-  setupsPayoffs: jsonb('setups_payoffs').default({}),
-  status: text('status').default('proposed'),
-  imageUrl: text('image_url'),
-  imagePrompt: text('image_prompt'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-})
+export const beats = pgTable(
+  'beats',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    episodeId: uuid('episode_id')
+      .references(() => episodes.id)
+      .notNull(),
+    sequence: integer('sequence').notNull(),
+    logline: text('logline').notNull(),
+    beatType: text('beat_type').notNull(),
+    content: text('content'),
+    visualHook: text('visual_hook'),
+    charactersInvolved: jsonb('characters_involved').default([]),
+    emotionalShifts: jsonb('emotional_shifts').default({}),
+    causalDependencies: jsonb('causal_dependencies').default([]),
+    setupsPayoffs: jsonb('setups_payoffs').default({}),
+    status: text('status').default('proposed'),
+    imageUrl: text('image_url'),
+    imagePrompt: text('image_prompt'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  table => [unique('beats_episode_id_sequence_uidx').on(table.episodeId, table.sequence)]
+)
 
 export const setups = pgTable('setups', {
   id: uuid('id').defaultRandom().primaryKey(),

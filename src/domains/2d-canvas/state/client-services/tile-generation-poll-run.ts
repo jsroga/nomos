@@ -61,6 +61,7 @@ export async function pollTileGenRun(runState: TileGenRunState, opId: string): P
                 newUrl: variantUrls[0] ?? '',
                 variantUrls,
                 tokenId: waitTokenId,
+                runId: runState.runId,
               })
             }
           }

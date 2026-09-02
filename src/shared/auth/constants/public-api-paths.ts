@@ -13,7 +13,6 @@ export const PUBLIC_API_PATHS = [
   '/api/auth/signup', // establishes the session
   '/api/auth/forgot-password', // pre-session recovery
   '/api/waitlist', // marketing capture, no tenant data
-  '/api/complete-token', // Trigger.dev public-token exchange
   '/api/mcp', // authenticates with its own hashed API key, not a cookie
 ] as const
 

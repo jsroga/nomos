@@ -46,6 +46,7 @@ interface UseTileReviewDialogParams {
   originalUrl?: string
   type: TileReviewType
   tokenId?: string
+  runId?: string
 }
 
 export function useTileReviewDialog({
@@ -57,6 +58,7 @@ export function useTileReviewDialog({
   originalUrl,
   type,
   tokenId,
+  runId,
 }: UseTileReviewDialogParams) {
   const [isAccepting, setIsAccepting] = useState(false)
   const [isRejecting, setIsRejecting] = useState(false)
@@ -84,14 +86,15 @@ export function useTileReviewDialog({
   }, [open, tileX, tileY, variantUrls])
 
   const acceptMjVariant = async (urls: string[], selectedUrl: string) => {
-    if (!tokenId) return
+    if (!tokenId || !runId) return
     const variantIndex = findVariantIndex(urls, selectedUrl)
     const pending = getWorldUiStore().getPendingGeneration(tileX, tileY)
     await persistFirstTileStyleAnchor(pending?.isFirstTile === true, selectedUrl)
     await tileGenerationService.completeVariantSelection(
       tokenId,
       VariantSelectionAction.Accept,
-      variantIndex === -1 ? 0 : variantIndex
+      variantIndex === -1 ? 0 : variantIndex,
+      runId
     )
     toast.success(TileReviewToast.UsingSelectedVariant)
     onClose()
@@ -136,7 +139,7 @@ export function useTileReviewDialog({
   }
 
   const handleUpscale = async () => {
-    if (!tokenId || !selectedVariantUrl || !pickerVariantUrls) return
+    if (!tokenId || !runId || !selectedVariantUrl || !pickerVariantUrls) return
     const variantIndex = findVariantIndex(pickerVariantUrls, selectedVariantUrl)
     if (variantIndex === -1) {
       toast.error(TileReviewToast.CouldNotDetermineVariantIndex)
@@ -147,7 +150,8 @@ export function useTileReviewDialog({
       await tileGenerationService.completeVariantSelection(
         tokenId,
         VariantSelectionAction.Upscale,
-        variantIndex
+        variantIndex,
+        runId
       )
       toast.success(TileReviewToast.UpscalingVariant)
       onClose()
