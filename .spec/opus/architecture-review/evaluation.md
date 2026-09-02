@@ -1,7 +1,9 @@
 # Nomos — Evaluation and Test Architecture
 
 How the Storyteller pipeline is tested, and how prose quality is measured. Companion to
-`target-architecture.md`. Baselined on `refactor` @ `b409539`.
+`target-architecture.md`. Baselined on `refactor` @ `b409539`. **Build order:** [phases.md](./phases.md).
+**Floor:** three critic scopes, Humanizer after verdict, host persist, 180s / one auto-revise.
+Regex prompt-injection is not an eval or product P0; account guardrails (ZDR, spend, allowlist) are.
 
 ---
 
@@ -37,9 +39,10 @@ proved the instrument works.
 
 ## 2. The four tiers
 
-This taxonomy is canonical. `target-architecture.md` §10 summarises it; `actions.md` Track C
+This taxonomy is canonical. `target-architecture.md` §9 summarises it; `actions.md` Track C
 (Actions 18–23, 29, 32) is the work broken into tickets. Where they appear to disagree, this
-document wins.
+document wins on measurement; `target-architecture.md` wins on the honest floor (three scopes,
+host persist, Humanizer after verdict).
 
 ### Tier 0 — Deterministic, no model, every commit
 
@@ -271,8 +274,9 @@ network, no database.
 
 - One beat request emits **exactly one** workflow dispatch — not zero (the model answered from its
   own head) and not three (a retry loop).
-- The critics dispatched **equal** the aids the plan declared. Not a superset.
-- Plan precedes draft; deterministic checks precede critics; verdict precedes commit.
+- The critics dispatched **equal** the aids the plan declared. Not a superset. Floor is
+  **three** overlapping scopes (`continuity`, `prose`, `stakes`).
+- Plan precedes draft; deterministic checks precede critics; verdict precedes **host persist**.
 - Critic spans **overlap in time** — proving `.parallel()` rather than sequential execution.
 
 ### 4.2 Absence of unnecessary work
@@ -281,8 +285,8 @@ Under-tested everywhere and worth as much as the positive cases:
 
 - A greeting emits **zero** tool calls.
 - A beat with no dialogue map dispatches no dialogue skill — assert on `skill.resolved`.
-- A beat with no continuity dependency dispatches no Continuity Critic.
-- A read-only question triggers no `write_draft`.
+- Extra scopes (`cognition`, `dialogue`) emit **zero** dispatches unless the plan or a flag asks.
+- A read-only question triggers no mutating chat CRUD.
 
 ### 4.2a Memory is bound, keyed and bounded
 
@@ -304,8 +308,8 @@ change and no failing test, and the only defence is a number someone can look at
 
 ### 4.3 The right text flows through
 
-The text handed to `commit_beat` is the **de-slopped revision**, not the original draft and not
-the pre-de-slop intermediate. Trivial to get wrong in a multi-step pipeline and invisible
+The text handed to **host persist** is the **de-slopped revision**, not the original draft and not
+the pre-de-slop intermediate. There is no `commit_beat` on the chat agent. Trivial to get wrong in a multi-step pipeline and invisible
 without a trace.
 
 ### 4.4 Failure handling
@@ -313,12 +317,13 @@ without a trace.
 - One critic throws → the run completes with a **partial** critique, flagged as partial.
 - Persistence fails → the run **fails**. It never completes with `saved: false`.
 - A `kill` verdict emits **zero** `persist.commit` events.
-- The revision loop terminates on unchanged findings rather than consuming its budget.
-- Suspend/resume round-trips: a resumed run reaches the same commit as an uninterrupted one.
+- The revision loop terminates on unchanged findings or after **one** auto-revise (InkOS), rather than consuming an unbounded budget.
+- Suspend/resume round-trips: a resumed run reaches the same persist as an uninterrupted one.
+- Client, route, and workflow timeouts share **one** source (`GENERATION_STUCK_TIMEOUT_MS` = 180s).
 
 ### 4.5 The two assertions the new architecture makes possible
 
-**Context isolation is real.** A critic subagent's read volume never enters the Conductor's
+**Context isolation is real.** A critic subagent's read volume never enters the chat agent's
 context — asserted on measured token counts from `context.isolated` events, not on intent. This is
 the property that makes the design work at novel length, so it deserves a test rather than a
 diagram.
@@ -416,11 +421,12 @@ where drift is bounded by §5.1's noise floor.
 
 ## 6A. Ablation — how the suite decides what grows past the floor
 
-The **floor** is not ablatable as a deletion: five catalog-mapped critic scopes, the
-novel-writing skill index, and the GRRM voice pack. If the pack loses a comparison, that is a
-packing bug, not a product decision.
+The **floor** is not ablatable as a deletion: **three** critic scopes that already run, the
+novel-writing skill **index** (L1), host persist after Approve, and Humanizer always-on class
+after the verdict (once Phase 2 lands). If the current GRRM pack loses a comparison, that is a
+packing bug, not a product decision to drop structure.
 
-Ablation decides **additions**: `anchoring` / `realism` scopes, variant tournament, embedding
+Ablation decides **additions**: `cognition` / `dialogue` / `anchoring` / `realism` scopes, variant tournament, embedding
 search, Muse-always-on.
 
 One ablation is **diagnostic rather than gating** and should be run first: the drafting voice
@@ -455,15 +461,16 @@ Three rules keep it honest:
 1. **Report per defect class, not only total score.** Contribution is reported against the
    `ProblemType` enum.
 2. **Same dataset, seed, judge id and hash discipline as §5.2.**
-3. **Adding a sixth critic scope** requires an ablation showing defects of that class surviving
-   the existing five. The GRRM rubric (consequence, embodiment, withheld truth, sensory density,
+3. **Adding a fourth critic scope** requires an ablation showing defects of that class surviving
+   the existing three. The GRRM rubric (consequence, embodiment, withheld truth, sensory density,
    Law of Motion) is a live-quality scorer, not an optional component.
 
 This is also the specific defence against over-engineering an agent system, which is the failure
 mode these designs are most prone to: the parts all sound useful, they are individually cheap, and
 they are collectively expensive. An earlier draft of the target architecture proposed seven
 critics, eleven tools and six workflows — not wrong because seven is too many, but wrong because
-nobody had measured whether three was enough.
+nobody had measured whether three was enough. The honest floor **is** those three. Five scopes
+are a Phase 4 candidate, not a commit-gate assertion.
 
 ---
 
@@ -565,7 +572,7 @@ The evidence a reviewer should demand before believing any quality claim this sy
 | 3 | Differences are real | No claimed improvement is smaller than 2× its noise floor |
 | 4 | Orchestration is verified | Deleting a critic dispatch, a gate, or the layer scoping each turns a specific named test red |
 | 5 | Absence is verified | A greeting produces zero tool calls; a no-dialogue beat loads no dialogue skill |
-| 6 | Isolation is verified | Measured token counts prove a critic's reads never reached the Conductor |
+| 6 | Isolation is verified | Measured token counts prove a critic's reads never reached the chat agent |
 | 7 | The artifact is honest | Editing an `instructions.md` invalidates it; a staged deletion is detected; a keyless run reports `skipped` |
 | 8 | Cost is known | Run total reconciles against the sum of its trace events; an unpriced model blocks a paid run |
 | 9 | The gate can fail | A missing binary, invalid config, signalled process and empty output with non-zero exit each produce red with a stated reason |

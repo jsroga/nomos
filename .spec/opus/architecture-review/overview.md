@@ -5,7 +5,8 @@
 All findings below were re-verified against a clean worktree of `b409539`, not against `main`.
 
 **Deliverable type:** analysis and documentation only. No implementation. Per-action
-specifications are a later stage.
+specifications are a later stage. **Build order:** [phases.md](./phases.md). **Target:**
+[target-architecture.md](./target-architecture.md) (honest floor).
 
 **Scope.** Storyteller, 2D Canvas, 3D Asset Exporter, Game Design, marketing, `app/`, `api/`,
 `shared/`, tooling, and evals. **Loop Creator and 3D Canvas are excluded** from
@@ -557,24 +558,28 @@ table stays a complete map rather than only an inbox.
 
 ## 8. How to read the rest
 
-- **`target-architecture.md`** — **the prose compiler, middle size.** One Conductor, three
-  permission modes, eight tools, one critic agent × five scopes mapped onto the
-  [novel-writing](https://github.com/wgwtest/novel-writing) catalog, three showable workflows
-  (`beat-forge`, `continuity-sweep`, `autonomous-episode`), the full ten-skill catalog at
-  progressive-disclosure L1, and the **George vibe split across the pipeline** — structure from
-  the catalog, voice in the Author's drafting prompt where `grrm-author` already puts it, and
-  anti-slop as a late fact-frozen pass. Ablation decides what grows *past* that floor.
-  Evaluation stays first-class. Models: Kimi K3 for prose, GLM 5.2 for planning and critics.
+- **`target-architecture.md`** — **the honest floor.** One chat agent, Planner, Author (incl.
+  Humanizer after verdict), one critic × **three** scopes, Muse as `brainstorm`, three
+  workflows (`beat-draft-workflow` heavy, `artifact-draft` light, `fix-inconsistencies` sweep).
+  Host persists after Approve — no model `commit_beat`. Four-layer canon is a prompt
+  partition first. Voice is the existing MASTER PROMPT / EPISODE PROMPT. Latency (180s, one
+  auto-revise, one timeout source) binds every phase. Ablation decides extras (`cognition`,
+  `dialogue`, ledger, autonomy). Evaluation stays first-class. Role pins after a live-quality
+  run, not vendor ids in the spec.
 - **`evaluation.md`** — **the deep companion on testing.** Four tiers; POV-leak and Law of
-  Motion in the deterministic tier; GRRM rubric in live quality; ablation for additions, not
-  for deleting the vibe.
-- **`diagrams.md`** — ten Mermaid diagrams: two of `b409539`, five of the middle system
+  Motion in the deterministic tier; GRRM rubric in live quality; ablation for additions past
+  **three** scopes, not for deleting the floor. Trace contracts assert three overlapping
+  critics, Humanizer before persist, kill writes nothing.
+- **`diagrams.md`** — ten Mermaid diagrams: two of `b409539`, five of the honest floor
   (including disclosure and the de-slop pass), three of measurement.
-- **`actions.md`** — thirty-two actions in four tracks (Foundations, Middle harness, Evals,
-  Compounding), with 26–32 collected after Track D and tagged with the track they belong to.
-  Action 17 is the George vibe. Every action has WHAT/HOW/WHERE/Acceptance plus **What is there
-  to learn** and **In plain words**. The appendix carries deferred capability with its promotion
-  trigger, and a short list of what Actions 33+ would be.
-- **`learning-materials.md`** — backend fundamentals through this repo, then a real teaching
-  unit on the craft catalog, the George split (structure / texture / measurement), and the
-  thirty-two actions as a syllabus.
+- **`actions.md`** — thirty-two actions in four tracks. Action **10 is cut**. Action **14**
+  floor is three scopes. Action **27** regex-injection is not P0. Action **28** is a Phase 0
+  constraint. Schedule is **`phases.md`**, not the historical serial string. Action 17 is the
+  George split. Every action has WHAT/HOW/WHERE/Acceptance plus **What is there to learn**
+  and **In plain words**.
+- **`phases.md`** — **canonical build order.** Platform ∥ storyteller in phases 0–4. All 32
+  ids mapped; none silently dropped.
+- **`second-opinion.md`** — rationale that produced the honest floor. The target document now
+  implements it.
+- **`learning-materials.md`** — backend fundamentals through this repo, then a teaching unit
+  on the craft catalog, the George split, and the thirty-two actions as a syllabus.

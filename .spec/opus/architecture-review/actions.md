@@ -11,36 +11,33 @@ for someone meeting the technique for the first time:
   working better with an AI assistant on that kind of problem.
 - **In plain words** — the idiot-proof version. No jargon, no repo names.
 
-**Four tracks.** **A — Foundations** (10): the system cannot be trusted or demonstrated without
-these. **B — The middle harness** (12): a showable agentic writing system that uses the full
-[novel-writing](https://github.com/wgwtest/novel-writing) catalog, plans with Martin's structural
-properties, and writes in the register the project asked for. **C — Evals and testing** (8): how
-you find out whether any of it works, including whether the vibe is present. **D — Compounding**
-(2): what makes it improve over time.
+**Four tracks.** **A — Foundations**: auth, CI, cost, gates, jobs. **B — Writing harness**:
+honest floor in `target-architecture.md` (one chat agent, three critic scopes, host persist).
+**C — Evals.** **D — Compounding** (Phase 4).
 
 **Priority.** P0 = a stated guarantee is false, a security exposure exists, or the architecture is
 unsound without it. P1 = structural work the design depends on. P2 = capability built on top.
 
-**Suggested order.** This is a valid topological order — no action appears before something it
-depends on.
+**Build order.** [phases.md](./phases.md) — platform ∥ storyteller per phase. The serial
+string that follows is historical; do not execute it. Action **10 is cut**. Action **14** floor
+is three scopes. Action **27** regex-injection is not P0. Action **28** is a Phase 0 constraint.
 
 `1 → 3 → 2 → 4 → 18 → 6 → 31 → 9 → 12 → 11 → 10 → 13 → 19 → 14 → 15 → 16 → 26 → 17 → 27 → 28 → 7 → 20 → 32 → 29 → 21 → 22 → 23 → 25 → 5 → 24 → 8 → 30`
 
-Action 1 is a live security exposure. Actions 3 and 2 are the substrate everything commits
-through. Action 18 (trace-contract tests) comes early because it is free and writable against
-the pipeline that exists today. Action 6 moves up because the harness is multi-step throughout.
+Phase 0 still starts with identity (Action 1), persist (2), trace (3, 18), CI (4), and one
+timeout source (28). That work is not optional decoration for the writing system.
 
-**Numbers are stable ids, not positions.** Actions 1–25 are grouped under their track headings;
-26–32 were added by later reviews and sit together in their own section after Track D, each
-tagged with the track it belongs to (27 and 31 → A, 26/28/30 → B, 29 and 32 → C). Read the order
-string above for sequence and the table below for scope.
+**Numbers are stable ids, not positions.** Schedule is [phases.md](./phases.md). Actions 1–25
+are grouped under track headings; 26–32 sit after Track D (27 and 31 → A, 26/28/30 → B, 29
+and 32 → C). The backtick string above is historical — do not execute it.
 
 **Current phase: evals first, no browser tier.** Verification for everything now in flight runs
 through unit tests, the structural and judge scorers, and the ablation harness. No Playwright
 spec is a prerequisite for any action below, and none should be blocked waiting for one — see
 `evaluation.md` §9.1.
 
-Two consequences for this list. **Actions 3 and 18 lead**, because proving *what ran* is the one
+Two consequences for this list. **Phase 0 leads** ([phases.md](./phases.md)): identity, persist,
+trace, and timeout reconciliation before new personalities. **Actions 3 and 18** are the
 measurement the repository does not currently have: every shipping scorer grades output text, so
 a pipeline that silently stopped dispatching its critics would still score. **UI-dependent
 work defers** — per-finding selection, undo and step progress have no acceptance path without a
@@ -67,14 +64,14 @@ Settled behaviour is `target-architecture.md` §8.4.
 | 6 | Make the cost ledger a total, not a floor | A | P1 | Count the whole bill, not the last item |
 | 7 | Three named eval tiers; make live quality real | A | P1 | Stop grading the answer key |
 | 8 | Credible tests and checkpointed paid steps | A | P1 | Don't pay twice when step three fails |
-| 9 | One Conductor, one entry point, one mutation policy | B | P1 | One front door, not three with different locks |
-| 10 | Three permission modes: read, draft, commit | B | P1 | Take the keys away instead of asking nicely |
-| 11 | Eight tools, each with one job | B | P1 | A sharp toolbox, including brainstorm and search |
-| 12 | The four-layer canon and layer-scoped retrieval | B | P1 | Don't hand the author the plot twist |
+| 9 | One chat agent, one entry point, one mutation policy | B | P1 | One front door, not three with different locks |
+| 10 | ~~Three permission modes with `commit_beat`~~ **CUT** | B | — | Host persists after Approve; Plan withholds chat writes |
+| 11 | Chat tools, each with one job | B | P1 | Sharp toolbox; Phase 1 is `brainstorm` only |
+| 12 | The four-layer canon and layer-scoped retrieval | B | P1 | Partition first; ledger is Phase 4 |
 | 13 | Typed contracts: Finding and BeatPlan | B | P1 | Make vague complaints impossible to write down |
-| 14 | One critic agent, five scopes | B | P1 | One inspector, five checklists from the craft catalog |
-| 15 | The full novel-writing catalog, disclosed on demand | B | P1 | Table of contents always; the chapter only when needed |
-| 16 | Three showable workflows | B | P1 | Compiler, episode sweep, and a durable loop you can demo |
+| 14 | One critic agent, **three** floor scopes | B | P1 | Keep continuity / prose / stakes; extra scopes by ablation |
+| 15 | The novel-writing catalog, disclosed on demand | B | P1 | Index always; bodies on match |
+| 16 | Three workflows: beat-draft, artifact-draft, fix-inconsistencies | B | P1 | Same shape, cheaper budget on bible/characters |
 | 17 | Martin plans, the user sets the tone, Humanizer de-slops | B | P1 | Martin builds the story; you choose how it sounds; a cleanup pass removes the robot |
 | 18 | Trace-contract tests | C | P1 | Prove the right things actually ran |
 | 19 | The deterministic prose linter | C | P1 | Catch the free mistakes for free |
@@ -83,10 +80,10 @@ Settled behaviour is `target-architecture.md` §8.4.
 | 22 | The ablation harness | C | P1 | Additions past the floor must prove they help |
 | 23 | The quality gate and cost per quality point | C | P2 | Never get worse; know what better costs |
 | 24 | `promote_rule` — findings become project law | D | P2 | Learn a lesson once, apply it forever |
-| 25 | The model role matrix: Kimi K3 and GLM 5.2 | D | P2 | Expensive brain for prose, cheap brain for checking |
-| 26 | The canon compiler: one pipeline, every artifact type | B | P1 | Bible sections get the same treatment beats do |
-| 27 | Two guardrail layers: the gateway and the prompt | A | P0 | Lock the account at OpenRouter; stop the tone note rewriting the truth |
-| 28 | The inline latency budget | B | P1 | Keep it under the timeout instead of hoping |
+| 25 | The model role matrix | D | P2 | Role pins now; vendor ids after a live-quality run |
+| 26 | The canon compiler: one pipeline, every artifact type | B | P1 | Same shape; bible/character are **light**, not five critics |
+| 27 | Two guardrail layers: gateway account + prompt precedence | A | P0* | ZDR / spend / allowlist are P0. Regex injection is **not**. Delimit `masterPrompt` |
+| 28 | The inline latency budget | B | P1 | Phase 0 constraint: one timeout source, one auto-revise, 180s |
 | 29 | The prompt registry | C | P1 | Stop hiding prompts in buttons; version them like code |
 | 30 | The chat surface: verdict, progress, labels | B | P2 | Finish the half-wired verdict and say what's happening in words |
 | 31 | Memory: bind it, bound it, expire it | A | P1 | Decide whose notebook is whose, how thick, and when it's shredded |
@@ -468,14 +465,14 @@ crashes it should be failing on.
 
 ---
 
-# Track B — The middle harness
+# Track B — The writing harness
 
-> Between the seven-critic roster and the three-scope minimum. This track uses the full
-> [novel-writing](https://github.com/wgwtest/novel-writing) catalog, runs five critic scopes,
-> ships three workflows you can demo, and puts the George vibe **in the pipeline**. Ablation
-> (Action 22) decides what grows *past* this floor; it does not get to delete the floor.
+> Honest floor in [target-architecture.md](./target-architecture.md). One chat agent, Planner,
+> Author, one critic × **three** scopes, Muse as `brainstorm`, three workflows (heavy beat-draft,
+> light artifact-draft, existing sweep). Host persists after Approve. Humanizer after the
+> verdict. Ablation (Action 22) decides extras. Action **10 is cut**. Schedule: [phases.md](./phases.md).
 
-## 9. One Conductor, one entry point, one mutation policy
+## 9. One chat agent, one entry point, one mutation policy
 
 **Track:** B · **Priority:** P1 · **Dependencies:** 3
 
@@ -489,12 +486,12 @@ from the domain barrel with no call sites — dead **wrappers**, not dead capabi
 file-system agents they shadow (`statelessGrrmAuthor`, `statelessBeatPlanner`) are what
 production actually runs, and the refactor branch added `meteredCall` inside the dead copies.
 
-**HOW.** Make the registered adapter the single implementation — the Conductor — and have the
-stream route resolve it rather than constructing its own. Express approval as one policy owned
-by the domain and selected by controller mode (Action 10). Either retire `/api/storyteller/chat`
-or make it an explicitly named unattended path. The autonomous author is the fourth caller:
-unattended becomes a declared, authorized mode whose verdicts queue as suspended runs. Delete
-dead wrappers. Reduce the mention catalog to hints, or implement real dispatch.
+**HOW.** Make the registered adapter the single implementation — the chat agent the writer
+talks to — and have the stream route resolve it rather than constructing its own. Same mutation
+policy on every URL. Plan-mode may withhold mutating **chat CRUD** tools. Persist after Approve
+is **host code**, not a model tool (Action 10 is cut). Either retire `/api/storyteller/chat`
+or make it an explicitly named unattended path. `autonomousAuthor` stays flagged off until
+verdicts can queue (Phase 4). Delete dead wrappers. Reduce the mention catalog to hints.
 
 **WHERE.** `src/domains/storyteller/core/io/mastra-runtime.ts`,
 `src/domains/storyteller/ai/agents/`, `src/app/api/storyteller/chat/`,
@@ -518,44 +515,43 @@ line (Action 17), not as a separate lobby.
 
 ---
 
-## 10. Three permission modes: read, draft, commit
+## 10. ~~Three permission modes with `commit_beat`~~ **CUT**
 
-**Track:** B · **Priority:** P1 · **Dependencies:** 9, 11
+**Track:** B · **Priority:** — · **Dependencies:** 9 · **Phase:** do not build
 
-**WHAT.** Nothing structurally prevents the agent from writing before it has been checked.
-Two modes (read / commit) was too coarse — a model that can `write_draft` during exploration
-will. Four modes duplicated the workflow stages in the controller. Three matches the
-novel-writing stage split: planning, drafting, reviewing.
+**WHAT.** Do **not** add `read / draft / commit` modes that put `commit_beat` on the model's
+tool list. Persist after editorial Approve is host code, same as Cursor Plan → user approve →
+apply. A model-visible commit recreates `autoApprove: true` in a new costume.
 
-**HOW.** `read` (read tools + `brainstorm`), `draft` (adds `write_draft`), `commit` (adds
-`commit_beat` and `promote_rule`). Mutating tools are **absent from the model's tool list** in
-earlier modes. Prefer `availableTools` / `additionalTools` with `transitionsTo`.
+**HOW.** Keep existing `AgentController` Plan-mode: withhold mutating **chat CRUD** tools
+during exploration. After human Approve (or Kill), **code** writes or writes nothing. Kill
+emits zero persist. `promote_rule` is Phase 4, not a commit-mode tool.
 
-**WHERE.** `src/domains/storyteller/ai/agents/StorytellerChatAdapterAgent/`,
-`src/domains/storyteller/ai/tools/`.
+**WHERE.** No new mode machine. Existing controller + `resumeChatWorkflow` + persist in the
+workflow (Actions 2, 9, 16, 30).
 
-**Acceptance.** In `read` mode `write_draft` and `commit_beat` do not appear in the request
-payload. No sequence of model output reaches `commit` without the gate. Mode transitions
-appear in the trace as `state.transition`.
+**Acceptance.** No `commit_beat` (or equivalent) appears in any chat-agent tool payload.
+Trace on Approve shows `persist.commit` from host, not from a model tool call. Kill shows
+zero persist events.
 
-**What is there to learn.** *Capability-based security.* Everything a model can be told, it
-can be talked out of; everything it is not given, it cannot use. The same idea as Action 12
-for information. *Working with AI:* any prompt sentence beginning "do not…" is a candidate
-for removing a capability instead.
+**What is there to learn.** *Capability-based security still applies* — to chat writes, not
+to compiler persist. The compiler is not a tool the intern is trusted with. *Working with
+AI:* "withhold tools" is the right lesson; giving the model the save key is the wrong
+application.
 
-**In plain words.** Don't tell the intern "please don't touch the master copy." Don't give
-them the draft pen until they're drafting, and don't give them the filing key until someone
-signed off.
+**In plain words.** Don't give the intern the filing cabinet key. After you stamp Approve,
+the clerk files the pages. Plan mode can still hide the edit buttons while you are thinking.
 
 ---
 
-## 11. Eight tools, each with one job
+## 11. Chat tools, each with one job
 
 **Track:** B · **Priority:** P1 · **Dependencies:** 3, 12
 
-**WHAT.** `read_canon`, `read_manuscript`, `search_manuscript` (literal — plant/payoff and
-self-repetition from the catalog are string problems), `run_prose_check`, `brainstorm` (wires
-the existing Muse; `wildcards` on the schema), `write_draft`, `commit_beat`, `promote_rule`.
+**WHAT.** Chat tools: `read_canon`, `read_manuscript`, `search_manuscript` (literal —
+plant/payoff and self-repetition are string problems), `run_prose_check`, `brainstorm` (wires
+the existing Muse; `wildcards` on the schema), existing `manage_*` CRUD, and workflow
+dispatch. **Not** model tools: `commit_beat` (host after Approve), `promote_rule` (Phase 4).
 
 **HOW.** `read_canon` carries two scopings: *depth* (task / near / far) and *layer* (Action
 12), both enforced server-side from role and POV. Every read tool takes a token budget and
@@ -569,15 +565,18 @@ never forwards it. `beat-draft-contract.ts:29` already declares it and
 
 **Acceptance.** Each tool has input and output schemas with no `z.any()`. `read_canon` cannot
 be prompt-injected into returning author truth to the Author. `brainstorm` is reachable from a
-plan that asks for wildcards. `write_draft` cannot write to canon.
+plan that asks for wildcards. Chat CRUD cannot persist a beat script; that path is the
+workflow. No `commit_beat` on the chat agent.
 
 **What is there to learn.** *Tool design is API design.* One job per tool, never let the model
 pass its own authorization parameter, budget the context, and write descriptions as routing
 logic. *Working with AI:* ask "could this be a parameter on an existing tool?" before adding
 the twelfth.
 
-**In plain words.** Eight labelled tools. One of them is "go think of wild options" — the
-thinker already lives in the building, someone just forgot to put a doorbell on the schema.
+**In plain words.** Labelled tools for reading, checking, brainstorming, and dispatching
+workflows. One of them is "go think of wild options" — the thinker already lives in the
+building, someone just forgot to put a doorbell on the schema. Saving the beat is not a tool
+the intern gets.
 
 ---
 
@@ -590,10 +589,11 @@ thinker already lives in the building, someone just forgot to put a doorbell on 
 character knowledge, author truth, reveal boundary. Today there is one `story_bible` blob.
 This is the structural half of the George vibe: dramatic irony as a retrieval permission.
 
-**HOW.** Model the layers. **The Author drafting a POV beat receives story facts plus that
-character's knowledge, and is not given author truth.** Enforcement lives in `read_canon`.
-Retrieval depths collapse the catalog's L0–L4 to task / near / far; L4 (future prose) stays
-excluded. Prose outranks cards.
+**HOW.** Phase 1 is a **prompt partition**: the Author drafting a POV beat receives story
+facts plus that character's knowledge, and is not given author truth. Enforcement lives in
+context assembly / `read_canon`. Retrieval depths collapse the catalog's L0–L4 to task /
+near / far; L4 (future prose) stays excluded. Prose outranks cards. A ledger table is Phase 4
+if the partition misses paraphrases.
 
 **WHERE.** `src/db/schema-parts/`, `src/domains/storyteller/ai/tools/read-canon.ts`, `core/io/`.
 
@@ -640,34 +640,35 @@ accepted answer.
 
 ---
 
-## 14. One critic agent, five scopes
+## 14. One critic agent, three floor scopes
 
-**Track:** B · **Priority:** P1 · **Dependencies:** 3, 13
+**Track:** B · **Priority:** P1 · **Dependencies:** 3, 13 · **Phase:** 1 (Finding on existing), 2 (`style-fidelity` on diff), 4 (extra scopes)
 
-**WHAT.** One critic agent, five parallel invocations, each mapped onto a novel-writing
-reference: `continuity` and `causality` → `scene-causality-and-agency`; `cognition` →
-`cognition-layers-and-language`; `dialogue` → `dialogue-and-behavior`; `style-fidelity` →
-`style-fidelity` **on the diff**. Cognition and dialogue are the two Martin-heavy scopes the
-minimum draft cut. A critic never rewrites.
+**WHAT.** One critic agent, **three** parallel invocations matching what already ships:
+`continuity` (today `continuityCritic`), `prose` (`proseCritic`), `stakes` (`stakesCritic`).
+A critic never rewrites. `cognition` and `dialogue` are Phase 4 **scopes** (same agent, extra
+checklist), loaded when golden-set defects of that class survive these three. `style-fidelity`
+on the revise **diff** is a critic job during `.dountil()`, not a fourth always-on wall.
 
 **HOW.** One agent definition, parameterised by scope and skill, `.parallel()`, own memory
-thread discarded on return. Emit `context.isolated`. Do not register scopes on the Mastra
-instance. Next candidates (`anchoring`, `realism`) wait on Action 22.
+thread discarded on return. Emit `context.isolated`. Do not register scopes as extra Agent
+classes on the Mastra instance. Next candidates (`anchoring`, `realism`) wait on Action 22.
 
-**WHERE.** `src/domains/storyteller/ai/agents/` (one critic), `ai/workflows/` (dispatch).
+**WHERE.** `src/domains/storyteller/ai/agents/` (keep the three; collapse wrappers later),
+`ai/workflows/` (dispatch).
 
-**Acceptance.** Five scopes overlap in the trace. Tokens returned are a small fraction of
-tokens read. One scope failing yields a partial critique. `style-fidelity` received a diff.
-`cognition` findings include leaked author-truth as a closed `ProblemType`.
+**Acceptance.** Three scopes overlap in the trace (Phase 0/1). Tokens returned are a small
+fraction of tokens read. One scope failing yields a partial critique. Extra scopes appear
+only when a flag or plan asks. `style-fidelity` received a diff when a revise ran.
 
 **What is there to learn.** *Context isolation, and parameterisation over duplication.* Seven
-agents that differ by a prompt paragraph are one agent with a parameter. Five scopes is the
-catalog's review procedure, not a headcount guess. *Working with AI:* "is this the same agent
-with a different input?"
+agents that differ by a prompt paragraph are one agent with a parameter. Three scopes is the
+floor because they already run; five is the catalog's full review procedure, earned by
+ablation. *Working with AI:* "is this the same agent with a different input?"
 
-**In plain words.** One inspector, sent in five times with five chapters of the craft manual.
-Two of those chapters are "who knows the secret" and "how people actually talk" — skip those
-and you skipped Martin.
+**In plain words.** One inspector, sent in three times with three chapters of the craft
+manual — the three you already have. Extra chapters (who knows the secret, how people talk)
+wait until those defects survive the first three.
 
 ---
 
@@ -677,10 +678,11 @@ and you skipped Martin.
 
 **WHAT.** All ten references from
 [wgwtest/novel-writing](https://github.com/wgwtest/novel-writing) sit at Level 1 (~100 tokens
-each). Seven bodies load at Level 2 by default for matching stages; `character-introductions`,
-`scene-and-structure`, `realism-constraints` load when the plan flags them. GRRM
-`psychology` loads at drafting and `anti-slop` at the de-slop pass (Action 17). Cutting the catalog to four
-skills was a cost-model error: the index is cheap, the bodies are expensive.
+each). Bodies load at Level 2 **on match** (scope, stage, or `forbiddenMistakes`) — not six
+bodies every beat. `psychology` loads at the **Planner** after a pack-on vs pack-off ablation
+(Action 17). Humanizer always-on class loads at the de-slop pass after verdict. Keep
+`anti-slop` until that ablation wins. Cutting the catalog to four skills was a cost-model
+error: the index is cheap, the bodies are expensive.
 
 **HOW.** Three-level progressive disclosure, which is the catalog's own working pattern.
 Level 3 runs `check_manuscript_text.py`-shaped scripts rather than reading them. Adapt
@@ -705,39 +707,44 @@ Open the one chapter the job needs. That library is
 
 ---
 
-## 16. Three showable workflows
+## 16. Three workflows: beat-draft, artifact-draft, fix-inconsistencies
 
-**Track:** B · **Priority:** P1 · **Dependencies:** 2, 3, 10, 11, 13, 14, 19
+**Track:** B · **Priority:** P1 · **Dependencies:** 2, 3, 9, 11, 13, 14, 19 · **Phase:** 0–1 keep beat-draft; 3 add artifact-draft
 
-**WHAT.** Three Mastra workflows, not one and not six.
+**WHAT.** Three Mastra workflows. Same **shape**, different **budget**. Names match the code.
 
-1. **`beat-forge`** — the compiler: plan → concreteness + Law of Motion → draft (in voice) →
-   deterministic check → five scopes → synthesize → suspend → (approve | revise ↺ | kill) →
-   **de-slop pass** → claim check → commit.
-2. **`continuity-sweep`** — episode-scale fan-out, extending `fix-inconsistencies` with
-   layer-scoped canon and the `cognition` / `continuity` scopes per beat.
-3. **`autonomous-episode`** — the existing durable agent + goal, with `autoApprove` retired
-   as a request boolean; unattended is a declared mode whose verdicts queue.
+1. **`beat-draft-workflow`** (heavy — beats and final episode compile): plan → concreteness +
+   Law of Motion → draft (Author + `masterPrompt`) → deterministic check → **three** critic
+   scopes → suspend → (approve | **one** auto-revise | kill) → **Humanizer** (always-on class)
+   → claim-check (code) → **host persist** including `AfterBeatState`.
+2. **`artifact-draft`** (light — character, bible section, premise): typed input → 1–2 scopes
+   → existing `SectionPendingOverlay` → persist. **No Humanizer. No Law of Motion.**
+3. **`fix-inconsistencies`** (sweep): keep the existing assemble → scan → propose → suspend →
+   apply. **No Humanizer** (it patches facts). Do not rebuild as five beat critics.
+
+`autonomousAuthor` is Phase 4, flagged off until verdicts can queue. Do not add
+`continuity-sweep` or `autonomous-episode` as extra “showable” machines.
 
 **HOW.** `createWorkflow` / `createStep`, `.parallel()`, `.dountil()` with a no-progress
-exit, `.branch()`, `suspend`. Voice stays in the drafting prompt where it already is (Action
-17); de-slop is a separate Author mode at the end. Intermediate state in step outputs.
+exit and **max one auto-revise** (InkOS). Voice in the drafting prompt (`masterPrompt`);
+de-slop is a second Author pass after the verdict. Intermediate state in step outputs.
+Persist is host, not `commit_beat`.
 
-**WHERE.** `src/domains/storyteller/ai/workflows/` (extend beat-draft and
-fix-inconsistencies), `src/domains/storyteller/ai/agents/AutonomousAuthor`.
+**WHERE.** `src/domains/storyteller/ai/workflows/` (extend beat-draft; add artifact-draft;
+keep fix-inconsistencies). Do not turn AutonomousAuthor on.
 
-**Acceptance.** Trace shows deterministic checks before model critics, the de-slop pass after
-the last revision and before `commit_beat`, five overlapping scopes, loop exit on unchanged
-findings, `kill` persists nothing. Sweep fan-out isolates per-beat context. Autonomous runs
-without `autoApprove` still suspend.
+**Acceptance.** Trace shows deterministic checks before model critics, Humanizer after the
+last revision and before persist, **three** overlapping scopes, loop exit on unchanged
+findings or after one auto-revise, `kill` persists nothing. Artifact traces show **1–2**
+critic dispatches, not three. Autonomous stays off.
 
 **What is there to learn.** *Put the plan in code.* Cheap deterministic checks before
 expensive probabilistic ones. Every loop needs a no-progress exit. *Working with AI:* when an
 assistant proposes an autonomous multi-step agent, ask which steps are actually fixed.
 
-**In plain words.** Three machines you can put on a slide: the chapter compiler that writes in
-Martin's voice and scrubs the machine tells at the end, the whole-episode continuity pass, and
-the robot that keeps writing overnight but still leaves you a pile of pages to stamp.
+**In plain words.** Three machines: the chapter compiler that writes, gets checked, waits
+for your stamp, then scrubs robot tells; a cheaper line for bible and characters; and the
+episode sweep you already have. Overnight autonomy waits until the stamp pile can queue.
 
 ---
 
@@ -816,7 +823,7 @@ control the split must beat.
 **Acceptance.** Two projects with different master prompts produce measurably different registers
 from the same brief, and both satisfy the structural rubric. Trace shows `psychology` resolving at
 the Planner and **not** at the Author, and the de-slop pass running after the last revision and
-before `commit_beat`. A claim-check failure returns to revision. A suppressed-class pattern does
+before host persist. A claim-check failure returns to revision. A suppressed-class pattern does
 not fire on a project that did not ask for plain register. Author context at every stage still has
 no author-truth row. Token count per author call falls against today's unconditional
 concatenation. The current-pack ablation has a recorded result.
@@ -864,11 +871,13 @@ draft from a lucky single-shot one.
 The seam is already there — `createBeatDraftWorkflow(deps)` takes injected dependencies and the
 workflow tests already stub them, so this needs no model, network or database.
 
-**HOW.** Assertions: one beat request → one workflow dispatch; five scopes match the plan and
-overlap; `style-fidelity` got a diff; de-slop ran after the last revision; Author `read_canon` had no
-author-truth; `brainstorm` reachable when asked; `commit_beat` got the revised text; greeting
+**HOW.** Assertions: one beat request → one workflow dispatch; **three** scopes match the plan and
+overlap; Humanizer ran after the last revision and before persist; claim-check zero fact delta;
+Author `read_canon` had no
+author-truth; `brainstorm` reachable when asked; persist received the de-slopped text; greeting
 → zero tools; `kill` → no `persist.commit`; one critic throw → partial critique; loop exits
-on no progress; run total reconciles; every tool named in a prompt is bound.
+on no progress or after one auto-revise; run total reconciles; every tool named in a prompt is bound.
+No `commit_beat` on the chat agent.
 
 **WHERE.** `evals/` (`agent-offline-contract`),
 `src/domains/storyteller/ai/workflows/__tests__/`.
@@ -973,8 +982,9 @@ actually changing — and ignore wobbles smaller than the scales' wobble.
 
 **Track:** C · **Priority:** P1 · **Dependencies:** 20, 21
 
-**WHAT.** Decides growth *past the floor*. The floor (five scopes, the catalog, the voice
-pack) is not optional. Candidates: `anchoring` / `realism` scopes, variant tournament,
+**WHAT.** Decides growth *past the floor*. The floor (three critic scopes, catalog L1, Humanizer
+always-on class after verdict, host persist) is not optional. Candidates: `cognition` /
+`dialogue` / `anchoring` / `realism` scopes, variant tournament,
 embedding search, Muse-always-on. One ablation here is **diagnostic rather than
 gating**: the drafting voice pack, which has shipped unmeasured in every beat (Action 17).
 
@@ -985,8 +995,8 @@ de-slop pass loses an ablation, that is a packing bug filed against Action 17, n
 **WHERE.** `evals/ablation/` (new), `evals/run.ts`, domain feature flags.
 
 **Acceptance.** Every *candidate* (not every floor piece) is switchable without code changes.
-A sweep produces deltas with noise floors. Adding a sixth scope requires defects surviving
-the five.
+A sweep produces deltas with noise floors. Adding a fourth scope requires defects surviving
+the three.
 
 **What is there to learn.** *Ablation studies.* Convert architectural argument into an
 experiment. Look at defect classes, not only totals. *Working with AI:* this is the leash on
@@ -1049,35 +1059,38 @@ agree, write it on the wall. The catalog already asked you to.
 
 ---
 
-## 25. The model role matrix: Kimi K3 and GLM 5.2
+## 25. The model role matrix
 
-**Track:** D · **Priority:** P2 · **Dependencies:** 6, 21
+**Track:** D · **Priority:** P2 · **Dependencies:** 6, 21 · **Phase:** 4 (pins after a live-quality run)
 
-**WHAT.** Author — drafting, revision and the de-slop pass — on `moonshotai/kimi-k3`. Conductor, Planner, five critic
-scopes on `z-ai/glm-5.2`. Author and chat are already Kimi; planner is still Opus and critic
-is still Haiku. Five scopes on Opus is unaffordable; on Haiku they are unreliable.
+**WHAT.** Role pins through `resolveRoleModel`. Author (draft, revise, Humanizer) is the
+expensive prose slot; chat, Planner, and the three critic scopes are the cheap checker slot.
+Do not freeze vendor ids (`kimi-k3`, `glm-5.2`) in this spec until a live-quality run exists.
+Author and chat are already Kimi; planner is still Opus and critic is still Haiku.
 
-**HOW.** Two role pins through `resolveRoleModel`. Assert the **effective** model from the
-trace after `enforceTextGenModelPolicy`. Five scopes ≈ $0.10/beat for the critic wall.
+**HOW.** Two role pins. Assert the **effective** model from the
+trace after `enforceTextGenModelPolicy`. Three scopes must fit the 180s window (Action 28).
 
 **WHERE.** `src/domains/storyteller/config/constants/model-config.ts`,
 `src/shared/ai/gateway/`.
 
 **Acceptance.** No agent file names a literal model. Trace matches the matrix after remap.
-An A/B is a config diff.
+An A/B is a config diff. A three-critic wall plus one Humanizer pass completes inside the
+first request window up to suspend.
 
 **What is there to learn.** *Configuration over hardcoding; declared vs effective config.*
 *Working with AI:* never paste a model name into an agent file; always assert from the
 trace.
 
-**In plain words.** Beautiful expensive writer for writing and for the Martin pass. Cheap
-sharp checker for the five inspections. Confirm from the logs who actually showed up.
+**In plain words.** Beautiful expensive writer for writing and for the cleanup pass. Cheap
+sharp checker for the three inspections. Confirm from the logs who actually showed up. Do
+not pick a brand until you have a live number.
 
 ---
 
 # Actions 26–32 — added by later review
 
-> These carry their own track tags (A, B, C) and slot into the suggested order above.
+> These carry their own track tags (A, B, C) and slot into [phases.md](./phases.md).
 > They are collected here rather than inside their tracks so that the numbering stays
 > stable and the additions are findable in one place.
 
@@ -1096,33 +1109,32 @@ The asymmetry has no principled basis. A world-logic rule is as load-bearing as 
 since beats are checked against it.
 
 **HOW.** One pipeline, an **artifact-type matrix** deciding what varies. The machinery is
-constant: typed input, plan, deterministic checks, critics, `Finding[]`, verdict, commit. What
+constant: typed input, checks, critics, `Finding[]`, verdict, persist. What
 varies per type is the **critic scopes**, the **canon layers read**, and the **budget**.
+Beats stay on `beat-draft-workflow` (heavy). Bible/character/premise use `artifact-draft`
+(light). `fix-inconsistencies` stays its own workflow (sweep) — same shape, not five beat
+critics.
 
 | Artifact | Scopes | Reads | Class |
 |---|---|---|---|
-| Beat script | all five | all four layers, POV-scoped | heavy |
-| Bible section (faction, world logic, item, event) | `continuity`, `causality` | story facts + author truth | light |
-| Episode premise / ten-point plan | `causality`, `stakes` | story facts | medium |
-| Character | `cognition`, `continuity` | facts + that character's ledger | light |
-
-`fix-inconsistencies` stops being a special workflow and becomes an **instance** of this — it
-already produces `ContinuityFinding` and already suspends for review, which is the shape
-everything else needs.
+| Beat script | three floor scopes | partition: facts + POV knowledge | heavy |
+| Bible section (faction, world logic, item, event) | `continuity` (+ causality if needed) | story facts | light |
+| Episode premise / ten-point plan | `stakes` | story facts | light |
+| Character | `continuity` (+ `cognition` if earned) | facts + that character | light |
 
 **Reuse the existing vocabulary.** `BibleSection` and `ActionType` enums already name these
 artifacts; do not invent a parallel taxonomy. `SectionPendingOverlay` is already the verdict
-surface for sections in five places.
+surface for sections in five places. **No Humanizer** on artifact-draft.
 
 **WHERE.** `src/domains/storyteller/ai/workflows/` (matrix + generalised pipeline),
 `src/domains/storyteller/core/types/enums.ts` (reuse `BibleSection`),
 `src/domains/storyteller/ai/workflows/fix-inconsistencies-workflow.ts` (becomes an instance).
 
-**Acceptance.** Generating a faction runs a plan, deterministic checks and two critic scopes, and
+**Acceptance.** Generating a faction runs deterministic checks and **1–2** critic scopes, and
 returns `Finding[]` in the same schema a beat returns. A faction contradicting an existing world
-rule produces a `Finding` and does not commit silently. The trace for a section shows **two**
-critic dispatches, not five — the matrix is doing its job rather than applying everything
-everywhere. A beat still runs all five.
+rule produces a `Finding` and does not persist silently. The trace for a section shows **two**
+critic dispatches, not three — the matrix is doing its job rather than applying everything
+everywhere. A beat still runs the three floor scopes.
 
 **What is there to learn.** *A pipeline is a shape, not a feature.* The instinct is to build a
 second workflow for sections; the better move is to notice beats and sections differ only in
@@ -1137,42 +1149,43 @@ checks on the smaller pieces.
 
 ---
 
-## 27. Two guardrail layers: the gateway and the prompt
+## 27. Two guardrail layers: gateway account + prompt precedence
 
-**Track:** A · **Priority:** P0 · **Dependencies:** 17
+**Track:** A · **Priority:** P0* · **Dependencies:** none for the account half; 17 for prompt
+precedence · **Phase:** 0 (account), 2 (`masterPrompt` delimit)
 
-**WHAT.** Two guardrails with different owners, commonly confused, and neither is in place.
+**WHAT.** Two guardrails with different owners. Only the **account** half is P0.
 
-**Layer one — the gateway.** Every call leaves through a single `OPENROUTER_API_KEY`
+**Layer one — the gateway (P0).** Every call leaves through a single `OPENROUTER_API_KEY`
 (`models.ts`: "one key to rule them all"), so
 [OpenRouter Guardrails](https://openrouter.ai/docs/guides/features/guardrails) is the right place
 for account-level policy. It is workspace-scoped, assigned to keys or members, provisioned through
 the Management API, and takes effect **without a code change**.
 
-| Policy | Field | Replaces |
-|---|---|---|
-| Model pins are procurement, not code | `allowed_models` / `ignored_models` | `enforceTextGenModelPolicy`, which remaps Anthropic ids to Kimi in userland and logs a warning |
-| Hard spend ceiling | `limit_usd` + `reset_interval` | Nothing — Action 6 measures cost but cannot stop it |
-| Users' unpublished fiction must not be retained | `enforce_zdr_anthropic` / `_openai` / `_google` / `_other` | Nothing |
-| Injection defence on user-authored text | `content_filter_builtins: [{ slug: 'regex-prompt-injection', action: 'block' }]` | Nothing |
+| Policy | Field | Replaces | Priority |
+|---|---|---|---|
+| Model pins are procurement, not code | `allowed_models` / `ignored_models` | `enforceTextGenModelPolicy` | P0 |
+| Hard spend ceiling | `limit_usd` + `reset_interval` | Nothing — Action 6 measures cost but cannot stop it | P0 |
+| Users' unpublished fiction must not be retained | `enforce_zdr_anthropic` / `_openai` / `_google` / `_other` | Nothing | P0 |
+| Regex injection filter | `content_filter_builtins: [{ slug: 'regex-prompt-injection' }]` | **Do not enable.** Fiction dialogue trips it. | **not P0** |
 
-**Layer two — the prompt.** Action 17 makes `masterPrompt` authoritative for register. It is
-user-authored text interpolated raw into `buildSystemContextBlock` — unsanitized, uncapped, and
-placed **last**, after every hard rule, in the same undifferentiated block. Authority without a
-boundary makes "the user sets the tone" collapse into "the user sets everything".
+**Layer two — the prompt (Phase 2, not P0).** Action 17 makes `masterPrompt` authoritative for
+register. It is user-authored text interpolated raw into `buildSystemContextBlock` —
+unsanitized, uncapped, and placed **last**, after every hard rule. Delimit it, cap it, pack
+hard rules **after** it. This is app code, not an OpenRouter regex.
 
 | It governs | It never governs |
 |---|---|
 | Register, cadence, diction, person, tense | What is true — canon facts |
 | Vocabulary preferences and banned phrasings | What a character knows — layer scoping (Action 12) |
 | Which Humanizer classes are suppressed | What may be revealed — the reveal boundary |
-| | What may be written or committed — permission modes (Action 10) |
+| | What may be persisted — host after Approve (Action 10 cut) |
 
-**HOW.** Provision the gateway guardrail through the Management API and check it into
-infrastructure config, not into `src/`. Delete `enforceTextGenModelPolicy` once `allowed_models`
-covers it. For layer two, delimit the master prompt as untrusted content, cap its length, and
-state the precedence rule in the system block above it — structure and facts outrank tone,
-always.
+**HOW.** Provision ZDR, `limit_usd`, and `allowed_models` through the Management API and check
+them into infrastructure config, not into `src/`. **Do not enable** `regex-prompt-injection`.
+Delete `enforceTextGenModelPolicy` once `allowed_models` covers it. For layer two, delimit the
+master prompt as untrusted content, cap its length, and pack hard rules **after** it —
+structure and facts outrank tone, always.
 
 **Do not enable the narrative-shaped PII filters.** `person-name` and `address` redaction would
 mangle character names and fictional places on every call; this app's payload is invented people
@@ -1199,16 +1212,16 @@ instruction win over the rules above it?" — that question finds injection seam
 reading the prompt top to bottom.
 
 **In plain words.** Two different locks. One is on your account at OpenRouter: which models, how
-much money, what gets kept, and a filter for text trying to hijack the robot — all set on their
-dashboard, no code. The other is in your own app: your style note is allowed to say *how* the
-story sounds, never *what is true in it*. The first lock cannot do the second job, because
-OpenRouter has no idea which of your made-up facts is a secret.
+much money, what gets kept — set on their dashboard, no code. Do **not** turn on their regex
+hijack filter; fiction dialogue will trip it. The other lock is in your own app: your style
+note is allowed to say *how* the story sounds, never *what is true in it*. The first lock
+cannot do the second job, because OpenRouter has no idea which of your made-up facts is a secret.
 
 ---
 
 ## 28. The inline latency budget
 
-**Track:** B · **Priority:** P1 · **Dependencies:** 3, 26
+**Track:** B · **Priority:** P1 · **Dependencies:** 3 · **Phase:** 0 (reconcile timeouts; binds every later phase)
 
 **WHAT.** The pipeline must complete inline, under the platform's request ceiling, and nothing
 currently ensures that. Worse, the layers disagree about what the ceiling is:
@@ -1222,10 +1235,11 @@ critique in the first; revise and commit in the second, after the human answers.
 ceiling on its own. Removing the gate to "simplify" would put the whole chain in one request and
 blow the budget.
 
-**HOW.** Publish a per-stage budget derived from the trace (Action 3), not from arithmetic over
-constants. Reconcile the three timeouts to one source. Constrain pipeline depth to fit: the
-matrix in Action 26 already limits section work to two scopes, which is a latency decision as
-much as a cost one. Stream the author step so the first window shows tokens rather than silence.
+**HOW.** Reconcile the three timeouts to **one** source in Phase 0. Copy InkOS: **one**
+auto-revise. Constrain pipeline depth to fit: three critic scopes + Humanizer after the
+verdict, or cut something — do not add five GLM critics. Stream the author step so the first
+window shows tokens rather than silence. The editorial suspend splits one Vercel window into
+two; do not remove it.
 
 **Treat the current figures as estimates until measured.** Nothing instruments stage duration
 today, so any budget written now is arithmetic over configured timeouts. Instrumentation is a
@@ -1334,8 +1348,8 @@ until the workflow emits step events outward. Those events are the `role.dispatc
 **Labels: hide the name, not the activity.** `AssistantToolFallback` renders `🛠 {toolName}` raw,
 so a user would read `write_draft`. Map ids to human phrasing, and split by whether the tool
 changed anything: reads (`read_canon`, `search_manuscript`, `run_prose_check`, `brainstorm`) share
-one line that updates in place and disappears; writes leave a mark, with `commit_beat` persisting
-after the run because a save is a fact rather than progress.
+one line that updates in place and disappears; writes leave a mark. Persist after Approve is
+host code, not a `commit_beat` progress badge.
 
 **Also fix the dead spinner.** `generatingSection` is declared at `useStorytellerPageBase.ts:128`
 and `setGeneratingSection` is **never called**, while the value is threaded through roughly twenty
@@ -1540,13 +1554,14 @@ rediscovered as a surprise later.
 
 | Deferred | Build it when |
 |---|---|
-| `anchoring` scope | First-appearance beats still fail `character-introductions` after the five scopes |
+| `anchoring` scope | First-appearance beats still fail `character-introductions` after the three floor scopes |
+| `cognition` / `dialogue` scopes | Golden-set defects of those classes survive continuity / prose / stakes |
+| Four permission modes | A leak shows Plan-mode + host persist are insufficient |
 | `realism` scope | Institutional / bodily / crowd beats lose on Tier 3 |
 | Variant tournament | Cost-per-quality beats one draft + revision + de-slop |
 | Character-knowledge ledger table | `cognition` cannot fit on the current `characters` row |
 | Object ledger | Golden-set object-duplication defects |
 | `canon-reconcile` | Measured card ↔ prose drift |
-| Four permission modes | A leak shows three are insufficient |
 | Embedding search | Literal `search_manuscript` misses plant/payoff the golden set cares about |
 | Per-finding accept / reject | A browser tier exists to assert the selection actually filters the patch |
 | Undo on a committed section | Snapshot restore is cheaper to build than to keep explaining |

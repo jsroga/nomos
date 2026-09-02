@@ -87,7 +87,27 @@ enum UiMessageStreamChunkType {
 
 enum AssistantTurnLog {
   ContextReady = '[Stream] World context ready in ',
+  HandleChatStart = '[Stream] handleChatStream() calling after ',
+  HandleChatReturned = '[Stream] handleChatStream() returned stream after ',
   FirstChunk = '[Stream] First agent chunk after ',
+  TurnMeta = '[Stream] Turn ',
+}
+
+enum UiChunkField {
+  Type = 'type',
+  ToolName = 'toolName',
+}
+
+enum TurnMetaFallback {
+  None = '(none)',
+  Default = '(default)',
+}
+
+function uiChunkSummary(chunk: unknown): string {
+  if (!isRecord(chunk)) return typeof chunk
+  const type = readString(Reflect.get(chunk, UiChunkField.Type)) ?? typeof chunk
+  const toolName = readString(Reflect.get(chunk, UiChunkField.ToolName))
+  return toolName ? `${type} ${toolName}` : type
 }
 
 /** Logs time-to-first-chunk so a slow turn can be attributed to context vs model. */
@@ -101,7 +121,7 @@ function withFirstChunkTiming<T>(
       transform(chunk, controller) {
         if (!logged) {
           logged = true
-          console.log(`${AssistantTurnLog.FirstChunk}${Date.now() - startedAt}ms`)
+          console.log(`${AssistantTurnLog.FirstChunk}${Date.now() - startedAt}ms | ${uiChunkSummary(chunk)}`)
         }
         controller.enqueue(chunk)
       },
@@ -337,7 +357,13 @@ export async function POST(req: Request, { params }: RouteContext) {
         userId,
         bibleSection,
       })
+      const activeTools = isStoryteller ? storytellerChatActiveTools(bibleSection) : []
+      const modelName = raw[AssistantChatBodyKey.ModelName]
       console.log(`${AssistantTurnLog.ContextReady}${Date.now() - turnStartedAt}ms`)
+      console.log(
+        `${AssistantTurnLog.TurnMeta}agent=${agentId} section=${bibleSection ?? TurnMetaFallback.None} model=${typeof modelName === 'string' && modelName.trim() ? modelName : TurnMetaFallback.Default} messages=${raw.messages.length} systemChars=${system?.length ?? 0} tools=${isStoryteller ? activeTools.length : TurnMetaFallback.Default}`,
+      )
+      console.log(`${AssistantTurnLog.HandleChatStart}${Date.now() - turnStartedAt}ms`)
       const agentStream = await handleChatStream({
         mastra,
         agentId,
@@ -347,12 +373,13 @@ export async function POST(req: Request, { params }: RouteContext) {
           requestContext,
           toolChoice: TOOL_CHOICE_AUTO,
           ...(system ? { system } : {}),
-          ...(isStoryteller ? { activeTools: storytellerChatActiveTools(bibleSection) } : {}),
+          ...(isStoryteller ? { activeTools } : {}),
         },
         sendStart: false,
         sendFinish: true,
         sendReasoning: false,
       })
+      console.log(`${AssistantTurnLog.HandleChatReturned}${Date.now() - turnStartedAt}ms`)
       writer.merge(withFirstChunkTiming(agentStream, turnStartedAt))
     },
   })

@@ -240,6 +240,8 @@ export const updateWorldBibleTool = createTool({
   inputSchema: UpdateWorldBibleInputSchema,
   outputSchema: UpdateWorldBibleOutputSchema,
   execute: async (inputData, context) => {
+    const executeStartedAt = Date.now()
+    console.log(`${BibleToolLog.ExecuteStart}${Object.keys(inputData).join(',')}`)
     // Server-trusted request-context IDs beat model-supplied input.
     const projectId =
       requestContextString(context.requestContext, STORYTELLER_PROJECT_ID) ?? inputData.projectId
@@ -249,17 +251,29 @@ export const updateWorldBibleTool = createTool({
     )
     const episodeId = requestContextString(context.requestContext, STORYTELLER_EPISODE_ID)
 
+    const finish = <T extends { success: boolean; error?: string; updatedFields?: string[] }>(
+      result: T,
+    ): T => {
+      const detail = result.success
+        ? result.updatedFields?.join(',') ?? ''
+        : result.error ?? ''
+      console.log(
+        `${BibleToolLog.ExecuteDone}${Date.now() - executeStartedAt}ms success=${String(result.success)} ${detail}`,
+      )
+      return result
+    }
+
     try {
       if (!projectId) {
-        return { success: false, error: BibleToolError.ProjectIdRequired }
+        return finish({ success: false, error: BibleToolError.ProjectIdRequired })
       }
       const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
 
       if (!project) {
-        return {
+        return finish({
           success: false,
           error: `Project ${projectId} not found`,
-        }
+        })
       }
 
       const proposed = applyPremiseFieldNarrowing(
@@ -274,38 +288,38 @@ export const updateWorldBibleTool = createTool({
       }
       const updatedFields = Object.keys(updates)
       if (updatedFields.length === 0) {
-        return {
+        return finish({
           success: false,
           error: emptyBibleSectionError(bibleSection),
-        }
+        })
       }
 
       const premiseValue = updates.episodePremise
       if (premiseValue !== undefined) {
         if (!episodeId) {
-          return {
+          return finish({
             success: false,
             error: BibleEpisodePremiseError.EpisodeIdRequired,
-          }
+          })
         }
         if (typeof premiseValue !== 'object' || premiseValue === null || Array.isArray(premiseValue)) {
-          return {
+          return finish({
             success: false,
             error: BibleToolError.NoFields,
-          }
+          })
         }
       }
 
-      return {
+      return finish({
         success: true,
         message: `${BibleToolMessage.ProposedPrefix}${updatedFields.length}${BibleToolMessage.ProposedSuffix}`,
         updatedFields,
-      }
+      })
     } catch (error) {
-      return {
+      return finish({
         success: false,
         error: getErrorMessage(error),
-      }
+      })
     }
   },
 })

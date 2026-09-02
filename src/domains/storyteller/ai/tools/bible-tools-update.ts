@@ -7,6 +7,8 @@ import { narrowPremiseRecord } from '@/domains/storyteller/core/utils/requested-
 
 export enum BibleToolLog {
   OffSectionFields = '[update_world_bible] Off-section fields for ',
+  ExecuteStart = '[update_world_bible] execute start fields=',
+  ExecuteDone = '[update_world_bible] execute done ',
 }
 
 export enum BibleToolError {

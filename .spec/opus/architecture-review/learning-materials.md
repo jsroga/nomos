@@ -11,7 +11,7 @@ through [wgwtest/novel-writing](https://github.com/wgwtest/novel-writing) and
 backend fundamentals, each anchored to real code, then the agentic writing system (craft catalog,
 George vibe, evaluation). Part 3 walks the thirty-two actions as a syllabus, not a ticket list.
 Part 4 lists the trade-offs we have deliberately accepted. Part 5 is an honest answer to "are we
-going in a good direction?"
+going in a good direction?" **Build order:** [phases.md](./phases.md).
 
 A note on honesty: this document points at real weaknesses in code you wrote. That is not
 criticism, it is the only way the material is useful. Every codebase of this size has these
@@ -547,10 +547,10 @@ The catalog's other hard rules map onto scopes and gates:
 | Hard rule in the skill | Where it lives in our system |
 |---|---|
 | Important characters cannot enter naked | `character-introductions` loaded when the plan flags a first appearance |
-| Scene information obeys access limits | `read_canon` + `cognition` scope |
-| Cognition must change choice and language | `cognition` scope |
-| Viewpoint does not own every decision | `causality` scope |
-| Dialogue happens through behavior | `dialogue` scope |
+| Scene information obeys access limits | `read_canon` partition (Phase 1); `cognition` scope if earned |
+| Cognition must change choice and language | `cognition` scope — Phase 4 by ablation |
+| Viewpoint does not own every decision | `stakes` floor scope (today's stakes critic) |
+| Dialogue happens through behavior | `dialogue` scope — Phase 4 by ablation |
 | Protect style-bearing material | `style-fidelity` on the **diff**, so revision cannot "fix" by flattening |
 | Every segment earns its place | Law of Motion fields on the plan; concreteness gate |
 | Review output must be specific | `Finding` schema |
@@ -648,12 +648,12 @@ near / far) and skill disclosure exist to spend that budget on purpose.
 
 **A subagent exists to protect a context window.** Continuity may read 60k tokens and return
 400 tokens of findings. The test is mechanical: does it read far more than it returns? If
-not, it should be a function call. Five critic scopes are five isolated reads, not five
-personalities.
+not, it should be a function call. Three critic scopes are three isolated reads, not three
+personalities. Extra scopes wait on ablation.
 
-**Put the plan in code.** `beat-forge`, `continuity-sweep`, and `autonomous-episode` are
-showable because a workflow is inspectable. Intermediate results live in step outputs, so the
-Conductor never accumulates five critiques, a revision and a de-slop pass in one window.
+**Put the plan in code.** `beat-draft-workflow`, `artifact-draft`, and `fix-inconsistencies` are
+inspectable because a workflow is inspectable. Intermediate results live in step outputs, so the
+chat agent never accumulates three critiques, a revision and a Humanizer pass in one window.
 
 **Goodhart's law will eat the revision loop.** The fastest way to clear findings is to delete
 anything interesting. `style-fidelity` on the diff, and a counter-metric on the quality gate,
@@ -701,56 +701,53 @@ unauthenticated, softly-persisted pipeline is a demo that lies.
 | 6 | Per-step vs cumulative usage | Module-global `lastEmbeddingTokens` under concurrency |
 | 7 | Construct validity | A gate named after the agent that scores a fixture |
 | 8 | Idempotency vs resumability | `maxAttempts: 1` as a substitute for a checkpoint |
-| 27 | Policy at the platform vs policy in your code | Expecting a gateway filter to protect made-up facts it has never heard of |
+| 27 | Policy at the platform vs policy in your code | Turning on regex prompt-injection; expecting a gateway filter to protect made-up facts |
 | 31 | Cache keys, bounds and retention | Accepting `lastMessages: 10` as a behaviour when nothing reads it |
 
-Work 1 → 3 → 2 → 4 first. Then 18 (trace-contract tests — Track C, but free and writable
-today) and 6 (otherwise every later dollar figure is a lower bound), then 31, which is the same
-lesson as 6 applied to a different input. 5, 7, 8 can wait until the harness exists; 7's
-live-quality tier needs the pipeline.
+Work Phase 0 first ([phases.md](./phases.md)): 1, 3, 2, 4, 18, 28, 6, 31. Then 5, 7, 8.
+Live-quality (7) needs the pipeline. Action 10 is cut.
 
 ### Track B — the writing system
 
-Read this as one sentence: **one front door, three keys, eight tools, a four-layer library
-card, a form critics must fill in, five inspections from the craft catalog, the whole catalog
-in the pocket, three machines you can demo, and Martin on the assembly line.**
+Read this as one sentence: **one front door, Plan-mode that withholds chat writes, host persist
+after Approve, a four-layer partition, a form critics must fill in, three inspections from the
+craft catalog, the catalog index in the pocket, three workflows with cheaper bible/character
+budget, and Martin on the assembly line as structure.**
 
-- **9 Conductor.** Invariants live in the domain, not in the URL. The George agent with no
-  call site is this lesson in costume.
-- **10 Three modes (read / draft / commit).** Matches the catalog's planning / drafting /
-  reviewing split. Withhold tools; do not instruct restraint.
-- **11 Eight tools.** `brainstorm` is a doorbell on Muse, which already exists.
-  `search_manuscript` is literal because plant/payoff is a string problem.
-- **12 Four-layer canon.** Catalog §4. This is dramatic irony as RLS. If you remember one
-  Track B idea, remember this.
+- **9 Chat agent.** Invariants live in the domain, not in the URL. The George agent with no
+  call site is this lesson in costume. Dead wrappers, not dead capabilities.
+- **10 CUT.** Do not build `read / draft / commit` with `commit_beat`. Host files after
+  Approve. Plan withholds mutating chat CRUD.
+- **11 Chat tools.** `brainstorm` is a doorbell on Muse, which already exists.
+  `search_manuscript` is literal because plant/payoff is a string problem. Persist is not a
+  model tool.
+- **12 Four-layer canon.** Catalog §4. Prompt partition first; ledger is Phase 4. If you
+  remember one Track B idea, remember this.
 - **13 Finding + BeatPlan + Law of Motion.** Catalog checklist + GRRM instructions, as
   schemas. Vague becomes a validation error.
-- **14 Five scopes, one agent.** Continuity, causality, cognition, dialogue, style-on-the-diff.
-  Cognition and dialogue are the two the minimum draft cut, and they are the Martin-heavy
-  pair. Isolation is the reason they are subagent calls.
-- **15 Full catalog, disclosed.** All ten [novel-writing](https://github.com/wgwtest/novel-writing)
+- **14 Three scopes, one agent.** Continuity, prose, stakes — what already ships. Cognition
+  and dialogue are Phase 4. Isolation is the reason they are subagent calls.
+- **15 Catalog, disclosed.** All ten [novel-writing](https://github.com/wgwtest/novel-writing)
   files at L1. Bodies on match. The cost of "using the catalog" is ~1.2k tokens of index,
   not 20k of bodies.
-- **16 Three workflows.** `beat-forge` (compiler), `continuity-sweep` (episode fan-out on
-  code that exists), `autonomous-episode` (durable showcase with `autoApprove` retired).
+- **16 Three workflows.** `beat-draft-workflow` (heavy compiler), `artifact-draft` (light),
+  `fix-inconsistencies` (sweep you already have). Autonomy is Phase 4.
 - **17 Split the George vibe.** The pack already drafts every beat, so this is not wiring.
-  Structure is already in 12–14; voice stays in the drafting prompt; anti-slop moves to a late
-  pass behind a claim check; both get disclosed per stage instead of concatenated into every
-  call. Measure with the GRRM rubric (21) — starting with an ablation of the pack itself.
-- **26 One pipeline for every artifact.** Beats get planned, checked and approved; everything
-  else in the bible gets a chatbot and a hidden paragraph of instructions. The lesson is
-  generalisation: one machine with a per-type configuration, not two machines.
-- **28 The latency budget.** Everything above has to finish before the platform hangs up. The
-  human approval pause is what makes that possible, by splitting one long request into two
-  short ones — a deadline is a design input, not an afterthought.
-- **30 The chat surface.** Say what is happening in words. A silent spinner and a broken system
-  look identical to the person waiting.
+  Structure is already in 12–14; voice stays in the existing MASTER PROMPT; Humanizer after
+  the verdict behind a claim check. Measure with the GRRM rubric (21) — starting with an
+  ablation of the pack itself.
+- **26 Same shape, cheaper budget.** Beats get the heavy line; bible and characters get 1–2
+  scopes and the existing overlay. No Humanizer on artifacts.
+- **28 The latency budget.** Phase 0 constraint. One timeout source, one auto-revise, 180s.
+  The human approval pause splits one long request into two short ones.
+- **30 The chat surface.** Call `resumeChatWorkflow`. Say what is happening in words. No new
+  Voice tab.
 
 ### Track C — how you know, including how you know it is Martin
 
-- **18 Trace contracts.** Stub the model, watch the levers. Include "de-slop ran after the
-  last revision," "drafting loaded psychology but not anti-slop," and "Author context had no
-  author-truth."
+- **18 Trace contracts.** Stub the model, watch the levers. Include "Humanizer ran after the
+  last revision," "`psychology` at Planner not Author after the move," "Author context had no
+  author-truth," "three scopes overlap," "kill writes nothing."
 - **19 Deterministic linter.** Catalog checker shape. POV-leak is a lookup.
 - **20 Golden set.** Include a deceived-POV beat and a delayed-cost beat, or the vibe has no
   exam questions.
@@ -769,8 +766,8 @@ in the pocket, three machines you can demo, and Martin on the assembly line.**
 
 - **24 `promote_rule`.** The catalog's last question on every finding. Project law overrides
   general craft.
-- **25 Model pins.** Kimi for prose — drafting, revision and de-slop; GLM for the five inspections.
-  Believe the trace, not the matrix, because a policy layer already remaps some models.
+- **25 Model pins.** Role slots after a live-quality run, not vendor ids in the spec. Believe
+  the trace, not the matrix, because a policy layer already remaps some models.
 
 **The one principle behind most of them:** *the host owns truth; the model owns language.*
 Any fact a later step depends on is committed by deterministic code. A model may propose a
@@ -836,13 +833,14 @@ example in the file: a ten-message memory window declared in three places and re
 the paths a user touches.
 
 The same habit, applied to the agentic system, is Track C. Ablation (Action 22) decides
-*additions* past the floor. The floor itself — five catalog-mapped scopes, the full skill
-index, the voice pack — is a product requirement. If the pack does not beat the noise floor,
-fix the pack. The first ablation to run is diagnostic rather than gating: the voice pack has
-been in every draft this repo ever produced, and nobody has a number for it.
+*additions* past the floor. The floor itself — **three** critic scopes, catalog L1, host
+persist, Humanizer after verdict — is a product requirement. Extra scopes are not. If the pack
+does not beat the noise floor, fix the pack. The first ablation to run is diagnostic rather
+than gating: the voice pack has been in every draft this repo ever produced, and nobody has a
+number for it.
 
-**What to do in what order** — this is the same order `actions.md` gives, and the reasoning
-behind it is worth understanding rather than just following:
+**What to do in what order** — [phases.md](./phases.md) is canonical (platform ∥ storyteller).
+The serial string in `actions.md` is historical. The reasoning behind Phase 0 first:
 
 1. **Action 1 (identity and ownership)** — a real security exposure, and it teaches the single
    most important concept in backend work.
@@ -850,19 +848,21 @@ behind it is worth understanding rather than just following:
    running pipeline costs several times what building it in costs, and every later action needs
    something to assert against.
 3. **Action 2 (atomic persistence)** — small, contained, and it teaches transactions properly.
-   The new pipeline commits four things at once, so this must be right before that exists.
+   The new pipeline commits draft + critiques + trace + cost + **state** at once.
 4. **Action 4 (CI)** — until something runs automatically, no other fix can be shown to hold.
 5. **Action 18 (trace-contract tests)** — free, fast, and writable against the pipeline that
-   exists today. It is the first point at which "did the right things run?" becomes answerable.
-6. **Action 6 (cost as a total)** — the new pipeline is multi-step everywhere, so an
+   exists today. Three overlapping critics, kill = no persist.
+6. **Action 28 (one timeout source)** — 180s, one auto-revise. A latency constraint, not a
+   late ticket.
+7. **Action 6 (cost as a total)** — the new pipeline is multi-step everywhere, so an
    under-reporting adapter would make every later measurement wrong in the same direction.
-7. Then Track B (including **Action 17, the George split** — not optional, not an appendix),
-   then the rest of Track C, in the order given in `actions.md`.
+8. Then Track B (including **Action 17, the George split** — not optional, not an appendix),
+   then the rest of Track C. Action **10 is not built**.
 
 Notice what that order encodes: **fix what is dangerous, then build what makes things visible,
 then build the thing itself.** Actions 5 and 8 are real and stay P1, but neither is bleeding right
 now — and Action 5 in particular guards a boundary that currently has zero violations, which is
-exactly why it moved down.
+exactly why it sits in Phase 1.
 
 ---
 

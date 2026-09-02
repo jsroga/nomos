@@ -10,7 +10,8 @@ import { DOCS_ALLOWED_FILES, isAllowedDocsPath } from './structure-gates/docs-al
 const WORKING_TREE = process.argv.includes('--working-tree')
 
 const ALLOWED_ROOT_FILES = new Set(['README.md', 'AGENTS.md', 'CLAUDE.md'])
-const ALLOWED_DIRS = ['.agents/', '.cursor/', '.claude/', '.fabro/', '.design-sync/', '.local/', 'evals/fixtures/']
+// .spec/ holds review/design specs the user explicitly approved (see .cursor/rules/agent-artifacts.mdc).
+const ALLOWED_DIRS = ['.agents/', '.cursor/', '.claude/', '.fabro/', '.design-sync/', '.local/', '.spec/', 'evals/fixtures/']
 const ALLOWED_SRC_BASENAMES = new Set(['instructions.md', 'SKILL.md'])
 const ALLOWED_SRC_DIRS = ['/legal/', '/references/', '/prompts/']
 

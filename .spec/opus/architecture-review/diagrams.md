@@ -1,9 +1,9 @@
 # Nomos — Architecture Diagrams: Current and Target
 
 Current-state diagrams describe `refactor` @ `b409539` as verified. Target-state diagrams
-describe the **middle** system in `target-architecture.md`: full
-[novel-writing](https://github.com/wgwtest/novel-writing) catalog, five critic scopes, three
-workflows, the George vibe split across drafting and a de-slop pass.
+describe the **honest floor** in `target-architecture.md`: three critic scopes, three
+workflows (heavy / light / sweep), host persist, Humanizer after verdict. Schedule:
+[phases.md](./phases.md).
 
 Legend: **red** = broken or unenforced · **amber** = present but incomplete · **green** =
 correct, do not regress · **blue** = deterministic host code · **purple** = model call.
@@ -96,93 +96,93 @@ scorer can tell a beat written with them from one written without.
 
 ---
 
-## 3. Target — the whole middle system on one page
+## 3. Target — the whole honest-floor system on one page
 
 ```mermaid
 flowchart TD
-    CO["Conductor · glm-5.2<br/>the only agent the writer talks to"]
+    CO["storyteller · chat<br/>the only agent the writer talks to"]
 
-    CO --> MODE{"mode"}
-    MODE -->|"read"| RT["read_canon · read_manuscript<br/>search_manuscript · run_prose_check<br/>brainstorm"]
-    MODE -->|"draft"| DT["write_draft"]
-    MODE -->|"commit"| CT["commit_beat · promote_rule"]
+    CO --> PLANMODE{"Plan mode"}
+    PLANMODE -->|"explore"| RT["read_canon · read_manuscript<br/>search_manuscript · run_prose_check<br/>brainstorm"]
+    PLANMODE -->|"mutate chat"| CRUD["existing manage_* CRUD"]
 
-    RT --> WF["three workflows"]
-    WF --> BF["beat-forge · the compiler"]
-    WF --> CS["continuity-sweep · episode scale"]
-    WF --> AE["autonomous-episode · durable"]
+    RT --> WF["three workflows · host persist"]
+    CRUD --> WF
+    WF --> BF["beat-draft-workflow · heavy"]
+    WF --> AD["artifact-draft · light"]
+    WF --> FI["fix-inconsistencies · sweep"]
 
-    BF --> PLAN["Planner · glm-5.2"]
-    BF --> AUTH["Author · kimi-k3 · the GRRM agent<br/>draft · revise · de-slop"]
-    BF --> CRIT["Critic · glm-5.2<br/>one agent, 5 scopes, parallel"]
+    BF --> PLAN["Planner · structure + psychology"]
+    BF --> AUTH["Author · draft · revise · Humanizer"]
+    BF --> CRIT["Critic · one agent, 3 scopes, parallel"]
+
+    NOTE["no commit_beat on the model<br/>Approve → code writes"]
+    WF -.- NOTE
 
     classDef model fill:#3a1b52,stroke:#8e44ad,color:#fff
     classDef host fill:#12305e,stroke:#3d7ebf,color:#fff
     classDef gate fill:#14401f,stroke:#27ae60,color:#fff
     class CO,PLAN,AUTH,CRIT model
-    class RT,DT,CT,WF,BF,CS,AE host
-    class MODE gate
+    class RT,CRUD,WF,BF,AD,FI,NOTE host
+    class PLANMODE gate
 ```
 
-**Reading it.** Four named agents, eight tools, three modes, three workflows. The critic is
-one agent run five times. The Author *is* the GRRM agent — that is already true on the
-`refactor` branch — so the vibe needs no new personality: voice rides in its drafting prompt
-and the de-slop pass is a second Author mode inside `beat-forge`.
+**Reading it.** One chat agent. Plan-mode withholds mutating chat writes. Persist is host after
+Approve. Three workflows, same shape, different budget. The critic is one agent run three
+times. The Author *is* the GRRM agent — already true on `refactor` — so the vibe needs no new
+personality: `masterPrompt` rides in its drafting prompt and Humanizer is a second Author pass
+after the verdict.
 
 ---
 
-## 4. Target — `beat-forge`, and where the two halves of the vibe sit
+## 4. Target — `beat-draft-workflow`, and where the two halves of the vibe sit
 
 ```mermaid
 flowchart TD
     ST["brief"] --> PLAN["Planner<br/>POV, required info, forbidden mistakes<br/>Law of Motion fields"]
     PLAN --> CG{"concreteness + Law of Motion"}
     CG -->|"fail"| PLAN
-    CG -->|"pass"| DRAFT["Author · draft<br/>voice pack: psychology + overlay"]
+    CG -->|"pass"| DRAFT["Author · draft<br/>masterPrompt register"]
 
     DRAFT --> DET["run_prose_check<br/>deterministic · free"]
     DET -->|"errors"| DRAFT
 
     DET -->|"clean"| FAN["critic scopes · parallel · isolated"]
     FAN --> K1["continuity"]
-    FAN --> K2["causality"]
-    FAN --> K3["cognition"]
-    FAN --> K4["dialogue"]
-    FAN --> K5["style-fidelity · on the diff"]
+    FAN --> K2["prose"]
+    FAN --> K3["stakes"]
 
     K1 --> SYN["synthesize"]
     K2 --> SYN
     K3 --> SYN
-    K4 --> SYN
-    K5 --> SYN
 
     SYN --> SUS["suspend · editorial verdict"]
     SUS --> VD{"verdict"}
     VD -->|"kill"| KILL["persist nothing"]
-    VD -->|"revise"| LOOP["revise · re-check<br/>exits: clean, budget, no progress"]
+    VD -->|"revise"| LOOP["revise · max one auto-revise<br/>exits: clean, no progress"]
     LOOP --> SYN
-    VD -->|"approve"| GEO["de-slop pass<br/>Humanizer · masterPrompt as sample"]
-    GEO --> CLAIM["claim check<br/>no fact added, dropped or altered"]
+    VD -->|"approve"| GEO["Humanizer always-on class<br/>sample = masterPrompt + accepted beats"]
+    GEO --> CLAIM["claim check · code<br/>no fact added, dropped or altered"]
     CLAIM -->|"fact moved"| LOOP
-    CLAIM -->|"clean"| COMMIT["commit_beat"]
+    CLAIM -->|"clean"| COMMIT["host persist<br/>draft + critiques + trace + cost + AfterBeatState"]
 
     classDef model fill:#3a1b52,stroke:#8e44ad,color:#fff
     classDef host fill:#12305e,stroke:#3d7ebf,color:#fff
     classDef gate fill:#14401f,stroke:#27ae60,color:#fff
     classDef vibe fill:#5c3d0a,stroke:#d4a017,color:#fff
-    class PLAN,K1,K2,K3,K4,K5,LOOP model
+    class PLAN,K1,K2,K3,LOOP model
     class DET,SYN,COMMIT,KILL host
     class CG,SUS,VD,CLAIM gate
     class DRAFT,GEO vibe
 ```
 
-**Reading it.** Cheap checks first. Five scopes, not three and not seven. The two gold boxes sit
-at opposite ends on purpose: **tone goes in at drafting**, from the project's `masterPrompt`,
-because a beat should be written in its register rather than translated into it; **de-slop comes
-out at the end**, because you cannot remove machine tells from prose that does not exist yet.
-Humanizer takes the master prompt as its writing sample, so the cleanup works toward the user's
-declared voice instead of flattening it. The claim check is what makes the last box safe — it may
-re-cadence, never re-fact. Martin is not in either box: he governs the plan (§9.1).
+**Reading it.** Cheap checks first. **Three** scopes, not five and not seven. Extra scopes
+(`cognition`, `dialogue`) load when ablation says they earn tokens. The two gold boxes sit at
+opposite ends on purpose: **tone goes in at drafting**, from the project's `masterPrompt`;
+**de-slop comes out at the end**, after Approve, because you cannot remove machine tells from
+prose that does not exist yet. Humanizer takes the master prompt as its writing sample. The
+claim check is code — it may re-cadence, never re-fact. Martin governs the plan, not the
+cadence. Latency: one auto-revise, 180s window split by the suspend.
 
 ---
 
@@ -190,7 +190,7 @@ re-cadence, never re-fact. Martin is not in either box: he governs the plan (§9
 
 ```mermaid
 flowchart LR
-    subgraph P["Conductor context · protected"]
+    subgraph P["Chat-agent context · protected"]
         PC["the conversation<br/>the plan<br/>the finished draft<br/>merged findings"]
     end
 
@@ -231,8 +231,8 @@ flowchart TD
     L3 --> RC
     L4 --> RC
 
-    RC -->|"story facts plus this POV's knowledge<br/>fingerprints for this scene only<br/>author truth withheld"| AU["Author · drafting"]
-    RC -->|"all four layers"| PLAN["Planner, continuity, cognition"]
+    RC -->|"story facts plus this POV's knowledge<br/>author truth withheld"| AU["Author · drafting"]
+    RC -->|"all four layers"| PLAN["Planner, continuity · cognition if earned"]
 
     LEAK["leaking the twist is<br/>structurally unreachable"]
     AU -.- LEAK
@@ -245,11 +245,10 @@ flowchart TD
     class LEAK ok
 ```
 
-**Reading it.** Dramatic irony is a retrieval permission. Martin-like withholding is
-impossible to violate from the Author seat because the secret was never retrieved. The same
-scoping does a second job: the character layer carries **how each person talks** as well as what
-they know, and the Author is handed fingerprints only for characters in the scene. Twenty voices
-in one prompt is how voices blur; four is how they stay separate.
+**Reading it.** Dramatic irony is a retrieval **partition** first (Phase 1): the Author never
+receives author-truth. A ledger table is Phase 4 if paraphrases leak. Fingerprints on the
+character card are Phase 3. Twenty voices in one prompt is how voices blur; the scene cast is
+how they stay separate.
 
 ---
 
@@ -264,10 +263,10 @@ flowchart TD
     CAT --> R["reviewing stage"]
     CAT --> G["de-slop pass"]
 
-    P --> P2["L2: planning<br/>story-outline-and-causal-summary<br/>+ psychology"]
-    D --> D2["L2: cognition, dialogue,<br/>scene-causality as needed<br/>+ masterPrompt register"]
+    P --> P2["L2: planning<br/>story-outline-and-causal-summary<br/>+ psychology after ablation"]
+    D --> D2["L2 on match<br/>+ masterPrompt register"]
     R --> R2["L2: matching critic scope<br/>+ revision-checklist at synthesize"]
-    G --> G2["L2: Humanizer + style-fidelity"]
+    G --> G2["L2: Humanizer always-on class"]
 
     L3["L3: checker script runs<br/>body is never read into the window"]
     R2 --> L3
@@ -292,7 +291,7 @@ plus the project's declared register — nothing that encodes a fixed taste.
 ```mermaid
 flowchart TD
     T0["Tier 0 · Deterministic<br/>schemas, POV-leak, Law of Motion,<br/>voice convergence<br/>no models · free · every commit"]
-    T1["Tier 1 · Contract<br/>five scopes, de-slop before commit,<br/>memory bound and keyed<br/>stubbed models · free · every commit"]
+    T1["Tier 1 · Contract<br/>three scopes, Humanizer before persist,<br/>memory bound and keyed<br/>stubbed models · free · every commit"]
     T2["Tier 2 · Calibration<br/>does the instrument work<br/>real models · cheap · nightly"]
     T3["Tier 3 · Live quality<br/>including the GRRM rubric<br/>real models · before shipping"]
 
@@ -331,10 +330,10 @@ flowchart TD
     CMP -->|"yes"| KEEP["C earns its place"]
     CMP -->|"no"| DROP["C is decoration"]
 
-    EX["candidates: anchoring scope · realism scope<br/>variant tournament · embedding search"]
+    EX["candidates: cognition · dialogue · anchoring<br/>realism · embedding search · autonomy"]
     Q -.- EX
 
-    FLOOR["the floor itself is not optional:<br/>five scopes, the catalog, the voice pack"]
+    FLOOR["the floor itself is not optional:<br/>three scopes, catalog L1, host persist"]
     FLOOR -.-> Q
 
     classDef host fill:#12305e,stroke:#3d7ebf,color:#fff
@@ -345,9 +344,10 @@ flowchart TD
     class FLOOR vibe
 ```
 
-**Reading it.** Ablation decides *additions*. It does not get to delete the product. If the
-voice pack loses an ablation, you fix the pack — you do not drop the requirement. The overdue
-run is the voice pack itself: it has shipped in every draft without ever being measured.
+**Reading it.** Ablation decides *additions*. It does not get to delete the three critics or
+host persist. If the current pack loses an ablation, you fix the pack — you do not drop
+structure. The overdue run is the voice pack itself: it has shipped in every draft without
+ever being measured.
 
 ---
 
