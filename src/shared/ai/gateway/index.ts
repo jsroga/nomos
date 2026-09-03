@@ -203,19 +203,21 @@ export async function embed(request: EmbedRequest): Promise<number[][]> {
   const startedAt = Date.now()
 
   try {
-    const { vectors, promptTokens } = await embeddings.embedDocumentsMetered(request.texts)
-    await recordLlmCall({
-      traceId: request.traceId,
-      projectId: request.scope.projectId,
-      userId: request.scope.userId,
-      feature: request.feature,
-      model,
-      provider: VOYAGE_PROVIDER,
-      promptTokens,
-      completionTokens: 0,
-      latencyMs: Date.now() - startedAt,
-      outcome: LlmOutcome.Ok,
-    })
+    const { vectors, promptTokens, cacheHit } = await embeddings.embedDocumentsMetered(request.texts)
+    if (!cacheHit) {
+      await recordLlmCall({
+        traceId: request.traceId,
+        projectId: request.scope.projectId,
+        userId: request.scope.userId,
+        feature: request.feature,
+        model,
+        provider: VOYAGE_PROVIDER,
+        promptTokens,
+        completionTokens: 0,
+        latencyMs: Date.now() - startedAt,
+        outcome: LlmOutcome.Ok,
+      })
+    }
     return vectors
   } catch (error) {
     await recordLlmCall({

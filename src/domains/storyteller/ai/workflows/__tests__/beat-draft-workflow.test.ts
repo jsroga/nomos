@@ -11,10 +11,18 @@ import { recordFromJson } from '@/shared/data/deep-merge'
 import { RunTraceEventType, subscribeRunTrace, type RunTraceEvent } from '@/shared/agent-kernel'
 import {
   createBeatDraftWorkflow,
+  BEAT_DRAFT_CRITIC_ROLES,
   type BeatDraftDeps,
 } from '../beat-draft-workflow'
 import { VERDICT_STEP_ID, beatDraftOutputSchema } from '../beat-draft-contract'
 import type { BeatPlan } from '../../agents/BeatPlanner/beat-plan-schema'
+import { emptyBeatDraftCanon } from '@/domains/storyteller/core/types/beat-draft-canon'
+import {
+  FindingSeverity,
+  ProblemType,
+  type Finding,
+} from '@/domains/storyteller/core/types/finding'
+import { BeatDraftCriticName } from '../constants/beat-draft-workflow'
 
 function suspendPayload(
   steps: Record<string, { suspendPayload?: unknown } | undefined> | undefined,
@@ -44,11 +52,28 @@ const FAKE_PLAN: BeatPlan = {
   charactersInvolved: ['Vera', 'Marcus'],
 }
 
+const FAKE_CANON = emptyBeatDraftCanon({
+  currentRoadmapSlotText: 'Vera confronts Marcus in the chapel',
+})
+
+function lintErrorFinding(): Finding {
+  return {
+    location: { beatId: 'draft', paragraph: 0, quote: 'orphan' },
+    problemType: ProblemType.SpatialOrActionCausality,
+    whatHappensNow: 'The draft beat has no causal parent.',
+    whyItFails: 'Empty causalDependencies',
+    revisionDirection: 'Name a parent beat.',
+    severity: FindingSeverity.Error,
+    promoteToProjectRule: false,
+  }
+}
+
 function makeDeps(overrides: Partial<BeatDraftDeps> = {}) {
   const deps: BeatDraftDeps = {
-    assembleCanon: vi.fn(async () => 'CANON: the bells ring at dusk'),
+    assembleCanon: vi.fn(async () => FAKE_CANON),
     planBeat: vi.fn(async () => FAKE_PLAN),
     draftBeat: vi.fn(async () => 'INT. CHAPEL — DUSK\nVERA: You already know.'),
+    runProseCheck: vi.fn(async () => []),
     critiqueContinuity: vi.fn(async () => '## Continuity\nNO FINDINGS.'),
     critiqueProse: vi.fn(async () => '## Prose findings\nNO FINDINGS.'),
     critiqueStakes: vi.fn(async () => '## Stakes\nNO FINDINGS.'),
@@ -367,5 +392,43 @@ describe('beat-draft-workflow contracts', () => {
 
     expect(result.status).toBe('success')
     expect(events.some(event => event.type === RunTraceEventType.PersistCommit)).toBe(true)
+  })
+})
+
+describe('beat-draft lint skip-critics', () => {
+  it('exports the three critic roles', () => {
+    expect(BEAT_DRAFT_CRITIC_ROLES).toEqual([
+      BeatDraftCriticName.Continuity,
+      BeatDraftCriticName.Prose,
+      BeatDraftCriticName.Stakes,
+    ])
+  })
+
+  it('skips critic RoleDispatch when lint errors remain', async () => {
+    const events: RunTraceEvent[] = []
+    const stop = subscribeRunTrace(event => events.push(event))
+    const deps = makeDeps({
+      runProseCheck: vi.fn(async () => [lintErrorFinding()]),
+    })
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    const result = await run.start({ inputData: INPUT })
+    stop()
+
+    expect(result.status).toBe('suspended')
+    expect(deps.critiqueContinuity).not.toHaveBeenCalled()
+    expect(deps.critiqueProse).not.toHaveBeenCalled()
+    expect(deps.critiqueStakes).not.toHaveBeenCalled()
+    expect(deps.draftBeat).toHaveBeenCalledTimes(2)
+    const criticDispatch = events.filter(
+      event =>
+        event.type === RunTraceEventType.RoleDispatch &&
+        (event.role === BeatDraftCriticName.Continuity ||
+          event.role === BeatDraftCriticName.Prose ||
+          event.role === BeatDraftCriticName.Stakes)
+    )
+    expect(criticDispatch).toEqual([])
+    const payload = suspendPayload(result.steps, VERDICT_STEP_ID)
+    expect(String(payload?.critiques)).toContain('orphan')
   })
 })

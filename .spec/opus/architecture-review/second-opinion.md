@@ -112,6 +112,8 @@ Cursor / Claude Code: the **harness** applies the patch after permissions; the m
 
 **Host owns commit.** Model proposes a draft. Human — or a declared autonomous queue whose verdicts wait — is the only commit. Controller modes are for chat exploration, not for the compiler.
 
+The manuscript still needs a page. InkOS writes in a chapter workspace. Cursor writes in the file. Nomos’s PhaseNavigator already says Premise → Beats → Draft, and Draft is a Courier `contentEditable` with a selection-rewrite menu. That is not a compiler surface. Do not invent a second chat to paper over it. Spec the well (`target-architecture.md` §7.5): ghost complete, section generate, Script vs Novel as format skills.
+
 ### 3.4 Four-layer canon without a ledger
 
 [novel-writing §4](https://github.com/wgwtest/novel-writing/blob/main/novel-writing/references/story-outline-and-causal-summary.md) is a **document convention** for outlines (story facts / character knowledge / author truth / reveal boundary). The spec treats it as queryable permissioned data, then defers the character-knowledge table to §13 while making layer-scoped retrieval a P1 floor item.

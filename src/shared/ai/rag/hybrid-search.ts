@@ -9,7 +9,9 @@ import { db } from '@/db/client'
 import { documentEmbeddings } from '@/db'
 import { sql, and, desc } from 'drizzle-orm'
 import { recordFromJson } from '@/shared/data/json-guards'
-import { getVoyageEmbeddings } from '../embeddings/voyage-embeddings'
+import { embed } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import {
   HYBRID_SEARCH_KEYWORD_FAILED_LOG,
   HYBRID_SEARCH_VECTOR_FAILED_LOG,
@@ -82,7 +84,6 @@ function normalizeScores(results: SearchResult[]): SearchResult[] {
 }
 
 export class HybridSearchEngine {
-  private embeddings = getVoyageEmbeddings()
   private config: HybridSearchConfig
 
   constructor(config?: Partial<HybridSearchConfig>) {
@@ -93,7 +94,7 @@ export class HybridSearchEngine {
    * Perform hybrid search combining vector and keyword search
    */
   async search(
-    projectId: string,
+    scope: ProjectScope,
     query: string,
     filters?: {
       documentTypes?: string[]
@@ -107,8 +108,8 @@ export class HybridSearchEngine {
 
     // Run vector and keyword searches in parallel
     const [vectorResults, keywordResults] = await Promise.all([
-      this.vectorSearch(projectId, query, filters, fetchCount),
-      this.keywordSearch(projectId, query, filters, fetchCount),
+      this.vectorSearch(scope, query, filters, fetchCount),
+      this.keywordSearch(scope.projectId, query, filters, fetchCount),
     ])
 
     // Create lookup maps for ranking
@@ -167,7 +168,7 @@ export class HybridSearchEngine {
    * Vector search using embeddings
    */
   private async vectorSearch(
-    projectId: string,
+    scope: ProjectScope,
     query: string,
     filters?: {
       documentTypes?: string[]
@@ -177,11 +178,14 @@ export class HybridSearchEngine {
     limit: number = 20
   ): Promise<Array<{ id: string; content: string; metadata: Record<string, unknown>; score: number }>> {
     try {
-      // Generate query embedding
-      const queryEmbedding = await this.embeddings.embedQuery(query)
+      const [queryEmbedding] = await embed({
+        scope,
+        feature: LlmFeature.RagEmbedding,
+        texts: [query],
+      })
+      if (!queryEmbedding) return []
 
-      // Build filter conditions
-      const conditions = [sql`${documentEmbeddings.projectId} = ${projectId}`]
+      const conditions = [sql`${documentEmbeddings.projectId} = ${scope.projectId}`]
 
       if (filters?.documentTypes && filters.documentTypes.length > 0) {
         // Convert JS array to PostgreSQL array literal format: {val1,val2,...}
@@ -296,23 +300,23 @@ export class HybridSearchEngine {
    * Search with automatic type detection
    */
   async semanticSearch(
-    projectId: string,
+    scope: ProjectScope,
     query: string,
     limit: number = 5
   ): Promise<SearchResult[]> {
-    return this.search(projectId, query, undefined, { topK: limit })
+    return this.search(scope, query, undefined, { topK: limit })
   }
 
   /**
    * Search filtered by document type
    */
   async searchByType(
-    projectId: string,
+    scope: ProjectScope,
     documentType: string,
     query: string,
     limit: number = 5
   ): Promise<SearchResult[]> {
-    return this.search(projectId, query, { documentTypes: [documentType] }, { topK: limit })
+    return this.search(scope, query, { documentTypes: [documentType] }, { topK: limit })
   }
 }
 

@@ -18,9 +18,17 @@ const deleteWhere = vi.fn()
 const findFirst = vi.fn()
 
 vi.mock('@/shared/auth/auth', async () => authModuleStub())
-vi.mock('@/domains/storyteller/server', () => ({
-  verifyEpisodeAccess: (...args: unknown[]) => verifyEpisodeAccess(...args),
-}))
+vi.mock('@/domains/storyteller/server', async importOriginal => {
+  function isModuleNamespace(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value)
+  }
+  const actual = await importOriginal()
+  const extras = {
+    verifyEpisodeAccess: (...args: unknown[]) => verifyEpisodeAccess(...args),
+  }
+  if (isModuleNamespace(actual)) return { ...actual, ...extras }
+  return extras
+})
 vi.mock('@/db/client', () => ({
   db: {
     query: { episodes: { findFirst: (...args: unknown[]) => findFirst(...args) } },
@@ -70,9 +78,9 @@ describe('PATCH', () => {
     expect(updateSet).not.toHaveBeenCalled()
   })
 
-  it('never writes projectId, id or createdAt even for the owner', async () => {
+  it('rejects unknown keys such as projectId instead of writing them', async () => {
     signIn(E2E_HARNESS_USER)
-    await PATCH(
+    const res = await PATCH(
       routeRequest({
         method: HttpMethod.Patch,
         body: { title: 'ok', projectId: OTHER_PROJECT, id: 'forged', createdAt: '2020-01-01' },
@@ -80,12 +88,8 @@ describe('PATCH', () => {
       routeParams({ episodeId: EPISODE_ID })
     )
 
-    expect(updateSet).toHaveBeenCalled()
-    for (const [values] of updateSet.mock.calls) {
-      expect(values).not.toHaveProperty('projectId')
-      expect(values).not.toHaveProperty('id')
-      expect(values).not.toHaveProperty('createdAt')
-    }
+    expect(res.status).toBe(HttpStatus.BAD_REQUEST)
+    expect(updateSet).not.toHaveBeenCalled()
   })
 
   it('still writes the fields a caller is allowed to set', async () => {

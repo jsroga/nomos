@@ -1,61 +1,40 @@
-import { createVisualSubjectClient } from '@/domains/storyteller/tasks/constants/visual-subject-client'
-import type { ChatCompletionContentPart } from 'openai/resources/chat/completions'
-import { OpenAiChatRole } from '@/shared/data/constants/protocol'
+import { complete } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { jobContextScope } from '@/shared/auth/project-scope'
 import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
-import {
-} from '@/domains/storyteller/services/visual-subject-llm'
 import {
   PORTRAIT_VARIANT_FALLBACK,
   PortraitVariantCopy,
   PortraitVariantIndex,
   PortraitVariantLog,
-  PortraitVisionPartType,
   parsePortraitVariantIndex,
 } from '@/domains/storyteller/services/constants/portrait-variant'
 
 export { parsePortraitVariantIndex, PortraitVariantIndex }
 
-function buildVariantUserContent(
-  imageUrl: string,
-  subject: string,
-  instruction: string,
-): ChatCompletionContentPart[] {
-  return [
-    {
-      type: PortraitVisionPartType.Text,
-      text: `${instruction}\n${PortraitVariantCopy.SubjectLabel} ${subject}`,
-    },
-    {
-      type: PortraitVisionPartType.ImageUrl,
-      image_url: { url: imageUrl },
-    },
-  ]
+function variantPrompt(imageUrl: string, subject: string, instruction: string): string {
+  return `${instruction}\n${PortraitVariantCopy.SubjectLabel} ${subject}\nImage: ${imageUrl}`
 }
 
 export async function pickPortraitVariantIndex(input: {
   imageUrl: string
   subject: string
   instruction?: string
+  projectId: string
 }): Promise<PortraitVariantIndex> {
-  const openai = createVisualSubjectClient()
-  if (!openai) return PORTRAIT_VARIANT_FALLBACK
-
   try {
-    const response = await openai.chat.completions.create({
+    const { text } = await complete({
+      scope: jobContextScope(input.projectId),
+      feature: LlmFeature.StorytellerVisualSubject,
       model: TEXT_GEN_FAST_MODEL,
-      messages: [
-        {
-          role: OpenAiChatRole.User,
-          content: buildVariantUserContent(
-            input.imageUrl,
-            input.subject,
-            input.instruction ?? PortraitVariantCopy.Instruction,
-          ),
-        },
-      ],
+      prompt: variantPrompt(
+        input.imageUrl,
+        input.subject,
+        input.instruction ?? PortraitVariantCopy.Instruction,
+      ),
       temperature: 0,
     })
-    return parsePortraitVariantIndex(response.choices[0]?.message?.content ?? '')
+    return parsePortraitVariantIndex(text)
   } catch (error) {
     console.warn(PortraitVariantLog.OpenAiFailed, error)
     return PORTRAIT_VARIANT_FALLBACK

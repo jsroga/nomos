@@ -8,3 +8,4 @@ export const ENV_DEFAULT = {
 } as const
 
 export const ENV_FLAG_ON = 'true'
+export const ENV_FLAG_OFF = 'false'

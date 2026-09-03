@@ -3,7 +3,8 @@
  *
  *   plan-beat (BeatPlanner, structured JSON)
  *     → draft-script (GrrmAuthor, script-beat format, toolChoice none)
- *     → critique (3 narrow critics in parallel — diagnose only)
+ *     → prose-check (deterministic lint; one author redraft; remaining errors skip critics)
+ *     → critique (3 narrow critics in parallel — diagnose only; skipped on lint errors)
  *     → editorial-verdict (SUSPENDS for the human: approve / revise / kill;
  *       state is snapshotted to Mastra storage, so the run survives restarts
  *       and can be resumed from the API route, Studio, or a script days later)
@@ -30,6 +31,9 @@ import {
   formatPlanQualityFeedback,
 } from '@/domains/storyteller/ai/agents/BeatPlanner/beat-plan-quality'
 import { formatSparksForPlanner } from '@/domains/storyteller/ai/agents/Muse/rank'
+import { BeatDraftCanonSchema } from '@/domains/storyteller/core/types/beat-draft-canon'
+import { CanonAudience, formatCanonFor } from './beat-draft-canon'
+import { runLintRedraftLoop } from './beat-draft-lint-loop'
 import { defaultBeatDraftDeps } from './beat-draft-default-deps'
 import type { BeatDraftContext, BeatDraftDeps } from './beat-draft-deps-types'
 import {
@@ -40,7 +44,10 @@ import {
 } from './beat-draft-contract'
 import { emitRunTrace, RunTraceEventType } from '@/shared/agent-kernel'
 import {
+  BEAT_DRAFT_AUTHOR_CANON_CHAR_BUDGET,
+  BEAT_DRAFT_AUTHOR_CANON_TRUNCATED,
   BEAT_DRAFT_CRITIQUE_JOIN,
+  BEAT_DRAFT_CRITIC_ROLES,
   BEAT_DRAFT_KILLED_MESSAGE,
   BEAT_DRAFT_VERDICT_NOTE_DESC,
   BEAT_DRAFT_VERDICT_SUSPEND_REASON,
@@ -52,6 +59,7 @@ import {
 export {
   beatDraftInputSchema,
   beatDraftOutputSchema,
+  BEAT_DRAFT_CRITIC_ROLES,
   BEAT_DRAFT_WORKFLOW_ID,
   VERDICT_STEP_ID,
 }
@@ -63,7 +71,7 @@ export { defaultBeatDraftDeps } from './beat-draft-default-deps'
 // ==========================================
 
 const planOutputSchema = beatDraftInputSchema.extend({
-  canon: z.string(),
+  canon: BeatDraftCanonSchema,
   beatPlan: BeatPlanSchema,
   /** Concreteness-gate failures that survived the single retry (usually empty). */
   planWarnings: z.array(z.string()),
@@ -75,7 +83,12 @@ const draftOutputSchema = planOutputSchema.extend({
   draft: z.string(),
 })
 
-const critiqueOutputSchema = draftOutputSchema.extend({
+const proseCheckOutputSchema = draftOutputSchema.extend({
+  skipCritics: z.boolean(),
+  lintReport: z.string(),
+})
+
+const critiqueOutputSchema = proseCheckOutputSchema.extend({
   critiques: z.string(),
 })
 
@@ -87,6 +100,15 @@ const verdictOutputSchema = critiqueOutputSchema.extend({
   ]),
   note: z.string().optional(),
 })
+
+function truncateAuthorCanon(text: string): string {
+  if (text.length <= BEAT_DRAFT_AUTHOR_CANON_CHAR_BUDGET) return text
+  return `${text.slice(0, BEAT_DRAFT_AUTHOR_CANON_CHAR_BUDGET)}${BEAT_DRAFT_AUTHOR_CANON_TRUNCATED}`
+}
+
+function authorCanonText(canon: z.infer<typeof BeatDraftCanonSchema>, characters: string[]): string {
+  return truncateAuthorCanon(formatCanonFor(CanonAudience.Author, canon, characters))
+}
 
 // ==========================================
 // WORKFLOW FACTORY
@@ -109,14 +131,15 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
         brief: inputData.brief,
         characters: inputData.characters,
       }
-      const canon = await deps.assembleCanon(ctx)
+      const assembled = await deps.assembleCanon(ctx)
+      const plannerCanon = formatCanonFor(CanonAudience.Planner, assembled, ctx.characters)
 
       // Muse sparks (5.3): opt-in, never fatal — an empty result proceeds
       // sparkless. The planner must engage-or-reject each spark by number.
-      const keptSparks = inputData.wildcards ? await deps.generateSparks(ctx, canon) : []
+      const keptSparks = inputData.wildcards ? await deps.generateSparks(ctx, plannerCanon) : []
       const sparksBlock = keptSparks.length > 0 ? formatSparksForPlanner(keptSparks) : undefined
 
-      let beatPlan = await deps.planBeat(ctx, canon, undefined, sparksBlock)
+      let beatPlan = await deps.planBeat(ctx, plannerCanon, undefined, sparksBlock)
       let planWarnings: string[] = []
 
       // Concreteness gate: retry ONCE with the failures named; a second
@@ -125,7 +148,7 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
       if (!quality.ok) {
         beatPlan = await deps.planBeat(
           ctx,
-          canon,
+          plannerCanon,
           formatPlanQualityFeedback(quality.failures),
           sparksBlock
         )
@@ -142,7 +165,7 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
       })
       return {
         ...inputData,
-        canon,
+        canon: assembled,
         beatPlan,
         planWarnings,
         sparks: keptSparks.map(entry => entry.idea.hook),
@@ -160,14 +183,15 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
         stepId: BeatDraftStepId.DraftScript,
         role: BeatDraftStepId.DraftScript,
       })
+      const ctx: BeatDraftContext = {
+        projectId: inputData.projectId,
+        episodeId: inputData.episodeId,
+        brief: inputData.brief,
+        characters: inputData.characters,
+      }
       const draft = await deps.draftBeat(
-        {
-          projectId: inputData.projectId,
-          episodeId: inputData.episodeId,
-          brief: inputData.brief,
-          characters: inputData.characters,
-        },
-        inputData.canon,
+        ctx,
+        authorCanonText(inputData.canon, inputData.characters),
         inputData.beatPlan
       )
       emitRunTrace({
@@ -179,31 +203,76 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
     },
   })
 
+  const proseCheckStep = createStep({
+    id: BeatDraftStepId.ProseCheck,
+    inputSchema: draftOutputSchema,
+    outputSchema: proseCheckOutputSchema,
+    execute: async ({ inputData }) => {
+      const ctx: BeatDraftContext = {
+        projectId: inputData.projectId,
+        episodeId: inputData.episodeId,
+        brief: inputData.brief,
+        characters: inputData.characters,
+      }
+      const linted = await runLintRedraftLoop({
+        draft: inputData.draft,
+        plan: inputData.beatPlan,
+        ctx,
+        canon: inputData.canon,
+        authorCanon: authorCanonText(inputData.canon, inputData.characters),
+        runProseCheck: deps.runProseCheck,
+        draftBeat: deps.draftBeat,
+      })
+      return { ...inputData, ...linted }
+    },
+  })
+
+  const criticByRole: Record<
+    BeatDraftCriticName,
+    (draft: string, canon: string) => Promise<string>
+  > = {
+    [BeatDraftCriticName.Continuity]: deps.critiqueContinuity,
+    [BeatDraftCriticName.Prose]: deps.critiqueProse,
+    [BeatDraftCriticName.Stakes]: deps.critiqueStakes,
+  }
+
   const critiqueStep = createStep({
     id: BeatDraftStepId.Critique,
-    inputSchema: draftOutputSchema,
+    inputSchema: proseCheckOutputSchema,
     outputSchema: critiqueOutputSchema,
     execute: async ({ inputData }) => {
-      emitRunTrace({
-        type: RunTraceEventType.RoleDispatch,
-        stepId: BeatDraftStepId.Critique,
-        role: BeatDraftCriticName.Continuity,
-      })
-      emitRunTrace({
-        type: RunTraceEventType.RoleDispatch,
-        stepId: BeatDraftStepId.Critique,
-        role: BeatDraftCriticName.Prose,
-      })
-      emitRunTrace({
-        type: RunTraceEventType.RoleDispatch,
-        stepId: BeatDraftStepId.Critique,
-        role: BeatDraftCriticName.Stakes,
-      })
-      const [continuity, prose, stakes] = await Promise.all([
-        deps.critiqueContinuity(inputData.draft, inputData.canon),
-        deps.critiqueProse(inputData.draft, inputData.canon),
-        deps.critiqueStakes(inputData.draft, inputData.canon),
-      ])
+      if (inputData.skipCritics) {
+        return { ...inputData, critiques: inputData.lintReport }
+      }
+      const formatted: Record<BeatDraftCriticName, string> = {
+        [BeatDraftCriticName.Continuity]: formatCanonFor(
+          CanonAudience.Continuity,
+          inputData.canon,
+          inputData.characters
+        ),
+        [BeatDraftCriticName.Prose]: formatCanonFor(
+          CanonAudience.Author,
+          inputData.canon,
+          inputData.characters
+        ),
+        [BeatDraftCriticName.Stakes]: formatCanonFor(
+          CanonAudience.Stakes,
+          inputData.canon,
+          inputData.characters
+        ),
+      }
+      for (const role of BEAT_DRAFT_CRITIC_ROLES) {
+        emitRunTrace({
+          type: RunTraceEventType.RoleDispatch,
+          stepId: BeatDraftStepId.Critique,
+          role,
+        })
+      }
+      const reports = await Promise.all(
+        BEAT_DRAFT_CRITIC_ROLES.map(role =>
+          criticByRole[role](inputData.draft, formatted[role])
+        )
+      )
       emitRunTrace({
         type: RunTraceEventType.RoleResult,
         stepId: BeatDraftStepId.Critique,
@@ -211,7 +280,7 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
       })
       return {
         ...inputData,
-        critiques: [continuity, prose, stakes].join(BEAT_DRAFT_CRITIQUE_JOIN),
+        critiques: reports.join(BEAT_DRAFT_CRITIQUE_JOIN),
       }
     },
   })
@@ -290,7 +359,7 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
       }
       const finalDraft = await deps.reviseBeat(
         ctx,
-        inputData.canon,
+        authorCanonText(inputData.canon, inputData.characters),
         inputData.draft,
         inputData.critiques,
         inputData.action === BeatDraftVerdictAction.Revise ? inputData.note : undefined
@@ -322,6 +391,7 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
   })
     .then(planStep)
     .then(draftStep)
+    .then(proseCheckStep)
     .then(critiqueStep)
     .then(verdictStep)
     .then(reviseStep)

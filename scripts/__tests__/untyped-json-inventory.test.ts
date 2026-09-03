@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 // The .mjs harness is shared by SPEC-12/13/14/16 and carries no types by design.
 import { inventory } from '../inventory/index.mjs'
-import { UntypedJsonBucket, classifyUntypedJsonRead, moduleOf } from '../inventory/matchers.mjs'
+import { UntypedJsonBucket, classifyUntypedJsonRead } from '../inventory/matchers.mjs'
 
 const RATCHET = JSON.parse(readFileSync('.quality-ratchet.json', 'utf8'))
 
@@ -24,7 +24,7 @@ const RATCHET = JSON.parse(readFileSync('.quality-ratchet.json', 'utf8'))
 const CONVERTED_MODULES = ['3d-asset-exporter']
 
 function buckets(): Record<string, string[]> {
-  return inventory(classifyUntypedJsonRead).byBucket
+  return inventory(classifyUntypedJsonRead).identitiesByBucket
 }
 
 describe('untyped JSON reads', () => {
@@ -42,7 +42,9 @@ describe('untyped JSON reads', () => {
 
   it('does not let a converted module regress, so half-done is a stable state', () => {
     const reads = buckets()[UntypedJsonBucket.SnakeCaseRead] ?? []
-    const inConverted = reads.filter(file => CONVERTED_MODULES.includes(moduleOf(file) ?? ''))
+    const inConverted = reads.filter(id =>
+      CONVERTED_MODULES.some(moduleName => id.includes(`src/domains/${moduleName}/`)),
+    )
 
     expect(inConverted.length).toBeLessThanOrEqual(RATCHET.snakeCaseReadsInConvertedModules)
   })

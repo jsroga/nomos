@@ -35,6 +35,7 @@ import { grrmTools, runBeatDraftWorkflowTool, proposeCharacterFieldsTool } from 
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
 import { CHAT_LIVE_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
+import { INHERITED_AGENT_LAST_MESSAGES } from '@/shared/agent-kernel/mastra/studio-memory'
 import {
   AgentModelRole,
   BeatPlannerCopy,
@@ -93,7 +94,7 @@ export class StorytellerAgent {
     const memory = new Memory({
       storage,
       options: {
-        lastMessages: 10, // Keep last 10 messages — 50 was burning tokens
+        lastMessages: INHERITED_AGENT_LAST_MESSAGES,
       },
     })
 
@@ -276,6 +277,7 @@ Create a beat with:
     toolChoice?: 'auto' | 'none' | 'required'
     /** Server-trusted per-request values (IDs, author model) — see agents/request-context. */
     requestContext?: RequestContext
+    memory?: { thread: string; resource: string }
   }) {
     // Use stream() with v2 models (specificationVersion = 'v2' set in createModel)
     const traceId = options?.traceId || this.generateHexId(32)
@@ -287,6 +289,7 @@ Create a beat with:
         maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
       },
       ...(options?.requestContext ? { requestContext: options.requestContext } : {}),
+      ...(options?.memory ? { memory: options.memory } : {}),
       tracingOptions: {
         traceId,
         ...(options?.parentSpanId ? { parentSpanId: options.parentSpanId } : {}),

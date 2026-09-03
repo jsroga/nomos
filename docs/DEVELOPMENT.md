@@ -57,7 +57,7 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 
 - Colocate unit tests next to code. Exclude `*.e2e.test.ts` from default unit runs (need DB/LLM).
 - Coverage (`npm run test:coverage`) uses `@vitest/coverage-v8` on every `src` `.ts`/`.tsx` file (`all: true`). `test:unit` stays uninstrumented. HTML / LCOV / json-summary land in `coverage/` (gitignored); `npm run test:coverage:open` generates then opens the HTML report.
-- E2E needs `npm run dev` (or `dev:stack`) + `.env.local`.
+- E2E needs `npm run dev` (or `dev:stack`) + `.env.local`. Default Playwright (`:3001` production start) sets `DATABASE_SSL_REJECT_UNAUTHORIZED=false` so a TLS-inspecting proxy does not block Postgres.
 - Golden set: `evals/datasets/storyteller-golden.ts`.
 - `npm run eval` is a **fixture-only alias** of `eval:scorer-fixture`. It is not agent quality.
 

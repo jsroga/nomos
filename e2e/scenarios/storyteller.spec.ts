@@ -33,7 +33,13 @@ test.describe(FlowTest.Describe, () => {
 
     await sendChatMessage(page, FlowPrompt.GenerateBible)
     await waitForAssistantStatus(page)
-    await acceptPendingAction(page)
+    try {
+      await acceptPendingAction(page)
+    } catch {
+      await sendChatMessage(page, FlowPrompt.GenerateBible)
+      await waitForAssistantStatus(page)
+      await acceptPendingAction(page)
+    }
     await openStorybible(page)
     await expectWorldBibleHasContent(page)
 

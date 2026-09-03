@@ -562,24 +562,29 @@ table stays a complete map rather than only an inbox.
   Humanizer after verdict), one critic × **three** scopes, Muse as `brainstorm`, three
   workflows (`beat-draft-workflow` heavy, `artifact-draft` light, `fix-inconsistencies` sweep).
   Host persists after Approve — no model `commit_beat`. Four-layer canon is a prompt
-  partition first. Voice is the existing MASTER PROMPT / EPISODE PROMPT. Latency (180s, one
-  auto-revise, one timeout source) binds every phase. Ablation decides extras (`cognition`,
-  `dialogue`, ledger, autonomy). Evaluation stays first-class. Role pins after a live-quality
-  run, not vendor ids in the spec.
+  partition first. Voice is the existing MASTER PROMPT / EPISODE PROMPT. **Draft** is the
+  existing PhaseNavigator tab: Medium well, Cursor ghost-text, Script / Novel format, generate
+  next / regenerate this section from bible + premise + beats (`target-architecture.md` §7.5).
+  Latency (180s, one auto-revise, one timeout source) binds every phase. Ablation decides extras
+  (`cognition`, `dialogue`, ledger, autonomy). Evaluation stays first-class. Role pins after a
+  live-quality run, not vendor ids in the spec.
 - **`evaluation.md`** — **the deep companion on testing.** Four tiers; POV-leak and Law of
   Motion in the deterministic tier; GRRM rubric in live quality; ablation for additions past
   **three** scopes, not for deleting the floor. Trace contracts assert three overlapping
   critics, Humanizer before persist, kill writes nothing.
-- **`diagrams.md`** — ten Mermaid diagrams: two of `b409539`, five of the honest floor
-  (including disclosure and the de-slop pass), three of measurement.
+- **`diagrams.md`** — eleven Mermaid diagrams: two of `b409539`, five of the honest floor
+  (including disclosure and the de-slop pass), three of measurement, one of Premise → Beats →
+  Draft.
 - **`actions.md`** — thirty-two actions in four tracks. Action **10 is cut**. Action **14**
   floor is three scopes. Action **27** regex-injection is not P0. Action **28** is a Phase 0
   constraint. Schedule is **`phases.md`**, not the historical serial string. Action 17 is the
   George split. Every action has WHAT/HOW/WHERE/Acceptance plus **What is there to learn**
   and **In plain words**.
 - **`phases.md`** — **canonical build order.** Platform ∥ storyteller in phases 0–4. All 32
-  ids mapped; none silently dropped.
+  ids mapped; none silently dropped. Phase 3 is the Draft manuscript (Script / Novel) plus
+  `artifact-draft`.
 - **`second-opinion.md`** — rationale that produced the honest floor. The target document now
   implements it.
-- **`learning-materials.md`** — backend fundamentals through this repo, then a teaching unit
-  on the craft catalog, the George split, and the thirty-two actions as a syllabus.
+- **`learning-materials.md`** — backend fundamentals through this repo, Part 2A (short Phase 1
+  picture), then the craft catalog and thirty-two-action syllabus. **Part 6 (last chapter)** is
+  Phase 1 as a system: platform boxes, request flows, and graphs — that phase only.

@@ -9,6 +9,7 @@
  */
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import {
+  CanonLayer,
   MergeStrategy,
   SECTION_NOT_HYDRATED_REASON,
   SectionLabel,
@@ -36,6 +37,7 @@ export const WORLD_BIBLE_SECTIONS: WorldBibleSection[] = Object.values(BibleSect
 export interface SectionSpec {
   readonly owner: SectionOwner
   readonly merge: MergeStrategy
+  readonly canonLayer: CanonLayer
   /** Whether the section reaches UI state through the hydration pass. */
   readonly hydrates: boolean
   /**
@@ -84,42 +86,49 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   [BibleSection.WORLD_DESCRIPTION]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Overwrite,
+    canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     label: SectionLabel.WorldDescription,
   },
   [BibleSection.WORLD_RULES]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Append,
+    canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     label: SectionLabel.WorldRules,
   },
   [BibleSection.FACTIONS]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Append,
+    canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     label: SectionLabel.Factions,
   },
   [BibleSection.INSPIRATIONS]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Deep,
+    canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     label: SectionLabel.Inspirations,
   },
   [BibleSection.PLOT_TWISTS]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Append,
+    canonLayer: CanonLayer.AuthorTruth,
     hydrates: true,
     label: SectionLabel.PlotTwists,
   },
   [BibleSection.EPISODE_ROADMAP]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Deep,
+    canonLayer: CanonLayer.RevealBoundary,
     hydrates: true,
     label: SectionLabel.EpisodeRoadmap,
   },
   [BibleSection.CAST]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Append,
+    canonLayer: CanonLayer.CharacterKnowledge,
     hydrates: true,
     hydratesAs: CastFieldAlias.KeyCharacters,
     label: SectionLabel.Cast,
@@ -127,6 +136,7 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   [BibleSection.SOUNDTRACKS]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Replace,
+    canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     aliases: { [SoundtrackFieldAlias.MoodSoundtrack]: { hydrates: true } },
     label: SectionLabel.Soundtracks,
@@ -134,6 +144,7 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   [BibleSection.MOODBOARD]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Deep,
+    canonLayer: CanonLayer.StoryFacts,
     hydrates: false,
     why: SECTION_NOT_HYDRATED_REASON.Moodboard,
     label: SectionLabel.Moodboard,
@@ -141,18 +152,20 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   [BibleSection.ITEMS]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Append,
+    canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     label: SectionLabel.Items,
   },
   [BibleSection.EVENTS]: {
     owner: SectionOwner.Bible,
     merge: MergeStrategy.Append,
+    canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     label: SectionLabel.Events,
   },
 }
 
-export { MergeStrategy, SectionOwner }
+export { CanonLayer, MergeStrategy, SectionOwner }
 
 function sectionsWhere(predicate: (spec: SectionSpec) => boolean): WorldBibleSection[] {
   return WORLD_BIBLE_SECTIONS.filter(section => predicate(SECTION_REGISTRY[section]))

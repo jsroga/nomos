@@ -1,29 +1,15 @@
 /**
  * Structured output contract for the three narrow critics.
  *
- * Critics DIAGNOSE ONLY: every finding quotes the offending passage and says
- * why it fails. There is deliberately no field for suggested replacement
- * prose — critics never rewrite (StoryForge rule; the author holds the vision
- * and may reject findings).
+ * Critics DIAGNOSE ONLY. Findings share the domain FindingSchema with the
+ * cheap linter so a packed lint report and a critic report are the same shape.
  */
 
+import { FindingSchema, type Finding } from '@/domains/storyteller/core/types/finding'
 import { z } from 'zod'
 
-export const CriticFindingSchema = z.object({
-  quote: z
-    .string()
-    .min(1)
-    .describe('Verbatim quote of the offending passage from the draft'),
-  why: z
-    .string()
-    .min(1)
-    .describe('Precisely why this passage fails, within this critic\'s brief'),
-  severity: z
-    .enum(['critical', 'major', 'minor'])
-    .describe('critical = breaks canon/scene; major = hurts quality; minor = polish'),
-})
-
-export type CriticFinding = z.infer<typeof CriticFindingSchema>
+export const CriticFindingSchema = FindingSchema
+export type CriticFinding = Finding
 
 export const CriticReportSchema = z.object({
   findings: z
@@ -40,7 +26,8 @@ export function formatCriticReport(criticName: string, report: CriticReport): st
     return `## ${criticName} findings\nNO FINDINGS.`
   }
   const lines = report.findings.map(
-    (f, i) => `${i + 1}. [${f.severity}] "${f.quote}" — ${f.why}`,
+    (finding, index) =>
+      `${index + 1}. [${finding.severity}] "${finding.location.quote}" — ${finding.whyItFails}`,
   )
   return `## ${criticName} findings\n${lines.join('\n')}`
 }

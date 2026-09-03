@@ -52,7 +52,7 @@ export const generatePortrait = defineOwnedTask({
       prompt,
     })
 
-    const generated = await generateSelectedPortraitImage(prompt, apiKey)
+    const generated = await generateSelectedPortraitImage(prompt, apiKey, projectId)
 
     await setPortraitStage(GeneratePortraitProgress.Downloading, GeneratePortraitStage.Downloading)
     const imgResponse = await fetch(generated.imageUrl)

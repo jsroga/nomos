@@ -87,8 +87,8 @@ async function embedWithCache(
   inputType: VoyageInputType,
   model: VoyageModelId,
   truncation: boolean
-): Promise<{ vectors: number[][]; promptTokens: number }> {
-  if (texts.length === 0) return { vectors: [], promptTokens: 0 }
+): Promise<{ vectors: number[][]; promptTokens: number; cacheHit: boolean }> {
+  if (texts.length === 0) return { vectors: [], promptTokens: 0, cacheHit: false }
 
   const results: number[][] = []
   const uncachedTexts: string[] = []
@@ -131,7 +131,7 @@ async function embedWithCache(
     }
   }
 
-  return { vectors: results, promptTokens }
+  return { vectors: results, promptTokens, cacheHit: uncachedTexts.length === 0 }
 }
 
 export class VoyageEmbeddings implements IEmbeddings {
@@ -155,7 +155,7 @@ export class VoyageEmbeddings implements IEmbeddings {
 
   async embedDocumentsMetered(
     texts: string[]
-  ): Promise<{ vectors: number[][]; promptTokens: number }> {
+  ): Promise<{ vectors: number[][]; promptTokens: number; cacheHit: boolean }> {
     return embedWithCache(texts, VoyageInputType.Document, this.model, this.truncation)
   }
 

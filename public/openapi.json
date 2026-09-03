@@ -1057,10 +1057,7 @@
           "title": {
             "type": "string"
           },
-          "masterPrompt": {
-            "type": "string"
-          },
-          "posterUrl": {
+          "summary": {
             "type": "string"
           },
           "premise": {
@@ -1068,8 +1065,51 @@
             "additionalProperties": {
               "nullable": true
             }
+          },
+          "thematicFocus": {
+            "type": "string"
+          },
+          "scriptContent": {
+            "type": "string"
+          },
+          "masterPrompt": {
+            "type": "string"
+          },
+          "currentPhase": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "posterUrl": {
+            "type": "string"
+          },
+          "posterPrompt": {
+            "type": "string"
+          },
+          "storyPlan": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          },
+          "planApproved": {
+            "type": "boolean"
+          },
+          "tenPointsPlan": {
+            "nullable": true
+          },
+          "episode_prompt": {
+            "type": "string"
+          },
+          "master_prompt": {
+            "type": "string"
+          },
+          "storyboardUrl": {
+            "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "StorytellerBeat": {
         "type": "object",

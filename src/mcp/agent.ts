@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent'
 import type { ToolsInput } from '@mastra/core/agent'
 import { Memory } from '@mastra/memory'
 import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
+import { INHERITED_AGENT_LAST_MESSAGES } from '@/shared/agent-kernel/mastra/studio-memory'
 import { entitiesTools } from './domains/entities/tools'
 import { storytellerTools } from './domains/storyteller/tools'
 import { generationTools } from './domains/generation/tools'
@@ -9,7 +10,10 @@ import { triggerTools } from './domains/trigger/tools'
 import { MCP_AGENT_DESCRIPTION, McpAgentName } from './constants/agent'
 
 // Shared store — falls back when DATABASE_URL is absent at build time
-const memory = new Memory({ storage: getStorageInstance() })
+const memory = new Memory({
+  storage: getStorageInstance(),
+  options: { lastMessages: INHERITED_AGENT_LAST_MESSAGES },
+})
 
 // Aggregate all implemented tools.
 // loop-creator, 3d-canvas, and 2d-canvas domains are not yet

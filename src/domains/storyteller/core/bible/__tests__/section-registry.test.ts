@@ -84,4 +84,9 @@ describe('SECTION_REGISTRY', () => {
 
     expect(unlabelled).toEqual([])
   })
+
+  it('assigns a canonLayer to every section', () => {
+    const missing = WORLD_BIBLE_SECTIONS.filter(section => !SECTION_REGISTRY[section].canonLayer)
+    expect(missing).toEqual([])
+  })
 })

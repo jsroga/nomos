@@ -95,10 +95,15 @@ VERA
   I know what you signed.
   (subtext: so did she)`
 
-      const critiques = await defaultBeatDraftDeps.critique(
-        plantedDraft,
+      const canon =
         'CANON: Vera and Marcus are rival stewards of the same house. The ledger is forged.'
-      )
+      const critiques = (
+        await Promise.all([
+          defaultBeatDraftDeps.critiqueContinuity(plantedDraft, canon),
+          defaultBeatDraftDeps.critiqueProse(plantedDraft, canon),
+          defaultBeatDraftDeps.critiqueStakes(plantedDraft, canon),
+        ])
+      ).join('\n')
 
       // Discipline: the planted cliché must be quoted…
       expect(critiques.toLowerCase()).toContain(PLANTED_CLICHE)

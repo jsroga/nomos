@@ -9,9 +9,11 @@ through [wgwtest/novel-writing](https://github.com/wgwtest/novel-writing) and
 
 **How to use it.** Part 1 is the story of what was recently refactored and why. Part 2 teaches
 backend fundamentals, each anchored to real code, then the agentic writing system (craft catalog,
-George vibe, evaluation). Part 3 walks the thirty-two actions as a syllabus, not a ticket list.
-Part 4 lists the trade-offs we have deliberately accepted. Part 5 is an honest answer to "are we
-going in a good direction?" **Build order:** [phases.md](./phases.md).
+George vibe, evaluation). **Part 2A is a short Phase 1 picture.** **Part 6 (the last chapter
+in this file)** is the system: platform boxes, request flows, and graphs for that same Phase 1
+work and nothing else. Part 3 walks the thirty-two actions as a syllabus. Part 4 lists accepted
+trade-offs. Part 5 asks whether the direction is good. **Build order:** [phases.md](./phases.md).
+Implementation tickets: the Phase 1 plan (`phase_1_architecture`).
 
 A note on honesty: this document points at real weaknesses in code you wrote. That is not
 criticism, it is the only way the material is useful. Every codebase of this size has these
@@ -556,6 +558,14 @@ The catalog's other hard rules map onto scopes and gates:
 | Review output must be specific | `Finding` schema |
 | Run the bundled checker | `run_prose_check` — rewrite the rules, keep the shape |
 
+**Script vs novel is also a spec, not a vibe.** Humans who write TV already use studio format
+(slugline, present-tense action, CHARACTER CUE, sparse parentheticals, one page ≈ one minute).
+Humans who write novels use chapters, viewpoint, attribution beats, and interiority. The
+Author must be taught those page geometries as a format skill (`target-architecture.md` §7.5).
+Do not emit a novel that starts every paragraph with `INT. KITCHEN – NIGHT`, and do not emit a
+script as markdown headings. The Draft tab is that page. Cork Board is the beat cards and is
+forbidden from drafting scripts.
+
 You do not need to become a novelist to implement this. You need to treat those documents as
 specifications.
 
@@ -682,6 +692,205 @@ voice-pack change can move it — that is construct invalidity, the same bug as 
 
 ---
 
+# Part 2A — Phase 1, in plain words (what we are about to build)
+
+Read this before the tickets. Tickets are in the Phase 1 plan and in [phases.md](./phases.md).
+This chapter is the picture those tickets are cutting out of.
+
+Phase 0 made the current loop **stop lying** (who you are, whether a beat saved, whether an
+eval actually measured an agent). Phase 1 does **not** add a new writer, a new critic, or a
+Humanizer. Same six agents. Same two workflows. The host work: **alarms that actually ring,
+a bill that is a total, a free spellcheck before the expensive editors, and a notebook that
+knows whose it is.**
+
+If you remember one sentence:
+
+> Typecheck the beat for free. Then, and only then, pay three critics. Never tell the
+> drafting Author the twist. Never pay Meshy twice because step three crashed.
+
+---
+
+## The beat, after Phase 1
+
+Today the pipeline is roughly:
+
+```
+plan → draft → three paid critics in parallel → you Approve / Revise / Kill → save
+```
+
+After Phase 1 it is:
+
+```
+plan
+  → draft (now on the cost ledger)
+  → free prose-check  (causal graph, plants, hygiene, "did this POV name the secret?")
+       errors?  one free-ish Author rewrite, check again
+       still broken?  skip the critics, show you the findings, wait for Approve/Revise/Kill
+       clean (or only warnings)?  three paid critics, same as today
+  → you Approve / Revise / Kill
+  → save  (plants also land in the setups table; Law of Motion fields stay on the beat)
+```
+
+Nothing in that picture is a new personality. The Author is still `statelessGrrmAuthor`.
+The three critics are still continuity, prose, and stakes. Muse still only runs if
+`wildcards` is on — and after this phase the **chat tool** can finally turn that switch,
+which today it cannot.
+
+---
+
+## Kitchen picture
+
+Imagine a restaurant.
+
+**The smoke alarm** is written on the wall in nine places. A later painter covered the
+cross-domain wire with "no raw OpenAI." The alarm still looks installed. Lighting a match
+in the kitchen (`import from '@/domains/game-design'` inside a storyteller file) currently
+does nothing. Phase 1 rewires the alarm and **tests that a match sets it off**, and that
+removing the battery makes the test fail. That is Actions 5's ESLint compose.
+
+**The tally board** on the wall has 21 numbers. Fourteen are wired to a bell. Seven are
+sharpie. Anyone can raise a number in the same breath they break the rule. Phase 1 either
+hooks those seven to a bell or erases them, and compares tonight's board to **last week's
+board**, not to itself. That is the ratchet.
+
+**The receipt** lists the last course, not the meal. The longest course — the Author
+drafting the beat — is missing. Embeddings and rerank sometimes never hit the till.
+Phase 1 puts those lines on the receipt. A missing price is still "we don't know," never
+"this was free."
+
+**Paying the butcher twice.** Image and 3D jobs retry when the upload fails. Retry today
+can mean "call Meshy again," which is a second invoice for the same steak. Phase 1 writes
+the butcher's ticket number on the order **before** paying, and on retry **reads** that
+number instead of ordering again.
+
+**The health inspection** currently ignores a waiter dropping a tray in the back
+(`dangerouslyIgnoreUnhandledErrors: true`). Phase 1 stops ignoring it, after the dropped
+trays that already exist are picked up — flip the flag while the suite is red and you
+learn nothing.
+
+None of that is a new menu item. It is the kitchen stopping its own lies.
+
+---
+
+## The writing loop, in the same kitchen
+
+**Don't tell the line cook the twist.** The world bible currently goes to the Author as
+one JSON dump, including `PLOT_TWISTS`. Asking the model "please don't spoil it" is a
+note on the fridge. Taking the twist folder off the cook's counter is a rule. Planner
+and the continuity critic still get the folder — they are the people who must know.
+Prose and stakes critics do not. If the beat has no POV character, the cook gets the
+public facts only, not every character's secrets. That is a **prompt partition**, not a
+new database of "who knows what." The ledger table is Phase 4, and only if this cheap
+version fails on paraphrases.
+
+**Spellcheck before the three expensive editors.** Causal holes, an unresolved plant, a
+POV naming a secret by its true name, leftover `</thinking>` markup — those are
+`tsc` errors. You do not pay a staff of reviewers to find a missing semicolon. The
+prose-check emits the same `Finding` shape a critic does (location + a verbatim quote,
+or it is not a finding). One rewrite if it fails. If it still fails, **skip the critics**
+and bring you the findings. Warnings (ugly but legal) do not block. This is not the
+Revise button after you have already seen the draft; that slot stays yours.
+
+**Do not throw out the beat's junk drawer.** `beats.setupsPayoffs` jsonb looks like a
+duplicate of the unused `setups` table. It is not only plants. It is also where
+`actionTaken` / `consequence` / `storyStateChange` are packed — Law of Motion, the
+thing the planner already gates on. Deleting the jsonb in this phase would break
+saves and the board. Phase 1 **dual-writes** new plants into `setups` and lets the
+linter prefer the table, then fall back to jsonb. The drawer stays.
+
+**Complaints must point at a sentence.** A critic that says "the pacing is a bit stiff"
+is an intern with no highlighter. After Phase 1 a finding without a location and a
+quote cannot be saved. Same form for the free linter and the three model critics.
+`promoteToProjectRule` is a checkbox defaulting to no. Nobody is building the machine
+that turns a finding into standing law yet.
+
+**A notebook with a name on it.** Agent memory is configured as "last ten messages" on
+code the live chat does not call. The path you talk to never passes `thread` +
+`resource`. Autonomous runs without an episode share one notebook named
+`storyteller-autonomous`. CRUD mints a fresh notebook every call, so nothing is ever
+recalled. MCP has no page limit at all. Phase 1: one helper that names the notebook
+`(project, episode, user)`, on **every** live door — the SSE stream, the flagged
+controller path, `/api/assistant/…`, autonomous, and MCP. Two projects never share a
+notebook. Recalled chat is conversation, not a back door around "don't tell the cook
+the twist." Expiry (throwing old notebooks away) waits for Phase 3.
+
+**The Muse doorbell is disconnected.** The workflow already honors `wildcards`. The
+tool the chat agent calls does not expose that field, so no user utterance can turn
+sparks on. Phase 1 adds the field and forwards it. It does **not** build a roster of
+`@mention` specialists. Two unused class wrappers (`GrrmAuthorAgent`,
+`BeatPlannerAgent`) get deleted; the file-based agents that actually draft stay.
+
+**One PATCH, done properly.** Episode update already has an allowlist — sitting in the
+`app/` route folder, which is the wrong house — while OpenAPI advertises a different,
+passthrough-y shape. Phase 1 moves the allowlist next to the domain, makes the route
+run **that** Zod, and regenerates OpenAPI from it. We do not wrap the other 85 raw
+routes. A dropped thumbnail field on 2D→legacy assets gets carried through the 3D
+contracts module; 3D is not allowed to import 2D to do it.
+
+---
+
+## What this is not
+
+| You might expect | What we are actually doing |
+|---|---|
+| A new Author, a fourth critic, Humanizer | Same six agents. Humanizer is Phase 2 |
+| Skills catalog in every call | Phase 2. This phase does not load novel-writing bodies |
+| A knowledge ledger ("who knows the twist" as rows) | Partition the prompt. Tables if that fails, Phase 4 |
+| Drop `setupsPayoffs` jsonb | Dual-write plants. Jsonb still holds Law of Motion |
+| Chat tools `read_canon` / `run_prose_check` | Linter is a **workflow step**. No new doorbells |
+| `@mention` writer / devil's advocate | Delete dead wrappers. Do not build the roster |
+| `commit_beat` for the model | Host still saves after **you** Approve |
+| Browser / Playwright to "see the card" | Unit + trace tests. Pixels stay unverified, on purpose |
+| Extract `/api/assistant` into a platform kernel | That is Phase K, **after** this phase, **before** Humanizer |
+| Silence lint with `eslint-disable` | Split the file or fix the rule. Ask before any disable |
+
+If an assistant starts any of those during Phase 1, it is off the plan.
+
+---
+
+## How you will know it worked
+
+Five facts, all checkable without opening the app:
+
+1. **A mechanically broken beat does not buy critics.** Empty causal spine, a POV using a
+   name that exists only in the twist folder, or a plant with no payoff window → Author
+   retry or suspend, **$0** on continuity/prose/stakes in `llm_calls`, no critic
+   `role.dispatch` on the trace.
+2. **The Author's assembled context has no twist.** A unit test on the assembly result,
+   not a prompt that says "don't mention it."
+3. **Importing `@/domains/game-design` from a real storyteller file is an ESLint error**,
+   and deleting that rule turns a named test red. Importing `openai` still errors (the
+   positive control — if that also goes quiet, the test harness is broken).
+4. **A retried tile or Meshy job does not create a second paid generation.** The test
+   mocks the provider; it fails the run if the create POST happens twice.
+5. **Deleting one of the three critics from the production workflow turns the contract
+   test red.** "We still score the prose" is not enough; the trace must show three
+   overlapping critics on the happy path.
+
+Plus the boring-but-load-bearing: unhandled promise rejections fail Vitest; Author
+drafts appear on the cost ledger; episode PATCH runtime schema equals the OpenAPI
+document; live chat passes `memory.thread` + `memory.resource`; `wildcards` on the
+tool reaches Muse.
+
+---
+
+## How to study this with an assistant
+
+1. Walk `createBeatDraftWorkflow` in `beat-draft-workflow.ts` and point at the hole
+   between `draft-script` and `critique`. That hole is the prose-check.
+2. Print `assembleCanon` in `beat-draft-default-deps.ts`. The `sections: [All]` is the
+   twist leak. Ask: "show me the object the Author receives after partition — not the
+   prompt text."
+3. When an assistant wants to `DROP` `setupsPayoffs`, make it show `packSetupsPayoffs`
+   in `beat-tool-operations.ts`. If it still wants to drop the column, it has not read
+   the kitchen.
+4. When an assistant binds memory only on `stream-post-handler.ts`, ask for the
+   controller path and `/api/assistant/[agentId]`. One door is not the product.
+5. When an assistant proposes Playwright "just to check," the answer is the five
+   facts above. A page is not an acceptance path in this phase.
+
+---
+
 # Part 3 — The thirty-two actions as a syllabus
 
 `actions.md` has the tickets (WHAT / HOW / WHERE / Acceptance) plus a teaching column on
@@ -731,7 +940,10 @@ budget, and Martin on the assembly line as structure.**
   files at L1. Bodies on match. The cost of "using the catalog" is ~1.2k tokens of index,
   not 20k of bodies.
 - **16 Three workflows.** `beat-draft-workflow` (heavy compiler), `artifact-draft` (light),
-  `fix-inconsistencies` (sweep you already have). Autonomy is Phase 4.
+  `fix-inconsistencies` (sweep you already have). Autonomy is Phase 4. Phase 3 also puts that
+  heavy compiler on the **Draft tab** (Premise → Beats → Draft): Script vs Novel format skill,
+  Cursor ghost-text, generate next / regenerate this section. Cork Board still does not draft
+  scripts.
 - **17 Split the George vibe.** The pack already drafts every beat, so this is not wiring.
   Structure is already in 12–14; voice stays in the existing MASTER PROMPT; Humanizer after
   the verdict behind a claim check. Measure with the GRRM rubric (21) — starting with an
@@ -741,7 +953,7 @@ budget, and Martin on the assembly line as structure.**
 - **28 The latency budget.** Phase 0 constraint. One timeout source, one auto-revise, 180s.
   The human approval pause splits one long request into two short ones.
 - **30 The chat surface.** Call `resumeChatWorkflow`. Say what is happening in words. No new
-  Voice tab.
+  Voice tab. Draft-tab pixels (ghost complete, section generate, mode switch) are Phase 3.
 
 ### Track C — how you know, including how you know it is Martin
 
@@ -782,6 +994,7 @@ Every one of these is defensible. What matters is that they are **decisions**, n
 | Trade-off | We chose | We gave up | Right call? |
 |---|---|---|---|
 | `jsonb` vs strict columns | Flexibility for evolving creative data | Write-time validation; the bill is 1148 read-site guards | Yes — but pay it with contracts (Action 13) |
+| Dual-write plants vs drop `setupsPayoffs` | Keep Law of Motion packing on the beat jsonb | One plant/payoff store | **Yes for Phase 1** — the jsonb is not only plants |
 | Fire-and-forget cost logging | A metering outage never breaks a user request | Guaranteed-complete billing data | Yes, for this domain |
 | RLS **and** service role | Server code can do its job | RLS protects nothing at 23 call sites | Yes — provided each site checks ownership |
 | Single Postgres primary | Strong consistency, simple reasoning | Read scaling; a single region | Yes at this stage |
@@ -936,3 +1149,1669 @@ Ordered by how directly it applies to what you are doing next.
 **Craft catalog (required reading for Track B)**
 - [wgwtest/novel-writing](https://github.com/wgwtest/novel-writing) — start at `SKILL.md`, then
   `references/revision-checklist.md` and `references/story-outline-and-causal-summary.md` §4.
+
+---
+
+# Part 6 — Phase 1 as a system (platform, flows, graphs)
+
+This chapter is **one week's homework**, drawn as pipes and then explained like
+you are ten. It is not thirty-two actions. It is not the polish robot
+(Humanizer). It is not a new catalog of novel-writing skills. It is not extra
+teacher types. It is not rebuilding the assistant doorway so every domain can
+plug in. Those are other weeks.
+
+This week, in playground words: make the smoke alarms honest, write down the
+money, don't buy a 3D model twice, make the episode form match the docs, make
+a "finding" a real red circle, don't hand the writer the twist, put a free
+spell-check in front of the paid teachers, keep **both** story boxes, open the
+right notebook on every chat door, actually wire the Muse button, throw away
+empty robot costumes.
+
+If a box is not in the graphs below, we are not building it this week.
+
+**How to read every section.** Three things, always in this order:
+
+1. **Graph** — a map of the pipes. You do not have to understand every box on
+   first look. It is there so you can point at "this arrow."
+2. **Like you're 10** — the whole idea in playground words. If this paragraph
+   still sounds like a slogan, it failed. It should feel like someone sitting
+   next to you with crayons.
+3. **Today / after** — the actual code. "Today" is the bug in the repo right
+   now. "After" is what we type when we fix it. "Wrong" is a trap: do not type
+   that.
+
+Code marked `after` is the **homework answer**, not a file that already exists.
+Do not paste it into `src/` from this document; the Phase 1 plan names the
+tickets.
+
+**Pocket words** (used in every section below):
+
+| Word | Like you're 10 |
+|---|---|
+| Project | Your story world. Other people's worlds must never mix with yours |
+| Episode | One chapter / one hour of TV inside that world |
+| Beat | One scene inside the episode |
+| Author | The robot that writes the scene |
+| Critics | Three paid teacher-robots that mark the scene |
+| Gateway | The one cashier. Skip it and we don't write down the money |
+| Door | A URL you hit to chat. There are four. All four must work |
+| Finding | A red circle on a real sentence: where, what's wrong, what to try |
+| Partition | Don't put the twist page in the writer's pile of papers |
+| Checkpoint | Write down the shop's ticket number before the computer might crash |
+| Compose | Glue the "don't do this" lists together so the last list doesn't erase the first |
+
+**You do not need to know this codebase.** Here is the house before the pipes.
+
+The product is a website. You log in, open **your** project, talk to a writing
+robot. The episode has three rooms in a row: **Premise** (what this hour is), **Beats**
+(index cards on a cork board — no script yet), **Draft** (the pages). Today Draft is a
+blank Courier field you type into. The plan is a Medium-quiet page that can ghost-complete
+like Cursor and generate or regenerate one section at a time, as a TV script or as a novel,
+from the bible and the premise and those cards. There is also a 2D map room (tiles) and a
+3D model room. Same login, different workshops.
+
+**Folders** (a path is just a street address):
+
+| Street | What lives there |
+|---|---|
+| `src/app/` | **Doors** — URLs the browser or chat hits. A file named `route.ts` is the doorman. Doormen should check "who are you?" then call the workshop. They should not contain the whole workshop. |
+| `src/domains/storyteller/` | The **story workshop** — writing robots, the scene recipe, save/load |
+| `src/domains/2d-canvas/` | The **map-tile** workshop |
+| `src/domains/3d-asset-exporter/` | The **3D model** workshop |
+| `src/shared/` | Tools **every** workshop may use (login, cashier, background jobs). Shared must not import a workshop. Workshops must not import each other. |
+| `src/mastra/agents/` | The live writer/planner robots Studio also knows about |
+
+**Words the graphs will use:**
+
+- **Database (Postgres)** — a filing cabinet. A **table** is a drawer (`beats`,
+  `setups`, `llm_calls`). A **row** is one card in that drawer.
+- **jsonb** — a sticky-note blob stuffed into one cell. Not a neat drawer. Box 1
+  in section 6.8 is this kind of blob on the `beats` card.
+- **Agent** — a rented AI brain with a job title (writer, planner, teacher).
+- **Workflow** — a recipe of steps in order: plan → write → check → teachers →
+  human.
+- **Tool** — a button the chat robot can press, e.g. "start the scene recipe."
+- **Job (Trigger)** — slow work in another room (draw a tile, order a 3D model).
+  If it crashes, it retries. That retry is how we accidentally buy twice.
+- **Lint (ESLint)** — a hall monitor that reads new code and yells "you borrowed
+  the other team's toys."
+- **Test (Vitest)** — a robot that pretends to run a tiny piece and checks the
+  answer. **Red** = that check failed. **Green** = that check passed. Not the
+  same as clicking the website.
+- **OpenAPI** — the published instruction sheet for a door: "you may send these
+  boxes." It must match what the doorman actually accepts.
+- **Zod / schema** — a bouncer that looks at incoming JSON and says "these
+  fields are allowed; extra fields get thrown away."
+
+**How to read the grey code boxes.** You do not need to compile TypeScript.
+Read the names and the comments. `import` = use something from another file.
+`await` = wait until this finishes. `z.object({...})` = the bouncer's list of
+boxes. If a line still looks like noise, skip to the sentence above the fence
+that says **what this code is saying**.
+
+Code marked `after` is the **homework answer**, not a file that already exists.
+Do not paste it into `src/` from this document; the Phase 1 plan names the
+tickets.
+
+---
+
+## 6.1 The platform this phase touches
+
+The product is a Next.js app with domain modules, a shared kernel, Mastra workflows, Trigger
+jobs, and Postgres. Phase 1 does not add a runtime. It **closes holes in the ones we already
+have**, then inserts one free compiler step into the beat workflow.
+
+```mermaid
+flowchart TB
+  subgraph clients ["Clients"]
+    WR["Writers Room / assistant-ui"]
+    MCP["MCP agent"]
+  end
+
+  subgraph next ["Next.js — app/ thin"]
+    STREAM["POST /storyteller/chat/stream"]
+    CTRL["controller-stream-wire<br/>FF_STORYTELLER_CONTROLLER"]
+    ASST["POST /api/assistant/:agentId"]
+    EPATCH["PATCH /storyteller/episodes/:id"]
+    AUTON["autonomous draft route"]
+  end
+
+  subgraph shared ["shared/ kernel"]
+    AUTH["auth + ProjectScope"]
+    GW["ai/gateway<br/>complete / embed / meteredCall"]
+    JOBS["jobs/defineOwnedTask"]
+    TRACE["agent-kernel run-trace"]
+    MEM["agent-kernel memoryIds"]
+    ESLINT["eslint.config compose"]
+    RATCHET["quality-ratchet + inventory AST"]
+  end
+
+  subgraph st ["domains/storyteller"]
+    TOOL["run_beat_draft_workflow tool"]
+    WF["beat-draft-workflow"]
+    CORE["core/ prose-check + canon partition"]
+    DEPS["beat-draft-default-deps"]
+    CRIT["continuity / prose / stakes"]
+  end
+
+  subgraph assets ["domains/2d-canvas + 3d-asset-exporter"]
+    TILE["generate-tile.task"]
+    MESHY["run-meshy-image-to-3d"]
+    REMESH["remesh-3d-model.task"]
+  end
+
+  subgraph data ["Postgres"]
+    LLM["llm_calls"]
+    BEATS["beats.setupsPayoffs jsonb"]
+    SETUPS["setups table"]
+    MASTRA["mastra_* threads"]
+  end
+
+  WR --> STREAM
+  WR --> CTRL
+  WR --> ASST
+  WR --> EPATCH
+  MCP --> MEM
+  STREAM --> AUTH
+  CTRL --> AUTH
+  ASST --> AUTH
+  STREAM --> MEM
+  CTRL --> MEM
+  ASST --> MEM
+  AUTON --> MEM
+  STREAM --> TOOL
+  ASST --> TOOL
+  TOOL --> WF
+  WF --> CORE
+  WF --> DEPS
+  DEPS --> GW
+  DEPS --> CRIT
+  WF --> TRACE
+  GW --> LLM
+  DEPS --> BEATS
+  DEPS --> SETUPS
+  TILE --> JOBS
+  MESHY --> JOBS
+  REMESH --> JOBS
+  JOBS --> TILE
+```
+
+**Like you're 10.** Imagine we already live in a house. We are not building a
+new house this week. We are putting stickers on the pipes so everyone knows
+which one is hot water, and we are putting a free spell-checker between "write
+the story" and "pay three grown-up teachers to read it."
+
+Almost every box in the drawing already exists. This week we do not add a new
+kitchen. We fix holes in the pipes we already have. The only **new** box is
+the free spell-checker, sitting between "write" and "pay the teachers."
+
+The left-ish stuff (lint, money notebook, job tickets) is the house alarm
+system. It protects story writing **and** 2D tiles **and** 3D models the same
+way. The story stuff (hide the twist, red circles, notebooks, Muse button) is
+still the same six robots — we are not hiring new personalities this week.
+
+If a pipe is missing from the drawing, we are not touching that pipe this week.
+
+**Today — the workflow has no spellcheck step.** Step ids are only plan / draft /
+critique / revise (`beat-draft-workflow.ts` constants):
+
+```ts
+export enum BeatDraftStepId {
+  PlanBeat = 'plan-beat',
+  DraftScript = 'draft-script',
+  Critique = 'critique',
+  Revise = 'revise',
+}
+```
+
+**After — one new id, still the same agents:**
+
+```ts
+export enum BeatDraftStepId {
+  PlanBeat = 'plan-beat',
+  DraftScript = 'draft-script',
+  ProseCheck = 'prose-check',
+  Critique = 'critique',
+  Revise = 'revise',
+}
+```
+
+`ProseCheck` is host TypeScript. It is not a fourth critic model.
+
+---
+
+## 6.2 Two tracks, one exit
+
+```mermaid
+flowchart LR
+  subgraph plat ["Platform track"]
+    A["A ESLint compose + probe"]
+    B["B ratchet vs pinned base + AST"]
+    C["C unhandled rejection fails Vitest"]
+    D["D tile / Meshy / remesh checkpoint"]
+    E["E cost holes through gateway"]
+    F["F episode PATCH + thumbnail contracts"]
+  end
+
+  subgraph story ["Storyteller track"]
+    G["G Finding schema"]
+    H["H author-truth partition"]
+    I["I prose-check in workflow"]
+    J["J memory bind every live door"]
+    K["K wildcards + delete wrappers"]
+  end
+
+  A --> EXIT["Phase 1 exit"]
+  B --> EXIT
+  C --> EXIT
+  D --> EXIT
+  E --> EXIT
+  F --> EXIT
+  G --> EXIT
+  H --> EXIT
+  I --> EXIT
+  J --> EXIT
+  K --> EXIT
+```
+
+**Exit — like you're 10, this week is finished when:**
+
+| You can see this | Which pile |
+|---|---|
+| A messy scene does **not** pay the three teachers | I — free spell-check |
+| The writer robot never sees the butler-is-the-killer page | H — hide the twist |
+| Importing the other team's code makes the hall monitor yell | A — lint actually on |
+| A crashed 3D job does **not** buy a second model | D — write the ticket first |
+| Deleting one teacher-robot makes a test go red | I — we still need all three |
+
+Order, like lining up at school: **A first** (the hall monitor has to work before we
+write new files). **H before I** (hide the twist before the spell-check looks for
+spoiler names). **G before I** (red-circle shape exists before the spell-check
+emits circles). **J helper before the four doors.** Fix real test explosions
+**before** we tell the teacher to fail on explosions. D, E, F can sit beside
+the story work. K is last and small (wire the Muse button, throw away empty
+costumes).
+
+**Like you're 10.** There are two piles of homework. Pile A is "make the smoke
+alarms actually beep when there is fire" — lint, tests, money notebook, paid
+jobs. Pile B is "make the story machine not leak the twist and not waste money
+on teachers when the page is still messy." You do not get a gold star until
+**both** piles are done. A nicer writing prompt does not count if the alarms
+are still broken.
+
+**Today — two tracks look optional.** You can merge a "better Author prompt"
+while ESLint still does not catch `import from '@/domains/game-design'`.
+
+**After — a probe that must fail** (this is the test, not production code):
+
+```ts
+const eslint = new ESLint()
+const results = await eslint.lintText(
+  `import { x } from '@/domains/game-design'\n`,
+  { filePath: 'src/domains/storyteller/ai/workflows/beat-draft-workflow.ts' },
+)
+expect(results[0]?.messages.some(m => m.ruleId === 'no-restricted-imports')).toBe(true)
+```
+
+If that expect is false, track A is not done. Do not start writing G–K files
+that "lint clean" under a dead rule.
+
+---
+
+## 6.3 The beat request after Phase 1
+
+This is the product path. Chat still talks to one agent. That agent still calls one workflow
+tool. The workflow still suspends for a human. What changes is **what happens between draft
+and critics**, **what the Author is allowed to read**, **whether the draft is billed**, and
+**whether Muse can be switched on from the tool.**
+
+```mermaid
+sequenceDiagram
+  actor Writer
+  participant Door as Chat door<br/>stream / assistant / controller
+  participant Mem as memoryIds(project, episode, user)
+  participant Tool as run_beat_draft_workflow
+  participant WF as beat-draft-workflow
+  participant Part as canon partition
+  participant Author as statelessGrrmAuthor
+  participant Lint as core/prose-check
+  participant C as critics x3
+  participant Human as editorial suspend
+  participant DB as beats + setups + llm_calls
+
+  Writer->>Door: brief
+  Door->>Mem: bind thread + resource
+  Door->>Tool: brief, wildcards?
+  Tool->>WF: run.start(forwarded wildcards)
+  WF->>Part: assembleCanon(role)
+  Part-->>Author: facts + POV knowledge<br/>no PLOT_TWISTS
+  Part-->>C: continuity gets all layers
+  WF->>Author: plan then draft
+  Author->>DB: llm_calls StorytellerAuthorDraft
+  WF->>Lint: draft + plan + canon layers
+  alt lint errors
+    Lint-->>Author: one retry
+    Author-->>Lint: second draft
+    alt still errors
+      Lint-->>Human: Finding[] skip critics
+    end
+  else clean or warnings
+    Lint-->>C: parallel continuity prose stakes
+    C-->>Human: critiques
+  end
+  Human->>Writer: Approve / Revise / Kill
+  Writer->>Human: verdict
+  alt Approve
+    Human->>DB: persist beat jsonb + dual-write plants
+  else Kill
+    Human-->>DB: no persist.commit
+  end
+```
+
+**Like you're 10.** This is still the same chat robot, the same "write a beat"
+button, and a human still says yes/no/try again at the end. What changes is
+the middle of the sandwich.
+
+You write a scene. A cheap robot checks it for free (junk left in the text, a
+sentence that comes from nowhere). If it is still messy, we do **not** pay
+three fancy teachers to read it — we show a human the red circles. If it looks
+okay, then the three teachers read it. Then a human says yes, no, or try again.
+The writing robot never hits Save by itself. Save is a person's button.
+
+There is a cheat code called `autoApprove` for tests. It is not a button in
+the product. We are not adding a polish robot after Save this week.
+
+**Today — draft goes straight to three paid critics.** The factory wires plan
+then draft then critique with nothing in between (`createBeatDraftWorkflow`):
+
+```ts
+const planStep = createStep({ id: BeatDraftStepId.PlanBeat, /* … */ })
+const draftStep = createStep({ id: BeatDraftStepId.DraftScript, /* … */ })
+const critiqueStep = createStep({ id: BeatDraftStepId.Critique, /* … */ })
+// then: plan → draft → critique → suspend
+```
+
+**After — a host step in the chain.** Errors skip critique. One Author retry
+max. Then suspend with `Finding[]` if still dirty:
+
+```ts
+const proseCheckStep = createStep({
+  id: BeatDraftStepId.ProseCheck,
+  execute: async ({ inputData }) => {
+    const findings = runProseCheck(inputData)
+    const errors = findings.filter(f => f.severity === FindingSeverity.Error)
+    if (errors.length === 0) return { ...inputData, findings, skipCritics: false }
+    return { ...inputData, findings, skipCritics: true }
+  },
+})
+```
+
+`runProseCheck` is a pure function. It does not call OpenRouter.
+
+---
+
+## 6.4 Chat doors and memory — the notebook is a platform object
+
+Today memory is **declared** on agent constructors and **not passed** into the live
+`agent.stream()` / `handleChatStream` calls. Phase 1 treats `(thread, resource)` as part of
+the platform call, like `ProjectScope` and `withGatewayContext`.
+
+```mermaid
+flowchart TB
+  H["memoryIds({ projectId, episodeId, userId })<br/>src/shared/agent-kernel"]
+
+  H --> T["thread"]
+  H --> R["resource"]
+
+  subgraph doors ["Must pass memory: { thread, resource }"]
+    D1["stream-post-handler.ts<br/>agent.stream"]
+    D2["controller-stream-wire.ts<br/>FF_STORYTELLER_CONTROLLER"]
+    D3["assistant/[agentId]/route.ts<br/>handleChatStream"]
+    D4["mastra-runtime autonomous"]
+  end
+
+  T --> D1
+  T --> D2
+  T --> D3
+  T --> D4
+  R --> D1
+  R --> D2
+  R --> D3
+  R --> D4
+
+  H --> MCP["src/mcp/agent.ts<br/>lastMessages bound const"]
+  H --> CRUD["storyteller-crud-service<br/>no thread_Date.now"]
+
+  P1["project A"] -.->|"never same key"| P2["project B"]
+```
+
+**Like you're 10.** Chat is a notebook. Every time you talk, you have to say
+"this is **my** notebook, for **this** project, for **this** episode." If you
+forget, the robot opens a blank notebook — or worse, someone else's. Writing
+"I have a notebook" on the robot when you **build** it does not count. That is
+like putting your name in the classroom and then never saying which desk is
+yours when you sit down. You must point at the desk **every time** you sit.
+
+There are four doors into chat. Binding one door and leaving the other three
+loose is still broken. The helper that names the notebook lives in
+`shared/agent-kernel` because MCP is a **second program** — it cannot import
+storyteller. If there is no episode, use a named empty-slot (an enum), not the
+same shared string for every user. The notebook holds **chat**. It does not
+hold the world bible. Hiding the twist is a different trick (section 6.5).
+Throwing away old notebook rows is **not** this week's job.
+
+**Today — stream never passes memory** (`stream-post-handler.ts`):
+
+```ts
+const agent = await createStorytellerAgent()
+const result = await agent.stream(promptWithContext, {
+  toolChoice: STREAM_ROUTE_TEXT.toolChoiceAuto,
+  traceId: input.traceId,
+  requestContext,
+  // no memory
+})
+```
+
+Autonomous already binds (`mastra-runtime.ts`). That is the pattern to copy, not
+a reason to skip the other three doors:
+
+```ts
+return getStorytellerAutonomousAgent().stream(params.prompt, {
+  memory: { thread: params.threadId, resource: params.resourceId },
+})
+```
+
+**Today — CRUD mints a new thread every request** (`storyteller-crud-service.ts`):
+
+```ts
+const threadId =
+  validated.threadId || `thread_${Date.now()}_${Math.random().toString(36).slice(2)}`
+```
+
+That is a new notebook every time. Yesterday's chat is gone.
+
+**After — one helper, four doors, no Date.now mint:**
+
+```ts
+export enum MemoryKeyKind {
+  Thread = 'thread',
+  Resource = 'resource',
+}
+
+export function memoryIds(input: {
+  projectId: string
+  episodeId: string | undefined
+  userId: string
+}): { thread: string; resource: string } {
+  const episode = input.episodeId ?? MemoryEpisodeSentinel.None
+  return {
+    thread: `${MemoryKeyKind.Thread}:${input.projectId}:${episode}:${input.userId}`,
+    resource: `${MemoryKeyKind.Resource}:${input.projectId}:${input.userId}`,
+  }
+}
+
+const { thread, resource } = memoryIds({ projectId, episodeId, userId })
+await agent.stream(prompt, { memory: { thread, resource }, /* … */ })
+```
+
+Helper lives in `src/shared/agent-kernel` so MCP can import it. MCP cannot import
+`@/domains/storyteller`.
+
+---
+
+## 6.5 Canon partition — retrieval permission, not a pep talk
+
+`assembleCanon` today dumps `sections: [All]` JSON into the Author, including
+`BibleSection.PLOT_TWISTS`. A system prompt that says "don't spoil" is not a boundary.
+Phase 1 splits the **payload** by **role**.
+
+```mermaid
+flowchart TB
+  BIBLE["world bible + beats list"]
+  PART["core partition helper<br/>server flag, not a model argument"]
+
+  BIBLE --> PART
+
+  PART --> FACTS["Story facts"]
+  PART --> KNOW["Character knowledge<br/>this POV only"]
+  PART --> TRUTH["Author truth<br/>PLOT_TWISTS / hidden mechanism"]
+  PART --> REVEAL["Reveal boundary"]
+
+  FACTS --> AUTH["Author draft + revise"]
+  KNOW --> AUTH
+  FACTS --> PL["Planner"]
+  KNOW --> PL
+  TRUTH --> PL
+  REVEAL --> PL
+  FACTS --> CONT["Continuity critic"]
+  KNOW --> CONT
+  TRUTH --> CONT
+  REVEAL --> CONT
+  FACTS --> PROSE["Prose critic"]
+  FACTS --> STAKES["Stakes critic"]
+```
+
+**Like you're 10.** The world bible has a secret page: the killer is the butler.
+The writer robot is writing a scene **from a character's eyes**. That robot
+must not be handed the secret page, or it will "accidentally" spoil the twist.
+Telling it "please don't spoil" is like putting a sticky note on a present you
+already unwrapped. The real fix: **do not put that page in the pile of papers
+you hand the writer.**
+
+The planner robot and the continuity teacher still get the secret page, because
+they have to check the story still makes sense. The writer does **not** get
+every character's secrets "just in case" — only what this point-of-view
+character would know, plus the public story facts.
+
+We are not building a new filing cabinet of "who knows what" this week. If
+secrets still leak after we hide the page, that cabinet is later homework.
+
+The spell-check later has a cheap extra lock: names that exist **only** on the
+secret page, if they show up in the draft, that's a spoiler. That lock only
+works if we already hid the page. That's why "hide the twist" comes before
+"spell-check."
+
+**Today — every role gets every section** (`assembleCanon` in
+`beat-draft-default-deps.ts`):
+
+```ts
+const bible = await readWorldBibleTool.execute!(
+  { projectId: ctx.projectId, sections: [BeatDraftWorldBibleSection.All] },
+  noopCtx,
+)
+```
+
+`BeatDraftWorldBibleSection.All` includes `BibleSection.PLOT_TWISTS`. The Author
+reads that blob.
+
+**After — payload split by role, not by hope:**
+
+```ts
+export enum CanonLayer {
+  StoryFacts = 'story-facts',
+  CharacterKnowledge = 'character-knowledge',
+  AuthorTruth = 'author-truth',
+  RevealBoundary = 'reveal-boundary',
+}
+
+const AUTHOR_LAYERS = [CanonLayer.StoryFacts, CanonLayer.CharacterKnowledge] as const
+const PLANNER_AND_CONTINUITY_LAYERS = [
+  CanonLayer.StoryFacts,
+  CanonLayer.CharacterKnowledge,
+  CanonLayer.AuthorTruth,
+  CanonLayer.RevealBoundary,
+] as const
+
+const authorCanon = packCanon(bible, AUTHOR_LAYERS)
+expect(authorCanon).not.toMatch(/PLOT_TWISTS/)
+```
+
+If a unit test can still find `PLOT_TWISTS` in the Author string, the partition
+did not ship.
+
+---
+
+## 6.6 Prose-check — the free compiler step
+
+This is the only new **workflow step**. It is not a chat tool. It is not a fourth critic
+agent. It is host code in `src/domains/storyteller/core/prose-check/` that emits `Finding[]`.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Plan
+  Plan --> Draft
+  Draft --> ProseCheck
+  ProseCheck --> Critics: clean or warnings
+  ProseCheck --> AuthorRetry: errors and retry remaining
+  AuthorRetry --> ProseCheck: second draft
+  ProseCheck --> SuspendSkipCritics: errors and retry spent
+  Critics --> Suspend
+  SuspendSkipCritics --> Suspend
+  Suspend --> Persist: Approve
+  Suspend --> [*]: Kill
+  Suspend --> Draft: Revise after verdict
+```
+
+**Like you're 10.** Spell-check on a computer is free. Paying three teachers to
+mark your essay is not. If the essay still has leftover junk like `***bold***`,
+or a sentence that pops in with no reason, do **not** hire the teachers yet.
+Let the writer try **once** more. If it is still messy, skip the teachers and
+show a human the red circles. Do not loop forever until it is perfect — that
+burns money, and it steals the "try again" the human was supposed to press.
+
+This checker is a little program we own. It is not a fourth teacher-robot. It
+does not call an AI. It looks for:
+
+- a sentence with no cause (it just appears)
+- a planted gun that never goes off
+- leftover `***` junk, broken quotes, copy-paste garbage
+- names that only exist on the secret twist page
+- missing "what they did / what happened / what changed"
+
+Red-circle **errors** skip the teachers. **Warnings** still let the teachers
+run. We still have exactly three teachers on the happy path. If someone deletes
+a teacher, a test must go red. If we skipped the teachers, the money notebook
+must show **zero** teacher rows.
+
+The checker must not import the evals folder (that's the exam room, not the
+classroom). We copy the old exam checks into the classroom. We do not invent
+new "how strict" numbers this week. The clock from last week still applies:
+one timeout, 180 seconds, the human pause splits the clock.
+
+**What the checker actually runs** (all a program, no rented brain):
+
+```mermaid
+flowchart TB
+  IN["draft + plan + layered canon + episode graph"] --> L1["Causal graph<br/>orphans, forward deps, dropped thread"]
+  IN --> L2["Plant / payoff<br/>setups table then jsonb fallback"]
+  IN --> L3["Hygiene<br/>markup leak, unbalanced quotes,<br/>replacement chars, adjacent dup paras"]
+  IN --> L4["POV-noun vs author-truth-only phrases"]
+  IN --> L5["Law of Motion fields present<br/>actionTaken / consequence / storyStateChange"]
+  L1 --> F["Finding[]"]
+  L2 --> F
+  L3 --> F
+  L4 --> F
+  L5 --> F
+  F --> SEV{"severity"}
+  SEV -->|error| BLOCK["skip critics"]
+  SEV -->|warning| WALL["critics still run"]
+```
+
+**Today — three critics always run** after draft (`BeatDraftCriticName` +
+`Promise.all` in the critique step). There is no `runProseCheck`.
+
+**After — findings first, models second:**
+
+```ts
+const findings = runProseCheck({ draft, plan, layers, episodeGraph })
+const errors = findings.filter(f => f.severity === FindingSeverity.Error)
+
+if (errors.length > 0 && retryRemaining) {
+  const secondDraft = await generateAuthorDraft(promptWithFindings(findings))
+  return proseCheckAgain(secondDraft, { retryRemaining: false })
+}
+
+if (errors.length > 0) {
+  emitRunTrace({ type: RunTraceEventType.GateDecision, stepId: BeatDraftStepId.ProseCheck })
+  return { skipCritics: true, findings }
+}
+
+await Promise.all([
+  dispatchCritic(BeatDraftCriticName.Continuity),
+  dispatchCritic(BeatDraftCriticName.Prose),
+  dispatchCritic(BeatDraftCriticName.Stakes),
+])
+```
+
+**Wrong (do not write this):**
+
+```ts
+// unbounded — burns Author tokens until clean; also steals the human Revise
+.dountil(({ findings }) => findings.filter(f => f.severity === 'error').length === 0)
+```
+
+**Wrong (do not write this either):**
+
+```ts
+import { scoreCausalGraph } from '../../../../evals/structural/s1-causal-graph'
+```
+
+Domain `core/` must not import `evals/`. Copy or move the checker into
+`src/domains/storyteller/core/prose-check/`. Evals may call core.
+
+---
+
+## 6.7 Finding — one shape for code and models
+
+Critics today return `{ quote, why, severity: critical|major|minor }` with no location.
+The compiler metaphor only works if a linter finding and a model finding are the same
+object, and if "the pacing is stiff" cannot be stored.
+
+```mermaid
+flowchart LR
+  RAW["critic structuredOutput<br/>or prose-check"] --> Z["Finding Zod"]
+  Z -->|missing location or quote| REJ["rejected — not a Finding"]
+  Z -->|ok| OK["location.beatId<br/>location.paragraph<br/>location.quote<br/>ProblemType enum<br/>whatHappensNow<br/>whyItFails<br/>revisionDirection<br/>severity<br/>promoteToProjectRule=false"]
+  OK --> FMT["formatCriticReport"]
+  OK --> SUS["suspend payload / Author retry"]
+```
+
+**In the system, not in a future ticket:** `promoteToProjectRule` is a boolean default
+`false`. There is no `promote_rule` tool. Extra scopes `cognition` / `dialogue` are not
+Agent classes this phase. The three existing critic agents stay; they share the schema.
+
+**Like you're 10.** A finding is a red circle on a real sentence. It must say:
+which beat, which paragraph, the exact words, what kind of problem it is, why
+that is bad, and what to try instead. "The pacing is stiff" is not a red
+circle. It is a shrug. The computer must **refuse** shrugs — if the paper
+doesn't have a place and a quote, it is not a finding, full stop. The free
+spell-check and the paid teachers must use the **same** red-circle shape, so a
+human (and the writer robot) can read both lists the same way. There is a
+checkbox called `promoteToProjectRule`. It stays off. We are not building a
+"save this as a house rule" button this week.
+
+**Today — quote + why, no place, no type** (`critic-schema.ts`):
+
+```ts
+export const CriticFindingSchema = z.object({
+  quote: z.string().min(1),
+  why: z.string().min(1),
+  severity: z.enum(['critical', 'major', 'minor']),
+})
+```
+
+This object can store `"pacing is stiff"` with no beat id and no paragraph.
+
+**After — same shape from linter and from models:**
+
+```ts
+export enum ProblemType {
+  CausalOrphan = 'causal-orphan',
+  ForwardDep = 'forward-dep',
+  DroppedThread = 'dropped-thread',
+  PlantWithoutPayoff = 'plant-without-payoff',
+  MarkupLeak = 'markup-leak',
+  PovNounLeak = 'pov-noun-leak',
+  LawOfMotionMissing = 'law-of-motion-missing',
+  ContinuityBreak = 'continuity-break',
+  ProseIssue = 'prose-issue',
+  StakesIssue = 'stakes-issue',
+}
+
+export const FindingSchema = z.object({
+  location: z.object({
+    beatId: z.string().min(1),
+    paragraph: z.number().int().nonnegative(),
+    quote: z.string().min(1),
+  }),
+  problemType: z.nativeEnum(ProblemType),
+  whatHappensNow: z.string().min(1),
+  whyItFails: z.string().min(1),
+  revisionDirection: z.string().min(1),
+  severity: z.nativeEnum(FindingSeverity),
+  promoteToProjectRule: z.boolean().default(false),
+})
+```
+
+**This is not a Finding (must parse-fail):**
+
+```ts
+FindingSchema.parse({
+  quote: 'the pacing is stiff',
+  why: 'it feels slow',
+  severity: 'minor',
+})
+```
+
+No `promote_rule` tool. `promoteToProjectRule` stays `false` unless a later
+phase builds promotion.
+
+---
+
+## 6.8 Persist — two stores, one job each
+
+This is the place an earlier spec over-simplified. `setupsPayoffs` jsonb is **not** a
+dead duplicate of `setups`.
+
+```mermaid
+flowchart TB
+  PERSIST["persistBeat after Approve"]
+
+  PERSIST --> JSONB["beats.setupsPayoffs jsonb"]
+  PERSIST --> TBL["setups table"]
+
+  JSONB --> LM["Law of Motion packing<br/>actionTaken<br/>consequence<br/>storyStateChange"]
+  JSONB --> LEGACY["legacy plant keys<br/>setupId / payoffFor"]
+  TBL --> PLANT["setupBeatId / payoffBeatId / isResolved"]
+
+  CHECK["prose-check plant/payoff"] --> TBL
+  CHECK -->|"fallback"| JSONB
+```
+
+**Do not `DROP` jsonb.** `packSetupsPayoffs` in `beat-tool-operations.ts` is live persist
+for the planner's Law of Motion fields. Deleting it breaks the board and the
+concreteness story. Phase 1 **dual-writes new plants** into `setups`. The linter prefers
+the table. Action fields stay in jsonb until they have their own home (not this phase).
+
+**Like you're 10.** Imagine two boxes on the desk, with two different jobs.
+
+Box 1 (`setupsPayoffs` jsonb) is "what the character **did**, what happened
+because of it, and how the story world changed." The storyboard needs that.
+Box 2 (`setups` table) is "we planted a gun in scene 1 — it should go off
+later."
+
+An old spec said "throw box 1 in the trash, we have box 2." That is wrong.
+Throwing box 1 away blanks the "what they did" notes. This week we **copy new
+plants into box 2** so the spell-check can look them up easily. We still write
+box 1. The spell-check looks in box 2 first, and only peeks in box 1 if box 2
+is empty.
+
+**Today — persist packs motion into jsonb only** (`packSetupsPayoffs` +
+`persistBeat`):
+
+```ts
+export function packSetupsPayoffs(
+  setupsPayoffs: BeatData['setupsPayoffs'],
+  action: ActionFields,
+) {
+  return { ...(setupsPayoffs ?? {}), ...action }
+}
+
+// persistBeat → manageBeatTool create:
+data: {
+  logline: plan.goal,
+  content: finalDraft,
+  actionTaken: plan.goal,
+  consequence: plan.conflict,
+  storyStateChange: plan.turn,
+}
+```
+
+No insert into `setups`. The linter would have to scrape jsonb.
+
+**Wrong (do not write this):**
+
+```sql
+ALTER TABLE beats DROP COLUMN setups_payoffs;
+```
+
+That column is where Law of Motion lives. Dropping it blanks the board.
+
+**After — same jsonb write, plus a plant row:**
+
+```ts
+await db.update(beats).set({
+  setupsPayoffs: packSetupsPayoffs(data.setupsPayoffs, {
+    actionTaken,
+    consequence,
+    storyStateChange,
+  }),
+})
+
+if (newPlant) {
+  await db.insert(setups).values({
+    projectId,
+    setupBeatId: persisted.beatId,
+    payoffBeatId: null,
+    isResolved: false,
+  })
+}
+```
+
+Linter reads `setups` first, jsonb only as fallback.
+
+---
+
+## 6.9 Cost ledger — every paid call on this path, or a named hole
+
+Phase 0 put `totalUsage` and assistant `withGatewayContext` in place. Phase 1 closes the
+remaining **named** holes on the graph. Eval scorers stay off `llm_calls` (ADR 0003).
+
+```mermaid
+flowchart TB
+  subgraph billed ["Must hit gateway → llm_calls"]
+    AD["generateAuthorDraft<br/>LlmFeature.StorytellerAuthorDraft"]
+    PL["planner — already metered"]
+    CR["three critics — already metered"]
+    EMB["hybrid-search + entity-graph<br/>gateway embed / RagEmbedding"]
+    RR["reranker / RagRerank<br/>or NEVER_BILLS comment"]
+  end
+
+  subgraph named ["Remainder — list may only shrink"]
+    M["agent-kernel/models.ts"]
+    REP["shared/ai/replicate.ts"]
+    MC["storyteller model-config.ts"]
+    GD["game-design-llm-shared.ts"]
+    VS["visual-subject-client.ts"]
+    GM["generate-metrics/route.ts"]
+  end
+
+  AD --> ROW["llm_calls"]
+  PL --> ROW
+  CR --> ROW
+  EMB --> ROW
+  RR --> ROW
+```
+
+**Unpriced model.** Still "we don't know," never a successful `$0`. The Phase 2 eval
+comparison "skipped ≠ zero" is not this chapter.
+
+**Like you're 10.** Every time we rent an AI brain, we are supposed to write it
+in a money notebook (`llm_calls`). If we skip the notebook, the bill looks
+smaller than it really is — that is lying to ourselves. Right now the **writer**
+robot talks to the brain without writing in the notebook. The planner and the
+teachers already write it down. The writer must too. Same for "turn this
+question into numbers so we can search" (embeddings) — that also costs money.
+
+One more rule: if we do not know the **price** of a brain, we must stop and say
+"we don't know." We must not write `$0` and pretend it was free. Zero means
+"we priced it and it was free," not "we shrugged."
+
+**Today — Author generate bypasses the gateway** (`generateAuthorDraft`):
+
+```ts
+const response = await Promise.race([
+  statelessGrrmAuthor.generate(hardened, {
+    toolChoice: BeatDraftToolChoice.None,
+    maxSteps: 1,
+  }),
+  timeout,
+])
+```
+
+Planner and critics already go through `meteredCall`. Author does not. Spend
+dashboards lie.
+
+**Today — RAG embed is also a hole** (`hybrid-search.ts`):
+
+```ts
+const queryEmbedding = await this.embeddings.embedQuery(query)
+```
+
+That is a paid embedding with no `llm_calls` row.
+
+**After — wrap the Author (and embed) the same way as the planner:**
+
+```ts
+const response = await meteredCall(
+  { feature: LlmFeature.StorytellerAuthorDraft, scope: projectScope },
+  () =>
+    statelessGrrmAuthor.generate(hardened, {
+      toolChoice: BeatDraftToolChoice.None,
+      maxSteps: 1,
+    }),
+)
+```
+
+If a model has no price in the table, this throws. It does not insert `$0`.
+
+---
+
+## 6.10 Paid jobs — checkpoint is a state machine
+
+Submission nonce (SPEC-14) stops a **second submit**. It does not stop a **retry after the
+provider already created work**. Phase 1 adds an explicit state on the Trigger run.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> PaidCreate: no provider id in metadata
+  Idle --> Poll: provider id already stored
+  PaidCreate --> StoreId: provider returns job id
+  StoreId --> Poll
+  Poll --> UploadOrPersist: provider done
+  UploadOrPersist --> [*]: success
+  UploadOrPersist --> Failed: persist throws
+  Failed --> [*]: run failed — not success with stale URL
+```
+
+**Surfaces (and no others this phase):**
+
+| Task | File | Failure today |
+|---|---|---|
+| Tile generate | `2d-canvas/tasks/generate-tile.task.ts` `maxAttempts: 3` | Paid generate then upload; retry re-generates |
+| Meshy image-to-3d | `3d-asset-exporter/tasks/lib/run-meshy-image-to-3d.ts` | Writes `meshyTaskId` after POST; never reads at start; persist swallows DB errors |
+| Remesh | `remesh-3d-model.task.ts` `maxAttempts: 1` | Stopgap. Replace with the same checkpoint |
+
+Not in this graph: `text-to-3d`, `retexture`, `surface-material`, Loop Creator jobs. Do not
+"while we're here" them.
+
+Keep `defineOwnedTask`. If `persistMeshyModelUrl` is edited, that one `supabaseAdmin` site
+becomes `serviceRoleClient(reason)` — not a burn-down of 23 service-role call sites.
+
+**Like you're 10.** You order a 3D model from a shop. The shop gives you a
+ticket number. If our computer crashes **after** we ordered but **before** we
+wrote the ticket down, it will order **again** when it wakes up. We pay twice
+for the same model. So: write the ticket number down **first**. If we crash and
+try again, look at the ticket and **wait for that order**. Do not buy a second
+one.
+
+Same story for a map tile picture: generate (paid) then upload (can fail). If
+upload fails and we retry the whole job, we generate again — second bill.
+
+If saving the finished file into our folder fails, that must count as **fail**,
+not a fake success with a leftover old file. We are only fixing tile generate,
+Meshy image-to-3d, and remesh this week. Not every other 3D button.
+
+**Today — Meshy POSTs first, stores id after, swallows DB errors:**
+
+```ts
+const createResponse = await fetch(MeshyGenerationApiUrl.OpenApiImageTo3d, { method: HttpMethod.Post, /* … */ })
+const taskId = readRowString(createJson, MeshyResponseField.Result)
+await metadata.set(MeshyGenerationMetadataKey.MeshyTaskId, taskId)
+
+await persistMeshyModelUrl(assetId, result)
+
+async function persistMeshyModelUrl(/* … */) {
+  try {
+    await supabaseAdmin.from(DB_TABLE.ASSETS).update({ /* url */ }).eq(DB_COLUMN.ID, assetId)
+  } catch (dbErr) {
+    logger.error(MeshyGenerationLog.DbUpdateFailed, { dbErr })
+    // run still succeeds — URL is gone
+  }
+}
+```
+
+If the process dies after POST and before `metadata.set`, retry POSTs again.
+If persist throws, the run looks successful with a stale URL.
+
+**Today — tile gen retries the paid generate** (`generate-tile.task.ts`):
+
+```ts
+retry: { maxAttempts: 3 },
+run: async payload => {
+  const generatedImageBase64 = await generateTileImage(/* … */)
+  const { filename, newUrl } = await uploadTileToBlob(projectId, x, y, generatedImageBase64)
+}
+```
+
+Upload can fail after the provider already billed. Attempt 2 generates again.
+
+**After — read checkpoint, then maybe create:**
+
+```ts
+const existingId = await metadata.get(MeshyGenerationMetadataKey.MeshyTaskId)
+if (typeof existingId === 'string' && existingId.length > 0) {
+  return pollExisting(existingId)
+}
+
+const taskId = await createMeshyTask(/* … */)
+await metadata.set(MeshyGenerationMetadataKey.MeshyTaskId, taskId)
+const result = await pollExisting(taskId)
+await persistMeshyModelUrl(assetId, result) // throw on DB error — do not catch-and-succeed
+```
+
+Do not add `text-to-3d` / `retexture` "while we are here."
+
+---
+
+## 6.11 Episode PATCH — one contract, executed
+
+The 3D exporter pattern (schema → mapper → domain type) is the **pilot**, not a flood of
+86 routes.
+
+```mermaid
+flowchart LR
+  BODY["PATCH body"] --> Z["domain Zod = allowlist<br/>no id / projectId / sequence"]
+  Z --> ROUTE["app/api/.../episodes/[id]/route.ts<br/>thin: auth then parse"]
+  Z --> OA["openapi-schemas stPatchEpisodeRequest<br/>no passthrough"]
+  OA --> GEN["openapi:generate"]
+  GEN --> CHECK["openapi:check"]
+  CHECK -->|"registry ≠ route schema"| FAIL["red"]
+```
+
+Today the allowlist lives under `app/api/.../constants/episode-patch.ts` (wrong layer) and
+OpenAPI is four optional fields plus `.passthrough()`. Phase 1 moves the allowlist to
+`domains/storyteller/core` (or `contracts/`). The route does not shape UPDATE maps by
+hand. Extra keys strip. Reparent is still forbidden.
+
+**Like you're 10.** There is a form for changing an episode: title, poster, and
+a few other boxes. The instructions (OpenAPI) should match the real form the
+server uses. Right now they don't. The instructions show four boxes and then
+say "also we will accept anything else you sneak in." Sneaking in `projectId`
+is how you **move an episode into someone else's project**. That is stealing.
+
+Fix: one list of allowed boxes, in the storyteller domain, used by the route
+**and** the docs. Extra boxes get thrown away. You cannot change `id`,
+`projectId`, or `sequence`. The route should not hand-build the database update
+from leftover keys.
+
+**Today — two contracts.** The route allowlist is under `app/`
+(`episode-patch.ts`):
+
+```ts
+export const EPISODE_PATCH_ALLOWED_COLUMNS = [
+  'title', 'summary', 'premise', 'thematicFocus', 'scriptContent',
+  'masterPrompt', 'currentPhase', 'status', 'posterUrl', 'posterPrompt',
+  'storyPlan', 'planApproved', 'tenPointsPlan',
+] as const
+```
+
+OpenAPI is four fields plus a hole (`openapi-schemas.ts`):
+
+```ts
+export const stPatchEpisodeRequest = z
+  .object({
+    title: z.string().optional(),
+    masterPrompt: z.string().optional(),
+    posterUrl: z.string().optional(),
+    premise: z.record(z.unknown()).optional(),
+  })
+  .passthrough()
+```
+
+`.passthrough()` means `projectId` in the body is "documented as allowed."
+
+**After — one Zod in the domain, route only parses:**
+
+```ts
+export const episodePatchSchema = z.object({
+  title: z.string().optional(),
+  summary: z.string().optional(),
+  // …same keys as EPISODE_PATCH_ALLOWED_COLUMNS, no id / projectId / sequence
+})
+
+export const stPatchEpisodeRequest = episodePatchSchema
+  // no .passthrough()
+
+export async function PATCH(req: NextRequest, ctx: { params: { episodeId: string } }) {
+  await requireAuth()
+  const body = episodePatchSchema.parse(await req.json())
+  return domainPatchEpisode(ctx.params.episodeId, body)
+}
+```
+
+`openapi:check` fails if registry Zod ≠ this schema.
+
+---
+
+## 6.12 Thumbnail — two domains, no import between them
+
+```mermaid
+flowchart TB
+  ASSET["WorldAsset.metadata"] --> MAP2D["2d-canvas toLegacyAsset<br/>keeps autoGeneratedThumbnail"]
+  ASSET --> MAP3D["3d-asset-exporter contracts<br/>generation-metadata schema field"]
+  MAP3D --> UI["AssetExporterLayout<br/>parseGenerationMetadata — no recordFromJson for the flag"]
+
+  MAP2D -.->|"FORBIDDEN"| UI
+```
+
+`@/domains/3d-asset-exporter` must not import `@/domains/2d-canvas`. Shared kernel does
+not import either. Verification is the mapper unit test, not a browser.
+
+**Like you're 10.** The 2D drawing room and the 3D model room are not allowed to
+borrow each other's toys. There is a little flag that means "this picture is a
+fake placeholder, not a real thumbnail." 3D currently rummages in a messy bag
+of leftovers to find that flag. 2D even **drops** the flag when packing the
+bag, so the flag often isn't there.
+
+Each room must pack the flag in **its own** box. 3D must not `import` 2D. We
+prove it with a unit test, not by clicking around in the browser.
+
+**Today — 3D UI reads a raw json key** (`AssetExporterLayout.tsx`):
+
+```ts
+isPlaceholderImage={
+  recordFromJson(selectedAsset.metadata).autoGeneratedThumbnail === true
+}
+```
+
+2D's `toLegacyAsset` also **drops** that key: `Asset['metadata']` only types
+`bounds` and `box`, so the flag never arrives in the 3D shape even if 2D had it.
+
+**After — typed field on each side, no cross-domain import:**
+
+```ts
+export type Asset = {
+  metadata: {
+    bounds?: { x: number; y: number; width: number; height: number }
+    box?: { x1: number; y1: number; x2: number; y2: number }
+    autoGeneratedThumbnail?: boolean
+  }
+}
+
+legacyMetadata.autoGeneratedThumbnail = metadata.autoGeneratedThumbnail === true
+
+isPlaceholderImage={parseGenerationMetadata(selectedAsset.metadata).autoGeneratedThumbnail === true}
+```
+
+**Wrong:**
+
+```ts
+import { toLegacyAsset } from '@/domains/2d-canvas'
+```
+
+That import is a lint error on purpose. 3D owns `generation-metadata.schema.ts`.
+
+---
+
+## 6.13 Gates as platform — compose, ratchet, unhandled
+
+These are not "tooling chores." They are how the rest of this chapter stays true after
+the PR merges.
+
+### ESLint last-write-wins
+
+Flat config **replaces** `no-restricted-imports` options. Nine blocks, later provider-SDK
+`src/**` overwrites the cross-domain ban. Blast radius is currently zero. Phase 1 still
+fixes it because the next storyteller file can walk through the open door.
+
+```mermaid
+flowchart TB
+  F1["fragments: cross-domain"]
+  F2["fragments: legacy @/lib"]
+  F3["fragments: provider SDK"]
+  F4["fragments: shared must not import domains"]
+  F1 --> ONE["exactly one no-restricted-imports<br/>per files glob"]
+  F2 --> ONE
+  F3 --> ONE
+  F4 --> ONE
+  ONE --> PROBE["lintText filename =<br/>beat-draft-workflow.ts"]
+  PROBE --> P1["openai → error (positive control)"]
+  PROBE --> P2["@/domains/game-design → error"]
+  PROBE --> P3["@/lib/utils → error"]
+  PROBE --> P4["shared importing @/domains/storyteller → error"]
+```
+
+**Like you're 10.** The linter is a hall monitor with a list of "don't do this."
+In this kind of config, if you pin **two** lists on the same classroom door,
+the **second** list throws the first one in the trash. So we might think "don't
+import the other team's code" is on — and it isn't. Someone can import
+game-design from storyteller and the hall monitor smiles.
+
+Fix: glue the lists into **one** list per group of files. Then a test that
+tries the bad import on purpose, using a **real filename**, and checks the
+alarm still rings. Do not turn rules off. Do not drop the older "don't call
+`getSession` on app routes" rule. The leftover-allow lists may only get
+shorter.
+
+**Today — last block for a glob can drop earlier bans.** Simplified picture
+(do not copy as a patch; the real file has more globs):
+
+```js
+{
+  files: ['src/domains/storyteller/**/*.{ts,tsx}'],
+  rules: { 'no-restricted-imports': ['error', composeRestrictedImports(crossDomain('storyteller'))] },
+},
+{
+  files: ['src/**/*.{ts,tsx}'],
+  rules: { 'no-restricted-imports': ['error', { paths: PROVIDER_SDK_RESTRICTED_PATHS }] },
+}
+```
+
+If the second glob matches the first file, cross-domain is gone. `import from
+'@/domains/game-design'` looks clean.
+
+**After — one options object:**
+
+```js
+'no-restricted-imports': [
+  'error',
+  composeRestrictedImports(crossDomain(domain), legacyRoot(), providerSdk(), projectAccess()),
+]
+```
+
+Probe with `lintText` + a **real filename** (see 6.2). Do not commit a
+storyteller file that imports game-design.
+
+**Do not drop** Phase 0 `getSession` syntax on app routes. Remainder lists
+shrink only.
+
+### Ratchet vs a previous tree
+
+```mermaid
+flowchart LR
+  HEAD["HEAD counters"] --> CMP["compare"]
+  BASE["pinned base 07403f0f"] --> CMP
+  CMP -->|threshold raised + new violations| RED["fail"]
+  CMP -->|swap A for B, total flat| RED
+  CMP -->|reformat only| OK["counts unchanged — AST identity"]
+```
+
+Seven honor-system counters (`_commands` greps with no Vitest consumer) get a checker or
+are deleted. `evalSkipCommits` too. Line-of-text inventory becomes module+symbol+kind.
+
+**Like you're 10.** There is a scoreboard of "how many messes we still have"
+(23 leftover admin keys, 1148 untyped JSON reads, …). If that scoreboard is
+just a number someone typed in a file, you can change 23 to 24 and nobody
+notices. That is a diary, not a referee.
+
+A real referee **counts the messes in the code**, compares to a photo of last
+week's code (a pinned git commit), and fails if you made **more** messes.
+Renaming a function without deleting the mess should **not** change the count
+— we count the real mess, not the letters. Swapping mess A for a brand-new
+mess B but keeping the same total must still fail. You can't "trade" messes.
+
+**Today — honor-system numbers** (`.quality-ratchet.json`):
+
+```json
+{
+  "serviceRoleClientSites": 23,
+  "evalSkipCommits": 0,
+  "untypedJsonReads": 1148
+}
+```
+
+`_commands` greps exist. Most have no Vitest consumer. You can raise 23 to 24
+and CI still smiles.
+
+**After — compare HEAD to a pinned SHA, identity is AST not text:**
+
+```ts
+const head = countServiceRoleSites(treeAt('HEAD'))
+const base = countServiceRoleSites(treeAt('07403f0f'))
+expect(head).toBeLessThanOrEqual(base)
+expect(head).toBe(ratchet.serviceRoleClientSites)
+```
+
+Renaming a function without deleting the call must **not** change the count
+(AST). Swapping violation A for new violation B with a flat total must **fail**.
+
+### Unhandled rejection
+
+```mermaid
+flowchart LR
+  C1["fix real leaks with flag off"] --> C2["vitest.config + vitest.live.config<br/>dangerouslyIgnoreUnhandledErrors false"]
+  C2 --> FX["fixture fails the suite if flag is true"]
+```
+
+No coverage percentages. Do not flip C2 while C1 is red.
+
+**Like you're 10.** Tests are a teacher watching homework. Sometimes a promise
+explodes in the corner of the room and nobody is looking. Today we told the
+teacher: "ignore explosions in the corner." That is how leaks hide. A test can
+still get a gold star while something is on fire.
+
+First we find and fix the real explosions (with the ignore-flag still on, so
+we can see them one by one). **Then** we tell the teacher to fail the class if
+anything explodes with no one catching it. Do not flip that switch while the
+room is still on fire.
+
+**Today** (`vitest.config.ts`):
+
+```ts
+dangerouslyIgnoreUnhandledErrors: true,
+```
+
+A test can `fetch()` without await, the assertion still passes, the leak is
+real in production.
+
+**After — fix leaks first, then:**
+
+```ts
+dangerouslyIgnoreUnhandledErrors: false,
+```
+
+A fixture that `Promise.reject`s with no listener must fail the suite. Same
+flag in `vitest.live.config.ts`. Do not flip the flag while C1 is still red.
+
+---
+
+## 6.14 Muse reachability and dead wrappers
+
+```mermaid
+flowchart LR
+  CHAT["chat agent"] --> TOOL["workflow-tool<br/>RunBeatDraftInputSchema"]
+  TOOL -->|"today: wildcards absent"| MISS["generateSparks never from chat"]
+  TOOL -->|"Phase 1: wildcards boolean forwarded"| START["run.start"]
+  START --> WF["workflow honors wildcards"]
+  WF --> MUSE["generateSparks"]
+
+  WRAP["GrrmAuthorAgent class<br/>BeatPlannerAgent class"] -.->|"no call sites — delete"| BIN["delete files + barrel lines"]
+  LIVE["statelessGrrmAuthor<br/>statelessBeatPlanner<br/>mastra/agents/*"] --> WF
+```
+
+No new `brainstorm` chat tool. No `@mention` specialist router. Keep `*AgentId` enums and
+file-based agents. No `z.any()` on the touched schema. No `commit_beat`.
+
+**Like you're 10.** Muse is a "give me wild ideas" button. The story machine
+already knows how to press it **if** you pass `wildcards: true`. The chat tool
+never sends that checkbox — so the button is on the wall with **no wire**.
+Chat cannot turn Muse on.
+
+Also: there are leftover class files (`GrrmAuthorAgent`, `BeatPlannerAgent`)
+that nobody actually calls. They are empty costumes. Delete the costumes. Keep
+the live robots (`statelessGrrmAuthor`, `statelessBeatPlanner`, and the files
+under `src/mastra/agents/`). Do not invent a whole new chat command called
+`brainstorm`. Do not add `z.any()`. Do not add a `commit_beat` tool.
+
+**Today — schema has no wildcards, start does not forward them**
+(`workflow-tool.ts`):
+
+```ts
+const RunBeatDraftInputSchema = z.object({
+  projectId: z.string().min(1).optional(),
+  episodeId: z.string().min(1).optional(),
+  brief: z.string().min(1),
+  characters: z.array(z.string()).optional(),
+  autoApprove: z.boolean().optional(),
+})
+
+await run.start({
+  inputData: {
+    projectId,
+    episodeId,
+    brief: inputData.brief,
+    characters: inputData.characters ?? [],
+    autoApprove: inputData.autoApprove ?? false,
+  },
+})
+```
+
+The workflow already does `inputData.wildcards ? generateSparks(...) : []`. Chat
+cannot set the flag.
+
+**Today — barrel still exports unused classes** (`ai/index.ts`):
+
+```ts
+export { GrrmAuthorAgent, createGrrmAuthorAgent } from './agents/GrrmAuthor/grrm-author-agent'
+export { BeatPlannerAgent, createBeatPlannerAgent } from './agents/BeatPlanner/beat-planner-agent'
+```
+
+Live path uses `statelessGrrmAuthor` / `statelessBeatPlanner` from
+`src/mastra/agents/*`.
+
+**After:**
+
+```ts
+const RunBeatDraftInputSchema = z.object({
+  // …existing fields
+  wildcards: z.boolean().optional(),
+})
+
+await run.start({
+  inputData: {
+    projectId,
+    episodeId,
+    brief: inputData.brief,
+    characters: inputData.characters ?? [],
+    autoApprove: inputData.autoApprove ?? false,
+    wildcards: inputData.wildcards ?? false,
+  },
+})
+```
+
+Delete the class files and those two barrel lines. Grep must find zero
+`createGrrmAuthorAgent(` call sites. Do not add a `brainstorm` chat tool.
+
+---
+
+## 6.15 What is not on these graphs
+
+If it is not drawn above, it is out of Phase 1. Listed so a later assistant cannot "complete"
+this chapter by building them.
+
+| Not in Phase 1 | Why it is absent from the diagrams |
+|---|---|
+| Humanizer after verdict | Phase 2. Would add a box after Approve |
+| Catalog L1/L2 skill bodies | Phase 2. Disclosure is not this compiler |
+| `psychology` moved to Planner | Phase 2, after pack-on vs pack-off |
+| Knowledge ledger tables | Phase 4 if partition fails |
+| `cognition` / `dialogue` critic scopes | Phase 4 ablation |
+| `read_canon` / `run_prose_check` as chat tools | Linter is a workflow step |
+| `/api/assistant` domain-agnostic host | Phase K, after this phase, before Humanizer |
+| One SSE vs AI-SDK wire merge | Phase K |
+| `drizzle-kit` drift CI, 409 optimistic lock, RLS user-B tests | Appendix 33–35, not this phase |
+| Playwright / browser | evaluation.md §9.1 |
+| Drop `setupsPayoffs` | Would delete Law of Motion packing |
+| Extra Meshy/tile tasks | Out of the D graph |
+
+**Like you're 10.** If it is not in the drawings above, it is **not this week's
+homework**. A later helper will want to "finish" the chapter by adding a polish
+robot after Save, or extra teacher types, or deleting box 1. That is next
+week's (or later) class. Doing it now is extra credit in the **wrong** subject.
+
+**Wrong "helpful" patches (do not ship in Phase 1):**
+
+```ts
+await humanizer.polish(finalDraft)
+
+import { read_canon } from './chat-tools'
+
+z.object({ modifications: z.any() })
+
+await db.query.mastraThreads.findMany({ where: olderThan(30) }).then(deleteAll)
+```
+
+Those belong to Humanizer, chat-tooling, game-design resume, and memory shred
+— other phases.
+
+---
+
+## 6.16 The system, one more time, as data flow
+
+```mermaid
+flowchart TB
+  subgraph platform ["Platform — same for every domain"]
+    G1["ESLint effective policy"]
+    G2["Ratchet vs pinned ref"]
+    G3["Vitest fails on unhandled rejection"]
+    G4["gateway + llm_calls"]
+    G5["Trigger checkpoint: id then poll"]
+    G6["OpenAPI = executed Zod on the PATCH we touch"]
+  end
+
+  subgraph beat ["Beat compiler — host owned"]
+    P["partition canon by role"]
+    D["metered Author draft"]
+    L["prose-check Finding[]"]
+    W["critics x3 or skip"]
+    V["human suspend"]
+    S["persist jsonb + setups dual-write"]
+  end
+
+  subgraph session ["Session"]
+    M["memoryIds on every door"]
+    U["wildcards reachable"]
+  end
+
+  G4 --> D
+  P --> D
+  D --> L
+  L --> W
+  W --> V
+  V --> S
+  G5 --> TILE2["tile / Meshy / remesh"]
+  M --> D
+  U --> D
+```
+
+That is the whole phase. Gates on the left so the compiler in the middle cannot quietly
+rot. Session keys so the compiler is not a goldfish with the wrong neighbour's memories.
+Jobs on the side so a failed blob upload does not buy a second 3D model.
+
+**Like you're 10.** Look at the drawing one more time, slowly.
+
+Left column is the smoke alarms: lint, scoreboard, tests that catch explosions,
+the money notebook, "don't buy the 3D model twice," one form for episode PATCH.
+
+Middle is the story factory: hide the twist from the writer, pay for the
+writer, free spell-check, maybe pay three teachers, a human says yes, save
+**both** boxes.
+
+Top is whose notebook we opened.
+
+Side is the picture/3D jobs: write the ticket down first.
+
+That is the whole week. Nothing else.
+
+**The whole path as one function (contract, not a file to paste):**
+
+```ts
+async function phase1BeatTurn(input: BeatTurnInput) {
+  const memory = memoryIds(input)
+  await bindChatDoor(input.door, memory)
+
+  const layers = partitionCanon(input.bible, CanonRole.Author)
+  const draft = await meteredCall(
+    { feature: LlmFeature.StorytellerAuthorDraft, scope: input.scope },
+    () => generateAuthorDraft(layers),
+  )
+
+  const findings = runProseCheck({ draft, plan: input.plan, layers })
+  const critiques =
+    findings.some(f => f.severity === FindingSeverity.Error)
+      ? []
+      : await runThreeCritics(draft)
+
+  const verdict = await suspendForHuman({ draft, findings, critiques })
+  if (verdict.action === BeatDraftVerdictAction.Approve) {
+    await persistBeatJsonbAndSetups(draft, input.plan)
+  }
+}
+```
+
+If any line above is missing in the implementation, that graph is unfinished.
+
+---
+
+## 6.17 File map (where the arrows land)
+
+| Concern | Path |
+|---|---|
+| ESLint compose | `eslint.config.js`, `eslint-rules/`, `scripts/__tests__/eslint-effective-config.test.ts` |
+| Ratchet / AST | `.quality-ratchet.json`, `scripts/inventory/index.mjs`, `scripts/__tests__/*inventory*` |
+| Unhandled | `vitest.config.ts`, `vitest.live.config.ts` |
+| Tile checkpoint | `src/domains/2d-canvas/tasks/generate-tile.task.ts` |
+| Meshy / remesh | `src/domains/3d-asset-exporter/tasks/lib/run-meshy-image-to-3d.ts`, `remesh-3d-model.task.ts` |
+| Author meter | `beat-draft-default-deps.ts`, `src/shared/ai/gateway/constants/llm-call.ts` |
+| RAG / rerank | `src/shared/ai/rag/hybrid-search.ts`, `reranker.ts`, `entity-graph-service.ts` |
+| Episode PATCH | move `episode-patch` into `src/domains/storyteller/core/`, `openapi-schemas.ts`, thin route |
+| Thumbnail | `world-types.ts` `toLegacyAsset`, `generation-metadata.schema.ts`, `AssetExporterLayout.tsx` |
+| Finding | `critic-schema.ts`, critic `instructions.md` |
+| Partition | `src/domains/storyteller/core/` helper, `assembleCanon` |
+| Prose-check | `src/domains/storyteller/core/prose-check/`, `beat-draft-workflow.ts` |
+| Setups dual-write | persist path + `core-tables.ts` `setups`; **keep** `packSetupsPayoffs` |
+| Memory | `src/shared/agent-kernel` helper; four doors; `src/mcp/agent.ts`; crud service |
+| Wildcards | `workflow-tool.ts` schema + `run.start` |
+| Wrappers | delete class files; keep `src/mastra/agents/grrm-author` and `beat-planner` |
+
+Each row is one "after" snippet earlier in this chapter. If the file still
+matches the "today" fence, that slice is not done.
+
+---
+
+## 6.18 How to verify this chapter against the tree
+
+When implementation starts, each graph is a test, not a slide.
+
+**Like you're 10.** "Done" does **not** mean you clicked around in the app and
+it looked fine. "Done" means a test on the computer turns **red** if you undo
+the fix. If the "after" snippet is still not true of the code, that slice is
+not done. Opening localhost does not count — we are not allowed to "just
+check" in the browser for this phase.
+
+**What a failing-then-green test looks like** (lint-skip path, 6.3 / 6.6):
+
+```ts
+it('skips critics when prose-check still has errors after one retry', async () => {
+  const deps = stubDeps({
+    draft: DIRTY_DRAFT,
+    retryDraft: STILL_DIRTY_DRAFT,
+  })
+  const result = await runBeatDraftOnce(deps)
+  expect(deps.dispatchCritic).not.toHaveBeenCalled()
+  expect(criticLlmCallCount()).toBe(0)
+  expect(result.skipCritics).toBe(true)
+})
+```
+
+1. **6.3 / 6.6** — stubbed workflow: lint-error fixture → zero critic dispatches, Author
+   `llm_calls` may be 1–2, critic `llm_calls` = 0.
+2. **6.5** — assembly unit test: Author payload has no `PLOT_TWISTS`; continuity payload
+   does.
+3. **6.4** — each of the four doors' tests assert `memory.thread` and `memory.resource`.
+4. **6.10** — mocked fetch: second attempt does not POST create.
+5. **6.13** — `calculateConfigForFile` on `beat-draft-workflow.ts`; delete a fragment →
+   named test red.
+6. **6.11** — `openapi:check` red if registry and route Zod diverge for episode PATCH.
+7. **6.12** — no `@/domains/2d-canvas` in 3d-asset-exporter; thumbnail round-trip test.
+8. **6.8** — persist still writes Law of Motion into jsonb; new plant also in `setups`.
+9. **6.14** — tool input with `wildcards: true` reaches `generateSparks`; grep has no
+   `createGrrmAuthorAgent` call sites.
+
+10. **6.9** — Author `generate` goes through `meteredCall`; a fixture draft
+    inserts `llm_calls` with `LlmFeature.StorytellerAuthorDraft`.
+
+No graph in this chapter is accepted by opening the app. That is a platform rule for this
+phase, not a shortcut.

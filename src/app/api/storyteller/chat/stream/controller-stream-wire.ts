@@ -18,7 +18,7 @@ import {
   createControllerStreamContext,
   mapControllerEvent,
   type ControllerFrameIntent,
-} from '@/domains/storyteller/ai/controller/controller-sse-wire'
+} from '@/domains/storyteller/server'
 import { ChatFrameType } from '@/shared/chat/core/protocol'
 import { emitFrame, type SseWriter } from './stream-wire'
 import {
@@ -32,6 +32,7 @@ import {
 
 /** Session tag key scoping threads to a project (ADR §Topology). */
 const PROJECT_TAG = 'projectId'
+const EPISODE_TAG = 'episodeId'
 /** Status text for the mutation/plan path whose byte-parity is operator-verified (needs keys). */
 const CONTROLLER_TOOL_PENDING = 'Applying changes…'
 const CONTROLLER_PLAN_PENDING = 'Awaiting plan approval…'
@@ -99,11 +100,15 @@ export async function streamStorytellerControllerResponse(opts: {
   requestContext: RequestContext
   userId: string
   projectId?: string
+  episodeId?: string
 }): Promise<Response> {
   const controller = await getStorytellerController()
   const session = await controller.createSession({
     resourceId: opts.userId,
-    tags: opts.projectId ? { [PROJECT_TAG]: opts.projectId } : undefined,
+    tags: {
+      ...(opts.projectId ? { [PROJECT_TAG]: opts.projectId } : {}),
+      ...(opts.episodeId ? { [EPISODE_TAG]: opts.episodeId } : {}),
+    },
   })
 
   const stream = new ReadableStream<Uint8Array>({

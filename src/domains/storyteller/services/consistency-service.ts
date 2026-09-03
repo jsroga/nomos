@@ -8,12 +8,11 @@
 
 import 'server-only'
 import { db } from '@/db/client'
-import { beats, projects, episodes } from '@/db/schema'
+import { beats, projects, episodes, setups } from '@/db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
 import {
   BeatRow,
   ConsistencyCheckKind,
-  setupsPayoffsFromJson,
   shouldRunCheck,
 } from './consistency-types'
 import {
@@ -143,7 +142,7 @@ export async function runConsistencyCheck(
       const allIssues: ContinuityIssue[] = []
 
       if (shouldRunCheck(checkTypes, ConsistencyCheckKind.SETUP_PAYOFF)) {
-        allIssues.push(...checkSetupPayoffs(beatsToCheck))
+        allIssues.push(...(await checkSetupPayoffs(projectId, beatsToCheck)))
       }
 
       // TODO: character_knowledge and timeline checks can be added here
@@ -177,49 +176,47 @@ export async function runConsistencyCheck(
     }
 }
 
-function checkSetupPayoffs(beatsToCheck: BeatRow[]): ContinuityIssue[] {
+export function checkSetupPayoffsFromRows(
+  rows: Array<{
+    setupBeatId: string | null
+    payoffBeatId: string | null
+    description: string
+  }>,
+  episodeBeatIds: Set<string>
+): ContinuityIssue[] {
   const issues: ContinuityIssue[] = []
-  const beatsWithSetups: typeof beatsToCheck = []
-  const beatsWithPayoffs: typeof beatsToCheck = []
-  for (const b of beatsToCheck) {
-    const sp = setupsPayoffsFromJson(b.setupsPayoffs)
-    if (sp.setupId) beatsWithSetups.push(b)
-    if (sp.payoffFor) beatsWithPayoffs.push(b)
-  }
 
-  beatsWithPayoffs.forEach(beat => {
-    const payoffFor = setupsPayoffsFromJson(beat.setupsPayoffs).payoffFor
-    const setupExists = beatsWithSetups.some(
-      b => setupsPayoffsFromJson(b.setupsPayoffs).setupId === payoffFor
-    )
-    if (!setupExists) {
-      issues.push({
-        type: ConsistencyIssueType.OrphanedSetup,
-        severity: ConsistencySeverity.Major,
-        description: `Payoff "${payoffFor}" in beat [${beat.sequence}] has no setup`,
-        location: beat.id,
-        affectedElements: [payoffFor || ConsistencyUnknownLocation.Unknown],
-        suggestion: ConsistencySuggestion.CreateSetupEarlier,
-      })
-    }
-  })
-
-  beatsWithSetups.forEach(beat => {
-    const setupId = setupsPayoffsFromJson(beat.setupsPayoffs).setupId
-    const hasPayoff = beatsWithPayoffs.some(
-      b => setupsPayoffsFromJson(b.setupsPayoffs).payoffFor === setupId
-    )
-    if (!hasPayoff) {
+  for (const row of rows) {
+    const inEpisodeSetup = row.setupBeatId !== null && episodeBeatIds.has(row.setupBeatId)
+    if (inEpisodeSetup && row.payoffBeatId === null) {
       issues.push({
         type: ConsistencyIssueType.MissingPayoff,
         severity: ConsistencySeverity.Minor,
-        description: `Setup "${setupId}" in beat [${beat.sequence}] has no payoff yet`,
-        location: beat.id,
-        affectedElements: [setupId ?? ConsistencyUnknownLocation.Unknown],
+        description: `Setup "${row.description}" in beat [${row.setupBeatId}] has no payoff yet`,
+        location: row.setupBeatId ?? ConsistencyUnknownLocation.Unknown,
+        affectedElements: [row.description || ConsistencyUnknownLocation.Unknown],
         suggestion: ConsistencySuggestion.AddPayoffBeat,
       })
     }
-  })
+
+    const inEpisodePayoff = row.payoffBeatId !== null && episodeBeatIds.has(row.payoffBeatId)
+    if (inEpisodePayoff && row.setupBeatId === null) {
+      issues.push({
+        type: ConsistencyIssueType.OrphanedSetup,
+        severity: ConsistencySeverity.Major,
+        description: `Payoff "${row.description}" in beat [${row.payoffBeatId}] has no setup`,
+        location: row.payoffBeatId ?? ConsistencyUnknownLocation.Unknown,
+        affectedElements: [row.description || ConsistencyUnknownLocation.Unknown],
+        suggestion: ConsistencySuggestion.CreateSetupEarlier,
+      })
+    }
+  }
 
   return issues
+}
+
+async function checkSetupPayoffs(projectId: string, beatsToCheck: BeatRow[]): Promise<ContinuityIssue[]> {
+  const rows = await db.select().from(setups).where(eq(setups.projectId, projectId))
+  const episodeBeatIds = new Set(beatsToCheck.map(beat => beat.id))
+  return checkSetupPayoffsFromRows(rows, episodeBeatIds)
 }

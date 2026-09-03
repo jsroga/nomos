@@ -1,11 +1,14 @@
-import { createVisualSubjectClient } from '@/domains/storyteller/tasks/constants/visual-subject-client'
 import { spawn } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { logger } from '@trigger.dev/sdk'
-import { OpenAiChatRole, EnvVarName } from '@/shared/data/constants/protocol'
-import { TEXT_GEN_FAST_MODEL, TEXT_TO_SPEECH_MODEL } from '@/shared/agent-kernel/models'
+import { complete } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { jobContextScope } from '@/shared/auth/project-scope'
+import { isVisualSubjectConfigured } from '@/domains/storyteller/services/visual-subject-llm'
+import { ContentType, EnvVarName, HttpAuthScheme, HttpMethod } from '@/shared/data/constants/protocol'
+import { TEXT_GEN_FAST_MODEL, TEXT_TO_SPEECH_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
 import { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { buildStoryboardCorePromptUser, type StoryboardVideoBeatText } from './constants/storyboard-video-prompt'
@@ -86,22 +89,21 @@ export async function generateStoryboardVoiceoverScript(
   beats: StoryboardVideoBeatText[],
   duration: number,
   look: StoryboardVideoLook,
+  projectId?: string,
 ): Promise<string> {
   const maxWords = storyboardVoiceoverWordBudget(duration)
   const fallback = buildStoryboardVoiceoverFallback(beats, maxWords)
-  const openai = createVisualSubjectClient()
-  if (!openai) return fallback
+  if (!projectId) return fallback
   try {
-    const response = await openai.chat.completions.create({
+    const { text } = await complete({
+      scope: jobContextScope(projectId),
+      feature: LlmFeature.StorytellerVisualSubject,
       model: TEXT_GEN_FAST_MODEL,
+      system: storyboardVoiceoverSystemPrompt(look, duration),
+      prompt: buildStoryboardCorePromptUser(beats),
       temperature: STORYBOARD_VOICEOVER_TEMPERATURE,
-      messages: [
-        { role: OpenAiChatRole.System, content: storyboardVoiceoverSystemPrompt(look, duration) },
-        { role: OpenAiChatRole.User, content: buildStoryboardCorePromptUser(beats) },
-      ],
     })
-    const raw = response.choices[0]?.message?.content?.trim() ?? ''
-    const capped = capStoryboardVoiceoverScript(raw, maxWords)
+    const capped = capStoryboardVoiceoverScript(text.trim(), maxWords)
     return capped.length > 0 ? capped : fallback
   } catch {
     return fallback
@@ -112,16 +114,24 @@ async function synthesizeStoryboardVoiceover(
   script: string,
   instructions: string,
 ): Promise<Buffer | null> {
-  const client = createVisualSubjectClient()
-  if (!client) return null
-  const speech = await client.audio.speech.create({
-    model: TEXT_TO_SPEECH_MODEL,
-    voice: StoryboardTtsVoice.Eve,
-    input: script,
-    response_format: StoryboardTtsFormat.Mp3,
-    instructions,
+  const { apiKey, baseURL } = openRouterClientConfig()
+  if (!apiKey) return null
+  const response = await fetch(`${baseURL}/audio/speech`, {
+    method: HttpMethod.Post,
+    headers: {
+      Authorization: `${HttpAuthScheme.Bearer}${apiKey}`,
+      'Content-Type': ContentType.Json,
+    },
+    body: JSON.stringify({
+      model: TEXT_TO_SPEECH_MODEL,
+      voice: StoryboardTtsVoice.Eve,
+      input: script,
+      response_format: StoryboardTtsFormat.Mp3,
+      instructions,
+    }),
   })
-  return Buffer.from(await speech.arrayBuffer())
+  if (!response.ok) return null
+  return Buffer.from(await response.arrayBuffer())
 }
 
 async function videoHasAudioStream(videoPath: string): Promise<boolean> {
@@ -195,17 +205,19 @@ export async function mixStoryboardVoiceover(input: {
   beats: StoryboardVideoBeatText[]
   duration: number
   look: StoryboardVideoLook
+  projectId: string
 }): Promise<StoryboardVoiceoverResult> {
   const script = (await generateStoryboardVoiceoverScript(
     input.beats,
     input.duration,
     input.look,
+    input.projectId,
   )).trim()
   if (script.length === 0) {
     return skipped(input.videoBytes, StoryboardVoiceoverSkip.NoScript)
   }
 
-  if (!createVisualSubjectClient()) {
+  if (!isVisualSubjectConfigured()) {
     return skipped(input.videoBytes, StoryboardVoiceoverSkip.NoTtsKey, script)
   }
 

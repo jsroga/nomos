@@ -11,6 +11,7 @@ import {
   storytellerEpisodesResponseSchema,
 } from '@/domains/storyteller/core/io/storyteller.dto'
 import { generateCharacterFieldsRequestSchema, generateCharacterFieldsResponseSchema } from '@/domains/storyteller/services/constants/generate-character-fields'
+import { episodePatchRequestSchema } from '@/domains/storyteller/core/io/episode-patch'
 import { ensureZodOpenApi } from '@/shared/openapi/ensure-zod-openapi'
 import { OpenApiSchemaName } from '@/shared/openapi/constants/openapi-wire'
 import { openApiSuccessMessageSchema } from '@/shared/openapi/shared-components'
@@ -129,15 +130,9 @@ export const stEpisodeIdParams = z
   .object({ episodeId: idString })
   .openapi(OpenApiStorytellerSchemaName.EpisodeIdParams)
 
-export const stPatchEpisodeRequest = z
-  .object({
-    title: z.string().optional(),
-    masterPrompt: z.string().optional(),
-    posterUrl: z.string().optional(),
-    premise: z.record(z.unknown()).optional(),
-  })
-  .passthrough()
-  .openapi(OpenApiStorytellerSchemaName.PatchEpisodeRequest)
+export const stPatchEpisodeRequest = episodePatchRequestSchema.openapi(
+  OpenApiStorytellerSchemaName.PatchEpisodeRequest
+)
 
 export const stBeat = z
   .object({

@@ -8,7 +8,8 @@ workflows (heavy / light / sweep), host persist, Humanizer after verdict. Schedu
 Legend: **red** = broken or unenforced · **amber** = present but incomplete · **green** =
 correct, do not regress · **blue** = deterministic host code · **purple** = model call.
 
-Ten diagrams: two of what exists, five of the system, three of how it gets measured.
+Eleven diagrams: two of what exists, five of the system, three of how it gets measured, then the
+writer journey (Premise → Beats → Draft).
 
 ---
 
@@ -387,3 +388,41 @@ flowchart TD
 
 **Reading it.** Four known biases, then a rubric that names the vibe in checkable pieces.
 "It feels like Martin" is not a scorer.
+
+---
+
+## 11. Target — Premise → Beats → Draft
+
+The navigator already has these three steps. Chat is not the manuscript.
+
+```mermaid
+flowchart LR
+    PRE["Premise<br/>Ozymandias + 10-point"] --> BEATS["Beats<br/>Cork Board text cards"]
+    BEATS -->|"at least one card"| DRAFT["Draft tab<br/>episodes.scriptContent"]
+
+    DRAFT --> MODE{"mode"}
+    MODE -->|"Script"| FMT_S["studio slugline · cue · dialogue"]
+    MODE -->|"Novel"| FMT_N["chapter prose · viewpoint"]
+
+    DRAFT --> GHOST["ghost complete at caret<br/>Tab / Esc · no critic wall"]
+    DRAFT --> NEXT["Generate next / regenerate section"]
+    NEXT --> WF["beat-draft-workflow"]
+    WF --> VERD["Approve / Revise / Kill"]
+    VERD -->|"Approve"| PAGE["replace that span only"]
+
+    BIBLE["world bible · partitioned"] -.-> NEXT
+    PRE -.-> NEXT
+    BEATS -.-> NEXT
+
+    classDef ok fill:#14401f,stroke:#27ae60,color:#fff
+    classDef host fill:#12305e,stroke:#3d7ebf,color:#fff
+    classDef warn fill:#4a3a15,stroke:#d68910,color:#fff
+    class PRE,BEATS ok
+    class DRAFT,GHOST,PAGE host
+    class WF,VERD ok
+    class MODE warn
+```
+
+**Reading it.** Cork Board must not call the compiler. Empty beats cannot Draft. Ghost text is
+the cheap Cursor habit; the heavy workflow is opt-in per section. Format is a skill, not a
+new agent. Spec: `target-architecture.md` §7.5.

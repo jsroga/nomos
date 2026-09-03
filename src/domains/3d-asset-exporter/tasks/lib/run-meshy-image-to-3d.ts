@@ -71,7 +71,12 @@ async function persistMeshyModelUrl(assetId: string, result: MeshyTask): Promise
       .eq(DB_COLUMN.ID, assetId)
   } catch (dbErr) {
     logger.error(MeshyGenerationLog.DbUpdateFailed, { dbErr })
+    throw dbErr
   }
+}
+
+function readStoredMeshyTaskId(): string | undefined {
+  return readRowString(recordFromJson(metadata.current()), MeshyGenerationMetadataKey.MeshyTaskId)
 }
 
 async function awaitMeshyImageTo3dTask(
@@ -96,38 +101,42 @@ export async function runMeshyImageTo3d(params: RunMeshyImageTo3dParams) {
   const shouldRemesh =
     targetPolycount !== undefined && targetPolycount !== MESHY_DEFAULT_POLYCOUNT
 
-  const createResponse = await fetch(MeshyGenerationApiUrl.OpenApiImageTo3d, {
-    method: HttpMethod.Post,
-    headers: {
-      [MeshyGenerationHttpHeader.Authorization]: `${HttpAuthScheme.Bearer}${apiKey}`,
-      [MeshyGenerationHttpHeader.ContentType]: ContentType.Json,
-    },
-    body: JSON.stringify({
-      [MeshyGenerationRequestField.ImageUrl]: finalImageUrl,
-      [MeshyGenerationRequestField.AiModel]: MeshyAiModelId.Latest,
-      [MeshyGenerationRequestField.EnablePbr]: true,
-      [MeshyGenerationRequestField.Topology]: topology ?? MeshyTopology.Triangle,
-      [MeshyGenerationRequestField.TargetPolycount]: targetPolycount ?? MESHY_DEFAULT_POLYCOUNT,
-      [MeshyGenerationRequestField.ShouldRemesh]: shouldRemesh,
-    }),
-  })
-
-  if (!createResponse.ok) {
-    const errText = await createResponse.text()
-    logger.error(MeshyGenerationLog.MeshyApiError, { status: createResponse.status, body: errText })
-    throw new Error(
-      `Meshy API error: ${parseMeshyErrorMessage(errText, createResponse.statusText)}`,
-    )
-  }
-
-  const createJson = recordFromJson(await createResponse.json())
-  const taskId = readRowString(createJson, MeshyResponseField.Result)
+  const storedTaskId = readStoredMeshyTaskId()
+  let taskId = storedTaskId
   if (!taskId) {
-    throw new Error(MeshyGenerationError.NoTaskId)
-  }
+    const createResponse = await fetch(MeshyGenerationApiUrl.OpenApiImageTo3d, {
+      method: HttpMethod.Post,
+      headers: {
+        [MeshyGenerationHttpHeader.Authorization]: `${HttpAuthScheme.Bearer}${apiKey}`,
+        [MeshyGenerationHttpHeader.ContentType]: ContentType.Json,
+      },
+      body: JSON.stringify({
+        [MeshyGenerationRequestField.ImageUrl]: finalImageUrl,
+        [MeshyGenerationRequestField.AiModel]: MeshyAiModelId.Latest,
+        [MeshyGenerationRequestField.EnablePbr]: true,
+        [MeshyGenerationRequestField.Topology]: topology ?? MeshyTopology.Triangle,
+        [MeshyGenerationRequestField.TargetPolycount]: targetPolycount ?? MESHY_DEFAULT_POLYCOUNT,
+        [MeshyGenerationRequestField.ShouldRemesh]: shouldRemesh,
+      }),
+    })
 
-  logger.info(`Meshy task created: ${taskId}`, { topology, targetPolycount, shouldRemesh })
-  await metadata.set(MeshyGenerationMetadataKey.MeshyTaskId, taskId)
+    if (!createResponse.ok) {
+      const errText = await createResponse.text()
+      logger.error(MeshyGenerationLog.MeshyApiError, { status: createResponse.status, body: errText })
+      throw new Error(
+        `Meshy API error: ${parseMeshyErrorMessage(errText, createResponse.statusText)}`,
+      )
+    }
+
+    const createJson = recordFromJson(await createResponse.json())
+    taskId = readRowString(createJson, MeshyResponseField.Result)
+    if (!taskId) {
+      throw new Error(MeshyGenerationError.NoTaskId)
+    }
+
+    logger.info(`Meshy task created: ${taskId}`, { topology, targetPolycount, shouldRemesh })
+    await metadata.set(MeshyGenerationMetadataKey.MeshyTaskId, taskId)
+  }
 
   const result = await awaitMeshyImageTo3dTask(taskId, apiKey, progress =>
     reportMeshyProgress(onProgress, progress),

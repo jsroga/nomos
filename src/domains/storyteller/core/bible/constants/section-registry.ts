@@ -18,6 +18,14 @@ export enum MergeStrategy {
   Overwrite = 'overwrite',
 }
 
+/** Which BeatDraftCanon layer a world-bible section belongs to. */
+export enum CanonLayer {
+  StoryFacts = 'story-facts',
+  CharacterKnowledge = 'character-knowledge',
+  AuthorTruth = 'author-truth',
+  RevealBoundary = 'reveal-boundary',
+}
+
 /** Human-facing name for each world section. */
 export enum SectionLabel {
   WorldDescription = 'World description',

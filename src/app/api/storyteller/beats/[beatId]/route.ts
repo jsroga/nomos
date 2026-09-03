@@ -4,8 +4,9 @@ import { db } from '@/db/client'
 import { beats } from '@/db'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyBeatAccess } from '@/domains/storyteller/server'
-import { pickBeatPatchUpdates } from '@/domains/storyteller/core/beat-patch'
+import { pickBeatPatchUpdates, verifyBeatAccess } from '@/domains/storyteller/server'
+import { projectIdForBeat, upsertSetupsFromBeat } from '@/domains/storyteller/core/io/setups-write'
+import { recordFromJson } from '@/shared/data/json-guards'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { HttpStatus } from '@/shared/data/constants/protocol'
 
@@ -34,6 +35,19 @@ export async function PATCH(req: Request, props: { params: Promise<{ beatId: str
     }
     const update = pickBeatPatchUpdates(body.data)
     const [updatedBeat] = await db.update(beats).set(update).where(eq(beats.id, beatId)).returning()
+
+    if (update.setupsPayoffs !== undefined) {
+      const setupsPayoffs = recordFromJson(update.setupsPayoffs)
+      const projectId = await projectIdForBeat(beatId)
+      if (projectId) {
+        await upsertSetupsFromBeat({
+          projectId,
+          beatId,
+          setupId: typeof setupsPayoffs.setupId === 'string' ? setupsPayoffs.setupId : undefined,
+          payoffFor: typeof setupsPayoffs.payoffFor === 'string' ? setupsPayoffs.payoffFor : undefined,
+        })
+      }
+    }
 
     return NextResponse.json(updatedBeat)
   } catch (error) {

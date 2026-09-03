@@ -2,8 +2,10 @@ import { Page, expect } from '@playwright/test'
 import {
   FlowApi,
   FlowCharacter,
+  FlowChatModel,
   FlowChatRole,
   FlowCookie,
+  FlowError,
   FlowHttp,
   FlowPrompt,
   FlowSelector,
@@ -17,6 +19,8 @@ import {
   FlowRole,
 } from '../constants/storyteller-flow'
 import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { EMPTY_TURN_NOTICE } from '@/shared/chat/assistant/assistant-stream-timing'
+import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
 
 const BASE_URL = process.env.BASE_URL?.trim() || 'http://localhost:3001'
 const SSE_TIMEOUT = 240_000
@@ -122,7 +126,11 @@ export async function acceptPendingAction(page: Page): Promise<void> {
   const addToWorld = page.getByRole(FlowRole.Button, { name: FlowUiLabel.AddToWorld }).first()
   const accept = page.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).first()
   const action = addToWorld.or(accept).first()
-  await expect(action).toBeVisible({ timeout: FlowTimeout.Generation })
+  const emptyTurn = page.getByText(EMPTY_TURN_NOTICE).first()
+  await expect(action.or(emptyTurn).first()).toBeVisible({ timeout: FlowTimeout.Generation })
+  if (await emptyTurn.isVisible()) {
+    throw new Error(FlowError.EmptyTurnBeforeAccept)
+  }
   await action.click()
   const updateAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.UpdateAll }).first()
   await updateAll.click({ timeout: FlowTimeout.Short }).catch(() => undefined)
@@ -181,6 +189,13 @@ export async function createStoryProject(page: Page): Promise<CreatedProject> {
 }
 
 export async function gotoStoryteller(page: Page, projectId: string): Promise<void> {
+  const chatModel = process.env.STORYTELLER_CHAT_MODEL?.trim() || FlowChatModel.Luna
+  await page.addInitScript(
+    ({ key, value }) => {
+      window.localStorage.setItem(key, value)
+    },
+    { key: LocalStorageKeys.STORYTELLER_CHAT_MODEL, value: chatModel },
+  )
   // The chat fires a warm GET when it mounts. Interactions before the runtime
   // is live are silently dropped and never replayed, so wait for it here rather
   // than letting every spec race the same window.

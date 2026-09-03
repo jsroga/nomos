@@ -7,6 +7,7 @@
  */
 export enum LlmFeature {
   StorytellerBeatPlan = 'storyteller.beat-plan',
+  StorytellerBeatDraft = 'storyteller.beat-draft',
   StorytellerChat = 'storyteller.chat',
   StorytellerCharacterFields = 'storyteller.character-fields',
   StorytellerCharacterMbti = 'storyteller.character-mbti',

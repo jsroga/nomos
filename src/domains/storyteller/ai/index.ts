@@ -12,9 +12,7 @@ import '@/shared/data/server-guard'
 // Chat adapter (conversation glue; owns the CRUD + alignment tool surface)
 export { StorytellerAgent, createStorytellerAgent } from './agents/StorytellerAgent/storyteller-agent'
 
-// GRRM solo agents (class wrappers for request-scoped, memory-backed use)
-export { GrrmAuthorAgent, createGrrmAuthorAgent } from './agents/GrrmAuthor/grrm-author-agent'
-export { BeatPlannerAgent, createBeatPlannerAgent } from './agents/BeatPlanner/beat-planner-agent'
+// GRRM solo agents (stateless FS packages + planner schema/quality)
 export { BeatPlanSchema, type BeatPlan } from './agents/BeatPlanner/beat-plan-schema'
 export {
   assessBeatPlanConcreteness,

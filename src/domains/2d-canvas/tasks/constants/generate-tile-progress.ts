@@ -28,6 +28,7 @@ export enum GenerateTileProgress {
 export enum GenerateTileMetadataKey {
   Progress = 'progress',
   Stage = 'stage',
+  ScratchUrl = 'scratch_url',
 }
 
 const progressFloor = new AsyncLocalStorage<{ value: number }>()

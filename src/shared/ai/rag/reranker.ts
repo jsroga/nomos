@@ -15,6 +15,14 @@ import {
   RerankerProviderId,
 } from '@/shared/ai/constants/reranker'
 import { OPENROUTER_BASE_URL } from '@/shared/agent-kernel/models'
+import { recordLlmCall } from '@/shared/ai/gateway/record'
+import { LlmFeature, LlmOutcome } from '@/shared/ai/gateway/constants/llm-call'
+import { OPENROUTER_PROVIDER } from '@/shared/ai/gateway/constants/provider'
+import type { ProjectScope } from '@/shared/auth/project-scope'
+
+enum RerankBillingModel {
+  OpenRouter = 'rerank-2',
+}
 
 // ============================================
 // TYPES
@@ -139,6 +147,7 @@ const cohereRerankResponseSchema = z.object({
  * Requires OPENROUTER_API_KEY; falls back to heuristic when missing.
  */
 async function rerankCohere(
+  scope: ProjectScope,
   query: string,
   results: SearchResult[],
   config: RerankerConfig
@@ -150,6 +159,7 @@ async function rerankCohere(
     return rerankHeuristic(query, results, config)
   }
 
+  const startedAt = Date.now()
   try {
     const response = await fetch(`${OPENROUTER_BASE_URL}/rerank`, {
       method: HttpMethod.Post,
@@ -171,13 +181,24 @@ async function rerankCohere(
 
     const data = cohereRerankResponseSchema.parse(await response.json())
 
-    // Map back to original results with new scores
     const rerankedResults = data.results
       .filter(r => r.relevance_score >= config.minScore)
       .map(r => ({
         ...results[r.index],
         score: r.relevance_score,
       }))
+
+    await recordLlmCall({
+      projectId: scope.projectId,
+      userId: scope.userId,
+      feature: LlmFeature.RagRerank,
+      model: RerankBillingModel.OpenRouter,
+      provider: OPENROUTER_PROVIDER,
+      promptTokens: 0,
+      completionTokens: 0,
+      latencyMs: Date.now() - startedAt,
+      outcome: LlmOutcome.Ok,
+    })
 
     return rerankedResults
   } catch (error) {
@@ -224,7 +245,7 @@ export class Reranker {
   /**
    * Rerank search results
    */
-  async rerank(query: string, results: SearchResult[]): Promise<RerankResult> {
+  async rerank(scope: ProjectScope, query: string, results: SearchResult[]): Promise<RerankResult> {
     const startTime = Date.now()
     const originalCount = results.length
 
@@ -232,7 +253,7 @@ export class Reranker {
 
     switch (this.config.provider) {
       case RerankerProviderId.Cohere:
-        rerankedResults = await rerankCohere(query, results, this.config)
+        rerankedResults = await rerankCohere(scope, query, results, this.config)
         break
       case RerankerProviderId.CrossEncoder:
         rerankedResults = await rerankCrossEncoder(query, results, this.config)

@@ -7,6 +7,8 @@ export const RUN_BEAT_DRAFT_EPISODE_ID_DESC =
 export const RUN_BEAT_DRAFT_CHARACTERS_DESC = 'Character names available for this beat'
 export const RUN_BEAT_DRAFT_AUTO_APPROVE_DESC =
   'Skip the human verdict gate (batch mode). Default false.'
+export const RUN_BEAT_DRAFT_WILDCARDS_DESC =
+  'Run the Muse brainstorm→rank stage and feed surviving sparks to the planner. Default off.'
 
 export const RUN_BEAT_DRAFT_TOOL_DESCRIPTION =
   'Draft a story beat through the full GRRM quality pipeline: beat plan → script-format draft → three narrow critics → HUMAN VERDICT (the run pauses for approval) → revision. Use this whenever the user asks to write, draft, or generate a story beat or scene.'

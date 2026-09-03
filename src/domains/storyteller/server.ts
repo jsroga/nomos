@@ -34,6 +34,29 @@ export {
 
 export { storytellerService } from './services/storyteller-crud-service'
 
+export { isStorytellerAutonomousEnabled } from './ai/agents/AutonomousAuthor/autonomous-author-agent'
+export { pickBeatPatchUpdates } from './core/beat-patch'
+export {
+  createControllerStreamContext,
+  mapControllerEvent,
+  type ControllerFrameIntent,
+} from './ai/controller/controller-sse-wire'
+export { resolveChatModelId } from './config/resolve-chat-model'
+export { isKnownChatModel } from './config/constants/chat-model-catalog'
+export { isStorytellerControllerEnabled } from './ai/controller/storyteller-controller'
+export { BibleSection, parsePhaseId } from './core/types/enums'
+export { type DetectedSection } from './config/tool-result-mapper'
+export { omitBibleOwnedPlanFields } from './core/utils/bible-populated-fields'
+export { storyPlanRecordFromJson } from './core/entities/story-plan-wire'
+export {
+  EPISODE_PATCH_ALLOWED_COLUMNS,
+  EpisodePatchAlias,
+  EpisodePatchRequestKey,
+  episodePatchRequestRecord,
+  episodePatchRequestSchema,
+  type EpisodePatchColumn,
+} from './core/io/episode-patch'
+
 // Consistency check — pure service behind the legacy API shape
 // (replaces the deleted ConsistencyAgent judge)
 export { runConsistencyCheck } from './services/consistency-check-adapter'

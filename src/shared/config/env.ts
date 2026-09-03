@@ -24,7 +24,7 @@
  * `optional` is a familiar late failure; a wrong `required` will not start.
  */
 import { z } from 'zod'
-import { ENV_DEFAULT, ENV_PARSE_FAILED } from '@/shared/config/constants/env'
+import { ENV_DEFAULT, ENV_FLAG_OFF, ENV_FLAG_ON, ENV_PARSE_FAILED } from '@/shared/config/constants/env'
 
 const serverEnvSchema = z.object({
   /**
@@ -40,6 +40,7 @@ const serverEnvSchema = z.object({
    * now fails by name at the point of use rather than connecting to `''`.
    */
   DATABASE_URL: z.string().min(1).optional(),
+  DATABASE_SSL_REJECT_UNAUTHORIZED: z.enum([ENV_FLAG_ON, ENV_FLAG_OFF]).optional(),
 
   // Providers — each call site already tests for presence and degrades.
   OPENROUTER_API_KEY: z.string().min(1).optional(),

@@ -1,6 +1,6 @@
 # Nomos — Phased plan
 
-**End state** is still: one chat agent, planner, author (incl. Humanizer after verdict), one critic × 3 scopes (more scopes only by ablation), Muse as `brainstorm`, three workflows (`beat-draft`, `artifact-draft`, `fix-inconsistencies`), catalog skills at L1 / bodies on match.
+**End state** is still: one chat agent, planner, author (incl. Humanizer after verdict), one critic × 3 scopes (more scopes only by ablation), Muse as `brainstorm`, three workflows (`beat-draft`, `artifact-draft`, `fix-inconsistencies`), catalog skills at L1 / bodies on match. Writer journey: Premise → Beats → Draft (Script / Novel manuscript on the existing tab).
 
 **This file** is how to get there without a 32-action serial chain. Two tracks run in each phase:
 
@@ -79,13 +79,16 @@ Same six agents, same two workflows. Host work, not new personalities.
 
 | Work | Actions / findings |
 |---|---|
-| Deterministic lint **in** beat-draft: causal graph, live `setups` table (kill jsonb duplicate), hygiene, POV-noun filter | 19, 12 (partition only) |
+| Deterministic lint **in** beat-draft: causal graph, hygiene, POV-noun filter; live `setups` **dual-write** (jsonb stays — it packs Law of Motion) | 19, 12 (partition only) |
 | Author-truth never in Author context (prompt partition, not a ledger table yet) | 12 |
-| Bind `memory: { thread, resource }` on live SSE; one key helper `(projectId, episodeId, userId)`; bound `lastMessages` including MCP | 31 (bind + bound; expiry can wait) |
-| Muse `wildcards` on the tool schema + forward. Delete dead wrappers. Do not build the `@mention` specialist roster | 5.1, 11 (`brainstorm` only) |
-| Finding schema on **existing** critics (location + quote required) if not already | 13 |
+| Bind `memory: { thread, resource }` on **every** live door (SSE, controller flag, `/api/assistant`, autonomous) + helper `(projectId, episodeId, userId)`; bound MCP `lastMessages` | 31 (bind + bound; expiry can wait) |
+| Muse `wildcards` on the tool schema + forward. Delete dead **class** wrappers. Keep file-based `stateless*` agents. Do not build the `@mention` specialist roster | 5.1, 11 (`brainstorm` only) |
+| Finding on **existing** critics (location + quote required). `promoteToProjectRule` defaults false — no `promote_rule` tool | 13 |
+| Episode PATCH: allowlist lives in domain; route runs that Zod; OpenAPI generated from it. `toLegacyAsset` thumbnail via 3d contracts (no 2d↔3d import) | 4.7, 13 (pilot) |
 
-**Exit.** A mechanically broken beat returns to Author with $0 critic spend. Author cannot see the twist. Cross-domain import probe fails closed. A retried paid task does not create a second Meshy/tile generation. Trace tests red if a critic is deleted.
+**Constraints this phase (not leftovers).** Lint errors → **one** Author retry → still dirty skips critics and suspends (do not spend the post-verdict revise; do not unbounded `.dountil()`). Domain must not import `evals/` (core owns the checker; evals may call core). Do not `DROP` `beats.setupsPayoffs`. Do not add chat tools `read_canon` / `run_prose_check`. No Playwright. No `eslint-disable`. Platform kernel extraction (assistant host, one wire protocol) is **after** this phase and **before** Phase 2 Humanizer — not a Phase 1 ticket.
+
+**Exit.** A mechanically broken beat returns to Author with $0 critic spend. Author cannot see the twist. Cross-domain import probe fails closed. A retried paid task does not create a second Meshy/tile generation. Trace tests red if a critic is deleted. System graphs: [learning-materials.md](./learning-materials.md) Part 6. Short picture: Part 2A.
 
 ---
 
@@ -118,19 +121,22 @@ Still no `artifact-draft`. Still **three** critic scopes. Latency budget still 3
 
 ---
 
-## Phase 3 — Same shape, other artifacts
+## Phase 3 — Same shape, other artifacts — and the Draft page
+
+The navigator is already Premise → Beats → Draft. Phase 3 is when Draft becomes a manuscript, not a blank Courier field. `artifact-draft` stays the cheap bible/character line. Do not skip the Draft surface to ship more critics.
 
 | Work | Actions / findings |
 |---|---|
+| **Draft manuscript** on existing `Phase.WRITING` / `ScriptEditor`: Medium well, Cursor ghost-text (Tab/Esc), **Regenerate this section** / **Generate next**, modes **Script** (studio/TV format) and **Novel** (prose). Context = partitioned bible + episode premise + beat board. Empty beats cannot Draft. Format taught as an Author skill (Fountain/studio vs novel chapter craft), not a new agent. Selection Expand/Condense/Rewrite stays. `POST /api/storyteller/script/edit` goes through the gateway with project scope | 16 (surface), 6 (cost hole), 30 (pixels on this tab) |
 | `artifact-draft` (or a `type` on one workflow): character, bible section, premise — schema + 1–2 scopes + existing `SectionPendingOverlay`. **No Humanizer** | 26 |
 | Prompt registry: generate buttons stop holding prose; hash joins eval artifact | 29 |
 | `fix-inconsistencies` stays the sweep; do not rebuild as five beat critics | 16 (keep, don’t add showcase twin) |
-| Final episode compile: heavy beat path + **one** Humanizer pass on compiled prose | 16, 17 |
+| Final episode compile: heavy beat path + **one** Humanizer pass on compiled prose (the Draft tab is the tree being compiled) | 16, 17 |
 | Memory TTL / prune on migrated `mastra_*` tables | 31 (expiry) |
 | Judge calibration, pairwise, GRRM rubric on **plans**, verbosity control vs de-slop | 21, 23 |
-| Voice fingerprints + extractor tests + min-token floor (stylometry is free only if the extractor is honest) | 32 |
+| Voice fingerprints + extractor tests + min-token floor (stylometry is free only if the extractor is honest). Script-mode extractor already assumes cue structure | 32 |
 
-**Exit.** A faction that contradicts world logic is a `Finding` and does not commit. Beat traces still show **three** critic spans, not five. Generate controls contain no prompt paragraphs.
+**Exit.** A faction that contradicts world logic is a `Finding` and does not commit. Beat traces still show **three** critic spans, not five. Generate controls contain no prompt paragraphs. From an episode with bible + premise + beats, Draft can produce the next formatted section without the writer pasting context. Ghost-text accepts with Tab and does not run the heavy critic wall. Script pages parse as studio format; Novel pages do not contain sluglines unless the writer typed them. Playwright on this tab: generate-next, regenerate-section, mode switch.
 
 ---
 
@@ -185,7 +191,7 @@ Do not schedule these as a sprint. Each item names its promotion test.
 | 13 | Finding / BeatPlan contracts | 1 |
 | 14 | One critic, five scopes | 1 keep three; 4 extra scopes |
 | 15 | Catalog disclosed | 2 |
-| 16 | Three workflows (heavy / light / sweep) | 3 `artifact-draft`; no showcase autonomy |
+| 16 | Three workflows (heavy / light / sweep) | 3 Draft manuscript + `artifact-draft`; no showcase autonomy |
 | 17 | Martin / tone / Humanizer | 2 (always-on class) |
 | 18 | Trace-contract tests | 0 |
 | 19 | Deterministic linter | 1 |
@@ -199,7 +205,7 @@ Do not schedule these as a sprint. Each item names its promotion test.
 | 27 | Guardrails | 0 account; 2 `masterPrompt`; **not** regex P0 |
 | 28 | Latency | **0 reconcile + every phase budget** |
 | 29 | Prompt registry | 3 |
-| 30 | Chat verdict wire | 0 (pixels later, unverified) |
+| 30 | Chat verdict wire | 0 (pixels later, unverified); 3 Draft-tab pixels |
 | 31 | Memory bind/bound/expire | 1 bind+bound, 3 expire |
 | 32 | Voice fingerprints | 3 |
 
@@ -210,9 +216,9 @@ Overview-only items with no action id: constants functions incentive → Phase 2
 ## How to use this
 
 1. Phase 0 is one engineering slice (platform + storyteller in the same PR series). It is security + persist + CI + eval honesty. No new agent.
-2. Phase 1 is still zero new agents.
+2. Phase 1 is still zero new agents. Kitchen picture: [learning-materials.md](./learning-materials.md) Part 2A.
 3. Phase 2 is the first writing-quality change (skills + Humanizer). Latency is the kill switch.
-4. Phase 3 is bible/characters/final-draft. Same shape, cheaper budget.
+4. Phase 3 is the Draft manuscript (Script / Novel) plus bible/characters on the cheap workflow. Same critic shape, cheaper budget on cards. The navigator already has the tab.
 5. Phase 4 is a backlog with promotion tests, not a roadmap sprint.
 
 When later editing these files, this file still wins on: regex-injection is not P0, latency is a Phase 0 constraint, three critics not five, host owns commit, all 32 ids stay mapped (none silently dropped). `target-architecture.md`, `actions.md`, `evaluation.md`, `diagrams.md`, `overview.md` §8, and `learning-materials.md` now state that same contract.

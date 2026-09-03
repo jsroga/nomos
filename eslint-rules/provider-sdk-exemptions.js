@@ -15,13 +15,13 @@ const NEVER_BILLS = [
   // Judge calls must not enter llm_calls as production spend — see
   // shared/ai/gateway/__tests__/eval-isolation.test.ts.
   'src/shared/agent-kernel/scorers/**/*.ts',
+  // Constructs model objects; generate happens at the call site.
+  'src/shared/agent-kernel/models.ts',
+  'src/domains/storyteller/config/constants/model-config.ts',
 ]
 
 /** In `shared/`, so they keep the shared boundary patterns. */
 const SHARED_REMAINDER = [
-  // Dissolved by SPEC-13 Task 13 into the gateway's model registry, so a
-  // conversion here would be thrown away with the file.
-  'src/shared/agent-kernel/models.ts',
   // A provider wrapper that belongs under gateway/providers/ once image
   // generation is metered; moving it is its own change.
   'src/shared/ai/replicate.ts',
@@ -29,17 +29,10 @@ const SHARED_REMAINDER = [
 
 /** In `domains/` or `app/`, so they keep the domain boundary patterns. */
 const DOMAIN_REMAINDER = [
-  // Dissolved by SPEC-13 Task 13 alongside models.ts.
-  'src/domains/storyteller/config/constants/model-config.ts',
   // Mastra tools whose `execute` receives only schema-declared args, so there
   // is no ProjectScope to bill against without changing every tool's input
   // contract — a field a model can silently omit.
   'src/domains/game-design/ai/tools/v2/game-design-llm-shared.ts',
-  // The raw client for five task helpers that call
-  // `openai.chat.completions.create` directly with no scope in hand. Isolated
-  // in one module so the exemption names one file rather than five; deleting
-  // it is what closes the gap.
-  'src/domains/storyteller/tasks/constants/visual-subject-client.ts',
   // Reached without a scope in hand. Threading one is the remaining work.
   'src/app/api/storyteller/generate-metrics/route.ts',
 ]

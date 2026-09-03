@@ -3,17 +3,20 @@ import {
   USAGE_COMPLETION_FIELDS,
   USAGE_PROMPT_FIELDS,
 } from './constants/stream-usage'
-import { resolveChatModelId } from '@/domains/storyteller/config/resolve-chat-model'
 import type { ProjectScope } from '@/shared/auth/project-scope'
 import { recordError } from '@/shared/observability/observability'
-import { parsePhaseId } from '@/domains/storyteller/core/types/enums'
-import { isKnownChatModel } from '@/domains/storyteller/config/constants/chat-model-catalog'
-import { isStorytellerControllerEnabled } from '@/domains/storyteller/ai/controller/storyteller-controller'
-import { BibleSection } from '@/domains/storyteller/core'
-import { type DetectedSection } from '@/domains/storyteller/config/tool-result-mapper'
-import { assembleStorytellerContext } from '@/domains/storyteller/services/context-assembly-service'
-import { createStorytellerAgent } from '@/domains/storyteller/ai'
+import { memoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
 import { buildStorytellerRequestContext } from '@/domains/storyteller/core/io/mastra-runtime'
+import {
+  assembleStorytellerContext,
+  BibleSection,
+  createStorytellerAgent,
+  isKnownChatModel,
+  isStorytellerControllerEnabled,
+  parsePhaseId,
+  resolveChatModelId,
+  type DetectedSection,
+} from '@/domains/storyteller/server'
 import {
   MASTRA_CHUNK,
   STREAM_ROUTE_TEXT,
@@ -100,14 +103,21 @@ async function runStorytellerStreamInner(input: StreamRequestInput): Promise<Res
       requestContext,
       userId: input.userId,
       projectId: input.scope?.projectId,
+      episodeId: input.episodeId,
     })
   }
 
   const agent = await createStorytellerAgent()
+  const bound = memoryRef({
+    projectId: input.scope?.projectId ?? '_',
+    episodeId: input.episodeId,
+    userId: input.userId,
+  })
   const result = await agent.stream(promptWithContext, {
     toolChoice: STREAM_ROUTE_TEXT.toolChoiceAuto,
     traceId: input.traceId,
     requestContext,
+    memory: { thread: bound.thread, resource: bound.resource },
   })
 
   const encoder = new TextEncoder()

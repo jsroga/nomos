@@ -76,7 +76,7 @@ core/io/       # API clients, mastra-runtime seam
 ## UI highlights
 
 - World Bible panel (lockable for central users)
-- Phase navigator / beat board / character web
+- Phase navigator / beat board / character web / Draft tab (`ScriptEditor`)
 - Streaming writers’ room chat
 
 ## Writers Room ↔ World Bible
@@ -115,6 +115,20 @@ Roadmap cards are **not** `episodes` rows. Matching is by position: `episodes.se
 Chat context injects `=== SEASON ROADMAP ===`, compact `=== EPISODE INDEX ===`, and — when an episode is open — `=== ROADMAP SLOT ===`. Missing slot: generate from premise only. Extra roadmap slots stay as future spine; do not auto-create episode rows.
 
 Section alignment uses one ContinuityCritic pass driven by `ALIGNMENT_REGISTRY` (`core/constants/alignment-registry.ts`): `check_section_alignment` in chat (read-only; not on every beat create) and the same jobs inside **Fix inconsistencies** `agenticScan`.
+
+## Episode phases (Premise → Beats → Draft)
+
+`PhaseNavigator` is three steps: **Premise**, **Beats**, **Draft** (`Phase.PREMISE` → `BREAKING` → `WRITING`). Draft unlocks when the beat board has at least one card.
+
+| Phase | Surface | Job |
+|-------|---------|-----|
+| Premise | `StoryPlanBoard` | Ozymandias + 10-point for this episode. |
+| Beats | Cork Board | ~30 text cards. Prompts forbid drafting scripts and calling `run_beat_draft_workflow`. |
+| Draft | `ScriptEditor` on `StorytellerTab.Script` | Manuscript in `episodes.scriptContent`. |
+
+**Draft today.** Courier `contentEditable`, placeholder “Start writing your screenplay…”, selection Expand / Condense / Rewrite via `POST /api/storyteller/script/edit`. No generate-from-bible, no ghost completion, no “next section,” no Novel mode.
+
+**Draft as specified** (architecture-review Phase 3, `target-architecture.md` §7.5): Medium-quiet well; Cursor-style ghost text (Tab accept, Esc dismiss); **Generate next** / **Regenerate this section** through the existing beat-draft workflow; two modes — **Script** (studio/TV format) and **Novel** (chapter prose) — taught as Author format skills, not a new agent. Context is partitioned world bible + episode premise + the beat board. Host still persists compiler output after Approve.
 
 ## Generate-new-part canon pack
 

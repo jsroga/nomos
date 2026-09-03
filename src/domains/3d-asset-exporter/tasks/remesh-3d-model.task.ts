@@ -6,13 +6,19 @@ import {
   type Remesh3dModelPayload,
 } from './constants/meshy-payloads'
 import { supabaseAdmin } from '@/shared/auth/supabase-admin'
-import { recordFromJson } from '@/shared/data/json-guards'
+import { recordFromJson, readRowString } from '@/shared/data/json-guards'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import {
   MeshyTaskStatusValue,
   parseMeshyTask,
   type MeshyTask,
 } from './constants/meshy-task-types'
+
+export enum RemeshMetadataKey {
+  Progress = 'progress',
+  MeshyTaskId = 'meshy_task_id',
+  RemeshTaskId = 'remesh_task_id',
+}
 
 function buildRemeshBody(payload: Remesh3dModelPayload): Record<string, unknown> {
   return remeshRequestToWire(payload)
@@ -83,7 +89,7 @@ async function pollRemeshUntilDone(apiKey: string, remeshTaskId: string): Promis
     lastStatus = lastResult.status
 
     const progress = lastResult.progress ?? 0
-    await metadata.set('progress', progress)
+    await metadata.set(RemeshMetadataKey.Progress, progress)
     logger.info(
       `Meshy remesh status: ${lastStatus}, Progress: ${progress}% (attempt ${attempts + 1}/${maxAttempts})`,
       { result: lastResult },
@@ -129,6 +135,40 @@ async function persistRemeshResult(
       .eq('id', assetId)
   } catch (dbErr) {
     logger.error('DB update failed but Meshy remesh succeeded', { dbErr })
+    throw dbErr
+  }
+}
+
+export async function runRemesh3dModel(payload: Remesh3dModelPayload) {
+  const { assetId, meshyTaskId, apiKey } = payload
+
+  logger.info(`Remeshing 3D model for asset ${assetId}, original task: ${meshyTaskId}`)
+
+  await metadata.set(RemeshMetadataKey.Progress, 0)
+  await metadata.set(RemeshMetadataKey.MeshyTaskId, meshyTaskId)
+
+  const storedRemeshId = readRowString(
+    recordFromJson(metadata.current()),
+    RemeshMetadataKey.RemeshTaskId,
+  )
+  let remeshTaskId = storedRemeshId
+  if (!remeshTaskId) {
+    const remeshBody = buildRemeshBody(payload)
+    logger.info('Creating remesh task', { remeshBody })
+    remeshTaskId = await createRemeshTask(apiKey, remeshBody)
+    logger.info(`Meshy remesh task created: ${remeshTaskId}`)
+    await metadata.set(RemeshMetadataKey.RemeshTaskId, remeshTaskId)
+  }
+
+  const result = await pollRemeshUntilDone(apiKey, remeshTaskId)
+  logger.info('Meshy remesh SUCCEEDED - returning result immediately', { result })
+
+  await persistRemeshResult(assetId, remeshTaskId, result)
+
+  return {
+    success: true,
+    modelUrl: result.modelUrls?.glb,
+    result,
   }
 }
 
@@ -138,32 +178,7 @@ export const remesh3DModelTask = defineOwnedTask({
   queue: JobQueue.Meshy,
   maxDuration: 1800, // 30 minutes
   retry: {
-    maxAttempts: 1, // Don't retry - costs money
+    maxAttempts: 3,
   },
-  run: async payload => {
-    const { assetId, meshyTaskId, apiKey } = payload
-
-    logger.info(`Remeshing 3D model for asset ${assetId}, original task: ${meshyTaskId}`)
-
-    await metadata.set('progress', 0)
-    await metadata.set('meshy_task_id', meshyTaskId)
-
-    const remeshBody = buildRemeshBody(payload)
-    logger.info('Creating remesh task', { remeshBody })
-
-    const remeshTaskId = await createRemeshTask(apiKey, remeshBody)
-    logger.info(`Meshy remesh task created: ${remeshTaskId}`)
-    await metadata.set('remesh_task_id', remeshTaskId)
-
-    const result = await pollRemeshUntilDone(apiKey, remeshTaskId)
-    logger.info('Meshy remesh SUCCEEDED - returning result immediately', { result })
-
-    await persistRemeshResult(assetId, remeshTaskId, result)
-
-    return {
-      success: true,
-      modelUrl: result.modelUrls?.glb,
-      result,
-    }
-  },
+  run: runRemesh3dModel,
 })

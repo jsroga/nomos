@@ -45,6 +45,7 @@ export interface GenerateSelectedMjImageInput {
   aspectRatio: string
   task: string
   variantInstruction: string
+  projectId: string
 }
 
 function midjourneyRequestPayload(fullPrompt: string, aspectRatio: string): Record<string, unknown> {
@@ -170,6 +171,7 @@ export async function generateSelectedMjImage(
     imageUrl: gridUrl,
     subject,
     instruction: variantInstruction,
+    projectId: input.projectId,
   })
   await metadata.set(GeneratePortraitMetadataKey.VariantIndex, variantIndex)
   logger.info(GeneratePortraitLog.VariantPicked, { variantIndex, gridUrl })
@@ -188,6 +190,7 @@ export async function generateSelectedMjImage(
 export async function generateSelectedPortraitImage(
   prompt: string,
   apiKey: string,
+  projectId: string,
 ): Promise<GeneratedSelectedMjImage> {
   return generateSelectedMjImage({
     prompt: buildPortraitMidjourneyPrompt(prompt),
@@ -196,5 +199,6 @@ export async function generateSelectedPortraitImage(
     aspectRatio: ApiframeGenerateAspectRatio.Square,
     task: PORTRAIT_LLM_TASK,
     variantInstruction: PortraitVariantCopy.Instruction,
+    projectId,
   })
 }

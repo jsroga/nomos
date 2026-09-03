@@ -14,6 +14,8 @@ import { EntityGraphLog } from '@/domains/storyteller/services/constants/entity-
 import { SqlResultColumn } from '@/shared/data/constants/protocol'
 import { readRowNumber, sqlResultRows } from '@/shared/data/json-guards'
 import type { ProjectScope } from '@/shared/auth/project-scope'
+import { embed } from '@/shared/ai/gateway'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { EntityReference, EntityType } from './entity-registry-service'
 import {
   conciseErrorMessage,
@@ -115,10 +117,11 @@ class EntityGraphService {
     const opts = { ...DEFAULT_GRAPH_RAG_OPTIONS, ...options }
 
     try {
-      const { getVoyageEmbeddings } =
-        await import('@/shared/ai/embeddings/voyage-embeddings')
-      const embeddings = getVoyageEmbeddings()
-      const queryEmbedding = await embeddings.embedQuery(query)
+      const [queryEmbedding] = await embed({
+        scope,
+        feature: LlmFeature.RagEmbedding,
+        texts: [query],
+      })
 
       if (!queryEmbedding || queryEmbedding.length === 0) {
         console.warn(EntityGraphLog.InvalidQueryEmbedding)

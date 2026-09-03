@@ -150,12 +150,14 @@ This check exists **twice**, and neither implementation uses the table designed 
 
 The second is close to the `Finding` shape already, which is a good sign for §3's premise.
 
-**The finding here is schema duplication.** `src/db/schema-parts/core-tables.ts` declares a
-`setups` table with `setupBeatId`, `payoffBeatId` and `isResolved` — and **nothing queries it**. It
-is dead schema sitting beside a live jsonb representation of the same concept. Two
-representations of one idea, one unused, is how the two drift and how a check silently starts
-reading the wrong one. Pick the relational table, migrate the jsonb into it, and delete the loser;
-`isResolved` plus a payoff window is strictly more queryable than a jsonb pair.
+**The finding here is schema overlap, not a free delete.** `src/db/schema-parts/core-tables.ts`
+declares a `setups` table with `setupBeatId`, `payoffBeatId` and `isResolved` — and **nothing
+queries it**. Plant/payoff also lives on `beats.setupsPayoffs` jsonb. That jsonb is **also**
+where `packSetupsPayoffs` stores Law of Motion (`actionTaken`, `consequence`,
+`storyStateChange`). Two plant representations can drift; deleting the jsonb in Phase 1 would
+break persist. Phase 1: dual-write plants into the table, linter reads table then jsonb,
+**keep** the jsonb until action fields have their own home. `isResolved` plus a payoff window
+is then the queryable plant store; the jsonb remains the action packing until that extract.
 
 ### 3.4 Object and identity consistency — no model
 
@@ -550,6 +552,7 @@ What follows from it:
 | **Backend-only work leads** | Anything that changes canon assembly, workflow stages, tools, critics or model pins verifies through Tiers 0–3 as they stand |
 | **UI-dependent work defers** | The editorial-verdict card, per-finding selection, undo and in-tool progress have no acceptance path without a browser tier, so they wait rather than shipping unverified |
 | **The gap is named, not hidden** | Deferred UI is listed as unverified work with the test that would cover it, per the project's verification rule |
+| **Phase 3 Draft tab** | When that surface ships, Playwright on generate-next, regenerate-section, and Script/Novel mode switch is the acceptance path (`target-architecture.md` §7.5). Not a Phase 0–2 gate |
 
 The ordering also happens to be the honest one: a verdict card is only worth building once the
 pipeline behind it is proven to dispatch what it claims, which is §4's job.

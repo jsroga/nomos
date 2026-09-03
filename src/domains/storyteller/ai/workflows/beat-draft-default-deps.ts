@@ -21,7 +21,9 @@ import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/ai/tools/be
 import { readWorldBibleTool } from '@/domains/storyteller/ai/tools/bible-tools'
 import { listEpisodesTool } from '@/domains/storyteller/ai/tools/episode-tools'
 import {
+  formatRoadmapList,
   formatRoadmapSlotBrief,
+  resolveRoadmapList,
   resolveRoadmapSlot,
 } from '@/domains/storyteller/core/utils/roadmap-slot'
 import { statelessGrrmAuthor, statelessBeatPlanner } from './stateless-agents'
@@ -33,7 +35,6 @@ import {
   BEAT_DRAFT_CHARACTERS_JOIN,
   BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
   BEAT_DRAFT_NO_FINDINGS,
-  BeatDraftCanonHeading,
   BeatDraftCriticName,
   BeatDraftStructuredOutputErrorStrategy,
   BeatDraftToolChoice,
@@ -41,8 +42,72 @@ import {
 } from './constants/beat-draft-workflow'
 import { ManageToolOperation } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { ManageBeatOutputSchema } from '@/domains/storyteller/ai/tools/beat-tools-schema'
-import { nextBeatSequence } from '@/domains/storyteller/core/io/beat-sequence'
+import { nextBeatSequence, nextSequenceAfter } from '@/domains/storyteller/core/io/beat-sequence'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
+import { runSyncProseCheck, sortFindings } from '@/domains/storyteller/core/prose-check/run-sync'
+import { setupsFindingsFromRows } from '@/domains/storyteller/core/prose-check/setups-rows'
+import { upsertSetupsFromBeat, listSetupRowsForProject } from '@/domains/storyteller/core/io/setups-write'
+import type { BeatDraftCanon } from '@/domains/storyteller/core/types/beat-draft-canon'
 import type { BeatDraftDeps } from './beat-draft-deps-types'
+
+type WorldBibleCanonFields = {
+  worldDescription?: unknown
+  worldRules?: unknown
+  factions?: unknown
+  inspirations?: unknown
+  plotTwists?: unknown
+  episodeRoadmap?: unknown
+  soundtracks?: unknown
+  items?: unknown
+  events?: unknown
+}
+
+const OPTIONAL_BIBLE_SECTIONS: ReadonlyArray<{
+  read: (bible: WorldBibleCanonFields) => unknown
+  section: BibleSection
+}> = [
+  { read: bible => bible.worldRules, section: BibleSection.WORLD_RULES },
+  { read: bible => bible.factions, section: BibleSection.FACTIONS },
+  { read: bible => bible.inspirations, section: BibleSection.INSPIRATIONS },
+  { read: bible => bible.plotTwists, section: BibleSection.PLOT_TWISTS },
+  { read: bible => bible.episodeRoadmap, section: BibleSection.EPISODE_ROADMAP },
+  { read: bible => bible.soundtracks, section: BibleSection.SOUNDTRACKS },
+  { read: bible => bible.items, section: BibleSection.ITEMS },
+  { read: bible => bible.events, section: BibleSection.EVENTS },
+]
+
+function sectionsFromWorldBible(
+  bibleValue: WorldBibleCanonFields | undefined
+): Record<string, unknown> {
+  const sections: Record<string, unknown> = {}
+  if (typeof bibleValue?.worldDescription === 'string') {
+    sections[BibleSection.WORLD_DESCRIPTION] = bibleValue.worldDescription
+  }
+  if (!bibleValue) return sections
+  for (const entry of OPTIONAL_BIBLE_SECTIONS) {
+    const value = entry.read(bibleValue)
+    if (value) sections[entry.section] = value
+  }
+  return sections
+}
+
+function canonBeatsFromListed(
+  listedBeats: Array<{
+    id: string
+    sequence: number
+    content?: string | null
+    causalDependencies?: string[]
+    beatType?: string | null
+  }>
+): BeatDraftCanon['beats'] {
+  return listedBeats.map(beat => ({
+    id: beat.id,
+    sequence: beat.sequence,
+    content: beat.content ?? null,
+    causalDependencies: beat.causalDependencies ?? [],
+    beatType: beat.beatType ?? null,
+  }))
+}
 
 function truncateForAuthor(text: string, budget: number): string {
   if (text.length <= budget) return text
@@ -63,14 +128,15 @@ function extractAuthorScript(text: string): string {
   return withoutThinking.length > 0 ? withoutThinking : text.trim()
 }
 
-async function generateAuthorDraft(prompt: string): Promise<string> {
+export async function generateAuthorDraft(prompt: string): Promise<string> {
   const hardened = `${prompt}
 
 Respond with the script beat only. No thinking tags, no markdown fences, no preamble.`
 
   let lastText = ''
   for (let attempt = 0; attempt < 1; attempt++) {
-    const response = await Promise.race([
+    const response = await meteredCall(LlmFeature.StorytellerBeatDraft, () =>
+      Promise.race([
       statelessGrrmAuthor.generate(hardened, {
         toolChoice: BeatDraftToolChoice.None,
         maxSteps: 1,
@@ -84,7 +150,8 @@ Respond with the script beat only. No thinking tags, no markdown fences, no prea
           )
         }, BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS)
       }),
-    ])
+    ]),
+    )
     lastText = response.text
     const script = extractAuthorScript(lastText)
     if (script.length > 0) return script
@@ -144,7 +211,7 @@ export const defaultBeatDraftDeps: BeatDraftDeps = {
     })
     const beats = await invokeTool(listBeatsTool, {
       episodeId: ctx.episodeId,
-      includeContent: false,
+      includeContent: true,
     })
     const listed = await invokeTool(listEpisodesTool, { projectId: ctx.projectId })
     const listedValue = listed ?? undefined
@@ -154,11 +221,24 @@ export const defaultBeatDraftDeps: BeatDraftDeps = {
       current === undefined
         ? undefined
         : resolveRoadmapSlot({ episodeRoadmap: bibleValue?.episodeRoadmap }, current.sequence)
-    const slotBlock =
-      current === undefined
-        ? ''
-        : `\n\n${BeatDraftCanonHeading.RoadmapSlot}\n${formatRoadmapSlotBrief(slot, current.sequence)}`
-    return `WORLD BIBLE (canon — do not contradict):\n${JSON.stringify(bible, null, 2)}\n\nEXISTING BEATS:\n${JSON.stringify(beats, null, 2)}${slotBlock}`
+    const slots = resolveRoadmapList({ episodeRoadmap: bibleValue?.episodeRoadmap })
+    const others =
+      current === undefined ? slots : slots.filter((_, index) => index !== current.sequence - 1)
+    const listedBeats = beats?.beats ?? []
+    const maxSequence = listedBeats.reduce(
+      (max, beat) => (beat.sequence > max ? beat.sequence : max),
+      0
+    )
+    return {
+      projectId: ctx.projectId,
+      episodeId: ctx.episodeId,
+      sections: sectionsFromWorldBible(bibleValue),
+      beats: canonBeatsFromListed(listedBeats),
+      currentRoadmapSlotText:
+        current === undefined ? '' : formatRoadmapSlotBrief(slot, current.sequence),
+      otherRoadmapSlotsText: formatRoadmapList(others),
+      nextSequence: nextSequenceAfter(maxSequence),
+    }
   },
 
   planBeat: async (ctx, canon, retryFeedback, sparksBlock) => {
@@ -189,7 +269,13 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
     return plan.data
   },
 
-  draftBeat: async (ctx, canon, plan) => {
+  draftBeat: async (ctx, canon, plan, lintFeedback) => {
+    const lintBlock = lintFeedback
+      ? `
+
+LINT FEEDBACK — fix these errors:
+${lintFeedback}`
+      : ''
     const prompt = `${truncateCanonForAuthor(canon)}
 
 Generate a script-format story beat for episode ${ctx.episodeId}.
@@ -202,9 +288,16 @@ Follow the Script Beat Format (§ GrrmSystemPrompt):
 - Dialogue blocks with subtext notes
 - Ensure Law of Motion fields: actionTaken, consequence, storyStateChange
 
-Output ONLY the script beat — no preamble, no notes.`
+Output ONLY the script beat — no preamble, no notes.${lintBlock}`
 
     return generateAuthorDraft(prompt)
+  },
+
+  runProseCheck: async ({ draft, ctx, canon }) => {
+    const sync = runSyncProseCheck({ draft, canon, characters: ctx.characters })
+    const rows = await listSetupRowsForProject(ctx.projectId)
+    const episodeBeatIds = new Set(canon.beats.map(beat => beat.id))
+    return sortFindings([...sync, ...setupsFindingsFromRows(rows, episodeBeatIds)])
   },
 
   critiqueContinuity: async (draft, canon) => {
@@ -275,6 +368,14 @@ Output the REVISED beat in full, in Script Beat Format. Script only — no pream
     }
     if (parsed.data.success !== true) {
       throw new Error(parsed.data.error ?? parsed.data.message ?? BEAT_DRAFT_MANAGE_BEAT_COMPLETED)
+    }
+    if (parsed.data.beat?.id) {
+      await upsertSetupsFromBeat({
+        projectId: ctx.projectId,
+        beatId: parsed.data.beat.id,
+        setupId: plan.setupPayoff?.setupFor,
+        payoffFor: plan.setupPayoff?.payoffFrom,
+      })
     }
     return {
       saved: true,

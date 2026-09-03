@@ -52,7 +52,7 @@ accepts the note. Four small edits to wired code finish it — the largest being
 `resumeChatWorkflow` is defined and never called, so an answered verdict currently goes nowhere.
 That path is API-level, so the **live tier** (`*.e2e.test.ts`) covers it without a browser.
 Action 30 splits precisely on this line: wiring and trace events land now, rendered pixels wait.
-Settled behaviour is `target-architecture.md` §8.4.
+Settled chat behaviour is `target-architecture.md` §7.4. Draft-tab pixels are §7.5 (Phase 3).
 
 | # | Action | Track | Priority | In plain words |
 |---|---|---|---|---|
@@ -709,7 +709,7 @@ Open the one chapter the job needs. That library is
 
 ## 16. Three workflows: beat-draft, artifact-draft, fix-inconsistencies
 
-**Track:** B · **Priority:** P1 · **Dependencies:** 2, 3, 9, 11, 13, 14, 19 · **Phase:** 0–1 keep beat-draft; 3 add artifact-draft
+**Track:** B · **Priority:** P1 · **Dependencies:** 2, 3, 9, 11, 13, 14, 19 · **Phase:** 0–1 keep beat-draft; 3 Draft manuscript + artifact-draft
 
 **WHAT.** Three Mastra workflows. Same **shape**, different **budget**. Names match the code.
 
@@ -725,6 +725,23 @@ Open the one chapter the job needs. That library is
 `autonomousAuthor` is Phase 4, flagged off until verdicts can queue. Do not add
 `continuity-sweep` or `autonomous-episode` as extra “showable” machines.
 
+**Draft tab (Phase 3, same action).** The heavy workflow is how a *section* of the manuscript
+is compiled. The page is the existing `Phase.WRITING` / `ScriptEditor` tab, not a new chat.
+See `target-architecture.md` §7.5. Premise → Beats → Draft is already the navigator. Cork
+Board does not draft scripts. Empty beat board cannot Draft.
+
+- Modes: **Script** (studio/TV format a human screenwriter uses) and **Novel** (chapter prose).
+  Format is an Author skill, not a fourth agent. `masterPrompt` still owns register.
+- Chrome: Medium well (centered column). Cursor ghost-text at the caret (Tab accept, Esc
+  dismiss). **Regenerate this section** and **Generate next** run the heavy workflow on a
+  bounded span. Selection Expand / Condense / Rewrite stays.
+- Context packed by the host: partitioned bible + episode premise + beat cards. Writer does
+  not paste those in.
+- `POST /api/storyteller/script/edit` is a cost hole today (overview §5.6): gateway + project
+  scope before this surface spends more.
+
+Ghost complete is not Approve. Section generate still suspends for the human verdict.
+
 **HOW.** `createWorkflow` / `createStep`, `.parallel()`, `.dountil()` with a no-progress
 exit and **max one auto-revise** (InkOS). Voice in the drafting prompt (`masterPrompt`);
 de-slop is a second Author pass after the verdict. Intermediate state in step outputs.
@@ -736,7 +753,10 @@ keep fix-inconsistencies). Do not turn AutonomousAuthor on.
 **Acceptance.** Trace shows deterministic checks before model critics, Humanizer after the
 last revision and before persist, **three** overlapping scopes, loop exit on unchanged
 findings or after one auto-revise, `kill` persists nothing. Artifact traces show **1–2**
-critic dispatches, not three. Autonomous stays off.
+critic dispatches, not three. Autonomous stays off. Draft tab: Generate next on an episode
+with bible + premise + beats writes formatted prose into `scriptContent` without the writer
+pasting context; ghost-text does not dispatch the three critics; Script mode parses as
+studio format; Novel mode does not emit sluglines unless typed.
 
 **What is there to learn.** *Put the plan in code.* Cheap deterministic checks before
 expensive probabilistic ones. Every loop needs a no-progress exit. *Working with AI:* when an
@@ -745,6 +765,8 @@ assistant proposes an autonomous multi-step agent, ask which steps are actually 
 **In plain words.** Three machines: the chapter compiler that writes, gets checked, waits
 for your stamp, then scrubs robot tells; a cheaper line for bible and characters; and the
 episode sweep you already have. Overnight autonomy waits until the stamp pile can queue.
+The Draft tab is the page those chapter pages land on — Premise, then Beats, then a quiet
+editor that can continue or redo a section in TV-script or novel form.
 
 ---
 
@@ -1320,10 +1342,13 @@ an edit helped.
 
 **Track:** B · **Priority:** P2 · **Dependencies:** 3, 26
 
-**WHAT.** Everything surfaces **inside the existing chat component**, in the pattern
+**WHAT.** Chat-loop chrome stays **inside the existing chat component**, in the pattern
 `AssistantToolFallback` already ships: a short status line always, structured detail only behind
-the debug toggle (`AssistantChatDetailsContext.showDetails`). No new panel, no new dialog. Settled
-behaviour is `target-architecture.md` §8.4.
+the debug toggle (`AssistantChatDetailsContext.showDetails`). No extra verdict dialog. Settled
+chat behaviour is `target-architecture.md` §7.4.
+
+The **Draft tab** is a different surface (`target-architecture.md` §7.5): Medium well, ghost
+complete, Script / Novel. That is Phase 3 pixels, not a second chat and not a Voice tab.
 
 **The verdict is already three-quarters wired**, which earlier drafts of this document got wrong
 by calling it a missing component. `emitVerdictGateIfSuspended` emits Approve / Revise / Kill over
@@ -1566,6 +1591,7 @@ rediscovered as a surprise later.
 | Per-finding accept / reject | A browser tier exists to assert the selection actually filters the patch |
 | Undo on a committed section | Snapshot restore is cheaper to build than to keep explaining |
 | Playwright specs for the chat surface | The wiring in Action 30 is landed and the pixels stop moving |
+| Playwright specs for the Draft tab | Generate next, regenerate section, Script/Novel mode switch (`target-architecture.md` §7.5) |
 | Token-level streaming of the author step | Action 28 shows the wall-clock is fine but the wait still feels dead |
 | Structured dialogue persistence | Action 32's extractor proves parsing free prose is the fragile part |
 | A voice **judge** rubric | The deterministic metric in Action 32 flags convergence the judge would need to explain |

@@ -8,192 +8,29 @@ const prettier = require('eslint-config-prettier')
 const unusedImports = require('eslint-plugin-unused-imports')
 const localRules = require('./eslint-rules')
 const providerSdkExemptions = require('./eslint-rules/provider-sdk-exemptions')
+const {
+  DOMAIN_MODULES,
+  PROVIDER_SDK_RESTRICTED_PATHS,
+  barrelGuard,
+  composeRestrictedImports,
+  crossDomain,
+  domainRemainderConfigs,
+  edgeRuntime,
+  legacyRoot,
+  projectAccess,
+  providerSdk,
+  sharedNoDomains,
+} = require('./eslint-rules/restricted-imports-policy.cjs')
 const codeMetricsLimits = require('./scripts/code-metrics-limits.cjs')
 
 const strictTypeScriptRules = typescript.configs.strict.rules
-
-const DOMAIN_MODULES = [
-  'storyteller',
-  // chat moved to src/shared/chat (PLAN-V2 3.1 — platform, not a domain)
-  '3d-canvas',
-  'loop-creator',
-  'marketing',
-  // deduction-puzzle-designer deleted (user-confirmed, PLAN-V2 6.2)
-  '3d-asset-exporter',
-  'game-design',
-  '2d-canvas',
-]
-
-const DOMAIN_BARREL_GUARD_PATTERNS = [
-  {
-    group: ['@/domains/storyteller/*', '!@/domains/storyteller/core/io/*'],
-    message:
-      'Import from "@/domains/storyteller" instead of storyteller internals. Only core/io/ is allowed for deep imports.',
-  },
-  {
-    group: ['@/domains/3d-canvas/*', '!@/domains/3d-canvas/core/io/*'],
-    message:
-      'Import from "@/domains/3d-canvas" instead of 3d-canvas internals. Only core/io/ is allowed for deep imports.',
-  },
-  {
-    group: ['@/domains/2d-canvas/*', '!@/domains/2d-canvas/core/io/*'],
-    message:
-      'Import from "@/domains/2d-canvas" instead of 2d-canvas internals. Only core/io/ is allowed for deep imports.',
-  },
-  {
-    // chat lives in src/shared/chat now (PLAN-V2 3.1); the old path must not come back
-    group: ['@/domains/chat', '@/domains/chat/*'],
-    message: 'chat moved to @/shared/chat (platform module) — import from there.',
-  },
-  {
-    group: ['@/domains/loop-creator/*'],
-    message: 'Import from "@/domains/loop-creator" instead of loop-creator internals.',
-  },
-  {
-    group: ['@/domains/marketing/*'],
-    message: 'Import from "@/domains/marketing" instead of marketing internals.',
-  },
-  {
-    group: ['@/domains/3d-asset-exporter/*'],
-    message: 'Import from "@/domains/3d-asset-exporter" instead of 3d-asset-exporter internals.',
-  },
-  {
-    group: ['@/domains/game-design/*'],
-    message: 'Import from "@/domains/game-design" instead of game-design internals.',
-  },
-]
-
-const DOMAIN_LEGACY_RESTRICTED_PATTERNS = [
-  {
-    group: ['@/lib/*', '@/lib'],
-    message: 'Import from "@/shared/data" or "@/shared/auth" instead of @/lib.',
-  },
-  {
-    group: ['@/hooks/*', '@/hooks'],
-    message: 'Import from "@/shared/data/queries" or "@/shared/data" instead of root @/hooks.',
-  },
-  {
-    group: ['@/store/*', '@/store'],
-    message: 'Import from "@/shared/auth" or "@/shared/errors" instead of root @/store.',
-  },
-  {
-    group: ['@/services/*', '@/services'],
-    message: 'Import from "@/shared/data" or domain index instead of root @/services.',
-  },
-]
-
-/**
- * Gate A2 — a paid model call goes through `@/shared/ai/gateway`, the only
- * place that knows what it cost.
- *
- * Spread into every `src`-wide restricted-imports block rather than declared in
- * its own. ESLint flat config *replaces* a rule's options when a later config
- * matches the same file, so a standalone block placed before the domain
- * boundaries and the auth zone would be silently dropped for most of `src` —
- * the exact failure mode action 8 calls the flat-config merge bug.
- */
-const PROVIDER_SDK_MESSAGE =
-  'Call models through @/shared/ai/gateway (complete / completeStructured / embed). ' +
-  'A direct provider import is a call nobody can cost. Rule: A2 · SPEC-13.'
-
-/**
- * Exact module names, via `paths` rather than `patterns`.
- *
- * `patterns.group` matches gitignore-style, so a bare `'ai'` matches any path
- * *segment* named `ai` — it flagged 499 files including every
- * `@/shared/ai/**` import. `paths` compares the specifier exactly.
- *
- * From `ai` only the functions that actually spend are banned. The package
- * also exports utilities — `generateId`, `getToolName`, `isToolUIPart` — and
- * the chat UI uses them without ever reaching a provider; banning the whole
- * module called those "a call nobody can cost", which they are not.
- */
-const SPENDING_AI_EXPORTS = [
-  'generateText',
-  'generateObject',
-  'streamText',
-  'streamObject',
-  'embed',
-  'embedMany',
-]
-
-const PROVIDER_SDK_RESTRICTED_PATHS = [
-  { name: 'ai', importNames: SPENDING_AI_EXPORTS, message: PROVIDER_SDK_MESSAGE },
-  { name: 'openai', message: PROVIDER_SDK_MESSAGE },
-  { name: 'replicate', message: PROVIDER_SDK_MESSAGE },
-]
-
-/** Scoped packages genuinely need a glob. */
-const PROVIDER_SDK_RESTRICTED_PATTERNS = [
-  // `@ai-sdk/react` is the client chat hook; it reaches a route, not a provider.
-  { group: ['@ai-sdk/*', '!@ai-sdk/react'], message: PROVIDER_SDK_MESSAGE },
-]
-
-const GLOBAL_LEGACY_RESTRICTED_PATTERNS = [
-  {
-    group: ['@/agent-core/*', '@/agent-core'],
-    message: 'Import from "@/shared/agent-kernel" instead of @/agent-core.',
-  },
-  {
-    group: ['@/infrastructure/*', '@/infrastructure'],
-    message: 'Import from "@/shared/data" or "@/shared/ai" instead of @/infrastructure.',
-  },
-  {
-    group: ['@/prompts/*', '@/prompts'],
-    message: 'Import from "@/shared/agent-kernel/prompts" instead of root @/prompts.',
-  },
-  {
-    group: ['@/lib/*', '@/lib'],
-    message: 'Import from "@/shared/data", "@/shared/auth", or "@/shared/tours" instead of @/lib.',
-  },
-  {
-    group: ['@/types/*', '@/types'],
-    message: 'Import from "@/shared/types" instead of @/types.',
-  },
-  {
-    group: ['@/config/*', '@/config'],
-    message: 'Import from "@/shared/data/constants" instead of @/config.',
-  },
-  {
-    group: ['@/constants/*', '@/constants'],
-    message: 'Import from "@/shared/data/constants" instead of @/constants.',
-  },
-  {
-    group: ['@/workflows/*', '@/workflows'],
-    message: 'Import from domain agents or "@/shared/agent-kernel/workflows" instead of @/workflows.',
-  },
-  {
-    group: ['@/mastra', '@/mastra/index', '@/mastra/index.ts'],
-    message:
-      'Do not import the Studio Mastra entry. Import file-based agents from "@/mastra/agents/<id>/…" or helpers from "@/shared/agent-kernel/mastra".',
-  },
-  {
-    group: ['@/evaluation/*', '@/evaluation'],
-    message: 'Import from "@/evals" (top-level evals/) instead of @/evaluation.',
-  },
-]
-
-function crossDomainImportPatterns(currentDomain) {
-  return DOMAIN_MODULES.filter(domain => domain !== currentDomain).map(other => ({
-    group: [`@/domains/${other}`, `@/domains/${other}/*`],
-    message: `Cross-domain import forbidden: use @/shared instead of @/domains/${other}.`,
-  }))
-}
 
 const domainBoundaryConfigs = DOMAIN_MODULES.map(domain => ({
   files: [`src/domains/${domain}/**/*.{ts,tsx}`],
   rules: {
     'no-restricted-imports': [
       'error',
-      {
-        patterns: [
-          ...DOMAIN_LEGACY_RESTRICTED_PATTERNS,
-          ...GLOBAL_LEGACY_RESTRICTED_PATTERNS,
-          ...PROVIDER_SDK_RESTRICTED_PATTERNS,
-          ...crossDomainImportPatterns(domain),
-        ],
-        paths: PROVIDER_SDK_RESTRICTED_PATHS,
-      },
+      composeRestrictedImports(crossDomain(domain), legacyRoot(), providerSdk(), projectAccess()),
     ],
   },
 }))
@@ -477,12 +314,7 @@ module.exports = [
       'src/domains/**',
     ],
     rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: DOMAIN_BARREL_GUARD_PATTERNS,
-        },
-      ],
+      'no-restricted-imports': ['error', composeRestrictedImports(barrelGuard())],
     },
   },
   // Per-domain boundaries: legacy roots + cross-domain isolation (domains only talk via @/shared)
@@ -494,10 +326,7 @@ module.exports = [
     rules: {
       'no-restricted-imports': [
         'error',
-        {
-          paths: PROVIDER_SDK_RESTRICTED_PATHS,
-          patterns: [...GLOBAL_LEGACY_RESTRICTED_PATTERNS, ...PROVIDER_SDK_RESTRICTED_PATTERNS],
-        },
+        composeRestrictedImports(barrelGuard(), providerSdk(), legacyRoot()),
       ],
     },
   },
@@ -513,26 +342,7 @@ module.exports = [
       'scripts/gate-fixtures/proxy-imports-node-only.ts',
     ],
     rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['@/db', '@/db/*', 'pg', 'postgres', 'drizzle-orm', 'drizzle-orm/*'],
-              message:
-                'Edge runtime: the proxy cannot open a database connection. Do the lookup in the route handler.',
-            },
-            {
-              group: ['node:*', 'fs', 'path', 'crypto', 'child_process'],
-              message: 'Edge runtime: Node builtins are unavailable in the proxy.',
-            },
-            {
-              group: ['@trigger.dev/*', 'openai', '@ai-sdk/*', '@mastra/*', 'replicate', 'sharp'],
-              message: 'Edge runtime: provider and job SDKs are Node-only. Keep the proxy to routing decisions.',
-            },
-          ],
-        },
-      ],
+      'no-restricted-imports': ['error', composeRestrictedImports(edgeRuntime())],
     },
   },
 
@@ -562,22 +372,11 @@ module.exports = [
       'src/**/*.{ts,tsx}',
       'scripts/gate-fixtures/src/services/imports-project-access.ts',
     ],
-    ignores: ['src/shared/auth/**'],
+    ignores: ['src/shared/auth/**', 'src/domains/**'],
     rules: {
       'no-restricted-imports': [
         'error',
-        {
-          paths: PROVIDER_SDK_RESTRICTED_PATHS,
-          patterns: [
-            ...PROVIDER_SDK_RESTRICTED_PATTERNS,
-            {
-              group: ['@/shared/auth/project-access'],
-              message:
-                'Establish project access with projectScope() / tryProjectScope() from ' +
-                '@/shared/auth/project-scope. verifyProjectAccess is internal to shared/auth.',
-            },
-          ],
-        },
+        composeRestrictedImports(barrelGuard(), providerSdk(), legacyRoot(), projectAccess()),
       ],
     },
   },
@@ -588,20 +387,7 @@ module.exports = [
     rules: {
       'no-restricted-imports': [
         'error',
-        {
-          paths: PROVIDER_SDK_RESTRICTED_PATHS,
-          patterns: [
-            ...PROVIDER_SDK_RESTRICTED_PATTERNS,
-            {
-              group: ['@/domains/*', '@/domains'],
-              message: 'shared/ MAY NOT import domains — dependency inversion required.',
-            },
-            {
-              group: ['@/app/*', '@/app'],
-              message: 'shared/ MAY NOT import app routes — dependency inversion required.',
-            },
-          ],
-        },
+        composeRestrictedImports(providerSdk(), sharedNoDomains()),
       ],
     },
   },
@@ -663,21 +449,7 @@ module.exports = [
   {
     files: [...providerSdkExemptions.NEVER_BILLS, ...providerSdkExemptions.SHARED_REMAINDER],
     rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['@/domains/*', '@/domains'],
-              message: 'shared/ MAY NOT import domains — dependency inversion required.',
-            },
-            {
-              group: ['@/app/*', '@/app'],
-              message: 'shared/ MAY NOT import app routes — dependency inversion required.',
-            },
-          ],
-        },
-      ],
+      'no-restricted-imports': ['error', composeRestrictedImports(sharedNoDomains())],
     },
   },
   ...contractsConvertedModules,
@@ -713,20 +485,7 @@ module.exports = [
   },
   // Named remainder of the gateway migration, outside shared/. Each is a real
   // gap rather than a decision, and `providerSdkImportsOutsideGateway` counts
-  // them. The domain patterns are restated so exempting the provider rule does
-  // not open a hole in the boundary rules.
-  {
-    files: providerSdkExemptions.DOMAIN_REMAINDER,
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            ...DOMAIN_LEGACY_RESTRICTED_PATTERNS,
-            ...GLOBAL_LEGACY_RESTRICTED_PATTERNS,
-          ],
-        },
-      ],
-    },
-  },
+  // them. Per-file compose restates legacy + cross-domain so exempting the
+  // provider rule does not open a hole in the boundary rules.
+  ...domainRemainderConfigs(providerSdkExemptions.DOMAIN_REMAINDER),
 ]

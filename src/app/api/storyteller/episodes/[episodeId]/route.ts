@@ -3,16 +3,19 @@ import { db } from '@/db/client'
 import { episodes } from '@/db'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyEpisodeAccess } from '@/domains/storyteller/server'
-import { recordFromJson } from '@/shared/data/json-guards'
-import { omitBibleOwnedPlanFields } from '@/domains/storyteller/core/utils/bible-populated-fields'
-import { storyPlanRecordFromJson } from '@/domains/storyteller/core/entities/story-plan-wire'
-import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { HttpStatus } from '@/shared/data/constants/protocol'
 import {
+  omitBibleOwnedPlanFields,
+  storyPlanRecordFromJson,
+  verifyEpisodeAccess,
   EPISODE_PATCH_ALLOWED_COLUMNS,
   EpisodePatchAlias,
-} from './constants/episode-patch'
+  EpisodePatchRequestKey,
+  episodePatchRequestRecord,
+  episodePatchRequestSchema,
+} from '@/domains/storyteller/server'
+import { recordFromJson } from '@/shared/data/json-guards'
+import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
+import { HttpStatus } from '@/shared/data/constants/protocol'
 
 /**
  * Every method here reads or writes one tenant's episode, so each one
@@ -85,8 +88,13 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ episode
     const denied = await requireEpisodeAccess(episodeId)
     if (denied) return denied
 
-    const body = recordFromJson(await req.json())
-    const { posterUrl, storyboardUrl } = body
+    const parsed = episodePatchRequestSchema.safeParse(await req.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: API_ERROR.INVALID_PAYLOAD }, { status: HttpStatus.BAD_REQUEST })
+    }
+    const body = episodePatchRequestRecord(parsed.data)
+    const posterUrl = body.posterUrl
+    const storyboardUrl = body[EpisodePatchRequestKey.StoryboardUrl]
     const updateData = pickAllowedColumns(body)
 
     // Wire aliases: the client has sent all three spellings historically.

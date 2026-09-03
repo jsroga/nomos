@@ -22,7 +22,7 @@ import {
 } from '@/domains/storyteller/ai/agents/critics'
 import { generateCriticReport } from '@/domains/storyteller/ai/agents/critics/run-critic'
 import type { CriticReport } from '@/domains/storyteller/ai/agents/critics'
-import { ConsistencySeverity } from '@/domains/storyteller/services/constants/consistency-issues'
+import { FindingSeverity } from '@/domains/storyteller/core/types/finding'
 import {
   ReviewPersonaKey,
   ScriptReviewCopy,
@@ -78,10 +78,9 @@ const PERSONA_TO_CRITIC: Record<ReviewPersona, Agent> = {
   [ReviewPersonaKey.DavidLynch]: stakesCritic,
 }
 
-const SEVERITY_PENALTY: Record<CriticReport['findings'][number]['severity'], number> = {
-  critical: 3,
-  major: 1.5,
-  minor: 0.5,
+const SEVERITY_PENALTY: Record<FindingSeverity, number> = {
+  [FindingSeverity.Error]: 3,
+  [FindingSeverity.Warning]: 1,
 }
 
 function clampScore(value: number): number {
@@ -98,12 +97,12 @@ function toPersonaReview(persona: ReviewPersona, report: CriticReport): PersonaR
     persona,
     // Critics diagnose only — no praise, no replacement prose.
     strengths: [],
-    weaknesses: report.findings.map(f => `"${f.quote}" — ${f.why}`),
+    weaknesses: report.findings.map(f => `"${f.location.quote}" — ${f.whyItFails}`),
     suggestions: report.findings
-      .filter(f => f.severity !== ConsistencySeverity.Critical)
-      .map(f => `[${f.severity}] ${f.why}`),
+      .filter(f => f.severity !== FindingSeverity.Error)
+      .map(f => `[${f.severity}] ${f.whyItFails}`),
     score: scoreFromReport(report),
-    quote: report.findings[0]?.quote ?? ScriptReviewCopy.NoFindings,
+    quote: report.findings[0]?.location.quote ?? ScriptReviewCopy.NoFindings,
   }
 }
 
@@ -157,7 +156,7 @@ export async function reviewScript(request: ScriptReviewRequest): Promise<Script
   const criticalFindings: typeof allFindings = []
   const otherFindings: typeof allFindings = []
   for (const f of allFindings) {
-    if (f.severity === ConsistencySeverity.Critical) criticalFindings.push(f)
+    if (f.severity === FindingSeverity.Error) criticalFindings.push(f)
     else otherFindings.push(f)
   }
 
@@ -169,8 +168,8 @@ export async function reviewScript(request: ScriptReviewRequest): Promise<Script
         : `${allFindings.length} finding(s) across three critics — most severe first in each review.`,
     reviews,
     synthesis: {
-      mustFix: criticalFindings.map(f => `"${f.quote}" — ${f.why}`),
-      suggestions: otherFindings.map(f => `[${f.severity}] ${f.why}`),
+      mustFix: criticalFindings.map(f => `"${f.location.quote}" — ${f.whyItFails}`),
+      suggestions: otherFindings.map(f => `[${f.severity}] ${f.whyItFails}`),
       // Critics don't praise; standout detection was judge-era behavior.
       standoutMoments: [],
     },

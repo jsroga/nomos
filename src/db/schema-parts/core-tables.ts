@@ -108,17 +108,21 @@ export const beats = pgTable(
   table => [unique('beats_episode_id_sequence_uidx').on(table.episodeId, table.sequence)]
 )
 
-export const setups = pgTable('setups', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  projectId: uuid('project_id')
-    .references(() => projects.id)
-    .notNull(),
-  setupBeatId: uuid('setup_beat_id').references(() => beats.id),
-  payoffBeatId: uuid('payoff_beat_id').references(() => beats.id),
-  description: text('description').notNull(),
-  isResolved: boolean('is_resolved').default(false),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-})
+export const setups = pgTable(
+  'setups',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .references(() => projects.id)
+      .notNull(),
+    setupBeatId: uuid('setup_beat_id').references(() => beats.id),
+    payoffBeatId: uuid('payoff_beat_id').references(() => beats.id),
+    description: text('description').notNull(),
+    isResolved: boolean('is_resolved').default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  table => [unique('setups_project_description_uidx').on(table.projectId, table.description)]
+)
 
 export const documentEmbeddings = pgTable('document_embeddings', {
   id: uuid('id').defaultRandom().primaryKey(),

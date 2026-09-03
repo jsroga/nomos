@@ -1,4 +1,4 @@
-import { SystemScopeReason, systemScope } from '@/shared/auth/project-scope'
+import { jobContextScope } from '@/shared/auth/project-scope'
 import { logger, metadata } from '@trigger.dev/sdk'
 import { JobQueue, defineOwnedTask } from '@/shared/jobs'
 import {
@@ -38,7 +38,7 @@ async function resolveLockedPosterPrompt(payload: GeneratePosterPayload): Promis
   if (existing) return existing
   return buildLockedEpisodePosterPrompt({
     // Background job: no user, but the payload names the project it bills to.
-    scope: systemScope(payload.projectId, SystemScopeReason.JobContext),
+    scope: jobContextScope(payload.projectId),
     context: {
       worldDesc: payload.worldDesc ?? '',
       overview: payload.overview ?? '',
@@ -80,6 +80,7 @@ export const generatePoster = defineOwnedTask({
       aspectRatio: ApiframeGenerateAspectRatio.PortraitTwoThree,
       task: POSTER_LLM_TASK,
       variantInstruction: EpisodePosterVariantCopy.Instruction,
+      projectId,
     })
 
     await setPosterStage(GeneratePosterProgress.Downloading, GeneratePosterStage.Downloading)

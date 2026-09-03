@@ -88,5 +88,10 @@ export function systemScope(projectId: string, reason: SystemScopeReason): Proje
   return brand(projectId, SYSTEM_USER_ID)
 }
 
+/** Trigger / background work billed to a project with no interactive user. */
+export function jobContextScope(projectId: string): ProjectScope {
+  return systemScope(projectId, SystemScopeReason.JobContext)
+}
+
 /** Sentinel owner for system-initiated work; never a real user. */
 export const SYSTEM_USER_ID = 'system'

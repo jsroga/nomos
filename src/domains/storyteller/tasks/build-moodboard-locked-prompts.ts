@@ -1,13 +1,12 @@
 import {
-  SystemScopeReason,
-  systemScope,
+  jobContextScope,
   type ProjectScope,
 } from '@/shared/auth/project-scope'
-import { createVisualSubjectClient } from '@/domains/storyteller/tasks/constants/visual-subject-client'
 import { stringArrayFromJson } from '@/shared/data/json-guards'
 import { firstMoodboardStyleRefUrl } from '@/domains/storyteller/core/moodboard-style-ref'
 import {
   generateVisualSubjects,
+  isVisualSubjectConfigured,
   type GenerateVisualSubjectInput,
 } from '@/domains/storyteller/services/visual-subject-llm'
 import type { VisualOverviewContext } from '@/domains/storyteller/services/visual-overview-context'
@@ -65,7 +64,7 @@ export async function generateMoodboardPrompts(
   context: MoodboardProjectContext,
   promptIndex?: number,
 ): Promise<string[]> {
-  if (!createVisualSubjectClient()) return buildFallbackPrompts(context, promptIndex)
+  if (!isVisualSubjectConfigured()) return buildFallbackPrompts(context, promptIndex)
   return generateVisualSubjects(scope, moodboardSubjectInput(context, promptIndex))
 }
 
@@ -86,7 +85,7 @@ export async function resolveMoodboardPrompts(input: {
   return generateMoodboardPrompts(
     // No user behind a background job; the payload carries the project it bills
     // to, and SPEC-06 made that field required on every task.
-    systemScope(input.projectId, SystemScopeReason.JobContext),
+    jobContextScope(input.projectId),
     {
       worldDesc: input.worldDesc ?? '',
       overview: input.overview ?? '',

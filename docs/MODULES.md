@@ -18,7 +18,7 @@ Legacy / niche: `deduction-puzzle-designer` may still exist in docs history; sca
 
 ## Storyteller
 
-Virtual writers’ room on **Mastra v1**: chat SSE, beat-draft workflow (plan → draft → critics → revise + HITL verdict), World Bible, character graph, moodboard/storyboard/poster Trigger tasks. Flagged **AgentController** path: `FF_STORYTELLER_CONTROLLER=true` — see [STORYTELLER.md](./STORYTELLER.md).
+Virtual writers’ room on **Mastra v1**: chat SSE, beat-draft workflow (plan → draft → critics → revise + HITL verdict), World Bible, character graph, moodboard/storyboard/poster Trigger tasks. Episode phases: Premise → Beats (Cork Board) → Draft (`ScriptEditor`; Phase 3 manuscript: Script / Novel, ghost complete, section generate — [STORYTELLER.md](./STORYTELLER.md)). Flagged **AgentController** path: `FF_STORYTELLER_CONTROLLER=true`.
 
 ## Loop Creator
 

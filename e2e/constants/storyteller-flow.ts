@@ -120,6 +120,15 @@ export enum FlowChatRole {
   User = 'user',
 }
 
+/** Matches `CHAT_MODELS` Luna id — Playwright pins this via env + localStorage. */
+export enum FlowChatModel {
+  Luna = 'openai:gpt-5.6-luna',
+}
+
+export enum FlowError {
+  EmptyTurnBeforeAccept = 'Writers Room returned an empty turn before Add to world / Accept',
+}
+
 /** Empty-turn notice scenario: the model returns no text and no tool calls. */
 export enum EmptyTurnScenario {
   TestName = 'shows a notice when the model returns an empty turn',

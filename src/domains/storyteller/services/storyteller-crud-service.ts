@@ -7,6 +7,7 @@ import 'server-only'
  * Used by both REST API and MCP server.
  */
 
+import { memoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
 import { db } from '@/db/client'
 import { characters, projects, episodes, beats } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
@@ -365,7 +366,12 @@ export class StorytellerService {
 
     // Generate thread ID if not provided
     const threadId =
-      validated.threadId || `thread_${Date.now()}_${Math.random().toString(36).slice(2)}`
+      validated.threadId ||
+      memoryRef({
+        projectId: validated.projectId,
+        episodeId: validated.episodeId,
+        userId: context.userId,
+      }).thread
 
     // Get series bible and characters for context
     const { seriesBible } = await this.getSeriesBible(scope)

@@ -133,7 +133,13 @@ Context: ${context}`
       const queries = await this.expandQueries(query, useQueryExpansion)
       const allResults = await this.searchExpandedQueries(scope, queries, documentType, limit, useReranking)
       const uniqueResults = deduplicateSearchResults(allResults)
-      const finalResults = await this.finalizeSearchResults(query, uniqueResults, limit, useReranking)
+      const finalResults = await this.finalizeSearchResults(
+        scope,
+        query,
+        uniqueResults,
+        limit,
+        useReranking,
+      )
       const results = convertSearchResultsToRagResults(finalResults)
 
       semanticCache.set(cacheKey, { results, timestamp: Date.now() })
@@ -247,13 +253,12 @@ Context: ${context}`
     limit: number,
     useReranking: boolean
   ): Promise<SearchResult[]> {
-    const { projectId } = scope
     const fetchLimit = useReranking ? limit * 2 : limit
     const limitedQueries = queries.slice(0, 3)
 
     const searchPromises = limitedQueries.map(q =>
       this.searchEngine.search(
-        projectId,
+        scope,
         q,
         documentType ? { documentTypes: [documentType] } : undefined,
         { topK: fetchLimit }
@@ -265,13 +270,14 @@ Context: ${context}`
   }
 
   private async finalizeSearchResults(
+    scope: ProjectScope,
     query: string,
     uniqueResults: SearchResult[],
     limit: number,
     useReranking: boolean
   ): Promise<SearchResult[]> {
     if (useReranking && uniqueResults.length > limit) {
-      const reranked = await this.reranker.rerank(query, uniqueResults)
+      const reranked = await this.reranker.rerank(scope, query, uniqueResults)
       if (STORYTELLER_CONFIG.debug.logRAGQueries) {
         console.log(`[RAG] Reranked ${uniqueResults.length} -> ${reranked.results.length} results`)
       }

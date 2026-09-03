@@ -15,7 +15,7 @@ export default defineConfig({
     globals: true,
     environment: VitestEnvironment.Node,
     setupFiles: ['dotenv/config'],
-    dangerouslyIgnoreUnhandledErrors: true,
+    dangerouslyIgnoreUnhandledErrors: false,
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
@@ -27,6 +27,8 @@ export default defineConfig({
       '**/openrouter-smoke.test.ts',
       // Live Trigger / provider smokes — run via `npm run test:smoke:tile-providers`
       '**/*.tests.ts',
+      // Intentional unhandled-rejection probe — spawned by unhandled-rejection-gate.test.ts
+      'scripts/gate-fixtures/unhandled-rejection.test.ts',
     ],
     env: {
       DOTENV_CONFIG_PATH: VitestEnvFile.Local,

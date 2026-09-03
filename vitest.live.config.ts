@@ -18,7 +18,7 @@ export default defineConfig({
     globals: true,
     environment: VitestEnvironment.Node,
     setupFiles: ['dotenv/config'],
-    dangerouslyIgnoreUnhandledErrors: true,
+    dangerouslyIgnoreUnhandledErrors: false,
     include: ['src/**/*.e2e.test.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
     testTimeout: LIVE_TEST_TIMEOUT_MS,

@@ -73,7 +73,7 @@ export const generateCombinedStoryboard = defineOwnedTask({
     await metadata.set(CombinedStoryboardMetadataKey.Duration, duration)
     await metadata.set(CombinedStoryboardMetadataKey.Stage, CombinedStoryboardStage.Summarizing)
 
-    const core = await generateStoryboardVideoCorePrompt(imaged, undefined, look, model)
+    const core = await generateStoryboardVideoCorePrompt(imaged, undefined, look, model, projectId)
     const prompt = core.prompt
     await metadata.set(CombinedStoryboardMetadataKey.Prompt, prompt)
     await metadata.set(CombinedStoryboardMetadataKey.CorePromptSource, core.source)
@@ -170,6 +170,7 @@ export const generateCombinedStoryboard = defineOwnedTask({
         beats: imaged,
         duration,
         look,
+        projectId,
       })
       await metadata.set(CombinedStoryboardMetadataKey.VoiceoverSource, voiced.source)
       if (voiced.skip) {

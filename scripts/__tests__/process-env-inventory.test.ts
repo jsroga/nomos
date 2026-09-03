@@ -26,7 +26,7 @@ function serverReads(): string[] {
   const result = inventory((line: string, file: string) =>
     classifyProcessEnvRead(line, file) === ProcessEnvBucket.Server ? ProcessEnvBucket.Server : null
   )
-  return result.byBucket[ProcessEnvBucket.Server] ?? []
+  return result.identitiesByBucket[ProcessEnvBucket.Server] ?? []
 }
 
 describe('process.env reads', () => {

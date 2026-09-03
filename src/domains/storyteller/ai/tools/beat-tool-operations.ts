@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { BeatType, BeatStatus } from '@/domains/storyteller/core/types/enums'
 import { recordFromJson, stringArrayFromJson } from '@/shared/data/deep-merge'
 import type { BeatData } from './beat-tools-schema'
+import { projectIdForEpisode, upsertSetupsFromBeat } from '@/domains/storyteller/core/io/setups-write'
 import {
   BEAT_ACTION_FIELDS_PARTIAL_REQUIRED,
   BEAT_ACTION_FIELDS_REQUIRED,
@@ -183,6 +184,16 @@ export async function createBeatOperation(
 
   const [created] = await db.select().from(beats).where(eq(beats.id, newBeatId))
 
+  const projectId = await projectIdForEpisode(episodeId)
+  if (projectId) {
+    await upsertSetupsFromBeat({
+      projectId,
+      beatId: newBeatId,
+      setupId: data.setupsPayoffs?.setupId,
+      payoffFor: data.setupsPayoffs?.payoffFor,
+    })
+  }
+
   return {
     success: true as const,
     message: `Created beat "${data.logline}" at sequence ${beatSequence}`,
@@ -250,6 +261,18 @@ export async function updateBeatOperation(beatId: string, data: BeatData) {
   const [updated] = await db.select().from(beats).where(eq(beats.id, beatId))
   if (!updated) {
     return { success: false as const, error: `Beat ${beatId} not found` }
+  }
+
+  if (data.setupsPayoffs !== undefined) {
+    const projectId = await projectIdForEpisode(updated.episodeId)
+    if (projectId) {
+      await upsertSetupsFromBeat({
+        projectId,
+        beatId,
+        setupId: data.setupsPayoffs.setupId,
+        payoffFor: data.setupsPayoffs.payoffFor,
+      })
+    }
   }
 
   return {

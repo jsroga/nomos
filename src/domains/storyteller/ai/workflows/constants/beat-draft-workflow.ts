@@ -5,6 +5,7 @@ import { CHAT_AUTHOR_GENERATE_TIMEOUT_MS } from '@/shared/chat/core/constants/ch
 export enum BeatDraftStepId {
   PlanBeat = 'plan-beat',
   DraftScript = 'draft-script',
+  ProseCheck = 'prose-check',
   Critique = 'critique',
   Revise = 'revise',
 }
@@ -13,6 +14,20 @@ export enum BeatDraftCriticName {
   Continuity = 'Continuity',
   Prose = 'Prose',
   Stakes = 'Stakes',
+}
+
+export enum BeatDraftLintReportName {
+  ProseCheck = 'ProseCheck',
+}
+
+export const BEAT_DRAFT_CRITIC_ROLES = [
+  BeatDraftCriticName.Continuity,
+  BeatDraftCriticName.Prose,
+  BeatDraftCriticName.Stakes,
+] as const
+
+export enum LintRedraftMax {
+  Value = 1,
 }
 
 export enum BeatDraftToolChoice {

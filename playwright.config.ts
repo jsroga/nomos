@@ -31,7 +31,7 @@ const DEVICE_DESKTOP_CHROME = 'Desktop Chrome'
 const DEV_SERVER_PORT = 3001
 const LOCAL_BASE_URL = `http://localhost:${DEV_SERVER_PORT}`
 const BUILD_COMMAND = 'npx next build'
-const START_COMMAND = `NODE_OPTIONS=--max-old-space-size=8192 npm run start -- -p ${DEV_SERVER_PORT}`
+const START_COMMAND = `DATABASE_SSL_REJECT_UNAUTHORIZED=false NODE_OPTIONS=--max-old-space-size=8192 npm run start -- -p ${DEV_SERVER_PORT}`
 const DEV_SERVER_COMMAND = `${BUILD_COMMAND} && ${START_COMMAND}`
 
 enum LoopbackHost {

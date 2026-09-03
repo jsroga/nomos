@@ -30,6 +30,7 @@ import {
   RUN_BEAT_DRAFT_SAVED_SUFFIX,
   RUN_BEAT_DRAFT_TOOL_DESCRIPTION,
   RUN_BEAT_DRAFT_VERDICT_DEFAULT_REASON,
+  RUN_BEAT_DRAFT_WILDCARDS_DESC,
 } from '@/domains/storyteller/ai/constants/workflow-tool'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
@@ -42,6 +43,7 @@ const RunBeatDraftInputSchema = z.object({
     .describe('What this beat must accomplish: goal, POV, plants/payoffs, constraints'),
   characters: z.array(z.string()).optional().describe(RUN_BEAT_DRAFT_CHARACTERS_DESC),
   autoApprove: z.boolean().optional().describe(RUN_BEAT_DRAFT_AUTO_APPROVE_DESC),
+  wildcards: z.boolean().optional().describe(RUN_BEAT_DRAFT_WILDCARDS_DESC),
 })
 
 const RunBeatDraftOutputSchema = z.object({
@@ -106,6 +108,7 @@ export const runBeatDraftWorkflowTool = createTool({
           brief: inputData.brief,
           characters: inputData.characters ?? [],
           autoApprove: inputData.autoApprove ?? false,
+          wildcards: inputData.wildcards,
         },
       })
 

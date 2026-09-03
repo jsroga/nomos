@@ -38,6 +38,7 @@ sets the floor to what already runs plus host-owned truth:
 | Skills | 10 + 3 | Catalog L1 always; L2 on match. `psychology` at Planner. Humanizer always-on class at de-slop. `anti-slop` until ablation wins |
 | Canon | 4 layers | Prompt **partition** first. Tables/ledger only if the partition fails |
 | Voice UI | 0 new | Existing sidebar MASTER PROMPT + episode prompt |
+| Draft surface | 1 tab | Existing PhaseNavigator **Draft** (`Phase.WRITING`). Medium well + Cursor ghost-text. Modes: Script / Novel |
 
 **Cut.** Action 10 as `read / draft / commit` with `commit_beat` in the model’s tools. Host
 persists after Approve. Kill emits zero persist.
@@ -60,8 +61,11 @@ The compile **unit** is the beat transaction: draft + critiques + trace + cost +
 decision). InkOS’s chapter workspace is this idea: body + foreshadowing + runtime snapshot,
 then one atomic commit. A run that reports success with `{ saved: false }` is not a compiler.
 
-The `setups` table already exists and nothing queries it. Live data in `setupsPayoffs` jsonb is
-the duplicate to delete.
+The `setups` table already exists and nothing queries it. Live plant/payoff data sits in
+`beats.setupsPayoffs` jsonb — **and that jsonb also packs Law of Motion fields**
+(`actionTaken`, `consequence`, `storyStateChange`). Phase 1 dual-writes plants into
+`setups` and leaves the jsonb in place. Deleting the jsonb is a later extract, after
+action fields have their own column or table.
 
 ### 1.2 The floor is chosen; everything above it earns its place
 
@@ -79,13 +83,17 @@ drops by more than the noise floor. Evaluation (`evaluation.md`) is how that rul
 
 ```
 Writer
-  └─ storyteller (chat)
-        ├─ tools: bible / characters / episodes / beats / brainstorm / run workflows
+  ├─ storyteller (chat) — bible, premise, beats, verdict
+  └─ Draft tab — manuscript (Script | Novel)
+        ghost complete · regenerate this section · generate next
+        │
         └─ workflows (code owns persist)
-              ├─ beat-draft-workflow     heavy
+              ├─ beat-draft-workflow     heavy (section generate)
               ├─ artifact-draft          light (character, bible section, premise)
               └─ fix-inconsistencies     sweep
 ```
+
+**Writer journey (already in the navigator).** Premise (Ozymandias + 10-point) → Beats (Cork Board text cards) → Draft (manuscript). Cork Board must not draft scripts (`CORK_BOARD_GENERATE_BEATS_PROMPT` already forbids `run_beat_draft_workflow`). Draft is where bible + premise + beats become pages.
 
 **Permission.** Plan-mode withholds mutating *chat* tools (existing `AgentController`). The
 compiler does not expose `commit_beat` to the model. After human Approve, **code** writes.
@@ -279,7 +287,7 @@ Do not rebuild as five beat critics. **No Humanizer** (it patches facts).
 
 ### 7.4 Chat surface
 
-Existing chat. No new panel.
+Existing Writers Room chat. No second chat. Verdict stays on the `questions` frame.
 
 | Decision | Behaviour |
 |---|---|
@@ -288,7 +296,46 @@ Existing chat. No new panel.
 | **Revise note** | Inline text on Revise |
 | **Timeout** | None. Drop `timeout: 120` and `defaultOption: 'approve'` |
 | **Critiques** | Debug toggle only |
-| **Voice** | Existing MASTER PROMPT / EPISODE PROMPT. No extra UI |
+| **Voice** | Existing MASTER PROMPT / EPISODE PROMPT. No extra Voice tab |
+
+The **Draft tab** is the manuscript, not a chat panel. Specified next.
+
+### 7.5 Manuscript surface — Premise → Beats → Draft
+
+The PhaseNavigator already names three steps: **Premise**, **Beats**, **Draft** (`Phase.PREMISE` → `BREAKING` → `WRITING`). Draft unlocks when the beat board has at least one card (`storytellerAdvanceablePhase`). That is the product. The compiler in §7.1 is how a *section* of the manuscript is produced. It is not a substitute for the page.
+
+**Today.** `StorytellerTab.Script` mounts `ScriptEditor`: a Courier `contentEditable`, placeholder “Start writing your screenplay…”, selection Expand / Condense / Rewrite via `POST /api/storyteller/script/edit`. CSS classes for slugline / character / parenthetical exist and are unused. There is no generate-from-canon, no ghost completion, no “next section,” no Novel mode. Cork Board copy forbids drafting scripts. `episodes.scriptContent` is the persist column. Chat may call `run_beat_draft_workflow`; the Draft tab does not.
+
+**Job of the page.** Type into a quiet well. Ask the Author to continue or redo a bounded section. Keep what you typed. The model proposes; the host writes `scriptContent` on debounce and still only persists a *compiler* beat after Approve.
+
+#### Modes
+
+One episode-level mode, default **Script**. Not a Voice settings UI. `masterPrompt` still owns register; mode owns **page geometry**.
+
+| Mode | Unit | What the Author is taught (non-AI craft, packed as a format skill) |
+|---|---|---|
+| **Script** | Scene (slugline → action → dialogue) | Studio/TV format a human screenwriter already uses: `INT./EXT. LOCATION – DAY/NIGHT`; action in present tense, camera-visible only; CHARACTER CUE in caps; parentheticals rare; dialogue; no markdown headings; ~one page per minute. Fountain/studio layout, not a novel with sluglines glued on. |
+| **Novel** | Scene or chapter (prose paragraphs) | Novel craft: chapter or `***` break, not `CUT TO:`; default past tense unless `masterPrompt` says otherwise; viewpoint owns sensory access; dialogue with attribution beats, not centered CUES; interiority allowed; paragraphs, not dual-dialogue columns. |
+
+Switching mode restyles the well (Courier vs a readable serif, Medium column) and swaps the format skill on the next Author call. It does not rewrite accepted pages unless the writer asks to regenerate.
+
+#### Cursor-style autocomplete
+
+Ghost text at the caret, same habit as the IDE: Tab accepts, Esc dismisses, typing through rejects. Trigger on pause or an explicit Continue. Context for that completion: partitioned bible + this episode’s premise + the beat cards that cover this span + manuscript *before* the caret. Same Author agent as the compiler; format skill from the mode. Ghost insert is not Approve and not a workflow persist.
+
+#### Medium-minimal chrome
+
+Centered reading column (~65–75ch). Novel: serif, generous leading. Script: Courier Prime (already on the tab). Persistent controls: mode toggle, **Generate next**, **Regenerate this section**. Selection toolbar already on the tab (Expand / Condense / Rewrite) stays, quieter. No critic dump, no tool log, no second chat column in the well.
+
+| Command | Bound | Does |
+|---|---|---|
+| **Regenerate this section** | Current scene (slugline → next slugline) or chapter (`***` / heading → next) | Runs the heavy workflow on that span. Verdict still Approve / Revise / Kill. Replace only that span. |
+| **Generate next** | After the last complete section, or empty page → first beat | Next uncovered beat (or beat range) becomes the next scene/chapter. Same workflow. Empty manuscript is allowed: first Generate next starts at beat 1. |
+| **Ghost complete** | Caret | Token continuation, not a full critic pass. Cheap. |
+
+Canon for every generate: world bible (partitioned) + episode premise + 10-point + the beat board. Do not ask the writer to paste those in. Do not generate Draft from chat-only memory while the beat board is empty — Beats stays the gate.
+
+**Not this surface.** A `commit_beat` tool. A third chat. Humanizer on keystroke. Five critic scopes. Auto-running the heavy workflow on every pause (ghost text is the cheap path; the compiler is opt-in per section).
 
 ---
 
@@ -355,6 +402,8 @@ fiction. Gateway cannot express “masterPrompt may govern register but never ca
 | Finding typing | `structuredOutput` |
 | Humanizer | Author mode + skill, after resume, not a Surgeon agent |
 | Episode autonomy | `createDurableAgent` + `goal` — Phase 4, queued verdicts |
+| Script vs Novel | Format skill on Author (L2 on mode), not a new Agent class |
+| Draft tab | Existing `Phase.WRITING` / `ScriptEditor` — Medium well + ghost complete; section generate calls `beat-draft-workflow` |
 
 **Memory.** Key from `(projectId, episodeId, userId)`. Bound `lastMessages` on every path
 including MCP. Expiry Phase 3. Recalled facts never bypass `read_canon`. Populate
@@ -392,6 +441,7 @@ search, voice stylometry after extractor tests, Kimi/GLM pins after a live run,
 - `continuity-sweep` and `autonomous-episode` as “showable” extras (`fix-inconsistencies` is
   the sweep).
 - Humanizer on bible cards or character sheets.
-- A new Voice settings UI.
+- A new Voice settings UI. (Draft mode Script/Novel is page geometry, not Voice.)
+- Replacing the Draft tab with chat. The navigator already names it.
 - Any quality claim from a tier that did not invoke the agent.
 - Leaving `masterPrompt` as chat-only decoration while GRRM skills own the beat.
