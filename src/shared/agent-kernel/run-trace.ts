@@ -6,6 +6,8 @@ export enum RunTraceEventType {
   RoleResult = 'role.result',
   PersistCommit = 'persist.commit',
   GateDecision = 'gate.decision',
+  SkillResolve = 'skill.resolve',
+  ClaimCheckFail = 'claim.check.fail',
 }
 
 export interface RunTraceEvent {

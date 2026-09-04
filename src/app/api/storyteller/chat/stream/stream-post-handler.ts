@@ -5,7 +5,7 @@ import {
 } from './constants/stream-usage'
 import type { ProjectScope } from '@/shared/auth/project-scope'
 import { recordError } from '@/shared/observability/observability'
-import { memoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
+import { MemorySlot, memoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
 import { buildStorytellerRequestContext } from '@/domains/storyteller/core/io/mastra-runtime'
 import {
   assembleStorytellerContext,
@@ -109,7 +109,7 @@ async function runStorytellerStreamInner(input: StreamRequestInput): Promise<Res
 
   const agent = await createStorytellerAgent()
   const bound = memoryRef({
-    projectId: input.scope?.projectId ?? '_',
+    projectId: input.scope?.projectId ?? MemorySlot.None,
     episodeId: input.episodeId,
     userId: input.userId,
   })

@@ -24,6 +24,7 @@ const REPO_ROOT = path.resolve(__dirname, '../..')
 const STORYTELLER_FILE = 'src/domains/storyteller/ai/workflows/beat-draft-workflow.ts'
 const SHARED_GATEWAY_FILE = 'src/shared/ai/gateway/agent.ts'
 const APP_STREAM_FILE = 'src/app/api/storyteller/chat/stream/stream-post-handler.ts'
+const GENERATE_METRICS_FILE = 'src/app/api/storyteller/generate-metrics/route.ts'
 
 function createRepoEslint(): ESLint {
   return new ESLint({ cwd: REPO_ROOT })
@@ -107,6 +108,14 @@ describe('effective no-restricted-imports', () => {
     expect(messages).toEqual([])
   })
 
+  it('allows a game-design core/io import from an app route', async () => {
+    const messages = await lintImport(
+      APP_STREAM_FILE,
+      'import { x } from \'@/domains/game-design/core/io/mastra-runtime\'\n',
+    )
+    expect(messages).toEqual([])
+  })
+
   it('fails closed on a non-seam storyteller deep import from an app route', async () => {
     const messages = await lintImport(
       APP_STREAM_FILE,
@@ -125,5 +134,39 @@ describe('effective no-restricted-imports', () => {
       ? options.patterns.flatMap((pattern: { group?: string[] }) => pattern.group ?? [])
       : []
     expect(groups).toContain('@/domains/game-design')
+  })
+
+  it('fails closed when an app route imports openai directly', async () => {
+    const messages = await lintImport(
+      GENERATE_METRICS_FILE,
+      'import OpenAI from \'openai\'\n',
+    )
+    expect(messages.length).toBeGreaterThan(0)
+    expect(messages.some(message => /OpenRouter|gateway|openai/i.test(message))).toBe(true)
+  })
+})
+
+describe('local/no-functions-in-constants', () => {
+  it('is wired as warn on src files', async () => {
+    const eslint = createRepoEslint()
+    const config = await eslint.calculateConfigForFile(
+      path.join(REPO_ROOT, 'src/shared/data/constants/feature-flags.ts')
+    )
+    const rule = config.rules?.['local/no-functions-in-constants']
+    const severity = Array.isArray(rule) ? rule[0] : rule
+    expect(severity === 'warn' || severity === 1).toBe(true)
+  })
+
+  it('warns on a function under constants/ without failing the lint as an error', async () => {
+    const eslint = createRepoEslint()
+    const results = await eslint.lintText('export function helper() { return 1 }\n', {
+      filePath: path.join(REPO_ROOT, 'src/shared/data/constants/feature-flags.ts'),
+    })
+    const first = results[0]
+    const hits = (first?.messages ?? []).filter(
+      message => message.ruleId === 'local/no-functions-in-constants'
+    )
+    expect(hits.length).toBeGreaterThan(0)
+    expect(hits.every(message => message.severity === 1)).toBe(true)
   })
 })

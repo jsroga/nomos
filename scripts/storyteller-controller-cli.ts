@@ -49,6 +49,7 @@ import {
   buildStorytellerControllerModes,
 } from '@/domains/storyteller/ai/controller/storyteller-controller'
 import { assembleStorytellerContext } from '@/domains/storyteller/services/context-assembly-service'
+import { memoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
 import {
   c,
   paint,
@@ -72,6 +73,7 @@ const renderJson = (event: CliEvent): void => write(`${JSON.stringify(event)}\n`
 
 const SUBMIT_PLAN = submitPlanTool.id
 const PROJECT_TAG = 'projectId'
+const EPISODE_TAG = 'episodeId'
 /** Upper bound on waiting for a resumed run to finish, so the terminal can never wedge. */
 const RUN_SETTLE_TIMEOUT_MS = 10 * 60 * 1000
 
@@ -267,9 +269,18 @@ function resolveOptions(): CliOptions {
 
 async function createCliContext(options: CliOptions): Promise<CliContext> {
   const controller = await getStorytellerController()
+  const bound = memoryRef({
+    projectId: options.projectId,
+    episodeId: options.episodeId,
+    userId: options.userId,
+  })
   const session = await controller.createSession({
-    resourceId: options.userId,
-    tags: { [PROJECT_TAG]: options.projectId },
+    resourceId: bound.resource,
+    threadId: bound.thread,
+    tags: {
+      [PROJECT_TAG]: options.projectId,
+      ...(options.episodeId ? { [EPISODE_TAG]: options.episodeId } : {}),
+    },
   })
   await allowChatModeReads(session)
   const state: TurnState = { pending: null, stream: createControllerStreamContext() }

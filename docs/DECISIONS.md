@@ -155,11 +155,11 @@ For a product whose unit economics **are** model spend, that was the largest mis
 
 ### Decision
 
-Every paid call goes through `@/shared/ai/gateway`, which writes one `llm_calls` row per call: tokens, cost, latency, feature, model, and outcome.
+Every paid call goes through `@/shared/ai/gateway` over **OpenRouter only**, which writes one `llm_calls` row per call: tokens, cost, `cost_status`, latency, feature, model, and outcome. Direct vendor SDKs (`openai`, Anthropic, Google GenAI, Cohere, Mistral, spending `ai` / `@ai-sdk/*` outside the gateway allowlist) are ESLint errors (`providerSdk()` / A2). Keys: `OPENROUTER_API_KEY` for chat LLMs.
 
 **The gateway takes a `ProjectScope`, not a project id.** ADR 0002's guarantee extends to spend — you cannot bill a project you have not proved you own.
 
-**Cost is computed from a committed price table, never fetched.** `PROVIDER_PRICING` is versioned by `effectiveFrom`, so a historical row keeps the price that applied when it ran. An unknown model **throws**: a silent zero reads as "this was free", which is worse than no instrumentation.
+**Cost is computed from a committed price table, never fetched.** `PROVIDER_PRICING` is versioned by `effectiveFrom`, so a historical row keeps the price that applied when it ran. An unknown model **throws**: a silent zero reads as "this was free", which is worse than no instrumentation. Rows carry `cost_status` (`priced` vs unpriced) so a real `$0` is not confused with a missing price row.
 
 **Recording never fails the call.** Writes are fire-and-forget with the error caught and counted. A metering outage must not take generation down, and that trade is only defensible in this direction.
 
@@ -183,7 +183,7 @@ Every paid call goes through `@/shared/ai/gateway`, which writes one `llm_calls`
 
 The rule that makes that safe: **no context means no row.** A model call outside a billing boundary is left unrecorded rather than attributed to a guess, because a row against the wrong project is worse than a missing one.
 
-**Accepted risk.** `llm_calls` is a floor, not a guaranteed total. Six files still reach a provider directly — each named with its reason in `eslint-rules/provider-sdk-exemptions.js` and counted by `providerSdkImportsOutsideGateway` — and any call made outside a boundary records nothing by design. Reconcile against a provider dashboard before treating a total as exact.
+**Accepted risk.** `llm_calls` is a floor, not a guaranteed total. A shrinking remainder in `eslint-rules/provider-sdk-exemptions.js` (counted by `providerSdkImportsOutsideGateway`) may still reach a provider outside the gateway — each entry is a named gap, not a license to add new ones — and any call made outside a boundary records nothing by design. Reconcile against a provider dashboard before treating a total as exact.
 
 ### Verification
 

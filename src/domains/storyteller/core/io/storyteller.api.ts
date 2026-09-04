@@ -231,6 +231,7 @@ export async function fetchEpisodeBeatsList(episodeId: string): Promise<unknown[
 }
 
 export async function editStorytellerScript(input: {
+  projectId: string
   selection: string
   instruction: string
 }): Promise<string> {
@@ -238,7 +239,11 @@ export async function editStorytellerScript(input: {
     await fetchJson('/api/storyteller/script/edit', {
       method: HttpMethod.Post,
       headers: JSON_HEADERS,
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        [QueryParam.ProjectId]: input.projectId,
+        selection: input.selection,
+        instruction: input.instruction,
+      }),
     })
   )
   const error = readString(data.error)

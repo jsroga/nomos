@@ -24,10 +24,12 @@ export const EVAL_WATCHED_PATHS = [
   'src/domains/game-design/ai',
   'src/domains/loop-creator/ai',
   'src/shared/agent-kernel',
+  'src/mastra/agents',
   'evals/datasets',
+  'evals/constants',
 ]
 
-const WATCHED_EXTENSIONS = ['.ts', '.tsx', '.json']
+const WATCHED_EXTENSIONS = ['.ts', '.tsx', '.json', '.md']
 const SKIP_DIRECTORIES = new Set(['node_modules', '__tests__', '__snapshots__'])
 const HASH_ALGORITHM = 'sha256'
 const HASH_ENCODING = 'hex'
@@ -63,12 +65,49 @@ export function watchedFiles(root = process.cwd()) {
   return found.sort()
 }
 
-/** The hash of the watched sources as they are on disk right now. */
-export function inputHash(root = process.cwd()) {
+/** True when a repo-relative path is in the eval watch set (prefix + extension). */
+export function isWatchedRelativePath(relativePath) {
+  const posix = relativePath.split(sep).join('/')
+  if (posix.includes('.test.')) return false
+  if (!WATCHED_EXTENSIONS.some(extension => posix.endsWith(extension))) return false
+  return EVAL_WATCHED_PATHS.some(
+    prefix => posix === prefix || posix.startsWith(`${prefix}/`)
+  )
+}
+
+/**
+ * Staged snapshot as `{ path, content }[]`. `names` are git staged paths;
+ * `readContent` is injectable (`git show :path` in production, a map in tests).
+ */
+export function stagedEntries(names, readContent) {
+  return names.filter(isWatchedRelativePath).map(path => ({
+    path,
+    content: readContent(path),
+  }))
+}
+
+/** Stable hash of `{ path, content }[]`. Path is part of the digest. */
+export function hashFromEntries(entries) {
   const hash = createHash(HASH_ALGORITHM)
-  for (const file of watchedFiles(root)) {
-    hash.update(file)
-    hash.update(readFileSync(join(root, file)))
+  const sorted = [...entries].sort((left, right) => left.path.localeCompare(right.path))
+  for (const entry of sorted) {
+    hash.update(entry.path)
+    hash.update(entry.content)
   }
   return hash.digest(HASH_ENCODING)
+}
+
+/** The hash of the watched sources as they are on disk right now. */
+export function inputHash(root = process.cwd()) {
+  return hashFromEntries(
+    watchedFiles(root).map(file => ({
+      path: file,
+      content: readFileSync(join(root, file)),
+    }))
+  )
+}
+
+/** Hash of injected staged entries. Tests pass `{ path, content }[]`; do not git the fixture tree. */
+export function stagedHash(entries) {
+  return hashFromEntries(entries)
 }

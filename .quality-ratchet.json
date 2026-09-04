@@ -6,7 +6,7 @@
   "sessionExistenceOnlyRoutes": 11,
   "directDbClientImporters": 70,
   "serviceRoleClientSites": 23,
-  "providerSdkImportsOutsideGateway": 3,
+  "providerSdkImportsOutsideGateway": 2,
   "langChainImports": 0,
   "bareProcessEnvReads": 0,
   "processEnvReadsInModelConfig": 0,

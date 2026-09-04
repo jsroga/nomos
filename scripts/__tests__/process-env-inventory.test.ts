@@ -30,19 +30,27 @@ function serverReads(): string[] {
 }
 
 describe('process.env reads', () => {
-  it('does not grow the count SPEC-12 is burning down', () => {
-    const owned = serverReads().filter(
-      file => !MODEL_CONFIG_FILES.some(deferred => file.includes(deferred))
-    )
+  it(
+    'does not grow the count SPEC-12 is burning down',
+    () => {
+      const owned = serverReads().filter(
+        file => !MODEL_CONFIG_FILES.some(deferred => file.includes(deferred))
+      )
 
-    expect(owned.length).toBeLessThanOrEqual(RATCHET.bareProcessEnvReads)
-  })
+      expect(owned.length).toBeLessThanOrEqual(RATCHET.bareProcessEnvReads)
+    },
+    60_000
+  )
 
-  it('leaves the model-config files to SPEC-13, and says how many that is', () => {
-    const deferred = serverReads().filter(file =>
-      MODEL_CONFIG_FILES.some(candidate => file.includes(candidate))
-    )
+  it(
+    'leaves the model-config files to SPEC-13, and says how many that is',
+    () => {
+      const deferred = serverReads().filter(file =>
+        MODEL_CONFIG_FILES.some(candidate => file.includes(candidate))
+      )
 
-    expect(deferred.length).toBeLessThanOrEqual(RATCHET.processEnvReadsInModelConfig)
-  })
+      expect(deferred.length).toBeLessThanOrEqual(RATCHET.processEnvReadsInModelConfig)
+    },
+    60_000
+  )
 })

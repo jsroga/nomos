@@ -39,6 +39,17 @@ describe('judgeUsageOf', () => {
 
     expect(usage.unpricedModels).toEqual([UNKNOWN_MODEL])
     expect(usage.costUsd).toBe(0)
+    expect(usage.costComplete).toBe(false)
+  })
+
+  it('does not treat a mix of priced and unpriced as a complete cost total', () => {
+    const priced = judgeUsageOf(resultWith(PRICED_MODEL, 1_000_000, 0), PRICED_MODEL)
+    const unpriced = judgeUsageOf(resultWith(UNKNOWN_MODEL, 1000, 0), UNKNOWN_MODEL)
+    const total = addJudgeUsage(priced, unpriced)
+
+    expect(total.costUsd).toBeCloseTo(0.15, 5)
+    expect(total.costComplete).toBe(false)
+    expect(total.unpricedModels).toEqual([UNKNOWN_MODEL])
   })
 
   it('returns nothing for a deterministic scorer, which calls no judge', () => {

@@ -7,11 +7,17 @@
  *
  *   npm run spend -- --days 7
  */
+import { pathToFileURL } from 'node:url'
 import { readFileSync } from 'node:fs'
 import pg from 'pg'
 
 const DEFAULT_DAYS = 7
 const USD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 4 })
+
+const CostStatus = {
+  Priced: 'priced',
+  Unknown: 'unknown',
+}
 
 function days() {
   const index = process.argv.indexOf('--days')
@@ -49,6 +55,11 @@ function table(title, rows, keyLabel) {
   }
 }
 
+/** Rows with cost_status unknown — undervalued, never "$0 cheap". */
+export function unknownCostRows(rows) {
+  return rows.filter(row => row.cost_status === CostStatus.Unknown)
+}
+
 async function main() {
   const url = connectionString()
   if (!url) {
@@ -64,7 +75,7 @@ async function main() {
   const select = (groupBy) => `
     SELECT ${groupBy} AS key,
            count(*)::int AS calls,
-           sum(cost_usd)::float AS cost,
+           sum(CASE WHEN cost_status = '${CostStatus.Unknown}' THEN 0 ELSE cost_usd END)::float AS cost,
            sum(prompt_tokens + completion_tokens)::int AS tokens
     FROM llm_calls
     WHERE created_at >= ${since}
@@ -79,6 +90,15 @@ async function main() {
       `SELECT outcome, count(*)::int AS calls FROM llm_calls
        WHERE created_at >= ${since} AND outcome <> 'ok' GROUP BY outcome ORDER BY calls DESC`
     )
+    const unknownByModel = await client.query(
+      `SELECT model AS key, count(*)::int AS calls,
+              sum(prompt_tokens + completion_tokens)::int AS tokens,
+              '${CostStatus.Unknown}' AS cost_status
+       FROM llm_calls
+       WHERE created_at >= ${since} AND cost_status = '${CostStatus.Unknown}'
+       GROUP BY model
+       ORDER BY tokens DESC`
+    )
 
     console.log(`\nModel spend, last ${window} day(s)`)
     const total = byProject.rows.reduce((sum, row) => sum + (row.cost ?? 0), 0)
@@ -88,12 +108,9 @@ async function main() {
     table('By feature', byFeature.rows, 'feature')
     table('By model', byModel.rows, 'model')
 
-    // A model with no price row records tokens at cost 0. Without this the
-    // total reads as complete when it is not — which is the failure the whole
-    // gateway exists to prevent, one level up.
-    const unpriced = byModel.rows.filter(row => (row.cost ?? 0) === 0 && row.tokens > 0)
+    const unpriced = unknownCostRows(unknownByModel.rows)
     if (unpriced.length > 0) {
-      console.log('\n⚠️  UNPRICED — the total above is a floor, not the bill')
+      console.log('\n⚠️  UNPRICED (cost_status=unknown) — the total above is a floor, not the bill')
       for (const row of unpriced) {
         console.log(
           `  ${String(row.key).padEnd(34)} ${String(row.calls).padStart(6)} calls  ${row.tokens} tokens  cost NOT counted`
@@ -112,7 +129,9 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  console.error(error.message)
-  process.exit(1)
-})
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch(error => {
+    console.error(error.message)
+    process.exit(1)
+  })
+}

@@ -11,8 +11,6 @@
  * getMastraInstance() in this route (ordering contract).
  */
 
-import { resolveChatModelId } from '@/domains/storyteller/config/resolve-chat-model'
-import '@/domains/storyteller/core/io/mastra-runtime'
 import '@/domains/game-design/core/io/mastra-runtime'
 import '@/domains/loop-creator/core/io/mastra-runtime'
 
@@ -22,20 +20,6 @@ import { createUIMessageStream, createUIMessageStreamResponse, generateId } from
 import type { UIMessage } from 'ai'
 import { getMastraInstance, warmMastraStorage } from '@/shared/agent-kernel/mastra-instance'
 import { withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
-import { buildStorytellerRequestContext } from '@/domains/storyteller/ai/request-context'
-import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
-import {
-  isKnownChatModel,
-} from '@/domains/storyteller/config/constants/chat-model-catalog'
-import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
-import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
-import { requireAuth } from '@/shared/auth/auth'
-import { ApiErrorMessage } from '@/shared/data/constants/protocol'
-import { requestedEpisodePremiseField } from '@/domains/storyteller/core/utils/requested-episode-premise-field'
-import { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
-import { readString } from '@/shared/data/json-guards'
-import { tryProjectScope } from '@/shared/auth/project-scope'
-import { withGatewayContext } from '@/shared/ai/gateway/call-context'
 import {
   BEAT_TOOL_ID,
   LIST_BEATS_TOOL_ID,
@@ -48,8 +32,24 @@ import {
   CHECK_CONTINUITY_TOOL_ID,
   CHECK_SECTION_ALIGNMENT_TOOL_ID,
   PROPOSE_CHARACTER_FIELDS_TOOL_ID,
-} from '@/domains/storyteller/ai/tools/manage-tools-wire'
-import { RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
+  RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
+  buildStorytellerRequestContext,
+} from '@/domains/storyteller/core/io/mastra-runtime'
+import {
+  CharacterDraftChatSection,
+  isKnownChatModel,
+  requestedEpisodePremiseField,
+  resolveChatModelId,
+  StorytellerAgentId,
+} from '@/domains/storyteller/server'
+import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { requireAuth } from '@/shared/auth/auth'
+import { ApiErrorMessage } from '@/shared/data/constants/protocol'
+import { readString } from '@/shared/data/json-guards'
+import { tryProjectScope } from '@/shared/auth/project-scope'
+import { withGatewayContext } from '@/shared/ai/gateway/call-context'
+import { MemorySlot, memoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
 
 /** Storyteller chat tools only — excludes inherited Mastra workspace FS tools. */
 const STORYTELLER_CHAT_ACTIVE_TOOLS = [
@@ -259,9 +259,7 @@ async function resolveStorytellerSystem(opts: {
   bibleSection?: string
 }): Promise<string | undefined> {
   if (opts.agentId !== StorytellerAgentId.Storyteller || !opts.projectId) return undefined
-  const { assembleStorytellerContext } = await import(
-    '@/domains/storyteller/services/context-assembly-service'
-  )
+  const { assembleStorytellerContext } = await import('@/domains/storyteller/server')
   const userMessage = latestUserText(opts.messages)
   const { contextPrompt } = await assembleStorytellerContext({
     projectId: opts.projectId,
@@ -301,9 +299,7 @@ export async function POST(req: Request, { params }: RouteContext) {
   const episodeId = raw[AssistantChatBodyKey.EpisodeId]
   const userId = session.user.id
 
-  const { verifyEpisodeAccess } = await import(
-    '@/domains/storyteller/services/access-verification-service'
-  )
+  const { verifyEpisodeAccess } = await import('@/domains/storyteller/server')
 
   const projectScope = projectId ? await tryProjectScope(projectId, userId) : null
   if (projectId && !projectScope) {
@@ -320,6 +316,11 @@ export async function POST(req: Request, { params }: RouteContext) {
   }
 
   const isStoryteller = agentId === StorytellerAgentId.Storyteller
+  const bound = memoryRef({
+    projectId: projectId ?? MemorySlot.None,
+    episodeId,
+    userId,
+  })
 
   // Return the SSE response immediately; assemble context inside the stream so
   // the client leaves "submitted" while world context loads (not hung).
@@ -368,6 +369,7 @@ export async function POST(req: Request, { params }: RouteContext) {
             // Override agent live scorers — goalReached LLM judges were holding
             // the SSE open ~30s after first chunk with nothing for the UI.
             scorers: CHAT_ROUTE_SCORERS,
+            memory: { thread: bound.thread, resource: bound.resource },
             ...(system ? { system } : {}),
             ...(isStoryteller ? { activeTools } : {}),
           },

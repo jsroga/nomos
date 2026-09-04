@@ -66,11 +66,14 @@ export async function fetchCharacterPortraitRunStatus(runId: string): Promise<{
   }
 }
 
-export async function fetchCharacterMetrics(description: string): Promise<Record<string, unknown>> {
+export async function fetchCharacterMetrics(
+  description: string,
+  projectId: string,
+): Promise<Record<string, unknown>> {
   const data = recordFromJson(await fetchJson(METRICS_ROUTE, {
     method: HttpMethod.Post,
     headers: { 'Content-Type': ContentType.Json },
-    body: JSON.stringify({ description }),
+    body: JSON.stringify({ description, [QueryParam.ProjectId]: projectId }),
   }))
   return recordFromJson(data.metrics)
 }

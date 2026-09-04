@@ -93,6 +93,7 @@ Docs: `mastra.ai/docs/long-running-agents/{durable-agents,goals}.md`.
 - Second Postgres store or Mastra instance.
 - `RuntimeContext`, root `@mastra/core` imports, old single-arg `execute`.
 - Hardcoded secrets or model strings.
+- **Direct provider LLM SDKs** (`openai`, `@anthropic-ai/*`, Google GenAI, Cohere, Mistral, spending `ai` / `@ai-sdk/*` outside the gateway). **Only OpenRouter** via `@/shared/ai/gateway`. See `.cursor/rules/openrouter-only.mdc`.
 - Remove tracing or shrink memory windows without reason.
 - **Type assertions** (`as any`, `as Type`) — use guards, Zod, or `recordFromJson`; `as const` only.
 - **Cross-domain imports** (`src/domains/foo` importing `@/domains/bar`) — lift to `@/shared`.
@@ -110,7 +111,7 @@ Docs: `mastra.ai/docs/long-running-agents/{durable-agents,goals}.md`.
 
 **Before handoff:** `npm run typecheck` · `npm run lint` · `npm run test:unit`
 
-**IMPORTANT — never open the app in a browser.** No browser MCP tools, no `browser-use` subagent, no `curl` against `localhost:3000` to check behaviour, no logging in as the user. Verify through reusable committed tests: `npm run test:unit`, the live tier `npm run test:live` (`*.e2e.test.ts`, needs a **scratch** project id), or a **Playwright** spec. Browser testing has exactly one allowed form — a reusable spec in `e2e/scenarios/*.spec.ts` with actions in `e2e/fixtures/`, string constants as enums in `e2e/constants/`, `setupAuthenticatedPage` for login, and a throwaway project for data; running it stays operator-only. If something can't be checked that way, say it is unverified and name the test that would cover it. Highest-priority rule: `.cursor/rules/no-agent-browser.mdc`.
+**IMPORTANT — never open the app in a browser for ad-hoc clicks.** No browser MCP tools, no `browser-use` subagent, no `curl` against `localhost:3000` to check behaviour, no logging in as the user. Verify through reusable committed tests: `npm run test:unit`, the live tier `npm run test:live` (`*.e2e.test.ts`, needs a **scratch** project id), or a **Playwright** / smoke e2e. After a plan completes (or when asked if e2e is done and it was not run), **run** `npm run test:e2e smoke` with `.env.local` loaded — do not ask. Highest-priority UI rule: `.cursor/rules/no-agent-browser.mdc`. OpenRouter-only LLM rule: `.cursor/rules/openrouter-only.mdc`.
 
 **When the user asks to commit:** `npm run precommit` first (includes **`test:unit`** + **`build`**), then commit without `--no-verify`. The message carries no `Co-Authored-By` trailer and no "generated with" footer naming a model, agent, or IDE. See `.cursor/rules/commit-gates.mdc`.
 

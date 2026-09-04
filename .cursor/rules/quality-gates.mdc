@@ -24,7 +24,9 @@ Run these before claiming a task is done. Failures must be fixed, not bypassed.
 
 **Never run full-repo `tsc --noEmit` during agent work** — it is slow and OOM-prone. Use `qualitygate:file`, `qualitygate:changed`, `qualitygate:tsc` only. Full `npm run typecheck` + `npm run lint` are end-of-task only unless the user asks.
 
-**Do not run E2E during agent work** — skip `npm run test:e2e` entirely at this stage (no smoke, no full-loop). E2E is operator/CI-only unless the user explicitly asks.
+**E2E after a plan:** when a plan completes (or the user asks if e2e is done/passing and it was not run), **run** `npm run test:e2e smoke` (load `.env.local` for `E2E_BYPASS_AUTH_SECRET`) without asking. Do not claim plan done without it. Hook: `.cursor/hooks/e2e-required-after-plan.sh`.
+
+**Do not casually open the app in a browser** for ad-hoc clicks — see `no-agent-browser.mdc`. Playwright / smoke e2e is the allowed browser path when verification requires it.
 
 **Never open the app in a browser** — no browser MCP, no `browser-use` subagent, no `curl` against `localhost:3000` to check behaviour. Verification goes through reusable committed tests. See `no-agent-browser.mdc` (highest priority).
 

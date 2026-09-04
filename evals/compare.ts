@@ -4,7 +4,7 @@
  * The table this prints is what action 15 wanted as a PR comment. With no CI it
  * is read at a terminal by whoever ran it — a real loss, named in the spec.
  */
-import { regressionThreshold, COST_BUDGET_MULTIPLE } from './constants/thresholds'
+import { regressionThreshold, COST_BUDGET_MULTIPLE, DEFAULT_JUDGING_MODEL_ID } from './constants/thresholds'
 import type { MultiVariantReport } from './types'
 
 export interface BaselineScorer {
@@ -52,8 +52,15 @@ export interface ComparisonResult {
   regressions: ScorerComparison[]
   /** A run with scorer failures is not a measurement and cannot be compared. */
   failureCount: number
-  /** Absent when the baseline predates cost recording. */
+  /** Absent when the baseline predates cost recording or the run is unpriced. */
   cost: CostComparison | null
+  /** Why cost was withheld — never summarized as a $0 win. */
+  costSkipped: string | null
+}
+
+enum CostSkipReason {
+  UnpricedModels = 'unpriced judge model(s) — not a $0 win',
+  MissingBaselineOrCurrent = 'baseline or run has no judge cost',
 }
 
 const IMPROVEMENT_EPSILON = 1e-9
@@ -65,6 +72,33 @@ function verdictFor(baseline: number, current: number, threshold: number): Score
   return ScorerVerdict.Ok
 }
 
+function resolveCost(
+  report: MultiVariantReport,
+  baseline: EvalBaseline
+): { cost: CostComparison | null; costSkipped: string | null } {
+  const before = baseline.judgeCostUsd
+  const after = report.judgeUsage?.costUsd
+  if (before === undefined || after === undefined) {
+    return { cost: null, costSkipped: CostSkipReason.MissingBaselineOrCurrent }
+  }
+
+  // A run whose judge model is missing from the price table costs $0 on paper.
+  // Compared against a priced baseline that reads as a large saving, so the
+  // comparison is withheld rather than inverted.
+  if ((report.judgeUsage?.unpricedModels.length ?? 0) > 0) {
+    return { cost: null, costSkipped: CostSkipReason.UnpricedModels }
+  }
+  if (report.judgeUsage?.costComplete === false) {
+    return { cost: null, costSkipped: CostSkipReason.UnpricedModels }
+  }
+
+  const allowed = before * COST_BUDGET_MULTIPLE
+  return {
+    cost: { baseline: before, current: after, allowed, exceeded: after > allowed },
+    costSkipped: null,
+  }
+}
+
 export function compareToBaseline(
   report: MultiVariantReport,
   baseline: EvalBaseline
@@ -74,7 +108,10 @@ export function compareToBaseline(
   const rows: ScorerComparison[] = []
 
   for (const id of ids) {
-    const threshold = regressionThreshold(id)
+    const threshold = regressionThreshold(
+      id,
+      report.judgingModelId ?? DEFAULT_JUDGING_MODEL_ID
+    )
     const before = baseline.scorers[id]?.mean
     const after = current[id]
 
@@ -102,30 +139,15 @@ export function compareToBaseline(
     row => row.verdict === ScorerVerdict.Regressed || row.verdict === ScorerVerdict.Missing
   )
 
+  const { cost, costSkipped } = resolveCost(report, baseline)
+
   return {
     rows,
     regressions,
     failureCount: report.failures?.length ?? 0,
-    cost: compareCost(report, baseline),
+    cost,
+    costSkipped,
   }
-}
-
-/**
- * A run that costs materially more than the baseline is a regression too — a
- * prompt that doubled in length scores the same and bills twice.
- */
-function compareCost(report: MultiVariantReport, baseline: EvalBaseline): CostComparison | null {
-  const before = baseline.judgeCostUsd
-  const after = report.judgeUsage?.costUsd
-  if (before === undefined || after === undefined) return null
-
-  // A run whose judge model is missing from the price table costs $0 on paper.
-  // Compared against a priced baseline that reads as a large saving, so the
-  // comparison is withheld rather than inverted.
-  if ((report.judgeUsage?.unpricedModels.length ?? 0) > 0) return null
-
-  const allowed = before * COST_BUDGET_MULTIPLE
-  return { baseline: before, current: after, allowed, exceeded: after > allowed }
 }
 
 function cell(value: number | null, width: number): string {
@@ -152,6 +174,8 @@ export function formatComparison(result: ComparisonResult, baselineName: string)
       `  judge cost: $${result.cost.current.toFixed(4)} vs baseline $${result.cost.baseline.toFixed(4)} ` +
         `(allowed $${result.cost.allowed.toFixed(4)})${result.cost.exceeded ? '  OVER BUDGET' : ''}`
     )
+  } else if (result.costSkipped === CostSkipReason.UnpricedModels) {
+    lines.push('', `  judge cost: skipped (${result.costSkipped})`)
   }
   return lines.join('\n')
 }

@@ -153,6 +153,19 @@ export {
   STORYTELLER_AUTHOR_MODEL,
   STORYTELLER_CHAT_MODEL,
 } from '@/domains/storyteller/ai/request-context'
+export {
+  BEAT_TOOL_ID,
+  LIST_BEATS_TOOL_ID,
+  CHARACTER_TOOL_ID,
+  LIST_CHARACTERS_TOOL_ID,
+  EPISODE_TOOL_ID,
+  LIST_EPISODES_TOOL_ID,
+  UPDATE_WORLD_BIBLE_TOOL_ID,
+  READ_WORLD_BIBLE_TOOL_ID,
+  CHECK_CONTINUITY_TOOL_ID,
+  CHECK_SECTION_ALIGNMENT_TOOL_ID,
+  PROPOSE_CHARACTER_FIELDS_TOOL_ID,
+} from '@/domains/storyteller/ai/tools/manage-tools-wire'
 
 // Dependency inversion: push this domain's runtime into the kernel registry
 // at module-load time. The tools barrel imports this module, so any code

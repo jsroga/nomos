@@ -1,5 +1,5 @@
 import { db } from '@/db/client'
-import { beats } from '@/db/schema'
+import { beats, projects } from '@/db/schema'
 import { eq, max } from 'drizzle-orm'
 
 export { db }
@@ -14,4 +14,13 @@ export async function nextBeatSequence(episodeId: string): Promise<number> {
     .from(beats)
     .where(eq(beats.episodeId, episodeId))
   return nextSequenceAfter(row?.maxSeq)
+}
+
+export async function loadProjectMasterPrompt(projectId: string): Promise<string> {
+  const rows = await db
+    .select({ masterPrompt: projects.masterPrompt })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1)
+  return rows[0]?.masterPrompt ?? ''
 }

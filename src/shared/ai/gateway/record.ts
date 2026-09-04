@@ -15,6 +15,11 @@ import {
 } from '@/shared/ai/gateway/constants/llm-call'
 import { PROVIDER_PRICING } from '@/shared/ai/gateway/constants/pricing'
 
+enum LlmCostStatus {
+  Priced = 'priced',
+  Unknown = 'unknown',
+}
+
 export interface LlmCallRecord {
   traceId?: string
   projectId: string
@@ -62,30 +67,28 @@ export function costUsdFor(model: string, promptTokens: number, completionTokens
 }
 
 /**
- * The row's cost, or 0 for a model with no price row.
- *
- * A missing price must not discard the record. Tokens, latency, project and
- * outcome are all still true and still worth having — losing them because we
- * cannot name a dollar figure is a disproportionate response, and it is what
- * this function was doing. The zero is not silent: the model is warned about
- * once and `npm run spend` reports it as undercounted.
+ * Cost for a row, plus whether it came from PROVIDER_PRICING.
+ * Unknown price keeps costUsd at 0 and marks cost_status unknown — never a silent free pass.
  */
-function costOrZero(record: LlmCallRecord): number {
+function costForRecord(record: LlmCallRecord): { costUsd: number; costStatus: LlmCostStatus } {
   try {
-    return costUsdFor(record.model, record.promptTokens, record.completionTokens)
+    return {
+      costUsd: costUsdFor(record.model, record.promptTokens, record.completionTokens),
+      costStatus: LlmCostStatus.Priced,
+    }
   } catch {
     if (!unpricedModels.has(record.model)) {
       unpricedModels.add(record.model)
       console.warn(`${GATEWAY_LOG.UnpricedRecorded} ${record.model}`)
     }
-    return 0
+    return { costUsd: 0, costStatus: LlmCostStatus.Unknown }
   }
 }
 
 /** Fire-and-forget. Resolves even when the write fails. */
 export async function recordLlmCall(record: LlmCallRecord): Promise<void> {
   try {
-    const costUsd = costOrZero(record)
+    const { costUsd, costStatus } = costForRecord(record)
 
     await db.insert(llmCalls).values({
       traceId: record.traceId,
@@ -98,6 +101,7 @@ export async function recordLlmCall(record: LlmCallRecord): Promise<void> {
       completionTokens: record.completionTokens,
       cachedTokens: record.cachedTokens ?? 0,
       costUsd: costUsd.toFixed(6),
+      costStatus,
       latencyMs: record.latencyMs,
       outcome: record.outcome,
     })

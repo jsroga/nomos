@@ -104,6 +104,8 @@ export enum SmokeLog {
   SuiteFailed = '❌ SMOKE TEST FAILED - System is NOT ready for deployment',
   SuitePassed = '✅ SMOKE TEST PASSED - Core functionality verified',
   FatalError = 'Fatal error:',
+  EnsuringProject = '📁 Ensuring smoke project exists…',
+  CreatedScratchProject = '✓ Created scratch smoke project:',
 
   ToolResults = '  Tool results:',
   AllEvents = '  All Events:',
@@ -169,6 +171,7 @@ export enum SmokeError {
   WorldDescriptionToolMissing = 'update_world_bible was never called for world description',
   WorldDescriptionStillRejected = 'Last update_world_bible call was still REJECTED; escape hatch should accept after 2 rejections',
   NoAiContent = 'No AI response content found (checked message and token events)',
+  FailedEnsureProject = 'Could not use or create smoke project — set TEST_PROJECT_ID or seed E2E mock user in auth.users',
 }
 
 export enum SmokeDummySuite {
@@ -177,7 +180,10 @@ export enum SmokeDummySuite {
 }
 
 export const DEFAULT_BASE_URL = 'http://localhost:3000'
+/** Fixture id; smoke creates it under the E2E mock user when missing. */
 export const DEFAULT_TEST_PROJECT_ID = '168b5a14-11dc-428a-b5a0-67d62dd32b71'
+export const SMOKE_SCRATCH_PROJECT_NAME = 'Smoke Fixture (auto)'
+export const SMOKE_SCRATCH_PROJECT_DESCRIPTION = 'Throwaway project for npm run test:e2e smoke'
 export const LIST_SEPARATOR = ', '
 export const EMPTY_JSON_OBJECT = '{}'
 /** 2 rejections + 1 accept, plus slack — more than this is a loop. */

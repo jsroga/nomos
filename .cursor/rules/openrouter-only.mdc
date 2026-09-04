@@ -1,0 +1,23 @@
+---
+description: Only OpenRouter via the shared gateway may call LLMs — never provider SDKs
+alwaysApply: true
+---
+
+# OpenRouter-only LLM access (binding)
+
+**Only OpenRouter**, reached through `@/shared/ai/gateway` (`complete`, `completeStructured`, `embed`, `meteredCall` / agent metering).
+
+## Forbidden outside the gateway allowlist
+
+- `import OpenAI from 'openai'` / `openai.chat.completions.create`
+- Direct Anthropic, Google GenAI, Cohere, Mistral, or other vendor SDKs
+- Direct `@ai-sdk/*` provider constructors in app/routes/domains (except named gateway / model-registry exemptions)
+- New entries in `eslint-rules/provider-sdk-exemptions.js` without shrinking an existing gap
+
+## Required
+
+- Text generation: `complete` / `completeStructured` with `ProjectScope` + `LlmFeature`
+- Model strings: OpenRouter `provider/model` form
+- Keys: `OPENROUTER_API_KEY` only for chat LLMs (judges: `JUDGING_MODEL` still OpenRouter-routed)
+
+Enforced by `no-restricted-imports` (`providerSdk()`) and `scripts/__tests__/provider-sdk-inventory.test.ts`.

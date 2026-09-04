@@ -161,8 +161,13 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
             content={script}
             onChange={setScript}
             onRegenerateSelection={async (selection, instruction) => {
+              if (!routeProjectId) return selection
               try {
-                return await editStorytellerScript({ selection, instruction })
+                return await editStorytellerScript({
+                  projectId: routeProjectId,
+                  selection,
+                  instruction,
+                })
               } catch (e) {
                 console.error('Regeneration failed:', e)
                 return selection

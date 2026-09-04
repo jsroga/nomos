@@ -11,7 +11,7 @@ import { API_ERROR, API_LOG_PREFIX, RATE_LIMIT } from '@/shared/data/constants/a
 
 // Re-exported so existing `@/shared/data/api-utils` importers keep working.
 // Canonical implementation (incl. E2E bypass) lives in @/shared/auth/auth.
-export { getUserSession }
+export { getUserSession, requireAuth } from '@/shared/auth/auth'
 
 // ============================================
 // TYPES
@@ -39,19 +39,6 @@ export type ApiHandler<T = unknown> = (
 // ============================================
 // AUTHENTICATION
 // ============================================
-
-/**
- * Require authentication - returns session or throws
- */
-export async function requireAuth() {
-  const { session, supabase, error } = await getUserSession()
-
-  if (error || !session) {
-    return { session: null, supabase: null, error: error || new Error(API_ERROR.UNAUTHORIZED) }
-  }
-
-  return { session, supabase, error: null }
-}
 
 /**
  * Wrapper for authenticated API routes

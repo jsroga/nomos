@@ -174,6 +174,8 @@ module.exports = [
       ],
       // Inline wire/domain strings must use enums or named constants (JSX carve-out for Tailwind/labels).
       'local/no-magic-string': ['error', { allowJsx: true }],
+      // Incentive only — existing constants/ helpers stay; do not mass-move.
+      'local/no-functions-in-constants': 'warn',
       'max-lines': [
         'warn',
         {
@@ -377,6 +379,19 @@ module.exports = [
       'no-restricted-imports': [
         'error',
         composeRestrictedImports(barrelGuard(), providerSdk(), legacyRoot(), projectAccess()),
+      ],
+    },
+  },
+
+  // Mastra Studio agents live outside domains/ but own file-based packages that
+  // must deep-import storyteller ai/config (same shape as already committed
+  // critics/muse/grrm agent modules). Keep provider + legacy bans; drop barrel.
+  {
+    files: ['src/mastra/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        composeRestrictedImports(providerSdk(), legacyRoot()),
       ],
     },
   },

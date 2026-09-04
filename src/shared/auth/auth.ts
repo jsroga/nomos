@@ -76,11 +76,15 @@ export async function getUserSession() {
 }
 
 export async function requireAuth() {
-  const { session, error } = await getUserSession()
+  const { session, supabase, error } = await getUserSession()
 
   if (error || !session) {
-    return { session: null, error: error || new Error(ApiErrorMessage.UNAUTHORIZED) }
+    return {
+      session: null,
+      supabase,
+      error: error || new Error(ApiErrorMessage.UNAUTHORIZED),
+    }
   }
 
-  return { session, error: null }
+  return { session, supabase, error: null }
 }

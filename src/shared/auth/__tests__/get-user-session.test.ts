@@ -14,6 +14,7 @@ vi.mock('@/shared/auth/supabase-route-client', () => ({
 }))
 
 import { getUserSession, requireAuth } from '../auth'
+import { requireAuth as requireAuthFromApiUtils } from '@/shared/data/api-utils'
 import { E2E_MOCK_USER_ID } from '../constants/e2e-auth'
 
 const USER = {
@@ -66,6 +67,10 @@ describe('getUserSession', () => {
 })
 
 describe('requireAuth', () => {
+  it('is the same function from auth and api-utils', () => {
+    expect(requireAuth).toBe(requireAuthFromApiUtils)
+  })
+
   it('fails closed on an unsigned token', async () => {
     getUser.mockResolvedValue({
       data: { user: null },
@@ -78,5 +83,16 @@ describe('requireAuth', () => {
     expect(error?.message).toBeTruthy()
     expect(error?.message.length).toBeGreaterThan(0)
     expect(ApiErrorMessage.UNAUTHORIZED.length).toBeGreaterThan(0)
+  })
+
+  it('includes supabase on a successful getUser result', async () => {
+    getUser.mockResolvedValue({ data: { user: USER }, error: null })
+
+    const result = await requireAuth()
+
+    expect(result.error).toBeNull()
+    expect(result.session?.user.id).toBe(USER.id)
+    expect('supabase' in result).toBe(true)
+    expect(result.supabase).toBeTruthy()
   })
 })

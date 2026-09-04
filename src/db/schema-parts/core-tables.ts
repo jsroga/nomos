@@ -151,6 +151,8 @@ export const llmCalls = pgTable('llm_calls', {
   completionTokens: integer('completion_tokens').notNull().default(0),
   cachedTokens: integer('cached_tokens').notNull().default(0),
   costUsd: numeric('cost_usd', { precision: 12, scale: 6 }).notNull().default('0'),
+  /** `priced` when costUsd came from PROVIDER_PRICING; `unknown` when the model had no row. */
+  costStatus: text('cost_status').notNull().default('priced'),
   latencyMs: integer('latency_ms').notNull().default(0),
   outcome: text('outcome').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

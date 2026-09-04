@@ -161,10 +161,13 @@ export class StorytellerAgent {
     goal: string,
     context: string,
     traceId?: string,
-    toolChoice: 'auto' | 'none' | 'required' = AgentModelRole.Auto,
-    _options?: { temperature?: number; topP?: number }
+    options?: {
+      toolChoice?: 'auto' | 'none' | 'required'
+      memory?: { thread: string; resource: string }
+    }
   ): Promise<string> {
     const id = traceId || this.generateHexId(32)
+    const toolChoice = options?.toolChoice ?? AgentModelRole.Auto
 
     return withMastraSpan(
       id,
@@ -178,6 +181,7 @@ export class StorytellerAgent {
           modelSettings: {
             maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
           },
+          ...(options?.memory ? { memory: options.memory } : {}),
           tracingOptions: {
             traceId: id,
             ...(span.spanId ? { parentSpanId: span.spanId } : {}),

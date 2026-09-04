@@ -13,9 +13,15 @@ import { readNumber, readString, recordFromJson } from '@/shared/data/json-guard
 export interface JudgeUsage {
   inputTokens: number
   outputTokens: number
+  /** USD from priced models only. Incomplete when unpricedModels is non-empty. */
   costUsd: number
   /** Models seen but absent from the price table; their cost is not counted. */
   unpricedModels: string[]
+  /**
+   * False when any judge model lacked a price row.
+   * A false value means costUsd is a floor — never treat it as a complete $0 win.
+   */
+  costComplete: boolean
 }
 
 export const EMPTY_JUDGE_USAGE: JudgeUsage = {
@@ -23,6 +29,7 @@ export const EMPTY_JUDGE_USAGE: JudgeUsage = {
   outputTokens: 0,
   costUsd: 0,
   unpricedModels: [],
+  costComplete: true,
 }
 
 function executionsOf(result: unknown): Record<string, unknown>[] {
@@ -55,17 +62,27 @@ export function judgeUsageOf(result: unknown, fallbackModel: string): JudgeUsage
       costUsd += costUsdFor(model, input, output)
     } catch {
       unpricedModels.add(model)
+      // Do not add 0 — an unpriced execution must not pad a passing cost total.
     }
   }
 
-  return { inputTokens, outputTokens, costUsd, unpricedModels: [...unpricedModels] }
+  const unpriced = [...unpricedModels]
+  return {
+    inputTokens,
+    outputTokens,
+    costUsd,
+    unpricedModels: unpriced,
+    costComplete: unpriced.length === 0,
+  }
 }
 
 export function addJudgeUsage(total: JudgeUsage, next: JudgeUsage): JudgeUsage {
+  const unpricedModels = [...new Set([...total.unpricedModels, ...next.unpricedModels])]
   return {
     inputTokens: total.inputTokens + next.inputTokens,
     outputTokens: total.outputTokens + next.outputTokens,
     costUsd: total.costUsd + next.costUsd,
-    unpricedModels: [...new Set([...total.unpricedModels, ...next.unpricedModels])],
+    unpricedModels,
+    costComplete: total.costComplete && next.costComplete && unpricedModels.length === 0,
   }
 }

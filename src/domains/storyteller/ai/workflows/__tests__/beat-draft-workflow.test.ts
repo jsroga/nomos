@@ -22,6 +22,7 @@ import {
   ProblemType,
   type Finding,
 } from '@/domains/storyteller/core/types/finding'
+import { ClaimCheckKind } from '@/domains/storyteller/core/claim-check'
 import { BeatDraftCriticName } from '../constants/beat-draft-workflow'
 
 function suspendPayload(
@@ -77,9 +78,12 @@ function makeDeps(overrides: Partial<BeatDraftDeps> = {}) {
     critiqueContinuity: vi.fn(async () => '## Continuity\nNO FINDINGS.'),
     critiqueProse: vi.fn(async () => '## Prose findings\nNO FINDINGS.'),
     critiqueStakes: vi.fn(async () => '## Stakes\nNO FINDINGS.'),
+    reviewStyleFidelity: vi.fn(async () => '## StyleFidelity\nNO FINDINGS.'),
     reviseBeat: vi.fn(async (_ctx, _canon, draft, _critiques, note) =>
       note ? `${draft}\n[revised per: ${note}]` : `${draft}\n[revised]`
     ),
+    humanizeBeat: vi.fn(async (_ctx, draft) => `${draft}\n[humanized]`),
+    claimCheckBeat: vi.fn(() => ({ ok: true, missing: [], altered: [] })),
     persistBeat: vi.fn(async () => ({ saved: true, beatId: 'beat-123', message: 'saved' })),
     generateSparks: vi.fn(async () => []),
     ...overrides,
@@ -125,9 +129,15 @@ describe('beat-draft-workflow mechanics (no LLM)', () => {
     expect(output.killed).toBe(false)
     expect(output.saved).toBe(true)
     expect(output.beatId).toBe('beat-123')
-    expect(output.finalDraft).toContain('[revised]')
+    expect(output.finalDraft).toContain('[humanized]')
     expect(deps.reviseBeat).toHaveBeenCalledTimes(1)
+    expect(deps.humanizeBeat).toHaveBeenCalledTimes(1)
     expect(deps.persistBeat).toHaveBeenCalledTimes(1)
+    expect(deps.persistBeat).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.stringContaining('[humanized]')
+    )
   })
 
   it('resume(revise + note) passes the editor note to the author', async () => {
@@ -172,7 +182,66 @@ describe('beat-draft-workflow mechanics (no LLM)', () => {
     expect(output.saved).toBe(false)
     expect(output.finalDraft).toBe('')
     expect(deps.reviseBeat).not.toHaveBeenCalled()
+    expect(deps.humanizeBeat).not.toHaveBeenCalled()
     expect(deps.persistBeat).not.toHaveBeenCalled()
+  })
+
+  it('claim-check fail skips persist and leaves saved false', async () => {
+    const deps = makeDeps({
+      claimCheckBeat: vi.fn(() => ({
+        ok: false,
+        missing: [{ kind: ClaimCheckKind.Number, value: '40' }],
+        altered: [],
+      })),
+    })
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    await run.start({ inputData: INPUT })
+
+    const result = await run.resume({
+      step: VERDICT_STEP_ID,
+      resumeData: { action: 'approve' },
+    })
+
+    expect(result.status).toBe('success')
+    if (result.status !== 'success') throw new Error('unreachable')
+    const output = beatDraftOutputSchema.parse(result.result)
+    expect(output.saved).toBe(false)
+    expect(output.killed).toBe(false)
+    expect(deps.humanizeBeat).toHaveBeenCalledTimes(1)
+    expect(deps.persistBeat).not.toHaveBeenCalled()
+  })
+
+  it('emits style_fidelity RoleDispatch with the revise paragraph diff before humanize', async () => {
+    const events: RunTraceEvent[] = []
+    const unsubscribe = subscribeRunTrace(event => {
+      events.push(event)
+    })
+    const deps = makeDeps({
+      draftBeat: vi.fn(async () => 'Para one.\n\nPara two.'),
+      reviseBeat: vi.fn(async () => 'Para one.\n\nPara two rewritten.'),
+    })
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    await run.start({ inputData: INPUT })
+    await run.resume({
+      step: VERDICT_STEP_ID,
+      resumeData: { action: 'approve' },
+    })
+    unsubscribe()
+
+    const styleDispatch = events.find(
+      event =>
+        event.type === RunTraceEventType.RoleDispatch &&
+        event.detail === 'style_fidelity'
+    )
+    expect(styleDispatch).toBeDefined()
+    expect(deps.reviewStyleFidelity).toHaveBeenCalledTimes(1)
+    const diffArg = vi.mocked(deps.reviewStyleFidelity).mock.calls[0]?.[0] ?? ''
+    expect(diffArg).toContain('PARAGRAPH DIFF')
+    expect(diffArg).toContain('Para two rewritten.')
+    expect(deps.humanizeBeat).toHaveBeenCalled()
+    expect(deps.persistBeat).toHaveBeenCalled()
   })
 
   it('autoApprove skips the verdict gate and completes in one run', async () => {

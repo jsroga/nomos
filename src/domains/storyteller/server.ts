@@ -62,3 +62,7 @@ export {
 export { runConsistencyCheck } from './services/consistency-check-adapter'
 
 export { getUndoManager } from './core/editing/undo-manager'
+export { GrrmAuthorAgentId, BeatPlannerAgentId, StorytellerAgentId } from './ai/constants/agent-identity'
+export { formatBannedPhrasesForPrompt } from './ai/prompts/guardrails/anti-slop-phrases'
+export { requestedEpisodePremiseField } from './core/utils/requested-episode-premise-field'
+export { CharacterDraftChatSection } from './core/storyteller-page-wire'

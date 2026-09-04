@@ -182,10 +182,10 @@ export function useCharacterCreationDialog({
   }, [activeCharId, description, mbti, motivation, onUpdate, projectId, updateGenState])
 
   const handleGenerateMetrics = useCallback(async () => {
-    if (!description) return
+    if (!description || !projectId) return
     setIsGeneratingMetrics(true)
     try {
-      const generated = await fetchCharacterMetrics(description)
+      const generated = await fetchCharacterMetrics(description, projectId)
       setMetrics((prev: CharacterMetrics) => mergeCharacterMetrics(prev, generated))
     } catch (error: unknown) {
       console.error(CHARACTER_DIALOG_ERROR_GENERATE_METRICS, error)
@@ -193,7 +193,7 @@ export function useCharacterCreationDialog({
     } finally {
       setIsGeneratingMetrics(false)
     }
-  }, [description])
+  }, [description, projectId])
 
   const missingFields = useGenerateMissingCharacterFields({
     name,

@@ -8,6 +8,7 @@ const noBareProjectIdParam = require('./no-bare-project-id-param')
 const noBareProcessEnv = require('./no-bare-process-env')
 const noRawTriggerTask = require('./no-raw-trigger-task')
 const noUntypedJsonRead = require('./no-untyped-json-read')
+const noFunctionsInConstants = require('./no-functions-in-constants')
 
 module.exports = {
   rules: {
@@ -21,5 +22,6 @@ module.exports = {
     'no-bare-process-env': noBareProcessEnv,
     'no-raw-trigger-task': noRawTriggerTask,
     'no-untyped-json-read': noUntypedJsonRead,
+    'no-functions-in-constants': noFunctionsInConstants,
   },
 }

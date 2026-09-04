@@ -173,7 +173,7 @@ sequenceDiagram
 | Hosting | Vercel | App + Blob |
 | Jobs | Trigger.dev | Image / 3D / long work |
 | DB / Auth | Supabase | Postgres + pgvector + Auth |
-| LLM gateway | OpenRouter (primary) | Agents / scorers |
+| LLM gateway | OpenRouter **only** via `@/shared/ai/gateway` | Agents / chat; vendor SDKs banned outside allowlist |
 | Embeddings | OpenRouter | RAG (`/embeddings`; optional Cohere rerank) |
 | Images | Gemini / Grok / Stability / LegNext | Tiles & media |
 | 3D | Meshy / Hyper3D / … | Asset exporter tasks |

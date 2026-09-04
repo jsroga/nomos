@@ -364,14 +364,12 @@ export class StorytellerService {
     )
     const agent = await createStorytellerAgent()
 
-    // Generate thread ID if not provided
-    const threadId =
-      validated.threadId ||
-      memoryRef({
-        projectId: validated.projectId,
-        episodeId: validated.episodeId,
-        userId: context.userId,
-      }).thread
+    const bound = memoryRef({
+      projectId: validated.projectId,
+      episodeId: validated.episodeId,
+      userId: context.userId,
+    })
+    const threadId = validated.threadId || bound.thread
 
     // Get series bible and characters for context
     const { seriesBible } = await this.getSeriesBible(scope)
@@ -391,7 +389,9 @@ export class StorytellerService {
 
     const content = await agent.run(
       StorytellerCrudAgentPrompt.RespondToUser,
-      `${chatContext}\n\nUser: ${validated.message}`
+      `${chatContext}\n\nUser: ${validated.message}`,
+      undefined,
+      { memory: { thread: threadId, resource: bound.resource } },
     )
 
     return {

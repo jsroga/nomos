@@ -118,12 +118,15 @@ describe('the cost budget', () => {
     const result = compareToBaseline(reportWith(IDENTICAL, 0, 0, ['acme/unknown']), priced)
 
     expect(result.cost).toBeNull()
+    expect(result.costSkipped).toContain('unpriced')
+    expect(formatComparison(result, 'test.json')).toContain('not a $0 win')
   })
 
   it('reports no cost comparison when the baseline predates cost recording', () => {
     const result = compareToBaseline(reportWith(IDENTICAL, 0, 0.2), BASELINE)
 
     expect(result.cost).toBeNull()
+    expect(result.costSkipped).toContain('no judge cost')
   })
 })
 

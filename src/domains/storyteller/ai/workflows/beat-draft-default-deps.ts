@@ -26,6 +26,9 @@ import {
   resolveRoadmapList,
   resolveRoadmapSlot,
 } from '@/domains/storyteller/core/utils/roadmap-slot'
+import { packMasterPromptVoice } from '@/domains/storyteller/services/pack-master-prompt-voice'
+import { claimCheckBeat as runClaimCheckBeat } from '@/domains/storyteller/core/claim-check'
+import { humanizeBeatDraft } from './beat-draft-humanize'
 import { statelessGrrmAuthor, statelessBeatPlanner } from './stateless-agents'
 import {
   BEAT_DRAFT_AUTHOR_CANON_CHAR_BUDGET,
@@ -37,12 +40,13 @@ import {
   BEAT_DRAFT_NO_FINDINGS,
   BeatDraftCriticName,
   BeatDraftStructuredOutputErrorStrategy,
+  BeatDraftStyleFidelity,
   BeatDraftToolChoice,
   BeatDraftWorldBibleSection,
 } from './constants/beat-draft-workflow'
 import { ManageToolOperation } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { ManageBeatOutputSchema } from '@/domains/storyteller/ai/tools/beat-tools-schema'
-import { nextBeatSequence, nextSequenceAfter } from '@/domains/storyteller/core/io/beat-sequence'
+import { nextBeatSequence, nextSequenceAfter, loadProjectMasterPrompt } from '@/domains/storyteller/core/io/beat-sequence'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { runSyncProseCheck, sortFindings } from '@/domains/storyteller/core/prose-check/run-sync'
 import { setupsFindingsFromRows } from '@/domains/storyteller/core/prose-check/setups-rows'
@@ -116,6 +120,11 @@ function truncateForAuthor(text: string, budget: number): string {
 
 function truncateCanonForAuthor(canon: string): string {
   return truncateForAuthor(canon, BEAT_DRAFT_AUTHOR_CANON_CHAR_BUDGET)
+}
+
+async function voicePrefixForProject(projectId: string): Promise<string> {
+  const packed = packMasterPromptVoice(await loadProjectMasterPrompt(projectId))
+  return packed.length > 0 ? `${packed}\n\n` : ''
 }
 
 /** Thinking models may wrap chain-of-thought; strip it so only script text is persisted. */
@@ -248,7 +257,8 @@ export const defaultBeatDraftDeps: BeatDraftDeps = {
 YOUR PREVIOUS PLAN FAILED THESE CONCRETENESS CHECKS — fix exactly these, keep what worked:
 ${retryFeedback}`
       : ''
-    const prompt = `${canon}
+    const voice = await voicePrefixForProject(ctx.projectId)
+    const prompt = `${voice}${canon}
 
 Plan the next beat for episode ${ctx.episodeId}.
 
@@ -276,7 +286,8 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
 LINT FEEDBACK — fix these errors:
 ${lintFeedback}`
       : ''
-    const prompt = `${truncateCanonForAuthor(canon)}
+    const voice = await voicePrefixForProject(ctx.projectId)
+    const prompt = `${voice}${truncateCanonForAuthor(canon)}
 
 Generate a script-format story beat for episode ${ctx.episodeId}.
 Beat plan: ${JSON.stringify(plan)}
@@ -317,11 +328,20 @@ Output ONLY the script beat — no preamble, no notes.${lintBlock}`
     return runCritic(stakesCritic, BeatDraftCriticName.Stakes, `${canonBlock}\n\n${draftBlock}`)
   },
 
-  reviseBeat: async (_ctx, canon, draft, critiques, editorNote) => {
+  reviewStyleFidelity: async diff => {
+    return runCritic(
+      proseCritic,
+      BeatDraftCriticName.Prose,
+      `${BeatDraftStyleFidelity.PromptPrefix}\n\n${diff}`
+    )
+  },
+
+  reviseBeat: async (ctx, canon, draft, critiques, editorNote) => {
     const noteBlock = editorNote
       ? `\nYOUR EDITOR'S DIRECTION (this outranks the critics and your own preferences):\n${editorNote}\n`
       : ''
-    const prompt = `${truncateCanonForAuthor(canon)}
+    const voice = await voicePrefixForProject(ctx.projectId)
+    const prompt = `${voice}${truncateCanonForAuthor(canon)}
 
 You drafted this script beat:
 
@@ -335,6 +355,10 @@ Output the REVISED beat in full, in Script Beat Format. Script only — no pream
 
     return generateAuthorDraft(prompt)
   },
+
+  humanizeBeat: (ctx, draft) => humanizeBeatDraft(ctx, draft),
+
+  claimCheckBeat: (sourceDraft, humanized) => runClaimCheckBeat(sourceDraft, humanized),
 
   generateSparks: async (ctx, canon) => {
     const { ideas } = await brainstormWildIdeas({

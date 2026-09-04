@@ -34,6 +34,7 @@ import { formatSparksForPlanner } from '@/domains/storyteller/ai/agents/Muse/ran
 import { BeatDraftCanonSchema } from '@/domains/storyteller/core/types/beat-draft-canon'
 import { CanonAudience, formatCanonFor } from './beat-draft-canon'
 import { runLintRedraftLoop } from './beat-draft-lint-loop'
+import { formatParagraphDiff } from './beat-draft-paragraph-diff'
 import { defaultBeatDraftDeps } from './beat-draft-default-deps'
 import type { BeatDraftContext, BeatDraftDeps } from './beat-draft-deps-types'
 import {
@@ -48,11 +49,13 @@ import {
   BEAT_DRAFT_AUTHOR_CANON_TRUNCATED,
   BEAT_DRAFT_CRITIQUE_JOIN,
   BEAT_DRAFT_CRITIC_ROLES,
+  BEAT_DRAFT_CLAIM_CHECK_FAIL_MESSAGE,
   BEAT_DRAFT_KILLED_MESSAGE,
   BEAT_DRAFT_VERDICT_NOTE_DESC,
   BEAT_DRAFT_VERDICT_SUSPEND_REASON,
   BeatDraftCriticName,
   BeatDraftStepId,
+  BeatDraftStyleFidelity,
   BeatDraftVerdictAction,
 } from './constants/beat-draft-workflow'
 
@@ -357,13 +360,44 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
         brief: inputData.brief,
         characters: inputData.characters,
       }
-      const finalDraft = await deps.reviseBeat(
+      const revised = await deps.reviseBeat(
         ctx,
         authorCanonText(inputData.canon, inputData.characters),
         inputData.draft,
         inputData.critiques,
         inputData.action === BeatDraftVerdictAction.Revise ? inputData.note : undefined
       )
+      const styleDiff = formatParagraphDiff(inputData.draft, revised)
+      emitRunTrace({
+        type: RunTraceEventType.RoleDispatch,
+        stepId: BeatDraftStepId.Revise,
+        role: BeatDraftStyleFidelity.Detail,
+        detail: BeatDraftStyleFidelity.Detail,
+      })
+      await deps.reviewStyleFidelity(styleDiff)
+      emitRunTrace({
+        type: RunTraceEventType.RoleResult,
+        stepId: BeatDraftStepId.Revise,
+        role: BeatDraftStyleFidelity.Detail,
+        detail: BeatDraftStyleFidelity.Detail,
+      })
+      const finalDraft = await deps.humanizeBeat(ctx, revised)
+      const claim = deps.claimCheckBeat(revised, finalDraft)
+      if (!claim.ok) {
+        emitRunTrace({
+          type: RunTraceEventType.ClaimCheckFail,
+          stepId: BeatDraftStepId.Revise,
+          detail: `missing=${claim.missing.length};altered=${claim.altered.length}`,
+        })
+        return {
+          finalDraft,
+          critiques: inputData.critiques,
+          beatPlan: inputData.beatPlan,
+          saved: false,
+          killed: false,
+          message: BEAT_DRAFT_CLAIM_CHECK_FAIL_MESSAGE,
+        }
+      }
       const persisted = await deps.persistBeat(ctx, inputData.beatPlan, finalDraft)
       emitRunTrace({
         type: RunTraceEventType.PersistCommit,

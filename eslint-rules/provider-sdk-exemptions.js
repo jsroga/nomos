@@ -33,8 +33,6 @@ const DOMAIN_REMAINDER = [
   // is no ProjectScope to bill against without changing every tool's input
   // contract — a field a model can silently omit.
   'src/domains/game-design/ai/tools/v2/game-design-llm-shared.ts',
-  // Reached without a scope in hand. Threading one is the remaining work.
-  'src/app/api/storyteller/generate-metrics/route.ts',
 ]
 
 module.exports = {

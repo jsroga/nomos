@@ -16,8 +16,9 @@ const DOMAIN_MODULES = [
 ]
 
 const PROVIDER_SDK_MESSAGE =
-  'Call models through @/shared/ai/gateway (complete / completeStructured / embed). ' +
-  'A direct provider import is a call nobody can cost. Rule: A2 · SPEC-13.'
+  'ONLY OpenRouter via @/shared/ai/gateway (complete / completeStructured / embed / meteredCall). ' +
+  'Direct openai / Anthropic / Google / other vendor SDKs and spending ai SDK exports are forbidden. ' +
+  'Rule: A2 · OpenRouter-only.'
 
 const SPENDING_AI_EXPORTS = [
   'generateText',
@@ -31,11 +32,18 @@ const SPENDING_AI_EXPORTS = [
 const PROVIDER_SDK_RESTRICTED_PATHS = [
   { name: 'ai', importNames: SPENDING_AI_EXPORTS, message: PROVIDER_SDK_MESSAGE },
   { name: 'openai', message: PROVIDER_SDK_MESSAGE },
+  { name: 'anthropic', message: PROVIDER_SDK_MESSAGE },
+  { name: '@anthropic-ai/sdk', message: PROVIDER_SDK_MESSAGE },
+  { name: '@google/generative-ai', message: PROVIDER_SDK_MESSAGE },
+  { name: 'cohere-ai', message: PROVIDER_SDK_MESSAGE },
+  { name: '@mistralai/mistralai', message: PROVIDER_SDK_MESSAGE },
   { name: 'replicate', message: PROVIDER_SDK_MESSAGE },
 ]
 
 const PROVIDER_SDK_RESTRICTED_PATTERNS = [
   { group: ['@ai-sdk/*', '!@ai-sdk/react'], message: PROVIDER_SDK_MESSAGE },
+  { group: ['@anthropic-ai/*'], message: PROVIDER_SDK_MESSAGE },
+  { group: ['@google-cloud/aiplatform', '@google/genai'], message: PROVIDER_SDK_MESSAGE },
 ]
 
 function domainBarrelGuardGroup(domain, extraAllows) {
@@ -62,13 +70,14 @@ const DOMAIN_BARREL_GUARD_PATTERNS = [
   ]),
   domainBarrelGuardGroup('3d-canvas'),
   domainBarrelGuardGroup('2d-canvas'),
+  domainBarrelGuardGroup('game-design'),
+  domainBarrelGuardGroup('loop-creator', [
+    '!@/domains/loop-creator/server',
+    '!@/domains/loop-creator/server/**',
+  ]),
   {
     group: ['@/domains/chat', '@/domains/chat/*'],
     message: 'chat moved to @/shared/chat (platform module) — import from there.',
-  },
-  {
-    group: ['@/domains/loop-creator/*'],
-    message: 'Import from "@/domains/loop-creator" instead of loop-creator internals.',
   },
   {
     group: ['@/domains/marketing/*'],
@@ -77,10 +86,6 @@ const DOMAIN_BARREL_GUARD_PATTERNS = [
   {
     group: ['@/domains/3d-asset-exporter/*'],
     message: 'Import from "@/domains/3d-asset-exporter" instead of 3d-asset-exporter internals.',
-  },
-  {
-    group: ['@/domains/game-design/*'],
-    message: 'Import from "@/domains/game-design" instead of game-design internals.',
   },
 ]
 

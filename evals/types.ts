@@ -84,8 +84,16 @@ export interface MultiVariantReport {
   timestamp: string
   /** Hash of the prompts, agents and datasets this run scored. */
   inputHash?: string
+  /** Resolved judging model id (env is not in the file hash). */
+  judgingModelId?: string
   /** What the judges cost. Never recorded to `llm_calls` — see ADR 0003. */
-  judgeUsage?: { inputTokens: number; outputTokens: number; costUsd: number; unpricedModels: string[] }
+  judgeUsage?: {
+    inputTokens: number
+    outputTokens: number
+    costUsd: number
+    unpricedModels: string[]
+    costComplete?: boolean
+  }
   variants: VariantReport[]
   scenarios: string[]
   /** Empty on a clean run. A non-empty list makes the run exit non-zero. */

@@ -5,6 +5,7 @@ export enum GrrmAuthorSkillDir {
 export enum GrrmAuthorSkillPath {
   AntiSlop = 'anti-slop/SKILL.md',
   Psychology = 'psychology/SKILL.md',
+  Humanizer = 'humanizer/SKILL.md',
 }
 
 export const GRRM_AUTHOR_SKILLS_DIRNAME = GrrmAuthorSkillDir.Skills

@@ -40,10 +40,19 @@ describe('check-eval-freshness', () => {
     ).toThrow()
   })
 
-  it('exits zero when passed is missing (skipped, not a pass)', () => {
+  it('exits zero when passed is missing and inputHash matches', () => {
     const dir = mkdtempSync(join(tmpdir(), 'eval-freshness-'))
     const artifact = join(dir, 'latest.json')
-    writeFileSync(artifact, JSON.stringify({ inputHash: 'not-a-pass' }))
+    const currentHash = execFileSync(
+      'node',
+      [
+        '--input-type=module',
+        '-e',
+        'import { inputHash } from \'./evals/input-hash.mjs\'; process.stdout.write(inputHash())',
+      ],
+      { cwd: process.cwd(), encoding: 'utf8' }
+    )
+    writeFileSync(artifact, JSON.stringify({ inputHash: currentHash }))
 
     const output = execFileSync('node', ['scripts/check-eval-freshness.mjs'], {
       cwd: process.cwd(),
@@ -51,5 +60,20 @@ describe('check-eval-freshness', () => {
       encoding: 'utf8',
     })
     expect(output).toContain('skipped (not a pass)')
+  })
+
+  it('exits non-zero when inputHash is stale', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'eval-freshness-'))
+    const artifact = join(dir, 'latest.json')
+    writeFileSync(artifact, JSON.stringify({ inputHash: 'stale-hash-fixture' }))
+
+    expect(() =>
+      execFileSync('node', ['scripts/check-eval-freshness.mjs'], {
+        cwd: process.cwd(),
+        env: { ...process.env, EVAL_RESULT_FILE: artifact },
+        encoding: 'utf8',
+        stdio: 'pipe',
+      })
+    ).toThrow(/inputHash mismatch/)
   })
 })

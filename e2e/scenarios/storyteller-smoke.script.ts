@@ -23,6 +23,8 @@ import {
   DB_PROPAGATION_DELAY_MS,
   DEFAULT_BASE_URL,
   DEFAULT_TEST_PROJECT_ID,
+  SMOKE_SCRATCH_PROJECT_DESCRIPTION,
+  SMOKE_SCRATCH_PROJECT_NAME,
   EMPTY_JSON_OBJECT,
   GENERIC_ANSWER_LOG_LIMIT,
   GENERIC_ANSWER_MIN_LENGTH,
@@ -46,9 +48,9 @@ import {
 
 const BASE_URL = process.env.TEST_BASE_URL || DEFAULT_BASE_URL
 const API_URL = `${BASE_URL}/api/storyteller/chat/stream`
-// Use environment variable or a known test project ID
-// The smoke test validates stream events, not actual DB persistence
-const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || DEFAULT_TEST_PROJECT_ID
+const PROJECT_API_URL = `${BASE_URL}/api/storyteller/projects`
+/** Set in `main` after ensure — env override, existing fixture, or freshly created. */
+let TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || DEFAULT_TEST_PROJECT_ID
 // Auth cookie for E2E persistence tests (optional - tests will be skipped if not provided)
 const AUTH_COOKIE = process.env.TEST_AUTH_COOKIE || ''
 
@@ -319,7 +321,6 @@ async function test_FLOW_GenerateContent_TriggersApproval() {
 // ============================================================================
 
 const ACTIONS_API_URL = `${BASE_URL}/api/storyteller/actions`
-const PROJECT_API_URL = `${BASE_URL}/api/storyteller/projects`
 
 interface ApprovalOutcome {
   ok: boolean
@@ -714,11 +715,44 @@ async function test_E2E_GraphRAG_ContextRetrieval() {
 // MAIN
 // ============================================================================
 
+async function ensureSmokeProjectId(): Promise<string> {
+  if (process.env.TEST_PROJECT_ID) return process.env.TEST_PROJECT_ID
+
+  console.log(SmokeLog.EnsuringProject)
+  const existing = await fetch(`${PROJECT_API_URL}/${DEFAULT_TEST_PROJECT_ID}`, {
+    headers: { 'x-bypass-auth': BYPASS_AUTH_VALUE },
+  })
+  if (existing.ok) return DEFAULT_TEST_PROJECT_ID
+
+  const created = await fetch(PROJECT_API_URL, {
+    method: SmokeHttp.Post,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-bypass-auth': BYPASS_AUTH_VALUE,
+    },
+    body: JSON.stringify({
+      name: SMOKE_SCRATCH_PROJECT_NAME,
+      description: SMOKE_SCRATCH_PROJECT_DESCRIPTION,
+    }),
+  })
+  if (!created.ok) {
+    throw new Error(`${SmokeError.FailedEnsureProject} (${created.status}: ${await created.text()})`)
+  }
+  const body: unknown = await created.json()
+  const id =
+    body && typeof body === 'object' && 'id' in body && typeof body.id === 'string' ? body.id : ''
+  if (!id) throw new Error(SmokeError.FailedEnsureProject)
+  console.log(SmokeLog.CreatedScratchProject, id)
+  return id
+}
+
 async function main() {
   console.log('\n' + '█'.repeat(BANNER_WIDTH))
   console.log(SmokeLog.BannerTitle)
   console.log(SmokeLog.BannerSubtitle)
   console.log('█'.repeat(BANNER_WIDTH) + '\n')
+
+  TEST_PROJECT_ID = await ensureSmokeProjectId()
 
   console.log(SmokeLog.TestingAgainst, API_URL)
   console.log(SmokeLog.ProjectId, TEST_PROJECT_ID)

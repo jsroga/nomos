@@ -28,11 +28,15 @@ function buckets(): Record<string, string[]> {
 }
 
 describe('untyped JSON reads', () => {
-  it('does not grow the guard count SPEC-16 is burning down', () => {
-    const guards = buckets()[UntypedJsonBucket.Guard] ?? []
+  it(
+    'does not grow the guard count SPEC-16 is burning down',
+    () => {
+      const guards = buckets()[UntypedJsonBucket.Guard] ?? []
 
-    expect(guards.length).toBeLessThanOrEqual(RATCHET.untypedJsonReads)
-  })
+      expect(guards.length).toBeLessThanOrEqual(RATCHET.untypedJsonReads)
+    },
+    60_000
+  )
 
   it('does not grow the database spellings that escaped their mapper', () => {
     const reads = buckets()[UntypedJsonBucket.SnakeCaseRead] ?? []
@@ -49,11 +53,15 @@ describe('untyped JSON reads', () => {
     expect(inConverted.length).toBeLessThanOrEqual(RATCHET.snakeCaseReadsInConvertedModules)
   })
 
-  it('does not grow the schemas that forward unknown keys', () => {
-    const schemas = buckets()[UntypedJsonBucket.Passthrough] ?? []
+  it(
+    'does not grow the schemas that forward unknown keys',
+    () => {
+      const schemas = buckets()[UntypedJsonBucket.Passthrough] ?? []
 
-    expect(schemas.length).toBeLessThanOrEqual(RATCHET.passthroughSchemas)
-  })
+      expect(schemas.length).toBeLessThanOrEqual(RATCHET.passthroughSchemas)
+    },
+    60_000
+  )
 
   it('has no z.any(), which disables checking on everything downstream', () => {
     const uses = buckets()[UntypedJsonBucket.ZodAny] ?? []

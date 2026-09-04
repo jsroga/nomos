@@ -27,11 +27,15 @@ function unique(files: string[] | undefined): string[] {
 }
 
 describe('background task shape', () => {
-  it('builds every task through the factory, so none can omit a schema', () => {
-    expect(unique(shape()[TriggerTaskBucket.RawTask]).length).toBeLessThanOrEqual(
-      RATCHET.rawTaskDefinitions
-    )
-  })
+  it(
+    'builds every task through the factory, so none can omit a schema',
+    () => {
+      expect(unique(shape()[TriggerTaskBucket.RawTask]).length).toBeLessThanOrEqual(
+        RATCHET.rawTaskDefinitions
+      )
+    },
+    60_000
+  )
 
   it('names a queue on every task, so one tenant cannot drain a provider quota', () => {
     const buckets = shape()

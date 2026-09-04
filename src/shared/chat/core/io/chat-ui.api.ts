@@ -10,9 +10,9 @@ import {
   GameEntityTypeId,
   GameSourceDomainId,
 } from '../constants/game-entity-mentions'
+import { CHAT_LLM_JUDGE_API_PATH } from '../constants/chat-interface'
 
 const PROVIDERS_ENDPOINT = '/api/settings/providers'
-const CHAT_LLM_JUDGE_API_PATH = '/api/chat/llm-judge'
 const ENTITIES_API_PATH = '/api/entities'
 
 const ENTITY_TYPES = Object.values(GameEntityTypeId)
@@ -86,6 +86,7 @@ export async function fetchProviderStatus(): Promise<ProviderStatusResponse> {
 }
 
 export async function evaluateChatConversation(payload: {
+  projectId: string
   conversation: Array<Record<string, unknown>>
   criteria: string[]
 }): Promise<ChatEvalResult> {

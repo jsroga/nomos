@@ -1,3 +1,12 @@
+export enum MemoryThreadPrefix {
+  Storyteller = 'storyteller',
+}
+
+/** Empty episode or project slot in the thread key. */
+export enum MemorySlot {
+  None = '_',
+}
+
 export interface MemoryRefInput {
   projectId: string
   episodeId?: string
@@ -11,7 +20,7 @@ export interface MemoryRef {
 
 export function memoryRef(input: MemoryRefInput): MemoryRef {
   return {
-    thread: `storyteller:${input.projectId}:${input.episodeId ?? '_'}:${input.userId}`,
+    thread: `${MemoryThreadPrefix.Storyteller}:${input.projectId}:${input.episodeId ?? MemorySlot.None}:${input.userId}`,
     resource: input.userId,
   }
 }

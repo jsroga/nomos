@@ -59,6 +59,7 @@ describe('recordLlmCall', () => {
     expect(insertMock.mock.calls[0]?.[0]).toMatchObject({
       feature: LlmFeature.StorytellerChat,
       costUsd: '2.500000',
+      costStatus: 'priced',
       outcome: LlmOutcome.Ok,
     })
   })
@@ -93,6 +94,7 @@ describe('recordLlmCall', () => {
       promptTokens: 1_000_000,
       latencyMs: 1200,
       costUsd: '0.000000',
+      costStatus: 'unknown',
     })
     warn.mockRestore()
   })

@@ -21,6 +21,7 @@ import { getErrorMessage } from '@/shared/errors/error-utils'
 // The .mjs module is shared with the pre-commit check, which runs under bare
 // node; it carries no types by design.
 import { inputHash } from './input-hash.mjs'
+import { resolveJudgingModelId } from './constants/thresholds'
 import { addJudgeUsage, judgeUsageOf, EMPTY_JUDGE_USAGE, type JudgeUsage } from './judge-usage'
 import { examplesMatchingScorers } from './select-eval-examples'
 import type {
@@ -175,7 +176,9 @@ async function runEval(): Promise<MultiVariantReport> {
   registerCorePrompts()
 
   const ALL_SCORERS = await loadScorers()
-  const judgingModel = process.env.JUDGING_MODEL || 'openai/gpt-5.6-sol (default)'
+  const judgingModelRaw = process.env.JUDGING_MODEL
+  const judgingModelId = resolveJudgingModelId(judgingModelRaw)
+  const judgingModel = judgingModelRaw || `${judgingModelId} (default)`
   console.log(`   Judge model: ${judgingModel}`)
 
   const dataset = parseDataset()
@@ -287,6 +290,7 @@ async function runEval(): Promise<MultiVariantReport> {
     // The sources this run scored. `check-eval-freshness` compares it against
     // the working tree, so a stale artifact cannot pass for a fresh one.
     inputHash: inputHash(),
+    judgingModelId,
     judgeUsage,
     variants: [variant],
     scenarios: scenarioNames,

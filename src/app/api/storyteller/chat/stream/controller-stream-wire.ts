@@ -13,6 +13,7 @@
  */
 
 import type { RequestContext } from '@mastra/core/di'
+import { MemorySlot, memoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
 import { getStorytellerController } from '@/domains/storyteller/core/io/mastra-runtime'
 import {
   createControllerStreamContext,
@@ -103,8 +104,14 @@ export async function streamStorytellerControllerResponse(opts: {
   episodeId?: string
 }): Promise<Response> {
   const controller = await getStorytellerController()
+  const bound = memoryRef({
+    projectId: opts.projectId ?? MemorySlot.None,
+    episodeId: opts.episodeId,
+    userId: opts.userId,
+  })
   const session = await controller.createSession({
-    resourceId: opts.userId,
+    resourceId: bound.resource,
+    threadId: bound.thread,
     tags: {
       ...(opts.projectId ? { [PROJECT_TAG]: opts.projectId } : {}),
       ...(opts.episodeId ? { [EPISODE_TAG]: opts.episodeId } : {}),

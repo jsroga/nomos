@@ -25,6 +25,7 @@ import {
   resolveRoadmapSlot,
 } from '@/domains/storyteller/core/utils/roadmap-slot'
 import type { Character, EpisodeIndexRow, ProjectMeta } from './context-assembly-parsers'
+import { packMasterPromptVoice } from './pack-master-prompt-voice'
 
 type BeatRow = typeof beats.$inferSelect
 
@@ -234,6 +235,7 @@ export function buildSystemContextBlock(params: {
 }): string {
   const linkReqs = getEntityLinkRequirements()
   const { projectId, episodeId, phase, masterPrompt } = params
+  const voiceBlock = packMasterPromptVoice(masterPrompt)
 
   return `=== IQ 200 CONTEXT ENGINEERING & ENTITY LINKS ===
 You are in a high-fidelity creative workspace. To maintain continuity and enable user interaction, you MUST use the following rules for entity references:
@@ -256,7 +258,7 @@ CURRENT STORY PHASE: ${phase}
 - ${Phase.BREAKING}: Plot structure, beat board organization.
 - ${Phase.WRITING}: Scripting and dialogue execution.
 ⚠️ REFERENCE ONLY: Content below is for world/history consistency. When asked to GENERATE, create NEW content.
-${masterPrompt ? `\n=== MASTER PROMPT ===\n${masterPrompt}` : ''}
+${voiceBlock ? `\n${voiceBlock}` : ''}
 `
 }
 

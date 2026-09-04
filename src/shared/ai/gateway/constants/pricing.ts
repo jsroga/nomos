@@ -57,4 +57,20 @@ export const PROVIDER_PRICING: Readonly<Record<string, ModelPrice>> = {
   'voyage-3': { inputPerMillion: 0.06, outputPerMillion: 0, effectiveFrom: EFFECTIVE_FROM },
   'voyage-3-lite': { inputPerMillion: 0.02, outputPerMillion: 0, effectiveFrom: EFFECTIVE_FROM },
   'rerank-2': { inputPerMillion: 0.05, outputPerMillion: 0, effectiveFrom: EFFECTIVE_FROM },
+  // TEXT_GEN_* production defaults (OpenRouter list prices, 2026-09).
+  'moonshotai/kimi-k3': {
+    inputPerMillion: 2.55,
+    outputPerMillion: 12.75,
+    effectiveFrom: EFFECTIVE_FROM,
+  },
+  'openai/gpt-5.6-sol': {
+    inputPerMillion: 2,
+    outputPerMillion: 10,
+    effectiveFrom: EFFECTIVE_FROM,
+  },
+  'openai/gpt-5.6-luna': {
+    inputPerMillion: 0.2,
+    outputPerMillion: 1.2,
+    effectiveFrom: EFFECTIVE_FROM,
+  },
 }

@@ -12,6 +12,9 @@
  * regex or a structural check); the rest are judges whose golden examples are
  * unambiguous enough to land identically. The floor is what stops that zero
  * from becoming a hair-trigger.
+ *
+ * Noise is keyed by **judge model id** as well as scorer id. A drifted judge
+ * without a noise row fails closed.
  */
 
 /**
@@ -32,6 +35,9 @@ export const SIGMA_MULTIPLE = 2
  */
 export const COST_BUDGET_MULTIPLE = 1.1
 
+/** Default judging model id when JUDGING_MODEL is unset (matches evals/run.ts). */
+export const DEFAULT_JUDGING_MODEL_ID = 'openai/gpt-5.6-sol'
+
 export enum ScorerKind {
   /** A regex or structural check: σ = 0 by construction. */
   Deterministic = 'deterministic',
@@ -48,7 +54,7 @@ export interface ScorerThreshold {
 }
 
 /** From `evals/baselines/noise.2026-08-28.json`. Re-measure after a judge change. */
-export const SCORER_NOISE: Readonly<Record<string, ScorerThreshold>> = {
+const NOISE_FOR_DEFAULT_JUDGE: Readonly<Record<string, ScorerThreshold>> = {
   magic: { sigma: 0.0220, kind: ScorerKind.LlmJudge, sigmaRuns: 3 },
   hallucination: { sigma: 0.0157, kind: ScorerKind.LlmJudge, sigmaRuns: 3 },
   'persona-fidelity': { sigma: 0.0057, kind: ScorerKind.LlmJudge, sigmaRuns: 3 },
@@ -59,13 +65,33 @@ export const SCORER_NOISE: Readonly<Record<string, ScorerThreshold>> = {
   'beat-plan-concreteness': { sigma: 0, kind: ScorerKind.Deterministic, sigmaRuns: 3 },
 }
 
+export const SCORER_NOISE: Readonly<
+  Record<string, Readonly<Record<string, ScorerThreshold>>>
+> = {
+  [DEFAULT_JUDGING_MODEL_ID]: NOISE_FOR_DEFAULT_JUDGE,
+}
+
+export function resolveJudgingModelId(raw?: string | null): string {
+  const trimmed = raw?.trim()
+  if (!trimmed || trimmed.includes('(default)')) return DEFAULT_JUDGING_MODEL_ID
+  return trimmed
+}
+
 /**
- * The drop this scorer must exceed to fail the gate. An unknown scorer — one
- * added since the last noise measurement — gets the floor, so it gates rather
- * than passing silently.
+ * The drop this scorer must exceed to fail the gate. Unknown scorer under a
+ * known judge → floor. Unknown judge id → throw (fail closed on drift).
  */
-export function regressionThreshold(scorerId: string): number {
-  const noise = SCORER_NOISE[scorerId]
+export function regressionThreshold(
+  scorerId: string,
+  judgeModelId: string = DEFAULT_JUDGING_MODEL_ID
+): number {
+  const byJudge = SCORER_NOISE[resolveJudgingModelId(judgeModelId)]
+  if (!byJudge) {
+    throw new Error(
+      `SCORER_NOISE has no row for judge model "${judgeModelId}" — re-measure noise or pin JUDGING_MODEL`
+    )
+  }
+  const noise = byJudge[scorerId]
   if (!noise) return REGRESSION_FLOOR
   return Math.max(SIGMA_MULTIPLE * noise.sigma, REGRESSION_FLOOR)
 }
