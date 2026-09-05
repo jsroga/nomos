@@ -8,8 +8,7 @@ workflows (heavy / light / sweep), host persist, Humanizer after verdict. Schedu
 Legend: **red** = broken or unenforced · **amber** = present but incomplete · **green** =
 correct, do not regress · **blue** = deterministic host code · **purple** = model call.
 
-Eleven diagrams: two of what exists, five of the system, three of how it gets measured, then the
-writer journey (Premise → Beats → Draft).
+Eleven diagrams of the writing system, then two of the Phase 5 workspace overlay (current death-on-navigate vs target shell).
 
 ---
 
@@ -426,3 +425,74 @@ flowchart LR
 **Reading it.** Cork Board must not call the compiler. Empty beats cannot Draft. Ghost text is
 the cheap Cursor habit; the heavy workflow is opt-in per section. Format is a skill, not a
 new agent. Spec: `target-architecture.md` §7.5.
+
+---
+
+## 12. Current — chat dies with the storyteller route
+
+Writers Room is a child of `StorytellerLayout`. The project shell (`[projectId]/layout.tsx`) has sidebar + header only.
+
+```mermaid
+flowchart TB
+  subgraph shell ["Project layout — stays mounted"]
+    SB["GlobalSidebar"]
+    HD["GlobalHeader"]
+  end
+
+  subgraph pages ["Route children — remount on navigate"]
+    ST["storyteller page<br/>WritersRoomAssistantChat"]
+    C2["2d-canvas page<br/>no chat"]
+  end
+
+  WR["Writer"] --> ST
+  ST -->|"navigate to 2d-canvas"| KILL["React unmount<br/>fetch aborted<br/>stream gone"]
+  KILL --> C2
+
+  classDef bad fill:#4a1520,stroke:#c0392b,color:#fff
+  classDef warn fill:#4a3a15,stroke:#d68910,color:#fff
+  classDef ok fill:#14401f,stroke:#27ae60,color:#fff
+  class KILL,C2 bad
+  class ST warn
+  class SB,HD ok
+```
+
+**Reading it.** The stream is owned by a page. Changing files in this product is not like Cursor: the chat panel is inside one file.
+
+---
+
+## 13. Target — Phase 5 overlay, many sessions, one module each
+
+```mermaid
+flowchart TB
+  subgraph shell ["Project layout — one overlay instance"]
+    SB["GlobalSidebar"]
+    HD["GlobalHeader<br/>show/hide chat"]
+    OV["General Chat Window"]
+    LIST["session list<br/>running · rename · delete"]
+    OV --> LIST
+  end
+
+  subgraph sessions ["Host-owned rows"]
+    S1["session A · module=storyteller · streaming"]
+    S2["session B · module=2d-canvas · idle"]
+  end
+
+  ST["/storyteller"] -.->|"view only — no remount"| OV
+  C2["/2d-canvas"] -.->|"view only — no remount"| OV
+
+  S1 --> OV
+  S2 --> OV
+
+  C2 -->|"send while A is focused"| DLG["dialog: start new chat<br/>for 2d-canvas"]
+  DLG --> S2
+  S1 -.->|"keeps streaming"| BG["background run"]
+
+  classDef ok fill:#14401f,stroke:#27ae60,color:#fff
+  classDef host fill:#12305e,stroke:#3d7ebf,color:#fff
+  classDef warn fill:#4a3a15,stroke:#d68910,color:#fff
+  class OV,LIST,S1,S2,BG host
+  class SB,HD,ST,C2 ok
+  class DLG warn
+```
+
+**Reading it.** The window is chrome. Sessions are data. Navigation is a view change. A prompt from the wrong module opens a new session; it does not hijack the live storyteller run. Spec: `target-architecture.md` §7.6. Actions 33–38. Phase 5.

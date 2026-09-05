@@ -1,4 +1,4 @@
-# Nomos — 32 Actions
+# Nomos — 38 Actions
 
 Baselined on `refactor` @ `b409539`. Analysis only — each action becomes a detailed specification
 later.
@@ -11,9 +11,9 @@ for someone meeting the technique for the first time:
   working better with an AI assistant on that kind of problem.
 - **In plain words** — the idiot-proof version. No jargon, no repo names.
 
-**Four tracks.** **A — Foundations**: auth, CI, cost, gates, jobs. **B — Writing harness**:
+**Five tracks.** **A — Foundations**: auth, CI, cost, gates, jobs. **B — Writing harness**:
 honest floor in `target-architecture.md` (one chat agent, three critic scopes, host persist).
-**C — Evals.** **D — Compounding** (Phase 4).
+**C — Evals.** **D — Compounding** (Phase 4). **E — Workspace overlay chat** (Phase 5, Actions 33–38). **F — Tests** (Phase 6, Actions 49–51).
 
 **Priority.** P0 = a stated guarantee is false, a security exposure exists, or the architecture is
 unsound without it. P1 = structural work the design depends on. P2 = capability built on top.
@@ -29,12 +29,9 @@ timeout source (28). That work is not optional decoration for the writing system
 
 **Numbers are stable ids, not positions.** Schedule is [phases.md](./phases.md). Actions 1–25
 are grouped under track headings; 26–32 sit after Track D (27 and 31 → A, 26/28/30 → B, 29
-and 32 → C). The backtick string above is historical — do not execute it.
+and 32 → C). Actions **33–38** are Track E / Phase 5. Actions **49–51** are Track F / Phase 6. Appendix B is **39–48**. The backtick string above is historical — do not execute it.
 
-**Current phase: evals first, no browser tier.** Verification for everything now in flight runs
-through unit tests, the structural and judge scorers, and the ablation harness. No Playwright
-spec is a prerequisite for any action below, and none should be blocked waiting for one — see
-`evaluation.md` §9.1.
+**Phases 0–5: evals first, no browser tier** for compiler work. **Phase 6** is when Playwright on product pages is scheduled — see `evaluation.md` §9.1 and [phases.md](./phases.md) Phase 6 tables. Do not block Actions 1–38 on those specs.
 
 Two consequences for this list. **Phase 0 leads** ([phases.md](./phases.md)): identity, persist,
 trace, and timeout reconciliation before new personalities. **Actions 3 and 18** are the
@@ -88,6 +85,12 @@ Settled chat behaviour is `target-architecture.md` §7.4. Draft-tab pixels are �
 | 30 | The chat surface: verdict, progress, labels | B | P2 | Finish the half-wired verdict and say what's happening in words |
 | 31 | Memory: bind it, bound it, expire it | A | P1 | Decide whose notebook is whose, how thick, and when it's shredded |
 | 32 | Character voice fingerprints | C | P1 | Every prompt demands distinct voices; nothing checks |
+| 33 | Chat session as a persisted aggregate | E | P1 | The chat is a saved thing, not a tab that forgets |
+| 34 | Overlay host: one component, never remounted | E | P1 | Same window on every module page |
+| 35 | Stream survives navigation and refresh | E | P1 | Leave the page; the reply keeps coming |
+| 36 | One session, one module; else new chat | E | P1 | Don't type 2D prompts into a story thread |
+| 37 | Session list like Cursor | E | P2 | Switch, see running, rename, delete |
+| 38 | Cheap title after the first message | E | P2 | Name the chat; don't make the user |
 
 ---
 
@@ -1568,11 +1571,284 @@ it costs nothing to run.
 
 ---
 
+# Track E — Workspace overlay chat (Phase 5)
+
+Product, not ablation. The compiler in Tracks A–D can ship without this. The project shell cannot: chat is mounted inside storyteller today, so leaving the route kills the stream. Schedule: [phases.md](./phases.md) Phase 5 — **that section is the implementation handover** (files, schema, mount tree, tests). Do not insert this before Humanizer. Do not invent a second plan.
+
+**Do in order: 33 → 34 → 35 → 36 → 37 → 38.** 34 without 33 has no list to restore. 35 without 34 still dies on navigate. 36 without 35 will abort the background stream while you argue about the dialog.
+
+---
+
+## 33. Chat session as a persisted aggregate
+
+**Track:** E · **Priority:** P1 · **Dependencies:** 1 (ownership), 31 (thread/resource keys)
+
+**WHAT.** A chat is a row the host owns: `projectId`, `userId`, immutable `moduleId`, Mastra `thread` + `resource`, title, status (`idle` / `streaming` / `suspended`), timestamps. Refresh must restore the **list**. Messages are **not** in this table — they stay in Mastra memory. User A cannot list or delete B's sessions (404).
+
+**HOW — implement exactly this.**
+
+1. **Enum `AppModuleId`** in `src/shared/data/constants/protocol-domain.ts` — add `AssetExporter = 'asset-exporter'`. Do not create `WorkspaceModuleId` next to it.
+2. **Enums** in `src/shared/chat/core/constants/chat-session.ts`: `ChatSessionStatus` (`idle`/`streaming`/`suspended`), `ChatSessionWire` (`aiSdk` only for overlay creates), `ChatSessionCopy.PlaceholderTitle = 'New chat'`.
+3. **SQL migration** `supabase/migrations/YYYYMMDDHHMMSS_chat_sessions.sql`: table `chat_sessions` as in [phases.md](./phases.md) §5.4. Enable RLS. Revoke anon/authenticated if the API uses service role (same pattern as host tables you already write through routes). Index `(project_id, user_id, updated_at DESC)`.
+4. **Drizzle** `src/db/schema-parts/chat-sessions.ts` + export from `src/db/schema.ts`. No `as`. No `any`.
+5. **`overlayMemoryRef({ id, userId })`** in `src/shared/agent-kernel/mastra/memory-ref.ts`: thread `overlay:${id}`, resource `userId`. **Do not** change `memoryRef()`. Add tests in a **new** file so `memory-ref.test.ts` live-door assertions stay green.
+6. **Routes** (new):
+   - `src/app/api/chat/sessions/route.ts` — GET list, POST create.
+   - `src/app/api/chat/sessions/[sessionId]/route.ts` — PATCH, DELETE.
+   - `src/app/api/chat/sessions/[sessionId]/messages/route.ts` — GET hydrate from Mastra memory (`src/shared/agent-kernel/memory/agent-memory.ts` already has thread helpers).
+   Auth: `requireAuth` then `tryProjectScope` / `projectScope`. Wrong user → **404**. PATCH schema: `title?`, `status?`, `runId?`. Zod **strip** `moduleId` if sent (or `.strict()` and 400). Create body: `{ projectId, moduleId }` only; server sets `thread`, `resource`, placeholder title, `status=idle`, `wire=aiSdk`.
+7. **OpenAPI:** Zod in `src/shared/chat/core/io/chat-session-contract.ts` (schema + inferred type + mapper; snake_case **only** in the mapper). Register in `src/shared/openapi/register-shared-routes.ts`. `npm run openapi:generate`. Do not omit `/chat/sessions` in `route-coverage-omit.ts`.
+8. **Client:** `src/shared/chat/core/io/chat-sessions.api.ts` (`buildUrl` / `joinUrlPath`). Query keys `chat-sessions.keys.ts`. TanStack Query for the list. Zustand is **not** the list.
+9. **Assistant door:** `src/app/api/assistant/[agentId]/route.ts` — add `AssistantChatBodyKey.SessionId = 'sessionId'`. When present, load row + bind `overlayMemoryRef`. When absent, keep `memoryRef({ projectId, episodeId, userId })`.
+
+**WHERE.** Shared chat + `src/db` + `src/app/api/chat/**`. Never `src/domains/storyteller/core/io/` for this table.
+
+**Acceptance.**
+
+- Create two sessions, reload, same ids/order for that user+project.
+- User B GET/PATCH/DELETE user A's id → 404.
+- POST sets `moduleId`; PATCH with `moduleId` does not change it (test the Zod/handler).
+- `overlayMemoryRef` threads differ per session id and differ from `memoryRef`.
+- Existing `memory-ref.test.ts` still passes.
+- `npm run qualitygate:file` on every new route + `openapi:check`.
+
+**What is there to learn.** *Session as an aggregate, distinct from the message log.* IDEs persist a conversation handle separately from the token stream. *Working with AI:* paste [phases.md](./phases.md) §5.4 into the prompt and forbid a second table of messages.
+
+**In plain words.** A chat is a saved row with an owner and a home module. Refresh brings the **list** back. The words of the chat live in the existing memory notebooks, not in a second copy of the novel.
+
+---
+
+## 34. Overlay host: one component, never remounted
+
+**Track:** E · **Priority:** P1 · **Dependencies:** 33
+
+**WHAT.** One **General Chat Window** for the project. Every workspace module sees the same instance. Navigating `/{projectId}/storyteller` → `/{projectId}/2d-canvas` must not remount it. Show/hide from `GlobalHeader`. Storyteller Writers Room and Loop Creator sidebar **do not** keep a second `AssistantChat` when the overlay flag is on.
+
+**HOW — implement exactly this.**
+
+1. **Flag:** `FeatureFlag.WorkspaceChatOverlay = 'FF_WORKSPACE_CHAT_OVERLAY'` and `isWorkspaceChatOverlayEnabled()` reading `process.env.NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY` as a **literal** (copy `isLoopCreatorEnabled`). Update `.env.local.example` **and** `.env.local`.
+2. **Client overlay** under `src/shared/chat/ui/WorkspaceChatOverlay/` as listed in [phases.md](./phases.md) §5.5. Export from `src/shared/chat/index.ts`.
+3. **`WorkspaceChatLayer.tsx`** next to the project layout (app may import domain barrels). Registers adapters; renders `WorkspaceChatOverlay`.
+4. **`src/app/(workspace)/[projectId]/layout.tsx`:** sibling of `ProjectLoader`, **not** inside `{children}`:
+
+```tsx
+<div className="flex-1 overflow-hidden relative">
+  <ProjectLoader>{children}</ProjectLoader>
+  {isWorkspaceChatOverlayEnabled() ? <WorkspaceChatLayer /> : null}
+</div>
+```
+
+   The ternary on **WorkspaceChatLayer** is allowed (whole feature off). The ternary on **open** inside the layer is **forbidden**.
+5. **Toggle:** `GlobalHeader` icon `MessageSquare` → `toggleOverlay()`. Overlay uses CSS/`hidden` when closed. Test: component still in the document.
+6. **Adapters (no domain imports from `shared/chat`):**
+   - Storyteller: move the **props** currently passed in `WritersRoomAssistantChat.tsx` (`agentId="storyteller"`, `writersRoomChatBody`, mentions, `BeatDraftVerdictToolUI`, add-to-world, pending prompt, generation activity, model picker, `TOUR_STEP_IDS.STORYTELLER_CHAT`) onto `getStorytellerChatAdapter()` exported from `@/domains/storyteller`. Keep handler logic; you may keep `StorytellerWritersRoom` as a **headless** host (hooks + ConfirmDialog) **without** rendering `WritersRoomAssistantChat` when the flag is on.
+   - Loop-creator: same for `LoopChatSidebar.tsx` — no `AssistantChat` when flag on.
+7. **Parse module** from pathname `/{projectId}/{segment}` (parts[0]=id, parts[1]=module). Ignore `ProjectSelectorDropdown`'s `/app/` comments.
+8. **Do not** put `AssistantChat` on `2d-canvas/page.tsx` or any other module page.
+
+**WHERE.** Layout + `GlobalHeader` + `src/shared/chat/ui/WorkspaceChatOverlay/*` + domain barrels for adapters only.
+
+**Acceptance.**
+
+- Client navigation storyteller → 2d-canvas: overlay React instance stays (ref/test id). `AssistantChat` inside it is not remounted solely because of the route (`key` must be `session.id`, never `pathname`).
+- Flag on: grep/test that `WritersRoomAssistantChat` / Loop `AssistantChat` are not mounted.
+- Flag off: today's Writers Room still mounts (no behavior change).
+- Toggle closed: pixels gone, runtimes still mounted (Action 35 will rely on this).
+
+**What is there to learn.** *Lift state above the route.* If a widget is a child of `page.tsx`, the App Router kills it when the segment changes. *Working with AI:* forbid "put the chat on each module page." Paste §5.2 of phases.md.
+
+**In plain words.** The chat window belongs to the project, like the left sidebar. Changing from Story to the 2D map is like changing files in an editor — the chat panel stays.
+
+---
+
+## 35. Stream survives navigation and refresh
+
+**Track:** E · **Priority:** P1 · **Dependencies:** 34, 6 (gateway context on the door the session uses)
+
+**WHAT.** An in-flight **AI-SDK** generation continues if the writer opens another module (SPA). After a **full** page load, the session **list** and **messages** come back; the HTTP stream is dead. Do **not** POST the last user message again. Do **not** merge SSE (`ChatFrameType`) into this runtime.
+
+**HOW — implement exactly this.**
+
+1. **One runtime per session that is focused or `streaming`.** File: `WorkspaceChatSessionRuntime.tsx`. `key={session.id}`. `useChat({ id: session.id, transport: new DefaultChatTransport({ api, body }) })`. Body **must** include `sessionId` + `projectId` (+ storyteller extras from the adapter).
+2. **Never** `key={focusedSessionId}` on a single `AssistantChat`.
+3. **Visible vs mounted:** unfocused streaming sessions render with `hidden` / `aria-hidden`, not `return null`.
+4. **Pathname** is not a dependency that unmounts runtimes. Do not `stop()` in an effect that lists `pathname`.
+5. **Abort only:** user Stop; DELETE that session; leaving `[projectId]` layout (different project).
+6. **Refresh:** GET sessions. Rows with `status=streaming` and no durable `runId` → PATCH `idle` (disconnected). GET messages into the thread. `handleChatStream` is **not** `observe(runId)` — do not fake a reconnect that re-calls the model.
+7. **Replace sessionStorage as source of truth** for overlay (`createSessionThreadHistoryAdapter('writers-room-'+projectId)` is the old tab cache). Overlay `load()` = `GET .../messages`. Keep `thread-history-adapter.ts` for flag-off Writers Room.
+8. **Status PATCH:** client sets `streaming` on send, `idle` on settle (`useAssistantTurnSettle` already knows busy→idle). Server may also set this around `handleChatStream` (best-effort).
+9. **Wire:** overlay creates `ChatSessionWire.AiSdk` only. Do not call `POST /api/storyteller/chat/stream` from the overlay. Verdict still uses `resumeChatWorkflow` inside `BeatDraftVerdictToolUI`.
+
+**WHERE.** `WorkspaceChatSessionRuntime`; assistant route memory bind (Action 33); messages GET. Not `stream-post-handler.ts`.
+
+**Acceptance.**
+
+- Unit: policy that a runtime list keeps streaming ids even when `focusedId` changes.
+- Unit: overlay `hidden` when closed still has the runtime node.
+- Contract: refresh hydration does not call the chat POST.
+- Manual/live (scratch project, not Playwright): start a long storyteller turn, click 2d-canvas in `GlobalSidebar`, tokens still arrive in the overlay.
+
+**What is there to learn.** *The stream is a process, the page is a view.* Killing the HTTP client on unmount is the default React mistake. *Working with AI:* the test is "navigate away," not "the hook still exists in StorytellerLayout." Honesty on refresh: disconnected ≠ replay.
+
+**In plain words.** If the robot is still talking and you go look at the map, it must keep talking. If you refresh the site, you get the conversation back as text. You do not secretly pay for the last question a second time.
+
+---
+
+## 36. One session, one module; else new chat
+
+**Track:** E · **Priority:** P1 · **Dependencies:** 33, 35
+
+**WHAT.** `moduleId` never changes. You may **watch** a storyteller session from 2d-canvas. You may not **send** into that session from 2d-canvas. If the **current** module has no agent (2d-canvas, 3d-canvas, asset-exporter today), you do not create a fake canvas chat.
+
+**HOW — implement exactly this.**
+
+1. Pure function `canSendToSession` in `src/shared/chat/core/chat-session-policy.ts` — matrix in [phases.md](./phases.md) §5.7. **Unit test the matrix** before UI.
+2. `moduleHasAgent(moduleId)`: `storyteller` true; `loop-creator` true iff loop flag; others false until a real `chatAgentId` exists. Read `CANVAS_MODULES` / workspace map — do not hardcode a 2d-canvas agent.
+3. Composer submit path (wrap `AssistantThreadComposer` or intercept `sendMessage`): if `!ok`, do not send. `ConfirmDialog` already exists (`src/components/ConfirmDialog`).
+   - `ModuleMismatch` and current module **has** agent: confirm creates POST `{ moduleId: current }`, focuses it, sends buffered text **there**. Cancel: no send.
+   - `ModuleHasNoAgent`: single OK. Copy: this page has no chat agent. No POST.
+4. Pending prompt inject (`AssistantPendingPromptBridge`) uses the same gate. Bible refresh must not land on a loop-creator thread.
+5. Background sessions stay `streaming`. Confirming a new chat does **not** call `stop()` on the old one.
+
+**WHERE.** `chat-session-policy.ts` + overlay composer + `WorkspaceChatMismatchDialog.tsx`. Module enum = `AppModuleId`.
+
+**Acceptance.**
+
+- Tests: storyteller session + current `2d-canvas` + send → no `sendMessage` on that session, dialog `ModuleHasNoAgent` (because canvas has no agent).
+- Tests: storyteller session + current `loop-creator` (flag on) + send → `ModuleMismatch` → confirm creates loop-creator session, storyteller runtime still streaming.
+- No `update_world_bible` / beat tools on a loop-creator thread (guaranteed by separate agent + session, not by a prompt).
+
+**What is there to learn.** *Capability isolation by conversation, not by prompt.* Mixing tool surfaces on one thread is how you get a storyteller beat tool firing from a tile prompt. *Working with AI:* write the mismatch function and tests **before** the dialog chrome.
+
+**In plain words.** A story chat is for the story. A map chat is for the map — and today the map **has no robot**, so you watch the story chat from the map, you do not pretend the map can talk. If you are on Loop Creator, you start a new chat. Both robots can work at the same time.
+
+---
+
+## 37. Session list like Cursor
+
+**Track:** E · **Priority:** P2 · **Dependencies:** 33, 36
+
+**WHAT.** Inside the General Chat Window: a list of this project's sessions. Switch focus without killing background streams. Running indicator. Rename. Delete (confirm). New chat.
+
+**HOW — implement exactly this.**
+
+1. `WorkspaceChatSessionList.tsx` — data from TanStack Query (Action 33). Running: `status === streaming` **or** the mounted runtime's `useChat().status` is submitted/streaming (prefer live runtime).
+2. Click → set `focusedSessionId` only.
+3. Rename: `Input` + PATCH `{ title }` → `title_locked=true`.
+4. Delete: `ConfirmDialog` → `chat.stop()` on **that** runtime → DELETE route. Other runtimes untouched.
+5. New chat: POST current `moduleId` if `moduleHasAgent`; else disable the button (same copy as Action 36).
+6. Module badge on each row (storyteller / loop-creator / …).
+7. **No** duplicate list in `StorytellerWritersRoom` or `LoopChatSidebar`.
+8. Icons: lucide `Pencil`, `Trash2`, `Plus` — already used in the repo. Do not add a new icon pack.
+
+**WHERE.** Same overlay as Action 34.
+
+**Acceptance.**
+
+- Two sessions, one streaming: list spinner on the live one; switch to idle shows its messages; streaming runtime still mounted (`hidden` on the unfocused pane).
+- Rename persists after refetch.
+- Delete removes the row and only that run stops.
+- `qualitygate:file` on the list component (stay ≤400 lines; extract if needed).
+
+**What is there to learn.** *A thread list is a first-class UI, not a dropdown afterthought.* *Working with AI:* copy Cursor's affordances, not a new invention.
+
+**In plain words.** Like Cursor: a list of chats, a spinner if one is still thinking, a pencil to rename, a trash to delete. Clicking another chat does not murder the one that is still running.
+
+---
+
+## 38. Cheap title after the first message
+
+**Track:** E · **Priority:** P2 · **Dependencies:** 33, 6 (gateway `complete`), 37 (rename lock)
+
+**WHAT.** After the user's first message on a session, a cheap model proposes a short title. The user turn must not wait on it. Rename still wins.
+
+**HOW — implement exactly this.**
+
+1. Add `LlmFeature.ChatSessionTitle = 'chat.session-title'` in `src/shared/ai/gateway/constants/llm-call.ts`.
+2. Service `src/shared/chat/services/title-chat-session.ts` (server-only, `import '@/shared/data/server-guard'` if that is the house pattern for server modules). Calls **`complete()`** from `@/shared/ai/gateway` — **not** `meteredCall` (that wrapper is for Mastra `agent.generate`). Args: `scope: ProjectScope`, `feature: LlmFeature.ChatSessionTitle`, `model: TEXT_GEN_FAST_MODEL`, short system + capped user prompt, no tools.
+3. Trigger: after first user send, `void titleChatSession(sessionId)` from the API route or a small `POST /api/chat/sessions/{id}/title` that 204s immediately after kicking the work. **Do not** `await` it in `handleChatStream`.
+4. PATCH title iff `title_locked === false` and title is still `ChatSessionCopy.PlaceholderTitle`. Else no-op.
+5. Failures: catch, leave placeholder, do not fail the chat turn. Recording still happens inside `complete()` (`llm_calls`).
+6. Do not use `resolveRoleModel('chat')`, Author, critic, or Kimi for this.
+
+**WHERE.** Shared chat service + optional title route. Not a storyteller workflow step. Not inside `beat-draft-workflow`.
+
+**Acceptance.**
+
+- First send: stream tokens start without waiting for the title (assert title route/function is not awaited on the stream path).
+- `llm_calls.feature === 'chat.session-title'` on success.
+- Failed `complete()`: session still usable, title placeholder.
+- After user rename, a later title job does not overwrite (`title_locked`).
+
+**What is there to learn.** *Name the conversation with a cheap model, not the expensive one.* *Working with AI:* insist fire-and-forget + `complete()` + a new `LlmFeature`; otherwise it will ride `StorytellerChat`.
+
+**In plain words.** After you send the first line, a small cheap brain names the chat ("Harbor treaty beat"). You can rename it. The story robot does not pause while that happens, and we still write down the money.
+
+---
+
+# Track F — Tests (Phase 6)
+
+No product. Close rows in [phases.md](./phases.md) §6.1 and §6.2. Do not aim for 100% unit coverage.
+
+## 49. Playwright fixtures and new specs for four surfaces
+
+**Track:** F · **Priority:** P1 · **Dependencies:** none (uses pages that already exist)
+
+**WHAT.** Enums + fixtures + spec files for 2d-canvas, 3d asset exporter, `/projects`, Settings dialog, plus storyteller error/edge specs that do not already exist. Copy the storyteller pattern (`e2e/constants`, `e2e/fixtures`, `e2e/scenarios`).
+
+**HOW.** Implement the **Have = no** E2E rows in phases.md §6.2. Reuse `setupAuthenticatedPage`. Never use `e2e/config.ts` default project UUID. Stub tile/Meshy/settings APIs. Pin live chat to GLM. 402 → stop.
+
+**WHERE.** `e2e/scenarios/{world-canvas,asset-exporter,projects,settings,storyteller-verdict,storyteller-auth,storyteller-episodes,storyteller-credits}.spec.ts` plus matching constants/fixtures.
+
+**Acceptance.** Operator `npm run test:e2e` on those files is green (or skipped only when credits exhausted, with a loud stop). Existing storyteller specs still pass.
+
+**What is there to learn.** *A check worth doing is a committed spec.* *Working with AI:* paste the E2E table and forbid inline selectors.
+
+**In plain words.** Click through story, map, 3D export, new project, and settings the way a person would — including when it fails — and keep those clicks as tests.
+
+---
+
+## 50. Unit coverage +15% relative
+
+**Track:** F · **Priority:** P1 · **Dependencies:** none
+
+**WHAT.** Raise Vitest **statement** coverage to **1.15 × baseline**. Baseline = `coverage/coverage-summary.json` `total.statements.pct` from one `npm run test:coverage` at phase start. Not 100%. Not +15 percentage points.
+
+**HOW.** Work the **Have = no / partial** rows in phases.md §6.1, starting with large uncovered `services/` / `tasks/` / `workspace` / route parsers. Prefer error and edge cases. `qualitygate:file` on each new test file's production sibling if you touch `src`.
+
+**WHERE.** Next to the code under test (`**/__tests__/**`). Not Playwright. Not evals.
+
+**Acceptance.** Printed baseline and target. Second coverage run ≥ target. UT-RT-05 still green (`openapi:check`).
+
+**What is there to learn.** *Coverage is a ratchet, not a trophy.* *Working with AI:* give the HTML uncovered-file list, not "add tests everywhere."
+
+**In plain words.** Measure how much of the program the cheap tests actually run. Make that number fifteen percent bigger. Stop. Do not try to test every line.
+
+---
+
+## 51. Happy / error / edge on each E2E surface
+
+**Track:** F · **Priority:** P1 · **Dependencies:** 49
+
+**WHAT.** Each of the four surfaces has at least one **H**, one **E**, and one **G** row from §6.2 landed (storyteller already has all three: chat/flow, empty-turn/beats-lock, draft ghost). Fill the gaps: canvas, exporter, projects, settings, plus storyteller kill/auth/402.
+
+**HOW.** Same table. Do not skip error rows because happy paths are prettier.
+
+**WHERE.** Same spec files as 49.
+
+**Acceptance.** Count of landed H/E/G ≥ 1 per surface. Kill does not persist. Empty create stays disabled. Exporter generate with no asset does not call Meshy. Settings rename failure keeps the old name.
+
+**What is there to learn.** *The bug lives on the unhappy path.* *Working with AI:* require the E column before adding a second happy spec.
+
+**In plain words.** Every screen we care about must have a test for "it worked," "it broke," and "the weird case."
+
+---
+
 # Appendix — deliberately not on the floor
 
 Two lists. The first is capability the design **names but does not build yet**, each with the
-measurement that would earn it a slot. The second is what would become Actions 33+ if the list
-were allowed to grow — real work, ranked below everything above, recorded so it is not
+measurement that would earn it a slot. The second is what would become Actions 39+ if the list
+were allowed to grow past Phase 5 — real work, ranked below the overlay, recorded so it is not
 rediscovered as a surprise later.
 
 ## A. Deferred capability — the trigger that promotes it
@@ -1597,40 +1873,40 @@ rediscovered as a surprise later.
 | A voice **judge** rubric | The deterministic metric in Action 32 flags convergence the judge would need to explain |
 | Semantic recall on Mastra memory | Action 31's bound window measurably loses context the run needed |
 
-## B. If the list ran past 32
+## B. If the list ran past 38
 
-Short form, in the order I would add them. Two former entries here — memory hygiene and
-character voice — were promoted into the main list as Actions 31 and 32.
+Short form, in the order I would add them. Former 33–42 in this appendix were
+renumbered **39–48** when Actions 33–38 took the overlay chat.
 
-- **33 · RLS parity with the API.** Action 1 fixes the trust boundary in route handlers; the
+- **39 · RLS parity with the API.** Action 1 fixes the trust boundary in route handlers; the
   Supabase row-level policies behind them are unaudited. Write the policy set as tests that
   connect as user B and assert every read and write against user A's project fails — the same
   guarantee, proven one layer lower, so a future direct-from-browser query cannot leak.
-- **34 · Schema drift gate.** Nothing currently proves the Drizzle schema and the deployed
+- **40 · Schema drift gate.** Nothing currently proves the Drizzle schema and the deployed
   Supabase database agree. Generate a diff in CI and fail on drift; a silent divergence turns
   every contract in Action 13 into fiction at runtime. Action 31 raises the stakes: the
   `mastra_*` tables have no migration owning them at all.
-- **35 · Concurrency and optimistic locking.** Two generate buttons pressed on one episode, or a
+- **41 · Concurrency and optimistic locking.** Two generate buttons pressed on one episode, or a
   resumed workflow racing a manual edit, both write last-wins today. Add a version column and
   reject stale writes — the beat `sequence` bug in Action 2 is the cheap version of this problem.
-- **36 · Series-level continuity.** Every critic scope reasons inside one episode. Drift across
+- **42 · Series-level continuity.** Every critic scope reasons inside one episode. Drift across
   episodes — a rule contradicted in episode 7, a character aged wrong — has no owner. A
   series sweep over accepted canon, run nightly rather than inline. The voice fingerprints from
   Action 32 are the natural second thing it checks.
-- **37 · Canon text as an injection surface.** Action 27 scopes the `masterPrompt`; character
+- **43 · Canon text as an injection surface.** Action 27 scopes the `masterPrompt`; character
   bios, world rules and user-pasted lore are interpolated with the same trust and are not
   scoped at all. Same treatment: quoted, labelled as data, never as instruction.
-- **38 · The storyboard and image pipeline joins the compiler.** Storyboard and 2D asset
+- **44 · The storyboard and image pipeline joins the compiler.** Storyboard and 2D asset
   generation sit entirely outside the plan → critique → verdict machinery. Same pipeline,
   visual critic scopes, same trace.
-- **39 · Failure taxonomy and dead letters.** Trigger tasks fail into logs. Classify failures
+- **45 · Failure taxonomy and dead letters.** Trigger tasks fail into logs. Classify failures
   (provider, contract, timeout, budget), route the unrecoverable to a dead-letter table, and
   make the trace in Action 3 the place you read them.
-- **40 · Human verdicts as judge training signal.** Every approve, revise and kill is a labelled
+- **46 · Human verdicts as judge training signal.** Every approve, revise and kill is a labelled
   example being thrown away. Log them against the run trace and use them to recalibrate the
   judge in Action 21 — the loop that makes the ruler match your taste rather than a rubric's.
-- **41 · Manuscript export.** Screenplay and prose export from accepted canon. Not architecture,
+- **47 · Manuscript export.** Screenplay and prose export from accepted canon. Not architecture,
   but the first thing anyone asks for after the writing works.
-- **42 · Accessibility pass on the chat surface.** Keyboard path through the verdict gate, focus
+- **48 · Accessibility pass on the chat surface.** Keyboard path through the verdict gate, focus
   management on the question card, announced progress. Cheap now, expensive after the surface
   grows.

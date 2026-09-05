@@ -565,6 +565,7 @@ table stays a complete map rather than only an inbox.
   partition first. Voice is the existing MASTER PROMPT / EPISODE PROMPT. **Draft** is the
   existing PhaseNavigator tab: Medium well, Cursor ghost-text, Script / Novel format, generate
   next / regenerate this section from bible + premise + beats (`target-architecture.md` §7.5).
+  **Overlay chat** is Phase 5 (`§7.6`): one window in the project shell, sessions per module.
   Latency (180s, one auto-revise, one timeout source) binds every phase. Ablation decides extras
   (`cognition`, `dialogue`, ledger, autonomy). Evaluation stays first-class. Role pins after a
   live-quality run, not vendor ids in the spec.
@@ -572,19 +573,22 @@ table stays a complete map rather than only an inbox.
   Motion in the deterministic tier; GRRM rubric in live quality; ablation for additions past
   **three** scopes, not for deleting the floor. Trace contracts assert three overlapping
   critics, Humanizer before persist, kill writes nothing.
-- **`diagrams.md`** — eleven Mermaid diagrams: two of `b409539`, five of the honest floor
+- **`diagrams.md`** — thirteen Mermaid diagrams: two of `b409539`, five of the honest floor
   (including disclosure and the de-slop pass), three of measurement, one of Premise → Beats →
-  Draft.
-- **`actions.md`** — thirty-two actions in four tracks. Action **10 is cut**. Action **14**
+  Draft, two of Phase 5 overlay chat (current death-on-navigate vs target shell).
+- **`actions.md`** — fifty-one numbered actions in six tracks (1–38 plus 49–51; appendix **39–48**). Action **10 is cut**. Action **14**
   floor is three scopes. Action **27** regex-injection is not P0. Action **28** is a Phase 0
-  constraint. Schedule is **`phases.md`**, not the historical serial string. Action 17 is the
+  constraint. Actions **33–38** are workspace overlay chat (Phase 5). Actions **49–51** are tests (Phase 6). Schedule is **`phases.md`**, not the historical serial string. Action 17 is the
   George split. Every action has WHAT/HOW/WHERE/Acceptance plus **What is there to learn**
   and **In plain words**.
-- **`phases.md`** — **canonical build order.** Platform ∥ storyteller in phases 0–4. All 32
-  ids mapped; none silently dropped. Phase 3 is the Draft manuscript (Script / Novel) plus
-  `artifact-draft`.
+- **`phases.md`** — **canonical build order.** Platform ∥ storyteller in phases 0–4. Overlay
+  chat is **Phase 5** (after 4, not before Humanizer) with a file-level handover (current
+  mounts, `overlayMemoryRef`, layout sibling, tests). **Phase 6** is tests only: unit statements ×1.15 and two scenario tables (UT + E2E). Ids 1–32 stay mapped; 33–38 overlay; 49–51 tests.
 - **`second-opinion.md`** — rationale that produced the honest floor. The target document now
   implements it.
 - **`learning-materials.md`** — backend fundamentals through this repo, Part 2A (short Phase 1
-  picture), then the craft catalog and thirty-two-action syllabus. **Part 6 (last chapter)** is
-  Phase 1 as a system: platform boxes, request flows, and graphs — that phase only.
+  picture), then the craft catalog and thirty-two-action writing syllabus. **Part 6** is Phase 1
+  as a system. Overlay chat is **not** in Part 6 — see `phases.md` Phase 5. **Part 7 (last
+  chapter)** is a non-technical briefing for a public post: practices from the manuscript
+  draft stack (`98056717`), stealable draft, allowed/forbidden claims. Overlay is not a
+  shipped claim there either.

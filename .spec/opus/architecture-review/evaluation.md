@@ -553,6 +553,8 @@ What follows from it:
 | **UI-dependent work defers** | The editorial-verdict card, per-finding selection, undo and in-tool progress have no acceptance path without a browser tier, so they wait rather than shipping unverified |
 | **The gap is named, not hidden** | Deferred UI is listed as unverified work with the test that would cover it, per the project's verification rule |
 | **Phase 3 Draft tab** | When that surface ships, Playwright on generate-next, regenerate-section, and Script/Novel mode switch is the acceptance path (`target-architecture.md` §7.5). Not a Phase 0–2 gate |
+| **Phase 5 overlay** | Session policy, restore, and module lock are unit / live-tier. Overlay pixels wait on a browser tier like other chat UI. Not a Phase 0–4 gate |
+| **Phase 6 browser campaign** | Playwright is scheduled here: storyteller (extend), 2d-canvas, 3d exporter, project create/settings — happy / error / edge. Tables: `phases.md` §6.1–6.2. Still not a gate for Phases 0–5 |
 
 The ordering also happens to be the honest one: a verdict card is only worth building once the
 pipeline behind it is proven to dispatch what it claims, which is §4's job.

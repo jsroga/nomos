@@ -4,7 +4,7 @@
 **Audit base (the spec’s):** `refactor` @ `b409539`. This document does not re-probe those measurements.
 **Comparators:** [InkOS](https://github.com/Narcooo/inkos), [Vela](https://github.com/heider-x/vela), [StoryCraftr](https://github.com/raestrada/storycraftr), [novel-writing](https://github.com/wgwtest/novel-writing), plus the coding-agent harnesses this repo already copies — [Cursor](https://cursor.com) and [Claude Code](https://code.claude.com/docs/en/how-claude-code-works).
 **Deliverable:** analysis only.
-**Build order:** [phases.md](./phases.md) — platform + storyteller tracks, all 32 actions mapped.
+**Build order:** [phases.md](./phases.md) — platform + storyteller tracks (0–4), overlay chat as Phase 5, tests as Phase 6.
 
 ---
 

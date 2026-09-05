@@ -1,23 +1,31 @@
 # Learning Materials — Backend Fundamentals, Explained Through This Repo
 
-**Who this is for.** A developer who is comfortable writing application code but has not yet
-built a mental model for database design, security boundaries, reliability, and the trade-offs
-behind them — and who is about to build an agentic fiction pipeline without having been a
-novelist. Backend ideas are taught through real files in this repo. Craft ideas are taught
-through [wgwtest/novel-writing](https://github.com/wgwtest/novel-writing) and
-`src/mastra/agents/grrm-author/`.
+**Who this is for.** Two audiences share this file.
+
+1. A developer who is comfortable writing application code but has not yet built a mental
+   model for database design, security boundaries, reliability, and the trade-offs behind
+   them — and who is about to build an agentic fiction pipeline without having been a
+   novelist. Backend ideas are taught through real files in this repo. Craft ideas are taught
+   through [wgwtest/novel-writing](https://github.com/wgwtest/novel-writing) and
+   `src/mastra/agents/grrm-author/`.
+2. **Part 7** is for a **non-technical person** (producer, writer, marketer, founder) who
+   must explain the work in public. After Part 7 you should be able to draft a blog post
+   without opening the code. Parts 1–6 are not required for that job.
 
 **How to use it.** Part 1 is the story of what was recently refactored and why. Part 2 teaches
 backend fundamentals, each anchored to real code, then the agentic writing system (craft catalog,
-George vibe, evaluation). **Part 2A is a short Phase 1 picture.** **Part 6 (the last chapter
-in this file)** is the system: platform boxes, request flows, and graphs for that same Phase 1
-work and nothing else. Part 3 walks the thirty-two actions as a syllabus. Part 4 lists accepted
-trade-offs. Part 5 asks whether the direction is good. **Build order:** [phases.md](./phases.md).
-Implementation tickets: the Phase 1 plan (`phase_1_architecture`).
+George vibe, evaluation). **Part 2A is a short Phase 1 picture.** **Part 6** is Phase 1 as a
+system: platform boxes, request flows, and graphs — that phase only. Part 3 walks the
+thirty-two writing actions as a syllabus. Part 4 lists accepted trade-offs. Part 5 asks whether
+the direction is good. **Part 7 (last chapter)** is the briefing for a public post: practices
+from the manuscript stack that shipped on `98056717`, plus the house rules from Phases 0–2
+that the post is allowed to claim. Overlay chat is **Phase 5** and is **not** in this briefing
+as a shipped feature. **Build order:** [phases.md](./phases.md).
 
 A note on honesty: this document points at real weaknesses in code you wrote. That is not
 criticism, it is the only way the material is useful. Every codebase of this size has these
-issues; most teams never find them.
+issues; most teams never find them. Part 7 is equally honest about what we **may not** claim
+in public (for example: the quality gate still grades a frozen answer key, not a live writer).
 
 ---
 
@@ -2815,3 +2823,681 @@ it('skips critics when prose-check still has errors after one retry', async () =
 
 No graph in this chapter is accepted by opening the app. That is a platform rule for this
 phase, not a shortcut.
+
+---
+
+# Part 7 — Briefing for a non-technical writer (you can write the blog from this)
+
+You do not need to know TypeScript. You do not need to open the repository. You need this
+chapter, a quiet hour, and the nerve to stay honest.
+
+The job of this chapter: after you finish it, you can write a public post about how this
+product treats AI writing — what we believe, what we shipped on the manuscript page, what we
+still refuse to pretend. If a sentence here feels like a slogan, skip it and use the story
+under it instead.
+
+**Evidence this chapter is allowed to use.** The manuscript / Draft stack that is on `main`
+as of commit `98056717` (5 September 2026): Script and Novel on the existing Draft tab,
+ghost-complete at the caret, generate-next / regenerate-section with a human yes, cheaper
+bible-and-character drafts, voice fingerprints that *count*, a plan rubric, notebooks that
+expire on purpose, a lint rule that forbids hiding errors in `.then()`, and smoke tests that
+**stop** when the AI wallet is empty. House rules from the weeks just before that (identity,
+don't pay twice, don't hand the writer the twist, don't hire three teachers for a broken
+page) are in §7.14–7.18 because a good post needs the philosophy, not only the latest
+pixels.
+
+**Evidence this chapter must not use as "we shipped it."** Overlay chat on every module
+(Phase 5). Extra critic personalities. A quality number that means "the live writer got
+better." Those are plans or traps. See §7.20.
+
+---
+
+## 7.0 How to read this if you will write the post
+
+Read once for the feeling. Read again with a highlighter for **stories** and **forbidden
+claims**. Then write from §7.21–7.23. Do not invent a metaphor we did not give you — the
+ones here are the ones the engineering already uses.
+
+Three voices in this chapter:
+
+| Voice | What it is | Use in the post? |
+|---|---|---|
+| **Story** | A person at a desk doing a thing | Yes. Lead with these |
+| **Rule** | What the product actually does | Yes. These are the claims |
+| **Shop talk** | File names, commit ids | Footnotes / editor only. Not the headline |
+
+If you get lost, remember one picture: **the host owns the truth; the model owns the
+language.** The computer decides what is allowed to be known, saved, billed, and forgotten.
+The rented brain decides how a sentence sounds. A human still presses Save on the expensive
+work.
+
+---
+
+## 7.1 What a reader already understands (start here)
+
+Imagine a writers' room that also draws maps and 3D toys.
+
+Until this stack, "write the episode" mostly meant: talk to a chat, get a beat card, hope
+the Courier box on the Draft tab would someday become a script. The Draft tab existed. It
+was a blank page with a nice font. It did not know the bible. It did not know the beat
+board. It did not know whether you wanted a **studio script** or a **novel chapter**.
+
+What shipped is not a new chat personality named ManuscriptBot. It is the **page** becoming
+a real desk:
+
+- You still plan on **Premise**, then **Beats**.
+- **Draft** unlocks when there is at least one beat card. Empty beats cannot Draft. That is
+  a lock, not a tooltip.
+- On Draft you pick **Script** or **Novel**. Same writer-robot. Different school of page
+  layout (sluglines vs chapters).
+- While you type, a cheap ghost may finish the line. **Tab** keeps it, **Esc** throws it
+  away. That ghost does **not** hire the three expensive teachers.
+- **Generate next** / **Regenerate this section** *does* run the serious machine, and a
+  human still says Approve / Revise / Kill before that span is glued into the page.
+- World-bible cards (a faction, a twist, a character sheet) use a **cheaper** machine. They
+  do not get the full three-teacher wall. They still need a human yes.
+- We started **counting** whether two characters talk like the same clever narrator.
+- Old chat notebooks get shredded on a timer, on purpose.
+- If the company card for rented brains is empty, the nightly "is the app alive?" test
+  **stops and yells**. It does not retry until the bill is paid.
+
+That is the product story. The rest of this chapter is *why those choices are engineering,
+not taste*, told so you can explain them to a stranger.
+
+---
+
+## 7.2 The post in one breath (steal this)
+
+Most AI writing tools hire a new "expert" for every job: a Script Agent, a Novel Agent, a
+Bible Agent, a Voice Agent. We did the opposite. We kept one writer. We taught it two page
+formats as **skills**, like sending the same person to screenwriting class or to novel
+class. We put a **cheap** autocomplete next to an **expensive** compiler. We refused to
+open Draft until the beat board had a card. We gave bible cards a smaller courtroom. We
+started measuring whether people still sound like themselves by counting little words, not
+by asking another AI "does this feel distinct?" We made the computer **wait** for errors
+instead of hoping a `.then()` would notice. And when the wallet for brains is empty, we
+stop — we do not pretend the smoke test passed.
+
+---
+
+## 7.3 Practice: do not hire a new specialist for every hat
+
+**Story.** A studio wants a TV script. A novelist wants chapters. A naive company builds
+two robots, two salaries, two places for bugs to hide. Six months later neither robot
+knows the other's bible.
+
+**What we did.** Script and Novel are **modes on one episode**, not two products. The
+writer-robot is the same. What changes is a short craft lesson loaded from disk: one lesson
+says INT./EXT., present tense, CHARACTER CUES in caps; the other says chapters, past tense
+unless you said otherwise, no sluglines unless the human typed them. Switching mode restyles
+the page (Courier vs a readable column) and swaps the lesson on the **next** generate. It
+does not secretly rewrite accepted pages.
+
+**Why it is good engineering.** Every new robot is a new bill, a new prompt to drift, a new
+way to forget the twist rules. A **skill** is a hat. Hats are cheap. Robots are not.
+
+**Blog sentence.** "We didn't clone the writer. We sent the same writer to two schools."
+
+**Do not say.** "We invented a Screenplay AI and a Novel AI." That is the thing we refused.
+
+---
+
+## 7.4 Practice: a cheap path and an expensive path on the same desk
+
+**Story.** Cursor (the code editor) does not run the full test suite every time you pause
+typing. It ghosts the next tokens. Tab accepts. The heavy "make this a real change" is a
+different button.
+
+**What we did.** Draft has the same split.
+
+| Path | What it feels like | What it costs | Who says yes |
+|---|---|---|---|
+| Ghost complete | Grey text at the caret after you pause | Cheap continuation | You, with Tab or Esc |
+| Generate next / regenerate section | A real scene or chapter span | The serious beat machine (plan, draft, teachers if the page is clean) | You, with Approve / Revise / Kill |
+| Chat beat workflow | Talk in the Writers Room | Same serious machine | You, same verdict |
+
+Ghost insert is **not** Approve. It is not a saved beat card. It is typing assistance.
+
+**Why it is good engineering.** If every pause hired three teachers, you would never pause.
+If generate-next skipped the human, we would have rebuilt the cheat that auto-saves. The
+product is honest about **which button spends the serious money**.
+
+**Blog sentence.** "Autocomplete is a whisper. Generate is a court date."
+
+**Do not say.** "The AI writes the episode by itself while you get coffee." Generate still
+stops for you. Ghost is optional and cheap.
+
+---
+
+## 7.5 Practice: the tab is a lock, not a sticker
+
+**Story.** Lots of apps have a step named Draft that you can click anyway. Then the AI
+invents a script with no plan, and you spend the afternoon unscrewing it.
+
+**What we did.** Premise → Beats → Draft is not decoration. Draft generate is **disabled
+when there are zero beat cards**. The server agrees: a generate-section request with no
+beats is refused. Chat memory is not allowed to stand in for the board.
+
+**Why it is good engineering.** Locks belong in the machine, not in a help article. If only
+the button looks disabled but the URL still works, someone will skip the board. Both the
+page and the door must say no.
+
+**Blog sentence.** "You cannot draft an episode you have not beaten out. The empty page is
+not a prompt. It is a locked door."
+
+**Do not say.** "Our AI is so good it doesn't need an outline." We require the outline
+(beat cards) on purpose.
+
+---
+
+## 7.6 Practice: not every artifact gets the full courtroom
+
+**Story.** A beat of drama can break the season. A one-line item on the world bible ("the
+harbor tax is paid in salt") should not wait for three literary inspectors.
+
+**What we did.** Beats still get the heavy path when you ask for a full generate. Character
+sheets, bible sections, premise cards go through a **lighter** draft: smaller courtroom,
+still a human yes/no (approve or kill) on an overlay. The overlay is the same kind of
+"pending card" the bible already knew — it now finishes a real run instead of a fake
+spinner.
+
+**Why it is good engineering.** Cost and latency are design. Using the beat-sized machine
+for a postcard is how tools get slow and expensive, then people turn the safety off.
+
+**Blog sentence.** "A scene is a trial. A bible card is a stamp. We stopped sending stamps
+to the high court."
+
+**Do not say.** "We removed all review from world-building." The human still accepts or
+kills the card. We removed the **wrong amount** of machinery, not the person.
+
+---
+
+## 7.7 Practice: do not hide the recipe in the button
+
+**Story.** A developer writes a giant instruction inside the Generate button. Six months
+later nobody knows which button taught the robot to say "her heart pounded." Quality
+numbers move and nobody can say why.
+
+**What we did.** A test walks the storyteller UI and fails if someone stuffed a model
+instruction into `onSendMessage` or a `generatePrompt=` attribute. Recipes live in a
+registry / skill files, versioned like code. Generate buttons are **controls**, not essays.
+
+**Why it is good engineering.** If the lesson is in the button, you cannot evaluate it, you
+cannot A/B it, and you cannot stop two buttons from teaching opposite manners.
+
+**Blog sentence.** "The button is a doorbell. The lesson is in the notebook we can
+version."
+
+**Do not say.** "We have no prompts." We have prompts. They are just not hiding in the
+chrome.
+
+---
+
+## 7.8 Practice: count whether people still sound like themselves
+
+**Story.** Long AI stories fail in a boring way: by chapter eight, the queen, the thief,
+and the child all talk like the same clever narrator in different hats. Teams then pay a
+judge-model to say "hmm, voices feel samey," which is slow, pricey, and moody.
+
+**What we did.** We steal a hundred-year-old trick from catching anonymous authors:
+**function words** — *the*, *but*, *of*, *would* — are habits, not choices. We pull
+dialogue off the page (script cues vs novel quotation, two extractors), compare the little
+words, and score whether two names have collapsed into one mouth. We also look at a
+character card's "favoured" and "forbidden" lexicon when those lists exist.
+
+**Why it is good engineering.** A countable proxy is free, instant, and does not change its
+mind on Tuesdays. A vibe judge is a second rented brain. Use the counter first.
+
+**Blog sentence.** "We don't ask an AI if the thief still sounds like the thief. We count
+the small words thieves actually use."
+
+**Do not say.** "We solved character voice forever." Counting catches collapse. It will
+miss a brilliant paraphrased sameness. It is a smoke alarm, not a novelist.
+
+**Do not say.** "This is the quality gate for the whole product." This is one structural
+check. The big eval command still has a known lie (it can grade a frozen sample). Honest
+posts mention that if they talk about evals at all — see §7.20.
+
+---
+
+## 7.9 Practice: grade the plan with a rubric, not a feeling
+
+**Story.** "Does this beat feel like Martin?" is not a score. It is a mood. Moods do not
+fail CI.
+
+**What we did.** When we look at a **plan** (goal, conflict, turn, who is in the room), a
+rubric asks checkable things: does the turn dump "the truth is…" like a Wikipedia villain;
+does the body show up (hand, door, seal) instead of only abstract nouns; does the hook
+mention someone who is not even in the scene. Pairwise judges exist to compare two plans,
+not to sprinkle five stars on a vibe.
+
+**Why it is good engineering.** Structure can be checked before pretty sentences exist. If
+the plan is a shrug, prettier prose will not save the episode.
+
+**Blog sentence.** "We grade the skeleton before we grade the skin."
+
+**Do not say.** "Our AI writes like George R. R. Martin now." Martin is **structure**
+(consequence, turn, who knows what). **Tone** is still the user's master prompt. Mixing
+those two is the old mistake.
+
+---
+
+## 7.10 Practice: forget on purpose
+
+**Story.** Chat products never take the trash out. The robot remembers a joke from March
+and a secret from a different project and someday those two facts date.
+
+**What we did.** Notebooks (chat memory) have a **time-to-live** and a **cap per thread**.
+A background job deletes what is too old or past the cap, oldest first, without renaming
+threads. The notebook is conversation. It is not the world bible. Secrets still must not
+ride in the notebook (that is a different lock: we don't put the twist page in the writer's
+pile).
+
+**Why it is good engineering.** Infinite memory is not loyalty. It is a leak and a bill.
+Forgetting is a feature with a clock.
+
+**Blog sentence.** "We shred old chat on purpose. Continuity lives in the bible and the
+beat board, not in a year of small talk."
+
+**Do not say.** "The AI remembers everything about your series forever." We work not to.
+
+---
+
+## 7.11 Practice: wait, don't hope
+
+**Story.** In code, `.then(...)` is "do this later, I hope someone handles the bang." A
+bang in the corner of the room can be ignored. We already learned that tests which ignore
+explosions are how leaks hide.
+
+**What we did.** A house rule now: asynchronous work uses **await** and **try/catch** —
+sit in the chair until it finishes or fails in your face. The exceptions are boring and
+named (a workflow library's `.then(step)` is not a promise callback; a schema's `.catch(0)`
+is a default, not an error sweep).
+
+**Why it is good engineering.** Hoping is not a strategy. Waiting is how you see the fire.
+
+**Blog sentence.** "We banned 'do this later and it'll be fine.' The computer has to sit
+there until the work succeeds or fails out loud."
+
+**Do not say.** "We never have bugs." We made a class of hidden bugs louder.
+
+---
+
+## 7.12 Practice: when the wallet is empty, stop
+
+**Story.** Automated tours of the app keep clicking Generate. The vendor that rents brains
+returns "you are out of credit." A naive suite retries, burns the last drops, and reports
+flake.
+
+**What we did.** Smoke tests **pause and tell a human**. They do not retry until credits
+are added. That is operational honesty: a red "we are broke" is better than a green "we
+pretended."
+
+**Why it is good engineering.** Retries are for blips, not for empty wallets. Empty wallet
+is a **stop**, not a loop.
+
+**Blog sentence.** "If the brain-rental card is empty, the robots sit down. They don't
+keep knocking on a locked shop."
+
+**Do not say.** "We never spend money on AI." We spend. We refuse to spend **blindly**
+when the meter says stop.
+
+---
+
+## 7.13 Practice: a person still says yes
+
+**Story.** The industry fantasy is "agentic": the robot commits the chapter while you
+sleep.
+
+**What we did.** Generate-next, regenerate-section, and bible-card drafts still stop for a
+human. Approve / Revise / Kill (or accept / kill on cards). The model does not get a
+`commit_beat` stamp. Ghost text is the only path that skips court, and it is explicitly
+not a commit.
+
+**Why it is good engineering.** The compiler metaphor only works if Save is a person. Auto
+save of a broken beat is how you get a green run and an empty episode.
+
+**Blog sentence.** "The robot proposes. The page does not change until a human nods — except
+for the grey whisper you can Tab away."
+
+**Do not say.** "Fully autonomous TV writer." That mode, if it ever exists, is a later
+switch with queued verdicts, not this desk.
+
+---
+
+## 7.14 House rule: a gate that cannot fail is a sticker
+
+This is older than the Draft tab and it is the house religion. Put it in the post if you
+talk about "quality" at all.
+
+We have alarms (lint, tests, spend ledgers). An alarm that always smiles is interior
+decor. Recent work made more alarms **able to go red**: inventories that recount from the
+code, tests that fail if a promise explodes in the corner, smoke that stops on empty
+credits. The remaining honesty gap: a command named like a writing-quality gate can still
+grade a **frozen sample** instead of a live writer. If your post says we "measure quality,"
+you must add: **we measure some things for real (voices collapsing, empty Draft, out of
+credit). We do not yet let a green eval star mean the live writer improved.** That sentence
+is what keeps the post from becoming the thing we attack.
+
+**Blog sentence.** "We are allergic to gold stars that cannot fail."
+
+---
+
+## 7.15 House rule: don't hand the writer the twist
+
+The writer-robot writing from a character's eyes does not get the secret page ("the butler
+did it"). Telling it "please don't spoil" is a sticky note on an unwrapped gift. Omitting
+the page is a lock. The planner and the continuity teacher still get the page so the story
+can make sense.
+
+**Blog sentence.** "Dramatic irony is a permission setting, not a vibe."
+
+Use this if the post is about *trust* and *spoilers*. Skip it if the post is only about the
+Draft tab — it is true, but it is last month's picture.
+
+---
+
+## 7.16 House rule: don't pay twice for the same model
+
+If we order a 3D model and crash before writing down the ticket, a retry must **wait for
+that ticket**, not buy a second statue. Same idea as ghost vs generate: know which actions
+spend.
+
+**Blog sentence.** "Retries should wait in line, not double-order."
+
+---
+
+## 7.17 House rule: one cashier
+
+Every rented brain is supposed to go through one cashier so the money notebook is a total.
+A successful `$0` means "we priced it free," not "we shrugged." Title-naming a chat (when
+that ships) must use the cheap cashier lane, not the novelist.
+
+**Blog sentence.** "If we paid a brain, we wrote it down. Zero means priced, not forgotten."
+
+---
+
+## 7.18 House rule: two boxes on the desk (do not throw box 1 away)
+
+When a beat is saved, "what the character **did**" and "we planted a gun in scene 1" are
+different jobs. We copy plants into a tidy table so spell-check can find them. We do **not**
+throw away the first box — that is where the motion of the scene lives.
+
+**Blog sentence.** "We keep both notebooks: how the scene moved, and which guns are still
+on the mantel."
+
+Only use this if someone asks "did you simplify the database." The answer is **no, we
+refused a fake simplification**.
+
+---
+
+## 7.19 Analogies you may reuse (and ones to avoid)
+
+**Reuse**
+
+| Analogy | Maps to |
+|---|---|
+| Same person, two schools | Script vs Novel skills |
+| Whisper vs court date | Ghost vs generate-section |
+| Locked door | Draft with zero beats |
+| Stamps vs trials | Bible cards vs beats |
+| Doorbell vs recipe book | Buttons vs prompt registry |
+| Counting *the* and *but* | Voice fingerprints |
+| Skeleton before skin | Plan rubric |
+| Taking out the trash | Memory prune |
+| Sit in the chair until it finishes | await / try-catch |
+| Shop is closed, don't knock | Credits exhausted |
+| Sticky note on an opened gift | "Don't spoil" vs hiding the twist page |
+| Hall monitor with two lists, second list wins | (Only if you write about lint. Easy to get wrong. Skip unless you care.) |
+
+**Avoid**
+
+- "Our AI is a writers' room of twelve specialists." We keep the room small on purpose.
+- "Fully autonomous." Not this desk.
+- "We measure writing quality end-to-end." Not honestly, not yet.
+- "Chat follows you to the map." That is Phase 5, not this ship.
+- "We deleted the old story notes column." We did not.
+
+---
+
+## 7.20 Claims you may make / must not make
+
+**You may say**
+
+- Draft is a real manuscript surface: Script and Novel, ghost complete, generate next /
+  regenerate this section.
+- Generate on Draft is blocked until there is at least one beat.
+- Ghost complete does not run the heavy teacher wall.
+- The human still approves expensive generates.
+- Bible/character cards use a cheaper draft path with an accept/kill overlay.
+- We count dialogue habits to see if voices collapsed.
+- We grade beat *plans* with a structural rubric, not a "feels like Martin" slider.
+- Chat notebooks expire; series truth is supposed to live in bible + beats.
+- Operational tests stop when the vendor says we are out of credit.
+- We would rather have a red alarm than a polite green lie.
+
+**You must not say**
+
+- Live eval scores prove the writer got better this week. The fixture runner can still
+  grade a frozen string. If you mention evals, mention that gap.
+- Overlay chat on 2D canvas is live. It is specified as Phase 5.
+- We added a Script Agent and a Novel Agent.
+- Critics were removed. They still exist on the heavy path. Lint can skip them when the
+  page is mechanically broken — that is a *savings*, not a firing.
+- We auto-save generated manuscript without Approve.
+- Function-word counting *is* George R. R. Martin. It is a cousin of authorship
+  attribution, used here as a collapse alarm.
+
+---
+
+## 7.21 Three blog outlines (pick one)
+
+### Outline A — "We didn't hire more AIs" (recommended, ~900 words)
+
+1. Hook: the industry clones a new agent per feature. We got tired.
+2. Desk tour: Premise, Beats, Draft. The lock on empty Draft.
+3. Two schools, one writer (Script / Novel).
+4. Whisper vs court date (ghost vs generate).
+5. Stamps vs trials (bible cards).
+6. Counting small words.
+7. Close: the host owns truth; the model owns language; a human still nods.
+
+### Outline B — "Quality that can fail" (~800 words)
+
+1. Hook: gold stars that never go red.
+2. Smoke tests that sit down when the card is empty.
+3. Voice collapse as a counter, not a vibe.
+4. Plan rubric vs "feels like Martin."
+5. Honest paragraph: the big eval command is not yet a live-writer grade.
+6. Close: we are trying to deserve the word quality.
+
+### Outline C — "The page, not the chat" (~700 words)
+
+1. Hook: chat is a hallway. The book is a page.
+2. Draft tab was a Courier toy. Now it is a well.
+3. Tab/Esc like an editor. Generate is opt-in per section.
+4. You cannot skip Beats.
+5. Close: we will not replace the Draft tab with another chat.
+
+Do not mix all three into one post. Pick A unless the editor wants a quality-and-honesty
+angle (B) or a UX angle (C).
+
+---
+
+## 7.22 A full draft you can steal (Outline A)
+
+Use this as a first draft. Change the "we." Keep the facts.
+
+---
+
+Most companies building AI writing products solve a new problem by hiring a new robot.
+Need a screenplay? ScriptBot. Need a novel? NovelBot. Need a world bible? BibleBot. Six
+months later you have a hallway of specialists who do not share a brain, a bill that looks
+like a studio, and a story that still sounds like one clever intern in twelve hats.
+
+We did the opposite.
+
+Our writer is still one writer. What shipped is the **desk**.
+
+The navigator was always Premise, then Beats, then Draft. Draft used to be a pretty empty
+page. It did not know your beat board. It did not know whether you wanted INT./EXT. or a
+chapter break. It would let you "write the episode" with nothing planned. That is how you
+get a confident mess.
+
+Draft is now a lock as well as a tab. No beat cards, no generate. The door on the server
+agrees with the button on the screen. You cannot sweet-talk the URL.
+
+On that page you pick Script or Novel. We did not clone the writer. We sent the same
+writer to two schools. One lesson is studio format: sluglines, present tense, cues in
+caps, cameras, no novel interiority. The other is chapter prose: breaks, viewpoint,
+attribution beats, no sluglines unless you typed them. Switch the mode and the next
+generate wears the other hat. We do not silently rewrite the pages you already accepted.
+That would be rude, and it would be a bug wearing a feature's coat.
+
+While you type, a cheap ghost may finish the line. Tab keeps it. Esc throws it away. That
+whisper does **not** call the expensive teachers. Those teachers are for **Generate next**
+and **Regenerate this section** — the court date. Court still ends with a human:
+Approve, Revise, or Kill. The robot does not own the stamp. Grey text is not a stamp.
+
+World-building cards — a faction, an item, a character sheet — used to wait in the same
+line as a season-turning beat. That is a waste of a courtroom. Cards now get a smaller
+machine and a yes/no overlay. A scene is a trial. A stamp is a stamp.
+
+We also started catching the failure everyone knows and nobody measures: by the middle of
+the book, everyone talks like the narrator. There is a hundred-year-old trick for catching
+anonymous authors. Count the little words. *The*, *but*, *of*, *would*. People do not
+choose those on purpose. We pull dialogue off the page and see whether two names have
+collapsed into one mouth. It is a smoke alarm. It is not a novelist. It is free, and it
+does not get moody.
+
+When we look at a *plan* — goal, conflict, turn — we use a rubric, not a "does this feel
+like Martin" slider. Martin, for us, is structure: consequence, who knows what, a turn
+that is not a Wikipedia confession. How the prose *sounds* is still your master prompt.
+If your post calls this "we write like HBO," you have already lied. We write like a
+compiler with a taste setting.
+
+Chat notebooks get taken out with the trash. Old small talk expires. The series is
+supposed to live in the bible and the board, not in a year of hallway jokes. And if the
+card we use to rent brains is empty, the robots sit down. They do not keep knocking on a
+closed shop and calling it a flaky test.
+
+The sentence we keep on the wall: the host owns the truth; the model owns the language. A
+human still nods at the expensive work.
+
+We are not done. A command that sounds like a writing-quality gate can still grade a
+frozen sample instead of a live writer. Chat does not yet follow you to the map. We will
+not pretend those are shipped. Gold stars that cannot fail are furniture. We would rather
+publish a smaller desk that locks, whispers, and waits for a person.
+
+---
+
+## 7.23 FAQ a journalist or investor will ask
+
+**Is this fully automated TV?**
+No. Expensive generate waits for a human. Ghost text is a whisper.
+
+**Did you add more AI agents?**
+No. Same writer. Two format lessons. A cheaper path for cards.
+
+**Can I draft with no outline?**
+Not on Draft generate. Beat cards first.
+
+**Do you write like Martin?**
+We steal *structure* (turns, consequence, who knows). Tone is yours.
+
+**How do you know voices are distinct?**
+We count small words in dialogue. It is an alarm, not a prize.
+
+**Is quality measured?**
+Some things yes (collapse, empty Draft, empty wallet). A green "eval" star is **not** yet
+proof the live writer improved. Say that out loud if they ask about evals.
+
+**Will chat stay on screen when I open the map?**
+That is the next product phase (overlay). Do not demo it as done.
+
+**Did you simplify storage by deleting old JSON?**
+No. We kept the motion notes and copy plants into a table. Fake simplification would blank
+the board.
+
+**What should I title the post?**
+
+- "We didn't hire more AIs. We built a desk."
+- "Draft is a lock, a whisper, and a court date."
+- "Count the small words."
+- "Gold stars that can fail."
+
+Avoid "introducing our new Manuscript Agent."
+
+---
+
+## 7.24 Glossary you can paste under the post
+
+| Word we might say | Say this instead |
+|---|---|
+| Agent | The writer-robot (one) |
+| Skill | A short lesson the writer puts on, like a hat |
+| Workflow / compiler | The serious machine: plan, draft, maybe teachers, then you |
+| Ghost complete | Grey autocomplete at the caret |
+| Verdict | Approve / Revise / Kill |
+| Beat | One card on the board; one job the scene must do |
+| Bible | The world notebook (rules, people, twists) |
+| Gateway / cashier | The one place we record that we rented a brain |
+| Fingerprint | A count of speech habits, not a police metaphor in the headline |
+| Ratchet | An alarm that may only get better, never quietly worse |
+| Overlay chat | Future: chat window that survives changing rooms. Not this ship |
+
+---
+
+## 7.25 If an editor asks "where is this in the product?"
+
+You can answer without files:
+
+- Open a project → Storyteller → you should see Premise / Beats / Draft.
+- Draft: mode Script or Novel; ghost on pause; Generate next / Regenerate this section.
+- With **no** beats, generate should refuse.
+- World bible generate still wants accept/kill, not a silent write.
+- You will not find a "ScriptBot" in the agent list. You will find format lessons.
+
+If they want the public architecture sentence: **one chat agent, one writer, three
+teachers on the heavy path, a human stamp, Draft as a manuscript well.** Overlay-on-every-
+page is the next chapter of the spec, not this briefing.
+
+---
+
+## 7.26 What this chapter is not
+
+It is not a changelog. It is not a promise that Phase 5 is done. It is not permission to
+call fixture evals "we improved the writing 12%." It is a kit: stories, rules, analogies,
+a stealable draft, and a list of lies we refuse to print.
+
+If you only remember four lines for the post:
+
+1. Same writer, two schools.
+2. Whisper vs court date.
+3. Locked Draft until there are beats.
+4. Count the small words — and never call a sticker a gate.
+
+---
+
+## 7.27 Shop-talk appendix (for you, not for the post)
+
+Skip this unless someone technical is sitting next to you.
+
+| Practice | Where it lives (names only) |
+|---|---|
+| Script / Novel skills | `manuscript-script` / `manuscript-novel` lessons on disk; catalog ids |
+| Ghost complete | Draft tab caret helper; Tab / Esc |
+| Generate next / regenerate | Script generate-section door; zero beats → error |
+| Artifact-draft overlay | Bible pending card; resume with approve/kill |
+| Prompt not in the button | UI inventory test over storyteller UI |
+| Voice fingerprints | Structural check on dialogue extractors + function words |
+| Plan rubric | Judge on goal / conflict / turn / hook |
+| Memory prune | Background job, TTL + per-thread cap |
+| await / try-catch | Lint rule `prefer-await-try-catch` |
+| Credits stop | Smoke constants: stop, tell operator, do not retry |
+| Human stamp | No `commit_beat`; verdict overlays |
+
+Commit worth citing internally: `98056717` — manuscript draft stack and prefer-await lint.
+The weeks before it: identity and honest alarms; compiler lint before paid teachers; don't
+hand the writer the twist. Phase 5 overlay is specified in `phases.md`, not shipped in
+that commit.

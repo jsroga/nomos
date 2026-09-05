@@ -287,7 +287,7 @@ Do not rebuild as five beat critics. **No Humanizer** (it patches facts).
 
 ### 7.4 Chat surface
 
-Existing Writers Room chat. No second chat. Verdict stays on the `questions` frame.
+Existing Writers Room chat — **one** conversation UI, later lifted to the project overlay (§7.6). No second *kind* of chat. Verdict stays on the `questions` frame.
 
 | Decision | Behaviour |
 |---|---|
@@ -297,6 +297,7 @@ Existing Writers Room chat. No second chat. Verdict stays on the `questions` fra
 | **Timeout** | None. Drop `timeout: 120` and `defaultOption: 'approve'` |
 | **Critiques** | Debug toggle only |
 | **Voice** | Existing MASTER PROMPT / EPISODE PROMPT. No extra Voice tab |
+| **Where it lives** | **Phase 5:** the General Chat Window in the *project* shell, not a child of `StorytellerLayout`. Until then, today's Writers Room mount is the interim. Overlay, multi-session, module lock: `target-architecture.md` §7.6 |
 
 The **Draft tab** is the manuscript, not a chat panel. Specified next.
 
@@ -335,7 +336,28 @@ Centered reading column (~65–75ch). Novel: serif, generous leading. Script: Co
 
 Canon for every generate: world bible (partitioned) + episode premise + 10-point + the beat board. Do not ask the writer to paste those in. Do not generate Draft from chat-only memory while the beat board is empty — Beats stays the gate.
 
-**Not this surface.** A `commit_beat` tool. A third chat. Humanizer on keystroke. Five critic scopes. Auto-running the heavy workflow on every pause (ghost text is the cheap path; the compiler is opt-in per section).
+**Not this surface.** A `commit_beat` tool. A second *kind* of chat (the overlay in §7.6 is the same Writers Room, lifted). Humanizer on keystroke. Five critic scopes. Auto-running the heavy workflow on every pause (ghost text is the cheap path; the compiler is opt-in per section).
+
+### 7.6 Workspace overlay chat — Phase 5
+
+The compiler talks through **one** chat agent per session. The *window* is project chrome, not a storyteller-only panel.
+
+| Rule | Behaviour |
+|---|---|
+| **One mount** | General Chat Window lives in `src/app/(workspace)/[projectId]/layout.tsx`. Module `page.tsx` files do not remount it |
+| **Show / hide** | Icon in `GlobalHeader` or `GlobalSidebar`. Hidden is not unmounted |
+| **Survive navigation** | storyteller → 2d-canvas (or any project module) does not abort an in-flight stream |
+| **Survive refresh** | Session list reloads from the host; a `streaming` session is reattached |
+| **Module lock** | `moduleId` is immutable. Watch any session from any module. **Send** only if `moduleId` matches the current module; else dialog to start a new session |
+| **Many at once** | Several sessions may stream in the background (Cursor / Copilot) |
+| **List** | In the same window: running indicator, switch, rename, delete |
+| **Title** | Cheap metered model after the first user message; user rename wins |
+
+`AssistantChat` in `@/shared/chat` is the implementation home. Storyteller verdict UI (`questions` frame, Action 30) still renders *inside* the session that owns that workflow — it does not become a second dock.
+
+**Implement from [phases.md](./phases.md) Phase 5** (file list, schema, mount tree, `overlayMemoryRef`, tests) and `actions.md` 33–38. Do not invent a second overlay plan. 2d-canvas / 3d-canvas / asset-exporter have **no** chat agent today — watch-only, do not invent one.
+
+**Not this phase.** Merging frozen `ChatFrameType` SSE with AI-SDK `handleChatStream`. That is a later host cleanup, not required to lift the window. Replaying the last user message after a full refresh (double bill). Changing `memoryRef()` for existing live doors.
 
 ---
 
@@ -428,6 +450,10 @@ fiction-adjusted class, knowledge ledger, object-identity ledger, `promote_rule`
 search, voice stylometry after extractor tests, Kimi/GLM pins after a live run,
 `autonomousAuthor` with queued verdicts.
 
+**Phase 5** is not in that ablation list. It is the workspace overlay chat (`§7.6`, Actions 33–38).
+
+**Phase 6** is tests only (unit statements ×1.15, Playwright on storyteller / 2d-canvas / 3d exporter / projects / settings). Tables: [phases.md](./phases.md) §6.1–6.2.
+
 ---
 
 ## 13. Explicitly not proposed
@@ -443,5 +469,7 @@ search, voice stylometry after extractor tests, Kimi/GLM pins after a live run,
 - Humanizer on bible cards or character sheets.
 - A new Voice settings UI. (Draft mode Script/Novel is page geometry, not Voice.)
 - Replacing the Draft tab with chat. The navigator already names it.
+- Mounting a second chat tree on every module page (Phase 5 is one overlay).
+- Sending a 2d-canvas prompt into a storyteller session without a new session (Phase 5 module lock).
 - Any quality claim from a tier that did not invoke the agent.
 - Leaving `masterPrompt` as chat-only decoration while GRRM skills own the beat.
