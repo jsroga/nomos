@@ -30,14 +30,14 @@ export const mastra = createMastra(agents, {
 
 const workspace = mastra.getWorkspace?.()
 if (workspace) {
-  void workspace
-    .init()
-    .then(() => {
+  void (async () => {
+    try {
+      await workspace.init()
       console.log(`📂 [Mastra Studio] Workspace ready (${workspace.status})`)
-    })
-    .catch(err => {
+    } catch (err) {
       console.warn(LOG_WORKSPACE_INIT_FAILED, err)
-    })
+    }
+  })()
 }
 
 console.log(

@@ -64,6 +64,16 @@ describe('recordLlmCall', () => {
     })
   })
 
+  it('writes recalled-message tokens as their own field, not folded into prompt', async () => {
+    await recordLlmCall({ ...CALL, recalledMessageTokens: 400, promptTokens: 1_000 })
+
+    expect(insertMock.mock.calls[0]?.[0]).toMatchObject({
+      promptTokens: 1_000,
+      recalledMessageTokens: 400,
+    })
+    expect(insertMock.mock.calls[0]?.[0].promptTokens).not.toBe(1_400)
+  })
+
   it('swallows a database failure and counts it — generation is unaffected', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     insertMock.mockRejectedValue(new Error('connection reset'))

@@ -75,9 +75,11 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
     let aborted = false
     const p = () => paramsRef.current
 
-    void pollTrigger3dRun(
-      currentRunId,
-      fetchTrigger3dRunStatus,
+    void (async () => {
+      try {
+        await pollTrigger3dRun(
+          currentRunId,
+          fetchTrigger3dRunStatus,
       {
         shouldAbort: () => aborted || !p().isMounted.current,
         onPoll: statusData => {
@@ -151,10 +153,12 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
           useGlobalStatusStore.getState().removeOperation(`3d-${assetId}`)
         },
       },
-      { intervalMs: THREE_D_TRIGGER_POLL_INTERVAL_MS, maxPolls: THREE_D_TRIGGER_MAX_POLLS }
-    ).catch(error => {
-      logPollErrorUnlessAborted(ThreeDPollCopy.PollGenError, error)
-    })
+          { intervalMs: THREE_D_TRIGGER_POLL_INTERVAL_MS, maxPolls: THREE_D_TRIGGER_MAX_POLLS }
+        )
+      } catch (error) {
+        logPollErrorUnlessAborted(ThreeDPollCopy.PollGenError, error)
+      }
+    })()
 
     return () => {
       aborted = true
@@ -166,9 +170,11 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
     let aborted = false
     const p = () => paramsRef.current
 
-    void pollTrigger3dRun(
-      remeshRunId,
-      fetchTrigger3dRunStatus,
+    void (async () => {
+      try {
+        await pollTrigger3dRun(
+          remeshRunId,
+          fetchTrigger3dRunStatus,
       {
         shouldAbort: () => aborted || !p().isMounted.current,
         onPoll: statusData => {
@@ -203,10 +209,12 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
           await p().clearRemeshState(GenerationStatus.Failed)
         },
       },
-      { intervalMs: THREE_D_TRIGGER_POLL_INTERVAL_MS, maxPolls: THREE_D_TRIGGER_MAX_POLLS }
-    ).catch(error => {
-      logPollErrorUnlessAborted(ThreeDPollCopy.PollRemeshError, error)
-    })
+          { intervalMs: THREE_D_TRIGGER_POLL_INTERVAL_MS, maxPolls: THREE_D_TRIGGER_MAX_POLLS }
+        )
+      } catch (error) {
+        logPollErrorUnlessAborted(ThreeDPollCopy.PollRemeshError, error)
+      }
+    })()
 
     return () => {
       aborted = true
@@ -218,9 +226,11 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
     let aborted = false
     const p = () => paramsRef.current
 
-    void pollTrigger3dRun(
-      uploadRunId,
-      fetchTrigger3dRunStatus,
+    void (async () => {
+      try {
+        await pollTrigger3dRun(
+          uploadRunId,
+          fetchTrigger3dRunStatus,
       {
         shouldAbort: () => aborted || !p().isMounted.current,
         onPoll: statusData => {
@@ -256,10 +266,12 @@ export function useThreeDRunPolling(params: UseThreeDRunPollingParams): void {
           await p().clearUploadState(GenerationStatus.Failed)
         },
       },
-      { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
-    ).catch(error => {
-      logPollErrorUnlessAborted(ThreeDPollCopy.PollUploadError, error)
-    })
+          { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
+        )
+      } catch (error) {
+        logPollErrorUnlessAborted(ThreeDPollCopy.PollUploadError, error)
+      }
+    })()
 
     return () => {
       aborted = true

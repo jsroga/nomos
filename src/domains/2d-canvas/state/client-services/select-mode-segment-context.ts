@@ -57,8 +57,9 @@ export async function buildContextCanvasBase64(params: {
       const imagePath = tileImagePath(tile.image_filename, projectId, tile.project_id)
       const origin = cellDrawOrigin(tx, ty, tileRange, cellSize)
 
-      const promise = loadImage(imagePath)
-        .then(img => {
+      const promise = (async () => {
+        try {
+          const img = await loadImage(imagePath)
           ctx.drawImage(
             img,
             0,
@@ -70,10 +71,10 @@ export async function buildContextCanvasBase64(params: {
             cellSize,
             cellSize,
           )
-        })
-        .catch(err => {
+        } catch (err) {
           console.error(SelectModeLogMessage.FailedToLoadTile, tileKey, imagePath, err)
-        })
+        }
+      })()
 
       imagePromises.push(promise)
     }

@@ -15,6 +15,13 @@ import { TileNeighborEdge } from '@/shared/data/server/constants/generation-prom
 
 vi.mock('@/shared/data/fetch-json-record', () => ({
   fetchJsonRecord: vi.fn(),
+  readJsonBody: async (source: { json: () => Promise<unknown> }, fallback: unknown = null) => {
+    try {
+      return await source.json()
+    } catch {
+      return fallback
+    }
+  },
 }))
 
 describe('world-gen-trigger.api', () => {

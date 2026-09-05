@@ -34,14 +34,15 @@ export function WebVitalsReporter() {
     if (process.env.NODE_ENV !== NodeEnv.Development) return
 
     let cancelled = false
-    void import('web-vitals').then(mod => {
+    void (async () => {
+      const mod = await import('web-vitals')
       if (cancelled) return
       mod.onCLS(reportMetric)
       mod.onINP(reportMetric)
       mod.onLCP(reportMetric)
       mod.onFCP(reportMetric)
       mod.onTTFB(reportMetric)
-    })
+    })()
 
     return () => {
       cancelled = true

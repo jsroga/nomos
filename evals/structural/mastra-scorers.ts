@@ -20,6 +20,7 @@ import { scoreCharacterFieldAdherence } from './s6-character-field'
 import { scoreSchemaValidity } from './s7-schema-validity'
 import { scoreSlopRate } from './s8-slop-rate'
 import { scoreSelfRepetition } from './s9-self-repetition'
+import { scoreVoiceDistinctiveness } from './s10-voice-distinctiveness'
 import type { CastPerson, DumpedBeat, MatchingRules, StructuralScore } from './types'
 
 const CANON_PER_THOUSAND_CAP = 100
@@ -213,6 +214,16 @@ export const selfRepetitionScorer = createScorer({
     }),
   )
 
+export const voiceDistinctivenessScorer = createScorer({
+  id: ScorerId.VoiceDistinctiveness,
+  name: 'Voice Distinctiveness',
+  description: 'Minimum pairwise function-word and 3-gram divergence across speakers',
+})
+  .generateScore(({ run }) =>
+    clamp01(metricNumber(scoreVoiceDistinctiveness(dumpedBeats(run.output)), 'minPairwiseDivergence'))
+  )
+  .generateReason(({ run }) => reasonJson(scoreVoiceDistinctiveness(dumpedBeats(run.output))))
+
 export const STRUCTURAL_MASTRA_SCORERS = {
   [ScorerId.CausalGraph]: causalGraphScorer,
   [ScorerId.PlanCoverage]: planCoverageScorer,
@@ -222,6 +233,7 @@ export const STRUCTURAL_MASTRA_SCORERS = {
   [ScorerId.SchemaValidity]: schemaValidityScorer,
   [ScorerId.SlopRate]: slopRateScorer,
   [ScorerId.SelfRepetition]: selfRepetitionScorer,
+  [ScorerId.VoiceDistinctiveness]: voiceDistinctivenessScorer,
 } as const
 
 export const STRUCTURAL_EXPERIMENT_SCORERS = [
@@ -232,4 +244,5 @@ export const STRUCTURAL_EXPERIMENT_SCORERS = [
   schemaValidityScorer,
   slopRateScorer,
   selfRepetitionScorer,
+  voiceDistinctivenessScorer,
 ] as const

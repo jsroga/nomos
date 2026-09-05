@@ -14,25 +14,21 @@ import { ManifestoSection } from './ManifestoSection'
 
 /** Canvas / WebGL only — `ssr: false` is allowed for non-text marketing FX. */
 const TurbulentBackground = dynamic(
-  () => import('../../TurbulentBackground').then(m => ({ default: m.TurbulentBackground })),
+  async () => ({ default: (await import('../../TurbulentBackground')).TurbulentBackground }),
   { ssr: false },
 )
 
-const ToolsIntegration = dynamic(() =>
-  import('@/domains/marketing/ui/ToolsIntegration').then(m => ({
-    default: m.ToolsIntegration,
-  })),
-)
+const ToolsIntegration = dynamic(async () => ({
+  default: (await import('@/domains/marketing/ui/ToolsIntegration')).ToolsIntegration,
+}))
 
-const SystemsSection = dynamic(() =>
-  import('./SystemsSection').then(m => ({ default: m.SystemsSection })),
-)
+const SystemsSection = dynamic(async () => ({
+  default: (await import('./SystemsSection')).SystemsSection,
+}))
 
-const ProPlanPromo = dynamic(() =>
-  import('@/domains/marketing/ui/ProPlanPromo').then(m => ({
-    default: m.ProPlanPromo,
-  })),
-)
+const ProPlanPromo = dynamic(async () => ({
+  default: (await import('@/domains/marketing/ui/ProPlanPromo')).ProPlanPromo,
+}))
 
 function useScrolledPastFold(): boolean {
   const [ready, setReady] = useState(false)

@@ -1,8 +1,8 @@
 import { useEffect, type MutableRefObject, type RefObject } from 'react'
 import {
-  AssistantChatStreamStatus,
   ASSISTANT_TURN_SETTLE_MS,
   isAssistantTurnBusy,
+  isAssistantTurnFailed,
   shouldEmitCompletedToolCalls,
 } from './assistant-turn-phase'
 import {
@@ -64,25 +64,34 @@ export function useAssistantTurnSettle({
 }: UseAssistantTurnSettleArgs): void {
   useEffect(() => {
     const busy = isAssistantTurnBusy(status)
+    const failed = isAssistantTurnFailed(status, error)
 
-    if (busy) {
+    // Failed turns must settle even if status is still submitted/streaming.
+    if (busy && !failed) {
       clearSettleTimer()
       wasBusy.current = true
       return
     }
 
+    if (failed && busy) {
+      wasBusy.current = true
+    }
+
     if (!wasBusy.current) return
     if (settleTimer.current) return
 
-    const errored = status === AssistantChatStreamStatus.Error || Boolean(error)
+    const errored = failed
     settleTimer.current = setTimeout(() => {
       settleTimer.current = null
-      if (isAssistantTurnBusy(statusRef.current)) return
+      const stillBusy =
+        isAssistantTurnBusy(statusRef.current) &&
+        !isAssistantTurnFailed(statusRef.current, errorRef.current)
+      if (stillBusy) return
       wasBusy.current = false
       if (shouldEmitCompletedToolCalls(statusRef.current)) {
         emitFreshTools(messagesRef.current)
       }
-      if (errored || statusRef.current === AssistantChatStreamStatus.Error || errorRef.current) {
+      if (errored || isAssistantTurnFailed(statusRef.current, errorRef.current)) {
         finishGeneration({
           error:
             errorRef.current instanceof Error
@@ -120,8 +129,9 @@ export function syncBusyTurnActivityFromMessages(
   resolvedAgentId: string,
   lastActivityFingerprint: MutableRefObject<string>,
   onGenerationActivityRef: RefObject<((activity: AssistantGenerationActivity) => void) | undefined>,
+  error?: unknown,
 ): void {
-  if (!isAssistantTurnBusy(status)) return
+  if (!isAssistantTurnBusy(status) || isAssistantTurnFailed(status, error)) return
   const derived = deriveAssistantGenerationActivity(messages, resolvedAgentId)
   const activity: AssistantGenerationActivity = derived ?? {
     phase: AssistantGenerationPhase.Submitted,

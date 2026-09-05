@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { buildUrl } from '@/shared/data/url-builder'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
+import { readJsonBody } from '@/shared/data/fetch-json-record'
 import { storytellerKeys } from '@/domains/storyteller/core/io/storyteller.keys'
 import { splitFixInconsistenciesSseChunks } from '@/domains/storyteller/core/io/fix-inconsistencies-sse'
 import { applyFixInconsistenciesSseFrame } from './apply-fix-inconsistencies-sse-frame'
@@ -194,7 +195,7 @@ export function useFixInconsistenciesRun({
       headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify({ runId: run.runId, action, projectId }),
     })
-    const body = recordFromJson(await response.json().catch(() => ({})))
+    const body = recordFromJson(await readJsonBody(response, {}))
     if (!response.ok) {
       toast.error(FixInconsistenciesToastCopy.ApplyFailed)
       setRun({ phase: ConsistencyFixRunPhase.Review })

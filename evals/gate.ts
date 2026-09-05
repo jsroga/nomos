@@ -1,6 +1,8 @@
 /**
- * `npm run eval:gate` — run the evals, compare against a baseline, refuse a
- * regression.
+ * `npm run eval:gate` — compare a fixture eval run against a baseline.
+ *
+ * Frozen-fixture scores are `eval:scorer-fixture`. This command is not live
+ * agent quality unless the artifact invoked the agent (`eval:agent-contract`).
  *
  * This is the gate. `scripts/check-eval-freshness.mjs` is only the *reminder*
  * that it needs running: a pre-commit hook that ran the evals would cost
@@ -10,7 +12,7 @@ import './env-preload'
 import * as fs from 'fs'
 import * as path from 'path'
 import { runEval } from './run'
-import { compareToBaseline, formatComparison, type EvalBaseline } from './compare'
+import { compareToBaseline, formatComparison, qualityUpCostDoubled, GateFailReason, type EvalBaseline } from './compare'
 import { EVAL_BASELINE, EVAL_GATE_MESSAGE } from './constants/gate'
 
 /** The newest dated baseline for a dataset, or null when none is chosen yet. */
@@ -53,6 +55,11 @@ async function gate(): Promise<number> {
 
   const result = compareToBaseline(report, readBaseline(baselinePath))
   console.log(formatComparison(result, path.relative(process.cwd(), baselinePath)))
+
+  if (qualityUpCostDoubled(result)) {
+    console.error(`\n${GateFailReason.QualityUpCostDoubled}`)
+    return 1
+  }
 
   if (result.cost?.exceeded) {
     console.error(`\n${EVAL_GATE_MESSAGE.OVER_BUDGET}`)

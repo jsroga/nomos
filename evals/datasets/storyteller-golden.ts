@@ -17,6 +17,7 @@ export type ScorerId =
   | 'story-motion'
   | 'beat-plan-concreteness'
   | 'critic-discipline'
+  | 'voice_distinctiveness'
 
 export interface StorytellerGoldenExample {
   id: string
@@ -56,7 +57,7 @@ Kael did not look at the parchment. He watched her left hand — the one that tr
     metadata: {
       category: 'magic',
       description: 'Specific voices, subtext, no AI slop',
-      scorers: ['magic'],
+      scorers: ['magic', 'voice_distinctiveness'],
     },
   },
   {

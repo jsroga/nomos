@@ -2,7 +2,7 @@ import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
-import { fetchJson } from '@/shared/data/fetch-json-record'
+import { fetchJson, readJsonBody } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
 import type { TriggerRunStatusPayload } from '@/shared/data/polling/wait-for-trigger-run'
@@ -59,7 +59,7 @@ export async function triggerEpisodePoster(
         body: JSON.stringify({ ...input, requestId }),
       })
   )
-  const data = recordFromJson(await response.json().catch(() => ({})))
+  const data = recordFromJson(await readJsonBody(response, {}))
   if (!response.ok) {
     return {
       handleId: null,

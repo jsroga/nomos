@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { readJsonBody } from '@/shared/data/fetch-json-record'
 import { ContentType, FetchCache, HttpMethod } from '@/shared/data/constants/protocol'
 import { buildUrl } from '@/shared/data/url-builder'
 import { WORLD_BUILDING_TOOLKIT_API_BASE_PATH } from '../../config/module'
@@ -28,7 +29,7 @@ async function parseResponse<TSchema extends z.ZodTypeAny>(
   response: Response,
   schema: TSchema
 ): Promise<z.output<TSchema>> {
-  const json = await response.json().catch(() => null)
+  const json = await readJsonBody(response, null)
   if (!response.ok) {
     const parsed = apiErrorSchema.safeParse(json)
     throw new Error(parsed.success ? parsed.data.error : `Request failed (${response.status})`)

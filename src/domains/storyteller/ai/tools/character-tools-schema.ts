@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { VoiceFingerprintSchema } from '@/domains/storyteller/core/voice/voice-fingerprint'
 import { INJECTED_PROJECT_ID_DESC, ManageToolOperation } from './manage-tools-wire'
 
 export const CharacterPsychologySchema = z
@@ -37,6 +38,7 @@ export const CharacterDataSchema = z.object({
   socialSafety: z.number().min(0).max(100).optional().describe('Social safety'),
   moralAlignment: z.number().min(0).max(100).optional().describe('Moral alignment'),
   transformationProgress: z.number().min(0).max(100).optional().describe('Transformation progress'),
+  voice: z.union([z.string(), VoiceFingerprintSchema]).optional(),
 })
 
 export const ManageCharacterInputSchema = z.object({
@@ -73,6 +75,7 @@ export const CharacterOutputSchema = z.object({
   mbti: z.string().optional(),
   portraitUrl: z.string().optional(),
   psychology: z.record(z.unknown()).optional(),
+  voice: VoiceFingerprintSchema.optional(),
   valence: z.number().optional(),
   arousal: z.number().optional(),
   autonomy: z.number().optional(),

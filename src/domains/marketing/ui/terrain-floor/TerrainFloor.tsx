@@ -22,12 +22,11 @@ export function TerrainFloor() {
     let cancelled = false
     let dispose: (() => void) | undefined
 
-    void Promise.all([import('three'), import('./create-terrain-scene')]).then(
-      ([THREE, mod]) => {
-        if (cancelled) return
-        dispose = mod.createTerrainFloorScene(THREE, container)
-      },
-    )
+    void (async () => {
+      const [THREE, mod] = await Promise.all([import('three'), import('./create-terrain-scene')])
+      if (cancelled) return
+      dispose = mod.createTerrainFloorScene(THREE, container)
+    })()
 
     return () => {
       cancelled = true

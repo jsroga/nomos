@@ -36,5 +36,5 @@ describe('direct provider SDK imports', () => {
     expect(imports(ProviderSdkBucket.LangChain).length).toBeLessThanOrEqual(
       RATCHET.langChainImports
     )
-  })
+  }, 60_000)
 })

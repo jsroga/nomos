@@ -3,6 +3,7 @@ import {
   AssistantChatStreamStatus,
   ASSISTANT_TURN_SETTLE_MS,
   isAssistantTurnBusy,
+  isAssistantTurnFailed,
   shouldEmitCompletedToolCalls,
 } from '../assistant-turn-phase'
 
@@ -16,6 +17,13 @@ describe('assistant turn phase', () => {
     expect(isAssistantTurnBusy(AssistantChatStreamStatus.Ready)).toBe(false)
     expect(isAssistantTurnBusy(AssistantChatStreamStatus.Error)).toBe(false)
     expect(isAssistantTurnBusy(undefined)).toBe(false)
+  })
+
+  it('treats status=error or an error object as a failed turn', () => {
+    expect(isAssistantTurnFailed(AssistantChatStreamStatus.Error, undefined)).toBe(true)
+    expect(isAssistantTurnFailed(AssistantChatStreamStatus.Streaming, new Error('boom'))).toBe(true)
+    expect(isAssistantTurnFailed(AssistantChatStreamStatus.Streaming, undefined)).toBe(false)
+    expect(isAssistantTurnFailed(AssistantChatStreamStatus.Ready, null)).toBe(false)
   })
 
   it('never surfaces a pending approval while the answer is still streaming', () => {

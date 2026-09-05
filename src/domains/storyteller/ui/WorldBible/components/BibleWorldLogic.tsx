@@ -1,5 +1,7 @@
 import type { FC } from 'react'
 import { Scale, Trash2 } from 'lucide-react'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import type { WorldRule } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import {
   parseWorldRuleCategory,
@@ -11,6 +13,7 @@ import { WorldRuleCard } from '../../WorldRuleCard'
 import { useBible } from './BibleContext'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
 import { bibleSectionItems, planItems } from '../utils/bible-section-items'
+import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
 import type { PendingAction } from '../utils/bible-context-types'
 
 const WorldRuleEditItem: FC<{
@@ -80,7 +83,7 @@ const WorldRulesSection: FC<{
   pending?: PendingAction
   isEditing: boolean
   isReadOnly: boolean
-  onSendMessage?: (msg: string, section?: string) => void
+  onGenerate?: () => void
   onAddWorldRule: () => void
   localRules: WorldRule[]
   displayRules: WorldRule[]
@@ -92,7 +95,7 @@ const WorldRulesSection: FC<{
   pending,
   isEditing,
   isReadOnly,
-  onSendMessage,
+  onGenerate,
   onAddWorldRule,
   localRules,
   displayRules,
@@ -114,15 +117,7 @@ const WorldRulesSection: FC<{
       isLoading={isLoading}
       onAdd={onAddWorldRule}
       addTitle="Add World Rule"
-      onGenerate={
-        onSendMessage
-          ? () =>
-              onSendMessage(
-                'Generate BRAND NEW fundamental laws and rules that govern this world - magic systems, physics, social contracts, etc. Each rule needs a short titled name (2–6 words, same length as a faction or event name) and the full law in the rule field. Mention examples of excellent world rules like in Death Note, Case of Golden Idol (game), Game of Thrones, Pluribus. IMPORTANT: Take a completely new creative direction and do NOT repeat previous rules.',
-                'worldRules'
-              )
-          : undefined
-      }
+      onGenerate={onGenerate}
       generateTitle="Generate World Rules"
     />
     {isEditing ? (
@@ -168,14 +163,23 @@ export const BibleWorldLogic: FC = () => {
     addWorldRule,
     removeWorldRule,
     isReadOnly,
-    onSendMessage,
     loadingSections,
     pendingActions,
     projectId,
+    setPendingAction,
   } = useBible()
 
   const localRules = planItems<WorldRule>(localPlan.worldRules)
   const displayRules = bibleSectionItems<WorldRule>(localPlan.worldRules, storyPlan.worldRules, isEditing)
+
+  const handleGenerate = async () => {
+    await runBibleSectionArtifactDraft({
+      projectId,
+      section: BibleSection.WORLD_RULES,
+      promptId: StorytellerPromptRegistryId.BibleWorldRulesGenerate,
+      setPendingAction,
+    })
+  }
 
   return (
     <WorldRulesSection
@@ -183,7 +187,7 @@ export const BibleWorldLogic: FC = () => {
       pending={pendingActions?.worldRules}
       isEditing={isEditing}
       isReadOnly={isReadOnly}
-      onSendMessage={onSendMessage}
+      onGenerate={handleGenerate}
       onAddWorldRule={addWorldRule}
       localRules={localRules}
       displayRules={displayRules}

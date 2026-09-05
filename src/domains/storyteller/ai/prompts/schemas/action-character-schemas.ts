@@ -1,6 +1,8 @@
 /** Character action Zod schemas. */
 import { z } from 'zod'
-// --- Character Development ---
+import { VoiceFingerprintSchema } from '@/domains/storyteller/core/voice/voice-fingerprint'
+
+export { voiceFingerprintFromUnknown } from '@/domains/storyteller/core/voice/voice-fingerprint'
 
 export const CreateCharacterActionSchema = z.object({
   type: z.literal('CREATE_CHARACTER'),
@@ -18,7 +20,7 @@ export const UpdateCharacterProfileActionSchema = z.object({
     updates: z.object({
       description: z.string().nullable().optional(),
       traits: z.array(z.string()).nullable().optional(),
-      voice: z.string().nullable().optional(),
+      voice: z.union([z.string(), VoiceFingerprintSchema]).nullable().optional(),
     }),
   }),
 })

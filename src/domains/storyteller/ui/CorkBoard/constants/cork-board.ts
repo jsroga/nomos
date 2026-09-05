@@ -1,3 +1,5 @@
+import { lookupPromptBody } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-table'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { BeatCardType } from '@/domains/storyteller/ui/BeatCard/constants/beat-card'
 import { StoryboardVideoPreset } from '@/shared/ai/storyboard-video-env'
 
@@ -26,7 +28,9 @@ export enum CorkBoardLoadingKey {
   Placeholder = 'beat-loading',
 }
 
-export const CORK_BOARD_GENERATE_BEATS_PROMPT = `Generate the full beat board (text only) for this episode from the accepted episode premise and its 10-point plan. Cover the 10-point plan as the detailed breakdown of ROADMAP SLOT (see system context). If that block is absent, use the premise only. Create ${CORK_BOARD_FULL_BEAT_COUNT} beats with manage_beat create. Each beat needs logline, beatType, visualHook, charactersInvolved, actionTaken, consequence, and storyStateChange. ${CORK_BOARD_BEAT_SHORT_RULE} Cover the full arc. Do not draft scripts. Do not generate images. Do not call run_beat_draft_workflow.`
+export const CORK_BOARD_GENERATE_BEATS_PROMPT = lookupPromptBody(
+  StorytellerPromptRegistryId.CorkBoardGenerateBeats
+)
 
 export enum CorkBoardPromptPlaceholder {
   Sequence = '{sequence}',
@@ -47,7 +51,9 @@ export enum CorkBoardBeatListSep {
   Item = '. ',
 }
 
-export const CORK_BOARD_GENERATE_NEXT_BEAT_PROMPT = `Generate the next story beat only (text card) for this episode. Create exactly one beat with manage_beat create. Sequence {sequence}. Continue from the existing beats: {existing}. Use the episode premise, 10-point plan, and ROADMAP SLOT when that system-context block is present. The beat needs logline, beatType, visualHook, charactersInvolved, actionTaken, consequence, and storyStateChange. ${CORK_BOARD_BEAT_SHORT_RULE} Do not replace or delete existing beats. Do not draft a script. Do not generate images. Do not call run_beat_draft_workflow.`
+export const CORK_BOARD_GENERATE_NEXT_BEAT_PROMPT = lookupPromptBody(
+  StorytellerPromptRegistryId.CorkBoardGenerateNextBeat
+)
 
 export enum CorkBoardCopy {
   BeatBoardHeading = 'Beat Board',

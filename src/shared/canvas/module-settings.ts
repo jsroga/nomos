@@ -35,7 +35,13 @@ function maybeWarm(): void {
   if (warmStarted || loaded) return
   if (!env.DATABASE_URL || process.env.VITEST) return
   warmStarted = true
-  void loadModuleSettings().catch(() => {})
+  void (async () => {
+    try {
+      await loadModuleSettings()
+    } catch {
+      // Catalog defaults apply until a later warm succeeds.
+    }
+  })()
 }
 
 /** Effective config for a module: catalog default overlaid with the admin row. */

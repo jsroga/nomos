@@ -2,6 +2,8 @@ import toast from 'react-hot-toast'
 import {
   applyGeneratedCharacterFields,
   CHARACTER_TEXT_FIELD_KEYS,
+  CharacterTextFieldKey,
+  generatedCharacterFieldsFromUnknown,
   hasMissingCharacterFields,
   hasUsableCharacterDraft,
   listMissingCharacterMetricKeys,
@@ -31,6 +33,7 @@ import {
 } from './constants/character-creation-dialog'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { ActionType } from '@/domains/storyteller/core/types/enums'
+import { recordFromJson } from '@/shared/data/json-guards'
 import type { PendingAction } from '@/domains/storyteller/ui/WorldBible/utils/bible-context-types'
 import type { CharacterFormFields } from './character-creation-dialog-helpers'
 import type { CharacterMetrics } from './character-creation-dialog-types'
@@ -274,6 +277,59 @@ export function generateMissingDisableReason(input: {
     return CharacterDialogGenerateMissingDisable.AllFilled
   }
   return null
+}
+
+enum CharacterArtifactPsychologyKey {
+  Psychology = 'psychology',
+  ActualMotivation = 'actualMotivation',
+}
+
+enum CharacterArtifactMetricsKey {
+  Metrics = 'metrics',
+}
+
+function parseArtifactDraftJson(draft: string): unknown {
+  try {
+    return JSON.parse(draft)
+  } catch {
+    return { [CharacterTextFieldKey.Description]: draft }
+  }
+}
+
+export function generatedCharacterFieldsFromArtifactDraft(draft: string): GeneratedCharacterFields {
+  const rec = recordFromJson(parseArtifactDraftJson(draft))
+  const psych = recordFromJson(rec[CharacterArtifactPsychologyKey.Psychology])
+  return generatedCharacterFieldsFromUnknown({
+    [CharacterTextFieldKey.Name]: rec[CharacterTextFieldKey.Name],
+    [CharacterTextFieldKey.Gender]: rec[CharacterTextFieldKey.Gender],
+    [CharacterTextFieldKey.Role]: rec[CharacterTextFieldKey.Role],
+    [CharacterTextFieldKey.Description]: rec[CharacterTextFieldKey.Description],
+    [CharacterTextFieldKey.Mbti]: rec[CharacterTextFieldKey.Mbti],
+    [CharacterTextFieldKey.Motivation]:
+      rec[CharacterTextFieldKey.Motivation] ??
+      rec[CharacterArtifactPsychologyKey.ActualMotivation] ??
+      psych[CharacterArtifactPsychologyKey.ActualMotivation],
+    [CharacterTextFieldKey.FatalFlaw]:
+      rec[CharacterTextFieldKey.FatalFlaw] ?? psych[CharacterTextFieldKey.FatalFlaw],
+    [CharacterTextFieldKey.Secrets]: rec[CharacterTextFieldKey.Secrets] ?? psych[CharacterTextFieldKey.Secrets],
+    [CharacterArtifactMetricsKey.Metrics]: rec[CharacterArtifactMetricsKey.Metrics],
+  })
+}
+
+export function attachCharacterArtifactPendingApply(
+  action: PendingAction | null,
+  applyDraft: (draft: string) => void,
+): PendingAction | null {
+  if (!action || action.isProcessing) return action
+  const draft = typeof action.preview === 'string' ? action.preview : ''
+  const accept = action.onAccept
+  return {
+    ...action,
+    onAccept: async () => {
+      applyDraft(draft)
+      await Promise.resolve(accept())
+    },
+  }
 }
 
 export function characterDraftPendingAction(input: {

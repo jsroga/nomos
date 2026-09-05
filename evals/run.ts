@@ -99,10 +99,19 @@ async function loadScorers() {
   const { ALL_SCORERS, IDEA_DIVERSITY_SCORERS } = await import('@/shared/agent-kernel/scorers')
   // Deterministic domain scorers (beat-plan gate, critic discipline) live in
   // the storyteller domain — shared/ cannot import domains, so the union
-  // happens here in the runner. Idea-diversity scorers ride along; the
-  // per-example `scorers` filter scopes each to its dataset.
-  const { STORYTELLER_EVAL_SCORERS } = await import('@/domains/storyteller/ai')
-  return [...ALL_SCORERS, ...STORYTELLER_EVAL_SCORERS, ...IDEA_DIVERSITY_SCORERS]
+  // happens here in the runner. Import the scorer files, not `@/domains/storyteller/ai`:
+  // that barrel loads tools → CRUD (`server-only`), which throws under tsx.
+  // Idea-diversity scorers ride along; the per-example `scorers` filter scopes
+  // each to its dataset.
+  const { beatPlanConcretenessScorer } = await import(
+    '@/domains/storyteller/ai/agents/BeatPlanner/beat-plan-concreteness-scorer'
+  )
+  const { criticDisciplineScorer } = await import(
+    '@/domains/storyteller/ai/agents/critics/critic-discipline-scorer'
+  )
+  const { voiceDistinctivenessScorer } = await import('./structural/mastra-scorers')
+  const { grrmPlanRubricScorer } = await import('./judges/grrm-plan-rubric')
+  return [...ALL_SCORERS, beatPlanConcretenessScorer, criticDisciplineScorer, voiceDistinctivenessScorer, grrmPlanRubricScorer, ...IDEA_DIVERSITY_SCORERS]
 }
 
 type RunnableScorer = Awaited<ReturnType<typeof loadScorers>>[number]
@@ -178,6 +187,9 @@ async function runEval(): Promise<MultiVariantReport> {
   const ALL_SCORERS = await loadScorers()
   const judgingModelRaw = process.env.JUDGING_MODEL
   const judgingModelId = resolveJudgingModelId(judgingModelRaw)
+  const { TEXT_GEN_PRIMARY_MODEL } = await import('@/shared/agent-kernel/models')
+  const { assertJudgeFamilyDiffers } = await import('./judges/family')
+  assertJudgeFamilyDiffers(judgingModelId, TEXT_GEN_PRIMARY_MODEL)
   const judgingModel = judgingModelRaw || `${judgingModelId} (default)`
   console.log(`   Judge model: ${judgingModel}`)
 
@@ -291,6 +303,7 @@ async function runEval(): Promise<MultiVariantReport> {
     // the working tree, so a stale artifact cannot pass for a fresh one.
     inputHash: inputHash(),
     judgingModelId,
+    judgePromptHash: (await import('./judges/prompt-hash')).judgePromptHash(),
     judgeUsage,
     variants: [variant],
     scenarios: scenarioNames,

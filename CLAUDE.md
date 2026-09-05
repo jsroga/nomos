@@ -19,8 +19,10 @@ npm run typecheck
 npm run test:unit
 npm run test:coverage        # Vitest v8 HTML/LCOV → coverage/
 npm run test:e2e         # Playwright (default)
-npm run test:e2e smoke   # storyteller smoke; also: actions, full-loop, swiss-knife
+npm run test:e2e smoke   # storyteller smoke (GLM chat pin; load .env.local); also: actions, full-loop, swiss-knife
 ```
+
+Smoke pins Writers Room chat to GLM (`zai-coding-plan:glm-5.2`). If OpenRouter returns insufficient credits, **stop and tell the operator** — do not keep calling models. In-flight budget (Retry-After 120) may be retried once.
 
 Single unit test (Vitest; `@/` → `src/`):
 
@@ -29,7 +31,7 @@ npx vitest run src/domains/storyteller/ai/tools/__tests__/storytelling.test.ts
 npx vitest run src/domains/loop-creator            # whole directory
 ```
 
-`*.e2e.test.ts` files are excluded from `test:unit` (need DB/LLM) — run them explicitly with `npx vitest run <path>` when keys are available. E2E scenarios need a running app + `.env.local`.
+`*.e2e.test.ts` files are excluded from `test:unit` (need DB/LLM) — run them explicitly with `npx vitest run <path>` when keys are available. E2E scenarios need a running app + `.env.local`. After a plan (or when asked), agents run `npm run test:e2e smoke` — GLM-pinned; credit exhaustion is a hard stop.
 
 ## Architecture
 

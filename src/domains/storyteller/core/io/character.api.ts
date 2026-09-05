@@ -1,6 +1,6 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
-import { ClientFetchError, fetchJson } from '@/shared/data/fetch-json-record'
+import { ClientFetchError, fetchJson, readJsonBody } from '@/shared/data/fetch-json-record'
 import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
@@ -37,7 +37,7 @@ export async function startCharacterPortraitGeneration(input: {
         body: JSON.stringify({ ...input, requestId }),
       })
   )
-  const data = recordFromJson(await response.json().catch(() => ({})))
+  const data = recordFromJson(await readJsonBody(response, {}))
   if (!response.ok) {
     throw new ClientFetchError(
       readString(data.error) ?? API_ERROR.UNKNOWN_ERROR,
@@ -87,7 +87,7 @@ export async function generateCharacterMissingFields(input: {
     headers: JSON_HEADERS,
     body: JSON.stringify(input),
   })
-  const data = recordFromJson(await response.json().catch(() => ({})))
+  const data = recordFromJson(await readJsonBody(response, {}))
   if (!response.ok) {
     throw new ClientFetchError(
       readString(data.error) ?? API_ERROR.FAILED_GENERATE_CHARACTER_FIELDS,

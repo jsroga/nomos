@@ -234,6 +234,8 @@ export async function editStorytellerScript(input: {
   projectId: string
   selection: string
   instruction: string
+  beforeText?: string
+  afterText?: string
 }): Promise<string> {
   const data = recordFromJson(
     await fetchJson('/api/storyteller/script/edit', {
@@ -243,6 +245,8 @@ export async function editStorytellerScript(input: {
         [QueryParam.ProjectId]: input.projectId,
         selection: input.selection,
         instruction: input.instruction,
+        beforeText: input.beforeText,
+        afterText: input.afterText,
       }),
     })
   )

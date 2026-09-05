@@ -16,8 +16,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Agent } from '@mastra/core/agent'
 import { z } from 'zod'
 import { requireAuth, withRateLimit } from '@/shared/data/api-utils'
-import { CHAT_MODELS } from '@/domains/storyteller/config/constants/chat-model-catalog'
-import { resolveStorytellerModel } from '@/domains/storyteller/config/constants/model-config'
+import { readJsonBody } from '@/shared/data/fetch-json-record'
+import { CHAT_MODELS, resolveStorytellerModel } from '@/domains/storyteller/server'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 const TEST_TIMEOUT_MS = 10_000
@@ -70,7 +70,7 @@ async function handleTest(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: ERR_UNAUTHORIZED }, { status: 401 })
   }
 
-  const parsed = bodySchema.safeParse(await request.json().catch(() => null))
+  const parsed = bodySchema.safeParse(await readJsonBody(request, null))
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: ERR_INVALID_BODY }, { status: 400 })
   }

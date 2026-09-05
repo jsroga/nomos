@@ -108,6 +108,14 @@ describe('effective no-restricted-imports', () => {
     expect(messages).toEqual([])
   })
 
+  it('allows the 2d-canvas server submodule from an app route', async () => {
+    const messages = await lintImport(
+      APP_STREAM_FILE,
+      'import { x } from \'@/domains/2d-canvas/server\'\n',
+    )
+    expect(messages).toEqual([])
+  })
+
   it('allows a game-design core/io import from an app route', async () => {
     const messages = await lintImport(
       APP_STREAM_FILE,
@@ -143,6 +151,30 @@ describe('effective no-restricted-imports', () => {
     )
     expect(messages.length).toBeGreaterThan(0)
     expect(messages.some(message => /OpenRouter|gateway|openai/i.test(message))).toBe(true)
+  })
+})
+
+describe('local/prefer-await-try-catch', () => {
+  it('is wired as error on src files', async () => {
+    const eslint = createRepoEslint()
+    const config = await eslint.calculateConfigForFile(
+      path.join(REPO_ROOT, 'src/shared/data/fetch-json-record.ts')
+    )
+    const rule = config.rules?.['local/prefer-await-try-catch']
+    const severity = Array.isArray(rule) ? rule[0] : rule
+    expect(severity === 'error' || severity === 2).toBe(true)
+  })
+
+  it('flags .then(callback) and allows await/try-catch', async () => {
+    const eslint = createRepoEslint()
+    const results = await eslint.lintText(
+      'export function load(url: string): Promise<string> {\n  return fetch(url).then(r => r.text())\n}\n',
+      { filePath: path.join(REPO_ROOT, 'src/shared/data/fetch-json-record.ts') },
+    )
+    const hits = (results[0]?.messages ?? []).filter(
+      message => message.ruleId === 'local/prefer-await-try-catch'
+    )
+    expect(hits.length).toBeGreaterThan(0)
   })
 })
 

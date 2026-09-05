@@ -1,11 +1,14 @@
 import { useState, type FC } from 'react'
 import { Music } from 'lucide-react'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { SoundtrackTrack } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { YouTubePlayer, YouTubeEmbedPlayer } from '../../YouTubePlayer'
 import { extractVideoId } from '@/domains/storyteller/core/utils/youtube-utils'
 import { useBible } from './BibleContext'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
 import { bibleSectionItems } from '../utils/bible-section-items'
+import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
 
 interface BibleSoundtracksProps {}
 
@@ -109,9 +112,10 @@ export const BibleSoundtracks: FC<BibleSoundtracksProps> = () => {
     localPlan,
     updateLocalPlan,
     isReadOnly,
-    onSendMessage,
     loadingSections,
     pendingActions,
+    projectId,
+    setPendingAction,
   } = useBible()
   const { playingTrackIndex, playingVideoId, handlePlayTrack, handleStopTrack } =
     useSoundtrackPlayback()
@@ -131,15 +135,14 @@ export const BibleSoundtracks: FC<BibleSoundtracksProps> = () => {
         title="Soundtrack"
         isReadOnly={isReadOnly}
         isLoading={isLoading}
-        onGenerate={
-          onSendMessage
-            ? () =>
-                onSendMessage(
-                  'Suggest 3-5 BRAND NEW real YouTube soundtrack recommendations for this world. For each track, provide the song title, artist name, and actual YouTube URL. Choose music that reinforces the tone and atmosphere. IMPORTANT: Take a completely new, unexpected creative direction and do NOT repeat previous suggestions.',
-                  'soundtracks'
-                )
-            : undefined
-        }
+        onGenerate={async () => {
+          await runBibleSectionArtifactDraft({
+            projectId,
+            section: BibleSection.SOUNDTRACKS,
+            promptId: StorytellerPromptRegistryId.BibleSoundtracksGenerate,
+            setPendingAction,
+          })
+        }}
         generateTitle="Generate Soundtracks"
       />
       {isEditing ? (

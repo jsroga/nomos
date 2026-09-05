@@ -1,3 +1,5 @@
+import { lookupPromptBody } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-table'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 
 export const MoodboardProvider = {
@@ -42,5 +44,6 @@ export enum BibleOverviewSectionTitle {
   Moodboard = 'Moodboard',
 }
 
-export const WORLD_DESCRIPTION_REGEN_PROMPT =
-  'Generate a completely BRAND NEW, rich world description including setting, atmosphere, and key details. IMPORTANT: Take a completely new creative direction and do NOT repeat previous content.'
+export const WORLD_DESCRIPTION_REGEN_PROMPT = lookupPromptBody(
+  StorytellerPromptRegistryId.WorldDescriptionRegen
+)

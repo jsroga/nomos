@@ -38,10 +38,14 @@ export enum SkillCatalogDescription {
   CharacterIntroductions = 'Character introductions — no naked entry without grounding.',
   SceneAndStructure = 'Scene and structure — beats that move space and time.',
   RealismConstraints = 'Realism constraints — physical and social limits hold.',
+  ManuscriptScript = 'Manuscript script — INT./EXT. sluglines, present-tense action, cue caps.',
+  ManuscriptNovel = 'Manuscript novel — chapter breaks, past tense, attribution beats, no sluglines.',
 }
 
 export enum SkillCatalogFs {
   RootDir = 'skill-catalog',
+  GrrmAuthorDir = 'grrm-author',
+  SkillsDir = 'skills',
   SkillFile = 'SKILL.md',
 }
 
@@ -166,6 +170,26 @@ export const SKILL_CATALOG: readonly SkillCatalogRow[] = [
     match: {
       stages: [SkillCatalogStage.Draft, SkillCatalogStage.Critique],
       problemTypes: [SkillCatalogProblemMatch.Realism],
+      hardRules: [],
+    },
+  },
+  {
+    id: SkillCatalogId.ManuscriptScript,
+    description: SkillCatalogDescription.ManuscriptScript,
+    owners: [SkillCatalogOwner.Author],
+    match: {
+      stages: [SkillCatalogStage.Draft],
+      problemTypes: [],
+      hardRules: [],
+    },
+  },
+  {
+    id: SkillCatalogId.ManuscriptNovel,
+    description: SkillCatalogDescription.ManuscriptNovel,
+    owners: [SkillCatalogOwner.Author],
+    match: {
+      stages: [SkillCatalogStage.Draft],
+      problemTypes: [],
       hardRules: [],
     },
   },

@@ -34,15 +34,20 @@ import {
   PAYLOAD_LOG_LIMIT,
   SmokeAction,
   SmokeActionStatus,
+  SmokeBodyKey,
+  SmokeChatModel,
   SmokeError,
   SmokeEvent,
   SmokeHttp,
+  SmokeHttpStatus,
   SmokeKey,
   SmokeLog,
   SmokeMatch,
   SmokePrompt,
+  SmokeRetry,
   SmokeSender,
   SmokeTestName,
+  SmokeTimeout,
   SmokeTool,
 } from '../constants/storyteller-smoke'
 
@@ -65,13 +70,19 @@ interface SSEMessage {
   content?: string
 }
 
+interface SSEStreamError {
+  message?: string
+  code?: string
+}
+
 interface SSEEvent {
   type: string
   toolName?: string
   result?: unknown
   token?: string
   action?: SSEAction
-  message?: SSEMessage
+  message?: SSEMessage | string
+  error?: SSEStreamError
 }
 
 interface SmokeCharacter {
@@ -146,7 +157,33 @@ async function parseSSEStream(response: Response): Promise<SSEEvent[]> {
   return events
 }
 
-async function sendChatMessage(message: string, projectId: string = TEST_PROJECT_ID): Promise<SSEEvent[]> {
+function eventErrorText(event: SSEEvent): string {
+  if (typeof event.error?.message === 'string') return event.error.message
+  const payload = event.message
+  if (typeof payload === 'string') return payload
+  if (payload && typeof payload.content === 'string') return payload.content
+  return ''
+}
+
+function streamHitInFlightBudget(events: SSEEvent[]): boolean {
+  return events.some(event => eventErrorText(event).includes(SmokeMatch.InFlightRequests))
+}
+
+function streamHitCreditExhausted(events: SSEEvent[]): boolean {
+  return events.some(event => {
+    const text = eventErrorText(event)
+    if (text.includes(SmokeMatch.InFlightRequests)) return false
+    return text.includes(SmokeMatch.InsufficientCredits)
+  })
+}
+
+function throwIfCreditsExhausted(events: SSEEvent[]): void {
+  if (streamHitCreditExhausted(events)) {
+    throw new Error(SmokeError.OpenRouterCreditsExhausted)
+  }
+}
+
+async function postChatMessage(message: string, projectId: string): Promise<SSEEvent[]> {
   const response = await fetch(API_URL, {
     method: SmokeHttp.Post,
     headers: {
@@ -154,11 +191,16 @@ async function sendChatMessage(message: string, projectId: string = TEST_PROJECT
       'x-bypass-auth': BYPASS_AUTH_VALUE // Bypass auth for E2E tests
     },
     body: JSON.stringify({
-      message,
-      projectId,
-      traceId: `smoke-${Date.now()}`
+      [SmokeBodyKey.Message]: message,
+      [SmokeBodyKey.ProjectId]: projectId,
+      [SmokeBodyKey.TraceId]: `smoke-${Date.now()}`,
+      [SmokeBodyKey.ModelName]: SmokeChatModel.Glm,
     })
   })
+
+  if (response.status === SmokeHttpStatus.PaymentRequired) {
+    throw new Error(SmokeError.OpenRouterCreditsExhausted)
+  }
 
   if (!response.ok) {
     throw new Error(`API Error: ${response.status} ${await response.text()}`)
@@ -167,12 +209,39 @@ async function sendChatMessage(message: string, projectId: string = TEST_PROJECT
   return parseSSEStream(response)
 }
 
+async function sendChatMessage(message: string, projectId: string = TEST_PROJECT_ID): Promise<SSEEvent[]> {
+  let events: SSEEvent[] = []
+  for (let attempt = 1; attempt <= SmokeRetry.ChatAttempts; attempt += 1) {
+    events = await postChatMessage(message, projectId)
+    throwIfCreditsExhausted(events)
+    if (!streamHitInFlightBudget(events)) return events
+    if (attempt >= SmokeRetry.ChatAttempts) break
+    console.log(SmokeLog.InFlightRetry)
+    await new Promise(resolve => setTimeout(resolve, SmokeTimeout.InFlightRetryMs))
+  }
+  return events
+}
+
 function findEvent(events: SSEEvent[], type: SmokeEvent): SSEEvent | undefined {
   return events.find(e => e.type === type)
 }
 
 function findEvents(events: SSEEvent[], type: SmokeEvent): SSEEvent[] {
   return events.filter(e => e.type === type)
+}
+
+function isStorytellerMessage(value: SSEMessage | string | undefined): value is SSEMessage {
+  return typeof value === 'object' && value !== null && value.sender === SmokeSender.Storyteller
+}
+
+function storytellerMessageContent(events: SSEEvent[]): string {
+  for (const event of findEvents(events, SmokeEvent.Message)) {
+    const payload = event.message
+    if (isStorytellerMessage(payload) && typeof payload.content === 'string') {
+      return payload.content
+    }
+  }
+  return ''
 }
 
 function findToolResult(events: SSEEvent[], tool: SmokeTool): SSEEvent | undefined {
@@ -210,6 +279,10 @@ async function runTest(name: SmokeTestName, fn: () => Promise<void>) {
     const message = error instanceof Error ? error.message : String(error)
     results.push({ name, passed: false, error: message, duration: Date.now() - start })
     console.log(`❌ ${name}: ${message}`)
+    if (message === SmokeError.OpenRouterCreditsExhausted) {
+      console.log(SmokeLog.CreditsExhaustedPause)
+      throw error
+    }
   }
 }
 
@@ -633,14 +706,8 @@ async function test_E2E_LinksExtraction() {
   // (avoid keywords like "world rules", "generate", "create" which force tool calls)
   const events = await sendChatMessage(SmokePrompt.AskToneAndTheme, TEST_PROJECT_ID)
 
-  // Check for AI response content - either from message event or token events
-  const messageEvents = findEvents(events, SmokeEvent.Message)
-  const aiMessage = messageEvents.find(m => m.message?.sender === SmokeSender.Storyteller)?.message
-
-  // Also check token events as fallback - tokens represent streamed text
   const tokenContent = findEvents(events, SmokeEvent.Token).map(t => t.token || '').join('')
-
-  const content = aiMessage?.content || tokenContent
+  const content = storytellerMessageContent(events) || tokenContent
 
   if (!content) {
     throw new Error(SmokeError.NoAiContent)
@@ -700,8 +767,7 @@ async function test_E2E_GraphRAG_ContextRetrieval() {
 
   const events = await sendChatMessage(SmokePrompt.AskUserRulesAboutMagic, TEST_PROJECT_ID)
 
-  const messageEvents = findEvents(events, SmokeEvent.Message)
-  const content = messageEvents.find(m => m.message?.sender === SmokeSender.Storyteller)?.message?.content || ''
+  const content = storytellerMessageContent(events)
 
   if (content.toLowerCase().includes(SmokeMatch.Magic) || content.length > GENERIC_ANSWER_MIN_LENGTH) {
     console.log(SmokeLog.GraphRagRelevant)
@@ -756,6 +822,7 @@ async function main() {
 
   console.log(SmokeLog.TestingAgainst, API_URL)
   console.log(SmokeLog.ProjectId, TEST_PROJECT_ID)
+  console.log(SmokeLog.ChatModel, SmokeChatModel.Glm)
   console.log('')
 
   // LAYER 1: API

@@ -129,8 +129,10 @@ export const SurfaceProperties: React.FC = () => {
     if (typeof taskId !== 'string') return
 
     let aborted = false
-    void pollInteriorTriggerRun(
-      () => interiorDesignerApi.material.getStatus(taskId),
+    void (async () => {
+      try {
+        await pollInteriorTriggerRun(
+          () => interiorDesignerApi.material.getStatus(taskId),
       {
         shouldAbort: () => {
           if (aborted) return true
@@ -178,10 +180,12 @@ export const SurfaceProperties: React.FC = () => {
           })
         },
       },
-      { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
-    ).catch(err => {
-      console.error(SurfacePropertiesLog.PollError, err)
-    })
+          { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
+        )
+      } catch (err) {
+        console.error(SurfacePropertiesLog.PollError, err)
+      }
+    })()
 
     return () => {
       aborted = true

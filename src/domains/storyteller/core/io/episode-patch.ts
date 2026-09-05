@@ -5,6 +5,7 @@
  * absent. `storyboardUrl` is request-only and merges into `storyPlan`.
  */
 import { z } from 'zod'
+import { ManuscriptMode } from '@/domains/storyteller/core/types/enums'
 
 export enum EpisodePatchColumnName {
   Title = 'title',
@@ -12,6 +13,7 @@ export enum EpisodePatchColumnName {
   Premise = 'premise',
   ThematicFocus = 'thematicFocus',
   ScriptContent = 'scriptContent',
+  ManuscriptMode = 'manuscriptMode',
   MasterPrompt = 'masterPrompt',
   CurrentPhase = 'currentPhase',
   Status = 'status',
@@ -28,6 +30,7 @@ export const EPISODE_PATCH_ALLOWED_COLUMNS = [
   EpisodePatchColumnName.Premise,
   EpisodePatchColumnName.ThematicFocus,
   EpisodePatchColumnName.ScriptContent,
+  EpisodePatchColumnName.ManuscriptMode,
   EpisodePatchColumnName.MasterPrompt,
   EpisodePatchColumnName.CurrentPhase,
   EpisodePatchColumnName.Status,
@@ -56,6 +59,7 @@ export const episodePatchRequestSchema = z
     premise: z.record(z.unknown()).optional(),
     thematicFocus: z.string().optional(),
     scriptContent: z.string().optional(),
+    manuscriptMode: z.nativeEnum(ManuscriptMode).optional(),
     masterPrompt: z.string().optional(),
     currentPhase: z.string().optional(),
     status: z.string().optional(),

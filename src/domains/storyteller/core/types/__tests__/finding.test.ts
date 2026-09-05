@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import {
   FindingSchema,
   FindingSeverity,
@@ -18,6 +19,20 @@ const VALID = {
 describe('FindingSchema', () => {
   it('parses a complete finding', () => {
     expect(FindingSchema.parse(VALID).location.quote).toBe('the bells are Vera')
+  })
+
+  it('parses a bible-section finding with no beatId', () => {
+    const parsed = FindingSchema.parse({
+      ...VALID,
+      location: {
+        section: BibleSection.FACTIONS,
+        paragraph: 0,
+        quote: 'They mint the tide.',
+      },
+      problemType: ProblemType.ChapterContinuity,
+    })
+    expect(parsed.location.beatId).toBeUndefined()
+    expect(parsed.location.section).toBe(BibleSection.FACTIONS)
   })
 
   it('rejects a missing quote', () => {

@@ -8,15 +8,15 @@ import {
 import { NodeEnv } from '@/shared/data/constants/protocol-http'
 
 const WebVitalsReporter = dynamic(
-  () => import('@/shared/debug').then(m => ({ default: m.WebVitalsReporter })),
+  async () => ({ default: (await import('@/shared/debug')).WebVitalsReporter }),
   { ssr: false }
 )
 const WebVitalsHud = dynamic(
-  () => import('@/shared/debug').then(m => ({ default: m.WebVitalsHud })),
+  async () => ({ default: (await import('@/shared/debug')).WebVitalsHud }),
   { ssr: false }
 )
 const PerfDebugTools = dynamic(
-  () => import('@/shared/debug').then(m => ({ default: m.PerfDebugTools })),
+  async () => ({ default: (await import('@/shared/debug')).PerfDebugTools }),
   { ssr: false }
 )
 

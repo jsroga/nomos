@@ -86,6 +86,8 @@ export interface MultiVariantReport {
   inputHash?: string
   /** Resolved judging model id (env is not in the file hash). */
   judgingModelId?: string
+  /** Hash of the judge prompt sources bound to this run. */
+  judgePromptHash?: string
   /** What the judges cost. Never recorded to `llm_calls` — see ADR 0003. */
   judgeUsage?: {
     inputTokens: number

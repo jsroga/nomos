@@ -1,5 +1,7 @@
 import type { FC } from 'react'
 import { Plus, RefreshCw, Trash2, Shuffle, Loader2 } from 'lucide-react'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { plotTwistObjectFromJson } from '@/domains/storyteller/core/entities/world-rule-wire'
 import { RichText } from '../../RichText'
 import { useBible } from './BibleContext'
@@ -8,6 +10,7 @@ import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { bibleSectionItems, planItems } from '../utils/bible-section-items'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
 
 const PlotTwistDisplayItem: FC<{ twist: unknown; index: number; projectId: string }> = ({
   twist,
@@ -54,9 +57,9 @@ const PlotTwistsHeaderActions: FC<{
   isLoading: boolean
   isEditing: boolean
   isReadOnly: boolean
-  onSendMessage?: (msg: string, section?: string) => void
+  onGenerate?: () => void
   onAddPlotTwist: () => void
-}> = ({ isLoading, isEditing, isReadOnly, onSendMessage, onAddPlotTwist }) => {
+}> = ({ isLoading, isEditing, isReadOnly, onGenerate, onAddPlotTwist }) => {
   const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
   const generateDisabled = isLoading || isGenerationActivityBusy(generationPhase)
 
@@ -78,14 +81,9 @@ const PlotTwistsHeaderActions: FC<{
             <Plus size={14} />
           </button>
         )}
-        {!isReadOnly && onSendMessage && (
+        {!isReadOnly && onGenerate && (
           <button
-            onClick={() =>
-              onSendMessage(
-                'Generate 3 completely BRAND NEW major plot twists for this story. IMPORTANT: Take a completely new creative direction and do NOT repeat previous twists.',
-                'plotTwists'
-              )
-            }
+            onClick={onGenerate}
             className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${generateDisabled ? 'pointer-events-none opacity-50' : ''}`}
             title="Generate Twists"
             disabled={generateDisabled}
@@ -108,10 +106,10 @@ export const BiblePlotTwists: FC = () => {
     addPlotTwist,
     removePlotTwist,
     isReadOnly,
-    onSendMessage,
     loadingSections,
     pendingActions,
     projectId,
+    setPendingAction,
   } = useBible()
 
   const isLoading = loadingSections?.plotTwists?.loading ?? false
@@ -138,7 +136,14 @@ export const BiblePlotTwists: FC = () => {
         isLoading={isLoading}
         isEditing={isEditing}
         isReadOnly={isReadOnly}
-        onSendMessage={onSendMessage}
+        onGenerate={async () => {
+          await runBibleSectionArtifactDraft({
+            projectId,
+            section: BibleSection.PLOT_TWISTS,
+            promptId: StorytellerPromptRegistryId.BiblePlotTwistsGenerate,
+            setPendingAction,
+          })
+        }}
         onAddPlotTwist={addPlotTwist}
       />
       {isEditing ? (

@@ -11,9 +11,10 @@ export function LandingNavClient() {
   useEffect(() => {
     const supabase = createClientComponentClient()
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       setIsLoggedIn(Boolean(session?.user))
-    })
+    })()
 
     const {
       data: { subscription },

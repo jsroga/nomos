@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { toastError } = vi.hoisted(() => ({
@@ -9,10 +10,15 @@ vi.mock('react-hot-toast', () => ({
 }))
 
 import { BeatboardPremiseValidationCopy } from '@/domains/storyteller/core/constants/beatboard-premise-validation'
+import {
+  StorytellerChatTool,
+  StorytellerWorkflowToolId,
+} from '@/domains/storyteller/core/storyteller-page-wire'
 import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   CORK_BOARD_GENERATE_BEATS_PROMPT,
+  CORK_BOARD_GENERATE_NEXT_BEAT_PROMPT,
   CORK_BOARD_STORY_STATE_RULE,
   CorkBoardBeatImagePolicy,
   CorkBoardCopy,
@@ -76,7 +82,20 @@ describe('requestCorkBoardTextBeats', () => {
     ).toBe(true)
     expect(onSendMessage).toHaveBeenCalledWith(CORK_BOARD_GENERATE_BEATS_PROMPT)
     expect(CORK_BOARD_GENERATE_BEATS_PROMPT).toContain(CORK_BOARD_STORY_STATE_RULE)
+    expect(CORK_BOARD_GENERATE_BEATS_PROMPT).toContain(StorytellerChatTool.ManageBeat)
+    expect(CORK_BOARD_GENERATE_BEATS_PROMPT).toContain(StorytellerWorkflowToolId.RunBeatDraft)
     expect(toastError).not.toHaveBeenCalled()
+  })
+
+  it('does not start artifact-draft or beat-draft from Cork Board modules', () => {
+    const generation = readFileSync('src/domains/storyteller/ui/CorkBoard/cork-board-generation.ts', 'utf8')
+    const state = readFileSync('src/domains/storyteller/ui/CorkBoard/useCorkBoardState.ts', 'utf8')
+    expect(generation).not.toContain('startStorytellerArtifactDraft')
+    expect(generation).not.toContain('runArtifactDraftOverlay')
+    expect(state).not.toContain('startStorytellerArtifactDraft')
+    expect(state).not.toContain('runArtifactDraftOverlay')
+    expect(CORK_BOARD_GENERATE_NEXT_BEAT_PROMPT).toContain(StorytellerWorkflowToolId.RunBeatDraft)
+    expect(CORK_BOARD_GENERATE_NEXT_BEAT_PROMPT).toContain(StorytellerChatTool.ManageBeat)
   })
 
   it('leaves image controls free and toasts instead of sending while chat is busy', () => {

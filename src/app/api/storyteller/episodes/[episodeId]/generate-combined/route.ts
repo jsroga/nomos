@@ -5,11 +5,11 @@ import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
-import type { generateCombinedStoryboard } from '@/domains/storyteller/tasks/generate-combined-storyboard.task'
 import {
   beatsWithImageUrl,
   type CombinedStoryboardBeat,
-} from '@/domains/storyteller/tasks/generate-combined-storyboard-helpers'
+  type generateCombinedStoryboard,
+} from '@/domains/storyteller/server'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { resolveApiframeApiKey } from '@/shared/ai/image-model-env'
 import {
@@ -18,6 +18,7 @@ import {
   StoryboardVideoRequestField,
 } from '@/shared/ai/storyboard-video-env'
 import { recordFromJson } from '@/shared/data/json-guards'
+import { readJsonBody } from '@/shared/data/fetch-json-record'
 
 function mapBeatRow(row: {
   logline: string
@@ -55,7 +56,7 @@ export async function POST(
       return NextResponse.json({ error: API_ERROR.APIFRAME_API_KEY_NOT_PROVIDED }, { status: 500 })
     }
 
-    const episodeData = await db
+    const episodeRows = await db
       .select({
         projectId: projects.id,
       })
@@ -63,7 +64,7 @@ export async function POST(
       .innerJoin(projects, eq(episodes.projectId, projects.id))
       .where(eq(episodes.id, episodeId))
       .execute()
-      .then(rows => rows[0])
+    const episodeData = episodeRows[0]
 
     if (!episodeData) {
       return NextResponse.json({ error: API_ERROR.EPISODE_PROJECT_NOT_FOUND }, { status: 404 })
@@ -97,7 +98,7 @@ export async function POST(
 
     console.log(`${API_LOG_PREFIX.COMBINED_STORYBOARD_TRIGGER} ${episodeId}`)
 
-    const body = recordFromJson(await req.json().catch(() => ({})))
+    const body = recordFromJson(await readJsonBody(req, {}))
     const model = resolveStoryboardVideoModel(
       undefined,
       body[StoryboardVideoRequestField.Model],

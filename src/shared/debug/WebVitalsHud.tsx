@@ -62,7 +62,8 @@ export function WebVitalsHud() {
     if (!enabled) return
 
     let cancelled = false
-    void import('web-vitals/attribution').then(mod => {
+    void (async () => {
+      const mod = await import('web-vitals/attribution')
       if (cancelled) return
 
       const push = (metric: {
@@ -88,7 +89,7 @@ export function WebVitalsHud() {
       mod.onLCP(push, opts)
       mod.onFCP(push, opts)
       mod.onTTFB(push, opts)
-    })
+    })()
 
     return () => {
       cancelled = true

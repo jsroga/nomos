@@ -7,9 +7,9 @@ import {
   MarketingThreeDLayout,
 } from '@/domains/marketing/constants/three-d-icon'
 
-const ThreeDIconCanvas = lazy(() =>
-  import('./ThreeDIconCanvas').then(module => ({ default: module.ThreeDIconCanvas }))
-)
+const ThreeDIconCanvas = lazy(async () => ({
+  default: (await import('./ThreeDIconCanvas')).ThreeDIconCanvas,
+}))
 
 interface ThreeDIconProps {
   type: string

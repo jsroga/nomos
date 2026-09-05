@@ -104,7 +104,9 @@ export async function streamMeshyImageTo3dTask(
       }
     }
   } finally {
-    await reader.cancel().catch(() => undefined)
+    try {
+      await reader.cancel()
+    } catch { }
   }
 
   if (lastResult?.status === MeshyTaskStatusValue.Succeeded) {

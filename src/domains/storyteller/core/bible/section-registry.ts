@@ -92,14 +92,14 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   },
   [BibleSection.WORLD_RULES]: {
     owner: SectionOwner.Bible,
-    merge: MergeStrategy.Append,
+    merge: MergeStrategy.Replace,
     canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     label: SectionLabel.WorldRules,
   },
   [BibleSection.FACTIONS]: {
     owner: SectionOwner.Bible,
-    merge: MergeStrategy.Append,
+    merge: MergeStrategy.Replace,
     canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     label: SectionLabel.Factions,
@@ -113,7 +113,7 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   },
   [BibleSection.PLOT_TWISTS]: {
     owner: SectionOwner.Bible,
-    merge: MergeStrategy.Append,
+    merge: MergeStrategy.Replace,
     canonLayer: CanonLayer.AuthorTruth,
     hydrates: true,
     label: SectionLabel.PlotTwists,
@@ -127,7 +127,7 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   },
   [BibleSection.CAST]: {
     owner: SectionOwner.Bible,
-    merge: MergeStrategy.Append,
+    merge: MergeStrategy.Replace,
     canonLayer: CanonLayer.CharacterKnowledge,
     hydrates: true,
     hydratesAs: CastFieldAlias.KeyCharacters,
@@ -151,14 +151,14 @@ export const SECTION_REGISTRY: Record<WorldBibleSection, SectionSpec> = {
   },
   [BibleSection.ITEMS]: {
     owner: SectionOwner.Bible,
-    merge: MergeStrategy.Append,
+    merge: MergeStrategy.Replace,
     canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     label: SectionLabel.Items,
   },
   [BibleSection.EVENTS]: {
     owner: SectionOwner.Bible,
-    merge: MergeStrategy.Append,
+    merge: MergeStrategy.Replace,
     canonLayer: CanonLayer.StoryFacts,
     hydrates: true,
     label: SectionLabel.Events,

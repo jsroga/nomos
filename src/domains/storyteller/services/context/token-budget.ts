@@ -54,6 +54,23 @@ export interface BudgetedContext {
   totalTokens: number
 }
 
+export function recalledMemorySection(texts: readonly string[]): string | undefined {
+  const parts: string[] = []
+  for (const text of texts) {
+    const trimmed = text.trim()
+    if (trimmed.length === 0) continue
+    parts.push(trimmed)
+  }
+  if (parts.length === 0) return undefined
+  return parts.join(TOKEN_BUDGET_SECTION_JOIN)
+}
+
+export function withRecalledMemory(parts: RawContextParts, recalled: string | undefined): RawContextParts {
+  const memory = recalledMemorySection(recalled ? [recalled] : [])
+  if (!memory) return parts
+  return { ...parts, [ContextBudgetSection.Memory]: memory }
+}
+
 /**
  * Estimate token count using 4 chars/token heuristic.
  * Fast approximation for budget checking (not billing-accurate).

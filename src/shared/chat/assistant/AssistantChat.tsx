@@ -330,10 +330,15 @@ export function AssistantChat({
 
   useEffect(() => {
     const controller = new AbortController()
-    void fetch(api, {
-      method: WarmHttpMethod.Get,
-      signal: controller.signal,
-    }).catch(() => undefined)
+    void (async () => {
+      try {
+        await fetch(api, {
+          method: WarmHttpMethod.Get,
+          signal: controller.signal,
+        })
+      } catch {
+      }
+    })()
     return () => controller.abort()
   }, [api])
 

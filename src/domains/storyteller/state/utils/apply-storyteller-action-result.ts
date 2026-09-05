@@ -88,15 +88,18 @@ function applyBibleUpdatedResult(ctx: ApplyActionResultContext): void {
 
   if (ctx.result.characters_synced === true && ctx.currentProject.id) {
     console.log(StorytellerActionsLog.CharactersSyncedRefetch)
-    fetchStorytellerCharacters(ctx.currentProject.id)
-      .then(charData => {
+    void (async () => {
+      try {
+        const charData = await fetchStorytellerCharacters(ctx.currentProject.id)
         if (!Array.isArray(charData)) return
         const mapped = charData
           .map(row => storytellerCharacterFromRow(row))
           .filter((character): character is StorytellerCharacter => character !== null)
         ctx.setCharacters(mapped)
-      })
-      .catch(e => console.error(StorytellerActionsLog.FailedRefetchCharacters, e))
+      } catch (e) {
+        console.error(StorytellerActionsLog.FailedRefetchCharacters, e)
+      }
+    })()
   }
 }
 

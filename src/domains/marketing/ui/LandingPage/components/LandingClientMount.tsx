@@ -12,10 +12,9 @@ import { LandingHeroDomId } from '@/domains/marketing/ui/LandingPage/constants/l
 import { LandingDeferred } from './LandingDeferred'
 
 const TerrainFloor = dynamic(
-  () =>
-    import('@/domains/marketing/ui/terrain-floor/TerrainFloor').then(m => ({
-      default: m.TerrainFloor,
-    })),
+  async () => ({
+    default: (await import('@/domains/marketing/ui/terrain-floor/TerrainFloor')).TerrainFloor,
+  }),
   { ssr: false },
 )
 

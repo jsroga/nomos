@@ -1,5 +1,8 @@
 import type { FC } from 'react'
 import { CalendarHeart } from 'lucide-react'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
+import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
 import { useBible } from './BibleContext'
 import { BibleSimpleEntitySection } from './BibleSimpleEntitySection'
 import { bibleMergedDisplayList } from '../utils/bible-section-items'
@@ -13,15 +16,24 @@ export const BibleEvents: FC = () => {
     addEvent,
     removeEvent,
     isReadOnly,
-    onSendMessage,
     loadingSections,
     pendingActions,
     projectId,
+    setPendingAction,
   } = useBible()
 
   const localEvents = localPlan.events || []
   const displayEvents = bibleMergedDisplayList(isEditing, localPlan.events, storyPlan.events)
   const isLoading = loadingSections?.events?.loading ?? false
+
+  const handleGenerate = async () => {
+    await runBibleSectionArtifactDraft({
+      projectId,
+      section: BibleSection.EVENTS,
+      promptId: StorytellerPromptRegistryId.BibleEventsGenerate,
+      setPendingAction,
+    })
+  }
 
   return (
     <BibleSimpleEntitySection
@@ -30,17 +42,15 @@ export const BibleEvents: FC = () => {
       loadingMessage="Pacing history..."
       emptyEditMessage="No events defined. Click + to add one."
       emptyDisplayMessage="No events defined. History has not yet been written."
-      generatePrompt="Generate the most important BRAND NEW historical events, tragedies, wars, and discoveries that shaped this world. IMPORTANT: Take a completely new creative direction and do NOT repeat any previously generated events."
       generateTitle="Generate Events"
       addTitle="Add Event"
-      sectionKey="events"
       localItems={localEvents}
       displayItems={displayEvents}
       isEditing={isEditing}
       isReadOnly={isReadOnly}
       isLoading={isLoading}
       pendingAction={pendingActions?.events}
-      onSendMessage={onSendMessage}
+      onGenerate={handleGenerate}
       projectId={projectId}
       onAdd={addEvent}
       onRemove={removeEvent}

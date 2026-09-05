@@ -34,7 +34,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const result = await withGatewayContext({ scope }, () => regenerateText(selection, instruction))
+    const beforeText = readString(body.beforeText)
+    const afterText = readString(body.afterText)
+
+    const result = await withGatewayContext({ scope }, () =>
+      regenerateText(
+        scope,
+        selection,
+        instruction,
+        beforeText !== undefined || afterText !== undefined
+          ? { beforeText, afterText }
+          : undefined
+      )
+    )
 
     return NextResponse.json({ result })
   } catch (error) {

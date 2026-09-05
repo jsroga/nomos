@@ -58,6 +58,11 @@ export function parsePhaseId(value: string | undefined): PhaseId {
   }
 }
 
+export enum ManuscriptMode {
+  Script = 'script',
+  Novel = 'novel',
+}
+
 // ============================================
 // Question machine state - UI flow for questions
 // ============================================

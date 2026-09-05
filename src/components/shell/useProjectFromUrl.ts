@@ -50,8 +50,9 @@ export function useProjectFromUrl() {
       setError(null)
       loadedProjectIdRef.current = projectId
 
-      loadWorkspaceProject(projectId)
-        .then(async loadedProject => {
+      void (async () => {
+        try {
+          const loadedProject = await loadWorkspaceProject(projectId)
           if (loadedProject) {
             await loadTilesForProject(projectId)
           }
@@ -63,14 +64,15 @@ export function useProjectFromUrl() {
             loadedProjectIdRef.current = null
             router.replace(AUTH_ROUTE.PROJECTS)
           }
-        })
-        .catch(err => {
+        } catch (err) {
           console.error(ProjectLoaderLog.FailedLoadProject, err)
           setError(ProjectLoaderMessage.FailedLoadProject)
           loadedProjectIdRef.current = null
           router.replace(AUTH_ROUTE.PROJECTS)
-        })
-        .finally(() => setIsLoading(false))
+        } finally {
+          setIsLoading(false)
+        }
+      })()
     } else if (!projectId && currentProject) {
       clearCurrentProject()
       clearTiles()

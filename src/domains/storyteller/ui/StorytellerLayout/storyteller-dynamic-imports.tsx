@@ -15,46 +15,46 @@ const loadingSpinner = (
 )
 
 export const ScriptEditor = dynamic<ScriptEditorProps>(
-  () => import('../ScriptEditor').then(m => m.default),
+  async () => (await import('../ScriptEditor')).default,
   { ssr: false, loading: () => loadingSpinner }
 )
 
 export const Timeline = dynamic<TimelineProps>(
-  () => import('../Timeline').then(m => m.default),
+  async () => (await import('../Timeline')).default,
   { ssr: false }
 )
 
 export const StoryPlanBoard = dynamic<StoryPlanBoardProps>(
-  () => import('../StoryPlanBoard').then(m => m.default),
+  async () => (await import('../StoryPlanBoard')).default,
   { ssr: false, loading: () => loadingSpinner }
 )
 
 export const WorldBiblePanel = dynamic<WorldBiblePanelProps>(
-  () => import('../WorldBiblePanel').then(m => m.default),
+  async () => (await import('../WorldBiblePanel')).default,
   { ssr: false, loading: () => loadingSpinner }
 )
 
 export const CharacterWeb = dynamic<CharacterWebProps>(
-  () => import('../CharacterWeb').then(m => m.CharacterWeb),
+  async () => (await import('../CharacterWeb')).CharacterWeb,
   { ssr: false, loading: () => loadingSpinner }
 )
 
 export const ActionCommitted = dynamic(
-  () => import('../ActionToast/ActionCommitted').then(m => m.ActionCommitted),
+  async () => (await import('../ActionToast/ActionCommitted')).ActionCommitted,
   { ssr: false }
 )
 
 export const ActionSuggestion = dynamic(
-  () => import('../ActionToast/ActionSuggestion').then(m => m.ActionSuggestion),
+  async () => (await import('../ActionToast/ActionSuggestion')).ActionSuggestion,
   { ssr: false }
 )
 
 export const QuestionCard = dynamic(
-  () => import('../QuestionCard').then(m => m.QuestionCard),
+  async () => (await import('../QuestionCard')).QuestionCard,
   { ssr: false }
 )
 
 export const EpisodeManager = dynamic(
-  () => import('../EpisodeManager').then(m => m.EpisodeManager),
+  async () => (await import('../EpisodeManager')).EpisodeManager,
   { ssr: false }
 )

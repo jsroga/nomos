@@ -189,9 +189,9 @@ export function assembleOpenEpisodeCanon(
 }
 
 async function defaultLoadSources(projectId: string): Promise<StoryCanonPackSources | null> {
-  const [project, storyPlanRow, episodeRows, characterRows] = await Promise.all([
-    db.select().from(projects).where(eq(projects.id, projectId)).then(rows => rows[0]),
-    db.select().from(storyPlans).where(eq(storyPlans.projectId, projectId)).then(rows => rows[0]),
+  const [projectRows, storyPlanRows, episodeRows, characterRows] = await Promise.all([
+    db.select().from(projects).where(eq(projects.id, projectId)),
+    db.select().from(storyPlans).where(eq(storyPlans.projectId, projectId)),
     db
       .select({
         id: episodes.id,
@@ -214,6 +214,8 @@ async function defaultLoadSources(projectId: string): Promise<StoryCanonPackSour
       .from(characters)
       .where(eq(characters.projectId, projectId)),
   ])
+  const project = projectRows[0]
+  const storyPlanRow = storyPlanRows[0]
 
   if (!project) return null
 

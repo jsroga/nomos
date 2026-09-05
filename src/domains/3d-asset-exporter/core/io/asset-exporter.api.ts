@@ -2,7 +2,7 @@ import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { ApiRoutePath, ContentType, HttpMethod, JsonField, QueryParam } from '@/shared/data/constants/protocol'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
-import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
+import { fetchJsonRecord, readJsonBody } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import type { TriggerRunStatusPayload } from '@/shared/data/polling/wait-for-trigger-run'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
@@ -36,7 +36,7 @@ export async function fetchTrigger3dRunStatus(
     buildUrl(AssetExporterApiRoute.Trigger3dStatus, { [QueryParam.RunId]: runId }),
     TRIGGER_STATUS_FETCH_INIT,
   )
-  const data = recordFromJson(await response.json().catch(() => ({})))
+  const data = recordFromJson(await readJsonBody(response, {}))
   return {
     statusCode: response.status,
     status: readString(data.status),

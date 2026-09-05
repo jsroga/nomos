@@ -20,7 +20,6 @@ import {
 import {
   extractCastFromUpdates,
   normalizeCastInUpdates,
-  readCastFromPlan,
 } from '@/domains/storyteller/core/formatting/story-plan-fields'
 import {
   EpisodePremiseFieldAlias,
@@ -314,11 +313,9 @@ export const STORY_PLAN_FIELDS = STORY_PLAN_MERGE_FIELDS
  * Apply updates to a story plan state, handling merging correctly
  */
 /**
- * One plan field: replace-on-regenerate, smart-merge, deep-merge, or overwrite.
- *
- * Only the replace decision is keyed on the field, and SECTION_REGISTRY is
- * where that is now declared. Everything else follows the shape of the value,
- * which is what the world-level scalars and episode fields rely on.
+ * Bible arrays replace; bible objects deep-merge. SECTION_REGISTRY declares
+ * that per section. World-level scalars and episode fields still follow value
+ * shape (array identity-merge, object deep-merge, scalar overwrite).
  */
 function mergePlanField(field: string, currentValue: unknown, update: unknown): unknown {
   if (Array.isArray(update)) {
@@ -349,10 +346,8 @@ export function applyUpdatesToStoryPlan<T extends object>(
 
   const cast = extractCastFromUpdates(normalizedUpdates)
   if (cast) {
-    const currentCast = readCastFromPlan(current)
-    const mergedCast = Array.isArray(cast) ? smartMergeArray(currentCast, cast) : cast
-    result[CastFieldAlias.Cast] = mergedCast
-    result[CastFieldAlias.KeyCharacters] = mergedCast
+    result[CastFieldAlias.Cast] = cast
+    result[CastFieldAlias.KeyCharacters] = cast
   }
 
   // Handle moodboard/moodImages aliases

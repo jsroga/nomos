@@ -48,19 +48,19 @@ let embeddingColumnDimPromise: Promise<number> | null = null
 
 function getEmbeddingColumnDim(): Promise<number> {
   if (!embeddingColumnDimPromise) {
-    embeddingColumnDimPromise = db
-      .execute(
-        sql`SELECT atttypmod FROM pg_attribute WHERE attrelid = 'entity_references'::regclass AND attname = 'embedding'`
-      )
-      .then(result => {
+    embeddingColumnDimPromise = (async () => {
+      try {
+        const result = await db.execute(
+          sql`SELECT atttypmod FROM pg_attribute WHERE attrelid = 'entity_references'::regclass AND attname = 'embedding'`
+        )
         const row = sqlResultRows(result)[0]
         const dim = readRowNumber(row ?? {}, SqlResultColumn.Atttypmod)
         return dim && dim > 0 ? dim : EMBEDDING_DIMENSION
-      })
-      .catch(() => {
+      } catch {
         embeddingColumnDimPromise = null
         return EMBEDDING_DIMENSION
-      })
+      }
+    })()
   }
   return embeddingColumnDimPromise
 }

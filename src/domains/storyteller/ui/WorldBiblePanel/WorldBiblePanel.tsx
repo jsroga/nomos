@@ -186,15 +186,21 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     refetchMoodboardData()
 
     // Resume any pending generations for this project
-    import('@/domains/storyteller/services/moodboard-generation-service').then(({ moodboardGenerationService }) => {
-      moodboardGenerationService.resumePendingGenerations(projectId, refetchMoodboardData, error => {
-        if (error instanceof Error && error.message.trim().length > 0) {
-          toast.error(error.message)
-          return
-        }
-        toast.error(MoodboardUserToast.GenerationFailed)
-      })
-    })
+    void (async () => {
+      try {
+        const { moodboardGenerationService } = await import(
+          '@/domains/storyteller/services/moodboard-generation-service'
+        )
+        moodboardGenerationService.resumePendingGenerations(projectId, refetchMoodboardData, error => {
+          if (error instanceof Error && error.message.trim().length > 0) {
+            toast.error(error.message)
+            return
+          }
+          toast.error(MoodboardUserToast.GenerationFailed)
+        })
+      } catch {
+      }
+    })()
   }, [projectId, refetchMoodboardData, moodboardCompleteVersion])
 
   // Shimmer State - check after all hooks

@@ -73,59 +73,65 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
       const projectId = currentProject.id
       lastResumedProjectId.current = projectId
 
-      import('@/domains/storyteller/services/poster-generation-service').then(({ posterGenerationService }) =>
-        posterGenerationService.resumePendingGenerations(
-          projectId,
-          async (url, episodeId, type, meta) => {
-            if (type === StorytellerPosterType.Poster) {
-              setIsGeneratingPoster(false)
-              setPosterIsVariantGrid(Boolean(meta?.isVariantGrid))
-              if (episodeId === currentEpisodeIdRef.current) {
-                setStoryPlan(prev => assignLatestPosterUrl(prev, url))
-              }
-            } else if (episodeId === currentEpisodeIdRef.current) {
-              setIsGeneratingStoryboard(false)
-              setStoryPlan(prev => (prev ? { ...prev, storyboardUrl: url } : null))
-            }
-
-            try {
+      void (async () => {
+        try {
+          const { posterGenerationService } = await import(
+            '@/domains/storyteller/services/poster-generation-service'
+          )
+          posterGenerationService.resumePendingGenerations(
+            projectId,
+            async (url, episodeId, type, meta) => {
               if (type === StorytellerPosterType.Poster) {
-                await patchStorytellerEpisode(episodeId, {
-                  [PosterPersistField.PosterUrl]: url,
-                })
-              } else {
-                await patchStorytellerEpisode(episodeId, {
-                  [PosterPersistField.StoryboardUrl]: url,
-                })
+                setIsGeneratingPoster(false)
+                setPosterIsVariantGrid(Boolean(meta?.isVariantGrid))
+                if (episodeId === currentEpisodeIdRef.current) {
+                  setStoryPlan(prev => assignLatestPosterUrl(prev, url))
+                }
+              } else if (episodeId === currentEpisodeIdRef.current) {
+                setIsGeneratingStoryboard(false)
+                setStoryPlan(prev => (prev ? { ...prev, storyboardUrl: url } : null))
               }
-            } catch (e) {
-              console.error(StorytellerLogMessage.FailedSaveResumedGeneration, e)
-            }
-          },
-          (error, episodeId, type) => {
-            if (type === StorytellerPosterType.Poster) {
-              setIsGeneratingPoster(false)
-              setPosterIsVariantGrid(false)
-            } else if (episodeId === currentEpisodeIdRef.current) {
-              setIsGeneratingStoryboard(false)
-            }
-            toastGenerationError(
-              type === StorytellerPosterType.Storyboard
-                ? PosterUserToast.StoryboardFailed
-                : PosterUserToast.PosterFailed,
-              error,
-            )
-          },
-          (episodeId, type) => {
-            if (episodeId !== currentEpisodeIdRef.current) return
-            if (type === StorytellerPosterType.Poster) {
-              setIsGeneratingPoster(true)
-              return
-            }
-            setIsGeneratingStoryboard(true)
-          },
-        )
-      )
+
+              try {
+                if (type === StorytellerPosterType.Poster) {
+                  await patchStorytellerEpisode(episodeId, {
+                    [PosterPersistField.PosterUrl]: url,
+                  })
+                } else {
+                  await patchStorytellerEpisode(episodeId, {
+                    [PosterPersistField.StoryboardUrl]: url,
+                  })
+                }
+              } catch (e) {
+                console.error(StorytellerLogMessage.FailedSaveResumedGeneration, e)
+              }
+            },
+            (error, episodeId, type) => {
+              if (type === StorytellerPosterType.Poster) {
+                setIsGeneratingPoster(false)
+                setPosterIsVariantGrid(false)
+              } else if (episodeId === currentEpisodeIdRef.current) {
+                setIsGeneratingStoryboard(false)
+              }
+              toastGenerationError(
+                type === StorytellerPosterType.Storyboard
+                  ? PosterUserToast.StoryboardFailed
+                  : PosterUserToast.PosterFailed,
+                error,
+              )
+            },
+            (episodeId, type) => {
+              if (episodeId !== currentEpisodeIdRef.current) return
+              if (type === StorytellerPosterType.Poster) {
+                setIsGeneratingPoster(true)
+                return
+              }
+              setIsGeneratingStoryboard(true)
+            },
+          )
+        } catch {
+        }
+      })()
     }
   }, [
     currentProject?.id,
@@ -146,14 +152,16 @@ export function useStorytellerGeneration(core: StorytellerWorkspaceCore) {
   useEffect(() => {
     if (!currentEpisodeId) return
     let cancelled = false
-    void fetchStorytellerEpisode(currentEpisodeId)
-      .then(episode => {
+    void (async () => {
+      try {
+        const episode = await fetchStorytellerEpisode(currentEpisodeId)
         if (cancelled) return
         const url = readEpisodePosterUrl(episode)
         if (!url) return
         setStoryPlan(prev => assignLatestPosterUrl(prev, url))
-      })
-      .catch(() => undefined)
+      } catch {
+      }
+    })()
     return () => {
       cancelled = true
     }

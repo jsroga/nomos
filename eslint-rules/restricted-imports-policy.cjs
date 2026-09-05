@@ -69,7 +69,10 @@ const DOMAIN_BARREL_GUARD_PATTERNS = [
     '!@/domains/storyteller/server/**',
   ]),
   domainBarrelGuardGroup('3d-canvas'),
-  domainBarrelGuardGroup('2d-canvas'),
+  domainBarrelGuardGroup('2d-canvas', [
+    '!@/domains/2d-canvas/server',
+    '!@/domains/2d-canvas/server/**',
+  ]),
   domainBarrelGuardGroup('game-design'),
   domainBarrelGuardGroup('loop-creator', [
     '!@/domains/loop-creator/server',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { formatSkillCatalogL1 } from '../skill-catalog-l1'
-import { SkillCatalogId, SkillCatalogLevel, SkillCatalogStage } from '../skill-catalog-ids'
+import { SkillCatalogId, SkillCatalogLevel, SkillCatalogStage, SkillManuscriptFormat } from '../skill-catalog-ids'
 import {
   SKILL_CATALOG,
   SkillCatalogDescription,
@@ -59,6 +59,41 @@ describe('resolveSkillCatalog', () => {
       catalog: [fake],
     })
     expect(matched).toEqual([fakeId])
+  })
+
+  it('loads exactly one manuscript format skill from Draft mode, never both', () => {
+    const manuscriptIds = new Set([SkillCatalogId.ManuscriptScript, SkillCatalogId.ManuscriptNovel])
+    const scriptMatched = resolveMatchedSkillIds({
+      stage: SkillCatalogStage.Draft,
+      manuscriptFormat: SkillManuscriptFormat.Script,
+    }).filter(id => manuscriptIds.has(id))
+    expect(scriptMatched).toEqual([SkillCatalogId.ManuscriptScript])
+
+    const novelMatched = resolveMatchedSkillIds({
+      stage: SkillCatalogStage.Draft,
+      manuscriptFormat: SkillManuscriptFormat.Novel,
+    }).filter(id => manuscriptIds.has(id))
+    expect(novelMatched).toEqual([SkillCatalogId.ManuscriptNovel])
+
+    const neither = resolveMatchedSkillIds({
+      stage: SkillCatalogStage.Draft,
+    }).filter(id => manuscriptIds.has(id))
+    expect(neither).toEqual([])
+  })
+
+  it('keeps INT./EXT. in the script L2 body and out of the novel L2 body', () => {
+    const slug = 'INT./EXT.'
+    const script = resolveSkillCatalog({
+      stage: SkillCatalogStage.Draft,
+      manuscriptFormat: SkillManuscriptFormat.Script,
+    }).find(row => row.id === SkillCatalogId.ManuscriptScript)
+    const novel = resolveSkillCatalog({
+      stage: SkillCatalogStage.Draft,
+      manuscriptFormat: SkillManuscriptFormat.Novel,
+    }).find(row => row.id === SkillCatalogId.ManuscriptNovel)
+    expect(script?.body).toContain(slug)
+    expect(novel?.body).toBeDefined()
+    expect(novel?.body).not.toContain(slug)
   })
 })
 

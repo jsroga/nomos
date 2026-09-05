@@ -80,9 +80,10 @@ export function ViewportGatedThreeDIcon({
     if (!allowPrefetch) return
 
     void import('@/domains/marketing/ui/ThreeDIconCanvas')
-    void import('@react-three/drei').then(mod => {
+    void (async () => {
+      const mod = await import('@react-three/drei')
       mod.useGLTF.preload(modelUrl)
-    })
+    })()
   }, [allowPrefetch, modelUrl])
 
   useEffect(() => {

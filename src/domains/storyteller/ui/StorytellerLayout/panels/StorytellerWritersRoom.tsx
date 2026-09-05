@@ -340,7 +340,17 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
           error: activity.error,
           agentId: activity.agentId,
         })
+        return
       }
+      setGenerationActivity({
+        phase,
+        label: activity.label,
+        section: pendingChatSectionRef.current,
+        toolName: activity.toolName,
+        agentId: activity.agentId,
+        preview: activity.preview,
+        toolComplete: activity.toolComplete,
+      })
     },
     [clearGenerationActivity, setGenerationActivity, setLoadingSections],
   )

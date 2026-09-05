@@ -42,9 +42,16 @@ export {
   type ControllerFrameIntent,
 } from './ai/controller/controller-sse-wire'
 export { resolveChatModelId } from './config/resolve-chat-model'
-export { isKnownChatModel } from './config/constants/chat-model-catalog'
+export { CHAT_MODELS, isKnownChatModel } from './config/constants/chat-model-catalog'
+export { resolveStorytellerModel } from './config/constants/model-config'
+export type { generateStoryboard } from './tasks/generate-storyboard.task'
+export type { generateCombinedStoryboard } from './tasks/generate-combined-storyboard.task'
+export {
+  beatsWithImageUrl,
+  type CombinedStoryboardBeat,
+} from './tasks/generate-combined-storyboard-helpers'
 export { isStorytellerControllerEnabled } from './ai/controller/storyteller-controller'
-export { BibleSection, parsePhaseId } from './core/types/enums'
+export { BibleSection, ManuscriptMode, parsePhaseId } from './core/types/enums'
 export { type DetectedSection } from './config/tool-result-mapper'
 export { omitBibleOwnedPlanFields } from './core/utils/bible-populated-fields'
 export { storyPlanRecordFromJson } from './core/entities/story-plan-wire'

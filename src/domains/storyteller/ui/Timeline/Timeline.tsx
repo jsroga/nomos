@@ -119,8 +119,9 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
       return
     }
 
-    fetchStorytellerTimeline(episodeId, selectedBeatId)
-      .then(data => {
+    void (async () => {
+      try {
+        const data = await fetchStorytellerTimeline(episodeId, selectedBeatId)
         const snapshots: CharacterSnapshot[] = recordArrayFromJson(data.snapshots).map(row => ({
           characterId: readString(row.characterId) ?? '',
           characterName: readString(row.characterName) ?? '',
@@ -131,8 +132,10 @@ const Timeline: React.FC<TimelineProps> = memo(function Timeline({
         if (snapshots.length > 0) {
           setSnapshots(snapshots)
         }
-      })
-      .catch(err => console.error(TIMELINE_FETCH_SNAPSHOTS_FAILED_LOG, err))
+      } catch (err) {
+        console.error(TIMELINE_FETCH_SNAPSHOTS_FAILED_LOG, err)
+      }
+    })()
   }, [selectedBeatId, episodeId])
 
   // Auto-play functionality

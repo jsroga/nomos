@@ -4,14 +4,21 @@ import { getMastraInstance } from '@/shared/agent-kernel'
 import {
   BEAT_DRAFT_WORKFLOW_ID,
   VERDICT_STEP_ID,
+  beatDraftOutputSchema,
 } from '@/domains/storyteller/core/io/mastra-runtime'
+import { StorytellerWorkflowVerdict } from '@/domains/storyteller/core/io/workflow-verdict'
+import {
+  loadSuspendedArtifactDraftRun,
+  mapResumeOptionToArtifactVerdict,
+  resumeArtifactDraftRun,
+} from '@/domains/storyteller/core/io/resume-artifact-draft'
+import { recordFromJson } from '@/shared/data/json-guards'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { HttpStatus } from '@/shared/data/constants/protocol'
 import { MastraWorkflowStatus, QueryParam } from '@/shared/data/constants/protocol'
-import { StorytellerWorkflowVerdict } from '@/domains/storyteller/core/storyteller-page-wire'
 
 /**
  * Request contract is UNCHANGED (published — `useChatStream.resumeWorkflow()`
@@ -52,6 +59,14 @@ const WorkflowRunStateSchema = z.object({
   resourceId: z.string().optional(),
 })
 
+enum WorkflowResumeField {
+  Result = 'result',
+}
+
+function workflowOutputPayload(result: unknown): unknown {
+  return recordFromJson(result)[WorkflowResumeField.Result]
+}
+
 function projectIdFromUnknown(value: unknown): string | undefined {
   const parsed = NestedProjectIdSchema.safeParse(value)
   return parsed.success ? parsed.data.projectId : undefined
@@ -66,6 +81,39 @@ function projectIdFromRunState(state: unknown): string | undefined {
     projectIdFromUnknown(record.data.requestPayload) ??
     record.data.resourceId
   )
+}
+
+async function resumeArtifactDraftRequest(
+  runId: string,
+  selectedOption: string
+): Promise<NextResponse> {
+  const loaded = await loadSuspendedArtifactDraftRun(runId)
+  if (!loaded) {
+    return NextResponse.json(
+      { error: API_ERROR.WORKFLOW_NOT_FOUND_OR_COMPLETED, runId },
+      { status: HttpStatus.NOT_FOUND }
+    )
+  }
+  const denied = await denyUnlessRunOwner(loaded.state, runId)
+  if (denied) return denied
+  const verdict = mapResumeOptionToArtifactVerdict(selectedOption)
+  if (!verdict) {
+    return NextResponse.json(
+      {
+        error: `Unknown option: ${selectedOption}. Expected approve, revise, or kill.`,
+        runId,
+      },
+      { status: HttpStatus.BAD_REQUEST }
+    )
+  }
+  const resumed = await resumeArtifactDraftRun(runId, verdict)
+  return NextResponse.json({
+    success: true,
+    message: `Workflow resumed with option: ${selectedOption}`,
+    runId,
+    selectedOption,
+    output: { persisted: resumed.persisted, message: resumed.message },
+  })
 }
 
 /**
@@ -133,16 +181,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Recover the persisted run state from storage (survives restarts).
-    const state = await workflow.getWorkflowRunById(runId)
-    if (!state || state.status !== MastraWorkflowStatus.Suspended) {
-      return NextResponse.json(
-        { error: API_ERROR.WORKFLOW_NOT_FOUND_OR_COMPLETED, runId },
-        { status: 404 }
-      )
+    const beatState = await workflow.getWorkflowRunById(runId)
+    if (!beatState || beatState.status !== MastraWorkflowStatus.Suspended) {
+      return await resumeArtifactDraftRequest(runId, selectedOption)
     }
 
-    const denied = await denyUnlessRunOwner(state, runId)
+    const denied = await denyUnlessRunOwner(beatState, runId)
     if (denied) return denied
 
     const run = await workflow.createRun({ runId })
@@ -161,11 +205,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const parsedOutput = beatDraftOutputSchema.safeParse(workflowOutputPayload(result))
     return NextResponse.json({
       success: true,
       message: `Workflow resumed with option: ${selectedOption}`,
       runId,
       selectedOption,
+      output: parsedOutput.success ? parsedOutput.data : undefined,
     })
   } catch (error: unknown) {
     console.error(API_LOG_PREFIX.STORYTELLER_WORKFLOW_RESUME_ERROR, error)

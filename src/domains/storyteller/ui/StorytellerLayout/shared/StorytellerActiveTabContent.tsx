@@ -1,9 +1,12 @@
 'use client'
 
 import { useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { CorkBoard } from '../../CorkBoard'
 import { StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
-import { editStorytellerScript } from '@/domains/storyteller/core/io/storyteller.api'
+import { editStorytellerScript, patchStorytellerEpisode } from '@/domains/storyteller/core/io/storyteller.api'
+import { EpisodePatchColumnName } from '@/domains/storyteller/core/io/episode-patch'
+import { storytellerKeys } from '@/domains/storyteller/core/io/storyteller.keys'
 import {
   ScriptEditor,
   StoryPlanBoard,
@@ -15,12 +18,15 @@ import {
   useStorytellerUiStore,
 } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
-import { StorytellerAgentTriggerPrompt } from '@/domains/storyteller/state/constants/agent-trigger-prompts'
-import { BibleSection, Phase } from '@/domains/storyteller/core/types/enums'
-import { EpisodePremiseSectionKey } from '@/domains/storyteller/ui/EpisodePremisePanel/constants/ozymandias-sections'
+import { BibleSection, ManuscriptMode, Phase } from '@/domains/storyteller/core/types/enums'
 import { pendingActionForCurrentEpisode } from '@/domains/storyteller/ui/WorldBible/utils/pending-action-for-episode'
 import { episodePremiseFromPlan } from '@/domains/storyteller/core/utils/validate-premise-for-beatboard'
 import { commitBeatCreatesToWorld } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-add-to-world'
+import { omitSectionKey } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-tool-helpers'
+import { runArtifactDraftOverlay } from '@/domains/storyteller/ui/WorldBible/utils/artifact-draft-overlay'
+import { ArtifactKind } from '@/domains/storyteller/core/types/artifact-kind'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
+import type { PendingAction } from '@/domains/storyteller/ui/WorldBible/utils/bible-context-types'
 
 export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = props => {
   const { core, episode, phase, generation, agents } = props
@@ -43,7 +49,7 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
     isSending,
     sectionPendingActions,
     loadingSections,
-    setLoadingSections,
+    setSectionPendingActions,
     currentEpisode,
     currentEpisodeTitle,
     setActiveTab,
@@ -58,34 +64,36 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
   const requestChatPrompt = useStorytellerUiStore(state => state.requestChatPrompt)
   const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
   const isChatBusy = isGenerationActivityBusy(generationPhase)
+  const queryClient = useQueryClient()
 
-  const queuePremisePrompt = useCallback(
-    (message: string) => {
-      setLoadingSections(prev => ({
-        ...prev,
-        [BibleSection.EPISODE_PREMISE]: { loading: true },
-      }))
-      requestChatPrompt(message, BibleSection.EPISODE_PREMISE)
-    },
-    [requestChatPrompt, setLoadingSections]
-  )
+  const setPremisePending = useCallback((section: string, action: PendingAction | null) => {
+    setSectionPendingActions(prev => {
+      if (action === null) return omitSectionKey(prev, section)
+      return { ...prev, [section]: action }
+    })
+  }, [setSectionPendingActions])
 
-  const handleGeneratePremise = useCallback(() => {
-    queuePremisePrompt(StorytellerAgentTriggerPrompt.GenerateEpisodePremiseUser)
-  }, [queuePremisePrompt])
+  const startPremiseArtifactDraft = useCallback(async () => {
+    const projectId = routeProjectId
+    const episodeId = currentEpisodeId
+    if (!projectId || !episodeId) return
+    await runArtifactDraftOverlay({
+      projectId,
+      episodeId,
+      kind: ArtifactKind.EpisodePremise,
+      promptId: StorytellerPromptRegistryId.GenerateEpisodePremiseAgent,
+      overlaySection: BibleSection.EPISODE_PREMISE,
+      setPendingAction: setPremisePending,
+    })
+  }, [currentEpisodeId, routeProjectId, setPremisePending])
 
-  const handleGeneratePremiseSection = useCallback(
-    (section: string) => {
-      if (section === EpisodePremiseSectionKey.Logline) {
-        queuePremisePrompt(StorytellerAgentTriggerPrompt.GenerateEpisodeDescriptionUser)
-        return
-      }
-      queuePremisePrompt(
-        `${StorytellerAgentTriggerPrompt.RegeneratePremiseSectionUserPrefix}${section}${StorytellerAgentTriggerPrompt.RegeneratePremiseSectionUserSuffix}`
-      )
-    },
-    [queuePremisePrompt]
-  )
+  const handleGeneratePremise = useCallback(async () => {
+    await startPremiseArtifactDraft()
+  }, [startPremiseArtifactDraft])
+
+  const handleGeneratePremiseSection = useCallback(async () => {
+    await startPremiseArtifactDraft()
+  }, [startPremiseArtifactDraft])
 
   const handleAddGeneratedBeats = useCallback(async () => {
     await commitBeatCreatesToWorld({
@@ -107,7 +115,7 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
           onApprove={handleApprovePlan}
           onUpdatePremise={updateEpisodePremise}
           onGeneratePremise={handleGeneratePremise}
-          onGeneratePremiseSection={section => handleGeneratePremiseSection(section)}
+          onGeneratePremiseSection={handleGeneratePremiseSection}
           onGeneratePoster={episodeId => void handlePosterTrigger(episodeId)}
           onGenerateStoryboard={episodeId => void handleStoryboardTrigger(episodeId)}
           isGenerating={
@@ -160,13 +168,15 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
           <ScriptEditor
             content={script}
             onChange={setScript}
-            onRegenerateSelection={async (selection, instruction) => {
+            onRegenerateSelection={async (selection, instruction, context) => {
               if (!routeProjectId) return selection
               try {
                 return await editStorytellerScript({
                   projectId: routeProjectId,
                   selection,
                   instruction,
+                  beforeText: context?.beforeText,
+                  afterText: context?.afterText,
                 })
               } catch (e) {
                 console.error('Regeneration failed:', e)
@@ -174,6 +184,25 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
               }
             }}
             isLoading={isScriptLoading}
+            beatCount={beats.length}
+            projectId={routeProjectId ?? ''}
+            episodeId={currentEpisodeId ?? ''}
+            mode={currentEpisode?.manuscriptMode ?? ManuscriptMode.Script}
+            onModeChange={next => {
+              if (!currentEpisodeId) return
+              void (async () => {
+                try {
+                  await patchStorytellerEpisode(currentEpisodeId, {
+                    [EpisodePatchColumnName.ManuscriptMode]: next,
+                  })
+                  await queryClient.invalidateQueries({
+                    queryKey: storytellerKeys.episode(currentEpisodeId),
+                  })
+                } catch {
+                  // Episode mode patch is best-effort; the editor stays on the prior mode.
+                }
+              })()
+            }}
           />
         </div>
       )}

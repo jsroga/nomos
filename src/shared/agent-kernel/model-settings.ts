@@ -28,7 +28,13 @@ function maybeWarm(): void {
   if (warmStarted || loaded) return
   if (!env.DATABASE_URL || process.env.VITEST) return
   warmStarted = true
-  void loadModelSettings().catch(() => {})
+  void (async () => {
+    try {
+      await loadModelSettings()
+    } catch {
+      // Resolver falls back to env / auto-beta until a later warm succeeds.
+    }
+  })()
 }
 
 /**

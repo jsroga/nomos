@@ -18,7 +18,7 @@ import {
   BibleRoadmap,
 } from '../WorldBible'
 
-const CharacterWeb = lazy(() => import('../CharacterWeb').then(m => ({ default: m.CharacterWeb })))
+const CharacterWeb = lazy(async () => ({ default: (await import('../CharacterWeb')).CharacterWeb }))
 
 /** Mount section only when near the viewport — cuts first-paint cost of Content tab. */
 function LazyBibleSection({

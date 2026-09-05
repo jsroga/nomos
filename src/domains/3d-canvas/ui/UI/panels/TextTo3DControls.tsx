@@ -130,8 +130,10 @@ export function TextTo3DControls({
 
     const runId = taskId
     let aborted = false
-    void pollInteriorTriggerRun(
-      () => interiorDesignerApi.textTo3D.getStatus(runId),
+    void (async () => {
+      try {
+        await pollInteriorTriggerRun(
+          () => interiorDesignerApi.textTo3D.getStatus(runId),
       {
         shouldAbort: () => {
           if (aborted) return true
@@ -169,10 +171,12 @@ export function TextTo3DControls({
           })
         },
       },
-      { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
-    ).catch(err => {
-      console.error(PropertiesPanelLog.PollError, err)
-    })
+          { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
+        )
+      } catch (err) {
+        console.error(PropertiesPanelLog.PollError, err)
+      }
+    })()
 
     return () => {
       aborted = true

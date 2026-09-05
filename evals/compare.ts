@@ -6,6 +6,15 @@
  */
 import { regressionThreshold, COST_BUDGET_MULTIPLE, DEFAULT_JUDGING_MODEL_ID } from './constants/thresholds'
 import type { MultiVariantReport } from './types'
+import { isBrevityCheat } from './structural/s8-concrete-noun-density'
+
+export { isBrevityCheat }
+
+const COST_DOUBLED_MULTIPLE = 2
+
+export enum GateFailReason {
+  QualityUpCostDoubled = 'quality-up / cost-doubled',
+}
 
 export interface BaselineScorer {
   mean: number
@@ -63,13 +72,11 @@ enum CostSkipReason {
   MissingBaselineOrCurrent = 'baseline or run has no judge cost',
 }
 
-const IMPROVEMENT_EPSILON = 1e-9
-
 function verdictFor(baseline: number, current: number, threshold: number): ScorerVerdict {
   const delta = current - baseline
-  if (delta < -threshold) return ScorerVerdict.Regressed
-  if (delta > IMPROVEMENT_EPSILON) return ScorerVerdict.Improved
-  return ScorerVerdict.Ok
+  if (Math.abs(delta) <= threshold) return ScorerVerdict.Ok
+  if (delta < 0) return ScorerVerdict.Regressed
+  return ScorerVerdict.Improved
 }
 
 function resolveCost(
@@ -148,6 +155,12 @@ export function compareToBaseline(
     cost,
     costSkipped,
   }
+}
+
+export function qualityUpCostDoubled(result: ComparisonResult): boolean {
+  if (!result.cost) return false
+  const qualityUp = result.rows.some(row => row.verdict === ScorerVerdict.Improved)
+  return qualityUp && result.cost.current >= result.cost.baseline * COST_DOUBLED_MULTIPLE
 }
 
 function cell(value: number | null, width: number): string {

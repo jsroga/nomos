@@ -7,7 +7,6 @@ import { useBible } from './BibleContext'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
 import {
   BIBLE_INSPIRATION_CATEGORY_CONFIG,
-  BIBLE_INSPIRATION_GENERATE_PROMPT,
   BibleInspirationCategoryKey,
 } from '../constants/bible-section-ui'
 import {
@@ -15,6 +14,9 @@ import {
   inspirationEditValue,
   normalizeInspirations,
 } from '../utils/bible-inspiration-normalize'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
+import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
 
 interface BibleInspirationsProps {}
 
@@ -98,9 +100,10 @@ export const BibleInspirations: FC<BibleInspirationsProps> = () => {
     localPlan,
     updateInspiration,
     isReadOnly,
-    onSendMessage,
     loadingSections,
     pendingActions,
+    projectId,
+    setPendingAction,
   } = useBible()
 
   const isLoading = loadingSections?.inspirations?.loading ?? false
@@ -123,9 +126,14 @@ export const BibleInspirations: FC<BibleInspirationsProps> = () => {
         title="Inspirations"
         isReadOnly={isReadOnly}
         isLoading={isLoading}
-        onGenerate={
-          onSendMessage ? () => onSendMessage(BIBLE_INSPIRATION_GENERATE_PROMPT, 'inspirations') : undefined
-        }
+        onGenerate={async () => {
+          await runBibleSectionArtifactDraft({
+            projectId,
+            section: BibleSection.INSPIRATIONS,
+            promptId: StorytellerPromptRegistryId.BibleInspirationGenerate,
+            setPendingAction,
+          })
+        }}
         generateTitle="Generate Inspirations"
       />
       <TooltipProvider>

@@ -7,6 +7,7 @@ export enum SmokeEvent {
   Action = 'action',
   ToolResult = 'tool_result',
   Message = 'message',
+  Error = 'error',
 }
 
 export enum SmokeTool {
@@ -36,6 +37,22 @@ export enum SmokeHttp {
   SseDataPrefix = 'data: ',
 }
 
+export enum SmokeHttpStatus {
+  PaymentRequired = 402,
+}
+
+/** Stream POST `modelName` — Writers Room catalog id (OpenRouter `z-ai/glm-5.2`). */
+export enum SmokeChatModel {
+  Glm = 'zai-coding-plan:glm-5.2',
+}
+
+export enum SmokeBodyKey {
+  Message = 'message',
+  ProjectId = 'projectId',
+  TraceId = 'traceId',
+  ModelName = 'modelName',
+}
+
 export enum SmokeSender {
   Storyteller = 'Storyteller',
 }
@@ -60,6 +77,8 @@ export enum SmokeMatch {
   CharacterTool = 'character',
   Rejected = 'REJECTED',
   Magic = 'magic',
+  InFlightRequests = 'in-flight requests',
+  InsufficientCredits = 'Insufficient credits',
 }
 
 export enum SmokePrompt {
@@ -96,6 +115,8 @@ export enum SmokeLog {
   BannerSubtitle = '██  Verifying core functionality',
   TestingAgainst = '📡 Testing against:',
   ProjectId = '📁 Project ID:',
+  ChatModel = '💬 Chat model:',
+  CreditsExhaustedPause = '\n⛔ OpenRouter credits exhausted. STOP — tell the operator and do not retry until credits are added.\n',
   LayerApi = '\n─── LAYER 1: API ───\n',
   LayerFlow = '\n─── LAYER 2: FLOW ───\n',
   LayerPersistence = '\n─── LAYER 3: E2E PERSISTENCE ───\n',
@@ -142,6 +163,7 @@ export enum SmokeLog {
   ResponseLength = '  Response length:',
   LinksDetected = '  ✓ Links detected in response:',
   LinksMissing = '  ⚠️  No links detected. (This might be valid if no entities matched text)',
+  InFlightRetry = '  ⏳ OpenRouter in-flight budget exhausted; retrying after settle…',
 
   WorldDescriptionStart = '  📤 Requesting world description (may reject then accept; must not loop)...',
   GraphRagStep1 = '  📤 Step 1: Asking contextual question (New Conversation)...',
@@ -172,6 +194,7 @@ export enum SmokeError {
   WorldDescriptionStillRejected = 'Last update_world_bible call was still REJECTED; escape hatch should accept after 2 rejections',
   NoAiContent = 'No AI response content found (checked message and token events)',
   FailedEnsureProject = 'Could not use or create smoke project — set TEST_PROJECT_ID or seed E2E mock user in auth.users',
+  OpenRouterCreditsExhausted = 'OpenRouter credits exhausted — pause and tell the operator. Do not retry smoke until credits are added.',
 }
 
 export enum SmokeDummySuite {
@@ -194,3 +217,11 @@ export const GENERIC_ANSWER_MIN_LENGTH = 20
 export const GENERIC_ANSWER_LOG_LIMIT = 50
 export const LINK_SAMPLE_LIMIT = 3
 export const BANNER_WIDTH = 70
+
+export enum SmokeTimeout {
+  InFlightRetryMs = 120_000,
+}
+
+export enum SmokeRetry {
+  ChatAttempts = 2,
+}

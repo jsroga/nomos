@@ -14,6 +14,18 @@ export class ClientFetchError extends Error {
   }
 }
 
+/** Parse JSON from a Request/Response body; `fallback` if the body is empty or invalid. */
+export async function readJsonBody(
+  source: { json: () => Promise<unknown> },
+  fallback: unknown = null
+): Promise<unknown> {
+  try {
+    return await source.json()
+  } catch {
+    return fallback
+  }
+}
+
 /** Parse JSON from a successful HTTP response. Throws ClientFetchError on non-OK status. */
 export async function fetchJson(
   input: RequestInfo | URL,

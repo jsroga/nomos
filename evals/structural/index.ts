@@ -6,6 +6,7 @@ export { scoreCharacterFieldAdherence } from './s6-character-field'
 export { scoreSchemaValidity } from './s7-schema-validity'
 export { scoreSlopRate } from './s8-slop-rate'
 export { scoreSelfRepetition } from './s9-self-repetition'
+export { scoreVoiceDistinctiveness } from './s10-voice-distinctiveness'
 export { dumpedBeatFromUnknown } from './beat-text'
 export {
   matchingRulesFromUnknown,

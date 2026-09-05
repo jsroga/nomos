@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import { LiquidProvider } from '../state/liquid-context'
 
 const TurbulentBackground = dynamic(
-  () => import('./TurbulentBackground').then(mod => mod.TurbulentBackground),
+  async () => (await import('./TurbulentBackground')).TurbulentBackground,
   { ssr: false }
 )
 

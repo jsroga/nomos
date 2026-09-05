@@ -82,17 +82,15 @@ export type BibleSimpleEntitySectionProps = {
   spinnerClassName?: string
   emptyEditMessage: string
   emptyDisplayMessage: string
-  generatePrompt: string
   generateTitle: string
   addTitle: string
-  sectionKey: string
   localItems: NamedEntity[]
   displayItems: NamedEntity[]
   isEditing: boolean
   isReadOnly: boolean
   isLoading: boolean
   pendingAction?: PendingAction
-  onSendMessage?: (msg: string, section?: string) => void
+  onGenerate?: () => void
   projectId: string
   onAdd: () => void
   onRemove: (index: number) => void
@@ -106,17 +104,15 @@ export const BibleSimpleEntitySection: FC<BibleSimpleEntitySectionProps> = ({
   spinnerClassName,
   emptyEditMessage,
   emptyDisplayMessage,
-  generatePrompt,
   generateTitle,
   addTitle,
-  sectionKey,
   localItems,
   displayItems,
   isEditing,
   isReadOnly,
   isLoading,
   pendingAction,
-  onSendMessage,
+  onGenerate,
   projectId,
   onAdd,
   onRemove,
@@ -136,9 +132,7 @@ export const BibleSimpleEntitySection: FC<BibleSimpleEntitySectionProps> = ({
       isLoading={isLoading}
       onAdd={onAdd}
       addTitle={addTitle}
-      onGenerate={
-        onSendMessage ? () => onSendMessage(generatePrompt, sectionKey) : undefined
-      }
+      onGenerate={onGenerate}
       generateTitle={generateTitle}
     />
     {isEditing ? (

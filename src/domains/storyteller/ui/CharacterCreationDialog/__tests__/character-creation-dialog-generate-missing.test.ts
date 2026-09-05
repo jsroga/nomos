@@ -8,6 +8,7 @@ import {
   buildGenerateMissingCharacterChatPrompt,
   filledCharacterDraftSummary,
   generateMissingDisableReason,
+  generatedCharacterFieldsFromArtifactDraft,
   isCharacterDraftForTarget,
   isCharacterDraftOverlayGenerating,
   isCharacterSidebarGeneratingFields,
@@ -223,5 +224,25 @@ describe('character draft overlay target', () => {
     expect(setters.next.name).toBe(VERA)
     expect(setters.next.description).toBe(VERA_DESC)
     expect(setters.next.motivation).toBe('Protect the ward')
+  })
+})
+
+describe('generatedCharacterFieldsFromArtifactDraft', () => {
+  it('reads nested psychology fields from an artifact-draft JSON body', () => {
+    const fields = generatedCharacterFieldsFromArtifactDraft(
+      JSON.stringify({
+        [CharacterTextFieldKey.Name]: VERA,
+        [CharacterTextFieldKey.Description]: VERA_DESC,
+        psychology: {
+          actualMotivation: 'Hold the ward',
+          [CharacterTextFieldKey.FatalFlaw]: 'Pride',
+          [CharacterTextFieldKey.Secrets]: 'The ledger',
+        },
+      }),
+    )
+    expect(fields.name).toBe(VERA)
+    expect(fields.motivation).toBe('Hold the ward')
+    expect(fields.fatalFlaw).toBe('Pride')
+    expect(fields.secrets).toBe('The ledger')
   })
 })

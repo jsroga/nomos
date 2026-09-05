@@ -28,8 +28,11 @@ import {
   proseCritic,
   stakesCritic,
 } from '@/domains/storyteller/ai/agents/critics'
+import { defaultArtifactDraftDeps } from '@/domains/storyteller/ai/workflows/artifact-draft-default-deps'
+import { createArtifactDraftWorkflow } from '@/domains/storyteller/ai/workflows/artifact-draft-workflow'
 import { beatDraftWorkflow } from '@/domains/storyteller/ai/workflows/beat-draft-workflow'
-import { fixInconsistenciesWorkflow } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-workflow'
+import { defaultFixInconsistenciesDeps } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-default-deps'
+import { createFixInconsistenciesWorkflow } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-workflow'
 // Tools come from their CONCRETE modules, never the tools barrel — the barrel
 // side-effect-imports this file (registration ordering), so importing it here
 // would create a cycle.
@@ -131,9 +134,15 @@ export const storytellerRuntimeAgents: Record<string, Agent> = {
   autonomousAuthor: autonomousAuthorAgent,
 }
 
+const artifactDraftWorkflow = createArtifactDraftWorkflow(defaultArtifactDraftDeps)
+const fixInconsistenciesWorkflow = createFixInconsistenciesWorkflow(
+  defaultFixInconsistenciesDeps
+)
+
 /** Workflows registered on the production Mastra instance. */
 export const storytellerRuntimeWorkflows = {
   beatDraftWorkflow,
+  artifactDraftWorkflow,
   fixInconsistenciesWorkflow,
 }
 
@@ -141,7 +150,14 @@ export {
   BEAT_DRAFT_WORKFLOW_ID,
   RUN_BEAT_DRAFT_WORKFLOW_TOOL_ID,
   VERDICT_STEP_ID,
+  beatDraftOutputSchema,
 } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
+export {
+  ARTIFACT_DRAFT_WORKFLOW_ID,
+  ARTIFACT_DRAFT_VERDICT_STEP_ID,
+  ArtifactDraftVerdictAction,
+  artifactDraftOutputSchema,
+} from '@/domains/storyteller/ai/workflows/artifact-draft-contract'
 export {
   FIX_INCONSISTENCIES_WORKFLOW_ID,
   FIX_INCONSISTENCIES_VERDICT_STEP,
@@ -207,7 +223,10 @@ export function getStorytellerController(): Promise<AgentController> {
         workspace: new Workspace({ filesystem: new LocalFilesystem({ basePath }) }),
       })
     )
-    storytellerControllerPromise = controller.init().then(() => controller)
+    storytellerControllerPromise = (async () => {
+      await controller.init()
+      return controller
+    })()
   }
   return storytellerControllerPromise
 }

@@ -126,7 +126,12 @@ export const ReferenceText: React.FC<ReferenceTextProps> = ({
 
   const handleEntityClick = (refId: string, entity: EntityReference | null) => {
     if (projectId) {
-      void markEntityReferenced(projectId, refId).catch(() => {})
+      void (async () => {
+        try {
+          await markEntityReferenced(projectId, refId)
+        } catch {
+        }
+      })()
     }
     onEntityClick?.(refId, entity)
   }

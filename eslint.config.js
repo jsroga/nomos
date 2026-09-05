@@ -199,6 +199,9 @@ module.exports = [
       'local/no-discarded-auth-context': 'error',
       'local/no-bare-project-id-param': 'error',
       'local/no-raw-trigger-task': 'error',
+      // Promise control flow: await + try/catch. Off here; scoped to src/ below
+      // (Mastra workflow `.then(step)` and Zod `.catch(value)` are allowed).
+      'local/prefer-await-try-catch': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
@@ -365,6 +368,20 @@ module.exports = [
       'src/domains/*/config/constants/model-config.ts',
     ],
     rules: { 'local/no-bare-process-env': 'error' },
+  },
+
+  {
+    files: [
+      'src/**/*.{ts,tsx}',
+      'scripts/gate-fixtures/src/services/uses-promise-then.ts',
+    ],
+    ignores: [
+      '**/__tests__/**',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/*.e2e.test.ts',
+    ],
+    rules: { 'local/prefer-await-try-catch': 'error' },
   },
 
   // `verifyProjectAccess` answers a boolean a caller can check and then ignore.

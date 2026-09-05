@@ -32,14 +32,16 @@ export const RepaintToolbar: React.FC = () => {
 
   React.useEffect(() => {
     if (currentProject?.id) {
-      settingsApi
-        .fetchProject(currentProject.id)
-        .then(data => {
+      void (async () => {
+        try {
+          const data = await settingsApi.fetchProject(currentProject.id)
           if (data.styleReferenceUrls?.length) {
             setStyleReferenceUrls(data.styleReferenceUrls)
           }
-        })
-        .catch(err => console.error(REPAINT_STYLE_REFS_FAILED_LOG, err))
+        } catch (err) {
+          console.error(REPAINT_STYLE_REFS_FAILED_LOG, err)
+        }
+      })()
     }
   }, [currentProject?.id])
 

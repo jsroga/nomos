@@ -79,15 +79,16 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
 
     setIsFetchingCharacters(true)
 
-    cachedFetch(
-      `characters:${projectId}`,
-      () => fetchStorytellerCharacters(projectId),
-      {
-        ttlMs: 60_000,
-        validate: (value): value is unknown[] => Array.isArray(value),
-      }
-    )
-      .then(data => {
+    void (async () => {
+      try {
+        const data = await cachedFetch(
+          `characters:${projectId}`,
+          () => fetchStorytellerCharacters(projectId),
+          {
+            ttlMs: 60_000,
+            validate: (value): value is unknown[] => Array.isArray(value),
+          }
+        )
         if (!isMounted) return
         if (Array.isArray(data)) {
           const mapped = data
@@ -95,11 +96,12 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
             .filter((character): character is NonNullable<typeof character> => character !== null)
           setCharacters(mapped)
         }
-      })
-      .catch(err => console.error(StorytellerLogMessage.FailedFetchCharacters, err))
-      .finally(() => {
+      } catch (err) {
+        console.error(StorytellerLogMessage.FailedFetchCharacters, err)
+      } finally {
         if (isMounted) setIsFetchingCharacters(false)
-      })
+      }
+    })()
 
     return () => {
       isMounted = false
@@ -110,34 +112,39 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
   useEffect(() => {
     const projectId = currentProject?.id
     if (projectId) {
-      import('@/domains/storyteller/services/moodboard-generation-service').then(
-        ({ moodboardGenerationService }) =>
-        moodboardGenerationService.resumePendingGenerations(
-          projectId,
-          async () => {
-            try {
-              const data = await fetchStorytellerProjectOptional(projectId)
-              if (data) {
-                const bible = parseSeriesBibleRecord(data.seriesBible ?? data.series_bible)
-                if (Array.isArray(bible.moodImages)) {
-                  setStoryPlan(prev =>
-                    prev ? { ...prev, moodImages: stringArrayFromJson(bible.moodImages) } : prev
-                  )
+      void (async () => {
+        try {
+          const { moodboardGenerationService } = await import(
+            '@/domains/storyteller/services/moodboard-generation-service'
+          )
+          moodboardGenerationService.resumePendingGenerations(
+            projectId,
+            async () => {
+              try {
+                const data = await fetchStorytellerProjectOptional(projectId)
+                if (data) {
+                  const bible = parseSeriesBibleRecord(data.seriesBible ?? data.series_bible)
+                  if (Array.isArray(bible.moodImages)) {
+                    setStoryPlan(prev =>
+                      prev ? { ...prev, moodImages: stringArrayFromJson(bible.moodImages) } : prev
+                    )
+                  }
                 }
+              } catch (error) {
+                console.error(StorytellerLogMessage.FailedRefetchMoodboard, error)
               }
-            } catch (error) {
-              console.error(StorytellerLogMessage.FailedRefetchMoodboard, error)
-            }
-          },
-          error => {
-            if (error instanceof Error && error.message.trim().length > 0) {
-              toast.error(error.message)
-              return
-            }
-            toast.error(MoodboardUserToast.GenerationFailed)
-          },
-        )
-      )
+            },
+            error => {
+              if (error instanceof Error && error.message.trim().length > 0) {
+                toast.error(error.message)
+                return
+              }
+              toast.error(MoodboardUserToast.GenerationFailed)
+            },
+          )
+        } catch {
+        }
+      })()
     }
   }, [currentProject?.id])
 
@@ -152,8 +159,9 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
     setBeats([])
     setSelectedBeatId(null)
 
-    fetchStorytellerTimeline(currentEpisodeId)
-      .then(data => {
+    void (async () => {
+      try {
+        const data = await fetchStorytellerTimeline(currentEpisodeId)
         const beats = recordArrayFromJson(data.beats)
         if (beats.length > 0) {
           setBeats(
@@ -175,8 +183,10 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
             }),
           )
         }
-      })
-      .catch(err => console.error(StorytellerLogMessage.FailedFetchBeats, err))
+      } catch (err) {
+        console.error(StorytellerLogMessage.FailedFetchBeats, err)
+      }
+    })()
   }, [currentEpisodeId])
 
   // Fetch story plan for selected episode OR load project bible
@@ -190,8 +200,9 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
 
     if (currentEpisodeId) {
       setIsFetchingPlan(true)
-      fetchStorytellerPlan(currentEpisodeId)
-        .then(data => {
+      void (async () => {
+        try {
+          const data = await fetchStorytellerPlan(currentEpisodeId)
           const planRecord = recordFromJson(data)
           const mergedPlan = buildMergedEpisodePlan(planRecord, currentProject)
           const inferred = inferEpisodePhase(planRecord)
@@ -227,9 +238,12 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
           setIsPlanApproved(false)
           setCurrentPhase(inferred)
           setViewPhase(inferred)
-        })
-        .catch(err => console.error(StorytellerLogMessage.FailedFetchPlan, err))
-        .finally(() => setIsFetchingPlan(false))
+        } catch (err) {
+          console.error(StorytellerLogMessage.FailedFetchPlan, err)
+        } finally {
+          setIsFetchingPlan(false)
+        }
+      })()
       return
     }
 

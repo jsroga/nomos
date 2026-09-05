@@ -3,6 +3,7 @@ import { db } from '@/db/client'
 import { eq, and } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import { recordFromJson } from '@/shared/data/deep-merge'
+import { voiceFingerprintFromUnknown } from '@/domains/storyteller/core/voice/voice-fingerprint'
 import type { CharacterData } from './character-tools-schema'
 import { DEFAULT_CHARACTER_ROLE } from './manage-tools-wire'
 
@@ -24,6 +25,7 @@ export function characterResponse(character: CharacterRow) {
     mbti: character.mbti ?? undefined,
     portraitUrl: character.portraitUrl ?? undefined,
     psychology: psychologyRecord(character.psychology),
+    voice: voiceFingerprintFromUnknown(character.voice),
     valence: character.valence ?? undefined,
     arousal: character.arousal ?? undefined,
     autonomy: character.autonomy ?? undefined,
@@ -59,6 +61,7 @@ function buildCharacterInsertValues(projectId: string, data: CharacterData) {
     portraitUrl: data.portraitUrl ?? null,
     characterPrompt: data.characterPrompt ?? null,
     psychology: data.psychology ?? null,
+    voice: data.voice === undefined ? {} : voiceFingerprintFromUnknown(data.voice),
     ...characterMetricDefaults(data),
   }
 }
@@ -75,6 +78,7 @@ function applyCharacterProfileFields(
   if (data.mbti !== undefined) updateFields.mbti = data.mbti
   if (data.portraitUrl !== undefined) updateFields.portraitUrl = data.portraitUrl
   if (data.characterPrompt !== undefined) updateFields.characterPrompt = data.characterPrompt
+  if (data.voice !== undefined) updateFields.voice = voiceFingerprintFromUnknown(data.voice)
 }
 
 function applyCharacterMetricFields(

@@ -95,8 +95,10 @@ export function RetextureControls({ objectId, modelUrl, projectId }: RetextureCo
 
     const runId = taskId
     let aborted = false
-    void pollInteriorTriggerRun(
-      () => interiorDesignerApi.retexture.getStatus(runId),
+    void (async () => {
+      try {
+        await pollInteriorTriggerRun(
+          () => interiorDesignerApi.retexture.getStatus(runId),
       {
         shouldAbort: () => {
           if (aborted) return true
@@ -133,10 +135,12 @@ export function RetextureControls({ objectId, modelUrl, projectId }: RetextureCo
           })
         },
       },
-      { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
-    ).catch(err => {
-      console.error(PropertiesPanelLog.PollError, err)
-    })
+          { intervalMs: POLLING_INTERVALS.DEFAULT, maxPolls: 120 }
+        )
+      } catch (err) {
+        console.error(PropertiesPanelLog.PollError, err)
+      }
+    })()
 
     return () => {
       aborted = true

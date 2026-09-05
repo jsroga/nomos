@@ -141,7 +141,7 @@ Enforced by: `npm run precommit` (eval comparison honesty), `npm run eval:gate`,
 **Metrics (warn / error):** 400 / 800 lines · complexity 15 / 25.  
 **IMPORTANT — never disable rules on your own if not allowed.** No file-level `eslint-disable` and no new `eslint.config.js` `'off'` overrides without explicit user approval.
 
-ESLint (`eslint.config.js`) ignores generated/local trees (`.mastra/**`, `.local/**`, `.design-sync/**`). `local/no-magic-string` is off for Vitest and Playwright suites (`**/__tests__/**`, `**/*.test.*`, `**/*.e2e.test.*`, `e2e/**`) and Storybook (`stories/**`, `.storybook/**`) — titles and fixtures are prose, not wire vocabulary.
+ESLint (`eslint.config.js`) ignores generated/local trees (`.mastra/**`, `.local/**`, `.design-sync/**`). `local/no-magic-string` is off for Vitest and Playwright suites (`**/__tests__/**`, `**/*.test.*`, `**/*.e2e.test.*`, `e2e/**`) and Storybook (`stories/**`, `.storybook/**`) — titles and fixtures are prose, not wire vocabulary. `local/prefer-await-try-catch` is **error** on `src/**` (tests exempt): use `await` and `try/catch` instead of Promise `.then` / `.catch` / `.finally`. Mastra `workflow.then(step)` and Zod `.catch(value)` are allowed.
 
 ## Public OpenAPI (`/api-docs`)
 

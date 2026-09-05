@@ -188,13 +188,18 @@ export function showBeatOnBoard(input: {
   closeBible: () => void
   refreshBeats: (episodeId: string) => Promise<unknown>
 }): boolean {
-  if (!input.episodeId) return false
+  const episodeId = input.episodeId
+  if (!episodeId) return false
   input.setActiveTab(StorytellerTab.Board)
   input.closeBible()
   getStorytellerUiStore().setPendingBoardHydration(true)
-  void Promise.resolve(input.refreshBeats(input.episodeId)).finally(() => {
-    getStorytellerUiStore().setPendingBoardHydration(false)
-  })
+  void (async () => {
+    try {
+      await Promise.resolve(input.refreshBeats(episodeId))
+    } finally {
+      getStorytellerUiStore().setPendingBoardHydration(false)
+    }
+  })()
   return true
 }
 

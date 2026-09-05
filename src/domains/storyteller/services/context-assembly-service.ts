@@ -5,16 +5,18 @@
  * the agent system context, and enforces the token budget.
  */
 
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { episodes, projects, storyPlans } from '@/db'
 import { db } from '@/db/client'
-import { budgetContext, type RawContextParts } from '@/domains/storyteller/services/context/token-budget'
+import { budgetContext, withRecalledMemory, type RawContextParts } from '@/domains/storyteller/services/context/token-budget'
 import {
   StorytellerAnswerSeparator,
 } from '@/domains/storyteller/core/storyteller-page-wire'
-import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { readRowString, readString, recordFromJson, sqlResultRows } from '@/shared/data/json-guards'
 import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import { parsePhaseId, type PhaseId } from '@/domains/storyteller/core/types/enums'
+import { memoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
+import { INHERITED_AGENT_LAST_MESSAGES } from '@/shared/agent-kernel/mastra/studio-memory'
 import {
   characterFromDbRow,
   charactersFromJson,
@@ -49,6 +51,7 @@ export interface AssembleContextParams {
   message: string
   currentPhase?: PhaseId
   userId: string
+  recalledMemory?: string
   onError?: (err: unknown) => void
 }
 
@@ -62,24 +65,68 @@ async function loadContextSourceData(
   episodeId: string | undefined,
   userId: string
 ) {
-  return Promise.all([
-    db.select().from(projects).where(eq(projects.id, projectId)).then(r => r[0]),
-    db.select().from(storyPlans).where(eq(storyPlans.projectId, projectId)).then(r => r[0]),
+  const [projectRows, storyPlanRows, projectEpisodes, serviceData] = await Promise.all([
+    db.select().from(projects).where(eq(projects.id, projectId)),
+    db.select().from(storyPlans).where(eq(storyPlans.projectId, projectId)),
     db.select().from(episodes).where(eq(episodes.projectId, projectId)),
-    import('./storyteller-crud-service').then(async m => {
+    (async () => {
+      const m = await import('./storyteller-crud-service')
       const [charsReq, beatsReq] = await Promise.all([
-        m.storytellerService
-          .listCharacters({ projectId }, { userId })
-          .catch((): { characters: Parameters<typeof characterFromDbRow>[0][] } => ({ characters: [] })),
-        episodeId
-          ? m.storytellerService
-              .listBeats({ episodeId }, { userId })
-              .catch((): { beats: BeatRow[] } => ({ beats: [] }))
-          : Promise.resolve({ beats: [] satisfies BeatRow[] }),
+        (async () => {
+          try {
+            return await m.storytellerService.listCharacters({ projectId }, { userId })
+          } catch {
+            return { characters: [] satisfies Parameters<typeof characterFromDbRow>[0][] }
+          }
+        })(),
+        (async () => {
+          if (!episodeId) return { beats: [] satisfies BeatRow[] }
+          try {
+            return await m.storytellerService.listBeats({ episodeId }, { userId })
+          } catch {
+            return { beats: [] satisfies BeatRow[] }
+          }
+        })(),
       ])
       return { characters: charsReq.characters, beats: beatsReq.beats }
-    }),
+    })(),
   ])
+  return [projectRows[0], storyPlanRows[0], projectEpisodes, serviceData] as const
+}
+
+enum RecalledMemoryTable {
+  Messages = 'mastra_messages',
+}
+
+enum RecalledMemoryColumn {
+  ThreadId = 'thread_id',
+  Content = 'content',
+  CreatedAt = 'createdAt',
+}
+
+async function loadRecalledMemoryText(
+  projectId: string,
+  episodeId: string | undefined,
+  userId: string,
+): Promise<string | undefined> {
+  const bound = memoryRef({ projectId, episodeId, userId })
+  try {
+    const result = await db.execute(sql`
+      SELECT ${sql.raw(RecalledMemoryColumn.Content)}::text AS ${sql.raw(RecalledMemoryColumn.Content)}
+      FROM ${sql.raw(RecalledMemoryTable.Messages)}
+      WHERE ${sql.raw(RecalledMemoryColumn.ThreadId)} = ${bound.thread}
+      ORDER BY ${sql.raw(`"${RecalledMemoryColumn.CreatedAt}"`)} ASC
+      LIMIT ${INHERITED_AGENT_LAST_MESSAGES}
+    `)
+    const texts = sqlResultRows(result).flatMap(row => {
+      const value = readRowString(row, RecalledMemoryColumn.Content)
+      return value ? [value] : []
+    })
+    if (texts.length === 0) return undefined
+    return texts.join('\n')
+  } catch {
+    return undefined
+  }
 }
 
 function buildContextParts(params: {
@@ -91,6 +138,7 @@ function buildContextParts(params: {
   storyPlanData: Awaited<ReturnType<typeof loadContextSourceData>>[1]
   projectEpisodes: Awaited<ReturnType<typeof loadContextSourceData>>[2]
   serviceData: Awaited<ReturnType<typeof loadContextSourceData>>[3]
+  recalledMemory?: string
 }): { contextPrompt: string; existingBibleData: Record<string, unknown> } {
   const {
     projectId,
@@ -101,6 +149,7 @@ function buildContextParts(params: {
     storyPlanData,
     projectEpisodes,
     serviceData,
+    recalledMemory,
   } = params
   const episodeData = projectEpisodes.find(row => row.id === episodeId)
 
@@ -162,7 +211,7 @@ function buildContextParts(params: {
     beats: formatBeatsBlock(beats),
     userMessage: message,
   }
-  const budgeted = budgetContext(rawParts)
+  const budgeted = budgetContext(withRecalledMemory(rawParts, recalledMemory))
 
   if (budgeted.trimmed.length > 0) {
     console.log(ContextAssemblyLog.TokenBudgetTrimmed, budgeted.trimmed)
@@ -190,6 +239,8 @@ export async function assembleStorytellerContext(
       episodeId,
       userId
     )
+    const recalledMemory =
+      params.recalledMemory ?? (await loadRecalledMemoryText(projectId, episodeId, userId))
     console.log(`${ContextAssemblyLog.SourcesLoadedIn}${Date.now() - startedAt}ms`)
 
     return buildContextParts({
@@ -201,6 +252,7 @@ export async function assembleStorytellerContext(
       storyPlanData,
       projectEpisodes,
       serviceData,
+      recalledMemory,
     })
   } catch (err) {
     console.warn(ContextAssemblyLog.FailedToLoadContext, err)

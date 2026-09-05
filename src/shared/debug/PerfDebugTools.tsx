@@ -28,8 +28,9 @@ export function PerfDebugTools() {
     if (!isPerfDebugEnabled()) return
 
     let cancelled = false
-    void import(/* webpackIgnore: true */ 'react-scan')
-      .then(mod => {
+    void (async () => {
+      try {
+        const mod = await import(/* webpackIgnore: true */ 'react-scan')
         if (cancelled) return
         const scan = readScanFn(mod)
         if (!scan) return
@@ -37,10 +38,10 @@ export function PerfDebugTools() {
           enabled: true,
           showToolbar: true,
         })
-      })
-      .catch(() => {
+      } catch {
         // Optional tooling — never block the app if the package fails to load.
-      })
+      }
+    })()
 
     return () => {
       cancelled = true

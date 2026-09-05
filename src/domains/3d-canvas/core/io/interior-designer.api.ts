@@ -1,6 +1,7 @@
 import { withSubmissionNonce, type Submitted } from '@/shared/jobs/submission-nonce'
 import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { z } from 'zod'
+import { readJsonBody } from '@/shared/data/fetch-json-record'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
 import { buildUrl } from '@/shared/data/url-builder'
@@ -52,7 +53,7 @@ async function parseResponse<TSchema extends z.ZodTypeAny>(
   response: Response,
   schema: TSchema
 ): Promise<z.output<TSchema>> {
-  const json = await response.json().catch(() => null)
+  const json = await readJsonBody(response, null)
 
   if (!response.ok) {
     const parsedError = apiErrorSchema.safeParse(json)

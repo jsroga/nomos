@@ -3,7 +3,7 @@
  * hand-degraded copy fails naming the scorer.
  */
 import { describe, expect, it } from 'vitest'
-import { compareToBaseline, formatComparison, ScorerVerdict, type EvalBaseline } from '../compare'
+import { compareToBaseline, formatComparison, isBrevityCheat, qualityUpCostDoubled, GateFailReason, ScorerVerdict, type EvalBaseline } from '../compare'
 import { regressionThreshold } from '../constants/thresholds'
 import type { MultiVariantReport } from '../types'
 
@@ -91,11 +91,19 @@ describe('compareToBaseline', () => {
     expect(result.failureCount).toBe(2)
   })
 
-  it('improvement is not a regression', () => {
-    const result = compareToBaseline(reportWith({ ...IDENTICAL, magic: 0.9 }), BASELINE)
+  it('treats a move inside noise as no difference', () => {
+    const inside = regressionThreshold('magic') / 2
+    const result = compareToBaseline(reportWith({ ...IDENTICAL, magic: 0.3022 + inside }), BASELINE)
 
-    expect(result.regressions).toEqual([])
-    expect(result.rows.find(row => row.id === 'magic')?.verdict).toBe(ScorerVerdict.Improved)
+    expect(result.rows.find(row => row.id === 'magic')?.verdict).toBe(ScorerVerdict.Ok)
+  })
+
+  it('fails quality-up / cost-doubled with a named reason', () => {
+    const priced: EvalBaseline = { ...BASELINE, judgeCostUsd: 0.1 }
+    const result = compareToBaseline(reportWith({ ...IDENTICAL, magic: 0.9 }, 0, 0.2), priced)
+
+    expect(qualityUpCostDoubled(result)).toBe(true)
+    expect(GateFailReason.QualityUpCostDoubled).toBe('quality-up / cost-doubled')
   })
 })
 
@@ -136,5 +144,13 @@ describe('formatComparison', () => {
 
     expect(table).toContain('magic')
     expect(table).toContain('test.json')
+  })
+})
+
+describe('verbosity vs de-slop', () => {
+  it('flags brevity that cheats slop by dropping required information', () => {
+    expect(isBrevityCheat(0, 0.01)).toBe(true)
+    expect(isBrevityCheat(0, 0.4)).toBe(false)
+    expect(isBrevityCheat(12, 0.01)).toBe(false)
   })
 })

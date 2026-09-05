@@ -55,12 +55,14 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
       return
     }
     setStyleReferenceUrls(clampStyleReferenceUrls(currentProject.styleReferenceUrls ?? []))
-    settingsApi
-      .fetchProject(currentProject.id)
-      .then(data => {
+    void (async () => {
+      try {
+        const data = await settingsApi.fetchProject(currentProject.id)
         setStyleReferenceUrls(clampStyleReferenceUrls(data.styleReferenceUrls ?? []))
-      })
-      .catch(err => console.error(WorldGenSidebarLog.FailedToLoadProjectStyleRefs, err))
+      } catch (err) {
+        console.error(WorldGenSidebarLog.FailedToLoadProjectStyleRefs, err)
+      }
+    })()
   }, [currentProject?.id])
 
   useEffect(() => {

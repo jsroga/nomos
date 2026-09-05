@@ -49,6 +49,11 @@ describe('selectGoldenQualityExamples', () => {
     ).toBe(true)
   })
 
+  it('attaches voice_distinctiveness to the golden row that claims specific voices', () => {
+    const row = STORYTELLER_GOLDEN_EXAMPLES.find(example => example.id === 'magic-strong-01')
+    expect(row?.metadata.scorers).toContain('voice_distinctiveness')
+  })
+
   it('returns frozen referenceOutput for the experiment task', () => {
     expect(
       goldenQualityTaskOutput({ [GoldenQualityItemMeta.ReferenceOutput]: 'the envoy waited' }),

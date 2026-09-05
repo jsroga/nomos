@@ -233,16 +233,19 @@ export class RepaintService {
       for (let ty = startTileY; ty <= endTileY; ty++) {
         const tileKey = `${tx}${TILE_COORD_SEPARATOR}${ty}`
         const tile = tiles[tileKey]
-        if (tile?.image_filename) {
-          const promise = this.loadImage(tile.image_filename, tile.project_id)
-            .then(img => {
+        const filename = tile?.image_filename
+        const projectId = tile?.project_id
+        if (filename && projectId) {
+          const promise = (async () => {
+            try {
+              const img = await this.loadImage(filename, projectId)
               const drawX = tx * this.TILE_SIZE - bounds.x
               const drawY = ty * this.TILE_SIZE - bounds.y
               ctx.drawImage(img, drawX, drawY, this.TILE_SIZE, this.TILE_SIZE)
-            })
-            .catch(err => {
+            } catch (err) {
               console.warn(`Failed to load tile ${tileKey} for repaint context`, err)
-            })
+            }
+          })()
           imagePromises.push(promise)
         }
       }

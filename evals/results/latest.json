@@ -1,12 +1,15 @@
 {
-  "id": "eval_2026-09-04_08-18-02-790_m42n",
-  "timestamp": "2026-09-04T08:18:02.791Z",
-  "inputHash": "c3eb2df3921f624bcf4431453dda705b84cafec9b736d63eeb84751259078e63",
+  "id": "eval_2026-09-05_09-15-41-309_mcgo",
+  "timestamp": "2026-09-05T09:15:41.311Z",
+  "inputHash": "2479e4b406ccd007b2314e7b07e048680d17753f7f9741b4437afaa5639847b6",
+  "judgingModelId": "openai/gpt-5.6-sol",
+  "judgePromptHash": "93ab05efa3b149e3f5d38a01ce2449e6acc015180911753c7a3045bb4a6f3601",
   "judgeUsage": {
-    "inputTokens": 0,
-    "outputTokens": 0,
-    "costUsd": 0,
-    "unpricedModels": []
+    "inputTokens": 1229,
+    "outputTokens": 741,
+    "costUsd": 0.009868,
+    "unpricedModels": [],
+    "costComplete": true
   },
   "variants": [
     {
@@ -22,6 +25,8 @@
           "story-motion",
           "beat-plan-concreteness",
           "critic-discipline",
+          "voice_distinctiveness",
+          "grrm-plan-rubric",
           "idea-uniqueness",
           "idea-diversity-judge"
         ],
@@ -29,85 +34,86 @@
         "dataset": "storyteller"
       },
       "overallMetrics": {
-        "magicScore": 0,
-        "consistency": 1,
+        "magicScore": 0.56,
+        "consistency": 0,
         "hallucination": 0,
-        "personaFidelity": 0,
-        "latencyMs": 3
+        "personaFidelity": 0.47500000000000003,
+        "latencyMs": 4939.333333333333
       },
       "scenarioMetrics": {
-        "beat-plan": {
+        "persona": {
           "magicScore": 0,
           "consistency": 0,
           "hallucination": 0,
-          "personaFidelity": 0,
-          "latencyMs": 3
+          "personaFidelity": 0.47500000000000003,
+          "latencyMs": 5532.5
         },
-        "consistency": {
-          "magicScore": 0,
-          "consistency": 1,
+        "magic": {
+          "magicScore": 0.56,
+          "consistency": 0,
           "hallucination": 0,
           "personaFidelity": 0,
-          "latencyMs": 3
+          "latencyMs": 3753
         }
       },
       "scorerAverages": {
-        "beat-plan-concreteness": 0.5,
-        "consistency": 1
+        "persona-fidelity": 0.47500000000000003,
+        "magic": 0.56,
+        "voice_distinctiveness": 0
       },
       "exampleLogs": [
         {
-          "id": "beat-plan-prose-leak-01",
-          "scenario": "beat-plan",
-          "input": "Plan a beat for the harbor scene",
-          "output": "In this beat, Vera walks along the harbor at dusk thinking about her past. The scene should feel melancholy and set up the later confrontation. We open on the water and slowly reveal her face.",
-          "score": 0,
+          "id": "persona-grrm-02",
+          "scenario": "persona",
+          "input": "Write the aftermath of a battle, from the perspective of a survivor",
+          "output": "The crows had the field now. Petyr walked the line of the ditch counting boots — you could sell boots, his father used to say, boots and belt buckles, never the swords, the lords took the swords. The boy from the mill was face-down in the water with his hands still tied. Petyr took his boots too, and was sick after, quietly, where the sergeant couldn't see.",
+          "score": 0.91,
           "reasoning": {
-            "beat-plan-concreteness": "Score 0.00 — output is not JSON (planner leaked prose)."
+            "persona-fidelity": "Strong persona fidelity. The passage stays tightly aligned with Petyr’s practical, morally compromised perspective: he sees a battlefield as salvage, inventory, and inherited instruction rather than spectacle. “Counting boots” and the father’s maxim create convincing class-conscious interiority, while the detail of the bound mill boy turns an ordinary act of looting into evidence of atrocity without exposition. Petyr taking the boots and then vomiting embodies moral greyness and consequence; the prose never names guilt, pity, fear, or shame. Crows, ditch water, boots, buckles, and claimed swords provide tactile material texture and imply a feudal hierarchy. The final qualification—“quietly, where the sergeant couldn’t see”—is especially effective because it makes concealment and military discipline more important than overt catharsis. The main limitation is that the imitation is highly compressed and somewhat visibly engineered around hallmark signals. The target’s fuller craft often accumulates broader sensory specifics—cold, mud, rot, banners, armor, hunger—or lets social history and self-justification deepen across a longer interior passage. Food, weather, and heraldry are largely absent, and the sentence music could use more variation. Even so, it captures the persona’s moral and perspectival core rather than merely borrowing medieval scenery."
           },
           "context": {
-            "latencyMs": 5,
-            "category": "beat-plan",
-            "scenario": "beat-plan"
+            "latencyMs": 6951,
+            "category": "persona",
+            "scenario": "persona"
           }
         },
         {
-          "id": "beat-plan-concrete-01",
-          "scenario": "beat-plan",
-          "input": "Plan a beat where Vera confronts Marcus about the forged ledger",
-          "output": "{\"goal\":\"Vera must extract the confession from Marcus before the vesper bells stop ringing\",\"conflict\":\"Marcus stalls her with the forged ledger, knowing silence is his only shield\",\"turn\":\"The confession implicates Vera herself — her signature is on the transfer order\",\"dialogueHook\":\"You already know what I did. You signed for it.\",\"charactersInvolved\":[\"Vera\",\"Marcus\"]}",
-          "score": 1,
+          "id": "magic-strong-01",
+          "scenario": "magic",
+          "input": "Write a tense negotiation scene in a throne room",
+          "output": "The envoy set the treaty on the table but kept one finger on the seal.\n\"Your brother signed this,\" she said, \"before he learned what the river really costs.\"\nKael did not look at the parchment. He watched her left hand — the one that trembled only when she lied.",
+          "score": 0.28,
           "reasoning": {
-            "beat-plan-concreteness": "Score 1.00 — plan passes the concreteness gate."
+            "magic": "The scene is polished but assembled from familiar fantasy-thriller parts: treaty, enigmatic river cost, dead or absent brother, and a protagonist who detects lies through a tiny physical tell. Replace the generic 'what the river really costs' with one concrete, unsettling consequence unique to this world—something Kael can see on the envoy or the treaty—so the exchange generates imagery and history rather than borrowing intrigue from vagueness.",
+            "voice_distinctiveness": "{\"metrics\":{\"minPairwiseDivergence\":0,\"speakerCount\":0,\"fingerprintAdherence\":null},\"flags\":[]}"
           },
           "context": {
-            "latencyMs": 1,
-            "category": "beat-plan",
-            "scenario": "beat-plan"
+            "latencyMs": 3753,
+            "category": "magic",
+            "scenario": "magic"
           }
         },
         {
-          "id": "consist-pass-02",
-          "scenario": "consistency",
-          "input": "Summarize the siege timeline",
-          "output": "The siege ended last winter when the treaty opened the gates. No assault breached the walls.",
-          "score": 1,
+          "id": "persona-mismatch-01",
+          "scenario": "persona",
+          "input": "Write a scene of cosmic horror revelation",
+          "output": "The eldritch void screamed incomprehensible truths as tentacles of pure madness unraveled the fabric of reality itself. It is important to consider that the protagonist's profound journey through cosmic horror revealed the intricate nature of existence.",
+          "score": 0.04,
           "reasoning": {
-            "consistency": "No obvious inconsistencies found"
+            "persona-fidelity": "The passage misses nearly every defining signal of the target craft. Its omniscient, abstract camera offers no POV-locked interiority, embodied perception, or character-specific thought. Phrases such as “eldritch void,” “incomprehensible truths,” “pure madness,” and “fabric of reality” are generic cosmic-horror shorthand rather than concrete sensory detail involving weather, food, clothing, heraldry, or physical discomfort. The second sentence becomes overtly analytical—“It is important to consider”—and summarizes a “profound journey” instead of dramatizing consequences through action and observation. There is no moral ambiguity, political or personal conflict, material cost, or restrained implication. Although the prose avoids directly naming a conventional emotion, it substitutes inflated declarations for the target persona’s grounded, consequential storytelling."
           },
           "context": {
-            "latencyMs": 3,
-            "category": "consistency",
-            "scenario": "consistency"
+            "latencyMs": 4114,
+            "category": "persona",
+            "scenario": "persona"
           }
         }
       ]
     }
   ],
   "scenarios": [
-    "beat-plan",
-    "consistency"
+    "persona",
+    "magic"
   ],
-  "failures": [],
-  "judgingModelId": "openai/gpt-5.6-sol"
+  "failures": []
 }

@@ -132,6 +132,7 @@ Enforced by: `npx vitest run scripts/__tests__/untyped-json-inventory.test.ts`
 - Type assertions banned (`assertionStyle: 'never'`, `as const` only)
 - Cross-domain imports forbidden — lift to `@/shared`
 - Protocol strings → TypeScript `enum`
+- Promise control flow → `await` + `try/catch` (`local/prefer-await-try-catch` on `src/**`, tests exempt). Mastra `workflow.then(step)` and Zod `.catch(value)` stay allowed.
 - Shared deep merge: `@/shared/data/deep-merge`; URLs: `@/shared/data/url-builder`
 
 ## System context

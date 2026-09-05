@@ -5,11 +5,12 @@ import { SeasonOverviewCard } from '../../SeasonOverviewCard'
 import { EpisodeRoadmapCard } from '../../EpisodeRoadmapCard'
 import { useBible } from './BibleContext'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
-import { BIBLE_ROADMAP_GENERATE_PROMPT } from '../constants/bible-roadmap'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import {
   resolveRoadmapSeasonStructure,
   resolveRoadmapSequences,
 } from '../utils/bible-roadmap-display'
+import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
 
 interface BibleRoadmapProps {}
 
@@ -65,10 +66,10 @@ export const BibleRoadmap: FC<BibleRoadmapProps> = () => {
     localPlan,
     addSequence,
     isReadOnly,
-    onSendMessage,
     loadingSections,
     pendingActions,
     projectId,
+    setPendingAction,
   } = useBible()
 
   const displaySequences = resolveRoadmapSequences(isEditing, localPlan, storyPlan)
@@ -89,12 +90,14 @@ export const BibleRoadmap: FC<BibleRoadmapProps> = () => {
         isReadOnly={isReadOnly}
         onAdd={addSequence}
         addTitle="Add Episode"
-        onGenerate={
-          onSendMessage
-            ? () =>
-                onSendMessage(BIBLE_ROADMAP_GENERATE_PROMPT, BibleSection.EPISODE_ROADMAP)
-            : undefined
-        }
+        onGenerate={async () => {
+          await runBibleSectionArtifactDraft({
+            projectId,
+            section: BibleSection.EPISODE_ROADMAP,
+            promptId: StorytellerPromptRegistryId.BibleRoadmapGenerate,
+            setPendingAction,
+          })
+        }}
         generateTitle="Generate Roadmap"
       />
       {isEditing ? (

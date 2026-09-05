@@ -126,4 +126,20 @@ describe('syncBusyTurnActivityFromMessages', () => {
     )
     expect(onGenerationActivity).not.toHaveBeenCalled()
   })
+
+  it('no-ops when status is still streaming but an error is set', () => {
+    const onGenerationActivity = vi.fn()
+    const onGenerationActivityRef = { current: onGenerationActivity }
+    const lastFingerprint = { current: '' }
+
+    syncBusyTurnActivityFromMessages(
+      AssistantChatStreamStatus.Streaming,
+      [],
+      'storyteller',
+      lastFingerprint,
+      onGenerationActivityRef,
+      new Error('upstream failed'),
+    )
+    expect(onGenerationActivity).not.toHaveBeenCalled()
+  })
 })

@@ -14,6 +14,7 @@ export const BeatDraftCanonBeatSchema = z.object({
   content: z.string().nullable(),
   causalDependencies: z.array(z.string()),
   beatType: z.string().nullable(),
+  charactersInvolved: z.array(z.string()).optional(),
 })
 
 export const BeatDraftCanonSchema = z.object({

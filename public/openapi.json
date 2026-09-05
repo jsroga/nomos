@@ -1072,6 +1072,13 @@
           "scriptContent": {
             "type": "string"
           },
+          "manuscriptMode": {
+            "type": "string",
+            "enum": [
+              "script",
+              "novel"
+            ]
+          },
           "masterPrompt": {
             "type": "string"
           },

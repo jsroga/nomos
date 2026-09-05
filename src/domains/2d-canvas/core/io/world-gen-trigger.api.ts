@@ -2,7 +2,7 @@ import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/pro
 import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
-import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
+import { fetchJsonRecord, readJsonBody } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
 import { FidelityApiRoute } from '../../constants/fidelity-service'
@@ -30,7 +30,7 @@ async function fetchTriggerRunStatus(
   runId: string
 ): Promise<WorldGenTriggerStatusResult> {
   const response = await fetch(buildUrl(statusRoute, { [QueryParam.RunId]: runId }), TRIGGER_STATUS_FETCH_INIT)
-  const body = recordFromJson(await response.json().catch(() => ({})))
+  const body = recordFromJson(await readJsonBody(response, {}))
   return {
     statusCode: response.status,
     status: readString(body.status),

@@ -1,3 +1,6 @@
+import { lookupPromptBody } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-table'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
+
 /** Story plan array keys used by bible context mutations. */
 export enum BiblePlanArrayKey {
   WorldRules = 'worldRules',
@@ -40,5 +43,6 @@ export const BIBLE_INSPIRATION_CATEGORY_CONFIG = [
   },
 ] as const
 
-export const BIBLE_INSPIRATION_GENERATE_PROMPT =
-  'Generate BRAND NEW diverse inspirations for this world - include relevant books, movies, and games. For each, provide the exact title and 1-2 sentences describing what it is and why it\'s thematically relevant. IMPORTANT: Take a completely new creative direction and do NOT repeat previous suggestions.'
+export const BIBLE_INSPIRATION_GENERATE_PROMPT = lookupPromptBody(
+  StorytellerPromptRegistryId.BibleInspirationGenerate
+)

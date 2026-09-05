@@ -21,18 +21,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ID_QUERY_REQUIRED }, { status: 400 })
     }
 
-    const [projectData, storyPlanData] = await Promise.all([
+    const [projectRows, storyPlanRows] = await Promise.all([
       db
         .select()
         .from(projects)
-        .where(eq(projects.id, projectId))
-        .then(r => r[0]),
+        .where(eq(projects.id, projectId)),
       db
         .select()
         .from(storyPlans)
-        .where(eq(storyPlans.projectId, projectId))
-        .then(r => r[0]),
+        .where(eq(storyPlans.projectId, projectId)),
     ])
+    const projectData = projectRows[0]
+    const storyPlanData = storyPlanRows[0]
 
     if (!projectData) {
       return NextResponse.json({ error: API_ERROR.PROJECT_NOT_FOUND }, { status: 404 })

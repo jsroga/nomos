@@ -10,6 +10,8 @@ import {
   MeshyModelFormat,
 } from '@/shared/ai/constants/meshy'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { readJsonBody } from '@/shared/data/fetch-json-record'
+import { recordFromJson, readString } from '@/shared/data/json-guards'
 import {
   CentralityFallback,
   HttpMethod,
@@ -52,8 +54,10 @@ export class MeshyClient {
     })
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }))
-      throw new Error(`Meshy Generation Failed: ${error.message || response.statusText}`)
+      const error = recordFromJson(await readJsonBody(response, { message: response.statusText }))
+      throw new Error(
+        `Meshy Generation Failed: ${readString(error.message) ?? response.statusText}`
+      )
     }
 
     const { result: taskId } = await response.json()

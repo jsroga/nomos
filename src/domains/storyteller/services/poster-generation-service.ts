@@ -127,7 +127,13 @@ export class PosterGenerationService {
     })
 
     try {
-      const episodePromise = fetchStorytellerEpisode(episodeId).catch(() => null)
+      const episodePromise = (async () => {
+        try {
+          return await fetchStorytellerEpisode(episodeId)
+        } catch {
+          return null
+        }
+      })()
       const { handleId, error } = await triggerEpisodePoster(episodeId, { prompt, config })
 
       if (!handleId) {
@@ -179,9 +185,13 @@ export class PosterGenerationService {
           useGlobalStatusStore.getState().updateOperation(opId, {
             details: `${PosterOperationDetail.StatusPrefix}${data.status ?? POSTER_UNKNOWN_STATUS}`,
           })
-          void this.readNewerPosterUrl(runState).then(url => {
-            if (url) newerFromDb = url
-          })
+          void (async () => {
+            try {
+              const url = await this.readNewerPosterUrl(runState)
+              if (url) newerFromDb = url
+            } catch {
+            }
+          })()
         },
         shouldAbort: () => newerFromDb !== null,
       })

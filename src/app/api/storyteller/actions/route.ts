@@ -101,7 +101,11 @@ export async function POST(req: NextRequest) {
     return await dispatchStorytellerAction(ctx, action)
   } catch (error) {
     console.error(API_LOG_PREFIX.ACTIONS_API_ERROR, error)
-    await flushObservability().catch(() => {})
+    try {
+      await flushObservability()
+    } catch {
+      // Flush must not mask the original action error.
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : API_ERROR.ACTION_EXECUTION_FAILED },
       { status: HttpStatus.INTERNAL }

@@ -4,6 +4,7 @@ import {
   SkillCatalogId,
   SkillCatalogLevel,
   SkillCatalogStage,
+  SkillManuscriptFormat,
 } from '@/shared/agent-kernel/mastra/skill-catalog-ids'
 import {
   SkillCatalogFs,
@@ -17,6 +18,7 @@ export interface SkillResolveInput {
   readonly stage: SkillCatalogStage
   readonly problemTypes?: readonly string[]
   readonly catalog?: readonly SkillCatalogRow[]
+  readonly manuscriptFormat?: SkillManuscriptFormat
 }
 
 export interface ResolvedSkill {
@@ -25,7 +27,18 @@ export interface ResolvedSkill {
   readonly body?: string
 }
 
+function isManuscriptFormatId(id: SkillCatalogId): boolean {
+  return id === SkillCatalogId.ManuscriptScript || id === SkillCatalogId.ManuscriptNovel
+}
+
 function rowMatches(row: SkillCatalogRow, input: SkillResolveInput): boolean {
+  if (isManuscriptFormatId(row.id)) {
+    if (input.stage !== SkillCatalogStage.Draft) return false
+    if (row.id === SkillCatalogId.ManuscriptScript) {
+      return input.manuscriptFormat === SkillManuscriptFormat.Script
+    }
+    return input.manuscriptFormat === SkillManuscriptFormat.Novel
+  }
   if (!row.match.stages.includes(input.stage)) return false
   const problems = input.problemTypes ?? []
   if (row.match.problemTypes.length === 0) {
@@ -36,17 +49,27 @@ function rowMatches(row: SkillCatalogRow, input: SkillResolveInput): boolean {
 
 /** Optional L2 body path under mastra agents — missing file yields L2-without-body. */
 function tryLoadBody(id: SkillCatalogId): string | undefined {
-  const path = join(
+  const catalogPath = join(
     fileAgentsRootDir(),
     SkillCatalogFs.RootDir,
     id,
     SkillCatalogFs.SkillFile
   )
-  try {
-    return readFileSync(path, FileEncoding.Utf8)
-  } catch {
-    return undefined
+  const authorSkillPath = join(
+    fileAgentsRootDir(),
+    SkillCatalogFs.GrrmAuthorDir,
+    SkillCatalogFs.SkillsDir,
+    id,
+    SkillCatalogFs.SkillFile
+  )
+  for (const path of [catalogPath, authorSkillPath]) {
+    try {
+      return readFileSync(path, FileEncoding.Utf8)
+    } catch {
+      continue
+    }
   }
+  return undefined
 }
 
 /**

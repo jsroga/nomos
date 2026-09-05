@@ -107,14 +107,18 @@ export const useCorkBoardState = ({
       queueMicrotask(() => setAwaitingBoardRefresh(false))
       onRefreshBeats?.()
     }
-    fetchEpisodeBeatsList(episodeId).then(data => {
-      setBeats(prev =>
-        applyBeatImagePatches(
-          preferRicherBeats(prev, beatsFromListPayload(data)),
-          getBeatImageBatchStore().patches,
-        ),
-      )
-    })
+    void (async () => {
+      try {
+        const data = await fetchEpisodeBeatsList(episodeId)
+        setBeats(prev =>
+          applyBeatImagePatches(
+            preferRicherBeats(prev, beatsFromListPayload(data)),
+            getBeatImageBatchStore().patches,
+          ),
+        )
+      } catch {
+      }
+    })()
   }, [isChatBusy, awaitingBoardRefresh, episodeId, onRefreshBeats])
 
   const expandedBeatIndex = beats.findIndex(b => b.id === expandedBeatId)

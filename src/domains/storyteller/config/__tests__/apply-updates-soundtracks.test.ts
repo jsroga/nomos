@@ -25,9 +25,9 @@ describe('applyUpdatesToStoryPlan — soundtracks replace', () => {
     expect(next.soundtracks).toEqual([])
   })
 
-  it('still appends additive collections like worldRules', () => {
+  it('replaces additive collections like worldRules', () => {
     const plan = { worldRules: [{ rule: 'Megacorps are above the law' }] }
     const next = applyUpdatesToStoryPlan(plan, { worldRules: [{ rule: 'The dead keep voting' }] })
-    expect(next.worldRules).toHaveLength(2)
+    expect(next.worldRules).toEqual([{ rule: 'The dead keep voting' }])
   })
 })

@@ -5,6 +5,13 @@ import { waitForTriggerRun } from '@/shared/data/polling/wait-for-trigger-run'
 
 vi.mock('@/shared/data/fetch-json-record', () => ({
   fetchJsonRecord: vi.fn(),
+  readJsonBody: async (source: { json: () => Promise<unknown> }, fallback: unknown = null) => {
+    try {
+      return await source.json()
+    } catch {
+      return fallback
+    }
+  },
 }))
 
 vi.mock('@/shared/data/polling/wait-for-trigger-run', () => ({

@@ -105,8 +105,9 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
     let cancelled = false
     const [episode, beatId] = snapshotKey.split(':')
 
-    fetchStorytellerTimeline(episode, beatId)
-      .then(data => {
+    void (async () => {
+      try {
+        const data = await fetchStorytellerTimeline(episode, beatId)
         if (cancelled) return
         const snapshots = recordArrayFromJson(data.snapshots)
         if (snapshots.length > 0) {
@@ -115,8 +116,10 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = React.memo(({
             [snapshotKey]: buildSnapshotMap(snapshots),
           }))
         }
-      })
-      .catch(err => console.error(CHARACTER_PANEL_LOG_FETCH_FAILED, err))
+      } catch (err) {
+        console.error(CHARACTER_PANEL_LOG_FETCH_FAILED, err)
+      }
+    })()
 
     return () => {
       cancelled = true

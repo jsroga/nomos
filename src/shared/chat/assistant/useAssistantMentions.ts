@@ -49,17 +49,18 @@ export function useAssistantMentions(
   useEffect(() => {
     let cancelled = false
     const controller = new AbortController()
-    void Promise.all(
-      providers.map(provider =>
-        Promise.resolve(provider.getItems('', projectContext, controller.signal)),
-      ),
-    )
-      .then(results => {
+    void (async () => {
+      try {
+        const results = await Promise.all(
+          providers.map(provider =>
+            Promise.resolve(provider.getItems('', projectContext, controller.signal)),
+          ),
+        )
         if (!cancelled) setItems(results.flat())
-      })
-      .catch(() => {
+      } catch {
         /* mentions are best-effort — a failed provider must not break the composer */
-      })
+      }
+    })()
     return () => {
       cancelled = true
       controller.abort()

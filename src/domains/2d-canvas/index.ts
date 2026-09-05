@@ -27,6 +27,7 @@ export {
 export { worldApi } from './core/io/world.api'
 export { worldKeys } from './core/io/world.keys'
 export type { WorldProject, WorldTile, WorldAsset } from './core/io/world.dto'
+export { WORLD_QUERY_PARAM } from './constants/world-query-params'
 
 export { Sidebar } from './ui/components/Sidebar/Sidebar'
 export { WorldCanvas } from './ui/components/Canvas/WorldCanvas'

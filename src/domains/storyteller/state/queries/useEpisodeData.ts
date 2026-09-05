@@ -14,12 +14,21 @@ import {
   episodeDisplayOrdinal,
   sortEpisodesForDisplay,
 } from '@/domains/storyteller/state/utils/episode-list'
+import { ManuscriptMode } from '@/domains/storyteller/core/types/enums'
+import { recordFromJson, readString } from '@/shared/data/json-guards'
 
 interface EpisodeBasic {
   id: string
   episode_prompt?: string
   title?: string | null
   masterPrompt?: string | null
+  manuscriptMode: ManuscriptMode
+}
+
+function manuscriptModeFromEpisode(data: unknown): ManuscriptMode {
+  const mode = readString(recordFromJson(data).manuscriptMode)
+  if (mode === ManuscriptMode.Novel) return ManuscriptMode.Novel
+  return ManuscriptMode.Script
 }
 
 function readStorytellerOverrideState(): string | null {
@@ -59,6 +68,7 @@ export function useEpisodeData(projectId: string | undefined) {
       episode_prompt: episodeQuery.data.episode_prompt ?? undefined,
       title: episodeQuery.data.title,
       masterPrompt: episodeQuery.data.masterPrompt,
+      manuscriptMode: manuscriptModeFromEpisode(episodeQuery.data),
     }
   }, [currentEpisodeId, episodeQuery.data])
 

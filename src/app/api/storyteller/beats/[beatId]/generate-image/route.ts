@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyBeatAccess } from '@/domains/storyteller/server'
+import { verifyBeatAccess, type generateStoryboard } from '@/domains/storyteller/server'
 import { HttpStatus } from '@/shared/data/constants/protocol'
 import { db } from '@/db/client'
 import { beats, episodes, projects } from '@/db'
 import { eq } from 'drizzle-orm'
-import type { generateStoryboard } from '@/domains/storyteller/tasks/generate-storyboard.task'
 import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
@@ -45,7 +44,7 @@ export async function POST(req: Request, props: { params: Promise<{ beatId: stri
     if (requestId instanceof NextResponse) return requestId
 
     // 1. Get Project ID
-    const beatData = await db
+    const beatRows = await db
       .select({
         projectId: projects.id,
       })
@@ -54,7 +53,7 @@ export async function POST(req: Request, props: { params: Promise<{ beatId: stri
       .innerJoin(projects, eq(episodes.projectId, projects.id))
       .where(eq(beats.id, beatId))
       .execute()
-      .then(rows => rows[0])
+    const beatData = beatRows[0]
 
     if (!beatData) {
       return NextResponse.json({ error: API_ERROR.BEAT_PROJECT_NOT_FOUND }, { status: 404 })

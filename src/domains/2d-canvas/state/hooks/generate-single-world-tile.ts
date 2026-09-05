@@ -161,8 +161,9 @@ export async function generateSingleWorldTile(params: {
 
       const getImageUrl = (neighborTile: (Tile & { imageUrl?: string }) | undefined) =>
         neighborTile?.imageUrl
-      blobToDataUrl(canonicalContext.imageBlob)
-        .then(assembledContext =>
+      void (async () => {
+        try {
+          const assembledContext = await blobToDataUrl(canonicalContext.imageBlob)
           setGenerationDebugInfo({
             neighbors: {
               up: getImageUrl(neighbors.up),
@@ -181,8 +182,8 @@ export async function generateSingleWorldTile(params: {
             weightedNeighbors: canonicalContext.strategy.weightedNeighbors,
             provider: WorldGenTileProvider.NanoBanana,
           })
-        )
-        .catch(() => {})
+        } catch { }
+      })()
     }
 
     await tileGenerationService.generate(

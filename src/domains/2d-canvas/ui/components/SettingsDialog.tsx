@@ -69,18 +69,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     if (!isOpen) return
 
     setLoadingProviders(true)
-    settingsApi
-      .fetchProviders()
-      .then(setProviders)
-      .catch(err => console.error(SETTINGS_LOAD_PROVIDERS_FAILED_LOG, err))
-      .finally(() => setLoadingProviders(false))
+    void (async () => {
+      try {
+        setProviders(await settingsApi.fetchProviders())
+      } catch (err) {
+        console.error(SETTINGS_LOAD_PROVIDERS_FAILED_LOG, err)
+      } finally {
+        setLoadingProviders(false)
+      }
+    })()
 
     setIsLoadingMcpKeys(true)
-    settingsApi
-      .fetchMcpKeys()
-      .then(setMcpKeys)
-      .catch(err => console.error(SETTINGS_LOAD_MCP_KEYS_FAILED_LOG, err))
-      .finally(() => setIsLoadingMcpKeys(false))
+    void (async () => {
+      try {
+        setMcpKeys(await settingsApi.fetchMcpKeys())
+      } catch (err) {
+        console.error(SETTINGS_LOAD_MCP_KEYS_FAILED_LOG, err)
+      } finally {
+        setIsLoadingMcpKeys(false)
+      }
+    })()
   }, [isOpen])
 
   const handleCreateMcpKey = async () => {

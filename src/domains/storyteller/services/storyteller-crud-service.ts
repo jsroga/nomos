@@ -335,6 +335,31 @@ export class StorytellerService {
     return { beats: result }
   }
 
+  async updateEpisodeScript(
+    episodeId: string,
+    scriptContent: string,
+    context: ServiceContext
+  ): Promise<void> {
+    const [episode] = await db.select().from(episodes).where(eq(episodes.id, episodeId))
+    if (!episode) {
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.episode,
+        StorytellerCrudErrorCode.NotFound
+      )
+    }
+    const hasAccess = await this.hasProjectAccess(episode.projectId, context.userId)
+    if (!hasAccess) {
+      throw new ServiceError(
+        STORYTELLER_CRUD_ACCESS_ERRORS.episodeAccess,
+        StorytellerCrudErrorCode.NotFound
+      )
+    }
+    await db
+      .update(episodes)
+      .set({ scriptContent, updatedAt: new Date() })
+      .where(eq(episodes.id, episodeId))
+  }
+
   /** Takes a scope: ownership was proved to mint it, so there is no second check. */
   async getSeriesBible(scope: ProjectScope): Promise<{ seriesBible: unknown }> {
     const [project] = await db.select().from(projects).where(eq(projects.id, scope.projectId))

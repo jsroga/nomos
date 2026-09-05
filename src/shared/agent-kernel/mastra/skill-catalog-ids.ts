@@ -13,6 +13,14 @@ export enum SkillCatalogId {
   CharacterIntroductions = 'character-introductions',
   SceneAndStructure = 'scene-and-structure',
   RealismConstraints = 'realism-constraints',
+  ManuscriptScript = 'manuscript-script',
+  ManuscriptNovel = 'manuscript-novel',
+}
+
+/** Draft format skill — resolver loads exactly one of these bodies. */
+export enum SkillManuscriptFormat {
+  Script = 'script',
+  Novel = 'novel',
 }
 
 /** Hard-rule citation ids (Action 15) — appear in matchers / gate enums. */

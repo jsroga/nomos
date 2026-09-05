@@ -1,7 +1,10 @@
 'use client'
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { Wand2, RotateCcw, Sparkles, ChevronDown } from 'lucide-react'
+import { ManuscriptSectionScope } from '@/domains/storyteller/core/manuscript/pack-manuscript-section-brief'
+import { compileStorytellerManuscript, startStorytellerManuscriptSection } from '@/domains/storyteller/core/io/manuscript-section.api'
+import { ManuscriptMode } from '@/domains/storyteller/core/types/enums'
+import { cn } from '@/shared/data/utils'
 import {
   SCRIPT_EDITOR_CONDENSE_PROMPT,
   SCRIPT_EDITOR_EXPAND_PROMPT,
@@ -9,13 +12,58 @@ import {
   SCRIPT_EDITOR_REWRITE_PROMPT,
   ScriptEditorCommand,
   ScriptRegenerateAction,
+  type ScriptEditorSelectionContext,
 } from './constants/script-editor'
+import { StorytellerWorkflowRunStatus } from '@/domains/storyteller/core/storyteller-page-wire'
+import { manuscriptSpanAt } from '@/domains/storyteller/core/manuscript/manuscript-span'
+import type { ManuscriptSpan } from '@/domains/storyteller/core/manuscript/manuscript-span'
+import { applyManuscriptSectionVerdict } from '@/domains/storyteller/core/io/apply-manuscript-section-verdict'
+import { ScriptEditorGhostOverlay } from './ScriptEditorGhostOverlay'
+import { ScriptEditorVerdictOverlay } from './ScriptEditorVerdictOverlay'
+import type { SuspendedBeatDraftResult } from './ScriptEditorVerdictOverlay'
+import { ScriptEditorManuscriptToolbar, ScriptEditorToolbarCopy } from './ScriptEditorManuscriptToolbar'
+import { ScriptEditorSelectionMenu } from './ScriptEditorSelectionMenu'
+import { manuscriptGenerateDisabled } from './manuscript-generate-disabled'
+import { manuscriptPrefixBeforeCaret } from './script-ghost-caret'
+import { useScriptGhostComplete } from './useScriptGhostComplete'
+
+type SectionVerdictPending = SuspendedBeatDraftResult & {
+  span: ManuscriptSpan | null
+  scriptSnapshot: string
+}
+
+enum ScriptEditorPlaceholder {
+  Script = 'Start writing your screenplay...',
+  Novel = 'Start writing the chapter...',
+}
 
 export interface ScriptEditorProps {
   content: string
   onChange: (content: string) => void
-  onRegenerateSelection?: (selection: string, instruction: string) => Promise<string>
+  onRegenerateSelection?: (
+    selection: string,
+    instruction: string,
+    context?: ScriptEditorSelectionContext
+  ) => Promise<string>
   isLoading?: boolean
+  mode?: ManuscriptMode
+  onModeChange?: (mode: ManuscriptMode) => void
+  beatCount?: number
+  projectId?: string
+  episodeId?: string
+}
+
+function scriptSelectionSurrounding(
+  editor: HTMLDivElement,
+  range: Range
+): ScriptEditorSelectionContext {
+  const beforeRange = document.createRange()
+  beforeRange.selectNodeContents(editor)
+  beforeRange.setEnd(range.startContainer, range.startOffset)
+  const afterRange = document.createRange()
+  afterRange.selectNodeContents(editor)
+  afterRange.setStart(range.endContainer, range.endOffset)
+  return { beforeText: beforeRange.toString(), afterText: afterRange.toString() }
 }
 
 const ScriptEditor: React.FC<ScriptEditorProps> = ({
@@ -23,9 +71,17 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
   onChange,
   onRegenerateSelection,
   isLoading = false,
+  mode: modeProp,
+  onModeChange,
+  beatCount = 0,
+  projectId = '',
+  episodeId = '',
 }) => {
   const editorRef = useRef<HTMLDivElement>(null)
   const isInitializedRef = useRef(false)
+  const [modeState, setModeState] = useState(modeProp ?? ManuscriptMode.Script)
+  const manuscriptMode = modeProp ?? modeState
+  const isNovel = manuscriptMode === ManuscriptMode.Novel
   const [selection, setSelection] = useState<{ text: string; range: Range | null }>({
     text: '',
     range: null,
@@ -34,6 +90,30 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 })
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [instruction, setInstruction] = useState('')
+  const [sectionVerdict, setSectionVerdict] = useState<SectionVerdictPending | null>(null)
+
+  const insertGhost = useCallback(
+    (ghostText: string) => {
+      const editor = editorRef.current
+      if (!editor || ghostText.length === 0) return
+      editor.focus()
+      document.execCommand(ScriptEditorCommand.InsertText, false, ghostText)
+      onChange(editor.innerText)
+    },
+    [onChange]
+  )
+
+  const { ghost, onKeyDown, rejectGhost, schedule } = useScriptGhostComplete({
+    enabled: projectId.length > 0 && episodeId.length > 0,
+    projectId,
+    episodeId,
+    mode: manuscriptMode,
+    getPrefix: () => {
+      const editor = editorRef.current
+      return editor ? manuscriptPrefixBeforeCaret(editor) : ''
+    },
+    onAccept: insertGhost,
+  })
 
   // Only set initial content once, or when content changes externally (e.g., from AI)
   useEffect(() => {
@@ -98,7 +178,11 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
 
     setIsRegenerating(true)
     try {
-      const newText = await onRegenerateSelection(selection.text, prompt)
+      const surrounding =
+        editorRef.current && selection.range
+          ? scriptSelectionSurrounding(editorRef.current, selection.range)
+          : undefined
+      const newText = await onRegenerateSelection(selection.text, prompt, surrounding)
 
       // Replace the selected text
       if (editorRef.current && selection.range) {
@@ -118,112 +202,152 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
     }
   }
 
+  const handleModeChange = (next: ManuscriptMode) => {
+    setModeState(next)
+    onModeChange?.(next)
+  }
+
+  const generateDisabled = manuscriptGenerateDisabled(beatCount)
+
+  const runSectionDraft = useCallback(
+    (scope: ManuscriptSectionScope) => {
+      if (generateDisabled || !projectId || !episodeId) return
+      const editor = editorRef.current
+      const scriptContent = editor?.innerText ?? content
+      const caret = editor ? manuscriptPrefixBeforeCaret(editor).length : scriptContent.length
+      void (async () => {
+        try {
+          const result = await startStorytellerManuscriptSection({
+            projectId,
+            episodeId,
+            mode: manuscriptMode,
+            scope,
+            scriptContent,
+            caret,
+          })
+          if (result.status === StorytellerWorkflowRunStatus.Suspended && result.runId) {
+            setSectionVerdict({
+              runId: result.runId,
+              draft: result.draft,
+              critiques: result.critiques,
+              span:
+                scope === ManuscriptSectionScope.Regenerate
+                  ? manuscriptSpanAt(scriptContent, caret, manuscriptMode)
+                  : null,
+              scriptSnapshot: scriptContent,
+            })
+          }
+        } catch (error) {
+          console.error(SCRIPT_EDITOR_REGENERATION_FAILED_LOG, error)
+        }
+      })()
+    },
+    [content, episodeId, generateDisabled, manuscriptMode, projectId]
+  )
+
   return (
     <div className="relative h-full flex flex-col bg-[#1a1a1a]">
-      {/* Editor Header */}
-      <div className="h-12 border-b border-border/30 flex items-center justify-between px-4 bg-card/50">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">Script</span>
-          {isLoading && <span className="text-xs text-primary animate-pulse">Writing...</span>}
-        </div>
+      <div className="min-h-12 border-b border-border/30 flex items-center justify-between gap-3 px-4 py-1 bg-card/50">
+        <ScriptEditorManuscriptToolbar
+          mode={manuscriptMode}
+          onModeChange={handleModeChange}
+          generateDisabled={generateDisabled}
+          generateDisabledReason={
+            generateDisabled ? ScriptEditorToolbarCopy.BeatsGate : undefined
+          }
+          onGenerateNext={() => runSectionDraft(ManuscriptSectionScope.GenerateNext)}
+          onRegenerateSection={() => runSectionDraft(ManuscriptSectionScope.Regenerate)}
+          onCompile={() => {
+            if (generateDisabled || !projectId || !episodeId) return
+            void (async () => {
+              try {
+                const result = await compileStorytellerManuscript({
+                  projectId,
+                  episodeId,
+                  mode: manuscriptMode,
+                })
+                if (!result.persist || result.scriptContent.length === 0) return
+                onChange(result.scriptContent)
+                if (editorRef.current) editorRef.current.innerText = result.scriptContent
+              } catch (error) {
+                console.error(SCRIPT_EDITOR_REGENERATION_FAILED_LOG, error)
+              }
+            })()
+          }}
+        />
+        {isLoading && <span className="text-xs text-primary animate-pulse">Writing...</span>}
       </div>
 
-      {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto relative">
         <div
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="script-editor max-w-3xl mx-auto px-16 py-12 min-h-full outline-none"
-          onInput={e => onChange(e.currentTarget.innerText)}
+          className={cn(
+            'script-editor mx-auto px-16 py-12 min-h-full outline-none',
+            isNovel ? 'max-w-[65ch]' : 'max-w-[72ch]'
+          )}
+          onInput={e => {
+            onChange(e.currentTarget.innerText)
+            rejectGhost()
+            schedule()
+          }}
           onBlur={e => onChange(e.currentTarget.innerText)}
           onMouseUp={handleSelection}
           onKeyUp={handleSelection}
-          style={{
-            fontFamily: '"Courier Prime", "Courier New", Courier, monospace',
-            fontSize: '14px',
-            lineHeight: '1.6',
-            color: '#e0e0e0',
-            whiteSpace: 'pre-wrap',
+          onKeyDown={onKeyDown}
+          style={
+            isNovel
+              ? {
+                  fontFamily: 'Georgia, "Times New Roman", Times, serif',
+                  fontSize: '18px',
+                  lineHeight: '1.85',
+                  color: '#e0e0e0',
+                  whiteSpace: 'pre-wrap',
+                }
+              : {
+                  fontFamily: '"Courier Prime", "Courier New", Courier, monospace',
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  color: '#e0e0e0',
+                  whiteSpace: 'pre-wrap',
+                }
+          }
+          data-placeholder={
+            isNovel ? ScriptEditorPlaceholder.Novel : ScriptEditorPlaceholder.Script
+          }
+        />
+        <ScriptEditorGhostOverlay ghost={ghost} />
+        <ScriptEditorVerdictOverlay
+          pending={sectionVerdict}
+          onSettled={resume => {
+            const pending = sectionVerdict
+            setSectionVerdict(null)
+            if (!pending) return
+            void applyManuscriptSectionVerdict({
+              resume,
+              scriptContent: pending.scriptSnapshot,
+              span: pending.span,
+              episodeId,
+              onChange,
+              editor: editorRef.current,
+            })
           }}
-          data-placeholder="Start writing your screenplay..."
         />
       </div>
 
-      {/* Selection Context Menu */}
-      {showContextMenu && selection.text && (
-        <div
-          className="fixed z-50 bg-card border border-border rounded-lg shadow-xl p-2 space-y-1"
-          style={{
-            left: Math.max(10, menuPosition.x - 100),
-            top: Math.max(10, menuPosition.y - 150),
-          }}
-        >
-          <div className="text-xs text-muted-foreground px-2 py-1 border-b border-border mb-1">
-            Selected: {selection.text.slice(0, 30)}...
-          </div>
+      <ScriptEditorSelectionMenu
+        visible={showContextMenu}
+        selectionText={selection.text}
+        menuPosition={menuPosition}
+        instruction={instruction}
+        isRegenerating={isRegenerating}
+        onInstructionChange={setInstruction}
+        onRegenerate={handleRegenerate}
+        onDismiss={() => setShowContextMenu(false)}
+      />
 
-          <button
-            onClick={() => handleRegenerate(ScriptRegenerateAction.Expand)}
-            disabled={isRegenerating}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-accent rounded transition-colors disabled:opacity-50"
-          >
-            <Sparkles size={14} className="text-blue-400" />
-            Expand
-          </button>
-
-          <button
-            onClick={() => handleRegenerate(ScriptRegenerateAction.Condense)}
-            disabled={isRegenerating}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-accent rounded transition-colors disabled:opacity-50"
-          >
-            <ChevronDown size={14} className="text-orange-400" />
-            Condense
-          </button>
-
-          <button
-            onClick={() => handleRegenerate(ScriptRegenerateAction.Rewrite)}
-            disabled={isRegenerating}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-accent rounded transition-colors disabled:opacity-50"
-          >
-            <RotateCcw size={14} className="text-green-400" />
-            Rewrite
-          </button>
-
-          <div className="border-t border-border pt-1 mt-1">
-            <div className="flex items-center gap-1">
-              <input
-                type="text"
-                placeholder="Custom instruction..."
-                value={instruction}
-                onChange={e => setInstruction(e.target.value)}
-                className="flex-1 bg-background border border-input rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                onKeyDown={e => e.key === 'Enter' && handleRegenerate(ScriptRegenerateAction.Custom)}
-              />
-              <button
-                onClick={() => handleRegenerate(ScriptRegenerateAction.Custom)}
-                disabled={isRegenerating || !instruction}
-                className="p-1 hover:bg-accent rounded disabled:opacity-50"
-              >
-                <Wand2 size={14} className="text-primary" />
-              </button>
-            </div>
-          </div>
-
-          {isRegenerating && (
-            <div className="text-xs text-primary text-center py-1 animate-pulse">
-              Regenerating...
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Click outside to close menu */}
-      {showContextMenu && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowContextMenu(false)} />
-      )}
-
-      <style jsx global>{`
+      <style>{`
         .script-editor .scene-heading {
           font-weight: bold;
           text-transform: uppercase;

@@ -40,12 +40,14 @@ let storageWarmPromise: Promise<void> | null = null
  */
 export function warmMastraStorage(): Promise<void> {
   if (!storageWarmPromise) {
-    storageWarmPromise = Promise.resolve(getStorageInstance().init()).catch(
-      (err: unknown) => {
+    storageWarmPromise = (async () => {
+      try {
+        await getStorageInstance().init()
+      } catch (err: unknown) {
         storageWarmPromise = null
         console.warn(MASTRA_STORAGE_WARM_FAILED_LOG, err)
       }
-    )
+    })()
   }
   return storageWarmPromise
 }

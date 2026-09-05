@@ -21,6 +21,7 @@ import { join, relative, sep } from 'node:path'
  */
 export const EVAL_WATCHED_PATHS = [
   'src/domains/storyteller/ai',
+  'src/domains/storyteller/ai/prompts/registry',
   'src/domains/game-design/ai',
   'src/domains/loop-creator/ai',
   'src/shared/agent-kernel',
@@ -62,7 +63,8 @@ export function watchedFiles(root = process.cwd()) {
     }
   }
 
-  return found.sort()
+  // Nested prefixes (prompt registry under storyteller/ai) must not hash twice.
+  return [...new Set(found)].sort()
 }
 
 /** True when a repo-relative path is in the eval watch set (prefix + extension). */

@@ -7,6 +7,7 @@ export enum ScorerId {
   SchemaValidity = 'schema_validity',
   SlopRate = 'slop_rate',
   SelfRepetition = 'self_repetition',
+  VoiceDistinctiveness = 'voice_distinctiveness',
 }
 
 export enum EntityKind {

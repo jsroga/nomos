@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { ContentType, FetchCache, HttpMethod, QueryParam, UrlScheme } from '@/shared/data/constants/protocol'
-import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
+import { fetchJsonRecord, readJsonBody } from '@/shared/data/fetch-json-record'
 import { buildUrl } from '@/shared/data/url-builder'
 
 export const WORKSPACE_ASSETS_API_PATH = '/api/world/assets'
@@ -43,7 +43,7 @@ export async function listProjectAssets(projectId: string): Promise<WorkspaceAss
   const response = await fetch(buildUrl(WORKSPACE_ASSETS_API_PATH, { [QueryParam.ProjectId]: projectId }), {
     cache: FetchCache.NoStore,
   })
-  const json: unknown = await response.json().catch(() => null)
+  const json: unknown = await readJsonBody(response, null)
   if (!response.ok) {
     throw new Error(FETCH_PROJECT_ASSETS_ERROR)
   }

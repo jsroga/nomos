@@ -233,10 +233,15 @@ function AddToWorldButton() {
             messageRuntime.unstable_getCopyText().trim() || fallbackText
           if (!text && toolArgs.length === 0) return
           setBusy(true)
-          void Promise.resolve(onAddToWorld({ text, toolArgs })).then(ok => {
-            if (ok) setAdded(true)
-            setBusy(false)
-          })
+          const result = onAddToWorld({ text, toolArgs })
+          void (async () => {
+            try {
+              const ok = await Promise.resolve(result)
+              if (ok) setAdded(true)
+              setBusy(false)
+            } catch {
+            }
+          })()
         }}
       >
         <Plus size={12} aria-hidden />

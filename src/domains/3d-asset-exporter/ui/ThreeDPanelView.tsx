@@ -16,7 +16,7 @@ import { ThreeDDownloadsSection } from './ThreeDDownloadsSection'
 import { ThreeDPanelChrome } from './ThreeDPanelChrome'
 
 const ThreeDViewer = dynamic(
-  () => import('./ThreeDViewer').then(mod => ({ default: mod.ThreeDViewer })),
+  async () => ({ default: (await import('./ThreeDViewer')).ThreeDViewer }),
   {
     ssr: false,
     loading: () => (

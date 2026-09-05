@@ -5,7 +5,11 @@ import type { ActionHandler } from '../action-handler-context'
 
 export const handleDefaultAction: ActionHandler = async (_ctx, action) => {
   console.log(`⚠️ Unhandled action type: ${action.type}`)
-  await flushObservability().catch(() => {})
+  try {
+    await flushObservability()
+  } catch {
+    // Flush must not fail the acknowledgement.
+  }
   return NextResponse.json({
     success: true,
     result: {

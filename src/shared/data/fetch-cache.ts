@@ -42,8 +42,9 @@ export async function cachedFetch<T>(
     }
   }
 
-  const promise = fetcher()
-    .then(data => {
+  const promise = (async () => {
+    try {
+      const data = await fetcher()
       const entry = fetchCache.get(key)
       if (entry) {
         entry.data = data
@@ -51,11 +52,11 @@ export async function cachedFetch<T>(
         entry.promise = undefined
       }
       return data
-    })
-    .catch(err => {
+    } catch (err) {
       fetchCache.delete(key)
       throw err
-    })
+    }
+  })()
 
   cached.promise = promise
   return promise

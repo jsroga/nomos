@@ -55,6 +55,7 @@ export const characters = pgTable('characters', {
   moralAlignment: integer('moral_alignment').default(70),
   transformationProgress: integer('transformation_progress').default(0),
   psychology: jsonb('psychology').notNull().default({}),
+  voice: jsonb('voice').notNull().default({}),
   arcStatus: jsonb('arc_status').notNull().default({}),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -72,6 +73,7 @@ export const episodes = pgTable('episodes', {
   premise: text('premise'),
   thematicFocus: text('thematic_focus'),
   scriptContent: text('script_content'),
+  manuscriptMode: text('manuscript_mode').notNull().default('script'),
   storyPlan: jsonb('story_plan'),
   planApproved: boolean('plan_approved').default(false),
   currentPhase: text('current_phase').default('premise'),
@@ -150,6 +152,7 @@ export const llmCalls = pgTable('llm_calls', {
   promptTokens: integer('prompt_tokens').notNull().default(0),
   completionTokens: integer('completion_tokens').notNull().default(0),
   cachedTokens: integer('cached_tokens').notNull().default(0),
+  recalledMessageTokens: integer('recalled_message_tokens').notNull().default(0),
   costUsd: numeric('cost_usd', { precision: 12, scale: 6 }).notNull().default('0'),
   /** `priced` when costUsd came from PROVIDER_PRICING; `unknown` when the model had no row. */
   costStatus: text('cost_status').notNull().default('priced'),

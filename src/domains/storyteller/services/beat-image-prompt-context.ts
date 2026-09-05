@@ -29,7 +29,7 @@ export async function loadBeatEpisodeLock(input: {
   projectIdHint?: string
   userId: string
 }): Promise<BeatEpisodeLockResult> {
-  const row = await db
+  const rows = await db
     .select({
       projectId: projects.id,
       episodeId: episodes.id,
@@ -38,7 +38,7 @@ export async function loadBeatEpisodeLock(input: {
     .innerJoin(episodes, eq(beats.episodeId, episodes.id))
     .innerJoin(projects, eq(episodes.projectId, projects.id))
     .where(eq(beats.id, input.beatId))
-    .then(rows => rows[0])
+  const row = rows[0]
 
   if (!row) return { ok: false, error: BeatCanonLookupError.NotFound }
   if (input.projectIdHint && input.projectIdHint !== row.projectId) {

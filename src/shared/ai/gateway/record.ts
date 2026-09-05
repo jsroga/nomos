@@ -30,6 +30,7 @@ export interface LlmCallRecord {
   promptTokens: number
   completionTokens: number
   cachedTokens?: number
+  recalledMessageTokens?: number
   latencyMs: number
   outcome: LlmOutcome
 }
@@ -100,6 +101,7 @@ export async function recordLlmCall(record: LlmCallRecord): Promise<void> {
       promptTokens: record.promptTokens,
       completionTokens: record.completionTokens,
       cachedTokens: record.cachedTokens ?? 0,
+      recalledMessageTokens: record.recalledMessageTokens ?? 0,
       costUsd: costUsd.toFixed(6),
       costStatus,
       latencyMs: record.latencyMs,

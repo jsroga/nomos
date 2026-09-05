@@ -1,5 +1,8 @@
 import type { FC } from 'react'
 import { Crown } from 'lucide-react'
+import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
+import { BibleSection } from '@/domains/storyteller/core/types/enums'
+import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
 import { BibleEntityTileClass } from '../../BibleEntityTile'
 import { FactionCard, factionCardFromUnknown } from '../../FactionCard'
 import { useBible } from './BibleContext'
@@ -16,10 +19,10 @@ export const BibleFactions: FC = () => {
     addFaction,
     removeFaction,
     isReadOnly,
-    onSendMessage,
     loadingSections,
     pendingActions,
     projectId,
+    setPendingAction,
   } = useBible()
 
   const localFactions = localPlan.factions || []
@@ -30,6 +33,15 @@ export const BibleFactions: FC = () => {
   })
   const isLoading = loadingSections?.factions?.loading ?? false
   const pendingAction = pendingActions?.factions
+
+  const handleGenerate = async () => {
+    await runBibleSectionArtifactDraft({
+      projectId,
+      section: BibleSection.FACTIONS,
+      promptId: StorytellerPromptRegistryId.BibleFactionsGenerate,
+      setPendingAction,
+    })
+  }
 
   return (
     <BibleSectionShell
@@ -45,15 +57,7 @@ export const BibleFactions: FC = () => {
         isLoading={isLoading}
         onAdd={addFaction}
         addTitle="Add Faction"
-        onGenerate={
-          onSendMessage
-            ? () =>
-                onSendMessage(
-                  'Generate completely BRAND NEW major factions, power structures, and political forces in this world. Each faction needs a short titled name (2–6 words, same length as a world-rule or event name) and the full summary in the description field. IMPORTANT: Take a completely new creative direction and do NOT repeat any previously generated factions.',
-                  'factions'
-                )
-            : undefined
-        }
+        onGenerate={handleGenerate}
         generateTitle="Generate Factions"
       />
       {isEditing ? (

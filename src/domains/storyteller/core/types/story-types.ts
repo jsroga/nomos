@@ -26,7 +26,7 @@ export interface BeatCard {
   mazurElements?: Record<string, unknown>
   charactersInvolved?: string[]
   content?: string
-  status?: 'proposed' | 'approved' | 'rejected'
+  status?: 'proposed' | 'approved' | 'rejected' | 'locked'
   emotionalShifts?: Record<string, unknown>
   causalDependencies?: string[]
   setupsPayoffs?: Record<string, unknown>
@@ -36,6 +36,7 @@ const BEAT_CARD_STATUSES = [
   `${BeatStatus.PROPOSED}`,
   `${BeatStatus.APPROVED}`,
   `${BeatStatus.REJECTED}`,
+  `${BeatStatus.LOCKED}`,
 ] as const
 
 /** Parse an untyped API/DB row into a BeatCard without `as` casts. */

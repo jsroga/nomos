@@ -71,9 +71,13 @@ class EntityRegistryService {
     }
 
     this.cacheEntity(entity, input.scope.projectId)
-    this.persistEntity(entity).catch(err => {
-      console.warn(EntityRegistryLog.PersistFailed, err)
-    })
+    void (async () => {
+      try {
+        await this.persistEntity(entity)
+      } catch (err) {
+        console.warn(EntityRegistryLog.PersistFailed, err)
+      }
+    })()
 
     return refId
   }
@@ -98,9 +102,13 @@ class EntityRegistryService {
     }
 
     this.cacheEntity(entity, input.scope.projectId)
-    this.persistEntity(entity).catch(err => {
-      console.warn(EntityRegistryLog.PersistFailed, err)
-    })
+    void (async () => {
+      try {
+        await this.persistEntity(entity)
+      } catch (err) {
+        console.warn(EntityRegistryLog.PersistFailed, err)
+      }
+    })()
 
     console.log(`[EntityRegistry] Registered entity with explicit ID: ${refId}`)
     return refId
@@ -382,9 +390,13 @@ class EntityRegistryService {
         },
       })
 
-    generateEntityEmbedding(entity).catch(err => {
-      console.warn(`[EntityRegistry] Embedding generation failed for ${entity.id}:`, err)
-    })
+    void (async () => {
+      try {
+        await generateEntityEmbedding(entity)
+      } catch (err) {
+        console.warn(`[EntityRegistry] Embedding generation failed for ${entity.id}:`, err)
+      }
+    })()
   }
 
   private dbToEntity(dbEntity: typeof entityReferences.$inferSelect): EntityReference | null {

@@ -10,6 +10,7 @@
 
 import '@/shared/data/server-guard'
 import { OPENROUTER_BASE_URL, openRouterClientConfig } from '@/shared/agent-kernel/models'
+import { readJsonBody } from '@/shared/data/fetch-json-record'
 import { isOpenRouterModelId } from '@/shared/agent-kernel/constants/model-settings'
 import {
   MODEL_PROBE_AUTH_HEADER,
@@ -82,7 +83,7 @@ export async function probeModel(model: string): Promise<ModelProbeResult> {
     })
 
     const latencyMs = Date.now() - started
-    const payload: unknown = await response.json().catch(() => ({}))
+    const payload: unknown = await readJsonBody(response, {})
 
     if (!response.ok) {
       return {

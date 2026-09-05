@@ -308,7 +308,8 @@ export function TurbulentBackground({
     let geometryDispose: (() => void) | null = null
     setCanvasReady(false)
 
-    void import('three').then(THREE => {
+    void (async () => {
+      const THREE = await import('three')
       if (cancelled || !containerRef.current) return
 
       const width = window.innerWidth
@@ -432,7 +433,7 @@ export function TurbulentBackground({
 
         geometry.dispose()
       }
-    })
+    })()
 
     return () => {
       cancelled = true

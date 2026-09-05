@@ -16,10 +16,9 @@ import { cn } from '@/shared/data/utils'
 
 // Dynamic import with SSR disabled to avoid React reconciler issues with Three.js
 const InteriorCanvas = dynamic(
-  () =>
-    import('@/domains/3d-canvas/ui/InteriorCanvas').then(mod => ({
-      default: mod.InteriorCanvas,
-    })),
+  async () => ({
+    default: (await import('@/domains/3d-canvas/ui/InteriorCanvas')).InteriorCanvas,
+  }),
   {
     ssr: false,
     loading: () => (
@@ -135,10 +134,8 @@ export function InteriorDesignerWorkspace() {
               className="hover:bg-white/5 font-mono text-[10px] uppercase tracking-widest border border-indigo-500/20"
               onClick={async () => {
                 const { walls, objects } = useInteriorStore.getState()
-                const zipBlob =
-                  await import('@/domains/3d-canvas/core/unity-exporter').then(m =>
-                    m.UnityExporter.createExportZip({ walls, objects })
-                  )
+                const { UnityExporter } = await import('@/domains/3d-canvas/core/unity-exporter')
+                const zipBlob = await UnityExporter.createExportZip({ walls, objects })
 
                 const url = URL.createObjectURL(zipBlob)
                 const link = document.createElement('a')

@@ -102,6 +102,7 @@ function canonBeatsFromListed(
     content?: string | null
     causalDependencies?: string[]
     beatType?: string | null
+    charactersInvolved?: string[]
   }>
 ): BeatDraftCanon['beats'] {
   return listedBeats.map(beat => ({
@@ -110,6 +111,7 @@ function canonBeatsFromListed(
     content: beat.content ?? null,
     causalDependencies: beat.causalDependencies ?? [],
     beatType: beat.beatType ?? null,
+    charactersInvolved: beat.charactersInvolved,
   }))
 }
 

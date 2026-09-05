@@ -45,7 +45,6 @@ import {
   FixInconsistenciesVerdictAction,
 } from './constants/fix-inconsistencies-workflow'
 import { collapseFixesByFieldPath, isPatchableFinding } from './collapse-consistency-fixes'
-import { defaultFixInconsistenciesDeps } from './fix-inconsistencies-default-deps'
 import type { FixInconsistenciesDeps } from './fix-inconsistencies-deps-types'
 import { ConsistencyIssueType, ConsistencyUnknownLocation } from '@/domains/storyteller/services/constants/consistency-issues'
 import type { ContinuityIssue } from '@/domains/storyteller/services/consistency-service'
@@ -115,9 +114,7 @@ function structuralIssueToFinding(issue: ContinuityIssue, index: number): Contin
   }
 }
 
-export function createFixInconsistenciesWorkflow(
-  deps: FixInconsistenciesDeps = defaultFixInconsistenciesDeps
-) {
+export function createFixInconsistenciesWorkflow(deps: FixInconsistenciesDeps) {
   const assembleStep = createStep({
     id: FixInconsistenciesStepId.AssembleCanon,
     inputSchema: fixInconsistenciesInputSchema,
@@ -290,5 +287,3 @@ export function createFixInconsistenciesWorkflow(
     .then(applyStep)
     .commit()
 }
-
-export const fixInconsistenciesWorkflow = createFixInconsistenciesWorkflow()

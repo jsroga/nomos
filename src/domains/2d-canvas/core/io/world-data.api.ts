@@ -1,5 +1,5 @@
 import { ContentType, FetchCache, HttpMethod, JsonField } from '@/shared/data/constants/protocol'
-import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
+import { fetchJsonRecord, readJsonBody } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { joinUrlPath } from '@/shared/data/url-builder'
 import {
@@ -87,7 +87,7 @@ export async function uploadTileFormData(formData: FormData): Promise<Record<str
     method: HttpMethod.Post,
     body: formData,
   })
-  const data = recordFromJson(await response.json().catch(() => ({})))
+  const data = recordFromJson(await readJsonBody(response, {}))
   if (!response.ok) {
     throw new Error(readString(data.error) ?? `Upload failed (${response.status})`)
   }

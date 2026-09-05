@@ -73,6 +73,11 @@ const FIXTURES: {
     ruleId: 'local/no-bare-project-id-param',
     minimumErrors: 1,
   },
+  {
+    file: 'scripts/gate-fixtures/src/services/uses-promise-then.ts',
+    ruleId: 'local/prefer-await-try-catch',
+    minimumErrors: 2,
+  },
 ]
 
 interface EslintMessage {

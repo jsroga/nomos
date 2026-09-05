@@ -92,6 +92,23 @@ export const ACTION_TYPES = { UPDATE_BEAT: 'UPDATE_BEAT' } as const
 
 For suspicious string literals in comparisons, switch cases, and dispatch sinks, extract an enum in `core/types/` or `core/enums.ts` and reference `ActionType.UpdateBeat` etc.
 
+## Promise control flow (`await` + `try/catch`)
+
+`local/prefer-await-try-catch` is **`error`** on `src/**` (tests exempt).
+
+**Forbidden:** `.then(callback)`, `.catch(handler)`, `.finally(callback)`.
+
+**Use instead:** `async`/`await` and `try/catch` / `try/finally`.
+
+**Allowed:**
+
+| Pattern | Why |
+|---------|-----|
+| Mastra `workflow.then(step)` / `.then(createStep())` | Fluent step chain, not a Promise callback |
+| Zod `.catch(undefined)` / `.catch(0)` / `.catch([])` | Schema fallback value, not rejection handling |
+
+Do not swallow errors with `.catch(() => {})`. Ignore with an empty `catch` block, or handle the error.
+
 ## File and function size
 
 See **`.cursor/rules/code-metrics.mdc`** for agent workflow, limits, and split discipline.
