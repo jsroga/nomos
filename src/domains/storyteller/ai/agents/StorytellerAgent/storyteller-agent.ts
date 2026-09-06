@@ -34,7 +34,7 @@ import {
 import { grrmTools, runBeatDraftWorkflowTool, proposeCharacterFieldsTool } from '@/domains/storyteller/ai/tools'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
-import { CHAT_LIVE_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
+import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
 import { INHERITED_AGENT_LAST_MESSAGES } from '@/shared/agent-kernel/mastra/studio-memory'
 import {
   AgentModelRole,
@@ -110,7 +110,7 @@ export class StorytellerAgent {
       mastra: m,
       memory,
       workspace: () => undefined,
-      scorers: CHAT_LIVE_SCORERS,
+      scorers: CHAT_HTTP_SCORERS,
       defaultOptions: {
         modelSettings: {
           maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,

@@ -10,6 +10,6 @@ import { handleStorytellerChatPost } from './chat-post-handler'
  */
 export const POST = withAuth(
   async (req: NextRequest, { session }: AuthenticatedRequest): Promise<NextResponse> => {
-    return handleStorytellerChatPost(req, session.user.id)
+    return handleStorytellerChatPost(req, session.user.id, session.user.email)
   }
 )

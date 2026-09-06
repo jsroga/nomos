@@ -173,7 +173,11 @@ function streamHitCreditExhausted(events: SSEEvent[]): boolean {
   return events.some(event => {
     const text = eventErrorText(event)
     if (text.includes(SmokeMatch.InFlightRequests)) return false
-    return text.includes(SmokeMatch.InsufficientCredits)
+    return (
+      text.includes(SmokeMatch.InsufficientCredits) ||
+      text.includes(SmokeMatch.RequiresMoreCredits) ||
+      text.includes(SmokeMatch.CanOnlyAfford)
+    )
   })
 }
 

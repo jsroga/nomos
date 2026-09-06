@@ -476,12 +476,27 @@ module.exports = [
   // merged into several earlier configs and flat config replaces rather than
   // merges — so an `ignores` on any one of them would not cover the rest.
   //
-  // The shared/ boundary patterns are restated here: dropping them would turn
-  // this exemption into a hole in a different rule.
+  // Shared never-bill files restate the shared/ boundary. The storyteller
+  // model-config never-bill file restates the storyteller domain boundary
+  // (same-domain catalog imports stay legal).
   {
-    files: [...providerSdkExemptions.NEVER_BILLS, ...providerSdkExemptions.SHARED_REMAINDER],
+    files: [
+      'src/shared/ai/gateway/**/*.ts',
+      'src/shared/agent-kernel/scorers/**/*.ts',
+      'src/shared/agent-kernel/models.ts',
+      ...providerSdkExemptions.SHARED_REMAINDER,
+    ],
     rules: {
       'no-restricted-imports': ['error', composeRestrictedImports(sharedNoDomains())],
+    },
+  },
+  {
+    files: ['src/domains/storyteller/config/constants/model-config.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        composeRestrictedImports(crossDomain('storyteller'), legacyRoot()),
+      ],
     },
   },
   ...contractsConvertedModules,

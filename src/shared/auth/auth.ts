@@ -16,6 +16,7 @@ import {
   HttpHeader,
   NodeEnv,
 } from '@/shared/data/constants/protocol'
+import { applyE2eLlmPinIfHarness } from '@/shared/ai/gateway/e2e-llm-pin'
 
 const DEV_MOCK_SESSION: Session = {
   user: {
@@ -48,6 +49,11 @@ export async function getUserSession() {
     const e2eHeader = headersList.get(HttpHeader.BYPASS_AUTH)
     const bypassSecret = process.env[EnvVarName.E2eBypassAuthSecret]
     if (bypassSecret && e2eHeader === bypassSecret) {
+      applyE2eLlmPinIfHarness({
+        userId: DEV_MOCK_SESSION.user.id,
+        email: DEV_MOCK_SESSION.user.email,
+        bypassHeader: e2eHeader,
+      })
       return { session: DEV_MOCK_SESSION, supabase: null, error: null }
     }
   }
@@ -72,6 +78,10 @@ export async function getUserSession() {
     expires_at: 0,
   }
 
+  applyE2eLlmPinIfHarness({
+    userId: session.user.id,
+    email: session.user.email,
+  })
   return { session, supabase, error: null }
 }
 

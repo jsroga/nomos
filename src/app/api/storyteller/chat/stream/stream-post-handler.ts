@@ -1,4 +1,6 @@
 import { withGatewayContext } from '@/shared/ai/gateway/call-context'
+import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
+import { isE2eLlmPinned } from '@/shared/ai/gateway/e2e-llm-pin'
 import {
   USAGE_COMPLETION_FIELDS,
   USAGE_PROMPT_FIELDS,
@@ -61,8 +63,9 @@ export async function runStorytellerStream(input: StreamRequestInput): Promise<R
 }
 
 async function runStorytellerStreamInner(input: StreamRequestInput): Promise<Response> {
-  const requestedModel =
-    typeof input.modelName === 'string' && input.modelName.trim()
+  const requestedModel = isE2eLlmPinned()
+    ? E2ePinnedChatModel.CatalogId
+    : typeof input.modelName === 'string' && input.modelName.trim()
       ? resolveChatModelId(input.modelName)
       : undefined
   if (requestedModel && !isKnownChatModel(requestedModel)) {

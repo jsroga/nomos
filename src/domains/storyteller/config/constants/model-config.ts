@@ -15,12 +15,13 @@ import {
   OPENROUTER_BASE_URL,
   TEXT_GEN_FAST_MODEL,
   TEXT_GEN_PRIMARY_MODEL,
-  TEXT_GEN_SHORT_IMPACT_MODEL,
   enforceTextGenModelPolicy,
   toOpenRouterModel,
   toOpenRouterModelId,
 } from '@/shared/agent-kernel/models'
 import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
+import { isE2eBannedModelId, isE2eLlmPinned, remapModelIdIfE2ePinned } from '@/shared/ai/gateway/e2e-llm-pin'
+import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
 
 /**
  * Effort levels for dynamic model selection
@@ -31,12 +32,11 @@ export type ModelEffort = 'low' | 'medium' | 'high'
 /**
  * Model configurations by effort level
  * - low: Fastest (GPT-5.6 Luna)
- * - medium: Short / high-impact (GPT-5.6 Sol)
- * - high: Primary long-form (Kimi latest)
+ * - medium / high: Primary long-form (Kimi). GPT-5.6 Sol is judging-only until the operator confirms it for generation.
  */
 export const MODEL_BY_EFFORT: Record<ModelEffort, string> = {
   low: TEXT_GEN_FAST_MODEL.replace('/', ':'),
-  medium: TEXT_GEN_SHORT_IMPACT_MODEL.replace('/', ':'),
+  medium: TEXT_GEN_PRIMARY_MODEL.replace('/', ':'),
   high: TEXT_GEN_PRIMARY_MODEL.replace('/', ':'),
 }
 
@@ -61,6 +61,16 @@ export function getAgentModel(modelName: string = TEXT_GEN_PRIMARY_MODEL) {
   // Support effort-based selection
   if (modelName === 'low' || modelName === 'medium' || modelName === 'high') {
     modelName = getModelByEffort(modelName)
+  }
+  if (isE2eLlmPinned()) {
+    const remapped = remapModelIdIfE2ePinned(modelName)
+    if (
+      remapped === E2ePinnedChatModel.CatalogId ||
+      remapped === E2ePinnedChatModel.GatewayId ||
+      remapped === E2ePinnedChatModel.OpenRouterId
+    ) {
+      return E2ePinnedChatModel.GatewayId
+    }
   }
   const enforced = enforceTextGenModelPolicy(modelName.replace(':', '/'))
   const colonForm = enforced.includes('/') ? enforced.replace('/', ':') : enforced
@@ -468,7 +478,12 @@ export function resolveRoleModel(
   // The precedence chain itself is the gateway registry's; this file supplies
   // the role's env var and decides what to do with the answer.
   const explicit = resolveConfiguredModelId(roleSpec(role), validatedOverride)
-  return explicit ? resolveStorytellerModel(explicit) : OPENROUTER_AUTO_GATEWAY
+  const resolved = explicit ? resolveStorytellerModel(explicit) : OPENROUTER_AUTO_GATEWAY
+  if (!isE2eLlmPinned()) return resolved
+  if (typeof resolved === 'string') {
+    return isE2eBannedModelId(resolved) ? E2ePinnedChatModel.GatewayId : resolved
+  }
+  return isE2eBannedModelId(resolved.id) ? E2ePinnedChatModel.GatewayId : resolved
 }
 
 /**

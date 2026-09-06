@@ -1,4 +1,6 @@
 import { env } from '@/shared/config/env'
+import { isE2eLlmPinned } from '@/shared/ai/gateway/e2e-llm-pin'
+import { E2eLlmPinError } from '@/shared/ai/gateway/constants/e2e-llm-pin'
 import type { ScorerJudgeConfig } from '@mastra/core/evals'
 import { wrapLanguageModel } from 'ai'
 import { MODELS, toOpenRouterModel, toOpenRouterModelId, createPureChatModel } from '@/shared/agent-kernel/models'
@@ -12,6 +14,9 @@ const JUDGING_ROLE = 'judging'
 export const JUDGING_MAX_OUTPUT_TOKENS = 1024
 
 export function toMastraJudgingModel(): string {
+  if (isE2eLlmPinned()) {
+    throw new Error(E2eLlmPinError.JudgingForbidden)
+  }
   // Read at call time so evals/run.ts can load .env.local before scorer modules import.
   // admin panel setting → JUDGING_MODEL env → default; routed through the OpenRouter gateway.
   return toOpenRouterModel(

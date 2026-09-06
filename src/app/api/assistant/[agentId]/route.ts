@@ -19,6 +19,7 @@ import { handleChatStream } from '@mastra/ai-sdk'
 import { createUIMessageStream, createUIMessageStreamResponse, generateId } from 'ai'
 import type { UIMessage } from 'ai'
 import { getMastraInstance, warmMastraStorage } from '@/shared/agent-kernel/mastra-instance'
+import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
 import { withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
 import {
   BEAT_TOOL_ID,
@@ -45,7 +46,9 @@ import {
 import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { requireAuth } from '@/shared/auth/auth'
-import { ApiErrorMessage } from '@/shared/data/constants/protocol'
+import { ApiErrorMessage, HttpHeader } from '@/shared/data/constants/protocol'
+import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
+import { isE2eHarnessCaller, withE2eLlmPin } from '@/shared/ai/gateway/e2e-llm-pin'
 import { readString } from '@/shared/data/json-guards'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { withGatewayContext } from '@/shared/ai/gateway/call-context'
@@ -107,9 +110,6 @@ enum TurnMetaFallback {
   None = '(none)',
   Default = '(default)',
 }
-
-/** Empty override — live LLM scorers must not hold the SSE open after the model turn. */
-const CHAT_ROUTE_SCORERS = {} as const
 
 enum StorytellerOpenWorkspaceCopy {
   Header = '=== OPEN WORKSPACE (authoritative — do not invent or scrape IDs from the repo) ===',
@@ -290,6 +290,16 @@ export async function POST(req: Request, { params }: RouteContext) {
     return new Response(JSON.stringify({ error: INVALID_BODY_MESSAGE }), { status: STATUS_BAD_REQUEST })
   }
 
+  const userId = session.user.id
+  const e2eHarness = isE2eHarnessCaller({
+    userId,
+    email: session.user.email,
+    bypassHeader: req.headers.get(HttpHeader.BYPASS_AUTH),
+  })
+  if (e2eHarness) {
+    raw[AssistantChatBodyKey.ModelName] = E2ePinnedChatModel.CatalogId
+  }
+
   const modelError = readModelNameError(raw)
   if (modelError) {
     return new Response(JSON.stringify({ error: modelError }), { status: STATUS_BAD_REQUEST })
@@ -297,7 +307,6 @@ export async function POST(req: Request, { params }: RouteContext) {
 
   const projectId = raw[AssistantChatBodyKey.ProjectId]
   const episodeId = raw[AssistantChatBodyKey.EpisodeId]
-  const userId = session.user.id
 
   const { verifyEpisodeAccess } = await import('@/domains/storyteller/server')
 
@@ -366,9 +375,8 @@ export async function POST(req: Request, { params }: RouteContext) {
             messages: raw.messages,
             requestContext,
             toolChoice: TOOL_CHOICE_AUTO,
-            // Override agent live scorers — goalReached LLM judges were holding
-            // the SSE open ~30s after first chunk with nothing for the UI.
-            scorers: CHAT_ROUTE_SCORERS,
+            // HTTP chat must not run live LLM judges (eval / Studio Evaluate only).
+            scorers: CHAT_HTTP_SCORERS,
             memory: { thread: bound.thread, resource: bound.resource },
             ...(system ? { system } : {}),
             ...(isStoryteller ? { activeTools } : {}),
@@ -390,8 +398,11 @@ export async function POST(req: Request, { params }: RouteContext) {
         throw error
       }
       }
-      if (projectScope) return withGatewayContext({ scope: projectScope }, runTurn)
-      return runTurn()
+      if (projectScope) {
+        const billed = () => withGatewayContext({ scope: projectScope }, runTurn)
+        return e2eHarness ? withE2eLlmPin(billed) : billed()
+      }
+      return e2eHarness ? withE2eLlmPin(runTurn) : runTurn()
     },
   })
 

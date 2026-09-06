@@ -8,7 +8,7 @@ export enum ChatLiveScorerSamplingType {
   Ratio = 'ratio',
 }
 
-/** Always-on for the conversation-goal judge already on the chat adapter. */
+/** Eval-phase sample rate for goal-reached — not attached to HTTP chat. */
 export const CHAT_LIVE_GOAL_SAMPLE_RATE = 1
 
 /** Sampled LLM quality judges (0.1–0.3 band). */
@@ -25,8 +25,15 @@ const sampled = {
 } as const
 
 /**
- * Live Studio / trace scores for the chat adapter.
- * `goal-reached` every turn; quality judges on a sample of turns.
+ * HTTP chat / e2e smoke attach this. Live LLM judges (`JUDGING_MODEL`,
+ * default GPT-5.6 Sol) belong on `npm run eval` and Studio Trace Evaluate,
+ * not on every Writers Room turn.
+ */
+export const CHAT_HTTP_SCORERS = {} as const
+
+/**
+ * Sampling table for Studio Trace Evaluate / evals — not attached to HTTP chat.
+ * `goal-reached` every sampled eval turn; quality judges on a sample of turns.
  */
 export const CHAT_LIVE_SCORERS = {
   goalReached: { scorer: goalReachedScorer, sampling: always },

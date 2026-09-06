@@ -25,6 +25,7 @@ import {
 } from '@/domains/loop-creator/config/model-config'
 import { toMastraJudgingModel } from '@/shared/agent-kernel/scorers/shared'
 import {
+  getModelByEffort,
   resolveRoleModel,
   resolveStorytellerModel,
 } from '@/domains/storyteller/config/constants/model-config'
@@ -118,6 +119,12 @@ describe('every model resolver routes through OpenRouter', () => {
     expect(resolveStorytellerModel('moonshotai:kimi-k2.7-code')).toBe(
       'openrouter/moonshotai/kimi-k2.7-code'
     )
+  })
+
+  it('generation effort tiers do not use GPT-5.6 Sol', () => {
+    expect(getModelByEffort('low')).not.toContain('gpt-5.6-sol')
+    expect(getModelByEffort('medium')).not.toContain('gpt-5.6-sol')
+    expect(getModelByEffort('high')).not.toContain('gpt-5.6-sol')
   })
 })
 

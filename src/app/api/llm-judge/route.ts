@@ -3,10 +3,12 @@ import { v4 as uuidv4 } from 'uuid'
 import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { withGatewayContext } from '@/shared/ai/gateway/call-context'
+import { isE2eHarnessCaller } from '@/shared/ai/gateway/e2e-llm-pin'
+import { E2eLlmPinError } from '@/shared/ai/gateway/constants/e2e-llm-pin'
 import { registerCorePrompts } from '@/shared/agent-kernel/prompts/registry'
 import { ALL_SCORERS } from '@/shared/agent-kernel/scorers'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { HttpStatus, QueryParam } from '@/shared/data/constants/protocol'
+import { HttpHeader, HttpStatus, QueryParam } from '@/shared/data/constants/protocol'
 import { recordFromJson, readString, recordArrayFromJson } from '@/shared/data/json-guards'
 import {
   CHAT_EVAL_FAILED_ERROR,
@@ -53,6 +55,19 @@ export async function POST(request: NextRequest) {
     const { session } = await requireAuth()
     if (!session) {
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
+    }
+
+    if (
+      isE2eHarnessCaller({
+        userId: session.user.id,
+        email: session.user.email,
+        bypassHeader: request.headers.get(HttpHeader.BYPASS_AUTH),
+      })
+    ) {
+      return NextResponse.json(
+        { error: E2eLlmPinError.JudgingForbidden },
+        { status: HttpStatus.NOT_FOUND }
+      )
     }
 
     const body = recordFromJson(await request.json())

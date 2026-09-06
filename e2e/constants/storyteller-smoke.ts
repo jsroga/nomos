@@ -41,9 +41,16 @@ export enum SmokeHttpStatus {
   PaymentRequired = 402,
 }
 
-/** Stream POST `modelName` — Writers Room catalog id (OpenRouter `z-ai/glm-5.2`). */
+/** Stream POST `modelName` — Writers Room catalog id (OpenRouter `z-ai/glm-5.2`). Never Kimi. Never GPT-5.6 Sol. */
 export enum SmokeChatModel {
   Glm = 'zai-coding-plan:glm-5.2',
+}
+
+/** Ids smoke must never POST — production picker (Kimi) and judging (Sol) stay off this suite. */
+export enum SmokeBannedChatModel {
+  KimiK3 = 'moonshotai:kimi-k3',
+  KimiK2 = 'kimi-k2',
+  Gpt56Sol = 'gpt-5.6-sol',
 }
 
 export enum SmokeBodyKey {
@@ -79,6 +86,8 @@ export enum SmokeMatch {
   Magic = 'magic',
   InFlightRequests = 'in-flight requests',
   InsufficientCredits = 'Insufficient credits',
+  RequiresMoreCredits = 'requires more credits',
+  CanOnlyAfford = 'can only afford',
 }
 
 export enum SmokePrompt {

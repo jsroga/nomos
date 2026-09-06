@@ -24,6 +24,6 @@ alwaysApply: true
 
 - **Insufficient credits** (HTTP 402 / `Insufficient credits`, not in-flight): **STOP, tell the operator, pause.** Do not retry smoke, evals, or live model calls until they say credits were added.
 - **In-flight budget** (`in-flight requests`, Retry-After 120): wait and retry **once**. That is not an empty wallet.
-- `npm run test:e2e smoke` pins the chat stream to GLM (`zai-coding-plan:glm-5.2` / `z-ai/glm-5.2`) via POST `modelName`. Do not pin smoke to Kimi or Opus.
+- `npm run test:e2e smoke` pins the chat stream to GLM (`zai-coding-plan:glm-5.2` / `z-ai/glm-5.2`) via POST `modelName`. Never Kimi. Never GPT-5.6 Sol. Never Opus. Do not attach live LLM scorers to smoke or HTTP chat; scoring is `npm run eval`.
 
 Enforced by `no-restricted-imports` (`providerSdk()`) and `scripts/__tests__/provider-sdk-inventory.test.ts`.

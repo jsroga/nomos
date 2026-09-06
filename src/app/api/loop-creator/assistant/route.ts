@@ -22,10 +22,10 @@ import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { streamLoopCreator } from '@/domains/loop-creator/server'
 import { createInitialLoopState, type LoopCreatorState } from '@/domains/loop-creator'
-import { LoopOrchestratorEventType } from '@/domains/loop-creator/constants/loop-orchestrator'
-import { ContentType } from '@/shared/data/constants/protocol'
+import { ContentType, HttpHeader, LoopCreatorStreamEventType } from '@/shared/data/constants/protocol'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { isPlainObject, readString } from '@/shared/data/json-guards'
+import { isE2eHarnessCaller, withE2eLlmPin } from '@/shared/ai/gateway/e2e-llm-pin'
 
 export const maxDuration = 120
 
@@ -87,6 +87,12 @@ export async function POST(req: Request) {
   const { session } = await requireAuth()
   if (!session) return jsonError(API_ERROR.UNAUTHORIZED, STATUS_401)
 
+  const e2eHarness = isE2eHarnessCaller({
+    userId: session.user.id,
+    email: session.user.email,
+    bypassHeader: req.headers.get(HttpHeader.BYPASS_AUTH),
+  })
+
   const body: unknown = await req.json()
   const record = isPlainObject(body) ? body : {}
   const projectId = readString(record.projectId) ?? ''
@@ -108,6 +114,7 @@ export async function POST(req: Request) {
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
+      const turn = async () => {
       const textId = crypto.randomUUID()
       const reasoningId = crypto.randomUUID()
       writer.write({ type: CHUNK_REASONING_START, id: reasoningId })
@@ -117,7 +124,7 @@ export async function POST(req: Request) {
         initialState,
         { configurable: { thread_id: crypto.randomUUID() } },
         event => {
-          if (event.type === LoopOrchestratorEventType.Message && event.message?.content) {
+          if (event.type === LoopCreatorStreamEventType.Message && event.message?.content) {
             writer.write({
               type: CHUNK_TEXT_DELTA,
               id: textId,
@@ -125,7 +132,7 @@ export async function POST(req: Request) {
             })
             return
           }
-          if (event.type === LoopOrchestratorEventType.Node) {
+          if (event.type === LoopCreatorStreamEventType.Node) {
             const label = event.agent ?? event.node
             if (label) {
               writer.write({
@@ -136,7 +143,7 @@ export async function POST(req: Request) {
             }
             return
           }
-          if (event.type === LoopOrchestratorEventType.Action && event.action?.type) {
+          if (event.type === LoopCreatorStreamEventType.Action && event.action?.type) {
             writer.write({
               type: CHUNK_REASONING_DELTA,
               id: reasoningId,
@@ -148,6 +155,8 @@ export async function POST(req: Request) {
 
       writer.write({ type: CHUNK_REASONING_END, id: reasoningId })
       writer.write({ type: CHUNK_TEXT_END, id: textId })
+      }
+      return e2eHarness ? withE2eLlmPin(turn) : turn()
     },
   })
 

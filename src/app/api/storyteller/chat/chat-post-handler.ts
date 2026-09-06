@@ -1,9 +1,5 @@
-import { resolveChatModelId } from '@/domains/storyteller/config/resolve-chat-model'
 import { NextRequest, NextResponse } from 'next/server'
-import { normalizeMastraTraceId } from '@/domains/storyteller/ai/tracing'
 import { BEAT_DRAFT_WORKFLOW_ID } from '@/domains/storyteller/core/io/mastra-runtime'
-import { beatDraftOutputSchema } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
-import { isKnownChatModel } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import {
   ChatContinuitySeverity,
   ChatPipelineRunStatus,
@@ -11,14 +7,19 @@ import {
   ChatSenderName,
 } from '@/domains/storyteller/core/io/constants/chat-route'
 import {
+  beatDraftOutputSchema,
+  isKnownChatModel,
+  normalizeMastraTraceId,
+  resolveChatModelId,
   StorytellerMessageRole,
   StorytellerMessageType,
-} from '@/domains/storyteller/core/storyteller-page-wire'
+} from '@/domains/storyteller/server'
 import { getMastraInstance } from '@/shared/agent-kernel'
 import { tryProjectScope } from '@/shared/auth/project-scope'
-import { HttpStatus } from '@/shared/data/constants/protocol'
+import { HttpHeader, HttpStatus } from '@/shared/data/constants/protocol'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { HttpHeader } from '@/shared/data/constants/protocol'
+import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
+import { isE2eHarnessCaller, isE2eLlmPinned, withE2eLlmPin } from '@/shared/ai/gateway/e2e-llm-pin'
 
 interface ChatRequestBody {
   message?: string
@@ -94,10 +95,31 @@ function buildChatErrorResponse(error: unknown) {
 
 export async function handleStorytellerChatPost(
   req: NextRequest,
+  userId: string,
+  email?: string | null
+): Promise<NextResponse> {
+  const run = () => handleStorytellerChatPostInner(req, userId)
+  if (
+    isE2eHarnessCaller({
+      userId,
+      email,
+      bypassHeader: req.headers.get(HttpHeader.BYPASS_AUTH),
+    })
+  ) {
+    return withE2eLlmPin(run)
+  }
+  return run()
+}
+
+async function handleStorytellerChatPostInner(
+  req: NextRequest,
   userId: string
 ): Promise<NextResponse> {
   try {
     const body: ChatRequestBody = await req.json()
+    if (isE2eLlmPinned()) {
+      body.modelName = E2ePinnedChatModel.CatalogId
+    }
     const { message, projectId, episodeId, characters, traceId: bodyTraceId, modelName } = body
 
     const resolvedModelName = resolveChatModelId(modelName)

@@ -69,7 +69,7 @@ import type { DurableAgent } from '@mastra/core/agent/durable'
 import { buildStorytellerControllerConfig } from '@/domains/storyteller/ai/controller/storyteller-controller'
 import { autonomousAuthorAgent } from '@/domains/storyteller/ai/agents/AutonomousAuthor/autonomous-author-agent'
 import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
-import { CHAT_LIVE_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
+import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
 
 const CHAT_ADAPTER_ID = 'storyteller'
 const CHAT_ADAPTER_NAME = 'Storyteller'
@@ -102,7 +102,7 @@ const chatAdapterAgent = new Agent({
   // Opt out of Mastra-instance workspace (repo FS tools). A function that
   // returns undefined does not fall back to the global workspace.
   workspace: () => undefined,
-  scorers: CHAT_LIVE_SCORERS,
+  scorers: CHAT_HTTP_SCORERS,
   defaultOptions: {
     modelSettings: CHAT_ADAPTER_MODEL_SETTINGS,
   },

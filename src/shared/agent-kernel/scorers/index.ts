@@ -44,7 +44,12 @@ export const STORYTELLER_SCORERS = {
   ...STRUCTURAL_MASTRA_SCORERS,
 } as const
 
-export { CHAT_LIVE_SCORERS, CHAT_LIVE_QUALITY_SAMPLE_RATE, CHAT_LIVE_GOAL_SAMPLE_RATE } from './chat-live-scorers'
+export {
+  CHAT_HTTP_SCORERS,
+  CHAT_LIVE_SCORERS,
+  CHAT_LIVE_QUALITY_SAMPLE_RATE,
+  CHAT_LIVE_GOAL_SAMPLE_RATE,
+} from './chat-live-scorers'
 
 export {
   magicScorer,

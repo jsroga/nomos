@@ -30,6 +30,7 @@ import {
 } from '@/shared/ai/gateway/constants/provider'
 import { getVoyageEmbeddings } from '@/shared/ai/embeddings/voyage-embeddings'
 import { recordLlmCall } from '@/shared/ai/gateway/record'
+import { remapModelIdIfE2ePinned } from '@/shared/ai/gateway/e2e-llm-pin'
 
 export interface GatewayRequest {
   scope: ProjectScope
@@ -140,9 +141,13 @@ async function meter<T>(
 
 /** Free-text completion. */
 export async function complete(request: GatewayRequest): Promise<GatewayResult> {
-  return meter(request, async () => {
+  const pinned: GatewayRequest = {
+    ...request,
+    model: remapModelIdIfE2ePinned(request.model, request.scope.userId),
+  }
+  return meter(pinned, async () => {
     const result = await generateText({
-      model: client()(request.model),
+      model: client()(pinned.model),
       system: request.system,
       prompt: request.prompt,
       temperature: request.temperature,
@@ -163,9 +168,10 @@ export async function complete(request: GatewayRequest): Promise<GatewayResult> 
 export async function completeStructured<T>(
   request: GatewayRequest & { schema: ZodType<T> }
 ): Promise<T> {
-  return meter(request, async () => {
+  const pinned = { ...request, model: remapModelIdIfE2ePinned(request.model, request.scope.userId) }
+  return meter(pinned, async () => {
     const result = await generateObject({
-      model: client()(request.model),
+      model: client()(pinned.model),
       schema: request.schema,
       system: request.system,
       prompt: request.prompt,

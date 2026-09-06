@@ -22,7 +22,7 @@ npm run test:e2e         # Playwright (default)
 npm run test:e2e smoke   # storyteller smoke (GLM chat pin; load .env.local); also: actions, full-loop, swiss-knife
 ```
 
-Smoke pins Writers Room chat to GLM (`zai-coding-plan:glm-5.2`). If OpenRouter returns insufficient credits, **stop and tell the operator** — do not keep calling models. In-flight budget (Retry-After 120) may be retried once.
+Smoke pins Writers Room chat to GLM (`zai-coding-plan:glm-5.2`) — never Kimi, never GPT-5.6 Sol. Live scorers do not run on smoke (`npm run eval` is the scoring phase). If OpenRouter returns insufficient credits, **stop and tell the operator** — do not keep calling models. In-flight budget (Retry-After 120) may be retried once.
 
 Single unit test (Vitest; `@/` → `src/`):
 

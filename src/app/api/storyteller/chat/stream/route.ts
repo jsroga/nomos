@@ -8,6 +8,8 @@ import {
   jsonError,
   STREAM_ROUTE_TEXT,
 } from './stream-route-handler'
+import { HttpHeader } from '@/shared/data/constants/protocol'
+import { isE2eHarnessCaller, withE2eLlmPin } from '@/shared/ai/gateway/e2e-llm-pin'
 
 // Next.js rejects imported bindings for segment config; keep equal to CHAT_ROUTE_MAX_DURATION_SECONDS.
 export const maxDuration = 180
@@ -20,7 +22,17 @@ export async function POST(req: Request) {
       return jsonError(STREAM_ROUTE_TEXT.errUnauthorized, 401)
     }
 
-    return handleStorytellerStreamPost(req, session.user.id)
+    const handle = () => handleStorytellerStreamPost(req, session.user.id)
+    if (
+      isE2eHarnessCaller({
+        userId: session.user.id,
+        email: session.user.email,
+        bypassHeader: req.headers.get(HttpHeader.BYPASS_AUTH),
+      })
+    ) {
+      return withE2eLlmPin(handle)
+    }
+    return handle()
   } catch (error) {
     console.error(STREAM_ROUTE_TEXT.logStreamingError, error)
     recordStreamRouteError(error)
