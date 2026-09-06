@@ -5,6 +5,7 @@
 
 import '@/shared/data/server-guard'
 
+export { dialogueCritic } from './dialogue-critic'
 export { continuityCritic } from './continuity-critic'
 export { proseCritic } from './prose-critic'
 export { stakesCritic } from './stakes-critic'

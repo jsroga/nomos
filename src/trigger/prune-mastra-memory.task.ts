@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm'
 import { JobQueue, OWNED_PAYLOAD_SHAPE, defineOwnedTask } from '@/shared/jobs'
 import { db } from '@/shared/persistence/client'
 import { MemoryThreadPrefix } from '@/shared/agent-kernel/mastra/memory-ref'
-import { pruneMastraMemory, type MemoryMessageRecord } from '@/shared/agent-kernel/mastra/prune-mastra-memory'
+import { pruneMastraMemory, storytellerProjectIdsFromThreadIds, type MemoryMessageRecord } from '@/shared/agent-kernel/mastra/prune-mastra-memory'
 import { readRowString, sqlResultRows } from '@/shared/data/json-guards'
 
 /**
@@ -62,6 +62,25 @@ async function listProjectMemoryMessages(projectId: string): Promise<MemoryMessa
     WHERE ${sql.raw(MastraMessageColumn.ThreadId)} LIKE ${prefix}
   `)
   return recordsFromSql(result)
+}
+
+export async function listStorytellerMemoryThreadIds(): Promise<string[]> {
+  const prefix = `${MemoryThreadPrefix.Storyteller}:%`
+  const result = await db.execute(sql`
+    SELECT DISTINCT ${sql.raw(MastraMessageColumn.ThreadId)}
+    FROM ${sql.raw(MastraMemoryTable.Messages)}
+    WHERE ${sql.raw(MastraMessageColumn.ThreadId)} LIKE ${prefix}
+  `)
+  const threadIds: string[] = []
+  for (const row of sqlResultRows(result)) {
+    const threadId = readRowString(row, MastraMessageColumn.ThreadId)
+    if (threadId) threadIds.push(threadId)
+  }
+  return threadIds
+}
+
+export async function listStorytellerMemoryProjectIds(): Promise<string[]> {
+  return storytellerProjectIdsFromThreadIds(await listStorytellerMemoryThreadIds())
 }
 
 async function deleteMemoryMessages(ids: readonly string[]): Promise<number> {

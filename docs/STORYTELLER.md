@@ -27,7 +27,7 @@ Virtual **writers’ room**: series bible, characters, episodes, beats, script d
 |-------|--------|
 | Controller | `storyteller-chat`; **existing** Postgres Mastra store only |
 | Session | per user/project tags; thread per conversation |
-| Modes | **mutations-only plan-first**: `chat` (reads + `propose_character_fields` + `submit_plan`) → `build` (mutating tools) |
+| Modes | **Chat + Build only** (skip extra Controller modes unless a Plan-mode leak is evidenced): `chat` (reads + `propose_character_fields` + `submit_plan`) → `build` (mutating tools) |
 | Beat verdict | stays workflow suspend — compose with controller modes |
 | SSE | reuse frozen `ChatFrameType` frames (`Start` / `Token` / `ToolResult` / `Questions` / …) |
 
@@ -81,7 +81,7 @@ core/io/       # API clients, mastra-runtime seam
 
 ## Writers Room ↔ World Bible
 
-**Models:** composer picker (Kimi / GLM / Opus) → chat adapter only. Default when unset: `STORYTELLER_CHAT_MODEL`. Author / planner / critic / muse / premise use their own `STORYTELLER_*_MODEL` pins — see [DEVELOPMENT.md](./DEVELOPMENT.md) § Model routing.
+**Models:** composer picker (Kimi / GLM / Opus) → chat adapter only. Default when unset: Kimi (`STORYTELLER_CHAT_MODEL` / catalog). Author / planner / critic / muse / premise use their own `STORYTELLER_*_MODEL` pins — see [DEVELOPMENT.md](./DEVELOPMENT.md) § Model routing. `npm run test:e2e smoke` posts GLM only; it never uses Kimi or GPT-5.6 Sol. Scorers stay on `npm run eval`, not on smoke.
 
 Chat goes through `/api/assistant/storyteller` (shared assistant route). Section refreshes and free chat share one thread; bible writes are gated so the wrong panel does not get a Pending Review blur.
 
@@ -146,4 +146,41 @@ Loader does not query the beats table. Beat **text** stays `manage_beat` on Cork
 
 ## Evals
 
-`npm run eval` — golden set + craft scorers. Policy in [DEVELOPMENT.md](./DEVELOPMENT.md).
+`npm run eval` — golden set + craft scorers (`JUDGING_MODEL`, real models). Policy in [DEVELOPMENT.md](./DEVELOPMENT.md). Do not run those judges inside e2e smoke.
+
+## Phase 4 promotion
+
+Wave 1 labels live on `evals/datasets/storyteller-golden.ts` (`promotion` category, scorer id `promotion-floor` so fixture averages do not shift). Measurement is `evals/__tests__/wave1-promotion-floor.test.ts` plus `evals/promotion/wave1-decisions.ts`. No live 50-label study.
+
+| Extra | Decision | Floor |
+|---|---|---|
+| Extra cognition critic | no-go | Continuity brief already covers knowledge the POV does not possess. `checkCharacterKnowledgeFromRows` hits `promo-cognition-token-01` (`THE_BELLS_ARE_VERA`). |
+| Extra dialogue critic | go | Deterministic `runSyncProseCheck` misses talking-heads / disembodied said-book. Prose brief covers info-dump, not adjacency or embodiment. |
+| Manuscript embedding search | go | Literal `search_manuscript` hits `the silver bell under the floorboard` and misses the paraphrase plant. |
+| Knowledge ledger | go | Partition + POV miss `promo-paraphrase-leak-01` (“harbour chimes belong to her”). |
+| Fiction-adjusted Humanizer (#1 #3 #4 #10 #25) | no-go | Extra s8 patterns raise hits on `persona-grrm-01` while always-on already catches `prose-craft-cliche-01`. Always-on Humanizer (#7, #20–#24) stays. |
+
+`FF_STORYTELLER_EXTRA_CRITIC_SCOPES` stays default off. Cognition critic files are not added. Dialogue critic wires only when the flag is exactly `true`. Embedding and ledger follow their go rows; Humanizer extra classes are not added to `SKILL.md`.
+
+`search_manuscript` stays one tool id: literal hits first, then gateway `embed` (`LlmFeature.RagEmbedding`) after a miss when a `ProjectScope` is on the request. No module-global Voyage client. Knowledge-ledger rows are host-written after Approve (`persistBeat`); author-truth partition stays. `setups_payoffs` jsonb is unchanged. Apply `supabase/migrations/20260905120000_knowledge_ledger.sql` as an operator — agents do not run live SQL.
+
+Promote a finding with **Approve and promote** (or `promote_rule` in Build mode). New findings still default `promoteToProjectRule: false`. Chat/plan mode cannot call `promote_rule`.
+
+Autonomy: `FF_STORYTELLER_AUTONOMOUS` stays default off. Queued editorial verdicts are durable suspend snapshots (`GET /api/storyteller/workflow/resume?queued=1&projectId=`). Approve / Revise / Kill still host-persist. No `autoApprove: true`. No `commit_beat`. Goal judge remains episode-finished only.
+
+Mastra `mastra_messages` prune is a scheduled Trigger fan-out (existing store; not re-exported from `src/trigger/index.ts`). Host Approve also writes `beats.after_beat_state` (positions, injuries, objects held, open plants, next-decision owner) with the beat. Kill emits zero persist. Apply `supabase/migrations/20260905130000_after_beat_state.sql` as an operator.
+
+## Phase 4 skips
+
+These stay out of this phase. Chat + Build remain the Controller floor.
+
+| Skip | Why it stays out |
+|---|---|
+| drizzle-kit empty-diff / RLS user-B tests | Actions 33–34 / ADR 0001. Drizzle persist is BYPASSRLS; agents do not apply live SQL. |
+| `/api/assistant` host merge and SSE↔AI-SDK wire merge | Phase K / Phase 2 out of scope. |
+| Voice settings UI and catalog L3 script runners | Phase 3 out of scope. |
+| Four extra Controller modes / `commit_beat` | No Plan-mode leak evidenced. Mutations stay in Build. |
+| Object-identity ledger table | Knowledge ledger + partition cover duplication until a labelled golden-set miss. |
+| Anchoring / realism critic scopes | Floor three critics unless first-appearance or institutional beats still fail. |
+| `RedisServerCache` on the durable author | In-process cache until multi-process autonomy is operator-on. |
+| Delete `anti-slop` | Wave 1 fiction-adjusted Humanizer is no-go; s8/s9 did not win on style-fidelity. Always-on Humanizer stays. Author compose still loads `anti-slop/SKILL.md`. |

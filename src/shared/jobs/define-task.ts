@@ -12,7 +12,7 @@
  * The idempotency key itself is derived at trigger time by `triggerOwnedRun`,
  * the only caller that has both the task id and the nonce.
  */
-import { schemaTask } from '@trigger.dev/sdk'
+import { schemaTask, schedules } from '@trigger.dev/sdk'
 import type { z } from 'zod'
 import { JobQueue, JOB_QUEUE_CONCURRENCY_LIMIT } from '@/shared/jobs/constants/job-queue'
 
@@ -39,6 +39,22 @@ interface OwnedTaskConfig<TSchema extends z.ZodType<OwnedTaskPayload>, TOutput> 
   maxDuration?: number
   retry?: { maxAttempts: number }
   run: (payload: z.output<TSchema>) => Promise<TOutput>
+}
+
+export function defineScheduledTask<TOutput>(config: {
+  id: string
+  cron: string
+  queue: JobQueue
+  maxDuration?: number
+  run: () => Promise<TOutput>
+}) {
+  return schedules.task({
+    id: config.id,
+    cron: config.cron,
+    queue: { name: config.queue, concurrencyLimit: JOB_QUEUE_CONCURRENCY_LIMIT },
+    maxDuration: config.maxDuration,
+    run: async () => config.run(),
+  })
 }
 
 export function defineOwnedTask<TSchema extends z.ZodType<OwnedTaskPayload>, TOutput>(

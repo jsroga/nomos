@@ -33,6 +33,10 @@ import {
 import { formatSparksForPlanner } from '@/domains/storyteller/ai/agents/Muse/rank'
 import { BeatDraftCanonSchema } from '@/domains/storyteller/core/types/beat-draft-canon'
 import { CanonAudience, formatCanonFor } from './beat-draft-canon'
+import {
+  activeBeatDraftCriticRoles,
+  canonTextForCriticRole,
+} from './beat-draft-critic-roles'
 import { runLintRedraftLoop } from './beat-draft-lint-loop'
 import { formatParagraphDiff } from './beat-draft-paragraph-diff'
 import { defaultBeatDraftDeps } from './beat-draft-default-deps'
@@ -237,6 +241,7 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
     [BeatDraftCriticName.Continuity]: deps.critiqueContinuity,
     [BeatDraftCriticName.Prose]: deps.critiqueProse,
     [BeatDraftCriticName.Stakes]: deps.critiqueStakes,
+    [BeatDraftCriticName.Dialogue]: deps.critiqueDialogue,
   }
 
   const critiqueStep = createStep({
@@ -247,24 +252,8 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
       if (inputData.skipCritics) {
         return { ...inputData, critiques: inputData.lintReport }
       }
-      const formatted: Record<BeatDraftCriticName, string> = {
-        [BeatDraftCriticName.Continuity]: formatCanonFor(
-          CanonAudience.Continuity,
-          inputData.canon,
-          inputData.characters
-        ),
-        [BeatDraftCriticName.Prose]: formatCanonFor(
-          CanonAudience.Author,
-          inputData.canon,
-          inputData.characters
-        ),
-        [BeatDraftCriticName.Stakes]: formatCanonFor(
-          CanonAudience.Stakes,
-          inputData.canon,
-          inputData.characters
-        ),
-      }
-      for (const role of BEAT_DRAFT_CRITIC_ROLES) {
+      const roles = activeBeatDraftCriticRoles()
+      for (const role of roles) {
         emitRunTrace({
           type: RunTraceEventType.RoleDispatch,
           stepId: BeatDraftStepId.Critique,
@@ -272,8 +261,11 @@ export function createBeatDraftWorkflow(deps: BeatDraftDeps = defaultBeatDraftDe
         })
       }
       const reports = await Promise.all(
-        BEAT_DRAFT_CRITIC_ROLES.map(role =>
-          criticByRole[role](inputData.draft, formatted[role])
+        roles.map(role =>
+          criticByRole[role](
+            inputData.draft,
+            canonTextForCriticRole(role, inputData.canon, inputData.characters)
+          )
         )
       )
       emitRunTrace({

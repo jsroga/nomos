@@ -56,8 +56,8 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 ```
 
 - Colocate unit tests next to code. Exclude `*.e2e.test.ts` from default unit runs (need DB/LLM).
-- Coverage (`npm run test:coverage`) uses `@vitest/coverage-v8` on every `src` `.ts`/`.tsx` file (`all: true`). `test:unit` stays uninstrumented. HTML / LCOV / json-summary land in `coverage/` (gitignored); `npm run test:coverage:open` generates then opens the HTML report.
-- E2E needs `npm run dev` (or `dev:stack`) + `.env.local`. Default Playwright (`:3001` production start) sets `DATABASE_SSL_REJECT_UNAUTHORIZED=false` so a TLS-inspecting proxy does not block Postgres.
+- Coverage (`npm run test:coverage`) uses `@vitest/coverage-v8` on every `src` `.ts`/`.tsx` file (`all: true`). `test:unit` stays uninstrumented. HTML / LCOV / json-summary land in `coverage/` (gitignored); `npm run test:coverage:open` generates then opens the HTML report. Per-file floors for storyteller critical modules (`search-manuscript-embed`, knowledge-ledger checker, promoted-rule merge, queued-verdicts selector) live in `vitest.config.ts` `coverage.thresholds` — not a repo-wide %.
+- E2E needs `npm run dev` (or `dev:stack`) + `.env.local`. **Smoke chat is GLM only** (`modelName: zai-coding-plan:glm-5.2` → OpenRouter `z-ai/glm-5.2`). Never Kimi. Never GPT-5.6 Sol until the operator confirms Sol for product text. Live LLM scorers do not run on smoke or HTTP chat — scoring is `npm run eval` / Studio Trace Evaluate (`JUDGING_MODEL` may be Sol). Pause and tell the operator on OpenRouter **insufficient credits** (distinct from in-flight 402). Default Playwright (`:3001` production start) sets `DATABASE_SSL_REJECT_UNAUTHORIZED=false` so a TLS-inspecting proxy does not block Postgres.
 - Golden set: `evals/datasets/storyteller-golden.ts`.
 - `npm run eval` is a **fixture-only alias** of `eval:scorer-fixture`. It is not agent quality.
 
@@ -154,6 +154,10 @@ To add or change a documented route:
 3. Run `npm run openapi:generate` and commit `public/openapi.json`.
 4. `npm run openapi:check` (also in precommit) fails if the committed spec drifts **or** a `src/app/api/**/route.ts` is missing from the spec (unless its path is on `scripts/openapi/route-coverage-omit.ts`). `qualitygate:file` on API routes runs the same coverage check.
 
+Storyteller beat / character / project / plan PATCH bodies run executed domain Zod (not `z.record(z.unknown())`). Shrink `route-coverage-omit.ts` only for routes whose Zod now runs in the handler. `POST /api/storyteller/generate-metrics` is in the public spec.
+
+Spend routes that only prove a session exists are marked `auth-scope: session-existence-only` (honor ratchet `sessionExistenceOnlyRoutes` in `.quality-ratchet.json`). Do not wrap those in `withProjectScope` — that trap nulls E2E `supabase`. Storyteller spend that takes a project id uses `requireAuth` plus `tryProjectScope`; a miss is **404**, not 403 (`projectScope` throws `ProjectForbidden` mapped the same way so existence is not confirmed).
+
 Scalar `info.description` is public product copy — keep generate commands out of the spec. Storyteller REST (projects, characters, episodes, beats, bible, plan, jobs, consistency) is in the spec. SSE chat (`/storyteller/chat/stream`, autonomous draft) and a few workspace-only helpers stay out; MCP tool details live in [MCP_API.md](./MCP_API.md).
 
 ## Observability
@@ -176,7 +180,7 @@ npm run mastra:dev   # Traces tab
 
 `MODEL_CHUNK` spans dropped by default (`MASTRA_TRACE_MODEL_CHUNKS=true` to keep).
 
-Studio **Scores** on a chat trace: the `storyteller` agent writes `goal-reached` every turn and samples `hallucination` / `magic` / `prose-craft` at rate `0.2`. Trace **Evaluate** lists the same judges from `createMastra({ scorers: STORYTELLER_SCORERS })` for spans that were not sampled.
+HTTP Writers Room chat (`/api/storyteller/chat/stream`, `/api/assistant/*`) attaches empty scorers (`CHAT_HTTP_SCORERS`). Per-turn `goal-reached` / sampled quality judges must not run on e2e smoke. Studio Trace **Evaluate** still lists judges from `createMastra({ scorers: STORYTELLER_SCORERS })`. Run those judges with `npm run eval` (real `JUDGING_MODEL`, default GPT-5.6 Sol).
 
 Studio **Experiments**:
 
@@ -230,6 +234,7 @@ Opt-in flags are named `FF_<NAME>` and turn on with the exact value `true`; anyt
 |---|---|
 | `FF_STORYTELLER_CONTROLLER` | Plan-first AgentController path for chat |
 | `FF_STORYTELLER_AUTONOMOUS` | Durable autonomous drafting loop (goals + durable agents) |
+| `FF_STORYTELLER_EXTRA_CRITIC_SCOPES` | Extra beat-draft critic (dialogue) in parallel with the floor three; default off |
 | `FF_LOOP_CREATOR_MASTRA` | Loop-creator chat via Mastra instead of the legacy adapter |
 | `FF_REMOTE_PROMPTS` | Remote prompt hub instead of the local registry |
 | `FF_INTERNAL_DOCS` | Exposes `GET /api/settings/models` in production (still requires `INTERNAL_DOCS_SECRET`) |
@@ -270,7 +275,7 @@ Do **not** add an app-layer regex prompt-injection filter. Fiction dialogue will
 | Eval judges | `JUDGING_MODEL`, `JUDGING_MODEL_FALLBACK` | `models.ts` |
 | Chat picker fallback (client default) | `NEXT_PUBLIC_DEFAULT_AGENT_MODEL` | `resolveChatModelId` when env chat pin unset |
 
-**Writers Room vs orchestration.** The composer offers three catalog models (Kimi / GLM / Opus). That choice only overrides the **chat adapter**. Beat-draft author, planner, critics, muse, and premise use their own matrix rows and `STORYTELLER_*_MODEL` pins — never the picker. `STORYTELLER_CHAT_MODEL` is the server default when the client sends no picker id.
+**Writers Room vs orchestration.** The composer offers three catalog models (Kimi / GLM / Opus). Default when the picker is unset: Kimi (`DEFAULT_CHAT_MODEL`). That choice only overrides the **chat adapter**. Beat-draft author, planner, critics, muse, and premise use their own matrix rows and `STORYTELLER_*_MODEL` pins — never the picker. `STORYTELLER_CHAT_MODEL` is the server default when the client sends no picker id. GPT-5.6 Sol is the eval judge default (`JUDGING_MODEL`), not a chat/generation slot, until the operator confirms it for product text.
 
 **Image models (Apiframe)** — pixel paths use `APIFRAME_API_KEY` only. Pin a surface with `IMAGE_*_MODEL` (see `.env.local.example`). First tile defaults to `midjourney`. Moodboard defaults to `midjourney` (`IMAGE_MOODBOARD_MODEL`). Combined episode storyboard video defaults to Kling 3.0 storyboard look (`IMAGE_STORYBOARD_VIDEO_MODEL`); CorkBoard offers Kling/Seedance × film-like/storyboard-like. Duration is hardcoded to 15s. Kling sends `klingParams.multi_prompt` as a JSON string of `[{prompt, duration}, …]` (max 6 shots, each 1–12s, summing to the clip) plus a look-specific `negative_prompt`. Seedance has neither field — look is locked in the prompt (`Avoid: …`). Native `generate_audio` is a sound bed. Every preset then gets one continuous spoken voice-over (Luna script → OpenRouter `/audio/speech` with look + opening-beat `instructions` → ffmpeg mix) on `OPENROUTER_API_KEY`. Mix uses `FFMPEG_PATH`/`FFPROBE_PATH` when set (Trigger cloud ffmpeg extension), otherwise `ffmpeg-static`/`ffprobe-static` — local `trigger dev` does not install apt ffmpeg. Missing binaries skip VO and still save the video. Episode posters and series posters honor `IMAGE_EPISODE_POSTER_MODEL` and `IMAGE_SERIES_POSTER_MODEL`. Generate values: `midjourney` · `nano-banana` · `nano-banana-pro` · `grok-imagine-image` · `gpt-image-1.5` · `flux-2-pro`. Video: `kling-3.0` · `seedance-2.5`. Upscale: `topaz-image-upscale` · `clarity-upscale` · `midjourney`. Repaint: `gpt-image-2`. Resolvers live in `src/shared/ai/image-model-env.ts` and `src/shared/ai/storyboard-video-env.ts`.
 

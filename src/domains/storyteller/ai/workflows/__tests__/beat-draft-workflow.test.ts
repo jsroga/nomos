@@ -78,6 +78,7 @@ function makeDeps(overrides: Partial<BeatDraftDeps> = {}) {
     critiqueContinuity: vi.fn(async () => '## Continuity\nNO FINDINGS.'),
     critiqueProse: vi.fn(async () => '## Prose findings\nNO FINDINGS.'),
     critiqueStakes: vi.fn(async () => '## Stakes\nNO FINDINGS.'),
+    critiqueDialogue: vi.fn(async () => '## Dialogue\nNO FINDINGS.'),
     reviewStyleFidelity: vi.fn(async () => '## StyleFidelity\nNO FINDINGS.'),
     reviseBeat: vi.fn(async (_ctx, _canon, draft, _critiques, note) =>
       note ? `${draft}\n[revised per: ${note}]` : `${draft}\n[revised]`
@@ -408,6 +409,7 @@ describe('beat-draft-workflow contracts', () => {
     expect(deps.critiqueContinuity).toHaveBeenCalledTimes(1)
     expect(deps.critiqueProse).toHaveBeenCalledTimes(1)
     expect(deps.critiqueStakes).toHaveBeenCalledTimes(1)
+    expect(deps.critiqueDialogue).not.toHaveBeenCalled()
     expect(started).toHaveLength(3)
     expect(Math.max(...started)).toBeLessThanOrEqual(Math.min(...ended))
   })
@@ -488,6 +490,7 @@ describe('beat-draft lint skip-critics', () => {
     expect(deps.critiqueContinuity).not.toHaveBeenCalled()
     expect(deps.critiqueProse).not.toHaveBeenCalled()
     expect(deps.critiqueStakes).not.toHaveBeenCalled()
+    expect(deps.critiqueDialogue).not.toHaveBeenCalled()
     expect(deps.draftBeat).toHaveBeenCalledTimes(2)
     const criticDispatch = events.filter(
       event =>

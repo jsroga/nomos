@@ -10,6 +10,8 @@ import {
   checkContinuityTool,
 } from '@/domains/storyteller/ai/tools/bible-tools'
 import { checkSectionAlignmentTool } from '@/domains/storyteller/ai/tools/section-alignment-tool'
+import { searchManuscriptTool } from '@/domains/storyteller/ai/tools/search-manuscript'
+import { promoteRuleTool } from '@/domains/storyteller/ai/tools/promote-rule-tool'
 import { manageBeatTool, listBeatsTool } from '@/domains/storyteller/ai/tools/beat-tools'
 import { manageCharacterTool, listCharactersTool } from '@/domains/storyteller/ai/tools/character-tools'
 import { manageEpisodeTool, listEpisodesTool } from '@/domains/storyteller/ai/tools/episode-tools'
@@ -43,6 +45,7 @@ describe('storyteller controller modes (plan-first)', () => {
     expect(allow).toContain(listEpisodesTool.id)
     expect(allow).toContain(checkContinuityTool.id)
     expect(allow).toContain(checkSectionAlignmentTool.id)
+    expect(allow).toContain(searchManuscriptTool.id)
     expect(allow).toContain(proposeCharacterFieldsTool.id)
     expect(allow).toContain('submit_plan')
     // The plan-first invariant: mutating tools are invisible until an approved plan.
@@ -52,6 +55,7 @@ describe('storyteller controller modes (plan-first)', () => {
       manageCharacterTool,
       manageEpisodeTool,
       runBeatDraftWorkflowTool,
+      promoteRuleTool,
     ]) {
       expect(allow).not.toContain(mutating.id)
     }

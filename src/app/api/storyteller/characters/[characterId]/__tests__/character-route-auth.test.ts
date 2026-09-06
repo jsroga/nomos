@@ -16,9 +16,17 @@ const verifyCharacterAccess = vi.fn()
 const updateSet = vi.fn()
 
 vi.mock('@/shared/auth/auth', async () => authModuleStub())
-vi.mock('@/domains/storyteller/server', () => ({
-  verifyCharacterAccess: (...args: unknown[]) => verifyCharacterAccess(...args),
-}))
+vi.mock('@/domains/storyteller/server', async importOriginal => {
+  function isModuleNamespace(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value)
+  }
+  const actual = await importOriginal()
+  const extras = {
+    verifyCharacterAccess: (...args: unknown[]) => verifyCharacterAccess(...args),
+  }
+  if (isModuleNamespace(actual)) return { ...actual, ...extras }
+  return extras
+})
 vi.mock('@/db/client', () => ({
   db: {
     update: () => ({

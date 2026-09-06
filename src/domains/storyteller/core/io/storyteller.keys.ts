@@ -7,4 +7,6 @@ export const storytellerKeys = {
   bibleLock: (projectId: string) => [...storytellerKeys.all, StorytellerQueryKey.BibleLock, projectId] as const,
   entity: (projectId: string | null | undefined, id: string, context?: string) =>
     [...storytellerKeys.all, StorytellerQueryKey.Entity, projectId ?? null, id, context ?? null] as const,
+  queuedVerdicts: (projectId: string) =>
+    [...storytellerKeys.all, StorytellerQueryKey.QueuedVerdicts, projectId] as const,
 }

@@ -19,6 +19,16 @@ describe('examplesMatchingScorers', () => {
     expect(examplesMatchingScorers(pool, undefined).map(row => row.id)).toEqual(['a', 'b'])
   })
 
+  it('keeps promotion-floor examples out of fixture scorer filters', () => {
+    const selected = examplesMatchingScorers(STORYTELLER_GOLDEN_EXAMPLES, ['magic'])
+    expect(selected.some(row => row.metadata.category === 'promotion')).toBe(false)
+    expect(
+      STORYTELLER_GOLDEN_EXAMPLES.filter(row => row.metadata.category === 'promotion').every(
+        row => row.metadata.scorers.includes('promotion-floor'),
+      ),
+    ).toBe(true)
+  })
+
   it('keeps only examples whose allowlist intersects the filter', () => {
     const pool = [
       example('beat', ['beat-plan-concreteness']),

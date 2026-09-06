@@ -758,22 +758,70 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "seriesBible": {
-            "type": "object",
-            "additionalProperties": {
-              "nullable": true
-            }
+            "nullable": true
+          },
+          "series_bible": {
+            "nullable": true
           },
           "storyPlan": {
-            "type": "object",
-            "additionalProperties": {
-              "nullable": true
-            }
+            "nullable": true
+          },
+          "story_plan": {
+            "nullable": true
+          },
+          "masterPrompt": {
+            "type": "string",
+            "nullable": true
+          },
+          "master_prompt": {
+            "type": "string",
+            "nullable": true
+          },
+          "stylePreset": {
+            "type": "string",
+            "nullable": true
+          },
+          "style_preset": {
+            "type": "string",
+            "nullable": true
+          },
+          "generationMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "generation_mode": {
+            "type": "string",
+            "nullable": true
+          },
+          "styleAnchorUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "style_anchor_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "canvasMasterPrompt": {
+            "type": "string",
+            "nullable": true
+          },
+          "canvas_master_prompt": {
+            "type": "string",
+            "nullable": true
+          },
+          "styleReferenceUrls": {
+            "nullable": true
+          },
+          "style_reference_urls": {
+            "nullable": true
           }
         }
       },
@@ -859,16 +907,53 @@
             "minLength": 1
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "role": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "characterPrompt": {
+            "type": "string",
+            "nullable": true
+          },
+          "mbti": {
+            "type": "string",
+            "nullable": true
+          },
+          "psychology": {
+            "nullable": true
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "portraitUrl": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
+          },
+          "morality": {
+            "type": "number"
+          },
+          "transformation": {
+            "type": "number"
+          },
+          "stress": {
+            "type": "number"
+          },
+          "trust": {
+            "type": "number"
+          },
+          "power": {
+            "type": "number"
+          },
+          "isolation": {
+            "type": "number"
           }
         }
       },
@@ -1186,8 +1271,47 @@
       },
       "StorytellerPatchBeatRequest": {
         "type": "object",
-        "additionalProperties": {
-          "nullable": true
+        "properties": {
+          "logline": {
+            "type": "string",
+            "nullable": true
+          },
+          "beatType": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "type": "string",
+            "nullable": true
+          },
+          "visualHook": {
+            "type": "string",
+            "nullable": true
+          },
+          "charactersInvolved": {
+            "nullable": true
+          },
+          "emotionalShifts": {
+            "nullable": true
+          },
+          "causalDependencies": {
+            "nullable": true
+          },
+          "setupsPayoffs": {
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "imagePrompt": {
+            "type": "string",
+            "nullable": true
+          }
         }
       },
       "StorytellerBibleLockResponse": {
@@ -1314,6 +1438,33 @@
             "type": "string"
           }
         }
+      },
+      "StorytellerPatchPlanSequenceRequest": {
+        "type": "object",
+        "properties": {
+          "episodeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sequenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "updates": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          }
+        },
+        "required": [
+          "sequenceId",
+          "updates"
+        ]
       },
       "StorytellerTimelineResponse": {
         "type": "array",
@@ -1801,6 +1952,40 @@
         },
         "required": [
           "prompt"
+        ]
+      },
+      "StorytellerGenerateMetricsResponse": {
+        "type": "object",
+        "properties": {
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          }
+        },
+        "required": [
+          "metrics"
+        ]
+      },
+      "StorytellerGenerateMetricsRequest": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "modelName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "description"
         ]
       },
       "StorytellerConsistencyCheckResponse": {
@@ -4133,7 +4318,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/StorytellerSavePlanRequest"
+                "$ref": "#/components/schemas/StorytellerPatchPlanSequenceRequest"
               }
             }
           }
@@ -4984,6 +5169,59 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SuccessMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/storyteller/generate-metrics": {
+      "post": {
+        "tags": [
+          "Storyteller"
+        ],
+        "summary": "Generate character metrics",
+        "security": [
+          {
+            "Session": []
+          },
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorytellerGenerateMetricsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Generated character metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorytellerGenerateMetricsResponse"
                 }
               }
             }

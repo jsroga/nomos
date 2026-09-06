@@ -101,6 +101,7 @@ export const beats = pgTable(
     emotionalShifts: jsonb('emotional_shifts').default({}),
     causalDependencies: jsonb('causal_dependencies').default([]),
     setupsPayoffs: jsonb('setups_payoffs').default({}),
+    afterBeatState: jsonb('after_beat_state').notNull().default({}),
     status: text('status').default('proposed'),
     imageUrl: text('image_url'),
     imagePrompt: text('image_prompt'),

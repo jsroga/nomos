@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { checkSetupPayoffsFromRows } from '@/domains/storyteller/services/consistency-service'
 import {
   ConsistencyIssueType,
@@ -19,5 +20,13 @@ describe('checkSetupPayoffsFromRows', () => {
     const orphaned = issues.find(issue => issue.type === ConsistencyIssueType.OrphanedSetup)
     expect(missing?.severity).toBe(ConsistencySeverity.Minor)
     expect(orphaned?.severity).toBe(ConsistencySeverity.Major)
+  })
+
+  it('loads those rows from the setups table', () => {
+    const source = readFileSync(
+      'src/domains/storyteller/services/consistency-service.ts',
+      'utf8'
+    )
+    expect(source).toContain('from(setups)')
   })
 })

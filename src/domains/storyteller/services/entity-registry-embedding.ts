@@ -1,4 +1,5 @@
 import { StringSeparator } from '@/shared/data/constants/protocol'
+import type { ProjectScope } from '@/shared/auth/project-scope'
 import type { EntityType } from './entity-registry-reference-id'
 
 interface EntityReferenceForEmbedding {
@@ -9,7 +10,10 @@ interface EntityReferenceForEmbedding {
   metadata: Record<string, unknown>
 }
 
-export async function generateEntityEmbedding(entity: EntityReferenceForEmbedding): Promise<void> {
+export async function generateEntityEmbedding(
+  entity: EntityReferenceForEmbedding,
+  scope: ProjectScope
+): Promise<void> {
   try {
     const { entityGraphService } = await import('./entity-graph-service')
 
@@ -36,7 +40,7 @@ export async function generateEntityEmbedding(entity: EntityReferenceForEmbeddin
 
     if (embeddingContent.length < 5) return
 
-    const wrote = await entityGraphService.buildEntityEmbedding(entity.id, embeddingContent)
+    const wrote = await entityGraphService.buildEntityEmbedding(entity.id, embeddingContent, scope)
     if (wrote) {
       console.log(`🧠 [EntityRegistry] Generated embedding for ${entity.id}`)
     }

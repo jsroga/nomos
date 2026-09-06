@@ -12,12 +12,14 @@ import {
   mapResumeOptionToArtifactVerdict,
   resumeArtifactDraftRun,
 } from '@/domains/storyteller/core/io/resume-artifact-draft'
+import { persistPromotedProjectRule, PromotedRuleCopy } from '@/domains/storyteller/core/io/promote-project-rule'
+import { listQueuedEditorialVerdicts } from '@/domains/storyteller/core/io/list-queued-verdicts'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
-import { HttpStatus } from '@/shared/data/constants/protocol'
+import { HttpStatus, QueryFlag } from '@/shared/data/constants/protocol'
 import { MastraWorkflowStatus, QueryParam } from '@/shared/data/constants/protocol'
 
 /**
@@ -41,6 +43,9 @@ type VerdictAction = (typeof VERDICT_ACTIONS)[number]
 
 function toVerdictAction(selectedOption: string): VerdictAction | null {
   const normalized = selectedOption.trim().toLowerCase()
+  if (normalized === StorytellerWorkflowVerdict.ApprovePromote) {
+    return StorytellerWorkflowVerdict.Approve
+  }
   return VERDICT_ACTIONS.find(action => action === normalized) ?? null
 }
 
@@ -148,6 +153,21 @@ async function denyUnlessRunOwner(
   return null
 }
 
+async function persistPromoteIfRequested(
+  selectedOption: string,
+  additionalFeedback: string | undefined,
+  beatState: unknown
+): Promise<void> {
+  if (selectedOption.trim().toLowerCase() !== StorytellerWorkflowVerdict.ApprovePromote) return
+  const projectId = projectIdFromRunState(beatState)
+  if (!projectId) return
+  await persistPromotedProjectRule({
+    projectId,
+    ruleText: additionalFeedback?.trim() || PromotedRuleCopy.DefaultRule,
+    quote: PromotedRuleCopy.DefaultQuote,
+  })
+}
+
 export async function POST(req: NextRequest) {
   try {
     const json = await req.json()
@@ -206,6 +226,7 @@ export async function POST(req: NextRequest) {
     }
 
     const parsedOutput = beatDraftOutputSchema.safeParse(workflowOutputPayload(result))
+    await persistPromoteIfRequested(selectedOption, additionalFeedback, beatState)
     return NextResponse.json({
       success: true,
       message: `Workflow resumed with option: ${selectedOption}`,
@@ -228,6 +249,23 @@ export async function POST(req: NextRequest) {
  * Check status of a suspended workflow run (from durable storage).
  */
 export async function GET(req: NextRequest) {
+  const queued = req.nextUrl.searchParams.get(QueryParam.Queued)
+  const projectId = req.nextUrl.searchParams.get(QueryParam.ProjectId)
+  if (queued === QueryFlag.On) {
+    if (!projectId) {
+      return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
+    }
+    const { session } = await requireAuth()
+    if (!session) {
+      return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
+    }
+    if (!(await tryProjectScope(projectId, session.user.id))) {
+      return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: HttpStatus.NOT_FOUND })
+    }
+    const queuedVerdicts = await listQueuedEditorialVerdicts(projectId)
+    return NextResponse.json({ queued: queuedVerdicts })
+  }
+
   const runId = req.nextUrl.searchParams.get(QueryParam.RunId)
 
   if (!runId) {

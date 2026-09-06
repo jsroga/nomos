@@ -73,7 +73,7 @@ class EntityRegistryService {
     this.cacheEntity(entity, input.scope.projectId)
     void (async () => {
       try {
-        await this.persistEntity(entity)
+        await this.persistEntity(entity, input.scope)
       } catch (err) {
         console.warn(EntityRegistryLog.PersistFailed, err)
       }
@@ -104,7 +104,7 @@ class EntityRegistryService {
     this.cacheEntity(entity, input.scope.projectId)
     void (async () => {
       try {
-        await this.persistEntity(entity)
+        await this.persistEntity(entity, input.scope)
       } catch (err) {
         console.warn(EntityRegistryLog.PersistFailed, err)
       }
@@ -366,7 +366,7 @@ class EntityRegistryService {
     this.projectCaches.get(projectId)?.add(entity.id)
   }
 
-  private async persistEntity(entity: EntityReference): Promise<void> {
+  private async persistEntity(entity: EntityReference, scope?: ProjectScope): Promise<void> {
     await db
       .insert(entityReferences)
       .values({
@@ -392,7 +392,8 @@ class EntityRegistryService {
 
     void (async () => {
       try {
-        await generateEntityEmbedding(entity)
+        if (!scope) return
+        await generateEntityEmbedding(entity, scope)
       } catch (err) {
         console.warn(`[EntityRegistry] Embedding generation failed for ${entity.id}:`, err)
       }

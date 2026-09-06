@@ -26,8 +26,8 @@ export interface EvalBaseline {
   dataset: string
   scorers: Record<string, BaselineScorer>
   excluded?: Record<string, string>
-  /** What the judges cost when this baseline was chosen. */
-  judgeCostUsd?: number
+  /** What the judges cost when this baseline was chosen. JSON baselines may store `null`. */
+  judgeCostUsd?: number | null
 }
 
 export interface CostComparison {
@@ -79,13 +79,17 @@ function verdictFor(baseline: number, current: number, threshold: number): Score
   return ScorerVerdict.Improved
 }
 
+function isRecordedCost(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
 function resolveCost(
   report: MultiVariantReport,
   baseline: EvalBaseline
 ): { cost: CostComparison | null; costSkipped: string | null } {
   const before = baseline.judgeCostUsd
   const after = report.judgeUsage?.costUsd
-  if (before === undefined || after === undefined) {
+  if (!isRecordedCost(before) || !isRecordedCost(after)) {
     return { cost: null, costSkipped: CostSkipReason.MissingBaselineOrCurrent }
   }
 

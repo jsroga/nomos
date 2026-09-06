@@ -30,6 +30,18 @@ describe('ARTIFACT_DRAFT_MATRIX', () => {
     }
   })
 
+  it('never assigns cognition or dialogue problem types to artifact rows', () => {
+    const banned = new Set([
+      ProblemType.CognitionAndDisclosure,
+      ProblemType.DialogueAdjacency,
+      ProblemType.DialogueEmbodiment,
+    ])
+    for (const row of ARTIFACT_DRAFT_MATRIX) {
+      expect(row.criticScopes.some(scope => banned.has(scope))).toBe(false)
+      expect(row.humanizer).toBe(false)
+    }
+  })
+
   it('maps premise to stakes and character to continuity', () => {
     expect(artifactDraftMatrixRow(ArtifactKind.EpisodePremise)?.criticScopes).toEqual([
       ProblemType.DecisionOwnership,

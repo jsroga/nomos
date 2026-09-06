@@ -8,6 +8,7 @@ export enum ScorerId {
   SlopRate = 'slop_rate',
   SelfRepetition = 'self_repetition',
   VoiceDistinctiveness = 'voice_distinctiveness',
+  DialogueAdjacency = 'dialogue_adjacency',
 }
 
 export enum EntityKind {

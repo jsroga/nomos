@@ -1,6 +1,9 @@
 import { env } from '@/shared/config/env'
 import { PgVector } from '@mastra/pg'
-import { getVoyageEmbeddings, type IEmbeddings } from '@/shared/ai/embeddings/voyage-embeddings'
+import {
+  embedQueryFromGatewayContext,
+  embedTextsFromGatewayContext,
+} from '@/shared/ai/embeddings/gateway-embeddings'
 
 import { gameDesignPatternFromVectorRow } from './pattern-wire'
 import {
@@ -34,7 +37,6 @@ const DEFAULT_DIMENSION = 1536 // OpenAI text-embedding-3-small
  */
 export class GameDesignMemory {
   private vector: PgVector
-  private embeddings: IEmbeddings
   private indexName: string
   private dimension: number
   private initialized = false
@@ -44,9 +46,6 @@ export class GameDesignMemory {
       id: config.indexName || DEFAULT_INDEX_NAME,
       connectionString: config.connectionString,
     })
-    // Voyage rather than OpenAI: same `IEmbeddings` surface, and it is already
-    // the embedding provider everywhere else in the codebase.
-    this.embeddings = getVoyageEmbeddings()
     this.indexName = config.indexName || DEFAULT_INDEX_NAME
     this.dimension = config.dimension || DEFAULT_DIMENSION
   }
@@ -75,8 +74,7 @@ export class GameDesignMemory {
     // Create text representation for embedding
     const textForEmbedding = this.patternToText(pattern)
 
-    // Generate embedding using LangChain
-    const embedding = await this.embeddings.embedQuery(textForEmbedding)
+    const embedding = await embedQueryFromGatewayContext(textForEmbedding)
 
     // Upsert to vector store
     const [id] = await this.vector.upsert({
@@ -106,8 +104,7 @@ export class GameDesignMemory {
 
     const textsForEmbedding = patterns.map(p => this.patternToText(p))
 
-    // Generate embeddings in batch using LangChain
-    const embeddings = await this.embeddings.embedDocuments(textsForEmbedding)
+    const embeddings = await embedTextsFromGatewayContext(textsForEmbedding)
 
     // Upsert all to vector store
     const ids = await this.vector.upsert({
@@ -134,7 +131,7 @@ export class GameDesignMemory {
     await this.initialize()
 
     // Generate query embedding
-    const embedding = await this.embeddings.embedQuery(query)
+    const embedding = await embedQueryFromGatewayContext(query)
 
     // Query vector store
     const results = await this.vector.query({
@@ -158,7 +155,7 @@ export class GameDesignMemory {
   ): Promise<GameDesignPattern[]> {
     await this.initialize()
 
-    const embedding = await this.embeddings.embedQuery(query)
+    const embedding = await embedQueryFromGatewayContext(query)
 
     const results = await this.vector.query({
       indexName: this.indexName,

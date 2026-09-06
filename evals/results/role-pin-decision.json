@@ -1,0 +1,12 @@
+{
+  "pinned": false,
+  "liveQuality": null,
+  "labelledPlanStubs": 7,
+  "candidates": {
+    "authorEnv": "STORYTELLER_AUTHOR_MODEL",
+    "plannerEnv": "STORYTELLER_PLANNER_MODEL",
+    "criticEnv": "STORYTELLER_CRITIC_MODEL",
+    "fastSample": "openai/gpt-5.6-luna"
+  },
+  "reason": "Env role pins stay unset until a live Kimi vs GLM labelled-plan run records quality. GLM remains the cheap smoke sample. Pause on insufficient credits."
+}

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { KnowledgeLedgerCanonRowSchema } from '@/domains/storyteller/core/knowledge-ledger/canon-row'
 
 export enum DraftBeatId {
   Draft = 'draft',
@@ -25,6 +26,7 @@ export const BeatDraftCanonSchema = z.object({
   currentRoadmapSlotText: z.string(),
   otherRoadmapSlotsText: z.string(),
   nextSequence: z.number().int().positive(),
+  knowledgeLedger: z.array(KnowledgeLedgerCanonRowSchema).default([]),
 })
 
 export type BeatDraftCanon = z.infer<typeof BeatDraftCanonSchema>
@@ -39,6 +41,7 @@ export function emptyBeatDraftCanon(overrides: Partial<BeatDraftCanon> = {}): Be
     currentRoadmapSlotText: '',
     otherRoadmapSlotsText: '',
     nextSequence: 1,
+    knowledgeLedger: [],
     ...overrides,
   }
 }

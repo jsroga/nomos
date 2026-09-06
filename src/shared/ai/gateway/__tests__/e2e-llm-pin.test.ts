@@ -85,4 +85,10 @@ describe('e2e LLM pin', () => {
     expect(readFileSync(PinSource.LlmJudge, 'utf8')).toContain('E2eLlmPinError.JudgingForbidden')
     expect(readFileSync(PinSource.PureModel, 'utf8')).toContain('E2ePinnedChatModel.OpenRouterId')
   })
+
+  it('keeps AsyncLocalStorage out of models.ts so webpack client chunks stay Node-free', () => {
+    const src = readFileSync(PinSource.PureModel, 'utf8')
+    expect(src).not.toContain('/gateway/e2e-llm-pin')
+    expect(src).not.toContain('node:async_hooks')
+  })
 })

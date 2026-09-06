@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server'
-import { z } from 'zod'
 import { db } from '@/db/client'
 import { beats } from '@/db'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
-import { pickBeatPatchUpdates, verifyBeatAccess } from '@/domains/storyteller/server'
+import {
+  beatPatchRequestRecord,
+  beatPatchRequestSchema,
+  pickBeatPatchUpdates,
+  verifyBeatAccess,
+} from '@/domains/storyteller/server'
 import { projectIdForBeat, upsertSetupsFromBeat } from '@/domains/storyteller/core/io/setups-write'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { HttpStatus } from '@/shared/data/constants/protocol'
-
-const BeatPatchBodySchema = z.record(z.unknown())
 
 export async function PATCH(req: Request, props: { params: Promise<{ beatId: string }> }) {
   const params = await props.params
@@ -29,11 +31,11 @@ export async function PATCH(req: Request, props: { params: Promise<{ beatId: str
       )
     }
 
-    const body = BeatPatchBodySchema.safeParse(await req.json())
+    const body = beatPatchRequestSchema.safeParse(await req.json())
     if (!body.success) {
       return NextResponse.json({ error: API_ERROR.INVALID_PAYLOAD }, { status: HttpStatus.BAD_REQUEST })
     }
-    const update = pickBeatPatchUpdates(body.data)
+    const update = pickBeatPatchUpdates(beatPatchRequestRecord(body.data))
     const [updatedBeat] = await db.update(beats).set(update).where(eq(beats.id, beatId)).returning()
 
     if (update.setupsPayoffs !== undefined) {

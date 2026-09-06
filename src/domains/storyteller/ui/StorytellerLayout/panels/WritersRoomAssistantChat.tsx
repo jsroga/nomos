@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
 import { BeatDraftVerdictToolUI } from '@/domains/storyteller/ui/QuestionCard/BeatDraftVerdictToolUI'
+import { QueuedVerdictsList } from '@/domains/storyteller/ui/QueuedVerdicts/QueuedVerdictsList'
 import type { AddToWorldPayload, CanAddToWorldInput } from '@/shared/chat/assistant/AssistantAddToWorldContext'
 import type { AssistantGenerationActivity } from '@/shared/chat/assistant/derive-assistant-generation-activity'
 import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
@@ -102,6 +103,7 @@ export function WritersRoomAssistantChat({
 
   return (
     <div className="flex h-full flex-col" id={TOUR_STEP_IDS.STORYTELLER_CHAT}>
+      {projectId ? <QueuedVerdictsList projectId={projectId} /> : null}
       <AssistantChat
         key={projectId || 'pending'}
         agentId="storyteller"

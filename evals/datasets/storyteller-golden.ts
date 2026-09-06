@@ -18,6 +18,7 @@ export type ScorerId =
   | 'beat-plan-concreteness'
   | 'critic-discipline'
   | 'voice_distinctiveness'
+  | 'promotion-floor'
 
 export interface StorytellerGoldenExample {
   id: string
@@ -36,11 +37,28 @@ export interface StorytellerGoldenExample {
   /** Prose to evaluate (stand-in for agent output until live eval is wired) */
   referenceOutput: string
   metadata: {
-    category: 'magic' | 'consistency' | 'hallucination' | 'persona' | 'beat-plan' | 'critic-discipline' | 'prose-craft'
+    category:
+      | 'magic'
+      | 'consistency'
+      | 'hallucination'
+      | 'persona'
+      | 'beat-plan'
+      | 'critic-discipline'
+      | 'prose-craft'
+      | 'promotion'
     description: string
-    /** When set, only these scorers run for this example */
     scorers: ScorerId[]
+    promotionClass?: PromotionClass
   }
+}
+
+export enum PromotionClass {
+  CognitionDisclosure = 'cognition-disclosure',
+  DialogueAdjacency = 'dialogue-adjacency',
+  DialogueEmbodiment = 'dialogue-embodiment',
+  PlantLiteral = 'plant-literal',
+  PlantParaphrase = 'plant-paraphrase',
+  ParaphraseLeak = 'paraphrase-leak',
 }
 
 const examples: StorytellerGoldenExample[] = [
@@ -397,6 +415,105 @@ There was nothing left to say that the silence had not already said better, so h
       category: 'magic',
       description: 'Inaction dressed as drama; final beat is reflection, not change — must hard-zero',
       scorers: ['story-motion'],
+    },
+  },
+
+  {
+    id: 'promo-cognition-token-01',
+    input: {
+      message: 'Draft Vera at the vestry after the forged receipt',
+      canon: 'Plot twist only: THE_BELLS_ARE_VERA. Story facts: Vera keeps the civic clocks honest.',
+    },
+    referenceOutput: `INT. VESTRY — NIGHT
+Vera counts the iron keys and already knows THE_BELLS_ARE_VERA.
+She pockets the receipt without looking at Marcus.`,
+    metadata: {
+      category: 'promotion',
+      description: 'POV names an author-truth token that lives only in plot twists',
+      scorers: ['promotion-floor'],
+      promotionClass: PromotionClass.CognitionDisclosure,
+    },
+  },
+  {
+    id: 'promo-dialogue-talking-heads-01',
+    input: {
+      message: 'Draft the vestry confrontation',
+    },
+    referenceOutput: `INT. VESTRY — NIGHT
+VERA
+I know what you did.
+MARCUS
+You don't.
+VERA
+Then say it.
+MARCUS
+There is nothing to say.`,
+    metadata: {
+      category: 'promotion',
+      description: 'Adjacent dialogue with no embodiment or interruption',
+      scorers: ['promotion-floor'],
+      promotionClass: PromotionClass.DialogueAdjacency,
+    },
+  },
+  {
+    id: 'promo-dialogue-disembodied-01',
+    input: {
+      message: 'Draft the vestry confrontation with talking heads',
+    },
+    referenceOutput: `INT. VESTRY — NIGHT
+"The ledger is forged," Vera said.
+"I know," Marcus said.
+"Then why keep it?" Vera said.
+"Because you signed it," Marcus said.`,
+    metadata: {
+      category: 'promotion',
+      description: 'Said-book dialogue with no body, prop, or interruption',
+      scorers: ['promotion-floor'],
+      promotionClass: PromotionClass.DialogueEmbodiment,
+    },
+  },
+  {
+    id: 'promo-plant-literal-01',
+    input: {
+      message: 'Search the manuscript for the silver bell plant',
+      plantedCliche: 'the silver bell under the floorboard',
+    },
+    referenceOutput: 'Vera lifts the silver bell under the floorboard and pockets it.',
+    metadata: {
+      category: 'promotion',
+      description: 'Exact plant string present in beat prose',
+      scorers: ['promotion-floor'],
+      promotionClass: PromotionClass.PlantLiteral,
+    },
+  },
+  {
+    id: 'promo-plant-paraphrase-01',
+    input: {
+      message: 'Search the manuscript for the silver bell plant',
+      plantedCliche: 'the silver bell under the floorboard',
+    },
+    referenceOutput: 'A hidden chime waits beneath the boards; Vera does not name it.',
+    metadata: {
+      category: 'promotion',
+      description: 'Same plant paraphrased — literal search should miss',
+      scorers: ['promotion-floor'],
+      promotionClass: PromotionClass.PlantParaphrase,
+    },
+  },
+  {
+    id: 'promo-paraphrase-leak-01',
+    input: {
+      message: 'Draft Vera after the harbour confession',
+      canon: 'Plot twist only: THE_BELLS_ARE_VERA. Story facts: Vera keeps the civic clocks honest.',
+    },
+    referenceOutput: `INT. VESTRY — NIGHT
+Vera already knows the harbour chimes belong to her.
+She does not say the name.`,
+    metadata: {
+      category: 'promotion',
+      description: 'Author-truth leaked by paraphrase, not the twist token',
+      scorers: ['promotion-floor'],
+      promotionClass: PromotionClass.ParaphraseLeak,
     },
   },
 ]

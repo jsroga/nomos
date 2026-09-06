@@ -4,13 +4,19 @@ import { projects, seriesBibles, storyPlans } from '@/db'
 import { eq } from 'drizzle-orm'
 import { firstNonEmptyRecord, readString, recordFromJson } from '@/shared/data/json-guards'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
-import { StorytellerLegacyPlanField } from '@/domains/storyteller/core/storyteller-page-wire'
+import { HttpStatus } from '@/shared/data/constants/protocol'
 import {
+  ProjectPatchField,
+  projectPatchRequestRecord,
+  projectPatchRequestSchema,
+} from '@/domains/storyteller/core/io/project-patch'
+import {
+  StorytellerLegacyPlanField,
   bibleOwnedFieldsMissingFromCanon,
   isPresentOverlapValue,
   omitVacantSoundtrackInspirations,
   populatedSoundtrackInspirations,
-} from '@/domains/storyteller/core/utils/bible-populated-fields'
+} from '@/domains/storyteller/server'
 
 const LEGACY_STORY_PLAN_FIELDS = [
   StorytellerLegacyPlanField.WorldDescription,
@@ -135,8 +141,27 @@ async function upsertMergedJsonContent(input: {
 }
 
 export async function patchStorytellerProject(projectId: string, req: NextRequest) {
-  const body = await req.json()
-  const { series_bible, seriesBible, story_plan, storyPlan, ...updates } = body
+  const parsed = projectPatchRequestSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: API_ERROR.INVALID_PAYLOAD }, { status: HttpStatus.BAD_REQUEST })
+  }
+  const body = projectPatchRequestRecord(parsed.data)
+  const series_bible = body[ProjectPatchField.SeriesBibleSnake]
+  const seriesBible = body[ProjectPatchField.SeriesBible]
+  const story_plan = body[ProjectPatchField.StoryPlanSnake]
+  const storyPlan = body[ProjectPatchField.StoryPlan]
+  const updates: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(body)) {
+    if (
+      key === ProjectPatchField.SeriesBibleSnake ||
+      key === ProjectPatchField.SeriesBible ||
+      key === ProjectPatchField.StoryPlanSnake ||
+      key === ProjectPatchField.StoryPlan
+    ) {
+      continue
+    }
+    updates[key] = value
+  }
 
   const dbUpdates = buildProjectDbUpdates(updates)
   if (Object.keys(dbUpdates).length > 1) {

@@ -21,6 +21,7 @@ export function mapResumeOptionToArtifactVerdict(
   const normalized = option.trim().toLowerCase()
   if (
     normalized === StorytellerWorkflowVerdict.Approve ||
+    normalized === StorytellerWorkflowVerdict.ApprovePromote ||
     normalized === ArtifactDraftVerdictAction.Accept
   ) {
     return ArtifactDraftVerdictAction.Accept

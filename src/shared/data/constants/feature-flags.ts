@@ -8,6 +8,7 @@
 export enum FeatureFlag {
   StorytellerController = 'FF_STORYTELLER_CONTROLLER',
   StorytellerAutonomous = 'FF_STORYTELLER_AUTONOMOUS',
+  StorytellerExtraCriticScopes = 'FF_STORYTELLER_EXTRA_CRITIC_SCOPES',
   LoopCreatorMastra = 'FF_LOOP_CREATOR_MASTRA',
   RemotePrompts = 'FF_REMOTE_PROMPTS',
   InternalDocs = 'FF_INTERNAL_DOCS',

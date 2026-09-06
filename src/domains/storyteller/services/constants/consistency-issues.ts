@@ -2,6 +2,9 @@ export enum ConsistencyIssueType {
   Contradiction = 'contradiction',
   OrphanedSetup = 'orphaned_setup',
   MissingPayoff = 'missing_payoff',
+  Timeline = 'timeline',
+  KnowledgeViolation = 'knowledge_violation',
+  Character = 'character',
 }
 
 export enum ConsistencySeverity {
@@ -18,6 +21,9 @@ export enum ConsistencySuggestion {
   ReviseBeatWorldRules = 'Revise beat to comply with world rules',
   CreateSetupEarlier = 'Create the setup in an earlier beat',
   AddPayoffBeat = 'Add a beat that pays off this setup',
+  NameCausalParent = 'Name the beat this draft depends on',
+  PointCausalEarlier = 'Point causalDependencies at an earlier beat',
+  CutAuthorTruthLeak = 'Cut the leak or reveal it through what the POV can observe',
 }
 
 export enum ConsistencyServiceError {

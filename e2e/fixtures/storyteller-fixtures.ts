@@ -17,6 +17,7 @@ import {
   FlowRoute,
   FlowKey,
   FlowRole,
+  FlowQueryParam,
 } from '../constants/storyteller-flow'
 import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { EMPTY_TURN_NOTICE } from '@/shared/chat/assistant/assistant-stream-timing'
@@ -188,7 +189,12 @@ export async function createStoryProject(page: Page): Promise<CreatedProject> {
   return { id: body.id, name }
 }
 
-export async function gotoStoryteller(page: Page, projectId: string): Promise<void> {
+export async function gotoStoryteller(
+  page: Page,
+  projectId: string,
+  episodeId?: string,
+  options?: { waitForChat?: boolean }
+): Promise<void> {
   const chatModel = process.env.STORYTELLER_CHAT_MODEL?.trim() || FlowChatModel.Luna
   await page.addInitScript(
     ({ key, value }) => {
@@ -207,10 +213,14 @@ export async function gotoStoryteller(page: Page, projectId: string): Promise<vo
     )
     .catch(() => undefined)
 
-  await page.goto(`/${projectId}/storyteller`, { waitUntil: FlowRoute.DomContentLoaded })
+  const search = episodeId
+    ? `?${FlowQueryParam.EpisodeId}=${encodeURIComponent(episodeId)}`
+    : ''
+  await page.goto(`/${projectId}/storyteller${search}`, { waitUntil: FlowRoute.DomContentLoaded })
   await expect(page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.Storyteller}`)).toBeVisible()
   await expect(page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.LoadingProject}`)).toBeHidden({ timeout: FlowTimeout.Long })
   await chatWarmed
+  if (options?.waitForChat === false) return
   await expect(page.locator(CHAT_INPUT).first()).toBeEnabled({ timeout: FlowTimeout.Medium })
 }
 

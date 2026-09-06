@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   E2E_HARNESS_USER,
   authModuleStub,
@@ -8,6 +9,7 @@ import {
 } from '@/app/api/route-harness'
 import { HttpMethod } from '@/shared/data/constants/protocol'
 import { isPlainObject } from '@/shared/data/json-guards'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 
 const start = vi.fn()
 
@@ -57,5 +59,27 @@ describe('handleStorytellerChatPost autoApprove', () => {
     const payload = start.mock.calls[0]?.[0]
     const inputData = isPlainObject(payload) && isPlainObject(payload.inputData) ? payload.inputData : null
     expect(inputData?.autoApprove).not.toBe(true)
+  })
+
+  it('does not hardcode autoApprove true on chat POST or stream routes', () => {
+    const AutoApproveTrue = 'autoApprove: true'
+    const sources = [
+      'src/app/api/storyteller/chat/chat-post-handler.ts',
+      'src/app/api/storyteller/chat/stream/route.ts',
+      'src/app/api/storyteller/chat/stream/stream-post-handler.ts',
+      'src/app/api/storyteller/chat/stream/stream-route-handler.ts',
+      'src/app/api/storyteller/autonomous/route.ts',
+    ]
+    for (const path of sources) {
+      expect(readFileSync(path, 'utf8')).not.toContain(AutoApproveTrue)
+    }
+  })
+
+  it('keeps autonomous drafting off unless the env flag is exactly true', () => {
+    const previous = process.env[FeatureFlag.StorytellerAutonomous]
+    Reflect.deleteProperty(process.env, FeatureFlag.StorytellerAutonomous)
+    expect(isFeatureEnabled(FeatureFlag.StorytellerAutonomous)).toBe(false)
+    if (previous === undefined) Reflect.deleteProperty(process.env, FeatureFlag.StorytellerAutonomous)
+    else process.env[FeatureFlag.StorytellerAutonomous] = previous
   })
 })

@@ -31,6 +31,11 @@ export enum QueryParam {
   EnrichRelationships = 'enrichRelationships',
   Refresh = 'refresh',
   Context = 'context',
+  Queued = 'queued',
+}
+
+export enum QueryFlag {
+  On = '1',
 }
 
 export enum HttpStatus {

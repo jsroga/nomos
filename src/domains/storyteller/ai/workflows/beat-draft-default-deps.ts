@@ -12,6 +12,7 @@ import { brainstormWildIdeas } from '@/domains/storyteller/ai/agents/Muse/brains
 import { rankWildIdeas } from '@/domains/storyteller/ai/agents/Muse/rank'
 import {
   continuityCritic,
+  dialogueCritic,
   proseCritic,
   stakesCritic,
   CriticReportSchema,
@@ -47,10 +48,21 @@ import {
 import { ManageToolOperation } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { ManageBeatOutputSchema } from '@/domains/storyteller/ai/tools/beat-tools-schema'
 import { nextBeatSequence, nextSequenceAfter, loadProjectMasterPrompt } from '@/domains/storyteller/core/io/beat-sequence'
+import {
+  listKnowledgeLedgerRows,
+  writeKnowledgeLedgerRows,
+} from '@/domains/storyteller/core/io/knowledge-ledger.api'
+import { ledgerFactsFromApprovedBeat } from '@/domains/storyteller/core/knowledge-ledger/facts-from-beat'
+import { packBeatDraftAuthorFingerprints } from './beat-draft-voice-fingerprints'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { runSyncProseCheck, sortFindings } from '@/domains/storyteller/core/prose-check/run-sync'
 import { setupsFindingsFromRows } from '@/domains/storyteller/core/prose-check/setups-rows'
 import { upsertSetupsFromBeat, listSetupRowsForProject } from '@/domains/storyteller/core/io/setups-write'
+import { writeAfterBeatState } from '@/domains/storyteller/core/io/after-beat-state-write'
+import {
+  afterBeatStateFromApprovedBeat,
+  requirePersistedBeatId,
+} from '@/domains/storyteller/core/types/after-beat-state'
 import type { BeatDraftCanon } from '@/domains/storyteller/core/types/beat-draft-canon'
 import type { BeatDraftDeps } from './beat-draft-deps-types'
 
@@ -240,6 +252,7 @@ export const defaultBeatDraftDeps: BeatDraftDeps = {
       (max, beat) => (beat.sequence > max ? beat.sequence : max),
       0
     )
+    const knowledgeLedger = await listKnowledgeLedgerRows(ctx.projectId)
     return {
       projectId: ctx.projectId,
       episodeId: ctx.episodeId,
@@ -249,6 +262,7 @@ export const defaultBeatDraftDeps: BeatDraftDeps = {
         current === undefined ? '' : formatRoadmapSlotBrief(slot, current.sequence),
       otherRoadmapSlotsText: formatRoadmapList(others),
       nextSequence: nextSequenceAfter(maxSequence),
+      knowledgeLedger,
     }
   },
 
@@ -289,7 +303,11 @@ LINT FEEDBACK — fix these errors:
 ${lintFeedback}`
       : ''
     const voice = await voicePrefixForProject(ctx.projectId)
-    const prompt = `${voice}${truncateCanonForAuthor(canon)}
+    const fingerprints = await packBeatDraftAuthorFingerprints(
+      ctx.projectId,
+      plan.charactersInvolved
+    )
+    const prompt = `${voice}${fingerprints}${truncateCanonForAuthor(canon)}
 
 Generate a script-format story beat for episode ${ctx.episodeId}.
 Beat plan: ${JSON.stringify(plan)}
@@ -330,6 +348,11 @@ Output ONLY the script beat — no preamble, no notes.${lintBlock}`
     return runCritic(stakesCritic, BeatDraftCriticName.Stakes, `${canonBlock}\n\n${draftBlock}`)
   },
 
+  critiqueDialogue: async (draft, _canon) => {
+    const draftBlock = `DRAFT BEAT:\n${draft}`
+    return runCritic(dialogueCritic, BeatDraftCriticName.Dialogue, draftBlock)
+  },
+
   reviewStyleFidelity: async diff => {
     return runCritic(
       proseCritic,
@@ -343,7 +366,8 @@ Output ONLY the script beat — no preamble, no notes.${lintBlock}`
       ? `\nYOUR EDITOR'S DIRECTION (this outranks the critics and your own preferences):\n${editorNote}\n`
       : ''
     const voice = await voicePrefixForProject(ctx.projectId)
-    const prompt = `${voice}${truncateCanonForAuthor(canon)}
+    const fingerprints = await packBeatDraftAuthorFingerprints(ctx.projectId, ctx.characters)
+    const prompt = `${voice}${fingerprints}${truncateCanonForAuthor(canon)}
 
 You drafted this script beat:
 
@@ -395,17 +419,34 @@ Output the REVISED beat in full, in Script Beat Format. Script only — no pream
     if (parsed.data.success !== true) {
       throw new Error(parsed.data.error ?? parsed.data.message ?? BEAT_DRAFT_MANAGE_BEAT_COMPLETED)
     }
-    if (parsed.data.beat?.id) {
-      await upsertSetupsFromBeat({
-        projectId: ctx.projectId,
-        beatId: parsed.data.beat.id,
-        setupId: plan.setupPayoff?.setupFor,
-        payoffFor: plan.setupPayoff?.payoffFrom,
+    const beatId = requirePersistedBeatId(parsed.data.beat?.id)
+    await upsertSetupsFromBeat({
+      projectId: ctx.projectId,
+      beatId,
+      setupId: plan.setupPayoff?.setupFor,
+      payoffFor: plan.setupPayoff?.payoffFrom,
+    })
+    await writeAfterBeatState(
+      beatId,
+      afterBeatStateFromApprovedBeat({
+        charactersInvolved: plan.charactersInvolved,
+        setupFor: plan.setupPayoff?.setupFor,
+        payoffFrom: plan.setupPayoff?.payoffFrom,
       })
-    }
+    )
+    await writeKnowledgeLedgerRows({
+      projectId: ctx.projectId,
+      episodeId: ctx.episodeId,
+      beatId,
+      rows: ledgerFactsFromApprovedBeat({
+        turn: plan.turn,
+        charactersInvolved: plan.charactersInvolved,
+        plotTwistTokens: [],
+      }),
+    })
     return {
       saved: true,
-      beatId: parsed.data.beat?.id,
+      beatId,
       message: parsed.data.message ?? BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
     }
   },

@@ -12,6 +12,13 @@ import {
 } from '@/domains/storyteller/core/io/storyteller.dto'
 import { generateCharacterFieldsRequestSchema, generateCharacterFieldsResponseSchema } from '@/domains/storyteller/services/constants/generate-character-fields'
 import { episodePatchRequestSchema } from '@/domains/storyteller/core/io/episode-patch'
+import { beatPatchRequestSchema } from '@/domains/storyteller/core/beat-patch'
+import { characterPatchRequestSchema } from '@/domains/storyteller/core/character-patch'
+import { projectPatchRequestSchema } from '@/domains/storyteller/core/io/project-patch'
+import {
+  planPatchSequenceRequestSchema,
+  planSaveRequestSchema,
+} from '@/domains/storyteller/core/io/plan-patch'
 import { ensureZodOpenApi } from '@/shared/openapi/ensure-zod-openapi'
 import { OpenApiSchemaName } from '@/shared/openapi/constants/openapi-wire'
 import { openApiSuccessMessageSchema } from '@/shared/openapi/shared-components'
@@ -67,15 +74,9 @@ export const stProjectIdParams = z
   .object({ id: idString })
   .openapi(OpenApiStorytellerSchemaName.ProjectIdParams)
 
-export const stPatchProjectRequest = z
-  .object({
-    name: z.string().optional(),
-    description: z.string().optional(),
-    seriesBible: z.record(z.unknown()).optional(),
-    storyPlan: z.record(z.unknown()).optional(),
-  })
-  .passthrough()
-  .openapi(OpenApiStorytellerSchemaName.PatchProjectRequest)
+export const stPatchProjectRequest = projectPatchRequestSchema.openapi(
+  OpenApiStorytellerSchemaName.PatchProjectRequest
+)
 
 export const stCharacter = z
   .object({
@@ -107,16 +108,9 @@ export const stCreateCharacterRequest = z
   .passthrough()
   .openapi(OpenApiStorytellerSchemaName.CreateCharacterRequest)
 
-export const stPatchCharacterRequest = z
-  .object({
-    id: idString.optional(),
-    name: z.string().optional(),
-    role: z.string().optional(),
-    description: z.string().optional(),
-    portraitUrl: z.string().optional(),
-  })
-  .passthrough()
-  .openapi(OpenApiStorytellerSchemaName.PatchCharacterRequest)
+export const stPatchCharacterRequest = characterPatchRequestSchema.openapi(
+  OpenApiStorytellerSchemaName.PatchCharacterRequest
+)
 
 export const stCharacterIdQuery = z
   .object({ id: idString })
@@ -160,9 +154,9 @@ export const stCreateBeatRequest = z
   })
   .openapi(OpenApiStorytellerSchemaName.CreateBeatRequest)
 
-export const stPatchBeatRequest = z
-  .record(z.unknown())
-  .openapi(OpenApiStorytellerSchemaName.PatchBeatRequest)
+export const stPatchBeatRequest = beatPatchRequestSchema.openapi(
+  OpenApiStorytellerSchemaName.PatchBeatRequest
+)
 
 export const stBeatIdParams = z
   .object({ beatId: idString })
@@ -234,15 +228,13 @@ export const stPlanResponse = z
   .passthrough()
   .openapi(OpenApiStorytellerSchemaName.PlanResponse)
 
-export const stSavePlanRequest = z
-  .object({
-    episodeId: idString.optional(),
-    projectId: idString.optional(),
-    storyPlan: z.unknown().optional(),
-    approved: z.boolean().optional(),
-    currentPhase: z.string().optional(),
-  })
-  .openapi(OpenApiStorytellerSchemaName.SavePlanRequest)
+export const stSavePlanRequest = planSaveRequestSchema.openapi(
+  OpenApiStorytellerSchemaName.SavePlanRequest
+)
+
+export const stPatchPlanSequenceRequest = planPatchSequenceRequestSchema.openapi(
+  OpenApiStorytellerSchemaName.PatchPlanSequenceRequest
+)
 
 export const stSavePlanResponse = z
   .object({
@@ -367,6 +359,22 @@ export const stMoodboardTriggerRequest = z
     promptIndex: z.number().optional(),
   })
   .openapi(OpenApiStorytellerSchemaName.MoodboardTriggerRequest)
+
+export const generateMetricsRequestSchema = z.object({
+  projectId: idString,
+  description: z.string().min(1),
+  modelName: z.string().optional(),
+})
+
+export const stGenerateMetricsRequest = generateMetricsRequestSchema.openapi(
+  OpenApiStorytellerSchemaName.GenerateMetricsRequest
+)
+
+export const stGenerateMetricsResponse = z
+  .object({
+    metrics: z.record(z.unknown()),
+  })
+  .openapi(OpenApiStorytellerSchemaName.GenerateMetricsResponse)
 
 export const stGenerateBeatImageRequest = z
   .object({

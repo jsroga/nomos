@@ -136,6 +136,17 @@ describe('the cost budget', () => {
     expect(result.cost).toBeNull()
     expect(result.costSkipped).toContain('no judge cost')
   })
+
+  it('treats a JSON-null baseline judge cost as unrecorded, not $0', () => {
+    const result = compareToBaseline(reportWith(IDENTICAL, 0, 0.0724), {
+      ...BASELINE,
+      judgeCostUsd: null,
+    })
+
+    expect(result.cost).toBeNull()
+    expect(result.costSkipped).toContain('no judge cost')
+    expect(formatComparison(result, 'test.json')).not.toContain('$null')
+  })
 })
 
 describe('formatComparison', () => {

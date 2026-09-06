@@ -1,7 +1,7 @@
 // shared/jobs barrel
 // Cross-module job status types, hooks, and Trigger.dev utilities
 export { JobQueue, JOB_QUEUE_CONCURRENCY_LIMIT } from '@/shared/jobs/constants/job-queue'
-export { MachinePreset, defineOwnedTask, type OwnedTaskPayload } from '@/shared/jobs/define-task'
+export { MachinePreset, defineOwnedTask, defineScheduledTask, type OwnedTaskPayload } from '@/shared/jobs/define-task'
 export { ownedElsewhere } from '@/shared/jobs/payload-schema'
 export {
   OWNED_PAYLOAD_SHAPE,

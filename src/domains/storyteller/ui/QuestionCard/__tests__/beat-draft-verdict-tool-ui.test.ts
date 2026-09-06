@@ -4,6 +4,7 @@ import { StorytellerWorkflowVerdict } from '@/domains/storyteller/core/storytell
 import {
   parseSuspendedBeatDraftResult,
   submitBeatDraftVerdict,
+  verdictQuestionFromResult,
 } from '../BeatDraftVerdictToolUI'
 
 describe('BeatDraftVerdictToolUI', () => {
@@ -23,6 +24,19 @@ describe('BeatDraftVerdictToolUI', () => {
       draft: 'INT. HALL',
       critiques: 'NO FINDINGS.',
     })
+  })
+
+  it('offers approve-and-promote as a human control', () => {
+    const parsed = parseSuspendedBeatDraftResult({
+      status: BeatDraftWorkflowStatus.Suspended,
+      runId: 'run-1',
+      draft: 'INT. HALL',
+      critiques: 'NO FINDINGS.',
+    })
+    expect(parsed).not.toBeNull()
+    if (!parsed) return
+    const ids = (verdictQuestionFromResult(parsed).options ?? []).map(option => option.id)
+    expect(ids).toContain(StorytellerWorkflowVerdict.ApprovePromote)
   })
 
   it('calls resumeChatWorkflow with the verdict and free-text note', async () => {

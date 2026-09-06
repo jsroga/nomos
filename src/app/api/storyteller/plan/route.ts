@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { episodes, projects, storyPlans } from '@/db'
 import { db } from '@/db/client'
-import { verifyEpisodeAccess } from '@/domains/storyteller/server'
+import {
+  episodeStoryPlanResponse,
+  verifyEpisodeAccess,
+} from '@/domains/storyteller/server'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
-import { episodeStoryPlanResponse } from '@/domains/storyteller/core/entities/story-plan-wire'
 import { persistBibleOwnedPlanFields } from '@/domains/storyteller/core/io/persist-bible-owned-plan'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { QueryParam } from '@/shared/data/constants/protocol'
+import { QueryParam, HttpStatus } from '@/shared/data/constants/protocol'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { patchStoryPlanSequence, splitStoryPlanForEpisodeWrite } from './plan-patch-helpers'
+import { PlanSaveField, planSaveRequestSchema } from '@/domains/storyteller/core/io/plan-patch'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -96,8 +99,18 @@ export async function POST(req: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: 401 })
 
-    const body = await req.json()
-    const { episodeId, projectId, storyPlan, approved, currentPhase } = body
+    const parsed = planSaveRequestSchema.safeParse(await req.json())
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: API_ERROR.INVALID_PAYLOAD },
+        { status: HttpStatus.BAD_REQUEST }
+      )
+    }
+    const episodeId = parsed.data[PlanSaveField.EpisodeId]
+    const projectId = parsed.data[PlanSaveField.ProjectId]
+    const storyPlan = parsed.data[PlanSaveField.StoryPlan]
+    const approved = parsed.data[PlanSaveField.Approved]
+    const currentPhase = parsed.data[PlanSaveField.CurrentPhase]
 
     if (episodeId) {
       if (!(await verifyEpisodeAccess(episodeId, session.user.id))) {

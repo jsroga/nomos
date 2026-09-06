@@ -334,6 +334,7 @@ export enum StorytellerTextSeparator {
 
 export enum StorytellerWorkflowVerdict {
   Approve = 'approve',
+  ApprovePromote = 'approve-promote',
   Revise = 'revise',
   Kill = 'kill',
 }

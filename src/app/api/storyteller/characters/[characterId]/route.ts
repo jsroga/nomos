@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
-import { z } from 'zod'
 import { db } from '@/db/client'
 import { characters } from '@/db'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
-import { verifyCharacterAccess } from '@/domains/storyteller/server'
-import { buildCharacterPatchUpdates } from '@/domains/storyteller/core/character-patch'
+import {
+  buildCharacterPatchUpdates,
+  characterPatchRequestRecord,
+  characterPatchRequestSchema,
+  verifyCharacterAccess,
+} from '@/domains/storyteller/server'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { HttpStatus } from '@/shared/data/constants/protocol'
-
-const CharacterPatchBodySchema = z.record(z.unknown())
 
 export async function PATCH(req: Request, props: { params: Promise<{ characterId: string }> }) {
   const params = await props.params
@@ -28,11 +29,11 @@ export async function PATCH(req: Request, props: { params: Promise<{ characterId
       )
     }
 
-    const body = CharacterPatchBodySchema.safeParse(await req.json())
+    const body = characterPatchRequestSchema.safeParse(await req.json())
     if (!body.success) {
       return NextResponse.json({ error: API_ERROR.INVALID_PAYLOAD }, { status: HttpStatus.BAD_REQUEST })
     }
-    const dbUpdates = buildCharacterPatchUpdates(body.data)
+    const dbUpdates = buildCharacterPatchUpdates(characterPatchRequestRecord(body.data))
     const [updatedCharacter] = await db
       .update(characters)
       .set(dbUpdates)

@@ -62,6 +62,11 @@ export function verdictQuestionFromResult(parsed: SuspendedBeatDraftResult): Age
         recommended: true,
       },
       {
+        id: StorytellerWorkflowVerdict.ApprovePromote,
+        label: BeatDraftVerdictCopy.ApprovePromoteLabel,
+        description: BeatDraftVerdictCopy.ApprovePromoteDescription,
+      },
+      {
         id: StorytellerWorkflowVerdict.Revise,
         label: BeatDraftVerdictCopy.ReviseLabel,
         description: BeatDraftVerdictCopy.ReviseDescription,

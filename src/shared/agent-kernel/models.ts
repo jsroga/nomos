@@ -7,8 +7,7 @@
 
 import { env } from '@/shared/config/env'
 import { createOpenAI } from '@ai-sdk/openai'
-import { remapModelIdIfE2ePinned, isE2eLlmPinned } from '@/shared/ai/gateway/e2e-llm-pin'
-import { E2eLlmPinError, E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
+import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
 
 // =============================================================================
 // OPENROUTER GATEWAY — one key to rule them all
@@ -174,11 +173,10 @@ function openAiCompatibleModel(
  * Does NOT set specificationVersion - uses native AI SDK behavior
  */
 export function createPureModel(modelName: string, chatCompletions = false) {
-  const pinnedName = remapModelIdIfE2ePinned(modelName)
   const glmId =
-    pinnedName === E2ePinnedChatModel.CatalogId ||
-    pinnedName === E2ePinnedChatModel.GatewayId ||
-    pinnedName === E2ePinnedChatModel.OpenRouterId
+    modelName === E2ePinnedChatModel.CatalogId ||
+    modelName === E2ePinnedChatModel.GatewayId ||
+    modelName === E2ePinnedChatModel.OpenRouterId
       ? E2ePinnedChatModel.OpenRouterId
       : null
   if (glmId) {
@@ -189,7 +187,7 @@ export function createPureModel(modelName: string, chatCompletions = false) {
       chatCompletions,
     )
   }
-  const enforced = enforceTextGenModelPolicy(pinnedName.replace(PROVIDER_COLON, PROVIDER_SLASH))
+  const enforced = enforceTextGenModelPolicy(modelName.replace(PROVIDER_COLON, PROVIDER_SLASH))
   const colonForm = enforced.includes(PROVIDER_SLASH)
     ? enforced.replace(PROVIDER_SLASH, PROVIDER_COLON)
     : enforced
@@ -229,7 +227,7 @@ export function createPureModel(modelName: string, chatCompletions = false) {
 
 /** Chat Completions (not Responses) — required for OpenRouter LLM-as-judge. */
 export function createPureChatModel(modelName: string) {
-  return createPureModel(remapModelIdIfE2ePinned(modelName), true)
+  return createPureModel(modelName, true)
 }
 
 // =============================================================================
@@ -241,12 +239,8 @@ export const getGenerationModel = (tier: 'primary' | 'fast' | 'creative' = 'prim
   createPureModel(MODELS.generation[tier])
 
 /** Get model for judging/evaluation (independent layer) - uses pure AI SDK */
-export const getJudgingModel = (tier: 'primary' | 'fallback' = 'primary') => {
-  if (isE2eLlmPinned()) {
-    throw new Error(E2eLlmPinError.JudgingForbidden)
-  }
-  return createPureModel(MODELS.judging[tier])
-}
+export const getJudgingModel = (tier: 'primary' | 'fallback' = 'primary') =>
+  createPureModel(MODELS.judging[tier])
 // =============================================================================
 // THE MAZUR FRAMEWORK - Why These Four Masters?
 // =============================================================================

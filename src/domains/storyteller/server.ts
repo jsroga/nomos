@@ -35,7 +35,17 @@ export {
 export { storytellerService } from './services/storyteller-crud-service'
 
 export { isStorytellerAutonomousEnabled } from './ai/agents/AutonomousAuthor/autonomous-author-agent'
-export { pickBeatPatchUpdates } from './core/beat-patch'
+export {
+  beatPatchRequestRecord,
+  beatPatchRequestSchema,
+  pickBeatPatchUpdates,
+} from './core/beat-patch'
+export {
+  buildCharacterPatchUpdates,
+  characterPatchRequestRecord,
+  characterPatchRequestSchema,
+} from './core/character-patch'
+export { completeScriptGhost } from './core/io/complete-script-ghost'
 export {
   createControllerStreamContext,
   mapControllerEvent,
@@ -53,8 +63,16 @@ export {
 export { isStorytellerControllerEnabled } from './ai/controller/storyteller-controller'
 export { BibleSection, ManuscriptMode, parsePhaseId } from './core/types/enums'
 export { type DetectedSection } from './config/tool-result-mapper'
-export { omitBibleOwnedPlanFields } from './core/utils/bible-populated-fields'
-export { storyPlanRecordFromJson } from './core/entities/story-plan-wire'
+export {
+  bibleOwnedFieldsMissingFromCanon,
+  isPresentOverlapValue,
+  omitBibleOwnedPlanFields,
+  omitVacantSoundtrackInspirations,
+  pickBibleOwnedPlanFields,
+  populatedSoundtrackInspirations,
+} from './core/utils/bible-populated-fields'
+export { storyPlanRecordFromJson, episodeStoryPlanResponse } from './core/entities/story-plan-wire'
+export { StorytellerLegacyPlanField } from './core/storyteller-page-wire'
 export {
   EPISODE_PATCH_ALLOWED_COLUMNS,
   EpisodePatchAlias,

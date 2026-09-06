@@ -63,6 +63,14 @@ export const CHECK_SECTION_ALIGNMENT_TOOL_ID = 'check_section_alignment'
 export const CHECK_SECTION_ALIGNMENT_TOOL_DESC =
   'Check one generated section against related canon (roadmap vs episode vs beats, bible vs cast, and other registry pairs). Use when the user asks about contradictions. Do not call on every beat-board create.'
 
+export const SEARCH_MANUSCRIPT_TOOL_ID = 'search_manuscript'
+export const SEARCH_MANUSCRIPT_TOOL_DESC =
+  'Search episode manuscript, beat content, planted setups, and character names. Literal first; embedding after a miss. Use for plants, repeated phrases, and name collisions. Read-only.'
+
+export const PROMOTE_RULE_TOOL_ID = 'promote_rule'
+export const PROMOTE_RULE_TOOL_DESC =
+  'Promote an editorial finding to a versioned project world rule, or revoke a promoted rule. Mutating. Not available in chat/plan mode.'
+
 export const DEFAULT_CHARACTER_ROLE = 'Supporting'
 
 export const BEAT_ACTION_FIELDS_REQUIRED =

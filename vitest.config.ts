@@ -53,6 +53,32 @@ export default defineConfig({
         VitestCoverageReporter.LcovOnly,
       ],
       reportsDirectory: VitestCoverageReportsDir.Root,
+      thresholds: {
+        'src/domains/storyteller/ai/tools/search-manuscript-embed.ts': {
+          lines: 50,
+          functions: 50,
+          statements: 50,
+          branches: 40,
+        },
+        'src/domains/storyteller/core/knowledge-ledger/check-knowledge-ledger.ts': {
+          lines: 50,
+          functions: 50,
+          statements: 50,
+          branches: 40,
+        },
+        'src/domains/storyteller/core/promote-rule/promoted-rule.ts': {
+          lines: 50,
+          functions: 50,
+          statements: 50,
+          branches: 40,
+        },
+        'src/domains/storyteller/core/workflow/queued-verdicts.ts': {
+          lines: 50,
+          functions: 50,
+          statements: 50,
+          branches: 40,
+        },
+      },
     },
   },
 })

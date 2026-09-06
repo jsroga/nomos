@@ -76,6 +76,8 @@ const storytellerIds: Array<[string, string]> = [
   ['analyze_psychology', 'Analyze character psychology for a beat or scene.'],
   ['simulate_reaction', 'Simulate how a character would react in a situation.'],
   ['assess_relationship', 'Assess relationship state between two characters.'],
+  ['search_manuscript', 'Search manuscript, beats, and setups. Literal first, embedding after a miss.'],
+  ['promote_rule', 'Promote or revoke a versioned project world rule. Mutating.'],
 ]
 
 export const storytellerStudioTools = asToolsMap(

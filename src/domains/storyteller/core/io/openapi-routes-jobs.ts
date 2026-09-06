@@ -20,6 +20,8 @@ import {
   stJobQueuedResponse,
   stJobStatusResponse,
   stMoodboardTriggerRequest,
+  stGenerateMetricsRequest,
+  stGenerateMetricsResponse,
   stRunIdQuery,
 } from '@/domains/storyteller/core/io/openapi-schemas'
 import { OpenApiHttpMethod, OpenApiTag } from '@/shared/openapi/constants/openapi-wire'
@@ -138,6 +140,17 @@ export function registerStorytellerJobRoutes(registry: OpenAPIRegistry): void {
     successStatus: 200,
     successSchema: openApiSuccessMessageSchema,
     successDescription: OpenApiStorytellerDescription.JobStatus,
+  })
+
+  registerJsonRoute(registry, {
+    method: OpenApiHttpMethod.Post,
+    path: OpenApiStorytellerPath.GenerateMetrics,
+    tags,
+    summary: OpenApiStorytellerSummary.GenerateMetrics,
+    body: stGenerateMetricsRequest,
+    successStatus: 200,
+    successSchema: stGenerateMetricsResponse,
+    successDescription: OpenApiStorytellerDescription.Metrics,
   })
 
   registerJsonRoute(registry, {

@@ -109,4 +109,14 @@ ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
     memory: createInheritedAgentMemory(),
   }),
+
+  dialogueCritic: new Agent({
+    id: 'dialogue-critic',
+    name: 'Dialogue Critic',
+    instructions: `You are a dialogue/embodiment checker. Your ONLY brief: adjacent talking-heads with no body or interruption; disembodied said-book speech; facts restated with no subtext.
+
+${CRITIC_STUDIO_RULES}`,
+    model: DEFAULT_MODEL,
+    memory: createInheritedAgentMemory(),
+  }),
 }

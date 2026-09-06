@@ -12,6 +12,14 @@ I would have thought that you would have seen this coming, because it is the sor
 MARCUS
 I would have thought that you would have seen this coming, because it is the sort of thing that we have always done.`
 
+const TINY = `INT. HALL - NIGHT
+
+VERA
+Go.
+
+MARCUS
+Stay.`
+
 const DISTINCT = `INT. HALL - NIGHT
 
 VERA
@@ -45,5 +53,17 @@ describe('S10 voice_distinctiveness', () => {
     expect(convergedMin).toBeLessThan(0.15)
     expect(distinctMin).toBeGreaterThan(0.35)
     expect(distinctMin - convergedMin).toBeGreaterThan(0.2)
+  })
+
+  it('drops speakers below the min-token floor so two tiny voices do not look distinct', () => {
+    const scored = scoreVoiceDistinctiveness([beatFromContent(TINY)])
+    expect(Number(scored.metrics.speakerCount)).toBeLessThan(2)
+    expect(Number(scored.metrics.minPairwiseDivergence)).toBe(0)
+  })
+
+  it('still scores two speakers with enough tokens', () => {
+    const scored = scoreVoiceDistinctiveness([beatFromContent(DISTINCT)])
+    expect(Number(scored.metrics.speakerCount)).toBeGreaterThanOrEqual(2)
+    expect(Number(scored.metrics.minPairwiseDivergence)).toBeGreaterThan(0.35)
   })
 })

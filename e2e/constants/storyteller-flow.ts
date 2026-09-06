@@ -65,7 +65,13 @@ export enum FlowRole {
 
 export enum FlowApi {
   Projects = '/api/storyteller/projects',
+  Episodes = '/api/storyteller/episodes',
+  Plan = '/api/storyteller/plan',
   ChatStream = '/api/storyteller/chat/stream',
+}
+
+export enum FlowQueryParam {
+  EpisodeId = 'episodeId',
 }
 
 export const BYPASS_AUTH_VALUE = process.env.E2E_BYPASS_AUTH_SECRET ?? ''

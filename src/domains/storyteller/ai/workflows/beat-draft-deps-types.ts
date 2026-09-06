@@ -41,6 +41,7 @@ export interface BeatDraftDeps {
   critiqueContinuity: (draft: string, canon: string) => Promise<string>
   critiqueProse: (draft: string, canon: string) => Promise<string>
   critiqueStakes: (draft: string, canon: string) => Promise<string>
+  critiqueDialogue: (draft: string, canon: string) => Promise<string>
   /** Trace-only style check on revise paragraph diff — never gates persist. */
   reviewStyleFidelity: (diff: string) => Promise<string>
   reviseBeat: (

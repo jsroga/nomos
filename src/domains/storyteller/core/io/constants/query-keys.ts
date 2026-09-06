@@ -4,4 +4,5 @@ export enum StorytellerQueryKey {
   Episode = 'episode',
   BibleLock = 'bible-lock',
   Entity = 'entity',
+  QueuedVerdicts = 'queued-verdicts',
 }

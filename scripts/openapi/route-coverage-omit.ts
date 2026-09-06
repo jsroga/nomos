@@ -27,7 +27,6 @@ export const OPENAPI_COVERAGE_OMIT_PREFIXES: readonly string[] = [
   '/storyteller/chat',
   '/storyteller/consistency/fix-run',
   '/storyteller/episodes/{episodeId}/generate-combined',
-  '/storyteller/generate-metrics',
   '/storyteller/save-',
   '/storyteller/script',
   '/storyteller/script/complete',

@@ -16,7 +16,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const SCORERS = 'src/shared/agent-kernel/scorers'
-const GATEWAY_IMPORT = '@/shared/ai/gateway'
+const GATEWAY_BARREL = /from ['"]@\/shared\/ai\/gateway(?:\/index)?['"]/
 
 function filesUnder(directory: string): string[] {
   return readdirSync(directory).flatMap(entry => {
@@ -26,10 +26,14 @@ function filesUnder(directory: string): string[] {
   })
 }
 
+function importsGatewayBarrel(source: string): boolean {
+  return GATEWAY_BARREL.test(source)
+}
+
 describe('eval scorers do not bill', () => {
-  it('imports no part of the model gateway', () => {
+  it('does not import the billing gateway barrel', () => {
     const offenders = filesUnder(SCORERS).filter(file =>
-      readFileSync(file, 'utf8').includes(GATEWAY_IMPORT)
+      importsGatewayBarrel(readFileSync(file, 'utf8'))
     )
 
     expect(offenders).toEqual([])

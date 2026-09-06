@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { episodes, projects, storyPlans } from '@/db'
 import { db } from '@/db/client'
-import { verifyEpisodeAccess } from '@/domains/storyteller/server'
-import { tryProjectScope } from '@/shared/auth/project-scope'
-import { eq } from 'drizzle-orm'
-import {
-  storyPlanRecordFromJson,
-} from '@/domains/storyteller/core/entities/story-plan-wire'
-import { persistBibleOwnedPlanFields } from '@/domains/storyteller/core/io/persist-bible-owned-plan'
 import {
   omitBibleOwnedPlanFields,
   pickBibleOwnedPlanFields,
-} from '@/domains/storyteller/core/utils/bible-populated-fields'
+  storyPlanRecordFromJson,
+  verifyEpisodeAccess,
+} from '@/domains/storyteller/server'
+import { tryProjectScope } from '@/shared/auth/project-scope'
+import { eq } from 'drizzle-orm'
+import { persistBibleOwnedPlanFields } from '@/domains/storyteller/core/io/persist-bible-owned-plan'
 import { recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
+import { HttpStatus } from '@/shared/data/constants/protocol'
+import {
+  PlanSaveField,
+  PlanSequencePatchField,
+  planPatchSequenceRequestSchema,
+} from '@/domains/storyteller/core/io/plan-patch'
 
 async function loadExistingPlan(input: {
   episodeId?: string
@@ -84,8 +88,17 @@ export async function splitStoryPlanForEpisodeWrite(input: {
 }
 
 export async function patchStoryPlanSequence(req: NextRequest, userId: string) {
-  const body = await req.json()
-  const { episodeId, projectId, sequenceId, updates } = body
+  const parsed = planPatchSequenceRequestSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: API_ERROR.INVALID_PAYLOAD },
+      { status: HttpStatus.BAD_REQUEST }
+    )
+  }
+  const episodeId = parsed.data[PlanSaveField.EpisodeId]
+  const projectId = parsed.data[PlanSaveField.ProjectId]
+  const sequenceId = parsed.data[PlanSequencePatchField.SequenceId]
+  const updates = parsed.data[PlanSequencePatchField.Updates]
 
   if (!sequenceId || !updates) {
     return NextResponse.json({ error: API_ERROR.SEQUENCE_ID_AND_UPDATES_REQUIRED }, { status: 400 })

@@ -23,6 +23,11 @@ import {
   ConsistencySuggestion,
   ConsistencyUnknownLocation,
 } from '@/domains/storyteller/services/constants/consistency-issues'
+import { checkTimelineFromRows } from './consistency-timeline'
+import { checkCharacterKnowledgeFromRows } from './consistency-knowledge'
+import type { ContinuityIssue } from './consistency-issue-shape'
+
+export type { ContinuityIssue } from './consistency-issue-shape'
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string }
 
@@ -31,21 +36,6 @@ export { ConsistencyCheckKind } from './consistency-types'
 // ==========================================
 // TYPES
 // ==========================================
-
-export interface ContinuityIssue {
-  type:
-    | 'contradiction'
-    | 'timeline'
-    | 'character'
-    | 'missing_payoff'
-    | 'orphaned_setup'
-    | 'knowledge_violation'
-  severity: 'critical' | 'major' | 'minor'
-  description: string
-  location: string
-  affectedElements: string[]
-  suggestion?: string
-}
 
 export interface ConsistencyCheckInput {
   projectId: string
@@ -145,8 +135,13 @@ export async function runConsistencyCheck(
         allIssues.push(...(await checkSetupPayoffs(projectId, beatsToCheck)))
       }
 
-      // TODO: character_knowledge and timeline checks can be added here
-      // For MVP, world_rules and setup_payoff are the core checks
+      if (shouldRunCheck(checkTypes, ConsistencyCheckKind.TIMELINE)) {
+        allIssues.push(...checkTimelineFromRows(beatsToCheck))
+      }
+
+      if (shouldRunCheck(checkTypes, ConsistencyCheckKind.CHARACTER_KNOWLEDGE)) {
+        allIssues.push(...checkCharacterKnowledgeFromRows(beatsToCheck, project.storyPlan))
+      }
 
       // Sort by severity
       const severityOrder = CONSISTENCY_SEVERITY_ORDER

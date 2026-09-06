@@ -1,19 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ManuscriptMode } from '@/domains/storyteller/server'
-import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
-import { complete } from '@/shared/ai/gateway'
+import { completeScriptGhost, ManuscriptMode } from '@/domains/storyteller/server'
 import { withGatewayContext } from '@/shared/ai/gateway/call-context'
-import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { HttpStatus, QueryParam } from '@/shared/data/constants/protocol'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
-
-enum ScriptGhostCopy {
-  System =
-    'Continue the manuscript with one sentence or a short paragraph. Do not rewrite the prefix. Match the requested format. Do not run critiques.',
-}
 
 enum ScriptGhostLog {
   Error = 'Script ghost complete error:',
@@ -56,16 +48,10 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await withGatewayContext({ scope }, () =>
-      complete({
-        scope,
-        feature: LlmFeature.StorytellerScriptGhost,
-        model: TEXT_GEN_FAST_MODEL,
-        system: `${ScriptGhostCopy.System}\nFormat: ${mode}`,
-        prompt: prefix,
-      })
+      completeScriptGhost({ scope, episodeId, prefix, mode })
     )
 
-    return NextResponse.json({ result: result.text.trim() })
+    return NextResponse.json({ result })
   } catch (error) {
     console.error(ScriptGhostLog.Error, error)
     return NextResponse.json(

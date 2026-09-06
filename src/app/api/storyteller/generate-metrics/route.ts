@@ -5,8 +5,9 @@ import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { HttpStatus, QueryParam } from '@/shared/data/constants/protocol'
-import { recordFromJson, readString } from '@/shared/data/json-guards'
+import { HttpStatus } from '@/shared/data/constants/protocol'
+import { generateMetricsRequestSchema } from '@/domains/storyteller/core/io/openapi-schemas'
+import { recordFromJson } from '@/shared/data/json-guards'
 import { resolveUserPickerOpenRouterModelId } from '@/domains/storyteller/core/io/resolve-user-picker-model'
 
 const CharacterMetricsSchema = z.object({
@@ -51,22 +52,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
     }
 
-    const body = recordFromJson(await req.json())
-    const projectId = readString(body[QueryParam.ProjectId])
-    if (!projectId) {
-      return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
+    const parsed = generateMetricsRequestSchema.safeParse(await req.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: API_ERROR.INVALID_PAYLOAD }, { status: HttpStatus.BAD_REQUEST })
     }
+    const projectId = parsed.data.projectId
+    const description = parsed.data.description
+    const modelName = parsed.data.modelName
 
     const scope = await tryProjectScope(projectId, session.user.id)
     if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: HttpStatus.NOT_FOUND })
-    }
-
-    const description = readString(body.description)
-    const modelName = readString(body.modelName)
-
-    if (!description) {
-      return NextResponse.json({ error: API_ERROR.DESCRIPTION_REQUIRED }, { status: HttpStatus.BAD_REQUEST })
     }
 
     const metrics = await completeStructured({

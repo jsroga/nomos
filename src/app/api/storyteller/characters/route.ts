@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { characters } from '@/db'
-import { verifyCharacterAccess } from '@/domains/storyteller/server'
+import {
+  buildCharacterPatchUpdates,
+  characterPatchRequestRecord,
+  characterPatchRequestSchema,
+  verifyCharacterAccess,
+} from '@/domains/storyteller/server'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { eq, desc } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
@@ -17,10 +22,7 @@ import {
 import { DEFAULT_BASE_URL } from '@/shared/data/constants/url'
 import { DB_COLUMN } from '@/shared/data/constants/db-tables'
 import { readRowString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
-import {
-  buildCharacterPatchUpdates,
-  createCharacterRecord,
-} from './characters-mutation-helpers'
+import { createCharacterRecord } from './characters-mutation-helpers'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -68,8 +70,12 @@ export async function PATCH(req: NextRequest) {
     const { session } = await requireAuth()
     if (!session) return NextResponse.json({ error: API_ERROR.UNAUTHORIZED }, { status: HttpStatus.UNAUTHORIZED })
 
-    const body = await req.json()
-    const { id } = body
+    const parsed = characterPatchRequestSchema.safeParse(await req.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: API_ERROR.INVALID_PAYLOAD }, { status: HttpStatus.BAD_REQUEST })
+    }
+    const body = characterPatchRequestRecord(parsed.data)
+    const id = parsed.data.id
 
     if (!id) {
       return NextResponse.json({ error: API_ERROR.CHARACTER_ID_REQUIRED }, { status: HttpStatus.BAD_REQUEST })

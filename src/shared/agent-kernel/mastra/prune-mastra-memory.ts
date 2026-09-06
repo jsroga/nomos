@@ -1,4 +1,6 @@
 import { MEMORY_MESSAGE_TTL_MS, MEMORY_THREAD_MESSAGE_CAP } from './memory-expiry'
+import { MemoryThreadPrefix } from './memory-ref'
+import { isValidProjectId } from '@/shared/auth/security'
 
 export interface MemoryMessageRecord {
   id: string
@@ -44,6 +46,32 @@ export function selectExpiredAndOverCapIds(
   return [...expired, ...overCap]
 }
 
+enum ThreadIdPart {
+  ProjectId = 1,
+}
+
+export enum PruneMastraMemoryScheduleId {
+  Fanout = 'prune-mastra-memory-fanout',
+}
+
+export enum PruneMastraMemoryCron {
+  DailyUtc = '0 3 * * *',
+}
+
+export function storytellerProjectIdsFromThreadIds(threadIds: readonly string[]): string[] {
+  const prefix = `${MemoryThreadPrefix.Storyteller}:`
+  const seen = new Set<string>()
+  const projectIds: string[] = []
+  for (const threadId of threadIds) {
+    if (!threadId.startsWith(prefix)) continue
+    const projectId = threadId.split(':')[ThreadIdPart.ProjectId]
+    if (!projectId || seen.has(projectId) || !isValidProjectId(projectId)) continue
+    seen.add(projectId)
+    projectIds.push(projectId)
+  }
+  return projectIds
+}
+
 export async function pruneMastraMemory(
   store: MemoryPruneStore,
   projectId: string,
@@ -54,4 +82,19 @@ export async function pruneMastraMemory(
   if (ids.length === 0) return { deleted: 0 }
   const deleted = await store.deleteMessages(ids)
   return { deleted }
+}
+
+export async function fanOutPruneMastraMemory(input: {
+  listProjectIds: () => Promise<string[]>
+  triggerPrune: (projectId: string, requestId: string) => Promise<unknown>
+  mintNonce: () => string
+}): Promise<{ triggered: number }> {
+  const projectIds = await input.listProjectIds()
+  if (projectIds.length === 0) return { triggered: 0 }
+  let triggered = 0
+  for (const projectId of projectIds) {
+    await input.triggerPrune(projectId, input.mintNonce())
+    triggered += 1
+  }
+  return { triggered }
 }

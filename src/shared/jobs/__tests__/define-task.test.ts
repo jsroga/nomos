@@ -19,6 +19,7 @@ const schemaTaskMock = vi.fn((config: CapturedTask) => config)
 
 vi.mock('@trigger.dev/sdk', () => ({
   schemaTask: (config: CapturedTask) => schemaTaskMock(config),
+  schedules: { task: (config: unknown) => config },
 }))
 
 import { JobQueue, JOB_QUEUE_CONCURRENCY_LIMIT } from '../constants/job-queue'

@@ -95,6 +95,28 @@ describe('resolveSkillCatalog', () => {
     expect(novel?.body).toBeDefined()
     expect(novel?.body).not.toContain(slug)
   })
+
+  it('loads cognition and dialogue L2 bodies on matching problem types, not on plan-only', () => {
+    const cognition = resolveSkillCatalog({
+      stage: SkillCatalogStage.Critique,
+      problemTypes: [SkillCatalogProblemMatch.Cognition],
+    }).find(row => row.id === SkillCatalogId.CognitionLayersAndLanguage)
+    const dialogue = resolveSkillCatalog({
+      stage: SkillCatalogStage.Critique,
+      problemTypes: [SkillCatalogProblemMatch.Dialogue],
+    }).find(row => row.id === SkillCatalogId.DialogueAndBehavior)
+    const planOnly = resolveSkillCatalog({
+      stage: SkillCatalogStage.Plan,
+      problemTypes: [SkillCatalogProblemMatch.Dialogue],
+    }).find(row => row.id === SkillCatalogId.DialogueAndBehavior)
+
+    expect(cognition?.level).toBe(SkillCatalogLevel.L2)
+    expect(cognition?.body).toContain('Access limits')
+    expect(dialogue?.level).toBe(SkillCatalogLevel.L2)
+    expect(dialogue?.body).toContain('Talking-heads')
+    expect(planOnly?.level).toBe(SkillCatalogLevel.L1)
+    expect(planOnly?.body).toBeUndefined()
+  })
 })
 
 describe('SkillHardRuleId coverage', () => {

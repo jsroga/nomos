@@ -18,6 +18,7 @@ import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
 import { readWorldBibleTool, checkContinuityTool } from '@/domains/storyteller/ai/tools/bible-tools'
 import { checkSectionAlignmentTool } from '@/domains/storyteller/ai/tools/section-alignment-tool'
+import { searchManuscriptTool } from '@/domains/storyteller/ai/tools/search-manuscript'
 import { listBeatsTool } from '@/domains/storyteller/ai/tools/beat-tools'
 import { listCharactersTool } from '@/domains/storyteller/ai/tools/character-tools'
 import { proposeCharacterFieldsTool } from '@/domains/storyteller/ai/tools/propose-character-fields-tool'
@@ -60,6 +61,7 @@ const CHAT_MODE_TOOLS: string[] = [
   listEpisodesTool.id,
   checkContinuityTool.id,
   checkSectionAlignmentTool.id,
+  searchManuscriptTool.id,
   proposeCharacterFieldsTool.id,
   SUBMIT_PLAN_TOOL_NAME,
   // `submit_plan` suspends with a plan FILE path — the host reads the body off

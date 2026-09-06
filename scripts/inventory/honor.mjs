@@ -168,6 +168,27 @@ export function routesTakingProjectIdWithoutOwnershipCheck() {
   return hits
 }
 
+function isConstantsPath(relativePath) {
+  return `/${posix(relativePath)}`.includes('/constants/')
+}
+
+export function constantsFilesWithFunctions() {
+  const hits = []
+  for (const file of sourceFiles(SRC)) {
+    const relativePath = posix(relative(process.cwd(), file))
+    if (isTestPath(relativePath)) continue
+    if (!isConstantsPath(relativePath)) continue
+    const sourceFile = parseFile(relativePath)
+    let matched = false
+    forEachNode(sourceFile, node => {
+      if (matched) return
+      if (ts.isFunctionDeclaration(node)) matched = true
+    })
+    if (matched) hits.push(`${relativePath}::function::constants`)
+  }
+  return hits
+}
+
 export function evalSkipCommits() {
   const output = execFileSync('git', ['log', '--grep=^Eval-Skip:', '--oneline'], {
     encoding: 'utf8',
@@ -185,6 +206,7 @@ export function honorCounts() {
     systemScopeSites: systemScopeSites().length,
     routesTakingProjectIdWithoutOwnershipCheck: routesTakingProjectIdWithoutOwnershipCheck().length,
     evalSkipCommits: evalSkipCommits().length,
+    constantsFilesWithFunctions: constantsFilesWithFunctions().length,
   }
 }
 
@@ -197,5 +219,6 @@ export function honorIdentities() {
     ...systemScopeSites(),
     ...routesTakingProjectIdWithoutOwnershipCheck(),
     ...evalSkipCommits(),
+    ...constantsFilesWithFunctions(),
   ]
 }

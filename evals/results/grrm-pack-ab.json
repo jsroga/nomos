@@ -1,6 +1,6 @@
 {
   "status": "skipped",
-  "packOnChars": 5375,
+  "packOnChars": 5569,
   "packOffChars": 3408,
   "packOnFixtureChars": 5116,
   "s8": null,
@@ -9,6 +9,6 @@
     "floor": 0.02,
     "note": "s8/s9 are structural; judge SCORER_NOISE floor=0.02; consistency σ=0"
   },
-  "timestamp": "2026-09-04T11:10:05.797Z",
+  "timestamp": "2026-09-06T10:16:00.901Z",
   "reason": "needs DATABASE_URL, an LLM key, WILDCARDS_AB_PROJECT_ID, and WILDCARDS_AB_EPISODE_ID"
 }

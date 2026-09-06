@@ -41,4 +41,8 @@ describe('honor-system ratchet consumers', () => {
   it('does not grow Eval-Skip commits', () => {
     expect(COUNTS.evalSkipCommits).toBeLessThanOrEqual(RATCHET.evalSkipCommits)
   })
+
+  it('does not grow constants/ files that declare functions', () => {
+    expect(COUNTS.constantsFilesWithFunctions).toBeLessThanOrEqual(RATCHET.constantsFilesWithFunctions)
+  })
 })

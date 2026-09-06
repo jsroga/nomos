@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   getAutonomousGoalConfig,
   isStorytellerAutonomousEnabled,
@@ -15,6 +16,11 @@ describe('autonomous author agent (goals + durable)', () => {
     expect(typeof goal.judge).toBe('function')
     expect(goal.maxRuns).toBe(STORYTELLER_AUTONOMOUS_MAX_RUNS)
     expect(goal.prompt).toBeTruthy()
+    const config = readFileSync(
+      'src/mastra/agents/storyteller-autonomous-author/config.ts',
+      'utf8'
+    )
+    expect(config).not.toContain('commit_beat')
   })
 
   describe('flag', () => {

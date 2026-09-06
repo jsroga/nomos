@@ -27,6 +27,7 @@ import {
   continuityCritic,
   proseCritic,
   stakesCritic,
+  dialogueCritic,
 } from '@/domains/storyteller/ai/agents/critics'
 import { defaultArtifactDraftDeps } from '@/domains/storyteller/ai/workflows/artifact-draft-default-deps'
 import { createArtifactDraftWorkflow } from '@/domains/storyteller/ai/workflows/artifact-draft-workflow'
@@ -54,6 +55,8 @@ import {
   checkContinuityTool,
 } from '@/domains/storyteller/ai/tools/bible-tools'
 import { checkSectionAlignmentTool } from '@/domains/storyteller/ai/tools/section-alignment-tool'
+import { searchManuscriptTool } from '@/domains/storyteller/ai/tools/search-manuscript'
+import { promoteRuleTool } from '@/domains/storyteller/ai/tools/promote-rule-tool'
 import { proposeCharacterFieldsTool } from '@/domains/storyteller/ai/tools/propose-character-fields-tool'
 import { runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools/workflow-tool'
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
@@ -117,12 +120,14 @@ const chatAdapterAgent = new Agent({
     [readWorldBibleTool.id]: readWorldBibleTool,
     [checkContinuityTool.id]: checkContinuityTool,
     [checkSectionAlignmentTool.id]: checkSectionAlignmentTool,
+    [searchManuscriptTool.id]: searchManuscriptTool,
+    [promoteRuleTool.id]: promoteRuleTool,
     [proposeCharacterFieldsTool.id]: proposeCharacterFieldsTool,
     [runBeatDraftWorkflowTool.id]: runBeatDraftWorkflowTool,
   },
 })
 
-/** The 6 GRRM-topology agents (chat adapter, author, planner, 3 critics). */
+/** Chat adapter, author, planner, floor critics, optional extra dialogue critic, autonomous author. */
 export const storytellerRuntimeAgents: Record<string, Agent> = {
   storyteller: chatAdapterAgent,
   grrmAuthor: statelessGrrmAuthor,
@@ -130,6 +135,7 @@ export const storytellerRuntimeAgents: Record<string, Agent> = {
   continuityCritic,
   proseCritic,
   stakesCritic,
+  dialogueCritic,
   // Registered so its goal/objective state persists to the Postgres store.
   autonomousAuthor: autonomousAuthorAgent,
 }

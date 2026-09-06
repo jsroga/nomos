@@ -14,6 +14,7 @@ export enum BeatDraftCriticName {
   Continuity = 'Continuity',
   Prose = 'Prose',
   Stakes = 'Stakes',
+  Dialogue = 'Dialogue',
 }
 
 export enum BeatDraftLintReportName {

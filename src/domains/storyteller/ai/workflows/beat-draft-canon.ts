@@ -79,5 +79,18 @@ export function formatCanonFor(
   if (seesOtherSlots(audience) && canon.otherRoadmapSlotsText.length > 0) {
     parts.push(canon.otherRoadmapSlotsText)
   }
+  const ledger = formatKnowledgeLedger(audience, canon)
+  if (ledger.length > 0) parts.push(ledger)
   return parts.join('\n')
+}
+
+function formatKnowledgeLedger(audience: CanonAudience, canon: BeatDraftCanon): string {
+  const rows = canon.knowledgeLedger ?? []
+  const visible = rows.filter(row => {
+    if (row.revoked) return false
+    if (row.authorTruth) return seesAuthorTruth(audience)
+    return true
+  })
+  if (visible.length === 0) return ''
+  return `KNOWLEDGE_LEDGER:\n${JSON.stringify(visible)}`
 }

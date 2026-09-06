@@ -87,4 +87,23 @@ describe('packScriptGhostContext', () => {
     expect(covering).toHaveLength(1)
     expect(covering[0]?.id).toBe('beat-1')
   })
+
+  it('packs premise and prefix when the episode has no beats', () => {
+    const packed = packScriptGhostContext({
+      masterPrompt: '',
+      canon: emptyBeatDraftCanon({
+        sections: { [BibleSection.WORLD_DESCRIPTION]: 'a harbour city' },
+        beats: [],
+      }),
+      episodePremise: 'Vera hunts the bells.',
+      prefix: 'INT. CHAPEL - NIGHT',
+    })
+
+    expect(packed).toContain(ScriptGhostPackHeading.Premise)
+    expect(packed).toContain('Vera hunts the bells.')
+    expect(packed).toContain(ScriptGhostPackHeading.Manuscript)
+    expect(packed).toContain('INT. CHAPEL - NIGHT')
+    expect(packed).not.toContain(ScriptGhostPackHeading.BeatPrefix)
+    expect(beatsCoveringCaret([], 'INT. CHAPEL - NIGHT')).toEqual([])
+  })
 })

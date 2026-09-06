@@ -24,6 +24,15 @@ export function shouldRunCheck(
 
 export type BeatRow = typeof beats.$inferSelect
 
+export interface ConsistencyBeatSlice {
+  id: string
+  sequence: number
+  beatType: string | null
+  causalDependencies: unknown
+  content: string | null
+  charactersInvolved: unknown
+}
+
 export interface SetupsPayoffsJson {
   setupId?: string
   payoffFor?: string

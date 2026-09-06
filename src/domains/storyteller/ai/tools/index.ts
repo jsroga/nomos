@@ -20,6 +20,8 @@ import {
   checkContinuityTool,
 } from './bible-tools'
 import { checkSectionAlignmentTool } from './section-alignment-tool'
+import { searchManuscriptTool } from './search-manuscript'
+import { promoteRuleTool } from './promote-rule-tool'
 
 export { manageBeatTool, listBeatsTool } from './beat-tools'
 
@@ -32,6 +34,8 @@ export { manageEpisodeTool, listEpisodesTool } from './episode-tools'
 // World Bible + Continuity (3 tools)
 export { updateWorldBibleTool, readWorldBibleTool, checkContinuityTool } from './bible-tools'
 export { checkSectionAlignmentTool } from './section-alignment-tool'
+export { searchManuscriptTool } from './search-manuscript'
+export { promoteRuleTool } from './promote-rule-tool'
 export { proposeCharacterFieldsTool } from './propose-character-fields-tool'
 
 // Workflow entry (tool #10) — for the CHAT adapter only, never the author
@@ -40,7 +44,7 @@ export { runBeatDraftWorkflowTool } from './workflow-tool'
 
 /**
  * All tools for the GRRM Agent
- * Total: 10 tools (CRUD + continuity + section alignment)
+ * Total: CRUD + continuity + section alignment + literal manuscript search
  */
 export const grrmTools = [
   // Beat CRUD
@@ -57,4 +61,6 @@ export const grrmTools = [
   readWorldBibleTool,
   checkContinuityTool,
   checkSectionAlignmentTool,
+  searchManuscriptTool,
+  promoteRuleTool,
 ]

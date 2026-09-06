@@ -58,3 +58,28 @@ describe('FF_TILE_SEAM_COLOR_FADE', () => {
     expect(isFeatureEnabled(FeatureFlag.TileSeamColorFade)).toBe(true)
   })
 })
+
+describe('FF_STORYTELLER_EXTRA_CRITIC_SCOPES', () => {
+  const key = FeatureFlag.StorytellerExtraCriticScopes
+  const prev = process.env[key]
+
+  afterEach(() => {
+    if (prev === undefined) Reflect.deleteProperty(process.env, key)
+    else process.env[key] = prev
+  })
+
+  it('is off unless set to true', () => {
+    Reflect.deleteProperty(process.env, key)
+    expect(isFeatureEnabled(FeatureFlag.StorytellerExtraCriticScopes)).toBe(false)
+    process.env[key] = '1'
+    expect(isFeatureEnabled(FeatureFlag.StorytellerExtraCriticScopes)).toBe(false)
+    process.env[key] = FEATURE_FLAG_ON
+    expect(isFeatureEnabled(FeatureFlag.StorytellerExtraCriticScopes)).toBe(true)
+  })
+})
+
+describe('fiction-adjusted Humanizer flag', () => {
+  it('is not a FeatureFlag member', () => {
+    expect(Object.values(FeatureFlag)).not.toContain('FF_STORYTELLER_HUMANIZER_FICTION')
+  })
+})

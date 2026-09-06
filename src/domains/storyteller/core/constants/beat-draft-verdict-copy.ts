@@ -5,6 +5,8 @@ export enum BeatDraftVerdictCopy {
   Question = 'The draft and critiques are ready. What is your editorial verdict?',
   ApproveLabel = 'Approve',
   ApproveDescription = 'Revise against the critiques as-is',
+  ApprovePromoteLabel = 'Approve and promote',
+  ApprovePromoteDescription = 'Approve, and persist the editor note as a project world rule',
   ReviseLabel = 'Revise with note',
   ReviseDescription = 'Add editorial direction (it outranks the critics)',
   KillLabel = 'Kill',

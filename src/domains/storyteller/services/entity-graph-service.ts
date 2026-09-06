@@ -86,12 +86,17 @@ class EntityGraphService {
     )
   }
 
-  async buildEntityEmbedding(entityId: string, content: string): Promise<boolean> {
+  async buildEntityEmbedding(
+    entityId: string,
+    content: string,
+    scope: ProjectScope
+  ): Promise<boolean> {
     try {
-      const { getVoyageEmbeddings } =
-        await import('@/shared/ai/embeddings/voyage-embeddings')
-      const embeddings = getVoyageEmbeddings()
-      const [embedding] = await embeddings.embedDocuments([content])
+      const [embedding] = await embed({
+        scope,
+        feature: LlmFeature.RagEmbedding,
+        texts: [content],
+      })
 
       if (!embedding || embedding.length === 0) return false
 

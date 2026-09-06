@@ -21,6 +21,11 @@ describe('FindingSchema', () => {
     expect(FindingSchema.parse(VALID).location.quote).toBe('the bells are Vera')
   })
 
+  it('defaults promoteToProjectRule to false when omitted', () => {
+    const { promoteToProjectRule: _omitted, ...rest } = VALID
+    expect(FindingSchema.parse(rest).promoteToProjectRule).toBe(false)
+  })
+
   it('parses a bible-section finding with no beatId', () => {
     const parsed = FindingSchema.parse({
       ...VALID,

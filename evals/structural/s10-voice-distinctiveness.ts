@@ -104,6 +104,10 @@ const FUNCTION_WORD_SET = new Set<string>(FUNCTION_WORDS)
 const NGRAM_SIZE = DISTINCT_N_VALUES[0]
 const MIN_SPEAKERS = 2
 
+export enum VoiceDistinctivenessFloor {
+  MinToken = 4,
+}
+
 interface SpeakerProfile {
   name: string
   tokens: string[]
@@ -194,7 +198,7 @@ function profilesFromBeats(beats: readonly DumpedBeat[]): SpeakerProfile[] {
   const profiles: SpeakerProfile[] = []
   for (const [name, texts] of grouped) {
     const tokens = tokenize(texts.join(' '))
-    if (tokens.length === 0) continue
+    if (tokens.length < VoiceDistinctivenessFloor.MinToken) continue
     profiles.push({
       name,
       tokens,
