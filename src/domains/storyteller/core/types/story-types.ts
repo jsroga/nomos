@@ -26,7 +26,7 @@ export interface BeatCard {
   mazurElements?: Record<string, unknown>
   charactersInvolved?: string[]
   content?: string
-  status?: 'proposed' | 'approved' | 'rejected' | 'locked'
+  status?: `${BeatStatus}`
   emotionalShifts?: Record<string, unknown>
   causalDependencies?: string[]
   setupsPayoffs?: Record<string, unknown>
@@ -34,6 +34,7 @@ export interface BeatCard {
 
 const BEAT_CARD_STATUSES = [
   `${BeatStatus.PROPOSED}`,
+  `${BeatStatus.CHALLENGED}`,
   `${BeatStatus.APPROVED}`,
   `${BeatStatus.REJECTED}`,
   `${BeatStatus.LOCKED}`,

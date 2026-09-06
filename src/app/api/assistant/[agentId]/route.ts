@@ -52,7 +52,9 @@ import { isE2eHarnessCaller, withE2eLlmPin } from '@/shared/ai/gateway/e2e-llm-p
 import { readString } from '@/shared/data/json-guards'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { withGatewayContext } from '@/shared/ai/gateway/call-context'
-import { MemorySlot, memoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
+import { MemorySlot, memoryRef, overlayMemoryRef, type MemoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
+import { findOwnedChatSession } from '@/shared/chat/core/io/chat-session-store'
+import { scheduleChatSessionTitle } from '@/shared/chat/core/io/title-chat-session'
 
 /** Storyteller chat tools only — excludes inherited Mastra workspace FS tools. */
 const STORYTELLER_CHAT_ACTIVE_TOOLS = [
@@ -142,6 +144,7 @@ interface AssistantChatBody {
   episodeId?: string
   modelName?: string
   bibleSection?: string
+  sessionId?: string
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -276,6 +279,24 @@ async function resolveStorytellerSystem(opts: {
   })
 }
 
+async function resolveAssistantMemory(input: {
+  sessionId: string | undefined
+  projectId: string | undefined
+  episodeId: string | undefined
+  userId: string
+}): Promise<MemoryRef | null> {
+  if (!input.sessionId) {
+    return memoryRef({
+      projectId: input.projectId ?? MemorySlot.None,
+      episodeId: input.episodeId,
+      userId: input.userId,
+    })
+  }
+  const owned = await findOwnedChatSession({ id: input.sessionId, userId: input.userId })
+  if (!owned) return null
+  return overlayMemoryRef({ id: owned.id, userId: input.userId })
+}
+
 export async function POST(req: Request, { params }: RouteContext) {
   const { session, error: authError } = await requireAuth()
   if (authError || !session?.user?.id) {
@@ -325,11 +346,24 @@ export async function POST(req: Request, { params }: RouteContext) {
   }
 
   const isStoryteller = agentId === StorytellerAgentId.Storyteller
-  const bound = memoryRef({
-    projectId: projectId ?? MemorySlot.None,
+  const sessionId = readString(raw[AssistantChatBodyKey.SessionId])
+  const bound = await resolveAssistantMemory({
+    sessionId,
+    projectId,
     episodeId,
     userId,
   })
+  if (!bound) {
+    return new Response(JSON.stringify({ error: PROJECT_ACCESS_DENIED }), { status: STATUS_NOT_FOUND })
+  }
+  if (sessionId && projectScope) {
+    scheduleChatSessionTitle({
+      sessionId,
+      userId,
+      scope: projectScope,
+      messages: raw.messages,
+    })
+  }
 
   // Return the SSE response immediately; assemble context inside the stream so
   // the client leaves "submitted" while world context loads (not hung).

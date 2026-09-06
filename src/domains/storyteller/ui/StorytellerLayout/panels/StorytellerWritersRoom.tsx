@@ -48,7 +48,8 @@ import {
   shouldShowAddToWorld,
 } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-tool-helpers'
 import { commitWritersRoomAddToWorld } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-add-to-world'
-import { WritersRoomAssistantChat } from '@/domains/storyteller/ui/StorytellerLayout/panels/WritersRoomAssistantChat'
+import { WritersRoomAssistantChat, WritersRoomOverlayBridgePublisher } from '@/domains/storyteller/ui/StorytellerLayout/panels/WritersRoomAssistantChat'
+import { isWorkspaceChatOverlayEnabled } from '@/shared/data/constants/feature-flags'
 
 export function StorytellerWritersRoom(props: StorytellerPageSlices) {
   const {
@@ -354,30 +355,39 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
     },
     [clearGenerationActivity, setGenerationActivity, setLoadingSections],
   )
+  const chatProps = {
+    projectId,
+    currentEpisodeId,
+    bibleSection: chatBibleSection,
+    characters,
+    beats,
+    storyPlan,
+    hasBible,
+    hasEpisodes,
+    modelId,
+    chatModelOptions,
+    onChatModelChange: setModelId,
+    pendingPrompt,
+    onPendingPromptHandled: handlePendingPromptHandled,
+    onStreamIdle: handleStreamIdle,
+    onGenerationActivity: handleGenerationActivity,
+    onCompletedToolCalls: handleCompletedToolCalls,
+    onAddToWorld: handleAddToWorld,
+    sectionLabelsFromToolArgs,
+    isAddToWorldSettled,
+    canAddToWorld,
+  }
+  if (isWorkspaceChatOverlayEnabled()) {
+    return (
+      <>
+        <WritersRoomOverlayBridgePublisher {...chatProps} />
+        {ConfirmDialogComponent}
+      </>
+    )
+  }
   return (
     <DomainSidebar header={null} position="right" storageKey="writers-room" defaultWidth={384} rawContent>
-      <WritersRoomAssistantChat
-        projectId={projectId}
-        currentEpisodeId={currentEpisodeId}
-        bibleSection={chatBibleSection}
-        characters={characters}
-        beats={beats}
-        storyPlan={storyPlan}
-        hasBible={hasBible}
-        hasEpisodes={hasEpisodes}
-        modelId={modelId}
-        chatModelOptions={chatModelOptions}
-        onChatModelChange={setModelId}
-        pendingPrompt={pendingPrompt}
-        onPendingPromptHandled={handlePendingPromptHandled}
-        onStreamIdle={handleStreamIdle}
-        onGenerationActivity={handleGenerationActivity}
-        onCompletedToolCalls={handleCompletedToolCalls}
-        onAddToWorld={handleAddToWorld}
-        sectionLabelsFromToolArgs={sectionLabelsFromToolArgs}
-        isAddToWorldSettled={isAddToWorldSettled}
-        canAddToWorld={canAddToWorld}
-      />
+      <WritersRoomAssistantChat {...chatProps} />
       {ConfirmDialogComponent}
     </DomainSidebar>
   )

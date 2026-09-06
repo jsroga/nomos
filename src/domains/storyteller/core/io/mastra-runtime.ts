@@ -34,6 +34,7 @@ import { createArtifactDraftWorkflow } from '@/domains/storyteller/ai/workflows/
 import { beatDraftWorkflow } from '@/domains/storyteller/ai/workflows/beat-draft-workflow'
 import { defaultFixInconsistenciesDeps } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-default-deps'
 import { createFixInconsistenciesWorkflow } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-workflow'
+import { bindStorytellerWorkflowRegistry } from '@/domains/storyteller/core/io/storyteller-workflow-registry'
 // Tools come from their CONCRETE modules, never the tools barrel — the barrel
 // side-effect-imports this file (registration ordering), so importing it here
 // would create a cycle.
@@ -145,12 +146,12 @@ const fixInconsistenciesWorkflow = createFixInconsistenciesWorkflow(
   defaultFixInconsistenciesDeps
 )
 
-/** Workflows registered on the production Mastra instance. */
-export const storytellerRuntimeWorkflows = {
-  beatDraftWorkflow,
-  artifactDraftWorkflow,
-  fixInconsistenciesWorkflow,
-}
+/** Workflows registered on the production Mastra instance (contract id + export name). */
+export const storytellerRuntimeWorkflows = bindStorytellerWorkflowRegistry({
+  beatDraft: beatDraftWorkflow,
+  artifactDraft: artifactDraftWorkflow,
+  fixInconsistencies: fixInconsistenciesWorkflow,
+})
 
 export {
   BEAT_DRAFT_WORKFLOW_ID,

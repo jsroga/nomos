@@ -23,7 +23,11 @@ import {
 import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
 import { resolveAddToWorldCommit } from '@/domains/storyteller/state/utils/resolve-add-to-world-target'
 import { characterDraftFieldsFromToolArgs } from '@/domains/storyteller/state/utils/character-draft-fields-from-tool'
-import { StorytellerChatTool, StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
+import {
+  StorytellerChatTool,
+  StorytellerTab,
+  StorytellerWorkflowToolId,
+} from '@/domains/storyteller/core/storyteller-page-wire'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { ActionType } from '@/domains/storyteller/core/types/enums'
 import type { StreamAgentAction } from '@/domains/storyteller/core/types/action-types'
@@ -307,7 +311,8 @@ export function shouldShowAddToWorld(input: ShouldShowAddToWorldInput): boolean 
   if (input.role !== ChatMessageRole.Assistant) return false
   if (isCharacterDraftAddToWorldTurn(input)) return true
   if (input.requestedSection === CharacterDraftChatSection.Form) return false
-  return hasCommittableBibleOrBeatWrite(input.toolNames, input.toolArgs)
+  const names = input.toolNames.filter(name => name !== StorytellerWorkflowToolId.RunBeatDraft)
+  return hasCommittableBibleOrBeatWrite(names, input.toolArgs)
 }
 
 export function isCharacterDraftAddToWorldTurn(input: {

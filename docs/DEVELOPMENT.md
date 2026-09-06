@@ -242,6 +242,7 @@ Opt-in flags are named `FF_<NAME>` and turn on with the exact value `true`; anyt
 | `FF_TILE_SEAM_COLOR_FADE` | 16px follow-up tile edge color fade (off: packed grey-hole crop only) |
 | `NEXT_PUBLIC_FF_3D_CANVAS` | Show 3D Canvas in the workspace sidebar and project hub |
 | `NEXT_PUBLIC_FF_LOOP_CREATOR` | Show Loop Creator in the workspace sidebar and project hub |
+| `NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY` | Workspace General Chat overlay (sibling of `ProjectLoader`); hides private Writers Room / Loop `AssistantChat` copies |
 | `NEXT_PUBLIC_FF_PERF_DEBUG` | React Scan overlay + CWV HUD + CharacterWeb timings |
 | `NEXT_PUBLIC_FF_CWV_HUD` | Core Web Vitals overlay only |
 
@@ -266,6 +267,7 @@ Do **not** add an app-layer regex prompt-injection filter. Fiction dialogue will
 | Slot | Env var | Resolver |
 |---|---|---|
 | Storyteller chat (Writers Room) | UI picker → `STORYTELLER_CHAT_MODEL` → matrix `chat` | `resolveRoleModel('chat')` + RequestContext `storyteller.chatModel` |
+| Overlay session title | `complete()` + `TEXT_GEN_FAST_MODEL` | `LlmFeature.ChatSessionTitle` (`chat.session-title`); fire-and-forget; rename locks |
 | Storyteller orchestration | `STORYTELLER_{AUTHOR,PLANNER,CRITIC,MUSE,PREMISE}_MODEL` | `ROLE_ENV_VARS` → `resolveRoleModel` (not the chat picker) |
 | Game design | `GAME_DESIGN_MODEL` | `domains/game-design/config/model-config.ts` |
 | Loop creator | `LOOP_CREATOR_MODEL` | `domains/loop-creator/config/model-config.ts` |

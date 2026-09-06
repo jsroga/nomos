@@ -12,7 +12,7 @@ import {
   shouldShowAddToWorld,
   showBeatOnBoard,
 } from '../writers-room-tool-helpers'
-import { CharacterDraftChatSection, StorytellerChatTool, StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
+import { CharacterDraftChatSection, StorytellerChatTool, StorytellerTab, StorytellerWorkflowToolId } from '@/domains/storyteller/core/storyteller-page-wire'
 import { ChatMessageRole } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { BibleSectionDisplayName, SectionListJoin } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
 import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
@@ -215,5 +215,15 @@ describe('shouldShowAddToWorld', () => {
         toolArgs: factionsArgs,
       }),
     ).toBe(true)
+  })
+
+  it('hides the button after a failed or unavailable beat-draft workflow call', () => {
+    expect(
+      shouldShowAddToWorld({
+        role: ChatMessageRole.Assistant,
+        toolNames: [StorytellerWorkflowToolId.RunBeatDraft],
+        toolArgs: [{ projectId: 'p1', episodeId: 'e1', brief: 'Draft the next beat.' }],
+      }),
+    ).toBe(false)
   })
 })

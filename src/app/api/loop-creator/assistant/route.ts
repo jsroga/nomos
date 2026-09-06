@@ -26,6 +26,9 @@ import { ContentType, HttpHeader, LoopCreatorStreamEventType } from '@/shared/da
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { isPlainObject, readString } from '@/shared/data/json-guards'
 import { isE2eHarnessCaller, withE2eLlmPin } from '@/shared/ai/gateway/e2e-llm-pin'
+import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { bindOverlaySessionMemory } from '@/shared/chat/core/io/bind-overlay-session-memory'
+import { scheduleChatSessionTitle } from '@/shared/chat/core/io/title-chat-session'
 
 export const maxDuration = 120
 
@@ -105,6 +108,21 @@ export async function POST(req: Request) {
   const history = toBaseMessages(record.messages)
   const message = latestUserText(history)
   const context = isPlainObject(record.context) ? record.context : undefined
+  const sessionId = readString(record[AssistantChatBodyKey.SessionId])
+  let crewThreadId = crypto.randomUUID()
+  if (sessionId) {
+    const overlayBound = await bindOverlaySessionMemory(sessionId, session.user.id)
+    if (!overlayBound) {
+      return jsonError(API_ERROR.PROJECT_ACCESS_DENIED, STATUS_404)
+    }
+    crewThreadId = overlayBound.thread
+    scheduleChatSessionTitle({
+      sessionId,
+      userId: session.user.id,
+      scope,
+      messages: record.messages,
+    })
+  }
 
   const initialState: LoopCreatorState = {
     ...createInitialLoopState(scope, message, context),
@@ -122,7 +140,7 @@ export async function POST(req: Request) {
 
       await streamLoopCreator(
         initialState,
-        { configurable: { thread_id: crypto.randomUUID() } },
+        { configurable: { thread_id: crewThreadId } },
         event => {
           if (event.type === LoopCreatorStreamEventType.Message && event.message?.content) {
             writer.write({

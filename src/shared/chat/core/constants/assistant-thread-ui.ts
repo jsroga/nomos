@@ -84,6 +84,7 @@ export enum AssistantChatBodyKey {
   EpisodeId = 'episodeId',
   BibleSection = 'bibleSection',
   Messages = 'messages',
+  SessionId = 'sessionId',
 }
 
 export type AssistantChatModelOption = {

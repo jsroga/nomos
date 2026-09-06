@@ -22,3 +22,8 @@ export function selectQueuedVerdicts(
     )
     .map(run => ({ runId: run.runId }))
 }
+
+/** Empty overlay chrome is hidden — “No queued verdicts” is not a user-facing state. */
+export function queuedVerdictsListVisible(runIds: readonly string[]): boolean {
+  return runIds.length > 0
+}

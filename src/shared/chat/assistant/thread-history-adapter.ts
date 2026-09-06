@@ -19,6 +19,7 @@ import type {
   MessageStorageEntry,
   GenericThreadHistoryAdapter,
 } from '@assistant-ui/react'
+import { fetchChatSessionMessages } from '@/shared/chat/core/io/chat-sessions.api'
 
 const STORAGE_PREFIX = 'aui-thread-'
 const ENTRY_KEY_ID = 'id'
@@ -77,14 +78,15 @@ export function clearThreadHistory(persistKey: string): void {
   }
 }
 
-function withFormatAdapter<TMessage, TStorageFormat extends Record<string, unknown>>(
-  persistKey: string,
-  formatAdapter: MessageFormatAdapter<TMessage, TStorageFormat>
+function withFormatFromStoredEntries<TMessage, TStorageFormat extends Record<string, unknown>>(
+  loadEntries: () => StoredEntry[] | Promise<StoredEntry[]>,
+  formatAdapter: MessageFormatAdapter<TMessage, TStorageFormat>,
 ): GenericThreadHistoryAdapter<TMessage> {
   return {
     async load() {
       const messages: MessageFormatItem<TMessage>[] = []
-      for (const entry of readEntries(persistKey)) {
+      const entries = await loadEntries()
+      for (const entry of entries) {
         if (entry.format !== formatAdapter.format) continue
         if (!isStorageContent<TStorageFormat>(entry.content)) continue
         try {
@@ -93,11 +95,24 @@ function withFormatAdapter<TMessage, TStorageFormat extends Record<string, unkno
           // Skip records that no longer decode (format drift).
         }
       }
-      const headId =
-        messages.length > 0 ? formatAdapter.getId(messages[messages.length - 1].message) : null
+      const last = messages[messages.length - 1]
+      const headId = last ? formatAdapter.getId(last.message) : null
       return { headId, messages }
     },
 
+    async append() {
+      // Base append is unused on the AI-SDK runtime (withFormat path handles it).
+    },
+  }
+}
+
+function withFormatAdapter<TMessage, TStorageFormat extends Record<string, unknown>>(
+  persistKey: string,
+  formatAdapter: MessageFormatAdapter<TMessage, TStorageFormat>
+): GenericThreadHistoryAdapter<TMessage> {
+  const formatted = withFormatFromStoredEntries(() => readEntries(persistKey), formatAdapter)
+  return {
+    load: formatted.load,
     async append(item) {
       const entry: StoredEntry = {
         id: formatAdapter.getId(item.message),
@@ -123,6 +138,25 @@ export function createSessionThreadHistoryAdapter(persistKey: string): ThreadHis
     },
     withFormat(formatAdapter) {
       return withFormatAdapter(persistKey, formatAdapter)
+    },
+  }
+}
+
+/** Overlay history — Mastra memory via GET /api/chat/sessions/{id}/messages. */
+export function createOverlayThreadHistoryAdapter(sessionId: string): ThreadHistoryAdapter {
+  return {
+    async load() {
+      await fetchChatSessionMessages(sessionId)
+      return { messages: [] }
+    },
+    async append() {
+      // Mastra memory is the source of truth; local append is unused.
+    },
+    withFormat(formatAdapter) {
+      return withFormatFromStoredEntries(async () => {
+        const raw = await fetchChatSessionMessages(sessionId)
+        return raw.filter(isStoredEntry)
+      }, formatAdapter)
     },
   }
 }

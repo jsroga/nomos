@@ -266,7 +266,7 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
                   episodeId,
                   mode: manuscriptMode,
                 })
-                if (!result.persist || result.scriptContent.length === 0) return
+                if (result.scriptContent.length === 0) return
                 onChange(result.scriptContent)
                 if (editorRef.current) editorRef.current.innerText = result.scriptContent
               } catch (error) {

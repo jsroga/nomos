@@ -167,6 +167,7 @@ export enum AppModuleId {
   LoopCreator = 'loop-creator',
   InteriorDesigner = '3d-canvas',
   WorldBuilding = '2d-canvas',
+  AssetExporter = 'asset-exporter',
 }
 
 export enum GameEntityKind {

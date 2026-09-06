@@ -11,7 +11,8 @@ Virtual **writers’ room**: series bible, characters, episodes, beats, script d
 
 | Surface | Path / flag |
 |---------|-------------|
-| Chat SSE (default) | `/api/storyteller/chat/stream` — agent.stream + tools |
+| Chat SSE (legacy / autonomous) | `/api/storyteller/chat/stream` — frozen `ChatFrameType` frames. Not the overlay door |
+| Overlay General Chat | `NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY=true` — `WorkspaceChatLayer` sibling of `ProjectLoader`; AI-SDK `/api/assistant/storyteller` + `overlayMemoryRef` |
 | AgentController chat | `FF_STORYTELLER_CONTROLLER=true` — plan-first modes |
 | Autonomous draft | `FF_STORYTELLER_AUTONOMOUS=true` — durable agent + goals |
 | Beat-draft workflow | Mastra workflow: plan → draft → critics → revise; editorial **suspend/resume** HITL |
@@ -77,7 +78,13 @@ core/io/       # API clients, mastra-runtime seam
 
 - World Bible panel (lockable for central users)
 - Phase navigator / beat board / character web / Draft tab (`ScriptEditor`)
-- Streaming writers’ room chat
+- Streaming writers’ room chat (private sidebar when the overlay flag is off)
+
+## Workspace overlay chat
+
+When `NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY=true`, Writers Room does not mount its private `AssistantChat`. Headless hooks still publish mentions, verdict UI, and pending bible prompts into the overlay via `WritersRoomOverlayBridgePublisher`. Overlay sessions are host rows in `chat_sessions`; words stay in Mastra memory. Overlay threads use `overlayMemoryRef({ id, userId })` (`thread: overlay:{id}`). Live doors (assistant without `sessionId`, SSE stream, controller, autonomous, CRUD) keep `memoryRef()`.
+
+A session is locked to one `AppModuleId` at create. Send is gated by `canSendToSession`. Storyteller pending prompts never inject into a non-storyteller session. Overlay transport is `/api/assistant/[agentId]` only — never `POST /api/storyteller/chat/stream`. Beat verdict still resumes through `BeatDraftVerdictToolUI` → `resumeChatWorkflow`.
 
 ## Writers Room ↔ World Bible
 

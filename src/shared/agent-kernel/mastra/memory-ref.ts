@@ -1,5 +1,6 @@
 export enum MemoryThreadPrefix {
   Storyteller = 'storyteller',
+  Overlay = 'overlay',
 }
 
 /** Empty episode or project slot in the thread key. */
@@ -21,6 +22,18 @@ export interface MemoryRef {
 export function memoryRef(input: MemoryRefInput): MemoryRef {
   return {
     thread: `${MemoryThreadPrefix.Storyteller}:${input.projectId}:${input.episodeId ?? MemorySlot.None}:${input.userId}`,
+    resource: input.userId,
+  }
+}
+
+export interface OverlayMemoryRefInput {
+  id: string
+  userId: string
+}
+
+export function overlayMemoryRef(input: OverlayMemoryRefInput): MemoryRef {
+  return {
+    thread: `${MemoryThreadPrefix.Overlay}:${input.id}`,
     resource: input.userId,
   }
 }

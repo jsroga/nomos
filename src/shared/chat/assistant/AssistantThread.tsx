@@ -23,6 +23,8 @@ interface AssistantThreadProps {
   chatModelId?: string
   chatModelOptions?: readonly AssistantChatModelOption[]
   onChatModelChange?: (modelId: string) => void
+  composerEnabled?: boolean
+  onBeforeSend?: (text: string) => boolean
 }
 
 export function AssistantThread({
@@ -31,6 +33,8 @@ export function AssistantThread({
   chatModelId,
   chatModelOptions,
   onChatModelChange,
+  composerEnabled = true,
+  onBeforeSend,
 }: AssistantThreadProps) {
   return (
     <AssistantChatDetailsProvider>
@@ -70,6 +74,8 @@ export function AssistantThread({
           chatModelId={chatModelId}
           chatModelOptions={chatModelOptions}
           onChatModelChange={onChatModelChange}
+          composerEnabled={composerEnabled}
+          onBeforeSend={onBeforeSend}
         />
       </ThreadPrimitive.Root>
     </AssistantChatDetailsProvider>

@@ -31,6 +31,7 @@ import {
   openApiJobRunParamsSchema,
   openApiJobRunResponseSchema,
 } from '@/shared/openapi/schemas/jobs'
+import { registerChatSessionPublicRoutes } from '@/shared/openapi/register-chat-session-routes'
 import {
   openApiJsonRpcRequestSchema,
   openApiJsonRpcResponseSchema,
@@ -276,4 +277,6 @@ export function registerSharedPublicRoutes(registry: OpenAPIRegistry): void {
       500: refResponse(OpenApiComponentResponse.ServerError),
     },
   })
+
+  registerChatSessionPublicRoutes(registry)
 }

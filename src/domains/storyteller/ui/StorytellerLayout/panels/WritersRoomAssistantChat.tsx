@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
 import { BeatDraftVerdictToolUI } from '@/domains/storyteller/ui/QuestionCard/BeatDraftVerdictToolUI'
@@ -23,6 +23,9 @@ import {
   writersRoomChatBody,
   writersRoomProjectContext,
 } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-tool-helpers'
+import { AppModuleId } from '@/shared/data/constants/protocol'
+import { useWritersRoomOverlayBridge } from '@/domains/storyteller/ui/overlay/writers-room-overlay-bridge'
+import type { WritersRoomOverlayBridge } from '@/domains/storyteller/ui/overlay/writers-room-overlay-bridge'
 
 interface WritersRoomAssistantChatProps {
   projectId: string
@@ -50,28 +53,31 @@ interface WritersRoomAssistantChatProps {
   canAddToWorld: (input: CanAddToWorldInput) => boolean
 }
 
-export function WritersRoomAssistantChat({
-  projectId,
-  currentEpisodeId,
-  bibleSection,
-  characters,
-  beats,
-  storyPlan,
-  hasBible,
-  hasEpisodes,
-  modelId,
-  chatModelOptions,
-  onChatModelChange,
-  pendingPrompt,
-  onPendingPromptHandled,
-  onStreamIdle,
-  onGenerationActivity,
-  onCompletedToolCalls,
-  onAddToWorld,
-  sectionLabelsFromToolArgs,
-  isAddToWorldSettled,
-  canAddToWorld,
-}: WritersRoomAssistantChatProps) {
+export function useWritersRoomAssistantBindings(
+  props: WritersRoomAssistantChatProps,
+): WritersRoomOverlayBridge {
+  const {
+    projectId,
+    currentEpisodeId,
+    bibleSection,
+    characters,
+    beats,
+    storyPlan,
+    hasBible,
+    hasEpisodes,
+    modelId,
+    chatModelOptions,
+    onChatModelChange,
+    pendingPrompt,
+    onPendingPromptHandled,
+    onStreamIdle,
+    onGenerationActivity,
+    onCompletedToolCalls,
+    onAddToWorld,
+    sectionLabelsFromToolArgs,
+    isAddToWorldSettled,
+    canAddToWorld,
+  } = props
   const mentionProviders = useMemo(
     () => [...getStorytellerMentionProviders(), getGameEntityProvider()],
     [],
@@ -100,32 +106,64 @@ export function WritersRoomAssistantChat({
     () => createStorytellerChatRenderers(projectId || undefined),
     [projectId],
   )
+  return {
+    body: chatBody,
+    suggestions,
+    mentionProviders,
+    mentionProjectContext,
+    modelId,
+    chatModelOptions,
+    onChatModelChange,
+    pendingPrompt,
+    onPendingPromptHandled,
+    onStreamIdle,
+    onGenerationActivity,
+    onCompletedToolCalls,
+    onAddToWorld,
+    sectionLabelsFromToolArgs,
+    isAddToWorldSettled,
+    canAddToWorld,
+    chatRenderers,
+    extraToolUIs: <BeatDraftVerdictToolUI />,
+  }
+}
 
+export function WritersRoomOverlayBridgePublisher(props: WritersRoomAssistantChatProps) {
+  const bindings = useWritersRoomAssistantBindings(props)
+  useEffect(() => {
+    useWritersRoomOverlayBridge.getState().setBridge(bindings)
+    return () => useWritersRoomOverlayBridge.getState().setBridge(null)
+  }, [bindings])
+  return null
+}
+
+export function WritersRoomAssistantChat(props: WritersRoomAssistantChatProps) {
+  const bindings = useWritersRoomAssistantBindings(props)
   return (
     <div className="flex h-full flex-col" id={TOUR_STEP_IDS.STORYTELLER_CHAT}>
-      {projectId ? <QueuedVerdictsList projectId={projectId} /> : null}
+      {props.projectId ? <QueuedVerdictsList projectId={props.projectId} /> : null}
       <AssistantChat
-        key={projectId || 'pending'}
-        agentId="storyteller"
-        body={chatBody}
-        suggestions={suggestions}
-        mentionProviders={mentionProviders}
-        mentionProjectContext={mentionProjectContext}
-        persistKey={projectId ? `writers-room-${projectId}` : undefined}
-        chatModelId={modelId}
-        chatModelOptions={chatModelOptions}
-        onChatModelChange={onChatModelChange}
-        pendingPrompt={pendingPrompt}
-        onPendingPromptHandled={onPendingPromptHandled}
-        onStreamIdle={onStreamIdle}
-        onGenerationActivity={onGenerationActivity}
-        onCompletedToolCalls={onCompletedToolCalls}
-        onAddToWorld={onAddToWorld}
-        sectionLabelsFromToolArgs={sectionLabelsFromToolArgs}
-        isAddToWorldSettled={isAddToWorldSettled}
-        canAddToWorld={canAddToWorld}
-        chatRenderers={chatRenderers}
-        extraToolUIs={<BeatDraftVerdictToolUI />}
+        key={props.projectId || 'pending'}
+        agentId={AppModuleId.Storyteller}
+        body={bindings.body}
+        suggestions={bindings.suggestions}
+        mentionProviders={bindings.mentionProviders}
+        mentionProjectContext={bindings.mentionProjectContext}
+        persistKey={props.projectId ? `writers-room-${props.projectId}` : undefined}
+        chatModelId={bindings.modelId}
+        chatModelOptions={bindings.chatModelOptions}
+        onChatModelChange={bindings.onChatModelChange}
+        pendingPrompt={bindings.pendingPrompt}
+        onPendingPromptHandled={bindings.onPendingPromptHandled}
+        onStreamIdle={bindings.onStreamIdle}
+        onGenerationActivity={bindings.onGenerationActivity}
+        onCompletedToolCalls={bindings.onCompletedToolCalls}
+        onAddToWorld={bindings.onAddToWorld}
+        sectionLabelsFromToolArgs={bindings.sectionLabelsFromToolArgs}
+        isAddToWorldSettled={bindings.isAddToWorldSettled}
+        canAddToWorld={bindings.canAddToWorld}
+        chatRenderers={bindings.chatRenderers}
+        extraToolUIs={bindings.extraToolUIs}
       />
     </div>
   )

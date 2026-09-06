@@ -23,6 +23,9 @@ export { ChatRenderersProvider, useChatRenderers } from './core/renderers'
 export type { ChatRenderers } from './core/renderers'
 export { ChatFrameType } from './core/protocol'
 export { resumeChatWorkflow } from './core/io/chat-ui.api'
+export { WorkspaceChatOverlay } from './ui/WorkspaceChatOverlay/WorkspaceChatOverlay'
+export { WorkspaceChatToggle } from './ui/WorkspaceChatOverlay/WorkspaceChatToggle'
+export { useWorkspaceChatUiStore } from './state/workspace-chat-ui-store'
 export { DEFAULT_RESUME_URL } from './core/constants/chat-stream'
 export {
   CHAT_STUCK_TIMEOUT_MS,

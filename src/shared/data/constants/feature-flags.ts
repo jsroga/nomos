@@ -15,6 +15,7 @@ export enum FeatureFlag {
   VoyageEmbeddings = 'FF_VOYAGE_EMBEDDINGS',
   CanvasGeminiUpscale = 'FF_CANVAS_GEMINI_UPSCALE',
   TileSeamColorFade = 'FF_TILE_SEAM_COLOR_FADE',
+  WorkspaceChatOverlay = 'FF_WORKSPACE_CHAT_OVERLAY',
 }
 
 export const FEATURE_FLAG_ON = 'true'
@@ -31,4 +32,9 @@ export function is3dCanvasEnabled(): boolean {
 /** Loop Creator icon in the workspace sidebar and project hub. Client-inlined. */
 export function isLoopCreatorEnabled(): boolean {
   return process.env.NEXT_PUBLIC_FF_LOOP_CREATOR === FEATURE_FLAG_ON
+}
+
+/** Workspace General Chat overlay. Client-inlined. */
+export function isWorkspaceChatOverlayEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY === FEATURE_FLAG_ON
 }

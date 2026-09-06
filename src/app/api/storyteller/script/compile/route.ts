@@ -8,10 +8,6 @@ import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { HttpStatus, QueryParam } from '@/shared/data/constants/protocol'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 
-export enum CompileManuscriptError {
-  Empty = 'EMPTY_COMPILE',
-}
-
 enum CompileField {
   Mode = 'mode',
 }
@@ -68,10 +64,6 @@ export async function POST(req: NextRequest) {
       beats: beatCardsFromRows(beatRows),
       mode,
     })
-
-    if (result.compiled.trim().length === 0) {
-      return NextResponse.json({ error: CompileManuscriptError.Empty }, { status: HttpStatus.BAD_REQUEST })
-    }
 
     if (result.persist && result.humanized) {
       await storytellerService.updateEpisodeScript(episodeId, result.humanized, ctx)

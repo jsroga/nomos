@@ -6,8 +6,8 @@ enum CompileJoin {
   Novel = '\n\n***\n\n',
 }
 
-function isApprovedOrLocked(status: BeatCard['status'] | undefined): boolean {
-  return status === BeatStatus.APPROVED || status === BeatStatus.LOCKED
+function isRejectedBeat(status: BeatCard['status'] | undefined): boolean {
+  return status === BeatStatus.REJECTED
 }
 
 export function compileEpisodeManuscript(beats: BeatCard[], mode: ManuscriptMode): string {
@@ -15,7 +15,7 @@ export function compileEpisodeManuscript(beats: BeatCard[], mode: ManuscriptMode
     .sort((left, right) => left.sequence - right.sequence)
     .filter(beat => {
       const body = beat.content?.trim() ?? ''
-      return body.length > 0 && isApprovedOrLocked(beat.status)
+      return body.length > 0 && !isRejectedBeat(beat.status)
     })
     .map(beat => beat.content?.trim() ?? '')
   const join = mode === ManuscriptMode.Novel ? CompileJoin.Novel : CompileJoin.Script

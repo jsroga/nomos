@@ -22,4 +22,19 @@ describe('runCompileHumanizePass', () => {
     expect(ok.persist).toBe(true)
     expect(ok.humanized).toBe(SOURCE)
   })
+
+  it('does not call humanize when the compiled manuscript is empty', async () => {
+    let called = false
+    const result = await runCompileHumanizePass({
+      compiled: '',
+      humanize: async () => {
+        called = true
+        return SOURCE
+      },
+      claimCheck: claimCheckBeat,
+    })
+    expect(called).toBe(false)
+    expect(result.persist).toBe(false)
+    expect(result.humanized).toBeNull()
+  })
 })

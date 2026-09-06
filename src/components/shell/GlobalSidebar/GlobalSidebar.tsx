@@ -9,6 +9,7 @@ import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { readString } from '@/shared/data/json-guards'
 import { isValidProjectId } from '@/shared/auth/security'
 import { AUTH_ROUTE } from '@/shared/auth/constants/auth-messages'
+import { AppModuleId } from '@/shared/data/constants/protocol'
 import { is3dCanvasEnabled, isLoopCreatorEnabled } from '@/shared/data/constants/feature-flags'
 import { AccountMenu } from './AccountMenu'
 
@@ -23,7 +24,9 @@ export const GlobalSidebar = () => {
   const storytellerHref = projectId ? `/${projectId}/storyteller` : AUTH_ROUTE.PROJECTS
   const worldGenHref = projectId ? `/${projectId}/2d-canvas` : AUTH_ROUTE.PROJECTS
   const loopCreatorHref = projectId ? `/${projectId}/loop-creator` : AUTH_ROUTE.PROJECTS
-  const assetExporterHref = projectId ? `/${projectId}/asset-exporter` : AUTH_ROUTE.PROJECTS
+  const assetExporterHref = projectId
+    ? `/${projectId}/${AppModuleId.AssetExporter}`
+    : AUTH_ROUTE.PROJECTS
   const interiorHref = projectId ? `/${projectId}/3d-canvas` : AUTH_ROUTE.PROJECTS
 
   return (

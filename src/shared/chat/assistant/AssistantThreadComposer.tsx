@@ -37,6 +37,7 @@ import {
   shortModelLabel,
   type AssistantChatModelOption,
 } from '../core/constants/assistant-thread-ui'
+import { KeyboardKey } from '@/shared/data/constants/protocol'
 
 // const MENTION_TRIGGER_CHAR = ASSISTANT_THREAD_WIRE.MentionAt
 const TEXTAREA_MAX_PX = 180
@@ -46,6 +47,8 @@ type AssistantThreadComposerProps = {
   chatModelId?: string
   chatModelOptions?: readonly AssistantChatModelOption[]
   onChatModelChange?: (modelId: string) => void
+  composerEnabled?: boolean
+  onBeforeSend?: (text: string) => boolean
 }
 
 function autoGrow(el: HTMLTextAreaElement | null) {
@@ -84,7 +87,13 @@ function FollowUpChips() {
   )
 }
 
-function ComposerInput() {
+function ComposerInput({
+  composerEnabled,
+  onBeforeSend,
+}: {
+  composerEnabled: boolean
+  onBeforeSend?: (text: string) => boolean
+}) {
   const ref = useRef<HTMLTextAreaElement | null>(null)
   const text = useComposer(c => c.text)
 
@@ -98,7 +107,14 @@ function ComposerInput() {
       rows={1}
       placeholder={ASSISTANT_THREAD_COPY.InputPlaceholder}
       className="aui-composer-input"
+      disabled={!composerEnabled}
       onInput={e => autoGrow(e.currentTarget)}
+      onKeyDown={event => {
+        if (event.key !== KeyboardKey.Enter || event.shiftKey) return
+        if (!composerEnabled || (onBeforeSend && !onBeforeSend(text))) {
+          event.preventDefault()
+        }
+      }}
     />
   )
 }
@@ -226,11 +242,43 @@ function ModelPicker({
   )
 }
 
+function GatedSend({
+  composerEnabled,
+  onBeforeSend,
+}: {
+  composerEnabled: boolean
+  onBeforeSend?: (text: string) => boolean
+}) {
+  const text = useComposer(c => c.text)
+  const handleClick = useCallback(
+    (event: { preventDefault: () => void; stopPropagation: () => void }) => {
+      if (!composerEnabled) {
+        event.preventDefault()
+        event.stopPropagation()
+        return
+      }
+      if (onBeforeSend && !onBeforeSend(text)) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    },
+    [composerEnabled, onBeforeSend, text],
+  )
+
+  return (
+    <ComposerPrimitive.Send className="aui-send" aria-label="Send" onClick={handleClick}>
+      <ArrowUp size={16} aria-hidden />
+    </ComposerPrimitive.Send>
+  )
+}
+
 export function AssistantThreadComposer({
   mentions,
   chatModelId,
   chatModelOptions,
   onChatModelChange,
+  composerEnabled = true,
+  onBeforeSend,
 }: AssistantThreadComposerProps) {
   const fallbackLabel = shortModelLabel(process.env.NEXT_PUBLIC_DEFAULT_AGENT_MODEL)
   const hasPicker =
@@ -245,7 +293,7 @@ export function AssistantThreadComposer({
 
         <ComposerPrimitive.Unstable_TriggerPopoverRoot>
           <ComposerPrimitive.Root className="aui-composer-surface">
-            <ComposerInput />
+            <ComposerInput composerEnabled={composerEnabled} onBeforeSend={onBeforeSend} />
 
             <div className="aui-composer-controls">
               <div className="aui-composer-left">
@@ -268,9 +316,7 @@ export function AssistantThreadComposer({
               </div>
 
               <ThreadPrimitive.If running={false}>
-                <ComposerPrimitive.Send className="aui-send" aria-label="Send">
-                  <ArrowUp size={16} aria-hidden />
-                </ComposerPrimitive.Send>
+                <GatedSend composerEnabled={composerEnabled} onBeforeSend={onBeforeSend} />
               </ThreadPrimitive.If>
               <ThreadPrimitive.If running>
                 <ComposerPrimitive.Cancel className="aui-send" aria-label="Stop">

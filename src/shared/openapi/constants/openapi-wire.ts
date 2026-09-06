@@ -58,6 +58,7 @@ export enum OpenApiTag {
   World = 'World',
   Canvas3d = '3D Canvas',
   Jobs = 'Jobs',
+  Chat = 'Chat',
 }
 
 export enum OpenApiMediaType {
@@ -89,6 +90,7 @@ export enum OpenApiTagDescription {
   World = 'Tile map read and write.',
   Canvas3d = 'Text-to-3D generation jobs.',
   Jobs = 'Background job runs. A run is readable only by the owner of the project it belongs to.',
+  Chat = 'Workspace overlay chat sessions. A session is readable only by its owner.',
 }
 
 export enum OpenApiRouteDescription {
@@ -115,6 +117,11 @@ export enum OpenApiRouteDescription {
   TextTo3dStarted = 'Generation started',
   TextTo3dStatus = 'Generation status',
   JobRun = 'Run status, output and metadata — only for a run in a project the caller owns.',
+  ChatSessionList = 'Chat sessions for the caller in a project, newest first.',
+  ChatSessionCreated = 'Created chat session.',
+  ChatSession = 'Chat session host row.',
+  ChatSessionDeleted = 'Session deleted.',
+  ChatSessionMessages = 'Messages hydrated from Mastra memory for that session thread.',
 }
 
 export enum OpenApiRouteSummary {
@@ -138,6 +145,12 @@ export enum OpenApiRouteSummary {
   TextTo3dStart = 'Start text-to-3D generation',
   TextTo3dPoll = 'Poll text-to-3D status',
   JobRunGet = 'Get background job run',
+  ChatSessionsList = 'List chat sessions',
+  ChatSessionsCreate = 'Create chat session',
+  ChatSessionGet = 'Get chat session',
+  ChatSessionPatch = 'Update chat session',
+  ChatSessionDelete = 'Delete chat session',
+  ChatSessionMessagesGet = 'List chat session messages',
 }
 
 /** OpenAPI path methods (lowercase — OpenAPI wire, not HTTP verb enums). */
@@ -161,6 +174,9 @@ export enum OpenApiPath {
   Canvas3dTextTo3d = '/3d-canvas/text-to-3d',
   Canvas3dTextTo3dTask = '/3d-canvas/text-to-3d/{taskId}',
   JobRun = '/jobs/{runId}',
+  ChatSessions = '/chat/sessions',
+  ChatSessionById = '/chat/sessions/{id}',
+  ChatSessionMessages = '/chat/sessions/{id}/messages',
 }
 
 export enum OpenApiSchemaName {
@@ -202,6 +218,13 @@ export enum OpenApiSchemaName {
   InteriorTextTo3DStatusResponse = 'InteriorTextTo3DStatusResponse',
   JobRunParams = 'JobRunParams',
   JobRunResponse = 'JobRunResponse',
+  ChatSession = 'ChatSession',
+  ChatSessionList = 'ChatSessionList',
+  ChatSessionCreateRequest = 'ChatSessionCreateRequest',
+  ChatSessionPatchRequest = 'ChatSessionPatchRequest',
+  ChatSessionsQuery = 'ChatSessionsQuery',
+  ChatSessionIdParams = 'ChatSessionIdParams',
+  ChatSessionMessagesResponse = 'ChatSessionMessagesResponse',
 }
 
 export enum OpenApiComponentDescription {

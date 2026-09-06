@@ -16,7 +16,7 @@ import { useChat } from '@ai-sdk/react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { useAISDKRuntime } from '@assistant-ui/react-ai-sdk'
 import { DefaultChatTransport } from 'ai'
-import { createSessionThreadHistoryAdapter } from './thread-history-adapter'
+import { createOverlayThreadHistoryAdapter, createSessionThreadHistoryAdapter } from './thread-history-adapter'
 import {
   getCanvasModuleAgentId,
   getCanvasModuleChatApiPath,
@@ -140,6 +140,18 @@ interface AssistantChatProps {
   chatRenderers?: ChatRenderers
   /** Domain tool UIs registered beside AskUser (storyteller verdict card). */
   extraToolUIs?: ReactNode
+  /** AI-SDK chat id — overlay passes the session id so runtimes do not share one Chat. */
+  chatId?: string
+  /** Overlay history: GET /api/chat/sessions/{id}/messages instead of sessionStorage. */
+  overlaySessionId?: string
+  /** When false, the composer cannot send. */
+  composerEnabled?: boolean
+  /** Return false to block sendMessage (module lock). */
+  onBeforeSend?: (text: string) => boolean
+  /** Overlay status PATCH: submitted/streaming/ready. */
+  onChatStatus?: (status: string) => void
+  /** Overlay abort: Stop / delete this session. */
+  onStopReady?: (stop: () => void) => void
 }
 
 function resolveApi(agentId?: string, moduleKey?: string): string {
@@ -157,6 +169,8 @@ function AssistantChatBody({
   chatModelId,
   chatModelOptions,
   onChatModelChange,
+  composerEnabled,
+  onBeforeSend,
 }: {
   suggestions: readonly string[]
   mentionProviders?: readonly MentionProvider[]
@@ -164,6 +178,8 @@ function AssistantChatBody({
   chatModelId?: string
   chatModelOptions?: readonly AssistantChatModelOption[]
   onChatModelChange?: (modelId: string) => void
+  composerEnabled: boolean
+  onBeforeSend?: (text: string) => boolean
 }) {
   const mentions = useAssistantMentions(
     mentionProviders ?? EMPTY_PROVIDERS,
@@ -178,6 +194,8 @@ function AssistantChatBody({
       chatModelId={chatModelId}
       chatModelOptions={chatModelOptions}
       onChatModelChange={onChatModelChange}
+      composerEnabled={composerEnabled}
+      onBeforeSend={onBeforeSend}
     />
   )
 }
@@ -204,11 +222,18 @@ export function AssistantChat({
   canAddToWorld,
   chatRenderers,
   extraToolUIs,
+  chatId,
+  overlaySessionId,
+  composerEnabled = true,
+  onBeforeSend,
+  onChatStatus,
+  onStopReady,
 }: AssistantChatProps) {
-  const history = useMemo(
-    () => (persistKey ? createSessionThreadHistoryAdapter(persistKey) : undefined),
-    [persistKey]
-  )
+  const history = useMemo(() => {
+    if (overlaySessionId) return createOverlayThreadHistoryAdapter(overlaySessionId)
+    if (persistKey) return createSessionThreadHistoryAdapter(persistKey)
+    return undefined
+  }, [overlaySessionId, persistKey])
   const api = resolveApi(agentId, moduleKey)
   const resolvedAgentId =
     agentId ?? (moduleKey ? getCanvasModuleAgentId(moduleKey) : undefined) ?? DEFAULT_AGENT_ID
@@ -224,7 +249,11 @@ export function AssistantChat({
     () => new DefaultChatTransport({ api, body: chatBody }),
     [api, chatBody]
   )
-  const chat = useChat({ transport, experimental_throttle: 50 })
+  const chat = useChat({
+    ...(chatId ? { id: chatId } : {}),
+    transport,
+    experimental_throttle: 50,
+  })
   const adapters = useMemo(() => (history ? { history } : undefined), [history])
   const runtime = useAISDKRuntime(chat, { adapters })
   const wasBusy = useRef(false)
@@ -329,6 +358,18 @@ export function AssistantChat({
   })
 
   useEffect(() => {
+    onChatStatus?.(chat.status)
+  }, [chat.status, onChatStatus])
+
+  useEffect(() => {
+    if (!onStopReady) return
+    const stop = chat.stop
+    onStopReady(() => {
+      void stop()
+    })
+  }, [chat.stop, onStopReady])
+
+  useEffect(() => {
     const controller = new AbortController()
     void (async () => {
       try {
@@ -369,6 +410,8 @@ export function AssistantChat({
         chatModelId={chatModelId}
         chatModelOptions={chatModelOptions}
         onChatModelChange={onChatModelChange}
+        composerEnabled={composerEnabled}
+        onBeforeSend={onBeforeSend}
       />
     </AssistantAddToWorldProvider>
   )

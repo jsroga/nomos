@@ -36,6 +36,7 @@ import { useChatRenderers } from '../core/renderers'
 import { describeThinkingProgress } from '../core/thinking-progress'
 import { AssistantToolFallback } from './AssistantToolFallback'
 import { useAssistantAddToWorld } from './AssistantAddToWorldContext'
+import { addToWorldButtonVisible } from './add-to-world-visibility'
 import { createToolArgsSnapshotSelector, createToolNamesSnapshotSelector } from './tool-args-from-assistant-content'
 import {
   createAssistantPlainTextSelector,
@@ -45,7 +46,6 @@ import {
   ASSISTANT_THREAD_COPY,
   CHAT_ENTITY_KIND_STYLE,
   ChatEntityKind,
-  ChatMessageRole,
   ChatMessageStatus,
   parseAssistantEntities,
   type ParsedChatEntity,
@@ -196,11 +196,12 @@ function AddToWorldButton() {
   const [added, setAdded] = useState(false)
   const [busy, setBusy] = useState(false)
   const settled = isAddToWorldSettled?.(toolArgs) ?? false
-  const visible =
-    role === ChatMessageRole.Assistant &&
-    (canAddToWorld
-      ? canAddToWorld({ role, toolNames, toolArgs })
-      : Boolean(onAddToWorld))
+  const visible = addToWorldButtonVisible({
+    role,
+    canAddToWorld,
+    toolNames,
+    toolArgs,
+  })
 
   if (!visible) return null
 

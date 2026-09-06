@@ -7,6 +7,8 @@ import { ProjectTourWrapper } from '@/components/shell/ProjectTourWrapper'
 import { TooltipProvider } from '@/components/Tooltip'
 import { WORKSPACE_PAGE_TITLE } from '@/shared/data/constants/route-metadata'
 import type { Metadata } from 'next'
+import { isWorkspaceChatOverlayEnabled } from '@/shared/data/constants/feature-flags'
+import { WorkspaceChatLayer } from './WorkspaceChatLayer'
 
 enum ProjectShellParam {
   Id = '__shell__',
@@ -36,8 +38,11 @@ export default async function ProjectLayout({ children }: { children: React.Reac
           <GlobalSidebar />
           <div className="flex-1 flex flex-col h-full overflow-hidden">
             <GlobalHeader />
-            <div className="flex-1 overflow-hidden relative">
-              <ProjectLoader>{children}</ProjectLoader>
+            <div className="flex min-h-0 flex-1 overflow-hidden">
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <ProjectLoader>{children}</ProjectLoader>
+              </div>
+              {isWorkspaceChatOverlayEnabled() ? <WorkspaceChatLayer /> : null}
             </div>
           </div>
         </div>

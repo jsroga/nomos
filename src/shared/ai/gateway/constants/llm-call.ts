@@ -19,6 +19,7 @@ export enum LlmFeature {
   StorytellerWorldGenPrompt = 'storyteller.world-gen-prompt',
   StorytellerVisualSubject = 'storyteller.visual-subject',
   Assistant = 'assistant',
+  ChatSessionTitle = 'chat.session-title',
   LoopCreator = 'loop-creator',
   GameDesign = 'game-design',
   RagEmbedding = 'rag.embedding',

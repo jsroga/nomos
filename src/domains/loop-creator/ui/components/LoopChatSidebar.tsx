@@ -3,6 +3,7 @@
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
 import { DomainSidebar } from '@/components/DomainSidebar'
 import type { LoopChatSidebarProps } from './loop-chat-sidebar-types'
+import { isWorkspaceChatOverlayEnabled } from '@/shared/data/constants/feature-flags'
 
 export type { LoopChatSidebarProps } from './loop-chat-sidebar-types'
 
@@ -22,6 +23,7 @@ export function LoopChatSidebar({
   mentionProviders,
   projectContext,
 }: LoopChatSidebarProps) {
+  if (isWorkspaceChatOverlayEnabled()) return null
   return (
     <DomainSidebar
       header={null}

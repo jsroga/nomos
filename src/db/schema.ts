@@ -1,4 +1,6 @@
 export * from './schema-parts/core-tables'
+export * from './schema-parts/chat-sessions'
+export * from './schema-parts/knowledge-ledger-tables'
 export * from './schema-parts/knowledge-ledger-tables'
 export * from './schema-parts/market-analysis-tables'
 export * from './schema-parts/relations'

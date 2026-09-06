@@ -3,6 +3,7 @@
  */
 
 export { LoopCreatorLayout } from './ui/components/LoopCreatorLayout'
+export { getLoopCreatorChatAdapter } from './ui/overlay/loop-creator-chat-adapter'
 export {
   createInitialLoopState,
   type LoopCreatorState,
