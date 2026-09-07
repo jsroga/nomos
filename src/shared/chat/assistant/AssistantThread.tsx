@@ -14,6 +14,7 @@ import {
 import { AssistantChatDetailsProvider } from './AssistantChatDetailsContext'
 import { AssistantThreadComposer } from './AssistantThreadComposer'
 import { AssistantMessage, UserMessage } from './AssistantThreadMessages'
+import { ThreadRunningPlaceholder } from './AssistantThinkingIndicator'
 
 const MESSAGE_COMPONENTS = { UserMessage, AssistantMessage }
 
@@ -64,6 +65,7 @@ export function AssistantThread({
             </ThreadPrimitive.Empty>
 
             <ThreadPrimitive.Messages components={MESSAGE_COMPONENTS} />
+            <ThreadRunningPlaceholder />
 
             <ThreadPrimitive.ScrollToBottom className="aui-scroll-bottom">↓</ThreadPrimitive.ScrollToBottom>
           </div>

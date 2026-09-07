@@ -100,7 +100,7 @@ describe('extra critic scopes', () => {
     process.env[key] = FEATURE_FLAG_ON
     expect(activeBeatDraftCriticRoles()).toHaveLength(4)
     expect(activeBeatDraftCriticRoles().length).toBeLessThan(5)
-    expect(CHAT_ROUTE_MAX_DURATION_SECONDS).toBe(180)
+    expect(CHAT_ROUTE_MAX_DURATION_SECONDS).toBe(300)
 
     const events: RunTraceEvent[] = []
     const stop = subscribeRunTrace(event => events.push(event))

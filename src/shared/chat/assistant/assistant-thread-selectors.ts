@@ -59,3 +59,19 @@ export function createThreadIsRunningSelector(): (thread: ThreadSnapshot) => boo
     return thread.isRunning
   }
 }
+
+/** True when the thread is running but the last row is still the user turn. */
+export function createThreadNeedsRunningPlaceholderSelector(): (
+  thread: ThreadSnapshot,
+) => boolean {
+  let lastMessages: ThreadSnapshot['messages'] | undefined
+  let lastResult = false
+  return thread => {
+    const messages = thread.messages
+    if (messages === lastMessages) return lastResult
+    lastMessages = messages
+    const last = messages[messages.length - 1]
+    lastResult = last == null || last.role === ChatMessageRole.User
+    return lastResult
+  }
+}

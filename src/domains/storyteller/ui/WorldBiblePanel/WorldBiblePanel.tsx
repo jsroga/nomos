@@ -203,12 +203,6 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
     })()
   }, [projectId, refetchMoodboardData, moodboardCompleteVersion])
 
-  // Shimmer State - check after all hooks
-  if (isLoading) {
-    return <WorldBiblePanelLoading />
-  }
-
-  // Save primary image selection
   const handleSetPrimaryImage = (index: number) => {
     const newIndex = primaryImageIndex === index ? null : index
     setPrimaryImageIndex(newIndex)
@@ -232,16 +226,19 @@ const WorldBiblePanelContent: React.FC<WorldBiblePanelProps> = ({
         onSavePlan={savePlan}
         hasOnUpdate={Boolean(onUpdate)}
       />
-
-      <WorldBiblePanelBody
-        activeTab={activeTab}
-        projectId={projectId}
-        primaryImageIndex={primaryImageIndex}
-        onSetPrimaryImage={handleSetPrimaryImage}
-        onRefetchMoodboardData={refetchMoodboardData}
-        focusEntityId={focusEntityId}
-        onClearFocusEntity={() => setFocusEntityId(null)}
-      />
+      {isLoading ? (
+        <WorldBiblePanelLoading />
+      ) : (
+        <WorldBiblePanelBody
+          activeTab={activeTab}
+          projectId={projectId}
+          primaryImageIndex={primaryImageIndex}
+          onSetPrimaryImage={handleSetPrimaryImage}
+          onRefetchMoodboardData={refetchMoodboardData}
+          focusEntityId={focusEntityId}
+          onClearFocusEntity={() => setFocusEntityId(null)}
+        />
+      )}
     </div>
   )
 }

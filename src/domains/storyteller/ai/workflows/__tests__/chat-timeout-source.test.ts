@@ -11,15 +11,16 @@ import { readFileSync } from 'node:fs'
 describe('storyteller chat timeout source', () => {
   it('derives client, route, and author budgets from one shared stuck window', () => {
     expect(GENERATION_STUCK_TIMEOUT_MS).toBe(CHAT_STUCK_TIMEOUT_MS)
-    expect(CHAT_ROUTE_MAX_DURATION_SECONDS).toBe(180)
+    expect(CHAT_ROUTE_MAX_DURATION_SECONDS).toBe(300)
     expect(CHAT_ROUTE_MAX_DURATION_SECONDS * 1000).toBe(CHAT_STUCK_TIMEOUT_MS)
     expect(BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS).toBe(CHAT_AUTHOR_GENERATE_TIMEOUT_MS)
+    expect(BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS).toBe(150_000)
     expect(BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS).toBeLessThan(CHAT_STUCK_TIMEOUT_MS)
   })
 
-  it('keeps three parallel critics inside the 180s chat route budget', () => {
+  it('keeps three parallel critics inside the 300s chat route budget', () => {
     expect(BEAT_DRAFT_CRITIC_ROLES).toHaveLength(3)
-    expect(CHAT_ROUTE_MAX_DURATION_SECONDS).toBe(180)
+    expect(CHAT_ROUTE_MAX_DURATION_SECONDS).toBe(300)
   })
 
   it('pins chat and assistant route maxDuration to the same Next literal', () => {

@@ -1,15 +1,13 @@
 /**
  * Copy for the "thinking" indicator while a turn produces no visible output.
  *
- * A reasoning model can spend a minute between `start-step` and its first tool
- * frame, and reasoning is not streamed to the client, so the thread has no data
- * to render for that whole window. Static dots make a working turn look hung,
- * so the label escalates and carries elapsed seconds — the only honest signal
- * available client-side.
+ * A reasoning model can spend a while between `start` and its first token.
+ * Until reasoning, a tool, or text arrives, the thread only has this wait label
+ * plus elapsed seconds.
  */
 
 export enum ThinkingLabel {
-  Thinking = 'Thinking',
+  Thinking = 'Waiting for first token',
   StillWorking = 'Still working',
   LongTurn = 'Still working — long turns can run past a minute',
 }

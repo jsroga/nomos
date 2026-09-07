@@ -2,19 +2,20 @@
  * Cached useMessage selectors — avoid getSnapshot loops during streaming.
  */
 
-import { ChatMessageStatus, ChatPartType } from '../core/constants/assistant-thread-ui'
+import {
+  ChatMessageStatus,
+  ChatPartType,
+  ChatToolPartPrefix,
+} from '../core/constants/assistant-thread-ui'
 
-const REASONING_PART_TYPE = 'reasoning'
-
-function hasRenderableAssistantContent(
+export function hasRenderableAssistantContent(
   content: ReadonlyArray<{ type: string; text?: string }>,
 ): boolean {
   return content.some(part => {
-    if (part.type === REASONING_PART_TYPE) return false
-    if (part.type === ChatPartType.Text) {
+    if (part.type === ChatPartType.Text || part.type === ChatPartType.Reasoning) {
       return typeof part.text === 'string' && part.text.trim().length > 0
     }
-    return true
+    return part.type.startsWith(ChatToolPartPrefix.Tool)
   })
 }
 
@@ -46,6 +47,20 @@ export function createAssistantPlainTextSelector(): (
 type ShowThinkingMessage = {
   status?: { type?: string } | null
   content: ReadonlyArray<{ type: string; text?: string }>
+}
+
+export function createHasRenderableAssistantContentSelector(): (
+  message: { content: ReadonlyArray<{ type: string; text?: string }> },
+) => boolean {
+  let lastContent: ReadonlyArray<{ type: string; text?: string }> | undefined
+  let lastResult = false
+  return message => {
+    const content = message.content
+    if (content === lastContent) return lastResult
+    lastContent = content
+    lastResult = hasRenderableAssistantContent(content)
+    return lastResult
+  }
 }
 
 export function createShowThinkingSelector(): (message: ShowThinkingMessage) => boolean {

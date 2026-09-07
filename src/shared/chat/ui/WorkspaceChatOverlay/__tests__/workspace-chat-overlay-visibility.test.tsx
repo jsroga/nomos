@@ -6,6 +6,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppModuleId } from '@/shared/data/constants/protocol'
+import { TourStepId } from '@/shared/tours/constants/tour-step-ids'
 import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
 
 const PROJECT_ID = '11111111-1111-4111-8111-111111111111'
@@ -25,6 +26,7 @@ vi.mock('@/shared/chat/core/io/chat-sessions.api', () => ({
 }))
 
 import { WorkspaceChatOverlay } from '../WorkspaceChatOverlay'
+import { WorkspaceChatClass } from '../workspace-chat-copy'
 
 describe('workspace chat overlay visibility', () => {
   it('hides with CSS instead of unmounting when overlayOpen is false', () => {
@@ -35,13 +37,17 @@ describe('workspace chat overlay visibility', () => {
     expect(src).toContain('key={session.id}')
     expect(src).not.toContain('key={focusedSessionId}')
     expect(src).toContain('streamingSessionsWithoutRunId')
+    expect(src).toContain('selectFocusedSessionId')
     expect(src).toContain('markChatSessionIdle')
+    expect(src).toContain('useEnsureFocusedOverlaySession')
     expect(src).not.toContain('chat/stream')
     expect(src).not.toContain('sendMessage')
     expect(src).not.toMatch(/stop\(\)/)
     expect(readFileSync('src/shared/chat/ui/WorkspaceChatOverlay/workspace-chat-copy.ts', 'utf8')).toContain(
       'ml-auto',
     )
+    expect(WorkspaceChatClass.Panel).toContain('border-l-0')
+    expect(WorkspaceChatClass.PanelHidden).toContain('border-l-0')
   })
 
   it('does not remount one AssistantChat on focusedSessionId', () => {
@@ -57,6 +63,17 @@ describe('workspace chat overlay visibility', () => {
     expect(list).toContain('DropdownMenu')
     expect(list).toContain('WorkspaceChatCopy.History')
     expect(list).toContain('WorkspaceChatCopy.NewChat')
+    expect(list).toContain('WorkspaceChatClass.SessionBar')
+    expect(list).toContain('WorkspaceChatClass.SessionBarNew')
+    expect(list).toContain('WorkspaceChatClass.SessionBarHistory')
+    expect(list).not.toContain('ButtonSizeKey.Icon')
+    expect(readFileSync('src/shared/chat/ui/WorkspaceChatOverlay/workspace-chat-copy.ts', 'utf8')).toContain(
+      'h-[50px]',
+    )
+    expect(WorkspaceChatClass.SessionBarNew.startsWith('h-9')).toBe(true)
+    expect(WorkspaceChatClass.SessionBarHistory.startsWith('h-9')).toBe(true)
+    expect(list).toContain('prependCreatedChatSession')
+    expect(list).toContain('setFocusedSessionId(created.id)')
     expect(list).not.toMatch(/<ul[\s>]/)
     expect(item).toContain('workspaceChatRenameGlyph')
     expect(item).toContain('<Save')
@@ -101,5 +118,6 @@ describe('workspace chat overlay mount', () => {
     expect(aside).not.toBeNull()
     expect(aside?.hidden).toBe(true)
     expect(aside?.getAttribute('aria-hidden')).toBe('true')
+    expect(aside?.id).toBe(TourStepId.STORYTELLER_CHAT)
   })
 })

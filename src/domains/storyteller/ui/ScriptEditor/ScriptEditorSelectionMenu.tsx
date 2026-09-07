@@ -1,8 +1,12 @@
 'use client'
 
 import type { FC } from 'react'
+import { createPortal } from 'react-dom'
 import { Wand2, RotateCcw, Sparkles, ChevronDown } from 'lucide-react'
-import { ScriptRegenerateAction } from './constants/script-editor'
+import {
+  ScriptEditorSelectionMenuClass,
+  ScriptRegenerateAction,
+} from './constants/script-editor'
 
 export interface ScriptEditorSelectionMenuProps {
   visible: boolean
@@ -27,10 +31,11 @@ export const ScriptEditorSelectionMenu: FC<ScriptEditorSelectionMenuProps> = ({
 }) => {
   if (!visible || !selectionText) return null
 
-  return (
+  return createPortal(
     <>
+      <div className={ScriptEditorSelectionMenuClass.Backdrop} onClick={onDismiss} />
       <div
-        className="fixed z-50 bg-card border border-border rounded-lg shadow-xl p-2 space-y-1"
+        className={ScriptEditorSelectionMenuClass.Menu}
         style={{
           left: Math.max(10, menuPosition.x - 100),
           top: Math.max(10, menuPosition.y - 150),
@@ -93,7 +98,7 @@ export const ScriptEditorSelectionMenu: FC<ScriptEditorSelectionMenuProps> = ({
           </div>
         )}
       </div>
-      <div className="fixed inset-0 z-40" onClick={onDismiss} />
-    </>
+    </>,
+    document.body,
   )
 }

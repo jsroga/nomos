@@ -9,6 +9,7 @@ import {
   calculateContentPosition,
   type ElementPosition,
 } from './tour-position'
+import { TourOverlayClass } from './constants/tour-overlay'
 import { TourOverlayControls } from './TourOverlayControls'
 
 interface TourOverlayProps {
@@ -41,7 +42,7 @@ export function TourOverlay({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 z-50 overflow-hidden bg-black/50"
+        className={TourOverlayClass.Dim}
         style={{ clipPath: buildTourClipPath(elementPosition, activeStep?.width, activeStep?.height) }}
       />
       <motion.div
@@ -49,13 +50,12 @@ export function TourOverlay({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         style={{
-          position: 'absolute',
           top: elementPosition.top,
           left: elementPosition.left,
           width: highlightWidth,
           height: highlightHeight,
         }}
-        className={cn('z-[100] border-2 border-muted-foreground pointer-events-none', className)}
+        className={cn(TourOverlayClass.Highlight, className)}
       />
       <motion.div
         initial={{ opacity: 0, y: 10, top: 50, right: 50 }}
@@ -71,16 +71,16 @@ export function TourOverlay({
           opacity: { duration: 0.4 },
         }}
         exit={{ opacity: 0, y: 10 }}
-        style={{ position: 'absolute', width: contentPosition.width }}
-        className="bg-background relative z-[100] rounded-lg border p-4 shadow-lg"
+        style={{ width: contentPosition.width }}
+        className={TourOverlayClass.Card}
       >
-        <div className="text-muted-foreground absolute right-4 top-4 text-xs flex items-center gap-2">
+        <div className={TourOverlayClass.Meta}>
           <span>
             {currentStep + 1} / {steps.length}
           </span>
           <button
             onClick={onEnd}
-            className="hover:text-foreground transition-colors p-1 -mr-2 -mt-1"
+            className={TourOverlayClass.Close}
             aria-label="Close tour"
           >
             <X size={14} />

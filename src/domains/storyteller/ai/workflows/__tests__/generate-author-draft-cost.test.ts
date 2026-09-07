@@ -39,6 +39,7 @@ describe('generateAuthorDraft cost', () => {
     )
 
     expect(script).toContain('INT. CHAPEL')
+    expect(generate.mock.calls[0]?.[1]?.abortSignal).toBeInstanceOf(AbortSignal)
     expect(recordLlmCall.mock.calls[0]?.[0]).toMatchObject({
       projectId: SCOPE.projectId,
       feature: LlmFeature.StorytellerBeatDraft,

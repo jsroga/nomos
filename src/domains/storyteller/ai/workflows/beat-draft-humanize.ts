@@ -22,6 +22,7 @@ import {
 import { statelessGrrmAuthor } from './stateless-agents'
 import {
   BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
+  BeatDraftGenerateTimeoutKind,
   BEAT_DRAFT_CRITIQUE_JOIN,
   BeatDraftHumanizerCopy,
   BeatDraftHumanizerFs,
@@ -29,6 +30,10 @@ import {
   BeatDraftToolChoice,
 } from './constants/beat-draft-workflow'
 import type { BeatDraftContext } from './beat-draft-deps-types'
+import {
+  beatDraftGenerateTimeoutMessage,
+  raceAuthorGenerate,
+} from './race-author-generate'
 
 async function invokeTool<TInput, TOutput>(
   tool: {
@@ -112,21 +117,19 @@ export async function humanizeBeatDraft(
   ].join(BEAT_DRAFT_CRITIQUE_JOIN)
 
   const response = await meteredCall(LlmFeature.StorytellerBeatHumanize, () =>
-    Promise.race([
-      statelessGrrmAuthor.generate(prompt, {
-        toolChoice: BeatDraftToolChoice.None,
-        maxSteps: 1,
-      }),
-      new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(
-            new Error(
-              `Humanizer generate timed out after ${BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS}ms`
-            )
-          )
-        }, BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS)
-      }),
-    ])
+    raceAuthorGenerate(
+      abortSignal =>
+        statelessGrrmAuthor.generate(prompt, {
+          toolChoice: BeatDraftToolChoice.None,
+          maxSteps: 1,
+          abortSignal,
+        }),
+      BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
+      beatDraftGenerateTimeoutMessage(
+        BeatDraftGenerateTimeoutKind.Humanizer,
+        BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
+      ),
+    ),
   )
   return extractAuthorScript(response.text)
 }

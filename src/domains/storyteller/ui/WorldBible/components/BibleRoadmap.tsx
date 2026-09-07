@@ -10,7 +10,7 @@ import {
   resolveRoadmapSeasonStructure,
   resolveRoadmapSequences,
 } from '../utils/bible-roadmap-display'
-import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
+import { requestBibleSectionChatRefresh } from '../utils/bible-section-chat-refresh'
 
 interface BibleRoadmapProps {}
 
@@ -69,7 +69,7 @@ export const BibleRoadmap: FC<BibleRoadmapProps> = () => {
     loadingSections,
     pendingActions,
     projectId,
-    setPendingAction,
+    onSendMessage,
   } = useBible()
 
   const displaySequences = resolveRoadmapSequences(isEditing, localPlan, storyPlan)
@@ -88,14 +88,14 @@ export const BibleRoadmap: FC<BibleRoadmapProps> = () => {
         title="Roadmap"
         isEditing={isEditing}
         isReadOnly={isReadOnly}
+        isLoading={isLoading}
         onAdd={addSequence}
         addTitle="Add Episode"
-        onGenerate={async () => {
-          await runBibleSectionArtifactDraft({
-            projectId,
+        onGenerate={() => {
+          requestBibleSectionChatRefresh({
+            onSendMessage,
             section: BibleSection.EPISODE_ROADMAP,
             promptId: StorytellerPromptRegistryId.BibleRoadmapGenerate,
-            setPendingAction,
           })
         }}
         generateTitle="Generate Roadmap"

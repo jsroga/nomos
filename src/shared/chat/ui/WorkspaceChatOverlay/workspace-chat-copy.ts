@@ -20,8 +20,11 @@ export enum WorkspaceChatCopy {
 }
 
 export enum WorkspaceChatClass {
-  Panel = 'relative z-[60] ml-auto flex h-full w-96 shrink-0 flex-col border-l border-border bg-card/95',
-  PanelHidden = 'relative z-[60] ml-auto flex h-full w-96 shrink-0 flex-col border-l border-border bg-card/95 hidden',
+  Panel = 'relative z-[60] ml-auto flex h-full w-96 shrink-0 flex-col border-l-0 bg-card/95',
+  PanelHidden = 'relative z-[60] ml-auto flex h-full w-96 shrink-0 flex-col border-l-0 bg-card/95 hidden',
+  SessionBar = 'flex h-[50px] shrink-0 items-center gap-2 border-b border-border px-3',
+  SessionBarNew = 'h-9 flex-1',
+  SessionBarHistory = 'h-9 w-9 shrink-0 px-0',
   HistoryItem = 'flex items-center gap-1',
   HistoryItemSelected = 'flex items-center gap-1 bg-muted',
 }

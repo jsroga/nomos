@@ -46,4 +46,7 @@ export enum StorytellerHeaderClass {
   Done = 'inline-flex items-center gap-[9px] px-[13px] py-1.5 rounded-lg bg-primary/20 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.45)] text-primary text-[12.5px] font-medium hover:bg-primary/30 transition-all duration-150 ease-in-out',
   Helper = 'font-mono text-[10px] tracking-[0.12em] text-muted-foreground/60',
   EditingStatus = 'flex items-center gap-[9px] text-[12.5px]',
+  ChromeSlot = 'flex flex-1 items-center gap-3.5 min-w-0',
+  Hidden = 'hidden',
+  BibleLayer = 'absolute inset-0 z-20 bg-background overflow-hidden min-h-0 flex flex-col',
 }

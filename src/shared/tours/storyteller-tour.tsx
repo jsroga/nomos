@@ -1,6 +1,7 @@
 import { TourStep } from '@/shared/tours/tour-types'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { TourStepPosition } from '@/shared/tours/constants/tour-positions'
+import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
 import { Sparkles, BookOpen, Layout, Users, Scroll } from 'lucide-react'
 
 export const storytellerTourSteps: TourStep[] = [
@@ -72,11 +73,14 @@ export const storytellerTourSteps: TourStep[] = [
           <h3 className="font-bold">Writers Room</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Chat with the AI Showrunner here to brainstorm ideas, draft content, or ask questions about your story anytime.
-        </p>
-      </div>
+        Chat with the AI Showrunner here to brainstorm ideas, draft content, or ask questions about your story anytime.
+      </p>
+    </div>
     ),
     selectorId: TOUR_STEP_IDS.STORYTELLER_CHAT,
     position: TourStepPosition.Left,
+    action: () => {
+      useWorkspaceChatUiStore.getState().setOverlayOpen(true)
+    },
   },
 ]

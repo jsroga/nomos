@@ -1,23 +1,28 @@
 'use client'
 
-import type { FC } from 'react'
+import type { CSSProperties, FC } from 'react'
 
-export enum ScriptGhostOverlayCopy {
-  AcceptHint = 'Tab to accept · Esc to dismiss',
+export enum ScriptGhostShadowClass {
+  Layer = 'pointer-events-none absolute inset-0 select-none overflow-visible whitespace-pre-wrap px-16 py-12',
+  Prefix = 'invisible',
+  Ghost = 'opacity-40',
 }
 
 export interface ScriptEditorGhostOverlayProps {
   ghost: string
+  prefix: string
+  style: CSSProperties
 }
 
-export const ScriptEditorGhostOverlay: FC<ScriptEditorGhostOverlayProps> = ({ ghost }) => {
+export const ScriptEditorGhostOverlay: FC<ScriptEditorGhostOverlayProps> = ({
+  ghost,
+  prefix,
+  style,
+}) => {
   if (!ghost) return null
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-6 mx-auto max-w-[72ch] px-16">
-      <p className="whitespace-pre-wrap text-sm italic text-muted-foreground/70">{ghost}</p>
-      <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground/50">
-        {ScriptGhostOverlayCopy.AcceptHint}
-      </p>
+    <div aria-hidden className={ScriptGhostShadowClass.Layer} style={style}>
+      <span className={ScriptGhostShadowClass.Prefix}>{prefix}</span><span className={ScriptGhostShadowClass.Ghost}>{ghost}</span>
     </div>
   )
 }

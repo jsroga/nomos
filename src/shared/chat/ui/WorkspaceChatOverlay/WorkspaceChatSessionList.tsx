@@ -19,8 +19,9 @@ import {
   patchChatSession,
 } from '@/shared/chat/core/io/chat-sessions.api'
 import { chatSessionsKeys } from '@/shared/chat/core/io/chat-sessions.keys'
+import { prependCreatedChatSession } from '@/shared/chat/core/overlay-session-runtime'
 import { moduleHasAgent } from '@/shared/chat/core/chat-session-policy'
-import { WorkspaceChatCopy } from './workspace-chat-copy'
+import { WorkspaceChatClass, WorkspaceChatCopy } from './workspace-chat-copy'
 import { WorkspaceChatHistoryItem } from './WorkspaceChatHistoryItem'
 import {
   isWorkspaceChatSessionBusy,
@@ -57,6 +58,9 @@ export function WorkspaceChatSessionList({
       return createChatSession({ projectId, moduleId: currentModuleId })
     },
     onSuccess: created => {
+      queryClient.setQueryData(chatSessionsKeys.list(projectId), (current: ChatSession[] | undefined) =>
+        prependCreatedChatSession(current, created),
+      )
       setFocusedSessionId(created.id)
       void invalidate()
     },
@@ -94,14 +98,14 @@ export function WorkspaceChatSessionList({
   }
 
   return (
-    <div className="flex flex-col gap-2 border-b border-border p-3">
-      <div className="flex items-center gap-2">
+    <>
+      <div className={WorkspaceChatClass.SessionBar}>
         <Button
           type={HtmlElementType.Button}
           size={ButtonSizeKey.Sm}
           variant={ButtonVariantKey.Outline}
-          className="flex-1"
-          disabled={!canCreate}
+          className={WorkspaceChatClass.SessionBarNew}
+          disabled={!canCreate || createMutation.isPending}
           onClick={() => createMutation.mutate()}
           title={canCreate ? WorkspaceChatCopy.NewChat : WorkspaceChatCopy.NoAgentDescription}
         >
@@ -119,8 +123,9 @@ export function WorkspaceChatSessionList({
           <DropdownMenuTrigger asChild>
             <Button
               type={HtmlElementType.Button}
-              size={ButtonSizeKey.Icon}
+              size={ButtonSizeKey.Sm}
               variant={ButtonVariantKey.Outline}
+              className={WorkspaceChatClass.SessionBarHistory}
               title={WorkspaceChatCopy.History}
               aria-label={WorkspaceChatCopy.History}
             >
@@ -168,6 +173,6 @@ export function WorkspaceChatSessionList({
           if (deleteId) deleteMutation.mutate(deleteId)
         }}
       />
-    </div>
+    </>
   )
 }

@@ -8,6 +8,7 @@ import { HtmlElementType } from '@/shared/data/constants/protocol'
 import { cn } from '@/shared/data/utils'
 import { StorytellerBibleTab } from './constants/world-bible-panel'
 import { toggledBibleTab } from './utils/toggled-bible-tab'
+import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   StorytellerHeaderClass,
   StorytellerHeaderCopy,
@@ -38,11 +39,12 @@ export interface WorldBiblePanelHeaderProps {
 }
 
 export function WorldBiblePanelHeader(props: WorldBiblePanelHeaderProps) {
+  const isWorldBibleOpen = useStorytellerUiStore(state => state.isWorldBibleOpen)
   const [host, setHost] = useState<HTMLElement | null>(null)
 
   useLayoutEffect(() => {
     setHost(document.getElementById(StorytellerHeaderSlotId.BibleChrome))
-  }, [])
+  }, [isWorldBibleOpen])
 
   useEffect(() => {
     if (!props.isEditing) return
@@ -62,7 +64,7 @@ export function WorldBiblePanelHeader(props: WorldBiblePanelHeaderProps) {
 
   const chrome = <WorldBiblePanelHeaderChrome {...props} />
   if (host) return createPortal(chrome, host)
-  return <div className="flex h-[50px] items-center gap-3.5 px-[22px] border-b border-border/70">{chrome}</div>
+  return null
 }
 
 function WorldBiblePanelHeaderChrome({

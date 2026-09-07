@@ -20,6 +20,11 @@ import type {
   GenericThreadHistoryAdapter,
 } from '@assistant-ui/react'
 import { fetchChatSessionMessages } from '@/shared/chat/core/io/chat-sessions.api'
+import {
+  mastraMemoryToUiMessages,
+  uiMessagesToHistoryEntries,
+  type OverlayHistoryEntry,
+} from '@/shared/chat/core/io/mastra-memory-to-ui-messages'
 
 const STORAGE_PREFIX = 'aui-thread-'
 const ENTRY_KEY_ID = 'id'
@@ -79,7 +84,7 @@ export function clearThreadHistory(persistKey: string): void {
 }
 
 function withFormatFromStoredEntries<TMessage, TStorageFormat extends Record<string, unknown>>(
-  loadEntries: () => StoredEntry[] | Promise<StoredEntry[]>,
+  loadEntries: () => StoredEntry[] | OverlayHistoryEntry[] | Promise<StoredEntry[] | OverlayHistoryEntry[]>,
   formatAdapter: MessageFormatAdapter<TMessage, TStorageFormat>,
 ): GenericThreadHistoryAdapter<TMessage> {
   return {
@@ -142,21 +147,22 @@ export function createSessionThreadHistoryAdapter(persistKey: string): ThreadHis
   }
 }
 
+async function overlayHistoryEntries(sessionId: string): Promise<OverlayHistoryEntry[]> {
+  const messages = mastraMemoryToUiMessages(await fetchChatSessionMessages(sessionId))
+  return uiMessagesToHistoryEntries(messages)
+}
+
 /** Overlay history — Mastra memory via GET /api/chat/sessions/{id}/messages. */
 export function createOverlayThreadHistoryAdapter(sessionId: string): ThreadHistoryAdapter {
   return {
     async load() {
-      await fetchChatSessionMessages(sessionId)
       return { messages: [] }
     },
     async append() {
       // Mastra memory is the source of truth; local append is unused.
     },
     withFormat(formatAdapter) {
-      return withFormatFromStoredEntries(async () => {
-        const raw = await fetchChatSessionMessages(sessionId)
-        return raw.filter(isStoredEntry)
-      }, formatAdapter)
+      return withFormatFromStoredEntries(() => overlayHistoryEntries(sessionId), formatAdapter)
     },
   }
 }

@@ -16,7 +16,7 @@ import {
 } from '../utils/bible-inspiration-normalize'
 import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
-import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
+import { requestBibleSectionChatRefresh } from '../utils/bible-section-chat-refresh'
 
 interface BibleInspirationsProps {}
 
@@ -102,8 +102,7 @@ export const BibleInspirations: FC<BibleInspirationsProps> = () => {
     isReadOnly,
     loadingSections,
     pendingActions,
-    projectId,
-    setPendingAction,
+    onSendMessage,
   } = useBible()
 
   const isLoading = loadingSections?.inspirations?.loading ?? false
@@ -126,12 +125,11 @@ export const BibleInspirations: FC<BibleInspirationsProps> = () => {
         title="Inspirations"
         isReadOnly={isReadOnly}
         isLoading={isLoading}
-        onGenerate={async () => {
-          await runBibleSectionArtifactDraft({
-            projectId,
+        onGenerate={() => {
+          requestBibleSectionChatRefresh({
+            onSendMessage,
             section: BibleSection.INSPIRATIONS,
             promptId: StorytellerPromptRegistryId.BibleInspirationGenerate,
-            setPendingAction,
           })
         }}
         generateTitle="Generate Inspirations"

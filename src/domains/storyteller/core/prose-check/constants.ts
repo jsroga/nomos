@@ -34,6 +34,17 @@ export const COMMON_ENGLISH_TOKENS = new Set<string>(Object.values(CommonEnglish
 
 export const AUTHOR_TRUTH_TOKEN_PATTERN = /[A-Za-z][A-Za-z0-9]{3,}/g
 
+export enum CausalFindingQuote {
+  ThisDraft = 'this draft',
+  UnknownBeat = 'unknown beat',
+}
+
+export enum BeatSequenceLabel {
+  Prefix = 'beat',
+}
+
+export const CAUSAL_QUOTE_MAX_CHARS = 72
+
 export enum CausalFindingCopy {
   OrphanWhat = 'The draft beat has no causal parent.',
   OrphanWhy = 'Sequence > 1 with empty causalDependencies is an orphan.',

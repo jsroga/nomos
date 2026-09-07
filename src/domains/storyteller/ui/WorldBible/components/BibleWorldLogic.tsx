@@ -13,7 +13,7 @@ import { WorldRuleCard } from '../../WorldRuleCard'
 import { useBible } from './BibleContext'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
 import { bibleSectionItems, planItems } from '../utils/bible-section-items'
-import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
+import { requestBibleSectionChatRefresh } from '../utils/bible-section-chat-refresh'
 import type { PendingAction } from '../utils/bible-context-types'
 
 const WorldRuleEditItem: FC<{
@@ -166,18 +166,17 @@ export const BibleWorldLogic: FC = () => {
     loadingSections,
     pendingActions,
     projectId,
-    setPendingAction,
+    onSendMessage,
   } = useBible()
 
   const localRules = planItems<WorldRule>(localPlan.worldRules)
   const displayRules = bibleSectionItems<WorldRule>(localPlan.worldRules, storyPlan.worldRules, isEditing)
 
-  const handleGenerate = async () => {
-    await runBibleSectionArtifactDraft({
-      projectId,
+  const handleGenerate = () => {
+    requestBibleSectionChatRefresh({
+      onSendMessage,
       section: BibleSection.WORLD_RULES,
       promptId: StorytellerPromptRegistryId.BibleWorldRulesGenerate,
-      setPendingAction,
     })
   }
 

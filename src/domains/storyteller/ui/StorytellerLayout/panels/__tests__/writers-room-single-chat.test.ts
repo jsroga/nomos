@@ -16,6 +16,14 @@ describe('writers-room-single-chat', () => {
     expect(overlayJsx).not.toContain('WritersRoomAssistantChat')
   })
 
+  it('keeps the overlay bridge mounted across pending-prompt updates', () => {
+    const src = readFileSync(
+      'src/domains/storyteller/ui/StorytellerLayout/panels/WritersRoomAssistantChat.tsx',
+      'utf8'
+    )
+    expect(src).toContain('useEffect(() => () => useWritersRoomOverlayBridge.getState().setBridge(null), [])')
+  })
+
   it('drops LoopChatSidebar AssistantChat when the overlay flag is on', () => {
     const src = readFileSync(LOOP_SIDEBAR, 'utf8')
     expect(src).toContain('if (isWorkspaceChatOverlayEnabled()) return null')

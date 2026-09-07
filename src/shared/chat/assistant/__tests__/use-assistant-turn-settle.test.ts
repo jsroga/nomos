@@ -142,4 +142,41 @@ describe('syncBusyTurnActivityFromMessages', () => {
     )
     expect(onGenerationActivity).not.toHaveBeenCalled()
   })
+
+  it('shows a first-token wait after the user send, not the previous assistant turn', () => {
+    const onGenerationActivity = vi.fn()
+    const onGenerationActivityRef = { current: onGenerationActivity }
+    const lastFingerprint = { current: '' }
+
+    syncBusyTurnActivityFromMessages(
+      AssistantChatStreamStatus.Submitted,
+      [
+        {
+          id: 'a1',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'tool-run_beat_draft_workflow',
+              toolCallId: 't1',
+              state: 'output-available',
+              input: {},
+              output: { success: true },
+            },
+          ],
+        },
+        {
+          id: 'u2',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Draft the next beat of the story.' }],
+        },
+      ],
+      'storyteller',
+      lastFingerprint,
+      onGenerationActivityRef,
+    )
+    expect(onGenerationActivity).toHaveBeenCalledTimes(1)
+    expect(onGenerationActivity.mock.calls[0]?.[0]?.label).toBe(
+      AssistantGenerationLabel.WaitingFirstToken,
+    )
+  })
 })

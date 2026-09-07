@@ -5,10 +5,8 @@ import { BibleSectionChromeClass } from '../constants/bible-section-ui'
 import { pendingReviewHostClass } from '../constants/section-pending-overlay'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-import {
-  GenerationActivityPhase,
-  isGenerationActivityBusy,
-} from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { isBibleSectionRefreshDisabled } from '../utils/bible-section-chat-refresh'
 import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 import { BibleMarkdown } from '@/domains/storyteller/ui/RichText/BibleMarkdown'
 import { cn } from '@/shared/data/utils'
@@ -95,12 +93,14 @@ export const BibleSectionHeader: FC<{
   generateTitle,
   trailingActions,
 }) => {
-  // The Writers Room is a single conversation: a section refresh started while
-  // the assistant is mid-turn crashes the thread. `isLoading` only covers *this*
-  // section generating, so the chat's phase has to be read here too — which is
-  // what BiblePlotTwists already did on its own, and every other section did not.
   const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
-  const generateDisabled = isLoading || isGenerationActivityBusy(generationPhase)
+  const pendingChatPrompt = useStorytellerUiStore(state => state.pendingChatPrompt)
+  const generateDisabled = isBibleSectionRefreshDisabled({
+    isLoading,
+    generationPhase,
+    pendingChatPrompt,
+  })
+  const showRefreshBusy = isLoading || pendingChatPrompt !== null
 
   return (
     <div className="flex items-center justify-between mb-4">
@@ -129,7 +129,7 @@ export const BibleSectionHeader: FC<{
             disabled={generateDisabled}
             type="button"
           >
-            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={showRefreshBusy ? 'animate-spin' : ''} />
           </button>
         )}
       </div>

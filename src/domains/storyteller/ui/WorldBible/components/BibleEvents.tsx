@@ -2,7 +2,7 @@ import type { FC } from 'react'
 import { CalendarHeart } from 'lucide-react'
 import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
-import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
+import { requestBibleSectionChatRefresh } from '../utils/bible-section-chat-refresh'
 import { useBible } from './BibleContext'
 import { BibleSimpleEntitySection } from './BibleSimpleEntitySection'
 import { bibleMergedDisplayList } from '../utils/bible-section-items'
@@ -19,19 +19,18 @@ export const BibleEvents: FC = () => {
     loadingSections,
     pendingActions,
     projectId,
-    setPendingAction,
+    onSendMessage,
   } = useBible()
 
   const localEvents = localPlan.events || []
   const displayEvents = bibleMergedDisplayList(isEditing, localPlan.events, storyPlan.events)
   const isLoading = loadingSections?.events?.loading ?? false
 
-  const handleGenerate = async () => {
-    await runBibleSectionArtifactDraft({
-      projectId,
+  const handleGenerate = () => {
+    requestBibleSectionChatRefresh({
+      onSendMessage,
       section: BibleSection.EVENTS,
       promptId: StorytellerPromptRegistryId.BibleEventsGenerate,
-      setPendingAction,
     })
   }
 

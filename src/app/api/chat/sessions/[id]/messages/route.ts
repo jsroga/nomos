@@ -7,6 +7,7 @@ import { findOwnedChatSession } from '@/shared/chat/core/io/chat-session-store'
 import { overlayMemoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
 import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
 import { MastraStoreName } from '@/shared/agent-kernel/constants/agent-memory'
+import { mastraMemoryToUiMessages } from '@/shared/chat/core/io/mastra-memory-to-ui-messages'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -16,10 +17,14 @@ async function listThreadMessages(thread: string, resource: string): Promise<unk
   try {
     const memory = await getStorageInstance().getStore(MastraStoreName.Memory)
     if (!memory) return []
-    const result = await memory.listMessages({ threadId: thread, resourceId: resource })
+    const result = await memory.listMessages({
+      threadId: thread,
+      resourceId: resource,
+      perPage: false,
+    })
     if (!result || typeof result !== 'object') return []
     const messages = Reflect.get(result, ChatSessionsApiSegment.Messages)
-    return Array.isArray(messages) ? messages : []
+    return Array.isArray(messages) ? mastraMemoryToUiMessages(messages) : []
   } catch {
     return []
   }

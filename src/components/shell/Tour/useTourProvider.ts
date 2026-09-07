@@ -8,6 +8,7 @@ import {
   TourDomEvent,
   type ElementPosition,
 } from './tour-position'
+import { TOUR_POSITION_RETRY_MS } from './constants/tour-overlay'
 
 interface UseTourProviderOptions {
   onComplete?: () => void
@@ -63,10 +64,14 @@ export function useTourProvider({ onComplete, isTourCompleted = false }: UseTour
     setTimeout(() => {
       const retryPosition = getElementPosition(steps[currentStep]?.selectorId ?? '')
       if (retryPosition) setElementPosition(retryPosition)
-    }, 500)
+    }, TOUR_POSITION_RETRY_MS)
   }, [currentStep, steps])
 
   useEffect(() => {
+    if (currentStep >= 0) {
+      steps[currentStep]?.action?.()
+    }
+
     const frameId = requestAnimationFrame(() => {
       updateElementPosition()
     })
@@ -82,10 +87,6 @@ export function useTourProvider({ onComplete, isTourCompleted = false }: UseTour
         observer = new ResizeObserver(updateElementPosition)
         observer.observe(element)
       }
-    }
-
-    if (currentStep >= 0 && steps[currentStep]?.action) {
-      steps[currentStep].action?.()
     }
 
     return () => {

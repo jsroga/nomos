@@ -8,7 +8,7 @@ import { extractVideoId } from '@/domains/storyteller/core/utils/youtube-utils'
 import { useBible } from './BibleContext'
 import { BibleSectionHeader, BibleSectionShell } from './BibleSectionChrome'
 import { bibleSectionItems } from '../utils/bible-section-items'
-import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
+import { requestBibleSectionChatRefresh } from '../utils/bible-section-chat-refresh'
 
 interface BibleSoundtracksProps {}
 
@@ -114,8 +114,7 @@ export const BibleSoundtracks: FC<BibleSoundtracksProps> = () => {
     isReadOnly,
     loadingSections,
     pendingActions,
-    projectId,
-    setPendingAction,
+    onSendMessage,
   } = useBible()
   const { playingTrackIndex, playingVideoId, handlePlayTrack, handleStopTrack } =
     useSoundtrackPlayback()
@@ -135,12 +134,11 @@ export const BibleSoundtracks: FC<BibleSoundtracksProps> = () => {
         title="Soundtrack"
         isReadOnly={isReadOnly}
         isLoading={isLoading}
-        onGenerate={async () => {
-          await runBibleSectionArtifactDraft({
-            projectId,
+        onGenerate={() => {
+          requestBibleSectionChatRefresh({
+            onSendMessage,
             section: BibleSection.SOUNDTRACKS,
             promptId: StorytellerPromptRegistryId.BibleSoundtracksGenerate,
-            setPendingAction,
           })
         }}
         generateTitle="Generate Soundtracks"

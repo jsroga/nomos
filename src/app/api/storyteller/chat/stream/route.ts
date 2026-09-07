@@ -12,7 +12,7 @@ import { HttpHeader } from '@/shared/data/constants/protocol'
 import { isE2eHarnessCaller, withE2eLlmPin } from '@/shared/ai/gateway/e2e-llm-pin'
 
 // Next.js rejects imported bindings for segment config; keep equal to CHAT_ROUTE_MAX_DURATION_SECONDS.
-export const maxDuration = 180
+export const maxDuration = 300
 
 export async function POST(req: Request) {
   try {

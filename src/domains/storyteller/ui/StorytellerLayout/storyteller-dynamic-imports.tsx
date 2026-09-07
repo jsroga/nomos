@@ -3,7 +3,6 @@
 import dynamic from 'next/dynamic'
 import { Loader2 } from 'lucide-react'
 import type { ScriptEditorProps } from '../ScriptEditor'
-import type { TimelineProps } from '../Timeline'
 import type { StoryPlanBoardProps } from '../StoryPlanBoard'
 import type { WorldBiblePanelProps } from '../WorldBiblePanel'
 import type { CharacterWebProps } from '../CharacterWeb/CharacterWeb'
@@ -17,11 +16,6 @@ const loadingSpinner = (
 export const ScriptEditor = dynamic<ScriptEditorProps>(
   async () => (await import('../ScriptEditor')).default,
   { ssr: false, loading: () => loadingSpinner }
-)
-
-export const Timeline = dynamic<TimelineProps>(
-  async () => (await import('../Timeline')).default,
-  { ssr: false }
 )
 
 export const StoryPlanBoard = dynamic<StoryPlanBoardProps>(

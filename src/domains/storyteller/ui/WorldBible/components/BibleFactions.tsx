@@ -2,7 +2,7 @@ import type { FC } from 'react'
 import { Crown } from 'lucide-react'
 import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
-import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
+import { requestBibleSectionChatRefresh } from '../utils/bible-section-chat-refresh'
 import { BibleEntityTileClass } from '../../BibleEntityTile'
 import { FactionCard, factionCardFromUnknown } from '../../FactionCard'
 import { useBible } from './BibleContext'
@@ -22,7 +22,7 @@ export const BibleFactions: FC = () => {
     loadingSections,
     pendingActions,
     projectId,
-    setPendingAction,
+    onSendMessage,
   } = useBible()
 
   const localFactions = localPlan.factions || []
@@ -34,12 +34,11 @@ export const BibleFactions: FC = () => {
   const isLoading = loadingSections?.factions?.loading ?? false
   const pendingAction = pendingActions?.factions
 
-  const handleGenerate = async () => {
-    await runBibleSectionArtifactDraft({
-      projectId,
+  const handleGenerate = () => {
+    requestBibleSectionChatRefresh({
+      onSendMessage,
       section: BibleSection.FACTIONS,
       promptId: StorytellerPromptRegistryId.BibleFactionsGenerate,
-      setPendingAction,
     })
   }
 

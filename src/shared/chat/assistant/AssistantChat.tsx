@@ -17,6 +17,10 @@ import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { useAISDKRuntime } from '@assistant-ui/react-ai-sdk'
 import { DefaultChatTransport } from 'ai'
 import { createOverlayThreadHistoryAdapter, createSessionThreadHistoryAdapter } from './thread-history-adapter'
+import { AssistantChatActionsProvider } from './AssistantChatActionsContext'
+import { useOverlayChatHydration } from './use-overlay-chat-hydration'
+import { regenerateAssistantTurn } from './regenerate-assistant-turn'
+import { isAssistantTurnBusy } from './assistant-turn-phase'
 import {
   getCanvasModuleAgentId,
   getCanvasModuleChatApiPath,
@@ -45,7 +49,7 @@ import {
   type AssistantCompletedToolCall,
 } from './extract-completed-assistant-tool-calls'
 import { AssistantPendingPromptBridge } from './AssistantPendingPromptBridge'
-import { useAssistantTurnSettle } from './use-assistant-turn-settle'
+import { useAssistantTurnSettle, syncBusyTurnActivityFromMessages } from './use-assistant-turn-settle'
 import type { AssistantPendingPrompt } from './use-assistant-pending-prompt'
 
 export type { AssistantPendingPrompt } from './use-assistant-pending-prompt'
@@ -267,6 +271,7 @@ export function AssistantChat({
   const onCompletedToolCallsRef = useRef(onCompletedToolCalls)
   const sendMessageRef = useRef(chat.sendMessage)
   const stopRef = useRef(chat.stop)
+  const regenerateRef = useRef(chat.regenerate)
   const statusRef = useRef(chat.status)
   const messagesRef = useRef<Parameters<typeof extractCompletedAssistantToolCalls>[0]>(
     chat.messages,
@@ -292,10 +297,29 @@ export function AssistantChat({
   useEffect(() => {
     sendMessageRef.current = chat.sendMessage
     stopRef.current = chat.stop
+    regenerateRef.current = chat.regenerate
     statusRef.current = chat.status
     messagesRef.current = chat.messages
     errorRef.current = chat.error
-  }, [chat.sendMessage, chat.stop, chat.status, chat.messages, chat.error])
+  }, [chat.sendMessage, chat.stop, chat.regenerate, chat.status, chat.messages, chat.error])
+
+  useOverlayChatHydration({
+    overlaySessionId,
+    setMessages: chat.setMessages,
+    messagesRef,
+  })
+
+  const chatActions = useMemo(
+    () => ({
+      regenerate: () =>
+        regenerateAssistantTurn({
+          isBusy: isAssistantTurnBusy(statusRef.current),
+          stop: () => stopRef.current(),
+          regenerate: () => regenerateRef.current(),
+        }),
+    }),
+    [],
+  )
 
   const clearStuckTimer = useCallback(() => {
     if (!stuckTimer.current) return
@@ -358,6 +382,17 @@ export function AssistantChat({
   })
 
   useEffect(() => {
+    syncBusyTurnActivityFromMessages(
+      chat.status,
+      chat.messages,
+      resolvedAgentId,
+      lastActivityFingerprint,
+      onGenerationActivityRef,
+      chat.error,
+    )
+  }, [chat.status, chat.messages, resolvedAgentId, chat.error])
+
+  useEffect(() => {
     onChatStatus?.(chat.status)
   }, [chat.status, onChatStatus])
 
@@ -418,15 +453,17 @@ export function AssistantChat({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <AssistantPendingPromptBridge
-        pendingPrompt={pendingPrompt}
-        onHandled={onPendingPromptHandled}
-      />
-      {chatRenderers ? (
-        <ChatRenderersProvider renderers={chatRenderers}>{chatBodyUi}</ChatRenderersProvider>
-      ) : (
-        chatBodyUi
-      )}
+      <AssistantChatActionsProvider actions={chatActions}>
+        <AssistantPendingPromptBridge
+          pendingPrompt={pendingPrompt}
+          onHandled={onPendingPromptHandled}
+        />
+        {chatRenderers ? (
+          <ChatRenderersProvider renderers={chatRenderers}>{chatBodyUi}</ChatRenderersProvider>
+        ) : (
+          chatBodyUi
+        )}
+      </AssistantChatActionsProvider>
     </AssistantRuntimeProvider>
   )
 }

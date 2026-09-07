@@ -16,6 +16,7 @@ import {
   ChatSessionStatus,
   ChatSessionWire,
 } from '@/shared/chat/core/constants/chat-session'
+import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
 import { overlayMemoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
 import type { ChatSession } from '@/shared/chat/core/io/chat-session-contract'
 
@@ -239,5 +240,50 @@ describe('GET /api/chat/sessions/{id}/messages', () => {
     findOwnedChatSession.mockResolvedValue(null)
     const res = await getMessages(routeRequest({ method: HttpMethod.Get }), routeParams({ id: SESSION_ID }))
     expect(res.status).toBe(HttpStatus.NOT_FOUND)
+  })
+
+  it('returns Mastra thread rows as AI SDK UI messages oldest first', async () => {
+    signIn(E2E_HARNESS_USER)
+    findOwnedChatSession.mockResolvedValue(sessionRow())
+    listMessages.mockResolvedValue({
+      messages: [
+        {
+          id: 'a1',
+          role: ChatMessageRole.Assistant,
+          createdAt: '2026-01-01T00:00:02.000Z',
+          content: { format: 2, parts: [{ type: ChatPartType.Text, text: 'Winterfell stands' }] },
+        },
+        {
+          id: 'u1',
+          role: ChatMessageRole.User,
+          createdAt: '2026-01-01T00:00:01.000Z',
+          content: { format: 2, parts: [{ type: ChatPartType.Text, text: 'Draft the siege' }] },
+        },
+      ],
+    })
+    const res = await getMessages(
+      routeRequest({ method: HttpMethod.Get }),
+      routeParams({ id: SESSION_ID }),
+    )
+    expect(res.status).toBe(HttpStatus.OK)
+    expect(listMessages).toHaveBeenCalledWith({
+      threadId: overlayMemoryRef({ id: SESSION_ID, userId: E2E_HARNESS_USER }).thread,
+      resourceId: E2E_HARNESS_USER,
+      perPage: false,
+    })
+    expect(await res.json()).toEqual({
+      messages: [
+        {
+          id: 'u1',
+          role: ChatMessageRole.User,
+          parts: [{ type: ChatPartType.Text, text: 'Draft the siege' }],
+        },
+        {
+          id: 'a1',
+          role: ChatMessageRole.Assistant,
+          parts: [{ type: ChatPartType.Text, text: 'Winterfell stands' }],
+        },
+      ],
+    })
   })
 })

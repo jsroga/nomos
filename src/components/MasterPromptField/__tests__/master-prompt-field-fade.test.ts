@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   MASTER_PROMPT_CLAMP_MAX_PX,
@@ -61,5 +62,11 @@ describe('MasterPromptField collapsed fade', () => {
     })
     expect(collapsed.split(' ')).toEqual(expect.arrayContaining(['text-transparent']))
     expect(collapsed.split(' ')).not.toEqual(expect.arrayContaining(['text-foreground/85']))
+  })
+
+  it('wraps every prompt box in BorderGlow', () => {
+    const src = readFileSync('src/components/MasterPromptField/MasterPromptFieldBody.tsx', 'utf8')
+    expect(src).toContain('BorderGlow')
+    expect(src).toContain('BorderGlowSurface.Field')
   })
 })

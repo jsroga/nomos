@@ -3,7 +3,10 @@ import { AppModuleId } from '@/shared/data/constants/protocol'
 import { ChatSessionCopy, ChatSessionStatus, ChatSessionWire } from '@/shared/chat/core/constants/chat-session'
 import type { ChatSession } from '@/shared/chat/core/io/chat-session-contract'
 import {
+  prependCreatedChatSession,
+  selectFocusedSessionId,
   selectMountedSessions,
+  shouldCreateFocusedOverlaySession,
   streamingSessionsWithoutRunId,
 } from '@/shared/chat/core/overlay-session-runtime'
 
@@ -42,6 +45,74 @@ describe('selectMountedSessions', () => {
     const next = selectMountedSessions(rows, IDLE).map(row => row.id)
     expect(next).toEqual([STREAMING, IDLE])
     expect(next).toContain(STREAMING)
+  })
+})
+
+describe('selectFocusedSessionId', () => {
+  it('keeps the focused session when it is still in the list', () => {
+    const rows = [session({ id: FOCUSED }), session({ id: IDLE })]
+    expect(selectFocusedSessionId(rows, FOCUSED)).toBe(FOCUSED)
+  })
+
+  it('falls back to the newest listed session only when focus is missing', () => {
+    const rows = [session({ id: FOCUSED }), session({ id: IDLE })]
+    expect(selectFocusedSessionId(rows, null)).toBe(FOCUSED)
+    expect(selectFocusedSessionId([], null)).toBeNull()
+  })
+
+  it('keeps a just-created id so New Chat does not snap back to the previous thread', () => {
+    const rows = [session({ id: FOCUSED }), session({ id: IDLE })]
+    expect(selectFocusedSessionId(rows, STREAMING)).toBe(STREAMING)
+  })
+})
+
+describe('prependCreatedChatSession', () => {
+  it('puts the new session first so it becomes the active thread', () => {
+    const existing = session({ id: IDLE })
+    const created = session({ id: FOCUSED })
+    expect(prependCreatedChatSession([existing], created).map(row => row.id)).toEqual([FOCUSED, IDLE])
+    expect(prependCreatedChatSession(undefined, created).map(row => row.id)).toEqual([FOCUSED])
+    expect(prependCreatedChatSession([created, existing], created).map(row => row.id)).toEqual([
+      FOCUSED,
+      IDLE,
+    ])
+  })
+})
+
+describe('shouldCreateFocusedOverlaySession', () => {
+  it('creates a thread only when the overlay is open and the list is empty', () => {
+    expect(
+      shouldCreateFocusedOverlaySession({
+        overlayOpen: true,
+        listReady: true,
+        sessionCount: 0,
+        canCreate: true,
+      })
+    ).toBe(true)
+    expect(
+      shouldCreateFocusedOverlaySession({
+        overlayOpen: false,
+        listReady: true,
+        sessionCount: 0,
+        canCreate: true,
+      })
+    ).toBe(false)
+    expect(
+      shouldCreateFocusedOverlaySession({
+        overlayOpen: true,
+        listReady: true,
+        sessionCount: 1,
+        canCreate: true,
+      })
+    ).toBe(false)
+    expect(
+      shouldCreateFocusedOverlaySession({
+        overlayOpen: true,
+        listReady: false,
+        sessionCount: 0,
+        canCreate: true,
+      })
+    ).toBe(false)
   })
 })
 

@@ -67,4 +67,5 @@ export enum MasterPromptFieldClass {
   IdeaItem = 'flex flex-col items-start gap-0.5 py-2',
   IdeaItemLabel = 'text-sm font-medium',
   IdeaItemHint = 'text-xs text-muted-foreground whitespace-normal',
+  GlowWrap = 'w-full',
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  assistantContentHasFailedTool,
   createToolArgsSnapshotSelector,
   toolArgsFromAssistantContent,
   toolNameFromAssistantPart,
@@ -49,5 +50,30 @@ describe('toolArgsFromAssistantContent', () => {
     const clone = [{ args: { worldDescription: 'Linked overview prose.' } }]
     const third = select(clone)
     expect(third).toBe(first)
+  })
+})
+
+describe('assistantContentHasFailedTool', () => {
+  it('detects a beat-draft tool that finished as failed', () => {
+    expect(
+      assistantContentHasFailedTool([
+        {
+          type: 'tool-run_beat_draft_workflow',
+          state: 'output-available',
+          input: { brief: 'Draft the next beat.' },
+          output: { status: 'failed', message: 'Author generate timed out' },
+        },
+      ]),
+    ).toBe(true)
+    expect(
+      assistantContentHasFailedTool([
+        {
+          type: 'tool-update_world_bible',
+          state: 'output-available',
+          args: { factions: [] },
+          output: { success: true },
+        },
+      ]),
+    ).toBe(false)
   })
 })

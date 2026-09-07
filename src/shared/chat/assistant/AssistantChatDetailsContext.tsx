@@ -9,18 +9,20 @@ import {
   type ReactNode,
 } from 'react'
 
+export const ASSISTANT_CHAT_SHOW_DETAILS_DEFAULT = true
+
 interface AssistantChatDetailsValue {
   showDetails: boolean
   toggleDetails: () => void
 }
 
 const AssistantChatDetailsContext = createContext<AssistantChatDetailsValue>({
-  showDetails: false,
+  showDetails: ASSISTANT_CHAT_SHOW_DETAILS_DEFAULT,
   toggleDetails: () => undefined,
 })
 
 export function AssistantChatDetailsProvider({ children }: { children: ReactNode }) {
-  const [showDetails, setShowDetails] = useState(false)
+  const [showDetails, setShowDetails] = useState(ASSISTANT_CHAT_SHOW_DETAILS_DEFAULT)
   const toggleDetails = useCallback(() => {
     setShowDetails(current => !current)
   }, [])

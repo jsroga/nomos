@@ -36,6 +36,7 @@ import {
   BEAT_DRAFT_AUTHOR_CANON_TRUNCATED,
   BEAT_DRAFT_AUTHOR_CRITIQUES_CHAR_BUDGET,
   BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
+  BeatDraftGenerateTimeoutKind,
   BEAT_DRAFT_CHARACTERS_JOIN,
   BEAT_DRAFT_MANAGE_BEAT_COMPLETED,
   BEAT_DRAFT_NO_FINDINGS,
@@ -65,6 +66,10 @@ import {
 } from '@/domains/storyteller/core/types/after-beat-state'
 import type { BeatDraftCanon } from '@/domains/storyteller/core/types/beat-draft-canon'
 import type { BeatDraftDeps } from './beat-draft-deps-types'
+import {
+  beatDraftGenerateTimeoutMessage,
+  raceAuthorGenerate,
+} from './race-author-generate'
 
 type WorldBibleCanonFields = {
   worldDescription?: unknown
@@ -156,32 +161,25 @@ export async function generateAuthorDraft(prompt: string): Promise<string> {
 
 Respond with the script beat only. No thinking tags, no markdown fences, no preamble.`
 
-  let lastText = ''
-  for (let attempt = 0; attempt < 1; attempt++) {
-    const response = await meteredCall(LlmFeature.StorytellerBeatDraft, () =>
-      Promise.race([
-      statelessGrrmAuthor.generate(hardened, {
-        toolChoice: BeatDraftToolChoice.None,
-        maxSteps: 1,
-      }),
-      new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(
-            new Error(
-              `Author generate timed out after ${BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS}ms (attempt ${attempt + 1})`
-            )
-          )
-        }, BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS)
-      }),
-    ]),
-    )
-    lastText = response.text
-    const script = extractAuthorScript(lastText)
-    if (script.length > 0) return script
-  }
-
+  const response = await meteredCall(LlmFeature.StorytellerBeatDraft, () =>
+    raceAuthorGenerate(
+      abortSignal =>
+        statelessGrrmAuthor.generate(hardened, {
+          toolChoice: BeatDraftToolChoice.None,
+          maxSteps: 1,
+          abortSignal,
+        }),
+      BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
+      beatDraftGenerateTimeoutMessage(
+        BeatDraftGenerateTimeoutKind.Author,
+        BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
+      ),
+    ),
+  )
+  const script = extractAuthorScript(response.text)
+  if (script.length > 0) return script
   throw new Error(
-    `Author generate returned empty script text after retry (raw length ${lastText.length})`
+    `Author generate returned empty script text (raw length ${response.text.length})`
   )
 }
 

@@ -4,12 +4,28 @@ import { TourDomEvent, TourSelectorId } from '@/shared/tours/constants/tour-ui'
 const PADDING = 16
 const CONTENT_WIDTH = 300
 const CONTENT_HEIGHT = 200
+const MIN_TARGET_PX = 1
 
 export type ElementPosition = {
   top: number
   left: number
   width: number
   height: number
+}
+
+function isHiddenTourTarget(element: HTMLElement): boolean {
+  let current: HTMLElement | null = element
+  while (current) {
+    if (current.hidden) return true
+    current = current.parentElement
+  }
+  return false
+}
+
+function isTourTargetOnScreen(element: HTMLElement): boolean {
+  if (isHiddenTourTarget(element)) return false
+  const rect = element.getBoundingClientRect()
+  return rect.width >= MIN_TARGET_PX && rect.height >= MIN_TARGET_PX
 }
 
 export function getElementPosition(id: string): ElementPosition | null {
@@ -23,14 +39,11 @@ export function getElementPosition(id: string): ElementPosition | null {
   }
 
   const element = document.getElementById(id)
-  if (!element) {
-    console.warn(`[Tour] Element with id '${id}' not found`)
-    return null
-  }
+  if (!element || !isTourTargetOnScreen(element)) return null
   const rect = element.getBoundingClientRect()
   return {
-    top: rect.top + window.scrollY,
-    left: rect.left + window.scrollX,
+    top: rect.top,
+    left: rect.left,
     width: rect.width,
     height: rect.height,
   }
@@ -78,21 +91,19 @@ export function calculateContentPosition(
 }
 
 export function isClickWithinTourArea(
-  event: MouseEvent,
+  event: { clientX: number; clientY: number },
   elementPosition: ElementPosition,
   stepWidth?: number,
   stepHeight?: number,
 ): boolean {
-  const clickX = event.clientX + window.scrollX
-  const clickY = event.clientY + window.scrollY
   const width = stepWidth || elementPosition.width
   const height = stepHeight || elementPosition.height
 
   return (
-    clickX >= elementPosition.left &&
-    clickX <= elementPosition.left + width &&
-    clickY >= elementPosition.top &&
-    clickY <= elementPosition.top + height
+    event.clientX >= elementPosition.left &&
+    event.clientX <= elementPosition.left + width &&
+    event.clientY >= elementPosition.top &&
+    event.clientY <= elementPosition.top + height
   )
 }
 

@@ -70,6 +70,11 @@ export const BEAT_DRAFT_AUTHOR_CANON_TRUNCATED =
 export const BEAT_DRAFT_AUTHOR_CRITIQUES_CHAR_BUDGET = 4_000
 /** Hard ceiling for a single author generate() in the beat-draft pipeline. */
 export const BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS = CHAT_AUTHOR_GENERATE_TIMEOUT_MS
+
+export enum BeatDraftGenerateTimeoutKind {
+  Author = 'Author generate',
+  Humanizer = 'Humanizer generate',
+}
 export const BEAT_DRAFT_VERDICT_SUSPEND_REASON =
   'Editorial verdict required: approve (revise against critiques), revise (add your note), or kill (discard draft).'
 export const BEAT_DRAFT_VERDICT_NOTE_DESC = 'Editorial direction, used when action is revise'

@@ -18,7 +18,9 @@ export enum AssistantGenerationPhase {
 
 export enum AssistantGenerationLabel {
   Submitted = 'Waiting for Writers Room…',
+  WaitingFirstToken = 'Waiting for first token…',
   SubmittedSlow = 'Still waiting for the model…',
+  Thinking = 'Writers Room agent is thinking…',
   Streaming = 'Writers Room agent is writing…',
   ToolPrefix = 'Tool · ',
   ToolStreamingSuffix = ' (streaming input)',
@@ -47,13 +49,23 @@ enum ToolUiPartState {
   OutputError = 'output-error',
 }
 
+type StreamSignals = {
+  lastToolName?: string
+  lastToolState?: string
+  preview?: string
+  lastText: string
+  lastReasoning: string
+}
+
+function clipPreview(text: string): string {
+  return text.length > PREVIEW_MAX ? `${text.slice(0, PREVIEW_MAX)}…` : text
+}
+
 function previewFromToolInput(input: unknown): string | undefined {
   const record = recordFromJson(input)
   const worldDescription = readString(record[WORLD_DESCRIPTION_KEY])
   if (!worldDescription) return undefined
-  return worldDescription.length > PREVIEW_MAX
-    ? `${worldDescription.slice(0, PREVIEW_MAX)}…`
-    : worldDescription
+  return clipPreview(worldDescription)
 }
 
 function latestAssistantParts(messages: UIMessage[]): UIMessage['parts'] | null {
@@ -64,6 +76,43 @@ function latestAssistantParts(messages: UIMessage[]): UIMessage['parts'] | null 
   return null
 }
 
+function partText(part: object): string {
+  const textValue = Reflect.get(part, ChatPartType.Text)
+  return typeof textValue === 'string' ? textValue : ''
+}
+
+function collectStreamSignals(parts: UIMessage['parts']): StreamSignals {
+  const signals: StreamSignals = { lastText: '', lastReasoning: '' }
+  for (const part of parts) {
+    if (part.type === ChatPartType.Text) {
+      signals.lastText = partText(part)
+      continue
+    }
+    if (part.type === ChatPartType.Reasoning) {
+      signals.lastReasoning = partText(part)
+      continue
+    }
+    if (!isToolUIPart(part)) continue
+    signals.lastToolName = getToolName(part)
+    signals.lastToolState = part.state
+    const fromInput = previewFromToolInput(part.input)
+    if (fromInput) signals.preview = fromInput
+  }
+  return signals
+}
+
+function toolSuffix(state: string | undefined): {
+  suffix: AssistantGenerationLabel
+  done: boolean
+} {
+  const streamingInput = state === ToolUiPartState.InputStreaming
+  const done =
+    state === ToolUiPartState.OutputAvailable || state === ToolUiPartState.OutputError
+  if (streamingInput) return { suffix: AssistantGenerationLabel.ToolStreamingSuffix, done }
+  if (done) return { suffix: AssistantGenerationLabel.ToolDoneSuffix, done }
+  return { suffix: AssistantGenerationLabel.ToolRunningSuffix, done }
+}
+
 export function deriveAssistantGenerationActivity(
   messages: UIMessage[],
   agentId?: string
@@ -71,66 +120,48 @@ export function deriveAssistantGenerationActivity(
   const parts = latestAssistantParts(messages)
   if (parts === null) return null
 
-  // Empty assistant parts cover context assembly + model wait; labels name the
-  // model wait because assembly is typically sub-second after RAG was removed.
   if (parts.length === 0) {
     return {
       phase: AssistantGenerationPhase.Submitted,
-      label: AssistantGenerationLabel.Submitted,
+      label: AssistantGenerationLabel.WaitingFirstToken,
       agentId,
     }
   }
 
-  let lastToolName: string | undefined
-  let lastToolState: string | undefined
-  let preview: string | undefined
-  let lastText = ''
-
-  for (const part of parts) {
-    if (part.type === ChatPartType.Text) {
-      const textValue = Reflect.get(part, ChatPartType.Text)
-      if (typeof textValue === 'string') lastText = textValue
-      continue
-    }
-    if (!isToolUIPart(part)) continue
-    lastToolName = getToolName(part)
-    lastToolState = part.state
-    const fromInput = previewFromToolInput(part.input)
-    if (fromInput) preview = fromInput
-  }
-
-  if (lastToolName) {
-    const streamingInput = lastToolState === ToolUiPartState.InputStreaming
-    const done =
-      lastToolState === ToolUiPartState.OutputAvailable ||
-      lastToolState === ToolUiPartState.OutputError
-    const suffix = streamingInput
-      ? AssistantGenerationLabel.ToolStreamingSuffix
-      : done
-        ? AssistantGenerationLabel.ToolDoneSuffix
-        : AssistantGenerationLabel.ToolRunningSuffix
+  const signals = collectStreamSignals(parts)
+  if (signals.lastToolName) {
+    const { suffix, done } = toolSuffix(signals.lastToolState)
     return {
       phase: AssistantGenerationPhase.Tool,
-      label: `${AssistantGenerationLabel.ToolPrefix}${lastToolName}${suffix}`,
-      toolName: lastToolName,
-      preview,
+      label: `${AssistantGenerationLabel.ToolPrefix}${signals.lastToolName}${suffix}`,
+      toolName: signals.lastToolName,
+      preview: signals.preview,
       agentId,
       toolComplete: done,
     }
   }
 
-  if (lastText.trim()) {
+  if (signals.lastText.trim()) {
     return {
       phase: AssistantGenerationPhase.Streaming,
       label: AssistantGenerationLabel.Streaming,
-      preview: lastText.length > PREVIEW_MAX ? `${lastText.slice(0, PREVIEW_MAX)}…` : lastText,
+      preview: clipPreview(signals.lastText),
+      agentId,
+    }
+  }
+
+  if (signals.lastReasoning.trim()) {
+    return {
+      phase: AssistantGenerationPhase.Streaming,
+      label: AssistantGenerationLabel.Thinking,
+      preview: clipPreview(signals.lastReasoning),
       agentId,
     }
   }
 
   return {
     phase: AssistantGenerationPhase.Streaming,
-    label: AssistantGenerationLabel.Streaming,
+    label: AssistantGenerationLabel.WaitingFirstToken,
     agentId,
   }
 }

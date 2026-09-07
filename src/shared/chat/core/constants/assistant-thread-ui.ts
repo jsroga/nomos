@@ -15,6 +15,13 @@ export enum ChatMessageRole {
 
 export enum ChatPartType {
   Text = 'text',
+  Reasoning = 'reasoning',
+  StepStart = 'step-start',
+  StepFinish = 'step-finish',
+}
+
+export enum ChatToolPartPrefix {
+  Tool = 'tool-',
 }
 
 export enum ChatMessageStatus {
@@ -69,6 +76,7 @@ export const ASSISTANT_THREAD_COPY = {
   ShowDetails: 'Details',
   ShowDetailsAria: 'Show tool and JSON details',
   HideDetailsAria: 'Hide tool and JSON details',
+  Regenerate: 'Regenerate',
 } as const
 
 export const ASSISTANT_THREAD_WIRE = {

@@ -15,6 +15,21 @@ export enum ScriptEditorToolbarCopy {
   BeatsGate = 'Beats is the gate',
 }
 
+export enum ScriptEditorToolbarClass {
+  Row = 'flex h-full items-center gap-2',
+  Cluster = 'flex h-full items-center gap-1',
+  Button = 'h-7 px-2 text-xs',
+}
+
+export enum ScriptEditorChromeClass {
+  Bar = 'h-9 shrink-0 border-t border-border/30 flex items-center gap-2 px-3 pt-1 bg-card/50',
+  Loading = 'ml-auto text-xs leading-none text-primary animate-pulse',
+}
+
+export enum ScriptEditorStatusCopy {
+  Writing = 'Writing...',
+}
+
 export interface ScriptEditorManuscriptToolbarProps {
   mode: ManuscriptMode
   onModeChange?: (mode: ManuscriptMode) => void
@@ -35,11 +50,16 @@ export const ScriptEditorManuscriptToolbar: FC<ScriptEditorManuscriptToolbarProp
   generateDisabledReason,
 }) => {
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1" role="group" aria-label={ScriptEditorToolbarCopy.ModeGroup}>
+    <div className={ScriptEditorToolbarClass.Row}>
+      <div
+        className={ScriptEditorToolbarClass.Cluster}
+        role="group"
+        aria-label={ScriptEditorToolbarCopy.ModeGroup}
+      >
         <Button
           type="button"
           size={ButtonSizeKey.Sm}
+          className={ScriptEditorToolbarClass.Button}
           variant={mode === ManuscriptMode.Script ? ButtonVariantKey.Default : ButtonVariantKey.Ghost}
           aria-pressed={mode === ManuscriptMode.Script}
           onClick={() => onModeChange?.(ManuscriptMode.Script)}
@@ -49,6 +69,7 @@ export const ScriptEditorManuscriptToolbar: FC<ScriptEditorManuscriptToolbarProp
         <Button
           type="button"
           size={ButtonSizeKey.Sm}
+          className={ScriptEditorToolbarClass.Button}
           variant={mode === ManuscriptMode.Novel ? ButtonVariantKey.Default : ButtonVariantKey.Ghost}
           aria-pressed={mode === ManuscriptMode.Novel}
           onClick={() => onModeChange?.(ManuscriptMode.Novel)}
@@ -56,36 +77,41 @@ export const ScriptEditorManuscriptToolbar: FC<ScriptEditorManuscriptToolbarProp
           {ScriptEditorToolbarCopy.Novel}
         </Button>
       </div>
-      <Button
-        type="button"
-        size={ButtonSizeKey.Sm}
-        variant={ButtonVariantKey.Outline}
-        disabled={generateDisabled}
-        title={generateDisabledReason}
-        onClick={onGenerateNext}
-      >
-        {ScriptEditorToolbarCopy.GenerateNext}
-      </Button>
-      <Button
-        type="button"
-        size={ButtonSizeKey.Sm}
-        variant={ButtonVariantKey.Outline}
-        disabled={generateDisabled}
-        title={generateDisabledReason}
-        onClick={onRegenerateSection}
-      >
-        {ScriptEditorToolbarCopy.RegenerateSection}
-      </Button>
-      <Button
-        type="button"
-        size={ButtonSizeKey.Sm}
-        variant={ButtonVariantKey.Outline}
-        disabled={generateDisabled}
-        title={generateDisabledReason}
-        onClick={onCompile}
-      >
-        {ScriptEditorToolbarCopy.Compile}
-      </Button>
+      <div className={ScriptEditorToolbarClass.Cluster}>
+        <Button
+          type="button"
+          size={ButtonSizeKey.Sm}
+          className={ScriptEditorToolbarClass.Button}
+          variant={ButtonVariantKey.Outline}
+          disabled={generateDisabled}
+          title={generateDisabledReason}
+          onClick={onGenerateNext}
+        >
+          {ScriptEditorToolbarCopy.GenerateNext}
+        </Button>
+        <Button
+          type="button"
+          size={ButtonSizeKey.Sm}
+          className={ScriptEditorToolbarClass.Button}
+          variant={ButtonVariantKey.Outline}
+          disabled={generateDisabled}
+          title={generateDisabledReason}
+          onClick={onRegenerateSection}
+        >
+          {ScriptEditorToolbarCopy.RegenerateSection}
+        </Button>
+        <Button
+          type="button"
+          size={ButtonSizeKey.Sm}
+          className={ScriptEditorToolbarClass.Button}
+          variant={ButtonVariantKey.Outline}
+          disabled={generateDisabled}
+          title={generateDisabledReason}
+          onClick={onCompile}
+        >
+          {ScriptEditorToolbarCopy.Compile}
+        </Button>
+      </div>
     </div>
   )
 }

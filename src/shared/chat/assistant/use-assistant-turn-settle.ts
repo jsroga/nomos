@@ -5,6 +5,7 @@ import {
   isAssistantTurnFailed,
   shouldEmitCompletedToolCalls,
 } from './assistant-turn-phase'
+import { ChatMessageRole } from '../core/constants/assistant-thread-ui'
 import {
   extractCompletedAssistantToolCalls,
 } from './extract-completed-assistant-tool-calls'
@@ -132,10 +133,14 @@ export function syncBusyTurnActivityFromMessages(
   error?: unknown,
 ): void {
   if (!isAssistantTurnBusy(status) || isAssistantTurnFailed(status, error)) return
-  const derived = deriveAssistantGenerationActivity(messages, resolvedAgentId)
+  const last = messages[messages.length - 1]
+  const waitingOnAssistant = last == null || last.role !== ChatMessageRole.Assistant
+  const derived = waitingOnAssistant
+    ? null
+    : deriveAssistantGenerationActivity(messages, resolvedAgentId)
   const activity: AssistantGenerationActivity = derived ?? {
     phase: AssistantGenerationPhase.Submitted,
-    label: AssistantGenerationLabel.Submitted,
+    label: AssistantGenerationLabel.WaitingFirstToken,
     agentId: resolvedAgentId,
   }
   const fingerprint = activityFingerprint(activity)

@@ -12,7 +12,6 @@ import {
 import type { OverlaySessionHostProps } from '@/shared/chat/overlay/module-chat-adapters'
 import type { ModuleChatAdapter } from '@/shared/chat/overlay/module-chat-adapters'
 import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
-import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 
 export function WorkspaceChatSessionRuntime({
   hidden,
@@ -67,7 +66,6 @@ export function WorkspaceChatSessionRuntime({
       hidden={hidden}
       aria-hidden={hidden}
       className={hidden ? 'hidden h-full' : 'flex h-full min-h-0 flex-col'}
-      id={!hidden ? TOUR_STEP_IDS.STORYTELLER_CHAT : undefined}
     >
       <AssistantChat
         chatId={host.session.id}

@@ -24,7 +24,43 @@ interface StorytellerEpisodeHeaderProps {
   onCreateEpisode: () => void
 }
 
-export const StorytellerEpisodeHeader: React.FC<StorytellerEpisodeHeaderProps> = ({
+interface EpisodePhaseTrailProps {
+  isEpisodeEditing: boolean
+  hasEpisode: boolean
+  currentEpisodeId: string | null
+  viewPhase: PhaseId
+  currentPhase: PhaseId
+  advanceablePhase?: PhaseId
+  isSending: boolean
+  onPhaseChange: (phase: PhaseId) => void
+}
+
+function EpisodePhaseTrail({
+  isEpisodeEditing,
+  hasEpisode,
+  currentEpisodeId,
+  viewPhase,
+  currentPhase,
+  advanceablePhase,
+  isSending,
+  onPhaseChange,
+}: EpisodePhaseTrailProps) {
+  if (isEpisodeEditing) return null
+  if (hasEpisode && currentEpisodeId) {
+    return (
+      <PhaseNavigatorCompact
+        currentPhase={viewPhase}
+        progressPhase={currentPhase}
+        advanceablePhase={advanceablePhase}
+        isWorking={isSending}
+        onPhaseChange={onPhaseChange}
+      />
+    )
+  }
+  return <span className={StorytellerHeaderClass.Helper}>{StorytellerHeaderCopy.EpisodesFromBible}</span>
+}
+
+export function StorytellerEpisodeHeader({
   currentEpisodeId,
   currentPhase,
   viewPhase,
@@ -36,7 +72,7 @@ export const StorytellerEpisodeHeader: React.FC<StorytellerEpisodeHeaderProps> =
   onOpenBible,
   onCloseBible,
   onCreateEpisode,
-}) => {
+}: StorytellerEpisodeHeaderProps) {
   const isBibleEditing = useStorytellerUiStore(state => state.isBibleEditing)
   const isEpisodeEditing = useStorytellerUiStore(state => state.isEpisodeEditing)
   const hasEpisode = hasEpisodes
@@ -54,30 +90,28 @@ export const StorytellerEpisodeHeader: React.FC<StorytellerEpisodeHeaderProps> =
         onCreateEpisode={onCreateEpisode}
       />
       <div className={StorytellerHeaderClass.Divider} />
-      {isWorldBibleOpen ? (
-        <div
-          id={StorytellerHeaderSlotId.BibleChrome}
-          className="flex flex-1 items-center gap-3.5 min-w-0"
+      <div
+        id={StorytellerHeaderSlotId.BibleChrome}
+        className={isWorldBibleOpen ? StorytellerHeaderClass.ChromeSlot : StorytellerHeaderClass.Hidden}
+        aria-hidden={!isWorldBibleOpen}
+      />
+      {isWorldBibleOpen ? null : (
+        <EpisodePhaseTrail
+          isEpisodeEditing={isEpisodeEditing}
+          hasEpisode={hasEpisode}
+          currentEpisodeId={currentEpisodeId}
+          viewPhase={viewPhase}
+          currentPhase={currentPhase}
+          advanceablePhase={advanceablePhase}
+          isSending={isSending}
+          onPhaseChange={handlePhaseChange}
         />
-      ) : (
-        <>
-          {isEpisodeEditing ? null : hasEpisode && currentEpisodeId ? (
-            <PhaseNavigatorCompact
-              currentPhase={viewPhase}
-              progressPhase={currentPhase}
-              advanceablePhase={advanceablePhase}
-              isWorking={isSending}
-              onPhaseChange={handlePhaseChange}
-            />
-          ) : (
-            <span className={StorytellerHeaderClass.Helper}>{StorytellerHeaderCopy.EpisodesFromBible}</span>
-          )}
-          <div
-            id={StorytellerHeaderSlotId.EpisodeChrome}
-            className="flex flex-1 items-center gap-3.5 min-w-0"
-          />
-        </>
       )}
+      <div
+        id={StorytellerHeaderSlotId.EpisodeChrome}
+        className={!isWorldBibleOpen ? StorytellerHeaderClass.ChromeSlot : StorytellerHeaderClass.Hidden}
+        aria-hidden={isWorldBibleOpen}
+      />
     </div>
   )
 }

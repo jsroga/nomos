@@ -73,7 +73,7 @@ const STORYTELLER_CHAT_ACTIVE_TOOLS = [
 ] as const
 
 // Next.js rejects imported bindings for segment config; keep equal to CHAT_ROUTE_MAX_DURATION_SECONDS.
-export const maxDuration = 180
+export const maxDuration = 300
 
 const INVALID_BODY_MESSAGE = 'Invalid body'
 const AGENT_NOT_FOUND_MESSAGE = 'Agent not found'

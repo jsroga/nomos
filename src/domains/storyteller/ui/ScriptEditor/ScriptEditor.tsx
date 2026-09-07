@@ -8,9 +8,12 @@ import { cn } from '@/shared/data/utils'
 import {
   SCRIPT_EDITOR_CONDENSE_PROMPT,
   SCRIPT_EDITOR_EXPAND_PROMPT,
+  SCRIPT_EDITOR_NOVEL_TYPE,
   SCRIPT_EDITOR_REGENERATION_FAILED_LOG,
   SCRIPT_EDITOR_REWRITE_PROMPT,
+  SCRIPT_EDITOR_SCRIPT_TYPE,
   ScriptEditorCommand,
+  ScriptEditorSurfaceClass,
   ScriptRegenerateAction,
   type ScriptEditorSelectionContext,
 } from './constants/script-editor'
@@ -21,10 +24,15 @@ import { applyManuscriptSectionVerdict } from '@/domains/storyteller/core/io/app
 import { ScriptEditorGhostOverlay } from './ScriptEditorGhostOverlay'
 import { ScriptEditorVerdictOverlay } from './ScriptEditorVerdictOverlay'
 import type { SuspendedBeatDraftResult } from './ScriptEditorVerdictOverlay'
-import { ScriptEditorManuscriptToolbar, ScriptEditorToolbarCopy } from './ScriptEditorManuscriptToolbar'
+import {
+  ScriptEditorChromeClass,
+  ScriptEditorManuscriptToolbar,
+  ScriptEditorStatusCopy,
+  ScriptEditorToolbarCopy,
+} from './ScriptEditorManuscriptToolbar'
 import { ScriptEditorSelectionMenu } from './ScriptEditorSelectionMenu'
 import { manuscriptGenerateDisabled } from './manuscript-generate-disabled'
-import { manuscriptPrefixBeforeCaret } from './script-ghost-caret'
+import { manuscriptCaretSlice, manuscriptPrefixBeforeCaret } from './script-ghost-caret'
 import { useScriptGhostComplete } from './useScriptGhostComplete'
 
 type SectionVerdictPending = SuspendedBeatDraftResult & {
@@ -103,14 +111,14 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
     [onChange]
   )
 
-  const { ghost, onKeyDown, rejectGhost, schedule } = useScriptGhostComplete({
+  const { ghost, ghostPrefix, onKeyDown, rejectGhost, schedule } = useScriptGhostComplete({
     enabled: projectId.length > 0 && episodeId.length > 0,
     projectId,
     episodeId,
     mode: manuscriptMode,
-    getPrefix: () => {
+    getCaret: () => {
       const editor = editorRef.current
-      return editor ? manuscriptPrefixBeforeCaret(editor) : ''
+      return editor ? manuscriptCaretSlice(editor) : { prefix: '', suffix: '' }
     },
     onAccept: insertGhost,
   })
@@ -128,9 +136,10 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
       ) {
         editorRef.current.innerText = content || ''
         isInitializedRef.current = true
+        rejectGhost()
       }
     }
-  }, [content])
+  }, [content, rejectGhost])
 
   // Handle text selection
   const handleSelection = useCallback(() => {
@@ -247,7 +256,58 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
 
   return (
     <div className="relative h-full flex flex-col bg-[#1a1a1a]">
-      <div className="min-h-12 border-b border-border/30 flex items-center justify-between gap-3 px-4 py-1 bg-card/50">
+      <div className="flex-1 overflow-y-auto relative">
+        <div
+          className={cn(
+            ScriptEditorSurfaceClass.Frame,
+            isNovel ? ScriptEditorSurfaceClass.NovelWidth : ScriptEditorSurfaceClass.ScriptWidth
+          )}
+        >
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            className={ScriptEditorSurfaceClass.Editor}
+            onInput={e => {
+              onChange(e.currentTarget.innerText)
+              rejectGhost()
+              schedule()
+            }}
+            onBlur={e => onChange(e.currentTarget.innerText)}
+            onMouseDown={rejectGhost}
+            onMouseUp={handleSelection}
+            onKeyUp={handleSelection}
+            onKeyDown={onKeyDown}
+            style={isNovel ? SCRIPT_EDITOR_NOVEL_TYPE : SCRIPT_EDITOR_SCRIPT_TYPE}
+            data-placeholder={
+              isNovel ? ScriptEditorPlaceholder.Novel : ScriptEditorPlaceholder.Script
+            }
+          />
+          <ScriptEditorGhostOverlay
+            ghost={ghost}
+            prefix={ghostPrefix}
+            style={isNovel ? SCRIPT_EDITOR_NOVEL_TYPE : SCRIPT_EDITOR_SCRIPT_TYPE}
+          />
+        </div>
+        <ScriptEditorVerdictOverlay
+          pending={sectionVerdict}
+          onSettled={resume => {
+            const pending = sectionVerdict
+            setSectionVerdict(null)
+            if (!pending) return
+            void applyManuscriptSectionVerdict({
+              resume,
+              scriptContent: pending.scriptSnapshot,
+              span: pending.span,
+              episodeId,
+              onChange,
+              editor: editorRef.current,
+            })
+          }}
+        />
+      </div>
+
+      <div className={ScriptEditorChromeClass.Bar}>
         <ScriptEditorManuscriptToolbar
           mode={manuscriptMode}
           onModeChange={handleModeChange}
@@ -275,65 +335,9 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
             })()
           }}
         />
-        {isLoading && <span className="text-xs text-primary animate-pulse">Writing...</span>}
-      </div>
-
-      <div className="flex-1 overflow-y-auto relative">
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          className={cn(
-            'script-editor mx-auto px-16 py-12 min-h-full outline-none',
-            isNovel ? 'max-w-[65ch]' : 'max-w-[72ch]'
-          )}
-          onInput={e => {
-            onChange(e.currentTarget.innerText)
-            rejectGhost()
-            schedule()
-          }}
-          onBlur={e => onChange(e.currentTarget.innerText)}
-          onMouseUp={handleSelection}
-          onKeyUp={handleSelection}
-          onKeyDown={onKeyDown}
-          style={
-            isNovel
-              ? {
-                  fontFamily: 'Georgia, "Times New Roman", Times, serif',
-                  fontSize: '18px',
-                  lineHeight: '1.85',
-                  color: '#e0e0e0',
-                  whiteSpace: 'pre-wrap',
-                }
-              : {
-                  fontFamily: '"Courier Prime", "Courier New", Courier, monospace',
-                  fontSize: '14px',
-                  lineHeight: '1.6',
-                  color: '#e0e0e0',
-                  whiteSpace: 'pre-wrap',
-                }
-          }
-          data-placeholder={
-            isNovel ? ScriptEditorPlaceholder.Novel : ScriptEditorPlaceholder.Script
-          }
-        />
-        <ScriptEditorGhostOverlay ghost={ghost} />
-        <ScriptEditorVerdictOverlay
-          pending={sectionVerdict}
-          onSettled={resume => {
-            const pending = sectionVerdict
-            setSectionVerdict(null)
-            if (!pending) return
-            void applyManuscriptSectionVerdict({
-              resume,
-              scriptContent: pending.scriptSnapshot,
-              span: pending.span,
-              episodeId,
-              onChange,
-              editor: editorRef.current,
-            })
-          }}
-        />
+        {isLoading && (
+          <span className={ScriptEditorChromeClass.Loading}>{ScriptEditorStatusCopy.Writing}</span>
+        )}
       </div>
 
       <ScriptEditorSelectionMenu

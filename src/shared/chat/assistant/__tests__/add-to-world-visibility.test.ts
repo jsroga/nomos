@@ -35,9 +35,33 @@ describe('addToWorldButtonVisible', () => {
     ).toBe(true)
   })
 
+  it('hides when the assistant only reports a failed pipeline', () => {
+    expect(
+      addToWorldButtonVisible({
+        role: ChatMessageRole.Assistant,
+        canAddToWorld: () => true,
+        toolNames: ['run_beat_draft_workflow'],
+        toolArgs: [{ brief: 'Draft the next beat.' }],
+        text:
+          'The beat-draft pipeline failed mid-run, so there\'s no draft to review — want me to retry it?',
+      }),
+    ).toBe(false)
+    expect(
+      addToWorldButtonVisible({
+        role: ChatMessageRole.Assistant,
+        canAddToWorld: () => true,
+        toolNames: ['run_beat_draft_workflow'],
+        toolArgs: [{ brief: 'Draft the next beat.' }],
+        toolsFailed: true,
+      }),
+    ).toBe(false)
+  })
+
   it('does not treat onAddToWorld as enough to show the button', () => {
     const src = readFileSync(THREAD_MESSAGES, 'utf8')
     expect(src).toContain('addToWorldButtonVisible')
+    expect(src).toContain('toolsFailed')
+    expect(src).toContain('fallbackText')
     expect(src).not.toContain('Boolean(onAddToWorld)')
   })
 })

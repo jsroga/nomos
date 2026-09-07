@@ -57,6 +57,37 @@ export function toolArgsFromAssistantContent(
   return collected
 }
 
+enum ToolOutputStatus {
+  Failed = 'failed',
+  Error = 'error',
+}
+
+enum ToolOutputState {
+  OutputError = 'output-error',
+}
+
+function isAssistantToolPart(part: unknown): boolean {
+  const record = recordFromJson(part)
+  if (toolNameFromAssistantPart(part)) return true
+  const type = readString(record.type)
+  return Boolean(type?.startsWith(AssistantToolPartPrefix.Tool))
+}
+
+/** True when a tool on this message finished as a failure (no artifact to commit). */
+export function assistantContentHasFailedTool(content: readonly unknown[]): boolean {
+  for (const part of content) {
+    if (!isAssistantToolPart(part)) continue
+    const record = recordFromJson(part)
+    const state = readString(record.state)
+    if (state === ToolOutputState.OutputError) return true
+    const output = recordFromJson(record.output ?? record.result)
+    const status = readString(output.status)?.toLowerCase()
+    if (status === ToolOutputStatus.Failed || status === ToolOutputStatus.Error) return true
+    if (output.success === false) return true
+  }
+  return false
+}
+
 /**
  * Per-hook getSnapshot cache. Returning a new array from useMessage every
  * render trips React's "getSnapshot should be cached" loop.
@@ -94,5 +125,18 @@ export function createToolNamesSnapshotSelector(): (
     lastSerialized = serialized
     lastNames = next.length === 0 ? EMPTY_TOOL_NAMES : next
     return lastNames
+  }
+}
+
+export function createAssistantToolsFailedSelector(): (
+  content: readonly unknown[],
+) => boolean {
+  let lastContent: readonly unknown[] | undefined
+  let lastResult = false
+  return content => {
+    if (content === lastContent) return lastResult
+    lastContent = content
+    lastResult = assistantContentHasFailedTool(content)
+    return lastResult
   }
 }

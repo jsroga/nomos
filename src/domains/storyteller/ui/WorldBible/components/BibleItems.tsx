@@ -2,7 +2,7 @@ import type { FC } from 'react'
 import { Package } from 'lucide-react'
 import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
-import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
+import { requestBibleSectionChatRefresh } from '../utils/bible-section-chat-refresh'
 import { useBible } from './BibleContext'
 import { BibleSimpleEntitySection } from './BibleSimpleEntitySection'
 import { bibleMergedDisplayList } from '../utils/bible-section-items'
@@ -19,19 +19,18 @@ export const BibleItems: FC = () => {
     loadingSections,
     pendingActions,
     projectId,
-    setPendingAction,
+    onSendMessage,
   } = useBible()
 
   const localItems = localPlan.items || []
   const displayItems = bibleMergedDisplayList(isEditing, localPlan.items, storyPlan.items)
   const isLoading = loadingSections?.items?.loading ?? false
 
-  const handleGenerate = async () => {
-    await runBibleSectionArtifactDraft({
-      projectId,
+  const handleGenerate = () => {
+    requestBibleSectionChatRefresh({
+      onSendMessage,
       section: BibleSection.ITEMS,
       promptId: StorytellerPromptRegistryId.BibleItemsGenerate,
-      setPendingAction,
     })
   }
 

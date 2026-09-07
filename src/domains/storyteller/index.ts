@@ -23,8 +23,6 @@ export { default as ScriptEditor } from './ui/ScriptEditor'
 export type { ScriptEditorProps } from './ui/ScriptEditor'
 export { default as StoryPlanBoard } from './ui/StoryPlanBoard'
 export type { StoryPlanBoardProps } from './ui/StoryPlanBoard'
-export { default as Timeline } from './ui/Timeline'
-export type { TimelineProps } from './ui/Timeline'
 export { default as WorldBiblePanel } from './ui/WorldBiblePanel'
 export type { WorldBiblePanelProps } from './ui/WorldBiblePanel'
 

@@ -264,11 +264,11 @@
 
 .aui-thinking-label {
   font-family: var(--font-mono), 'JetBrains Mono', monospace;
-  font-size: 9.5px;
+  font-size: 11px;
   line-height: 1;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .aui-composer-wrap {
@@ -516,8 +516,7 @@
   }
 }
 
-/* Streamed model thinking — quiet by default so it never competes with the
-   answer, but visibly moving while the turn has nothing else to show. */
+/* Streamed model thinking — full trace when Details is on; peeked when off. */
 .aui-reasoning {
   margin: 2px 0 8px;
   padding: 7px 9px;

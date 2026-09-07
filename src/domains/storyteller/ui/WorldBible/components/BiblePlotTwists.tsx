@@ -9,8 +9,10 @@ import { pendingReviewHostClass } from '../constants/section-pending-overlay'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { bibleSectionItems, planItems } from '../utils/bible-section-items'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
-import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
+import {
+  isBibleSectionRefreshDisabled,
+  requestBibleSectionChatRefresh,
+} from '../utils/bible-section-chat-refresh'
 
 const PlotTwistDisplayItem: FC<{ twist: unknown; index: number; projectId: string }> = ({
   twist,
@@ -61,7 +63,13 @@ const PlotTwistsHeaderActions: FC<{
   onAddPlotTwist: () => void
 }> = ({ isLoading, isEditing, isReadOnly, onGenerate, onAddPlotTwist }) => {
   const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
-  const generateDisabled = isLoading || isGenerationActivityBusy(generationPhase)
+  const pendingChatPrompt = useStorytellerUiStore(state => state.pendingChatPrompt)
+  const generateDisabled = isBibleSectionRefreshDisabled({
+    isLoading,
+    generationPhase,
+    pendingChatPrompt,
+  })
+  const showRefreshBusy = isLoading || pendingChatPrompt !== null
 
   return (
     <div className="flex items-center justify-between mb-4">
@@ -89,7 +97,7 @@ const PlotTwistsHeaderActions: FC<{
             disabled={generateDisabled}
             type="button"
           >
-            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={showRefreshBusy ? 'animate-spin' : ''} />
           </button>
         )}
       </div>
@@ -109,7 +117,7 @@ export const BiblePlotTwists: FC = () => {
     loadingSections,
     pendingActions,
     projectId,
-    setPendingAction,
+    onSendMessage,
   } = useBible()
 
   const isLoading = loadingSections?.plotTwists?.loading ?? false
@@ -136,12 +144,11 @@ export const BiblePlotTwists: FC = () => {
         isLoading={isLoading}
         isEditing={isEditing}
         isReadOnly={isReadOnly}
-        onGenerate={async () => {
-          await runBibleSectionArtifactDraft({
-            projectId,
+        onGenerate={() => {
+          requestBibleSectionChatRefresh({
+            onSendMessage,
             section: BibleSection.PLOT_TWISTS,
             promptId: StorytellerPromptRegistryId.BiblePlotTwistsGenerate,
-            setPendingAction,
           })
         }}
         onAddPlotTwist={addPlotTwist}

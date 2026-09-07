@@ -5,18 +5,10 @@ import { emptyBeatDraftCanon } from '@/domains/storyteller/core/types/beat-draft
 import { runSyncProseCheck } from '../run-sync'
 
 describe('runSyncProseCheck', () => {
-  it('flags a phantom orphan when nextSequence is 2 and deps are empty', () => {
+  it('flags a phantom orphan when nextSequence is 2 and the board has no parent beat', () => {
     const canon = emptyBeatDraftCanon({
       nextSequence: 2,
-      beats: [
-        {
-          id: 'beat-1',
-          sequence: 1,
-          content: 'INT. START',
-          causalDependencies: [],
-          beatType: 'setup',
-        },
-      ],
+      beats: [],
     })
     const findings = runSyncProseCheck({
       draft: 'INT. CHAPEL',

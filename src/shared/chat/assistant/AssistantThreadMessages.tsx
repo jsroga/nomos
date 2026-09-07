@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -30,18 +30,27 @@ import {
   MessagePrimitive,
   useMessage,
   useMessageRuntime,
+  useThread,
 } from '@assistant-ui/react'
 import { Button } from '@/components/Button'
 import { useChatRenderers } from '../core/renderers'
-import { describeThinkingProgress } from '../core/thinking-progress'
 import { AssistantToolFallback } from './AssistantToolFallback'
 import { useAssistantAddToWorld } from './AssistantAddToWorldContext'
+import { useAssistantChatDetails } from './AssistantChatDetailsContext'
+import { useAssistantChatActions } from './AssistantChatActionsContext'
 import { addToWorldButtonVisible } from './add-to-world-visibility'
-import { createToolArgsSnapshotSelector, createToolNamesSnapshotSelector } from './tool-args-from-assistant-content'
+import { ThinkingIndicator } from './AssistantThinkingIndicator'
+import {
+  createAssistantToolsFailedSelector,
+  createToolArgsSnapshotSelector,
+  createToolNamesSnapshotSelector,
+} from './tool-args-from-assistant-content'
 import {
   createAssistantPlainTextSelector,
+  createHasRenderableAssistantContentSelector,
   createShowThinkingSelector,
 } from './assistant-message-selectors'
+import { createThreadIsRunningSelector } from './assistant-thread-selectors'
 import {
   ASSISTANT_THREAD_COPY,
   CHAT_ENTITY_KIND_STYLE,
@@ -128,9 +137,11 @@ const UserPlainText: TextMessagePartComponent = ({ text }) => (
  * whole reason a turn could look frozen for a minute.
  */
 const AssistantReasoning: ReasoningMessagePartComponent = ({ text, status }) => {
+  const { showDetails } = useAssistantChatDetails()
   const [open, setOpen] = useState(false)
   const streaming = status?.type === ChatMessageStatus.Running
   const body = text.trim()
+  const showFull = showDetails || open
   if (!body) return null
 
   return (
@@ -138,16 +149,14 @@ const AssistantReasoning: ReasoningMessagePartComponent = ({ text, status }) => 
       <button
         type="button"
         className="aui-reasoning-toggle"
-        aria-expanded={open}
+        aria-expanded={showFull}
         onClick={() => setOpen(value => !value)}
       >
         <Brain size={12} aria-hidden />
         {streaming ? ASSISTANT_THREAD_COPY.ReasoningLive : ASSISTANT_THREAD_COPY.ReasoningDone}
       </button>
-      {/* While streaming, show the tail so there is visible motion without
-          flooding the thread; expanded shows the whole trace. */}
-      <p className={open ? 'aui-reasoning-text' : 'aui-reasoning-text aui-reasoning-text--peek'}>
-        {open ? body : body.slice(-REASONING_PEEK_CHARS)}
+      <p className={showFull ? 'aui-reasoning-text' : 'aui-reasoning-text aui-reasoning-text--peek'}>
+        {showFull ? body : body.slice(-REASONING_PEEK_CHARS)}
       </p>
     </div>
   )
@@ -189,6 +198,11 @@ function AddToWorldButton() {
   }, [])
   const toolArgs = useMessage(toolArgsSelector)
   const toolNames = useMessage(toolNamesSelector)
+  const toolsFailedSelector = useMemo(() => {
+    const select = createAssistantToolsFailedSelector()
+    return (m: { content: readonly unknown[] }) => select(m.content)
+  }, [])
+  const toolsFailed = useMessage(toolsFailedSelector)
   const sectionLabels = useMemo(
     () => sectionLabelsFromToolArgs?.(toolArgs) ?? [],
     [sectionLabelsFromToolArgs, toolArgs],
@@ -201,6 +215,8 @@ function AddToWorldButton() {
     canAddToWorld,
     toolNames,
     toolArgs,
+    text: fallbackText,
+    toolsFailed,
   })
 
   if (!visible) return null
@@ -267,41 +283,32 @@ export function UserMessage() {
   )
 }
 
-const THINKING_TICK_MS = 1000
-
-/**
- * Reasoning is not streamed, so a turn can sit with zero renderable frames for
- * a minute. Elapsed time is the only honest progress signal the client has.
- */
-function ThinkingIndicator() {
-  const [startedAt] = useState(() => Date.now())
-  const [elapsedMs, setElapsedMs] = useState(0)
-
-  useEffect(() => {
-    const timer = setInterval(() => setElapsedMs(Date.now() - startedAt), THINKING_TICK_MS)
-    return () => clearInterval(timer)
-  }, [startedAt])
-
-  const progress = describeThinkingProgress(elapsedMs)
-
+function ReloadButton() {
+  const actions = useAssistantChatActions()
   return (
-    <div className="aui-thinking" data-testid="assistant-running-status" aria-live="polite">
-      <span className="aui-thinking-dots" aria-hidden>
-        <span className="aui-thinking-dot" />
-        <span className="aui-thinking-dot" />
-        <span className="aui-thinking-dot" />
-      </span>
-      <span className="aui-thinking-label">
-        {progress.label}
-        {progress.showSeconds ? ` · ${progress.seconds}s` : ''}
-      </span>
-    </div>
+    <button
+      type="button"
+      className="aui-icon-btn"
+      aria-label={ASSISTANT_THREAD_COPY.Regenerate}
+      onClick={() => {
+        void actions?.regenerate()
+      }}
+    >
+      <RefreshCw size={13} />
+    </button>
   )
 }
 
 export function AssistantMessage() {
   const isLastSelector = useMemo(() => (m: { isLast: boolean }) => m.isLast, [])
   const isLast = useMessage(isLastSelector)
+  const isRunningSelector = useMemo(() => createThreadIsRunningSelector(), [])
+  const isRunning = useThread(isRunningSelector)
+  const hasRenderableSelector = useMemo(() => {
+    const select = createHasRenderableAssistantContentSelector()
+    return (m: { content: ReadonlyArray<{ type: string; text?: string }> }) => select(m)
+  }, [])
+  const hasRenderable = useMessage(hasRenderableSelector)
   const showThinkingSelector = useMemo(() => {
     const select = createShowThinkingSelector()
     return (m: {
@@ -309,7 +316,9 @@ export function AssistantMessage() {
       content: ReadonlyArray<{ type: string; text?: string }>
     }) => select({ status: m.status, content: m.content })
   }, [])
-  const showThinking = useMessage(showThinkingSelector)
+  const showThinkingFromStatus = useMessage(showThinkingSelector)
+  const showThinking =
+    showThinkingFromStatus || (isLast && isRunning && !hasRenderable)
 
   return (
     <MessagePrimitive.Root
@@ -336,11 +345,7 @@ export function AssistantMessage() {
               <Copy size={13} />
             </button>
           </ActionBarPrimitive.Copy>
-          <ActionBarPrimitive.Reload asChild>
-            <button type="button" className="aui-icon-btn" aria-label="Regenerate">
-              <RefreshCw size={13} />
-            </button>
-          </ActionBarPrimitive.Reload>
+          <ReloadButton />
           {/* <ActionBarPrimitive.FeedbackPositive asChild>
             <button type="button" className="aui-icon-btn" aria-label="Like">
               <ThumbsUp size={13} />

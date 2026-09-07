@@ -2,12 +2,14 @@
 
 import { useCallback } from 'react'
 import { StorytellerEmptyState } from '../../StorytellerEmptyState'
-import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { getStorytellerUiStore, useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
 import { WorldBiblePanel } from '../storyteller-dynamic-imports'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 import { StorytellerEpisodeHeader } from './StorytellerEpisodeHeader'
 import { StorytellerActiveTabContent } from './StorytellerActiveTabContent'
 import { storytellerAdvanceablePhase } from '@/domains/storyteller/state/utils/resolve-storyteller-phase-click'
+import { StorytellerHeaderClass } from '../constants/storyteller-module-header'
 
 export function StorytellerCenterPanel(props: StorytellerPageSlices) {
   const { core, phase, agents } = props
@@ -34,9 +36,12 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
     phase
   const { worldBiblePanelStoryPlan, handleUpdateGlobalBible, closeWorldBiblePanel } = agents
   const requestChatPrompt = useStorytellerUiStore(state => state.requestChatPrompt)
+  const setOverlayOpen = useWorkspaceChatUiStore(state => state.setOverlayOpen)
 
   const handleBibleSendMessage = useCallback(
     (message: string, section?: string) => {
+      setOverlayOpen(true)
+      const seqBefore = getStorytellerUiStore().pendingChatPromptSeq
       if (section) {
         setLoadingSections(prev => ({
           ...prev,
@@ -44,8 +49,16 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
         }))
       }
       requestChatPrompt(message, section)
+      if (section && getStorytellerUiStore().pendingChatPromptSeq === seqBefore) {
+        setLoadingSections(prev => {
+          if (!(section in prev)) return prev
+          const next = { ...prev }
+          Reflect.deleteProperty(next, section)
+          return next
+        })
+      }
     },
-    [requestChatPrompt, setLoadingSections]
+    [requestChatPrompt, setLoadingSections, setOverlayOpen]
   )
 
   return (
@@ -77,9 +90,12 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
         })}
         onOpenBible={() => setWorldBibleOpen(true)}
         onCloseBible={() => {
-          const episodeId = currentEpisodeId ?? firstEpisodeId
-          if (episodeId) {
-            selectEpisode(episodeId)
+          if (currentEpisodeId) {
+            setWorldBibleOpen(false)
+            return
+          }
+          if (firstEpisodeId) {
+            selectEpisode(firstEpisodeId)
             return
           }
           setWorldBibleOpen(false)
@@ -105,21 +121,23 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
           />
         )}
 
-        {isWorldBibleOpen && (
-          <div className="absolute inset-0 z-20 bg-background overflow-hidden min-h-0 flex flex-col animate-in fade-in zoom-in-95 duration-200">
-            <WorldBiblePanel
-              storyPlan={worldBiblePanelStoryPlan}
-              projectId={currentProject?.id || ''}
-              onUpdate={handleUpdateGlobalBible}
-              isReadOnly={isSending}
-              isLoading={isFetchingPlan}
-              loadingSections={loadingSections}
-              pendingActions={sectionPendingActions}
-              onClose={closeWorldBiblePanel}
-              onSendMessage={handleBibleSendMessage}
-            />
-          </div>
-        )}
+        <div
+          className={isWorldBibleOpen ? StorytellerHeaderClass.BibleLayer : StorytellerHeaderClass.Hidden}
+          hidden={!isWorldBibleOpen}
+          aria-hidden={!isWorldBibleOpen}
+        >
+          <WorldBiblePanel
+            storyPlan={worldBiblePanelStoryPlan}
+            projectId={currentProject?.id || ''}
+            onUpdate={handleUpdateGlobalBible}
+            isReadOnly={isSending}
+            isLoading={isFetchingPlan}
+            loadingSections={loadingSections}
+            pendingActions={sectionPendingActions}
+            onClose={closeWorldBiblePanel}
+            onSendMessage={handleBibleSendMessage}
+          />
+        </div>
       </div>
     </div>
   )

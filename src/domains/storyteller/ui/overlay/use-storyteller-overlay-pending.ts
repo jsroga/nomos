@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { AppModuleId } from '@/shared/data/constants/protocol'
 import { ChatSessionSendDecision } from '@/shared/chat/core/constants/chat-session'
@@ -24,6 +24,7 @@ export function useStorytellerOverlayPending(input: {
   const queuedSend = useWorkspaceChatUiStore(state => state.queuedSend)
   const setQueuedSend = useWorkspaceChatUiStore(state => state.setQueuedSend)
   const setMismatchDialog = useWorkspaceChatUiStore(state => state.setMismatchDialog)
+  const setOverlayOpen = useWorkspaceChatUiStore(state => state.setOverlayOpen)
   const pathname = usePathname()
   const currentModuleId = parseWorkspaceModuleId(pathname ?? '')
   const currentHasAgent = currentModuleId ? moduleHasAgent(currentModuleId) : false
@@ -47,11 +48,17 @@ export function useStorytellerOverlayPending(input: {
     }
   }, [bridge?.pendingPrompt, sessionOk, sendDecision, setMismatchDialog])
 
+  useEffect(() => {
+    if (pendingFromBridge) setOverlayOpen(true)
+  }, [pendingFromBridge, setOverlayOpen])
+
+  const onPendingPromptHandled = useCallback(() => {
+    setQueuedSend(null)
+    useWritersRoomOverlayBridge.getState().bridge?.onPendingPromptHandled()
+  }, [setQueuedSend])
+
   return {
     pendingPrompt: pendingFromQueue ?? pendingFromBridge,
-    onPendingPromptHandled: () => {
-      setQueuedSend(null)
-      bridge?.onPendingPromptHandled()
-    },
+    onPendingPromptHandled,
   }
 }

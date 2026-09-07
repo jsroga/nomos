@@ -106,34 +106,57 @@ export function useWritersRoomAssistantBindings(
     () => createStorytellerChatRenderers(projectId || undefined),
     [projectId],
   )
-  return {
-    body: chatBody,
-    suggestions,
-    mentionProviders,
-    mentionProjectContext,
-    modelId,
-    chatModelOptions,
-    onChatModelChange,
-    pendingPrompt,
-    onPendingPromptHandled,
-    onStreamIdle,
-    onGenerationActivity,
-    onCompletedToolCalls,
-    onAddToWorld,
-    sectionLabelsFromToolArgs,
-    isAddToWorldSettled,
-    canAddToWorld,
-    chatRenderers,
-    extraToolUIs: <BeatDraftVerdictToolUI />,
-  }
+  const extraToolUIs = useMemo(() => <BeatDraftVerdictToolUI />, [])
+  return useMemo(
+    () => ({
+      body: chatBody,
+      suggestions,
+      mentionProviders,
+      mentionProjectContext,
+      modelId,
+      chatModelOptions,
+      onChatModelChange,
+      pendingPrompt,
+      onPendingPromptHandled,
+      onStreamIdle,
+      onGenerationActivity,
+      onCompletedToolCalls,
+      onAddToWorld,
+      sectionLabelsFromToolArgs,
+      isAddToWorldSettled,
+      canAddToWorld,
+      chatRenderers,
+      extraToolUIs,
+    }),
+    [
+      chatBody,
+      suggestions,
+      mentionProviders,
+      mentionProjectContext,
+      modelId,
+      chatModelOptions,
+      onChatModelChange,
+      pendingPrompt,
+      onPendingPromptHandled,
+      onStreamIdle,
+      onGenerationActivity,
+      onCompletedToolCalls,
+      onAddToWorld,
+      sectionLabelsFromToolArgs,
+      isAddToWorldSettled,
+      canAddToWorld,
+      chatRenderers,
+      extraToolUIs,
+    ],
+  )
 }
 
 export function WritersRoomOverlayBridgePublisher(props: WritersRoomAssistantChatProps) {
   const bindings = useWritersRoomAssistantBindings(props)
   useEffect(() => {
     useWritersRoomOverlayBridge.getState().setBridge(bindings)
-    return () => useWritersRoomOverlayBridge.getState().setBridge(null)
   }, [bindings])
+  useEffect(() => () => useWritersRoomOverlayBridge.getState().setBridge(null), [])
   return null
 }
 

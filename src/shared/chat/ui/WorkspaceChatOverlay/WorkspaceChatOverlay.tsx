@@ -16,11 +16,15 @@ import type { ChatSession } from '@/shared/chat/core/io/chat-session-contract'
 import { createChatSession, listChatSessions, markChatSessionIdle } from '@/shared/chat/core/io/chat-sessions.api'
 import { chatSessionsKeys } from '@/shared/chat/core/io/chat-sessions.keys'
 import {
+  prependCreatedChatSession,
   selectMountedSessions,
+  selectFocusedSessionId,
   streamingSessionsWithoutRunId,
 } from '@/shared/chat/core/overlay-session-runtime'
 import { getDefaultChatAdapter, type ModuleChatAdapter } from '@/shared/chat/overlay/module-chat-adapters'
 import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
+import { useEnsureFocusedOverlaySession } from './use-ensure-focused-overlay-session'
 import { WorkspaceChatClass, WorkspaceChatCopy } from './workspace-chat-copy'
 import { WorkspaceChatMismatchDialog } from './WorkspaceChatMismatchDialog'
 import { WorkspaceChatSessionList } from './WorkspaceChatSessionList'
@@ -64,6 +68,21 @@ export function WorkspaceChatOverlay({
     }
   }, [sessionsQuery.data])
 
+  useEffect(() => {
+    if (!sessionsQuery.isSuccess) return
+    const next = selectFocusedSessionId(sessions, focusedSessionId)
+    if (next !== focusedSessionId) setFocusedSessionId(next)
+  }, [sessions, focusedSessionId, sessionsQuery.isSuccess, setFocusedSessionId])
+
+  useEnsureFocusedOverlaySession({
+    overlayOpen,
+    listReady: sessionsQuery.isSuccess,
+    sessionCount: sessions.length,
+    projectId,
+    currentModuleId,
+    currentHasAgent,
+  })
+
   const mounted = useMemo(
     () => selectMountedSessions(sessions, focusedSessionId),
     [sessions, focusedSessionId],
@@ -96,6 +115,9 @@ export function WorkspaceChatOverlay({
     if (!currentModuleId || !currentHasAgent) return
     void (async () => {
       const created = await createChatSession({ projectId, moduleId: currentModuleId })
+      queryClient.setQueryData(chatSessionsKeys.list(projectId), (current: ChatSession[] | undefined) =>
+        prependCreatedChatSession(current, created),
+      )
       setFocusedSessionId(created.id)
       setQueuedSend({ sessionId: created.id, text: bufferedText, id: Date.now() })
       await queryClient.invalidateQueries({ queryKey: chatSessionsKeys.list(projectId) })
@@ -104,6 +126,7 @@ export function WorkspaceChatOverlay({
 
   return (
     <aside
+      id={TOUR_STEP_IDS.STORYTELLER_CHAT}
       className={overlayOpen ? WorkspaceChatClass.Panel : WorkspaceChatClass.PanelHidden}
       hidden={!overlayOpen}
       aria-hidden={!overlayOpen}

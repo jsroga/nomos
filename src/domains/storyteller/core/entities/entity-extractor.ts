@@ -17,7 +17,7 @@ import {
 export interface EntityExtractablePlan {
   factions?:
     | Array<{
-        name: string
+        name?: string | null
         description?: string | null
         ideology?: string | null
         goals?: string[] | null
@@ -27,7 +27,7 @@ export interface EntityExtractablePlan {
     | null
   keyCharacters?:
     | Array<{
-        name: string
+        name?: string | null
         role?: string | null
         archetype?: string | null
         motivation?: string | null
@@ -51,10 +51,12 @@ export function extractEntitiesFromPlan(
   // Helper to add entity
   const addEntity = (
     type: EntityReference['type'],
-    name: string,
+    name: string | null | undefined,
     description: string,
     metadata: Record<string, unknown> = {}
   ) => {
+    if (typeof name !== 'string' || name.trim().length === 0) return
+
     // We need to generate a deterministic ID if possible, but usually the ID comes from the source
     // OR we match by name if ID is missing.
     // However, ReferenceText looks up by ID (e.g. "faction-the-bottlers-guild").

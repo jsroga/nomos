@@ -7,7 +7,7 @@ import { pendingReviewHostClass } from '../constants/section-pending-overlay'
 import { resolveOverviewDisplayFields } from '../utils/bible-overview-fields'
 import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
-import { runBibleSectionArtifactDraft } from '../utils/artifact-draft-overlay'
+import { requestBibleSectionChatRefresh } from '../utils/bible-section-chat-refresh'
 
 export const WorldDescriptionSection: React.FC = () => {
   const {
@@ -19,7 +19,7 @@ export const WorldDescriptionSection: React.FC = () => {
     projectId,
     loadingSections,
     pendingActions,
-    setPendingAction,
+    onSendMessage,
   } = useBible()
 
   const isWorldDescLoading = loadingSections?.worldDescription?.loading ?? false
@@ -35,12 +35,11 @@ export const WorldDescriptionSection: React.FC = () => {
       <WorldDescriptionHeader
         isReadOnly={isReadOnly}
         isWorldDescLoading={isWorldDescLoading}
-        onGenerate={async () => {
-          await runBibleSectionArtifactDraft({
-            projectId,
+        onGenerate={() => {
+          requestBibleSectionChatRefresh({
+            onSendMessage,
             section: BibleSection.WORLD_DESCRIPTION,
             promptId: StorytellerPromptRegistryId.WorldDescriptionRegen,
-            setPendingAction,
           })
         }}
       />
