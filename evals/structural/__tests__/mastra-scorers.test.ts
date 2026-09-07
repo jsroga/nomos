@@ -12,6 +12,14 @@ function readFixture(name: string): Record<string, unknown> {
 }
 
 describe('mastra structural scorers', () => {
+  it('does not leave @/ aliases in the Studio-reachable voice scorer', () => {
+    const source = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../s10-voice-distinctiveness.ts'),
+      'utf8',
+    )
+    expect(source).not.toMatch(/^import .+ from ['"]@\//m)
+  })
+
   it('scores empty causalDependencies as 0 and reports orphanCount', async () => {
     const fixture = readFixture('s1-empty-causal.json')
     const result = await causalGraphScorer.run({ output: fixture.beats })

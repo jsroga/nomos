@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { History, Plus } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/Button'
-import { ButtonSizeKey, ButtonVariantKey } from '@/components/Button/constants/button-styles'
+import { ButtonVariantKey } from '@/components/Button/constants/button-styles'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import {
   DropdownMenu,
@@ -102,14 +102,13 @@ export function WorkspaceChatSessionList({
       <div className={WorkspaceChatClass.SessionBar}>
         <Button
           type={HtmlElementType.Button}
-          size={ButtonSizeKey.Sm}
-          variant={ButtonVariantKey.Outline}
+          variant={ButtonVariantKey.Ghost}
           className={WorkspaceChatClass.SessionBarNew}
           disabled={!canCreate || createMutation.isPending}
           onClick={() => createMutation.mutate()}
           title={canCreate ? WorkspaceChatCopy.NewChat : WorkspaceChatCopy.NoAgentDescription}
         >
-          <Plus className="mr-1 h-4 w-4" />
+          <Plus size={13} strokeWidth={1.7} />
           {WorkspaceChatCopy.NewChat}
         </Button>
         <DropdownMenu
@@ -123,18 +122,17 @@ export function WorkspaceChatSessionList({
           <DropdownMenuTrigger asChild>
             <Button
               type={HtmlElementType.Button}
-              size={ButtonSizeKey.Sm}
-              variant={ButtonVariantKey.Outline}
+              variant={ButtonVariantKey.Ghost}
               className={WorkspaceChatClass.SessionBarHistory}
               title={WorkspaceChatCopy.History}
               aria-label={WorkspaceChatCopy.History}
             >
-              <History className="h-4 w-4" />
+              <History size={13} strokeWidth={1.7} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className={WorkspaceChatClass.HistoryMenu}>
             {sessions.length === 0 ? (
-              <p className="px-2 py-1.5 text-sm text-muted-foreground">{WorkspaceChatCopy.HistoryEmpty}</p>
+              <p className={WorkspaceChatClass.HistoryEmpty}>{WorkspaceChatCopy.HistoryEmpty}</p>
             ) : (
               sessions.map(session => (
                 <WorkspaceChatHistoryItem

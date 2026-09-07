@@ -66,12 +66,15 @@ describe('workspace chat overlay visibility', () => {
     expect(list).toContain('WorkspaceChatClass.SessionBar')
     expect(list).toContain('WorkspaceChatClass.SessionBarNew')
     expect(list).toContain('WorkspaceChatClass.SessionBarHistory')
-    expect(list).not.toContain('ButtonSizeKey.Icon')
+    expect(list).not.toContain('ButtonSizeKey')
     expect(readFileSync('src/shared/chat/ui/WorkspaceChatOverlay/workspace-chat-copy.ts', 'utf8')).toContain(
       'h-[50px]',
     )
-    expect(WorkspaceChatClass.SessionBarNew.startsWith('h-9')).toBe(true)
-    expect(WorkspaceChatClass.SessionBarHistory.startsWith('h-9')).toBe(true)
+    expect(WorkspaceChatClass.SessionBarNew).toContain('h-8')
+    expect(WorkspaceChatClass.SessionBarHistory).toContain('h-8')
+    expect(WorkspaceChatClass.SessionBarHistory).toContain('w-8')
+    expect(WorkspaceChatClass.HistoryItem).toContain('py-0.5')
+    expect(WorkspaceChatClass.HistoryItemAction).toContain('h-6')
     expect(list).toContain('prependCreatedChatSession')
     expect(list).toContain('setFocusedSessionId(created.id)')
     expect(list).not.toMatch(/<ul[\s>]/)

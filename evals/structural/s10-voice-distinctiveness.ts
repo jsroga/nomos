@@ -1,5 +1,6 @@
-import { extractNovelDialogue } from '@/domains/storyteller/core/voice/extract-novel-dialogue'
-import { extractScriptDialogue } from '@/domains/storyteller/core/voice/extract-script-dialogue'
+// Relative paths — Mastra Studio does not rewrite path aliases under evals/.
+import { extractNovelDialogue } from '../../src/domains/storyteller/core/voice/extract-novel-dialogue'
+import { extractScriptDialogue } from '../../src/domains/storyteller/core/voice/extract-script-dialogue'
 import { tokenize } from './beat-text'
 import { DISTINCT_N_VALUES, ScorerId } from './constants'
 import type { DumpedBeat, StructuralScore } from './types'

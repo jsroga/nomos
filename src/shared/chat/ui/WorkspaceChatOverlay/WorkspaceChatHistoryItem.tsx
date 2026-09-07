@@ -2,11 +2,12 @@
 
 import { Pencil, Save, Trash2 } from 'lucide-react'
 import { Button } from '@/components/Button'
-import { ButtonSizeKey, ButtonVariantKey } from '@/components/Button/constants/button-styles'
+import { ButtonVariantKey } from '@/components/Button/constants/button-styles'
 import { DropdownMenuItem } from '@/components/DropdownMenu'
 import { Input } from '@/components/Input'
 import { HtmlElementType, KeyboardKey } from '@/shared/data/constants/protocol'
 import type { ChatSession } from '@/shared/chat/core/io/chat-session-contract'
+import { cn } from '@/shared/data/utils'
 import {
   WorkspaceChatClass,
   WorkspaceChatCopy,
@@ -42,10 +43,11 @@ export function WorkspaceChatHistoryItem({
   return (
     <DropdownMenuItem
       onSelect={event => event.preventDefault()}
-      className={selected ? WorkspaceChatClass.HistoryItemSelected : WorkspaceChatClass.HistoryItem}
+      className={cn(WorkspaceChatClass.HistoryItem, selected && WorkspaceChatClass.HistoryItemSelected)}
     >
       {renaming ? (
         <Input
+          className={WorkspaceChatClass.HistoryItemInput}
           value={renameValue}
           onChange={event => onRenameValueChange(event.target.value)}
           onBlur={() => onCommitRename()}
@@ -56,7 +58,7 @@ export function WorkspaceChatHistoryItem({
       ) : (
         <button
           type={HtmlElementType.Button}
-          className="min-w-0 flex-1 truncate px-1 text-left text-sm"
+          className={WorkspaceChatClass.HistoryItemTitle}
           onClick={onFocusSession}
         >
           {session.title}
@@ -65,8 +67,8 @@ export function WorkspaceChatHistoryItem({
       )}
       <Button
         type={HtmlElementType.Button}
-        size={ButtonSizeKey.Icon}
         variant={ButtonVariantKey.Ghost}
+        className={WorkspaceChatClass.HistoryItemAction}
         title={workspaceChatRenameButtonTitle(glyph, WorkspaceChatCopy.Save, WorkspaceChatCopy.Rename)}
         onMouseDown={event => {
           event.preventDefault()
@@ -77,19 +79,19 @@ export function WorkspaceChatHistoryItem({
         }}
       >
         {glyph === WorkspaceChatRenameGlyph.Save ? (
-          <Save className="h-3.5 w-3.5" />
+          <Save size={12} strokeWidth={1.7} />
         ) : (
-          <Pencil className="h-3.5 w-3.5" />
+          <Pencil size={12} strokeWidth={1.7} />
         )}
       </Button>
       <Button
         type={HtmlElementType.Button}
-        size={ButtonSizeKey.Icon}
         variant={ButtonVariantKey.Ghost}
+        className={WorkspaceChatClass.HistoryItemAction}
         title={WorkspaceChatCopy.Delete}
         onClick={onDelete}
       >
-        <Trash2 className="h-3.5 w-3.5" />
+        <Trash2 size={12} strokeWidth={1.7} />
       </Button>
     </DropdownMenuItem>
   )

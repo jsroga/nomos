@@ -8,7 +8,6 @@ import { ManuscriptMode } from '@/domains/storyteller/core/types/enums'
 import {
   ScriptEditorChromeClass,
   ScriptEditorManuscriptToolbar,
-  ScriptEditorToolbarClass,
   ScriptEditorToolbarCopy,
 } from '../ScriptEditorManuscriptToolbar'
 import { ScriptEditorSelectionMenu } from '../ScriptEditorSelectionMenu'
@@ -24,8 +23,9 @@ describe('ScriptEditor manuscript chrome contract', () => {
     expect(writing).toBeGreaterThan(-1)
     expect(bar).toBeGreaterThan(writing)
     expect(src).not.toMatch(/min-h-12 border-b/)
-    expect(ScriptEditorChromeClass.Bar).toContain('h-9')
-    expect(ScriptEditorChromeClass.Bar).toContain('pt-1')
+    expect(ScriptEditorChromeClass.Bar).toContain('min-h-[50px]')
+    expect(ScriptEditorChromeClass.Bar).toContain('px-[22px]')
+    expect(ScriptEditorChromeClass.Bar).toContain('py-2.5')
     expect(ScriptEditorChromeClass.Bar).toContain('border-t')
     expect(ScriptEditorChromeClass.Bar).toContain('items-center')
   })
@@ -65,9 +65,9 @@ describe('ScriptEditorManuscriptToolbar', () => {
       ScriptEditorToolbarCopy.RegenerateSection,
       ScriptEditorToolbarCopy.Compile,
     ])
-    const compactHeight = ScriptEditorToolbarClass.Button.split(' ')[0]
     for (const button of buttons) {
-      expect(button.className.split(/\s+/)).toContain(compactHeight)
+      expect(button.className.split(/\s+/)).toContain('py-1.5')
+      expect(button.className.split(/\s+/)).toContain('text-[12.5px]')
     }
     expect(host.querySelector('[role="group"]')?.className).toContain('items-center')
   })
