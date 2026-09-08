@@ -71,6 +71,29 @@ const ExecuteStepPayloadSchema = z.object({
   balanceAnalysis: AnalyzeBalanceOutputSchema.optional(),
 })
 
+export const GameDesignAgentOutputSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal(GameDesignResponseType.AskUser),
+    thought: z.string().optional(),
+    payload: AskUserPayloadSchema,
+  }),
+  z.object({
+    type: z.literal(GameDesignResponseType.ProposePlan),
+    thought: z.string().optional(),
+    payload: z.object({ plan: z.unknown() }),
+  }),
+  z.object({
+    type: z.literal(GameDesignResponseType.ExecuteStep),
+    thought: z.string().optional(),
+    payload: ExecuteStepPayloadSchema,
+  }),
+  z.object({
+    type: z.literal(GameDesignResponseType.Finish),
+    thought: z.string().optional(),
+    payload: FinishPayloadSchema,
+  }),
+])
+
 export function parseGameDesignResponseRecord(
   value: unknown,
   thought: string

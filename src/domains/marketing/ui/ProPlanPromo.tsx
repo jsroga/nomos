@@ -76,7 +76,7 @@ export const ProPlanPromo = () => {
 
               <div className="space-y-4">
                 {[
-                  'Premium AI Models (GPT-5.2)',
+                  'Premium AI Models (Kimi K3, GPT-5.6 Sol)',
                   'Full Developer API Access',
                   'Priority Generation Queue',
                   'Commercial Studio License',

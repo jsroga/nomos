@@ -29,6 +29,14 @@ export enum MastraMessageRole {
   User = 'user',
 }
 
+export enum MarketAnalystStructuredOutputJsonPromptInjection {
+  Auto = 'auto',
+}
+
+export enum MarketAnalystStructuredOutputErrorStrategy {
+  Warn = 'warn',
+}
+
 export enum MarketAnalysisProgressMessage {
   StartingUi = 'Starting market analysis...',
   StartingLog = 'Starting market analysis',

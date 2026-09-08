@@ -20,6 +20,12 @@ import type { ProjectScope } from '@/shared/auth/project-scope'
 export interface GatewayCallContext {
   readonly scope: ProjectScope
   readonly traceId?: string
+  /**
+   * The model the writer picked for this request. Honoured only by the writing
+   * roles (chat, author, planner, premise) — the cheap tier is hardcoded and a
+   * picker choice must not retarget it.
+   */
+  readonly writerModel?: string
 }
 
 const storage = new AsyncLocalStorage<GatewayCallContext>()

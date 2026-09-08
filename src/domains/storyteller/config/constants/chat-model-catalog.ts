@@ -34,40 +34,32 @@ export interface ChatModelOption {
   /** Optional one-line description for the picker. */
   description?: string
   /**
-   * Offered in the user-facing picker: Kimi, GLM, and Opus 5.
-   * `resolveChatModelId` still accepts non-selectable ids so legacy saved
-   * preferences keep resolving.
+   * Offered in the user-facing picker: Kimi and Sol. GLM stays resolvable but
+   * unlisted — it is the hardcoded cheap tier and the e2e chat pin, and
+   * `resolveChatModelId` accepts non-selectable ids so saved preferences keep
+   * resolving.
    */
   userSelectable: boolean
 }
 
 export const CHAT_MODELS: ChatModelOption[] = [
   {
-    id: 'openai:gpt-5.6-luna',
-    label: 'GPT-5.6 Luna',
-    provider: 'OpenAI',
-    providerKey: 'openai',
+    id: 'moonshotai:kimi-k3',
+    label: 'Kimi K3',
+    provider: 'Moonshot (via OpenRouter)',
+    providerKey: 'openrouter',
     envVar: 'OPENROUTER_API_KEY',
-    description: 'Fast OpenRouter tier — internal glue/autocomplete.',
-    userSelectable: false,
+    description: 'Long-form craft, voice, and story structure. The default.',
+    userSelectable: true,
   },
   {
-    id: 'anthropic:claude-sonnet-5',
-    label: 'Claude Sonnet 5',
-    provider: 'Anthropic',
-    providerKey: 'anthropic',
+    id: 'openai:gpt-5.6-sol',
+    label: 'GPT-5.6 Sol',
+    provider: 'OpenAI (via OpenRouter)',
+    providerKey: 'openrouter',
     envVar: 'OPENROUTER_API_KEY',
-    description: 'Strong narrative voice and consistency — internal chat slot.',
-    userSelectable: false,
-  },
-  {
-    id: 'google:gemini-2.5-flash',
-    label: 'Gemini 2.5 Flash',
-    provider: 'Google',
-    providerKey: 'google',
-    envVar: 'OPENROUTER_API_KEY',
-    description: 'Fast Google model with a large context window.',
-    userSelectable: false,
+    description: 'Heavier reasoning on the same writing slots.',
+    userSelectable: true,
   },
   {
     id: 'zai-coding-plan:glm-5.2',
@@ -76,36 +68,20 @@ export const CHAT_MODELS: ChatModelOption[] = [
     providerKey: 'openrouter',
     envVar: 'OPENROUTER_API_KEY',
     openRouterId: 'z-ai/glm-5.2',
-    description: 'Zhipu GLM 5.2 via OpenRouter — author choice, single key.',
-    userSelectable: true,
-  },
-  {
-    id: 'moonshotai:kimi-k3',
-    label: 'Kimi K3',
-    provider: 'Moonshot (via OpenRouter)',
-    providerKey: 'openrouter',
-    envVar: 'OPENROUTER_API_KEY',
-    description: 'Moonshot Kimi K3 (non-code) via OpenRouter — default author, single key.',
-    userSelectable: true,
-  },
-  {
-    id: 'anthropic:claude-opus-5',
-    label: 'Opus 5',
-    provider: 'Anthropic (via OpenRouter)',
-    providerKey: 'openrouter',
-    envVar: 'OPENROUTER_API_KEY',
-    openRouterId: 'anthropic/claude-opus-5',
-    description: 'Claude Opus 5 via OpenRouter — high-reasoning picker choice.',
-    userSelectable: true,
+    description: 'Cheap tier for short structured work; not offered in the picker.',
+    userSelectable: false,
   },
 ]
 
-/** Models offered in the user-facing picker (Kimi, GLM, Opus 5). */
+/** Models offered in the user-facing picker (Kimi, Sol). */
 export const USER_SELECTABLE_CHAT_MODELS: ChatModelOption[] = CHAT_MODELS.filter(
   option => option.userSelectable
 )
 
 export const DEFAULT_CHAT_MODEL = 'moonshotai:kimi-k3'
+
+/** Hardcoded tier for short structured work — never the writer's choice. */
+export const CHEAP_TIER_CHAT_MODEL = 'zai-coding-plan:glm-5.2'
 
 const CHAT_MODEL_BY_ID = new Map(CHAT_MODELS.map(m => [m.id, m]))
 

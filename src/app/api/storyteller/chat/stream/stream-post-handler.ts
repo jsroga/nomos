@@ -12,13 +12,15 @@ import { buildStorytellerRequestContext } from '@/domains/storyteller/core/io/ma
 import {
   assembleStorytellerContext,
   BibleSection,
-  createStorytellerAgent,
   isKnownChatModel,
   isStorytellerControllerEnabled,
   parsePhaseId,
   resolveChatModelId,
+  resolveWriterModelChoice,
+  StorytellerAgentId,
   type DetectedSection,
 } from '@/domains/storyteller/server'
+import { getPublishedAgent } from '@/shared/agent-kernel/mastra/get-published-agent'
 import {
   MASTRA_CHUNK,
   STREAM_ROUTE_TEXT,
@@ -55,10 +57,16 @@ interface StreamRequestInput {
 export async function runStorytellerStream(input: StreamRequestInput): Promise<Response> {
   // Everything downstream — the agent, its tools, the services they reach —
   // bills to this project. Established once here rather than threaded through
-  // twenty signatures; see shared/ai/gateway/call-context.ts.
+  // twenty signatures; see shared/ai/gateway/call-context.ts. The picker choice
+  // rides along so workflow steps (author, planner) resolve to it too.
   if (!input.scope) return runStorytellerStreamInner(input)
-  return withGatewayContext({ scope: input.scope, traceId: input.traceId }, () =>
-    runStorytellerStreamInner(input)
+  return withGatewayContext(
+    {
+      scope: input.scope,
+      traceId: input.traceId,
+      writerModel: resolveWriterModelChoice(input.modelName),
+    },
+    () => runStorytellerStreamInner(input)
   )
 }
 
@@ -110,7 +118,7 @@ async function runStorytellerStreamInner(input: StreamRequestInput): Promise<Res
     })
   }
 
-  const agent = await createStorytellerAgent()
+  const agent = await getPublishedAgent(StorytellerAgentId.Storyteller)
   const bound = memoryRef({
     projectId: input.scope?.projectId ?? MemorySlot.None,
     episodeId: input.episodeId,
@@ -118,7 +126,7 @@ async function runStorytellerStreamInner(input: StreamRequestInput): Promise<Res
   })
   const result = await agent.stream(promptWithContext, {
     toolChoice: STREAM_ROUTE_TEXT.toolChoiceAuto,
-    traceId: input.traceId,
+    tracingOptions: { traceId: input.traceId },
     requestContext,
     memory: { thread: bound.thread, resource: bound.resource },
   })

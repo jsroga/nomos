@@ -16,7 +16,7 @@ const goalReachedAnalyzeSchema = z.object({
 const JUDGE_INSTRUCTIONS = [
   'You judge whether an assistant reply achieved a stated conversation goal.',
   'score 1.0 = goal fully met; 0.0 = missed, empty, off-topic, or refused when the goal required an answer.',
-  'Respond with valid JSON: { "score": 0-1, "reasoning": "…" }.',
+  'score 1.0 = goal fully met; 0.0 = missed, empty, off-topic, or refused when the goal required an answer.',
 ].join('\n')
 
 enum GoalReachedInputField {

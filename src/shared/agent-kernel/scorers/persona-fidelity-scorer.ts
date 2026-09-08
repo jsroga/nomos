@@ -14,7 +14,7 @@ export const personaFidelityScorer = createScorer({
   name: 'Persona Fidelity',
   description: 'How well output matches a requested creative persona',
   judge: createJudgingConfig(
-    'You evaluate persona fidelity in creative writing. Respond with valid JSON containing score (0-100) and reasoning.',
+    'You evaluate persona fidelity in creative writing. Score 0-100 and explain the match or miss.',
   ),
 })
   .analyze({

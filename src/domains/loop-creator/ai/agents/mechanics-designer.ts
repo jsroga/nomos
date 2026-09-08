@@ -9,8 +9,9 @@
 
 import { AIMessage } from '@/shared/chat/core/message'
 import { LoopCreatorState } from '../../core/graph/state'
-import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
+import { MechanicsDesignerOutputSchema } from './schemas/mechanics-designer-output'
 import {
   buildMechanicsDesignerContext,
   MechanicsDesignerAgentName,
@@ -42,19 +43,19 @@ export async function mechanicsDesignerAgent(
   console.log(MechanicsDesignerLog.Task, task.slice(0, 100))
   console.log(MechanicsDesignerLog.CallingLlm)
 
-  const content = await runLoopCreatorCompletion({
+  const output = await runLoopCreatorStructuredCompletion({
     scope: state.scope,
     agentId: LoopCreatorMastraAgentId.MechanicsDesigner,
     systemPrompt,
     history: state.messages.slice(-5),
     temperature: state.modelConfig?.temperature ?? 0.5,
     modelOverride: state.modelConfig?.model,
+    schema: MechanicsDesignerOutputSchema,
   })
 
   console.log(MechanicsDesignerLog.LlmResponseReceived)
-  console.log(MechanicsDesignerLog.ResponseLength, content.length)
 
-  const parsed = parseMechanicsDesignerResponse(content)
+  const parsed = parseMechanicsDesignerResponse(output)
 
   console.log(
     `${MechanicsDesignerLog.CreatedSummary}${parsed.mechanics.length}${MechanicsDesignerLog.MechanicsWord}${parsed.connections.length}${MechanicsDesignerLog.ConnectionsWord}`,

@@ -76,7 +76,7 @@ CHARACTERS AVAILABLE: ${characters}
 
 ${formatEntropyHand(hand)}
 
-Produce 3-5 wild ideas as JSON. Each idea: hook (WHO does WHAT irreversible thing), mechanism (how your dealt constraints produce the action — name the object, countdown, venue property), collision (what existing element it collides with and what breaks).`
+Produce 3-5 wild ideas. Each idea: hook (WHO does WHAT irreversible thing), mechanism (how your dealt constraints produce the action — name the object, countdown, venue property), collision (what existing element it collides with and what breaks).`
 }
 
 const defaultMuseGenerate: MuseGenerate = async prompt => {

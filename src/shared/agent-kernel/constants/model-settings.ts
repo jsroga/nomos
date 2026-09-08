@@ -37,20 +37,11 @@ export interface OpenRouterModelOption {
   label: string
 }
 
-/** Curated OpenRouter model ids for the admin dropdown (provider/model form). */
+/** The three models text generation runs on (provider/model form). */
 export const OPENROUTER_MODEL_OPTIONS: OpenRouterModelOption[] = [
-  { id: 'openrouter/auto-beta', label: 'Auto — OpenRouter auto-beta router' },
-  { id: 'openai/gpt-5.6-luna', label: 'GPT-5.6 Luna — fast thinking' },
-  { id: 'openai/gpt-5.6-luna-pro', label: 'GPT-5.6 Luna Pro' },
-  { id: 'openai/gpt-5.4', label: 'GPT-5.4' },
-  { id: 'google/gemini-3.5-flash', label: 'Gemini 3.5 Flash — cheap/fast' },
-  { id: 'anthropic/claude-opus-4.8', label: 'Claude Opus 4.8' },
-  { id: 'anthropic/claude-sonnet-5', label: 'Claude Sonnet 5' },
-  { id: 'anthropic/claude-haiku-4.5', label: 'Claude Haiku 4.5 — cheap' },
-  { id: 'moonshotai/kimi-k2.7-code', label: 'Kimi K2.7 Code' },
-  { id: 'z-ai/glm-5.2', label: 'GLM 5.2' },
-  { id: 'deepseek/deepseek-v4-pro', label: 'DeepSeek V4 Pro' },
-  { id: 'x-ai/grok-4.5', label: 'Grok 4.5' },
+  { id: 'moonshotai/kimi-k3', label: 'Kimi K3 — prose and structure' },
+  { id: 'openai/gpt-5.6-sol', label: 'GPT-5.6 Sol — heavier reasoning' },
+  { id: 'z-ai/glm-5.2', label: 'GLM 5.2 — cheap tier' },
 ]
 
 export const OPENROUTER_MODEL_OPTION_IDS: readonly string[] = OPENROUTER_MODEL_OPTIONS.map(o => o.id)

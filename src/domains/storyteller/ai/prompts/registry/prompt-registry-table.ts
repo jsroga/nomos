@@ -61,9 +61,9 @@ SCREENPLAY FORMAT REFERENCE:
   [StorytellerPromptRegistryId.RegeneratePremiseSectionAgentPrefix]: 'Please regenerate ONLY the ',
   [StorytellerPromptRegistryId.RegeneratePremiseSectionAgentMid]: ' (',
   [StorytellerPromptRegistryId.RegeneratePremiseSectionAgentSuffix]:
-    ') for the episode premise. Return a JSON object containing ONLY this field. Do not include unchanged fields. Take a completely new, bold, and distinct creative direction. Do not just rephrase the previous version - give me a brand new idea. Delegate to the Episode Premise Architect.',
+    ') for the episode premise. Update only this field. Do not include unchanged fields. Take a completely new, bold, and distinct creative direction. Do not just rephrase the previous version - give me a brand new idea.',
   [StorytellerPromptRegistryId.CharacterGenerateMissing]:
-    'Fill missing character fields. Return JSON with name, role, description, gender, mbti, and psychology (actualMotivation, fatalFlaw, secrets). Do not call tools. Do not persist.',
+    'Fill missing character fields: name, role, description, gender, mbti, motivation, fatalFlaw, secrets, and metrics. Do not call tools. Do not persist.',
 }
 
 export function lookupPromptBody(id: string): string {

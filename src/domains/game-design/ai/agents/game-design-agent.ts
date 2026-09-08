@@ -15,6 +15,7 @@ import {
 import { invokeGameDesignTool } from '../constants/invoke-game-design-tool'
 import {
   GameDesignResponseType,
+  GameDesignAgentOutputSchema,
   type GameDesignResponse,
 } from '../constants/game-design-response'
 import {
@@ -29,16 +30,20 @@ import {
   GameDesignAgentSpan,
   GameDesignStreamToolChoice,
   GameDesignSystemPromptId,
+  GameDesignStructuredOutputErrorStrategy,
+  GameDesignStructuredOutputJsonPromptInjection,
 } from '../constants/agent-identity'
 import {
   buildDesignLoopUserMessage,
   buildGameDesignContextString,
   formatRecentConversation,
-  parseGameDesignAgentResponse,
+  mapGameDesignStructuredOutput,
 } from './game-design-agent-helpers'
 import { GameDesignMemory } from './memory'
 import { GameLoop, GameMechanic } from '../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { getPublishedAgentOr } from '@/shared/agent-kernel/mastra/get-published-agent'
 
 export type { GameDesignResponse } from '../constants/game-design-response'
 
@@ -124,6 +129,7 @@ export class GameDesignAgent {
       instructions: () => resolveGameDesignInstructions(),
       model: () => resolveGameDesignModel(config.modelName),
       tools: this.toolsMap,
+      editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
     })
   }
 
@@ -139,7 +145,12 @@ export class GameDesignAgent {
 
   /** Backward-compatible async factory. Kept for existing call sites. */
   static async create(config: GameDesignAgentConfig = {}): Promise<GameDesignAgent> {
-    return GameDesignAgent.createSync(config)
+    const wrapper = GameDesignAgent.createSync(config)
+    wrapper.agent = await getPublishedAgentOr(
+      GameDesignAgentId.GameDesignAgent,
+      wrapper.agent,
+    )
+    return wrapper
   }
 
   /** The underlying Mastra `Agent` — the object registered on the central instance. */
@@ -198,8 +209,16 @@ export class GameDesignAgent {
 
           prompt += `${GameDesignAgentPromptCopy.GoalCurrentPrefix}${goal}${NewlineSeparator.Double}${GameDesignAgentPromptCopy.ContextPrefix}${enrichedContext}${NewlineSeparator.Double}${GameDesignAgentPromptCopy.AnalyzeFooter}`
 
-          const response = await meteredCall(LlmFeature.GameDesign, () => this.agent.generate(prompt))
-          return parseGameDesignAgentResponse(response.text)
+          const response = await meteredCall(LlmFeature.GameDesign, () =>
+            this.agent.generate(prompt, {
+              structuredOutput: {
+                schema: GameDesignAgentOutputSchema,
+                jsonPromptInjection: GameDesignStructuredOutputJsonPromptInjection.Auto,
+                errorStrategy: GameDesignStructuredOutputErrorStrategy.Warn,
+              },
+            })
+          )
+          return mapGameDesignStructuredOutput(response.object, response.text)
         } catch (error: unknown) {
           console.error(GameDesignAgentCopy.RunWithContextFailed, error)
           return {

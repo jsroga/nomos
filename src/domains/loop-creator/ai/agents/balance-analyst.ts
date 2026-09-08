@@ -9,8 +9,9 @@
  */
 
 import { AIMessage } from '@/shared/chat/core/message'
-import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
+import { BalanceAnalystOutputSchema } from './schemas/balance-analyst-output'
 import {
   readNumber,
   readRowString,
@@ -68,23 +69,8 @@ Description: {{DESCRIPTION}}
 - **dead_end**: Mechanic leads nowhere
 - **grind_detected**: Excessive repetition required
 
-## Response Format
-Respond with JSON:
-{
-  "analysis": "Your detailed analysis",
-  "overallScore": 7,
-  "issues": [
-    {
-      "severity": "warning",
-      "type": "reward_imbalance",
-      "description": "What's wrong",
-      "affectedMechanics": ["mechanic-ids"],
-      "suggestedFix": "How to fix it"
-    }
-  ],
-  "recommendations": ["General recommendations"],
-  "message": "Summary for the user"
-}`
+## Output
+Provide analysis, overallScore (1-10), issues (severity, type, description, affectedMechanics, suggestedFix), recommendations, and a short user-facing message.`
 
 /**
  * Build context for the agent
@@ -160,30 +146,25 @@ function parseBalanceIssue(raw: unknown): BalanceIssue {
   }
 }
 
-function parseResponse(content: string): BalanceAnalystResponse {
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (jsonMatch) {
-    try {
-      const parsed = recordFromJson(JSON.parse(jsonMatch[0]))
-      const issuesRaw = recordArrayFromJson(parsed.issues)
-      return {
-        analysis: readRowString(parsed, 'analysis') ?? '',
-        overallScore: Math.min(10, Math.max(1, readNumber(parsed.overallScore) ?? 5)),
-        issues: issuesRaw.map(parseBalanceIssue),
-        recommendations: stringArrayFromJson(parsed.recommendations),
-        message: readRowString(parsed, 'message') ?? '',
-      }
-    } catch {
-      // Fall through
+function parseResponse(value: unknown): BalanceAnalystResponse {
+  const parsed = recordFromJson(value)
+  const issuesRaw = recordArrayFromJson(parsed.issues)
+  if (Object.keys(parsed).length === 0) {
+    return {
+      analysis: '',
+      overallScore: 5,
+      issues: [],
+      recommendations: [],
+      message: '',
     }
   }
 
   return {
-    analysis: content,
-    overallScore: 5,
-    issues: [],
-    recommendations: [],
-    message: content,
+    analysis: readRowString(parsed, 'analysis') ?? '',
+    overallScore: Math.min(10, Math.max(1, readNumber(parsed.overallScore) ?? 5)),
+    issues: issuesRaw.map(parseBalanceIssue),
+    recommendations: stringArrayFromJson(parsed.recommendations),
+    message: readRowString(parsed, 'message') ?? '',
   }
 }
 
@@ -216,16 +197,17 @@ export async function balanceAnalystAgent(
 
   const systemPrompt = buildContext(state).replace('{{TASK}}', task)
 
-  const content = await runLoopCreatorCompletion({
+  const output = await runLoopCreatorStructuredCompletion({
     scope: state.scope,
     agentId: LoopCreatorMastraAgentId.BalanceAnalyst,
     systemPrompt,
     history: state.messages.slice(-5),
     temperature: state.modelConfig?.temperature ?? 0.3,
     modelOverride: state.modelConfig?.model,
+    schema: BalanceAnalystOutputSchema,
   })
 
-  const parsed = parseResponse(content)
+  const parsed = parseResponse(output)
 
   console.log(`[BalanceAnalyst] Score: ${parsed.overallScore}/10, Issues: ${parsed.issues.length}`)
 

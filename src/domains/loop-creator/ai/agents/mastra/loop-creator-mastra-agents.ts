@@ -12,9 +12,13 @@
  */
 
 import '@/shared/data/server-guard'
+import type { Config } from '@mastra/core/mastra'
 import { Agent } from '@mastra/core/agent'
 import { resolveLoopCreatorMastraModel } from '../../../config/model-config'
 import { marketAnalystAgent } from '../market-analyst'
+import { marketAnalystTools } from '../market-analyst/tools-registry'
+import { EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { MarketAnalystAgentId } from '../../constants/market-analyst-agent-wire'
 
 export enum LoopCreatorMastraAgentId {
   Supervisor = 'loop-creator-supervisor',
@@ -54,6 +58,7 @@ function buildAgent(
     name,
     instructions: role,
     model: () => resolveLoopCreatorMastraModel(),
+    editor: EDITOR_INSTRUCTIONS_ONLY,
   })
 }
 
@@ -98,17 +103,22 @@ export const loopCreatorMastraAgentById: Record<LoopCreatorMastraAgentId, Agent>
   [LoopCreatorMastraAgentId.ConceptEvaluator]: loopCreatorConceptEvaluatorAgent,
 }
 
+export const loopCreatorRuntimeTools: NonNullable<Config['tools']> = Object.fromEntries(
+  marketAnalystTools.map(tool => [tool.id, tool]),
+)
+
 /**
- * Agents registered on the central Mastra instance (Studio parity). The
- * supervisor-crew agents back the flagged (`FF_LOOP_CREATOR_MASTRA=true`) specialist
- * path; the market analyst is an always-Mastra ReAct agent (native tools).
+ * Agents registered on the central Mastra instance (Studio parity). Keys match
+ * agent.id. The supervisor-crew agents back the flagged
+ * (`FF_LOOP_CREATOR_MASTRA=true`) specialist path; the market analyst is an
+ * always-Mastra ReAct agent (native tools).
  */
 export const loopCreatorRuntimeAgents: Record<string, Agent> = {
-  loopCreatorSupervisor: loopCreatorSupervisorAgent,
-  loopCreatorLoopPlanner: loopCreatorLoopPlannerAgent,
-  loopCreatorMechanicsDesigner: loopCreatorMechanicsDesignerAgent,
-  loopCreatorBalanceAnalyst: loopCreatorBalanceAnalystAgent,
-  loopCreatorProgressionArchitect: loopCreatorProgressionArchitectAgent,
-  loopCreatorConceptEvaluator: loopCreatorConceptEvaluatorAgent,
-  marketAnalyst: marketAnalystAgent,
+  [LoopCreatorMastraAgentId.Supervisor]: loopCreatorSupervisorAgent,
+  [LoopCreatorMastraAgentId.LoopPlanner]: loopCreatorLoopPlannerAgent,
+  [LoopCreatorMastraAgentId.MechanicsDesigner]: loopCreatorMechanicsDesignerAgent,
+  [LoopCreatorMastraAgentId.BalanceAnalyst]: loopCreatorBalanceAnalystAgent,
+  [LoopCreatorMastraAgentId.ProgressionArchitect]: loopCreatorProgressionArchitectAgent,
+  [LoopCreatorMastraAgentId.ConceptEvaluator]: loopCreatorConceptEvaluatorAgent,
+  [MarketAnalystAgentId.Id]: marketAnalystAgent,
 }

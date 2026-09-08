@@ -37,19 +37,12 @@ function queuedRunFromRow(
   }
 }
 
-enum BeatDraftWorkflowRegistryKey {
-  ExportName = 'beatDraftWorkflow',
-}
-
 function beatDraftWorkflowOrNull(): object | null {
-  const mastra = getMastraInstance()
-  for (const key of [BEAT_DRAFT_WORKFLOW_ID, BeatDraftWorkflowRegistryKey.ExportName]) {
-    try {
-      const workflow: unknown = mastra.getWorkflow(key)
-      if (typeof workflow === 'object' && workflow !== null) return workflow
-    } catch {
-      // Production registry keys the export name; getWorkflow(id) throws.
-    }
+  try {
+    const workflow: unknown = getMastraInstance().getWorkflow(BEAT_DRAFT_WORKFLOW_ID)
+    if (typeof workflow === 'object' && workflow !== null) return workflow
+  } catch {
+    return null
   }
   return null
 }

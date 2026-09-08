@@ -14,7 +14,7 @@ import {
   assembleAgentFromFsEntry,
   type FsAgentConfig,
 } from '@mastra/core/agent'
-import { loadAgentInstructions } from '@/shared/agent-kernel/mastra/load-agent-instructions'
+import { loadAgentInstructions } from './load-agent-instructions'
 
 export type AssembleFsAgentConfig = FsAgentConfig | Agent
 

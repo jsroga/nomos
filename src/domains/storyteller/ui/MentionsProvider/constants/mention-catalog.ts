@@ -1,4 +1,5 @@
 import type { MentionItem } from '@/shared/chat'
+import { MentionAgentTypeId, MentionCategoryId, MentionIconName } from '@/shared/chat/core/constants/mention-types'
 
 export const MENTION_CATEGORY_ENTITY = 'entity'
 export const MENTION_CATEGORY_AGENT = 'agent'
@@ -30,50 +31,10 @@ export const STORYTELLER_AGENT_MENTION_CATALOG: MentionItem[] = [
   {
     id: 'agent-writer',
     name: 'writer',
-    category: MENTION_CATEGORY_AGENT,
-    type: 'writer',
-    icon: 'PenTool',
+    category: MentionCategoryId.Agent,
+    type: MentionAgentTypeId.Writer,
+    icon: MentionIconName.PenTool,
     preview: 'Script & dialogue',
-  },
-  {
-    id: 'agent-premise',
-    name: 'premise_architect',
-    category: MENTION_CATEGORY_AGENT,
-    type: 'premise_architect',
-    icon: 'Building2',
-    preview: 'World building',
-  },
-  {
-    id: 'agent-plot',
-    name: 'plot_architect',
-    category: MENTION_CATEGORY_AGENT,
-    type: 'plot_architect',
-    icon: 'Map',
-    preview: 'Story structure',
-  },
-  {
-    id: 'agent-devils',
-    name: 'devils_advocate',
-    category: MENTION_CATEGORY_AGENT,
-    type: 'devils_advocate',
-    icon: 'AlertTriangle',
-    preview: 'Critical review',
-  },
-  {
-    id: 'agent-episode',
-    name: 'episode_premise_architect',
-    category: MENTION_CATEGORY_AGENT,
-    type: 'episode_premise_architect',
-    icon: 'FileEdit',
-    preview: 'Episode premises',
-  },
-  {
-    id: 'agent-psychology',
-    name: 'character_psychology',
-    category: MENTION_CATEGORY_AGENT,
-    type: 'character_psychology',
-    icon: 'User',
-    preview: 'Character analysis',
   },
 ]
 

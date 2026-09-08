@@ -33,7 +33,7 @@ export const CANVAS_MODULES: readonly CanvasModuleDef[] = [
     key: 'loop-creator',
     label: 'Loop Creator',
     description: 'Game-loop design canvas (React Flow) — supervisor + specialist crew.',
-    chatAgentId: 'loopCreatorSupervisor',
+    chatAgentId: 'loop-creator-supervisor',
     // Full crew orchestration (streamLoopCreator), not the single supervisor agent.
     chatApiPath: '/api/loop-creator/assistant',
     modelRole: 'loop-creator',
@@ -48,7 +48,7 @@ export const CANVAS_MODULES: readonly CanvasModuleDef[] = [
     key: 'game-design',
     label: 'Game Design',
     description: 'Game-design agent + loop workflow.',
-    chatAgentId: 'gameDesign',
+    chatAgentId: 'game-design-agent',
     modelRole: 'game-design',
     enabledByDefault: true,
   },

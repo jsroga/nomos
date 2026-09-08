@@ -3,6 +3,7 @@ import { createMastra, createPostgresStore } from './create-mastra'
 import { studioAgents } from './agents/constants/registry'
 import { studioMcpServers } from './mcp/studio-servers'
 import { consumeMastraRegistrations } from './runtime-registry'
+import { seedEditorPromptBlocks } from './seed-editor-prompt-blocks'
 
 const ENV_LOCAL_PATH = '.env.local'
 const LOG_WORKSPACE_INIT_FAILED = '⚠️ [Mastra Studio] Workspace init failed:'
@@ -16,9 +17,11 @@ dotenv.config({ override: true })
 // modules before this file runs). Registered agents OVERRIDE same-id stubs;
 // stubs without a registered counterpart stay visible as clearly-marked
 // Studio-only fallbacks (PLAN-V2 1.1 — no more hardcoded placeholder drift).
-const { agents: registeredAgents, workflows: registeredWorkflows } = consumeMastraRegistrations()
+const { agents: registeredAgents, workflows: registeredWorkflows, tools: registeredTools } =
+  consumeMastraRegistrations()
 const agents = { ...studioAgents, ...registeredAgents }
 const workflows = Object.keys(registeredWorkflows).length > 0 ? registeredWorkflows : undefined
+const tools = Object.keys(registeredTools).length > 0 ? registeredTools : undefined
 
 // Studio must share the same Postgres storage path as production — `storage: null`
 // forced the in-memory fallback warning and left Memory/observability disconnected.
@@ -26,12 +29,15 @@ export const mastra = createMastra(agents, {
   storage: createPostgresStore(),
   mcpServers: studioMcpServers,
   ...(workflows ? { workflows } : {}),
+  ...(tools ? { tools } : {}),
 })
 
 const workspace = mastra.getWorkspace?.()
 if (workspace) {
   void (async () => {
     try {
+      await mastra.getStorage()?.init()
+      await seedEditorPromptBlocks(mastra)
       await workspace.init()
       console.log(`📂 [Mastra Studio] Workspace ready (${workspace.status})`)
     } catch (err) {

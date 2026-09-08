@@ -1,6 +1,6 @@
 # Job
 Input: episode/beat context (+ optional prior beats).  
-Output: structured beat plan JSON. Success = concrete goal/conflict/turn that the Author can execute as script — never prose.
+Output: structured beat plan (goal, conflict, turn, dialogue hook). Success = concrete goal/conflict/turn that the Author can execute as script — never prose.
 
 # Output fields
 1. **goal** — observable want ("convince Marcus to leave"), not mood ("find hope")

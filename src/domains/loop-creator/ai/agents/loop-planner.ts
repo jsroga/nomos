@@ -8,7 +8,8 @@
  */
 
 import { AIMessage } from '@/shared/chat/core/message'
-import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'
+import { LoopPlannerOutputSchema } from './schemas/loop-planner-output'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import { LoopCreatorState, LoopAgentAction } from '../../core/graph/state'
 import { buildCanvasActionsFromLoops } from '../constants/loop-planner-canvas'
@@ -110,58 +111,14 @@ AVOID:
 - Loops that exist because "every game has them"
 - Session lengths copied from similar games without justification
 
-## CRITICAL: Response Format
-You MUST respond with valid JSON and NOTHING ELSE. No explanation text before or after.
-
+## Output
 Each loop MUST contain nodes that follow the psychological order: Challenge → Action → Feedback.
-Group loops by timeframe (micro/core/session/meta).
+Group loops by timeframe (micro / core / session / meta).
+Every loop needs a specific name (not generic), type, timeframe, description, ordered nodes (name, psychPhase, description), duration (min/max/typical and unit), playerExperience, satisfactionPeak, analysis of the psychological flow, recommendations, and a short user-facing message.
 
-REQUIRED JSON FORMAT:
-{
-  "analysis": "Your analysis including how the psychological flow works in this design",
-  "loops": [
-    {
-      "id": "unique-id-1",
-      "name": "Specific Loop Name (not generic)",
-      "type": "core",
-      "timeframe": "micro|core|session|meta",
-      "description": "Detailed description of what this loop involves",
-      "nodes": [
-        { "name": "Node Name", "psychPhase": "challenge", "description": "What happens" },
-        { "name": "Node Name", "psychPhase": "action", "description": "What player does" },
-        { "name": "Node Name", "psychPhase": "feedback", "description": "Result/reward" }
-      ],
-      "duration": { "min": 1, "max": 5, "typical": 3, "unit": "seconds|minutes" },
-      "playerExperience": "What the player feels at each phase",
-      "satisfactionPeak": "When satisfaction is highest (usually at feedback)"
-    }
-  ],
-  "recommendations": ["Specific recommendation 1", "Specific recommendation 2"],
-  "message": "Summary explaining the psychological flow of each loop"
-}
+Example (Disco Elysium): a micro Dialogue Skill Check — Conversation Choice (challenge) → Commit to Response (action) → Consequence Reveal (feedback), typically ~30 seconds.
 
-### EXAMPLE - Disco Elysium Style:
-{
-  "loops": [
-    {
-      "id": "dialogue-loop",
-      "name": "Dialogue Skill Check",
-      "type": "core",
-      "timeframe": "micro",
-      "nodes": [
-        { "name": "Conversation Choice", "psychPhase": "challenge", "description": "NPC presents dilemma, player sees skill check odds" },
-        { "name": "Commit to Response", "psychPhase": "action", "description": "Player selects dialogue option, dice roll animation" },
-        { "name": "Consequence Reveal", "psychPhase": "feedback", "description": "Success/failure shown, NPC reacts, world state changes" }
-      ],
-      "duration": { "min": 10, "max": 60, "typical": 30, "unit": "seconds" }
-    }
-  ]
-}
-
-REMEMBER: 
-- Output ONLY the JSON object. No text before or after.
-- EVERY loop must have nodes in order: challenge(s) → action(s) → feedback
-- If you need more than 6 nodes, SPLIT into separate loops`
+EVERY loop must have nodes in order: challenge(s) → action(s) → feedback. If you need more than 6 nodes, SPLIT into separate loops.`
 
 /**
  * Build context for the agent
@@ -215,19 +172,18 @@ export async function loopPlannerAgent(
   const systemPrompt = buildContext(state).replace('{{TASK}}', task)
 
   console.log('[LoopPlanner] Calling LLM...')
-  const content = await runLoopCreatorCompletion({
+  const output = await runLoopCreatorStructuredCompletion({
     scope: state.scope,
     agentId: LoopCreatorMastraAgentId.LoopPlanner,
     systemPrompt,
     history: state.messages.slice(-5),
     temperature: state.modelConfig?.temperature ?? 0.5,
     modelOverride: state.modelConfig?.model,
-    jsonMode: true,
+    schema: LoopPlannerOutputSchema,
   })
   console.log('[LoopPlanner] LLM response received')
-  console.log('[LoopPlanner] Response length:', content.length)
 
-  const parsed = parseLoopPlannerResponse(content)
+  const parsed = parseLoopPlannerResponse(output)
 
   console.log(`[LoopPlanner] Created ${parsed.loops.length} loops`)
 

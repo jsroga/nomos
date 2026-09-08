@@ -3,7 +3,7 @@
  *
  * Provides mentionable items for the Storyteller chat:
  * - Entities: characters, episodes, beats, factions, places, events
- * - Agents: writer, premise_architect, plot_architect, etc.
+ * - Agents: writer
  * - Sections: worldRules, inspirations, soundtracks, plotTwists
  * - Registry: All entities from the EntityRegistry (GraphRAG-enabled) - SERVER ONLY
  */

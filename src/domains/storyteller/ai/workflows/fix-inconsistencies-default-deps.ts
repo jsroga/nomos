@@ -3,7 +3,6 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { beats, characters, episodes, projects, seriesBibles } from '@/db/schema'
 import { generateStructured } from '@/domains/storyteller/ai/agents/critics/generate-structured'
-import { continuityCritic } from '@/domains/storyteller/ai/agents/critics'
 import { applyCascadingFixes } from '@/domains/storyteller/core/editing/cascade-editor'
 import { getUndoManager } from '@/domains/storyteller/core/editing/undo-manager'
 import { parseStoryPlanRecord } from '@/domains/storyteller/core/io/project-jsonb'
@@ -15,7 +14,7 @@ import type { ConsistencyFix } from '@/domains/storyteller/core/types/consistenc
 import { BeatStatus } from '@/domains/storyteller/core/types/enums'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 import { ConsistencyCheckKind, worldRulesFromStoryPlan } from '@/domains/storyteller/services/consistency-types'
-import { statelessGrrmAuthor } from './stateless-agents'
+import { publishedContinuityCritic, publishedGrrmAuthor } from './published-workflow-agents'
 import { filterLockedFixes } from './collapse-consistency-fixes'
 import { buildAlignmentScanJobs, collectAlignmentFindings } from './alignment-scan'
 import {
@@ -233,7 +232,7 @@ async function structuralScan(projectId: string) {
 
 async function scanChunk(prompt: string): Promise<ContinuityFinding[]> {
   const report = await generateStructured(
-    continuityCritic,
+    await publishedContinuityCritic(),
     joinPrompt([FIX_INCONSISTENCIES_SCAN_INSTRUCTIONS, prompt]),
     ContinuityScanReportSchema
   )
@@ -259,7 +258,7 @@ async function proposeFixes(
     stringifyJson(findings, FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY),
   ])
   const batch = await generateStructured(
-    statelessGrrmAuthor,
+    await publishedGrrmAuthor(),
     prompt,
     ConsistencyFixBatchSchema
   )

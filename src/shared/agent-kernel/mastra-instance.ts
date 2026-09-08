@@ -1,15 +1,16 @@
 import type { Mastra } from '@mastra/core/mastra'
 import type { PostgresStore } from '@mastra/pg'
-import { createMastra, createPostgresStore } from '@/shared/agent-kernel/mastra/create-mastra'
+import { createMastra, createPostgresStore } from './mastra/create-mastra'
+import { seedEditorPromptBlocks } from './mastra/seed-editor-prompt-blocks'
 import {
   consumeMastraRegistrations,
   setMastraInstanceInvalidator,
-} from '@/shared/agent-kernel/mastra/runtime-registry'
+} from './mastra/runtime-registry'
 import {
   LIST_JOIN_SEPARATOR,
   MASTRA_STORAGE_INITIALIZED_LOG,
   MASTRA_STORAGE_WARM_FAILED_LOG,
-} from '@/shared/agent-kernel/constants/mastra-instance'
+} from './constants/mastra-instance'
 
 let mastraInstance: Mastra | null = null
 let storageInstance: PostgresStore | null = null
@@ -43,6 +44,7 @@ export function warmMastraStorage(): Promise<void> {
     storageWarmPromise = (async () => {
       try {
         await getStorageInstance().init()
+        await seedEditorPromptBlocks(getMastraInstance())
       } catch (err: unknown) {
         storageWarmPromise = null
         console.warn(MASTRA_STORAGE_WARM_FAILED_LOG, err)
@@ -61,10 +63,11 @@ export function warmMastraStorage(): Promise<void> {
  */
 export function getMastraInstance(): Mastra {
   if (!mastraInstance) {
-    const { agents, workflows } = consumeMastraRegistrations()
+    const { agents, workflows, tools } = consumeMastraRegistrations()
     mastraInstance = createMastra(agents, {
       storage: getStorageInstance(),
       workflows,
+      ...(Object.keys(tools).length > 0 ? { tools } : {}),
     })
     console.log(
       `🚀 [Mastra] Centralized instance initialized — agents: [${Object.keys(agents).join(LIST_JOIN_SEPARATOR)}], workflows: [${Object.keys(workflows).join(LIST_JOIN_SEPARATOR)}]`

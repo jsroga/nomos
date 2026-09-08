@@ -2,8 +2,10 @@ import { env } from '@/shared/config/env'
 import type { Agent } from '@mastra/core/agent'
 import type { MCPServerBase } from '@mastra/core/mcp'
 import type { AnyWorkflow } from '@mastra/core/workflows'
-import { Mastra } from '@mastra/core/mastra'
+import { Mastra, type Config } from '@mastra/core/mastra'
+import { MastraEditor } from '@mastra/editor'
 import { PostgresStore, PostgresStoreVNext } from '@mastra/pg'
+import { MastraEditorSource } from './constants/editor'
 import { createObservability } from './observability-config'
 import { PinoLogger } from '@mastra/loggers'
 import { STORYTELLER_SCORERS } from '../scorers'
@@ -76,6 +78,7 @@ export function createMastra(
     storage?: PostgresStore | null
     mcpServers?: Record<string, MCPServerBase>
     workflows?: Record<string, AnyWorkflow>
+    tools?: Config['tools']
   },
 ): Mastra {
   configureSerializationLimits()
@@ -104,6 +107,8 @@ export function createMastra(
     workspace,
     ...(options?.workflows ? { workflows: options.workflows } : {}),
     ...(options?.mcpServers ? { mcpServers: options.mcpServers } : {}),
+    ...(options?.tools ? { tools: options.tools } : {}),
+    editor: new MastraEditor({ source: MastraEditorSource.Database }),
     logger: new PinoLogger({
       name: MASTRA_LOGGER_NAME,
       level: MASTRA_LOGGER_LEVEL,

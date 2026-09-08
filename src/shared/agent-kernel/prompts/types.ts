@@ -18,4 +18,5 @@ export interface PromptDefinition {
 export interface IPromptRepository {
   getPrompt(name: string, variables?: PromptVariables): Promise<string>
   register(definition: PromptDefinition): void
+  listRegistered(): PromptDefinition[]
 }

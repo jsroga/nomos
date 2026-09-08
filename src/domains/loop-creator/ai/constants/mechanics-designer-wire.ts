@@ -136,37 +136,8 @@ AVOID:
 - Overlapping different types without sequential connections.
 - Generic mechanics without specific durations.
 
-## Response Format
-Respond with JSON:
-{
-  "analysis": "Your analysis and design thinking",
-  "mechanics": [
-    {
-      "id": "unique-id",
-      "name": "Mechanic Name",
-      "type": "core|secondary|meta|progression|reward",
-      "description": "What this mechanic does",
-      "inputs": ["What triggers/feeds this"],
-      "outputs": ["What this produces"],
-      "balanceFactors": {
-        "effort": 5,
-        "reward": 7,
-        "frequency": 10
-      },
-      "examples": ["Examples from other games"]
-    }
-  ],
-  "connections": [
-    {
-      "id": "conn-id",
-      "source": "mechanic-id",
-      "target": "mechanic-id",
-      "type": "triggers|enables|requires|conflicts|enhances",
-      "label": "Connection description"
-    }
-  ],
-  "message": "Summary for the user"
-}`
+## Output
+Provide analysis, mechanics (id, name, type, description, inputs, outputs, balanceFactors effort/reward/frequency, examples), connections (id, source, target, type, label), and a short user-facing message.`
 
 export enum MechanicsDesignerPromptPlaceholder {
   Task = '{{TASK}}',
@@ -325,27 +296,22 @@ export function buildMechanicsDesignerContext(state: LoopCreatorState): string {
     .replace(MechanicsDesignerPromptPlaceholder.Connections, connectionsList)
 }
 
-export function parseMechanicsDesignerResponse(content: string): MechanicsDesignerResponse {
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (jsonMatch) {
-    try {
-      const parsed = recordFromJson(JSON.parse(jsonMatch[0]))
-      return {
-        analysis: readRowString(parsed, MechanicsDesignerJsonField.Analysis) ?? '',
-        mechanics: recordArrayFromJson(parsed.mechanics).map(parseMechanicNode),
-        connections: recordArrayFromJson(parsed.connections).map(parseMechanicEdge),
-        message: readRowString(parsed, MechanicsDesignerJsonField.Message) ?? '',
-      }
-    } catch {
-      // Fall through
+export function parseMechanicsDesignerResponse(value: unknown): MechanicsDesignerResponse {
+  const parsed = recordFromJson(value)
+  if (Object.keys(parsed).length === 0) {
+    return {
+      analysis: '',
+      mechanics: [],
+      connections: [],
+      message: '',
     }
   }
 
   return {
-    analysis: content,
-    mechanics: [],
-    connections: [],
-    message: content,
+    analysis: readRowString(parsed, MechanicsDesignerJsonField.Analysis) ?? '',
+    mechanics: recordArrayFromJson(parsed.mechanics).map(parseMechanicNode),
+    connections: recordArrayFromJson(parsed.connections).map(parseMechanicEdge),
+    message: readRowString(parsed, MechanicsDesignerJsonField.Message) ?? '',
   }
 }
 

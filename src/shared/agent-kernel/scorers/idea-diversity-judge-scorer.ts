@@ -27,7 +27,7 @@ const JUDGE_INSTRUCTIONS = [
   'uniqueness (0-1): how distinct ideas are from each other (penalize duplicates and near-paraphrases).',
   'randomness (0-1): lexical and structural variety — not the same template with swapped nouns.',
   'overall: the mean of uniqueness and randomness.',
-  'Respond with valid JSON matching the schema. Be harsh on template spam and echo chambers.',
+  'Be harsh on template spam and echo chambers.',
 ].join('\n')
 
 const JUDGE_PROMPT_PREFIX = 'Judge this idea set:\n'

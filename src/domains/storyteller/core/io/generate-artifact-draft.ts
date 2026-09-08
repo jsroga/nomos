@@ -3,14 +3,11 @@ import { lookupPromptBody } from '@/domains/storyteller/ai/prompts/registry/prom
 import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { ArtifactKind } from '@/domains/storyteller/core/types/artifact-kind'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
-import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
-import { complete } from '@/shared/ai/gateway'
-import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import type { ProjectScope } from '@/shared/auth/project-scope'
+import { completeArtifactDraft } from './artifact-draft-structured'
 import { ArtifactDraftRunStatus, startArtifactDraft, type StartArtifactDraftResult } from './start-artifact-draft'
 
 enum ArtifactDraftGenerateCopy {
-  System = 'Write only the requested series-bible, character, or premise content. No preamble. Use JSON arrays of objects when the section is a list.',
   Empty = 'Model returned an empty artifact draft.',
 }
 
@@ -50,14 +47,17 @@ export async function generateAndStartArtifactDraft(
   input: GenerateArtifactDraftInput
 ): Promise<StartArtifactDraftResult> {
   const instruction = lookupPromptBody(input.promptId)
-  const generated = await complete({
-    scope: input.scope,
-    feature: LlmFeature.StorytellerEntityDescription,
-    model: TEXT_GEN_FAST_MODEL,
-    system: ArtifactDraftGenerateCopy.System,
-    prompt: instruction,
-  })
-  const draft = generated.text.trim()
+  let draft = ''
+  try {
+    draft = await completeArtifactDraft({
+      scope: input.scope,
+      kind: input.kind,
+      instruction,
+      section: input.section,
+    })
+  } catch {
+    draft = ''
+  }
   if (!draft) {
     return {
       runId: '',

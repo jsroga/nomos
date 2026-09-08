@@ -5,7 +5,7 @@
  * match the user's requested game concept.
  */
 
-import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import { z } from 'zod'
 import { LoopCreatorState } from '../../core/graph/state'
@@ -97,9 +97,7 @@ Genre: {{GENRE}}
 - 30-49: Poor alignment, only superficial similarities
 - 0-29: No alignment, wrong genre/concept entirely
 
-Be HONEST and CRITICAL. If someone asks for "Disco Elysium" and gets generic RPG mechanics without the unique internal monologue system, that's a LOW score.
-
-Respond with a JSON object matching the evaluation schema.`
+Be HONEST and CRITICAL. If someone asks for "Disco Elysium" and gets generic RPG mechanics without the unique internal monologue system, that's a LOW score.`
 
 /**
  * Extract reference game name from user description
@@ -163,27 +161,18 @@ export async function evaluateConceptAlignment(
     .replace('{{GENRE}}', state.gameGenre || 'Unknown')
     .replace('{{MECHANICS}}', formatMechanics(state))
 
-  const content = await runLoopCreatorCompletion({
+  const parsed = await runLoopCreatorStructuredCompletion({
     scope: state.scope,
     agentId: LoopCreatorMastraAgentId.ConceptEvaluator,
     systemPrompt: prompt,
     userPrompt: 'Evaluate the concept alignment and provide your assessment.',
-    temperature: 0.2, // Lower temperature for more consistent evaluation
+    temperature: 0.2,
     modelOverride: state.modelConfig?.model,
+    schema: ConceptEvaluationSchema,
   })
 
-  // Parse JSON from response
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0])
-      return ConceptEvaluationSchema.parse(parsed)
-    } catch (error) {
-      console.error('[ConceptEvaluator] Parse error:', error)
-    }
-  }
+  if (parsed) return parsed
 
-  // Return default low score if parsing fails
   return {
     overallAlignment: 0,
     conceptMatch: null,

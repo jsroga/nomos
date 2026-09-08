@@ -172,16 +172,6 @@ export function getEntityLinkRequirements(): EntityLinkRequirements {
 }
 
 // ============================================
-// PROMPT IDENTIFIERS
-// ============================================
-
-/**
- * Prompt identifiers for the local / remote prompt registry.
- * Push via: npm run prompts:push[:staging|:prod]
- */
-export { PROMPT_IDS } from './constants/storyteller-config-defaults'
-
-// ============================================
 // ENVIRONMENT VARIABLE KEYS
 // ============================================
 // ============================================

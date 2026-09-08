@@ -261,6 +261,6 @@ describe('docs/ flat catalog (no trash)', () => {
   })
 
   it('allowlist matches docs/README catalog size', () => {
-    expect(DOCS_ALLOWED_FILES.size).toBe(8)
+    expect(DOCS_ALLOWED_FILES.size).toBe(9)
   })
 })

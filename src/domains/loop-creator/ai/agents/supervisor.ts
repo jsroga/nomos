@@ -8,8 +8,10 @@
  * - Managing workflow progression
  */
 
-import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
+import { SupervisorOutputSchema } from './schemas/supervisor-output'
+import { NEXT_AGENT_END, LOOP_CREATOR_PHASE_INITIAL } from '@/domains/loop-creator/constants/graph-state-defaults'
 import { LoopCreatorState, NextAgent, LoopCreatorPhase } from '../../core/graph/state'
 import {
   buildSupervisorStateUpdate,
@@ -46,40 +48,20 @@ You coordinate a team of specialists to help users design game mechanics and loo
 - **review**: Final review and polish
 - **complete**: Design is finished
 
-## Response Format
-You MUST respond with a JSON object:
-{
-  "thinking": "Your internal reasoning about what to do",
-  "nextAgent": "loop_planner|mechanics_designer|balance_analyst|progression_architect|market_analyst|END",
-  "nextPhase": "current phase or new phase",
-  "message": "Your message to the user",
-  "questions": [{ "id": "uuid", "question": "...", "options": [...], "required": true }],
-  "taskForAgent": "If delegating, the SPECIFIC task for the agent",
-  "actions": [{ "type": "ACTION_TYPE", "payload": {...} }]
-}
+## Output
+Fill thinking, nextAgent, nextPhase, message, optional questions, optional taskForAgent, and optional canvas actions.
 
-## Canvas Actions
-When the user asks to modify the canvas, include actions in your response:
+nextAgent is one of: loop_planner, mechanics_designer, balance_analyst, progression_architect, market_analyst, END. Never route to supervisor — use END instead.
 
-- **ADD_NODE**: Add a new node
-  { "type": "ADD_NODE", "payload": { "id": "unique-id", "label": "Node Name", "description": "...", "nodeType": "challenge|action|reward|feedback" } }
+Canvas actions (shown to the user for approval):
+- ADD_NODE — id, label, description, nodeType (challenge|action|reward|feedback)
+- REMOVE_NODE — id
+- REMOVE_ALL_NODES
+- MODIFY_NODE — id plus updates (label, description)
+- ADD_EDGE — source, target, label
+- REMOVE_EDGE — id
 
-- **REMOVE_NODE**: Remove a specific node
-  { "type": "REMOVE_NODE", "payload": { "id": "node-id-to-remove" } }
-
-- **REMOVE_ALL_NODES**: Clear all nodes from canvas
-  { "type": "REMOVE_ALL_NODES", "payload": {} }
-
-- **MODIFY_NODE**: Update a node's properties
-  { "type": "MODIFY_NODE", "payload": { "id": "node-id", "updates": { "label": "New Name", "description": "..." } } }
-
-- **ADD_EDGE**: Connect two nodes
-  { "type": "ADD_EDGE", "payload": { "source": "source-id", "target": "target-id", "label": "connection label" } }
-
-- **REMOVE_EDGE**: Remove a connection
-  { "type": "REMOVE_EDGE", "payload": { "id": "edge-id" } }
-
-IMPORTANT: Actions are shown to the user for approval before being applied. Always emit actions when the user requests canvas modifications.
+Always emit actions when the user requests canvas modifications.
 
 ## CRITICAL ROUTING RULES
 1. When DELEGATING to a specialist:
@@ -139,41 +121,29 @@ interface SupervisorResponse {
   actions?: Array<{ type: string; payload: Record<string, unknown> }>
 }
 
-function parseResponse(content: string): SupervisorResponse {
-  // Try to extract JSON
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0])
-      // Validate nextAgent - if invalid, default to END to prevent loops
-      const validAgents = [
-        'supervisor',
-        'loop_planner',
-        'mechanics_designer',
-        'balance_analyst',
-        'progression_architect',
-        'market_analyst',
-        'END',
-      ]
-      if (!validAgents.includes(parsed.nextAgent)) {
-        parsed.nextAgent = 'END'
-      }
-      return {
-        ...parsed,
-        actions: parsed.actions || [],
-      }
-    } catch {
-      // Fall through to defaults
+function parseResponse(value: unknown): SupervisorResponse {
+  const parsed = SupervisorOutputSchema.safeParse(value)
+  if (!parsed.success) {
+    return {
+      thinking: 'Unable to parse structured response',
+      nextAgent: NEXT_AGENT_END,
+      nextPhase: LOOP_CREATOR_PHASE_INITIAL,
+      message: '',
+      actions: [],
     }
   }
 
-  // Default response - END to prevent infinite loops
   return {
-    thinking: 'Unable to parse structured response',
-    nextAgent: 'END',
-    nextPhase: 'initial',
-    message: content,
-    actions: [],
+    thinking: parsed.data.thinking,
+    nextAgent: parsed.data.nextAgent,
+    nextPhase: parsed.data.nextPhase,
+    message: parsed.data.message,
+    questions: parsed.data.questions,
+    taskForAgent: parsed.data.taskForAgent,
+    actions: (parsed.data.actions ?? []).map(action => ({
+      type: action.type,
+      payload: action.payload ?? {},
+    })),
   }
 }
 
@@ -188,16 +158,17 @@ export async function supervisorAgent(state: LoopCreatorState): Promise<Partial<
     comingFromSpecialist,
   )
 
-  const content = await runLoopCreatorCompletion({
+  const output = await runLoopCreatorStructuredCompletion({
     scope: state.scope,
     agentId: LoopCreatorMastraAgentId.Supervisor,
     systemPrompt,
     history: state.messages.slice(-10),
     temperature: state.modelConfig?.temperature ?? 0.3,
     modelOverride: state.modelConfig?.model,
+    schema: SupervisorOutputSchema,
   })
 
-  const parsed = parseResponse(content)
+  const parsed = parseResponse(output)
 
   console.log(`[Supervisor] Thinking: ${parsed.thinking}`)
   console.log(`[Supervisor] Next: ${parsed.nextAgent}, Phase: ${parsed.nextPhase}`)

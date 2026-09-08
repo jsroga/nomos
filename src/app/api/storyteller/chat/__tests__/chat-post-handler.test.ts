@@ -17,7 +17,8 @@ vi.mock('@/shared/auth/project-scope', () => ({
   tryProjectScope: async () => true,
 }))
 vi.mock('@/domains/storyteller/config/resolve-chat-model', () => ({
-  resolveChatModelId: () => 'openai/gpt-5.6-luna',
+  resolveChatModelId: () => 'moonshotai/kimi-k3',
+  resolveWriterModelChoice: () => undefined,
 }))
 vi.mock('@/domains/storyteller/config/constants/chat-model-catalog', async importOriginal => {
   const actual =

@@ -36,6 +36,7 @@ import { getEntityLinkRequirements } from '@/domains/storyteller/config/storytel
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
 import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
 import { INHERITED_AGENT_LAST_MESSAGES } from '@/shared/agent-kernel/mastra/studio-memory'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
 import {
   AgentModelRole,
   BeatPlannerCopy,
@@ -110,6 +111,7 @@ export class StorytellerAgent {
       mastra: m,
       memory,
       workspace: () => undefined,
+      editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
       scorers: CHAT_HTTP_SCORERS,
       defaultOptions: {
         modelSettings: {

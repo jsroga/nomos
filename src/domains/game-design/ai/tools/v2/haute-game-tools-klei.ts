@@ -22,8 +22,11 @@ Inspired by Klei's design philosophy: few rules, many outcomes.`,
     execute: async (args) => {
       try {
         const prompt = buildAtomicLoomPrompt(args)
-        const parsed = await invokeLlmJsonPrompt(prompt, createHauteGameModel())
-        const validated = AtomicLoomOutputSchema.parse(parsed)
+        const validated = await invokeLlmJsonPrompt(
+          prompt,
+          createHauteGameModel(),
+          AtomicLoomOutputSchema,
+        )
         return { success: true, ...validated }
       } catch (error: unknown) {
         return { success: false, error: getErrorMessage(error) }
@@ -41,8 +44,11 @@ Inspired by Klei: Death should teach, not punish.`,
     execute: async (args) => {
       try {
         const prompt = buildSilentTeacherPrompt(args)
-        const parsed = await invokeLlmJsonPrompt(prompt, createHauteGameModel())
-        const validated = SilentTeacherOutputSchema.parse(parsed)
+        const validated = await invokeLlmJsonPrompt(
+          prompt,
+          createHauteGameModel(),
+          SilentTeacherOutputSchema,
+        )
         return { success: true, ...validated }
       } catch (error: unknown) {
         return { success: false, error: getErrorMessage(error) }

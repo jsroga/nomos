@@ -19,6 +19,7 @@ import { requireAuth, withRateLimit } from '@/shared/data/api-utils'
 import { readJsonBody } from '@/shared/data/fetch-json-record'
 import { CHAT_MODELS, resolveStorytellerModel } from '@/domains/storyteller/server'
 import { getErrorMessage } from '@/shared/errors/error-utils'
+import { EDITOR_DISABLED } from '@/shared/agent-kernel/mastra/editor-permissions'
 
 const TEST_TIMEOUT_MS = 10_000
 const RATE_LIMIT_KEY_PREFIX = 'provider-test'
@@ -51,6 +52,7 @@ async function probeProvider(modelId: string): Promise<void> {
     name: PROBE_AGENT_NAME,
     instructions: PROBE_INSTRUCTIONS,
     model,
+    editor: EDITOR_DISABLED,
   })
 
   let timer: ReturnType<typeof setTimeout> | undefined

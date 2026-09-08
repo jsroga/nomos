@@ -383,11 +383,15 @@ export class StorytellerService {
 
     const scope = await this.requireScope(validated.projectId, context.userId)
 
-    // Dynamic import to avoid a static service ↔ agents cycle.
-    const { createStorytellerAgent } = await import(
-      '@/domains/storyteller/ai/agents/StorytellerAgent/storyteller-agent'
+    const { getPublishedAgent } = await import(
+      '@/shared/agent-kernel/mastra/get-published-agent'
     )
-    const agent = await createStorytellerAgent()
+    const { StorytellerAgentId } = await import(
+      '@/domains/storyteller/ai/constants/agent-identity'
+    )
+    const { meteredCall } = await import('@/shared/ai/gateway/agent')
+    const { LlmFeature } = await import('@/shared/ai/gateway/constants/llm-call')
+    const agent = await getPublishedAgent(StorytellerAgentId.Storyteller)
 
     const bound = memoryRef({
       projectId: validated.projectId,
@@ -412,12 +416,13 @@ export class StorytellerService {
       .filter(Boolean)
       .join('\n')
 
-    const content = await agent.run(
-      StorytellerCrudAgentPrompt.RespondToUser,
-      `${chatContext}\n\nUser: ${validated.message}`,
-      undefined,
-      { memory: { thread: threadId, resource: bound.resource } },
+    const response = await meteredCall(LlmFeature.StorytellerChat, () =>
+      agent.generate(
+        `Goal: ${StorytellerCrudAgentPrompt.RespondToUser}\n\nContext:\n${chatContext}\n\nUser: ${validated.message}`,
+        { memory: { thread: threadId, resource: bound.resource } },
+      ),
     )
+    const content = response.text
 
     return {
       response: { messages: [{ role: StorytellerChatRole.Assistant, content }] },

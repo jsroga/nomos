@@ -14,7 +14,7 @@ export const hallucinationScorer = createScorer({
   name: 'Hallucination',
   description: 'Grounding check against established canon',
   judge: createJudgingConfig(
-    'You are a ruthless fact-checker. Respond with valid JSON containing score (0-1) and reasoning.',
+    'You are a ruthless fact-checker. Score 0-1 (1 = no hallucinations) and explain.',
   ),
 })
   .analyze({

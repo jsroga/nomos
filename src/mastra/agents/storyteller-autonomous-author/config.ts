@@ -14,6 +14,7 @@ import {
   AutonomousAuthorName,
   STORYTELLER_AUTONOMOUS_MAX_RUNS,
 } from './constants'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
 import {
   composeAutonomousAuthorInstructions,
   loadAutonomousGoalJudgePrompt,
@@ -38,5 +39,6 @@ export default agentConfig({
     [checkContinuityTool.id]: checkContinuityTool,
     [listCharactersTool.id]: listCharactersTool,
   },
+  editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
   goal: autonomousGoal,
 })

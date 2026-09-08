@@ -8,7 +8,7 @@ describe('judge family vs author family', () => {
   })
 
   it('rejects a same-family judge', () => {
-    expect(() => assertJudgeFamilyDiffers('openai/gpt-5.6-sol', 'openai/gpt-5.6-luna')).toThrow(
+    expect(() => assertJudgeFamilyDiffers('openai/gpt-5.6-sol', 'openai/gpt-4o')).toThrow(
       SameFamilyJudgeErrorMessage.Rejected
     )
   })

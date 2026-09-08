@@ -23,6 +23,20 @@ export enum GameDesignStreamToolChoice {
   Auto = 'auto',
 }
 
+export enum GameDesignStructuredOutputJsonPromptInjection {
+  Auto = 'auto',
+}
+
+export enum GameDesignStructuredOutputErrorStrategy {
+  Warn = 'warn',
+}
+
+export enum GameDesignToolStructurer {
+  Id = 'game-design-tool-structurer',
+  Name = 'Game Design Tool Structurer',
+  Instructions = 'Produce the requested fields. Do not wrap the result in markdown.',
+}
+
 export enum GameDesignModelSeparator {
   Colon = ':',
   Slash = '/',

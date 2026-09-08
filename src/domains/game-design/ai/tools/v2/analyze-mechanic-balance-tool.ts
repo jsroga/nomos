@@ -4,11 +4,7 @@ import { getErrorMessage } from '@/shared/errors/error-utils'
 import { AnalyzeMechanicBalanceInputSchema } from '../../constants/logic-tool-schemas'
 import { buildAnalyzeMechanicBalancePrompt } from '../../constants/logic-tool-prompts'
 import { LogicToolCopy, LogicToolId, TargetAudience } from '../../constants/logic-tool-wire'
-import {
-  createLogicToolModel,
-  invokeLlmTextPrompt,
-  parseLlmJsonOrError,
-} from './game-design-llm-shared'
+import { createLogicToolModel, invokeLlmJsonPrompt } from './game-design-llm-shared'
 
 export const createAnalyzeMechanicBalanceTool = () =>
   createTool({
@@ -37,12 +33,11 @@ Returns a comprehensive balance report with actionable recommendations.`,
         })
 
         const model = createLogicToolModel()
-        const content = await invokeLlmTextPrompt(prompt, model)
-
-        const { parsed, error } = parseLlmJsonOrError(content)
-        if (!parsed) return { success: false, error }
-
-        const validated = AnalyzeBalanceOutputSchema.parse(parsed)
+        const validated = await invokeLlmJsonPrompt(
+          prompt,
+          model,
+          AnalyzeBalanceOutputSchema,
+        )
         return { success: true, loopId, ...validated }
       } catch (error: unknown) {
         return { success: false, error: getErrorMessage(error) }

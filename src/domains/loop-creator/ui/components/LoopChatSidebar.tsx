@@ -9,7 +9,7 @@ export type { LoopChatSidebarProps } from './loop-chat-sidebar-types'
 
 /**
  * Loop-creator chat — now on assistant-ui (roadmap B4/C1). Talks to the
- * registered `loopCreatorSupervisor` Mastra agent via /api/assistant.
+ * registered `loop-creator-supervisor` Mastra agent via /api/assistant.
  *
  * NOTE: this streams the supervisor agent, not the full LangGraph-style crew
  * orchestration (`/api/loop-creator/chat` → streamLoopCreator). Wiring the crew

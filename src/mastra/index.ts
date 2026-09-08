@@ -7,13 +7,15 @@
  * import side-effect in a parent re-export.
  */
 import dotenv from 'dotenv'
-import { storytellerRuntimeAgents, storytellerRuntimeWorkflows } from '../domains/storyteller/core/io/mastra-runtime'
+import { storytellerRuntimeAgents, storytellerRuntimeWorkflows, storytellerRuntimeTools } from '../domains/storyteller/core/io/mastra-runtime'
 import {
   gameDesignRuntimeAgents,
   gameDesignRuntimeWorkflows,
+  gameDesignRuntimeTools,
 } from '../domains/game-design/core/io/mastra-runtime'
-import { loopCreatorRuntimeAgents } from '../domains/loop-creator/core/io/mastra-runtime'
+import { loopCreatorRuntimeAgents, loopCreatorRuntimeTools } from '../domains/loop-creator/core/io/mastra-runtime'
 import { createMastra, createPostgresStore } from '../shared/agent-kernel/mastra/create-mastra'
+import { seedEditorPromptBlocks } from '../shared/agent-kernel/mastra/seed-editor-prompt-blocks'
 import { studioAgents } from '../shared/agent-kernel/mastra/agents/constants/registry'
 import { studioMcpServers } from '../shared/agent-kernel/mastra/mcp/studio-servers'
 import { consumeMastraRegistrations } from '../shared/agent-kernel/mastra/runtime-registry'
@@ -39,20 +41,29 @@ const registeredWorkflows = {
   ...storytellerRuntimeWorkflows,
   ...gameDesignRuntimeWorkflows,
 }
+const registeredTools = {
+  ...storytellerRuntimeTools,
+  ...gameDesignRuntimeTools,
+  ...loopCreatorRuntimeTools,
+}
 
 const agents = { ...studioAgents, ...registeredAgents }
 const workflowKeys = Object.keys(registeredWorkflows)
+const toolKeys = Object.keys(registeredTools)
 
 export const mastra = createMastra(agents, {
   storage: createPostgresStore(),
   mcpServers: studioMcpServers,
   ...(workflowKeys.length > 0 ? { workflows: registeredWorkflows } : {}),
+  ...(toolKeys.length > 0 ? { tools: registeredTools } : {}),
 })
 
 const workspace = mastra.getWorkspace?.()
 if (workspace) {
   void (async () => {
     try {
+      await mastra.getStorage()?.init()
+      await seedEditorPromptBlocks(mastra)
       await workspace.init()
       console.log(`📂 [Mastra Studio] Workspace ready (${workspace.status})`)
     } catch (err) {

@@ -55,16 +55,7 @@ Design an atomic system where:
 
 Think like Klei: "If fire exists, it should burn ALL flammable things."
 
-Create ${resolveVerbNounCount(input.complexityTarget)} verbs and nouns.
-
-Respond with JSON:
-{
-  "verbs": [{ "id": "string", "name": "string", "targets": ["noun types"], "effects": ["state changes"], "playerInitiated": true }],
-  "nouns": [{ "id": "string", "name": "string", "properties": ["traits"], "states": ["possible states"], "category": "resource|entity|environment|abstract" }],
-  "rules": [{ "id": "string", "verb": "string", "noun": "string", "result": "string", "emergent": ["chains"], "chainable": true/false }],
-  "emergentCombos": [{ "chain": ["verb+noun", "verb+noun"], "outcome": "string", "discoveryDifficulty": "obvious|hidden|secret" }],
-  "systemEleganceScore": 0-10
-}`
+Create ${resolveVerbNounCount(input.complexityTarget)} verbs and nouns.`
 }
 
 type MemoryKeeperPromptInput = {
@@ -117,15 +108,7 @@ Design a memory system where:
 2. **Rumors** spread and distort over time
 3. **Quest triggers** emerge from accumulated events
 
-Think like CDPR: "Twenty hours later, your choice matters."
-
-Respond with JSON:
-{
-  "events": [{ "id": "string", "type": "action|dialogue|discovery|combat|choice", "description": "string", "witnesses": ["npc ids"], "decayDays": number, "propagationRadius": "local|regional|global" }],
-  "rumors": [{ "id": "string", "sourceEvent": "event id", "currentForm": "how told now", "distortionLevel": 0-1, "spreadRate": "slow|medium|fast|viral", "factionReach": ["factions"] }],
-  "questTriggers": [{ "condition": "what triggers", "questSeed": "brief concept", "delay": "immediate|short|long|very_long" }],
-  "worldMemoryDepth": 0-10
-}`
+Think like CDPR: "Twenty hours later, your choice matters."`
 }
 
 type GreyPalettePromptInput = {
@@ -171,39 +154,7 @@ Design impossible choices where:
 3. **Consequences chain** - immediate, short-term, long-term, permanent
 4. **Truth is complicated** - player may never know if they chose "right"
 
-Think like CDPR: "The Bloody Baron is a monster AND a victim."
-
-Respond with JSON:
-{
-  "choices": [{
-    "id": "string",
-    "situation": "the dilemma",
-    "options": [{
-      "id": "string",
-      "action": "what player does",
-      "immediateGain": "optional benefit",
-      "hiddenCost": "optional hidden price",
-      "factionImpact": { "faction_name": -10 to 10 },
-      "moralWeight": "light|moderate|heavy|defining"
-    }],
-    "noGoodChoice": true/false,
-    "delayedConsequence": true/false
-  }],
-  "consequences": [{
-    "triggerId": "choice id",
-    "immediate": ["happens now"],
-    "shortTerm": ["same session"],
-    "longTerm": ["hours later"],
-    "permanent": ["forever changed"]
-  }],
-  "factionTensions": [{
-    "factionA": "name",
-    "factionB": "name",
-    "tension": "allied|neutral|suspicious|hostile|war",
-    "playerCanInfluence": true/false
-  }],
-  "moralComplexityScore": 0-10
-}`
+Think like CDPR: "The Bloody Baron is a monster AND a victim."`
 }
 
 type StrandWeaverPromptInput = {
@@ -237,33 +188,7 @@ Design strand systems where:
 3. **Shared challenges** - Problems that require many hands
 4. **Indirect gifts** - Helping without knowing who
 
-Think like Kojima: "Another player's abandoned farm becomes ruins you discover."
-
-Respond with JSON:
-{
-  "traceTypes": [{
-    "id": "string",
-    "name": "what players leave",
-    "persistence": "session|permanent|decaying",
-    "visibility": "always|proximity|special_condition",
-    "interactable": true/false,
-    "examples": ["specific examples"]
-  }],
-  "legacyElements": [{
-    "id": "string",
-    "sourceType": "death|abandonment|achievement|gift",
-    "element": "what persists",
-    "transformRules": "how it changes",
-    "inheritanceChance": 0-1
-  }],
-  "sharedChallenges": [{
-    "name": "string",
-    "description": "string",
-    "contributionType": "additive|competitive|collaborative",
-    "reward": "string"
-  }],
-  "connectionMeaningScore": 0-10
-}`
+Think like Kojima: "Another player's abandoned farm becomes ruins you discover."`
 }
 
 type SilentTeacherPromptInput = {
@@ -308,31 +233,7 @@ Design implicit learning where:
 
 Think like Klei: "The first enemy IS the lesson."
 
-CRITICAL: "explicitInstruction" must ALWAYS be false. Never tell, always show.
-
-Respond with JSON:
-{
-  "scenarios": [{
-    "id": "string",
-    "mechanicToTeach": "mechanic name",
-    "setupDescription": "how arranged",
-    "failureMode": "what happens on fail",
-    "failureSeverity": "trivial|setback|significant",
-    "successIndicator": "how player knows success",
-    "explicitInstruction": false
-  }],
-  "breadcrumbs": [{
-    "hint": "subtle environmental hint",
-    "mechanic": "what it hints at",
-    "obviousness": "subtle|moderate|clear"
-  }],
-  "safeFailureZones": [{
-    "location": "where",
-    "purpose": "what to practice",
-    "resetCost": "free|minor|moderate"
-  }],
-  "discoveryRespectScore": 0-10
-}`
+CRITICAL: "explicitInstruction" must ALWAYS be false. Never tell, always show.`
 }
 
 type MundanePoetPromptInput = {
@@ -370,29 +271,5 @@ Transform "boring" into ritual where:
 3. **Quiet moments** - silence between storms
 4. **Skip penalties** - rushing has cost
 
-Think like Kojima: "The wait, the breath, the walk - they matter."
-
-Respond with JSON:
-{
-  "rituals": [{
-    "id": "string",
-    "baseMechanic": "the boring action",
-    "ritualName": "what it becomes",
-    "steps": ["deliberate process"],
-    "emotionalPayoff": "what player feels",
-    "frequency": "constant|frequent|occasional|rare",
-    "skipPenalty": "optional cost of rushing"
-  }],
-  "frictionPoints": [{
-    "action": "what",
-    "friction": "intentional slowness",
-    "purpose": "why it matters"
-  }],
-  "quietMoments": [{
-    "trigger": "when it happens",
-    "duration": "how long",
-    "atmosphere": "what it feels like"
-  }],
-  "mundaneBeautyScore": 0-10
-}`
+Think like Kojima: "The wait, the breath, the walk - they matter."`
 }

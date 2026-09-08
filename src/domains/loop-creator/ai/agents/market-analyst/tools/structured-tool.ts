@@ -2,14 +2,16 @@ import { createTool } from '@mastra/core/tools'
 import type { z } from 'zod'
 import { recordFromJson } from '@/shared/data/json-guards'
 
+export enum LoopStructuredToolOutputField {
+  Output = 'output',
+}
+
 export interface LoopStructuredToolFields {
   name: string
   description: string
   schema: z.ZodTypeAny
   func: (input: Record<string, unknown>) => Promise<string>
 }
-
-const TOOL_OUTPUT_KEY = 'output'
 
 /**
  * Single bridge for the market-analyst tools. Emits a native Mastra `createTool`
@@ -25,7 +27,7 @@ export function createLoopStructuredTool(fields: LoopStructuredToolFields) {
     inputSchema: fields.schema,
     execute: async inputData => {
       const result = await fields.func(recordFromJson(inputData))
-      return { [TOOL_OUTPUT_KEY]: result }
+      return { [LoopStructuredToolOutputField.Output]: result }
     },
   })
 }

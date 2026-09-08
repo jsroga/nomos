@@ -19,6 +19,8 @@ import { handleChatStream } from '@mastra/ai-sdk'
 import { createUIMessageStream, createUIMessageStreamResponse, generateId } from 'ai'
 import type { UIMessage } from 'ai'
 import { getMastraInstance, warmMastraStorage } from '@/shared/agent-kernel/mastra-instance'
+import { hasRegisteredAgent } from '@/shared/agent-kernel/mastra/get-published-agent'
+import { MastraAgentVersionStatus } from '@/shared/agent-kernel/mastra/constants/editor'
 import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
 import { withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
 import {
@@ -41,6 +43,7 @@ import {
   isKnownChatModel,
   requestedEpisodePremiseField,
   resolveChatModelId,
+  resolveWriterModelChoice,
   StorytellerAgentId,
 } from '@/domains/storyteller/server'
 import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
@@ -341,7 +344,7 @@ export async function POST(req: Request, { params }: RouteContext) {
 
   const requestContext = buildRequestContext(agentId, raw)
   const mastra = getMastraInstance()
-  if (!mastra.getAgentById(agentId)) {
+  if (!hasRegisteredAgent(agentId)) {
     return new Response(JSON.stringify({ error: AGENT_NOT_FOUND_MESSAGE }), { status: STATUS_NOT_FOUND })
   }
 
@@ -404,6 +407,7 @@ export async function POST(req: Request, { params }: RouteContext) {
         const agentStream = await handleChatStream({
           mastra,
           agentId,
+          agentVersion: { status: MastraAgentVersionStatus.Published },
           version: AiSdkUiMessageVersion.V6,
           params: {
             messages: raw.messages,
@@ -433,7 +437,8 @@ export async function POST(req: Request, { params }: RouteContext) {
       }
       }
       if (projectScope) {
-        const billed = () => withGatewayContext({ scope: projectScope }, runTurn)
+        const writerModel = resolveWriterModelChoice(raw[AssistantChatBodyKey.ModelName])
+        const billed = () => withGatewayContext({ scope: projectScope, writerModel }, runTurn)
         return e2eHarness ? withE2eLlmPin(billed) : billed()
       }
       return e2eHarness ? withE2eLlmPin(runTurn) : runTurn()
@@ -446,8 +451,7 @@ export async function POST(req: Request, { params }: RouteContext) {
 /** Warm the route chunk + Mastra registration without starting a chat turn. */
 export async function GET(_req: Request, { params }: RouteContext) {
   const { agentId } = await params
-  const mastra = getMastraInstance()
-  if (!mastra.getAgentById(agentId)) {
+  if (!hasRegisteredAgent(agentId)) {
     return new Response(JSON.stringify({ error: AGENT_NOT_FOUND_MESSAGE }), { status: STATUS_NOT_FOUND })
   }
   // Not awaited: schema setup is ~30s cold and would otherwise be paid by the

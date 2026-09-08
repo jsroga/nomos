@@ -57,7 +57,7 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 
 - Colocate unit tests next to code. Exclude `*.e2e.test.ts` from default unit runs (need DB/LLM).
 - Coverage (`npm run test:coverage`) uses `@vitest/coverage-v8` on every `src` `.ts`/`.tsx` file (`all: true`). `test:unit` stays uninstrumented. HTML / LCOV / json-summary land in `coverage/` (gitignored); `npm run test:coverage:open` generates then opens the HTML report. Per-file floors for storyteller critical modules (`search-manuscript-embed`, knowledge-ledger checker, promoted-rule merge, queued-verdicts selector) live in `vitest.config.ts` `coverage.thresholds` — not a repo-wide %.
-- E2E needs `npm run dev` (or `dev:stack`) + `.env.local`. **Smoke chat is GLM only** (`modelName: zai-coding-plan:glm-5.2` → OpenRouter `z-ai/glm-5.2`). Never Kimi. Never GPT-5.6 Sol until the operator confirms Sol for product text. Live LLM scorers do not run on smoke or HTTP chat — scoring is `npm run eval` / Studio Trace Evaluate (`JUDGING_MODEL` may be Sol). Pause and tell the operator on OpenRouter **insufficient credits** (distinct from in-flight 402). Default Playwright (`:3001` production start) sets `DATABASE_SSL_REJECT_UNAUTHORIZED=false` so a TLS-inspecting proxy does not block Postgres.
+- E2E needs `npm run dev` (or `dev:stack`) + `.env.local`. **Smoke chat is GLM only** (`modelName: zai-coding-plan:glm-5.2` → OpenRouter `z-ai/glm-5.2`). Never Kimi, never GPT-5.6 Sol — smoke checks wiring, not writing quality, so it stays on the cheap tier. Live LLM scorers do not run on smoke or HTTP chat — scoring is `npm run eval` / Studio Trace Evaluate (`JUDGING_MODEL` may be Sol). Pause and tell the operator on OpenRouter **insufficient credits** (distinct from in-flight 402). Default Playwright (`:3001` production start) sets `DATABASE_SSL_REJECT_UNAUTHORIZED=false` so a TLS-inspecting proxy does not block Postgres.
 - Golden set: `evals/datasets/storyteller-golden.ts`.
 - `npm run eval` is a **fixture-only alias** of `eval:scorer-fixture`. It is not agent quality.
 
@@ -80,6 +80,11 @@ npm run eval:noise           # re-measure σ after changing a judge or the golde
 **These fixture scorers are not agent quality.** They score frozen
 `referenceOutput` on golden examples. A green `eval:scorer-fixture` does not
 mean the live beat-draft agent improved.
+
+LLM-as-judge prompts (`src/shared/agent-kernel/prompts/registry-evaluation-prompts.ts`
+and scorer instructions) describe criteria in prose. The response shape is the
+analyze `outputSchema`; `createJudgingConfig` sets `jsonPromptInjection: true`
+because OpenRouter chat completions cannot host Mastra's Responses-API tool schema.
 
 **A regression is a drop beyond noise, not any drop.** LLM judges are
 stochastic; a hard `>=` on a mean of 24 examples fails constantly, and a gate
@@ -250,7 +255,11 @@ Opt-in flags are named `FF_<NAME>` and turn on with the exact value `true`; anyt
 
 ## Model routing
 
-Every model resolves through the OpenRouter gateway on `OPENROUTER_API_KEY`. Defaults live in `src/shared/agent-kernel/models.ts` and the per-domain `config/model-config.ts`; agents default to `openrouter/auto-beta`. Pin a slot by setting its env var to a `provider/model` id — the gateway prefix is added automatically.
+The full map of agents, models, tools, scores, workflows and jobs is [MODEL_MAP.md](./MODEL_MAP.md). This section is the operator levers.
+
+Text generation runs on **three models and no others**, all reached through the OpenRouter gateway on `OPENROUTER_API_KEY`. Constants live in `src/shared/agent-kernel/models.ts`; prices are the committed table in `src/shared/ai/gateway/constants/pricing.ts`. An unpriced model throws rather than recording as free. Pin a slot to a `provider/model` id — the gateway prefix is added automatically. `GET /api/settings/models` prints the resolved role→model table with provenance.
+
+Precedence: writer's chat picker → admin panel slot → env var → matrix lane. The picker retargets chat, author, planner and premise; critic and muse stay on GLM. See [MODEL_MAP.md](./MODEL_MAP.md) for which agent reads which slot.
 
 ### OpenRouter account controls
 
@@ -264,26 +273,9 @@ Operator-only. Do this in the OpenRouter dashboard, not in app code:
 
 Do **not** add an app-layer regex prompt-injection filter. Fiction dialogue will trip it. Do **not** enable OpenRouter `person-name` or `address` filters.
 
-| Slot | Env var | Resolver |
-|---|---|---|
-| Storyteller chat (Writers Room) | UI picker → `STORYTELLER_CHAT_MODEL` → matrix `chat` | `resolveRoleModel('chat')` + RequestContext `storyteller.chatModel` |
-| Overlay session title | `complete()` + `TEXT_GEN_FAST_MODEL` | `LlmFeature.ChatSessionTitle` (`chat.session-title`); fire-and-forget; rename locks |
-| Storyteller orchestration | `STORYTELLER_{AUTHOR,PLANNER,CRITIC,MUSE,PREMISE}_MODEL` | `ROLE_ENV_VARS` → `resolveRoleModel` (not the chat picker) |
-| Game design | `GAME_DESIGN_MODEL` | `domains/game-design/config/model-config.ts` |
-| Loop creator | `LOOP_CREATOR_MODEL` | `domains/loop-creator/config/model-config.ts` |
-| Generation | `GENERATION_MODEL`, `GENERATION_MODEL_FAST`, `GENERATION_MODEL_CREATIVE` | `models.ts` |
-| Planning | `PLANNING_MODEL`, `PLANNING_MODEL_REASONING` | `models.ts` |
-| Embeddings | `EMBEDDING_MODEL` (default `openai/text-embedding-3-small`) | OpenRouter `/embeddings` |
-| Eval judges | `JUDGING_MODEL`, `JUDGING_MODEL_FALLBACK` | `models.ts` |
-| Chat picker fallback (client default) | `NEXT_PUBLIC_DEFAULT_AGENT_MODEL` | `resolveChatModelId` when env chat pin unset |
-
-**Writers Room vs orchestration.** The composer offers three catalog models (Kimi / GLM / Opus). Default when the picker is unset: Kimi (`DEFAULT_CHAT_MODEL`). That choice only overrides the **chat adapter**. Beat-draft author, planner, critics, muse, and premise use their own matrix rows and `STORYTELLER_*_MODEL` pins — never the picker. `STORYTELLER_CHAT_MODEL` is the server default when the client sends no picker id. GPT-5.6 Sol is the eval judge default (`JUDGING_MODEL`), not a chat/generation slot, until the operator confirms it for product text.
-
 **Image models (Apiframe)** — pixel paths use `APIFRAME_API_KEY` only. Pin a surface with `IMAGE_*_MODEL` (see `.env.local.example`). First tile defaults to `midjourney`. Moodboard defaults to `midjourney` (`IMAGE_MOODBOARD_MODEL`). Combined episode storyboard video defaults to Kling 3.0 storyboard look (`IMAGE_STORYBOARD_VIDEO_MODEL`); CorkBoard offers Kling/Seedance × film-like/storyboard-like. Duration is hardcoded to 15s. Kling sends `klingParams.multi_prompt` as a JSON string of `[{prompt, duration}, …]` (max 6 shots, each 1–12s, summing to the clip) plus a look-specific `negative_prompt`. Seedance has neither field — look is locked in the prompt (`Avoid: …`). Native `generate_audio` is a sound bed. Every preset then gets one continuous spoken voice-over (Luna script → OpenRouter `/audio/speech` with look + opening-beat `instructions` → ffmpeg mix) on `OPENROUTER_API_KEY`. Mix uses `FFMPEG_PATH`/`FFPROBE_PATH` when set (Trigger cloud ffmpeg extension), otherwise `ffmpeg-static`/`ffprobe-static` — local `trigger dev` does not install apt ffmpeg. Missing binaries skip VO and still save the video. Episode posters and series posters honor `IMAGE_EPISODE_POSTER_MODEL` and `IMAGE_SERIES_POSTER_MODEL`. Generate values: `midjourney` · `nano-banana` · `nano-banana-pro` · `grok-imagine-image` · `gpt-image-1.5` · `flux-2-pro`. Video: `kling-3.0` · `seedance-2.5`. Upscale: `topaz-image-upscale` · `clarity-upscale` · `midjourney`. Repaint: `gpt-image-2`. Resolvers live in `src/shared/ai/image-model-env.ts` and `src/shared/ai/storyboard-video-env.ts`.
 
-Overrides are read at call time, not module load, so dotenv scripts and per-environment rollbacks work regardless of import order. `GET /api/settings/models` prints the resolved role→model table with provenance.
-
-The Writers Room picker offers three catalog models (Kimi / GLM / Opus); selection is chat-only. Orchestration pins use `STORYTELLER_{AUTHOR,PLANNER,CRITIC,MUSE,PREMISE}_MODEL`. Text LLMs, RAG embeddings, and Cohere rerank use `OPENROUTER_API_KEY` only — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` are optional legacy fallbacks. Image paths use Apiframe (`APIFRAME_API_KEY`).
+Text LLMs, RAG embeddings, and Cohere rerank use `OPENROUTER_API_KEY` only — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` are optional legacy fallbacks. Image paths use Apiframe (`APIFRAME_API_KEY`).
 
 ## Adding a background task
 

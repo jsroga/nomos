@@ -9,8 +9,6 @@ import {
 } from '@mastra/core/tools'
 import type { Agent } from '@mastra/core/agent'
 import {
-  continuityCritic,
-  stakesCritic,
   CriticReportSchema,
   formatCriticReport,
 } from '@/domains/storyteller/ai/agents/critics'
@@ -31,6 +29,10 @@ import {
 } from './constants/beat-draft-workflow'
 import { checkArtifactWorldRuleContinuity } from '@/domains/storyteller/core/artifact/check-artifact-world-rule-continuity'
 import { assembleCanon } from './fix-inconsistencies-default-deps'
+import {
+  publishedContinuityCritic,
+  publishedStakesCritic,
+} from './published-workflow-agents'
 import type { ArtifactDraftDeps, ArtifactDraftInput, ArtifactDraftPersistResult } from './artifact-draft-deps-types'
 
 enum ArtifactDraftPersistCopy {
@@ -99,6 +101,10 @@ function bibleFieldValue(section: BibleSection, draft: string): unknown {
     const rec = recordFromJson(parsed)
     if (Object.keys(rec).length > 0) return rec
     return { books: [{ title: draft }] }
+  }
+  if (section === BibleSection.EPISODE_ROADMAP) {
+    const rec = recordFromJson(parsed)
+    if (Object.keys(rec).length > 0) return rec
   }
   return typeof parsed === 'string' ? parsed : draft
 }
@@ -238,9 +244,13 @@ export const defaultArtifactDraftDeps: ArtifactDraftDeps = {
   critique: async (scope, draft, canonText) => {
     const prompt = `CANON:\n${canonText}\n\nDRAFT:\n${draft}`
     if (scope === ProblemType.DecisionOwnership) {
-      return runCritic(stakesCritic, BeatDraftCriticName.Stakes, prompt)
+      return runCritic(await publishedStakesCritic(), BeatDraftCriticName.Stakes, prompt)
     }
-    return runCritic(continuityCritic, BeatDraftCriticName.Continuity, prompt)
+    return runCritic(
+      await publishedContinuityCritic(),
+      BeatDraftCriticName.Continuity,
+      prompt,
+    )
   },
 
   persist: async input => {

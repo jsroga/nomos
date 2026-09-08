@@ -13,6 +13,10 @@ export class PromptRepository implements IPromptRepository {
     this.localRegistry.set(definition.name, definition)
   }
 
+  listRegistered(): PromptDefinition[] {
+    return [...this.localRegistry.values()]
+  }
+
   async getPrompt(name: string, variables: PromptVariables = {}): Promise<string> {
     if (this.useRemote) {
       console.warn(

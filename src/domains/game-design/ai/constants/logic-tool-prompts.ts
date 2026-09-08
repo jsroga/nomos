@@ -33,18 +33,7 @@ ${input.mechanics.map(mechanic => `- ${mechanic.name} (${mechanic.type}): ${mech
 
 Focus on the MOST ENGAGING and FREQUENTLY REPEATED loop.
 
-Respond with JSON matching this schema:
-{
-  "coreLoop": {
-    "name": "string - name of the loop",
-    "type": "compulsion|core|meta|social|monetization",
-    "mechanics": ["array of mechanic IDs involved"],
-    "cycleDuration": { "min": number, "max": number, "unit": "seconds|minutes|hours" },
-    "psychologicalHook": "string explaining the engagement driver"
-  },
-  "confidence": 0-1 number,
-  "reasoning": "string explaining your analysis"
-}`
+Name the core loop, its type (compulsion/core/meta/social/monetization), the mechanic IDs involved, cycle duration, psychological hook, confidence (0-1), and reasoning.`
 }
 
 function formatMechanicBalanceLine(mechanic: GameMechanic): string {
@@ -87,26 +76,7 @@ ${input.resources.map(resource => `- ${resource.name} (${resource.type}): starts
 Be specific about which mechanics cause problems and how to fix them.
 Consider the target audience - casual players have less tolerance for grind.
 
-Respond with JSON matching this schema:
-{
-  "overallScore": 0-10 number,
-  "economyHealth": "healthy|inflationary|deflationary|broken",
-  "issues": [
-    {
-      "severity": "critical|warning|suggestion",
-      "type": "reward_imbalance|effort_mismatch|loop_break|dead_end|grind_detected|resource_flood|resource_drought",
-      "description": "string",
-      "affectedMechanics": ["mechanic names"],
-      "suggestedFix": "optional string"
-    }
-  ],
-  "recommendations": ["array of strings"],
-  "simulationResults": {
-    "timeToFirstReward": number in seconds,
-    "resourcesAtSessionEnd": { "resourceName": value },
-    "playerSatisfactionEstimate": 0-10 number
-  }
-}`
+Return overallScore (0-10), economyHealth, issues (severity, type, description, affectedMechanics, suggestedFix), recommendations, and simulationResults (timeToFirstReward, resourcesAtSessionEnd, playerSatisfactionEstimate).`
 }
 
 function formatExpansionHint(direction: string): string {
@@ -164,21 +134,7 @@ ${input.existingMechanics.map(mechanic => `- ${mechanic.name}: ${mechanic.descri
 
 Be creative but practical. Suggestions should enhance player engagement without overwhelming them.
 
-Respond with JSON matching this schema:
-{
-  "suggestions": [
-    {
-      "id": "uuid string",
-      "type": "new_mechanic|new_loop|balance_tweak|progression_gate",
-      "title": "string",
-      "description": "string",
-      "impact": { "engagement": -5 to 5, "complexity": -5 to 5, "monetization": -5 to 5 },
-      "implementation": "string describing how to implement",
-      "priority": "high|medium|low"
-    }
-  ],
-  "overallDirection": "string with strategic advice"
-}`
+Return suggestions (id, type, title, description, impact on engagement/complexity/monetization, implementation, priority) and overallDirection.`
 }
 
 export { joinWithCommaSpace, ListSeparator }

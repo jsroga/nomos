@@ -6,11 +6,7 @@ import {
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { buildIdentifyCoreLoopPrompt } from '../../constants/logic-tool-prompts'
 import { LogicToolCopy, LogicToolId, TargetAudience } from '../../constants/logic-tool-wire'
-import {
-  createLogicToolModel,
-  invokeLlmTextPrompt,
-  parseLlmJsonOrError,
-} from './game-design-llm-shared'
+import { createLogicToolModel, invokeLlmJsonPrompt } from './game-design-llm-shared'
 
 export const createIdentifyCoreLoopTool = () =>
   createTool({
@@ -36,12 +32,11 @@ what psychological hooks are at play, and how long each cycle typically takes.`,
         })
 
         const model = createLogicToolModel()
-        const content = await invokeLlmTextPrompt(prompt, model)
-
-        const { parsed, error } = parseLlmJsonOrError(content)
-        if (!parsed) return { success: false, error }
-
-        const validated = IdentifyCoreLoopOutputSchema.parse(parsed)
+        const validated = await invokeLlmJsonPrompt(
+          prompt,
+          model,
+          IdentifyCoreLoopOutputSchema,
+        )
         return { success: true, ...validated }
       } catch (error: unknown) {
         return { success: false, error: getErrorMessage(error) }

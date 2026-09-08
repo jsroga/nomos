@@ -17,7 +17,8 @@ import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import '@/shared/data/server-guard'
 import type { BaseMessage } from '@/shared/chat/core/message'
 import type { ProjectScope } from '@/shared/auth/project-scope'
-import { complete } from '@/shared/ai/gateway'
+import { complete, completeStructured } from '@/shared/ai/gateway'
+import type { ZodType } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
@@ -26,6 +27,7 @@ import {
   LoopCreatorMastraAgentId,
   loopCreatorMastraAgentById,
 } from './loop-creator-mastra-agents'
+import { getPublishedAgentOr } from '@/shared/agent-kernel/mastra/get-published-agent'
 
 const COMPLETION_SPAN_PREFIX = 'loop-creator.completion.'
 const FALLBACK_USER_PROMPT = 'Proceed.'
@@ -33,7 +35,9 @@ const HISTORY_HEADER = 'Recent conversation:'
 const ROLE_ASSISTANT = 'assistant'
 const ROLE_SYSTEM = 'system'
 const ROLE_USER = 'user'
-const JSON_ONLY_DIRECTIVE = 'Respond ONLY with a single valid JSON object, no prose.'
+export enum LoopCreatorStructuredOutputErrorStrategy {
+  Warn = 'warn',
+}
 
 /** Whether the flagged Mastra path is active. */
 export function isLoopCreatorMastraEnabled(): boolean {
@@ -76,38 +80,36 @@ export interface LoopCreatorCompletionParams {
   temperature: number
   /** LangChain-path model override (`state.modelConfig?.model`). */
   modelOverride?: string
-  /** Force JSON-object output (loop-planner). */
-  jsonMode?: boolean
   traceId?: string
   /** The project this run bills to. */
   scope: ProjectScope
 }
 
+function resolveCompletionPrompt(params: LoopCreatorCompletionParams): string {
+  const historyText = flattenHistory(params.history ?? [])
+  const promptParts: string[] = []
+  if (historyText) promptParts.push(historyText)
+  if (params.userPrompt) promptParts.push(params.userPrompt)
+  return promptParts.length > 0 ? promptParts.join('\n\n') : FALLBACK_USER_PROMPT
+}
+
 /**
- * Run one specialist completion on Mastra and return the raw text (the callers
- * regex-parse JSON out of it, exactly as with the LangChain path).
+ * Run one specialist completion on Mastra and return the raw text.
  */
 export async function runLoopCreatorMastraCompletion(
   params: LoopCreatorCompletionParams
 ): Promise<string> {
-  const agent = loopCreatorMastraAgentById[params.agentId]
-  const historyText = flattenHistory(params.history ?? [])
+  const codeAgent = loopCreatorMastraAgentById[params.agentId]
+  const agent = await getPublishedAgentOr(params.agentId, codeAgent)
 
   return withMastraSpan(
     params.traceId ?? uuidv4(),
     `${COMPLETION_SPAN_PREFIX}${params.agentId}`,
     async () => {
-      const promptParts: string[] = []
-      if (historyText) promptParts.push(historyText)
-      if (params.userPrompt) promptParts.push(params.userPrompt)
-      const prompt = promptParts.length > 0 ? promptParts.join('\n\n') : FALLBACK_USER_PROMPT
-
-      const instructions = params.jsonMode
-        ? `${params.systemPrompt}\n\n${JSON_ONLY_DIRECTIVE}`
-        : params.systemPrompt
+      const prompt = resolveCompletionPrompt(params)
 
       const response = await meteredCall(LlmFeature.LoopCreator, () => agent.generate(prompt, {
-        instructions,
+        instructions: params.systemPrompt,
         modelSettings: { temperature: params.temperature },
       }))
 
@@ -148,8 +150,7 @@ async function runLoopCreatorDirectCompletion(
 
 /**
  * Unified specialist completion seam: routes to the Mastra `Agent`
- * (`FF_LOOP_CREATOR_MASTRA=true`) or the default LangChain path. Returns the raw text;
- * callers regex-parse JSON out of it in both cases.
+ * (`FF_LOOP_CREATOR_MASTRA=true`) or the gateway text path.
  */
 export async function runLoopCreatorCompletion(
   params: LoopCreatorCompletionParams
@@ -157,4 +158,68 @@ export async function runLoopCreatorCompletion(
   return isLoopCreatorMastraEnabled()
     ? runLoopCreatorMastraCompletion(params)
     : runLoopCreatorDirectCompletion(params)
+}
+
+export interface LoopCreatorStructuredCompletionParams<T> extends LoopCreatorCompletionParams {
+  schema: ZodType<T>
+}
+
+async function runLoopCreatorMastraStructuredCompletion<T>(
+  params: LoopCreatorStructuredCompletionParams<T>
+): Promise<T | null> {
+  const codeAgent = loopCreatorMastraAgentById[params.agentId]
+  const agent = await getPublishedAgentOr(params.agentId, codeAgent)
+  const prompt = resolveCompletionPrompt(params)
+
+  try {
+    return await withMastraSpan(
+      params.traceId ?? uuidv4(),
+      `${COMPLETION_SPAN_PREFIX}${params.agentId}`,
+      async () => {
+        const response = await meteredCall(LlmFeature.LoopCreator, () =>
+          agent.generate(prompt, {
+            instructions: params.systemPrompt,
+            structuredOutput: {
+              schema: params.schema,
+              errorStrategy: LoopCreatorStructuredOutputErrorStrategy.Warn,
+            },
+            modelSettings: { temperature: params.temperature },
+          })
+        )
+        const parsed = params.schema.safeParse(response.object)
+        return parsed.success ? parsed.data : null
+      },
+      { agentId: params.agentId, temperature: params.temperature }
+    )
+  } catch {
+    return null
+  }
+}
+
+async function runLoopCreatorDirectStructuredCompletion<T>(
+  params: LoopCreatorStructuredCompletionParams<T>
+): Promise<T | null> {
+  try {
+    return await completeStructured({
+      scope: params.scope,
+      feature: LlmFeature.LoopCreator,
+      model: resolveLoopCreatorModel(params.modelOverride),
+      system: params.systemPrompt,
+      prompt: resolveCompletionPrompt(params),
+      temperature: params.temperature,
+      schema: params.schema,
+      traceId: params.traceId,
+    })
+  } catch {
+    return null
+  }
+}
+
+/** Specialist completion with Mastra / gateway structured output. */
+export async function runLoopCreatorStructuredCompletion<T>(
+  params: LoopCreatorStructuredCompletionParams<T>
+): Promise<T | null> {
+  return isLoopCreatorMastraEnabled()
+    ? runLoopCreatorMastraStructuredCompletion(params)
+    : runLoopCreatorDirectStructuredCompletion(params)
 }

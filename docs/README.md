@@ -1,6 +1,6 @@
 # Documentation
 
-> World Building Kit — **exactly seven** markdown files, flat under `docs/` (no subfolders).  
+> World Building Kit — **eight** topic files plus this index, flat under `docs/` (no subfolders).  
 > Enforced by `src/__tests__/structure.test.ts` + `scripts/check-agent-artifacts.mjs`  
 > (allowlist: `scripts/structure-gates/docs-allowlist.mjs`).
 
@@ -13,6 +13,7 @@
 | [DESIGN.md](./DESIGN.md) | Product UI contract (tokens, projects, chat, marketing SSR) |
 | [MCP_API.md](./MCP_API.md) | MCP tools / auth for integrators |
 | [DECISIONS.md](./DECISIONS.md) | Architecture decision log — what was decided, what was rejected, and why |
+| [MODEL_MAP.md](./MODEL_MAP.md) | Agents, models, tools, scores — the whole wiring |
 | [README.md](./README.md) | This index |
 
 ## Also at repo root

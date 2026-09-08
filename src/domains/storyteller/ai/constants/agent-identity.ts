@@ -47,7 +47,7 @@ export enum GrrmAuthorAgentDescription {
   GrrmAuthor =
     'The solo creative mind — drafts and revises script beats with craft mechanics (Law of Motion, anti-slop, subtext dialogue).',
   BeatPlanner =
-    'Plans beat structure as JSON (goal, conflict, turn, dialogue hook) — never writes prose.',
+    'Plans beat structure (goal, conflict, turn, dialogue hook) — never writes prose.',
 }
 
 export enum GrrmAuthorAgentSpan {

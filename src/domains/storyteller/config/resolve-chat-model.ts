@@ -21,6 +21,17 @@ import {
  * `STORYTELLER_CHAT_MODEL`, else `NEXT_PUBLIC_DEFAULT_AGENT_MODEL`, else the
  * catalog default.
  */
+/**
+ * The picker choice to carry on the gateway context, or undefined when the
+ * request named nothing usable. Read by the writing roles (chat, author,
+ * planner, premise) — never by the hardcoded cheap tier.
+ */
+export function resolveWriterModelChoice(rawModel: unknown): string | undefined {
+  if (typeof rawModel !== 'string' || !rawModel.trim()) return undefined
+  const resolved = resolveChatModelId(rawModel)
+  return isKnownChatModel(resolved) ? resolved : undefined
+}
+
 export function resolveChatModelId(modelName?: string | null): string {
   const trimmed = typeof modelName === 'string' ? modelName.trim() : ''
   if (trimmed) return trimmed

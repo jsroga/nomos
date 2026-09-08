@@ -14,7 +14,7 @@ export const magicScorer = createScorer({
   name: 'Magic Score',
   description: 'Creative quality, originality, and anti-slop evaluation',
   judge: createJudgingConfig(
-    'You are a ruthless creative writing critic. Respond with valid JSON matching the requested schema.',
+    'You are a ruthless creative writing critic.',
   ),
 })
   .analyze({

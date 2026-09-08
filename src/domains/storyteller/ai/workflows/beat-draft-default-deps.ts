@@ -11,10 +11,6 @@ import { BeatPlanSchema } from '@/domains/storyteller/ai/agents/BeatPlanner/beat
 import { brainstormWildIdeas } from '@/domains/storyteller/ai/agents/Muse/brainstorm'
 import { rankWildIdeas } from '@/domains/storyteller/ai/agents/Muse/rank'
 import {
-  continuityCritic,
-  dialogueCritic,
-  proseCritic,
-  stakesCritic,
   CriticReportSchema,
   formatCriticReport,
 } from '@/domains/storyteller/ai/agents/critics'
@@ -30,7 +26,14 @@ import {
 import { packMasterPromptVoice } from '@/domains/storyteller/services/pack-master-prompt-voice'
 import { claimCheckBeat as runClaimCheckBeat } from '@/domains/storyteller/core/claim-check'
 import { humanizeBeatDraft } from './beat-draft-humanize'
-import { statelessGrrmAuthor, statelessBeatPlanner } from './stateless-agents'
+import {
+  publishedBeatPlanner,
+  publishedContinuityCritic,
+  publishedDialogueCritic,
+  publishedGrrmAuthor,
+  publishedProseCritic,
+  publishedStakesCritic,
+} from './published-workflow-agents'
 import {
   BEAT_DRAFT_AUTHOR_CANON_CHAR_BUDGET,
   BEAT_DRAFT_AUTHOR_CANON_TRUNCATED,
@@ -161,10 +164,11 @@ export async function generateAuthorDraft(prompt: string): Promise<string> {
 
 Respond with the script beat only. No thinking tags, no markdown fences, no preamble.`
 
+  const author = await publishedGrrmAuthor()
   const response = await meteredCall(LlmFeature.StorytellerBeatDraft, () =>
     raceAuthorGenerate(
       abortSignal =>
-        statelessGrrmAuthor.generate(hardened, {
+        author.generate(hardened, {
           toolChoice: BeatDraftToolChoice.None,
           maxSteps: 1,
           abortSignal,
@@ -283,7 +287,8 @@ ${ctx.characters.length > 0 ? `Characters available: ${ctx.characters.join(BEAT_
 ${sparksBlock ?? ''}
 Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.${retryBlock}`
 
-    const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => statelessBeatPlanner.generate(prompt, {
+    const planner = await publishedBeatPlanner()
+    const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => planner.generate(prompt, {
       structuredOutput: { schema: BeatPlanSchema },
     }))
     const plan = BeatPlanSchema.safeParse(response.object)
@@ -332,28 +337,40 @@ Output ONLY the script beat — no preamble, no notes.${lintBlock}`
   critiqueContinuity: async (draft, canon) => {
     const canonBlock = `CANON:\n${canon}`
     const draftBlock = `DRAFT BEAT:\n${draft}`
-    return runCritic(continuityCritic, BeatDraftCriticName.Continuity, `${canonBlock}\n\n${draftBlock}`)
+    return runCritic(
+      await publishedContinuityCritic(),
+      BeatDraftCriticName.Continuity,
+      `${canonBlock}\n\n${draftBlock}`,
+    )
   },
 
   critiqueProse: async (draft, _canon) => {
     const draftBlock = `DRAFT BEAT:\n${draft}`
-    return runCritic(proseCritic, BeatDraftCriticName.Prose, draftBlock)
+    return runCritic(await publishedProseCritic(), BeatDraftCriticName.Prose, draftBlock)
   },
 
   critiqueStakes: async (draft, canon) => {
     const canonBlock = `CANON:\n${canon}`
     const draftBlock = `DRAFT BEAT:\n${draft}`
-    return runCritic(stakesCritic, BeatDraftCriticName.Stakes, `${canonBlock}\n\n${draftBlock}`)
+    return runCritic(
+      await publishedStakesCritic(),
+      BeatDraftCriticName.Stakes,
+      `${canonBlock}\n\n${draftBlock}`,
+    )
   },
 
   critiqueDialogue: async (draft, _canon) => {
     const draftBlock = `DRAFT BEAT:\n${draft}`
-    return runCritic(dialogueCritic, BeatDraftCriticName.Dialogue, draftBlock)
+    return runCritic(
+      await publishedDialogueCritic(),
+      BeatDraftCriticName.Dialogue,
+      draftBlock,
+    )
   },
 
   reviewStyleFidelity: async diff => {
     return runCritic(
-      proseCritic,
+      await publishedProseCritic(),
       BeatDraftCriticName.Prose,
       `${BeatDraftStyleFidelity.PromptPrefix}\n\n${diff}`
     )

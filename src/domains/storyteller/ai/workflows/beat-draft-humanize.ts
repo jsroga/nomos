@@ -19,7 +19,7 @@ import {
   type ToolExecutionContext,
   type ValidationError,
 } from '@mastra/core/tools'
-import { statelessGrrmAuthor } from './stateless-agents'
+import { publishedGrrmAuthor } from './published-workflow-agents'
 import {
   BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
   BeatDraftGenerateTimeoutKind,
@@ -116,10 +116,11 @@ export async function humanizeBeatDraft(
     BeatDraftHumanizerCopy.Instruction,
   ].join(BEAT_DRAFT_CRITIQUE_JOIN)
 
+  const author = await publishedGrrmAuthor()
   const response = await meteredCall(LlmFeature.StorytellerBeatHumanize, () =>
     raceAuthorGenerate(
       abortSignal =>
-        statelessGrrmAuthor.generate(prompt, {
+        author.generate(prompt, {
           toolChoice: BeatDraftToolChoice.None,
           maxSteps: 1,
           abortSignal,

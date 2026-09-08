@@ -14,10 +14,11 @@
 
 import '@/shared/data/server-guard'
 import { registerMastraModule } from '@/shared/agent-kernel/mastra/runtime-registry'
-import { loopCreatorRuntimeAgents } from '@/domains/loop-creator/ai/agents/mastra/loop-creator-mastra-agents'
+import { loopCreatorRuntimeAgents, loopCreatorRuntimeTools } from '@/domains/loop-creator/ai/agents/mastra/loop-creator-mastra-agents'
 
-export { loopCreatorRuntimeAgents } from '@/domains/loop-creator/ai/agents/mastra/loop-creator-mastra-agents'
+export { loopCreatorRuntimeAgents, loopCreatorRuntimeTools } from '@/domains/loop-creator/ai/agents/mastra/loop-creator-mastra-agents'
 
 registerMastraModule({
   agents: loopCreatorRuntimeAgents,
+  tools: loopCreatorRuntimeTools,
 })

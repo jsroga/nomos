@@ -42,7 +42,7 @@ export const storyMotionScorer = createScorer({
   description:
     'Law of Motion: the ratio of state-changing beats to static beats, with a hard zero for prose that ENDS on stasis.',
   judge: createJudgingConfig(
-    'You are a structural referee. You inventory story motion precisely: who acted, what changed, what cannot be undone. Mood is not motion. Respond with valid JSON matching the requested schema.',
+    'You are a structural referee. You inventory story motion precisely: who acted, what changed, what cannot be undone. Mood is not motion.',
   ),
 })
   .analyze({

@@ -3,24 +3,21 @@ import { describe, expect, it } from 'vitest'
 import { ARTIFACT_DRAFT_WORKFLOW_ID } from '@/domains/storyteller/ai/workflows/artifact-draft-contract'
 import { BEAT_DRAFT_WORKFLOW_ID } from '@/domains/storyteller/ai/workflows/beat-draft-contract'
 import { FIX_INCONSISTENCIES_WORKFLOW_ID } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-contract'
-import {
-  bindStorytellerWorkflowRegistry,
-  StorytellerWorkflowExportName,
-} from '../storyteller-workflow-registry'
+import { bindStorytellerWorkflowRegistry } from '../storyteller-workflow-registry'
 
 describe('bindStorytellerWorkflowRegistry', () => {
-  it('registers kebab-case contract ids and camelCase export names', () => {
+  it('registers one key per contract id', () => {
     const bound = bindStorytellerWorkflowRegistry({
       beatDraft: 'beat',
       artifactDraft: 'artifact',
       fixInconsistencies: 'fix',
     })
-    expect(bound[BEAT_DRAFT_WORKFLOW_ID]).toBe('beat')
-    expect(bound[StorytellerWorkflowExportName.BeatDraft]).toBe('beat')
-    expect(bound[ARTIFACT_DRAFT_WORKFLOW_ID]).toBe('artifact')
-    expect(bound[StorytellerWorkflowExportName.ArtifactDraft]).toBe('artifact')
-    expect(bound[FIX_INCONSISTENCIES_WORKFLOW_ID]).toBe('fix')
-    expect(bound[StorytellerWorkflowExportName.FixInconsistencies]).toBe('fix')
+    expect(bound).toEqual({
+      [BEAT_DRAFT_WORKFLOW_ID]: 'beat',
+      [ARTIFACT_DRAFT_WORKFLOW_ID]: 'artifact',
+      [FIX_INCONSISTENCIES_WORKFLOW_ID]: 'fix',
+    })
+    expect(Object.keys(bound)).toHaveLength(3)
   })
 
   it('binds production Mastra keys so getWorkflow(contract id) succeeds', () => {

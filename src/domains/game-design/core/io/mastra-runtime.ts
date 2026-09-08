@@ -20,8 +20,11 @@
 
 import '@/shared/data/server-guard'
 import type { Agent } from '@mastra/core/agent'
+import type { Config } from '@mastra/core/mastra'
 import { registerMastraModule } from '@/shared/agent-kernel/mastra/runtime-registry'
 import { GameDesignAgent } from '@/domains/game-design/ai/agents/game-design-agent'
+import { createGameDesignToolList } from '@/domains/game-design/ai/constants/game-design-tools'
+import { GameDesignAgentId } from '@/domains/game-design/ai/constants/agent-identity'
 import { createGameLoopWorkflowGraph } from '@/domains/game-design/ai/workflows/game-loop-workflow'
 import { GAME_LOOP_WORKFLOW_ID } from '@/domains/game-design/ai/workflows/game-loop-workflow-schemas'
 
@@ -32,12 +35,15 @@ import { GAME_LOOP_WORKFLOW_ID } from '@/domains/game-design/ai/workflows/game-l
  */
 const gameDesignAgent = GameDesignAgent.createSync()
 
-/** The workflow graph registered on the central instance (Studio can run it). */
 const gameLoopWorkflowGraph = createGameLoopWorkflowGraph(gameDesignAgent)
 
-/** Agents registered on the production Mastra instance. */
+export const gameDesignRuntimeTools: NonNullable<Config['tools']> = Object.fromEntries(
+  createGameDesignToolList().map(tool => [tool.id, tool]),
+)
+
+/** Agents registered on the production Mastra instance. Keys match agent.id. */
 export const gameDesignRuntimeAgents: Record<string, Agent> = {
-  gameDesign: gameDesignAgent.mastraAgent,
+  [GameDesignAgentId.GameDesignAgent]: gameDesignAgent.mastraAgent,
 }
 
 /** Workflows registered on the production Mastra instance. */
@@ -48,4 +54,5 @@ export const gameDesignRuntimeWorkflows = {
 registerMastraModule({
   agents: gameDesignRuntimeAgents,
   workflows: gameDesignRuntimeWorkflows,
+  tools: gameDesignRuntimeTools,
 })

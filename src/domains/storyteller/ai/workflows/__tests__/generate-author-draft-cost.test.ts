@@ -13,6 +13,12 @@ vi.mock('../stateless-agents', () => ({
   statelessBeatPlanner: { generate: vi.fn() },
 }))
 
+vi.mock('@/shared/agent-kernel/mastra/get-published-agent', () => ({
+  hasRegisteredAgent: () => false,
+  getPublishedAgent: vi.fn(),
+  getPublishedAgentOr: async (_id: string, fallback: { generate: typeof generate }) => fallback,
+}))
+
 vi.mock('@/shared/ai/gateway/record', () => ({ recordLlmCall }))
 
 import { SystemScopeReason, systemScope } from '@/shared/auth/project-scope'
@@ -28,7 +34,7 @@ beforeEach(() => {
   generate.mockResolvedValue({
     text: 'INT. CHAPEL — DUSK\nVERA: You already know.',
     usage: { inputTokens: 80, outputTokens: 40 },
-    model: 'openai/gpt-5.6-luna',
+    model: 'moonshotai/kimi-k3',
   })
 })
 

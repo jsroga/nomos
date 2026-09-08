@@ -31,8 +31,11 @@ Inspired by CDPR's narrative depth: every quest connects, nothing is throwaway.`
     execute: async (args) => {
       try {
         const prompt = buildMemoryKeeperPrompt(args)
-        const parsed = await invokeLlmJsonPrompt(prompt, createHauteGameModel())
-        const validated = MemoryKeeperOutputSchema.parse(parsed)
+        const validated = await invokeLlmJsonPrompt(
+          prompt,
+          createHauteGameModel(),
+          MemoryKeeperOutputSchema,
+        )
         return { success: true, ...validated }
       } catch (error: unknown) {
         return { success: false, error: getErrorMessage(error) }
@@ -50,8 +53,11 @@ Inspired by CDPR: "Evil is evil, lesser, greater, middling... makes no differenc
     execute: async (args) => {
       try {
         const prompt = buildGreyPalettePrompt(args)
-        const parsed = await invokeLlmJsonPrompt(prompt, createHauteGameModel())
-        const validated = GreyPaletteOutputSchema.parse(parsed)
+        const validated = await invokeLlmJsonPrompt(
+          prompt,
+          createHauteGameModel(),
+          GreyPaletteOutputSchema,
+        )
         return { success: true, ...validated }
       } catch (error: unknown) {
         return { success: false, error: getErrorMessage(error) }
@@ -69,8 +75,11 @@ Inspired by Kojima: "Games should connect strangers in ways social media never c
     execute: async (args) => {
       try {
         const prompt = buildStrandWeaverPrompt(args)
-        const parsed = await invokeLlmJsonPrompt(prompt, createHauteGameModel())
-        const validated = StrandWeaverOutputSchema.parse(parsed)
+        const validated = await invokeLlmJsonPrompt(
+          prompt,
+          createHauteGameModel(),
+          StrandWeaverOutputSchema,
+        )
         return { success: true, ...validated }
       } catch (error: unknown) {
         return { success: false, error: getErrorMessage(error) }
@@ -88,8 +97,11 @@ Inspired by Kojima: "Death Stranding taught us walking can be profound."`,
     execute: async (args) => {
       try {
         const prompt = buildMundanePoetPrompt(args)
-        const parsed = await invokeLlmJsonPrompt(prompt, createHauteGameModel())
-        const validated = MundanePoetOutputSchema.parse(parsed)
+        const validated = await invokeLlmJsonPrompt(
+          prompt,
+          createHauteGameModel(),
+          MundanePoetOutputSchema,
+        )
         return { success: true, ...validated }
       } catch (error: unknown) {
         return { success: false, error: getErrorMessage(error) }

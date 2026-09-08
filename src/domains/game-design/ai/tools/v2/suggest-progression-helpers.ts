@@ -1,4 +1,3 @@
-import { invokeLlmTextPrompt } from '@/domains/game-design/ai/tools/v2/game-design-llm-shared'
 import { SuggestProgressionOutputSchema } from '../../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { buildSuggestProgressionPrompt } from '../../constants/logic-tool-prompts'
@@ -10,7 +9,7 @@ import {
   joinWithCommaSpace,
 } from '../../constants/logic-tool-wire'
 import type { GameResource } from '../../constants/logic-tool-schemas'
-import { createLogicToolModel, parseLlmJsonOrError } from './game-design-llm-shared'
+import { createLogicToolModel, invokeLlmJsonPrompt } from './game-design-llm-shared'
 import type { z } from 'zod'
 
 type SuggestProgressionArgs = z.infer<typeof SuggestProgressionToolInputSchema>
@@ -39,22 +38,17 @@ export function buildSuggestProgressionPromptFromLoop(
     nodeCount: currentLoop.nodes?.length ?? 0,
     edgeCount: currentLoop.edges?.length ?? 0,
     existingMechanics: inputs.existingMechanics,
-    expansionDirection: inputs.expansionDirection,
     theme: inputs.theme,
     genre: inputs.genre,
     targetAudience: inputs.targetAudience,
+    expansionDirection: inputs.expansionDirection,
   })
 }
 
 export async function runSuggestProgressionLlm(prompt: string) {
   try {
     const model = createLogicToolModel()
-    const content = await invokeLlmTextPrompt(prompt, model)
-
-    const { parsed, error } = parseLlmJsonOrError(content)
-    if (!parsed) return { success: false as const, error }
-
-    const validated = SuggestProgressionOutputSchema.parse(parsed)
+    const validated = await invokeLlmJsonPrompt(prompt, model, SuggestProgressionOutputSchema)
     return { success: true as const, ...validated }
   } catch (error: unknown) {
     return { success: false as const, error: getErrorMessage(error) }

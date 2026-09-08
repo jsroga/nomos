@@ -6,7 +6,7 @@
     "authorEnv": "STORYTELLER_AUTHOR_MODEL",
     "plannerEnv": "STORYTELLER_PLANNER_MODEL",
     "criticEnv": "STORYTELLER_CRITIC_MODEL",
-    "fastSample": "openai/gpt-5.6-luna"
+    "fastSample": "z-ai/glm-5.2"
   },
-  "reason": "Env role pins stay unset until a live Kimi vs GLM labelled-plan run records quality. GLM remains the cheap smoke sample. Pause on insufficient credits."
+  "reason": "Lanes live in the role matrix (Kimi for prose and structure, GLM for the cheap tier). Env role pins stay unset until a live Kimi vs Sol labelled-plan run records quality. GLM remains the cheap smoke sample. Pause on insufficient credits."
 }

@@ -25,7 +25,7 @@ export const stakesCostScorer = createScorer({
   name: 'Stakes Cost',
   description: 'Structural stakes: every beat must cost something; victories must be earned.',
   judge: createJudgingConfig(
-    'You are a structural editor evaluating narrative stakes. You judge coldly and cite evidence. Respond with valid JSON matching the requested schema.',
+    'You are a structural editor evaluating narrative stakes. You judge coldly and cite evidence.',
   ),
 })
   .analyze({

@@ -88,7 +88,7 @@ A session is locked to one `AppModuleId` at create. Send is gated by `canSendToS
 
 ## Writers Room ↔ World Bible
 
-**Models:** composer picker (Kimi / GLM / Opus) → chat adapter only. Default when unset: Kimi (`STORYTELLER_CHAT_MODEL` / catalog). Author / planner / critic / muse / premise use their own `STORYTELLER_*_MODEL` pins — see [DEVELOPMENT.md](./DEVELOPMENT.md) § Model routing. `npm run test:e2e smoke` posts GLM only; it never uses Kimi or GPT-5.6 Sol. Scorers stay on `npm run eval`, not on smoke.
+**Models:** the composer picker offers Kimi K3 and GPT-5.6 Sol, defaulting to Kimi (`STORYTELLER_CHAT_MODEL` / catalog). That choice retargets the writing roles — chat, author, planner, premise — because the writer is choosing a prose voice, not just a chat partner. Critics and muse stay pinned to the cheap tier so one picker choice cannot make a diagnose-only pass expensive. Full wiring: [MODEL_MAP.md](./MODEL_MAP.md). Operator pins: [DEVELOPMENT.md](./DEVELOPMENT.md) § Model routing. `npm run test:e2e smoke` posts GLM only; it never uses Kimi or GPT-5.6 Sol. Scorers stay on `npm run eval`, not on smoke.
 
 Chat goes through `/api/assistant/storyteller` (shared assistant route). Section refreshes and free chat share one thread; bible writes are gated so the wrong panel does not get a Pending Review blur.
 

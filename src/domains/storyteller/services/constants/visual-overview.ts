@@ -22,7 +22,7 @@ export enum VisualSubjectCopy {
   Poster =
     'You write a Midjourney subject for a movie poster. Output 3 to 5 words that name the key art: the central figure, conflict, or iconic moment. This is a film poster, not a location plate and not a headshot. Focus is the episode. World and Overview are style context only.',
   Batch =
-    'You write Midjourney subjects. Output ONLY a JSON array of strings, no markdown. Each string is 3 to 5 words only. No sentences, no quotes, no --params.',
+    'You write Midjourney subjects, one per category. Each string is 3 to 5 words only. No sentences, no quotes, no --params.',
   SlotRule = 'Name the subject in 3 to 5 words.',
 }
 

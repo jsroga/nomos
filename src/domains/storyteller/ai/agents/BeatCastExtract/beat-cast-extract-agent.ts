@@ -7,6 +7,7 @@ import {
   BeatCastExtractSchema,
   type BeatCastExtract,
 } from '@/domains/storyteller/ai/prompts/schemas/beat-cast-extract-schema'
+import { EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 import {
   BeatCastExtractAgentId,
   BeatCastExtractAgentLabel,
@@ -18,6 +19,7 @@ export const beatCastExtractAgent = new Agent({
   name: BeatCastExtractAgentLabel.BeatCastExtract,
   instructions: BeatCastExtractCopy.Instructions,
   model: () => getAgentModel(TEXT_GEN_FAST_MODEL),
+  editor: EDITOR_INSTRUCTIONS_ONLY,
 })
 
 export async function extractBeatCastNames(prompt: string): Promise<BeatCastExtract | null> {

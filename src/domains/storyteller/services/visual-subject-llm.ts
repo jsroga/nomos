@@ -1,7 +1,8 @@
-import { complete } from '@/shared/ai/gateway'
+import { complete, completeStructured } from '@/shared/ai/gateway'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { TEXT_GEN_FAST_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
 import type { ProjectScope } from '@/shared/auth/project-scope'
+import { z } from 'zod'
 import {
   VisualOverviewLabel,
   VisualSubjectCopy,
@@ -89,49 +90,45 @@ export function fallbackVisualSubjects(input: GenerateVisualSubjectInput): strin
   return fallbacks.slice(0, 1)
 }
 
-function parseSubjectArray(content: string, input: GenerateVisualSubjectInput): string[] {
-  try {
-    const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim()
-    const parsed: unknown = JSON.parse(cleanContent)
-    if (!Array.isArray(parsed)) {
-      return fallbackVisualSubjects(input)
-    }
-    const prompts = parsed
-      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-      .map(normalizeVisualSubject)
-      .filter(scene => scene.length > 0)
-    return prompts.length > 0 ? prompts : fallbackVisualSubjects(input)
-  } catch (error) {
-    console.warn(VisualSubjectLog.ParseFallback, error)
-    return fallbackVisualSubjects(input)
-  }
-}
-
 export async function generateVisualSubjects(
   scope: ProjectScope,
   input: GenerateVisualSubjectInput,
 ): Promise<string[]> {
   const fallbacks = fallbackVisualSubjects(input)
+  const slots = input.slots ?? []
+  const slotIndex = input.slotIndex
+  const isSingle =
+    slots.length === 0 ||
+    (typeof slotIndex === 'number' && slotIndex >= 0 && slotIndex < slots.length)
+
   try {
-    const { text } = await complete({
+    if (isSingle) {
+      const { text } = await complete({
+        scope,
+        feature: LlmFeature.StorytellerVisualSubject,
+        model: TEXT_GEN_FAST_MODEL,
+        system: buildVisualSubjectSystemPrompt(input),
+        prompt: VisualSubjectCopy.SlotRule,
+        temperature: 0.7,
+      })
+      const stripped = normalizeVisualSubject(text.trim())
+      return stripped.length > 0 ? [stripped] : fallbacks
+    }
+
+    const subjects = await completeStructured({
       scope,
       feature: LlmFeature.StorytellerVisualSubject,
       model: TEXT_GEN_FAST_MODEL,
       system: buildVisualSubjectSystemPrompt(input),
       prompt: VisualSubjectCopy.SlotRule,
       temperature: 0.7,
+      schema: z.array(z.string()),
     })
-    const content = text.trim()
-    const slots = input.slots ?? []
-    const slotIndex = input.slotIndex
-    const isSingle =
-      slots.length === 0 ||
-      (typeof slotIndex === 'number' && slotIndex >= 0 && slotIndex < slots.length)
-    if (isSingle) {
-      const stripped = normalizeVisualSubject(content)
-      return stripped.length > 0 ? [stripped] : fallbacks
-    }
-    return parseSubjectArray(content, input)
+    const prompts = subjects
+      .filter(item => item.trim().length > 0)
+      .map(normalizeVisualSubject)
+      .filter(scene => scene.length > 0)
+    return prompts.length > 0 ? prompts : fallbacks
   } catch (openaiError) {
     console.error(VisualSubjectLog.OpenAiFailed, openaiError)
     return fallbacks

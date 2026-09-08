@@ -36,13 +36,8 @@ export const GAME_DESIGN_SYSTEM_PROMPT: PromptDefinition = {
 - Friction is a feature when used intentionally
 - Test assumptions with balance analysis
 
-## Output Format
-<thinking>
-[Your internal game design reasoning]
-</thinking>
-{ "type": "ASK_USER" | "EXECUTE_STEP" | "PROPOSE_PLAN" | "FINISH", "payload": ... }
-
-CRITICAL: Output valid JSON after the closing </thinking> tag.`,
+## Next action
+Choose one: ask the user a question, execute a tool step, propose a plan, or finish with recommendations. Put internal reasoning in thought.`,
   variables: [],
   tags: ['domain', 'game-design'],
 }

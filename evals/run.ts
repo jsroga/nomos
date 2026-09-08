@@ -7,7 +7,7 @@
  *   npm run eval -- --scorers=magic
  *
  * LLM scorers use JUDGING_MODEL from .env.local (default openai/gpt-5.6-sol).
- * Example: JUDGING_MODEL=openai/gpt-5.6-luna
+ * Example: JUDGING_MODEL=openai/gpt-4o
  */
 
 // First, and before every other import: `@/shared/config/env` parses

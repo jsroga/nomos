@@ -9,8 +9,9 @@
  */
 
 import { AIMessage } from '@/shared/chat/core/message'
-import { runLoopCreatorCompletion } from './mastra/loop-creator-completion'
+import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
+import { ProgressionArchitectOutputSchema } from './schemas/progression-architect-output'
 import {
   readNumber,
   readRowString,
@@ -72,31 +73,8 @@ Description: {{DESCRIPTION}}
 - **social**: Social features and status
 - **collection**: Collectibles and completionism
 
-## Response Format
-Respond with JSON:
-{
-  "analysis": "Your design thinking",
-  "progressionSystems": [
-    {
-      "id": "unique-id",
-      "name": "System Name",
-      "type": "skill|power|content|social|collection",
-      "milestones": [
-        {
-          "id": "milestone-id",
-          "name": "Milestone Name",
-          "requiredEffort": 2,
-          "unlocksFeatures": ["What this unlocks"],
-          "rewardType": "Type of reward",
-          "playerMotivation": "Why player wants this"
-        }
-      ],
-      "curve": "linear|exponential|logarithmic|s-curve|stepped"
-    }
-  ],
-  "recommendations": ["Design recommendations"],
-  "message": "Summary for the user"
-}`
+## Output
+Provide analysis, progressionSystems (id, name, type, milestones with requiredEffort/unlocksFeatures/rewardType/playerMotivation, curve), recommendations, and a short user-facing message.`
 
 /**
  * Build context for the agent
@@ -192,27 +170,22 @@ function parseProgressionSystem(raw: unknown): ProgressionSystem {
   }
 }
 
-function parseResponse(content: string): ProgressionArchitectResponse {
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (jsonMatch) {
-    try {
-      const parsed = recordFromJson(JSON.parse(jsonMatch[0]))
-      return {
-        analysis: readRowString(parsed, 'analysis') ?? '',
-        progressionSystems: recordArrayFromJson(parsed.progressionSystems).map(parseProgressionSystem),
-        recommendations: stringArrayFromJson(parsed.recommendations),
-        message: readRowString(parsed, 'message') ?? '',
-      }
-    } catch {
-      // Fall through
+function parseResponse(value: unknown): ProgressionArchitectResponse {
+  const parsed = recordFromJson(value)
+  if (Object.keys(parsed).length === 0) {
+    return {
+      analysis: '',
+      progressionSystems: [],
+      recommendations: [],
+      message: '',
     }
   }
 
   return {
-    analysis: content,
-    progressionSystems: [],
-    recommendations: [],
-    message: content,
+    analysis: readRowString(parsed, 'analysis') ?? '',
+    progressionSystems: recordArrayFromJson(parsed.progressionSystems).map(parseProgressionSystem),
+    recommendations: stringArrayFromJson(parsed.recommendations),
+    message: readRowString(parsed, 'message') ?? '',
   }
 }
 
@@ -232,16 +205,17 @@ export async function progressionArchitectAgent(
 
   const systemPrompt = buildContext(state).replace('{{TASK}}', task)
 
-  const content = await runLoopCreatorCompletion({
+  const output = await runLoopCreatorStructuredCompletion({
     scope: state.scope,
     agentId: LoopCreatorMastraAgentId.ProgressionArchitect,
     systemPrompt,
     history: state.messages.slice(-5),
     temperature: state.modelConfig?.temperature ?? 0.5,
     modelOverride: state.modelConfig?.model,
+    schema: ProgressionArchitectOutputSchema,
   })
 
-  const parsed = parseResponse(content)
+  const parsed = parseResponse(output)
 
   console.log(
     `[ProgressionArchitect] Created ${parsed.progressionSystems.length} progression systems`

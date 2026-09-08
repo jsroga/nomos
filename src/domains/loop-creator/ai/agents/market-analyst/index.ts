@@ -16,14 +16,15 @@ import {
   MarketAnalystPromptPlaceholder,
   MastraMessageRole,
   MarketAnalysisErrorMessage,
+  MarketAnalystStructuredOutputErrorStrategy,
+  MarketAnalystStructuredOutputJsonPromptInjection,
 } from '../../constants/market-analyst-agent-wire'
 import { LoopAnalysisInput, MarketAnalysisReport } from './types'
 import { MARKET_ANALYST_SYSTEM_PROMPT, buildLoopContext, SCORING_CRITERIA_PLACEHOLDER } from './prompts'
-import {
-  extractReportFromAgentMessages,
-  extractReportFromText,
-} from './market-analysis-run'
+import { extractReportFromGenerateResult } from './market-analysis-run'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { marketAnalystTools } from './tools-registry'
+import { MarketAnalysisReportSchema } from '../schemas/market-analysis-report'
 
 /**
  * Create the market analyst as a Mastra agent. Tools are native Mastra tools
@@ -39,6 +40,7 @@ export function createMarketAnalystAgent() {
     instructions: MARKET_ANALYST_AGENT_INSTRUCTIONS,
     model: () => resolveLoopCreatorMastraModel(),
     tools,
+    editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
   })
 }
 
@@ -104,14 +106,20 @@ export async function runMarketAnalysis(
         { role: MastraMessageRole.System, content: buildMarketAnalysisPrompt(input) },
         { role: MastraMessageRole.User, content: buildMarketAnalysisUserMessage(input) },
       ],
-      { maxSteps: 25 },
+      {
+        maxSteps: 25,
+        structuredOutput: {
+          schema: MarketAnalysisReportSchema,
+          jsonPromptInjection: MarketAnalystStructuredOutputJsonPromptInjection.Auto,
+          errorStrategy: MarketAnalystStructuredOutputErrorStrategy.Warn,
+        },
+      },
     ))
 
     const agentMessages = result.response?.messages || []
     messages.push(...collectAssistantMessages(agentMessages))
 
-    const report =
-      extractReportFromAgentMessages(agentMessages) ?? extractReportFromText(result.text)
+    const report = extractReportFromGenerateResult(result)
 
     onProgress?.(
       report

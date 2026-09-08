@@ -51,7 +51,7 @@ export {
   mapControllerEvent,
   type ControllerFrameIntent,
 } from './ai/controller/controller-sse-wire'
-export { resolveChatModelId } from './config/resolve-chat-model'
+export { resolveChatModelId, resolveWriterModelChoice } from './config/resolve-chat-model'
 export { CHAT_MODELS, isKnownChatModel } from './config/constants/chat-model-catalog'
 export { resolveStorytellerModel } from './config/constants/model-config'
 export type { generateStoryboard } from './tasks/generate-storyboard.task'
@@ -72,7 +72,15 @@ export {
   populatedSoundtrackInspirations,
 } from './core/utils/bible-populated-fields'
 export { storyPlanRecordFromJson, episodeStoryPlanResponse } from './core/entities/story-plan-wire'
-export { StorytellerLegacyPlanField } from './core/storyteller-page-wire'
+export {
+  StorytellerAnswerSeparator,
+  StorytellerBeatTypeFallback,
+  StorytellerLegacyPlanField,
+  StorytellerPromptAgentInstruction,
+  StorytellerPromptTemplateToken,
+  StorytellerSettingFallback,
+} from './core/storyteller-page-wire'
+export { loadBeatEpisodeLock, readBeatId } from './services/beat-image-prompt-context'
 export {
   EPISODE_PATCH_ALLOWED_COLUMNS,
   EpisodePatchAlias,

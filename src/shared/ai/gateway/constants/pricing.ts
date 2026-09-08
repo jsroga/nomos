@@ -73,4 +73,10 @@ export const PROVIDER_PRICING: Readonly<Record<string, ModelPrice>> = {
     outputPerMillion: 1.2,
     effectiveFrom: EFFECTIVE_FROM,
   },
+  // Z.ai list price; OpenRouter marketplace routes range $0.93-$3.00 in.
+  'z-ai/glm-5.2': {
+    inputPerMillion: 1.4,
+    outputPerMillion: 4.4,
+    effectiveFrom: EFFECTIVE_FROM,
+  },
 }

@@ -71,11 +71,19 @@ import { AgentController } from '@mastra/core/agent-controller'
 import { createDurableAgent } from '@mastra/core/agent/durable'
 import type { DurableAgent } from '@mastra/core/agent/durable'
 import { buildStorytellerControllerConfig } from '@/domains/storyteller/ai/controller/storyteller-controller'
-import { autonomousAuthorAgent } from '@/domains/storyteller/ai/agents/AutonomousAuthor/autonomous-author-agent'
+import { autonomousAuthorAgent, AUTONOMOUS_AUTHOR_ID } from '@/domains/storyteller/ai/agents/AutonomousAuthor/autonomous-author-agent'
 import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
 import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { getPublishedAgentOr } from '@/shared/agent-kernel/mastra/get-published-agent'
+import {
+  BeatPlannerAgentId,
+  GrrmAuthorAgentId,
+  StorytellerAgentId,
+} from '@/domains/storyteller/ai/constants/agent-identity'
+import { CriticAgentId } from '@/domains/storyteller/ai/agents/critics/constants/critic-agents'
 
-const CHAT_ADAPTER_ID = 'storyteller'
+const CHAT_ADAPTER_ID = StorytellerAgentId.Storyteller
 const CHAT_ADAPTER_NAME = 'Storyteller'
 const CHAT_ADAPTER_DESCRIPTION =
   'Chat adapter: converse, keep the world bible current via tools, delegate beat drafting to the beat-draft workflow.'
@@ -84,6 +92,23 @@ const CHAT_ROLE: Parameters<typeof resolveRoleModel>[0] = 'chat'
 const CHAT_ADAPTER_MODEL_SETTINGS = {
   maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
 } as const
+
+const CHAT_ADAPTER_TOOLS = {
+  [manageBeatApprovalTool.id]: manageBeatApprovalTool,
+  [listBeatsTool.id]: listBeatsTool,
+  [manageCharacterTool.id]: manageCharacterTool,
+  [listCharactersTool.id]: listCharactersTool,
+  [manageEpisodeTool.id]: manageEpisodeTool,
+  [listEpisodesTool.id]: listEpisodesTool,
+  [updateWorldBibleTool.id]: updateWorldBibleTool,
+  [readWorldBibleTool.id]: readWorldBibleTool,
+  [checkContinuityTool.id]: checkContinuityTool,
+  [checkSectionAlignmentTool.id]: checkSectionAlignmentTool,
+  [searchManuscriptTool.id]: searchManuscriptTool,
+  [promoteRuleTool.id]: promoteRuleTool,
+  [proposeCharacterFieldsTool.id]: proposeCharacterFieldsTool,
+  [runBeatDraftWorkflowTool.id]: runBeatDraftWorkflowTool,
+}
 
 /**
  * The REAL chat adapter registered for Studio/observability parity: same
@@ -110,35 +135,23 @@ const chatAdapterAgent = new Agent({
   defaultOptions: {
     modelSettings: CHAT_ADAPTER_MODEL_SETTINGS,
   },
-  tools: {
-    [manageBeatApprovalTool.id]: manageBeatApprovalTool,
-    [listBeatsTool.id]: listBeatsTool,
-    [manageCharacterTool.id]: manageCharacterTool,
-    [listCharactersTool.id]: listCharactersTool,
-    [manageEpisodeTool.id]: manageEpisodeTool,
-    [listEpisodesTool.id]: listEpisodesTool,
-    [updateWorldBibleTool.id]: updateWorldBibleTool,
-    [readWorldBibleTool.id]: readWorldBibleTool,
-    [checkContinuityTool.id]: checkContinuityTool,
-    [checkSectionAlignmentTool.id]: checkSectionAlignmentTool,
-    [searchManuscriptTool.id]: searchManuscriptTool,
-    [promoteRuleTool.id]: promoteRuleTool,
-    [proposeCharacterFieldsTool.id]: proposeCharacterFieldsTool,
-    [runBeatDraftWorkflowTool.id]: runBeatDraftWorkflowTool,
-  },
+  tools: CHAT_ADAPTER_TOOLS,
+  editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
 })
 
-/** Chat adapter, author, planner, floor critics, optional extra dialogue critic, autonomous author. */
+/** Production tools listed on the Mastra instance for Editor's project-tool picker. */
+export const storytellerRuntimeTools = CHAT_ADAPTER_TOOLS
+
+/** Chat adapter, author, planner, floor critics, autonomous author. Keys match agent.id. */
 export const storytellerRuntimeAgents: Record<string, Agent> = {
-  storyteller: chatAdapterAgent,
-  grrmAuthor: statelessGrrmAuthor,
-  beatPlanner: statelessBeatPlanner,
-  continuityCritic,
-  proseCritic,
-  stakesCritic,
-  dialogueCritic,
-  // Registered so its goal/objective state persists to the Postgres store.
-  autonomousAuthor: autonomousAuthorAgent,
+  [CHAT_ADAPTER_ID]: chatAdapterAgent,
+  [GrrmAuthorAgentId.GrrmAuthor]: statelessGrrmAuthor,
+  [BeatPlannerAgentId.BeatPlanner]: statelessBeatPlanner,
+  [CriticAgentId.Continuity]: continuityCritic,
+  [CriticAgentId.Prose]: proseCritic,
+  [CriticAgentId.Stakes]: stakesCritic,
+  [CriticAgentId.Dialogue]: dialogueCritic,
+  [AUTONOMOUS_AUTHOR_ID]: autonomousAuthorAgent,
 }
 
 const artifactDraftWorkflow = createArtifactDraftWorkflow(defaultArtifactDraftDeps)
@@ -146,7 +159,7 @@ const fixInconsistenciesWorkflow = createFixInconsistenciesWorkflow(
   defaultFixInconsistenciesDeps
 )
 
-/** Workflows registered on the production Mastra instance (contract id + export name). */
+/** Workflows registered on the production Mastra instance — one key per contract id. */
 export const storytellerRuntimeWorkflows = bindStorytellerWorkflowRegistry({
   beatDraft: beatDraftWorkflow,
   artifactDraft: artifactDraftWorkflow,
@@ -196,6 +209,7 @@ export {
 registerMastraModule({
   agents: storytellerRuntimeAgents,
   workflows: storytellerRuntimeWorkflows,
+  tools: storytellerRuntimeTools,
 })
 
 // PLAN-V2 Phase 4.2/4.3 — lazily-initialized storyteller chat controller.
@@ -223,14 +237,15 @@ export function getStorytellerController(): Promise<AgentController> {
     const basePath = resolveControllerWorkspaceDir()
     fs.mkdirSync(basePath, { recursive: true })
 
-    const controller = new AgentController(
-      buildStorytellerControllerConfig({
-        agent: chatAdapterAgent,
-        storage: getStorageInstance(),
-        workspace: new Workspace({ filesystem: new LocalFilesystem({ basePath }) }),
-      })
-    )
     storytellerControllerPromise = (async () => {
+      const agent = await getPublishedAgentOr(CHAT_ADAPTER_ID, chatAdapterAgent)
+      const controller = new AgentController(
+        buildStorytellerControllerConfig({
+          agent,
+          storage: getStorageInstance(),
+          workspace: new Workspace({ filesystem: new LocalFilesystem({ basePath }) }),
+        })
+      )
       await controller.init()
       return controller
     })()
@@ -264,12 +279,16 @@ export async function startAutonomousEpisodeDraft(params: {
   prompt: string
   maxRuns?: number
 }) {
-  await autonomousAuthorAgent.setObjective(params.objective, {
+  const agent = await getPublishedAgentOr(AUTONOMOUS_AUTHOR_ID, autonomousAuthorAgent)
+  await agent.setObjective(params.objective, {
     threadId: params.threadId,
     resourceId: params.resourceId,
     ...(params.maxRuns !== undefined ? { maxRuns: params.maxRuns } : {}),
   })
-  return getStorytellerAutonomousAgent().stream(params.prompt, {
+  if (!autonomousDurableAgent) {
+    autonomousDurableAgent = createDurableAgent({ agent })
+  }
+  return autonomousDurableAgent.stream(params.prompt, {
     memory: { thread: params.threadId, resource: params.resourceId },
   })
 }

@@ -11,10 +11,11 @@
  */
 
 import type { ProjectScope } from '@/shared/auth/project-scope'
-import { complete } from '@/shared/ai/gateway'
+import { completeStructured } from '@/shared/ai/gateway'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { QUERY_EXPANDER_SCOPE_REQUIRED } from '@/shared/ai/rag/constants/query-expander'
 import { OPENROUTER_AUTO_MODEL } from '@/shared/agent-kernel/models'
+import { z } from 'zod'
 
 // ============================================
 // TYPES
@@ -268,14 +269,13 @@ Given a user query, generate expanded queries to improve document retrieval.
 - Keep expanded queries concise (under 15 words each)
 - Focus on storytelling domain (characters, plot, dialogue, scenes, arcs)
 - Generate 3-5 expansions total
-- Don't repeat the original query
+- Don't repeat the original query`
 
-Respond with JSON only:
-{
-  "subQueries": ["decomposed query 1", "decomposed query 2"],
-  "synonymExpansions": ["query with synonym 1"],
-  "hypotheticalDocuments": ["A short sentence that might match relevant documents"]
-}`
+const QueryExpansionLlmSchema = z.object({
+  subQueries: z.array(z.string()),
+  synonymExpansions: z.array(z.string()),
+  hypotheticalDocuments: z.array(z.string()),
+})
 
 /**
  * LLM-powered intelligent query expansion
@@ -293,40 +293,27 @@ export async function expandQueryLLM(
   }
 
   try {
-    const { text: responseText } = await complete({
+    const parsed = await completeStructured({
       scope,
       feature: LlmFeature.RagQueryExpansion,
       model: OPENROUTER_AUTO_MODEL,
       prompt: EXPANSION_PROMPT.replace('{query}', query),
       temperature: 0,
+      schema: QueryExpansionLlmSchema,
     })
 
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error('No JSON in response')
-    }
-
-    const parsed = JSON.parse(jsonMatch[0])
-
-    const expanded: string[] = [query] // Always include original
+    const expanded: string[] = [query]
     const metadata: QueryExpansion['metadata'] = {}
 
-    if (parsed.subQueries && Array.isArray(parsed.subQueries)) {
-      metadata.subQueries = parsed.subQueries
-      expanded.push(...parsed.subQueries)
-    }
+    metadata.subQueries = parsed.subQueries
+    expanded.push(...parsed.subQueries)
 
-    if (parsed.synonymExpansions && Array.isArray(parsed.synonymExpansions)) {
-      metadata.synonyms = parsed.synonymExpansions
-      expanded.push(...parsed.synonymExpansions)
-    }
+    metadata.synonyms = parsed.synonymExpansions
+    expanded.push(...parsed.synonymExpansions)
 
-    if (parsed.hypotheticalDocuments && Array.isArray(parsed.hypotheticalDocuments)) {
-      metadata.hypotheticalAnswers = parsed.hypotheticalDocuments
-      expanded.push(...parsed.hypotheticalDocuments)
-    }
+    metadata.hypotheticalAnswers = parsed.hypotheticalDocuments
+    expanded.push(...parsed.hypotheticalDocuments)
 
-    // Dedupe and limit
     const uniqueExpanded = [...new Set(expanded)].slice(0, fullConfig.maxExpansions)
 
     return {

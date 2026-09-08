@@ -9,6 +9,7 @@ import {
   ListSeparator,
   NewlineSeparator,
 } from '../constants/agent-copy'
+import { isPlainObject, readString } from '@/shared/data/json-guards'
 import {
   GameDesignResponseType,
   parseGameDesignResponseRecord,
@@ -85,6 +86,20 @@ export function buildDesignLoopUserMessage(input: {
     ? ` Reference games: ${input.referenceGames.join(ListSeparator.CommaSpace)}.`
     : ''
   return `Design a ${loopType} game loop for a ${input.genre} game targeting ${input.targetAudience} players.${themeSuffix}${referenceSuffix}`
+}
+
+export function mapGameDesignStructuredOutput(
+  value: unknown,
+  fallbackText: string
+): GameDesignResponse {
+  const thought = isPlainObject(value) ? (readString(value.thought) ?? '') : ''
+  const parsed = parseGameDesignResponseRecord(value, thought)
+  if (parsed) return parsed
+  return {
+    type: GameDesignResponseType.Finish,
+    payload: { result: fallbackText },
+    thought,
+  }
 }
 
 export function parseGameDesignAgentResponse(text: string): GameDesignResponse {

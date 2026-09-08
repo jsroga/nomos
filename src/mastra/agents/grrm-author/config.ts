@@ -10,6 +10,7 @@ import {
   STORYTELLER_AUTHOR_MODEL,
   requestContextString,
 } from '@/domains/storyteller/ai/request-context'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { composeGrrmInstructions } from './compose-instructions'
 
 /**
@@ -26,4 +27,5 @@ export default agentConfig({
       requestContextString(requestContext, STORYTELLER_AUTHOR_MODEL)
     ),
   instructions: () => composeGrrmInstructions(),
+  editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
 })

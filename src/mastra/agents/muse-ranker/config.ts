@@ -4,6 +4,7 @@ import {
   MuseAgentId,
   MuseAgentName,
 } from '@/domains/storyteller/ai/agents/Muse/constants/muse-agents'
+import { EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
 import { AgentModelRole } from '@/domains/storyteller/ai/constants/agent-identity'
 
@@ -13,4 +14,5 @@ export default agentConfig({
   name: MuseAgentName.Ranker,
   description: MuseAgentDescription.Ranker,
   model: () => resolveRoleModel(AgentModelRole.Planner),
+  editor: EDITOR_INSTRUCTIONS_ONLY,
 })

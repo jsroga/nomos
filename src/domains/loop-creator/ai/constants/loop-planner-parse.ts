@@ -141,43 +141,23 @@ function createFallbackLoops(): GameLoop[] {
   ]
 }
 
-export function parseLoopPlannerResponse(content: string): LoopPlannerResponse {
-  console.log('[LoopPlanner] Parsing response...')
-
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (jsonMatch) {
-    try {
-      const parsed: unknown = JSON.parse(jsonMatch[0])
-      const row = recordFromJson(parsed)
-      const loops = recordArrayFromJson(row.loops).map(parseGameLoopFromJson)
-
-      console.log('[LoopPlanner] Successfully parsed JSON')
-      console.log(
-        `[LoopPlanner] Parsed ${loops.length} loops:`,
-        loops.map(loop => loop.name)
-      )
-
-      return {
-        analysis: readRowString(row, 'analysis') ?? '',
-        loops,
-        recommendations: stringArrayFromJson(row.recommendations),
-        message: readRowString(row, 'message') ?? '',
-      }
-    } catch (error) {
-      console.error('[LoopPlanner] JSON parse error:', error)
-      console.error('[LoopPlanner] Raw content:', content.slice(0, 500))
+export function parseLoopPlannerResponse(value: unknown): LoopPlannerResponse {
+  const row = recordFromJson(value)
+  const loops = recordArrayFromJson(row.loops).map(parseGameLoopFromJson)
+  if (loops.length === 0) {
+    return {
+      analysis: '',
+      loops: createFallbackLoops(),
+      recommendations: ['Continue refining the loop structure'],
+      message: '',
     }
-  } else {
-    console.error('[LoopPlanner] No JSON found in response!')
-    console.error('[LoopPlanner] Raw content:', content.slice(0, 500))
   }
 
-  console.log('[LoopPlanner] Creating fallback loops...')
   return {
-    analysis: content,
-    loops: createFallbackLoops(),
-    recommendations: ['Continue refining the loop structure'],
-    message: content,
+    analysis: readRowString(row, 'analysis') ?? '',
+    loops,
+    recommendations: stringArrayFromJson(row.recommendations),
+    message: readRowString(row, 'message') ?? '',
   }
 }
 

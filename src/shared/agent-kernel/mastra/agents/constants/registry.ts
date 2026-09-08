@@ -1,8 +1,10 @@
 import { Agent } from '@mastra/core/agent'
+import { OPENROUTER_AUTO_GATEWAY } from '@/shared/agent-kernel/models'
 import { storytellerStudioTools, gameDesignStudioTools } from '../../tools/bundles'
 import { createInheritedAgentMemory } from '../../studio-memory'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS, EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 
-const DEFAULT_MODEL = 'anthropic/claude-sonnet-5'
+const DEFAULT_MODEL = OPENROUTER_AUTO_GATEWAY
 
 const CRITIC_STUDIO_RULES = `Rules:
 - Report ONLY findings within your brief. Ignore everything else, even obvious problems.
@@ -22,7 +24,7 @@ const CRITIC_STUDIO_RULES = `Rules:
  * cosmetic, never edit instructions here expecting production effect.
  *
  * Bundler-safe by construction: tool stubs only, no domain imports (the
- * reason this file exists at all).
+ * reason this file exists at all). Keys match `agent.id`.
  */
 export const studioAgents: Record<string, Agent> = {
   storyteller: new Agent({
@@ -33,9 +35,10 @@ export const studioAgents: Record<string, Agent> = {
     model: DEFAULT_MODEL,
     tools: storytellerStudioTools,
     memory: createInheritedAgentMemory(),
+    editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
   }),
 
-  gameDesign: new Agent({
+  'game-design-agent': new Agent({
     id: 'game-design-agent',
     name: 'Game Design Agent',
     instructions:
@@ -43,21 +46,10 @@ export const studioAgents: Record<string, Agent> = {
     model: DEFAULT_MODEL,
     tools: gameDesignStudioTools,
     memory: createInheritedAgentMemory(),
+    editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
   }),
 
-  worldBuilding: new Agent({
-    id: 'world-building-agent',
-    name: 'World Building Agent',
-    instructions:
-      'You assist with game entities, stories, episodes, characters, and assets for long-term world building.',
-    model: DEFAULT_MODEL,
-    tools: {
-      ...storytellerStudioTools,
-    },
-    memory: createInheritedAgentMemory(),
-  }),
-
-  grrmAuthor: new Agent({
+  'grrm-author': new Agent({
     id: 'grrm-author',
     name: 'GRRM Author',
     instructions:
@@ -65,22 +57,24 @@ export const studioAgents: Record<string, Agent> = {
     model: DEFAULT_MODEL,
     tools: storytellerStudioTools,
     memory: createInheritedAgentMemory(),
+    editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
   }),
 
-  beatPlanner: new Agent({
+  'beat-planner': new Agent({
     id: 'beat-planner',
     name: 'Beat Planner',
     instructions:
-      'You plan story beat structure (goal, conflict, turn, dialogue hook) — NO prose generation. Output structured beat plans as JSON. Hand plans to the Author for script execution.',
+      'You plan story beat structure (goal, conflict, turn, dialogue hook) — NO prose generation. Hand plans to the Author for script execution.',
     model: DEFAULT_MODEL,
     tools: {
       list_beats: storytellerStudioTools.list_beats,
       manage_beat: storytellerStudioTools.manage_beat,
     },
     memory: createInheritedAgentMemory(),
+    editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
   }),
 
-  continuityCritic: new Agent({
+  'continuity-critic': new Agent({
     id: 'continuity-critic',
     name: 'Continuity Critic',
     instructions: `You are a continuity checker. Your ONLY brief: characters acting on knowledge they do not possess; contradictions with timeline, character sheets, world rules, or paid-off setups; internal contradictions within the draft.
@@ -88,9 +82,10 @@ export const studioAgents: Record<string, Agent> = {
 ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
     memory: createInheritedAgentMemory(),
+    editor: EDITOR_INSTRUCTIONS_ONLY,
   }),
 
-  proseCritic: new Agent({
+  'prose-critic': new Agent({
     id: 'prose-critic',
     name: 'Prose Critic',
     instructions: `You are a line-level prose critic. Your ONLY brief: stated emotion instead of evidence; clichés and stock phrasing; POV breaks; dialogue with no subtext; abstract detail where specific sensory texture is needed.
@@ -98,9 +93,10 @@ ${CRITIC_STUDIO_RULES}`,
 ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
     memory: createInheritedAgentMemory(),
+    editor: EDITOR_INSTRUCTIONS_ONLY,
   }),
 
-  stakesCritic: new Agent({
+  'stakes-critic': new Agent({
     id: 'stakes-critic',
     name: 'Stakes Critic',
     instructions: `You are a structural critic for stakes and cost. Your ONLY brief: costless beats; unearned victories; threats announced but never priced; scenes without friction; antagonists evil for evil's sake.
@@ -108,9 +104,10 @@ ${CRITIC_STUDIO_RULES}`,
 ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
     memory: createInheritedAgentMemory(),
+    editor: EDITOR_INSTRUCTIONS_ONLY,
   }),
 
-  dialogueCritic: new Agent({
+  'dialogue-critic': new Agent({
     id: 'dialogue-critic',
     name: 'Dialogue Critic',
     instructions: `You are a dialogue/embodiment checker. Your ONLY brief: adjacent talking-heads with no body or interruption; disembodied said-book speech; facts restated with no subtext.
@@ -118,5 +115,6 @@ ${CRITIC_STUDIO_RULES}`,
 ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
     memory: createInheritedAgentMemory(),
+    editor: EDITOR_INSTRUCTIONS_ONLY,
   }),
 }

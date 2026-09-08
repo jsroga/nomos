@@ -14,15 +14,18 @@
  */
 
 import type { Agent } from '@mastra/core/agent'
+import type { Config } from '@mastra/core/mastra'
 import type { AnyWorkflow } from '@mastra/core/workflows'
 
 export interface MastraRuntimeModule {
   agents?: Record<string, Agent>
   workflows?: Record<string, AnyWorkflow>
+  tools?: Config['tools']
 }
 
 const pendingAgents: Record<string, Agent> = {}
 const pendingWorkflows: Record<string, AnyWorkflow> = {}
+const pendingTools: NonNullable<Config['tools']> = {}
 let consumed = false
 let invalidateMastraInstance: (() => void) | null = null
 
@@ -34,6 +37,7 @@ export function setMastraInstanceInvalidator(fn: () => void): void {
 export function registerMastraModule(module: MastraRuntimeModule): void {
   Object.assign(pendingAgents, module.agents ?? {})
   Object.assign(pendingWorkflows, module.workflows ?? {})
+  Object.assign(pendingTools, module.tools ?? {})
   if (!consumed) return
   consumed = false
   invalidateMastraInstance?.()
@@ -43,7 +47,12 @@ export function registerMastraModule(module: MastraRuntimeModule): void {
 export function consumeMastraRegistrations(): {
   agents: Record<string, Agent>
   workflows: Record<string, AnyWorkflow>
+  tools: NonNullable<Config['tools']>
 } {
   consumed = true
-  return { agents: { ...pendingAgents }, workflows: { ...pendingWorkflows } }
+  return {
+    agents: { ...pendingAgents },
+    workflows: { ...pendingWorkflows },
+    tools: { ...pendingTools },
+  }
 }

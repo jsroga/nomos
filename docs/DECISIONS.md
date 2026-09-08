@@ -267,3 +267,42 @@ npx vitest run scripts/__tests__/untyped-json-inventory.test.ts
 npx vitest run src/domains/3d-asset-exporter/contracts
 npx eslint src/domains/3d-asset-exporter   # local/no-untyped-json-read
 ```
+
+---
+
+## ADR 0005 — Mastra Editor overlays live on Postgres; code remains SSOT until publish
+
+**Status:** accepted, 2026-09-08 · **Supersedes:** nothing · **Related:** [AGENTS.md](../AGENTS.md) § Mastra Editor
+
+### Context
+
+Studio needs a place to draft and publish agent briefs without a deploy. Mastra Editor stores versions on the instance store. `getAgentById(id)` without a selector returns the **code** agent; published overlays apply only when `{ status: 'published' }` is passed.
+
+This app already has one `PostgresStoreVNext`. A second store (LibSQL, a composite `editor` domain on another connection) would split memory from Editor state. Default Editor permissions allow changing tool **membership**, which would let a Studio collaborator attach extra mutating storyteller tools to chat. Chat/GRRM/game-design instructions are **functions**; world bible is packed per turn on the `system` message and must not be folded into published instruction text.
+
+### Decision
+
+1. **One Editor, one Postgres.** `createMastra` constructs `new MastraEditor({ source: 'db' })`. Studio CLI and `getMastraInstance()` both inherit it. Do not introduce LibSQL.
+2. **Production always loads `status: 'published'`.** Kernel helper `getPublishedAgent` / `getPublishedAgentOr`. Code agent is the default until a version is published. Drafts stay in Studio.
+3. **Permissions lock tool membership** on mutating agents (`tools: { description: true }` or instructions-only). `id`, `name`, and `model` stay code-owned.
+4. **World bible / workspace packing stays on the turn `system` message**, not Editor instruction text.
+5. **Evals hash code**, not DB overlays. Do not expose Editor REST on the Next app. Do not register muse / muse-ranker / beat-cast-extract solely so Studio lists them. Agent Builder EE, Composio, and Arcade are out of scope.
+
+### Rejected
+
+| Option | Why not |
+|--------|---------|
+| Editor `source: 'code'` | Drafts would not persist across Studio restarts independently of git. |
+| LibSQL / second composite store | Splits Editor from the existing Postgres memory/observability store. |
+| Production `getAgentById(id)` with no version | Published Studio edits would be invisible on Writers Room, `/api/assistant`, and workflows. |
+| Default Editor permissions (instructions + full tools) | Collaborators could attach extra mutating tools to chat. |
+| Folding bible/canon into published instructions | Canon is per-project and already packed on the turn `system` message. |
+| Registering unused council/muse agents “for completeness” | Studio would list ghosts; production does not call them via the instance. |
+
+### Verification
+
+```bash
+npx vitest run src/shared/agent-kernel/mastra/__tests__/editor-connect.test.ts
+npx vitest run src/domains/storyteller/ai/workflows/__tests__/generate-author-draft-cost.test.ts
+npm run mastra:smoke
+```

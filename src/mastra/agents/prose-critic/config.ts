@@ -7,6 +7,7 @@ import {
 } from '@/domains/storyteller/ai/agents/critics/constants/critic-agents'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
 import { loadAgentInstructions } from '@/shared/agent-kernel/mastra/load-agent-instructions'
+import { EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { formatBannedPhrasesForPrompt } from '@/domains/storyteller/ai/prompts/guardrails/anti-slop-phrases'
 
 /**
@@ -20,4 +21,5 @@ export default agentConfig({
   model: () => resolveRoleModel(StorytellerModelRoleKey.Critic),
   instructions: () =>
     `${loadAgentInstructions(CriticAgentId.Prose)}\n\n${formatBannedPhrasesForPrompt()}`,
+  editor: EDITOR_INSTRUCTIONS_ONLY,
 })

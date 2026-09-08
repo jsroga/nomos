@@ -13,6 +13,7 @@ export const DOCS_ALLOWED_FILES = new Set([
   // Append-only architecture decision log. Flat, per this catalog's own rule —
   // an `adr/` directory is explicitly forbidden below.
   'DECISIONS.md',
+  'MODEL_MAP.md',
 ])
 
 export const DOCS_IGNORED_ENTRIES = new Set(['.DS_Store', '.gitkeep'])

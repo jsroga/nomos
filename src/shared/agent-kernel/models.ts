@@ -16,9 +16,10 @@ import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
 // Everything routes through the OpenRouter gateway so a single
 // OPENROUTER_API_KEY serves every provider (no per-provider keys).
 //
-// Text generation policy (2026-07-28):
- // - Preferred default: latest Kimi (`moonshotai/kimi-k3`)
- // - Eval judges: GPT-5.6 Sol (`openai/gpt-5.6-sol`) via JUDGING_MODEL — not generation, not e2e smoke, until the operator confirms Sol for product text
+// Text generation runs on three models and no others:
+ // - Kimi (`moonshotai/kimi-k3`) — default for prose and story structure; the writer may swap it for Sol
+ // - Sol (`openai/gpt-5.6-sol`) — the picker's second choice, and the eval judge
+ // - GLM (`z-ai/glm-5.2`) — hardcoded cheap tier for short structured work; never offered in the picker
  // - Anthropic Claude is NEVER used for text generation (remapped to Kimi)
 //
 // NOTE: if Mastra's model router needs a gateway double-prefix for a special
@@ -27,10 +28,10 @@ import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
 
 /** Preferred default for long-form / general text generation (Kimi latest). */
 export const TEXT_GEN_PRIMARY_MODEL = 'moonshotai/kimi-k3'
-/** Eval / judging default only — not Writers Room generation and not e2e smoke. */
+/** Eval judging default, and the writer's alternative to Kimi in the chat picker. */
 export const TEXT_GEN_SHORT_IMPACT_MODEL = 'openai/gpt-5.6-sol'
-/** Fastest responses (autocomplete, glue, low-effort). */
-export const TEXT_GEN_FAST_MODEL = 'openai/gpt-5.6-luna'
+/** Cheap tier: labels, summaries, one-line prompts, ghost text, diagnose-only critics. */
+export const TEXT_GEN_FAST_MODEL = 'z-ai/glm-5.2'
 /** CorkBoard storyboard voice-over via OpenRouter `/audio/speech`. */
 export const TEXT_TO_SPEECH_MODEL = 'x-ai/grok-voice-tts-1.0'
 
@@ -192,7 +193,7 @@ export function createPureModel(modelName: string, chatCompletions = false) {
     ? enforced.replace(PROVIDER_SLASH, PROVIDER_COLON)
     : enforced
 
-  // OpenAI (Luna / Sol / …) — prefer OpenRouter; optional OPENAI_API_KEY direct fallback
+  // OpenAI (Sol / …) — prefer OpenRouter; optional OPENAI_API_KEY direct fallback
   if (colonForm.startsWith('openai:')) {
     const useOpenRouter = Boolean(env.OPENROUTER_API_KEY)
     const modelId = useOpenRouter

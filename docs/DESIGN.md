@@ -78,7 +78,7 @@ Dockable / full-height chat: **no header** inside the thread chrome.
 | User | Right-aligned indigo bubble, radius `14px 14px 3px 14px` |
 | Assistant | Avatar + unboxed prose; entity lists → cards; icon actions (copy / regenerate) + **Add to world** (like / attach / `@` hidden for now) |
 | Add to world | Same outline primary chip as **Suggest idea**: `Button` `size="sm"` `variant="outline"` · `h-6 text-xs gap-1 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground` · 12px icon. On Writers Room it **commits** into the inferred bible section (overview / inspirations / soundtrack) immediately — Accept, not Pending Review. Tool-driven `update_world_bible` still uses Accept/Reject on the target section. |
-| Model picker | Composer dropdown: **Kimi K3** · **GLM 5.2** · **Opus 5** (`USER_SELECTABLE_CHAT_MODELS`); persists `localStorage` `storyteller-chat-model`; sent as `modelName` on each `/api/assistant/*` request |
+| Model picker | Composer dropdown: **Kimi K3** · **GPT-5.6 Sol** (`USER_SELECTABLE_CHAT_MODELS`); persists `localStorage` `storyteller-chat-model`; sent as `modelName` on each `/api/assistant/*` request. Retargets the writing roles (chat, author, planner, premise); the GLM cheap tier is hardcoded |
 | Thinking | **One** replaceable row (dots + mono label), vertically centered with avatar — never stack status strings |
 | Composer | Surface with `:focus-within` indigo ring; chips from last reply; model picker; send = indigo bright square + arrow-up (stop while running) |
 

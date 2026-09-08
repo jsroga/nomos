@@ -11,6 +11,10 @@ import {
   isKnownChatModel,
 } from '@/domains/storyteller/config/constants/chat-model-catalog'
 import {
+  AGENT_MODEL_MATRIX,
+  type AgentModelConfig,
+} from '@/domains/storyteller/config/constants/agent-model-matrix'
+import {
   OPENROUTER_AUTO_GATEWAY,
   OPENROUTER_BASE_URL,
   TEXT_GEN_FAST_MODEL,
@@ -20,8 +24,12 @@ import {
   toOpenRouterModelId,
 } from '@/shared/agent-kernel/models'
 import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
+import { currentGatewayContext } from '@/shared/ai/gateway/call-context'
 import { isE2eBannedModelId, isE2eLlmPinned, remapModelIdIfE2ePinned } from '@/shared/ai/gateway/e2e-llm-pin'
 import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
+
+export type { AgentModelConfig }
+export { AGENT_MODEL_MATRIX }
 
 /**
  * Effort levels for dynamic model selection
@@ -31,8 +39,8 @@ export type ModelEffort = 'low' | 'medium' | 'high'
 
 /**
  * Model configurations by effort level
- * - low: Fastest (GPT-5.6 Luna)
- * - medium / high: Primary long-form (Kimi). GPT-5.6 Sol is judging-only until the operator confirms it for generation.
+ * - low: cheap tier (GLM) — short structured work
+ * - medium / high: primary long-form and structure (Kimi)
  */
 export const MODEL_BY_EFFORT: Record<ModelEffort, string> = {
   low: TEXT_GEN_FAST_MODEL.replace('/', ':'),
@@ -48,6 +56,13 @@ export function getModelByEffort(effort: ModelEffort = 'medium'): string {
   return MODEL_BY_EFFORT[effort]
 }
 
+/** Providers reachable only through OpenRouter (no direct-key fallback). */
+const OPENROUTER_ONLY_PREFIXES = ['google:', 'moonshotai:', 'z-ai:']
+
+function isOpenRouterOnlyProvider(colonForm: string): boolean {
+  return OPENROUTER_ONLY_PREFIXES.some(prefix => colonForm.startsWith(prefix))
+}
+
 /**
  * Centrally manages agent models and ensures Mastra compatibility.
  * "One var to rule them all" approach.
@@ -55,7 +70,7 @@ export function getModelByEffort(effort: ModelEffort = 'medium'): string {
  * NOTE: Using specificationVersion 'v1' for AI SDK v4 compatibility.
  * When upgrading to AI SDK v5, change to 'v2'.
  *
- * @param modelName - Model identifier (e.g., 'openai:gpt-5.6-luna') or effort level ('low', 'medium', 'high')
+ * @param modelName - Model identifier (e.g., 'moonshotai:kimi-k3') or effort level ('low', 'medium', 'high')
  */
 export function getAgentModel(modelName: string = TEXT_GEN_PRIMARY_MODEL) {
   // Support effort-based selection
@@ -92,8 +107,8 @@ export function getAgentModel(modelName: string = TEXT_GEN_PRIMARY_MODEL) {
     return model
   }
 
-  // Google / Moonshot — OpenRouter only
-  if (colonForm.startsWith('google:') || colonForm.startsWith('moonshotai:')) {
+  // Google / Moonshot / Z.AI — OpenRouter only
+  if (isOpenRouterOnlyProvider(colonForm)) {
     const openai = createOpenAI({
       apiKey: env.OPENROUTER_API_KEY,
       baseURL: OPENROUTER_BASE_URL,
@@ -125,7 +140,7 @@ export const MODEL_FALLBACKS = [{ model: OPENROUTER_AUTO_GATEWAY, maxRetries: 3 
 
 /**
  * Get model string for Mastra's unified API format
- * Converts 'openai:gpt-5.6-luna' to 'openai/gpt-5.6-luna'
+ * Converts 'moonshotai:kimi-k3' to 'moonshotai/kimi-k3'
  */
 export function toMastraModelString(modelName: string): string {
   return modelName.replace(':', '/')
@@ -216,21 +231,6 @@ export function inferEffortFromContext(context: {
   return 'low'
 }
 
-// =============================================================================
-// AGENT-MODEL ASSIGNMENT MATRIX
-// Maps each agent role to its optimal model, temperature, and token limits.
-// 2026 pricing: GPT-5.6 Luna (fast), Gemini Flash, GPT-5.2, Claude Sonnet —
-// prefer OpenRouter ids; fast glue roles use TEXT_GEN_FAST_MODEL (Luna).
-// =============================================================================
-
-export interface AgentModelConfig {
-  model: string
-  temperature: number
-  topP: number
-  maxOutputTokens: number
-  rationale: string
-}
-
 /**
  * Shared runtime defaults for agents, replacing scattered magic literals.
  * Sampling defaults are only used when an agent has no entry in
@@ -245,168 +245,6 @@ export const AGENT_RUNTIME_DEFAULTS = {
   temperature: 0.7,
   topP: 0.9,
 } as const
-
-export const AGENT_MODEL_MATRIX: Record<string, AgentModelConfig> = {
-  // === TIER 1: CHEAP + FAST (analysis, scoring, structured output) ===
-  psychologist: {
-    model: 'moonshotai:kimi-k3',
-    temperature: 0.55,
-    topP: 0.9,
-    maxOutputTokens: 4000,
-    rationale: 'High EQ required. Temp 0.55 balances analytical rigor with narrative voice — too cold produces formulaic psychology. Non-core role: Kimi K3 replaces the prohibited Claude Sonnet 5.',
-  },
-  consequence: {
-    model: 'openai:gpt-5.2',
-    temperature: 0.45,
-    topP: 0.9,
-    maxOutputTokens: 4000,
-    rationale: 'Causality tracking needs logic but also narrative awareness. Temp 0.45 avoids clinical tone while staying rigorous.',
-  },
-  'consequence-scoring': {
-    model: DEFAULT_CHAT_MODEL,
-    temperature: 0.3,
-    topP: 0.9,
-    maxOutputTokens: 2000,
-    rationale:
-      'Follows the Writers Room user picker (same catalog as author).',
-  },
-  'quality-gate': {
-    model: DEFAULT_CHAT_MODEL,
-    temperature: 0.1,
-    topP: 0.9,
-    maxOutputTokens: 1000,
-    rationale: 'Follows the Writers Room user picker (same catalog as author).',
-  },
-  'creative-director': {
-    model: DEFAULT_CHAT_MODEL,
-    temperature: 0.5,
-    topP: 0.9,
-    maxOutputTokens: 2000,
-    rationale: 'Follows the Writers Room user picker (same catalog as author).',
-  },
-
-  // === TIER 2: FAST CREATIVE (drafts, critique, non-critical writing) ===
-  'devils-advocate': {
-    model: 'openai:gpt-5.2',
-    temperature: 0.6,
-    topP: 0.9,
-    maxOutputTokens: 4000,
-    rationale:
-      'Critique requires finding logic gaps. GPT-5.2 is best for red-teaming and logic checks.',
-  },
-  'gardener-standard': {
-    model: 'openai:gpt-5.2',
-    temperature: 0.72,
-    topP: 0.92,
-    maxOutputTokens: 6000,
-    rationale:
-      'Standard scene writing. Temp 0.72 narrows quality band — still creative but less prone to purple prose. Fast non-core role uses GPT-5.2 instead of Claude Sonnet 5.',
-  },
-  autocomplete: {
-    model: 'openai:gpt-5.6-luna',
-    temperature: 0.4,
-    topP: 0.9,
-    maxOutputTokens: 200,
-    rationale: 'Ghost-text completions must be FAST (<500ms). Luna via OpenRouter. Short output.',
-  },
-
-  // === TIER 3: FULL CREATIVE POWER (important scenes, orchestration) ===
-  storyteller: {
-    model: 'moonshotai:kimi-k3',
-    temperature: 0.75,
-    topP: 0.92,
-    maxOutputTokens: 8000,
-    rationale:
-      'Orchestrator and main writer — core role must use Kimi or GLM per user policy (Claude Sonnet 5 prohibited). Kimi K3 balances originality with consistency.',
-  },
-  'premise-architect': {
-    model: 'openai:gpt-5.2',
-    temperature: 0.8,
-    topP: 0.95,
-    maxOutputTokens: 8000,
-    rationale: 'Premise generation needs maximum structural coherence and logic. GPT-5.2 excels here.',
-  },
-
-  // === TIER 4: PRESTIGE (climactic scenes, refinement passes) ===
-  'gardener-climax': {
-    model: 'moonshotai:kimi-k3',
-    temperature: 0.78,
-    topP: 0.93,
-    maxOutputTokens: 8000,
-    rationale:
-      'Climactic scenes get slightly higher temp for peak creativity, but still controlled. Core creative role uses Kimi K3 instead of Claude Sonnet 5.',
-  },
-  'gardener-refinement': {
-    model: 'openai:gpt-5.2',
-    temperature: 0.65,
-    topP: 0.9,
-    maxOutputTokens: 6000,
-    rationale: 'Refinement passes need precision over creativity. Lower temp for targeted, controlled rewrites. Non-core role uses GPT-5.2 instead of Claude Sonnet 5.',
-  },
-
-  // === TIER 5: REASONING (complex planning, multi-step logic) ===
-  'storyteller-complex': {
-    model: 'openai:gpt-5.2',
-    temperature: 0.7,
-    topP: 0.9,
-    maxOutputTokens: 8000,
-    rationale:
-      'Multi-step planning, complex tool chains. GPT-5.2 has best reasoning capabilities.',
-  },
-
-  // === GRRM PIPELINE ROLES (beat-draft-workflow: author / planner / critics) ===
-  // NOTE: Claude Opus 4.7+ and Sonnet 5 reject temperature/topP at the API —
-  // the sampling fields below are advisory for older models only; workflow
-  // steps must not pass modelSettings when the resolved model is Claude 4.7+.
-  author: {
-    model: 'moonshotai:kimi-k3',
-    temperature: 0.75,
-    topP: 0.92,
-    maxOutputTokens: 8000,
-    rationale:
-      'Single GRRM author drafts AND revises — Kimi K3 by default; pin via STORYTELLER_AUTHOR_MODEL. Not driven by the Writers Room chat picker (that only overrides the chat adapter). Planner/premise stay Opus-class. Code models are prohibited in storyteller.',
-  },
-  planner: {
-    model: 'anthropic:claude-opus-4-8',
-    temperature: 0.6,
-    topP: 0.9,
-    maxOutputTokens: 4000,
-    rationale:
-      'Beat plans decide what the author dramatizes — high-importance reasoning runs Opus 4.8 by user decision (2026-07-09). Structured JSON output (goal/conflict/turn/hook), short, so the cost per run is bounded.',
-  },
-  critic: {
-    model: 'anthropic:claude-haiku-4-5',
-    temperature: 0.3,
-    topP: 0.9,
-    maxOutputTokens: 2000,
-    rationale:
-      'Narrow diagnose-only critics with quoted evidence. Cheap model is fine — critics are not the quality bottleneck (StoryForge finding).',
-  },
-  muse: {
-    model: DEFAULT_CHAT_MODEL,
-    temperature: 1.0,
-    topP: 0.98,
-    maxOutputTokens: 1500,
-    rationale:
-      'Blank-context wildcard ideas. Uses the muse slot (STORYTELLER_MUSE_MODEL / matrix), not the Writers Room chat picker. Entropy is code-side (D4).',
-  },
-  premise: {
-    model: 'anthropic:claude-opus-4-8',
-    temperature: 0.8,
-    topP: 0.95,
-    maxOutputTokens: 8000,
-    rationale:
-      'Premise / roadmap architecture — the highest-leverage structural decisions. Fable-class opt-in via STORYTELLER_PREMISE_MODEL=anthropic:claude-fable-5.',
-  },
-  chat: {
-    model: DEFAULT_CHAT_MODEL,
-    temperature: 0.7,
-    topP: 0.9,
-    maxOutputTokens: 8000,
-    rationale:
-      'Writers Room chat adapter. Per-request picker (Kimi / GLM / Opus) wins; else STORYTELLER_CHAT_MODEL; else this matrix default. Orchestration roles (author/planner/critic/muse/premise) use their own slots — not the chat picker. Headroom is set well above answer length because reasoning draws from this same budget: measured by chat-model-output-budget.e2e, a one-sentence answer costs 463-779 reasoning tokens on Kimi / GLM / Opus (up to 98% of the spend). The old 2000 left too little for a full bible section once reasoning is paid.',
-  },
-}
 
 /** Pipeline + product roles with env overrides (STORYTELLER_<ROLE>_MODEL). */
 export type StorytellerModelRole = 'author' | 'planner' | 'critic' | 'muse' | 'premise' | 'chat'
@@ -429,6 +267,30 @@ function isStorytellerRole(agentId: string): agentId is StorytellerModelRole {
 
 function roleSpec(role: StorytellerModelRole): ModelRoleSpec {
   return { role, envVar: ROLE_ENV_VARS[role] }
+}
+
+/**
+ * Which roles the Writers Room picker may retarget. Prose and story structure
+ * follow the writer; the cheap tier (critics, muse) stays where it is pinned,
+ * so one picker choice cannot make a diagnose-only pass expensive.
+ */
+const WRITER_CHOICE_ROLES: Record<StorytellerModelRole, boolean> = {
+  chat: true,
+  author: true,
+  planner: true,
+  premise: true,
+  critic: false,
+  muse: false,
+}
+
+/**
+ * The picker choice for this request, carried on the gateway context so it
+ * reaches workflow steps (author, planner) that take no RequestContext.
+ */
+function writerChoiceFor(role: StorytellerModelRole): string | undefined {
+  if (!WRITER_CHOICE_ROLES[role]) return undefined
+  const picked = currentGatewayContext()?.writerModel
+  return picked && isKnownChatModel(picked) ? picked : undefined
 }
 
 /**
@@ -460,7 +322,7 @@ export function getAgentModelConfig(agentId: string): AgentModelConfig {
  * Resolve a role to the model config Mastra's `Agent({ model })` accepts —
  * a `provider/model` gateway string, or a `{ url, id, apiKey }` object for
  * endpoint models (GLM via Z.AI Coding Plan). THE single role-resolution
- * path (item 57): user override → env override → matrix default.
+ * path (item 57): user override → env override → matrix lane.
  *
  * `overrideId` is user-influenced (the picker choice via RequestContext) and
  * is only honored when it names a known catalog entry — a user pref can never
@@ -471,14 +333,17 @@ export function resolveRoleModel(
   role: StorytellerModelRole,
   overrideId?: string
 ): StorytellerMastraModel {
-  const validatedOverride = overrideId && isKnownChatModel(overrideId) ? overrideId : undefined
+  const validatedOverride =
+    (overrideId && isKnownChatModel(overrideId) ? overrideId : undefined) ?? writerChoiceFor(role)
   // Single-key OpenRouter: per-request picker → admin panel setting → operator
-  // env override (STORYTELLER_<ROLE>_MODEL) → auto router. All routed through the
-  // same gateway. The per-role matrix still supplies temperature/topP/rationale.
-  // The precedence chain itself is the gateway registry's; this file supplies
-  // the role's env var and decides what to do with the answer.
+  // env override (STORYTELLER_<ROLE>_MODEL) → the role's lane in the matrix. All
+  // routed through the same gateway. The matrix also supplies
+  // temperature/topP/rationale. The precedence chain itself is the gateway
+  // registry's; this file supplies the role's env var and the lane default.
   const explicit = resolveConfiguredModelId(roleSpec(role), validatedOverride)
-  const resolved = explicit ? resolveStorytellerModel(explicit) : OPENROUTER_AUTO_GATEWAY
+  const resolved = resolveStorytellerModel(
+    explicit ?? AGENT_MODEL_MATRIX[role]?.model ?? DEFAULT_CHAT_MODEL
+  )
   if (!isE2eLlmPinned()) return resolved
   if (typeof resolved === 'string') {
     return isE2eBannedModelId(resolved) ? E2ePinnedChatModel.GatewayId : resolved

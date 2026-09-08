@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createStorytellerAgent } from '@/domains/storyteller/server'
+import { getPublishedAgent } from '@/shared/agent-kernel/mastra/get-published-agent'
+import { meteredCall } from '@/shared/ai/gateway/agent'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { HttpStatus } from '@/shared/data/constants/protocol'
 import {
+  loadBeatEpisodeLock,
+  readBeatId,
+  StorytellerAgentId,
   StorytellerAnswerSeparator,
   StorytellerBeatTypeFallback,
   StorytellerPromptAgentInstruction,
   StorytellerPromptTemplateToken,
   StorytellerSettingFallback,
-} from '@/domains/storyteller/core/storyteller-page-wire'
-import {
-  loadBeatEpisodeLock,
-  readBeatId,
-} from '@/domains/storyteller/services/beat-image-prompt-context'
+} from '@/domains/storyteller/server'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 
 const PROMPT_GENERATOR_SYSTEM = `You are a Visual Director for a film. 
@@ -71,7 +72,7 @@ export const POST = withAuth(async (req: NextRequest, { session }: Authenticated
 
     const beatRecord = recordFromJson(beat)
     const mazur = recordFromJson(beatRecord.mazurElements)
-    const agent = await createStorytellerAgent()
+    const agent = await getPublishedAgent(StorytellerAgentId.Storyteller)
 
     const promptInput = PROMPT_GENERATOR_SYSTEM.replace(
       StorytellerPromptTemplateToken.BeatContent,
@@ -91,10 +92,11 @@ export const POST = withAuth(async (req: NextRequest, { session }: Authenticated
       )
       .replace(StorytellerPromptTemplateToken.CanonLock, lookup.lock)
 
-    const imagePrompt = await agent.run(
-      StorytellerPromptAgentInstruction.GenerateImagePrompt,
+    const prompt = `Goal: ${StorytellerPromptAgentInstruction.GenerateImagePrompt}\n\nContext:\n${
       promptInput + StorytellerPromptAgentInstruction.GenerateImagePromptSuffix
-    )
+    }`
+    const response = await meteredCall(LlmFeature.StorytellerChat, () => agent.generate(prompt))
+    const imagePrompt = response.text
 
     return NextResponse.json({ prompt: imagePrompt })
   } catch (error) {

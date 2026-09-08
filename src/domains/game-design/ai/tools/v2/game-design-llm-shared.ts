@@ -1,20 +1,22 @@
-import { createOpenAI } from '@ai-sdk/openai'
-import { generateText } from 'ai'
-import { OPENROUTER_AUTO_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
+import '@/shared/data/server-guard'
+import { Agent } from '@mastra/core/agent'
+import type { ZodType } from 'zod'
+import { resolveGameDesignModel } from '@/domains/game-design/config/model-config'
+import { EDITOR_DISABLED } from '@/shared/agent-kernel/mastra/editor-permissions'
 import {
-  GameDesignLlmRole,
   GameDesignLlmTemperature,
   GameDesignToolCopy,
 } from '../../constants/game-design-tool-wire'
+import {
+  GameDesignStructuredOutputErrorStrategy,
+  GameDesignToolStructurer,
+} from '../../constants/agent-identity'
 
 /**
  * A temperature-bound handle on the OpenRouter model.
  *
- * **Not the gateway, and that is the open item here.** These run inside Mastra
- * tools whose `execute` receives only schema-declared args, so there is no
- * `ProjectScope` to bill against without changing every tool's input contract
- * — a change a model can silently get wrong by omitting the field. LangChain
- * is gone; the metering is recorded as remaining work in SPEC-13.
+ * Tool execute receives only schema-declared args, so there is no
+ * `ProjectScope` to bill against without changing every tool's input contract.
  */
 export interface GameDesignModel {
   temperature: number
@@ -28,44 +30,37 @@ export function createLogicToolModel(): GameDesignModel {
   return { temperature: GameDesignLlmTemperature.Analytical }
 }
 
-export function extractJsonFromLlmContent(content: string): unknown {
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) {
-    throw new Error(GameDesignToolCopy.NoJsonInResponse)
+let toolStructuringAgent: Agent | undefined
+
+function getToolStructuringAgent(): Agent {
+  if (!toolStructuringAgent) {
+    toolStructuringAgent = new Agent({
+      id: GameDesignToolStructurer.Id,
+      name: GameDesignToolStructurer.Name,
+      instructions: GameDesignToolStructurer.Instructions,
+      model: () => resolveGameDesignModel(),
+      editor: EDITOR_DISABLED,
+    })
   }
-  return JSON.parse(jsonMatch[0])
+  return toolStructuringAgent
 }
 
-/** Raw text from the model, for callers that parse it themselves. */
-export async function invokeLlmTextPrompt(prompt: string, model: GameDesignModel): Promise<string> {
-  const openRouter = openRouterClientConfig()
-  const openrouter = createOpenAI({ apiKey: openRouter.apiKey, baseURL: openRouter.baseURL })
-  const { text } = await generateText({
-    model: openrouter(OPENROUTER_AUTO_MODEL),
-    temperature: model.temperature,
-    messages: [{ role: GameDesignLlmRole.User, content: prompt }],
-  })
-  return text
-}
-
-export async function invokeLlmJsonPrompt(
+export async function invokeLlmJsonPrompt<T>(
   prompt: string,
-  model: GameDesignModel
-): Promise<unknown> {
-  const openRouter = openRouterClientConfig()
-  const openrouter = createOpenAI({ apiKey: openRouter.apiKey, baseURL: openRouter.baseURL })
-  const { text } = await generateText({
-    model: openrouter(OPENROUTER_AUTO_MODEL),
-    temperature: model.temperature,
-    messages: [{ role: GameDesignLlmRole.User, content: prompt }],
+  model: GameDesignModel,
+  schema: ZodType<T>
+): Promise<T> {
+  const agent = getToolStructuringAgent()
+  const response = await agent.generate(prompt, {
+    structuredOutput: {
+      schema,
+      errorStrategy: GameDesignStructuredOutputErrorStrategy.Warn,
+    },
+    modelSettings: { temperature: model.temperature },
   })
-  return extractJsonFromLlmContent(text)
-}
-
-export function parseLlmJsonOrError(content: string): { parsed?: unknown; error?: string } {
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) {
-    return { error: GameDesignToolCopy.FailedToParseAiResponse }
+  const parsed = schema.safeParse(response.object)
+  if (!parsed.success) {
+    throw new Error(GameDesignToolCopy.FailedToParseAiResponse)
   }
-  return { parsed: JSON.parse(jsonMatch[0]) }
+  return parsed.data
 }
