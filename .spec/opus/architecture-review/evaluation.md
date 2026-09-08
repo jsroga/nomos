@@ -521,6 +521,10 @@ Stating this plainly is what makes the rest credible.
 > the author never spends attention on a fixable defect, so that all of their attention goes to
 > the judgements only they can make.
 
+**Phase 7 is that sentence as a click path.** Studio scores defects and regressions. You keep
+preference: Promote, Publish, golden edits, beat Approve/Kill. A higher magic score is not
+permission to merge.
+
 ---
 
 ## 9. What runs when
@@ -555,6 +559,7 @@ What follows from it:
 | **Phase 3 Draft tab** | When that surface ships, Playwright on generate-next, regenerate-section, and Script/Novel mode switch is the acceptance path (`target-architecture.md` §7.5). Not a Phase 0–2 gate |
 | **Phase 5 overlay** | Session policy, restore, and module lock are unit / live-tier. Overlay pixels wait on a browser tier like other chat UI. Not a Phase 0–4 gate |
 | **Phase 6 browser campaign** | Playwright is scheduled here: storyteller (extend), 2d-canvas, 3d exporter, project create/settings — happy / error / edge. Tables: `phases.md` §6.1–6.2. Still not a gate for Phases 0–5 |
+| **Phase 7 Studio loop** | Experiments, Compare, traces, champion record. **Not** a fifth eval tier. Does not replace Tiers 0–3. HTTP chat unscored. You promote (`phases.md` §7.1, Actions 52–58). Nightly jobs may propose; they must not merge |
 
 The ordering also happens to be the honest one: a verdict card is only worth building once the
 pipeline behind it is proven to dispatch what it claims, which is §4's job.
@@ -582,3 +587,4 @@ The evidence a reviewer should demand before believing any quality claim this sy
 | 8 | Cost is known | Run total reconciles against the sum of its trace events; an unpriced model blocks a paid run |
 | 9 | The gate can fail | A missing binary, invalid config, signalled process and empty output with non-zero exit each produce red with a stated reason |
 | 10 | Humans stay in the loop | Every automated finding is overridable, and an override can be promoted to a project rule |
+| 11 | Promote is a person | A Studio score delta cannot Publish Editor, merge a prompt, or Approve a beat without the operator record (Phase 7) |

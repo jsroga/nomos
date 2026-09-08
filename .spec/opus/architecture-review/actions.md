@@ -1,4 +1,4 @@
-# Nomos — 38 Actions
+# Nomos — Actions
 
 Baselined on `refactor` @ `b409539`. Analysis only — each action becomes a detailed specification
 later.
@@ -11,9 +11,9 @@ for someone meeting the technique for the first time:
   working better with an AI assistant on that kind of problem.
 - **In plain words** — the idiot-proof version. No jargon, no repo names.
 
-**Five tracks.** **A — Foundations**: auth, CI, cost, gates, jobs. **B — Writing harness**:
+**Seven tracks.** **A — Foundations**: auth, CI, cost, gates, jobs. **B — Writing harness**:
 honest floor in `target-architecture.md` (one chat agent, three critic scopes, host persist).
-**C — Evals.** **D — Compounding** (Phase 4). **E — Workspace overlay chat** (Phase 5, Actions 33–38). **F — Tests** (Phase 6, Actions 49–51).
+**C — Evals.** **D — Compounding** (Phase 4). **E — Workspace overlay chat** (Phase 5, Actions 33–38). **F — Tests** (Phase 6, Actions 49–51). **G — Self-improving AI, you in the loop** (Phase 7, Actions 52–58): Studio traces, scorers, datasets, experiments; you promote.
 
 **Priority.** P0 = a stated guarantee is false, a security exposure exists, or the architecture is
 unsound without it. P1 = structural work the design depends on. P2 = capability built on top.
@@ -29,9 +29,9 @@ timeout source (28). That work is not optional decoration for the writing system
 
 **Numbers are stable ids, not positions.** Schedule is [phases.md](./phases.md). Actions 1–25
 are grouped under track headings; 26–32 sit after Track D (27 and 31 → A, 26/28/30 → B, 29
-and 32 → C). Actions **33–38** are Track E / Phase 5. Actions **49–51** are Track F / Phase 6. Appendix B is **39–48**. The backtick string above is historical — do not execute it.
+and 32 → C). Actions **33–38** are Track E / Phase 5. Actions **49–51** are Track F / Phase 6. Actions **52–58** are Track G / Phase 7. Appendix B is **39–48**. The backtick string above is historical — do not execute it.
 
-**Phases 0–5: evals first, no browser tier** for compiler work. **Phase 6** is when Playwright on product pages is scheduled — see `evaluation.md` §9.1 and [phases.md](./phases.md) Phase 6 tables. Do not block Actions 1–38 on those specs.
+**Phases 0–5: evals first, no browser tier** for compiler work. **Phase 6** is when Playwright on product pages is scheduled — see `evaluation.md` §9.1 and [phases.md](./phases.md) Phase 6 tables. Do not block Actions 1–38 on those specs. **Phase 7** is the quality operating system in Mastra Studio — not a Nomos settings tab, not scorers on HTTP chat. Click path: [phases.md](./phases.md) §7.1.
 
 Two consequences for this list. **Phase 0 leads** ([phases.md](./phases.md)): identity, persist,
 trace, and timeout reconciliation before new personalities. **Actions 3 and 18** are the
@@ -91,6 +91,16 @@ Settled chat behaviour is `target-architecture.md` §7.4. Draft-tab pixels are �
 | 36 | One session, one module; else new chat | E | P1 | Don't type 2D prompts into a story thread |
 | 37 | Session list like Cursor | E | P2 | Switch, see running, rename, delete |
 | 38 | Cheap title after the first message | E | P2 | Name the chat; don't make the user |
+| 49 | Playwright fixtures and new specs for four surfaces | F | P1 | Keep the clicks as tests |
+| 50 | Unit coverage +15% relative | F | P1 | Fifteen percent more of the program, then stop |
+| 51 | Happy / error / edge on each E2E surface | F | P1 | It worked, it broke, the weird case |
+| 52 | Studio is the inspect cockpit | G | P1 | Open the lab; do not build a second dashboard |
+| 53 | Versioned dataset from the golden set | G | P1 | One exam; Studio versions it; you edit goldens |
+| 54 | Experiments on agent and workflow | G | P1 | Run the exam against a named target; keep the trace |
+| 55 | Compare, 2σ, you promote | G | P1 | Math proposes; your click ships |
+| 56 | Champion record | G | P1 | Write down what is actually in production |
+| 57 | Trace three items when scores move | G | P1 | A number without a trace is a rumor |
+| 58 | Calibration in the same cockpit | G | P1 | Check the ruler; never auto-merge |
 
 ---
 
@@ -1844,12 +1854,219 @@ No product. Close rows in [phases.md](./phases.md) §6.1 and §6.2. Do not aim f
 
 ---
 
+# Track G — Self-improving AI (you in the loop) — Phase 7
+
+The writing compiler (0–4), overlay (5), and tests (6) already exist. This track is the **quality operating system**. Mastra already has the primitives: Studio (`localhost:4111`), scorers on `createMastra`, traces, Editor publish, Datasets, Experiments, Compare. Track C already named honest evals (`eval:scorer-fixture` ≠ live quality). Track G **composes** those surfaces into a loop you can click. It does **not** replace Tiers 0–3, attach judges to HTTP chat, or auto-merge prompts.
+
+**You always own:** Approve/Kill in Writers Room; Promote/Reject of an experiment; Editor Publish; git commit of prompts/pins; golden-set edits; empty-wallet stop. **The machine owns:** run the experiment, score rows, compute deltas, store traces.
+
+Click-by-click product path: [phases.md](./phases.md) §7.0–7.3. Do not invent a Nomos Quality tab that duplicates Studio.
+
+---
+
+## 52. Studio is the inspect cockpit
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 3, 18 (traces exist); scorers already registered on `createMastra`
+
+**WHAT.** The inspect/control surface for system quality is **Mastra Studio**, not a new page in Nomos. After a prompt, model, skill, or Editor-draft change, you can open traces, scorers, datasets, and experiments without an agent inventing a dashboard. HTTP chat / `/api/assistant` / smoke keep `CHAT_HTTP_SCORERS = {}`. Production never loads Editor **drafts**. Studio stays local; do not expose Editor REST or Studio on the Next app.
+
+**HOW — implement exactly this.**
+
+1. Keep `npm run mastra:dev` as the lab (`:4111`). Same Postgres as the app so traces and Editor versions match production.
+2. Register nothing new on `handleChatStream` / `CHAT_HTTP_SCORERS`. Ratchet: existing `chat-live-scorers.test.ts` stays red if HTTP scorers are attached.
+3. Document the click path once: [phases.md](./phases.md) §7.1 is canonical. Point `AGENTS.md` / `docs/DEVELOPMENT.md` at that section — do not fork a third runbook.
+4. Studio playground chats you start on purpose may attach scorers. Writers Room must not.
+5. Forbidden: Agent Builder EE, Composio, Arcade, a second Mastra instance, auto-Publish from a cron.
+
+**WHERE.** `src/shared/agent-kernel/mastra/create-mastra.ts` (already has `scorers: STORYTELLER_SCORERS` and Editor). `src/shared/agent-kernel/scorers/chat-live-scorers.ts`. Docs only besides a ratchet if the empty-HTTP-scorers test is missing a Studio mention. No new `src/app` Quality route.
+
+**Acceptance.**
+
+- `mastra:dev` lists storyteller / GRRM / critics / workflows and the scorer ids in `STORYTELLER_SCORERS`.
+- A Writers Room turn writes **no** live judge rows on the chat stream.
+- Opening Studio does not require a Nomos login tab.
+- `getPublishedAgent` still ignores drafts (ADR 0005).
+
+**What is there to learn.** *Inspect where the orchestrator already lives.* *Working with AI:* paste §7.1 and forbid a new Settings panel.
+
+**In plain words.** The book is Writers Room. The lab is Studio on port 4111. Scores on every chat message would burn money and still would not tell you whether to ship. You look at traces first, then scores.
+
+---
+
+## 53. Versioned dataset from the golden set
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 20 (golden set)
+
+**WHAT.** Studio **Datasets** hold the same exam as `evals/datasets/storyteller-golden.ts` (and idea-diversity when that loop is in play). One meaning of “good.” Studio versions items (SCD-2). You edit goldens when taste changes. An agent must not rewrite goldens to match a bad model.
+
+**HOW — implement exactly this.**
+
+1. Create (once) a Studio dataset whose items are the golden briefs + expected shape, not a second secret exam.
+2. Import from the committed golden module (CSV/JSON export is fine). Pin a **version** before every experiment.
+3. A human edit in Studio must be exportable back to `evals/datasets/` in the same change, or Studio is declared a view and git remains source of truth — pick one in the implementation and write it on the champion record. Default: **git is source of truth**; Studio import is a snapshot of that commit.
+4. Do not let `startExperiment` mutate items.
+
+**WHERE.** Studio Datasets UI + a small sync script under `evals/` only if import-by-hand is error-prone. Do not store a parallel golden in `src/`.
+
+**Acceptance.**
+
+- Two experiments on the same dataset version are comparable.
+- Changing a golden in git without re-importing is a named failure (“stale Studio dataset”), not silent drift.
+- No agent tool can PATCH golden items.
+
+**What is there to learn.** *Version the exam or the scores are fiction.* *Working with AI:* one dataset id, pin version, forbid a “fix the golden so we pass.”
+
+**In plain words.** The test questions live in git. Studio can run them. When you change what “good” means, you change the questions on purpose and write a new version number.
+
+---
+
+## 54. Experiments on agent and workflow
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 52, 53, 7 (named eval tiers)
+
+**WHAT.** Studio **Experiments** (or `dataset.startExperiment` / `createExperiment` / `runExperimentItem`) run all items against a **named** target: workflow `beat-draft-workflow` for compiler quality, or agent `storyteller` / `grrm-author` for a single-role question. Attach a **named subset** of `STORYTELLER_SCORERS`. Each row stores input, output, scores, and a **trace id** you can click.
+
+**HOW — implement exactly this.**
+
+1. One target type per experiment. Do not mix workflow and agent in one run.
+2. Scorer subsets: author/draft → `magic`, `prose-craft`, `stakes-cost`, `story-motion`; canon/tools → `consistency`, `hallucination`. Structural scorers when the claim is orchestration, not prose.
+3. Pin dataset version. Low `maxConcurrency`. Cheap agent targets may use GLM; never pin this path to smoke-chat Sol/Kimi/Opus by accident.
+4. OpenRouter **insufficient credits** (402): stop the experiment. Do not retry, do not switch model. In-flight budget (Retry-After 120) may retry **once**.
+5. If a row has scores but no trace id, the wiring is wrong — fail the ticket, do not report quality.
+6. `eval:scorer-fixture` stays frozen `referenceOutput`. Experiments that call live agents are **not** that command.
+
+**WHERE.** Studio Experiments + Mastra dataset APIs. Workflow and agent ids must match `agent.id` / workflow registration (`runtime-registry.ts`). No scorers on the Next SSE route.
+
+**Acceptance.**
+
+- A beat-draft experiment shows planner / author / three critic spans on a sampled row’s trace.
+- Fixture `npm run eval:scorer-fixture` still does not call those agents.
+- 402 stops the run with a loud failure, not a flake-retry loop.
+
+**What is there to learn.** *An experiment is a proposal, not a ship.* *Working with AI:* name the target id and scorer list; refuse “run all scorers on everything.”
+
+**In plain words.** You press Run on a named robot or a named pipeline, against the exam you pinned. Each answer keeps a flight recording. That is how you find out if a prompt change helped.
+
+---
+
+## 55. Compare, 2σ, you promote
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 54, 21 (σ), 23 (quality gate)
+
+**WHAT.** Studio **Compare** two experiments (candidate vs champion). A claimed win must beat `max(2σ, 0.02)` on the scorers you named (`evals/constants/thresholds.ts`). Smaller deltas are noise. Missing scorer vs champion is a regression. **Your click** is the only promote. Scores never publish Editor, never `git commit`, never Approve a beat.
+
+**HOW — implement exactly this.**
+
+1. Compare UI: candidate experiment id vs champion id from Action 56.
+2. Apply the 2σ rule per named scorer. Do not average away a drop on `stakes-cost` with a rise on `magic` unless you wrote that trade on the champion record first.
+3. Cost: unpriced model → comparison is **cost unknown**, not cheaper. Do not promote on “$0.”
+4. **Promote checklist** (also [phases.md](./phases.md) §7.1.H): three traces sampled; three critics present on beat-draft; Kill still writes nothing; dataset version recorded; HTTP chat still has empty scorers.
+5. Promote does **one** of: Editor **Publish**, or a git prompt/code commit — unless you record both ids. Reject leaves champion unchanged.
+6. Pre-commit never runs Studio experiments. Release still uses `npm run eval:gate` / `eval:full` when you decide to ship (Action 58).
+
+**WHERE.** Studio Compare. Thresholds stay in `evals/constants/thresholds.ts` — do not invent `studio-thresholds.ts`.
+
+**Acceptance.**
+
+- A +0.01 magic bump cannot become champion in the happy path (document or test the reject).
+- Promote without the checklist is a failed review.
+- No cron publishes Editor.
+
+**What is there to learn.** *The gate is a human, the ruler is math.* *Working with AI:* paste the Promote checklist; refuse “if score > 0.8 auto-merge.”
+
+**In plain words.** The computer says “maybe better.” You look at three recordings, then you press Publish or you don’t. A tiny score wiggle is weather, not a reason to change the book.
+
+---
+
+## 56. Champion record
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 55, 25 (model pins), Editor publish (ADR 0005)
+
+**WHAT.** A small record **you** write of what production actually runs: champion experiment id, dataset version, Editor published version (or “code instructions”), git SHA of prompts, `resolveRoleModel` pins, date, your initials. The machine must not update this behind your back.
+
+**HOW — implement exactly this.**
+
+1. One committed file (allowlisted under `evals/` or `docs/` — not a new `docs/` subfolder; prefer extending `docs/DEVELOPMENT.md` or an eval artifact the freshness gate already understands) **or** Studio metadata you paste into git in the same PR as the promote.
+2. Fields: experiment id, dataset version, prompt/editor version, model pins, cost note (known / unknown), date, operator.
+3. A promote that does not update this record is incomplete.
+4. Do not treat `evals/results/latest.json` as the champion — that file is the live-eval artifact slot, not Studio.
+
+**WHERE.** Named in the first implementation PR. Default suggestion: a short section in `docs/DEVELOPMENT.md` § eval / Studio, updated on promote — or `evals/results/champion.json` if you want it machine-readable **written by the operator**, not by the scorer.
+
+**Acceptance.**
+
+- After a real promote, a stranger can name the experiment + dataset version + prompt source from the record.
+- CI does not overwrite the record on `eval:scorer-fixture`.
+
+**What is there to learn.** *Production is a pointer, not a vibe.* *Working with AI:* require the record fields in the PR body.
+
+**In plain words.** Write down which test run, which questions, and which prompt you actually shipped, with your name on it. Do not let the robot update that note for you.
+
+---
+
+## 57. Trace three items when scores move
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 3, 18, 54
+
+**WHAT.** When Compare shows a drop (or a promote candidate), you open **three** traces from the worst items before you revert prompts or ship. Classify: orchestration (missing critic), canon leak, slop, judge noise. Orchestration bugs are Phase 0/1, not a new scorer.
+
+**HOW — implement exactly this.**
+
+1. Experiment row → trace id → Studio Traces.
+2. Quota: three traces per decision (reject or promote). More is optional.
+3. Missing critic span → stop looking at magic; fix dispatch (Action 18).
+4. Same prose, different score → Action 58 calibration, not a model swap.
+5. Do not auto-rewrite goldens from failing items.
+
+**WHERE.** Studio Traces + existing `withMastraSpan` / workflow spans. No new telemetry vendor.
+
+**Acceptance.**
+
+- Promote checklist requires three trace ids written on the champion record or the PR.
+- A quality discussion with no trace ids is incomplete.
+
+**What is there to learn.** *Score is a pointer to a recording.* *Working with AI:* demand trace ids before a prompt revert.
+
+**In plain words.** If the grade fell, watch three tapes. Maybe the teacher blinked. Maybe a reviewer never showed up. Maybe the writing got worse. Those are different jobs.
+
+---
+
+## 58. Calibration in the same cockpit
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 21, 22, 23, 55
+
+**WHAT.** Weekly (and after `JUDGING_MODEL` or golden changes): a **calibration** experiment — same items, same target, unchanged judge — to bound σ. Ablations (pack on/off, extra critic, Humanizer class) run as experiments and Compare the same way. `npm run eval:gate` / `eval:full` remain the **release** live-quality commands. Studio does not replace them; it is how you decide whether to run them. Nightly jobs may **propose** (open an experiment, leave a note). They must not merge, publish, or Approve beats.
+
+**HOW — implement exactly this.**
+
+1. Calibration experiment reuses Action 21’s σ story. If you change the judge, re-measure before believing deltas.
+2. Ablation experiments are Action 22, visible in Studio Compare, not a one-off script nobody can replay.
+3. Operator cadence: [phases.md](./phases.md) §7.2. Release: `eval:gate` still compares to the dated baseline; 2σ rule unchanged.
+4. Optional later: Appendix **46** (verdicts as labels) feeds calibration — still your taste, still not auto-merge.
+5. Judge spend stays off `llm_calls` (ADR 0003). Studio playground chats that hit production agents **do** bill — notice them on the weekly spend glance.
+
+**WHERE.** Studio + existing `evals/` runner. Do not attach this to husky.
+
+**Acceptance.**
+
+- A judge-model change without a new calibration cannot promote.
+- A nightly job cannot Publish Editor.
+- `eval:scorer-fixture` still is not live quality.
+
+**What is there to learn.** *Calibrate the ruler on a schedule; ship on purpose.* *Working with AI:* two commands stay named — fixture vs gate — plus Studio as the cockpit, not a fourth silent number.
+
+**In plain words.** Once a week, give the same test to the same robot so you know how much the grades wiggle. Big wiggles mean the teacher is noisy. Real releases still use the named live exam. Nothing ships while you sleep.
+
+---
+
 # Appendix — deliberately not on the floor
 
 Two lists. The first is capability the design **names but does not build yet**, each with the
 measurement that would earn it a slot. The second is what would become Actions 39+ if the list
 were allowed to grow past Phase 5 — real work, ranked below the overlay, recorded so it is not
-rediscovered as a surprise later.
+rediscovered as a surprise later. **Phase 7 (52–58)** is not this appendix: it is Track G, the
+Studio quality loop. Appendix **46** (verdicts as labels) may later feed Action 58; it still does
+not auto-merge.
 
 ## A. Deferred capability — the trigger that promotes it
 

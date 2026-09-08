@@ -4,7 +4,7 @@
 **Audit base (the spec’s):** `refactor` @ `b409539`. This document does not re-probe those measurements.
 **Comparators:** [InkOS](https://github.com/Narcooo/inkos), [Vela](https://github.com/heider-x/vela), [StoryCraftr](https://github.com/raestrada/storycraftr), [novel-writing](https://github.com/wgwtest/novel-writing), plus the coding-agent harnesses this repo already copies — [Cursor](https://cursor.com) and [Claude Code](https://code.claude.com/docs/en/how-claude-code-works).
 **Deliverable:** analysis only.
-**Build order:** [phases.md](./phases.md) — platform + storyteller tracks (0–4), overlay chat as Phase 5, tests as Phase 6.
+**Build order:** [phases.md](./phases.md) — platform + storyteller tracks (0–4), overlay chat as Phase 5, tests as Phase 6, Studio quality loop as Phase 7 (you promote).
 
 ---
 
@@ -261,6 +261,7 @@ The week table below is the same work, grouped. Execute by phase, with platform 
 | 2 | Cost: `totalUsage` not last-step; gateway context on `/api/assistant`; kill the embedding global. Rename eval commands. Pack-on vs pack-off live ablation. | Every later quality number is a lie until the ledger and the eval name tell the truth. |
 | 3 | `AfterBeatState` + live `setups` table + author-truth partition on Author context. Deterministic checks in the draft path. | InkOS lesson + Cursor lint-on-edit. Continuity becomes data. |
 | Later | Extra critic scopes, four-layer tables, `promote_rule`, role pins — each behind an ablation that beats noise. Humanizer always-on class is Phase 2, not “later.” | The spec already wrote this rule. Apply it to extras, not to the three critics. |
+| 7 | Studio traces → dataset → experiment → Compare. You Promote. HTTP chat unscored. `eval:gate` still the release live exam. | Self-improving AI with a human gate. Do not auto-publish Editor. |
 
 ---
 
@@ -270,6 +271,7 @@ The week table below is the same work, grouped. Execute by phase, with platform 
 - That InkOS’s 37-dimension auditor or Vela’s local RAG should be imported. They should not.
 - That “GRRM-level” is automatable. The spec is honest about this (`evaluation.md` §8). Absolute literary quality stays human. Defects and regressions do not.
 - That one Conductor is wrong. It is right. The extra Conductor *modes that can commit* are wrong.
+- That Phase 7 auto-improves the system. It proposes. You inspect. You promote.
 
 ---
 
@@ -279,4 +281,4 @@ The audit of `b409539` is a top-tier finding list. The ideas worth keeping: iron
 
 `target-architecture.md` is now the coding-agent harness with different tools: **one chat agent, tools withheld by Plan mode, rows as truth, deterministic verify in the loop, human commit, three isolated reviewers, skills disclosed not concatenated.** World-state settlement is in the transaction. Extra critics grow by ablation. Regex prompt-injection is not P0. Latency (180s / one auto-revise) binds every phase.
 
-That is the system that can ship. [phases.md](./phases.md) is how to get there.
+That is the system that can ship. [phases.md](./phases.md) is how to get there. Phase 7 is how quality *moves* after it ships, with you still on the Promote button.

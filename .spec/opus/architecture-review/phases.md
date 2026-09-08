@@ -9,9 +9,9 @@
 | **Platform** | Auth, CI, cost, gates, jobs, contracts — the whole app | The opus audit’s P0s are mostly here. They are the strongest part of `actions.md`. Storyteller quality numbers are lies until this track is honest. |
 | **Storyteller** | Beat loop, skills, Humanizer, other artifacts | The writing system. Starts small; same agents you have today until Phase 2. |
 
-Do not start a later phase until the previous **Exit** is green. Loop Creator and 3D Canvas stay out of scope through Phase 4 except where a shared file (gateway, auth, CI, eval harness) is touched. **Phase 5** is the workspace chat overlay: those modules become first-class *chat session owners*, not writing-compiler work. **Phase 6** is tests only (unit coverage +15% relative, Playwright on four product surfaces). No product features in Phase 6.
+Do not start a later phase until the previous **Exit** is green. Loop Creator and 3D Canvas stay out of scope through Phase 4 except where a shared file (gateway, auth, CI, eval harness) is touched. **Phase 5** is the workspace chat overlay: those modules become first-class *chat session owners*, not writing-compiler work. **Phase 6** is tests only (unit coverage +15% relative, Playwright on four product surfaces). No product features in Phase 6. **Phase 7** is self-improving AI with the operator in the loop: Mastra Studio traces, scorers, datasets, and experiments. No silent auto-merge of prompts, models, or Editor publishes. Actions **52–58**.
 
-Action numbers in parentheses are ids from `actions.md`. They are **mapped**, not executed in opus order. Actions **33–38** are Phase 5 only. Actions **49–51** are Phase 6 only. Appendix B stays **39–48**.
+Action numbers in parentheses are ids from `actions.md`. They are **mapped**, not executed in opus order. Actions **33–38** are Phase 5 only. Actions **49–51** are Phase 6 only. Actions **52–58** are Phase 7 only. Appendix B stays **39–48**.
 
 ---
 
@@ -687,6 +687,168 @@ Live = real model or real provider. Stub = `page.route` like empty-turn / ghost 
 
 ---
 
+## Phase 7 — Self-improving AI (you in the loop)
+
+A **quality operating system**, not a new critic and not a new chat agent. The writing compiler (0–4), overlay (5), and test campaign (6) already exist. Phase 7 is how quality *moves* without the model shipping itself.
+
+**Not auto-improve.** The loop proposes. You inspect. You promote. A score going up is not permission to merge. A score going down is not permission to ignore. The 2σ rule in `evaluation.md` is the math; **your click** is the gate.
+
+**Not HTTP-chat scoring.** `CHAT_HTTP_SCORERS` stays `{}` on Writers Room / `/api/assistant` / smoke. Live judges on every chat turn are how credits die and latency slips. Scoring belongs on **Studio experiments**, `npm run eval` / `eval:gate` / `eval:full`, and traces you opened on purpose.
+
+**Mastra already in this repo (do not rebuild):**
+
+| Primitive | Where it already is | Phase 7 uses it for |
+|---|---|---|
+| Scorers on the instance | `createMastra({ scorers: STORYTELLER_SCORERS })` | Studio Scorers tab + experiment `scorerIds` |
+| `createScorer` + `outputSchema` + `jsonPromptInjection` | `src/shared/agent-kernel/scorers/` | Same instruments; no JSON-in-prompt leftovers |
+| Observability / traces | `withMastraSpan`, Postgres vNext observability | Studio Traces for “did the pipeline actually run?” |
+| Editor overlays | `MastraEditor({ source: 'db' })`, `getPublishedAgent` | You publish a brief; production never loads drafts |
+| Fixture vs live eval | `eval:scorer-fixture` vs `eval:gate` / `eval:full` | Fixture is not quality. Live is operator cadence |
+| Ablation harness | `evals/experiments/wildcards-ab.ts` (Action 22) | One experiment class among several, not the only loop |
+| Verdicts as labels | Appendix B **46** | Optional later: feed Approve/Kill into calibration — still your taste |
+
+**Studio is local.** `npm run mastra:dev` → `http://localhost:4111`. Do not expose Editor REST or Studio on the Next app (AGENTS.md). Do not enable Agent Builder EE, Composio, or Arcade.
+
+**What you always own (never automate):**
+
+| Decision | You | Machine |
+|---|---|---|
+| Is this draft good enough to keep in the book? | Writers Room Approve / Revise / Kill | Workflow `suspend` only waits |
+| Is this *system* better than last week? | Promote / reject experiment | Scores, deltas, traces |
+| Which prompt/model is champion? | Write the champion record | Experiment ids and hashes |
+| Publish an Editor overlay? | Studio Publish | Drafts stay in Studio |
+| Merge a prompt or pin a model? | Git commit / settings | Never `git commit` from a scorer |
+| Empty wallet? | Stop | 402 is a hard stop, same as smoke |
+| Attach scorers to HTTP chat? | No | Keep `CHAT_HTTP_SCORERS` empty |
+
+---
+
+### 7.0 Product (what you see)
+
+Two windows. Neither replaces the other.
+
+1. **Writers Room** (the book). Premise → Beats → Draft. You still click Generate, then Approve / Revise / Kill. That is the *story* loop. Phase 7 does not add a “auto-accept beats that scored 0.8” button.
+2. **Mastra Studio** (the lab). Agents, Workflows, Traces, Scorers, Datasets, Experiments, Compare, Editor. That is the *system* loop.
+
+The ultimate workflow is: write in the book → measure in the lab → you decide whether the lab result becomes the next book.
+
+---
+
+### 7.1 Click-by-click — daily / after a prompt or model change
+
+Do this in order. Skip a step only when the previous one has nothing to show (no new run, no dataset change).
+
+**A. Confirm the product still works (cheap).**
+
+1. App: `npm run dev` (or `dev:stack`). Open the project’s Writers Room.
+2. Send a tiny GLM-pinned turn if you need a live check (`zai-coding-plan:glm-5.2`). Never Kimi/Sol/Opus for this ping. If OpenRouter returns **insufficient credits**, **stop** — do not retry, do not “try a cheaper model.”
+3. Optional: `npm run test:e2e smoke` with `.env.local` loaded. Same credit rule.
+
+**B. Open the lab.**
+
+4. Terminal: `npm run mastra:dev` (Studio `:4111`). Keep it on the same Postgres as the app so traces and Editor versions are the ones production would see.
+5. Browser: `http://localhost:4111`. This is the inspect surface. You do not need a new Nomos settings tab for Phase 7.
+
+**C. Inspect the last real run (traces first, scores second).**
+
+6. Studio → **Observability / Traces** (wording may be **Traces**).
+7. Open the newest `beat-draft-workflow` (or `artifact-draft` / `fix-inconsistencies`) run from the project you just used.
+8. Check, by eye: planner span, author span, **three** critic spans overlapping, Humanizer after verdict if that path ran, persist only after Approve. If a critic span is missing, **do not** look at magic scores — the pipeline is lying (Action 18). Fix orchestration first.
+9. Open 1–2 tool calls. Confirm `structuredOutput` / schema-shaped critic reports, not a JSON blob scraped from assistant prose.
+
+**D. Scorers tab (instruments, not a ship decision).**
+
+10. Studio → **Scorers**. Confirm the registered set matches `STORYTELLER_SCORERS` (`magic`, `consistency`, `hallucination`, `persona-fidelity`, `prose-craft`, `stakes-cost`, `story-motion`, `goal-reached`, plus structural scorers).
+11. If a scorer shows results from a Studio **agent playground** chat you started on purpose, read them. Do **not** require scorers on the Next chat stream.
+
+**E. Dataset (the exam stays versioned).**
+
+12. Studio → **Datasets**.
+13. Open (or create once) the dataset whose items are the storyteller golden briefs — same meaning as `evals/datasets/storyteller-golden.ts`, not a second secret exam. Import CSV/JSON if Studio is empty; pin a **version**.
+14. Edit an item only when you, a human, changed what “good” means. That edit versions the dataset (SCD-2). Do not let an agent rewrite goldens to match a bad model.
+
+**F. Experiment (the proposal).**
+
+15. Studio → **Experiments** → new experiment.
+16. Target: **workflow** `beat-draft-workflow` for compiler quality, or **agent** `storyteller` / `grrm-author` for a single-role question. One target per experiment.
+17. Scorers: pick a named subset. Author/draft changes → `magic`, `prose-craft`, `stakes-cost`, `story-motion`. Tools/canon → `consistency`, `hallucination`. Do not dump every scorer on every run to “be complete.”
+18. Pin dataset **version**. Optional: `maxConcurrency` low; GLM for cheap agent targets; never pin smoke-chat to Sol.
+19. Click **Run**. Watch items complete. 402 → stop the experiment, tell yourself credits are empty, do not fan out retries.
+20. Open failing items. Each row should carry input, output, scores, **trace id**. Click through to the trace (step C). If there is no trace id, the experiment is not wired — that is Action 54, not a quality result.
+
+**G. Compare (the math).**
+
+21. Studio → compare this experiment to the **champion** experiment id in the champion record (Action 56).
+22. Apply `evaluation.md`: a claimed win must beat `max(2σ, 0.02)` on the scorers you named. Smaller deltas are noise. A missing scorer vs the champion is a regression, not “N/A.”
+23. Cost: if either side is unpriced, the comparison is **cost unknown**, not cheaper. Do not promote on “$0.”
+
+**H. Your gate (the only ship step).**
+
+24. If worse, or within noise: **Reject.** Leave champion unchanged. Optionally open traces for the dropped items (quota: three traces, Action 57). Do not publish Editor. Do not merge prompts.
+25. If better beyond noise: walk the **Promote checklist** (also in Action 55):
+    - Three traces sampled; three critics present on beat-draft.
+    - Kill still writes nothing (spot-check or existing contract test).
+    - Cost known or explicitly accepted as unknown.
+    - Dataset version recorded.
+    - HTTP chat still has empty scorers.
+26. Only then, **one** of: (a) Studio **Editor → Publish** that agent’s instructions, or (b) a git commit of prompt/code. Never both in the same motion without writing both ids on the champion record.
+27. Update the champion record: experiment id, dataset version, prompt/editor version, model pins, date, your initials. The machine does not update this behind your back.
+
+**I. Release cadence (not every experiment).**
+
+28. Before a release, or after a judge/golden change: `npm run eval:gate` and/or `eval:full` from the repo. That is still the named live-quality gate. Studio experiments do not replace it; they are how you *decide* whether to run it.
+29. Pre-commit stays fixture + unit + build. A Studio experiment is never a husky hook.
+
+---
+
+### 7.2 Click-by-click — weekly lab
+
+1. Studio → Datasets: any golden edits from the week? Pin a new version if yes.
+2. Run one **calibration** experiment (Action 58 / Action 21): same items, same target, judge model unchanged — bound σ. If you changed `JUDGING_MODEL`, re-measure before believing deltas.
+3. Run or re-run the **ablation** that is in flight (pack on/off, extra critic scope, Humanizer class) through the same Compare path. Phase 4 extras still need this; Phase 7 is the cockpit for it.
+4. Editor: review **draft** overlays. Publish none unless step 7.1.H passed for that change.
+5. Glance at `llm_calls` / `npm run spend` for the week. Experiments and judges are not tenant spend (ADR 0003); still notice if Studio playground chats were billed as production.
+
+---
+
+### 7.3 Click-by-click — “the score fell and I do not know why”
+
+1. Do not revert prompts yet.
+2. Studio → Experiments → the run that fell → sort by largest negative scorer.
+3. Open the three worst items’ **traces**.
+4. Classify each: orchestration (missing critic / skip persist), canon leak (author-truth in Author), slop (Humanizer), judge noise (same prose, different score).
+5. Orchestration bugs → Phase 0/1 work, not a new scorer.
+6. Judge noise → calibration, not a model swap.
+7. Real quality drop → Reject champion change; optional Revise in Writers Room on a fixture project; do not auto-rewrite goldens.
+
+---
+
+### 7.4 What to implement (tickets)
+
+Handover tickets: `actions.md` **52–58**. File-level notes:
+
+| Work | Where |
+|---|---|
+| Runbook lives in this section | Do not hide it in a Nomos UI mock |
+| Dataset sync from `evals/datasets/` | One exam; Studio is a view/version, not a fork |
+| `dataset.startExperiment` / Studio Experiments | Target registered `agent.id` / workflow id |
+| Compare + 2σ | `evals/constants/thresholds.ts` already owns σ; do not invent a second threshold file |
+| Champion record | Small committed file or Studio metadata **you** write; name it in Action 56 |
+| Trace link on experiment rows | Observability store already there |
+| Forbidden | Scorers on `handleChatStream`; auto-Publish; auto-`git commit`; Studio public on Next; Agent Builder EE |
+
+**Constraints this phase**
+
+- Phase 7 does not implement overlay chat, extra critics, or Playwright. Those stay 5–6.
+- `eval:scorer-fixture` still scores frozen `referenceOutput`. Never relabel it live quality.
+- Structured output stays on `structuredOutput.schema` / scorer `outputSchema`. Experiments must not reintroduce JSON templates in prompts to “help the judge.”
+- Credit 402 → stop. In-flight budget (Retry-After 120) may retry **once**.
+- You remain the editorial verdict on beats. Experiments never call `commit_beat` and never Approve for you.
+
+**Exit.** You can run the §7.1 loop on a throwaway project without asking an agent to invent a dashboard. A better experiment cannot become champion without the Promote checklist. A worse one cannot publish Editor. HTTP chat still has no live scorers. `npm run eval:gate` remains the release gate. Three sampled traces exist for the last promote. Champion record names experiment id + dataset version.
+
+---
+
 ## What I would not do, even later, as specified
 
 | Opus item | Instead |
@@ -696,7 +858,7 @@ Live = real model or real provider. Stub = `page.route` like empty-turn / ghost 
 | Action 16 `continuity-sweep` + `autonomous-episode` as “showable” | `fix-inconsistencies` is the sweep; autonomy is Phase 4 |
 | Action 27 regex-injection P0 | Account guardrails yes; regex no |
 | Action 28 after the full floor is built | Constraint from Phase 0 |
-| Serial `1 → 3 → 2 → … → 30` | Platform ∥ Storyteller per phase |
+| Auto-publish Editor / auto-merge prompts from a score | Human Promote (Phase 7); drafts stay drafts |
 
 ---
 
@@ -745,8 +907,15 @@ Live = real model or real provider. Stub = `page.route` like empty-turn / ghost 
 | 49 | E2E fixtures + new specs (four surfaces) | 6 |
 | 50 | Unit coverage +15% relative (table 6.1) | 6 |
 | 51 | Playwright happy/error/edge backlog (table 6.2) | 6 |
+| 52 | Studio is the inspect cockpit | 7 |
+| 53 | Versioned dataset from the golden set | 7 |
+| 54 | Experiments on agent and workflow | 7 |
+| 55 | Compare, 2σ, you promote | 7 |
+| 56 | Champion record | 7 |
+| 57 | Trace three items when scores move | 7 |
+| 58 | Calibration in the same cockpit | 7 |
 
-Overview-only items with no action id: constants functions incentive → Phase 2; `toLegacyAsset` dropped thumbnail → with the next 2D/3D contract touch in Phase 1; bible-tools / model-config size → extract when those files are next edited, not a phase gate. Appendix B (RLS tests, drizzle-kit drift, optimistic lock, …) stays unphased — those ids moved to **39–48** so they do not collide with Phase 5. Phase 6 tests are **49–51**.
+Overview-only items with no action id: constants functions incentive → Phase 2; `toLegacyAsset` dropped thumbnail → with the next 2D/3D contract touch in Phase 1; bible-tools / model-config size → extract when those files are next edited, not a phase gate. Appendix B (RLS tests, drizzle-kit drift, optimistic lock, …) stays unphased — those ids moved to **39–48** so they do not collide with Phase 5. Phase 6 tests are **49–51**. Phase 7 quality loop is **52–58**.
 
 ---
 
@@ -759,5 +928,6 @@ Overview-only items with no action id: constants functions incentive → Phase 2
 5. Phase 4 is a backlog with promotion tests, not a roadmap sprint.
 6. Phase 5 is the workspace overlay chat (Actions 33–38). After 0–4. Not a lettered insert before Humanizer. The Phase 5 section in this file is the handover: current files, why the stream dies, schema, mount tree, adapter rules, tests. Tickets in `actions.md` are step lists for a smaller agent.
 7. Phase 6 is tests only (Actions 49–51). Unit statements × 1.15 vs a captured baseline. Playwright on storyteller (extend), 2d-canvas, 3d exporter, projects, settings — happy / error / edge. Tables in this file are the backlog.
+8. Phase 7 is self-improving AI with you in the loop (Actions 52–58). Studio traces → dataset → experiment → compare → **you** promote. HTTP chat stays unscored. Click path is this file §7.1.
 
-When later editing these files, this file still wins on: regex-injection is not P0, latency is a Phase 0 constraint, three critics not five, host owns commit, overlay chat is **Phase 5**, ids 1–32 stay mapped, 33–38 are the overlay, **49–51 are tests (Phase 6)**. `target-architecture.md`, `actions.md`, `evaluation.md`, `diagrams.md`, `overview.md` §8, and `learning-materials.md` now state that same contract.
+When later editing these files, this file still wins on: regex-injection is not P0, latency is a Phase 0 constraint, three critics not five, host owns commit, overlay chat is **Phase 5**, ids 1–32 stay mapped, 33–38 are the overlay, **49–51 are tests (Phase 6)**, **52–58 are the Studio quality loop (Phase 7)**. `target-architecture.md`, `actions.md`, `evaluation.md`, `diagrams.md`, `overview.md` §8, and `learning-materials.md` now state that same contract.

@@ -11,6 +11,8 @@
 2. **Part 7** is for a **non-technical person** (producer, writer, marketer, founder) who
    must explain the work in public. After Part 7 you should be able to draft a blog post
    without opening the code. Parts 1–6 are not required for that job.
+3. **Part 8** is for the same operator who will run Mastra Studio: how quality improves
+   with you in the loop. It is a plan (Phase 7), not a shipped auto-improver.
 
 **How to use it.** Part 1 is the story of what was recently refactored and why. Part 2 teaches
 backend fundamentals, each anchored to real code, then the agentic writing system (craft catalog,
@@ -20,7 +22,8 @@ thirty-two writing actions as a syllabus. Part 4 lists accepted trade-offs. Part
 the direction is good. **Part 7 (last chapter)** is the briefing for a public post: practices
 from the manuscript stack that shipped on `98056717`, plus the house rules from Phases 0–2
 that the post is allowed to claim. Overlay chat is **Phase 5** and is **not** in this briefing
-as a shipped feature. **Build order:** [phases.md](./phases.md).
+as a shipped feature. **Part 8** is Phase 7 (Studio lab) — also not a shipped claim in Part 7.
+**Build order:** [phases.md](./phases.md).
 
 A note on honesty: this document points at real weaknesses in code you wrote. That is not
 criticism, it is the only way the material is useful. Every codebase of this size has these
@@ -3501,3 +3504,50 @@ Commit worth citing internally: `98056717` — manuscript draft stack and prefer
 The weeks before it: identity and honest alarms; compiler lint before paid teachers; don't
 hand the writer the twist. Phase 5 overlay is specified in `phases.md`, not shipped in
 that commit.
+
+---
+
+# Part 8 — Self-improving AI with you in the loop (operator briefing)
+
+This is **Phase 7**. It is not on `98056717`. It is not a feature you can click in Nomos today
+beyond opening Studio. Read [phases.md](./phases.md) §7.1 for the full button path. Actions
+**52–58** in [actions.md](./actions.md).
+
+**Two windows.**
+
+| Window | Job | You still click |
+|---|---|---|
+| Writers Room | The book | Generate, then Approve / Revise / Kill |
+| Mastra Studio (`localhost:4111`) | The lab | Run experiment, Compare, Promote, Editor Publish |
+
+A beat does not stay in the book because a scorer liked it. A prompt does not ship because magic
+went up 0.01. The computer proposes. You inspect three traces. You promote.
+
+**What Mastra already gives you (do not rebuild a dashboard).**
+
+- **Traces** — did planner, author, and three critics actually run?
+- **Scorers** — `magic`, `prose-craft`, `stakes-cost`, `story-motion`, `consistency`, `hallucination`, … registered on the Mastra instance
+- **Datasets** — versioned exam; git golden set is the source of truth
+- **Experiments** — run the exam against an agent or a workflow
+- **Compare** — candidate vs champion; win only if bigger than `max(2σ, 0.02)`
+- **Editor** — draft overlays in Studio; production loads **published** only
+
+**What you never give the machine.**
+
+- Auto-Publish
+- Auto-`git commit`
+- Auto-Approve a beat
+- Live judges on every Writers Room chat turn (that burns money and is not the exam)
+- Rewriting the golden questions so a bad model looks good
+
+**Short loop after you change a prompt.**
+
+1. Cheap ping in Writers Room (GLM). Empty wallet → stop.
+2. Studio → Traces → last beat-draft. Three critics present?
+3. Studio → Datasets → pin the golden version.
+4. Studio → Experiments → Run (one target, a named scorer subset).
+5. Compare vs champion. Noise → reject. Real win → Promote checklist, then **one** of Publish or git.
+6. Write the champion record (experiment id, dataset version, your name).
+7. Releases still use `npm run eval:gate`. Studio is how you decide to run it, not a silent merge.
+
+**In one sentence.** Automate defect detection; keep preference — including “is this system better than last week?” — as a human click.
