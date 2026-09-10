@@ -1,4 +1,4 @@
-import { isPlainObject } from '@/shared/data/json-guards'
+import { isPlainObject } from '../../../data/json-guards'
 import { OpenRouterCreditNeedle } from './constants'
 
 export enum CreditHaltKind {

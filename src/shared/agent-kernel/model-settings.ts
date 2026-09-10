@@ -9,8 +9,8 @@
  * every lookup returns undefined and the resolvers fall back to env → auto-beta.
  */
 
-import { env } from '@/shared/config/env'
-import '@/shared/data/server-guard'
+import { env } from '../config/env'
+import '../data/server-guard'
 import { MODEL_SETTING_DEFAULT_ROLE } from './utils/model-settings'
 
 const cache = new Map<string, string>()

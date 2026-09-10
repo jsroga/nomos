@@ -1,12 +1,12 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { EnvVarName } from '@/shared/data/constants/protocol'
-import { E2E_MOCK_USER_ID } from '@/shared/auth/constants/e2e-auth'
+import { EnvVarName } from '../../data/constants/protocol'
+import { E2E_MOCK_USER_ID } from '../../auth/constants/e2e-auth'
 import {
   E2eBannedModelNeedle,
   E2eHarnessEmail,
   E2eOpenRouterGateway,
   E2ePinnedChatModel,
-} from '@/shared/ai/gateway/constants/e2e-llm-pin'
+} from './constants/e2e-llm-pin'
 
 const pinStore = new AsyncLocalStorage<true>()
 

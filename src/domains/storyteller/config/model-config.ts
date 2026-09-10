@@ -1,19 +1,19 @@
-import { env } from '@/shared/config/env'
-import { clientEnv } from '@/shared/config/env.client'
+import { env } from '../../../shared/config/env'
+import { clientEnv } from '../../../shared/config/env.client'
 import {
   resolveConfiguredModelId,
   type ModelRoleSpec,
-} from '@/shared/ai/gateway/model-registry'
+} from '../../../shared/ai/gateway/model-registry'
 import { createOpenAI } from '@ai-sdk/openai'
 import {
   DEFAULT_CHAT_MODEL,
   getChatModelOption,
   isKnownChatModel,
-} from '@/domains/storyteller/config/chat-model-catalog'
+} from './chat-model-catalog'
 import {
   AGENT_MODEL_MATRIX,
   type AgentModelConfig,
-} from '@/domains/storyteller/config/constants/agent-model-matrix'
+} from './constants/agent-model-matrix'
 import {
   OPENROUTER_AUTO_GATEWAY,
   OPENROUTER_BASE_URL,
@@ -22,11 +22,11 @@ import {
   enforceTextGenModelPolicy,
   toOpenRouterModel,
   toOpenRouterModelId,
-} from '@/shared/agent-kernel/models'
-import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
-import { currentGatewayContext } from '@/shared/ai/gateway/call-context'
-import { isE2eBannedModelId, isE2eLlmPinned, remapModelIdIfE2ePinned } from '@/shared/ai/gateway/e2e-llm-pin'
-import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
+} from '../../../shared/agent-kernel/models'
+import { getConfiguredModel } from '../../../shared/agent-kernel/model-settings'
+import { currentGatewayContext } from '../../../shared/ai/gateway/call-context'
+import { isE2eBannedModelId, isE2eLlmPinned, remapModelIdIfE2ePinned } from '../../../shared/ai/gateway/e2e-llm-pin'
+import { E2ePinnedChatModel } from '../../../shared/ai/gateway/constants/e2e-llm-pin'
 
 export type { AgentModelConfig }
 export { AGENT_MODEL_MATRIX }

@@ -11,8 +11,8 @@
  * storyteller agent is, and folding an agent×model matrix in here would be a
  * worse design than the duplication it removed.
  */
-import { toOpenRouterModel, toOpenRouterModelId } from '@/shared/agent-kernel/models'
-import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
+import { toOpenRouterModel, toOpenRouterModelId } from '../../agent-kernel/models'
+import { getConfiguredModel } from '../../agent-kernel/model-settings'
 
 export interface ModelRoleSpec {
   /** Key the admin panel stores a setting under. */

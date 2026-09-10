@@ -1,9 +1,9 @@
-import '@/shared/data/server-guard'
+import '../../../data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import type { GoalConfig } from '@mastra/core/agent'
-import { toOpenRouterModel, TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
-import { EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
-import { createInheritedAgentMemory } from '@/shared/agent-kernel/mastra/studio-memory'
+import { toOpenRouterModel, TEXT_GEN_FAST_MODEL } from '../../models'
+import { EDITOR_INSTRUCTIONS_ONLY } from '../editor-permissions'
+import { createInheritedAgentMemory } from '../studio-memory'
 import {
   HourLoopBudget,
   QualityImproverAgentDescription,

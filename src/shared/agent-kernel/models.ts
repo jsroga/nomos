@@ -5,9 +5,9 @@
  * Every model used anywhere in the system is configured here.
  */
 
-import { env } from '@/shared/config/env'
+import { env } from '../config/env'
 import { createOpenAI } from '@ai-sdk/openai'
-import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
+import { E2ePinnedChatModel } from '../ai/gateway/constants/e2e-llm-pin'
 
 // =============================================================================
 // OPENROUTER GATEWAY — one key to rule them all
