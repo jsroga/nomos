@@ -72,6 +72,10 @@ describe('inputHash', () => {
   it('watches the real tree, not an empty list', () => {
     expect(watchedFiles().length).toBeGreaterThan(50)
   })
+
+  it('includes Editor overlay JSON in the watch set', () => {
+    expect(EVAL_WATCHED_PATHS).toContain('src/mastra/editor')
+  })
 })
 
 describe('stagedHash', () => {

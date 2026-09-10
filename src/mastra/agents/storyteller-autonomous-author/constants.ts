@@ -10,8 +10,7 @@ export enum AutonomousAuthorName {
 }
 
 export enum AutonomousAuthorDescription {
-  Agent =
-    'Long-running author: drafts an episode beat-by-beat toward a standing objective, judged by the critics after each iteration.',
+  Agent = 'Storyteller · Long-running author toward a standing objective.',
 }
 
 /** Default goal budget — evaluations before the loop stops (resumable by raising it). */

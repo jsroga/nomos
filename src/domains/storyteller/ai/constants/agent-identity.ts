@@ -19,6 +19,11 @@ export enum StorytellerAgentLabel {
   Storyteller = 'Storyteller',
 }
 
+export enum StorytellerAgentDescription {
+  Storyteller =
+    'Storyteller · Chat adapter: bible tools and converse. Beat draft goes through the workflow.',
+}
+
 export enum BeatPlannerAgentId {
   BeatPlanner = 'beat-planner',
 }
@@ -44,10 +49,8 @@ export enum GrrmAuthorAgentLabel {
 }
 
 export enum GrrmAuthorAgentDescription {
-  GrrmAuthor =
-    'The solo creative mind — drafts and revises script beats with craft mechanics (Law of Motion, anti-slop, subtext dialogue).',
-  BeatPlanner =
-    'Plans beat structure (goal, conflict, turn, dialogue hook) — never writes prose.',
+  GrrmAuthor = 'Storyteller · Drafts script beats from a plan.',
+  BeatPlanner = 'Storyteller · Plans beat structure: goal, conflict, turn, dialogue hook.',
 }
 
 export enum GrrmAuthorAgentSpan {

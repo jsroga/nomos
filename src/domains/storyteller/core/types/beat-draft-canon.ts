@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { KnowledgeLedgerCanonRowSchema } from '@/domains/storyteller/core/knowledge-ledger/canon-row'
+import { KnowledgeLedgerCanonRowSchema } from '../knowledge-ledger/canon-row'
 
 export enum DraftBeatId {
   Draft = 'draft',

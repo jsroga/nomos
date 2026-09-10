@@ -1,4 +1,5 @@
 import { STRUCTURAL_MASTRA_SCORERS } from '@/evals/structural/mastra-scorers'
+export { STRUCTURAL_MASTRA_SCORERS } from '@/evals/structural/mastra-scorers'
 import { consistencyScorer } from './consistency-scorer'
 import { goalReachedScorer } from './goal-reached-scorer'
 import { hallucinationScorer } from './hallucination-scorer'
@@ -9,6 +10,14 @@ import { personaFidelityScorer } from './persona-fidelity-scorer'
 import { proseCraftScorer } from './prose-craft-scorer'
 import { stakesCostScorer } from './stakes-cost-scorer'
 import { storyMotionScorer } from './story-motion-scorer'
+
+export {
+  HOUR_LOOP_DEFAULT_SCORERS,
+  HourLoopScorerId,
+  hourLoopExperimentScorerIds,
+  hourLoopScorerIds,
+  hourLoopScorersForItem,
+} from './hour-loop-default-scorers'
 
 /** Mastra scorers — single definition for batch evals (`npm run eval`) and Mastra registry. */
 export const ALL_SCORERS = [

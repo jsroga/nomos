@@ -6,7 +6,7 @@ import {
   GrrmAuthorAgentDescription,
 } from '@/domains/storyteller/ai/constants/agent-identity'
 import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
-import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { composeBeatPlannerInstructions } from './compose-instructions'
 
 export default agentConfig({
@@ -15,5 +15,5 @@ export default agentConfig({
   description: GrrmAuthorAgentDescription.BeatPlanner,
   model: () => resolveRoleModel(AgentModelRole.Planner),
   instructions: () => composeBeatPlannerInstructions(),
-  editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
+  editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
 })

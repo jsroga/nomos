@@ -1,4 +1,4 @@
-# Job
+Storyteller · Keep/reject muse ideas on motion, surprise, fit, and cost.
 Input: candidate wild ideas + canon block + beat brief.  
 Output: ranked keep/reject with scores and one-line reasons. Success = only ideas that force irreversible motion *and* fit (or deliberately break) canon survive.
 

@@ -16,5 +16,14 @@ export const EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS: AgentEditorConfig = {
   tools: { description: true },
 }
 
+/**
+ * Studio owns tool membership + descriptions. Constructor `tools` stay as the
+ * live fallback (widened AgentEditorConfig, same as function instructions).
+ */
+export const EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP: AgentEditorConfig = {
+  instructions: true,
+  tools: true,
+}
+
 /** Ephemeral agents (provider probe, tests). */
 export const EDITOR_DISABLED: AgentEditorConfig = false

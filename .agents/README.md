@@ -23,7 +23,7 @@
       session-tracking.md
     templates/
       session/          ← starters copied into .local/sessions/…
-  skills/               ← use_skill + /slash skills (17 — see skills/README.md)
+  skills/               ← use_skill + /slash skills (19 — see skills/README.md)
     README.md
     <name>/SKILL.md
   goals/                ← session entry — one-off planning prompts (not Fabro stages)

@@ -72,21 +72,23 @@ import { createDurableAgent } from '@mastra/core/agent/durable'
 import type { DurableAgent } from '@mastra/core/agent/durable'
 import { buildStorytellerControllerConfig } from '@/domains/storyteller/ai/controller/storyteller-controller'
 import { autonomousAuthorAgent, AUTONOMOUS_AUTHOR_ID } from '@/domains/storyteller/ai/agents/AutonomousAuthor/autonomous-author-agent'
+import { museAgent, museRankerAgent } from '@/domains/storyteller/ai/agents/Muse/muse-agent'
 import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
 import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
-import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { getPublishedAgentOr } from '@/shared/agent-kernel/mastra/get-published-agent'
 import {
   BeatPlannerAgentId,
   GrrmAuthorAgentId,
+  StorytellerAgentDescription,
   StorytellerAgentId,
 } from '@/domains/storyteller/ai/constants/agent-identity'
 import { CriticAgentId } from '@/domains/storyteller/ai/agents/critics/constants/critic-agents'
+import { MuseAgentId } from '@/domains/storyteller/ai/agents/Muse/constants/muse-agents'
 
 const CHAT_ADAPTER_ID = StorytellerAgentId.Storyteller
 const CHAT_ADAPTER_NAME = 'Storyteller'
-const CHAT_ADAPTER_DESCRIPTION =
-  'Chat adapter: converse, keep the world bible current via tools, delegate beat drafting to the beat-draft workflow.'
+const CHAT_ADAPTER_DESCRIPTION = StorytellerAgentDescription.Storyteller
 const CHAT_ROLE: Parameters<typeof resolveRoleModel>[0] = 'chat'
 
 const CHAT_ADAPTER_MODEL_SETTINGS = {
@@ -136,13 +138,13 @@ const chatAdapterAgent = new Agent({
     modelSettings: CHAT_ADAPTER_MODEL_SETTINGS,
   },
   tools: CHAT_ADAPTER_TOOLS,
-  editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
+  editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
 })
 
 /** Production tools listed on the Mastra instance for Editor's project-tool picker. */
 export const storytellerRuntimeTools = CHAT_ADAPTER_TOOLS
 
-/** Chat adapter, author, planner, floor critics, autonomous author. Keys match agent.id. */
+/** Chat adapter, author, planner, floor critics, muse pair, autonomous author. Keys match agent.id. */
 export const storytellerRuntimeAgents: Record<string, Agent> = {
   [CHAT_ADAPTER_ID]: chatAdapterAgent,
   [GrrmAuthorAgentId.GrrmAuthor]: statelessGrrmAuthor,
@@ -151,6 +153,8 @@ export const storytellerRuntimeAgents: Record<string, Agent> = {
   [CriticAgentId.Prose]: proseCritic,
   [CriticAgentId.Stakes]: stakesCritic,
   [CriticAgentId.Dialogue]: dialogueCritic,
+  [MuseAgentId.Muse]: museAgent,
+  [MuseAgentId.Ranker]: museRankerAgent,
   [AUTONOMOUS_AUTHOR_ID]: autonomousAuthorAgent,
 }
 
@@ -209,7 +213,6 @@ export {
 registerMastraModule({
   agents: storytellerRuntimeAgents,
   workflows: storytellerRuntimeWorkflows,
-  tools: storytellerRuntimeTools,
 })
 
 // PLAN-V2 Phase 4.2/4.3 — lazily-initialized storyteller chat controller.

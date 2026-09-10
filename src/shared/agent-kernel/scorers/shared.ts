@@ -7,6 +7,17 @@ import { MODELS, toOpenRouterModel, toOpenRouterModelId, createPureChatModel } f
 import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
 import { isPlainObject } from '@/shared/data/json-guards'
 import { ScorerOutputField, LanguageModelMiddlewareSpec } from '@/shared/agent-kernel/scorers/constants/shared'
+import { ScorerInspectField, ScorerInspectMarker } from '@/shared/agent-kernel/scorers/constants/inspect'
+
+function stripWorkspacePack(text: string): string {
+  const index = text.indexOf(ScorerInspectMarker.Iq200)
+  if (index === -1) return text
+  return text.slice(0, index).trim()
+}
+
+function isAgentEnvelope(value: unknown): value is Record<string, unknown> {
+  return isPlainObject(value) && ScorerInspectField.InputMessages in value
+}
 
 const JUDGING_ROLE = 'judging'
 
@@ -54,11 +65,13 @@ export function normalizeScore(score: number): number {
 }
 
 export function outputToString(output: unknown): string {
-  if (typeof output === 'string') return output
+  if (typeof output === 'string') return stripWorkspacePack(output)
+  if (isAgentEnvelope(output)) return ''
   if (output && typeof output === 'object' && ScorerOutputField.Response in output) {
-    return String(output.response)
+    return stripWorkspacePack(String(output.response))
   }
-  return JSON.stringify(output)
+  if (Array.isArray(output)) return extractProse(output)
+  return stripWorkspacePack(JSON.stringify(output))
 }
 
 /**
@@ -66,12 +79,27 @@ export function outputToString(output: unknown): string {
  * beat-draft step records ({ draft } / { finalDraft }); falls back to JSON.
  */
 export function extractProse(output: unknown): string {
-  if (typeof output === 'string') return output
-  if (output && typeof output === 'object') {
-    if (ScorerOutputField.Draft in output && typeof output.draft === 'string') return output.draft
-    if (ScorerOutputField.FinalDraft in output && typeof output.finalDraft === 'string') return output.finalDraft
+  if (typeof output === 'string') return stripWorkspacePack(output)
+  if (isAgentEnvelope(output)) return ''
+  if (Array.isArray(output)) {
+    for (let index = output.length - 1; index >= 0; index -= 1) {
+      const row = output[index]
+      if (!isPlainObject(row)) continue
+      if (row[ScorerInspectField.Role] === ScorerInspectField.Assistant) {
+        const content = row[ScorerInspectField.Content]
+        if (typeof content === 'string') return stripWorkspacePack(content)
+      }
+    }
   }
-  return JSON.stringify(output ?? '')
+  if (output && typeof output === 'object') {
+    if (ScorerOutputField.Draft in output && typeof output.draft === 'string') {
+      return stripWorkspacePack(output.draft)
+    }
+    if (ScorerOutputField.FinalDraft in output && typeof output.finalDraft === 'string') {
+      return stripWorkspacePack(output.finalDraft)
+    }
+  }
+  return stripWorkspacePack(JSON.stringify(output ?? ''))
 }
 
 export function inputRecord(input: unknown): Record<string, unknown> {

@@ -26,6 +26,7 @@ export const EVAL_WATCHED_PATHS = [
   'src/domains/loop-creator/ai',
   'src/shared/agent-kernel',
   'src/mastra/agents',
+  'src/mastra/editor',
   'evals/datasets',
   'evals/constants',
 ]

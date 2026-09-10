@@ -185,16 +185,27 @@ npm run mastra:dev   # Traces tab
 
 `MODEL_CHUNK` spans dropped by default (`MASTRA_TRACE_MODEL_CHUNKS=true` to keep).
 
-HTTP Writers Room chat (`/api/storyteller/chat/stream`, `/api/assistant/*`) attaches empty scorers (`CHAT_HTTP_SCORERS`). Per-turn `goal-reached` / sampled quality judges must not run on e2e smoke. Studio Trace **Evaluate** still lists judges from `createMastra({ scorers: STORYTELLER_SCORERS })`. Run those judges with `npm run eval` (real `JUDGING_MODEL`, default GPT-5.6 Sol).
+HTTP Writers Room chat (`/api/storyteller/chat/stream`, `/api/assistant/*`) attaches empty scorers (`CHAT_HTTP_SCORERS`). Per-turn `goal-reached` / sampled quality judges must not run on e2e smoke. Studio Trace **Evaluate** lists leftover **code** scorers plus any FilesystemStore **stored** twins. Run those judges with `npm run eval` (real `JUDGING_MODEL`, default GPT-5.6 Sol). Overlay JSON under `src/mastra/editor` is on the eval hash (`EVAL_WATCHED_PATHS`).
+
+Studio **Editor** uses Mastra `source: 'code'`. Save writes JSON under `src/mastra/editor/` (`prompt-blocks.json`, `agents.json`, `scorer-definitions.json`). You `git add` / commit. `instructions.md` is fallback when an overlay id is missing. Boot does not copy markdown onto existing JSON. First import: `npm run studio:import-prompts` (or `--dry-run`). Hour-bot may dirty those files; it never git-commits.
+
+**Tools vs Prompts.** Writers (`storyteller`, `grrm-author`, `beat-planner`, autonomous author, `game-design-agent`, `market-analyst`) use `editor.tools: true` so Studio owns the tool list; constructor `tools` stay as the live fallback when JSON membership is empty. Critics, muse, muse-ranker, and `quality-improver` stay instructions-only. Tool `execute()` stays in TypeScript. No Skills tab.
+
+**beat-draft** critic loop is Mastra `.dountil()` capped at 3 writer revises. Lint stays one retry inside prose-check (`LintRedraftMax = 1`). Editorial verdict still suspends after the loop.
 
 Studio **Experiments**:
 
 | Dataset | Publisher | Task |
 |---|---|---|
-| `aeternum-episode-01` | `npx tsx evals/scripts/publish-aeternum-studio.ts` | Frozen beats (structural identity, no LLM) |
-| `storyteller-golden-quality` | `npx tsx evals/scripts/publish-golden-quality-studio.ts` | Frozen golden `referenceOutput` (hallucination + magic judges) |
+| `aeternum-episode-01` | `npx tsx evals/tools/publish-aeternum-studio.ts` | Frozen beats (structural identity, no LLM) |
+| `storyteller-golden-quality` | `npx tsx evals/tools/publish-golden-quality-studio.ts` | Frozen golden `referenceOutput` (hallucination + magic judges). Does **not** call the writer. |
+| `storyteller-live-quality` | `npx tsx evals/tools/publish-live-quality-studio.ts` | Git-backed live briefs (`evals/datasets/storyteller-live-quality.ts`). Default experiment target is `grrm-author` `generate`. Never mix with golden. |
 
-`npm run eval` remains the file report (`evals/results/latest.json`).
+**Hour-loop default scorers** (`HOUR_LOOP_DEFAULT_SCORERS`): `magic`, `prose-craft`, `stakes-cost`, `story-motion`. Add `consistency` when the item has `facts`; add `hallucination` when it has `canon`. Skip a scorer when its context is missing — do not score 0. Off-loop: `goal-reached`, idea-diversity. Structural scorers only when the target is `beat-draft-workflow`. HTTP chat keeps `CHAT_HTTP_SCORERS = {}`.
+
+`evals/results/champion.json` is operator-written after a real win beyond `max(2σ, 0.02)`. The hour-bot never updates it. `npm run eval:gate` remains the release gate.
+
+`npm run eval` remains the file report (`evals/results/latest.json`). HTML dashboard: `npm run eval:dashboard` (`evals/tools/generate-report.ts`). Tree under `evals/`: `baselines/` `constants/` `datasets/` `fixtures/` `judges/` `results/` `structural/` `tools/` (`structural/` stays here).
 
 ## Perf debug (opt-in)
 
@@ -241,7 +252,6 @@ Opt-in flags are named `FF_<NAME>` and turn on with the exact value `true`; anyt
 | `FF_STORYTELLER_AUTONOMOUS` | Durable autonomous drafting loop (goals + durable agents) |
 | `FF_STORYTELLER_EXTRA_CRITIC_SCOPES` | Extra beat-draft critic (dialogue) in parallel with the floor three; default off |
 | `FF_LOOP_CREATOR_MASTRA` | Loop-creator chat via Mastra instead of the legacy adapter |
-| `FF_REMOTE_PROMPTS` | Remote prompt hub instead of the local registry |
 | `FF_INTERNAL_DOCS` | Exposes `GET /api/settings/models` in production (still requires `INTERNAL_DOCS_SECRET`) |
 | `FF_CANVAS_GEMINI_UPSCALE` | Gemini pre-upscale before Topaz |
 | `FF_TILE_SEAM_COLOR_FADE` | 16px follow-up tile edge color fade (off: packed grey-hole crop only) |

@@ -10,6 +10,7 @@ import {
   MarketAnalysisFailurePrefix,
   MarketAnalysisProgressMessage,
   MarketAnalysisUserPromptPart,
+  MarketAnalystAgentDescription,
   MarketAnalystAgentId,
   MarketAnalystAgentName,
   MARKET_ANALYST_AGENT_INSTRUCTIONS,
@@ -22,7 +23,7 @@ import {
 import { LoopAnalysisInput, MarketAnalysisReport } from './types'
 import { MARKET_ANALYST_SYSTEM_PROMPT, buildLoopContext, SCORING_CRITERIA_PLACEHOLDER } from './prompts'
 import { extractReportFromGenerateResult } from './market-analysis-run'
-import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { marketAnalystTools } from './tools-registry'
 import { MarketAnalysisReportSchema } from '../schemas/market-analysis-report'
 
@@ -37,10 +38,11 @@ export function createMarketAnalystAgent() {
   return new Agent({
     id: MarketAnalystAgentId.Id,
     name: MarketAnalystAgentName.Name,
+    description: MarketAnalystAgentDescription.Name,
     instructions: MARKET_ANALYST_AGENT_INSTRUCTIONS,
     model: () => resolveLoopCreatorMastraModel(),
     tools,
-    editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
+    editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
   })
 }
 

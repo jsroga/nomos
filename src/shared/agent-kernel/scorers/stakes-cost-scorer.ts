@@ -1,6 +1,7 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { createJudgingConfig, extractProse, normalizeScore } from './shared'
+import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
 
 /**
  * Structural stakes scorer (StoryForge port): every beat must cost something;
@@ -27,6 +28,11 @@ export const stakesCostScorer = createScorer({
   judge: createJudgingConfig(
     'You are a structural editor evaluating narrative stakes. You judge coldly and cite evidence.',
   ),
+  prepareRun: run => ({
+    ...run,
+    input: compactScorerInput(run.input),
+    output: compactScorerOutput(run.output),
+  }),
 })
   .analyze({
     description: 'Assess beats, costs, and earned outcomes',

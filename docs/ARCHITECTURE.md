@@ -26,7 +26,7 @@ Next.js 16 · Mastra · Radix/CVA · Supabase · TanStack Query · Trigger.dev �
 | `trigger/` | Task registry |
 | `mcp/` | MCP server (separate deployable) |
 
-`src/mastra.ts` — Mastra Studio CLI entry; `src/mastra/agents/` holds file-based instructions. Production instance: `src/shared/agent-kernel/MastraInstance.ts`.  
+`src/mastra.ts` — Mastra Studio CLI entry; `src/mastra/agents/` holds file-based instructions; `src/mastra/editor/` is committed Studio Save JSON. Production instance: `src/shared/agent-kernel/MastraInstance.ts`.  
 Evals: top-level `evals/`. Structure tests: `src/__tests__/structure.test.ts`, `src/domains/__tests__/domain-structure.test.ts`.  
 Storybook (shared primitives): top-level `stories/` + `.storybook/` — Vite catalog of `src/components/`, not App Router.
 
@@ -273,6 +273,7 @@ npm run mastra:smoke  # handover when Mastra paths change
 |---------|----------|
 | Studio entry | `src/mastra.ts` |
 | File-based agents | `src/mastra/agents/<id>/` |
+| Editor overlays | `src/mastra/editor/` (Studio Save → git JSON) |
 | Runtime registry | `src/shared/agent-kernel/mastra/runtime-registry.ts` |
 | Domain agents | `src/domains/*/ai/` |
 

@@ -6,6 +6,10 @@ export enum GameDesignAgentLabel {
   GameDesignAgent = 'Game Design Agent',
 }
 
+export enum GameDesignAgentDescription {
+  GameDesignAgent = 'Game Design · Designs loops, economy, and progression.',
+}
+
 export enum GameDesignAgentSpan {
   Run = 'GameDesignAgent.run',
   RunWithContext = 'GameDesignAgent.runWithContext',

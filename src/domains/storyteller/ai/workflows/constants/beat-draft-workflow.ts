@@ -7,7 +7,20 @@ export enum BeatDraftStepId {
   DraftScript = 'draft-script',
   ProseCheck = 'prose-check',
   Critique = 'critique',
+  WriterLoopRevise = 'writer-loop-revise',
+  CriticLoop = 'beat-draft-critic-loop',
   Revise = 'revise',
+}
+
+export enum BeatDraftStepDescription {
+  PlanBeat = 'Plan the next beat: goal, conflict, turn, dialogue hook.',
+  DraftScript = 'Draft the beat in script format from the plan.',
+  ProseCheck = 'Deterministic lint; one author redraft; remaining errors skip critics.',
+  Critique = 'Parallel floor critics; skip when lint is still dirty.',
+  WriterLoopRevise = 'Revise the draft against critiques without persisting.',
+  CriticLoop = 'Critic then optional writer; stop when clean or after 3 writer passes.',
+  Verdict = 'Human editorial verdict: approve, revise, or kill.',
+  Revise = 'Author revise, humanize, claim-check, and persist after the verdict.',
 }
 
 export enum BeatDraftCriticName {
@@ -29,6 +42,10 @@ export const BEAT_DRAFT_CRITIC_ROLES = [
 
 export enum LintRedraftMax {
   Value = 1,
+}
+
+export enum CriticReviseMax {
+  Value = 3,
 }
 
 export enum BeatDraftToolChoice {
@@ -98,6 +115,11 @@ export enum BeatDraftHumanizerCopy {
 
 export enum BeatDraftHumanizerSample {
   MaxBeats = 3,
+}
+
+export enum BeatDraftWorkflowCopy {
+  Description =
+    'Plan, draft, lint (one retry), critic loop (max 3 writer revises), editorial verdict, then persist.',
 }
 
 export enum BeatDraftStyleFidelity {

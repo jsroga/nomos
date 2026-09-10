@@ -11,8 +11,8 @@
 2. **Part 7** is for a **non-technical person** (producer, writer, marketer, founder) who
    must explain the work in public. After Part 7 you should be able to draft a blog post
    without opening the code. Parts 1–6 are not required for that job.
-3. **Part 8** is for the same operator who will run Mastra Studio: how quality improves
-   with you in the loop. It is a plan (Phase 7), not a shipped auto-improver.
+3. **Part 8** is for the same operator who will run Mastra Studio: paste an hour prompt,
+   come back, read what happened. First: Studio must not leak `.env` or dress game agents in Martin skills. It is a plan (Phase 7), not a Nomos feature and not auto-Publish.
 
 **How to use it.** Part 1 is the story of what was recently refactored and why. Part 2 teaches
 backend fundamentals, each anchored to real code, then the agentic writing system (craft catalog,
@@ -22,7 +22,7 @@ thirty-two writing actions as a syllabus. Part 4 lists accepted trade-offs. Part
 the direction is good. **Part 7 (last chapter)** is the briefing for a public post: practices
 from the manuscript stack that shipped on `98056717`, plus the house rules from Phases 0–2
 that the post is allowed to claim. Overlay chat is **Phase 5** and is **not** in this briefing
-as a shipped feature. **Part 8** is Phase 7 (Studio lab) — also not a shipped claim in Part 7.
+as a shipped feature. **Part 8** is Phase 7 (Studio hour-bot) — also not a shipped claim in Part 7.
 **Build order:** [phases.md](./phases.md).
 
 A note on honesty: this document points at real weaknesses in code you wrote. That is not
@@ -3507,47 +3507,55 @@ that commit.
 
 ---
 
-# Part 8 — Self-improving AI with you in the loop (operator briefing)
+# Part 8 — Studio hour-loop (operator briefing)
 
-This is **Phase 7**. It is not on `98056717`. It is not a feature you can click in Nomos today
-beyond opening Studio. Read [phases.md](./phases.md) §7.1 for the full button path. Actions
-**52–58** in [actions.md](./actions.md).
+This is **Phase 7**. It is not on `98056717`. It is **not** a Nomos feature. Do not open Writers
+Room for this loop. Read [phases.md](./phases.md) §7.1–7.5. Actions **52–67** in
+[actions.md](./actions.md).
 
-**Two windows.**
+**Studio must be honest before the hour.** Workspaces must not show `.env.local`. Game Design must
+not wear `george-rr-martin`. Loop-creator specialists must not offer a fake Open Chat. Purpose is
+one line. Then the prompt is the product:
 
-| Window | Job | You still click |
+| Window | Job | You |
 |---|---|---|
-| Writers Room | The book | Generate, then Approve / Revise / Kill |
-| Mastra Studio (`localhost:4111`) | The lab | Run experiment, Compare, Promote, Editor Publish |
+| Mastra Studio (`localhost:4111`) | The whole loop | Paste the hour prompt. Come back. Publish if you want. |
 
-A beat does not stay in the book because a scorer liked it. A prompt does not ship because magic
-went up 0.01. The computer proposes. You inspect three traces. You promote.
+The prompt is the product:
 
-**What Mastra already gives you (do not rebuild a dashboard).**
+> Pracuj godzinę nad zwiększeniem wyników w score.
 
+The bot runs the **live** dataset (not the frozen golden cheat-sheet), drafts Editor overlays,
+leaves experiments and traces. It does not Publish. JSON walls in Scorers are a bug (Action 53).
+The scorers we already have need a keep/kill pass (Action 54).
+
+**What Mastra already gives you (do not rebuild Nomos).**
+
+- **Hour-bot** — durable/goal agent in Studio (Action 56), not `/api/assistant`
 - **Traces** — did planner, author, and three critics actually run?
-- **Scorers** — `magic`, `prose-craft`, `stakes-cost`, `story-motion`, `consistency`, `hallucination`, … registered on the Mastra instance
-- **Datasets** — versioned exam; git golden set is the source of truth
-- **Experiments** — run the exam against an agent or a workflow
-- **Compare** — candidate vs champion; win only if bigger than `max(2σ, 0.02)`
-- **Editor** — draft overlays in Studio; production loads **published** only
+- **Scorers** — short names, sentence reasons; default subset only
+- **Live dataset** — inputs that invoke the pipeline; git golden stays the fixture exam
+- **Experiments** — champion vs candidate; win only if bigger than `max(2σ, 0.02)`
+- **Editor** — bot writes **drafts**; you Publish
 
 **What you never give the machine.**
 
 - Auto-Publish
 - Auto-`git commit`
 - Auto-Approve a beat
-- Live judges on every Writers Room chat turn (that burns money and is not the exam)
-- Rewriting the golden questions so a bad model looks good
+- Live judges on every Writers Room chat turn
+- Rewriting exam items so a bad model looks good
+- Any Nomos screen for this phase
+- Repo workspace / `.env` as agent files
+- Storyteller skills on game-design or loop-creator
 
-**Short loop after you change a prompt.**
+**Short loop.**
 
-1. Cheap ping in Writers Room (GLM). Empty wallet → stop.
-2. Studio → Traces → last beat-draft. Three critics present?
-3. Studio → Datasets → pin the golden version.
-4. Studio → Experiments → Run (one target, a named scorer subset).
-5. Compare vs champion. Noise → reject. Real win → Promote checklist, then **one** of Publish or git.
-6. Write the champion record (experiment id, dataset version, your name).
-7. Releases still use `npm run eval:gate`. Studio is how you decide to run it, not a silent merge.
+1. Confirm Workspaces has no `.env.local` and Purpose is one line (`phases.md` §7.5).
+2. `npm run mastra:dev` → Studio. Paste the hour prompt.
+3. Walk away (402 → stop).
+4. Come back: Experiments (Δ), three traces, Editor draft, run note.
+5. Noise → do nothing. Real win → **you** Publish XOR git. Write the champion pointer yourself.
+6. Releases still use `npm run eval:gate`.
 
-**In one sentence.** Automate defect detection; keep preference — including “is this system better than last week?” — as a human click.
+**In one sentence.** Tell Studio to work for an hour; read the receipt; you still press Publish.

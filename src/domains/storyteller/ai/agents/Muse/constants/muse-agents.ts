@@ -11,6 +11,6 @@ export enum MuseAgentName {
 }
 
 export enum MuseAgentDescription {
-  Muse = 'Blank-context wildcard brainstormer for irreversible story-motion ideas.',
-  Ranker = 'Ranks muse wild ideas on surprise, motion, fit, and cost.',
+  Muse = 'Storyteller · Blank-context wild ideas with irreversible on-screen action.',
+  Ranker = 'Storyteller · Keep/reject muse ideas on motion, surprise, fit, and cost.',
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { watchedFiles } from '../input-hash.mjs'
-import { WAVE1_PROMOTION_DECISIONS, Wave1PromotionTarget, PromotionDecision } from '../promotion/wave1-decisions'
+import { WAVE1_PROMOTION_DECISIONS, Wave1PromotionTarget, PromotionDecision } from '../tools/wave1-decisions'
 
 enum HumanizerSkillPath {
   File = 'src/mastra/agents/grrm-author/skills/humanizer/SKILL.md',

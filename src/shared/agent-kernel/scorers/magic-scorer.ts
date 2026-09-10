@@ -1,7 +1,9 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
+import { PromptRegistryName } from '@/shared/agent-kernel/prompts/constants/prompt-block-ids'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { createJudgingConfig, normalizeScore, outputToString } from './shared'
+import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 const magicAnalyzeSchema = z.object({
@@ -16,13 +18,18 @@ export const magicScorer = createScorer({
   judge: createJudgingConfig(
     'You are a ruthless creative writing critic.',
   ),
+  prepareRun: run => ({
+    ...run,
+    input: compactScorerInput(run.input),
+    output: compactScorerOutput(run.output),
+  }),
 })
   .analyze({
     description: 'Evaluate creative magic and slop patterns',
     outputSchema: magicAnalyzeSchema,
     createPrompt: async ({ run }) => {
       const content = outputToString(run.output)
-      return promptRepository.getPrompt('magic-judge', { content })
+      return promptRepository.getPrompt(PromptRegistryName.MagicJudge, { content })
     },
   })
   .generateScore(({ results }) => {

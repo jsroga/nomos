@@ -90,12 +90,14 @@ function runContext(input: unknown, output: unknown): RunContext {
   }
 }
 
-function reasonJson(score: StructuralScore, extra: Record<string, unknown> = {}): string {
-  return JSON.stringify({
-    metrics: score.metrics,
-    flags: score.flags,
-    ...extra,
-  })
+function reasonSentence(score: StructuralScore, extra: Record<string, unknown> = {}): string {
+  const metrics = Object.entries(score.metrics)
+    .map(([key, value]) => `${key} ${value}`)
+    .join(', ')
+  const extraText = Object.keys(extra).length
+    ? ` ${Object.entries(extra).map(([key, value]) => `${key} ${value}`).join(', ')}.`
+    : ''
+  return `${score.id}: ${metrics}. ${score.flags.length} flag(s).${extraText}`
 }
 
 function castHasBehaviouralFields(cast: readonly CastPerson[]): boolean {
@@ -114,7 +116,7 @@ export const causalGraphScorer = createScorer({
   description: 'Share of beats after beat 1 with non-empty causalDependencies',
 })
   .generateScore(({ run }) => clamp01(metricNumber(scoreCausalGraph(dumpedBeats(run.output)), 'shareNonEmptyCausal')))
-  .generateReason(({ run }) => reasonJson(scoreCausalGraph(dumpedBeats(run.output))))
+  .generateReason(({ run }) => reasonSentence(scoreCausalGraph(dumpedBeats(run.output))))
 
 export const planCoverageScorer = createScorer({
   id: ScorerId.PlanCoverage,
@@ -128,7 +130,7 @@ export const planCoverageScorer = createScorer({
   })
   .generateReason(({ run }) => {
     const ctx = runContext(run.input, run.output)
-    return reasonJson(scorePlanCoverage(dumpedBeats(run.output), ctx.planPoints))
+    return reasonSentence(scorePlanCoverage(dumpedBeats(run.output), ctx.planPoints))
   })
 
 export const setupPayoffScorer = createScorer({
@@ -144,7 +146,7 @@ export const setupPayoffScorer = createScorer({
   })
   .generateReason(({ run }) => {
     const ctx = runContext(run.input, run.output)
-    return reasonJson(scoreSetupPayoff(dumpedBeats(run.output), ctx.lexicon, ctx.rules))
+    return reasonSentence(scoreSetupPayoff(dumpedBeats(run.output), ctx.lexicon, ctx.rules))
   })
 
 export const canonViolationScorer = createScorer({
@@ -159,7 +161,7 @@ export const canonViolationScorer = createScorer({
   })
   .generateReason(({ run }) => {
     const ctx = runContext(run.input, run.output)
-    return reasonJson(scoreCanonViolation(dumpedBeats(run.output), ctx.lexicon, ctx.cast, ctx.rules))
+    return reasonSentence(scoreCanonViolation(dumpedBeats(run.output), ctx.lexicon, ctx.cast, ctx.rules))
   })
 
 export const characterFieldScorer = createScorer({
@@ -176,7 +178,7 @@ export const characterFieldScorer = createScorer({
   .generateReason(({ run }) => {
     const ctx = runContext(run.input, run.output)
     if (!castHasBehaviouralFields(ctx.cast)) return S6_NOT_APPLICABLE
-    return reasonJson(scoreCharacterFieldAdherence(dumpedBeats(run.output), ctx.cast, ctx.rules))
+    return reasonSentence(scoreCharacterFieldAdherence(dumpedBeats(run.output), ctx.cast, ctx.rules))
   })
 
 export const schemaValidityScorer = createScorer({
@@ -185,7 +187,7 @@ export const schemaValidityScorer = createScorer({
   description: 'Parse rate of dumped beat rows against the fixture schema',
 })
   .generateScore(({ run }) => clamp01(metricNumber(scoreSchemaValidity(runContext(run.input, run.output).rawBeats), 'parseRate')))
-  .generateReason(({ run }) => reasonJson(scoreSchemaValidity(runContext(run.input, run.output).rawBeats)))
+  .generateReason(({ run }) => reasonSentence(scoreSchemaValidity(runContext(run.input, run.output).rawBeats)))
 
 export const slopRateScorer = createScorer({
   id: ScorerId.SlopRate,
@@ -199,7 +201,7 @@ export const slopRateScorer = createScorer({
   })
   .generateReason(({ run }) => {
     const ctx = runContext(run.input, run.output)
-    return reasonJson(scoreSlopRate(dumpedBeats(run.output), ctx.corpus))
+    return reasonSentence(scoreSlopRate(dumpedBeats(run.output), ctx.corpus))
   })
 
 export const selfRepetitionScorer = createScorer({
@@ -209,7 +211,7 @@ export const selfRepetitionScorer = createScorer({
 })
   .generateScore(({ run }) => clamp01(metricNumber(scoreSelfRepetition(dumpedBeats(run.output)), 'distinct3')))
   .generateReason(({ run }) =>
-    reasonJson(scoreSelfRepetition(dumpedBeats(run.output)), {
+    reasonSentence(scoreSelfRepetition(dumpedBeats(run.output)), {
       pairwiseSimilarityMean: S9_CROSS_RUN,
     }),
   )
@@ -222,7 +224,7 @@ export const voiceDistinctivenessScorer = createScorer({
   .generateScore(({ run }) =>
     clamp01(metricNumber(scoreVoiceDistinctiveness(dumpedBeats(run.output)), 'minPairwiseDivergence'))
   )
-  .generateReason(({ run }) => reasonJson(scoreVoiceDistinctiveness(dumpedBeats(run.output))))
+  .generateReason(({ run }) => reasonSentence(scoreVoiceDistinctiveness(dumpedBeats(run.output))))
 
 export const STRUCTURAL_MASTRA_SCORERS = {
   [ScorerId.CausalGraph]: causalGraphScorer,

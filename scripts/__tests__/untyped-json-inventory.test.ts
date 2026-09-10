@@ -38,11 +38,15 @@ describe('untyped JSON reads', () => {
     60_000
   )
 
-  it('does not grow the database spellings that escaped their mapper', () => {
-    const reads = buckets()[UntypedJsonBucket.SnakeCaseRead] ?? []
+  it(
+    'does not grow the database spellings that escaped their mapper',
+    () => {
+      const reads = buckets()[UntypedJsonBucket.SnakeCaseRead] ?? []
 
-    expect(reads.length).toBeLessThanOrEqual(RATCHET.snakeCaseReadsOutsideMappers)
-  })
+      expect(reads.length).toBeLessThanOrEqual(RATCHET.snakeCaseReadsOutsideMappers)
+    },
+    60_000,
+  )
 
   it('does not let a converted module regress, so half-done is a stable state', () => {
     const reads = buckets()[UntypedJsonBucket.SnakeCaseRead] ?? []

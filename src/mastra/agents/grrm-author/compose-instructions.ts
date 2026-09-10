@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   fileAgentsRootDir,
-  loadAgentInstructions,
   stripMarkdownFrontmatter,
 } from '@/shared/agent-kernel/mastra/load-agent-instructions'
+import { loadPublishedOrFileBrief } from '@/shared/agent-kernel/mastra/load-published-brief'
 import { formatBannedPhrasesForPrompt } from '@/domains/storyteller/ai/prompts/guardrails/anti-slop-phrases'
 import { GrrmAuthorAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 import { FileEncoding } from '@/shared/data/constants/protocol'
@@ -58,7 +58,7 @@ export function composeGrrmInstructions(options: GrrmInstructionsOptions = {}): 
     stage = SkillCatalogStage.Draft,
     problemTypes = [],
   } = options
-  const parts = [loadAgentInstructions(GrrmAuthorAgentId.GrrmAuthor)]
+  const parts = [loadPublishedOrFileBrief(GrrmAuthorAgentId.GrrmAuthor)]
 
   if (phase) parts.push(`${GrrmInstructionSectionHeader.CurrentPhase}${phase}`)
   if (projectContext) parts.push(`${GrrmInstructionSectionHeader.ProjectContext}${projectContext}`)

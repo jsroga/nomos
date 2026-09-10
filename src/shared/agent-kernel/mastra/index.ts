@@ -4,6 +4,8 @@ import { studioAgents } from './agents/constants/registry'
 import { studioMcpServers } from './mcp/studio-servers'
 import { consumeMastraRegistrations } from './runtime-registry'
 import { seedEditorPromptBlocks } from './seed-editor-prompt-blocks'
+import { studioChromeMiddleware } from './studio-chrome-middleware'
+import { qualityImproverAgent } from './quality-improver'
 
 const ENV_LOCAL_PATH = '.env.local'
 const LOG_WORKSPACE_INIT_FAILED = '⚠️ [Mastra Studio] Workspace init failed:'
@@ -19,7 +21,11 @@ dotenv.config({ override: true })
 // Studio-only fallbacks (PLAN-V2 1.1 — no more hardcoded placeholder drift).
 const { agents: registeredAgents, workflows: registeredWorkflows, tools: registeredTools } =
   consumeMastraRegistrations()
-const agents = { ...studioAgents, ...registeredAgents }
+const agents = {
+  ...studioAgents,
+  ...registeredAgents,
+  [qualityImproverAgent.id]: qualityImproverAgent,
+}
 const workflows = Object.keys(registeredWorkflows).length > 0 ? registeredWorkflows : undefined
 const tools = Object.keys(registeredTools).length > 0 ? registeredTools : undefined
 
@@ -28,6 +34,7 @@ const tools = Object.keys(registeredTools).length > 0 ? registeredTools : undefi
 export const mastra = createMastra(agents, {
   storage: createPostgresStore(),
   mcpServers: studioMcpServers,
+  server: { middleware: studioChromeMiddleware },
   ...(workflows ? { workflows } : {}),
   ...(tools ? { tools } : {}),
 })

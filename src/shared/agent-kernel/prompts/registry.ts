@@ -1,4 +1,7 @@
+import { EVAL_PROMPT_DESCRIPTIONS } from './constants/eval-prompt-descriptions'
+import { catalogDomainFromTags, promptCatalogDescription } from './prompt-catalog-copy'
 import { promptRepository } from './repository'
+import type { PromptDefinition } from './types'
 import {
   BALANCE_ANALYSIS_PROMPT,
   GAME_DESIGN_LOOP_PROMPT,
@@ -47,28 +50,44 @@ export {
   TOXICITY_PROMPT,
 } from './registry-evaluation-prompts'
 
-// Register Defaults
+const CORE_EVAL_PROMPTS = [
+  RAG_GROUNDING_PROMPT,
+  CITATION_JUDGE_PROMPT,
+  HALLUCINATION_JUDGE_PROMPT,
+  RETRIEVAL_JUDGE_PROMPT,
+  REVERSE_INTENT_JUDGE_PROMPT,
+  PERSONA_FIDELITY_JUDGE_PROMPT,
+  MAGIC_JUDGE_PROMPT,
+  SCRIPT_FORMAT_PROMPT,
+  DIALOGUE_PROMPT,
+  PACING_PROMPT,
+  MANIPULATION_PROMPT,
+  TOXICITY_PROMPT,
+  EQ_PROMPT,
+  TOOL_USAGE_PROMPT,
+  CORRECTION_PROMPT,
+  ORCHESTRATION_PROMPT,
+] as const
+
+function describedPrompt(definition: PromptDefinition): PromptDefinition {
+  const body = definition.description ?? EVAL_PROMPT_DESCRIPTIONS[definition.name]
+  if (!body) {
+    throw new Error(`Missing PromptDefinition.description for ${definition.name}`)
+  }
+  return {
+    ...definition,
+    description: promptCatalogDescription(catalogDomainFromTags(definition.tags), body),
+  }
+}
+
 export function registerCorePrompts() {
-  promptRepository.register(RAG_GROUNDING_PROMPT)
-  promptRepository.register(CITATION_JUDGE_PROMPT)
-  promptRepository.register(HALLUCINATION_JUDGE_PROMPT)
-  promptRepository.register(RETRIEVAL_JUDGE_PROMPT)
-  promptRepository.register(REVERSE_INTENT_JUDGE_PROMPT)
-  promptRepository.register(PERSONA_FIDELITY_JUDGE_PROMPT)
-  promptRepository.register(MAGIC_JUDGE_PROMPT)
-  promptRepository.register(SCRIPT_FORMAT_PROMPT)
-  promptRepository.register(DIALOGUE_PROMPT)
-  promptRepository.register(PACING_PROMPT)
-  promptRepository.register(MANIPULATION_PROMPT)
-  promptRepository.register(TOXICITY_PROMPT)
-  promptRepository.register(EQ_PROMPT)
-  promptRepository.register(TOOL_USAGE_PROMPT)
-  promptRepository.register(CORRECTION_PROMPT)
-  promptRepository.register(ORCHESTRATION_PROMPT)
+  for (const definition of CORE_EVAL_PROMPTS) {
+    promptRepository.register(describedPrompt(definition))
+  }
 }
 
 export function registerGameDesignPrompts() {
-  promptRepository.register(GAME_DESIGN_SYSTEM_PROMPT)
-  promptRepository.register(GAME_DESIGN_LOOP_PROMPT)
-  promptRepository.register(BALANCE_ANALYSIS_PROMPT)
+  promptRepository.register(describedPrompt(GAME_DESIGN_SYSTEM_PROMPT))
+  promptRepository.register(describedPrompt(GAME_DESIGN_LOOP_PROMPT))
+  promptRepository.register(describedPrompt(BALANCE_ANALYSIS_PROMPT))
 }

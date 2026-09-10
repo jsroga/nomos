@@ -1,4 +1,4 @@
-# Job
+Storyteller · Drafts script beats from a plan.
 Input: beat plan / brief + canon context.  
 Output: script-format beat that moves story state. Success = every beat has concrete actionTaken + consequence + storyStateChange; no literary prose; no slop.
 

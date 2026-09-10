@@ -157,7 +157,7 @@ Loader does not query the beats table. Beat **text** stays `manage_beat` on Cork
 
 ## Phase 4 promotion
 
-Wave 1 labels live on `evals/datasets/storyteller-golden.ts` (`promotion` category, scorer id `promotion-floor` so fixture averages do not shift). Measurement is `evals/__tests__/wave1-promotion-floor.test.ts` plus `evals/promotion/wave1-decisions.ts`. No live 50-label study.
+Wave 1 labels live on `evals/datasets/storyteller-golden.ts` (`promotion` category, scorer id `promotion-floor` so fixture averages do not shift). Measurement is `evals/__tests__/wave1-promotion-floor.test.ts` plus `evals/tools/wave1-decisions.ts`. No live 50-label study.
 
 | Extra | Decision | Floor |
 |---|---|---|

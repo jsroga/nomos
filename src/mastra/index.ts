@@ -7,7 +7,7 @@
  * import side-effect in a parent re-export.
  */
 import dotenv from 'dotenv'
-import { storytellerRuntimeAgents, storytellerRuntimeWorkflows, storytellerRuntimeTools } from '../domains/storyteller/core/io/mastra-runtime'
+import { storytellerRuntimeAgents, storytellerRuntimeWorkflows } from '../domains/storyteller/core/io/mastra-runtime'
 import {
   gameDesignRuntimeAgents,
   gameDesignRuntimeWorkflows,
@@ -19,6 +19,8 @@ import { seedEditorPromptBlocks } from '../shared/agent-kernel/mastra/seed-edito
 import { studioAgents } from '../shared/agent-kernel/mastra/agents/constants/registry'
 import { studioMcpServers } from '../shared/agent-kernel/mastra/mcp/studio-servers'
 import { consumeMastraRegistrations } from '../shared/agent-kernel/mastra/runtime-registry'
+import { studioChromeMiddleware } from '../shared/agent-kernel/mastra/studio-chrome-middleware'
+import { qualityImproverAgent } from '../shared/agent-kernel/mastra/quality-improver'
 
 const ENV_LOCAL_PATH = '.env.local'
 const LOG_WORKSPACE_INIT_FAILED = '⚠️ [Mastra Studio] Workspace init failed:'
@@ -42,18 +44,22 @@ const registeredWorkflows = {
   ...gameDesignRuntimeWorkflows,
 }
 const registeredTools = {
-  ...storytellerRuntimeTools,
   ...gameDesignRuntimeTools,
   ...loopCreatorRuntimeTools,
 }
 
-const agents = { ...studioAgents, ...registeredAgents }
+const agents = {
+  ...studioAgents,
+  ...registeredAgents,
+  [qualityImproverAgent.id]: qualityImproverAgent,
+}
 const workflowKeys = Object.keys(registeredWorkflows)
 const toolKeys = Object.keys(registeredTools)
 
 export const mastra = createMastra(agents, {
   storage: createPostgresStore(),
   mcpServers: studioMcpServers,
+  server: { middleware: studioChromeMiddleware },
   ...(workflowKeys.length > 0 ? { workflows: registeredWorkflows } : {}),
   ...(toolKeys.length > 0 ? { tools: registeredTools } : {}),
 })

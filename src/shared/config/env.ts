@@ -24,7 +24,7 @@
  * `optional` is a familiar late failure; a wrong `required` will not start.
  */
 import { z } from 'zod'
-import { ENV_DEFAULT, ENV_FLAG_OFF, ENV_FLAG_ON, ENV_PARSE_FAILED } from '@/shared/config/constants/env'
+import { ENV_DEFAULT, ENV_FLAG_OFF, ENV_FLAG_ON, ENV_PARSE_FAILED } from './constants/env'
 
 const serverEnvSchema = z.object({
   /**

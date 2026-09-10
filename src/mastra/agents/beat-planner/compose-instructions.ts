@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   fileAgentsRootDir,
-  loadAgentInstructions,
   stripMarkdownFrontmatter,
 } from '@/shared/agent-kernel/mastra/load-agent-instructions'
+import { loadPublishedOrFileBrief } from '@/shared/agent-kernel/mastra/load-published-brief'
 import {
   BeatPlannerAgentId,
   GrrmAuthorAgentId,
@@ -34,7 +34,7 @@ function readGrrmPsychologySkill(): string {
 
 export function composeBeatPlannerInstructions(episodeContext?: string): string {
   const parts = [
-    loadAgentInstructions(BeatPlannerAgentId.BeatPlanner),
+    loadPublishedOrFileBrief(BeatPlannerAgentId.BeatPlanner),
     readGrrmPsychologySkill(),
   ]
   if (episodeContext?.trim()) {

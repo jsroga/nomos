@@ -3,7 +3,7 @@
  * `.mastra/output` or `src/mastra/public` (not the monorepo root).
  */
 
-import { env } from '@/shared/config/env'
+import { env } from '../../config/env'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import {
@@ -12,9 +12,9 @@ import {
   NEXT_CONFIG_FILENAME,
   PACKAGE_JSON_FILENAME,
   PACKAGE_JSON_NAME_FIELD,
-} from '@/shared/agent-kernel/constants/mastra-bootstrap'
-import { FileEncoding } from '@/shared/data/constants/protocol'
-import { readString, recordFromJson } from '@/shared/data/json-guards'
+} from '../constants/mastra-bootstrap'
+import { FileEncoding } from '../../data/constants/protocol'
+import { readString, recordFromJson } from '../../data/json-guards'
 
 export function resolveProjectRoot(): string {
   const envRoot = env.MASTRA_PROJECT_ROOT?.trim()

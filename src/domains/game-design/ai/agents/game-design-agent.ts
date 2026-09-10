@@ -25,6 +25,7 @@ import {
   ListSeparator,
 } from '../constants/agent-copy'
 import {
+  GameDesignAgentDescription,
   GameDesignAgentId,
   GameDesignAgentLabel,
   GameDesignAgentSpan,
@@ -42,7 +43,7 @@ import {
 import { GameDesignMemory } from './memory'
 import { GameLoop, GameMechanic } from '../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { getPublishedAgentOr } from '@/shared/agent-kernel/mastra/get-published-agent'
 
 export type { GameDesignResponse } from '../constants/game-design-response'
@@ -126,10 +127,11 @@ export class GameDesignAgent {
     this.agent = new Agent({
       id: GameDesignAgentId.GameDesignAgent,
       name: GameDesignAgentLabel.GameDesignAgent,
+      description: GameDesignAgentDescription.GameDesignAgent,
       instructions: () => resolveGameDesignInstructions(),
       model: () => resolveGameDesignModel(config.modelName),
       tools: this.toolsMap,
-      editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
+      editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
     })
   }
 

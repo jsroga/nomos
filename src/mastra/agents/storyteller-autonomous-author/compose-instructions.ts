@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   fileAgentsRootDir,
-  loadAgentInstructions,
   stripMarkdownFrontmatter,
 } from '@/shared/agent-kernel/mastra/load-agent-instructions'
+import { loadPublishedOrFileBrief } from '@/shared/agent-kernel/mastra/load-published-brief'
 import { composeChatAdapterInstructions } from '../storyteller/compose-instructions'
 import type { EntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import {
@@ -34,7 +34,7 @@ export function loadAutonomousGoalJudgePrompt(): string {
  * (entity-link minimums) so bible reads stay consistent with the chat agent.
  */
 export function composeAutonomousAuthorInstructions(reqs: EntityLinkRequirements): string {
-  const autonomousBrief = loadAgentInstructions(AutonomousAuthorId.Agent)
+  const autonomousBrief = loadPublishedOrFileBrief(AutonomousAuthorId.Agent)
   const chatProtocol = composeChatAdapterInstructions(reqs)
   return [autonomousBrief, chatProtocol].join(AUTONOMOUS_INSTRUCTION_BLOCK_SEPARATOR)
 }

@@ -1,4 +1,4 @@
-# Job
+Storyteller · Blank-context wild ideas with irreversible on-screen action.
 Input: entropy hand (constraints) + one-line premise fragment.  
 Output: wild but **concrete** story ideas. Success = every idea is an irreversible on-screen ACTION that satisfies every dealt constraint.
 

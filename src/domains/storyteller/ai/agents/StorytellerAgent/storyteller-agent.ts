@@ -36,10 +36,11 @@ import { getEntityLinkRequirements } from '@/domains/storyteller/config/storytel
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
 import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
 import { INHERITED_AGENT_LAST_MESSAGES } from '@/shared/agent-kernel/mastra/studio-memory'
-import { EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP } from '@/shared/agent-kernel/mastra/editor-permissions'
 import {
   AgentModelRole,
   BeatPlannerCopy,
+  StorytellerAgentDescription,
   StorytellerAgentId,
   StorytellerAgentLabel,
   StorytellerAgentSpan,
@@ -105,13 +106,14 @@ export class StorytellerAgent {
     this.agent = new Agent({
       id: StorytellerAgentId.Storyteller,
       name: StorytellerAgentLabel.Storyteller,
+      description: StorytellerAgentDescription.Storyteller,
       instructions,
       model,
       tools: this.toolsMap,
       mastra: m,
       memory,
       workspace: () => undefined,
-      editor: EDITOR_INSTRUCTIONS_AND_TOOL_DESCRIPTIONS,
+      editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
       scorers: CHAT_HTTP_SCORERS,
       defaultOptions: {
         modelSettings: {
@@ -136,6 +138,7 @@ export class StorytellerAgent {
     promptRepository.register({
       name: StorytellerSystemPromptId.StorytellerSystem,
       version: 2,
+      description: StorytellerAgentDescription.Storyteller,
       variables: [],
       text: instructions,
     })

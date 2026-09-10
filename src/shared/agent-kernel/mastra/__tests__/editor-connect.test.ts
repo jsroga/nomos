@@ -32,6 +32,7 @@ describe('Mastra Editor connect', () => {
     const mastra = createMastra({}, { storage: null })
     expect(mastra.getEditor()).toBeTruthy()
     expect(readSource(EditorConnectSource.CreateMastra)).toContain('new MastraEditor')
+    expect(readSource(EditorConnectSource.CreateMastra)).toContain('MastraEditorSource.Code')
   })
 
   it('loads published overlays on live agent paths', () => {
@@ -51,7 +52,15 @@ describe('Mastra Editor connect', () => {
     expect(readSource(EditorConnectSource.BeatDraftDeps)).toContain('publishedGrrmAuthor')
     expect(readSource(EditorConnectSource.PublishedWorkflow)).toContain('getPublishedAgentOr')
     expect(readSource(EditorConnectSource.MastraInstance)).toContain('seedEditorPromptBlocks')
-    expect(readSource(EditorConnectSource.Seed)).toContain('editor.prompt.create')
+    expect(readSource(EditorConnectSource.Seed)).toContain('source: code')
+    expect(readSource(EditorConnectSource.Seed)).toMatch(
+      /export async function seedEditorPromptBlocks[\s\S]*?{\s*return\s*\n}/,
+    )
+    expect(readSource(EditorConnectSource.CreateMastra)).toContain('MastraEditorSource.Code')
+    expect(readSource(EditorConnectSource.CreateMastra)).toContain('codePath:')
+    expect(readSource(EditorConnectSource.CreateMastra)).not.toContain('MastraEditorSource.Database')
+    expect(readSource(EditorConnectSource.CreateMastra)).not.toContain('sourceControlProvider')
+    expect(readSource(EditorConnectSource.CreateMastra)).toContain('registerGameDesignPrompts')
     expect(readSource(EditorConnectSource.Probe)).toContain('EDITOR_DISABLED')
   })
 

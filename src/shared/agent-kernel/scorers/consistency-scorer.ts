@@ -1,11 +1,17 @@
 import { createScorer } from '@mastra/core/evals'
 import { stringArrayFromJson } from '@/shared/data/json-guards'
 import { inputRecord, outputToString } from './shared'
+import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
 
 export const consistencyScorer = createScorer({
   id: 'consistency',
   name: 'Consistency',
   description: 'Detect contradictions against established facts',
+  prepareRun: run => ({
+    ...run,
+    input: compactScorerInput(run.input),
+    output: compactScorerOutput(run.output),
+  }),
 })
   .generateScore(({ run }) => {
     const facts = stringArrayFromJson(inputRecord(run.input).facts)

@@ -1,3 +1,4 @@
+import { PromptRegistryName } from './constants/prompt-block-ids'
 import { PromptDefinition } from './types'
 
 export const TOOL_USAGE_PROMPT: PromptDefinition = {
@@ -182,25 +183,16 @@ Score 0.0-1.0 and give a reason covering the criteria.`,
 }
 
 export const MAGIC_JUDGE_PROMPT: PromptDefinition = {
-  name: 'magic-judge',
-  version: 1,
-  text: `You are a ruthless creative writing critic. Scoring 0-100 (Be MERCILESS).
+  name: PromptRegistryName.MagicJudge,
+  version: 2,
+  description: 'Holistic creative quality 0–100: originality, voice, subtext, anti-slop.',
+  text: `Ruthless creative critic. Score overallMagic 0-100 (merciless).
 
 ## Content
 {{content}}
 
-## Score Dimensions
-1. **CONCEPTUAL ORIGINALITY**: Fresh ideas vs clichés.
-2. **CHARACTER SPECIFICITY**: Unique voices vs archetypes.
-3. **PROSE VOICE**: Distinct style vs generic AI text.
-4. **RISK TAKING**: Bold choices vs safe bets.
-5. **MEMORABILITY**: Haunting imagery vs forgettable.
-6. **WORLD BUILDING**: Lived-in vs wallpaper.
-7. **SUBTEXT**: Layers vs on-the-nose.
-8. **UNEXPECTED CHOICES**: Surprises vs predictability.
-
-## Instructions
-Weight those dimensions into overallMagic (0-100). List sparks (brilliant moments) and slop (AI-sounding phrases). Give one specific actionable critique.`,
+Score: originality, specific voices, prose (not generic AI), risk, memorable image, lived-in world, subtext, surprise.
+List one spark and one slop phrase. One actionable critique.`,
   variables: ['content'],
   tags: ['evaluation', 'creative'],
 }
@@ -224,7 +216,7 @@ Score 0.0 to 1.0 (1.0 = Highly Relevant, 0.0 = Irrelevant) and explain why.`,
 }
 
 export const PERSONA_FIDELITY_JUDGE_PROMPT: PromptDefinition = {
-  name: 'persona-fidelity-judge',
+  name: PromptRegistryName.PersonaFidelityJudge,
   version: 1,
   text: `You are an expert literary and cinematic critic. Your task is to evaluate how well a piece of writing adheres to the specific style and philosophy of a requested persona.
 
@@ -262,7 +254,7 @@ export const REVERSE_INTENT_JUDGE_PROMPT: PromptDefinition = {
 }
 
 export const HALLUCINATION_JUDGE_PROMPT: PromptDefinition = {
-  name: 'hallucination-judge',
+  name: PromptRegistryName.HallucinationJudge,
   version: 1,
   text: `You are a ruthless fact-checker. Detect ANY fabricated content.
 

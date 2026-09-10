@@ -13,7 +13,7 @@ for someone meeting the technique for the first time:
 
 **Seven tracks.** **A — Foundations**: auth, CI, cost, gates, jobs. **B — Writing harness**:
 honest floor in `target-architecture.md` (one chat agent, three critic scopes, host persist).
-**C — Evals.** **D — Compounding** (Phase 4). **E — Workspace overlay chat** (Phase 5, Actions 33–38). **F — Tests** (Phase 6, Actions 49–51). **G — Self-improving AI, you in the loop** (Phase 7, Actions 52–58): Studio traces, scorers, datasets, experiments; you promote.
+**C — Evals.** **D — Compounding** (Phase 4). **E — Workspace overlay chat** (Phase 5, Actions 33–38). **F — Tests** (Phase 6, Actions 49–51). **G — Studio hour-loop + Studio truth** (Phase 7, Actions 52–67): **this slice is storyteller only.** Game-design and loop-creator Studio agents stay as they are (Actions 61, 62 and their rows in 60/63/64/67 are deferred). Zero Nomos product work.
 
 **Priority.** P0 = a stated guarantee is false, a security exposure exists, or the architecture is
 unsound without it. P1 = structural work the design depends on. P2 = capability built on top.
@@ -29,9 +29,9 @@ timeout source (28). That work is not optional decoration for the writing system
 
 **Numbers are stable ids, not positions.** Schedule is [phases.md](./phases.md). Actions 1–25
 are grouped under track headings; 26–32 sit after Track D (27 and 31 → A, 26/28/30 → B, 29
-and 32 → C). Actions **33–38** are Track E / Phase 5. Actions **49–51** are Track F / Phase 6. Actions **52–58** are Track G / Phase 7. Appendix B is **39–48**. The backtick string above is historical — do not execute it.
+and 32 → C). Actions **33–38** are Track E / Phase 5. Actions **49–51** are Track F / Phase 6. Actions **52–67** are Track G / Phase 7 (52–58 hour-loop, 59–67 Studio truth). Appendix B is **39–48**. The backtick string above is historical — do not execute it.
 
-**Phases 0–5: evals first, no browser tier** for compiler work. **Phase 6** is when Playwright on product pages is scheduled — see `evaluation.md` §9.1 and [phases.md](./phases.md) Phase 6 tables. Do not block Actions 1–38 on those specs. **Phase 7** is the quality operating system in Mastra Studio — not a Nomos settings tab, not scorers on HTTP chat. Click path: [phases.md](./phases.md) §7.1.
+**Phases 0–5: evals first, no browser tier** for compiler work. **Phase 6** is when Playwright on product pages is scheduled — see `evaluation.md` §9.1 and [phases.md](./phases.md) Phase 6 tables. Do not block Actions 1–38 on those specs. **Phase 7** is Studio-only and **storyteller-only** this slice: make the writer robots honest and safe, then readable scorers, a live dataset, and a bot you can tell “work an hour on raising scores.” Do not change the Game Design or loop-creator agents. No Nomos screens. Product path: [phases.md](./phases.md) §7.0–7.5.
 
 Two consequences for this list. **Phase 0 leads** ([phases.md](./phases.md)): identity, persist,
 trace, and timeout reconciliation before new personalities. **Actions 3 and 18** are the
@@ -94,13 +94,22 @@ Settled chat behaviour is `target-architecture.md` §7.4. Draft-tab pixels are �
 | 49 | Playwright fixtures and new specs for four surfaces | F | P1 | Keep the clicks as tests |
 | 50 | Unit coverage +15% relative | F | P1 | Fifteen percent more of the program, then stop |
 | 51 | Happy / error / edge on each E2E surface | F | P1 | It worked, it broke, the weird case |
-| 52 | Studio is the inspect cockpit | G | P1 | Open the lab; do not build a second dashboard |
-| 53 | Versioned dataset from the golden set | G | P1 | One exam; Studio versions it; you edit goldens |
-| 54 | Experiments on agent and workflow | G | P1 | Run the exam against a named target; keep the trace |
-| 55 | Compare, 2σ, you promote | G | P1 | Math proposes; your click ships |
-| 56 | Champion record | G | P1 | Write down what is actually in production |
-| 57 | Trace three items when scores move | G | P1 | A number without a trace is a rumor |
-| 58 | Calibration in the same cockpit | G | P1 | Check the ruler; never auto-merge |
+| 52 | Studio-only; the prompt is the UX | G | P1 | Type the hour objective in Studio. Touch nothing in Nomos |
+| 53 | Scorers a human can read | G | P1 | Short copy, human reasons, no JSON walls in Studio |
+| 54 | Review the scorers we already have | G | P1 | Keep, kill, or split — do not run all of them on the hour |
+| 55 | A dataset the bot can actually raise | G | P1 | Live briefs, not a frozen answer key |
+| 56 | The hour-bot | G | P1 | Durable/goal agent: experiment, draft, leave traces |
+| 57 | Black-on-white after the hour | G | P1 | Walk into Studio and see what ran, what moved, what it drafted |
+| 58 | You still Publish | G | P1 | Bot never ships. 2σ. 402 stops. `eval:gate` still release |
+| 59 | Scope Studio workspace; no secrets | G | P0 | Do not mount the repo (`.env.local`, `.git`) as the agent FS |
+| 60 | Per-domain skills, not the story pack on game people | G | P0 | `george-rr-martin` is not a game-design skill |
+| 61 | Game Design instructions match real tools | G | P1 | Drop `planner_tool`; name `design_*` |
+| 62 | Loop-creator crew is not a fake Open Chat | G | P1 | Hide hollow specialists, or give them a real prompt + tools |
+| 63 | One-line `description` on every Studio name tag | G | P1 | Purpose column is not the system prompt |
+| 64 | Instance Tools is not a junk drawer | G | P1 | Register on the instance only what Studio should poke |
+| 65 | MCP Servers nav must not 404 | G | P2 | Wire it or hide the item |
+| 66 | Storyteller workflow visible or honestly tool-only | G | P2 | Card says Workflows: 0 while `beat-draft-workflow` exists |
+| 67 | Studio leftover nits | G | P2 | Processors, Muse workspace pending, market-analyst copy, prompt catalog |
 
 ---
 
@@ -1854,208 +1863,502 @@ No product. Close rows in [phases.md](./phases.md) §6.1 and §6.2. Do not aim f
 
 ---
 
-# Track G — Self-improving AI (you in the loop) — Phase 7
+# Track G — Studio hour-loop + Studio truth — Phase 7
 
-The writing compiler (0–4), overlay (5), and tests (6) already exist. This track is the **quality operating system**. Mastra already has the primitives: Studio (`localhost:4111`), scorers on `createMastra`, traces, Editor publish, Datasets, Experiments, Compare. Track C already named honest evals (`eval:scorer-fixture` ≠ live quality). Track G **composes** those surfaces into a loop you can click. It does **not** replace Tiers 0–3, attach judges to HTTP chat, or auto-merge prompts.
+This track **does not change Nomos**. No Writers Room buttons, no Quality tab, no overlay, no HTTP-chat scorers. The product is **Mastra Studio** (`npm run mastra:dev` → `:4111`).
 
-**You always own:** Approve/Kill in Writers Room; Promote/Reject of an experiment; Editor Publish; git commit of prompts/pins; golden-set edits; empty-wallet stop. **The machine owns:** run the experiment, score rows, compute deltas, store traces.
+**Scope fence (this slice).** Only the **storyteller** family in Studio: `storyteller`, `grrm-author`, `beat-planner`, floor critics, autonomous author, muse / muse-ranker, storyteller scorers, storyteller datasets/experiments, and the hour-bot that chases **writer** scores. **Do not edit** `game-design-agent`, loop-creator specialists, or `market-analyst` (leave their prompts, tools, registration, skills, descriptions). Actions **61** and **62** are out of this slice. Instance-wide `createMastra` workspace/tools changes are allowed only when they are required to stop **storyteller** robots reading `.env` / the repo; do not “clean” game-loop rows as a goal.
 
-Click-by-click product path: [phases.md](./phases.md) §7.0–7.3. Do not invent a Nomos Quality tab that duplicates Studio.
+Two slices, in this order:
 
----
+1. **Studio truth for the writer robots (59, 60, 63, 64, 65, 66, 67 — storyteller rows only).** Purpose dumps novels; some writer agents inherit the repo FS; skills belong on writer robots not as a global spice rack *for this slice’s writer cards*; Tools page may still show other domains (leave those). MCP Servers nav must not 404 (65) — keep the catalog wired.
+2. **Hour-loop (52–58).** After the writer cards are readable and not reading secrets, the UX is one prompt:
 
-## 52. Studio is the inspect cockpit
+> Pracuj godzinę nad zwiększeniem wyników w score.
 
-**Track:** G · **Priority:** P1 · **Dependencies:** 3, 18 (traces exist); scorers already registered on `createMastra`
+A registered Studio agent (Action 56) must be able to take that objective and **actually work**: run the live **storyteller** dataset, read traces, write an Editor **draft** (never Publish), re-run, leave Compare + traces. You still Publish (Action 58).
 
-**WHAT.** The inspect/control surface for system quality is **Mastra Studio**, not a new page in Nomos. After a prompt, model, skill, or Editor-draft change, you can open traces, scorers, datasets, and experiments without an agent inventing a dashboard. HTTP chat / `/api/assistant` / smoke keep `CHAT_HTTP_SCORERS = {}`. Production never loads Editor **drafts**. Studio stays local; do not expose Editor REST or Studio on the Next app.
+Track C still owns honesty: `eval:scorer-fixture` is **not** this loop.
 
-**HOW — implement exactly this.**
+Implement **59 (storyteller agents) → 60 (attach writer skills on writer agents only; do not retune game-loop) → 63+66+67 (writer name tags / workflow card / Muse) → 65 (MCP catalog) → 53–55 → 56–58**. Skip 61, 62 only. Do not start the hour-bot while a writer agent can still read `.env.local`.
 
-1. Keep `npm run mastra:dev` as the lab (`:4111`). Same Postgres as the app so traces and Editor versions match production.
-2. Register nothing new on `handleChatStream` / `CHAT_HTTP_SCORERS`. Ratchet: existing `chat-live-scorers.test.ts` stays red if HTTP scorers are attached.
-3. Document the click path once: [phases.md](./phases.md) §7.1 is canonical. Point `AGENTS.md` / `docs/DEVELOPMENT.md` at that section — do not fork a third runbook.
-4. Studio playground chats you start on purpose may attach scorers. Writers Room must not.
-5. Forbidden: Agent Builder EE, Composio, Arcade, a second Mastra instance, auto-Publish from a cron.
-
-**WHERE.** `src/shared/agent-kernel/mastra/create-mastra.ts` (already has `scorers: STORYTELLER_SCORERS` and Editor). `src/shared/agent-kernel/scorers/chat-live-scorers.ts`. Docs only besides a ratchet if the empty-HTTP-scorers test is missing a Studio mention. No new `src/app` Quality route.
-
-**Acceptance.**
-
-- `mastra:dev` lists storyteller / GRRM / critics / workflows and the scorer ids in `STORYTELLER_SCORERS`.
-- A Writers Room turn writes **no** live judge rows on the chat stream.
-- Opening Studio does not require a Nomos login tab.
-- `getPublishedAgent` still ignores drafts (ADR 0005).
-
-**What is there to learn.** *Inspect where the orchestrator already lives.* *Working with AI:* paste §7.1 and forbid a new Settings panel.
-
-**In plain words.** The book is Writers Room. The lab is Studio on port 4111. Scores on every chat message would burn money and still would not tell you whether to ship. You look at traces first, then scores.
+Canonical product path: [phases.md](./phases.md) §7.0–7.5.
 
 ---
 
-## 53. Versioned dataset from the golden set
+## 52. Studio-only; the prompt is the UX
 
-**Track:** G · **Priority:** P1 · **Dependencies:** 20 (golden set)
+**Track:** G · **Priority:** P1 · **Dependencies:** 3, 18 (traces exist); `createMastra` already has scorers + Editor
 
-**WHAT.** Studio **Datasets** hold the same exam as `evals/datasets/storyteller-golden.ts` (and idea-diversity when that loop is in play). One meaning of “good.” Studio versions items (SCD-2). You edit goldens when taste changes. An agent must not rewrite goldens to match a bad model.
+**WHAT.** Phase 7 assumes **zero Nomos product changes**. The only UI is Studio. The only operator start is a **Studio prompt** (playground / durable agent / `setObjective`) that a non-engineer can paste. Opening Nomos is not a step. Writers Room Approve/Kill is a different product; this track does not touch it. **This slice:** writer robots only. Game-design and loop-creator stay untouched.
 
 **HOW — implement exactly this.**
 
-1. Create (once) a Studio dataset whose items are the golden briefs + expected shape, not a second secret exam.
-2. Import from the committed golden module (CSV/JSON export is fine). Pin a **version** before every experiment.
-3. A human edit in Studio must be exportable back to `evals/datasets/` in the same change, or Studio is declared a view and git remains source of truth — pick one in the implementation and write it on the champion record. Default: **git is source of truth**; Studio import is a snapshot of that commit.
-4. Do not let `startExperiment` mutate items.
+1. `npm run mastra:dev` → `:4111`. Same Postgres as the app so traces and Editor versions are real.
+2. No new `src/app` routes, tabs, overlays, or Writers Room buttons. A PR that adds Nomos chrome for this track is out of spec.
+3. `CHAT_HTTP_SCORERS` stays `{}`. Ratchet: `chat-live-scorers.test.ts`.
+4. Studio stays local. No Editor REST on Next. No Agent Builder EE, Composio, Arcade, second Mastra instance.
+5. Document the start phrase once in [phases.md](./phases.md) §7.1. Point `AGENTS.md` at that section. Do not write a Nomos runbook.
 
-**WHERE.** Studio Datasets UI + a small sync script under `evals/` only if import-by-hand is error-prone. Do not store a parallel golden in `src/`.
+**WHERE.** Registration in `src/shared/agent-kernel/mastra/` (Studio-visible agent). Docs: `phases.md` §7, `AGENTS.md` Mastra Editor / Studio. **Not** `src/domains/storyteller/ui/`.
 
 **Acceptance.**
 
-- Two experiments on the same dataset version are comparable.
-- Changing a golden in git without re-importing is a named failure (“stale Studio dataset”), not silent drift.
-- No agent tool can PATCH golden items.
+- A reviewer can complete the hour-loop without logging into Nomos.
+- `git diff` for this track has no `src/app/**` and no storyteller layout/chat files unless a later ticket names them (none do).
+- HTTP chat still writes no live judge rows.
 
-**What is there to learn.** *Version the exam or the scores are fiction.* *Working with AI:* one dataset id, pin version, forbid a “fix the golden so we pass.”
+**What is there to learn.** *The lab is already a product.* *Working with AI:* forbid `src/app` in the Phase 7 PR list.
 
-**In plain words.** The test questions live in git. Studio can run them. When you change what “good” means, you change the questions on purpose and write a new version number.
+**In plain words.** You do not click anything in the writing app. You open Studio, you tell the bot to work, you come back and read what it did.
 
 ---
 
-## 54. Experiments on agent and workflow
+## 53. Scorers a human can read
 
-**Track:** G · **Priority:** P1 · **Dependencies:** 52, 53, 7 (named eval tiers)
+**Track:** G · **Priority:** P1 · **Dependencies:** 52; existing `createScorer` + `outputSchema`
 
-**WHAT.** Studio **Experiments** (or `dataset.startExperiment` / `createExperiment` / `runExperimentItem`) run all items against a **named** target: workflow `beat-draft-workflow` for compiler quality, or agent `storyteller` / `grrm-author` for a single-role question. Attach a **named subset** of `STORYTELLER_SCORERS`. Each row stores input, output, scores, and a **trace id** you can click.
+**WHAT.** Studio **Scorers** is unreadable today. Opening a scorer (or a scored run) dumps a Mastra envelope — `inputMessages` / `rememberedMessages` / `systemMessages` — not the instrument. A real paste (Smoke Fixture thread `storyteller:168b5a14-…`) is tens of thousands of characters: `=== IQ 200 CONTEXT ENGINEERING & ENTITY LINKS ===` packed into every user turn, nested JSON of prior turns inside `content`, five duplicate `TestHero_*` rows, tool traces, reasoning. The operator asked for **at most ~30 lines**: what this scorer measures, on what input, what 0 vs 1 means. They got the whole chat memory bag instead.
+
+Separately, judge essays and structural `generateReason` as `JSON.stringify({ metrics, flags })` still wreck experiment rows.
 
 **HOW — implement exactly this.**
 
-1. One target type per experiment. Do not mix workflow and agent in one run.
-2. Scorer subsets: author/draft → `magic`, `prose-craft`, `stakes-cost`, `story-motion`; canon/tools → `consistency`, `hallucination`. Structural scorers when the claim is orchestration, not prose.
-3. Pin dataset version. Low `maxConcurrency`. Cheap agent targets may use GLM; never pin this path to smoke-chat Sol/Kimi/Opus by accident.
-4. OpenRouter **insufficient credits** (402): stop the experiment. Do not retry, do not switch model. In-flight budget (Retry-After 120) may retry **once**.
-5. If a row has scores but no trace id, the wiring is wrong — fail the ticket, do not report quality.
-6. `eval:scorer-fixture` stays frozen `referenceOutput`. Experiments that call live agents are **not** that command.
+**A. Inspect screen (the actual complaint).** When you open a scorer or a scored item in Studio you see, in this order, and nothing else as the default view:
 
-**WHERE.** Studio Experiments + Mastra dataset APIs. Workflow and agent ids must match `agent.id` / workflow registration (`runtime-registry.ts`). No scorers on the Next SSE route.
+1. **Instrument** — `id`, one-line `description`, rubric ≤ ~30 lines (criteria, scale, what is out of scope). This is `judge.instructions` + analyze criteria, not the agent’s Job prompt.
+2. **Scored payload** — the *extracted* thing being graded: user request sentence, or beat prose, or assistant reply. Not `inputMessages[]`. Not `rememberedMessages`. Not the IQ 200 pack. Not `format: 2` / `parts[]`.
+3. **Result** — numeric score + one sentence `generateReason`.
+
+Raw JSON / full thread is behind an explicit “show envelope” (or not shown at all). Default view over ~30 lines of rubric + a short excerpt is a failed ticket.
+
+**B. Do not feed the envelope to the judge as the “content”.** Scorer `createPrompt` / `outputToString` must not stringify the Mastra message list. If the run is a chat turn, take the last user-visible request and the assistant prose (same idea as `extractProse`). Workspace packing (`context-assembly-formatters.ts` IQ 200 block) is **not** the scorer’s homework — strip it before scoring. That packing staying on the **writer** system/user turn is a later chat-adapter ticket; this action only forbids it on the **scorer inspect + judge prompt**.
+
+**C. Copy hygiene (still required).**
+
+1. Studio-visible `name`, `description`, `generateReason` are human sentences. Never `JSON.stringify` as the reason (`evals/structural/mastra-scorers.ts` `reasonJson`).
+2. `createPrompt` stays short. Criteria on `outputSchema` `.describe()`.
+3. `jsonPromptInjection: true` stays for OpenRouter. It must not be the Studio description.
+4. `JUDGING_MAX_OUTPUT_TOKENS` already 1024. Reasons one paragraph.
+5. No `eslint-disable`. No parallel JSON blob Studio then prints.
+
+**WHERE.** `src/shared/agent-kernel/scorers/*.ts` (especially `outputToString` / `extractProse` / `inputRecord`), structural `reasonJson`, `registry-evaluation-prompts.ts`. If Studio itself dumps the envelope with no hook, add a scorer `preprocess` / custom input mapper and document it. Do not “fix” this by attaching scorers to HTTP chat.
 
 **Acceptance.**
 
-- A beat-draft experiment shows planner / author / three critic spans on a sampled row’s trace.
-- Fixture `npm run eval:scorer-fixture` still does not call those agents.
-- 402 stops the run with a loud failure, not a flake-retry loop.
+- Opening a scorer on a Smoke-Fixture-shaped chat run: default view has no `inputMessages`, no IQ 200 banner, no nested `{"format":2`. Rubric ≤ ~30 lines. Scored text is the user ask + reply (or beat prose), not the memory bag.
+- Experiment row reason is a sentence, not `{ "metrics": … }`.
+- Judge prompts have no JSON templates. `goal-reached` instructions not duplicated.
 
-**What is there to learn.** *An experiment is a proposal, not a ship.* *Working with AI:* name the target id and scorer list; refuse “run all scorers on everything.”
+**What is there to learn.** *Inspect the instrument, not the flight recorder.* *Working with AI:* paste this Smoke Fixture envelope as the failing fixture; require the 30-line default view.
 
-**In plain words.** You press Run on a named robot or a named pipeline, against the exam you pinned. Each answer keeps a flight recording. That is how you find out if a prompt change helped.
+**In plain words.** You open the scorer to read the rules of the grade. You should not get the entire Writers Room thread, the bible pack, and five TestHeros in the face.
 
 ---
 
-## 55. Compare, 2σ, you promote
+## 54. Review the scorers we already have
 
-**Track:** G · **Priority:** P1 · **Dependencies:** 54, 21 (σ), 23 (quality gate)
+**Track:** G · **Priority:** P1 · **Dependencies:** 53 (readable enough to judge them)
 
-**WHAT.** Studio **Compare** two experiments (candidate vs champion). A claimed win must beat `max(2σ, 0.02)` on the scorers you named (`evals/constants/thresholds.ts`). Smaller deltas are noise. Missing scorer vs champion is a regression. **Your click** is the only promote. Scores never publish Editor, never `git commit`, never Approve a beat.
+**WHAT.** Inventory `STORYTELLER_SCORERS` + idea-diversity scorers. Decide **keep on the hour-loop**, **keep elsewhere**, **merge**, or **drop from Studio experiments**. Running every scorer on every item is how the tab becomes noise. Today the hour-loop would attach instruments that do not even score the same shape of output.
 
-**HOW — implement exactly this.**
+**HOW — implement exactly this.** Write the keep/kill table in the implementation PR (extend `docs/DEVELOPMENT.md` eval section — not a new `docs/` file). Starting evidence from the repo now:
 
-1. Compare UI: candidate experiment id vs champion id from Action 56.
-2. Apply the 2σ rule per named scorer. Do not average away a drop on `stakes-cost` with a rise on `magic` unless you wrote that trade on the champion record first.
-3. Cost: unpriced model → comparison is **cost unknown**, not cheaper. Do not promote on “$0.”
-4. **Promote checklist** (also [phases.md](./phases.md) §7.1.H): three traces sampled; three critics present on beat-draft; Kill still writes nothing; dataset version recorded; HTTP chat still has empty scorers.
-5. Promote does **one** of: Editor **Publish**, or a git prompt/code commit — unless you record both ids. Reject leaves champion unchanged.
-6. Pre-commit never runs Studio experiments. Release still uses `npm run eval:gate` / `eval:full` when you decide to ship (Action 58).
+| Scorer | Shape it needs | Hour-loop? | Note |
+|---|---|---|---|
+| `magic` | prose string | **Keep** (headline) | 8 dimensions in the judge prompt — shorten (Action 53). Overlaps `prose-craft` on slop; keep both only if magic stays holistic and craft stays counts |
+| `prose-craft` | prose string | **Keep** | Stated emotion / cliché / POV per 1k words. Distinct from magic if reasons quote the violations |
+| `consistency` | facts + prose | **Keep** | Needs `input.facts`; live dataset must supply them |
+| `hallucination` | canon + prose | **Keep** | Needs `input.canon` |
+| `persona-fidelity` | persona + prose | **Keep** when the target is a persona pin (GRRM); skip on generic beat-draft unless the item names a persona |
+| `stakes-cost` | prose | **Keep** | |
+| `story-motion` | prose | **Keep** | Review overlap with stakes; do not average them away |
+| `goal-reached` | chat goal + reply | **Off the hour-loop** | Used by live chat tests, not `evals/run.ts`. Do not attach to writer experiments |
+| `idea-uniqueness` / `idea-diversity-judge` | idea lists | **Off the hour-loop** | Own dataset. Separate Studio experiment if you care |
+| Structural `causal-graph`, `plan-coverage`, `setup-payoff`, `schema-validity`, … | **beat JSON**, not novel prose | **Only** when the experiment target is `beat-draft-workflow` and items have beats + plan/lexicon | Fix reasons (Action 53). Do not attach to a prose-only agent playground |
+| `slop-rate` vs `prose-craft` vs `magic` | overlapping slop | **Pick one headline slop signal** for the hour-loop; keep the others off the default subset or merge later with evidence |
+| `voice-distinctiveness` | multi-speaker beats | Workflow items with ≥2 speakers; not a default on 1-speaker briefs |
+| Golden `promotion-floor` examples | no matching scorer in `ALL_SCORERS` | Either wire a scorer or stop pretending those rows measure promotion |
 
-**WHERE.** Studio Compare. Thresholds stay in `evals/constants/thresholds.ts` — do not invent `studio-thresholds.ts`.
+The **default hour-loop subset** (what the bot attaches unless the prompt names otherwise): `magic`, `prose-craft`, `stakes-cost`, `story-motion`, plus `consistency` / `hallucination` when the item has facts/canon. Everything else is opt-in.
+
+**WHERE.** The table lives in docs; the default subset is a named constant next to `STORYTELLER_SCORERS` (Studio experiment + hour-bot tools read it). Do not delete scorers in this ticket unless the review says drop — hiding from the default subset is enough.
 
 **Acceptance.**
 
-- A +0.01 magic bump cannot become champion in the happy path (document or test the reject).
-- Promote without the checklist is a failed review.
-- No cron publishes Editor.
+- Studio experiment UI / hour-bot default scorer list matches the table.
+- A reviewer can name which scorers are noise on a prose-only run.
+- No “run all `STORYTELLER_SCORERS`” default.
 
-**What is there to learn.** *The gate is a human, the ruler is math.* *Working with AI:* paste the Promote checklist; refuse “if score > 0.8 auto-merge.”
+**What is there to learn.** *More instruments are not more signal.* *Working with AI:* require the keep/kill table before adding a new scorer.
 
-**In plain words.** The computer says “maybe better.” You look at three recordings, then you press Publish or you don’t. A tiny score wiggle is weather, not a reason to change the book.
+**In plain words.** We already have too many graders, some grading the wrong homework. Decide which few the hour-bot is allowed to chase.
 
 ---
 
-## 56. Champion record
+## 55. A dataset the bot can actually raise
 
-**Track:** G · **Priority:** P1 · **Dependencies:** 55, 25 (model pins), Editor publish (ADR 0005)
+**Track:** G · **Priority:** P1 · **Dependencies:** 20 (fixture golden stays), 54 (scorers that match item shape)
 
-**WHAT.** A small record **you** write of what production actually runs: champion experiment id, dataset version, Editor published version (or “code instructions”), git SHA of prompts, `resolveRoleModel` pins, date, your initials. The machine must not update this behind your back.
+**WHAT.** `evals/datasets/storyteller-golden.ts` is ~30 frozen `referenceOutput` rows. Scoring them cannot rise when the writer improves — the agent never runs (Track C, Action 7). `author-labelled-beats.ts` is one stub per class. `idea-diversity-golden.ts` is four fixture idea sets. That is **not** a dataset you can tell a bot to raise. Phase 7 needs a **live** Studio dataset: **inputs** (brief, facts, canon, optional persona, optional beat-plan) that invoke `beat-draft-workflow` or a named agent; **outputs come from the run**; scores attach to those outputs.
 
 **HOW — implement exactly this.**
 
-1. One committed file (allowlisted under `evals/` or `docs/` — not a new `docs/` subfolder; prefer extending `docs/DEVELOPMENT.md` or an eval artifact the freshness gate already understands) **or** Studio metadata you paste into git in the same PR as the promote.
-2. Fields: experiment id, dataset version, prompt/editor version, model pins, cost note (known / unknown), date, operator.
-3. A promote that does not update this record is incomplete.
-4. Do not treat `evals/results/latest.json` as the champion — that file is the live-eval artifact slot, not Studio.
+1. Two named exams, never mixed:
+   - **Fixture / golden** — git `storyteller-golden.ts`. Judge regression only (`eval:scorer-fixture`). Studio may import it as a view. The hour-bot **must not** target it.
+   - **Live quality** — new Studio dataset (git export of **inputs** under `evals/datasets/`, e.g. live briefs — not a second `docs/` novel). Items have no frozen winning prose. Pin a **version**.
+2. Enough items per default scorer to make `max(2σ, 0.02)` meaningful (Action 21). If the live set is smaller than that, say so on the dataset and do not let the bot claim a win.
+3. Git is source of truth for **inputs**. Studio import is a snapshot of that commit. The hour-bot cannot PATCH items, cannot rewrite goldens, cannot add “easy” rows to pass.
+4. Each live item declares which default scorers apply (facts present → consistency, etc.). Rows missing required context skip that scorer rather than scoring 0 and poisoning the hour.
+5. Optional later: Appendix **46** (Approve/Kill labels) can add items. Still human taste. Still not auto-merge.
 
-**WHERE.** Named in the first implementation PR. Default suggestion: a short section in `docs/DEVELOPMENT.md` § eval / Studio, updated on promote — or `evals/results/champion.json` if you want it machine-readable **written by the operator**, not by the scorer.
+**WHERE.** `evals/datasets/` (new live-input module; do not merge into `storyteller-golden.ts`). Studio Datasets UI. Sync script under `evals/` only if hand-import is error-prone.
 
 **Acceptance.**
 
-- After a real promote, a stranger can name the experiment + dataset version + prompt source from the record.
-- CI does not overwrite the record on `eval:scorer-fixture`.
+- An experiment on the live dataset invokes the named agent/workflow (trace id on each row).
+- The same experiment on the golden fixture still does **not** invoke the writer (fixture path unchanged).
+- No tool on the hour-bot can edit dataset items.
 
-**What is there to learn.** *Production is a pointer, not a vibe.* *Working with AI:* require the record fields in the PR body.
+**What is there to learn.** *You cannot optimize an answer key.* *Working with AI:* forbid “just score referenceOutput in the hour-loop.”
 
-**In plain words.** Write down which test run, which questions, and which prompt you actually shipped, with your name on it. Do not let the robot update that note for you.
+**In plain words.** The old exam grades the cheat sheet. The new exam is real homework. The bot is only allowed to practice on homework.
 
 ---
 
-## 57. Trace three items when scores move
+## 56. The hour-bot
 
-**Track:** G · **Priority:** P1 · **Dependencies:** 3, 18, 54
+**Track:** G · **Priority:** P1 · **Dependencies:** 52–55 (Studio, readable scorers, subset, live dataset)
 
-**WHAT.** When Compare shows a drop (or a promote candidate), you open **three** traces from the worst items before you revert prompts or ship. Classify: orchestration (missing critic), canon leak, slop, judge noise. Orchestration bugs are Phase 0/1, not a new scorer.
+**WHAT.** A Mastra agent visible in Studio (durable + `goal`, or equivalent Studio-run loop) that accepts an objective like “work one hour on raising scores” and **does the work**. It is not a Nomos chat personality. It is not registered on `/api/assistant`. It does not Approve beats.
 
 **HOW — implement exactly this.**
 
-1. Experiment row → trace id → Studio Traces.
-2. Quota: three traces per decision (reject or promote). More is optional.
-3. Missing critic span → stop looking at magic; fix dispatch (Action 18).
-4. Same prose, different score → Action 58 calibration, not a model swap.
-5. Do not auto-rewrite goldens from failing items.
+1. Register an agent id for Studio (`quality-improver` or similar) via the existing `registerMastraModule` path. `editor: { instructions: true }` at most — it must not gain mutating storyteller tools (`commit_beat` does not exist; do not add persist).
+2. Use Mastra **goals** + **durable agent** (already in AGENTS.md): `goal.prompt` / `setObjective`, `maxRuns` and a **wall-clock budget of 60 minutes** (whichever hits first). Judge of the *goal* (“did this hour’s experiment beat champion beyond noise?”) is not the same as writer scorers — keep that judge cheap (GLM).
+3. **Allowed tools** (names as implemented; jobs are binding):
+   - pin / read the live dataset version (Action 55)
+   - `startExperiment` / read experiment rows (one target: `beat-draft-workflow` **or** one agent id, never mixed)
+   - attach the **default scorer subset** (Action 54)
+   - read a row’s **trace**
+   - write an Editor **draft** overlay on a named writer/critic agent (instructions only)
+   - start a **second** experiment against the same dataset version (candidate)
+   - stop on OpenRouter **402** (insufficient credits). In-flight Retry-After 120: retry **once**. Do not switch model to “keep going.”
+4. **Forbidden tools:** Editor Publish, git, PATCH dataset items, `handleChatStream`, anything that persists a beat, attaching `CHAT_HTTP_SCORERS`.
+5. Each hour leaves: candidate experiment id, optional champion compare, Editor draft id/version, a short **run note** the operator can read in Studio (what it tried, which items were worst, whether Δ beat `max(2σ, 0.02)`). If it cannot write a Studio-visible note, the ticket is not done — Slack-only / terminal-only logs are not the product.
+6. Cheap generation for the writer under test may use GLM when the objective is a dry run; never pin smoke-chat to Kimi/Sol/Opus. Live quality hours that you intend to Publish still use the role matrix.
+7. `eval:scorer-fixture` is not a tool this agent calls and is not a success metric it may cite.
 
-**WHERE.** Studio Traces + existing `withMastraSpan` / workflow spans. No new telemetry vendor.
+**WHERE.** New agent package under `src/domains/storyteller/ai/agents/` **or** `src/shared/agent-kernel/mastra/` if it must not import the storyteller domain — prefer shared if the bot only talks to Mastra dataset/experiment/editor APIs. Register in `runtime-registry.ts`. Studio-only: do not import it from `src/app/api/assistant`.
 
 **Acceptance.**
 
-- Promote checklist requires three trace ids written on the champion record or the PR.
-- A quality discussion with no trace ids is incomplete.
+- From Studio playground, the pasted Polish/English hour prompt starts a run that creates ≥1 experiment on the live dataset and ≥0 Editor drafts (drafts may be zero if the first experiment already wins — then the note says so).
+- After 60 minutes or `maxRuns`, the loop stops even if scores did not rise.
+- 402 stops the loop. Publish never happens.
+- A Writers Room session cannot invoke this agent.
 
-**What is there to learn.** *Score is a pointer to a recording.* *Working with AI:* demand trace ids before a prompt revert.
+**What is there to learn.** *A goal loop is not a ship loop.* *Working with AI:* paste the allowed/forbidden tool list; refuse “just let it publish if magic > 0.8.”
 
-**In plain words.** If the grade fell, watch three tapes. Maybe the teacher blinked. Maybe a reviewer never showed up. Maybe the writing got worse. Those are different jobs.
+**In plain words.** You tell it “work an hour.” It runs the exam, fiddles with a draft prompt, runs the exam again, and leaves the mess in Studio. It does not ship the book.
 
 ---
 
-## 58. Calibration in the same cockpit
+## 57. Black-on-white after the hour
 
-**Track:** G · **Priority:** P1 · **Dependencies:** 21, 22, 23, 55
+**Track:** G · **Priority:** P1 · **Dependencies:** 56, 3, 18
 
-**WHAT.** Weekly (and after `JUDGING_MODEL` or golden changes): a **calibration** experiment — same items, same target, unchanged judge — to bound σ. Ablations (pack on/off, extra critic, Humanizer class) run as experiments and Compare the same way. `npm run eval:gate` / `eval:full` remain the **release** live-quality commands. Studio does not replace them; it is how you decide whether to run them. Nightly jobs may **propose** (open an experiment, leave a note). They must not merge, publish, or Approve beats.
+**WHAT.** When the hour ends, an operator who did not watch it must reconstruct the story from Studio alone: what ran, what scores did, what it changed, what to look at next. If that story lives in a chat scroll of JSON, the ticket failed.
 
-**HOW — implement exactly this.**
+**HOW — implement exactly this.** The inspect path is [phases.md](./phases.md) §7.2. Required surfaces, in this order:
 
-1. Calibration experiment reuses Action 21’s σ story. If you change the judge, re-measure before believing deltas.
-2. Ablation experiments are Action 22, visible in Studio Compare, not a one-off script nobody can replay.
-3. Operator cadence: [phases.md](./phases.md) §7.2. Release: `eval:gate` still compares to the dated baseline; 2σ rule unchanged.
-4. Optional later: Appendix **46** (verdicts as labels) feeds calibration — still your taste, still not auto-merge.
-5. Judge spend stays off `llm_calls` (ADR 0003). Studio playground chats that hit production agents **do** bill — notice them on the weekly spend glance.
+1. **Experiments** — champion vs this hour’s candidate. Per-scorer table. Dataset version. Target id. Missing scorer vs champion = regression, not skip.
+2. **Worst items** — sort by largest drop. Each row: input brief (not a JSON blob), output prose (or a link), **sentence** reasons (Action 53), **trace id**.
+3. **Traces** — click-through from the row. For beat-draft: planner, author, three critic spans. Missing critic → stop reading magic (Action 18).
+4. **Editor** — the draft overlay this hour wrote (diff vs published/code). If it wrote nothing, the run note says why.
+5. **Run note** — wall-clock, spend (or “judge spend off `llm_calls`” + playground billed), 402 or not, whether Δ > `max(2σ, 0.02)`.
 
-**WHERE.** Studio + existing `evals/` runner. Do not attach this to husky.
+Quota when you decide to Publish (Action 58): **three** traces from worst or best items, written next to the champion pointer. No auto-rewrite of live items from failures.
+
+**WHERE.** Studio Experiments, Traces, Editor. Run note: Studio-visible (experiment metadata or the hour-bot’s last assistant message **in that Studio thread**, not Nomos). No new Nomos page.
 
 **Acceptance.**
 
-- A judge-model change without a new calibration cannot promote.
-- A nightly job cannot Publish Editor.
+- A second person, given only `:4111` and the experiment id, can answer: did scores move, on which scorer, which three traces, what draft exists.
+- Experiment rows do not display raw `reasonJson` blobs.
+
+**What is there to learn.** *Audit trail is a UI, not a log file.* *Working with AI:* require the five-bullet inspect path as the demo, not a terminal dump.
+
+**In plain words.** You come back from coffee, open Studio, and you can see what the bot did as clearly as a receipt.
+
+---
+
+## 58. You still Publish
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 55–57, 21, 23
+
+**WHAT.** The hour-bot **proposes**. You **ship**. A score going up is not permission to merge. Math: claimed win must beat `max(2σ, 0.02)` on the scorers you named (`evals/constants/thresholds.ts`). You Publish Editor **or** git-commit prompts — record which. You write the champion pointer (experiment id, dataset version, editor/git, pins, date, your name). The machine does not update that pointer. `npm run eval:gate` / `eval:full` remain the **release** live exam. Pre-commit never runs the hour-bot.
+
+**HOW — implement exactly this.**
+
+1. Compare in Studio (Action 57). Noise or worse → leave champion; you may keep the draft as draft.
+2. Real win → you open three traces; then **one** of Editor **Publish** or a git prompt/code commit. Both in one motion only if you write both ids.
+3. Champion pointer: extend `docs/DEVELOPMENT.md` or `evals/results/champion.json` **written by you**, not by the scorer. Not `evals/results/latest.json`.
+4. Nightly may **start** the hour-bot. It must not Publish, commit, or Approve beats.
+5. Judge-model change → re-measure σ (Action 21) before believing an hour. Ablations (Action 22) are the same experiment/Compare path, not a one-off script.
+6. Unpriced model → cost unknown, not cheaper. Do not Publish on “$0.”
+7. 402 → stop. Do not “try a cheaper model” until credits exist.
+
+**WHERE.** Studio Publish + git. Thresholds stay in `evals/constants/thresholds.ts`.
+
+**Acceptance.**
+
+- No cron / no hour-bot path calls Editor Publish.
+- A +0.01 magic bump cannot become champion in the happy path.
 - `eval:scorer-fixture` still is not live quality.
+- HTTP chat still has empty scorers.
 
-**What is there to learn.** *Calibrate the ruler on a schedule; ship on purpose.* *Working with AI:* two commands stay named — fixture vs gate — plus Studio as the cockpit, not a fourth silent number.
+**What is there to learn.** *Autonomy without a ship button.* *Working with AI:* refuse “auto-publish if the goal judge is satisfied.”
 
-**In plain words.** Once a week, give the same test to the same robot so you know how much the grades wiggle. Big wiggles mean the teacher is noisy. Real releases still use the named live exam. Nothing ships while you sleep.
+**In plain words.** The bot may work for an hour. Only you press Publish. Tiny score wiggles are weather. Empty wallet means stop.
+
+---
+
+## 59. Scope Studio workspace; no secrets
+
+**Track:** G · **Priority:** P0 · **Dependencies:** none (do this before 56 or any Studio Open Chat)
+
+**WHAT.** `createMastra` mounts `new LocalFilesystem({ basePath: projectRoot })` plus `skills: [src/domains/storyteller/ai/prompts/skills]`. Studio **Workspaces** therefore shows the whole tree: `.git`, `node_modules`, `.env.local`. Agents that inherit the instance workspace get `read_file` / grep on secrets. Storyteller chat already opts out (`workspace: () => undefined` in `mastra-runtime.ts`). **This slice:** do the same (or a secrets-free sandbox) for the **other writer robots** that still inherit the instance: `grrm-author`, `beat-planner`, critics, autonomous author, muse / muse-ranker. **Do not** change `game-design-agent` or loop-creator / market-analyst workspace as a goal. If a shared `createMastra` change is the only way to stop writer robots reading `.env`, keep game-loop behavior the same (they may still inherit whatever they have today).
+
+**HOW — implement exactly this.**
+
+1. Instance workspace `basePath` is **not** the repo root. Use a dedicated sandbox (e.g. under `.local/` or `os.tmpdir()`, gitignored, empty of secrets). Nothing copies `.env*` into it.
+2. Deny `.env`, `.env.*`, `.git`, `node_modules`, credentials files. If `LocalFilesystem` has ignore / `readOnly`, use them for Studio exploration. If it does not, a sandbox with no secrets is the whole fix — do not invent a parallel FS stack.
+3. Default agents to **no** instance workspace unless they need files (`workspace: () => undefined`, same as storyteller). Hour-bot (56) may get the **sandbox** workspace only, still not `projectRoot`.
+4. Unit ratchet: `createMastra` workspace basePath is not `resolveProjectRoot()`; a fixture fails if `.env.local` is listable.
+
+**WHERE.** `src/shared/agent-kernel/mastra/create-mastra.ts`. Per-agent `workspace` on game-design, loop-creator `buildAgent`, market-analyst, `studioAgents`, FS agents under `src/mastra/agents/`.
+
+**Acceptance.**
+
+- Studio Workspaces does not list `.env.local` or `.git`.
+- Open Chat on game-design cannot read repo secrets via workspace tools.
+- Storyteller still has no instance workspace (do not re-enable it).
+
+**What is there to learn.** *The workspace is a tool, not a convenience mount of cwd.* *Working with AI:* fail the PR if `basePath: projectRoot` remains.
+
+**In plain words.** Do not give the bot the house keys and label the mat “workspace.”
+
+---
+
+## 60. Per-domain skills, not the story pack on game people
+
+**Track:** G · **Priority:** P0 · **Dependencies:** 59 (same `Workspace` constructor)
+
+**WHAT.** Instance `skills: [path.join(projectRoot, SKILLS_DIR)]` with `SKILLS_DIR = src/domains/storyteller/ai/prompts/skills`. **This slice:** writer robots that should have Martin / storyteller booklets get them on **their** workspace, not via hoping the instance dump is correct. Writer robots that should not read the repo still follow Action 59. **Do not** take skills off game-design / loop-creator / market-analyst as a ticket (leave those agents). A later slice may un-mount the global pack.
+
+**HOW — implement exactly this.**
+
+1. Do not mount the storyteller skills folder on the **instance** workspace used by every agent.
+2. Storyteller-family agents that should see those skills get a **storyteller-only** `Workspace` (skills path only, still not `projectRoot` — Action 59). Game-design, loop-creator, market-analyst, hour-bot: no storyteller skills. Empty skills list or a domain folder that actually belongs to them (today game/loop have no SKILL.md pack — that is fine; do not invent one to fill the tab).
+3. Ratchet: a test that the game-design / loop / market agent workspace skill names do not include `george-rr-martin` or `storyteller`.
+
+**WHERE.** `create-mastra.ts` `skills` option; per-agent `workspace` factories. `src/shared/agent-kernel/skills/skill-loader.ts` stays the storyteller loader — do not globalize it.
+
+**Acceptance.**
+
+- Studio Agents → Game Design / Loop Supervisor / Market Analyst: no `george-rr-martin`, no `storyteller` skill.
+- GRRM / storyteller / critics may still show those skills if they have an explicit storyteller workspace.
+
+**What is there to learn.** *Skills are domain packs, not a repo-wide spice rack.* *Working with AI:* paste the football-coach / baking-book line; refuse “mount SKILLS_DIR once for convenience.”
+
+**In plain words.** The game designer does not get Martin’s recipe book because it was hanging in the same kitchen.
+
+---
+
+## 61. Game Design instructions match real tools
+
+**Deferred this slice.** Leave `game-design-agent` as it is. Do not edit `GAME_DESIGN_SYSTEM_PROMPT` / `planner_tool` until a later game-loop Studio pass.
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 60 (same agent)
+
+**WHAT.** `GAME_DESIGN_SYSTEM_PROMPT` (`registry-game-design-prompts.ts`) lists `planner_tool` — that tool does not exist. It does not list the Haute tools the agent actually has: `design_atomic_systems`, `design_world_memory`, `design_moral_choices`, `design_strand_connections`, `design_implicit_tutorial`, `design_meaningful_mundane` (`createGameDesignToolList()` + `HauteGameToolId`). Fallback copy in `game-design-agent.ts` is a philosophy essay and also names no real tools. Studio Open Chat will follow the lie.
+
+**HOW — implement exactly this.**
+
+1. Available Tools in the prompt = the ids from `createGameDesignToolList()`, one line each. Generate the list from the function (or a shared id enum) so a new tool without a prompt line fails a test.
+2. Delete `planner_tool`. Do not add a fake planner to “make the prompt true.”
+3. Keep philosophy short enough that Studio Purpose does not dump it (Action 63: `description` is the name tag; instructions stay instructions).
+
+**WHERE.** `src/shared/agent-kernel/prompts/registry-game-design-prompts.ts`, `src/domains/game-design/ai/agents/game-design-agent.ts` fallback, unit next to existing prompt tests.
+
+**Acceptance.**
+
+- Prompt text contains every `createGameDesignToolList()` id and does not contain `planner_tool`.
+- Studio tool list on the agent matches that prompt list.
+
+**What is there to learn.** *The prompt is a contract with the tool table.* *Working with AI:* require a test that diffs prompt tool names vs `createGameDesignToolList()`.
+
+**In plain words.** The label on the box must name the toys that are actually inside.
+
+---
+
+## 62. Loop-creator crew is not a fake Open Chat
+
+**Deferred this slice.** Leave loop-creator specialists and Market Analyst registration as they are.
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 59, 60
+
+**WHAT.** `loop-creator-mastra-agents.ts` registers supervisor / planner / mechanics / balance / progression / concept as Studio agents with **no `description`**, **no tools**, **no memory**, and a one-line `instructions` that the file itself says is only role identity — the real prompt is injected at runtime (`loop-creator-completion.ts`). Studio still offers **Open Chat**. Empty chairs with name tags.
+
+**HOW — implement exactly this.** Default is **(a)**, not (b):
+
+1. **Do not expose specialists as Studio playground agents.** Keep them on the **production** Mastra instance for `generate()` from the orchestrator. Omit them from `src/mastra/index.ts` `agents` (Studio CLI). If a later Mastra flag exists for “hidden / internal,” set it — do not rely on hope.
+2. Each specialist still gets a one-line `description` (Action 63) so traces/Editor are scannable: “Internal specialist; prompt injected per call; not a Studio chat agent.”
+3. `workspace: () => undefined` on all of them (Actions 59–60).
+4. **Do not** pick (b) (full default prompt + tools in Studio) unless a later ticket says you want to debug specialists in Open Chat. (b) would duplicate the state-templated prompts and is out of this action.
+5. Market Analyst stays a real Studio agent (it has tools). Give it `description` (63) and longer instructions if 67 says so — not this ticket’s (a).
+
+**WHERE.** `src/mastra/index.ts` agent merge; `loop-creator-mastra-agents.ts`; production `getMastraInstance()` still drains the full `loopCreatorRuntimeAgents`.
+
+**Acceptance.**
+
+- Studio Agents list does not offer Open Chat on the six hollow specialists (they are absent from the Studio instance, or marked internal so the button is gone).
+- Production loop-creator flagged path still resolves those agent ids.
+- Market Analyst remains on Studio with its tools.
+
+**What is there to learn.** *Registration for traces is not the same as a chat persona.* *Working with AI:* forbid “register everything so Studio looks complete.”
+
+**In plain words.** If the chair is empty, do not put it in the dining room with a fork.
+
+---
+
+## 63. One-line `description` on every Studio name tag
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 62 (loop specialists may leave the Studio list)
+
+**WHAT.** Studio **Agents → Purpose** dumps giant `instructions` when `description` is missing. **This slice:** every **writer** agent (`storyteller`, `grrm-author`, `beat-planner`, critics, autonomous author, muse / muse-ranker, hour-bot when 56 lands, matching `studioAgents` stubs). Storyteller already has `CHAT_ADAPTER_DESCRIPTION`. **Do not** require descriptions on `game-design-agent`, `loop-creator-*`, or `market-analyst`. Prompt catalog: fill `description` on **storyteller / judge** prompts used by this loop; leave game-design prompt rows.
+
+**HOW — implement exactly this.**
+
+1. Every `new Agent({` registered on Studio or production has `description` ≤ ~160 characters. Instructions may be long; Purpose must not be.
+2. Required one-liners at least: `game-design-agent`, `market-analyst`, remaining loop-creator ids (even if internal), critics, `grrm-author`, `beat-planner`, autonomous author, muse / muse-ranker, hour-bot when 56 lands, `studioAgents` stubs.
+3. `PromptDefinition` gains an optional `description` (one line). Seed it on registered prompts so Studio Prompt catalog is scannable. Do not paste the full `text` into Description.
+4. Ratchet: unit over `storytellerRuntimeAgents` / `gameDesignRuntimeAgents` / `loopCreatorRuntimeAgents` / `studioAgents` — every agent has non-empty `description` under a max length.
+
+**WHERE.** Agent constructors; `src/shared/agent-kernel/prompts/types.ts` + registry files. No Nomos UI.
+
+**Acceptance.**
+
+- Studio Agents Purpose column is one line per row, not a system prompt.
+- Prompt catalog Description column is filled for registered prompts (or explicitly “—”) — not a blank next to a 2k-char body.
+
+**What is there to learn.** *`description` is the name tag; `instructions` is the manual.* *Working with AI:* add the ratchet before rewriting prompts.
+
+**In plain words.** You should see who does what without opening the novel.
+
+---
+
+## 64. Instance Tools is not a junk drawer
+
+**Track:** G · **Priority:** P1 · **Dependencies:** 59 (workspace tools go away with sandbox)
+
+**WHAT.** `src/mastra/index.ts` passes a union of domain tools into `createMastra`. **This slice:** storyteller tools live on the storyteller agent; do not use the instance dump as the place to poke beat CRUD. **Do not** remove game-design or market-analyst tools from the instance as a cleanup goal. Workspace FS tools on writer robots follow Action 59.
+
+**HOW — implement exactly this.**
+
+1. **Agent-scoped tools stay on the agent.** Instance `tools` is only what you want to poke in Studio **without** opening an agent: keep it small or empty.
+2. Do not register Trigger run controls, tile/3D generation, or `storyteller_chat` on the instance unless a named Studio debug ticket says so. If they appear today from workspace/MCP/stubs, remove them from the instance map.
+3. Editor project-tool picker: if it needs a list, pass a **named allowlist** per domain, not the union of all runtime tools.
+4. Workspace FS tools (read_file, grep) only exist on the sandbox workspace (59), never as a global “poke the repo” catalog.
+
+**WHERE.** `src/mastra/index.ts`, `create-mastra.ts` `options.tools`, `runtime-registry.ts` (production instance — same rule). `mastra/tools/bundles.ts` stubs stay bundler-safe but must not inflate the instance dump.
+
+**Acceptance.**
+
+- Studio Tools page is a short, labelled set — or empty with tools visible on each agent card.
+- Opening Tools does not show the union of storyteller CRUD + Steam + 3D + Trigger.
+
+**What is there to learn.** *Instance tools are a gallery, not a parts bin.* *Working with AI:* refuse “register all tools so Editor can see them.”
+
+**In plain words.** Do not dump every kitchen gadget on one table.
+
+---
+
+## 65. MCP Servers nav must not 404
+
+**Track:** G · **Priority:** P2 · **Dependencies:** none
+
+**WHAT.** Studio sidebar **MCP Servers** throws `Unexpected Application Error! 404 Not Found`. `src/mastra/index.ts` still logs `studioMcpServers` into `createMastra({ mcpServers })`. Registration without a Studio route is a broken button.
+
+**HOW — implement exactly this.** Pick one, write it in the PR:
+
+1. **Wire** MCP into the Studio version you run (`mastra dev`) so the nav item loads the registered `studioMcpServers`, **or**
+2. **Hide** the nav / do not pass `mcpServers` until the route exists.
+
+Do not leave a crashing sidebar. Production MCP (`npm run mcp:start`, `/api/mcp`) is a different process — this ticket is Studio only.
+
+**WHERE.** `src/mastra/index.ts`, `src/shared/agent-kernel/mastra/mcp/studio-servers.ts`, Mastra Studio config if it has a nav flag.
+
+**Acceptance.**
+
+- Clicking MCP Servers in Studio does not 404. Either a working catalog or no item.
+
+**What is there to learn.** *A logged registration is not a UI.* *Working with AI:* screenshot the 404 as the failing acceptance.
+
+**In plain words.** Do not put a door in the hallway that opens onto a brick wall.
+
+---
+
+## 66. Storyteller workflow visible or honestly tool-only
+
+**Track:** G · **Priority:** P2 · **Dependencies:** 63
+
+**WHAT.** `beat-draft-workflow` (and siblings) are registered on the instance. The Storyteller **agent card** shows **Workflows: 0**. Beat drafting is only reached via `run_beat_draft_workflow`. Studio looks like the washer is missing.
+
+**HOW — implement exactly this.** Agent **Purpose** is domain · one sentence (no tool ids, no `# Job`). Do not put `run_beat_draft_workflow` in `description`. Beat-draft itself is the visible graph: critic→writer `.dountil()` max 3 after lint (one retry). Keep tool-only dispatch (`run_beat_draft_workflow`); do not attach `artifact-draft` / `fix-inconsistencies` unless Studio chat should start them.
+
+**WHERE.** `src/domains/storyteller/core/io/mastra-runtime.ts` (`chatAdapterAgent`). Description string next to `CHAT_ADAPTER_DESCRIPTION`. Beat-draft loop: `beat-draft-workflow.ts`.
+
+**Acceptance.**
+
+- Purpose stays one line with ` · ` and no workflow/tool ids.
+- Workflows canvas shows the critic loop cap; lint remains one hidden retry.
+
+**What is there to learn.** *Cards are documentation.* *Working with AI:* one sentence in `description`; no silent mismatch.
+
+**In plain words.** If the washer is in the basement, the laundry card should say so.
+
+---
+
+## 67. Studio leftover nits
+
+**Track:** G · **Priority:** P2 · **Dependencies:** 62, 63
+
+**WHAT.** Smaller Studio lies on **writer** robots:
+
+| Nit | Evidence | Fix |
+|---|---|---|
+| Processors UI empty-ish | Autonomous author has `goal` config (`getAutonomousGoalConfig`) but Studio Processors looks empty | Surface goal/processors Mastra already has, or description: “goal loop; Processors tab N/A in this Studio version” |
+| Muse / Muse Ranker workspace pending; `canVector: false` | FS packages under `src/mastra/agents/muse*` via `assembleFsAgent`; inherit bad instance workspace | Same as 59 for **these writer agents**. Do not enable vector search just to fill a badge |
+| Market Analyst one-liner | Out of slice | Leave |
+| Prompt catalog empty Description | Action 63, storyteller/judge prompts | Land with 63 |
+
+**Do not** change Market Analyst instructions in this slice.
+
+**HOW — implement exactly this.** Land as one PR or fold into 62/63. Do not build Agent Builder EE. Do not enable vector search on Muse to “fill the badge.”
+
+**WHERE.** Autonomous author FS package; `src/mastra/agents/muse*`; `market-analyst-agent-wire.ts` + `createMarketAnalystAgent`; prompt types if not done in 63.
+
+**Acceptance.**
+
+- Muse cards are not stuck “workspace pending” because of repo mount.
+- Market Analyst has a description and instructions that mention its tool families.
+- Processors: either shows goal-state or the agent description explains the empty tab.
+
+**What is there to learn.** *Unfinished Studio chrome is still a product lie.* *Working with AI:* table of nits; no extra features.
+
+**In plain words.** Sweep the small lies so the hour-bot is not sitting in a messy room.
 
 ---
 
@@ -2064,9 +2367,9 @@ Click-by-click product path: [phases.md](./phases.md) §7.0–7.3. Do not invent
 Two lists. The first is capability the design **names but does not build yet**, each with the
 measurement that would earn it a slot. The second is what would become Actions 39+ if the list
 were allowed to grow past Phase 5 — real work, ranked below the overlay, recorded so it is not
-rediscovered as a surprise later. **Phase 7 (52–58)** is not this appendix: it is Track G, the
-Studio quality loop. Appendix **46** (verdicts as labels) may later feed Action 58; it still does
-not auto-merge.
+rediscovered as a surprise later. **Phase 7 (52–67)** is not this appendix: it is Track G (Studio
+truth 59–67, then hour-loop 52–58). Appendix **46** (verdicts as labels) may later
+feed the live dataset; it still does not auto-merge.
 
 ## A. Deferred capability — the trigger that promotes it
 

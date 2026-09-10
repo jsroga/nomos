@@ -1,0 +1,22 @@
+{
+  "storyteller": {
+    "name": "Storyteller",
+    "description": "Storyteller · Chat adapter: bible tools and converse. Beat draft goes through the workflow.",
+    "tools": {
+      "manage_beat": {},
+      "list_beats": {},
+      "manage_character": {},
+      "list_characters": {},
+      "manage_episode": {},
+      "list_episodes": {},
+      "update_world_bible": {},
+      "read_world_bible": {},
+      "check_continuity": {},
+      "check_section_alignment": {},
+      "search_manuscript": {},
+      "promote_rule": {},
+      "propose_character_fields": {},
+      "run_beat_draft_workflow": {}
+    }
+  }
+}

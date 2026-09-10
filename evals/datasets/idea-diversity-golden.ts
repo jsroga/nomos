@@ -11,7 +11,7 @@
 import {
   generateIdeaSets,
   DEFAULT_IDEA_PROMPT,
-} from '@/evals/idea-diversity/generate-ideas-wire'
+} from '@/evals/datasets/idea-diversity/generate-ideas-wire'
 import type { RunnableEvalExample } from '../types'
 
 const IDEA_COUNT = 8

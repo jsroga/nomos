@@ -1,6 +1,7 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { createJudgingConfig, extractProse, normalizeScore } from './shared'
+import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
 
 /**
  * Story-motion (stasis) scorer — PLAN-V2 5.4.
@@ -44,6 +45,11 @@ export const storyMotionScorer = createScorer({
   judge: createJudgingConfig(
     'You are a structural referee. You inventory story motion precisely: who acted, what changed, what cannot be undone. Mood is not motion.',
   ),
+  prepareRun: run => ({
+    ...run,
+    input: compactScorerInput(run.input),
+    output: compactScorerOutput(run.output),
+  }),
 })
   .analyze({
     description: 'Inventory state changes vs static beats',

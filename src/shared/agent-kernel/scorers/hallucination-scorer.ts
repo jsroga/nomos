@@ -1,7 +1,9 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
+import { PromptRegistryName } from '@/shared/agent-kernel/prompts/constants/prompt-block-ids'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { createJudgingConfig, inputRecord, normalizeScore, outputToString } from './shared'
+import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 const hallucinationAnalyzeSchema = z.object({
@@ -16,6 +18,11 @@ export const hallucinationScorer = createScorer({
   judge: createJudgingConfig(
     'You are a ruthless fact-checker. Score 0-1 (1 = no hallucinations) and explain.',
   ),
+  prepareRun: run => ({
+    ...run,
+    input: compactScorerInput(run.input),
+    output: compactScorerOutput(run.output),
+  }),
 })
   .analyze({
     description: 'Detect fabricated content against canon',
@@ -26,7 +33,7 @@ export const hallucinationScorer = createScorer({
         ? JSON.stringify(run.groundTruth)
         : String(input.context ?? input.canon ?? '')
       const output = outputToString(run.output)
-      return promptRepository.getPrompt('hallucination-judge', { reference, output })
+      return promptRepository.getPrompt(PromptRegistryName.HallucinationJudge, { reference, output })
     },
   })
   .generateScore(({ results }) => {

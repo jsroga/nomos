@@ -8,6 +8,10 @@ export enum MarketAnalystAgentName {
   Name = 'Market Analyst',
 }
 
+export enum MarketAnalystAgentDescription {
+  Name = 'Loop Creator · Scores market fit for a designed loop.',
+}
+
 export const MARKET_ANALYST_AGENT_INSTRUCTIONS =
   'Perform comprehensive market research on game loops. Use tools to gather data, score archetypes, and produce a structured report.'
 

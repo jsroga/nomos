@@ -21,7 +21,7 @@ import {
   PromotionDecision,
   WAVE1_PROMOTION_DECISIONS,
   Wave1PromotionTarget,
-} from '../promotion/wave1-decisions'
+} from '../tools/wave1-decisions'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 

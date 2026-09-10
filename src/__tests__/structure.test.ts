@@ -111,14 +111,14 @@ describe('src/shared topology (docs/ARCHITECTURE.md)', () => {
 describe('src/mastra Studio entry', () => {
   const mastraDir = path.join(SRC_DIR, 'mastra')
 
-  it('contains only index.ts, agents/, and optional public/', () => {
+  it('contains only index.ts, agents/, editor/, and optional public/', () => {
     if (!fs.existsSync(mastraDir)) return
     const entries = fs.readdirSync(mastraDir)
-    const allowed = new Set(['index.ts', 'agents', 'public'])
+    const allowed = new Set(['index.ts', 'agents', 'editor', 'public'])
     const unexpected = entries.filter(e => !allowed.has(e))
     expect(
       unexpected,
-      `src/mastra/ allowed: index.ts, agents/, public/ — found: ${entries.join(', ')}`,
+      `src/mastra/ allowed: index.ts, agents/, editor/, public/ — found: ${entries.join(', ')}`,
     ).toEqual([])
   })
 })

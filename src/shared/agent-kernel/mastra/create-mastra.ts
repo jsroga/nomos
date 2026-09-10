@@ -6,13 +6,12 @@ import { Mastra, type Config } from '@mastra/core/mastra'
 import { MastraEditor } from '@mastra/editor'
 import { PostgresStore, PostgresStoreVNext } from '@mastra/pg'
 import { MastraEditorSource } from './constants/editor'
+import { listStoredScorerIds, resolveEditorCodePath } from './editor-overlay'
 import { createObservability } from './observability-config'
+import { omitStoredJudgeCodeScorers } from '../scorers/studio-scorers'
 import { PinoLogger } from '@mastra/loggers'
 import { STORYTELLER_SCORERS } from '../scorers'
-import { registerCorePrompts } from '@/shared/agent-kernel/prompts/registry'
-import { Workspace, LocalFilesystem } from '@mastra/core/workspace'
-import path from 'path'
-import { SKILLS_DIR } from '../skills/skill-loader'
+import { registerCorePrompts, registerGameDesignPrompts } from '@/shared/agent-kernel/prompts/registry'
 import {
   MASTRA_DATABASE_URL_WARNING,
   MASTRA_FALLBACK_DATABASE_URL,
@@ -26,7 +25,7 @@ import {
   MASTRA_STORAGE_ID,
   MastraObservabilityDatabaseEnv,
 } from '@/shared/agent-kernel/constants/mastra-bootstrap'
-import { resolveProjectRoot } from '@/shared/agent-kernel/mastra/project-root'
+import { createInstanceStudioWorkspace } from '@/shared/agent-kernel/mastra/studio-workspace'
 
 let serializationConfigured = false
 
@@ -79,19 +78,14 @@ export function createMastra(
     mcpServers?: Record<string, MCPServerBase>
     workflows?: Record<string, AnyWorkflow>
     tools?: Config['tools']
+    server?: Config['server']
   },
 ): Mastra {
   configureSerializationLimits()
   registerCorePrompts()
+  registerGameDesignPrompts()
 
-  const projectRoot = resolveProjectRoot()
-
-  const workspace = new Workspace({
-    filesystem: new LocalFilesystem({
-      basePath: projectRoot,
-    }),
-    skills: [path.join(projectRoot, SKILLS_DIR)],
-  })
+  const workspace = createInstanceStudioWorkspace()
 
   const storage =
     options?.storage === null
@@ -102,13 +96,17 @@ export function createMastra(
 
   return new Mastra({
     agents,
-    scorers: STORYTELLER_SCORERS,
+    scorers: omitStoredJudgeCodeScorers(STORYTELLER_SCORERS, listStoredScorerIds()),
     ...(storage ? { storage } : {}),
     workspace,
     ...(options?.workflows ? { workflows: options.workflows } : {}),
     ...(options?.mcpServers ? { mcpServers: options.mcpServers } : {}),
     ...(options?.tools ? { tools: options.tools } : {}),
-    editor: new MastraEditor({ source: MastraEditorSource.Database }),
+    ...(options?.server ? { server: options.server } : {}),
+    editor: new MastraEditor({
+      source: MastraEditorSource.Code,
+      codePath: resolveEditorCodePath(),
+    }),
     logger: new PinoLogger({
       name: MASTRA_LOGGER_NAME,
       level: MASTRA_LOGGER_LEVEL,

@@ -6,6 +6,8 @@ export interface PromptDefinition {
   name: string
   version: number
   text: string
+  /** One-line catalog copy; not the full body. */
+  description?: string
   variables: string[] // List of expected variable names
   tags?: string[]
   modelConfig?: {

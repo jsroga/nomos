@@ -111,6 +111,8 @@ describe('beat-draft-workflow mechanics (no LLM)', () => {
     expect(payload?.draft).toContain('INT. CHAPEL')
     expect(payload?.critiques).toContain('NO FINDINGS')
     expect(deps.persistBeat).not.toHaveBeenCalled()
+    expect(deps.draftBeat).toHaveBeenCalledTimes(1)
+    expect(deps.reviseBeat).not.toHaveBeenCalled()
   })
 
   it('resume(approve) revises and persists the beat', async () => {
@@ -387,19 +389,19 @@ describe('beat-draft-workflow contracts', () => {
         started.push(Date.now())
         await delay(40)
         ended.push(Date.now())
-        return 'c'
+        return 'c\nNO FINDINGS.'
       }),
       critiqueProse: vi.fn(async () => {
         started.push(Date.now())
         await delay(40)
         ended.push(Date.now())
-        return 'p'
+        return 'p\nNO FINDINGS.'
       }),
       critiqueStakes: vi.fn(async () => {
         started.push(Date.now())
         await delay(40)
         ended.push(Date.now())
-        return 's'
+        return 's\nNO FINDINGS.'
       }),
     })
     const workflow = makeWorkflow(deps)
@@ -492,6 +494,7 @@ describe('beat-draft lint skip-critics', () => {
     expect(deps.critiqueStakes).not.toHaveBeenCalled()
     expect(deps.critiqueDialogue).not.toHaveBeenCalled()
     expect(deps.draftBeat).toHaveBeenCalledTimes(2)
+    expect(deps.reviseBeat).not.toHaveBeenCalled()
     const criticDispatch = events.filter(
       event =>
         event.type === RunTraceEventType.RoleDispatch &&
@@ -504,3 +507,30 @@ describe('beat-draft lint skip-critics', () => {
     expect(String(payload?.critiques)).toContain('orphan')
   })
 })
+
+describe('beat-draft critic loop', () => {
+  it('stops after three dirty writer revises then suspends', async () => {
+    const dirty = '## Continuity\nThe ledger is in two places at once.'
+    const deps = makeDeps({
+      critiqueContinuity: vi.fn(async () => dirty),
+      critiqueProse: vi.fn(async () => dirty),
+      critiqueStakes: vi.fn(async () => dirty),
+    })
+    const workflow = makeWorkflow(deps)
+    const run = await workflow.createRun()
+    const result = await run.start({ inputData: INPUT })
+
+    expect(result.status).toBe('suspended')
+    expect(deps.draftBeat).toHaveBeenCalledTimes(1)
+    expect(deps.reviseBeat).toHaveBeenCalledTimes(3)
+    expect(deps.persistBeat).not.toHaveBeenCalled()
+
+    await run.resume({
+      step: VERDICT_STEP_ID,
+      resumeData: { action: 'approve' },
+    })
+    expect(deps.reviseBeat).toHaveBeenCalledTimes(4)
+    expect(deps.persistBeat).toHaveBeenCalledTimes(1)
+  })
+})
+

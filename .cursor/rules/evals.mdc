@@ -26,7 +26,7 @@ Judge: `OPENAI_API_KEY` or `JUDGING_MODEL` in `.env.local` (Mastra LLM-as-judge 
 
 - `src/shared/agent-kernel/scorers/` — `consistency`, `hallucination`, `magic`, `persona-fidelity` (registered on Mastra)
 - `evals/datasets/storyteller-golden.ts` — 12 golden examples
-- `evals/run.ts` — batch runner; `evals/report/generate.ts` — HTML report; `evals/results/latest.json`
+- `evals/run.ts` — batch runner; `evals/tools/generate-report.ts` — HTML report; `evals/results/latest.json`
 - `evals/types.ts`, `evals/tsconfig.json`
 
 ## When to run evals

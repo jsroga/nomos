@@ -39,28 +39,29 @@ The dark-factory execute loop has three interchangeable runners that share the *
 | Observability | `@mastra/observability` registry (`create-mastra`) + `tracingOptions`; real spans via `src/shared/observability/mastra-tracing.ts` (`withMastraSpan`); `observability.ts` = sanitizers only |
 | Evals / scorers | `@mastra/core/evals` `createScorer`, `src/shared/agent-kernel/scorers/` + domain deterministic scorers unioned in `evals/run.ts` |
 | Prompts | `src/shared/agent-kernel/prompts/` (repository + core prompts), domain `prompts/`; **static agent prompts** → `src/mastra/agents/<id>/instructions.md` (file-based, via `loadAgentInstructions`) |
-| Editor | `@mastra/editor` on `createMastra` (`source: 'db'`). Studio drafts; production `getPublishedAgent(id)`. See **Mastra Editor** below. |
+| Editor | `@mastra/editor` on `createMastra` (`source: 'code'`). Studio Save writes committed JSON under `src/mastra/editor/`. See **Mastra Editor** below. |
 
 ## Mastra Editor
 
-Studio (`npm run mastra:dev`, `:4111`) drafts and publishes agent instruction (and allowed tool-description) overlays onto the same `PostgresStoreVNext` as memory. Production never loads a draft.
+Studio (`npm run mastra:dev`, `:4111`) Save writes Editor overlays as JSON under `src/mastra/editor/` (`source: 'code'`). You git-commit those files. Production and `npm run eval` read the same overlay JSON. `instructions.md` is fallback when an overlay id is missing.
 
-- **Storage:** `MastraEditor({ source: 'db' })` in [`create-mastra.ts`](src/shared/agent-kernel/mastra/create-mastra.ts). Reuse the existing Postgres store — no LibSQL, no second Editor composite unless `init()` fails to create editor tables.
-- **Live agents:** `getPublishedAgent(id)` / `getPublishedAgentOr(id, fallback)` in [`get-published-agent.ts`](src/shared/agent-kernel/mastra/get-published-agent.ts) wrap `getAgentById(id, { status: 'published' })`. Editor fail-closes when `instructions: true` and no published row exists; the helper then returns the **code** agent from `listAgents()`. `/api/assistant` passes `agentVersion: { status: 'published' }` into `handleChatStream`. Writers Room SSE, AgentController, workflows, game-design, and loop-creator generate/stream go through the helper.
-- **Code owns identity.** `id`, `name`, `model` / `resolveRoleModel`, RequestContext, and mutating tool **implementations** stay in TypeScript. Editor may change **instructions** and (where allowed) tool **descriptions** only.
+- **Storage:** `MastraEditor({ source: 'code', codePath })` in [`create-mastra.ts`](src/shared/agent-kernel/mastra/create-mastra.ts). Postgres stays for memory / traces. Do not pass `sourceControlProvider` (no auto-PR).
+- **Live agents:** `getPublishedAgent(id)` / `getPublishedAgentOr(id, fallback)` in [`get-published-agent.ts`](src/shared/agent-kernel/mastra/get-published-agent.ts) wrap `getAgentById(id, { status: 'published' })`. Empty tool membership in JSON falls back to the code catalog. Instruction overlays also apply via `loadPublishedOrFileBrief` / `getPrompt`. `/api/assistant` passes `agentVersion: { status: 'published' }` into `handleChatStream`. Writers Room SSE, AgentController, workflows, game-design, and loop-creator generate/stream go through the helper.
+- **Code owns identity.** `id`, `name`, `model` / `resolveRoleModel`, RequestContext, and mutating tool **implementations** stay in TypeScript. Studio may change **instructions**, tool **descriptions**, and (writers only) tool **membership**.
 - **World bible stays off Editor text.** Workspace packing is the turn `system` message (assistant route + chat adapter), not published instruction overlays.
 - **Registry keys match `agent.id`** (`storyteller`, `grrm-author`, `game-design-agent`, `loop-creator-supervisor`, …) so Studio does not list duplicates. Muse, muse-ranker, and beat-cast-extract stay direct `generate()` agents — do not register extra instance copies for Studio completeness.
-- **Instance tools:** domains pass production tools through `registerMastraModule({ tools })`. Editor’s picker lists those ids. Do not import `@mastra/editor/composio` or `@mastra/editor/arcade`.
-- **Prompt blocks:** `seedEditorPromptBlocks` (from `warmMastraStorage` / Studio boot) idempotently seeds `brief-<dir>` from `src/mastra/agents/*/instructions.md` and `registry-<name>` from `promptRepository.listRegistered()`. Dynamic composers (`buildChatAdapterPrompt`, GRRM compose) are not blocks.
-- **Evals** (`npm run eval` / `eval:gate`) hash **code** prompts under `src/domains/*/ai/` and `src/shared/agent-kernel/`. Published DB overlays are a production overlay, not an eval input. HTTP chat keeps `CHAT_HTTP_SCORERS = {}`.
+- **Instance tools:** domains pass production tools through `registerMastraModule({ tools })`. Editor’s picker lists those ids. Hour-bot tools stay agent-local. Do not import `@mastra/editor/composio` or `@mastra/editor/arcade`.
+- **Prompt blocks:** overlay ids are `brief-<agentId>` and `registry-<promptName>`. Import missing files once with `npm run studio:import-prompts`. Boot does not overwrite JSON from `instructions.md`.
+- **Evals** (`npm run eval` / `eval:gate`) hash `src/mastra/editor` plus code prompts. HTTP chat keeps `CHAT_HTTP_SCORERS = {}`.
+- **Studio hour-loop (Phase 7):** start in Studio chat — [`.spec/opus/architecture-review/phases.md`](.spec/opus/architecture-review/phases.md) §7.1. Register `quality-improver` on the Studio CLI instance only. Bot may dirty Editor JSON; you commit. Live vs golden datasets: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) § Observability (Experiments table).
 - **Studio stays local.** Do not expose Editor REST (`/api/stored/*`) on the Next app. Out of scope: Agent Builder (`@mastra/editor/ee`), a second Editor on the MCP stdio process.
 
 Permissions (`editor:` on every Agent) — defaults would let Studio attach extra mutating tools:
 
 | Agents | `editor` |
 |--------|----------|
-| Chat adapter, GRRM author, beat planner, autonomous author, game-design, market-analyst | `{ instructions: true, tools: { description: true } }` |
-| Critics, loop-creator specialists, beat-cast-extract, muse / muse-ranker (FS packages) | `{ instructions: true }` |
+| Chat adapter, GRRM author, beat planner, autonomous author, game-design, market-analyst | `{ instructions: true, tools: true }` (Studio owns membership; code `tools` are fallback) |
+| Critics, loop-creator specialists, beat-cast-extract, muse / muse-ranker, quality-improver | `{ instructions: true }` |
 | Provider probe, tests | `false` |
 
 ## Tool pattern

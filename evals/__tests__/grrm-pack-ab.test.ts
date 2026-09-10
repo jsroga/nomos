@@ -3,7 +3,7 @@ import {
   GrrmPackAbStatus,
   measureComposeArms,
   scoreDraftArms,
-} from '../experiments/grrm-pack-ab'
+} from '../tools/grrm-pack-ab'
 
 describe('grrm-pack-ab', () => {
   it('pack-on compose is longer than pack-off (skills included)', () => {

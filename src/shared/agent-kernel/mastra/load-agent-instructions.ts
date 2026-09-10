@@ -9,11 +9,11 @@
  * Paths resolve from the app repo root (not Mastra Studio cwd).
  */
 
-import '@/shared/data/server-guard'
+import '../../data/server-guard'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { resolveProjectRoot } from '@/shared/agent-kernel/mastra/project-root'
-import { FileEncoding } from '@/shared/data/constants/protocol'
+import { resolveProjectRoot } from './project-root'
+import { FileEncoding } from '../../data/constants/protocol'
 
 const FILE_AGENTS_DIR = 'src/mastra/agents'
 const INSTRUCTIONS_FILENAME = 'instructions.md'

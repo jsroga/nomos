@@ -23,7 +23,7 @@ Fabro local Mac discovery still needs a **real copy** under `~/.fabro/skills/` (
 rm -rf ~/.fabro/skills && mkdir -p ~/.fabro/skills && cp -R .agents/skills/. ~/.fabro/skills/
 ```
 
-## Catalog (18)
+## Catalog (19)
 
 | Skill | Use when |
 | --- | --- |
@@ -33,6 +33,7 @@ rm -rf ~/.fabro/skills && mkdir -p ~/.fabro/skills && cp -R .agents/skills/. ~/.
 | `core-web-vitals` | Landing CWV lab audits, prod `next build`/`start`, Lighthouse pitfalls |
 | `execute` | `/execute <module>` dark-factory loop |
 | `mastra-workflow` | Mastra v1 workflows (steps, suspend, critics, SSE) |
+| `pl-tech` | User-facing Polish; English identifiers stay (`inputHash`, `pre-commit`, paths) |
 | `pr-description` | PR body from branch diff |
 | `review` | Code / security review findings |
 | `shadcn` | shadcn/ui in this repo |

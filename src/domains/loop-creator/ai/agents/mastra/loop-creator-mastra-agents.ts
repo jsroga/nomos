@@ -19,6 +19,8 @@ import { marketAnalystAgent } from '../market-analyst'
 import { marketAnalystTools } from '../market-analyst/tools-registry'
 import { EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { MarketAnalystAgentId } from '../../constants/market-analyst-agent-wire'
+import { LoopCreatorPurposeBody } from '@/shared/agent-kernel/prompts/constants/prompt-catalog'
+import { loopCreatorPurposeDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
 
 export enum LoopCreatorMastraAgentId {
   Supervisor = 'loop-creator-supervisor',
@@ -51,11 +53,13 @@ enum LoopCreatorMastraAgentRole {
 function buildAgent(
   id: LoopCreatorMastraAgentId,
   name: LoopCreatorMastraAgentName,
-  role: LoopCreatorMastraAgentRole
+  role: LoopCreatorMastraAgentRole,
+  purpose: LoopCreatorPurposeBody,
 ): Agent {
   return new Agent({
     id,
     name,
+    description: loopCreatorPurposeDescription(purpose),
     instructions: role,
     model: () => resolveLoopCreatorMastraModel(),
     editor: EDITOR_INSTRUCTIONS_ONLY,
@@ -65,32 +69,38 @@ function buildAgent(
 export const loopCreatorSupervisorAgent = buildAgent(
   LoopCreatorMastraAgentId.Supervisor,
   LoopCreatorMastraAgentName.Supervisor,
-  LoopCreatorMastraAgentRole.Supervisor
+  LoopCreatorMastraAgentRole.Supervisor,
+  LoopCreatorPurposeBody.Supervisor,
 )
 export const loopCreatorLoopPlannerAgent = buildAgent(
   LoopCreatorMastraAgentId.LoopPlanner,
   LoopCreatorMastraAgentName.LoopPlanner,
-  LoopCreatorMastraAgentRole.LoopPlanner
+  LoopCreatorMastraAgentRole.LoopPlanner,
+  LoopCreatorPurposeBody.LoopPlanner,
 )
 export const loopCreatorMechanicsDesignerAgent = buildAgent(
   LoopCreatorMastraAgentId.MechanicsDesigner,
   LoopCreatorMastraAgentName.MechanicsDesigner,
-  LoopCreatorMastraAgentRole.MechanicsDesigner
+  LoopCreatorMastraAgentRole.MechanicsDesigner,
+  LoopCreatorPurposeBody.MechanicsDesigner,
 )
 export const loopCreatorBalanceAnalystAgent = buildAgent(
   LoopCreatorMastraAgentId.BalanceAnalyst,
   LoopCreatorMastraAgentName.BalanceAnalyst,
-  LoopCreatorMastraAgentRole.BalanceAnalyst
+  LoopCreatorMastraAgentRole.BalanceAnalyst,
+  LoopCreatorPurposeBody.BalanceAnalyst,
 )
 export const loopCreatorProgressionArchitectAgent = buildAgent(
   LoopCreatorMastraAgentId.ProgressionArchitect,
   LoopCreatorMastraAgentName.ProgressionArchitect,
-  LoopCreatorMastraAgentRole.ProgressionArchitect
+  LoopCreatorMastraAgentRole.ProgressionArchitect,
+  LoopCreatorPurposeBody.ProgressionArchitect,
 )
 export const loopCreatorConceptEvaluatorAgent = buildAgent(
   LoopCreatorMastraAgentId.ConceptEvaluator,
   LoopCreatorMastraAgentName.ConceptEvaluator,
-  LoopCreatorMastraAgentRole.ConceptEvaluator
+  LoopCreatorMastraAgentRole.ConceptEvaluator,
+  LoopCreatorPurposeBody.ConceptEvaluator,
 )
 
 /** Agent lookup by id — used by the completion helper. */

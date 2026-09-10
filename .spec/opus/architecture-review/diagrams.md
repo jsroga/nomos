@@ -8,7 +8,7 @@ workflows (heavy / light / sweep), host persist, Humanizer after verdict. Schedu
 Legend: **red** = broken or unenforced · **amber** = present but incomplete · **green** =
 correct, do not regress · **blue** = deterministic host code · **purple** = model call.
 
-Eleven diagrams of the writing system, then two of the Phase 5 workspace overlay (current death-on-navigate vs target shell), then one of Phase 7 (you in the quality loop).
+Eleven diagrams of the writing system, then two of the Phase 5 workspace overlay (current death-on-navigate vs target shell), then one of Phase 7 (Studio hour-bot; you Publish).
 
 ---
 
@@ -499,48 +499,47 @@ flowchart TB
 
 ---
 
-## 14. Target — Phase 7 quality loop (book vs lab)
+## 14. Target — Phase 7 Studio hour-loop
 
 ```mermaid
 flowchart TD
-    WR["Writers Room<br/>Generate → Approve / Revise / Kill"]
+    YOU["You"]
     ST["Studio :4111"]
-    TR["Traces"]
-    DS["Datasets<br/>git golden, pinned version"]
-    EX["Experiments<br/>agent or workflow + scorers"]
-    CMP["Compare vs champion"]
-    YOU{"You"}
-    REJ["Reject · champion unchanged"]
-    PRO["Promote checklist"]
-    PUB["Editor Publish XOR git prompt commit"]
-    CH["Champion record"]
-    GATE["eval:gate / eval:full<br/>release only"]
-    HTTP["HTTP chat scorers"]
+    BOT["Hour-bot<br/>goal / durable"]
+    DS["Live dataset<br/>inputs, not frozen prose"]
+    EX["Experiments + traces"]
+    DR["Editor DRAFT"]
+    NOTE["Run note<br/>Δ · 402 · time"]
+    INS["You inspect"]
+    PUB["You Publish XOR git"]
+    HTTP["Nomos / HTTP chat"]
+    GOLD["Golden referenceOutput"]
 
-    WR -->|"story loop"| YOU
-    WR -->|"spans"| TR
-    ST --> TR
-    ST --> DS
-    ST --> EX
-    EX --> CMP
-    TR --> YOU
-    CMP -->|"Δ ≤ noise or worse"| REJ
-    CMP -->|"Δ > max(2σ, 0.02)"| PRO
-    PRO --> YOU
-    YOU -->|"no"| REJ
-    YOU -->|"yes"| PUB
-    PUB --> CH
-    YOU -->|"release cadence"| GATE
-    HTTP -.->|"forbidden = empty"| WR
+    YOU -->|"paste hour prompt"| ST
+    ST --> BOT
+    BOT --> DS
+    BOT --> EX
+    BOT --> DR
+    BOT --> NOTE
+    EX --> INS
+    DR --> INS
+    NOTE --> INS
+    INS --> YOU
+    YOU --> PUB
+    HTTP -.->|"forbidden: no UI, no scorers"| BOT
+    GOLD -.->|"forbidden as hour exam"| BOT
+    SEC[".env / repo workspace"]
+    SKL["storyteller skills on GDA"]
+    SEC -.->|"forbidden (59)"| ST
+    SKL -.->|"forbidden (60)"| ST
 
     classDef ok fill:#14401f,stroke:#27ae60,color:#fff
     classDef host fill:#12305e,stroke:#3d7ebf,color:#fff
     classDef warn fill:#4a3a15,stroke:#d68910,color:#fff
     classDef bad fill:#4a1520,stroke:#c0392b,color:#fff
-    class WR,YOU ok
-    class ST,TR,DS,EX,CMP,CH,GATE host
-    class PRO,PUB warn
-    class HTTP,REJ bad
+    class YOU,INS,PUB ok
+    class ST,BOT,DS,EX,DR,NOTE host
+    class HTTP,GOLD,SEC,SKL bad
 ```
 
-**Reading it.** Two windows. The book never auto-keeps a beat because a scorer liked it. The lab never ships because a number ticked up. Traces first, scores second, your click last. Actions 52–58. Phase 7.
+**Reading it.** One window. Studio must not mount secrets or story skills on game agents (59–60). You type the objective. The bot works. You still Publish. Actions 52–67. Phase 7.

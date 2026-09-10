@@ -1,0 +1,5 @@
+{
+  "dataset": "storyteller-live-quality",
+  "experimentId": null,
+  "note": "Operator writes this pointer after a real win beyond max(2σ, 0.02). The hour-bot never updates this file. eval:gate remains the release gate."
+}

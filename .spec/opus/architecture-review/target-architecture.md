@@ -391,8 +391,8 @@ Law of Motion remains a planner **gate** (`actionTaken`, `consequence`, `storySt
 Only Tier 3 may claim quality. Today’s `evals/run.ts` scores a frozen string. Name it
 `eval:scorer-fixture`. Trace-contract tests on the **existing** three-critic workflow are Phase 0.
 
-**Phase 7** does not add a fifth eval tier. Studio experiments are how you *propose* a live-quality
-run (`eval:gate` / `eval:full`). HTTP chat stays unscored (`CHAT_HTTP_SCORERS`). You promote.
+**Phase 7** does not add a fifth eval tier. A Studio hour-bot proposes live-quality runs
+(`eval:gate` / `eval:full` stay release). HTTP chat stays unscored. You Publish. Zero Nomos UI.
 
 Trace assertions specific to this floor: three scopes dispatched and overlapping; Humanizer
 after last revision and before persist; claim-check zero fact delta; Author context had no
@@ -429,10 +429,12 @@ fiction. Gateway cannot express “masterPrompt may govern register but never ca
 | Episode autonomy | `createDurableAgent` + `goal` — Phase 4, queued verdicts |
 | Script vs Novel | Format skill on Author (L2 on mode), not a new Agent class |
 | Draft tab | Existing `Phase.WRITING` / `ScriptEditor` — Medium well + ghost complete; section generate calls `beat-draft-workflow` |
-| Studio scorers | `createMastra({ scorers: STORYTELLER_SCORERS })` — inspect/experiments, never HTTP chat |
-| Datasets / experiments | Studio `:4111` + `dataset.startExperiment` — Phase 7; git golden is source of truth |
-| Editor overlays | `MastraEditor` db source; production `status: 'published'` only |
-| Champion vs candidate | Studio Compare + `max(2σ, 0.02)`; operator Promote (Actions 55–56) |
+| Studio scorers | `createMastra({ scorers: STORYTELLER_SCORERS })` — human reasons in Studio; never HTTP chat |
+| Datasets / experiments | Studio `:4111` + `dataset.startExperiment` — Phase 7 **live** inputs; git golden is the fixture exam |
+| Editor overlays | `MastraEditor` db source; production `status: 'published'` only; hour-bot writes drafts |
+| Champion vs candidate | Studio Compare + `max(2σ, 0.02)`; operator Publish (Actions 57–58) |
+| Hour-bot | Durable/goal agent in Studio; not on `/api/assistant` |
+| Studio workspace | Sandbox FS, not `projectRoot`; per-agent skills (Actions 59–60) |
 
 **Memory.** Key from `(projectId, episodeId, userId)`. Bound `lastMessages` on every path
 including MCP. Expiry Phase 3. Recalled facts never bypass `read_canon`. Populate
@@ -447,7 +449,7 @@ including MCP. Expiry Phase 3. Recalled facts never bypass `read_canon`. Populat
 | Persist? | Host, after Approve |
 | Has repair stopped helping? | `dountil` no-progress, max one auto-revise |
 | Is the episode finished? | `goal` judge, Phase 4 |
-| Is the *system* better than last week? | Studio Compare + **your** Promote (Phase 7) |
+| Is the *system* better than last week? | Studio Compare + **your** Publish (Phase 7 hour-bot never ships) |
 
 ---
 
@@ -462,7 +464,7 @@ search, voice stylometry after extractor tests, Kimi/GLM pins after a live run,
 
 **Phase 6** is tests only (unit statements ×1.15, Playwright on storyteller / 2d-canvas / 3d exporter / projects / settings). Tables: [phases.md](./phases.md) §6.1–6.2.
 
-**Phase 7** is the Studio quality loop (Actions 52–58). Not an ablation extra. Not auto-improve.
+**Phase 7** is the Studio hour-loop (Actions 52–58) after Studio truth (59–67). Not Nomos UI. Not auto-Publish. Workspace is not the repo root.
 
 ---
 
@@ -485,4 +487,10 @@ search, voice stylometry after extractor tests, Kimi/GLM pins after a live run,
 - Leaving `masterPrompt` as chat-only decoration while GRRM skills own the beat.
 - Auto-publishing Editor overlays or auto-merging prompts from a score delta.
 - Attaching live scorers to Writers Room / smoke HTTP chat.
-- A Nomos Quality dashboard that duplicates Mastra Studio.
+- A Nomos Quality dashboard, Writers Room buttons, or any `src/app` work for Phase 7.
+- Treating `storyteller-golden.ts` `referenceOutput` as a dataset the hour-bot can raise.
+- Dumping JSON metrics / schema blobs as Studio scorer reasons or descriptions.
+- Mounting `projectRoot` as the Mastra workspace (secrets, `.git`).
+- Mounting storyteller `SKILLS_DIR` on game-design / loop-creator / market-analyst.
+- Registering hollow loop-creator specialists as Studio Open Chat agents.
+- A Studio MCP nav item that 404s.

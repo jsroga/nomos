@@ -1,8 +1,11 @@
+import { GameDesignPromptDescription, PromptCatalogTag } from './constants/prompt-catalog'
+import { PromptRegistryName } from './constants/prompt-block-ids'
 import { PromptDefinition } from './types'
 
 export const GAME_DESIGN_SYSTEM_PROMPT: PromptDefinition = {
-  name: 'game-design-system',
+  name: PromptRegistryName.GameDesignSystem,
   version: 1,
+  description: GameDesignPromptDescription.System,
   text: `You are a SENIOR GAME DESIGNER specializing in game loop design, economy balancing, and player engagement.
 
 ## Your Expertise
@@ -39,12 +42,13 @@ export const GAME_DESIGN_SYSTEM_PROMPT: PromptDefinition = {
 ## Next action
 Choose one: ask the user a question, execute a tool step, propose a plan, or finish with recommendations. Put internal reasoning in thought.`,
   variables: [],
-  tags: ['domain', 'game-design'],
+  tags: ['domain', PromptCatalogTag.GameDesign],
 }
 
 export const GAME_DESIGN_LOOP_PROMPT: PromptDefinition = {
-  name: 'game-design-loop',
+  name: PromptRegistryName.GameDesignLoop,
   version: 1,
+  description: GameDesignPromptDescription.Loop,
   text: `## Current Goal
 {{goal}}
 
@@ -55,12 +59,13 @@ export const GAME_DESIGN_LOOP_PROMPT: PromptDefinition = {
 Analyze the context and determine the best next action to achieve the goal.
 Use your tools to gather information, analyze mechanics, or validate changes.`,
   variables: ['goal', 'context'],
-  tags: ['domain', 'game-design'],
+  tags: ['domain', PromptCatalogTag.GameDesign],
 }
 
 export const BALANCE_ANALYSIS_PROMPT: PromptDefinition = {
-  name: 'balance-analysis-prompt',
+  name: PromptRegistryName.BalanceAnalysis,
   version: 1,
+  description: GameDesignPromptDescription.Balance,
   text: `Analyze the following game loop for balance issues.
 
 ## Loop Definition
@@ -81,5 +86,5 @@ export const BALANCE_ANALYSIS_PROMPT: PromptDefinition = {
 
 Provide specific, actionable recommendations.`,
   variables: ['loop', 'mechanics', 'audience'],
-  tags: ['domain', 'game-design', 'analysis'],
+  tags: ['domain', PromptCatalogTag.GameDesign, 'analysis'],
 }

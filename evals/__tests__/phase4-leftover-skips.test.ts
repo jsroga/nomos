@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { WAVE1_PROMOTION_DECISIONS, Wave1PromotionTarget, PromotionDecision } from '../promotion/wave1-decisions'
+import { WAVE1_PROMOTION_DECISIONS, Wave1PromotionTarget, PromotionDecision } from '../tools/wave1-decisions'
 
 enum SkipSource {
   MastraRuntime = 'src/domains/storyteller/core/io/mastra-runtime.ts',
