@@ -4,7 +4,7 @@ import React from 'react'
 import { Box, Layers, Upload } from 'lucide-react'
 import { AIProvider } from '@/shared/types/enums'
 import { MeshyTopology } from '../core/types/three-d-generation'
-import { AssetExporterPanelClass, AssetExporterPanelCopy } from './constants/asset-exporter-panel'
+import { AssetExporterPanelClass, AssetExporterPanelCopy } from './utils/asset-exporter-panel'
 import { ThreeDGenerationSettings, ThreeDRemeshSettings } from './ThreeDSettingsPanels'
 import { ThreeDToolbarActions } from './ThreeDToolbarActions'
 

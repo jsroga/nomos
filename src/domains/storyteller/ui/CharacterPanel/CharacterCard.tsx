@@ -15,7 +15,7 @@ import {
   CharacterPanelConfirmCopy,
   CharacterPanelCopy,
   StorytellerConfirmCopy,
-} from './constants/character-panel-metrics'
+} from './utils/character-panel-metrics'
 import { CharacterCardExpandedContent } from './CharacterCardExpandedContent'
 
 interface CharacterCardProps {

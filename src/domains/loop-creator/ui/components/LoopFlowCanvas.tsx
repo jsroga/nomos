@@ -20,7 +20,7 @@ import { nodeTypes } from './custom-nodes'
 import { PropertiesPanel } from './PropertiesPanel'
 import { SuggestionPanel, Suggestion } from './SuggestionPanel'
 import { LoopEmptyState } from './LoopEmptyState'
-import { LOOP_CONNECTION_STROKE } from '../constants/loop-creator-layout'
+import { LOOP_CONNECTION_STROKE } from '../utils/loop-creator-layout'
 
 const EDGE_LABEL_BG_PADDING: [number, number] = [6, 4]
 

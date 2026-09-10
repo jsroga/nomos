@@ -10,7 +10,7 @@ import { generateApiframeSurfaceImage } from '@/shared/ai/generate-apiframe-surf
 import {
   ApiframeGenerateAspectRatio,
   ApiframeImageModel,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import { resolveEpisodePosterModel } from '@/shared/ai/image-model-env'
 
 enum PosterPrompt {

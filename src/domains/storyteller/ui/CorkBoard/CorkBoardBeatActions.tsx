@@ -1,5 +1,5 @@
 import { Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'
-import { CorkBoardCopy } from './constants/cork-board'
+import { CorkBoardCopy } from './utils/cork-board'
 
 interface CorkBoardBeatActionsProps {
   beatCount: number

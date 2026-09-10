@@ -1,6 +1,6 @@
 import { ContentType, UrlScheme } from '@/shared/data/constants/protocol'
 import { resolveProjectAssetUrl } from '@/shared/workspace/io/project-assets-api'
-import { AssetKind, AssetUploadStatus } from '@/shared/workspace/constants/asset-upload'
+import { AssetKind, AssetUploadStatus } from '@/shared/workspace/utils/asset-upload'
 import type { AssetUploadQueueItem } from '@/shared/workspace/asset-upload-queue'
 import {
   FileUploaderItemStatus,

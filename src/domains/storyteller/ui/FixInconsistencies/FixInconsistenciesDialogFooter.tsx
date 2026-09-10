@@ -6,8 +6,8 @@ import {
   ButtonVariantKey,
 } from '@/components/Button/constants/button-styles'
 import { DialogFooter } from '@/components/Dialog'
-import { ConsistencyFixRunPhase } from './constants/fix-inconsistencies-dialog'
-import { FixInconsistenciesDialogCopy } from './constants/fix-inconsistencies-dialog'
+import { ConsistencyFixRunPhase } from './utils/fix-inconsistencies-dialog'
+import { FixInconsistenciesDialogCopy } from './utils/fix-inconsistencies-dialog'
 
 interface FixInconsistenciesDialogFooterProps {
   phase: ConsistencyFixRunPhase

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { WorldCanvasToolShortcut } from '../constants/world-canvas'
 import { isWorldCanvasSpaceRelease, worldCanvasEventKey } from '../world-canvas-keyboard'
 import { enterPanMode, handleEscapeKey } from '../useWorldCanvasKeyboard'
-import type { RepaintResult } from '@/domains/2d-canvas/constants/repaint-service'
+import type { RepaintResult } from '@/domains/2d-canvas/utils/repaint-service'
 
 const REPAINT_RESULT: RepaintResult = {
   imageUrl: 'data:image/png;base64,AA==',

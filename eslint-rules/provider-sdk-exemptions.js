@@ -17,7 +17,7 @@ const NEVER_BILLS = [
   'src/shared/agent-kernel/scorers/**/*.ts',
   // Constructs model objects; generate happens at the call site.
   'src/shared/agent-kernel/models.ts',
-  'src/domains/storyteller/config/constants/model-config.ts',
+  'src/domains/storyteller/config/model-config.ts',
 ]
 
 /** In `shared/`, so they keep the shared boundary patterns. */

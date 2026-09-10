@@ -9,7 +9,7 @@ import {
   GAME_ENTITY_FETCH_ERROR,
   GameEntityTypeId,
   GameSourceDomainId,
-} from '../constants/game-entity-mentions'
+} from '../utils/game-entity-mentions'
 import { CHAT_LLM_JUDGE_API_PATH } from '../constants/chat-interface'
 
 const PROVIDERS_ENDPOINT = '/api/settings/providers'

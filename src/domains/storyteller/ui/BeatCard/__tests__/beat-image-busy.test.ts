@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { beatImageBusy } from '../BeatCard'
-import { BeatGenerationMode } from '../constants/beat-card'
+import { BeatGenerationMode } from '../utils/beat-card'
 
 describe('beatImageBusy', () => {
   it('locks only while this beat or the batch is generating an image', () => {

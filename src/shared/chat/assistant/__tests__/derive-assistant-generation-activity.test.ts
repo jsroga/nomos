@@ -5,7 +5,7 @@ import {
   deriveAssistantGenerationActivity,
 } from '../derive-assistant-generation-activity'
 import type { UIMessage } from 'ai'
-import { ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatPartType } from '@/shared/chat/core/utils/assistant-thread-ui'
 
 describe('deriveAssistantGenerationActivity', () => {
   it('marks a completed tool as loaded so overlays can drop the spinner', () => {

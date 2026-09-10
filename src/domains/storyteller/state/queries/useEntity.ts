@@ -2,7 +2,7 @@ import { useQueries } from '@tanstack/react-query'
 import type { EntityReference } from '@/domains/storyteller/core/entities/entity-references'
 import { entityLoader } from '@/domains/storyteller/services/entity-loader-service'
 import { storytellerKeys } from '@/domains/storyteller/core/io/storyteller.keys'
-import { entityNeedsDescription } from '@/domains/storyteller/services/constants/entity-needs-description'
+import { entityNeedsDescription } from '@/domains/storyteller/services/utils/entity-needs-description'
 
 const ENTITY_QUERY_STALE_MS = 1000 * 60 * 5
 

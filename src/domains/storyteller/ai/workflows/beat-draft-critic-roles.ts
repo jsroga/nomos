@@ -1,5 +1,5 @@
 import '@/shared/data/server-guard'
-import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/feature-flags'
 import type { BeatDraftCanon } from '@/domains/storyteller/core/types/beat-draft-canon'
 import { CanonAudience, formatCanonFor } from './beat-draft-canon'
 import {

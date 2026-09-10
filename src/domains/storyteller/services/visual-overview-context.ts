@@ -1,7 +1,7 @@
 import { readString } from '@/shared/data/json-guards'
 import { loadStoryCanonPack } from '@/domains/storyteller/services/story-canon-pack'
 import type { ProjectScope } from '@/shared/auth/project-scope'
-import { VisualOverviewLabel } from '@/domains/storyteller/services/constants/visual-overview'
+import { VisualOverviewLabel } from '@/domains/storyteller/services/utils/visual-overview'
 
 export interface VisualOverviewContext {
   worldDesc: string

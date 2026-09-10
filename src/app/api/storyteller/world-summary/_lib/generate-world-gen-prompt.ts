@@ -1,9 +1,9 @@
 import type { ProjectScope } from '@/shared/auth/project-scope'
 import { complete } from '@/shared/ai/gateway'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
-import type { SeriesBible } from '@/domains/storyteller/services/context/series-bible'
+import type { SeriesBible } from '@/domains/storyteller/server'
 import { API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { resolveUserPickerOpenRouterModelId } from '@/domains/storyteller/config/constants/model-config'
+import { resolveUserPickerOpenRouterModelId } from '@/domains/storyteller/config/model-config'
 import { buildContextSnippet } from './world-summary-content'
 
 const WORLD_GEN_SYSTEM_PROMPT = `You are a visual art director writing style descriptions for isometric tilemap generation.

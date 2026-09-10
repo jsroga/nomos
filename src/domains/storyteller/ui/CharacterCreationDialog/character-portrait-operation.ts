@@ -2,7 +2,7 @@ import { useGlobalStatusStore, type AsyncOperation } from '@/shared/jobs/useGlob
 import {
   AsyncOperationStatus,
   isActiveOperationStatus,
-} from '@/shared/jobs/constants/async-operation-status'
+} from '@/shared/jobs/utils/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 
 export enum CharacterPortraitOperationLabel {

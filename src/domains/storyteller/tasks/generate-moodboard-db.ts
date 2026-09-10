@@ -16,7 +16,7 @@ import {
   MOODBOARD_PROJECT_NOT_FOUND,
   MOODBOARD_TABLE_PROJECTS,
   MOODBOARD_TABLE_SERIES_BIBLES,
-} from './constants/moodboard-task-wire'
+} from './utils/moodboard-task-wire'
 
 export enum PersistMoodboardRetry {
   Attempts = 3,

@@ -11,7 +11,7 @@ import {
   LOOP_DOMAIN_TO_FLOW_NODE,
   LOOP_GROUP_BG_COLOR,
   LOOP_GROUP_BORDER_COLOR,
-} from '../constants/loop-creator-layout'
+} from '../utils/loop-creator-layout'
 
 export function createCanvasNode(
   nodeType: LoopNodeType | typeof CANVAS_NODE_TYPE_GROUP,

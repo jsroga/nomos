@@ -13,10 +13,10 @@
 import { resolveChatModelId } from '@/domains/storyteller/config/resolve-chat-model'
 import { describe, expect, it } from 'vitest'
 import { Agent } from '@mastra/core/agent'
-import { AGENT_MODEL_MATRIX, resolveStorytellerModel } from '../constants/model-config'
+import { AGENT_MODEL_MATRIX, resolveStorytellerModel } from '../model-config'
 import {
   USER_SELECTABLE_CHAT_MODELS,
-} from '../constants/chat-model-catalog'
+} from '../chat-model-catalog'
 
 const ready = Boolean(process.env.OPENROUTER_API_KEY)
 const PROMPT = 'In one short sentence, what makes a story premise compelling?'

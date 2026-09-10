@@ -1,5 +1,5 @@
 import { AppModuleId } from '@/shared/data/constants/protocol'
-import { isLoopCreatorEnabled } from '@/shared/data/constants/feature-flags'
+import { isLoopCreatorEnabled } from '@/shared/data/feature-flags'
 import { ChatSessionSendDecision } from '@/shared/chat/core/constants/chat-session'
 
 export function moduleHasAgent(moduleId: AppModuleId): boolean {

@@ -13,14 +13,14 @@ import {
   RETEXTURE_OPERATION_ID_PREFIX,
 } from '@/domains/3d-canvas/constants/properties-panel'
 import { RETEXTURE_EMPTY_METADATA } from '@/domains/3d-canvas/constants/retexture-slice-log'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/utils/polling'
 import {
   AsyncOperationStatus,
   isActiveOperationStatus,
   isTerminalOperationStatus,
-} from '@/shared/jobs/constants/async-operation-status'
+} from '@/shared/jobs/utils/async-operation-status'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { pollInteriorTriggerRun } from '@/domains/3d-canvas/state/utils/poll-interior-trigger-run'
 import { buildRetextureStartMetadata } from '@/domains/3d-canvas/state/utils/build-retexture-start-metadata'

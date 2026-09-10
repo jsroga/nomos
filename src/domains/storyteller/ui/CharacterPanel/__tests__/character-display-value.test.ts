@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CharacterMissingValue, CharacterUnsetSentinel } from '../constants/character-panel-metrics'
+import { CharacterMissingValue, CharacterUnsetSentinel } from '../utils/character-panel-metrics'
 import { characterDisplayValue } from '../character-display-value'
 
 describe('characterDisplayValue', () => {

@@ -1,6 +1,6 @@
 import { OnboardingState, type ModuleId } from '@/shared/types/onboarding'
 import { AuthBypassFlag } from '@/shared/data/constants/protocol'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 
 export function isForceOnboardingEnabled(): boolean {
   return (

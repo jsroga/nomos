@@ -3,7 +3,7 @@ import {
   OPENROUTER_MODEL_OPTION_IDS,
   OPENROUTER_MODEL_ID_MAX_LENGTH,
   isOpenRouterModelId,
-} from '@/shared/agent-kernel/constants/model-settings'
+} from '@/shared/agent-kernel/utils/model-settings'
 
 describe('isOpenRouterModelId', () => {
   it('accepts every curated option', () => {

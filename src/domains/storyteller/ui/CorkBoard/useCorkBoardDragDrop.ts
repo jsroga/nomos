@@ -1,6 +1,6 @@
 import { useState, type Dispatch, type SetStateAction } from 'react'
 import { BeatCard as BeatData } from '@/domains/storyteller/core/types/story-types'
-import { CORK_BOARD_DRAG_EFFECT_MOVE } from './constants/cork-board'
+import { CORK_BOARD_DRAG_EFFECT_MOVE } from './utils/cork-board'
 
 export const useCorkBoardDragDrop = (
   beats: BeatData[],

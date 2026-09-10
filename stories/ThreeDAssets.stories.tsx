@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ThreeDAssets } from '@/components/ThreeDAssets'
-import { FileUploaderKind } from '@/components/FileUploader/constants/file-uploader'
-import { formatUploadingLabel } from '@/components/ThreeDAssets/constants/three-d-assets'
+import { FileUploaderKind } from '@/components/FileUploader/utils/file-uploader'
+import { formatUploadingLabel } from '@/components/ThreeDAssets/utils/three-d-assets'
 import {
   noopCancel,
   noopDownload,

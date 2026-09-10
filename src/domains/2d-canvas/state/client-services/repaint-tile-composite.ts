@@ -11,7 +11,7 @@ import {
   RepaintTileStatusLabel,
   UrlScheme,
   type RepaintBounds,
-} from '../../constants/repaint-service'
+} from '../../utils/repaint-service'
 
 export type { RepaintBounds }
 

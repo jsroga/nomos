@@ -5,7 +5,7 @@ import {
   GrrmAuthorAgentId,
   GrrmAuthorAgentLabel,
 } from '@/domains/storyteller/ai/constants/agent-identity'
-import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import { resolveRoleModel } from '@/domains/storyteller/config/model-config'
 import {
   STORYTELLER_AUTHOR_MODEL,
   requestContextString,

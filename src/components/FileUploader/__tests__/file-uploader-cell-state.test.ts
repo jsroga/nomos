@@ -4,7 +4,7 @@ import {
   canFileUploaderAdd,
   formatFileUploaderPercent,
   isFileUploaderUploading,
-} from '../constants/file-uploader'
+} from '../utils/file-uploader'
 
 describe('isFileUploaderUploading', () => {
   it('treats uploading flag as in-flight', () => {

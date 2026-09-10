@@ -18,15 +18,15 @@ import {
   ContentType,
   UrlScheme,
 } from '@/shared/data/constants/protocol'
-import { createSupabaseServiceClient } from './constants/generate-tile-persist'
+import { createSupabaseServiceClient } from './utils/generate-tile-persist'
 import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
 import {
   generationModeDef,
   resolveGenerationMode,
-} from '../constants/generation-modes'
-import { topazEnhanceModelFromFidelityMode } from '../constants/topaz-upscale'
+} from '../utils/generation-modes'
+import { topazEnhanceModelFromFidelityMode } from '../utils/topaz-upscale'
 import { upscaleWithApiframe } from './upscale-tile-apiframe-provider'
-import { ApiframeTopazUpscaleFactor } from '@/shared/ai/constants/apiframe'
+import { ApiframeTopazUpscaleFactor } from '@/shared/ai/utils/apiframe'
 import { enhanceFidelityWithGenerate } from './enhance-fidelity-generate'
 
 export enum EnhanceFidelityError {

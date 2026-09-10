@@ -4,7 +4,7 @@ import { complete } from '@/shared/ai/gateway'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
 import { isPlainObject, readString } from '@/shared/data/json-guards'
-import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/utils/assistant-thread-ui'
 import {
   ChatSessionCopy,
   ChatSessionTitleCopy,

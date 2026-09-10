@@ -11,7 +11,7 @@ import { FixInconsistenciesSkipReason } from '@/domains/storyteller/ai/workflows
 import {
   FixInconsistenciesDialogClass,
   FixInconsistenciesDialogCopy,
-} from './constants/fix-inconsistencies-dialog'
+} from './utils/fix-inconsistencies-dialog'
 
 interface FixInconsistenciesReviewProps {
   findings: ContinuityFinding[]

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MechanicNodeKind } from '../../constants/mechanics-designer-wire'
+import { MechanicNodeKind } from '../../utils/mechanics-designer-wire'
 
 export enum MechanicConnectionKind {
   Triggers = 'triggers',

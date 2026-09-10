@@ -9,7 +9,7 @@ import {
   getThinkingMessage,
   type ThinkingMessageStep,
   type ThinkingMessagesConfig,
-} from './constants/thinking-messages'
+} from './utils/thinking-messages'
 
 export type { ActionMessageLocation }
 export type ActionStatus = ApprovalActionStatus

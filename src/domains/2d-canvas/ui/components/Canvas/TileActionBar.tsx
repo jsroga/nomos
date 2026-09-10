@@ -3,15 +3,15 @@
 import { useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { ConfirmDialogVariant } from '@/components/ConfirmDialog/constants/confirm-dialog-copy'
-import { generationModeDef } from '@/domains/2d-canvas/constants/generation-modes'
-import type { GenerationMode } from '@/domains/2d-canvas/constants/generation-modes'
+import { generationModeDef } from '@/domains/2d-canvas/utils/generation-modes'
+import type { GenerationMode } from '@/domains/2d-canvas/utils/generation-modes'
 import type { Tile } from '@/domains/2d-canvas'
 import { useWorldStore } from '@/domains/2d-canvas'
 import {
   TileActionBarClass,
   TileActionBarCopy,
   TileActionBarVariant,
-} from '@/domains/2d-canvas/ui/constants/tile-action-bar'
+} from '@/domains/2d-canvas/ui/utils/tile-action-bar'
 import {
   resolveTileActionBarVariant,
   tileActionBarPosition,

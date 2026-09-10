@@ -1,7 +1,7 @@
 import {
   ApiframeErrorMessage,
   ApiframeImageModel,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import {
   generateApiframeImage,
   pickApiframeImageUrl,

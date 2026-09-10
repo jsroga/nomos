@@ -1,6 +1,6 @@
 import { createTool } from '@mastra/core/tools'
 import { SuggestProgressionToolInputSchema } from '../../constants/logic-tool-schemas'
-import { LogicToolId } from '../../constants/logic-tool-wire'
+import { LogicToolId } from '../../utils/logic-tool-wire'
 import {
   buildSuggestProgressionPromptFromLoop,
   resolveSuggestProgressionInputs,

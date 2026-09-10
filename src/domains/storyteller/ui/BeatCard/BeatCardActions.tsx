@@ -3,7 +3,7 @@ import { Trash2, Edit2, Check, X, ImageIcon, Loader2 } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 import { cn } from '@/shared/data/utils'
-import { BeatCardActionLabel, BeatGenerationMode } from './constants/beat-card'
+import { BeatCardActionLabel, BeatGenerationMode } from './utils/beat-card'
 
 interface BeatCardActionsProps {
   isEditing: boolean

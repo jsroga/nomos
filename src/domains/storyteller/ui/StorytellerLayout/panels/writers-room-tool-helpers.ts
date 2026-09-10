@@ -6,7 +6,7 @@ import {
 } from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
 import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
 import { AssistantGenerationPhase } from '@/shared/chat/assistant/derive-assistant-generation-activity'
-import { CharacterDraftChatSection, GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { CharacterDraftChatSection, GenerationActivityPhase } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import {
   recordArrayFromJson,
   recordFromJson,
@@ -20,7 +20,7 @@ import {
   isNonBibleToolPayload,
   mergeToolArgFields,
 } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
-import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
+import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
 import { resolveAddToWorldCommit } from '@/domains/storyteller/state/utils/resolve-add-to-world-target'
 import { characterDraftFieldsFromToolArgs } from '@/domains/storyteller/state/utils/character-draft-fields-from-tool'
 import {
@@ -31,7 +31,7 @@ import {
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { ActionType } from '@/domains/storyteller/core/types/enums'
 import type { StreamAgentAction } from '@/domains/storyteller/core/types/action-types'
-import { AssistantChatBodyKey, ChatMessageRole } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { AssistantChatBodyKey, ChatMessageRole } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import {
   episodePremiseFromToolArgs,

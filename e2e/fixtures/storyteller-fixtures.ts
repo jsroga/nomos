@@ -19,9 +19,9 @@ import {
   FlowRole,
   FlowQueryParam,
 } from '../constants/storyteller-flow'
-import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { EMPTY_TURN_NOTICE } from '@/shared/chat/assistant/assistant-stream-timing'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 
 const BASE_URL = process.env.BASE_URL?.trim() || 'http://localhost:3001'
 const SSE_TIMEOUT = 240_000

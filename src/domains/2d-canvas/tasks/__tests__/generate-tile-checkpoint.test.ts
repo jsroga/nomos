@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { GenerateTilePayload } from '../constants/generate-tile'
+import type { GenerateTilePayload } from '../utils/generate-tile'
 import type { GenerateTileRunDeps } from '../generate-tile-run'
 
 vi.mock('@trigger.dev/sdk', () => ({
@@ -14,7 +14,7 @@ vi.mock('@/shared/ai/ai-provider-config', () => ({
   aiProviderConfigFromRecord: () => ({ provider: 'gemini' }),
 }))
 
-vi.mock('../constants/generate-tile-persist', () => ({
+vi.mock('../utils/generate-tile-persist', () => ({
   extractContextImageBase64: () => undefined,
   assembleServerContextImage: vi.fn(),
   createSupabaseServiceClient: () => ({}),

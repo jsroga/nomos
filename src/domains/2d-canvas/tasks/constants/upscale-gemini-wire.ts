@@ -3,7 +3,7 @@ import {
   GoogleModelId,
   HttpMethod,
 } from '@/shared/data/constants/protocol'
-import { GeminiResponseModality } from '@/shared/data/constants/repaint-gemini'
+import { GeminiResponseModality } from '@/shared/data/utils/repaint-gemini'
 
 export const UpscaleGeminiStage = {
   GeminiUpscale: 'gemini_upscale',

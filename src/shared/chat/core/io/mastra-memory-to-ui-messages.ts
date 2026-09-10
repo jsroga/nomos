@@ -1,6 +1,6 @@
 import type { UIMessage } from 'ai'
 import { isPlainObject, readString } from '@/shared/data/json-guards'
-import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/utils/assistant-thread-ui'
 
 export enum OverlayHistoryMessageFormat {
   AiSdkV6 = 'ai-sdk/v6',

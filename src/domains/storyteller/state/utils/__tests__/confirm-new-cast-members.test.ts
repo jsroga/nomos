@@ -17,7 +17,7 @@ import {
   newCastDescription,
   WritersRoomCastConfirm,
   WritersRoomToast,
-} from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
+} from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
 import {
   ConfirmNewCastOutcome,
   confirmNewCastMembers,

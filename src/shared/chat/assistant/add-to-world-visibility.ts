@@ -1,4 +1,4 @@
-import { ChatMessageRole } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole } from '@/shared/chat/core/utils/assistant-thread-ui'
 import type { CanAddToWorldInput } from './AssistantAddToWorldContext'
 
 export enum AddToWorldFailureMarker {

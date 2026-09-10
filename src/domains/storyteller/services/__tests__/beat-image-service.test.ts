@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 import {
   BeatImageOperationDetail,
   BeatImageOperationLabel,
   BeatImageStorageKeyPrefix,
   beatImageOperationId,
-} from '../constants/beat-image-service'
+} from '../utils/beat-image-service'
 
 const BEAT_ID = '8db804d0-1c39-498e-97a5-dfd7eb828789'
 const HANDLE_ID = 'run-beat-image-1'

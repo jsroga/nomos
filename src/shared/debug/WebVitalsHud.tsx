@@ -6,7 +6,7 @@ import {
   CwvHudCopy,
   isCwvHudEnabled,
   PerfDebugHudRatingClass,
-} from '@/shared/debug/constants/perf-debug'
+} from '@/shared/debug/utils/perf-debug'
 import {
   WebVitalMetricName,
   WebVitalsRating,

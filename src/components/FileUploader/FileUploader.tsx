@@ -11,7 +11,7 @@ import {
   canFileUploaderAdd,
   type FileUploaderKind,
   type FileUploaderItemStatus,
-} from './constants/file-uploader'
+} from './utils/file-uploader'
 
 export interface FileUploaderItem {
   id: string

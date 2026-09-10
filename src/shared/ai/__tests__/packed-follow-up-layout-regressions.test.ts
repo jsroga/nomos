@@ -11,7 +11,7 @@ import {
   type CardinalPresence,
   type PackedCropRect,
 } from '../context-pack-layout'
-import { ApiframeGenerateAspectRatio } from '../constants/apiframe'
+import { ApiframeGenerateAspectRatio } from '../utils/apiframe'
 
 const TILE = PACKED_TILE_SIZE
 

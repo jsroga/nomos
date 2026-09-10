@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ImageEnvVar } from '@/shared/ai/constants/image-env'
-import { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeVideoModel } from '@/shared/ai/utils/apiframe'
 import {
   resolveStoryboardVideoDuration,
   resolveStoryboardVideoLook,

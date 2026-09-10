@@ -1,4 +1,4 @@
-import { CORK_BOARD_LOADING_PLACEHOLDER_COUNT } from './constants/cork-board'
+import { CORK_BOARD_LOADING_PLACEHOLDER_COUNT } from './utils/cork-board'
 
 export enum CorkBoardListMode {
   Empty = 'empty',

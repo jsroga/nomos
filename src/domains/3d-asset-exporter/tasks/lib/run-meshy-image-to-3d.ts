@@ -19,11 +19,11 @@ import {
   MeshyGenerationMetadataKey,
   MeshyGenerationRequestField,
   MeshyResponseField,
-} from '../constants/meshy-generation-wire'
+} from '../utils/meshy-generation-wire'
 import {
   resolveMeshyModelUrl,
   type MeshyTask,
-} from '../constants/meshy-task-types'
+} from '../utils/meshy-task-types'
 import { pollMeshyImageTo3dTask } from './poll-meshy-image-to-3d'
 import { MeshyStreamFallbackError, streamMeshyImageTo3dTask } from './stream-meshy-image-to-3d'
 

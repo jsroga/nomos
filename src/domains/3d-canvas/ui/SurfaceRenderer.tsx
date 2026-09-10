@@ -4,7 +4,7 @@
 import React, { useEffect, useMemo } from 'react'
 import { Surface, useInteriorStore } from '@/domains/3d-canvas'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { isActiveOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { isActiveOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import * as THREE from 'three'
 import { ThreeEvent } from '@react-three/fiber'
 import { RoadMesh } from '@/domains/3d-canvas/ui/meshes/RoadMesh'

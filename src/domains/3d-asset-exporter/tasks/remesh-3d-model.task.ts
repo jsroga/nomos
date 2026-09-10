@@ -12,7 +12,7 @@ import {
   MeshyTaskStatusValue,
   parseMeshyTask,
   type MeshyTask,
-} from './constants/meshy-task-types'
+} from './utils/meshy-task-types'
 
 export enum RemeshMetadataKey {
   Progress = 'progress',

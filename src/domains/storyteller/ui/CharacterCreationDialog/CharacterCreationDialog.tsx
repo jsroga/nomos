@@ -21,7 +21,7 @@ import { SectionPendingOverlay } from '@/domains/storyteller/ui/WorldBible'
 import {
   BibleSectionLoadingOverlay,
 } from '@/domains/storyteller/ui/WorldBible/components/BibleSectionChrome'
-import { pendingReviewHostClass } from '@/domains/storyteller/ui/WorldBible/constants/section-pending-overlay'
+import { pendingReviewHostClass } from '@/domains/storyteller/ui/WorldBible/utils/section-pending-overlay'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
 
 export type { CharacterCreationDialogProps, InitialCharacterData } from './character-creation-dialog-types'

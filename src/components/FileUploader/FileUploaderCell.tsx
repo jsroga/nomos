@@ -16,7 +16,7 @@ import {
   FILE_UPLOADER_PROGRESS_MIN,
   formatFileUploaderPercent,
   isFileUploaderUploading,
-} from './constants/file-uploader'
+} from './utils/file-uploader'
 
 export function FileUploaderCell({
   item,

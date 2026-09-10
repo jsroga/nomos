@@ -8,7 +8,7 @@ import {
   PACKED_TILE_SIZE,
   type CardinalPresence,
 } from '../context-pack-layout'
-import { ApiframeGenerateAspectRatio } from '../constants/apiframe'
+import { ApiframeGenerateAspectRatio } from '../utils/apiframe'
 
 function presenceFromMask(mask: number): CardinalPresence {
   return {

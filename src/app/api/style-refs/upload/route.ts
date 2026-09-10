@@ -10,7 +10,7 @@ import { tryProjectScope } from '@/shared/auth/project-scope'
 import { formFile, formString } from '@/shared/data/form-data-guards'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { BlobAccess, ContentType, FormField } from '@/shared/data/constants/protocol'
-import { isAllowedStyleRefMime, STYLE_REF_BLOB_PREFIX } from '@/domains/2d-canvas/constants/mj-sref'
+import { isAllowedStyleRefMime, STYLE_REF_BLOB_PREFIX } from '@/domains/2d-canvas/server'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {

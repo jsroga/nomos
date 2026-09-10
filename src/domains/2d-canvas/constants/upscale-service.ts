@@ -1,5 +1,5 @@
 import { BooleanQueryValue, ContentType, HttpMethod, UrlScheme } from '@/shared/data/constants/protocol'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 import { TriggerTerminalStatus } from '@/shared/jobs/constants/trigger-active-status'
 import { TileProgressStage } from '../ui/constants/tile-stage-labels'

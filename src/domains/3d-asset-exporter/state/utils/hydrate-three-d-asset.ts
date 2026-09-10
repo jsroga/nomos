@@ -16,7 +16,7 @@ import {
   ThreeDRunKind,
   TriggerRunOutputKey,
 } from '../../constants/three-d-operation-wire'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import { decideResumeRun, ResumeRunDecision } from './decide-resume-run'
 
 export interface ThreeDHydrationResult {

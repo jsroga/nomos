@@ -7,7 +7,7 @@ import { useAssetEditorImageUpload } from '../state/hooks/useAssetEditorImageUpl
 import { useAssetEditorCanvas } from '../state/hooks/useAssetEditorCanvas'
 import { AssetEditorUploadZone } from './AssetEditorUploadZone'
 import { AssetPanelCheckerboard } from './AssetPanelEmptyState'
-import { AssetExporterPanelClass, AssetExporterPanelCopy } from './constants/asset-exporter-panel'
+import { AssetExporterPanelClass, AssetExporterPanelCopy } from './utils/asset-exporter-panel'
 
 interface AssetEditorProps {
   assetId: string

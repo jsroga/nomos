@@ -8,7 +8,7 @@ import { EpisodePremiseHero } from './components/EpisodePremiseHero'
 import { OzymandiasSections } from './components/OzymandiasSection'
 import { TenPointsPlanSection } from './components/TenPointsPlanSection'
 import { EpisodePremisePanelClass } from './constants/episode-premise-panel'
-import { EpisodePremiseSectionKey, OZYMANSIAS_SECTIONS } from './constants/ozymandias-sections'
+import { EpisodePremiseSectionKey, OZYMANSIAS_SECTIONS } from './utils/ozymandias-sections'
 import { useEpisodePremiseLocalState } from './hooks/useEpisodePremiseLocalState'
 import { usePosterVariantPicker } from './hooks/usePosterVariantPicker'
 import { handleEpisodePosterVariantSelect } from './utils/handle-poster-variant-select'
@@ -17,7 +17,7 @@ import { SectionPendingOverlay } from '../WorldBible/components/SectionPendingOv
 import {
   pendingReviewHostClass,
   SectionPendingOverlayClass,
-} from '../WorldBible/constants/section-pending-overlay'
+} from '../WorldBible/utils/section-pending-overlay'
 import type { PendingAction } from '../WorldBible/utils/bible-context-types'
 import { cn } from '@/shared/data/utils'
 

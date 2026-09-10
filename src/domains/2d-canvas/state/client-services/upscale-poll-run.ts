@@ -1,4 +1,4 @@
-import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/utils/polling'
 import { createTriggerRunStatusFetch } from '@/shared/data/polling/trigger-run-status-fetcher'
 import {
   waitForTriggerRun,

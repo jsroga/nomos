@@ -18,7 +18,7 @@ import {
   THREE_D_TRIGGER_MAX_POLLS,
   THREE_D_TRIGGER_POLL_INTERVAL_MS,
 } from '../../constants/three-d-polling'
-import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/utils/polling'
 import { ThreeDPollCopy, ThreeDPollToast } from '../../constants/three-d-poll-copy'
 
 export interface ThreeDPollSaveMetadata {

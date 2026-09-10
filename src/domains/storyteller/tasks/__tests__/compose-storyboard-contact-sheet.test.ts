@@ -7,7 +7,7 @@ import {
   CONTACT_SHEET_FRAME_WIDTH,
   chooseContactSheetGrid,
   contactSheetLayout,
-} from '../constants/storyboard-video-sheet'
+} from '../utils/storyboard-video-sheet'
 import { FsDirectory } from '@/shared/data/constants/protocol'
 
 describe('storyboard contact sheet layout', () => {

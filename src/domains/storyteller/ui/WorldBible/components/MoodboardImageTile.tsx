@@ -7,7 +7,7 @@ import {
   moodboardImageClickHandler,
   resolveMoodboardImageUrl,
 } from '../utils/bible-overview-moodboard'
-import { formatMoodboardGeneratingCopy } from '@/domains/storyteller/services/constants/moodboard-generation-service'
+import { formatMoodboardGeneratingCopy } from '@/domains/storyteller/services/utils/moodboard-generation-service'
 import {
   addMoodboardImage,
   regenerateMoodboardImage,

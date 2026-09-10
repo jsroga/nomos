@@ -7,7 +7,7 @@ import {
   GeneratePortraitError,
   GeneratePortraitLog,
   GeneratePortraitTable,
-} from './constants/generate-portrait-wire'
+} from './utils/generate-portrait-wire'
 
 export enum PersistCharacterPortraitRetry {
   Attempts = 3,

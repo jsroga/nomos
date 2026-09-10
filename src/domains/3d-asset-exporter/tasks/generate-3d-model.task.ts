@@ -5,7 +5,7 @@ import { generate3dModelPayloadSchema } from './constants/generate-3d-model-payl
 import { prepareImageUrl } from './lib/prepare-image-url'
 import { runHyper3dGeneration } from './lib/run-hyper3d-generation'
 import { runMeshyImageTo3d } from './lib/run-meshy-image-to-3d'
-import { MeshyGenerationMetadataKey } from './constants/meshy-generation-wire'
+import { MeshyGenerationMetadataKey } from './utils/meshy-generation-wire'
 
 export const generate3DModelTask = defineOwnedTask({
   id: 'generate-3d-model',

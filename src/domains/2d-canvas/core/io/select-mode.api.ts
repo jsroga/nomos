@@ -4,7 +4,7 @@ import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/pro
 import { fetchJsonRecord, readJsonBody } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readNumber, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
-import { POLLING_INTERVALS, TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS, TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/utils/polling'
 import { createTriggerRunStatusFetch } from '@/shared/data/polling/trigger-run-status-fetcher'
 import { waitForTriggerRun } from '@/shared/data/polling/wait-for-trigger-run'
 import {

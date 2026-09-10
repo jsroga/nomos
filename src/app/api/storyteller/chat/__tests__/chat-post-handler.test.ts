@@ -9,7 +9,7 @@ import {
 } from '@/app/api/route-harness'
 import { HttpMethod } from '@/shared/data/constants/protocol'
 import { isPlainObject } from '@/shared/data/json-guards'
-import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/feature-flags'
 
 const start = vi.fn()
 
@@ -20,9 +20,9 @@ vi.mock('@/domains/storyteller/config/resolve-chat-model', () => ({
   resolveChatModelId: () => 'moonshotai/kimi-k3',
   resolveWriterModelChoice: () => undefined,
 }))
-vi.mock('@/domains/storyteller/config/constants/chat-model-catalog', async importOriginal => {
+vi.mock('@/domains/storyteller/config/chat-model-catalog', async importOriginal => {
   const actual =
-    await importOriginal<typeof import('@/domains/storyteller/config/constants/chat-model-catalog')>()
+    await importOriginal<typeof import('@/domains/storyteller/config/chat-model-catalog')>()
   return { ...actual, isKnownChatModel: () => true }
 })
 vi.mock('@/shared/agent-kernel', () => ({

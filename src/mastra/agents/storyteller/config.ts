@@ -5,7 +5,7 @@ import {
   StorytellerAgentLabel,
   AgentModelRole,
 } from '@/domains/storyteller/ai/constants/agent-identity'
-import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import { resolveRoleModel } from '@/domains/storyteller/config/model-config'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { composeChatAdapterInstructions } from './compose-instructions'

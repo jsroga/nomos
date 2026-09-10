@@ -3,7 +3,7 @@ import {
   LogicToolCopy,
   ValidateLoopIssueType,
   ValidateLoopSeverity,
-} from '../../constants/logic-tool-wire'
+} from '../../utils/logic-tool-wire'
 import type { ValidateLoopStructureIssue } from '../../constants/logic-tool-schemas'
 
 export function buildAdjacencyList(loop: GameLoop): Map<string, string[]> {

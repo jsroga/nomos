@@ -6,7 +6,7 @@ import {
   withRateLimit,
   type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { tryProjectScope } from '@/shared/auth/project-scope'
-import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
+import { resolveStyleReferenceUrls } from '@/shared/data/utils/style-presets'
 import {
   API_ERROR,
   TRIGGER_TASK_ID,

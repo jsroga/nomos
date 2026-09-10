@@ -4,7 +4,7 @@ import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytelle
 import { WorldBiblePanelBody } from './WorldBiblePanelBody'
 import { WorldBiblePanelHeader } from './WorldBiblePanelHeader'
 import { WorldBiblePanelLoading } from './WorldBiblePanelLoading'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import {
@@ -18,7 +18,7 @@ import {
   moodboardGenOperationPrefix,
   moodboardPrimaryStorageKey,
 } from './constants/world-bible-panel'
-import { MoodboardUserToast } from '@/domains/storyteller/services/constants/moodboard-generation-service'
+import { MoodboardUserToast } from '@/domains/storyteller/services/utils/moodboard-generation-service'
 
 import { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { fetchStorytellerProjectOptional } from '@/domains/storyteller/core/io/storyteller.api'

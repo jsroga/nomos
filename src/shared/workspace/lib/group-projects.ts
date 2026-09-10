@@ -3,7 +3,7 @@ import {
   formatProjectMonthLabel,
   ProjectSortMode,
   projectMonthKey,
-} from '../constants/project-selection'
+} from '../utils/project-selection'
 
 export type ProjectMonthGroup = {
   key: string

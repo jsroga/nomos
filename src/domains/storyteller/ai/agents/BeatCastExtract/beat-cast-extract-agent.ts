@@ -1,7 +1,7 @@
 import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
-import { getAgentModel } from '@/domains/storyteller/config/constants/model-config'
+import { getAgentModel } from '@/domains/storyteller/config/model-config'
 import { generateStructured } from '@/domains/storyteller/ai/agents/critics/generate-structured'
 import {
   BeatCastExtractSchema,

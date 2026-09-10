@@ -8,7 +8,7 @@ import {
   AssetExporterSidebarCopy,
   formatExportSelectedLabel,
   formatExportingLabel,
-} from './constants/asset-exporter-sidebar'
+} from './utils/asset-exporter-sidebar'
 
 export interface AssetExporterFooterProps {
   readyCount: number

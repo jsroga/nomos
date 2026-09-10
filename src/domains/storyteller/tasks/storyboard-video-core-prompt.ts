@@ -2,7 +2,7 @@ import { complete } from '@/shared/ai/gateway'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { jobContextScope } from '@/shared/auth/project-scope'
 import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
-import { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeVideoModel } from '@/shared/ai/utils/apiframe'
 import { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 import {
   StoryboardCorePromptSource,
@@ -13,7 +13,7 @@ import {
   capStoryboardCorePrompt,
   storyboardCoreSystemPrompt,
   type StoryboardVideoBeatText,
-} from './constants/storyboard-video-prompt'
+} from './utils/storyboard-video-prompt'
 
 export interface StoryboardCorePromptCompleteInput {
   system: string

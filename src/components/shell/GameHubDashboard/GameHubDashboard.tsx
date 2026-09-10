@@ -33,7 +33,7 @@ import {
   GameHubEntityStatsSuffix,
   GameHubRouteId,
 } from '@/components/shell/GameHubDashboard/constants/game-hub-dashboard'
-import { is3dCanvasEnabled, isLoopCreatorEnabled } from '@/shared/data/constants/feature-flags'
+import { is3dCanvasEnabled, isLoopCreatorEnabled } from '@/shared/data/feature-flags'
 
 interface GameHubDashboardProps {
   projectId: string

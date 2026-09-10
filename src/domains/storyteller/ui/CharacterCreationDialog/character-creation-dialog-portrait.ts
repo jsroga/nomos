@@ -1,7 +1,7 @@
 import toast from 'react-hot-toast'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/utils/polling'
 import {
   TriggerRunPollAbortedError,
   waitForTriggerRun,

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { ChatSessionCopy, ChatSessionStatus, ChatSessionWire } from '@/shared/chat/core/constants/chat-session'
 import { AppModuleId } from '@/shared/data/constants/protocol'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'

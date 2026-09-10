@@ -1,4 +1,4 @@
-import { CharacterMissingValue, CharacterUnsetSentinel } from './constants/character-panel-metrics'
+import { CharacterMissingValue, CharacterUnsetSentinel } from './utils/character-panel-metrics'
 
 const UNSET_VALUES = new Set<string>([
   CharacterUnsetSentinel.Empty,

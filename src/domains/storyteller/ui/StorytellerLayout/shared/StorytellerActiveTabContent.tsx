@@ -17,7 +17,7 @@ import {
   getStorytellerUiStore,
   useStorytellerUiStore,
 } from '@/domains/storyteller/state/useStorytellerUiStore'
-import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { isGenerationActivityBusy } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { BibleSection, ManuscriptMode, Phase } from '@/domains/storyteller/core/types/enums'
 import { pendingActionForCurrentEpisode } from '@/domains/storyteller/ui/WorldBible/utils/pending-action-for-episode'
 import { episodePremiseFromPlan } from '@/domains/storyteller/core/utils/validate-premise-for-beatboard'

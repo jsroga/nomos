@@ -11,12 +11,12 @@ import {
   entityBaseDescriptionUserPrompt,
   entityNeedsDescription,
   fallbackEntityDescription,
-} from '@/domains/storyteller/services/constants/entity-base-description'
+} from '@/domains/storyteller/services/utils/entity-base-description'
 
 export {
   entityNeedsDescription,
   fallbackEntityDescription,
-} from '@/domains/storyteller/services/constants/entity-base-description'
+} from '@/domains/storyteller/services/utils/entity-base-description'
 
 export interface BaseEntityDescriptionRequest {
   name: string

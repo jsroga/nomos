@@ -11,7 +11,7 @@ import {
   AssetExporterPanelClass,
   AssetExporterPanelCopy,
   resolveNoModelDescription,
-} from './constants/asset-exporter-panel'
+} from './utils/asset-exporter-panel'
 import { ThreeDDownloadsSection } from './ThreeDDownloadsSection'
 import { ThreeDPanelChrome } from './ThreeDPanelChrome'
 

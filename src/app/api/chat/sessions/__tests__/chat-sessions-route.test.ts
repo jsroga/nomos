@@ -16,7 +16,7 @@ import {
   ChatSessionStatus,
   ChatSessionWire,
 } from '@/shared/chat/core/constants/chat-session'
-import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { overlayMemoryRef } from '@/shared/agent-kernel/mastra/memory-ref'
 import type { ChatSession } from '@/shared/chat/core/io/chat-session-contract'
 

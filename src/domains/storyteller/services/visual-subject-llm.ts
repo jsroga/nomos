@@ -9,7 +9,7 @@ import {
   VisualSubjectKind,
   VisualSubjectLog,
   normalizeVisualSubject,
-} from '@/domains/storyteller/services/constants/visual-overview'
+} from '@/domains/storyteller/services/utils/visual-overview'
 import {
   formatVisualOverviewBlock,
   isVisualOverviewReady,

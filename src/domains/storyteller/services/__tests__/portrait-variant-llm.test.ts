@@ -3,7 +3,7 @@ import {
   PORTRAIT_VARIANT_FALLBACK,
   PortraitVariantIndex,
   parsePortraitVariantIndex,
-} from '../constants/portrait-variant'
+} from '../utils/portrait-variant'
 
 describe('parsePortraitVariantIndex', () => {
   it('reads the first digit 1-4', () => {

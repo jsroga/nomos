@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
-import type { upscaleTileTask } from '@/domains/2d-canvas/tasks/upscale-tile.task'
 import {
   withAuth,
   withRateLimit,
-  type AuthenticatedRequest } from '@/shared/data/api-utils'
+  type AuthenticatedRequest,
+} from '@/shared/data/api-utils'
 import { tryProjectScope } from '@/shared/auth/project-scope'
-import { resolveStyleReferenceUrls } from '@/shared/data/constants/style-presets'
+import { resolveStyleReferenceUrls } from '@/shared/data/utils/style-presets'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { TriggerTaskTtl } from '@/shared/data/constants/protocol'
 import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
@@ -15,14 +15,15 @@ import { readString } from '@/shared/data/json-guards'
 import {
   generationModeDef,
   resolveGenerationMode,
-} from '@/domains/2d-canvas/constants/generation-modes'
-import { UpscaleProvider } from '@/domains/2d-canvas/core/upscale-provider-wire'
+  UpscaleProvider,
+  type ProviderConfig,
+  type upscaleTileTask,
+} from '@/domains/2d-canvas/server'
 import {
   buildUpscaleProviderConfig,
   isUpscaleMode,
   resolveModeUpscaleAuth,
 } from './trigger-upscale-helpers'
-import type { ProviderConfig } from '@/domains/2d-canvas/tasks/upscale-tile-providers'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session, supabase }: AuthenticatedRequest) => {

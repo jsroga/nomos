@@ -5,13 +5,13 @@ import {
   ApiframeTopazModelType,
   ApiframeTopazUpscaleFactor,
   ApiframeUpscaleModel,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import { upscaleApiframeImage } from '@/shared/ai/apiframe'
 import { resolveImageUpscaleMode } from '@/shared/ai/image-model-env'
 import {
   resolveTopazUpscalePlan,
   topazEnhanceModelFromMode,
-} from '../constants/topaz-upscale'
+} from '../utils/topaz-upscale'
 
 export async function upscaleWithApiframe(
   imageBase64: string,

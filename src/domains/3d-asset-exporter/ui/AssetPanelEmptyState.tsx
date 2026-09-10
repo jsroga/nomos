@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { Loader2 } from 'lucide-react'
 import { ASSET_EDITOR_CHECKERBOARD_BACKGROUND_STYLE } from '../constants/asset-editor'
-import { AssetExporterEmptyStateClass } from './constants/asset-exporter-panel'
+import { AssetExporterEmptyStateClass } from './utils/asset-exporter-panel'
 
 export function AssetPanelCheckerboard() {
   return (

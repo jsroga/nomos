@@ -16,15 +16,15 @@ import {
 } from '@/domains/3d-canvas/constants/properties-panel'
 import { RETEXTURE_EMPTY_METADATA } from '@/domains/3d-canvas/constants/retexture-slice-log'
 import { seedFromString } from '@/shared/data/seedFromString'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { POLLING_INTERVALS, isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS, isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/utils/polling'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import {
   AsyncOperationStatus,
   isActiveOperationStatus,
   isTerminalOperationStatus,
-} from '@/shared/jobs/constants/async-operation-status'
+} from '@/shared/jobs/utils/async-operation-status'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { pollInteriorTriggerRun } from '@/domains/3d-canvas/state/utils/poll-interior-trigger-run'
 import { readString, recordFromJson } from '@/shared/data/json-guards'

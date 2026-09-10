@@ -13,7 +13,7 @@ import {
   LOOP_NEW_NODE_LABEL,
   flowNodeTypeForDomain,
   loopSuggestionSortOrder,
-} from '../constants/loop-creator-layout'
+} from '../utils/loop-creator-layout'
 import { tidyNodesLayout } from './tidy-nodes-layout'
 
 interface SuggestionPayloadRecord {

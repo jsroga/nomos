@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { AppModuleId } from '@/shared/data/constants/protocol'
-import { isLoopCreatorEnabled } from '@/shared/data/constants/feature-flags'
+import { isLoopCreatorEnabled } from '@/shared/data/feature-flags'
 import { getStorytellerChatAdapter } from '@/domains/storyteller'
 import { getLoopCreatorChatAdapter } from '@/domains/loop-creator'
 import { WorkspaceChatOverlay } from '@/shared/chat/ui/WorkspaceChatOverlay/WorkspaceChatOverlay'

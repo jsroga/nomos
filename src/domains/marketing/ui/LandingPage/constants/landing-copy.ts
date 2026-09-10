@@ -36,6 +36,10 @@ export enum LandingSectionId {
   Systems = 'systems',
 }
 
+export enum LandingScrollBehavior {
+  Smooth = 'smooth',
+}
+
 export enum LandingHeroDomId {
   TerrainSlot = 'landing-hero-terrain',
 }

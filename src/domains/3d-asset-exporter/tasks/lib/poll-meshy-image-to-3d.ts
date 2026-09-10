@@ -8,12 +8,12 @@ import {
   MeshyGenerationLog,
   MeshyTaskStatusValue,
   meshyImageTo3dTaskUrl,
-} from '../constants/meshy-generation-wire'
+} from '../utils/meshy-generation-wire'
 import {
   meshyProgressPercent,
   parseMeshyTask,
   type MeshyTask,
-} from '../constants/meshy-task-types'
+} from '../utils/meshy-task-types'
 
 export async function pollMeshyImageTo3dTask(
   taskId: string,

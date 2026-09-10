@@ -6,7 +6,7 @@ import {
 import {
   ApiframeErrorMessage,
   ApiframeImageModel,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import { MidjourneyParamFlag } from '@/shared/data/server/midjourney-params'
 
 export function buildMidjourneySurfacePrompt(

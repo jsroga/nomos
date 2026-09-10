@@ -51,7 +51,7 @@ import {
 } from './character-web-decorations'
 import { NodeDetailsPanel } from './NodeDetailsPanel'
 import { EdgeDetailsPanel } from './EdgeDetailsPanel'
-import { isPerfDebugEnabled } from '@/shared/debug/constants/perf-debug'
+import { isPerfDebugEnabled } from '@/shared/debug/utils/perf-debug'
 
 const nodeTypes = {
   [CharacterWebNodeType.CharacterNode]: CharacterNode,

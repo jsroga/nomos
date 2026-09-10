@@ -9,7 +9,7 @@ import {
   CharacterMbtiCopy,
   characterMbtiUserPrompt,
   parseCharacterMbti,
-} from '@/domains/storyteller/services/constants/character-mbti'
+} from '@/domains/storyteller/services/utils/character-mbti'
 
 export { parseCharacterMbti }
 

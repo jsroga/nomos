@@ -1,7 +1,7 @@
 import {
   ApiframeGenerateAspectRatio,
   APIFRAME_GENERATE_ASPECT_RATIOS,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 
 export const PACKED_TILE_SIZE = 512
 export const PACKED_LONG_SIDE_CAP = 2048

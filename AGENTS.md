@@ -124,6 +124,7 @@ Docs: `mastra.ai/docs/long-running-agents/{durable-agents,goals}.md`.
 - **Cross-domain imports** (`src/domains/foo` importing `@/domains/bar`) — lift to `@/shared`.
 - **Local `deepMerge`** — use `@/shared/data/deep-merge`.
 - **Magic string values** as bare literals — use an `enum`, a `SCREAMING` const, or a `constants/` module. Use `enum` for plain literals; but an enum member referencing another enum/const or duplicating a value is illegal → `const X = { … } as const` (+ `type X = (typeof X)[keyof typeof X]`).
+- **`constants/` is values only** (enums, tables, numeric limits). No `function`, arrow helper, or `FunctionExpression` in `src/**/constants/**`. Put logic in the same-layer `utils/` or a named module (`git mv` the file; do not leave function re-exports in `constants/`). Enforced by `local/no-functions-in-constants` (**error**).
 - **Non-null `!`** (`no-non-null-assertion`) — guard/`?.`/`?? fallback` instead.
 - **Repeated `.filter()`** on the same array in one scope (`local/no-repeated-array-filter`) — one pass.
 - **Manual URL construction** (`?foo=${x}`, `encodeURIComponent`, local `buildUrl`) — use `@/shared/data/url-builder` (`buildUrl`, `joinUrlPath`, `appendQueryParams`, `cloneSearchParams`).

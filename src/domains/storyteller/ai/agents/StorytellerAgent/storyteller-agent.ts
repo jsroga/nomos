@@ -24,7 +24,7 @@ import {
   AGENT_RUNTIME_DEFAULTS,
   resolveRoleModel,
   resolveStorytellerModel,
-} from '@/domains/storyteller/config/constants/model-config'
+} from '@/domains/storyteller/config/model-config'
 import {
   STORYTELLER_CHAT_MODEL,
   requestContextString,

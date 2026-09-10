@@ -22,7 +22,7 @@ import {
 } from '../utils/bible-overview-moodboard'
 import { resolveOverviewDisplayFields, isOverviewReadyForMoodboard } from '../utils/bible-overview-fields'
 import { generateInitialMoodboard } from '../utils/bible-overview-moodboard-actions'
-import { formatMoodboardGeneratingCopy } from '@/domains/storyteller/services/constants/moodboard-generation-service'
+import { formatMoodboardGeneratingCopy } from '@/domains/storyteller/services/utils/moodboard-generation-service'
 
 interface MoodboardImagesSectionProps {
   primaryImageIndex: number | null

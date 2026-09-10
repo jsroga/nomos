@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { generateMidjourneyUpscaledImage } from '@/shared/ai/apiframe'
-import { MIDJOURNEY_VERSION } from '@/shared/ai/constants/apiframe'
+import { MIDJOURNEY_VERSION } from '@/shared/ai/utils/apiframe'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, _auth: AuthenticatedRequest) => {

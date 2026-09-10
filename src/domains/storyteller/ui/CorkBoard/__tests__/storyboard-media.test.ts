@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CorkBoardCopy, CorkBoardExpandedId } from '../constants/cork-board'
+import { CorkBoardCopy, CorkBoardExpandedId } from '../utils/cork-board'
 import {
   isStoryboardStillLightboxOpen,
   isStoryboardVideoUrl,

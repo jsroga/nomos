@@ -10,8 +10,8 @@ import { useCallback, useState } from 'react'
 import type {
   ModelSettingRoleDef,
   OpenRouterModelOption,
-} from '@/shared/agent-kernel/constants/model-settings'
-import { isOpenRouterModelId } from '@/shared/agent-kernel/constants/model-settings'
+} from '@/shared/agent-kernel/utils/model-settings'
+import { isOpenRouterModelId } from '@/shared/agent-kernel/utils/model-settings'
 import {
   MODEL_OPTION_CUSTOM,
   MODEL_OPTION_UNSET,

@@ -67,6 +67,11 @@ const DOMAIN_BARREL_GUARD_PATTERNS = [
   domainBarrelGuardGroup('storyteller', [
     '!@/domains/storyteller/server',
     '!@/domains/storyteller/server/**',
+    '!@/domains/storyteller/config',
+    '@/domains/storyteller/config/*',
+    '!@/domains/storyteller/config/model-config',
+    '!@/domains/storyteller/config/chat-model-catalog',
+    '!@/domains/storyteller/config/resolve-chat-model',
   ]),
   domainBarrelGuardGroup('3d-canvas'),
   domainBarrelGuardGroup('2d-canvas', [

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FileUploader } from '@/components/FileUploader'
-import { FileUploaderKind } from '@/components/FileUploader/constants/file-uploader'
+import { FileUploaderKind } from '@/components/FileUploader/utils/file-uploader'
 import {
   noopCancel,
   noopDownload,

@@ -11,7 +11,7 @@ import {
   TRIGGER_TASK_TTL,
 } from '@/shared/data/constants/api-errors'
 import { recordFromJson, readNumber, readString } from '@/shared/data/json-guards'
-import { readFalApiKey, resolveSamPrompt } from '@/shared/ai/constants/fal'
+import { readFalApiKey, resolveSamPrompt } from '@/shared/ai/utils/fal'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 
 function readSelectBox(value: unknown): {

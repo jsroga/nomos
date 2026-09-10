@@ -40,7 +40,7 @@ npm run test:e2e smoke             # shortcuts: smoke · api · all (operator-on
 
 ## Configuration
 
-One `OPENROUTER_API_KEY` routes every model; per-slot pins and the role→model table are in [docs/DEVELOPMENT.md § Model routing](docs/DEVELOPMENT.md). Server configuration is parsed once, at import, by [`src/shared/config/env.ts`](src/shared/config/env.ts) — a missing variable fails at boot naming itself rather than surfacing later as `undefined`, and `npm run env:check` fails when a schema key is undocumented. Feature flags are `FF_<NAME>=true` — opt-in, on only when the value is exactly `true` ([`src/shared/data/constants/feature-flags.ts`](src/shared/data/constants/feature-flags.ts)). Admin access comes from `NEXT_PUBLIC_CENTRAL_USERS` ([docs/ARCHITECTURE.md § Access control](docs/ARCHITECTURE.md)). Every variable is listed in [`.env.local.example`](.env.local.example).
+One `OPENROUTER_API_KEY` routes every model; per-slot pins and the role→model table are in [docs/DEVELOPMENT.md § Model routing](docs/DEVELOPMENT.md). Server configuration is parsed once, at import, by [`src/shared/config/env.ts`](src/shared/config/env.ts) — a missing variable fails at boot naming itself rather than surfacing later as `undefined`, and `npm run env:check` fails when a schema key is undocumented. Feature flags are `FF_<NAME>=true` — opt-in, on only when the value is exactly `true` ([`src/shared/data/feature-flags.ts`](src/shared/data/feature-flags.ts)). Admin access comes from `NEXT_PUBLIC_CENTRAL_USERS` ([docs/ARCHITECTURE.md § Access control](docs/ARCHITECTURE.md)). Every variable is listed in [`.env.local.example`](.env.local.example).
 
 ## Docs
 

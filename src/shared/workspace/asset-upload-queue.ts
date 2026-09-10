@@ -9,7 +9,7 @@ import {
   validateAssetUploadFile,
   type AssetKind,
   type AssetUploadReject,
-} from './constants/asset-upload'
+} from './utils/asset-upload'
 
 export type AssetUploadQueueItem = {
   id: string

@@ -17,7 +17,7 @@ import {
   StorytellerBeatStatus,
   StorytellerBeatTypeDefault,
 } from '@/domains/storyteller/core/storyteller-page-wire'
-import { MoodboardUserToast } from '@/domains/storyteller/services/constants/moodboard-generation-service'
+import { MoodboardUserToast } from '@/domains/storyteller/services/utils/moodboard-generation-service'
 import { projectHasStoredPlan } from '@/domains/storyteller/state/utils/episode-route'
 import {
   buildFallbackBiblePlan,

@@ -1,6 +1,6 @@
 'use client'
 
-import { isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/constants/polling'
+import { isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/utils/polling'
 import { recordFromJson } from '@/shared/data/json-guards'
 import {
   waitForTriggerRun,

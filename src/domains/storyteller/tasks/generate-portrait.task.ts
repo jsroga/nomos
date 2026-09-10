@@ -13,7 +13,7 @@ import {
   GeneratePortraitProgress,
   GeneratePortraitStage,
   isPortraitCharacterUuid,
-} from './constants/generate-portrait-wire'
+} from './utils/generate-portrait-wire'
 
 async function setPortraitStage(
   progress: GeneratePortraitProgress,

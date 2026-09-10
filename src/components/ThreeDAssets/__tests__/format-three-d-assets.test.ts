@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fileStem, formatUploadingLabel, ThreeDAssetsCopy } from '../constants/three-d-assets'
+import { fileStem, formatUploadingLabel, ThreeDAssetsCopy } from '../utils/three-d-assets'
 
 describe('fileStem', () => {
   it('strips the extension from a basename', () => {

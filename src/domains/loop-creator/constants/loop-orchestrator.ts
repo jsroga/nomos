@@ -2,7 +2,7 @@
 
 import { LoopAgentNode } from '@/domains/loop-creator/constants/agent-nodes'
 import { LoopCreatorStreamEventType } from '@/shared/data/constants/protocol'
-import { LoopChatMessageType } from '@/domains/loop-creator/ui/constants/loop-creator-layout'
+import { LoopChatMessageType } from '@/domains/loop-creator/ui/utils/loop-creator-layout'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 
 export { LoopCreatorStreamEventType as LoopOrchestratorEventType }

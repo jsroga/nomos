@@ -11,7 +11,7 @@ import {
   MoodboardStorageKey,
   moodboardGenOperationPrefix,
   moodboardPrimaryStorageKey,
-} from '@/domains/storyteller/services/constants/moodboard-generation-service'
+} from '@/domains/storyteller/services/utils/moodboard-generation-service'
 
 export {
   StorytellerBibleTab,

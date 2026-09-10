@@ -3,7 +3,7 @@
 import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { MarketingThreeDColor } from '@/domains/marketing/constants/three-d-icon'
+import { MarketingThreeDColor } from '@/domains/marketing/utils/three-d-icon'
 import { KURVITZA_FRAGMENT_SHADER, KURVITZA_VERTEX_SHADER } from './kurvitza-shaders'
 
 interface KurvitzaSphereProps {

@@ -4,7 +4,7 @@ import { useRef, useMemo } from 'react'
 import { useFrame, type RootState } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
-import { MarketingThreeDColor } from '@/domains/marketing/constants/three-d-icon'
+import { MarketingThreeDColor } from '@/domains/marketing/utils/three-d-icon'
 import { KurvitzaSphere } from './KurvitzaSphere'
 import { PointCloudDots } from './PointCloudDots'
 

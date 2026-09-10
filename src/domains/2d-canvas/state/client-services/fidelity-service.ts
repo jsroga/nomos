@@ -1,10 +1,10 @@
 import { useWorldStore } from '../useWorldStore'
 import type { Tile } from '../../core/world-types'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { DynamicLocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
-import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/utils/polling'
 import { createTriggerRunStatusFetch } from '@/shared/data/polling/trigger-run-status-fetcher'
 import {
   waitForTriggerRun,

@@ -2,7 +2,7 @@ import type { AsyncOperation } from '@/shared/jobs/useGlobalStatusStore'
 import {
   AsyncOperationStatus,
   isActiveOperationStatus,
-} from '@/shared/jobs/constants/async-operation-status'
+} from '@/shared/jobs/utils/async-operation-status'
 
 export enum RetextureViewPhase {
   Completed = 'completed',

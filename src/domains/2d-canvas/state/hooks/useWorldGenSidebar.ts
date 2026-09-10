@@ -7,9 +7,9 @@ import { uploadTileBase64 } from '@/domains/2d-canvas/core/io/world-data.api'
 import { fileReaderText, readString, recordFromJson } from '@/shared/data/json-guards'
 import { tileGenerationService } from '@/domains/2d-canvas/state/client-services/tile-generation-service'
 import { fidelityService } from '@/domains/2d-canvas/state/client-services/fidelity-service'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { clampStyleReferenceUrls } from '@/domains/2d-canvas/constants/mj-sref'
+import { clampStyleReferenceUrls } from '@/domains/2d-canvas/utils/mj-sref'
 import { UpscaleProvider } from '../../core/upscale-provider-wire'
 import { useWorldUiStore } from '@/domains/2d-canvas/state/useWorldUiStore'
 import type { MjGridPayload } from '@/domains/2d-canvas/state/constants/world-ui-store'
@@ -19,7 +19,7 @@ import {
   WorldGenSidebarError,
   WorldGenSidebarLog,
   WorldGenSidebarToast,
-} from '../../ui/constants/sidebar'
+} from '../../ui/utils/sidebar'
 import { generateSingleWorldTile } from './generate-single-world-tile'
 import { useWorldSidebarPrompt } from './useWorldSidebarPrompt'
 

@@ -3,11 +3,11 @@
 import React from 'react'
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { useGlobalStatusStore, type OperationType } from '@/shared/jobs/useGlobalStatusStore'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 import { buildUrl, joinUrlPath } from '@/shared/data/url-builder'
 import { HttpStatus, QueryParam } from '@/shared/data/constants/protocol'
-import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
+import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/utils/polling'
 import {
   TRIGGER_ACTIVE_STATUSES,
   TriggerTerminalStatus,

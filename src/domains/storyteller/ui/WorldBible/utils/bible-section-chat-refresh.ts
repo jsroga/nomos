@@ -6,7 +6,7 @@ import {
   isGenerationActivityBusy,
   type GenerationActivityPhase,
   type PendingChatPromptPayload,
-} from '@/domains/storyteller/state/constants/storyteller-ui-store'
+} from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
 
 export function requestBibleSectionChatRefresh(input: {

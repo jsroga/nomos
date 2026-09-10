@@ -182,7 +182,13 @@ export function constantsFilesWithFunctions() {
     let matched = false
     forEachNode(sourceFile, node => {
       if (matched) return
-      if (ts.isFunctionDeclaration(node)) matched = true
+      if (
+        ts.isFunctionDeclaration(node) ||
+        ts.isFunctionExpression(node) ||
+        ts.isArrowFunction(node)
+      ) {
+        matched = true
+      }
     })
     if (matched) hits.push(`${relativePath}::function::constants`)
   }

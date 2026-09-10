@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 
 const addOperation = vi.fn()

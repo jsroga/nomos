@@ -134,20 +134,18 @@ export const STYLE_OPTIONS: { value: TextureStyle; label: string }[] = [
   { value: 'organic', label: TextureStyleLabel.Organic },
 ]
 
-export const getMaterialGenerationStageLabel = (
-  stage: string | undefined,
-  progress: number
-): string => {
-  switch (stage) {
-    case 'preview':
-      return `Generating mesh... ${progress}%`
-    case 'refine':
-      return `Adding textures... ${progress}%`
-    case 'saving':
-      return `Saving model... ${progress}%`
-    case 'completed':
-      return 'Complete!'
-    default:
-      return `Processing... ${progress}%`
-  }
+export enum MaterialGenerationStage {
+  Preview = 'preview',
+  Refine = 'refine',
+  Saving = 'saving',
+  Completed = 'completed',
 }
+
+export enum MaterialGenerationStageCopy {
+  Preview = 'Generating mesh...',
+  Refine = 'Adding textures...',
+  Saving = 'Saving model...',
+  Completed = 'Complete!',
+  Processing = 'Processing...',
+}
+

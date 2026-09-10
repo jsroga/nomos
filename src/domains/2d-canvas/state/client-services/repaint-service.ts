@@ -4,7 +4,7 @@ import type { Tile } from '../../core/world-types'
 import { TILE_COORD_SEPARATOR } from '../../ui/constants/tile-stage-labels'
 import { postRepaint } from '../../core/io/repaint.api'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 import {
   CanvasContextType,
@@ -25,7 +25,7 @@ import {
   RepaintTilePrompt,
   UrlScheme,
   type RepaintResult,
-} from '../../constants/repaint-service'
+} from '../../utils/repaint-service'
 import {
   collectAffectedTiles,
   compositeRepaintOntoTile,

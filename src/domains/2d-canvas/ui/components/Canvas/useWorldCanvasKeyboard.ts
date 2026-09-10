@@ -11,7 +11,7 @@ import {
   REPAINT_CHANGES_APPLIED_TOAST,
 } from '@/domains/2d-canvas/ui/constants/repaint-toolbar'
 import toast from 'react-hot-toast'
-import type { RepaintResult } from '@/domains/2d-canvas/constants/repaint-service'
+import type { RepaintResult } from '@/domains/2d-canvas/utils/repaint-service'
 import type { SelectResult } from '@/domains/2d-canvas/state/client-services/select-mode-service'
 import {
   isWorldCanvasTypingTarget,

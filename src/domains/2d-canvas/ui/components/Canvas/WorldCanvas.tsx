@@ -13,7 +13,7 @@ import { WorldCanvasSelectOverlays } from './WorldCanvasSelectOverlays'
 import type { WorldGenSidebarState } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
 import { WorldCanvasCursor } from './constants/world-canvas'
 import { TileActionBar } from './TileActionBar'
-import { TileActionBarAccept, TileActionBarClass } from '@/domains/2d-canvas/ui/constants/tile-action-bar'
+import { TileActionBarAccept, TileActionBarClass } from '@/domains/2d-canvas/ui/utils/tile-action-bar'
 
 const WorldCanvasViewportTransform = memo(function WorldCanvasViewportTransform({
   children,

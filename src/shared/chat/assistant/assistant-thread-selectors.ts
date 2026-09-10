@@ -2,7 +2,7 @@
  * Cached useThread selectors — avoid getSnapshot loops during streaming.
  */
 
-import { ChatMessageRole, ChatPartType } from '../core/constants/assistant-thread-ui'
+import { ChatMessageRole, ChatPartType } from '../core/utils/assistant-thread-ui'
 
 type ThreadMessageContent = ReadonlyArray<{ type: string; text?: string }>
 

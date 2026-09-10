@@ -10,7 +10,7 @@ import {
   storytellerEpisodesQuerySchema,
   storytellerEpisodesResponseSchema,
 } from '@/domains/storyteller/core/io/storyteller.dto'
-import { generateCharacterFieldsRequestSchema, generateCharacterFieldsResponseSchema } from '@/domains/storyteller/services/constants/generate-character-fields'
+import { generateCharacterFieldsRequestSchema, generateCharacterFieldsResponseSchema } from '@/domains/storyteller/services/utils/generate-character-fields'
 import { episodePatchRequestSchema } from '@/domains/storyteller/core/io/episode-patch'
 import { beatPatchRequestSchema } from '@/domains/storyteller/core/beat-patch'
 import { characterPatchRequestSchema } from '@/domains/storyteller/core/character-patch'

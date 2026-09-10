@@ -20,11 +20,11 @@ import {
   MECHANICS_DESIGNER_NEXT_AGENT,
   parseMechanicsDesignerResponse,
   resolveMechanicsDesignerTask,
-} from '../constants/mechanics-designer-wire'
+} from '../utils/mechanics-designer-wire'
 import {
   buildConceptEvaluationNote,
   buildMechanicCanvasActions,
-} from '../constants/mechanics-designer-actions-wire'
+} from '../utils/mechanics-designer-actions-wire'
 
 /**
  * Main mechanics designer agent function

@@ -4,7 +4,7 @@ import { worldRuleTileCopy } from '@/domains/storyteller/core/entities/world-rul
 import { cn } from '@/shared/data/utils'
 import { BibleEntityTile, BibleEntityTileClass } from '../BibleEntityTile'
 import { RichText } from '../RichText'
-import { resolveWorldRuleCategoryStyle } from './constants/world-rule-display'
+import { resolveWorldRuleCategoryStyle } from './utils/world-rule-display'
 
 interface WorldRuleCardProps {
   rule: WorldRule

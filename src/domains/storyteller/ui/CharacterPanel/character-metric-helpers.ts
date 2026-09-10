@@ -3,7 +3,7 @@ import { readCharacterMetric } from '@/domains/storyteller/core/entities/charact
 import {
   CHARACTER_METRIC_CONFIG,
   CharacterMetricKey,
-} from '@/domains/storyteller/ui/CharacterPanel/constants/character-panel-metrics'
+} from '@/domains/storyteller/ui/CharacterPanel/utils/character-panel-metrics'
 
 export const isMetricHighRisk = (key: CharacterMetricKey, value: number): boolean => {
   if (key === CharacterMetricKey.Valence && value < -50) return true

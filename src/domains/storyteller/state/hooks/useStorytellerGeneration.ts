@@ -3,11 +3,11 @@
 import { useEffect, useCallback, useRef } from 'react'
 import { ActionHistoryStatus, ActionType } from '@/domains/storyteller/core/types/enums'
 import { resolveEpisodeId } from '@/domains/storyteller/state/utils/episode-route'
-import type { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import type { ApiframeVideoModel } from '@/shared/ai/utils/apiframe'
 import type { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
 import { readString, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
@@ -22,7 +22,7 @@ import {
 import {
   MoodboardStorageKey,
   moodboardPrimaryStorageKey,
-} from '@/domains/storyteller/services/constants/moodboard-generation-service'
+} from '@/domains/storyteller/services/utils/moodboard-generation-service'
 import {
   PosterPersistField,
   PosterStorageKeyPrefix,

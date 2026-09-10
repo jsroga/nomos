@@ -13,7 +13,7 @@ import {
   UnityExportFolder,
   UnityModelFilePrefix,
   isUnityPrimitiveModelUrl,
-} from '@/domains/3d-canvas/constants/unity-export'
+} from '@/domains/3d-canvas/utils/unity-export'
 import {
   appendObjectsToSceneYaml,
   appendWallsToSceneYaml,

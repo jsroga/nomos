@@ -6,7 +6,7 @@ import {
   ChatMessageStatus,
   ChatPartType,
   ChatToolPartPrefix,
-} from '../core/constants/assistant-thread-ui'
+} from '../core/utils/assistant-thread-ui'
 
 export function hasRenderableAssistantContent(
   content: ReadonlyArray<{ type: string; text?: string }>,

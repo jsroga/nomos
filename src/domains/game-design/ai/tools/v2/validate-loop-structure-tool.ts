@@ -5,7 +5,7 @@ import {
   ValidateLoopStructureInputSchema,
   ValidateLoopStructureOutputSchema,
 } from '../../constants/logic-tool-schemas'
-import { LogicToolCopy, LogicToolId, ValidateLoopSeverity } from '../../constants/logic-tool-wire'
+import { LogicToolCopy, LogicToolId, ValidateLoopSeverity } from '../../utils/logic-tool-wire'
 import { validateLoopStructure } from './validate-loop-structure-helpers'
 
 export const createValidateLoopStructureTool = () =>

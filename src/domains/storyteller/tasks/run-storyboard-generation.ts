@@ -5,11 +5,11 @@ import fs from 'fs'
 import path from 'path'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { BufferEncoding, FsDirectory } from '@/shared/data/constants/protocol'
-import { ApiframeGenerateAspectRatio } from '@/shared/ai/constants/apiframe'
+import { ApiframeGenerateAspectRatio } from '@/shared/ai/utils/apiframe'
 import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
 import { StorytellerAnswerSeparator } from '@/domains/storyteller/core/storyteller-page-wire'
 import { extractVisibleBeatCast } from '@/domains/storyteller/services/beat-cast-extract-service'
-import { buildBeatExtractText } from '@/domains/storyteller/services/constants/beat-cast-extract'
+import { buildBeatExtractText } from '@/domains/storyteller/services/utils/beat-cast-extract'
 import {
   StoryboardBeatColumn,
   StoryboardBeatLog,
@@ -18,7 +18,7 @@ import {
   StoryboardGenerationProgress,
   StoryboardGenerationStage,
 } from './constants/storyboard-beat-generation'
-import { buildStoryboardBeatPrompt } from './constants/storyboard-beat-prompt'
+import { buildStoryboardBeatPrompt } from './utils/storyboard-beat-prompt'
 import {
   beatCastExtractFields,
   loadStoryboardBeatCast,

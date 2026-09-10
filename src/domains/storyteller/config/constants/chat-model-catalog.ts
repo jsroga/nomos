@@ -73,22 +73,3 @@ export const CHAT_MODELS: ChatModelOption[] = [
   },
 ]
 
-/** Models offered in the user-facing picker (Kimi, Sol). */
-export const USER_SELECTABLE_CHAT_MODELS: ChatModelOption[] = CHAT_MODELS.filter(
-  option => option.userSelectable
-)
-
-export const DEFAULT_CHAT_MODEL = 'moonshotai:kimi-k3'
-
-/** Hardcoded tier for short structured work — never the writer's choice. */
-export const CHEAP_TIER_CHAT_MODEL = 'zai-coding-plan:glm-5.2'
-
-const CHAT_MODEL_BY_ID = new Map(CHAT_MODELS.map(m => [m.id, m]))
-
-export function getChatModelOption(id: string): ChatModelOption | undefined {
-  return CHAT_MODEL_BY_ID.get(id)
-}
-
-export function isKnownChatModel(id: string): boolean {
-  return CHAT_MODEL_BY_ID.has(id)
-}

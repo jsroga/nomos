@@ -244,7 +244,7 @@ Copy lives in `LANDING_HERO_HEADLINES` (`src/domains/marketing/ui/LandingPage/co
 
 ## Feature flags
 
-Opt-in flags are named `FF_<NAME>` and turn on with the exact value `true`; anything else is off. Server code reads them via `isFeatureEnabled(FeatureFlag.X)` from `@/shared/data/constants/feature-flags`. Client code must reference `process.env.NEXT_PUBLIC_FF_*` as a literal so Next can inline it — the helper does not work in the browser bundle.
+Opt-in flags are named `FF_<NAME>` and turn on with the exact value `true`; anything else is off. Server code reads them via `isFeatureEnabled(FeatureFlag.X)` from `@/shared/data/feature-flags`. `constants/` folders hold values only; helpers live in `utils/` or a named module (`local/no-functions-in-constants`). Client code must reference `process.env.NEXT_PUBLIC_FF_*` as a literal so Next can inline it — the helper does not work in the browser bundle.
 
 | Flag | Effect |
 |---|---|

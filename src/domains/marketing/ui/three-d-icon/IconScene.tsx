@@ -4,7 +4,7 @@ import {
   MarketingIconType,
   MarketingThreeDModelPath,
   resolveMarketingModelUrl,
-} from '@/domains/marketing/constants/three-d-icon'
+} from '@/domains/marketing/utils/three-d-icon'
 import { GLTFModel } from './GLTFModel'
 import { KurvitzaSphere } from './KurvitzaSphere'
 

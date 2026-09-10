@@ -11,7 +11,7 @@ import {
   EpisodeManagerRowClass,
   episodePhaseChipLabel,
   formatEpisodeIndex,
-} from './constants/episode-manager'
+} from './utils/episode-manager'
 import {
   EpisodeTitleActionMode,
   episodeTitleActionLabel,

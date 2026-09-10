@@ -7,7 +7,7 @@ import { storytellerCharacterFromRow } from '@/domains/storyteller/core/entities
 import type {
   BeatCastMember,
   BeatExtractTextFields,
-} from '@/domains/storyteller/services/constants/beat-cast-extract'
+} from '@/domains/storyteller/services/utils/beat-cast-extract'
 import { beatImageDiskPath } from './compose-storyboard-contact-sheet'
 import {
   STORYBOARD_BEAT_SELECT,
@@ -20,7 +20,7 @@ import {
 import {
   partitionBeatCastRefs,
   type StoryboardCastRefs,
-} from './constants/storyboard-beat-prompt'
+} from './utils/storyboard-beat-prompt'
 import { isPublicHttpsUrl, persistGeneratedImage } from './persist-generated-image'
 
 export interface StoryboardBeatCastLoad {

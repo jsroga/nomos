@@ -4,15 +4,15 @@ import { MeshyArtStyle } from '@/shared/data/constants/protocol'
 import React, { useState, useEffect } from 'react'
 import { interiorDesignerApi } from '@/domains/3d-canvas/core/io/interior-designer.api'
 import { useInteriorStore, TextureStyle } from '@/domains/3d-canvas'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/utils/polling'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import {
   AsyncOperationStatus,
   isActiveOperationStatus,
   isTerminalOperationStatus,
-} from '@/shared/jobs/constants/async-operation-status'
+} from '@/shared/jobs/utils/async-operation-status'
 import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import toast from 'react-hot-toast'
 import { getErrorMessage } from '@/shared/errors/error-utils'

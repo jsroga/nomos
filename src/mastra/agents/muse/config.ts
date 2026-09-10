@@ -7,7 +7,7 @@ import {
 import { AgentModelRole } from '@/domains/storyteller/ai/constants/agent-identity'
 import { EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { loadPublishedOrFileBrief } from '@/shared/agent-kernel/mastra/load-published-brief'
-import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import { resolveRoleModel } from '@/domains/storyteller/config/model-config'
 
 /**
  * File-based Muse — blank-context brainstormer.

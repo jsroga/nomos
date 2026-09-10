@@ -30,8 +30,6 @@ export const MODEL_SETTING_ROLES: ModelSettingRoleDef[] = [
   { role: 'judging', label: 'Evals · Judge', description: 'LLM-as-judge scorers (npm run eval).' },
 ]
 
-export const MODEL_SETTING_ROLE_IDS: readonly string[] = MODEL_SETTING_ROLES.map(r => r.role)
-
 export interface OpenRouterModelOption {
   id: string
   label: string
@@ -44,23 +42,3 @@ export const OPENROUTER_MODEL_OPTIONS: OpenRouterModelOption[] = [
   { id: 'z-ai/glm-5.2', label: 'GLM 5.2 — cheap tier' },
 ]
 
-export const OPENROUTER_MODEL_OPTION_IDS: readonly string[] = OPENROUTER_MODEL_OPTIONS.map(o => o.id)
-
-/**
- * `provider/model` (or gatewayed `openrouter/provider/model`), the only shape
- * `toOpenRouterModel` can route. The curated list above is a convenience, not a
- * whitelist — admins may paste any id OpenRouter serves, so the write path
- * validates shape rather than membership.
- */
-const OPENROUTER_MODEL_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*(?:\/[a-zA-Z0-9._:-]+){1,2}$/
-
-export const OPENROUTER_MODEL_ID_MAX_LENGTH = 120
-
-export function isOpenRouterModelId(value: string): boolean {
-  const trimmed = value.trim()
-  return (
-    trimmed.length > 0 &&
-    trimmed.length <= OPENROUTER_MODEL_ID_MAX_LENGTH &&
-    OPENROUTER_MODEL_ID_PATTERN.test(trimmed)
-  )
-}

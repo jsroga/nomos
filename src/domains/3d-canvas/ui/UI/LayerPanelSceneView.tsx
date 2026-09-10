@@ -6,7 +6,7 @@ import { Square, GitCommit, BrickWall, Box, Mountain, Droplets } from 'lucide-re
 import { cn } from '@/shared/data/utils'
 import { SidebarSection, SidebarEmptyState } from '@/components/DomainSidebar'
 import { LayerItem } from './LayerItem'
-import { getLayerTerrainIconColor } from './constants/layer-terrain-icon-colors'
+import { getLayerTerrainIconColor } from './utils/layer-terrain-icon-colors'
 import type { LayerPanelActions } from './LayerPanelTerrainView'
 import type { LayerSurfaceGroups } from './utils/partition-layer-surfaces'
 

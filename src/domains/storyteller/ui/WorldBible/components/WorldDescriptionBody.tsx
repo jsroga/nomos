@@ -7,7 +7,7 @@ import type { PendingAction } from './BibleContext'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { ToolActivityMarkdownPreview } from './BibleSectionChrome'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { GenerationActivityPhase } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 
 interface WorldDescriptionLoadingProps {

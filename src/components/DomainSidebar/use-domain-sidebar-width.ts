@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import {
   DomMouseEvent,
   SIDEBAR_MAX_WIDTH,

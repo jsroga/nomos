@@ -7,7 +7,7 @@ import {
   ApiframeImageModel,
   ApiframeParamsKey,
   type ApiframeImageUrlField,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 
 export function extractApiframeAspectRatio(prompt: string): string | undefined {
   const match = APIFRAME_ASPECT_RATIO_PATTERN.exec(prompt)

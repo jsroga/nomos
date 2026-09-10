@@ -6,7 +6,7 @@
 import { getToolName, isToolUIPart } from 'ai'
 import type { UIMessage } from 'ai'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
-import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/utils/assistant-thread-ui'
 
 export enum AssistantGenerationPhase {
   Idle = 'idle',

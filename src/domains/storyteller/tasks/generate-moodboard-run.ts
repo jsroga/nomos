@@ -16,11 +16,11 @@ import {
   ApiframeImageField,
   ApiframeImageModel,
   MIDJOURNEY_VERSION,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import { generateNanoBananaBase64 } from '@/shared/ai/apiframe-nano-banana'
 import { BufferEncoding } from '@/shared/data/constants/protocol'
 import { MidjourneyParamFlag } from '@/shared/data/server/midjourney-params'
-import { appendStorytellerLookSref } from './constants/storyteller-look-sref'
+import { appendStorytellerLookSref } from './utils/storyteller-look-sref'
 import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'
 import {
   MOODBOARD_BASE64_LABEL,
@@ -40,7 +40,7 @@ import {
   MOODBOARD_STAGE_SAVING,
   MOODBOARD_STAGE_SUBMITTING,
   MOODBOARD_STAGE_WAITING,
-} from './constants/moodboard-task-wire'
+} from './utils/moodboard-task-wire'
 
 interface MoodboardGeneratedImage {
   base64: string

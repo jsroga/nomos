@@ -2,7 +2,7 @@
 
 import { motion } from 'motion/react'
 import { Plus } from 'lucide-react'
-import { MarketingIconType } from '@/domains/marketing/constants/three-d-icon'
+import { MarketingIconType } from '@/domains/marketing/utils/three-d-icon'
 import { ViewportGatedThreeDIcon } from '@/domains/marketing/ui/ViewportGatedThreeDIcon'
 import { LANDING_BRAND_ACCENT } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
 import {

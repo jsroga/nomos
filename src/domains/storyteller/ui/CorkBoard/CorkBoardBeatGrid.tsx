@@ -4,7 +4,7 @@ import { BeatCard } from '../BeatCard'
 import { BeatCardLoading } from '../BeatCard/BeatCardLoading'
 import { BeatCard as BeatData } from '@/domains/storyteller/core/types/story-types'
 import { beatImageBatchOverlay } from '@/domains/storyteller/state/useBeatImageBatchStore'
-import { CorkBoardLoadingKey } from './constants/cork-board'
+import { CorkBoardLoadingKey } from './utils/cork-board'
 import { corkBoardLoadingPlaceholderCount } from './cork-board-list-mode'
 
 interface CorkBoardBeatGridProps {

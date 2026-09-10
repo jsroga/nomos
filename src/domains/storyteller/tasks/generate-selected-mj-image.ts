@@ -16,12 +16,12 @@ import {
   ApiframeGenerateAspectRatio,
   ApiframeImageField,
   ApiframeImageModel,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import { pickPortraitVariantIndex } from '@/domains/storyteller/services/portrait-variant-llm'
 import {
   PortraitVariantCopy,
   PortraitVariantIndex,
-} from '@/domains/storyteller/services/constants/portrait-variant'
+} from '@/domains/storyteller/services/utils/portrait-variant'
 import {
   GeneratePortraitError,
   GeneratePortraitLog,
@@ -30,7 +30,7 @@ import {
   GeneratePortraitStage,
   PORTRAIT_LLM_TASK,
   buildPortraitMidjourneyPrompt,
-} from './constants/generate-portrait-wire'
+} from './utils/generate-portrait-wire'
 
 export interface GeneratedSelectedMjImage {
   imageUrl: string

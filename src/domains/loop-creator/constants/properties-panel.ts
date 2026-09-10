@@ -1,7 +1,7 @@
 /** Properties panel — node/agency/timescale option wire values. */
 
 import { LoopNodeType } from '@/domains/loop-creator/constants/custom-nodes'
-import { LoopTimescaleOrder } from '@/domains/loop-creator/constants/timescale-order'
+import { LoopTimescaleOrder } from '@/domains/loop-creator/utils/timescale-order'
 import { LoopPlayerAgency } from '@/domains/loop-creator/constants/custom-nodes'
 
 export enum PropertiesPanelNodeLabel {

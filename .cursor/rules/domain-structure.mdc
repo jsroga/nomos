@@ -20,6 +20,8 @@ src/domains/<module>/
 │   ├── agents/     # Mastra Agent classes + multi-file agent packages
 │   └── prompts/    # agent prompts + Workspace skills
 ├── tasks/          # Trigger.dev tasks (asset modules lean here, not ai/)
+├── constants/      # values only (enums, tables, limits)
+├── utils/          # same-layer helpers; not nested under constants/
 └── index.ts      # single public barrel
 ```
 
@@ -31,7 +33,7 @@ src/domains/<module>/
 
 When `hooks/`, `utils/`, or `constants/` sit beside UI components, **PascalCase components go under `ui/components/`** — not at `ui/` root.
 
-When `constants/`, `tools/`, `workflows/`, or `prompts/` sit beside Mastra agents, **agent packages go under `ai/agents/`** — not at `ai/` root. The domain folder is `ai/` (not `agents/`); nested agent implementations live in `ai/agents/`. Prompts and skills live in `ai/prompts/`.
+When `constants/`, `utils/`, `tools/`, `workflows/`, or `prompts/` sit beside Mastra agents, **agent packages go under `ai/agents/`** — not at `ai/` root. The domain folder is `ai/` (not `agents/`); nested agent implementations live in `ai/agents/`. Prompts and skills live in `ai/prompts/`. Helpers that left `ai/constants/` live in `ai/utils/`.
 
 ## Non-negotiable invariants
 
@@ -44,6 +46,7 @@ When `constants/`, `tools/`, `workflows/`, or `prompts/` sit beside Mastra agent
 7. ESLint import guards — barrel guards for outsiders; **cross-domain imports forbidden** (`@/domains/A` must not import `@/domains/B`; shared code goes in `@/shared`). See `.cursor/rules/eslint-boundaries.mdc`.
 8. Asset modules (`2d-canvas`, `3d-canvas`, `3d-asset-exporter`) lean on `tasks/` not `ai/`.
 9. Magic string sets (action types, statuses, phases) → **TypeScript `enum`**, not inline literals or `as const` object maps.
+10. **`constants/` is values only** (enums, tables, limits). No functions or arrows. Helpers go in the same-layer `utils/` or a named module. `local/no-functions-in-constants` is **error**. Do not nest `utils/constants/`.
 
 ## When changing a module
 

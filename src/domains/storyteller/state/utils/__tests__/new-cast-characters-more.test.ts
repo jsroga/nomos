@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CharacterRole } from '@/shared/data/constants/protocol'
-import { NEW_CAST_DESCRIPTION_MAX_LENGTH } from '../constants/new-cast-characters'
+import { NEW_CAST_DESCRIPTION_MAX_LENGTH } from '../new-cast-character-wire'
 import {
   collectCastCandidates,
   existingCastEntries,

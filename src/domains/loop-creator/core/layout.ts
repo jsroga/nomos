@@ -5,7 +5,7 @@ import {
   CANVAS_NODE_TYPE_GROUP,
 } from '@/domains/loop-creator/constants/graph-state-defaults'
 import { LAYOUT_LOG_PREFIX, LAYOUT_LOG_SUFFIX } from '@/domains/loop-creator/constants/layout-messages'
-import { loopTimescaleSortIndex } from '@/domains/loop-creator/constants/timescale-order'
+import { loopTimescaleSortIndex } from '@/domains/loop-creator/utils/timescale-order'
 import { groupTimescale } from './loop-node-wire'
 
 const GROUP_GAP = 350

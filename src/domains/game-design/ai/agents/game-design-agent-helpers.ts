@@ -14,7 +14,7 @@ import {
   GameDesignResponseType,
   parseGameDesignResponseRecord,
   type GameDesignResponse,
-} from '../constants/game-design-response'
+} from '../utils/game-design-response'
 
 function appendOptionalLine(parts: string[], label: string, value: string | undefined): void {
   if (value) {

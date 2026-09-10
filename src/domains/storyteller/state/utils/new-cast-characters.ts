@@ -9,7 +9,7 @@ import {
   NEW_CAST_ENTITY_TYPE,
   NEW_CAST_SENTENCE_SPLIT,
   NewCastField,
-} from '@/domains/storyteller/state/utils/constants/new-cast-characters'
+} from '@/domains/storyteller/state/utils/new-cast-character-wire'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { CharacterRole } from '@/shared/data/constants/protocol'
 import {

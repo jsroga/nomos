@@ -10,7 +10,7 @@ import { readString } from '@/shared/data/json-guards'
 import { LoopNodeType } from '@/domains/loop-creator/constants/custom-nodes'
 import { LOOP_NODE_DEFAULT_COLOR } from '@/domains/loop-creator/constants/custom-nodes'
 import { LOOP_NODE_TYPE_DEFAULT } from '@/domains/loop-creator/constants/loop-node-defaults'
-import { LoopTimescaleOrder } from '@/domains/loop-creator/constants/timescale-order'
+import { LoopTimescaleOrder } from '@/domains/loop-creator/utils/timescale-order'
 import { LoopPlayerAgency } from '@/domains/loop-creator/constants/custom-nodes'
 import { CANVAS_NODE_TYPE_GROUP } from '@/domains/loop-creator/constants/graph-state-defaults'
 import {
@@ -21,7 +21,7 @@ import {
 import {
   LOOP_DOMAIN_TO_FLOW_NODE,
   LoopFlowNodeType,
-} from '@/domains/loop-creator/ui/constants/loop-creator-layout'
+} from '@/domains/loop-creator/ui/utils/loop-creator-layout'
 import { nodeColors } from './custom-nodes'
 
 interface PropertiesPanelProps {

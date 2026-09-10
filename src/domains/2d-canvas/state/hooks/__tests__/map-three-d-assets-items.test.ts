@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AssetKind, AssetUploadStatus } from '@/shared/workspace/constants/asset-upload'
+import { AssetKind, AssetUploadStatus } from '@/shared/workspace/utils/asset-upload'
 import type { AssetUploadQueueItem } from '@/shared/workspace/asset-upload-queue'
 import { FileUploaderItemStatus, FileUploaderKind } from '@/components/FileUploader'
 import type { Asset } from '@/domains/2d-canvas/core/world-types'

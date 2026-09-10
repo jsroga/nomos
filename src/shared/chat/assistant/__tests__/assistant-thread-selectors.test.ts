@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ChatMessageRole } from '../../core/constants/assistant-thread-ui'
+import { ChatMessageRole } from '../../core/utils/assistant-thread-ui'
 import { createThreadNeedsRunningPlaceholderSelector } from '../assistant-thread-selectors'
 
 describe('createThreadNeedsRunningPlaceholderSelector', () => {

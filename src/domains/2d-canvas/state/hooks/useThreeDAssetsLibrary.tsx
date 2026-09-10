@@ -6,7 +6,7 @@ import { HttpMethod, HtmlElementType } from '@/shared/data/constants/protocol'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { joinUrlPath } from '@/shared/data/url-builder'
 import { deleteProjectAssetImage, resolveProjectAssetUrl } from '@/shared/workspace/io/project-assets-api'
-import { ASSET_FILE_ACCEPT, ASSET_UPLOAD_FILE_SIZE_ERROR, AssetUploadReject } from '@/shared/workspace/constants/asset-upload'
+import { ASSET_FILE_ACCEPT, ASSET_UPLOAD_FILE_SIZE_ERROR, AssetUploadReject } from '@/shared/workspace/utils/asset-upload'
 import {
   cancelAssetUpload,
   enqueueAssetUploads,

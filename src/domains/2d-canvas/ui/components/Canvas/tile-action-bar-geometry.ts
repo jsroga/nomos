@@ -4,7 +4,7 @@ import {
   TILE_ACTION_BAR_HEIGHT_PX,
   TILE_ACTION_BAR_VIEWPORT_MARGIN_PX,
   TileActionBarVariant,
-} from '@/domains/2d-canvas/ui/constants/tile-action-bar'
+} from '@/domains/2d-canvas/ui/utils/tile-action-bar'
 
 export interface TileScreenRect {
   left: number

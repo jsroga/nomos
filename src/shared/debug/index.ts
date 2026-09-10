@@ -7,4 +7,4 @@ export {
   isPerfDebugEnabled,
   CwvHudEnv,
   PerfDebugEnv,
-} from './constants/perf-debug'
+} from './utils/perf-debug'

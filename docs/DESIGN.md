@@ -86,7 +86,7 @@ Sizes that breathe use `clamp(..., Ncqi, ...)` — see
 `src/shared/chat/assistant/assistant-thread.css`.
 
 Code: `src/shared/chat/assistant/AssistantThread*.tsx`,
-`src/shared/chat/core/constants/assistant-thread-ui.ts`.
+`src/shared/chat/core/utils/assistant-thread-ui.ts`.
 
 ## Auth callback
 

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { PUBLIC_API_PATHS, isPublicApiPath } from '@/shared/auth/constants/public-api-paths'
+import { PUBLIC_API_PATHS, isPublicApiPath } from '@/shared/auth/utils/public-api-paths'
 
 /**
  * Gate A4 — every route establishes a session, or is an explicit public decision.

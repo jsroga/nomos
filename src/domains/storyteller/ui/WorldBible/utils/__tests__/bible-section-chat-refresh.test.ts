@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { lookupPromptBody } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-table'
-import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { GenerationActivityPhase } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
 import {

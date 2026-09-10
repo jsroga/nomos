@@ -4,8 +4,8 @@ import {
   IdentifyCoreLoopOutputSchema,
 } from '../../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { buildIdentifyCoreLoopPrompt } from '../../constants/logic-tool-prompts'
-import { LogicToolCopy, LogicToolId, TargetAudience } from '../../constants/logic-tool-wire'
+import { buildIdentifyCoreLoopPrompt } from '../../prompts/logic-tool-prompts'
+import { LogicToolCopy, LogicToolId, TargetAudience } from '../../utils/logic-tool-wire'
 import { createLogicToolModel, invokeLlmJsonPrompt } from './game-design-llm-shared'
 
 export const createIdentifyCoreLoopTool = () =>

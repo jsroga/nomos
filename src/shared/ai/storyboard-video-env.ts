@@ -1,7 +1,7 @@
 import {
   ApiframeVideoModel,
   isApiframeVideoModel,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import { ImageEnvVar } from '@/shared/ai/constants/image-env'
 
 export enum StoryboardVideoRequestField {

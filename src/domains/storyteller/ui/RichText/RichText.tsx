@@ -25,7 +25,7 @@ import {
   RichTextContainerTag,
   RichTextWhitespaceClass,
   splitBibleParagraphs,
-} from '@/domains/storyteller/ui/RichText/constants/rich-text'
+} from '@/domains/storyteller/ui/RichText/utils/rich-text'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { BibleMarkdown } from './BibleMarkdown'
 

@@ -1,1 +1,1 @@
-export { resolveUserPickerOpenRouterModelId } from '@/domains/storyteller/config/constants/model-config'
+export { resolveUserPickerOpenRouterModelId } from '@/domains/storyteller/config/model-config'

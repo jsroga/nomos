@@ -6,4 +6,4 @@ export {
   THREE_D_ASSETS_UNDO_MS,
   fileStem,
   formatUploadingLabel,
-} from './constants/three-d-assets'
+} from './utils/three-d-assets'

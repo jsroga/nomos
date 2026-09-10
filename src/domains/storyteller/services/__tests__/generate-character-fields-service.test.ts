@@ -6,7 +6,7 @@ import {
   DEFAULT_CHARACTER_METRICS,
   type CharacterFilledDraft,
 } from '../../core/character-missing-fields'
-import { GenerateCharacterFieldsErrorCode, generatedCharacterFieldsLlmSchema } from '../constants/generate-character-fields'
+import { GenerateCharacterFieldsErrorCode, generatedCharacterFieldsLlmSchema } from '../utils/generate-character-fields'
 import {
   GenerateCharacterFieldsError,
   generateCharacterMissingFields,

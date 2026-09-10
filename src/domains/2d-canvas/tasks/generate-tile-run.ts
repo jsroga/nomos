@@ -4,28 +4,28 @@
 
 import { logger, metadata } from '@trigger.dev/sdk'
 import { aiProviderConfigFromRecord } from '@/shared/ai/ai-provider-config'
-import { packedCropFromContext } from './constants/generate-tile'
-import type { GenerateTilePayload } from './constants/generate-tile'
-import { PackedCropError } from './constants/generate-tile-output'
+import { packedCropFromContext } from './utils/generate-tile'
+import type { GenerateTilePayload } from './utils/generate-tile'
+import { PackedCropError } from './utils/generate-tile-output'
 import {
   assembleServerContextImage,
   createSupabaseServiceClient,
   extractContextImageBase64,
   resolveOriginalTileUrl,
   uploadTileToBlob,
-} from './constants/generate-tile-persist'
-import { generateTileImage } from './constants/generate-tile-providers'
+} from './utils/generate-tile-persist'
+import { generateTileImage } from './utils/generate-tile-providers'
 import {
   GenerateTileProgress,
   GenerateTileStage,
   advanceGenerateTileProgress,
-} from './constants/generate-tile-progress'
+} from './utils/generate-tile-progress'
 import {
   downloadTileScratchBase64,
   readTileScratchUrl,
   uploadTileScratch,
   writeTileScratchUrl,
-} from './constants/generate-tile-scratch'
+} from './utils/generate-tile-scratch'
 
 enum GenerateTileCoordKey {
   TileX = 'tile_x',

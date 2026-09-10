@@ -5,7 +5,7 @@ import {
   MARKETING_THREE_D_VIGNETTE_MASK,
   MarketingDomEvent,
   MarketingThreeDLayout,
-} from '@/domains/marketing/constants/three-d-icon'
+} from '@/domains/marketing/utils/three-d-icon'
 
 const ThreeDIconCanvas = lazy(async () => ({
   default: (await import('./ThreeDIconCanvas')).ThreeDIconCanvas,

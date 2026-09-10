@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { isPerfDebugEnabled } from '@/shared/debug/constants/perf-debug'
+import { isPerfDebugEnabled } from '@/shared/debug/utils/perf-debug'
 
 enum ReactScanExport {
   Scan = 'scan',

@@ -59,12 +59,3 @@ export const FAILED_STATUSES = [
   'SYSTEM_FAILURE',
   'INTERRUPTED',
 ] as const
-
-export const isActiveTaskStatus = (status: string): boolean =>
-  ACTIVE_TASK_STATUSES.some(activeStatus => activeStatus === status.toUpperCase())
-
-export const isSuccessTaskStatus = (status: string): boolean =>
-  SUCCESS_STATUSES.some(successStatus => successStatus === status.toUpperCase())
-
-export const isFailedTaskStatus = (status: string): boolean =>
-  FAILED_STATUSES.some(failedStatus => failedStatus === status.toUpperCase())

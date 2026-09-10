@@ -92,6 +92,8 @@ export const ACTION_TYPES = { UPDATE_BEAT: 'UPDATE_BEAT' } as const
 
 For suspicious string literals in comparisons, switch cases, and dispatch sinks, extract an enum in `core/types/` or `core/enums.ts` and reference `ActionType.UpdateBeat` etc.
 
+**`constants/` folders are values only.** `local/no-functions-in-constants` is **error**. Do not add `function` / arrow helpers under `src/**/constants/**`. Move the file to the same-layer `utils/` or a named module (`git mv`).
+
 ## Promise control flow (`await` + `try/catch`)
 
 `local/prefer-await-try-catch` is **`error`** on `src/**` (tests exempt).

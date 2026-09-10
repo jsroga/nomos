@@ -33,7 +33,7 @@ import {
   ChatMessageRole,
   ChatPartType,
   type AssistantChatModelOption,
-} from '@/shared/chat/core/constants/assistant-thread-ui'
+} from '@/shared/chat/core/utils/assistant-thread-ui'
 import { isPlainObject } from '@/shared/data/json-guards'
 import { AssistantThread } from './AssistantThread'
 import { AskUserToolUI } from './AssistantHumanTool'

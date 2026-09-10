@@ -12,7 +12,7 @@ import {
   isFixInconsistenciesStartDisabled,
   StorytellerSidebarFooterClass,
   StorytellerSidebarFooterCopy,
-} from '../constants/storyteller-sidebar-footer'
+} from '../utils/storyteller-sidebar-footer'
 import { useStorytellerChatBusy } from '@/domains/storyteller/state/hooks/useStorytellerChatBusy'
 
 interface StorytellerSidebarFooterProps {

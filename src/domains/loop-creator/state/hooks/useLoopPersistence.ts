@@ -10,7 +10,7 @@ import {
   LOOP_LOG_CREATE_FAILED,
   LOOP_LOG_LOOP_CREATED,
   LOOP_LOG_SWITCHED_LOOP,
-} from '@/domains/loop-creator/ui/constants/loop-creator-layout'
+} from '@/domains/loop-creator/ui/utils/loop-creator-layout'
 import { type LoopGameContext } from '@/domains/loop-creator/ui/types/loop-layout-wires'
 import {
   persistedEdgesFromUnknown,

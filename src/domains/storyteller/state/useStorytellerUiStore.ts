@@ -7,11 +7,11 @@ import {
   type GenerationActivityState,
   type MoodboardCompletePayload,
   type PendingChatPromptPayload,
-} from '@/domains/storyteller/state/constants/storyteller-ui-store'
+} from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import {
   ConsistencyFixRunPhase,
   isConsistencyFixRunBusy,
-} from '@/domains/storyteller/ui/FixInconsistencies/constants/fix-inconsistencies-dialog'
+} from '@/domains/storyteller/ui/FixInconsistencies/utils/fix-inconsistencies-dialog'
 import type { ConsistencyFixItem, ContinuityFinding } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-schema'
 import type { SkippedFinding } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-contract'
 import { mergePendingBeatArgs } from '@/domains/storyteller/state/utils/pending-beat-adds'

@@ -36,11 +36,22 @@ export const PROJECT_SELECTION_MONTH_HEADER_STYLE = {
   marginTop: '14px',
 } as const
 
-export function projectAvatarUrl(metadata: unknown): string | undefined {
-  if (!metadata || typeof metadata !== 'object') return undefined
-  if (!('avatar_url' in metadata)) return undefined
-  const value = metadata.avatar_url
-  return typeof value === 'string' ? value : undefined
+export enum ProjectMetadataKey {
+  AvatarUrl = 'avatar_url',
+}
+
+export enum ProjectDateCopy {
+  Unknown = 'Unknown',
+  UnknownKey = 'unknown',
+}
+
+export enum ProjectDateLocale {
+  EnUs = 'en-US',
+}
+
+export enum ProjectDateTimeStyle {
+  Month = 'long',
+  Year = 'numeric',
 }
 
 export enum ProjectSortMode {
@@ -61,29 +72,3 @@ export const PROJECT_SORT_CYCLE: readonly ProjectSortMode[] = [
   ProjectSortMode.Name,
 ]
 
-/** Compress ISO timestamps to `27.07.26` for card metadata. */
-export function formatProjectCardDate(iso: string | undefined): string {
-  if (!iso) return ''
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return ''
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = String(date.getFullYear()).slice(-2)
-  return `${day}.${month}.${year}`
-}
-
-export function formatProjectMonthLabel(iso: string | undefined): string {
-  if (!iso) return 'Unknown'
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return 'Unknown'
-  return date
-    .toLocaleString('en-US', { month: 'long', year: 'numeric' })
-    .toUpperCase()
-}
-
-export function projectMonthKey(iso: string | undefined): string {
-  if (!iso) return 'unknown'
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return 'unknown'
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-}

@@ -36,7 +36,7 @@ import {
   deriveFollowUpChips,
   shortModelLabel,
   type AssistantChatModelOption,
-} from '../core/constants/assistant-thread-ui'
+} from '../core/utils/assistant-thread-ui'
 import { KeyboardKey } from '@/shared/data/constants/protocol'
 
 // const MENTION_TRIGGER_CHAR = ASSISTANT_THREAD_WIRE.MentionAt

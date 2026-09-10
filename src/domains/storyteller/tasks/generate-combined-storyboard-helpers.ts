@@ -3,15 +3,15 @@ import { createSupabaseServiceClient } from '@/shared/auth/supabase-service'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { ContentType } from '@/shared/data/constants/protocol'
-import { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeVideoModel } from '@/shared/ai/utils/apiframe'
 import type { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 import type { KlingMultiPromptShot } from '@/shared/ai/apiframe-video'
 import { persistGeneratedMedia } from './persist-generated-image'
-import { beatHasImageUrl } from './constants/storyboard-video-sheet'
+import { beatHasImageUrl } from './utils/storyboard-video-sheet'
 import {
   buildStoryboardMultiPrompt,
   storyboardLookNegative,
-} from './constants/storyboard-video-prompt'
+} from './utils/storyboard-video-prompt'
 
 export enum CombinedStoryboardStage {
   Summarizing = 'summarizing_prompt',

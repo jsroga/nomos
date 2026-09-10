@@ -1,12 +1,12 @@
 import { logger } from '@trigger.dev/sdk'
-import { UpscaleStrategy } from '../constants/generation-modes'
-import { topazEnhanceModelFromMode } from '../constants/topaz-upscale'
+import { UpscaleStrategy } from '../utils/generation-modes'
+import { topazEnhanceModelFromMode } from '../utils/topaz-upscale'
 import { runGeminiPreUpscaleStep } from './upscale-tile-gemini-step'
 import { upscaleNearestNeighbour } from './upscale-tile-nearest-provider'
 import { upscaleWithApiframe } from './upscale-tile-apiframe-provider'
 import type { ProviderConfig } from './upscale-tile-provider-types'
 import { resolveImageUpscaleMode } from '@/shared/ai/image-model-env'
-import { ApiframeUpscaleModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeUpscaleModel } from '@/shared/ai/utils/apiframe'
 
 interface ModeUpscaleResult {
   finalImageUrl: string | null

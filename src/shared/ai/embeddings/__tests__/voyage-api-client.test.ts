@@ -7,9 +7,9 @@ vi.mock('@/shared/config/env', () => ({
   },
 }))
 
-vi.mock('@/shared/data/constants/feature-flags', async () => {
-  const actual = await vi.importActual<typeof import('@/shared/data/constants/feature-flags')>(
-    '@/shared/data/constants/feature-flags'
+vi.mock('@/shared/data/feature-flags', async () => {
+  const actual = await vi.importActual<typeof import('@/shared/data/feature-flags')>(
+    '@/shared/data/feature-flags'
   )
   return { ...actual, isFeatureEnabled: () => true }
 })

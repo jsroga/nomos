@@ -62,7 +62,7 @@ import { proposeCharacterFieldsTool } from '@/domains/storyteller/ai/tools/propo
 import { runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools/workflow-tool'
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
-import { resolveRoleModel, AGENT_MODEL_MATRIX } from '@/domains/storyteller/config/constants/model-config'
+import { resolveRoleModel, AGENT_MODEL_MATRIX } from '@/domains/storyteller/config/model-config'
 import {
   STORYTELLER_CHAT_MODEL,
   requestContextString,

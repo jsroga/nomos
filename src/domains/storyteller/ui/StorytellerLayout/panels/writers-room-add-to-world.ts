@@ -14,13 +14,13 @@ import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/us
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
-import { CharacterDraftChatSection } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { CharacterDraftChatSection } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { characterDraftFieldsFromToolArgs } from '@/domains/storyteller/state/utils/character-draft-fields-from-tool'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   WritersRoomConfirm,
   WritersRoomToast,
-} from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
+} from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
 import {
   chatFallbackAddToWorldTargets,
   createBeatCommitActions,

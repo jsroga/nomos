@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { NextResponse } from 'next/server'
 import { TileTriggerProvider } from '@/shared/data/constants/trigger-tile-route'
 import { ImageEnvVar, ImageGenerateModelId } from '@/shared/ai/constants/image-env'
-import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeImageModel } from '@/shared/ai/utils/apiframe'
 import { resolveTileAiProvider } from '../trigger-tile-helpers'
 
 describe('resolveTileAiProvider', () => {

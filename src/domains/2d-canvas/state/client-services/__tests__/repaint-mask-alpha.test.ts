@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { applyLuminanceToAlpha } from '../repaint-mask-alpha'
-import { RepaintRgba } from '../../../constants/repaint-service'
+import { RepaintRgba } from '../../../utils/repaint-service'
 
 describe('applyLuminanceToAlpha', () => {
   it('copies red into alpha and fills RGB white', () => {

@@ -1,6 +1,6 @@
 import { HttpMethod } from '@/shared/data/constants/protocol'
-import { BeatImageTriggerStatus } from '@/domains/storyteller/services/constants/beat-image-service'
-import { CharacterDraftChatSection } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { BeatImageTriggerStatus } from '@/domains/storyteller/services/utils/beat-image-service'
+import { CharacterDraftChatSection } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 
 export { HttpMethod as CharacterDialogHttpMethod, BeatImageTriggerStatus as CharacterDialogTriggerStatus }
 export { CharacterDraftChatSection }

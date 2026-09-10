@@ -5,7 +5,7 @@ import {
   findRosterMember,
   matchCastByExtractedNames,
   type BeatCastMember,
-} from '../constants/beat-cast-extract'
+} from '../utils/beat-cast-extract'
 import { extractVisibleBeatCast } from '../beat-cast-extract-service'
 import { BeatCastExtractPromptLabel } from '@/domains/storyteller/ai/agents/BeatCastExtract/constants/beat-cast-extract-agent'
 

@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/DropdownMenu'
 import { ChevronDown, Loader2, Sparkles, Video } from 'lucide-react'
-import type { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import type { ApiframeVideoModel } from '@/shared/ai/utils/apiframe'
 import {
   isStoryboardVideoPreset,
   STORYBOARD_VIDEO_PRESETS,
@@ -21,7 +21,7 @@ import {
   CorkBoardCopy,
   CorkBoardUrlScheme,
   corkBoardVideoPresetLabel,
-} from './constants/cork-board'
+} from './utils/cork-board'
 import { isStoryboardVideoUrl, storyboardEmptyCopy } from './storyboard-media'
 
 interface CorkBoardStoryboardSectionProps {

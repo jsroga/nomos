@@ -15,7 +15,7 @@ import {
   VOYAGE_NETWORK_ERROR_TOKEN,
 } from '@/shared/ai/constants/voyage-embeddings'
 import { ContentType, HttpAuthScheme, HttpMethod } from '@/shared/data/constants/protocol'
-import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/feature-flags'
 
 export type VoyageModelId = (typeof VOYAGE_MODEL_VALUES)[number]
 

@@ -13,7 +13,7 @@ import {
   ASSET_UPLOAD_NETWORK_ERROR,
   AssetUploadStatus,
   AssetUploadXhrEvent,
-} from '@/shared/workspace/constants/asset-upload'
+} from '@/shared/workspace/utils/asset-upload'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024

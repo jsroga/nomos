@@ -12,7 +12,7 @@ import {
   iconForEntityType,
   isIgnorableGameEntityFetchError,
   labelForSourceDomain,
-} from '../constants/game-entity-mentions'
+} from '../utils/game-entity-mentions'
 import { fetchGameEntitiesForMentions } from '../io/chat-ui.api'
 
 /**

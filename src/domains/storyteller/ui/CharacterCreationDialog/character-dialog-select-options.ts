@@ -2,7 +2,7 @@ import {
   CharacterDialogGender,
   CharacterDialogMbti,
   CharacterDialogStoryRole,
-} from '@/domains/storyteller/services/constants/generate-character-fields'
+} from '@/domains/storyteller/services/utils/generate-character-fields'
 import {
   CharacterDialogMbtiGroup,
   CharacterDialogMbtiOptionLabel,

@@ -3,7 +3,7 @@ import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import {
   ApiframeImageModel,
   ApiframeUpscaleModel,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import {
   ImageEnvVar,
   ImageFidelityMode,

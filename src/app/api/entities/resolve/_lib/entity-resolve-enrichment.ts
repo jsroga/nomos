@@ -1,21 +1,17 @@
-import type { EntityReference } from '@/domains/storyteller/core/entities/entity-references'
+import type { EntityReference } from '@/domains/storyteller'
 import type { ProjectScope } from '@/shared/auth/project-scope'
 import {
   contextualSummaryService,
+  displayNameFromRefId,
+  entityNeedsDescription,
   entityRegistry,
+  fillMissingEntityDescriptions,
+  generateBaseEntityDescription,
+  getEntityTypeFromId,
+  hasUsefulResolveContext,
   relationshipEnricher,
   tryAutoRegisterEntity,
 } from '@/domains/storyteller/server'
-import {
-  fillMissingEntityDescriptions,
-  generateBaseEntityDescription,
-} from '@/domains/storyteller/services/entity-base-description-service'
-import { entityNeedsDescription } from '@/domains/storyteller/services/constants/entity-needs-description'
-import { hasUsefulResolveContext } from '@/domains/storyteller/services/constants/entity-base-description'
-import {
-  displayNameFromRefId,
-  getEntityTypeFromId,
-} from '@/domains/storyteller/services/entity-registry-reference-id'
 
 const MAX_CONTEXT_LENGTH = 1000
 const MAX_CONTEXTUAL_SUMMARIES = 10

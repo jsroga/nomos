@@ -10,22 +10,12 @@ import {
   BeatCardType,
   BeatGenerationMode,
   isBeatCardType,
-} from './constants/beat-card'
+} from './utils/beat-card'
 import { BeatCardActions } from './BeatCardActions'
 import { BeatCardImageSection } from './BeatCardImageSection'
 import { BeatImageBatchOverlay } from '@/domains/storyteller/state/useBeatImageBatchStore'
 
-interface Beat {
-  id: string
-  logline: string
-  type?: string
-  sequence: number
-  content?: string
-  beatType?: string
-  status?: 'proposed' | 'approved' | 'rejected'
-  imageUrl?: string
-  imagePrompt?: string
-}
+type Beat = BeatCardData & { type?: string }
 
 interface BeatCardProps {
   beat: Beat

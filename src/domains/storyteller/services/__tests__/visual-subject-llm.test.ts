@@ -5,7 +5,7 @@ import {
   VisualSubjectKind,
   normalizeVisualSubject,
   stripMidjourneyFlags,
-} from '../constants/visual-overview'
+} from '../utils/visual-overview'
 import {
   buildVisualSubjectSystemPrompt,
   fallbackVisualSubjects,

@@ -3,7 +3,7 @@ import {
   isVisualSubjectConfigured,
   generateVisualSubjects,
 } from '@/domains/storyteller/services/visual-subject-llm'
-import { VisualSubjectKind } from '@/domains/storyteller/services/constants/visual-overview'
+import { VisualSubjectKind } from '@/domains/storyteller/services/utils/visual-overview'
 import {
   isVisualOverviewReady,
   type VisualOverviewContext,
@@ -11,7 +11,7 @@ import {
 import {
   buildEpisodePosterPrompt,
   EpisodePosterPromptLock,
-} from './constants/episode-poster-prompt'
+} from './utils/episode-poster-prompt'
 import { GeneratePosterError } from './constants/generate-poster-wire'
 
 export function lockedPosterPromptOrNull(prompt: string | undefined): string | null {

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { ChatMessageRole } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { addToWorldButtonVisible } from '../add-to-world-visibility'
 
 const THREAD_MESSAGES = 'src/shared/chat/assistant/AssistantThreadMessages.tsx'

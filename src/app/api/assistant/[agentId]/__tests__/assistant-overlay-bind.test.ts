@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { AssistantChatBodyKey } from '@/shared/chat/core/utils/assistant-thread-ui'
 
 const ASSISTANT_ROUTE = 'src/app/api/assistant/[agentId]/route.ts'
 

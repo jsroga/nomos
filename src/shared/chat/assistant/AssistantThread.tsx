@@ -10,7 +10,7 @@ import type { AssistantMentionBundle } from './useAssistantMentions'
 import {
   ASSISTANT_THREAD_COPY,
   type AssistantChatModelOption,
-} from '../core/constants/assistant-thread-ui'
+} from '../core/utils/assistant-thread-ui'
 import { AssistantChatDetailsProvider } from './AssistantChatDetailsContext'
 import { AssistantThreadComposer } from './AssistantThreadComposer'
 import { AssistantMessage, UserMessage } from './AssistantThreadMessages'

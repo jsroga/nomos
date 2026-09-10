@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ImageEnvVar, ImageRepaintModelId } from '@/shared/ai/constants/image-env'
-import { ApiframeEditModel, ApiframeImageModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeEditModel, ApiframeImageModel } from '@/shared/ai/utils/apiframe'
 import {
   resolveCombinedStoryboardModel,
   resolveMoodboardModel,

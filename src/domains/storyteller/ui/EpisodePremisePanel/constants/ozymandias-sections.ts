@@ -103,36 +103,27 @@ const TONE_SKELETON_CLASS: Record<OzymandiasSectionTone, string> = {
   [OzymandiasSectionTone.Purple]: 'bg-purple-500/10',
 }
 
-export function ozymandiasLabelClass(tone: OzymandiasSectionTone): string {
-  return TONE_LABEL_CLASS[tone]
+const TONE_EMPTY_ICON_CLASS: Record<OzymandiasSectionTone, string> = {
+  [OzymandiasSectionTone.Primary]: 'text-muted-foreground',
+  [OzymandiasSectionTone.Red]: 'text-red-400/50',
+  [OzymandiasSectionTone.Orange]: 'text-orange-400/50',
+  [OzymandiasSectionTone.Purple]: 'text-purple-400/50',
 }
 
-export function ozymandiasBorderClass(tone: OzymandiasSectionTone): string {
-  return TONE_BORDER_CLASS[tone]
+const TONE_HOVER_CLASS: Record<OzymandiasSectionTone, string> = {
+  [OzymandiasSectionTone.Primary]: 'hover:text-primary',
+  [OzymandiasSectionTone.Red]: 'hover:text-red-400',
+  [OzymandiasSectionTone.Orange]: 'hover:text-orange-400',
+  [OzymandiasSectionTone.Purple]: 'hover:text-purple-400',
 }
 
-export function ozymandiasEditClass(tone: OzymandiasSectionTone): string {
-  return TONE_BG_CLASS[tone]
+export {
+  TONE_BG_CLASS,
+  TONE_BORDER_CLASS,
+  TONE_DASHED_CLASS,
+  TONE_EMPTY_ICON_CLASS,
+  TONE_HOVER_CLASS,
+  TONE_LABEL_CLASS,
+  TONE_SKELETON_CLASS,
 }
 
-export function ozymandiasDashedClass(tone: OzymandiasSectionTone): string {
-  return TONE_DASHED_CLASS[tone]
-}
-
-export function ozymandiasSkeletonClass(tone: OzymandiasSectionTone): string {
-  return TONE_SKELETON_CLASS[tone]
-}
-
-export function ozymandiasHoverClass(tone: OzymandiasSectionTone): string {
-  if (tone === OzymandiasSectionTone.Primary) return 'hover:text-primary'
-  if (tone === OzymandiasSectionTone.Red) return 'hover:text-red-400'
-  if (tone === OzymandiasSectionTone.Orange) return 'hover:text-orange-400'
-  return 'hover:text-purple-400'
-}
-
-export function ozymandiasEmptyIconClass(tone: OzymandiasSectionTone): string {
-  if (tone === OzymandiasSectionTone.Primary) return 'text-muted-foreground'
-  if (tone === OzymandiasSectionTone.Red) return 'text-red-400/50'
-  if (tone === OzymandiasSectionTone.Orange) return 'text-orange-400/50'
-  return 'text-purple-400/50'
-}

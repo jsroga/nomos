@@ -1,5 +1,5 @@
 import { Loader2 } from 'lucide-react'
-import { BeatCardCopy } from './constants/beat-card'
+import { BeatCardCopy } from './utils/beat-card'
 
 export function BeatCardLoading() {
   return (

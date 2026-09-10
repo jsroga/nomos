@@ -4,7 +4,7 @@ import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import { fetchJsonRecord, readJsonBody } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
-import { POLLING_INTERVALS, TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS, TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/utils/polling'
 import { createTriggerRunStatusFetch } from '@/shared/data/polling/trigger-run-status-fetcher'
 import {
   readTriggerRunOutputField,
@@ -14,7 +14,7 @@ import {
   RepaintApiRoute,
   RepaintOutputField,
   RepaintServiceError,
-} from '../../constants/repaint-service'
+} from '../../utils/repaint-service'
 import type { WorldGenTriggerStatusResult } from './world-gen-trigger.api'
 
 const JSON_HEADERS = { 'Content-Type': ContentType.Json }

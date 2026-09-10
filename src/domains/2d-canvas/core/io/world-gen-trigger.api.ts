@@ -1,7 +1,7 @@
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
-import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
+import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/utils/polling'
 import { fetchJsonRecord, readJsonBody } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'

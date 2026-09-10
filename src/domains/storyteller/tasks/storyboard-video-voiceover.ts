@@ -11,7 +11,7 @@ import { ContentType, EnvVarName, HttpAuthScheme, HttpMethod } from '@/shared/da
 import { TEXT_GEN_FAST_MODEL, TEXT_TO_SPEECH_MODEL, openRouterClientConfig } from '@/shared/agent-kernel/models'
 import { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { buildStoryboardCorePromptUser, type StoryboardVideoBeatText } from './constants/storyboard-video-prompt'
+import { buildStoryboardCorePromptUser, type StoryboardVideoBeatText } from './utils/storyboard-video-prompt'
 import {
   StoryboardFfmpegArg,
   StoryboardFfprobeCodec,
@@ -36,7 +36,7 @@ import {
   storyboardVoiceoverMixFilter,
   storyboardVoiceoverSystemPrompt,
   storyboardVoiceoverWordBudget,
-} from './constants/storyboard-video-voiceover'
+} from './utils/storyboard-video-voiceover'
 
 export interface StoryboardVoiceoverResult {
   bytes: Buffer

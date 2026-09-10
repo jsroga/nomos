@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { denyAnonymousApiRequest } from '@/shared/auth/api-default-deny'
-import { isPublicApiPath } from '@/shared/auth/constants/public-api-paths'
-import { ApiDenyMode, isSupabaseAuthCookieName } from '@/shared/auth/constants/session-cookie'
+import { isPublicApiPath } from '@/shared/auth/utils/public-api-paths'
+import { ApiDenyMode, isSupabaseAuthCookieName } from '@/shared/auth/utils/session-cookie'
 import { HttpHeader, HttpStatus } from '@/shared/data/constants/protocol'
 
 const BYPASS_SECRET = 'harness-bypass-secret'

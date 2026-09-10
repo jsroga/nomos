@@ -1,5 +1,5 @@
 import { FileEncoding } from '@/shared/data/constants/protocol'
-import { FeatureFlag } from '@/shared/data/constants/feature-flags'
+import { FeatureFlag } from '@/shared/data/feature-flags'
 
 export enum AutonomousAuthorId {
   Agent = 'storyteller-autonomous-author',

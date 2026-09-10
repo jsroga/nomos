@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { ApiframeGenerateAspectRatio, MIDJOURNEY_VERSION } from '@/shared/ai/constants/apiframe'
+import { ApiframeGenerateAspectRatio, MIDJOURNEY_VERSION } from '@/shared/ai/utils/apiframe'
 import { MidjourneyParamFlag } from '@/shared/data/server/midjourney-params'
-import { MOODBOARD_PROMPT_SUFFIX } from '../constants/moodboard-task-wire'
-import { LockedVisualConceptArt } from '../constants/locked-visual-prompt'
+import { MOODBOARD_PROMPT_SUFFIX } from '../utils/moodboard-task-wire'
+import { LockedVisualConceptArt } from '../utils/locked-visual-prompt'
 import {
   buildCharacterPortraitPrompt,
   CharacterPortraitBasePhrase,
   CharacterPortraitPromptLock,
-} from '../constants/character-portrait-prompt'
+} from '../utils/character-portrait-prompt'
 import {
   buildPortraitMidjourneyPrompt,
   isPortraitCharacterUuid,
-} from '../constants/generate-portrait-wire'
-import { StorytellerLookSrefUrl } from '../constants/storyteller-look-sref'
+} from '../utils/generate-portrait-wire'
+import { StorytellerLookSrefUrl } from '../utils/storyteller-look-sref'
 
 describe('buildCharacterPortraitPrompt', () => {
   it('returns null when the scene is empty or whitespace', () => {

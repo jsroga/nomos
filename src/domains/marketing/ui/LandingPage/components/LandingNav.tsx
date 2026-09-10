@@ -8,7 +8,7 @@ import {
   LandingHeroCopy,
 } from '@/domains/marketing/ui/LandingPage/constants/landing-copy'
 import { LandingNavUiCopy } from '@/domains/marketing/ui/LandingPage/constants/landing-ui-copy'
-import { handleLandingNavSelect } from '@/domains/marketing/ui/LandingPage/constants/landing-nav'
+import { handleLandingNavSelect } from '@/domains/marketing/ui/LandingPage/utils/landing-nav'
 import { LandingGitHubLink } from './LandingGitHubLink'
 
 type LandingNavProps = {

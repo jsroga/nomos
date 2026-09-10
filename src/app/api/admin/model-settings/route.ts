@@ -23,7 +23,7 @@ import {
   MODEL_SETTING_ROLE_IDS,
   OPENROUTER_MODEL_OPTIONS,
   isOpenRouterModelId,
-} from '@/shared/agent-kernel/constants/model-settings'
+} from '@/shared/agent-kernel/utils/model-settings'
 
 const HTTP_UNAUTHORIZED = 401
 const HTTP_FORBIDDEN = 403

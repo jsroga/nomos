@@ -121,7 +121,7 @@ writer's chat picker → admin panel slot → env var → matrix lane.
 
 `resolveConfiguredModelId` (`src/shared/ai/gateway/model-registry.ts`) reads that chain at call time, not module load. The picker rides `writerModel` on the gateway call context (`src/shared/ai/gateway/call-context.ts`), so it reaches author and planner inside a workflow without threading a request through every step. `WRITER_CHOICE_ROLES` in the storyteller model config decides who reads it: critic and muse ignore it, because a writer switching prose models must not move the checker underneath the check.
 
-`GET /api/settings/models` prints the resolved role→model table with provenance. Resolvers: `domains/storyteller/config/constants/model-config.ts`, `domains/game-design/config/model-config.ts`, `domains/loop-creator/config/model-config.ts`.
+`GET /api/settings/models` prints the resolved role→model table with provenance. Resolvers: `domains/storyteller/config/model-config.ts`, `domains/game-design/config/model-config.ts`, `domains/loop-creator/config/model-config.ts`.
 
 ## Agents
 

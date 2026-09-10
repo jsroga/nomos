@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
 import type { AssistantPendingPrompt } from '@/shared/chat/assistant/AssistantChat'
-import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { AssistantChatBodyKey } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { AssistantChatRuntimeStatus } from '@/shared/chat/core/constants/assistant-runtime-status'
 import {
   markChatSessionIdle,

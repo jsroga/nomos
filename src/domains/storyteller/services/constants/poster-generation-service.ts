@@ -1,11 +1,11 @@
 /** Poster / storyboard generation client service wire values. */
 
-import { BeatImageTriggerStatus } from '@/domains/storyteller/services/constants/beat-image-service'
+import { BeatImageTriggerStatus } from '@/domains/storyteller/services/utils/beat-image-service'
 import {
   StorytellerHttpMethod,
   StorytellerPosterType,
 } from '@/domains/storyteller/core/storyteller-page-wire'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 
 export { BeatImageTriggerStatus as PosterTriggerStatus }

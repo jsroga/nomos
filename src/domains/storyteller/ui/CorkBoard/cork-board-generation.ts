@@ -16,12 +16,12 @@ import {
   CorkBoardCopy,
   CorkBoardExistingBeatsLabel,
   CorkBoardPromptPlaceholder,
-} from './constants/cork-board'
+} from './utils/cork-board'
 import { StorytellerMessageType } from '@/domains/storyteller/core/storyteller-page-wire'
-import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { isGenerationActivityBusy } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { getBeatImageBatchStore } from '@/domains/storyteller/state/useBeatImageBatchStore'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-import { isConsistencyFixRunBusy } from '@/domains/storyteller/ui/FixInconsistencies/constants/fix-inconsistencies-dialog'
+import { isConsistencyFixRunBusy } from '@/domains/storyteller/ui/FixInconsistencies/utils/fix-inconsistencies-dialog'
 
 interface GenerateBeatImagesParams {
   projectId: string

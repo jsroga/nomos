@@ -3,7 +3,7 @@ import {
   TileActionBarClass,
   TileActionBarCopy,
   formatTileCoords,
-} from '@/domains/2d-canvas/ui/constants/tile-action-bar'
+} from '@/domains/2d-canvas/ui/utils/tile-action-bar'
 
 interface TileActionBarBusyProps {
   x: number

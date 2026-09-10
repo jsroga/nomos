@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { UrlScheme } from '@/shared/data/constants/protocol'
 import { isPortraitDbWriteConfirmed } from '../persist-character-portrait-db'
-import { GeneratePortraitColumn } from '../constants/generate-portrait-wire'
+import { GeneratePortraitColumn } from '../utils/generate-portrait-wire'
 
 const STORED_URL = `${UrlScheme.Https}://blob.example/portrait.png`
 

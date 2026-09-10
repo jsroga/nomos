@@ -9,7 +9,7 @@ import type { AddToWorldPayload, CanAddToWorldInput } from '@/shared/chat/assist
 import type { AssistantGenerationActivity } from '@/shared/chat/assistant/derive-assistant-generation-activity'
 import type { AssistantCompletedToolCall } from '@/shared/chat/assistant/extract-completed-assistant-tool-calls'
 import type { AssistantPendingPrompt } from '@/shared/chat/assistant/AssistantChat'
-import type { AssistantChatModelOption } from '@/shared/chat/core/constants/assistant-thread-ui'
+import type { AssistantChatModelOption } from '@/shared/chat/core/utils/assistant-thread-ui'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 import {
   resolveWritersRoomSuggestions,

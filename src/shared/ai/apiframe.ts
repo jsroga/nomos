@@ -21,7 +21,7 @@ import {
   ApiframeTopazParam,
   ApiframeTopazUpscaleFactor,
   ApiframeUpscaleModel,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import { buildGenerateBody } from '@/shared/ai/apiframe-generate-body'
 import { nextMidjourneyPromptAfterImageDenial } from '@/shared/data/server/midjourney-params'
 

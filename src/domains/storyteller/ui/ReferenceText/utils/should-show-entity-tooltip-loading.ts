@@ -1,5 +1,5 @@
 import type { EntityReference } from '@/domains/storyteller/core/entities/entity-references'
-import { entityNeedsDescription } from '@/domains/storyteller/services/constants/entity-needs-description'
+import { entityNeedsDescription } from '@/domains/storyteller/services/utils/entity-needs-description'
 
 export function shouldRefetchEntityForTooltip(
   entity: EntityReference | null | undefined

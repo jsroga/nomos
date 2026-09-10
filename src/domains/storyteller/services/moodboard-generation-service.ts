@@ -1,5 +1,5 @@
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/utils/polling'
 import { browserStorage } from '@/shared/data/browser-storage'
 import { waitForTriggerRun, TriggerRunPollFailedError } from '@/shared/data/polling/wait-for-trigger-run'
 import {
@@ -23,7 +23,7 @@ import {
   MoodboardOperationType,
   MoodboardStorageKey,
   MoodboardTriggerStatus,
-} from '@/domains/storyteller/services/constants/moodboard-generation-service'
+} from '@/domains/storyteller/services/utils/moodboard-generation-service'
 
 const MOODBOARD_METADATA_KEY = 'metadata'
 

@@ -1,22 +1,20 @@
 import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { resolveStyleContext } from '@/shared/data/constants/style-presets'
+import { resolveStyleContext } from '@/shared/data/utils/style-presets'
 import { readString, readNumber, recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { DB_COLUMN, DB_SELECT, DB_TABLE } from '@/shared/data/constants/db-tables'
 import {
   generationModeDef,
+  packedCropFromContext,
   resolveGenerationMode,
-} from '@/domains/2d-canvas/constants/generation-modes'
-import { absolutizeStyleReferenceUrls } from '@/domains/2d-canvas/constants/mj-sref'
+  type GenerateTileContextPayload,
+  type GenerateTilePayload,
+  absolutizeStyleReferenceUrls,
+  ContextAssemblyVariant,
+} from '@/domains/2d-canvas/server'
 import { getSiteURL } from '@/shared/data/url'
-import type {
-  GenerateTileContextPayload,
-  GenerateTilePayload,
-} from '@/domains/2d-canvas/tasks/constants/generate-tile'
-import { packedCropFromContext } from '@/domains/2d-canvas/tasks/constants/generate-tile'
 import type { PackedCropRect, PackedCropSpec } from '@/shared/ai/context-pack-layout'
-import { ContextAssemblyVariant } from '@/domains/2d-canvas/constants/tile-generation-service'
 import type { TileAIProvider } from '@/trigger/providers/follow-up-provider'
 
 enum TileContextPayloadKey {

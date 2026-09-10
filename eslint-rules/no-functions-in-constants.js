@@ -1,30 +1,28 @@
 /**
- * Incentive: folders named constants/ should hold values, not functions.
- *
- * Existing helpers under constants/ stay; this rule is warn-only so it does
- * not force a mass move. New code should put logic beside the values, not in
- * the constants folder.
+ * Folders named constants/ hold values only (enums, tables, limits).
+ * Functions, arrows, and function expressions belong in the same-layer utils/
+ * or a named module. Severity is error in eslint.config.js.
  */
 
 /** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
   meta: {
-    type: 'suggestion',
+    type: 'problem',
     docs: {
       description:
-        'Discourage FunctionDeclaration / FunctionExpression / ArrowFunctionExpression under **/constants/**.',
+        'Forbid FunctionDeclaration / FunctionExpression / ArrowFunctionExpression under **/constants/**.',
     },
     schema: [],
     messages: {
       functionsInConstants:
-        'Functions in constants/ folders are discouraged. Keep values here; move logic out of constants/. ' +
-        'This rule is warn-only — do not mass-move existing helpers.',
+        'Functions are forbidden in constants/ folders. Keep values here; git mv logic to the same-layer utils/ or a named module.',
     },
   },
 
   create(context) {
     const filename = (context.filename ?? context.getFilename()).split('\\').join('/')
     if (!filename.includes('/constants/')) return {}
+    if (filename.includes('/__tests__/') || /\.test\.(ts|tsx)$/.test(filename)) return {}
 
     const report = node => {
       context.report({ node, messageId: 'functionsInConstants' })

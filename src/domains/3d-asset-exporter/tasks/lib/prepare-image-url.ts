@@ -16,7 +16,7 @@ import {
   PrepareImagePathPrefix,
   PrepareImagePublicDir,
   UrlScheme,
-} from '../constants/meshy-generation-wire'
+} from '../utils/meshy-generation-wire'
 
 export type PrepareImageUpload = (filename: string, data: Buffer) => Promise<string | null>
 export type PrepareImageReadLocal = (imageUrl: string) => Promise<Buffer>

@@ -46,8 +46,8 @@ import {
   resolveWriterModelChoice,
   StorytellerAgentId,
 } from '@/domains/storyteller/server'
-import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
-import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { AssistantChatBodyKey } from '@/shared/chat/core/utils/assistant-thread-ui'
+import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { requireAuth } from '@/shared/auth/auth'
 import { ApiErrorMessage, HttpHeader } from '@/shared/data/constants/protocol'
 import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'

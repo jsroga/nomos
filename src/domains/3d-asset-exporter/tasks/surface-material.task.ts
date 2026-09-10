@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid'
 import {
   parseMeshyTask,
   type MeshyTask,
-} from './constants/meshy-task-types'
+} from './utils/meshy-task-types'
 
 const MESHY_BASE_URL = 'https://api.meshy.ai/openapi/v2/text-to-3d'
 

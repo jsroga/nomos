@@ -4,7 +4,7 @@ import { resolveDurablePublicImageUrl } from '../persist-generated-image'
 import { isPosterDbWriteConfirmed, mergeStoryPlanPosterUrl } from '../persist-episode-poster-db'
 import { GeneratePosterColumn, GeneratePosterPlanField } from '../constants/generate-poster-wire'
 import { lockedPosterPromptOrNull } from '../build-episode-poster-locked-prompt'
-import { EpisodePosterPromptLock } from '../constants/episode-poster-prompt'
+import { EpisodePosterPromptLock } from '../utils/episode-poster-prompt'
 
 describe('resolveDurablePublicImageUrl', () => {
   it('keeps a hosted https persist URL', () => {

@@ -13,7 +13,7 @@ import {
   storyboardVoiceoverWordBudget,
   resolveStoryboardBin,
   STORYBOARD_VOICEOVER_WORDS_PER_SECOND,
-} from '../constants/storyboard-video-voiceover'
+} from '../utils/storyboard-video-voiceover'
 
 describe('storyboard voiceover script', () => {
   it('sizes the word budget to the clip duration', () => {

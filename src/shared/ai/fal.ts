@@ -6,7 +6,7 @@ import {
   FalSamEndpoint,
   FalSamInputField,
   resolveSamPrompt,
-} from '@/shared/ai/constants/fal'
+} from '@/shared/ai/utils/fal'
 import { ContentType } from '@/shared/data/constants/protocol'
 
 export interface BoxPrompt {

@@ -9,7 +9,7 @@
 import {
   CHEAP_TIER_CHAT_MODEL,
   DEFAULT_CHAT_MODEL,
-} from '@/domains/storyteller/config/constants/chat-model-catalog'
+} from '@/domains/storyteller/config/chat-model-catalog'
 
 export interface AgentModelConfig {
   model: string

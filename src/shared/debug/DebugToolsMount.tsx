@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic'
 import {
   CwvHudEnv,
   PerfDebugEnv,
-} from '@/shared/debug/constants/perf-debug'
+} from '@/shared/debug/utils/perf-debug'
 import { NodeEnv } from '@/shared/data/constants/protocol-http'
 
 const WebVitalsReporter = dynamic(

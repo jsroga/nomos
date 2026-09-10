@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole, ChatPartType } from '@/shared/chat/core/utils/assistant-thread-ui'
 import {
   OverlayHistoryMessageFormat,
   OverlayMemoryPartType,

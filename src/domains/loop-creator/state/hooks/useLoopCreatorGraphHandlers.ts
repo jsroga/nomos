@@ -31,7 +31,7 @@ import {
   LOOP_LOG_CLEAR_CANVAS,
   LOOP_LOG_JSON_PARSE_ERROR,
   LOOP_LOG_REJECT_SUGGESTION,
-} from '@/domains/loop-creator/ui/constants/loop-creator-layout'
+} from '@/domains/loop-creator/ui/utils/loop-creator-layout'
 import { type LoopGameContext } from '@/domains/loop-creator/ui/types/loop-layout-wires'
 import { createCanvasNode } from '@/domains/loop-creator/ui/utils/create-canvas-node'
 import {

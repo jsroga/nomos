@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 import { requireSubmissionNonce, triggerOwnedRun } from '@/shared/jobs'
-import type { generatePortrait } from '@/domains/storyteller/tasks/generate-portrait.task'
 import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { TriggerRunStatus } from '@/shared/data/constants/protocol'
 import { resolveApiframeApiKey } from '@/shared/ai/image-model-env'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
-import { buildCharacterPortraitPrompt } from '@/domains/storyteller/tasks/constants/character-portrait-prompt'
-import { isPortraitCharacterUuid } from '@/domains/storyteller/tasks/constants/generate-portrait-wire'
 import {
-  isVisualSubjectConfigured,
+  buildCharacterPortraitPrompt,
   generateOverviewVisualSubject,
-} from '@/domains/storyteller/services/visual-subject-llm'
-import { VisualSubjectKind } from '@/domains/storyteller/services/constants/visual-overview'
+  isPortraitCharacterUuid,
+  isVisualSubjectConfigured,
+  VisualSubjectKind,
+  type generatePortrait,
+} from '@/domains/storyteller/server'
 
 export const POST = withRateLimit(
   withAuth(async (request: NextRequest, { session }: AuthenticatedRequest) => {

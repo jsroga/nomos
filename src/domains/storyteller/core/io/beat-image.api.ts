@@ -2,7 +2,7 @@ import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { withSubmissionNonce } from '@/shared/jobs/submission-nonce'
 import type { BeatCard } from '@/domains/storyteller/core/types/story-types'
 import { HttpMethod, QueryParam, ContentType } from '@/shared/data/constants/protocol'
-import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
+import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/utils/polling'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import {

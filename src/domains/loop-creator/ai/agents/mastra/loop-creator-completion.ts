@@ -21,7 +21,7 @@ import { complete, completeStructured } from '@/shared/ai/gateway'
 import type { ZodType } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { withMastraSpan } from '@/shared/observability/mastra-tracing'
-import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/feature-flags'
 import { resolveLoopCreatorModel } from '../../../config/model-config'
 import {
   LoopCreatorMastraAgentId,

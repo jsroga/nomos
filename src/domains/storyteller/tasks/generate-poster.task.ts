@@ -5,11 +5,11 @@ import {
   generatePosterPayloadSchema,
   type GeneratePosterPayload,
 } from './constants/task-payloads'
-import { ApiframeGenerateAspectRatio } from '@/shared/ai/constants/apiframe'
+import { ApiframeGenerateAspectRatio } from '@/shared/ai/utils/apiframe'
 import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'
 import { persistEpisodePosterToDatabase } from './persist-episode-poster-db'
 import { generateSelectedMjImage } from './generate-selected-mj-image'
-import { buildPosterMidjourneyLockFlags } from './constants/locked-visual-prompt'
+import { buildPosterMidjourneyLockFlags } from './utils/locked-visual-prompt'
 import {
   buildLockedEpisodePosterPrompt,
   lockedPosterPromptOrNull,

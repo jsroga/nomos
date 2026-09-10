@@ -179,26 +179,26 @@ describe('local/prefer-await-try-catch', () => {
 })
 
 describe('local/no-functions-in-constants', () => {
-  it('is wired as warn on src files', async () => {
+  it('is wired as error on src constants files', async () => {
     const eslint = createRepoEslint()
     const config = await eslint.calculateConfigForFile(
-      path.join(REPO_ROOT, 'src/shared/data/constants/feature-flags.ts')
+      path.join(REPO_ROOT, 'src/shared/data/constants/protocol.ts')
     )
     const rule = config.rules?.['local/no-functions-in-constants']
     const severity = Array.isArray(rule) ? rule[0] : rule
-    expect(severity === 'warn' || severity === 1).toBe(true)
+    expect(severity === 'error' || severity === 2).toBe(true)
   })
 
-  it('warns on a function under constants/ without failing the lint as an error', async () => {
+  it('errors on a function under constants/', async () => {
     const eslint = createRepoEslint()
     const results = await eslint.lintText('export function helper() { return 1 }\n', {
-      filePath: path.join(REPO_ROOT, 'src/shared/data/constants/feature-flags.ts'),
+      filePath: path.join(REPO_ROOT, 'src/shared/data/constants/protocol.ts'),
     })
     const first = results[0]
     const hits = (first?.messages ?? []).filter(
       message => message.ruleId === 'local/no-functions-in-constants'
     )
     expect(hits.length).toBeGreaterThan(0)
-    expect(hits.every(message => message.severity === 1)).toBe(true)
+    expect(hits.every(message => message.severity === 2)).toBe(true)
   })
 })

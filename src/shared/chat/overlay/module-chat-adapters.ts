@@ -3,7 +3,7 @@ import { AppModuleId } from '@/shared/data/constants/protocol'
 import type { ChatSession } from '@/shared/chat/core/io/chat-session-contract'
 import type { AssistantPendingPrompt } from '@/shared/chat/assistant/AssistantChat'
 import type { MentionProvider, ProjectContext } from '@/shared/chat/core/mentions/types'
-import type { AssistantChatModelOption } from '@/shared/chat/core/constants/assistant-thread-ui'
+import type { AssistantChatModelOption } from '@/shared/chat/core/utils/assistant-thread-ui'
 import type { ChatRenderers } from '@/shared/chat/core/renderers'
 import type {
   AddToWorldPayload,

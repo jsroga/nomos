@@ -47,7 +47,7 @@ import {
   episodeDeleteDescription,
   formatEpisodeIndex,
   formatEpisodesHeading,
-} from './constants/episode-manager'
+} from './utils/episode-manager'
 import { shouldPersistEpisodeRename } from './episode-title-action'
 import { KeyboardKey } from '@/shared/data/constants/protocol'
 import { readString } from '@/shared/data/json-guards'

@@ -9,8 +9,8 @@ import {
 } from '../bible-overview-moodboard'
 import { isOverviewReadyForMoodboard } from '../bible-overview-fields'
 import { BibleOverviewMoodboardCopy } from '../../constants/bible-overview'
-import { moodboardGenOperationPrefix } from '@/domains/storyteller/services/constants/moodboard-generation-service'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { moodboardGenOperationPrefix } from '@/domains/storyteller/services/utils/moodboard-generation-service'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import type { AsyncOperation } from '@/shared/jobs/useGlobalStatusStore'
 
 const PROJECT_ID = 'proj-1'

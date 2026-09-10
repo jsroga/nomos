@@ -4,10 +4,10 @@ import {
   ApiframeErrorMessage,
   ApiframeGenerateAspectRatio,
   type ApiframeImageModel,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import { imageGenerateModelToImageGenProvider } from '@/shared/ai/image-model-env'
 import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
-import { REPAINT_STYLE_REF_PREFIX } from '@/shared/data/constants/repaint-gemini'
+import { REPAINT_STYLE_REF_PREFIX } from '@/shared/data/utils/repaint-gemini'
 import {
   BufferEncoding,
   ContentType,

@@ -12,8 +12,8 @@ import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-comple
 import { LoopPlannerOutputSchema } from './schemas/loop-planner-output'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import { LoopCreatorState, LoopAgentAction } from '../../core/graph/state'
-import { buildCanvasActionsFromLoops } from '../constants/loop-planner-canvas'
-import { parseLoopPlannerResponse } from '../constants/loop-planner-parse'
+import { buildCanvasActionsFromLoops } from '../utils/loop-planner-canvas'
+import { parseLoopPlannerResponse } from '../utils/loop-planner-parse'
 
 const LOOP_PLANNER_SYSTEM_PROMPT = `You are a Game Loop Planner - an expert in designing engaging gameplay loop structures.
 

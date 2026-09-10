@@ -5,7 +5,7 @@ import {
   CharacterWebEdgeStyle,
   CharacterWebNodeType,
 } from './constants/character-web'
-import { RelationshipStrokeStyle } from './constants/relationship-web-styles'
+import { RelationshipStrokeStyle } from './utils/relationship-web-styles'
 import {
   CharacterWebEdge,
   CharacterWebNode,

@@ -5,7 +5,7 @@ import {
   isAssistantTurnFailed,
   shouldEmitCompletedToolCalls,
 } from './assistant-turn-phase'
-import { ChatMessageRole } from '../core/constants/assistant-thread-ui'
+import { ChatMessageRole } from '../core/utils/assistant-thread-ui'
 import {
   extractCompletedAssistantToolCalls,
 } from './extract-completed-assistant-tool-calls'

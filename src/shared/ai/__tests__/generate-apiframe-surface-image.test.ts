@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildMidjourneySurfacePrompt } from '@/shared/ai/generate-apiframe-surface-image'
 import { MidjourneyParamFlag } from '@/shared/data/server/midjourney-params'
-import { ApiframeGenerateAspectRatio } from '@/shared/ai/constants/apiframe'
+import { ApiframeGenerateAspectRatio } from '@/shared/ai/utils/apiframe'
 
 describe('buildMidjourneySurfacePrompt', () => {
   it('adds aspect ratio without style refs', () => {

@@ -7,7 +7,7 @@ import {
   STORYTELLER_AUTONOMOUS_ENV,
   STORYTELLER_AUTONOMOUS_MAX_RUNS,
 } from './constants'
-import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/feature-flags'
 import type { GoalConfig } from '@mastra/core/agent'
 
 export const autonomousAuthorAgent = assembleFsAgent(AutonomousAuthorId.Agent, config)

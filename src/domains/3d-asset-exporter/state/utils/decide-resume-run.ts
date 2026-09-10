@@ -1,5 +1,5 @@
 import { HttpStatus } from '@/shared/data/constants/protocol'
-import { isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/constants/polling'
+import { isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/utils/polling'
 
 export enum ResumeRunDecision {
   Resume = 'resume',

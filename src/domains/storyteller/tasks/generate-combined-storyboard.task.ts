@@ -21,7 +21,7 @@ import { isPublicHttpsUrl } from './persist-generated-image'
 import { composeStoryboardContactSheet } from './compose-storyboard-contact-sheet'
 import { generateStoryboardVideoCorePrompt } from './storyboard-video-core-prompt'
 import { mixStoryboardVoiceover } from './storyboard-video-voiceover'
-import { CONTACT_SHEET_HTTPS_REQUIRED } from './constants/storyboard-video-sheet'
+import { CONTACT_SHEET_HTTPS_REQUIRED } from './utils/storyboard-video-sheet'
 import {
   CombinedStoryboardLog,
   CombinedStoryboardMetadataKey,

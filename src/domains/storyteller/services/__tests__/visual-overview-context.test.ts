@@ -5,7 +5,7 @@ import {
   visualOverviewFromCanon,
   formatVisualOverviewBlock,
 } from '../visual-overview-context'
-import { VisualOverviewLabel } from '../constants/visual-overview'
+import { VisualOverviewLabel } from '../utils/visual-overview'
 
 describe('buildVisualOverviewContext', () => {
   it('joins executive summary and central question as overview', () => {

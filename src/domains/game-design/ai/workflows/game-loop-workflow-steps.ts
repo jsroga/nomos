@@ -6,7 +6,7 @@ import {
   type GameDesignAgent,
 } from '@/domains/game-design'
 import { GameMechanicSchema } from '@/domains/game-design/core/schemas'
-import { LoopProposalSchema, parseLoopProposal } from '../constants/loop-proposal'
+import { LoopProposalSchema, parseLoopProposal } from '../utils/loop-proposal'
 import {
   BalanceIssueSeverity,
   DEFAULT_SESSION_DURATION_MINUTES,

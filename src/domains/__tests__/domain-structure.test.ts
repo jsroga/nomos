@@ -76,6 +76,7 @@ function listUiFeatureFolders(uiDir: string): string[] {
 /** Blueprint layer folders — agent packages must live under agents/ when these exist. */
 const AI_LAYER_FOLDERS = new Set([
   'constants',
+  'utils',
   'tools',
   'workflows',
   'agents',
@@ -300,7 +301,7 @@ describe('Domain folder structure conformance', () => {
         const violations = findAiAgentLayerViolations(aiDir)
         expect(
           violations,
-          `${domain}/ai: move Mastra agent packages into ai/agents/ — found beside constants/tools/workflows: ${violations.join(', ')}`,
+          `${domain}/ai: move Mastra agent packages into ai/agents/ — found beside constants/utils/tools/workflows: ${violations.join(', ')}`,
         ).toEqual([])
       })
 

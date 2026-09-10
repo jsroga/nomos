@@ -1,5 +1,5 @@
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
 import { fetchUrlAsBase64 } from '../../core/io/world-data.api'
 import { triggerUpscale, triggerUpscaleVariantSelection } from '../../core/io/world-gen-trigger.api'

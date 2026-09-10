@@ -33,9 +33,12 @@ chose **[A] Approve & build** at Verification.
 - **No browser → Supabase writes** — API routes + TanStack Query mutations.
 - **No server state in Zustand** — UI ephemeral state only.
 - **Magic strings** (`local/no-magic-string`, broadly enforced) → a `SCREAMING` module const, an
-  `enum`, or a `constants/` module. Exempt paths (put the literal there): `constants/`, `*-wire.ts`,
+  `enum`, or a `constants/` module. Exempt paths (put the **literal** there): `constants/`, `*-wire.ts`,
   `enums.ts`, `*-schema.ts`, `*-scorer.ts`, domain `prompts/`, `agents/tools/*-tools.ts`,
   `mcp/domains/*/tools.ts`, tests. Comparison/`typeof` literals, paths (`/`), URLs, and JSX allowed.
+  **`constants/` is values only** — no `function` or arrow helpers (`local/no-functions-in-constants` is
+  **error**). Put logic in the same-layer `utils/` or a named module (`git mv`; do not re-export
+  functions from `constants/`).
 - **Public OpenAPI:** adding or changing `src/app/api/**/route.ts` (path, method, query, body,
   response) requires registering the same Zod in `domains/*/core/io/openapi-routes.ts` or
   `src/shared/openapi/`, then `npm run openapi:generate`. SSE/admin/workspace-only routes get an

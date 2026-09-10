@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ApiframeGenerateAspectRatio,
   MIDJOURNEY_VERSION,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import { MidjourneyParamFlag } from '@/shared/data/server/midjourney-params'
 import { MoodboardFallbackScene, lockedMoodboardPromptsOrNull } from '../build-moodboard-locked-prompts'
 import { buildMoodboardMidjourneyPrompt } from '../generate-moodboard-run'
@@ -13,8 +13,8 @@ import {
   firstMoodboardStyleRefUrl,
   moodboardStyleReferenceForPrompt,
   wrapMoodboardScene,
-} from '../constants/moodboard-task-wire'
-import { StorytellerLookSrefUrl } from '../constants/storyteller-look-sref'
+} from '../utils/moodboard-task-wire'
+import { StorytellerLookSrefUrl } from '../utils/storyteller-look-sref'
 
 describe('lockedMoodboardPromptsOrNull', () => {
   it('keeps already-built prompts so the job can skip the LLM', () => {

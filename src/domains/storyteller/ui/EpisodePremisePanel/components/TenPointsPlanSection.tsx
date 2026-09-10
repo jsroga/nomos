@@ -2,7 +2,7 @@ import { ListOrdered, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { EpisodePremise } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { Button } from '@/components/Button'
 import { Skeleton } from '@/components/Skeleton'
-import { EpisodePremiseSectionKey } from '../constants/ozymandias-sections'
+import { EpisodePremiseSectionKey } from '../utils/ozymandias-sections'
 import { cn } from '@/shared/data/utils'
 import { RichText } from '../../RichText'
 

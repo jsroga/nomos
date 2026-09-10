@@ -16,7 +16,7 @@ import {
   ApiframeVideoField,
   ApiframeVideoModel,
   KlingMultiPromptField,
-} from '../constants/apiframe'
+} from '../utils/apiframe'
 
 describe('buildKlingGenerateBody', () => {
   it('sends model, prompt, start image, duration, and native audio', () => {

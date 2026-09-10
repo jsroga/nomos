@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CORK_BOARD_LOADING_PLACEHOLDER_COUNT } from '../constants/cork-board'
+import { CORK_BOARD_LOADING_PLACEHOLDER_COUNT } from '../utils/cork-board'
 import {
   CorkBoardListMode,
   corkBoardIsAwaitingBeats,

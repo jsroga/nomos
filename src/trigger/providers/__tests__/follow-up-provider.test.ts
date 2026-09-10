@@ -19,7 +19,7 @@ import {
   ImagePosterSurface,
 } from '@/shared/ai/image-model-env'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeImageModel } from '@/shared/ai/utils/apiframe'
 
 describe('resolveFollowUpImageProviderFromEnv', () => {
   it('selects from IMAGE_TILE_FOLLOW_UP_MODEL', () => {

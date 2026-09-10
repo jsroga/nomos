@@ -1,5 +1,5 @@
 import { GENERATION_PROMPTS, type TilePromptLayers } from '@/shared/data/server/prompts'
-import { MIDJOURNEY_VERSION } from '@/shared/ai/constants/apiframe'
+import { MIDJOURNEY_VERSION } from '@/shared/ai/utils/apiframe'
 import { StringSeparator, UrlScheme } from '@/shared/data/constants/protocol'
 
 export enum MidjourneyBaseNegative {

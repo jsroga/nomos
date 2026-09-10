@@ -7,7 +7,7 @@ import {
   RepaintRgba,
   RepaintServiceError,
   canvasBlurFilter,
-} from '../../constants/repaint-service'
+} from '../../utils/repaint-service'
 import { loadImageFromUrl } from './repaint-tile-composite'
 
 export function applyLuminanceToAlpha(data: Uint8ClampedArray): void {

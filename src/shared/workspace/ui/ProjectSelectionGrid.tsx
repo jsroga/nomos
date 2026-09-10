@@ -6,7 +6,7 @@ import {
   PROJECT_SELECTION_FOCUS_RING_VISIBLE,
   PROJECT_SELECTION_GRID_STYLE,
   PROJECT_SELECTION_MONTH_HEADER_STYLE,
-} from '../constants/project-selection'
+} from '../utils/project-selection'
 import type { ProjectMonthGroup } from '../lib/group-projects'
 import type { WorkspaceProject } from '../types'
 

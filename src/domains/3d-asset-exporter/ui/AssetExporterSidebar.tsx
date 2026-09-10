@@ -9,16 +9,16 @@ import {
   MasterPromptSuggestion,
 } from '@/components/MasterPromptField'
 import { ThreeDAssets, type ThreeDAssetsProps } from '@/components/ThreeDAssets'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { getRandomWorldPromptIdea } from '@/shared/data/constants/worldPromptIdeas'
+import { getRandomWorldPromptIdea } from '@/shared/data/utils/worldPromptIdeas'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { AssetExporterFooter } from './AssetExporterFooter'
 import {
   AssetExporterSidebarClass,
   AssetExporterSidebarCopy,
   AssetExporterSidebarStorage,
-} from './constants/asset-exporter-sidebar'
+} from './utils/asset-exporter-sidebar'
 
 export type AssetExporterAssetsBind = ThreeDAssetsProps & {
   selectedCount: number

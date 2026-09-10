@@ -9,7 +9,7 @@ import { SettingsDialog } from '@/domains/2d-canvas'
 import { ProjectSelectorDropdown } from '@/components/shell/ProjectSelectorDropdown'
 import { AsyncStatusIndicator } from '@/components/AsyncStatusIndicator'
 import { TroubleshootIndicator } from '@/components/shell/TroubleshootIndicator'
-import { isWorkspaceChatOverlayEnabled } from '@/shared/data/constants/feature-flags'
+import { isWorkspaceChatOverlayEnabled } from '@/shared/data/feature-flags'
 import { WorkspaceChatToggle } from '@/shared/chat/ui/WorkspaceChatOverlay/WorkspaceChatToggle'
 
 export function GlobalHeader() {

@@ -5,7 +5,7 @@
 
 import { getToolName, isToolUIPart } from 'ai'
 import type { UIMessage } from 'ai'
-import { ChatMessageRole } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole } from '@/shared/chat/core/utils/assistant-thread-ui'
 
 enum ToolUiPartState {
   OutputAvailable = 'output-available',

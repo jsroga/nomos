@@ -2,8 +2,8 @@ import { createTool } from '@mastra/core/tools'
 import { AnalyzeBalanceOutputSchema } from '../../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { AnalyzeMechanicBalanceInputSchema } from '../../constants/logic-tool-schemas'
-import { buildAnalyzeMechanicBalancePrompt } from '../../constants/logic-tool-prompts'
-import { LogicToolCopy, LogicToolId, TargetAudience } from '../../constants/logic-tool-wire'
+import { buildAnalyzeMechanicBalancePrompt } from '../../prompts/logic-tool-prompts'
+import { LogicToolCopy, LogicToolId, TargetAudience } from '../../utils/logic-tool-wire'
 import { createLogicToolModel, invokeLlmJsonPrompt } from './game-design-llm-shared'
 
 export const createAnalyzeMechanicBalanceTool = () =>

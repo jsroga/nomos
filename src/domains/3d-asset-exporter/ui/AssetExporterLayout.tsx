@@ -10,7 +10,7 @@ import { AssetPanelCheckerboard, AssetPanelEmptyState } from './AssetPanelEmptyS
 import {
   AssetExporterPanelClass,
   AssetExporterPanelCopy,
-} from './constants/asset-exporter-panel'
+} from './utils/asset-exporter-panel'
 import { ThreeDPanel } from './ThreeDPanel'
 
 export interface AssetExporterLayoutAsset {

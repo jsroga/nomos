@@ -6,8 +6,8 @@ import {
   USER_SELECTABLE_CHAT_MODELS,
   isKnownChatModel,
   type ChatModelOption,
-} from '@/domains/storyteller/config/constants/chat-model-catalog'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+} from '@/domains/storyteller/config/chat-model-catalog'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 
 export type StorytellerChatModelChoice = Pick<ChatModelOption, 'id' | 'label'>
 

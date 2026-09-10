@@ -1,6 +1,6 @@
 import { LayoutGrid, Loader2, Plus, Sparkles } from 'lucide-react'
 import { Button } from '@/components/Button'
-import { CorkBoardCopy } from './constants/cork-board'
+import { CorkBoardCopy } from './utils/cork-board'
 
 interface CorkBoardEmptyStateProps {
   isBusy: boolean

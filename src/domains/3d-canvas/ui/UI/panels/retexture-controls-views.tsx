@@ -11,7 +11,7 @@ import {
 } from '@/domains/3d-canvas/constants/properties-panel'
 import {
   AsyncOperationStatus,
-} from '@/shared/jobs/constants/async-operation-status'
+} from '@/shared/jobs/utils/async-operation-status'
 import type { AsyncOperation } from '@/shared/jobs/useGlobalStatusStore'
 
 interface RetextureCompletedViewProps {

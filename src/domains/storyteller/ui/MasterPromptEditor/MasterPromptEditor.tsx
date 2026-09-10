@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Save, Scroll, FileText } from 'lucide-react'
 import { HtmlElementType } from '@/shared/data/constants/protocol'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
-import { getRandomWorldPromptIdea } from '@/shared/data/constants/worldPromptIdeas'
+import { getRandomWorldPromptIdea } from '@/shared/data/utils/worldPromptIdeas'
 import { cn } from '@/shared/data/utils'
 import {
   MasterPromptField,

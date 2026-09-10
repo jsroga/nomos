@@ -17,7 +17,7 @@ import {
   CharacterMetricKey,
   CharacterPanelCopy,
   formatCastHeading,
-} from './constants/character-panel-metrics'
+} from './utils/character-panel-metrics'
 import { CharacterCard } from './CharacterCard'
 import { CharacterPanelLoading } from './CharacterPanelLoading'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'

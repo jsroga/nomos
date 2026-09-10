@@ -13,9 +13,9 @@ import {
   showBeatOnBoard,
 } from '../writers-room-tool-helpers'
 import { CharacterDraftChatSection, StorytellerChatTool, StorytellerTab, StorytellerWorkflowToolId } from '@/domains/storyteller/core/storyteller-page-wire'
-import { ChatMessageRole } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { ChatMessageRole } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { BibleSectionDisplayName, SectionListJoin } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
-import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
+import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
 import type { ProposedBibleSectionUpdate } from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
 
 function proposal(section: BibleSection): ProposedBibleSectionUpdate {

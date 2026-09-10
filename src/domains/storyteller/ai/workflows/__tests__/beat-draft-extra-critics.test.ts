@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Mastra } from '@mastra/core/mastra'
 import { RunTraceEventType, subscribeRunTrace, type RunTraceEvent } from '@/shared/agent-kernel'
-import { FEATURE_FLAG_ON, FeatureFlag } from '@/shared/data/constants/feature-flags'
+import { FEATURE_FLAG_ON, FeatureFlag } from '@/shared/data/feature-flags'
 import { createBeatDraftWorkflow, type BeatDraftDeps } from '../beat-draft-workflow'
 import {
   activeBeatDraftCriticRoles,

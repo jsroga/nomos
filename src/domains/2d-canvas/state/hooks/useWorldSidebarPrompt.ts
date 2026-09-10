@@ -3,20 +3,20 @@ import toast from 'react-hot-toast'
 import {
   type GenerationModeDef,
   resolveGenerationMode,
-} from '../../constants/generation-modes'
+} from '../../utils/generation-modes'
 import {
   clampStyleReferenceUrls,
   generationModePersistFields,
   remainingStyleRefSlots,
   takeStyleRefFiles,
-} from '../../constants/mj-sref'
+} from '../../utils/mj-sref'
 import { settingsApi } from '../../core/io/settings.api'
 import { uploadStyleRefFile } from '../../core/io/style-refs.api'
 import {
   MASTER_PROMPT_SAVE_DEBOUNCE_MS,
   WorldGenSidebarLog,
   WorldGenSidebarToast,
-} from '../../ui/constants/sidebar'
+} from '../../ui/utils/sidebar'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import type { WorkspaceProject } from '@/shared/workspace/types'
 import { resolveGenerationModeSrefUrls } from './apply-generation-mode-srefs'

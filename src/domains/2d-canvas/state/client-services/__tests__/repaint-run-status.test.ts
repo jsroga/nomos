@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 import {
   RepaintOperationDetail,
   RepaintOperationId,
   RepaintOperationLabel,
-} from '../../../constants/repaint-service'
+} from '../../../utils/repaint-service'
 
 const addOperation = vi.fn()
 const removeOperation = vi.fn()

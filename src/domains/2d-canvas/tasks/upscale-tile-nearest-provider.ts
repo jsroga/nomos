@@ -1,6 +1,6 @@
 import { logger } from '@trigger.dev/sdk'
 import { BufferEncoding } from '@/shared/data/constants/protocol'
-import { TOPAZ_MEGAPIXEL_DIVISOR, resolveNearestNeighbourSize } from '../constants/topaz-upscale'
+import { TOPAZ_MEGAPIXEL_DIVISOR, resolveNearestNeighbourSize } from '../utils/topaz-upscale'
 
 export async function upscaleNearestNeighbour(imageBase64: string): Promise<string> {
   const sharp = (await import('sharp')).default

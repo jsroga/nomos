@@ -4,13 +4,11 @@ import { withAuth, withRateLimit, type AuthenticatedRequest } from '@/shared/dat
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { HttpStatus } from '@/shared/data/constants/protocol'
 import {
+  GenerateCharacterFieldsError,
   GenerateCharacterFieldsErrorCode,
   generateCharacterFieldsRequestSchema,
-} from '@/domains/storyteller/services/constants/generate-character-fields'
-import {
-  GenerateCharacterFieldsError,
   generateCharacterMissingFields,
-} from '@/domains/storyteller/services/generate-character-fields-service'
+} from '@/domains/storyteller/server'
 
 /**
  * This route runs inference, so it needs longer than the platform default.

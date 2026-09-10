@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
 import { ownedElsewhere } from '@/shared/jobs/payload-schema'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeVideoModel } from '@/shared/ai/utils/apiframe'
 import type { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 
 /** An image provider's credentials, as a route resolves them. */

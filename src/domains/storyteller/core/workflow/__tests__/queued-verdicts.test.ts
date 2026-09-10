@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { queuedVerdictsListVisible, selectQueuedVerdicts } from '../queued-verdicts'
 import { MastraWorkflowStatus } from '@/shared/data/constants/protocol'
 import { readFileSync } from 'node:fs'
-import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/feature-flags'
 
 describe('queued editorial verdicts', () => {
   it('keeps only suspended runs for the project', () => {

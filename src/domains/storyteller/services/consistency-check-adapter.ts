@@ -26,7 +26,7 @@ import {
   LegacyConsistencyType,
   legacyConsistencyTypeForIssue,
   parseContinuityIssueWireType,
-} from '@/domains/storyteller/services/constants/consistency-check-adapter'
+} from '@/domains/storyteller/services/utils/consistency-check-adapter'
 
 /** Legacy StoryContext-ish input the API route passes through. */
 export interface ConsistencyCheckContext {

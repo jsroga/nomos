@@ -4,7 +4,7 @@ import { JobQueue, MachinePreset, defineOwnedTask } from '@/shared/jobs'
 import { put } from '@vercel/blob'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { BufferEncoding, ContentType } from '@/shared/data/constants/protocol'
-import { UpscaleStrategy } from '../constants/generation-modes'
+import { UpscaleStrategy } from '../utils/generation-modes'
 import { runModeUpscale } from './upscale-tile-mode-run'
 import { upscaleTilePayloadSchema } from './constants/upscale-tile-payload'
 

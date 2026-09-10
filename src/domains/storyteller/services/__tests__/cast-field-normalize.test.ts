@@ -12,7 +12,7 @@ vi.mock('@/domains/storyteller/services/character-mbti-service', async importOri
   return { ...actual, generateCharacterMbti }
 })
 
-import { CharacterUnsetSentinel } from '@/domains/storyteller/ui/CharacterPanel/constants/character-panel-metrics'
+import { CharacterUnsetSentinel } from '@/domains/storyteller/ui/CharacterPanel/utils/character-panel-metrics'
 import { CastUnsetVoice, optionalCastString, resolveInsertMbti } from '../cast-field-normalize'
 
 const VERA = 'Vera'

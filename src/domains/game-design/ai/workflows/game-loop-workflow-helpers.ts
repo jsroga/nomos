@@ -7,12 +7,12 @@ import {
 import { z } from 'zod'
 import type { GameDesignAgent } from '@/domains/game-design'
 import { GameLoopSchema } from '@/domains/game-design/core/schemas'
-import { GameDesignResponseType } from '../constants/game-design-response'
+import { GameDesignResponseType } from '../utils/game-design-response'
 import {
   mergeLoopProposal,
   parseLoopProposal,
   type LoopProposal,
-} from '../constants/loop-proposal'
+} from '../utils/loop-proposal'
 import {
   GameLoopValidationState,
   GameLoopWorkflowCopy,

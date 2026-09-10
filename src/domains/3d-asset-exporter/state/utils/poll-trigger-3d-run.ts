@@ -1,6 +1,6 @@
 'use client'
 
-import { isActiveTaskStatus } from '@/shared/data/constants/polling'
+import { isActiveTaskStatus } from '@/shared/data/utils/polling'
 import { createTriggerRunStatusFetch } from '@/shared/data/polling/trigger-run-status-fetcher'
 import type { HttpTriggerRunStatus } from '@/shared/data/polling/trigger-run-status-fetcher'
 import {

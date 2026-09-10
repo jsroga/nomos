@@ -12,7 +12,7 @@ import {
   PROJECT_SELECTION_DELETE_TITLE,
   PROJECT_SORT_CYCLE,
   ProjectSortMode,
-} from '../constants/project-selection'
+} from '../utils/project-selection'
 import { filterAndSortProjects, groupProjectsByMonth } from '../lib/group-projects'
 import { useWorkspaceProjectStore } from '../workspace-project-store'
 

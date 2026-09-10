@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { PrepareImageError } from '../../constants/meshy-generation-wire'
+import { PrepareImageError } from '../../utils/meshy-generation-wire'
 import { prepareImageUrl } from '../prepare-image-url'
 
 vi.mock('@trigger.dev/sdk', () => ({

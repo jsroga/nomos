@@ -14,7 +14,7 @@ import {
   OPENROUTER_AUTO_GATEWAY,
   openRouterClientConfig,
 } from '@/shared/agent-kernel/models'
-import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import { resolveRoleModel } from '@/domains/storyteller/config/model-config'
 import { resolveGameDesignModel } from '@/domains/game-design/config/model-config'
 import { registerCorePrompts } from '@/shared/agent-kernel/prompts/registry'
 

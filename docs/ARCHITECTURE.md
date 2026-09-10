@@ -52,6 +52,8 @@ contracts/        # Zod schemas + mappers; the ONLY place snake_case lives
 services/         # server-only Drizzle / external APIs
 ai/               # server-only Mastra (agents under ai/agents/)
 tasks/            # Trigger.dev schemaTask
+constants/        # values only (enums, tables, limits)
+utils/            # same-layer helpers; not nested under constants/
 ```
 
 **Rules**
@@ -211,7 +213,7 @@ Two layers, deliberately unequal.
 
 `MIDDLEWARE_DENY_MODE` selects `report` (log and allow) or `enforce` (401). Report exists so the deny list can be observed against real traffic before it bites; anything appearing in the log is either a missing allowlist entry or a real vulnerability.
 
-**`PUBLIC_API_PATHS`** (`shared/auth/constants/public-api-paths`) is the one allowlist in the system, because it *is* the security decision rather than a way to avoid one. Every entry states why it is public. Adding one is a security review.
+**`PUBLIC_API_PATHS`** (`shared/auth/utils/public-api-paths`) is the one allowlist in the system, because it *is* the security decision rather than a way to avoid one. Every entry states why it is public. Adding one is a security review.
 
 **Using the session.** A handler that binds the authenticated session and never reads it is an error (`local/no-discarded-auth-context`): in an API route that usually means it proved *someone* is signed in, then acted on a caller-supplied id without checking *who*. Routes that genuinely need only session existence say so on the first line of the handler — `// auth-scope: session-existence-only — <reason>` — an explicit statement rather than a path exemption.
 
@@ -243,6 +245,7 @@ The `NEXT_PUBLIC_` prefix inlines the list into the client bundle so the UI can 
 3. **One Mastra instance / one Postgres store** — see AGENTS.md.
 4. **Quality gates** — `qualitygate:*`, metrics 400/800 lines, complexity 15/25 — [DEVELOPMENT.md](./DEVELOPMENT.md).
 5. **One declaration per world-bible section** — see below.
+6. **`constants/` is values only** — enums, tables, limits. Functions and arrows live in the same-layer `utils/` or a named module (`local/no-functions-in-constants`).
 
 ### Adding a world-bible section
 

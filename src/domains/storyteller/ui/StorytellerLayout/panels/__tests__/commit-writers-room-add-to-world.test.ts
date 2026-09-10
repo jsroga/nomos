@@ -13,13 +13,13 @@ import { StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { BibleSectionDisplayName } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-import { WritersRoomConfirm, WritersRoomToast } from '../../constants/writers-room-copy'
+import { WritersRoomConfirm, WritersRoomToast } from '../../utils/writers-room-copy'
 import {
   commitWritersRoomAddToWorld,
   type CommitWritersRoomAddToWorldInput,
 } from '../writers-room-add-to-world'
 import { ManageToolOperation } from '@/domains/storyteller/ai/tools/manage-tools-wire'
-import { CharacterDraftChatSection } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { CharacterDraftChatSection } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { CharacterTextFieldKey } from '@/domains/storyteller/core/character-missing-fields'
 
 const EPISODE_ID = '8db804d0-1c39-498e-97a5-dfd7eb828789'

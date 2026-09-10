@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ChatMessageStatus, ChatPartType, ChatToolPartPrefix } from '../../core/constants/assistant-thread-ui'
+import { ChatMessageStatus, ChatPartType, ChatToolPartPrefix } from '../../core/utils/assistant-thread-ui'
 import {
   createShowThinkingSelector,
   hasRenderableAssistantContent,

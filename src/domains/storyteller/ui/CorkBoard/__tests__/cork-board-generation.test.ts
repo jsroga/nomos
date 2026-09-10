@@ -14,7 +14,7 @@ import {
   StorytellerChatTool,
   StorytellerWorkflowToolId,
 } from '@/domains/storyteller/core/storyteller-page-wire'
-import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { GenerationActivityPhase } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   CORK_BOARD_GENERATE_BEATS_PROMPT,
@@ -24,7 +24,7 @@ import {
   CorkBoardCopy,
   CorkBoardExistingBeatsLabel,
   CorkBoardPromptPlaceholder,
-} from '../constants/cork-board'
+} from '../utils/cork-board'
 import {
   beatsForImageGeneration,
   corkBoardNextBeatPrompt,

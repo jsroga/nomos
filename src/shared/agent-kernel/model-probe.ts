@@ -11,7 +11,7 @@
 import '@/shared/data/server-guard'
 import { OPENROUTER_BASE_URL, openRouterClientConfig } from '@/shared/agent-kernel/models'
 import { readJsonBody } from '@/shared/data/fetch-json-record'
-import { isOpenRouterModelId } from '@/shared/agent-kernel/constants/model-settings'
+import { isOpenRouterModelId } from '@/shared/agent-kernel/utils/model-settings'
 import {
   MODEL_PROBE_AUTH_HEADER,
   MODEL_PROBE_CONTENT_TYPE_HEADER,

@@ -8,7 +8,7 @@ import {
   PROJECT_SELECTION_FOCUS_RING,
   PROJECT_SELECTION_FOCUS_RING_VISIBLE,
   PROJECT_SELECTION_NAME_PLACEHOLDER,
-} from '../constants/project-selection'
+} from '../utils/project-selection'
 
 type ProjectSelectionComposeBarProps = {
   value: string

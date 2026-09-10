@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MeshyGenerationApiUrl, MeshyGenerationMetadataKey } from '../../constants/meshy-generation-wire'
-import { MeshyTaskStatusValue } from '../../constants/meshy-task-types'
+import { MeshyGenerationApiUrl, MeshyGenerationMetadataKey } from '../../utils/meshy-generation-wire'
+import { MeshyTaskStatusValue } from '../../utils/meshy-task-types'
 
 const { metadataStore, clearMetadata } = vi.hoisted(() => {
   const metadataStore: Record<string, unknown> = {}

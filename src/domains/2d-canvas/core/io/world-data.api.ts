@@ -8,7 +8,7 @@ import {
   WorldDataApiRoute,
   WorldDataStoreError,
 } from '../../state/constants/world-data-store'
-import { WorldGenSidebarApiRoute } from '../../ui/constants/sidebar'
+import { WorldGenSidebarApiRoute } from '../../ui/utils/sidebar'
 import { worldProjectSchema, type WorldProject } from './world.dto'
 
 const JSON_HEADERS = { 'Content-Type': ContentType.Json }

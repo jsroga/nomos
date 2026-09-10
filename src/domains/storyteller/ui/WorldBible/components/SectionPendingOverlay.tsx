@@ -7,7 +7,7 @@ import { VisualJsonDiff } from '@/domains/storyteller/ui/ActionToast/VisualJsonD
 import {
   SectionPendingOverlayClass,
   SectionPendingOverlayCopy,
-} from '@/domains/storyteller/ui/WorldBible/constants/section-pending-overlay'
+} from '@/domains/storyteller/ui/WorldBible/utils/section-pending-overlay'
 import { cn } from '@/shared/data/utils'
 import type { PendingAction } from '../utils/bible-context-types'
 

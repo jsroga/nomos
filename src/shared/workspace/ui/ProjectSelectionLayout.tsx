@@ -10,7 +10,7 @@ import {
   PROJECT_SELECTION_SEARCH_PLACEHOLDER,
   PROJECT_SORT_LABEL,
   projectAvatarUrl,
-} from '../constants/project-selection'
+} from '../utils/project-selection'
 import { useProjectSelection } from '../hooks/useProjectSelection'
 import { ProjectSelectionComposeBar } from './ProjectSelectionComposeBar'
 import { ProjectSelectionGrid } from './ProjectSelectionGrid'

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { GENERATION_MODES, GenerationMode } from '../../../constants/generation-modes'
+import { GENERATION_MODES, GenerationMode } from '../../../utils/generation-modes'
 import { masterPromptAfterModePick } from '../useWorldSidebarPrompt'
-import { switchGenerationModeDescription } from '../../../ui/constants/sidebar'
+import { switchGenerationModeDescription } from '../../../ui/utils/sidebar'
 
 describe('masterPromptAfterModePick', () => {
   const painted = GENERATION_MODES.find(mode => mode.id === GenerationMode.PaintedIsometric)

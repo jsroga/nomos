@@ -58,7 +58,7 @@ import {
   ChatMessageStatus,
   parseAssistantEntities,
   type ParsedChatEntity,
-} from '../core/constants/assistant-thread-ui'
+} from '../core/utils/assistant-thread-ui'
 
 const ENTITY_ICONS: Record<ChatEntityKind, LucideIcon> = {
   [ChatEntityKind.Character]: User,

@@ -4,12 +4,12 @@ import { MasterPromptField, MasterPromptSuggestMode } from '@/components/MasterP
 import { FileUploader } from '@/components/FileUploader'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import toast from 'react-hot-toast'
-import { GENERATION_MODES } from '@/domains/2d-canvas/constants/generation-modes'
+import { GENERATION_MODES } from '@/domains/2d-canvas/utils/generation-modes'
 import {
   STYLE_REF_FILE_ACCEPT,
   STYLE_REFERENCE_URL_MAX,
   confirmGenerationModeSwitch,
-} from '@/domains/2d-canvas/constants/mj-sref'
+} from '@/domains/2d-canvas/utils/mj-sref'
 import type { WorldGenSidebarState } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
 import {
   WorldGenSidebarWorldCopy,
@@ -20,7 +20,7 @@ import {
   styleRefUploadingLabel,
   switchGenerationModeDescription,
   WorldGenStyleRefsClass,
-} from '../../constants/sidebar'
+} from '../../utils/sidebar'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { HtmlElementType } from '@/shared/data/constants/protocol'
 

@@ -2,8 +2,8 @@ import { env } from '@/shared/config/env'
 import { NextResponse } from 'next/server'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { EnvVarName } from '@/shared/data/constants/protocol'
-import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
-import { UpscaleStrategy } from '@/domains/2d-canvas/constants/generation-modes'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/feature-flags'
+import { UpscaleStrategy } from '@/domains/2d-canvas/server'
 import { readApiframeApiKey } from '@/shared/ai/image-model-env'
 
 export enum UpscaleMode {

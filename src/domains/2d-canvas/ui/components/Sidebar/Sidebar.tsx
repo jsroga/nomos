@@ -1,7 +1,7 @@
 import React from 'react'
 import { DomainSidebar } from '@/components/DomainSidebar'
 import type { WorldGenSidebarState } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
-import { WorldGenSidebarHeader, WorldGenSidebarStorageKey } from '../../constants/sidebar'
+import { WorldGenSidebarHeader, WorldGenSidebarStorageKey } from '../../utils/sidebar'
 import { SidebarContent } from './SidebarContent'
 
 interface SidebarProps {

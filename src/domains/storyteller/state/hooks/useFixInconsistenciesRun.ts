@@ -24,8 +24,8 @@ import {
   ConsistencyFixRunPhase,
   FixInconsistenciesToastCopy,
   consistencyFixRunStorageKey,
-} from '@/domains/storyteller/ui/FixInconsistencies/constants/fix-inconsistencies-dialog'
-import { isGenerationActivityBusy } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+} from '@/domains/storyteller/ui/FixInconsistencies/utils/fix-inconsistencies-dialog'
+import { isGenerationActivityBusy } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import {
   IDLE_CONSISTENCY_FIX_RUN,
   useStorytellerUiStore,

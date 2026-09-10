@@ -3,7 +3,7 @@
 import {
   isActiveTaskStatus,
   POLLING_INTERVALS,
-} from '@/shared/data/constants/polling'
+} from '@/shared/data/utils/polling'
 
 import {
   shouldStopTriggerRunPolling,

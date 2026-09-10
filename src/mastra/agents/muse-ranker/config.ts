@@ -6,7 +6,7 @@ import {
 } from '@/domains/storyteller/ai/agents/Muse/constants/muse-agents'
 import { EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { loadPublishedOrFileBrief } from '@/shared/agent-kernel/mastra/load-published-brief'
-import { resolveRoleModel } from '@/domains/storyteller/config/constants/model-config'
+import { resolveRoleModel } from '@/domains/storyteller/config/model-config'
 import { AgentModelRole } from '@/domains/storyteller/ai/constants/agent-identity'
 
 /** File-based muse-ranker — structural keep/reject. Planner-class model. */

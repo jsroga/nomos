@@ -8,7 +8,7 @@ import {
   type MjGridPayload,
   type WorldGenReviewPayload,
 } from '@/domains/2d-canvas/state/constants/world-ui-store'
-import type { RepaintResult } from '@/domains/2d-canvas/constants/repaint-service'
+import type { RepaintResult } from '@/domains/2d-canvas/utils/repaint-service'
 import type { SelectResult } from './client-services/select-mode-service'
 import { omitRecordKey } from './utils/omit-record-key'
 

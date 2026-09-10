@@ -13,7 +13,7 @@ import {
 import { useWorldStore } from '../../useWorldStore'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { DynamicLocalStorageKeys } from '@/shared/data/utils/localStorage'
 import type { UpscaleRunState } from '../upscale-run-types'
 import { UpscaleProvider } from '../../../core/upscale-provider-wire'
 

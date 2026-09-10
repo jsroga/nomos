@@ -14,7 +14,7 @@ import {
   CONTACT_SHEET_SVG_NS,
   contactSheetLayout,
   type ContactSheetCell,
-} from './constants/storyboard-video-sheet'
+} from './utils/storyboard-video-sheet'
 
 function isRemoteUrl(url: string): boolean {
   return (

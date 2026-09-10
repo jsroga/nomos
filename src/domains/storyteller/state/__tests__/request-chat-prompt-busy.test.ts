@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import { getStorytellerUiStore } from '../useStorytellerUiStore'
-import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
-import { ConsistencyFixRunPhase } from '@/domains/storyteller/ui/FixInconsistencies/constants/fix-inconsistencies-dialog'
+import { GenerationActivityPhase } from '@/domains/storyteller/state/utils/storyteller-ui-store'
+import { ConsistencyFixRunPhase } from '@/domains/storyteller/ui/FixInconsistencies/utils/fix-inconsistencies-dialog'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 
 describe('requestChatPrompt', () => {

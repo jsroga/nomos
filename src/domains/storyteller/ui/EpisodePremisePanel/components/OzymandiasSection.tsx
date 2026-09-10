@@ -15,7 +15,7 @@ import {
   ozymandiasHoverClass,
   ozymandiasLabelClass,
   ozymandiasSkeletonClass,
-} from '../constants/ozymandias-sections'
+} from '../utils/ozymandias-sections'
 
 type PremiseSectionKey = EpisodePremiseSectionKey
 

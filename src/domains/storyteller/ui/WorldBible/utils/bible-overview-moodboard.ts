@@ -1,6 +1,6 @@
 import type { AsyncOperation } from '@/shared/jobs/useGlobalStatusStore'
 import { UrlScheme } from '@/shared/data/constants/protocol'
-import { moodboardGenOperationPrefix } from '@/domains/storyteller/services/constants/moodboard-generation-service'
+import { moodboardGenOperationPrefix } from '@/domains/storyteller/services/utils/moodboard-generation-service'
 import { BibleOverviewMoodboardCopy } from '../constants/bible-overview'
 
 const MOODBOARD_INITIAL_SLOT_COUNT = 3

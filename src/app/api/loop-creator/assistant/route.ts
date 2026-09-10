@@ -26,7 +26,7 @@ import { ContentType, HttpHeader, LoopCreatorStreamEventType } from '@/shared/da
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { isPlainObject, readString } from '@/shared/data/json-guards'
 import { isE2eHarnessCaller, withE2eLlmPin } from '@/shared/ai/gateway/e2e-llm-pin'
-import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { AssistantChatBodyKey } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { bindOverlaySessionMemory } from '@/shared/chat/core/io/bind-overlay-session-memory'
 import { scheduleChatSessionTitle } from '@/shared/chat/core/io/title-chat-session'
 

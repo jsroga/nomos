@@ -6,7 +6,7 @@ import {
   TileActionBarCopy,
   TileActionBarVariant,
   formatTileCoords,
-} from '@/domains/2d-canvas/ui/constants/tile-action-bar'
+} from '@/domains/2d-canvas/ui/utils/tile-action-bar'
 import { TileActionBarEnhance } from './TileActionBarEnhance'
 
 interface TileActionBarIdleProps {

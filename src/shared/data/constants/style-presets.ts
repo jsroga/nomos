@@ -119,51 +119,7 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
 ]
 
-export const STYLE_PRESETS_MAP: Record<string, StylePreset> = STYLE_PRESETS.reduce<
-  Record<string, StylePreset>
->(
-  (acc, preset) => {
-    acc[preset.id] = preset
-    return acc
-  },
-  {}
-)
-
 /** Default palette phrase when no preset is selected (custom URLs or legacy). */
 export const DEFAULT_STYLE_CONTEXT =
   'muted desaturated palette, rich atmospheric detail.'
 
-/**
- * Resolves the style context phrase for first-tile prompts from project settings.
- * Used to replace the default "painterly art style..." with the selected preset's phrase.
- */
-export function resolveStyleContext(project: {
-  stylePreset?: string | null
-}): string {
-  if (project.stylePreset) {
-    const preset = STYLE_PRESETS_MAP[project.stylePreset]
-    if (preset?.styleContext) return preset.styleContext
-  }
-  return DEFAULT_STYLE_CONTEXT
-}
-
-/**
- * Resolves the effective style reference URLs for a project.
- * If a preset is selected, returns the preset's URLs.
- * Otherwise returns the custom URLs stored on the project.
- */
-export function resolveStyleReferenceUrls(project: {
-  stylePreset?: string | null
-  styleReferenceUrls?: unknown
-}): string[] {
-  if (project.stylePreset) {
-    const preset = STYLE_PRESETS_MAP[project.stylePreset]
-    if (preset && preset.urls.length > 0) {
-      return preset.urls
-    }
-  }
-  if (Array.isArray(project.styleReferenceUrls)) {
-    return project.styleReferenceUrls.filter((url): url is string => typeof url === 'string')
-  }
-  return []
-}

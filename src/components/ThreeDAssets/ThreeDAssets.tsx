@@ -7,7 +7,7 @@ import { FileUploader, FileUploaderItemStatus, isFileUploaderUploading, type Fil
 import {
   ThreeDAssetsClass,
   ThreeDAssetsCopy,
-} from './constants/three-d-assets'
+} from './utils/three-d-assets'
 
 export interface ThreeDAssetsProps {
   items: FileUploaderItem[]

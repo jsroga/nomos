@@ -20,12 +20,12 @@ import {
   HYPER3D_MAX_POLL_ATTEMPTS,
   HYPER3D_POLL_INTERVAL_MS,
   UrlScheme,
-} from '../constants/meshy-generation-wire'
+} from '../utils/meshy-generation-wire'
 import {
   parseHyper3dTask,
   resolveHyper3dModelUrl,
   type Hyper3dTask,
-} from '../constants/meshy-task-types'
+} from '../utils/meshy-task-types'
 
 interface RunHyper3dGenerationParams {
   assetId: string

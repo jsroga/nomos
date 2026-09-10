@@ -52,8 +52,8 @@ export {
   type ControllerFrameIntent,
 } from './ai/controller/controller-sse-wire'
 export { resolveChatModelId, resolveWriterModelChoice } from './config/resolve-chat-model'
-export { CHAT_MODELS, isKnownChatModel } from './config/constants/chat-model-catalog'
-export { resolveStorytellerModel } from './config/constants/model-config'
+export { CHAT_MODELS, isKnownChatModel } from './config/chat-model-catalog'
+export { resolveStorytellerModel } from './config/model-config'
 export type { generateStoryboard } from './tasks/generate-storyboard.task'
 export type { generateCombinedStoryboard } from './tasks/generate-combined-storyboard.task'
 export {
@@ -97,6 +97,38 @@ export { runConsistencyCheck } from './services/consistency-check-adapter'
 export { getUndoManager } from './core/editing/undo-manager'
 export { GrrmAuthorAgentId, BeatPlannerAgentId, StorytellerAgentId } from './ai/constants/agent-identity'
 export { formatBannedPhrasesForPrompt } from './ai/prompts/guardrails/anti-slop-phrases'
+export {
+  fillMissingEntityDescriptions,
+  generateBaseEntityDescription,
+} from './services/entity-base-description-service'
+export { entityNeedsDescription } from './services/utils/entity-needs-description'
+export { hasUsefulResolveContext } from './services/utils/entity-base-description'
+export {
+  displayNameFromRefId,
+  getEntityTypeFromId,
+} from './services/entity-registry-reference-id'
+export {
+  ROLE_ENV_VARS,
+  resolveRoleModel,
+  resolveUserPickerOpenRouterModelId,
+  type StorytellerModelRole,
+} from './config/model-config'
+export {
+  GenerateCharacterFieldsErrorCode,
+  generateCharacterFieldsRequestSchema,
+} from './services/utils/generate-character-fields'
+export {
+  GenerateCharacterFieldsError,
+  generateCharacterMissingFields,
+} from './services/generate-character-fields-service'
+export type { generatePortrait } from './tasks/generate-portrait.task'
+export { buildCharacterPortraitPrompt } from './tasks/utils/character-portrait-prompt'
+export { isPortraitCharacterUuid } from './tasks/utils/generate-portrait-wire'
+export {
+  generateOverviewVisualSubject,
+  isVisualSubjectConfigured,
+} from './services/visual-subject-llm'
+export { VisualSubjectKind } from './services/utils/visual-overview'
 export { requestedEpisodePremiseField } from './core/utils/requested-episode-premise-field'
 export { CharacterDraftChatSection, StorytellerMessageRole, StorytellerMessageType } from './core/storyteller-page-wire'
 export { beatDraftOutputSchema } from './ai/workflows/beat-draft-contract'

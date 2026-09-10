@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
 import { ownedElsewhere } from '@/shared/jobs/payload-schema'
-import { UpscaleStrategy } from '../../constants/generation-modes'
+import { UpscaleStrategy } from '../../utils/generation-modes'
 import type { UpscaleProvider } from '../../core/upscale-provider-wire'
 import type { ProviderConfig } from '../upscale-tile-providers'
 

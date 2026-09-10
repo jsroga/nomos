@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ImageEnvVar, ImageGenerateModelId } from '@/shared/ai/constants/image-env'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeImageModel } from '@/shared/ai/utils/apiframe'
 import { resolveMoodboardProviderConfig } from '../moodboard-provider-config'
 
 describe('resolveMoodboardProviderConfig', () => {

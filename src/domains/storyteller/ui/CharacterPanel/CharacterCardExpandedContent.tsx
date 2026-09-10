@@ -5,7 +5,7 @@ import { characterDisplayValue } from './character-display-value'
 import {
   CharacterExpandFieldLabel,
   CharacterPsychologyField,
-} from './constants/character-panel-metrics'
+} from './utils/character-panel-metrics'
 
 interface CharacterCardExpandedContentProps {
   character: StorytellerCharacter

@@ -9,12 +9,12 @@
 
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/shared/data/api-utils'
-import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/feature-flags'
 import {
   ROLE_ENV_VARS,
   resolveRoleModel,
   type StorytellerModelRole,
-} from '@/domains/storyteller/config/constants/model-config'
+} from '@/domains/storyteller/config/model-config'
 
 const ERR_UNAUTHORIZED = 'Unauthorized'
 const ERR_NOT_AVAILABLE = 'Not available'

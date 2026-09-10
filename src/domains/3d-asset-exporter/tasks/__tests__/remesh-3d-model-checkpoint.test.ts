@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpMethod, MeshyTopology } from '@/shared/data/constants/protocol'
-import { MeshyTaskStatusValue } from '../constants/meshy-task-types'
+import { MeshyTaskStatusValue } from '../utils/meshy-task-types'
 import type { Remesh3dModelPayload } from '../constants/meshy-payloads'
 
 const { metadataStore, clearMetadata } = vi.hoisted(() => {

@@ -8,7 +8,7 @@ import {
   PortraitVariantIndex,
   PortraitVariantLog,
   parsePortraitVariantIndex,
-} from '@/domains/storyteller/services/constants/portrait-variant'
+} from '@/domains/storyteller/services/utils/portrait-variant'
 
 export { parsePortraitVariantIndex, PortraitVariantIndex }
 

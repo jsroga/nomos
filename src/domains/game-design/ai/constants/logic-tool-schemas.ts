@@ -4,7 +4,7 @@ import {
   GameMechanicSchema,
   GameResourceSchema,
 } from '../../core/schemas'
-import { ExpansionDirection, TargetAudience } from './logic-tool-wire'
+import { ExpansionDirection, TargetAudience } from '../utils/logic-tool-wire'
 
 export const AnalyzeMechanicBalanceInputSchema = z.object({
   loopId: z.string().uuid(),

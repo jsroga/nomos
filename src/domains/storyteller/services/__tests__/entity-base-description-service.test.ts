@@ -8,7 +8,7 @@ import {
   entityNeedsDescription,
   fallbackEntityDescription,
   hasUsefulResolveContext,
-} from '../constants/entity-base-description'
+} from '../utils/entity-base-description'
 import { EntityRegistryNote } from '@/domains/storyteller/services/constants/entity-registry-log'
 import { StoryEntityType } from '@/domains/storyteller/core/entities/constants/entity-types'
 import type { EntityReference } from '@/domains/storyteller/core/entities/entity-references'

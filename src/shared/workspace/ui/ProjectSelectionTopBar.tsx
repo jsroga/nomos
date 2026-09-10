@@ -7,7 +7,7 @@ import {
   PROJECT_SELECTION_LOGO_ALT,
   PROJECT_SELECTION_LOGO_SRC,
   PROJECT_SELECTION_SIGN_OUT,
-} from '../constants/project-selection'
+} from '../utils/project-selection'
 
 type ProjectSelectionTopBarProps = {
   email: string | undefined

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { UnityYAML } from './unity-yaml'
 import type { InteriorState } from '../state/useInteriorStore'
-import { ThreeEulerOrder } from '@/domains/3d-canvas/constants/unity-export'
+import { ThreeEulerOrder } from '@/domains/3d-canvas/utils/unity-export'
 
 type ExportState = Pick<InteriorState, 'walls' | 'objects'>
 

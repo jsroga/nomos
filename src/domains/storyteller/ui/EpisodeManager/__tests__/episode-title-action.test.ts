@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   EPISODE_MANAGER_RENAME_LABEL,
   EPISODE_MANAGER_SAVE_LABEL,
-} from '../constants/episode-manager'
+} from '../utils/episode-manager'
 import {
   EpisodeTitleActionMode,
   episodeTitleActionLabel,

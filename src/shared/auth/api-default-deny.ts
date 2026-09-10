@@ -9,14 +9,14 @@
  */
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { isPublicApiPath } from '@/shared/auth/constants/public-api-paths'
+import { isPublicApiPath } from '@/shared/auth/utils/public-api-paths'
 import {
   API_DENY_MODE_ENV,
   API_PATH_PREFIX,
   ApiDenyMode,
   PROXY_DENY_LOG,
   isSupabaseAuthCookieName,
-} from '@/shared/auth/constants/session-cookie'
+} from '@/shared/auth/utils/session-cookie'
 import {
   ApiErrorMessage,
   EnvVarName,

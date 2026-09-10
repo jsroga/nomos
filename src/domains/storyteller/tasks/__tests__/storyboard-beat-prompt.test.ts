@@ -3,8 +3,8 @@ import {
   buildStoryboardBeatPrompt,
   partitionBeatCastRefs,
   StoryboardBeatStyleCopy,
-} from '../constants/storyboard-beat-prompt'
-import type { BeatCastMember } from '@/domains/storyteller/services/constants/beat-cast-extract'
+} from '../utils/storyboard-beat-prompt'
+import type { BeatCastMember } from '@/domains/storyteller/services/utils/beat-cast-extract'
 
 const SCENE = 'Two figures argue on the pier'
 const VERA = 'Vera'

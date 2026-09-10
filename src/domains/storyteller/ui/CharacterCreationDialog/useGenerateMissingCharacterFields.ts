@@ -5,8 +5,8 @@ import {
   CharacterDraftResolution,
   GenerationActivityPhase,
   isGenerationActivityBusy,
-} from '@/domains/storyteller/state/constants/storyteller-ui-store'
-import { isConsistencyFixRunBusy } from '@/domains/storyteller/ui/FixInconsistencies/constants/fix-inconsistencies-dialog'
+} from '@/domains/storyteller/state/utils/storyteller-ui-store'
+import { isConsistencyFixRunBusy } from '@/domains/storyteller/ui/FixInconsistencies/utils/fix-inconsistencies-dialog'
 import type { PendingAction } from '@/domains/storyteller/ui/WorldBible/utils/bible-context-types'
 import { ArtifactKind } from '@/domains/storyteller/core/types/artifact-kind'
 import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'

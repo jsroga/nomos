@@ -3,10 +3,10 @@
 import toast from 'react-hot-toast'
 import { AIProvider } from '@/shared/types/enums'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import {
   fetchMeshyImageTo3dTask,
   fetchProxiedModelBlob,

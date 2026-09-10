@@ -15,7 +15,7 @@
 import '@/shared/data/server-guard'
 import type { AgentControllerConfig, AgentControllerMode } from '@mastra/core/agent-controller'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
-import { FeatureFlag, isFeatureEnabled } from '@/shared/data/constants/feature-flags'
+import { FeatureFlag, isFeatureEnabled } from '@/shared/data/feature-flags'
 import { readWorldBibleTool, checkContinuityTool } from '@/domains/storyteller/ai/tools/bible-tools'
 import { checkSectionAlignmentTool } from '@/domains/storyteller/ai/tools/section-alignment-tool'
 import { searchManuscriptTool } from '@/domains/storyteller/ai/tools/search-manuscript'

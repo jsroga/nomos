@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { useFrame, type RootState } from '@react-three/fiber'
 import * as THREE from 'three'
 import { BufferGeometryAttribute } from '@/shared/three/constants/buffer-geometry-attribute'
-import { MarketingThreeDColor } from '@/domains/marketing/constants/three-d-icon'
+import { MarketingThreeDColor } from '@/domains/marketing/utils/three-d-icon'
 import { MarketingMediaQuery } from '@/domains/marketing/constants/viewport-3d'
 import {
   POINT_CLOUD_DENSITY_MAX,

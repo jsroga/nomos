@@ -12,7 +12,7 @@ import {
 import { useWorldStore } from '../../useWorldStore'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
 import { browserStorage } from '@/shared/data/browser-storage'
-import { DynamicLocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { DynamicLocalStorageKeys } from '@/shared/data/utils/localStorage'
 import type { TileGenRunState } from '../tile-generation-run-types'
 
 const storageMap = new Map<string, string>()

@@ -14,7 +14,7 @@ import { clientEnv } from '@/shared/config/env.client'
 import {
   DEFAULT_CHAT_MODEL,
   isKnownChatModel,
-} from '@/domains/storyteller/config/constants/chat-model-catalog'
+} from '@/domains/storyteller/config/chat-model-catalog'
 
 /**
  * The effective chat model id: an explicit override, else

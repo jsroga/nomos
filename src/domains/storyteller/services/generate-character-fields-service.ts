@@ -22,7 +22,7 @@ import {
   GenerateCharacterFieldsErrorCode,
   GenerateCharacterFieldsErrorName,
   generatedCharacterFieldsLlmSchema,
-} from '@/domains/storyteller/services/constants/generate-character-fields'
+} from '@/domains/storyteller/services/utils/generate-character-fields'
 import {
   formatCanonForTextFill,
   hasUsableCanonPack,

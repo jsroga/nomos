@@ -16,7 +16,7 @@ import {
 import { StorytellerRelationshipType } from '@/domains/storyteller/services/constants/relationship-enricher'
 import { StorytellerTextSeparator } from '@/domains/storyteller/core/storyteller-page-wire'
 import { HttpMethod } from '@/shared/data/constants/protocol'
-import { RichTextContainerTag } from '@/domains/storyteller/ui/RichText/constants/rich-text'
+import { RichTextContainerTag } from '@/domains/storyteller/ui/RichText/utils/rich-text'
 
 const DOM_EVENT_KEYDOWN = 'keydown'
 

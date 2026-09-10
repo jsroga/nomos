@@ -1,5 +1,5 @@
 import { Edge, Node } from '@xyflow/react'
-import { LoopFlowNodeType } from '../constants/loop-creator-layout'
+import { LoopFlowNodeType } from '../utils/loop-creator-layout'
 
 const CARD_WIDTH = 240
 const CARD_HEIGHT = 180

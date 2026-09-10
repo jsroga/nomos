@@ -1,13 +1,13 @@
 import { z } from 'zod'
 import { AnalyzeBalanceOutputSchema } from '@/domains/game-design/core/schemas'
-import { LoopProposalSchema } from '../constants/loop-proposal'
+import { LoopProposalSchema } from '../utils/loop-proposal'
 import {
   DEFAULT_LOOP_TYPE,
   DEFAULT_TARGET_AUDIENCE,
   GameLoopTypeInput,
   GameLoopWorkflowStatus,
 } from '../constants/game-loop-workflow-wire'
-import { TargetAudience } from '../constants/logic-tool-wire'
+import { TargetAudience } from '../utils/logic-tool-wire'
 
 export const GAME_LOOP_WORKFLOW_ID = 'game-loop-refinement'
 

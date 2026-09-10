@@ -1,5 +1,5 @@
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/utils/polling'
 import { browserStorage } from '@/shared/data/browser-storage'
 import {
   waitForTriggerRun,
@@ -18,7 +18,7 @@ import {
   triggerCombinedStoryboard,
   triggerEpisodePoster,
 } from '@/domains/storyteller/core/io/poster.api'
-import type { ApiframeVideoModel } from '@/shared/ai/constants/apiframe'
+import type { ApiframeVideoModel } from '@/shared/ai/utils/apiframe'
 import type { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 import {
   PosterGenerationError,

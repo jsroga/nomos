@@ -14,7 +14,7 @@ import {
   WorldGenSidebarError,
   WorldGenSidebarLog,
   WorldGenTileProvider,
-} from '../../ui/constants/sidebar'
+} from '../../ui/utils/sidebar'
 
 export function blobToRawBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {

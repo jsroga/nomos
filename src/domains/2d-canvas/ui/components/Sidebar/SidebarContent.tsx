@@ -7,7 +7,7 @@ import { ThreeDAssets, ThreeDAssetsCopy } from '@/components/ThreeDAssets'
 import { MjVariantPicker } from '@/domains/2d-canvas/ui/components/MjVariantPicker'
 import type { WorldGenSidebarState } from '@/domains/2d-canvas/state/hooks/useWorldGenSidebar'
 import { useThreeDAssetsLibrary } from '@/domains/2d-canvas/state/hooks/useThreeDAssetsLibrary'
-import { WorldGenSidebarClass } from '../../constants/sidebar'
+import { WorldGenSidebarClass } from '../../utils/sidebar'
 import { SidebarWorldSection } from './SidebarWorldSection'
 import { SidebarGenerationDebugPanel } from './SidebarGenerationDebugPanel'
 

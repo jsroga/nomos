@@ -4,7 +4,7 @@ import { autoLayoutNodes } from '@/domains/loop-creator/core/layout'
 import {
   LoopEdgeType,
   LoopFlowNodeType,
-} from '../constants/loop-creator-layout'
+} from '../utils/loop-creator-layout'
 import {
   importedEdgesFromJson,
   importedNodesFromJson,

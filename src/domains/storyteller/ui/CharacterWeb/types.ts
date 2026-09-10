@@ -15,7 +15,7 @@ import {
   RELATIONSHIP_DEFAULT_TYPE,
   RELATIONSHIP_STYLES,
   type RelationshipType,
-} from './constants/relationship-web-styles'
+} from './utils/relationship-web-styles'
 
 export type { RelationshipType }
 export {

@@ -18,7 +18,7 @@ import {
   ApiframeVideoField,
   ApiframeVideoModel,
   KlingMultiPromptField,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 
 export interface ApiframeVideoJobProgress {
   jobId: string

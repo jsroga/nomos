@@ -13,7 +13,7 @@ import {
   ApiframeTopazOutputFormat,
   ApiframeTopazUpscaleFactor,
   ApiframeUpscaleModel,
-} from '../constants/apiframe'
+} from '../utils/apiframe'
 import { recordFromJson } from '@/shared/data/deep-merge'
 
 const API_KEY = 'afk_test'

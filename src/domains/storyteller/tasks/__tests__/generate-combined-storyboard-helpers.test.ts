@@ -4,7 +4,7 @@ import {
   ApiframeVideoModel,
   KLING_MULTI_PROMPT_SHOT_PROMPT_MAX_CHARS,
   KlingMultiPromptField,
-} from '@/shared/ai/constants/apiframe'
+} from '@/shared/ai/utils/apiframe'
 import { StoryboardVideoLook } from '@/shared/ai/storyboard-video-env'
 import { beatsHaveImageUrl, storyboardKlingDirectorFields } from '../generate-combined-storyboard-helpers'
 import {
@@ -21,7 +21,7 @@ import {
   StoryboardShotCut,
   StoryboardShotLookTag,
   storyboardLookNegative,
-} from '../constants/storyboard-video-prompt'
+} from '../utils/storyboard-video-prompt'
 import { generateStoryboardVideoCorePrompt } from '../storyboard-video-core-prompt'
 
 describe('storyboard video prompt', () => {

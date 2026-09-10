@@ -12,7 +12,7 @@ import { ChatSenderName } from '@/domains/storyteller/core/io/constants/chat-rou
 import { ChatFrameType } from '@/shared/chat/core/protocol'
 import { ChatMessageRole } from '@/shared/chat/core/constants/chat-messages'
 import { OpenAiChatRole } from '@/shared/data/constants/protocol'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 
 export const STORYTELLER_CHAT_WELCOME_MESSAGE =
   'Welcome to the Writers Room! Select an episode to begin, then tell me about the story you want to create.'

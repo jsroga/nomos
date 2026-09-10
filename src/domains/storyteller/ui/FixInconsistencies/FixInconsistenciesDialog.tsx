@@ -9,11 +9,11 @@ import {
   DialogTitle,
 } from '@/components/Dialog'
 import { cn } from '@/shared/data/utils'
-import { ConsistencyFixRunPhase } from './constants/fix-inconsistencies-dialog'
+import { ConsistencyFixRunPhase } from './utils/fix-inconsistencies-dialog'
 import {
   FixInconsistenciesDialogClass,
   FixInconsistenciesDialogCopy,
-} from './constants/fix-inconsistencies-dialog'
+} from './utils/fix-inconsistencies-dialog'
 import type { ConsistencyFixRunState } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { FixInconsistenciesReview } from './FixInconsistenciesReview'
 import { FixInconsistenciesDialogFooter } from './FixInconsistenciesDialogFooter'

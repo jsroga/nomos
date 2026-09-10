@@ -12,7 +12,7 @@ import {
   MOODBOARD_STAGE_UPDATING_DB,
   MOODBOARD_TASK_ID,
   MOODBOARD_IMAGE_GEN_FAILED,
-} from './constants/moodboard-task-wire'
+} from './utils/moodboard-task-wire'
 import { syncMoodboardToDatabase } from './generate-moodboard-db'
 import { resolveMoodboardPrompts } from './build-moodboard-locked-prompts'
 import { generateAllMoodboardImages } from './generate-moodboard-run'

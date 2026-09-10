@@ -1,7 +1,7 @@
 'use client'
 
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
-import { AssistantChatBodyKey } from '@/shared/chat/core/constants/assistant-thread-ui'
+import { AssistantChatBodyKey } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { AppModuleId } from '@/shared/data/constants/protocol'
 import type { OverlaySessionHostProps } from '@/shared/chat/overlay/module-chat-adapters'
 import type { ModuleChatAdapter } from '@/shared/chat/overlay/module-chat-adapters'

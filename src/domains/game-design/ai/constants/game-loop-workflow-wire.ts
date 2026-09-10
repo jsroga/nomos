@@ -1,4 +1,4 @@
-import { TargetAudience } from './logic-tool-wire'
+import { TargetAudience } from '../utils/logic-tool-wire'
 
 export enum GameLoopWorkflowStepId {
   Ideation = 'ideation',

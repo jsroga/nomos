@@ -144,7 +144,7 @@ Non-chat generate APIs load the same season spine as chat via `loadStoryCanonPac
 | Surface | Slice | Must not inject |
 |---------|--------|-----------------|
 | Missing character fields | `formatCanonForTextFill` — bible, compact season list, episode index, cast | 10-point arrays, beat boards, `[Name][id]` chips |
-| Moodboard | World description + overview (executive summary, central question). Missing either → generate overview first. LLM 3–5 word subject + hardcoded style lock. Look `--sref` pair in `tasks/constants/storyteller-look-sref.ts`; later tiles may also `--sref` the first moodboard image. | Genre, tone, full roadmap, Ozymandias, 10-point |
+| Moodboard | World description + overview (executive summary, central question). Missing either → generate overview first. LLM 3–5 word subject + hardcoded style lock. Look `--sref` pair in `tasks/utils/storyteller-look-sref.ts`; later tiles may also `--sref` the first moodboard image. | Genre, tone, full roadmap, Ozymandias, 10-point |
 | Portraits | Same overview LLM subject + hardcoded portrait lock + description + look `--sref` pair | Genre, tone, full roadmap, Ozymandias, 10-point |
 | Episode posters | Same overview LLM subject + hardcoded `movie poster for …` wrap + look `--sref` pair | Genre, tone, full roadmap, 10-point |
 | Beat image prompt | `formatCanonEpisodeLock` — visual lock + slot brief + logline/hook/theme | 10-point plans, 30 beat loglines, chat “expand this slot” copy |

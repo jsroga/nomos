@@ -4,13 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { browserStorage } from '@/shared/data/browser-storage'
-import { LocalStorageKeys } from '@/shared/data/constants/localStorage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { triggerRunRefetchInterval } from '@/shared/data/polling/trigger-run-query'
 import {
   fetchCharacterPortraitRunStatus,
   startCharacterPortraitGeneration,
 } from '../../core/io/character.api'
-import { isFailedTaskStatus, isSuccessTaskStatus } from '@/shared/data/constants/polling'
+import { isFailedTaskStatus, isSuccessTaskStatus } from '@/shared/data/utils/polling'
 
 const PROJECT_ID_REQUIRED_ERROR = 'projectId required'
 const CHARACTER_PORTRAIT_RUN_QUERY_KEY = 'character-portrait-run'

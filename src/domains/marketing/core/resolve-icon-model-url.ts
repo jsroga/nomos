@@ -2,7 +2,7 @@ import {
   MarketingIconType,
   MarketingThreeDModelPath,
   resolveMarketingModelUrl,
-} from '@/domains/marketing/constants/three-d-icon'
+} from '@/domains/marketing/utils/three-d-icon'
 
 /** Resolve the runtime GLB URL for a marketing icon type (lite path). */
 export function resolveIconModelUrl(type: string): string {

@@ -1,6 +1,6 @@
 import { Edge, Node } from '@xyflow/react'
 import type { WireAgentAction } from '@/shared/agent-kernel/action-wire'
-import { LoopLayoutAgentAction } from '../constants/loop-creator-layout'
+import { LoopLayoutAgentAction } from '../utils/loop-creator-layout'
 import { Suggestion } from '../components/SuggestionPanel'
 import { suggestionFromAction } from './loop-agent-action-suggestions'
 

@@ -3,7 +3,7 @@ import { Sparkles, Loader2 } from 'lucide-react'
 import { BibleOverviewMoodboardCopy } from '../constants/bible-overview'
 import { clampProgressBarWidth } from '../utils/bible-overview-moodboard'
 import { generateInitialMoodboard } from '../utils/bible-overview-moodboard-actions'
-import { formatMoodboardGeneratingCopy } from '@/domains/storyteller/services/constants/moodboard-generation-service'
+import { formatMoodboardGeneratingCopy } from '@/domains/storyteller/services/utils/moodboard-generation-service'
 
 interface MoodboardEmptyStateProps {
   isReadOnly: boolean

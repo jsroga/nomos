@@ -18,7 +18,7 @@ import {
 } from '@/shared/jobs'
 import type { generateTileTask } from '@/domains/2d-canvas/tasks/generate-tile.task'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
-import { ApiframeImageModel } from '@/shared/ai/constants/apiframe'
+import { ApiframeImageModel } from '@/shared/ai/utils/apiframe'
 import { generateMidjourneyImages, pickApiframeImageUrl } from '@/shared/ai/apiframe'
 import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { isPlainObject, readString } from '@/shared/data/json-guards'

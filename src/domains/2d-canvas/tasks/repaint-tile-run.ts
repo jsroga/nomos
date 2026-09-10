@@ -3,14 +3,14 @@ import { OWNED_PAYLOAD_SHAPE } from '@/shared/jobs/submission-nonce'
 import { logger, metadata } from '@trigger.dev/sdk'
 import { generateApiframeImage } from '@/shared/ai/apiframe'
 import { buildGenerateBody } from '@/shared/ai/apiframe-generate-body'
-import { ApiframeErrorMessage } from '@/shared/ai/constants/apiframe'
+import { ApiframeErrorMessage } from '@/shared/ai/utils/apiframe'
 import { ImageGenProvider } from '@/shared/ai/constants/image-providers'
 import { readApiframeApiKey, resolveRepaintModel } from '@/shared/ai/image-model-env'
 import { API_ERROR, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import {
   RepaintUploadPrefix,
   buildRepaintPrompt,
-} from '@/shared/data/constants/repaint-gemini'
+} from '@/shared/data/utils/repaint-gemini'
 import { BufferEncoding, ContentType, UrlScheme } from '@/shared/data/constants/protocol'
 import { storageService } from '@/shared/data/storage/storage-service'
 import { getErrorMessage } from '@/shared/errors/error-utils'

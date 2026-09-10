@@ -18,7 +18,7 @@ import {
   MATERIAL_3D_PRESETS,
   PROMPT_PRESETS,
   STYLE_OPTIONS,
-} from './constants/surface-properties-presets'
+} from './utils/surface-properties-presets'
 
 interface MaterialGenerationSectionProps {
   selectedSurface: Surface

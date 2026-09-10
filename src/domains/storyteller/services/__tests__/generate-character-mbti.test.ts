@@ -10,7 +10,7 @@ vi.mock('@/shared/ai/gateway', () => ({ complete }))
 
 import { SystemScopeReason, systemScope } from '@/shared/auth/project-scope'
 import { generateCharacterMbti } from '../character-mbti-service'
-import { characterMbtiUserPrompt } from '../constants/character-mbti'
+import { characterMbtiUserPrompt } from '../utils/character-mbti'
 
 /** A scope cannot be forged, so the test takes the system constructor. */
 const SCOPE = systemScope('11111111-1111-4111-8111-111111111111', SystemScopeReason.ProviderSmoke)

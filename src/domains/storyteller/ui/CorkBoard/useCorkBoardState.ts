@@ -25,7 +25,7 @@ import {
   CORK_BOARD_UNKNOWN_PROJECT,
   CorkBoardBeatImagePolicy,
   CorkBoardCopy,
-} from './constants/cork-board'
+} from './utils/cork-board'
 import { resolveCorkBoardUrl } from './CorkBoardStoryboardSection'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {

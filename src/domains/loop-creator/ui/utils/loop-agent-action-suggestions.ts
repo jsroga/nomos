@@ -17,7 +17,7 @@ import {
   LoopSuggestionKind,
   LOOP_MECHANIC_LABEL_SUFFIX,
   LOOP_MODIFY_NODE_JOIN,
-} from '../constants/loop-creator-layout'
+} from '../utils/loop-creator-layout'
 
 export interface SuggestionContext {
   nodes: Node[]

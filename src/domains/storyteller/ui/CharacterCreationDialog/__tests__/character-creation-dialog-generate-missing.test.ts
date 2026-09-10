@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_CHARACTER_METRICS } from '@/domains/storyteller/core/character-missing-fields'
 import { CharacterTextFieldKey } from '@/domains/storyteller/core/character-missing-fields'
 import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page-wire'
-import { GenerationActivityPhase } from '@/domains/storyteller/state/constants/storyteller-ui-store'
+import { GenerationActivityPhase } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import {
   applyAcceptedCharacterDraft,
   buildGenerateMissingCharacterChatPrompt,

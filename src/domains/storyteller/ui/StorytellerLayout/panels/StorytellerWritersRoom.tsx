@@ -15,7 +15,7 @@ import { getStorytellerUiStore, useStorytellerUiStore } from '@/domains/storytel
 import {
   CharacterDraftChatSection,
   GenerationActivityPhase,
-} from '@/domains/storyteller/state/constants/storyteller-ui-store'
+} from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { type ProposedBibleSectionUpdate } from '@/domains/storyteller/state/utils/propose-assistant-bible-update'
 import {
   addToWorldSectionLabels,
@@ -36,7 +36,7 @@ import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/us
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { StorytellerChatTool, StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
-import { WritersRoomAddToWorldLabel, WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/constants/writers-room-copy'
+import { WritersRoomAddToWorldLabel, WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
 import {
   mapAssistantPhase,
   omitSectionKey,
@@ -49,7 +49,7 @@ import {
 } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-tool-helpers'
 import { commitWritersRoomAddToWorld } from '@/domains/storyteller/ui/StorytellerLayout/panels/writers-room-add-to-world'
 import { WritersRoomAssistantChat, WritersRoomOverlayBridgePublisher } from '@/domains/storyteller/ui/StorytellerLayout/panels/WritersRoomAssistantChat'
-import { isWorkspaceChatOverlayEnabled } from '@/shared/data/constants/feature-flags'
+import { isWorkspaceChatOverlayEnabled } from '@/shared/data/feature-flags'
 
 export function StorytellerWritersRoom(props: StorytellerPageSlices) {
   const {

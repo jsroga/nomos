@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FalSamPrompt, resolveSamPrompt } from '../constants/fal'
+import { FalSamPrompt, resolveSamPrompt } from '../utils/fal'
 
 describe('resolveSamPrompt', () => {
   it('uses the typed prompt when present', () => {

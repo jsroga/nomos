@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MIDJOURNEY_VERSION } from '@/shared/ai/constants/apiframe'
+import { MIDJOURNEY_VERSION } from '@/shared/ai/utils/apiframe'
 import { StringSeparator } from '@/shared/data/constants/protocol'
 import {
   MidjourneyBaseNegative,

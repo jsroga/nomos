@@ -16,7 +16,7 @@ import { MasterPromptScope } from '@/domains/storyteller/ui/MasterPromptEditor/c
 import {
   StorytellerSidebarCopy,
   StorytellerSidebarStorageKey,
-} from '../constants/storyteller-sidebar-footer'
+} from '../utils/storyteller-sidebar-footer'
 import { StorytellerHeaderCopy } from '../constants/storyteller-module-header'
 import { StorytellerSidebarFooter } from './StorytellerSidebarFooter'
 

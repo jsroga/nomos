@@ -3,7 +3,7 @@
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
 import { DomainSidebar } from '@/components/DomainSidebar'
 import type { LoopChatSidebarProps } from './loop-chat-sidebar-types'
-import { isWorkspaceChatOverlayEnabled } from '@/shared/data/constants/feature-flags'
+import { isWorkspaceChatOverlayEnabled } from '@/shared/data/feature-flags'
 
 export type { LoopChatSidebarProps } from './loop-chat-sidebar-types'
 

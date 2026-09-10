@@ -20,7 +20,7 @@ import {
   getModuleConfig,
   type ModuleSettingUpdate,
 } from '@/shared/canvas/module-settings'
-import { MODEL_SETTING_ROLES } from '@/shared/agent-kernel/constants/model-settings'
+import { MODEL_SETTING_ROLES } from '@/shared/agent-kernel/utils/model-settings'
 
 const HTTP_UNAUTHORIZED = 401
 const HTTP_FORBIDDEN = 403

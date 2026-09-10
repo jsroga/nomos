@@ -1,6 +1,6 @@
 import { JobQueue, defineOwnedTask } from '@/shared/jobs'
-import { generateTilePayloadSchema } from './constants/generate-tile'
-import { runWithTileProgress } from './constants/generate-tile-progress'
+import { generateTilePayloadSchema } from './utils/generate-tile'
+import { runWithTileProgress } from './utils/generate-tile-progress'
 import { runGenerateTile } from './generate-tile-run'
 
 export const generateTileTask = defineOwnedTask({

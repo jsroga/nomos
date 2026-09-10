@@ -11,7 +11,7 @@
 
 import { env } from '@/shared/config/env'
 import '@/shared/data/server-guard'
-import { MODEL_SETTING_DEFAULT_ROLE } from './constants/model-settings'
+import { MODEL_SETTING_DEFAULT_ROLE } from './utils/model-settings'
 
 const cache = new Map<string, string>()
 let loaded = false

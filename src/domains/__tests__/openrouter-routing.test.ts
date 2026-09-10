@@ -28,11 +28,11 @@ import {
   getModelByEffort,
   resolveRoleModel,
   resolveStorytellerModel,
-} from '@/domains/storyteller/config/constants/model-config'
+} from '@/domains/storyteller/config/model-config'
 import {
   DEFAULT_CHAT_MODEL,
   USER_SELECTABLE_CHAT_MODELS,
-} from '@/domains/storyteller/config/constants/chat-model-catalog'
+} from '@/domains/storyteller/config/chat-model-catalog'
 import { withGatewayContext } from '@/shared/ai/gateway/call-context'
 import { SystemScopeReason, systemScope } from '@/shared/auth/project-scope'
 import {

@@ -13,7 +13,7 @@
  * | Enhance Fidelity   | Gemini     | None                  | creativityPrompt|
  */
 
-import { DEFAULT_STYLE_CONTEXT } from '@/shared/data/constants/style-presets'
+import { DEFAULT_STYLE_CONTEXT } from '@/shared/data/utils/style-presets'
 import {
   CREATIVITY_PROMPT_PREFIX,
   CreativityPromptLevel,

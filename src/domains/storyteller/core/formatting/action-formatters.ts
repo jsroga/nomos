@@ -5,7 +5,7 @@ import { isActionType } from '@/domains/storyteller/core/types/enums'
 import {
   ACTION_DISPLAY_BY_TYPE,
   ACTION_DISPLAY_FALLBACK,
-} from '@/domains/storyteller/core/formatting/constants/action-display'
+} from '@/domains/storyteller/core/formatting/utils/action-display'
 
 /** Display wording for approval UI vs committed history — subset of wire approval status. */
 export type ActionDisplayStatus =

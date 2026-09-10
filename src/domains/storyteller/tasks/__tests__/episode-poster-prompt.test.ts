@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { ApiframeGenerateAspectRatio, MIDJOURNEY_VERSION } from '@/shared/ai/constants/apiframe'
+import { ApiframeGenerateAspectRatio, MIDJOURNEY_VERSION } from '@/shared/ai/utils/apiframe'
 import { MidjourneyParamFlag } from '@/shared/data/server/midjourney-params'
-import { MOODBOARD_PROMPT_SUFFIX } from '../constants/moodboard-task-wire'
-import { LockedVisualConceptArt, buildPosterMidjourneyLockFlags } from '../constants/locked-visual-prompt'
-import { StorytellerLookSrefUrl } from '../constants/storyteller-look-sref'
+import { MOODBOARD_PROMPT_SUFFIX } from '../utils/moodboard-task-wire'
+import { LockedVisualConceptArt, buildPosterMidjourneyLockFlags } from '../utils/locked-visual-prompt'
+import { StorytellerLookSrefUrl } from '../utils/storyteller-look-sref'
 import {
   EpisodePosterBasePhrase,
   EpisodePosterPromptLock,
   buildEpisodePosterPrompt,
-} from '../constants/episode-poster-prompt'
+} from '../utils/episode-poster-prompt'
 
 describe('buildEpisodePosterPrompt', () => {
   it('returns null when the scene is empty', () => {

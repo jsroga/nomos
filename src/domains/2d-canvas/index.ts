@@ -63,5 +63,5 @@ export {
   UpscaleStrategy,
   generationModeDef,
   resolveGenerationMode,
-} from './constants/generation-modes'
-export type { GenerationModeDef } from './constants/generation-modes'
+} from './utils/generation-modes'
+export type { GenerationModeDef } from './utils/generation-modes'

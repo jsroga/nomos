@@ -1,7 +1,7 @@
 import {
   isFailedTaskStatus,
   isSuccessTaskStatus,
-} from '@/shared/data/constants/polling'
+} from '@/shared/data/utils/polling'
 import { readString } from '@/shared/data/json-guards'
 
 export interface TriggerRunStatusPayload {

@@ -11,13 +11,13 @@ import {
   createGameDesignToolList,
   type GameDesignPlanPersistence,
   type GameDesignTool,
-} from '../constants/game-design-tools'
-import { invokeGameDesignTool } from '../constants/invoke-game-design-tool'
+} from '../utils/game-design-tools'
+import { invokeGameDesignTool } from '../utils/invoke-game-design-tool'
 import {
   GameDesignResponseType,
   GameDesignAgentOutputSchema,
   type GameDesignResponse,
-} from '../constants/game-design-response'
+} from '../utils/game-design-response'
 import {
   GameDesignAgentCopy,
   GameDesignAgentPromptCopy,
@@ -46,7 +46,7 @@ import { getErrorMessage } from '@/shared/errors/error-utils'
 import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { getPublishedAgentOr } from '@/shared/agent-kernel/mastra/get-published-agent'
 
-export type { GameDesignResponse } from '../constants/game-design-response'
+export type { GameDesignResponse } from '../utils/game-design-response'
 
 const GAME_DESIGN_FALLBACK_INSTRUCTIONS = `You are a senior game designer combining the philosophies of:
 - **Klei** (Don't Starve, ONI): Elegant systems with emergent complexity

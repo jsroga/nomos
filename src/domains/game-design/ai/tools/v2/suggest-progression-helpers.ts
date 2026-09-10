@@ -1,13 +1,13 @@
 import { SuggestProgressionOutputSchema } from '../../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
-import { buildSuggestProgressionPrompt } from '../../constants/logic-tool-prompts'
+import { buildSuggestProgressionPrompt } from '../../prompts/logic-tool-prompts'
 import { SuggestProgressionToolInputSchema } from '../../constants/logic-tool-schemas'
 import {
   ExpansionDirection,
   GameDesignToolCopy,
   LogicToolCopy,
   joinWithCommaSpace,
-} from '../../constants/logic-tool-wire'
+} from '../../utils/logic-tool-wire'
 import type { GameResource } from '../../constants/logic-tool-schemas'
 import { createLogicToolModel, invokeLlmJsonPrompt } from './game-design-llm-shared'
 import type { z } from 'zod'

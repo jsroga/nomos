@@ -7,7 +7,7 @@ import {
   buildLoopCreatorProjectContext,
 } from '@/domains/loop-creator/core/mentions/providers'
 import { nodeDescription, nodeLabel } from '@/domains/loop-creator/core/loop-node-wire'
-import { LoopCanvasKind } from '@/domains/loop-creator/ui/constants/loop-creator-layout'
+import { LoopCanvasKind } from '@/domains/loop-creator/ui/utils/loop-creator-layout'
 import type { LoopCreatorCore } from './useLoopCreatorCore'
 
 /**

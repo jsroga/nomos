@@ -3,7 +3,7 @@ import { TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { z } from 'zod'
 import { readJsonBody } from '@/shared/data/fetch-json-record'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
-import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/constants/polling'
+import { TRIGGER_STATUS_FETCH_INIT } from '@/shared/data/utils/polling'
 import { buildUrl } from '@/shared/data/url-builder'
 import { INTERIOR_DESIGNER_API_BASE_PATH } from '../../config/module'
 import {

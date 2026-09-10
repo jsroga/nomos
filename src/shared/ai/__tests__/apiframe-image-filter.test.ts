@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isApiframeImageFilterDenial } from '../apiframe'
-import { ApiframeErrorMessage, ApiframeJobErrorMatch } from '../constants/apiframe'
+import { ApiframeErrorMessage, ApiframeJobErrorMatch } from '../utils/apiframe'
 
 describe('isApiframeImageFilterDenial', () => {
   it('matches the Apiframe image-filter cancel message', () => {

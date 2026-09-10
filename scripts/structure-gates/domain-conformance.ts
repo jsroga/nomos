@@ -20,6 +20,8 @@ export const BLUEPRINT_TOP_LEVEL = new Set([
   'config',
   // Domain-level string-artifact tables (no-magic-string convention dirs)
   'constants',
+  // Helpers that left constants/ (values stay in constants/; functions here)
+  'utils',
   // 'db' removed — the duplicate storyteller schema was deleted (PLAN-V2 6.1);
   // the one Drizzle schema lives at src/db/schema.ts
 ])
@@ -52,7 +54,7 @@ export type DomainConformance = {
    */
   uiLayerStructureEnforced?: boolean
   /**
-   * ai/ Mastra agent packages must live under ai/agents/ when constants/tools/workflows
+   * ai/ Mastra agent packages must live under ai/agents/ when constants/utils/tools/workflows
    * exist at the same level. Ratchet: enable per domain after migration.
    */
   aiLayerStructureEnforced?: boolean

@@ -14,11 +14,11 @@ import {
 } from '@/domains/storyteller/core/character-missing-fields'
 import {
   isConsistencyFixRunBusy,
-} from '@/domains/storyteller/ui/FixInconsistencies/constants/fix-inconsistencies-dialog'
+} from '@/domains/storyteller/ui/FixInconsistencies/utils/fix-inconsistencies-dialog'
 import {
   GenerationActivityPhase,
   isGenerationActivityBusy,
-} from '@/domains/storyteller/state/constants/storyteller-ui-store'
+} from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
   CHARACTER_DIALOG_GENERATE_MISSING_FILLED_CHARS,

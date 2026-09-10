@@ -3,7 +3,7 @@ import {
   buildBeatCastExtractPrompt,
   matchCastByExtractedNames,
   type BeatCastMember,
-} from '@/domains/storyteller/services/constants/beat-cast-extract'
+} from '@/domains/storyteller/services/utils/beat-cast-extract'
 
 export type { BeatCastMember }
 

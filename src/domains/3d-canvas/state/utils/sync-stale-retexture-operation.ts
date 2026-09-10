@@ -4,11 +4,11 @@ import {
   PropertiesPanelLog,
 } from '@/domains/3d-canvas/constants/properties-panel'
 import { RETEXTURE_EMPTY_METADATA } from '@/domains/3d-canvas/constants/retexture-slice-log'
-import { isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/constants/polling'
+import { isActiveTaskStatus, isSuccessTaskStatus } from '@/shared/data/utils/polling'
 import {
   AsyncOperationStatus,
   isTerminalOperationStatus,
-} from '@/shared/jobs/constants/async-operation-status'
+} from '@/shared/jobs/utils/async-operation-status'
 import type { AsyncOperation } from '@/shared/jobs/useGlobalStatusStore'
 
 interface SyncStaleRetextureParams {

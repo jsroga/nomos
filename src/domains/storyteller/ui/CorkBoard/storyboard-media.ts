@@ -1,5 +1,5 @@
 import { VideoFileExtension } from '@/shared/data/constants/protocol'
-import { CorkBoardCopy, CorkBoardExpandedId } from './constants/cork-board'
+import { CorkBoardCopy, CorkBoardExpandedId } from './utils/cork-board'
 
 const STORYBOARD_VIDEO_URL_BASE = 'https://local.invalid'
 

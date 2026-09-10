@@ -174,8 +174,7 @@ module.exports = [
       ],
       // Inline wire/domain strings must use enums or named constants (JSX carve-out for Tailwind/labels).
       'local/no-magic-string': ['error', { allowJsx: true }],
-      // Incentive only — existing constants/ helpers stay; do not mass-move.
-      'local/no-functions-in-constants': 'warn',
+      'local/no-functions-in-constants': 'error',
       'max-lines': [
         'warn',
         {
@@ -342,7 +341,7 @@ module.exports = [
     files: [
       'src/proxy.ts',
       'src/shared/auth/api-default-deny.ts',
-      'src/shared/auth/constants/session-cookie.ts',
+      'src/shared/auth/utils/session-cookie.ts',
       // Covered so the fixture proving this rule is on actually trips it.
       'scripts/gate-fixtures/proxy-imports-node-only.ts',
     ],
@@ -365,7 +364,6 @@ module.exports = [
       'src/shared/agent-kernel/model-settings.ts',
       'src/shared/data/constants/llm-providers.ts',
       'src/domains/*/config/model-config.ts',
-      'src/domains/*/config/constants/model-config.ts',
     ],
     rules: { 'local/no-bare-process-env': 'error' },
   },
@@ -491,7 +489,7 @@ module.exports = [
     },
   },
   {
-    files: ['src/domains/storyteller/config/constants/model-config.ts'],
+    files: ['src/domains/storyteller/config/model-config.ts'],
     rules: {
       'no-restricted-imports': [
         'error',

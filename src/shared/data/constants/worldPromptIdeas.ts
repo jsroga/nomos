@@ -77,10 +77,3 @@ export const WORLD_PROMPT_IDEAS = [
 
 export type WorldPromptIdea = (typeof WORLD_PROMPT_IDEAS)[number]
 
-/**
- * Get a random world prompt idea
- */
-export function getRandomWorldPromptIdea(): WorldPromptIdea {
-  const index = Math.floor(Math.random() * WORLD_PROMPT_IDEAS.length)
-  return WORLD_PROMPT_IDEAS[index]
-}

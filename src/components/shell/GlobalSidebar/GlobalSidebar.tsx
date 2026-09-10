@@ -10,7 +10,7 @@ import { readString } from '@/shared/data/json-guards'
 import { isValidProjectId } from '@/shared/auth/security'
 import { AUTH_ROUTE } from '@/shared/auth/constants/auth-messages'
 import { AppModuleId } from '@/shared/data/constants/protocol'
-import { is3dCanvasEnabled, isLoopCreatorEnabled } from '@/shared/data/constants/feature-flags'
+import { is3dCanvasEnabled, isLoopCreatorEnabled } from '@/shared/data/feature-flags'
 import { AccountMenu } from './AccountMenu'
 
 export const GlobalSidebar = () => {

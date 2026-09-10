@@ -6,14 +6,14 @@ import {
   triggerBeatImageGeneration,
   cancelBeatImageRun,
 } from '@/domains/storyteller/core/io/beat-image.api'
-import { POLLING_INTERVALS } from '@/shared/data/constants/polling'
+import { POLLING_INTERVALS } from '@/shared/data/utils/polling'
 import { browserStorage } from '@/shared/data/browser-storage'
 import {
   TriggerRunPollAbortedError,
   waitForTriggerRun,
 } from '@/shared/data/polling/wait-for-trigger-run'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { AsyncOperationStatus } from '@/shared/jobs/constants/async-operation-status'
+import { AsyncOperationStatus } from '@/shared/jobs/utils/async-operation-status'
 import { OperationTypeId } from '@/shared/jobs/constants/operation-type-id'
 import toast from 'react-hot-toast'
 import {
@@ -31,7 +31,7 @@ import {
   BeatImageOperationLabel,
   BeatImageProvider,
   beatImageOperationId,
-} from '@/domains/storyteller/services/constants/beat-image-service'
+} from '@/domains/storyteller/services/utils/beat-image-service'
 
 const UNKNOWN_STATUS = 'unknown'
 

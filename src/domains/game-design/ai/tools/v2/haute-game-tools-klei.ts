@@ -8,7 +8,7 @@ import { AtomicLoomInputSchema, SilentTeacherInputSchema } from '../../constants
 import {
   buildAtomicLoomPrompt,
   buildSilentTeacherPrompt,
-} from '../../constants/haute-game-tool-prompts'
+} from '../../prompts/haute-game-tool-prompts'
 import { HauteGameToolId } from '../../constants/haute-game-tool-wire'
 import { createHauteGameModel, invokeLlmJsonPrompt } from './game-design-llm-shared'
 

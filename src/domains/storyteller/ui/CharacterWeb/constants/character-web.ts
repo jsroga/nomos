@@ -5,7 +5,7 @@ import { GRAPH_NODE_TYPES } from '@/domains/storyteller/core/io/constants/relati
 import {
   RELATIONSHIP_DEFAULT_TYPE,
   RelationshipStrokeStyle,
-} from '@/domains/storyteller/ui/CharacterWeb/constants/relationship-web-styles'
+} from '@/domains/storyteller/ui/CharacterWeb/utils/relationship-web-styles'
 import { StorytellerRelationshipType } from '@/domains/storyteller/services/constants/relationship-enricher'
 import { RelationshipsApiError } from '@/domains/storyteller/core/io/constants/relationships-api'
 
