@@ -1,13 +1,13 @@
 {
-  "id": "eval_2026-09-10_13-57-20-538_p5z3",
-  "timestamp": "2026-09-10T13:57:20.538Z",
-  "inputHash": "c0946925b2c5e51d45f605520a7d4e29d16bab4530b518a92cf9415765b5b440",
+  "id": "eval_2026-09-10_14-38-01-424_3f5e",
+  "timestamp": "2026-09-10T14:38:01.426Z",
+  "inputHash": "d15302e292bf7861aed29015d5548e149f1c2dc69ce4ccb689ee6eed73a274af",
   "judgingModelId": "openai/gpt-5.6-sol",
   "judgePromptHash": "ea4bc7cb31a397263aebf032fe4e88e7bdd303a0a1b712ee669f2723eeeac518",
   "judgeUsage": {
-    "inputTokens": 5268,
-    "outputTokens": 6378,
-    "costUsd": 0.07431600000000001,
+    "inputTokens": 4933,
+    "outputTokens": 5246,
+    "costUsd": 0.062326,
     "unpricedModels": [],
     "costComplete": true
   },
@@ -34,40 +34,19 @@
         "dataset": "storyteller"
       },
       "overallMetrics": {
-        "magicScore": 0.3166666666666667,
+        "magicScore": 0.39333333333333337,
         "consistency": 0.6666666666666666,
-        "hallucination": 0.47666666666666674,
-        "personaFidelity": 0.6166666666666667,
-        "latencyMs": 6487.433333333333
+        "hallucination": 0.4833333333333334,
+        "personaFidelity": 0.61,
+        "latencyMs": 5877.2
       },
       "scenarioMetrics": {
-        "consistency": {
-          "magicScore": 0,
-          "consistency": 0.6666666666666666,
-          "hallucination": 0,
-          "personaFidelity": 0,
-          "latencyMs": 2.3333333333333335
-        },
-        "magic": {
-          "magicScore": 0.3166666666666667,
-          "consistency": 0,
-          "hallucination": 0,
-          "personaFidelity": 0,
-          "latencyMs": 13946.833333333334
-        },
-        "hallucination": {
-          "magicScore": 0,
-          "consistency": 0,
-          "hallucination": 0.47666666666666674,
-          "personaFidelity": 0,
-          "latencyMs": 5607
-        },
         "critic-discipline": {
           "magicScore": 0,
           "consistency": 0,
           "hallucination": 0,
           "personaFidelity": 0,
-          "latencyMs": 3
+          "latencyMs": 2
         },
         "promotion": {
           "magicScore": 0,
@@ -76,13 +55,6 @@
           "personaFidelity": 0,
           "latencyMs": 0
         },
-        "prose-craft": {
-          "magicScore": 0,
-          "consistency": 0,
-          "hallucination": 0,
-          "personaFidelity": 0,
-          "latencyMs": 17521.666666666668
-        },
         "beat-plan": {
           "magicScore": 0,
           "consistency": 0,
@@ -90,55 +62,170 @@
           "personaFidelity": 0,
           "latencyMs": 1
         },
+        "hallucination": {
+          "magicScore": 0,
+          "consistency": 0,
+          "hallucination": 0.4833333333333334,
+          "personaFidelity": 0,
+          "latencyMs": 5589
+        },
+        "magic": {
+          "magicScore": 0.39333333333333337,
+          "consistency": 0,
+          "hallucination": 0,
+          "personaFidelity": 0,
+          "latencyMs": 14798.166666666666
+        },
         "persona": {
           "magicScore": 0,
           "consistency": 0,
           "hallucination": 0,
-          "personaFidelity": 0.6166666666666667,
-          "latencyMs": 13845.666666666666
+          "personaFidelity": 0.61,
+          "latencyMs": 13452.333333333334
+        },
+        "prose-craft": {
+          "magicScore": 0,
+          "consistency": 0,
+          "hallucination": 0,
+          "personaFidelity": 0,
+          "latencyMs": 10130.333333333334
+        },
+        "consistency": {
+          "magicScore": 0,
+          "consistency": 0.6666666666666666,
+          "hallucination": 0,
+          "personaFidelity": 0,
+          "latencyMs": 1
         }
       },
       "scorerAverages": {
-        "consistency": 0.6666666666666666,
-        "magic": 0.3166666666666667,
-        "voice_distinctiveness": 0,
-        "hallucination": 0.47666666666666674,
         "critic-discipline": 0.3333333333333333,
-        "story-motion": 0.26666666666666666,
-        "prose-craft": 0.3333333333333333,
         "beat-plan-concreteness": 0.3333333333333333,
-        "persona-fidelity": 0.6166666666666667
+        "hallucination": 0.4833333333333334,
+        "magic": 0.39333333333333337,
+        "persona-fidelity": 0.61,
+        "prose-craft": 0.3333333333333333,
+        "consistency": 0.6666666666666666,
+        "story-motion": 0.26666666666666666,
+        "voice_distinctiveness": 0
       },
       "exampleLogs": [
         {
-          "id": "consist-pass-02",
-          "scenario": "consistency",
-          "input": "Summarize the siege timeline",
-          "output": "The siege ended last winter when the treaty opened the gates. No assault breached the walls.",
-          "score": 1,
+          "id": "critic-misses-cliche-01",
+          "scenario": "critic-discipline",
+          "input": "Critique this draft (contains a planted cliché)",
+          "output": "## Prose findings\n1. [minor] The dialogue in the second exchange is purely informational.\n2. [minor] The room description is generic — no anchoring sensory detail.",
+          "score": 0,
           "reasoning": {
-            "consistency": "No obvious inconsistencies found"
+            "critic-discipline": "Score 0.00 — planted cliché \"a chill ran down his spine\" was never quoted."
           },
           "context": {
-            "latencyMs": 5,
-            "category": "consistency",
-            "scenario": "consistency"
+            "latencyMs": 4,
+            "category": "critic-discipline",
+            "scenario": "critic-discipline"
           }
         },
         {
-          "id": "magic-strong-01",
-          "scenario": "magic",
-          "input": "Write a tense negotiation scene in a throne room",
-          "output": "The envoy set the treaty on the table but kept one finger on the seal.\n\"Your brother signed this,\" she said, \"before he learned what the river really costs.\"\nKael did not look at the parchment. He watched her left hand — the one that trembled only when she lied.",
-          "score": 0.27,
+          "id": "promo-plant-literal-01",
+          "scenario": "promotion",
+          "input": "Search the manuscript for the silver bell plant",
+          "output": "Vera lifts the silver bell under the floorboard and pockets it.",
+          "score": 0,
+          "reasoning": {},
+          "context": {
+            "latencyMs": 0,
+            "category": "promotion",
+            "scenario": "promotion"
+          }
+        },
+        {
+          "id": "beat-plan-vague-01",
+          "scenario": "beat-plan",
+          "input": "Plan the next beat",
+          "output": "{\"goal\":\"win the day\",\"conflict\":\"Something happens and tension rises between the two of them\",\"turn\":\"Everything changes and nothing will be the same afterwards\",\"dialogueHook\":\"We need to talk.\",\"charactersInvolved\":[\"Vera\"]}",
+          "score": 0,
           "reasoning": {
-            "magic": "Competent intrigue, but it reads like the opening move of a generic fantasy negotiation: treaty, envoy, dead-or-absent brother, costly river, lie-detecting tremor. The prose is clean, yet cleanliness is doing the work that specificity should. Voice is barely distinguishable, the world is implied rather than lived in, and the final observation delivers familiar competence-porn instead of surprise. Originality: 4/10. Specific voices: 4/10. Prose: 6/10. Risk: 3/10. Memorable image: 5/10. Lived-in world: 4/10. Subtext: 7/10. Surprise: 4/10. Spark: “before he learned what the river really costs” creates a strong unanswered question and hints that the river’s price may be stranger than money or blood. Slop phrase: “He watched her left hand—the one that trembled only when she lied.” This is a stock hyper-observant-protagonist reveal, too conveniently diagnostic to feel human. Actionable critique: Replace the lie-tremor with a behavior rooted in a specific shared history or local custom, and make Kael misread or fear it; that would expose character, complicate the power dynamic, and make this world feel inhabited rather than assembled from intrigue tropes.",
-            "voice_distinctiveness": "voice_distinctiveness: minPairwiseDivergence 0, speakerCount 0, fingerprintAdherence null. 0 flag(s)."
+            "beat-plan-concreteness": "Score 0.00 — gate failures: goal is too thin (11 chars): \"win the day\" — state a concrete, script-visible goal in at least one full sentence. | conflict leans on the vague phrase \"something happens\": \"Something happens and tension rises between the two of them\" — replace it with the specific event, object, or line that happens on screen. | conflict leans on the vague phrase \"tension rises\": \"Something happens and tension rises between the two of them\" — replace it with the specific event, object, or line that happens on screen. | turn leans on the vague phrase \"everything changes\": \"Everything changes and nothing will be the same afterwards\" — replace it with the specific event, object, or line that happens on screen. | turn leans on the vague phrase \"nothing will be the same\": \"Everything changes and nothing will be the same afterwards\" — replace it with the specific event, object, or line that happens on screen. | None of goal/conflict/turn names a character (available: Vera) — anchor the beat to who acts and who opposes."
           },
           "context": {
-            "latencyMs": 18042,
+            "latencyMs": 1,
+            "category": "beat-plan",
+            "scenario": "beat-plan"
+          }
+        },
+        {
+          "id": "halluc-grounded-01",
+          "scenario": "hallucination",
+          "input": "What are the rules of magic in this world?",
+          "output": "In this world, magic only works through spoken rhyme, and each spell steals a memory from the caster. Iron deadens magic nearby, and the Order of Ash bans healing entirely.",
+          "score": 0.9,
+          "reasoning": {
+            "hallucination": "Most claims accurately paraphrase the canon: spoken rhyme is required, every spell costs the caster a memory, and iron suppresses nearby magic. However, “the Order of Ash bans healing entirely” overstates the canon, which only says it “forbids healing magic.” This could incorrectly include nonmagical healing. Severity: minor. No invented entities or direct contradictions otherwise."
+          },
+          "context": {
+            "latencyMs": 8045,
+            "category": "hallucination",
+            "scenario": "hallucination"
+          }
+        },
+        {
+          "id": "beat-plan-concrete-01",
+          "scenario": "beat-plan",
+          "input": "Plan a beat where Vera confronts Marcus about the forged ledger",
+          "output": "{\"goal\":\"Vera must extract the confession from Marcus before the vesper bells stop ringing\",\"conflict\":\"Marcus stalls her with the forged ledger, knowing silence is his only shield\",\"turn\":\"The confession implicates Vera herself — her signature is on the transfer order\",\"dialogueHook\":\"You already know what I did. You signed for it.\",\"charactersInvolved\":[\"Vera\",\"Marcus\"]}",
+          "score": 1,
+          "reasoning": {
+            "beat-plan-concreteness": "Score 1.00 — plan passes the concreteness gate."
+          },
+          "context": {
+            "latencyMs": 1,
+            "category": "beat-plan",
+            "scenario": "beat-plan"
+          }
+        },
+        {
+          "id": "magic-slop-01",
+          "scenario": "magic",
+          "input": "Write an epic fantasy battle",
+          "output": "In a world where darkness loomed on the horizon, the brave hero stood tall against the vast expanse of evil. It is worth noting that the myriad of warriors clashed in a profound dance of destiny. The intricate tapestry of fate wove itself through the annals of time.",
+          "score": 0.02,
+          "reasoning": {
+            "magic": "This is fantasy-flavored fog: no character, place, conflict, sensory detail, or distinctive voice—only abstractions announcing importance. Originality: 0/10. Specific voice: 0/10. Prose/non-AI feel: 1/10. Risk: 0/10. Memorable image: 1/10. Lived-in world: 0/10. Subtext: 0/10. Surprise: 0/10. Spark: “darkness loomed on the horizon” at least offers a rudimentary visual axis, though it is thoroughly clichéd. Slop phrase: “It is worth noting that the myriad of warriors clashed in a profound dance of destiny”—empty throat-clearing welded to stock AI grandeur. Actionable critique: replace every abstraction with one concrete, consequential detail; name the hero, specify what the enemy is doing, and show one strange battlefield image only this world could produce—for example, a deserter scraping his family name from a sword before the enemy can steal it."
+          },
+          "context": {
+            "latencyMs": 11089,
             "category": "magic",
             "scenario": "magic"
+          }
+        },
+        {
+          "id": "persona-mismatch-01",
+          "scenario": "persona",
+          "input": "Write a scene of cosmic horror revelation",
+          "output": "The eldritch void screamed incomprehensible truths as tentacles of pure madness unraveled the fabric of reality itself. It is important to consider that the protagonist's profound journey through cosmic horror revealed the intricate nature of existence.",
+          "score": 0.04,
+          "reasoning": {
+            "persona-fidelity": "The passage largely misses the target craft. Its cosmic-horror abstractions—“eldritch void,” “incomprehensible truths,” “pure madness,” and “fabric of reality”—are generic Lovecraftian shorthand rather than POV-locked experience. The narrative camera is unmoored: no specific character perceives the event, and there are no bodily reactions, concrete surroundings, food, weather, heraldry, social tensions, or materially consequential choices. The second sentence becomes overtly analytical (“It is important to consider”) and states the journey’s significance instead of dramatizing it through action and aftermath. Persona-specific signals found are limited to darkness and the possibility of transformation, but neither is grounded in moral ambiguity or human cost. Missed opportunities include filtering the horror through a biased viewpoint, replacing cosmic superlatives with tactile sensory detail, tying the revelation to compromised loyalties or political stakes, and showing consequences rather than announcing profundity."
+          },
+          "context": {
+            "latencyMs": 12705,
+            "category": "persona",
+            "scenario": "persona"
+          }
+        },
+        {
+          "id": "prose-craft-stated-emotion-01",
+          "scenario": "prose-craft",
+          "input": "Write a scene where a father waits for news from the surgery ward",
+          "output": "Tomas felt terrified as he waited. He was overwhelmed with anxiety and felt a deep sense of dread. When the doctor appeared, he felt a surge of hope, but then he felt crushed by despair when he saw her expression. He felt utterly helpless.",
+          "score": 0,
+          "reasoning": {
+            "prose-craft": "Score 0.00 — 4 stated emotions, 3 clichés, 0 POV breaks in ~44 words."
+          },
+          "context": {
+            "latencyMs": 8861,
+            "category": "prose-craft",
+            "scenario": "prose-craft"
           }
         },
         {
@@ -157,18 +244,18 @@
           }
         },
         {
-          "id": "halluc-partial-01",
-          "scenario": "hallucination",
-          "input": "Who rules the northern provinces?",
-          "output": "Queen Maret rules the north from Whitehall. Prince Hollis, her brother, leads the Frostgate garrison and is widely expected to succeed her.",
-          "score": 0.55,
+          "id": "beat-plan-prose-leak-01",
+          "scenario": "beat-plan",
+          "input": "Plan a beat for the harbor scene",
+          "output": "In this beat, Vera walks along the harbor at dusk thinking about her past. The scene should feel melancholy and set up the later confrontation. We open on the water and slowly reveal her face.",
+          "score": 0,
           "reasoning": {
-            "hallucination": "Supported: “Queen Maret rules the north” reasonably restates that she “holds the northern provinces.” “Prince Hollis, her brother, leads the Frostgate garrison” matches the canon that he is her brother and commands that garrison. Hallucinations: “from Whitehall” introduces an invented location and governing seat absent from the canon (major). “is widely expected to succeed her” asserts unsupported public expectations and succession knowledge; the canon only says Hollis “holds no crown” and does not identify him as heir (major)."
+            "beat-plan-concreteness": "Score 0.00 — output is not JSON (planner leaked prose)."
           },
           "context": {
-            "latencyMs": 6703,
-            "category": "hallucination",
-            "scenario": "hallucination"
+            "latencyMs": 1,
+            "category": "beat-plan",
+            "scenario": "beat-plan"
           }
         },
         {
@@ -187,6 +274,94 @@
           }
         },
         {
+          "id": "story-motion-strong-01",
+          "scenario": "magic",
+          "input": "A courier decides whether to deliver a sealed order",
+          "output": "The courier weighed the sealed order, then held its corner to the lamp until the wax ran and the paper caught.\n\"Tell the general it never arrived,\" she said, and carried the ash out into the rain.\nBy the next morning the garrison had marched the other way.",
+          "score": 0.8,
+          "reasoning": {
+            "story-motion": "Score 0.80 — 4 state changes vs 1 static beats; ends on motion."
+          },
+          "context": {
+            "latencyMs": 17603,
+            "category": "magic",
+            "scenario": "magic"
+          }
+        },
+        {
+          "id": "persona-grrm-02",
+          "scenario": "persona",
+          "input": "Write the aftermath of a battle, from the perspective of a survivor",
+          "output": "The crows had the field now. Petyr walked the line of the ditch counting boots — you could sell boots, his father used to say, boots and belt buckles, never the swords, the lords took the swords. The boy from the mill was face-down in the water with his hands still tied. Petyr took his boots too, and was sick after, quietly, where the sergeant couldn't see.",
+          "score": 0.91,
+          "reasoning": {
+            "persona-fidelity": "A strong match. Persona-specific signals include tightly POV-locked observation, with the battlefield filtered through Petyr’s practical counting of salvageable boots; concrete sensory aftermath in crows, ditch water, corpses, and vomiting; class-conscious worldbuilding through the father’s rule that lords claim the swords while lesser men scavenge buckles; and moral greyness embodied rather than explained. Petyr robs a bound mill boy’s corpse yet is sick afterward, revealing conscience through physical consequence without stating fear, guilt, or disgust. The repeated boots also function as both material detail and moral motif. The passage favors consequence over battle spectacle and suggests a larger feudal hierarchy economically. Missed opportunities are minor: heraldry, weather, and richer food-or-landscape texture are absent, while the father’s maxim feels slightly engineered to deliver setting and theme efficiently. The final beat is effective but somewhat familiar. Even so, the compressed prose captures much of the requested craft’s soul rather than merely borrowing medieval imagery."
+          },
+          "context": {
+            "latencyMs": 13022,
+            "category": "persona",
+            "scenario": "persona"
+          }
+        },
+        {
+          "id": "consist-pass-02",
+          "scenario": "consistency",
+          "input": "Summarize the siege timeline",
+          "output": "The siege ended last winter when the treaty opened the gates. No assault breached the walls.",
+          "score": 1,
+          "reasoning": {
+            "consistency": "No obvious inconsistencies found"
+          },
+          "context": {
+            "latencyMs": 1,
+            "category": "consistency",
+            "scenario": "consistency"
+          }
+        },
+        {
+          "id": "story-motion-stasis-02",
+          "scenario": "magic",
+          "input": "A man receives news he has been dreading",
+          "output": "He read the letter twice, then set it face-down on the table.\nOutside, the streetlight buzzed and steadied.\nThere was nothing left to say that the silence had not already said better, so he let the silence say it.",
+          "score": 0,
+          "reasoning": {
+            "story-motion": "Score 0.00 — 2 state changes vs 2 static beats; ENDS ON STASIS (hard zero)."
+          },
+          "context": {
+            "latencyMs": 7865,
+            "category": "magic",
+            "scenario": "magic"
+          }
+        },
+        {
+          "id": "halluc-fabricated-01",
+          "scenario": "hallucination",
+          "input": "Explain how teleportation works here",
+          "output": "Teleportation circles were installed by the Archivists after the Ash War and can move a person up to fifty leagues if they carry a sigil-stone.",
+          "score": 0,
+          "reasoning": {
+            "hallucination": "Critical contradiction: the claim that “Teleportation circles were installed” and “can move a person up to fifty leagues” directly violates the canon’s explicit statement, “There is no teleportation.” Major fabrications: “the Archivists,” “after the Ash War,” and “sigil-stone” are not mentioned or reasonably implied by the canon. The claimed fifty-league range is also invented. The content is therefore wholly unsupported and canonically impossible."
+          },
+          "context": {
+            "latencyMs": 3363,
+            "category": "hallucination",
+            "scenario": "hallucination"
+          }
+        },
+        {
+          "id": "promo-dialogue-talking-heads-01",
+          "scenario": "promotion",
+          "input": "Draft the vestry confrontation",
+          "output": "INT. VESTRY — NIGHT\nVERA\nI know what you did.\nMARCUS\nYou don't.\nVERA\nThen say it.\nMARCUS\nThere is nothing to say.",
+          "score": 0,
+          "reasoning": {},
+          "context": {
+            "latencyMs": 0,
+            "category": "promotion",
+            "scenario": "promotion"
+          }
+        },
+        {
           "id": "critic-quotes-cliche-01",
           "scenario": "critic-discipline",
           "input": "Critique this draft (contains a planted cliché)",
@@ -199,6 +374,79 @@
             "latencyMs": 1,
             "category": "critic-discipline",
             "scenario": "critic-discipline"
+          }
+        },
+        {
+          "id": "prose-craft-clean-01",
+          "scenario": "prose-craft",
+          "input": "Write a scene where a father waits for news from the surgery ward",
+          "output": "Tomas fed the vending machine his last coins and did not press any button. Down the corridor a gurney wheel squeaked on every third turn. He counted the squeaks to forty, lost the number when the doors opened, and started again from one.",
+          "score": 1,
+          "reasoning": {
+            "prose-craft": "Score 1.00 — 0 stated emotions, 0 clichés, 0 POV breaks in ~43 words."
+          },
+          "context": {
+            "latencyMs": 4081,
+            "category": "prose-craft",
+            "scenario": "prose-craft"
+          }
+        },
+        {
+          "id": "halluc-partial-01",
+          "scenario": "hallucination",
+          "input": "Who rules the northern provinces?",
+          "output": "Queen Maret rules the north from Whitehall. Prince Hollis, her brother, leads the Frostgate garrison and is widely expected to succeed her.",
+          "score": 0.55,
+          "reasoning": {
+            "hallucination": "Partially supported. “Queen Maret rules the north” reasonably paraphrases the canon’s “holds the northern provinces,” and “Prince Hollis, her brother, leads the Frostgate garrison” is directly supported. However, “from Whitehall” invents an unmentioned location/entity (minor hallucination). The claim that Hollis “is widely expected to succeed her” is unsupported; the canon only says he “holds no crown,” which provides no evidence about succession expectations (major hallucination)."
+          },
+          "context": {
+            "latencyMs": 5359,
+            "category": "hallucination",
+            "scenario": "hallucination"
+          }
+        },
+        {
+          "id": "persona-grrm-01",
+          "scenario": "persona",
+          "input": "Write a quiet scene where a character realizes they have been lied to",
+          "output": "The capon had gone cold on the trencher. Aldric read the letter a second time, slower, the wax crumbs still under his thumbnail. His brother's hand, yes — the same looping T he'd taught him in the sept — but the date was wrong, three days before the raven could have flown. He set the letter beside the knife and made himself finish the wine.",
+          "score": 0.88,
+          "reasoning": {
+            "persona-fidelity": "Strong match. Persona-specific signals include tightly locked POV through Aldric’s scrutiny; tactile and gustatory texture in the cold capon, trencher, wax crumbs, knife, and wine; period-world vocabulary such as “sept” and “raven”; and emotion conveyed indirectly through repeated reading, attention to the malformed chronology, and the controlled act of finishing the wine. The letter’s impossible date creates political or familial menace without spectacle, while the remembered lesson in penmanship gives the suspicion personal consequence. The prose is restrained, concrete, and rhythmically convincing, especially the turn from verification to quiet ritual. Missed opportunities: moral greyness and consequence remain only implicit, with no difficult choice yet presented; heraldry, weather, social hierarchy, and broader political context are absent; and the familiar cluster of capon/trencher/sept/raven risks reading as surface imitation of the setting’s lexicon. Even so, the unstated emotion and ominous material detail capture much of the requested craft’s underlying method rather than merely its decoration."
+          },
+          "context": {
+            "latencyMs": 14630,
+            "category": "persona",
+            "scenario": "persona"
+          }
+        },
+        {
+          "id": "promo-paraphrase-leak-01",
+          "scenario": "promotion",
+          "input": "Draft Vera after the harbour confession",
+          "output": "INT. VESTRY — NIGHT\nVera already knows the harbour chimes belong to her.\nShe does not say the name.",
+          "score": 0,
+          "reasoning": {},
+          "context": {
+            "latencyMs": 0,
+            "category": "promotion",
+            "scenario": "promotion"
+          }
+        },
+        {
+          "id": "prose-craft-cliche-01",
+          "scenario": "prose-craft",
+          "input": "Write a confrontation between two old rivals",
+          "output": "His heart pounded as time seemed to slow. A chill ran down her spine when their eyes met, and the tension was palpable. She let out a breath she didn't know she was holding as he shrugged his shoulders and nodded his head.",
+          "score": 0,
+          "reasoning": {
+            "prose-craft": "Score 0.00 — 0 stated emotions, 8 clichés, 2 POV breaks in ~43 words."
+          },
+          "context": {
+            "latencyMs": 17449,
+            "category": "prose-craft",
+            "scenario": "prose-craft"
           }
         },
         {
@@ -230,46 +478,34 @@
           }
         },
         {
-          "id": "halluc-grounded-01",
-          "scenario": "hallucination",
-          "input": "What are the rules of magic in this world?",
-          "output": "In this world, magic only works through spoken rhyme, and each spell steals a memory from the caster. Iron deadens magic nearby, and the Order of Ash bans healing entirely.",
-          "score": 0.88,
+          "id": "magic-strong-01",
+          "scenario": "magic",
+          "input": "Write a tense negotiation scene in a throne room",
+          "output": "The envoy set the treaty on the table but kept one finger on the seal.\n\"Your brother signed this,\" she said, \"before he learned what the river really costs.\"\nKael did not look at the parchment. He watched her left hand — the one that trembled only when she lied.",
+          "score": 0.275,
           "reasoning": {
-            "hallucination": "Mostly faithful. “Magic only works through spoken rhyme” matches “requires spoken rhyme,” and “each spell steals a memory” reasonably paraphrases the memory cost. “Iron deadens magic nearby” is accurate but omits the canon’s ten-pace limit; this is imprecision, not fabrication. Minor overstatement: “the Order of Ash bans healing entirely” could include mundane healing, while canon only says it “forbids healing magic.” No invented entities or direct contradictions."
+            "magic": "Competent tension, but this is polished stock fantasy diplomacy rather than a scene with its own blood type. Originality: 5/10. Specific voices: 4/10; both characters speak and behave like interchangeable intrigue archetypes. Prose: 6/10; clean, controlled, and not egregiously AI-generic, though the gestures are prefab. Risk: 3/10. Memorable image: 6/10; the finger pinning the seal has visual pressure. Lived-in world: 4/10; “what the river really costs” promises history but supplies only atmospheric vagueness. Subtext: 7/10; leverage, grief, and suspected deceit are efficiently implied. Surprise: 4/10; the lie-detecting tremor is familiar and immediately legible. Spark: “kept one finger on the seal” turns a document into contested territory. Slop phrase: “the one that trembled only when she lied” is a well-worn tell presented as a dramatic revelation. Actionable critique: Replace the generic physical lie tell with a behavior rooted in this treaty, river, or shared history—something Kael could recognize only because he knows her—and make her opening line concrete enough to reveal one strange, consequential detail about the river’s cost.",
+            "voice_distinctiveness": "voice_distinctiveness: minPairwiseDivergence 0, speakerCount 0, fingerprintAdherence null. 0 flag(s)."
           },
           "context": {
-            "latencyMs": 6442,
-            "category": "hallucination",
-            "scenario": "hallucination"
+            "latencyMs": 13389,
+            "category": "magic",
+            "scenario": "magic"
           }
         },
         {
-          "id": "critic-misses-cliche-01",
-          "scenario": "critic-discipline",
-          "input": "Critique this draft (contains a planted cliché)",
-          "output": "## Prose findings\n1. [minor] The dialogue in the second exchange is purely informational.\n2. [minor] The room description is generic — no anchoring sensory detail.",
-          "score": 0,
+          "id": "magic-motion-01",
+          "scenario": "magic",
+          "input": "Two siblings argue about selling the family farm",
+          "output": "\"You always do this,\" Mara said, and slid the deed across the ledger to his side of the table.\n\"Sign it, or don't. I already called the buyer.\"\nTomas looked at the pen a long moment. Then he tore the deed down the middle and fed both halves to the stove.",
+          "score": 0.61,
           "reasoning": {
-            "critic-discipline": "Score 0.00 — planted cliché \"a chill ran down his spine\" was never quoted."
+            "magic": "Originality: 58. Specific voices: 45. Prose: 62. Risk: 55. Memorable image: 76. Lived-in world: 38. Subtext: 68. Surprise: 64.\n\nThe scene has clean pressure and a strong final gesture, but it is skeletal to the point of interchangeability: “deed,” “buyer,” and “stove” imply a world without making one feel inhabited. Mara and Tomas sound like efficient screenplay placeholders rather than people with distinct verbal habits or history. Tearing the deed is expected defiance; feeding it to the stove gives the beat heat, but not enough specificity to make it singular.\n\nSpark: “fed both halves to the stove” — decisive, visual, and charged with consequence.\n\nSlop phrase: “looked at the pen a long moment” — generic dramatic-delay filler used in countless synthetic scenes.\n\nActionable critique: Replace the pen-staring beat with one concrete action rooted in their shared history or trade—ink under Tomas’s thumbnail, Mara protecting a scorched ledger, a disputed boundary name on the deed—so his refusal reveals character and makes this conflict belong only to these two people."
           },
           "context": {
-            "latencyMs": 7,
-            "category": "critic-discipline",
-            "scenario": "critic-discipline"
-          }
-        },
-        {
-          "id": "promo-dialogue-talking-heads-01",
-          "scenario": "promotion",
-          "input": "Draft the vestry confrontation",
-          "output": "INT. VESTRY — NIGHT\nVERA\nI know what you did.\nMARCUS\nYou don't.\nVERA\nThen say it.\nMARCUS\nThere is nothing to say.",
-          "score": 0,
-          "reasoning": {},
-          "context": {
-            "latencyMs": 0,
-            "category": "promotion",
-            "scenario": "promotion"
+            "latencyMs": 11078,
+            "category": "magic",
+            "scenario": "magic"
           }
         },
         {
@@ -282,142 +518,9 @@
             "story-motion": "Score 0.00 — 3 state changes vs 3 static beats; ENDS ON STASIS (hard zero)."
           },
           "context": {
-            "latencyMs": 18968,
+            "latencyMs": 27765,
             "category": "magic",
             "scenario": "magic"
-          }
-        },
-        {
-          "id": "prose-craft-cliche-01",
-          "scenario": "prose-craft",
-          "input": "Write a confrontation between two old rivals",
-          "output": "His heart pounded as time seemed to slow. A chill ran down her spine when their eyes met, and the tension was palpable. She let out a breath she didn't know she was holding as he shrugged his shoulders and nodded his head.",
-          "score": 0,
-          "reasoning": {
-            "prose-craft": "Score 0.00 — 0 stated emotions, 5 clichés, 2 POV breaks in ~43 words."
-          },
-          "context": {
-            "latencyMs": 36651,
-            "category": "prose-craft",
-            "scenario": "prose-craft"
-          }
-        },
-        {
-          "id": "magic-slop-01",
-          "scenario": "magic",
-          "input": "Write an epic fantasy battle",
-          "output": "In a world where darkness loomed on the horizon, the brave hero stood tall against the vast expanse of evil. It is worth noting that the myriad of warriors clashed in a profound dance of destiny. The intricate tapestry of fate wove itself through the annals of time.",
-          "score": 0.03,
-          "reasoning": {
-            "magic": "Originality: 1/10. Specific voice: 0/10. Prose: 1/10—pure generic fantasy/AI filler. Risk: 0/10. Memorable image: 1/10. Lived-in world: 0/10. Subtext: 0/10. Surprise: 0/10. Nothing concrete happens: an unnamed hero confronts abstract evil while fate, destiny, time, and tapestry metaphors smother the scene. Spark: “dance of destiny” at least gestures toward making battle rhythmic, though it remains clichéd. Slop phrase: “It is worth noting that”—a dead-eyed essay transition that annihilates dramatic immediacy. Actionable critique: Replace every abstraction with one irreversible physical event rooted in this world—for example, give the hero a name, a compromised motive, and a strange local weapon, then show them recognizing a loved one beneath an enemy helmet. Delete “darkness,” “evil,” “profound,” “destiny,” “tapestry,” “fate,” and “annals of time” unless you can make each literal and specific."
-          },
-          "context": {
-            "latencyMs": 11497,
-            "category": "magic",
-            "scenario": "magic"
-          }
-        },
-        {
-          "id": "beat-plan-prose-leak-01",
-          "scenario": "beat-plan",
-          "input": "Plan a beat for the harbor scene",
-          "output": "In this beat, Vera walks along the harbor at dusk thinking about her past. The scene should feel melancholy and set up the later confrontation. We open on the water and slowly reveal her face.",
-          "score": 0,
-          "reasoning": {
-            "beat-plan-concreteness": "Score 0.00 — output is not JSON (planner leaked prose)."
-          },
-          "context": {
-            "latencyMs": 0,
-            "category": "beat-plan",
-            "scenario": "beat-plan"
-          }
-        },
-        {
-          "id": "magic-motion-01",
-          "scenario": "magic",
-          "input": "Two siblings argue about selling the family farm",
-          "output": "\"You always do this,\" Mara said, and slid the deed across the ledger to his side of the table.\n\"Sign it, or don't. I already called the buyer.\"\nTomas looked at the pen a long moment. Then he tore the deed down the middle and fed both halves to the stove.",
-          "score": 0.38,
-          "reasoning": {
-            "magic": "Originality: 3/10. Specific voices: 2/10. Prose: 5/10. Risk: 3/10. Memorable image: 5/10. Lived-in world: 2/10. Subtext: 5/10. Surprise: 4/10. This is clean but skeletal, assembled from familiar dramatic shorthand: an ultimatum, a loaded silence, a document destroyed in a stove. Mara and Tomas have no verbal fingerprints, and “deed,” “buyer,” and “ledger” suggest a world without making it tangible. The gesture communicates refusal, but nothing uniquely personal is exposed by it. Spark: “fed both halves to the stove” gives the scene heat, motion, and finality. Slop phrase: “looked at the pen a long moment” is generic hesitation filler. Actionable critique: replace the pause with one concrete action or remark tied to their shared history—something only Tomas would do—and specify what the deed controls, so tearing it costs more than an abstract property transaction."
-          },
-          "context": {
-            "latencyMs": 12777,
-            "category": "magic",
-            "scenario": "magic"
-          }
-        },
-        {
-          "id": "story-motion-stasis-02",
-          "scenario": "magic",
-          "input": "A man receives news he has been dreading",
-          "output": "He read the letter twice, then set it face-down on the table.\nOutside, the streetlight buzzed and steadied.\nThere was nothing left to say that the silence had not already said better, so he let the silence say it.",
-          "score": 0,
-          "reasoning": {
-            "story-motion": "Score 0.00 — 2 state changes vs 2 static beats; ENDS ON STASIS (hard zero)."
-          },
-          "context": {
-            "latencyMs": 5421,
-            "category": "magic",
-            "scenario": "magic"
-          }
-        },
-        {
-          "id": "prose-craft-clean-01",
-          "scenario": "prose-craft",
-          "input": "Write a scene where a father waits for news from the surgery ward",
-          "output": "Tomas fed the vending machine his last coins and did not press any button. Down the corridor a gurney wheel squeaked on every third turn. He counted the squeaks to forty, lost the number when the doors opened, and started again from one.",
-          "score": 1,
-          "reasoning": {
-            "prose-craft": "Score 1.00 — 0 stated emotions, 0 clichés, 0 POV breaks in ~43 words."
-          },
-          "context": {
-            "latencyMs": 3661,
-            "category": "prose-craft",
-            "scenario": "prose-craft"
-          }
-        },
-        {
-          "id": "persona-mismatch-01",
-          "scenario": "persona",
-          "input": "Write a scene of cosmic horror revelation",
-          "output": "The eldritch void screamed incomprehensible truths as tentacles of pure madness unraveled the fabric of reality itself. It is important to consider that the protagonist's profound journey through cosmic horror revealed the intricate nature of existence.",
-          "score": 0.04,
-          "reasoning": {
-            "persona-fidelity": "The passage barely matches the requested craft. Its only faintly compatible signal is a dark, destabilizing threat with potentially grave consequences. Otherwise, it relies on generic cosmic-horror abstractions—“eldritch void,” “pure madness,” “fabric of reality,” and “intricate nature of existence”—rather than concrete, character-bound experience. The camera is not POV-locked: no specific consciousness filters what is seen, heard, remembered, or misunderstood. “It is important to consider” becomes overt critical commentary, breaking immersion, while “profound journey” directly labels significance instead of dramatizing it. Missing persona-specific signals include sensory particulars such as cold, hunger, smells, clothing, food, wounds, weather, heraldic or political detail; morally compromised choices; competing loyalties; social stakes; and tangible consequences. The void “screaming truths” favors spectacle over consequence, and there is no embodied aftermath or human cost. To fit the persona better, the horror should be rendered through a limited viewpoint using physical details and personal associations, then force a costly decision whose moral meaning remains ambiguous rather than explaining the theme."
-          },
-          "context": {
-            "latencyMs": 12287,
-            "category": "persona",
-            "scenario": "persona"
-          }
-        },
-        {
-          "id": "beat-plan-concrete-01",
-          "scenario": "beat-plan",
-          "input": "Plan a beat where Vera confronts Marcus about the forged ledger",
-          "output": "{\"goal\":\"Vera must extract the confession from Marcus before the vesper bells stop ringing\",\"conflict\":\"Marcus stalls her with the forged ledger, knowing silence is his only shield\",\"turn\":\"The confession implicates Vera herself — her signature is on the transfer order\",\"dialogueHook\":\"You already know what I did. You signed for it.\",\"charactersInvolved\":[\"Vera\",\"Marcus\"]}",
-          "score": 1,
-          "reasoning": {
-            "beat-plan-concreteness": "Score 1.00 — plan passes the concreteness gate."
-          },
-          "context": {
-            "latencyMs": 2,
-            "category": "beat-plan",
-            "scenario": "beat-plan"
-          }
-        },
-        {
-          "id": "promo-plant-literal-01",
-          "scenario": "promotion",
-          "input": "Search the manuscript for the silver bell plant",
-          "output": "Vera lifts the silver bell under the floorboard and pockets it.",
-          "score": 0,
-          "reasoning": {},
-          "context": {
-            "latencyMs": 0,
-            "category": "promotion",
-            "scenario": "promotion"
           }
         },
         {
@@ -434,113 +537,10 @@
           }
         },
         {
-          "id": "persona-grrm-02",
-          "scenario": "persona",
-          "input": "Write the aftermath of a battle, from the perspective of a survivor",
-          "output": "The crows had the field now. Petyr walked the line of the ditch counting boots — you could sell boots, his father used to say, boots and belt buckles, never the swords, the lords took the swords. The boy from the mill was face-down in the water with his hands still tied. Petyr took his boots too, and was sick after, quietly, where the sergeant couldn't see.",
-          "score": 0.92,
-          "reasoning": {
-            "persona-fidelity": "Strong match. Persona-specific signals include tightly POV-locked attention to what Petyr notices and values; material, class-conscious detail in the boots, belt buckles, swords, ditch, and mill boy; an inherited maxim that conveys both character and social order; and moral greyness rendered through action rather than judgment. Taking the bound boy’s boots and then vomiting out of the sergeant’s sight captures complicity, shame, necessity, and hierarchy without naming any emotion. The crows and aftermath keep the emphasis on consequence rather than battle spectacle, while the repeated boots give the passage a grim, economical rhythm. The strongest line is the father’s saying, which efficiently suggests a lifetime of scavenging beneath lords who reserve symbols of honor for themselves. Missed opportunities: the sensory texture is somewhat narrow—there is no smell, cold, mud against skin, food, weather, or heraldic color—and the field could feel more physically particular. The syntax and bleak medieval register are convincing but slightly distilled, closer to an excellent miniature imitation than a fully inhabited chapter passage. A more idiosyncratic interior association or politically charged observation would deepen the effect."
-          },
-          "context": {
-            "latencyMs": 13136,
-            "category": "persona",
-            "scenario": "persona"
-          }
-        },
-        {
-          "id": "story-motion-strong-01",
-          "scenario": "magic",
-          "input": "A courier decides whether to deliver a sealed order",
-          "output": "The courier weighed the sealed order, then held its corner to the lamp until the wax ran and the paper caught.\n\"Tell the general it never arrived,\" she said, and carried the ash out into the rain.\nBy the next morning the garrison had marched the other way.",
-          "score": 0.8,
-          "reasoning": {
-            "story-motion": "Score 0.80 — 4 state changes vs 1 static beats; ends on motion."
-          },
-          "context": {
-            "latencyMs": 16976,
-            "category": "magic",
-            "scenario": "magic"
-          }
-        },
-        {
-          "id": "persona-grrm-01",
-          "scenario": "persona",
-          "input": "Write a quiet scene where a character realizes they have been lied to",
-          "output": "The capon had gone cold on the trencher. Aldric read the letter a second time, slower, the wax crumbs still under his thumbnail. His brother's hand, yes — the same looping T he'd taught him in the sept — but the date was wrong, three days before the raven could have flown. He set the letter beside the knife and made himself finish the wine.",
-          "score": 0.89,
-          "reasoning": {
-            "persona-fidelity": "Strong match. Persona-specific signals include the close POV lock through Aldric’s scrutiny; tactile and gustatory details such as cold capon, trencher, wax crumbs, knife, and wine; setting markers like the sept and raven; and emotion conveyed through behavior rather than named outright. Reading the letter twice, recognizing the taught penmanship, and forcing himself to finish the wine communicate suspicion and dread without stating either. The prose also favors consequence over spectacle: the threat lies in chronology, kinship, and possible deception rather than action. The brotherly history embedded in the looping T gives the clue personal weight.\n\nThe imitation captures much of the craft’s soul because every physical detail also performs narrative work. The cold meal suggests neglected time, the wax supports forensic attention, and the wine becomes an act of control. The final restraint is especially effective.\n\nMissed opportunities are mostly products of the passage’s brevity. Moral greyness is only latent; Aldric faces no choice that implicates him ethically. Heraldry and weather are absent, and the sensory palette could extend beyond touch and taste into smell, sound, or bodily discomfort. The chronology clue is intriguing but slightly opaque: “three days before the raven could have flown” does not by itself establish why the date is impossible without more situational context. Overall, it is highly convincing, though more a sharp opening fragment than a complete demonstration of the persona’s political complexity and consequence-driven storytelling."
-          },
-          "context": {
-            "latencyMs": 16114,
-            "category": "persona",
-            "scenario": "persona"
-          }
-        },
-        {
-          "id": "beat-plan-vague-01",
-          "scenario": "beat-plan",
-          "input": "Plan the next beat",
-          "output": "{\"goal\":\"win the day\",\"conflict\":\"Something happens and tension rises between the two of them\",\"turn\":\"Everything changes and nothing will be the same afterwards\",\"dialogueHook\":\"We need to talk.\",\"charactersInvolved\":[\"Vera\"]}",
-          "score": 0,
-          "reasoning": {
-            "beat-plan-concreteness": "Score 0.00 — gate failures: goal is too thin (11 chars): \"win the day\" — state a concrete, script-visible goal in at least one full sentence. | conflict leans on the vague phrase \"something happens\": \"Something happens and tension rises between the two of them\" — replace it with the specific event, object, or line that happens on screen. | conflict leans on the vague phrase \"tension rises\": \"Something happens and tension rises between the two of them\" — replace it with the specific event, object, or line that happens on screen. | turn leans on the vague phrase \"everything changes\": \"Everything changes and nothing will be the same afterwards\" — replace it with the specific event, object, or line that happens on screen. | turn leans on the vague phrase \"nothing will be the same\": \"Everything changes and nothing will be the same afterwards\" — replace it with the specific event, object, or line that happens on screen. | None of goal/conflict/turn names a character (available: Vera) — anchor the beat to who acts and who opposes."
-          },
-          "context": {
-            "latencyMs": 1,
-            "category": "beat-plan",
-            "scenario": "beat-plan"
-          }
-        },
-        {
-          "id": "prose-craft-stated-emotion-01",
-          "scenario": "prose-craft",
-          "input": "Write a scene where a father waits for news from the surgery ward",
-          "output": "Tomas felt terrified as he waited. He was overwhelmed with anxiety and felt a deep sense of dread. When the doctor appeared, he felt a surge of hope, but then he felt crushed by despair when he saw her expression. He felt utterly helpless.",
-          "score": 0,
-          "reasoning": {
-            "prose-craft": "Score 0.00 — 4 stated emotions, 3 clichés, 0 POV breaks in ~44 words."
-          },
-          "context": {
-            "latencyMs": 12253,
-            "category": "prose-craft",
-            "scenario": "prose-craft"
-          }
-        },
-        {
-          "id": "halluc-fabricated-01",
-          "scenario": "hallucination",
-          "input": "Explain how teleportation works here",
-          "output": "Teleportation circles were installed by the Archivists after the Ash War and can move a person up to fifty leagues if they carry a sigil-stone.",
-          "score": 0,
-          "reasoning": {
-            "hallucination": "Critical contradiction and pure fabrication. The canon explicitly states, \"There is no teleportation,\" while the content claims, \"Teleportation circles were installed\" and can transport people \"up to fifty leagues.\" The Archivists, Ash War, teleportation circles, sigil-stones, installation timeline, and fifty-league range are all unsupported invented details. The asserted travel method also conflicts with the canon’s permitted transport by horse, river barge, or the single east-west rail line."
-          },
-          "context": {
-            "latencyMs": 3676,
-            "category": "hallucination",
-            "scenario": "hallucination"
-          }
-        },
-        {
           "id": "promo-dialogue-disembodied-01",
           "scenario": "promotion",
           "input": "Draft the vestry confrontation with talking heads",
           "output": "INT. VESTRY — NIGHT\n\"The ledger is forged,\" Vera said.\n\"I know,\" Marcus said.\n\"Then why keep it?\" Vera said.\n\"Because you signed it,\" Marcus said.",
-          "score": 0,
-          "reasoning": {},
-          "context": {
-            "latencyMs": 0,
-            "category": "promotion",
-            "scenario": "promotion"
-          }
-        },
-        {
-          "id": "promo-paraphrase-leak-01",
-          "scenario": "promotion",
-          "input": "Draft Vera after the harbour confession",
-          "output": "INT. VESTRY — NIGHT\nVera already knows the harbour chimes belong to her.\nShe does not say the name.",
           "score": 0,
           "reasoning": {},
           "context": {
@@ -553,14 +553,14 @@
     }
   ],
   "scenarios": [
-    "consistency",
-    "magic",
-    "hallucination",
     "critic-discipline",
     "promotion",
-    "prose-craft",
     "beat-plan",
-    "persona"
+    "hallucination",
+    "magic",
+    "persona",
+    "prose-craft",
+    "consistency"
   ],
   "failures": []
 }

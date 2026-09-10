@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { STUDIO_AGENT_DESCRIPTION_MAX } from '@/shared/agent-kernel/mastra/constants/studio-workspace'
 import {
   FileAgentCatalogId,
+  LoopCreatorPurposeBody,
   PromptCatalogDomain,
   PromptCatalogJoin,
 } from '@/shared/agent-kernel/prompts/constants/prompt-catalog'
 import {
   fileAgentCatalogDescription,
+  loopCreatorInternalPurposeDescription,
   promptCatalogDescription,
 } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
 import { EVAL_PROMPT_DESCRIPTIONS } from '@/shared/agent-kernel/prompts/constants/eval-prompt-descriptions'
@@ -42,5 +44,14 @@ describe('Studio prompt catalog copy', () => {
     expect(gameSystem?.description?.startsWith(`${PromptCatalogDomain.GameDesign}${PromptCatalogJoin.Domain}`)).toBe(
       true,
     )
+  })
+
+  it('keeps loop-creator internal Purpose under the Studio max', () => {
+    for (const body of Object.values(LoopCreatorPurposeBody)) {
+      if (body === LoopCreatorPurposeBody.MarketAnalyst) continue
+      const line = loopCreatorInternalPurposeDescription(body)
+      expect(line.length).toBeLessThanOrEqual(STUDIO_AGENT_DESCRIPTION_MAX)
+      expect(line.startsWith(`${PromptCatalogDomain.LoopCreator}${PromptCatalogJoin.Domain}`)).toBe(true)
+    }
   })
 })

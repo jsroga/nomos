@@ -782,8 +782,8 @@ These are why the hour prompt would fail if you tried it this morning:
 | Studio Logs/Memory leftover probes 400 | `GET /api/logs` needs `transportId`; `GET /api/memory/status` needs `agentId`; Zod logs `Error parsing query params` | middleware in `createMastra({ server })` (Studio CLI only) |
 | Writer robots inherit repo FS / secrets | Chat adapter already `workspace: () => undefined`; GRRM / critics / muse / autonomous may still inherit `projectRoot` | **59** (writer agents only) |
 | Writer skills should sit on writer robots | `SKILLS_DIR` is the story pack; attach on writer agents. Do not retune game-loop | **60** (writer only) |
-| Game Design prompt names a missing toy | `planner_tool` | **61 deferred** |
-| Loop-creator Open Chat is empty chairs | no tools / runtime prompt | **62 deferred** |
+| Game Design prompt names a missing toy | `planner_tool` | **61** (live tool list; no planner) |
+| Loop-creator Open Chat is empty chairs | no tools / runtime prompt | **62** (Studio: Market Analyst only) |
 | Writer Purpose column is a novel | missing `description` on writer agents / judge prompts | **63** (writer + judge prompts) |
 | Storyteller tools also dumped on instance | union in `src/mastra/index.ts` | **64** (do not strip game/loop tools) |
 | MCP Servers nav 404 | Spec “no route” is stale: SPA `/mcps` and `GET /mcp/v0/servers` exist; keep `studioMcpServers` registered | **65** (do not skip) |

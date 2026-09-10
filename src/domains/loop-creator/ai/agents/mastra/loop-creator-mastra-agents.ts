@@ -7,8 +7,9 @@
  * Each specialist builds a full, state-templated system prompt per call, so the
  * agent's construction-time `instructions` is only the role identity — the real
  * prompt is passed per call via the `instructions` execution override (see
- * `loop-creator-completion.ts`). This file lives under `agents/` so it inherits
- * the AI-layer lint exemptions.
+ * `loop-creator-completion.ts`). Specialists stay on the production instance for
+ * `generate()`. Studio CLI registers Market Analyst only. This file lives under
+ * `agents/` so it inherits the AI-layer lint exemptions.
  */
 
 import '@/shared/data/server-guard'
@@ -20,7 +21,7 @@ import { marketAnalystTools } from '../market-analyst/tools-registry'
 import { EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { MarketAnalystAgentId } from '../../constants/market-analyst-agent-wire'
 import { LoopCreatorPurposeBody } from '@/shared/agent-kernel/prompts/constants/prompt-catalog'
-import { loopCreatorPurposeDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { loopCreatorInternalPurposeDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
 
 export enum LoopCreatorMastraAgentId {
   Supervisor = 'loop-creator-supervisor',
@@ -59,7 +60,7 @@ function buildAgent(
   return new Agent({
     id,
     name,
-    description: loopCreatorPurposeDescription(purpose),
+    description: loopCreatorInternalPurposeDescription(purpose),
     instructions: role,
     model: () => resolveLoopCreatorMastraModel(),
     editor: EDITOR_INSTRUCTIONS_ONLY,
@@ -118,10 +119,8 @@ export const loopCreatorRuntimeTools: NonNullable<Config['tools']> = Object.from
 )
 
 /**
- * Agents registered on the central Mastra instance (Studio parity). Keys match
- * agent.id. The supervisor-crew agents back the flagged
- * (`FF_LOOP_CREATOR_MASTRA=true`) specialist path; the market analyst is an
- * always-Mastra ReAct agent (native tools).
+ * Production Mastra instance — specialists for `generate()` plus Market Analyst.
+ * Keys match agent.id.
  */
 export const loopCreatorRuntimeAgents: Record<string, Agent> = {
   [LoopCreatorMastraAgentId.Supervisor]: loopCreatorSupervisorAgent,
@@ -130,5 +129,10 @@ export const loopCreatorRuntimeAgents: Record<string, Agent> = {
   [LoopCreatorMastraAgentId.BalanceAnalyst]: loopCreatorBalanceAnalystAgent,
   [LoopCreatorMastraAgentId.ProgressionArchitect]: loopCreatorProgressionArchitectAgent,
   [LoopCreatorMastraAgentId.ConceptEvaluator]: loopCreatorConceptEvaluatorAgent,
+  [MarketAnalystAgentId.Id]: marketAnalystAgent,
+}
+
+/** Studio CLI — only agents that are real Open Chat personas. */
+export const loopCreatorStudioAgents: Record<string, Agent> = {
   [MarketAnalystAgentId.Id]: marketAnalystAgent,
 }

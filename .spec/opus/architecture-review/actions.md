@@ -13,7 +13,7 @@ for someone meeting the technique for the first time:
 
 **Seven tracks.** **A — Foundations**: auth, CI, cost, gates, jobs. **B — Writing harness**:
 honest floor in `target-architecture.md` (one chat agent, three critic scopes, host persist).
-**C — Evals.** **D — Compounding** (Phase 4). **E — Workspace overlay chat** (Phase 5, Actions 33–38). **F — Tests** (Phase 6, Actions 49–51). **G — Studio hour-loop + Studio truth** (Phase 7, Actions 52–67): **this slice is storyteller only.** Game-design and loop-creator Studio agents stay as they are (Actions 61, 62 and their rows in 60/63/64/67 are deferred). Zero Nomos product work.
+**C — Evals.** **D — Compounding** (Phase 4). **E — Workspace overlay chat** (Phase 5, Actions 33–38). **F — Tests** (Phase 6, Actions 49–51). **G — Studio hour-loop + Studio truth** (Phase 7, Actions 52–67): Storyteller landed first. Game Design tool contract and Loop Creator Studio cards follow the same convention (Actions 61–62). Zero Nomos product work.
 
 **Priority.** P0 = a stated guarantee is false, a security exposure exists, or the architecture is
 unsound without it. P1 = structural work the design depends on. P2 = capability built on top.
@@ -2178,8 +2178,6 @@ Quota when you decide to Publish (Action 58): **three** traces from worst or bes
 
 ## 61. Game Design instructions match real tools
 
-**Deferred this slice.** Leave `game-design-agent` as it is. Do not edit `GAME_DESIGN_SYSTEM_PROMPT` / `planner_tool` until a later game-loop Studio pass.
-
 **Track:** G · **Priority:** P1 · **Dependencies:** 60 (same agent)
 
 **WHAT.** `GAME_DESIGN_SYSTEM_PROMPT` (`registry-game-design-prompts.ts`) lists `planner_tool` — that tool does not exist. It does not list the Haute tools the agent actually has: `design_atomic_systems`, `design_world_memory`, `design_moral_choices`, `design_strand_connections`, `design_implicit_tutorial`, `design_meaningful_mundane` (`createGameDesignToolList()` + `HauteGameToolId`). Fallback copy in `game-design-agent.ts` is a philosophy essay and also names no real tools. Studio Open Chat will follow the lie.
@@ -2204,8 +2202,6 @@ Quota when you decide to Publish (Action 58): **three** traces from worst or bes
 ---
 
 ## 62. Loop-creator crew is not a fake Open Chat
-
-**Deferred this slice.** Leave loop-creator specialists and Market Analyst registration as they are.
 
 **Track:** G · **Priority:** P1 · **Dependencies:** 59, 60
 

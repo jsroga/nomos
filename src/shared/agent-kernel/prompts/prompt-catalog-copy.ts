@@ -3,6 +3,7 @@ import {
   FileAgentCatalogBody,
   FileAgentCatalogId,
   LoopCreatorPurposeBody,
+  LoopCreatorPurposeSuffix,
   PromptCatalogDomain,
   PromptCatalogJoin,
   PromptCatalogTag,
@@ -46,4 +47,11 @@ export function studioPurposeDescription(body: StudioPurposeBody): string {
 
 export function loopCreatorPurposeDescription(body: LoopCreatorPurposeBody): string {
   return promptCatalogDescription(PromptCatalogDomain.LoopCreator, body)
+}
+
+export function loopCreatorInternalPurposeDescription(body: LoopCreatorPurposeBody): string {
+  return promptCatalogDescription(
+    PromptCatalogDomain.LoopCreator,
+    `${body}${LoopCreatorPurposeSuffix.InternalNotStudio}`,
+  )
 }

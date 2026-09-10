@@ -118,6 +118,12 @@ describe('Studio workspace and writer cards', () => {
     expect(readFileSync(MASTRA_SERVER_MCP, 'utf8')).toContain('/mcp/v0/servers')
   })
 
+  it('Studio CLI omits hollow loop-creator specialists', () => {
+    const src = readFileSync(MASTRA_INDEX, 'utf8')
+    expect(src).toContain('loopCreatorStudioAgents')
+    expect(src).not.toContain('...loopCreatorRuntimeAgents')
+  })
+
   it('quality-improver is Studio-only and not on /api/assistant', () => {
     expect(readFileSync(MASTRA_INDEX, 'utf8')).toContain('qualityImproverAgent')
     expect(readFileSync(ASSISTANT_ROUTE, 'utf8')).not.toContain('quality-improver')

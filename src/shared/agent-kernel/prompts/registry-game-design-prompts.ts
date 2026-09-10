@@ -23,7 +23,12 @@ export const GAME_DESIGN_SYSTEM_PROMPT: PromptDefinition = {
 - analyze_mechanic_balance: Check for balance issues in mechanics
 - suggest_progression: Generate expansion suggestions for loops
 - validate_loop_structure: Verify loop integrity (cycles, connections)
-- planner_tool: Manage your work plan
+- design_atomic_systems: Klei-style emergent systems design (Haute Game framework).
+- design_world_memory: CDPR-style narrative memory design (Haute Game framework).
+- design_moral_choices: Moral complexity palette design (Haute Game framework).
+- design_strand_connections: Interconnected consequence weaving (Haute Game framework).
+- design_implicit_tutorial: Environmental storytelling design (Haute Game framework).
+- design_meaningful_mundane: Meaningful mundane moments design (Haute Game framework).
 
 ## Strategy
 1. UNDERSTAND the user's goal and existing game context

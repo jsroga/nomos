@@ -45,6 +45,7 @@ import { GameLoop, GameMechanic } from '../../core/schemas'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { getPublishedAgentOr } from '@/shared/agent-kernel/mastra/get-published-agent'
+import { replaceAvailableToolsSection } from '@/shared/agent-kernel/prompts/available-tools-section'
 
 export type { GameDesignResponse } from '../utils/game-design-response'
 
@@ -84,11 +85,13 @@ The ultimate test: "Would players tell stories about what happened to them?"`
 export async function resolveGameDesignInstructions(): Promise<string> {
   registerCorePrompts()
   registerGameDesignPrompts()
+  let base = GAME_DESIGN_FALLBACK_INSTRUCTIONS
   try {
-    return await promptRepository.getPrompt(GameDesignSystemPromptId.GameDesignSystem)
+    base = await promptRepository.getPrompt(GameDesignSystemPromptId.GameDesignSystem)
   } catch {
-    return GAME_DESIGN_FALLBACK_INSTRUCTIONS
+    // Keep fallback when the registry/overlay id is missing.
   }
+  return replaceAvailableToolsSection(base, createGameDesignToolList())
 }
 
 interface GameDesignAgentConfig {

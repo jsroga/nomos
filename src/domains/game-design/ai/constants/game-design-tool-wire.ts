@@ -11,6 +11,10 @@ export enum GameDesignLlmTemperature {
   Analytical = 0.3,
 }
 
+export enum GameDesignRetiredToolId {
+  Planner = 'planner_tool',
+}
+
 export enum GameDesignToolCopy {
   NoJsonInResponse = 'No JSON found in response',
   FailedToParseAiResponse = 'Failed to parse AI response',

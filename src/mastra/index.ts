@@ -13,7 +13,7 @@ import {
   gameDesignRuntimeWorkflows,
   gameDesignRuntimeTools,
 } from '../domains/game-design/core/io/mastra-runtime'
-import { loopCreatorRuntimeAgents, loopCreatorRuntimeTools } from '../domains/loop-creator/core/io/mastra-runtime'
+import { loopCreatorStudioAgents, loopCreatorRuntimeTools } from '../domains/loop-creator/core/io/mastra-runtime'
 import { createMastra, createPostgresStore } from '../shared/agent-kernel/mastra/create-mastra'
 import { seedEditorPromptBlocks } from '../shared/agent-kernel/mastra/seed-editor-prompt-blocks'
 import { studioAgents } from '../shared/agent-kernel/mastra/agents/constants/registry'
@@ -37,7 +37,7 @@ consumeMastraRegistrations()
 const registeredAgents = {
   ...storytellerRuntimeAgents,
   ...gameDesignRuntimeAgents,
-  ...loopCreatorRuntimeAgents,
+  ...loopCreatorStudioAgents,
 }
 const registeredWorkflows = {
   ...storytellerRuntimeWorkflows,

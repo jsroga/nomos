@@ -17,6 +17,11 @@ export enum PromptCatalogJoin {
   Domain = ' · ',
 }
 
+/** Heading for the live tool-id contract appended to Studio/Open Chat instructions. */
+export enum PromptSectionHeading {
+  AvailableTools = '## Available Tools',
+}
+
 export enum FileAgentCatalogId {
   Storyteller = 'storyteller',
   GrrmAuthor = 'grrm-author',
@@ -56,6 +61,10 @@ export enum LoopCreatorPurposeBody {
   ProgressionArchitect = 'Designs pacing and progression systems.',
   ConceptEvaluator = 'Scores fit against the stated concept.',
   MarketAnalyst = 'Scores market fit for a designed loop.',
+}
+
+export enum LoopCreatorPurposeSuffix {
+  InternalNotStudio = ' Internal; not Studio chat.',
 }
 
 export enum GameDesignPromptDescription {
