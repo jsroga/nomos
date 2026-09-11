@@ -1,6 +1,8 @@
 import { createScorer } from '@mastra/core/evals'
 import { BeatPlanSchema } from './beat-plan-schema'
 import { assessBeatPlanConcreteness } from './beat-plan-quality'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from '@/shared/agent-kernel/scorers/constants/scorer-descriptions'
 
 /**
  * Deterministic eval scorer over the beat-plan concreteness gate (item 35/36).
@@ -24,8 +26,7 @@ function parsePlanOutput(output: unknown): ReturnType<typeof BeatPlanSchema.safe
 export const beatPlanConcretenessScorer = createScorer({
   id: 'beat-plan-concreteness',
   name: 'Beat Plan Concreteness',
-  description:
-    'Deterministic: output must be valid BeatPlan JSON (no prose leak) and pass the concreteness gate (length floor, no vagueness phrases, names a character).',
+  description: evalInstrumentDescription(ScorerDescriptionBody.BeatPlanConcreteness),
 })
   .generateScore(({ run }) => {
     const parsed = parsePlanOutput(run.output)

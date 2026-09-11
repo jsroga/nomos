@@ -2,6 +2,8 @@ import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { createJudgingConfig, normalizeScore } from './shared'
 import { extractIdeaSet } from './idea-set-extract-wire'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from './constants/scorer-descriptions'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 /**
@@ -35,7 +37,7 @@ const JUDGE_PROMPT_PREFIX = 'Judge this idea set:\n'
 export const ideaDiversityJudgeScorer = createScorer({
   id: 'idea-diversity-judge',
   name: 'Idea Diversity (LLM Judge)',
-  description: 'LLM-judged uniqueness and randomness of a generated idea set',
+  description: evalInstrumentDescription(ScorerDescriptionBody.IdeaDiversityJudge),
   judge: createJudgingConfig(JUDGE_INSTRUCTIONS),
 })
   .analyze({

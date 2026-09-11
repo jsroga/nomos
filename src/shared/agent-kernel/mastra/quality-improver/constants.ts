@@ -90,7 +90,8 @@ export enum HourExperimentCopy {
 
 export const HOUR_LOOP_EDITOR_STATUS = MastraAgentVersionStatus.Draft
 
-export const QUALITY_IMPROVER_INSTRUCTIONS = `You raise storyteller writer scores in Mastra Studio for up to 60 minutes.
+export const QUALITY_IMPROVER_INSTRUCTIONS = `${QualityImproverAgentDescription.QualityImprover}
+You raise storyteller writer scores in Mastra Studio for up to 60 minutes.
 
 Rules:
 - Target only the live dataset storyteller-live-quality and agent grrm-author generate.

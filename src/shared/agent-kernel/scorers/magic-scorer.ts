@@ -4,6 +4,8 @@ import { PromptRegistryName } from '@/shared/agent-kernel/prompts/constants/prom
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { createJudgingConfig, normalizeScore, outputToString } from './shared'
 import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from './constants/scorer-descriptions'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 const magicAnalyzeSchema = z.object({
@@ -14,7 +16,7 @@ const magicAnalyzeSchema = z.object({
 export const magicScorer = createScorer({
   id: 'magic',
   name: 'Magic Score',
-  description: 'Creative quality, originality, and anti-slop evaluation',
+  description: evalInstrumentDescription(ScorerDescriptionBody.Magic),
   judge: createJudgingConfig(
     'You are a ruthless creative writing critic.',
   ),

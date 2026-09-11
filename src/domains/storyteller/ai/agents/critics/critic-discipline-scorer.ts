@@ -1,5 +1,7 @@
 import { createScorer } from '@mastra/core/evals'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from '@/shared/agent-kernel/scorers/constants/scorer-descriptions'
 
 /**
  * Deterministic eval scorer for critic discipline (item 36): a critic report
@@ -35,8 +37,7 @@ const REWRITE_MARKERS = [
 export const criticDisciplineScorer = createScorer({
   id: 'critic-discipline',
   name: 'Critic Discipline',
-  description:
-    'Deterministic: the critic report must quote the planted cliché and must not suggest any rewrite (diagnosis only).',
+  description: evalInstrumentDescription(ScorerDescriptionBody.CriticDiscipline),
 })
   .generateScore(({ run }) => {
     const planted = readString(recordFromJson(run.input).plantedCliche)

@@ -1,6 +1,8 @@
 import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { createJudgingConfig, inputRecord, normalizeScore, outputToString } from './shared'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from './constants/scorer-descriptions'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 /**
@@ -30,7 +32,7 @@ enum GoalReachedInputField {
 export const goalReachedScorer = createScorer({
   id: 'goal-reached',
   name: 'Goal Reached',
-  description: 'Whether the assistant achieved the stated conversation goal',
+  description: evalInstrumentDescription(ScorerDescriptionBody.GoalReached),
   judge: createJudgingConfig(JUDGE_INSTRUCTIONS),
 })
   .analyze({

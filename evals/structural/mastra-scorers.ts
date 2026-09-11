@@ -5,6 +5,8 @@
 
 import { createScorer } from '@mastra/core/evals'
 import { recordFromJson, readString, stringArrayFromJson } from '../../src/shared/data/json-guards'
+import { evalInstrumentDescription } from '../../src/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from '../../src/shared/agent-kernel/scorers/constants/scorer-descriptions'
 import { dumpedBeatFromUnknown } from './beat-text'
 import { ScorerId } from './constants'
 import {
@@ -113,7 +115,7 @@ function castHasBehaviouralFields(cast: readonly CastPerson[]): boolean {
 export const causalGraphScorer = createScorer({
   id: ScorerId.CausalGraph,
   name: 'Causal Graph Integrity',
-  description: 'Share of beats after beat 1 with non-empty causalDependencies',
+  description: evalInstrumentDescription(ScorerDescriptionBody.CausalGraph),
 })
   .generateScore(({ run }) => clamp01(metricNumber(scoreCausalGraph(dumpedBeats(run.output)), 'shareNonEmptyCausal')))
   .generateReason(({ run }) => reasonSentence(scoreCausalGraph(dumpedBeats(run.output))))
@@ -121,7 +123,7 @@ export const causalGraphScorer = createScorer({
 export const planCoverageScorer = createScorer({
   id: ScorerId.PlanCoverage,
   name: 'Plan Coverage Evenness',
-  description: 'How evenly beats map onto the frozen 10-point plan',
+  description: evalInstrumentDescription(ScorerDescriptionBody.PlanCoverage),
 })
   .generateScore(({ run }) => {
     const ctx = runContext(run.input, run.output)
@@ -136,7 +138,7 @@ export const planCoverageScorer = createScorer({
 export const setupPayoffScorer = createScorer({
   id: ScorerId.SetupPayoff,
   name: 'Setup Payoff Distance',
-  description: 'Entities first mentioned in the final third that appear in climax or resolution',
+  description: evalInstrumentDescription(ScorerDescriptionBody.SetupPayoff),
 })
   .generateScore(({ run }) => {
     const ctx = runContext(run.input, run.output)
@@ -152,7 +154,7 @@ export const setupPayoffScorer = createScorer({
 export const canonViolationScorer = createScorer({
   id: ScorerId.CanonViolation,
   name: 'Canon Violation',
-  description: 'Unknown lexicon entities per thousand tokens; new characters listed separately',
+  description: evalInstrumentDescription(ScorerDescriptionBody.CanonViolation),
 })
   .generateScore(({ run }) => {
     const ctx = runContext(run.input, run.output)
@@ -167,7 +169,7 @@ export const canonViolationScorer = createScorer({
 export const characterFieldScorer = createScorer({
   id: ScorerId.CharacterField,
   name: 'Character Field Adherence',
-  description: 'Contradictions of wants, fears, and wontBreak on the frozen cast',
+  description: evalInstrumentDescription(ScorerDescriptionBody.CharacterField),
 })
   .generateScore(({ run }) => {
     const ctx = runContext(run.input, run.output)
@@ -184,7 +186,7 @@ export const characterFieldScorer = createScorer({
 export const schemaValidityScorer = createScorer({
   id: ScorerId.SchemaValidity,
   name: 'Schema Validity',
-  description: 'Parse rate of dumped beat rows against the fixture schema',
+  description: evalInstrumentDescription(ScorerDescriptionBody.SchemaValidity),
 })
   .generateScore(({ run }) => clamp01(metricNumber(scoreSchemaValidity(runContext(run.input, run.output).rawBeats), 'parseRate')))
   .generateReason(({ run }) => reasonSentence(scoreSchemaValidity(runContext(run.input, run.output).rawBeats)))
@@ -192,7 +194,7 @@ export const schemaValidityScorer = createScorer({
 export const slopRateScorer = createScorer({
   id: ScorerId.SlopRate,
   name: 'Slop Rate',
-  description: 'Negative-corpus phrase hits per thousand tokens',
+  description: evalInstrumentDescription(ScorerDescriptionBody.SlopRate),
 })
   .generateScore(({ run }) => {
     const ctx = runContext(run.input, run.output)
@@ -207,7 +209,7 @@ export const slopRateScorer = createScorer({
 export const selfRepetitionScorer = createScorer({
   id: ScorerId.SelfRepetition,
   name: 'Self Repetition',
-  description: 'Intra-set distinct-3; cross-run similarity is NOT_APPLICABLE on a single run',
+  description: evalInstrumentDescription(ScorerDescriptionBody.SelfRepetition),
 })
   .generateScore(({ run }) => clamp01(metricNumber(scoreSelfRepetition(dumpedBeats(run.output)), 'distinct3')))
   .generateReason(({ run }) =>
@@ -219,7 +221,7 @@ export const selfRepetitionScorer = createScorer({
 export const voiceDistinctivenessScorer = createScorer({
   id: ScorerId.VoiceDistinctiveness,
   name: 'Voice Distinctiveness',
-  description: 'Minimum pairwise function-word and 3-gram divergence across speakers',
+  description: evalInstrumentDescription(ScorerDescriptionBody.VoiceDistinctiveness),
 })
   .generateScore(({ run }) =>
     clamp01(metricNumber(scoreVoiceDistinctiveness(dumpedBeats(run.output)), 'minPairwiseDivergence'))

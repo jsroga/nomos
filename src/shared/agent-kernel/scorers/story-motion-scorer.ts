@@ -2,6 +2,8 @@ import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { createJudgingConfig, extractProse, normalizeScore } from './shared'
 import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from './constants/scorer-descriptions'
 
 /**
  * Story-motion (stasis) scorer — PLAN-V2 5.4.
@@ -40,8 +42,7 @@ const storyMotionAnalyzeSchema = z.object({
 export const storyMotionScorer = createScorer({
   id: 'story-motion',
   name: 'Story Motion',
-  description:
-    'Law of Motion: the ratio of state-changing beats to static beats, with a hard zero for prose that ENDS on stasis.',
+  description: evalInstrumentDescription(ScorerDescriptionBody.StoryMotion),
   judge: createJudgingConfig(
     'You are a structural referee. You inventory story motion precisely: who acted, what changed, what cannot be undone. Mood is not motion.',
   ),

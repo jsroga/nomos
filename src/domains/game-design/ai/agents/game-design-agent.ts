@@ -46,10 +46,13 @@ import { getErrorMessage } from '@/shared/errors/error-utils'
 import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { getPublishedAgentOr } from '@/shared/agent-kernel/mastra/get-published-agent'
 import { replaceAvailableToolsSection } from '@/shared/agent-kernel/prompts/available-tools-section'
+import { instructionsWithPurpose } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
 
 export type { GameDesignResponse } from '../utils/game-design-response'
 
-const GAME_DESIGN_FALLBACK_INSTRUCTIONS = `You are a senior game designer combining the philosophies of:
+const GAME_DESIGN_FALLBACK_INSTRUCTIONS = instructionsWithPurpose(
+  GameDesignAgentDescription.GameDesignAgent,
+  `You are a senior game designer combining the philosophies of:
 - **Klei** (Don't Starve, ONI): Elegant systems with emergent complexity
 - **CD Projekt Red** (Witcher, Cyberpunk): Deep narrative with moral grey areas
 - **Kojima** (Death Stranding, MGS): Connection and meaningful mundane
@@ -74,7 +77,8 @@ When given a task:
 4. Design for player discovery, not hand-holding
 5. Make routine actions feel meaningful
 
-The ultimate test: "Would players tell stories about what happened to them?"`
+The ultimate test: "Would players tell stories about what happened to them?"`,
+)
 
 /**
  * Resolve the game-design system prompt (registry → fallback). Used as the
@@ -91,7 +95,10 @@ export async function resolveGameDesignInstructions(): Promise<string> {
   } catch {
     // Keep fallback when the registry/overlay id is missing.
   }
-  return replaceAvailableToolsSection(base, createGameDesignToolList())
+  return replaceAvailableToolsSection(
+    instructionsWithPurpose(GameDesignAgentDescription.GameDesignAgent, base),
+    createGameDesignToolList(),
+  )
 }
 
 interface GameDesignAgentConfig {

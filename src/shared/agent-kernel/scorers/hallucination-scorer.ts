@@ -4,6 +4,8 @@ import { PromptRegistryName } from '@/shared/agent-kernel/prompts/constants/prom
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { createJudgingConfig, inputRecord, normalizeScore, outputToString } from './shared'
 import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from './constants/scorer-descriptions'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 const hallucinationAnalyzeSchema = z.object({
@@ -14,7 +16,7 @@ const hallucinationAnalyzeSchema = z.object({
 export const hallucinationScorer = createScorer({
   id: 'hallucination',
   name: 'Hallucination',
-  description: 'Grounding check against established canon',
+  description: evalInstrumentDescription(ScorerDescriptionBody.Hallucination),
   judge: createJudgingConfig(
     'You are a ruthless fact-checker. Score 0-1 (1 = no hallucinations) and explain.',
   ),

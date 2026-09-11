@@ -2,6 +2,8 @@ import { createScorer } from '@mastra/core/evals'
 import { z } from 'zod'
 import { createJudgingConfig, extractProse, normalizeScore } from './shared'
 import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from './constants/scorer-descriptions'
 
 /**
  * Line-level craft scorer (StoryForge port): counts stated emotion, clichés,
@@ -22,8 +24,7 @@ const proseCraftAnalyzeSchema = z.object({
 export const proseCraftScorer = createScorer({
   id: 'prose-craft',
   name: 'Prose Craft',
-  description:
-    'Line-level craft: penalizes stated emotion, clichés, and POV breaks per 1000 words.',
+  description: evalInstrumentDescription(ScorerDescriptionBody.ProseCraft),
   judge: createJudgingConfig(
     'You are a strict line-editor. You count craft violations precisely and never invent them.',
   ),

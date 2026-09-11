@@ -53,6 +53,10 @@ export enum StudioPurposeBody {
   QualityImprover = 'Hour-bot for live writer experiments and Editor drafts.',
 }
 
+export enum GameDesignPurposeBody {
+  Agent = 'Designs loops, economy, and progression.',
+}
+
 export enum LoopCreatorPurposeBody {
   Supervisor = 'Routes loop-creation crew work.',
   LoopPlanner = 'Plans core, meta, and social loops.',

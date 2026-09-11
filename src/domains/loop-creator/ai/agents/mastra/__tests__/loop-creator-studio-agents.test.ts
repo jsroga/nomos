@@ -6,11 +6,12 @@ import {
   loopCreatorRuntimeAgents,
   loopCreatorStudioAgents,
 } from '../loop-creator-mastra-agents'
-import { MarketAnalystAgentId, MARKET_ANALYST_AGENT_INSTRUCTIONS } from '../../../constants/market-analyst-agent-wire'
+import { MarketAnalystAgentDescription, MarketAnalystAgentId, MARKET_ANALYST_AGENT_INSTRUCTIONS } from '../../../constants/market-analyst-agent-wire'
 import { marketAnalystAgent } from '../../market-analyst'
 import { marketAnalystTools } from '../../market-analyst/tools-registry'
 import { replaceAvailableToolsSection } from '@/shared/agent-kernel/prompts/available-tools-section'
-import { PromptCatalogJoin, LoopCreatorPurposeSuffix, PromptSectionHeading } from '@/shared/agent-kernel/prompts/constants/prompt-catalog'
+import { PromptCatalogJoin, LoopCreatorPurposeBody, LoopCreatorPurposeSuffix, PromptSectionHeading } from '@/shared/agent-kernel/prompts/constants/prompt-catalog'
+import { firstInstructionLine, loopCreatorPurposeDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
 import { STUDIO_AGENT_DESCRIPTION_MAX } from '@/shared/agent-kernel/mastra/constants/studio-workspace'
 import { FileEncoding } from '@/shared/data/constants/protocol'
 
@@ -41,7 +42,12 @@ describe('Loop Creator Studio convention', () => {
   })
 
   it('lists every Market Analyst tool id in Open Chat instructions', () => {
+    expect(MarketAnalystAgentDescription.Name).toBe(
+      loopCreatorPurposeDescription(LoopCreatorPurposeBody.MarketAnalyst),
+    )
+    expect(firstInstructionLine(MARKET_ANALYST_AGENT_INSTRUCTIONS)).toBe(MarketAnalystAgentDescription.Name)
     const text = replaceAvailableToolsSection(MARKET_ANALYST_AGENT_INSTRUCTIONS, marketAnalystTools)
+    expect(firstInstructionLine(text)).toBe(MarketAnalystAgentDescription.Name)
     expect(text).toContain(PromptSectionHeading.AvailableTools)
     for (const tool of marketAnalystTools) {
       expect(text).toContain(tool.id)

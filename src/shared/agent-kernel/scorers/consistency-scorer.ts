@@ -2,11 +2,13 @@ import { createScorer } from '@mastra/core/evals'
 import { stringArrayFromJson } from '@/shared/data/json-guards'
 import { inputRecord, outputToString } from './shared'
 import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from './constants/scorer-descriptions'
 
 export const consistencyScorer = createScorer({
   id: 'consistency',
   name: 'Consistency',
-  description: 'Detect contradictions against established facts',
+  description: evalInstrumentDescription(ScorerDescriptionBody.Consistency),
   prepareRun: run => ({
     ...run,
     input: compactScorerInput(run.input),

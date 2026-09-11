@@ -6,6 +6,11 @@ import { createGameDesignToolList } from '../../utils/game-design-tools'
 import { GameDesignRetiredToolId } from '../../constants/game-design-tool-wire'
 import { GAME_DESIGN_SYSTEM_PROMPT } from '@/shared/agent-kernel/prompts/registry-game-design-prompts'
 import { PromptBlockId } from '@/shared/agent-kernel/prompts/constants/prompt-block-ids'
+import { GameDesignAgentDescription } from '../../constants/agent-identity'
+import {
+  firstInstructionLine,
+  gameDesignPurposeDescription,
+} from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
 import { recordFromJson } from '@/shared/data/deep-merge'
 import { readString } from '@/shared/data/json-guards'
 import { FileEncoding } from '@/shared/data/constants/protocol'
@@ -21,6 +26,16 @@ function overlayGameDesignSystem(): string {
 }
 
 describe('Game Design Studio instructions', () => {
+  it('starts Open Chat instructions with the Game Design Purpose line', async () => {
+    const purpose = GameDesignAgentDescription.GameDesignAgent
+    expect(purpose).toBe(gameDesignPurposeDescription())
+    const resolved = await resolveGameDesignInstructions()
+    const overlay = overlayGameDesignSystem()
+    expect(firstInstructionLine(resolved)).toBe(purpose)
+    expect(firstInstructionLine(overlay)).toBe(purpose)
+    expect(firstInstructionLine(GAME_DESIGN_SYSTEM_PROMPT.text)).toBe(purpose)
+  })
+
   it('lists every live tool id and never advertises planner_tool', async () => {
     const resolved = await resolveGameDesignInstructions()
     const overlay = overlayGameDesignSystem()

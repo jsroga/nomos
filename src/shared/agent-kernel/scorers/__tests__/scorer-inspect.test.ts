@@ -9,9 +9,19 @@ import { compactScorerInput, compactScorerOutput, formatDefaultScorerInspect } f
 import { outputToString } from '../shared'
 import { ScorerInspectField, ScorerInspectMarker } from '../constants/inspect'
 import { HOUR_LOOP_DEFAULT_SCORERS, HourLoopScorerId, hourLoopExperimentScorerIds, hourLoopScorersForItem } from '../hour-loop-default-scorers'
-import { STORYTELLER_SCORERS } from '../index'
+import { IDEA_DIVERSITY_SCORERS, STORYTELLER_SCORERS } from '../index'
+import { ScorerDescriptionBody } from '../constants/scorer-descriptions'
+import { evalInstrumentDescription } from '../../prompts/prompt-catalog-copy'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 
 const MAGIC_RUBRIC_MAX_LINES = 30
+
+function studioScorerDescription(scorer: object): string {
+  const row = recordFromJson(scorer)
+  const direct = readString(row.description)
+  if (direct) return direct
+  return readString(recordFromJson(row.config).description) ?? ''
+}
 
 function scorerInspectAsk(input: unknown): string {
   const message = compactScorerInput(input)[ScorerInspectField.Message]
@@ -82,5 +92,20 @@ describe('scorer inspect and hour-loop subset', () => {
       HourLoopScorerId.Consistency,
       HourLoopScorerId.Hallucination,
     ])
+  })
+
+  it('prefixes Studio scorer descriptions with Eval and stays under the Purpose max', () => {
+    const prefix = `${PromptCatalogDomain.Eval}${PromptCatalogJoin.Domain}`
+    for (const body of Object.values(ScorerDescriptionBody)) {
+      const line = evalInstrumentDescription(body)
+      expect(line).toBe(`${prefix}${body}`)
+      expect(line.length).toBeLessThanOrEqual(STUDIO_AGENT_DESCRIPTION_MAX)
+    }
+    const registered = [...Object.entries(STORYTELLER_SCORERS), ...IDEA_DIVERSITY_SCORERS.map(scorer => [scorer.id, scorer] as const)]
+    for (const [id, scorer] of registered) {
+      const description = studioScorerDescription(scorer)
+      expect(description.startsWith(prefix), id).toBe(true)
+      expect(description.length).toBeLessThanOrEqual(STUDIO_AGENT_DESCRIPTION_MAX)
+    }
   })
 })

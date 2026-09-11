@@ -4,6 +4,8 @@ import { PromptRegistryName } from '@/shared/agent-kernel/prompts/constants/prom
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { createJudgingConfig, inputRecord, normalizeScore, outputToString } from './shared'
 import { compactScorerInput, compactScorerOutput } from './scorer-inspect'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from './constants/scorer-descriptions'
 import { readNumber, readString, recordFromJson } from '@/shared/data/json-guards'
 
 const personaAnalyzeSchema = z.object({
@@ -14,7 +16,7 @@ const personaAnalyzeSchema = z.object({
 export const personaFidelityScorer = createScorer({
   id: 'persona-fidelity',
   name: 'Persona Fidelity',
-  description: 'How well output matches a requested creative persona',
+  description: evalInstrumentDescription(ScorerDescriptionBody.PersonaFidelity),
   judge: createJudgingConfig(
     'You evaluate persona fidelity in creative writing. Score 0-100 and explain the match or miss.',
   ),

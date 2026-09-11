@@ -8,7 +8,7 @@ import { loadPublishedOrFileBrief } from '@/shared/agent-kernel/mastra/load-publ
 import {
   BeatPlannerAgentId,
   GrrmAuthorAgentId,
-} from '@/domains/storyteller/server'
+} from '@/domains/storyteller/ai/constants/agent-identity'
 import { FileEncoding } from '@/shared/data/constants/protocol'
 import {
   GRRM_AUTHOR_SKILLS_DIRNAME,

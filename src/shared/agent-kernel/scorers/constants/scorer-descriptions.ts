@@ -1,0 +1,26 @@
+/** Studio Scorers list copy. Prefix at use with Eval · via promptCatalogDescription. */
+
+export enum ScorerDescriptionBody {
+  Magic = 'Creative quality, originality, and anti-slop evaluation',
+  Consistency = 'Detect contradictions against established facts',
+  Hallucination = 'Grounding check against established canon',
+  PersonaFidelity = 'How well output matches a requested creative persona',
+  ProseCraft = 'Line-level craft: stated emotion, clichés, and POV breaks per 1000 words.',
+  StakesCost = 'Structural stakes: every beat must cost something; victories must be earned.',
+  StoryMotion = 'Law of Motion: state-changing beats vs static beats; hard zero when prose ends on stasis.',
+  GoalReached = 'Whether the assistant achieved the stated conversation goal',
+  IdeaUniqueness = 'Uniqueness and randomness of a generated idea set (deterministic)',
+  IdeaDiversityJudge = 'LLM-judged uniqueness and randomness of a generated idea set',
+  CausalGraph = 'Share of beats after beat 1 with non-empty causalDependencies',
+  PlanCoverage = 'How evenly beats map onto the frozen 10-point plan',
+  SetupPayoff = 'Entities first mentioned in the final third that appear in climax or resolution',
+  CanonViolation = 'Unknown lexicon entities per thousand tokens; new characters listed separately',
+  CharacterField = 'Contradictions of wants, fears, and wontBreak on the frozen cast',
+  SchemaValidity = 'Parse rate of dumped beat rows against the fixture schema',
+  SlopRate = 'Negative-corpus phrase hits per thousand tokens',
+  SelfRepetition = 'Intra-set distinct-3; cross-run similarity is NOT_APPLICABLE on a single run',
+  VoiceDistinctiveness = 'Minimum pairwise function-word and 3-gram divergence across speakers',
+  CriticDiscipline = 'Critic report must quote the planted cliché and must not suggest a rewrite.',
+  BeatPlanConcreteness = 'Valid BeatPlan JSON that passes the concreteness gate (length, no vagueness, names a character).',
+  GrrmPlanRubric = 'Plans only: consequence, embodied dialogue, withheld truth, sensory density, Law of Motion.',
+}

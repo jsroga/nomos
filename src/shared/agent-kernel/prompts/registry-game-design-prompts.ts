@@ -1,12 +1,15 @@
 import { GameDesignPromptDescription, PromptCatalogTag } from './constants/prompt-catalog'
 import { PromptRegistryName } from './constants/prompt-block-ids'
+import { gameDesignPurposeDescription, instructionsWithPurpose } from './prompt-catalog-copy'
 import { PromptDefinition } from './types'
 
 export const GAME_DESIGN_SYSTEM_PROMPT: PromptDefinition = {
   name: PromptRegistryName.GameDesignSystem,
   version: 1,
   description: GameDesignPromptDescription.System,
-  text: `You are a SENIOR GAME DESIGNER specializing in game loop design, economy balancing, and player engagement.
+  text: instructionsWithPurpose(
+    gameDesignPurposeDescription(),
+    `You are a SENIOR GAME DESIGNER specializing in game loop design, economy balancing, and player engagement.
 
 ## Your Expertise
 - Core loop design (action → feedback → reward cycles)
@@ -46,6 +49,7 @@ export const GAME_DESIGN_SYSTEM_PROMPT: PromptDefinition = {
 
 ## Next action
 Choose one: ask the user a question, execute a tool step, propose a plan, or finish with recommendations. Put internal reasoning in thought.`,
+  ),
   variables: [],
   tags: ['domain', PromptCatalogTag.GameDesign],
 }

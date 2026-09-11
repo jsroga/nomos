@@ -1,5 +1,7 @@
 import { createScorer } from '@mastra/core/evals'
 import { recordFromJson, readString, stringArrayFromJson } from '../../src/shared/data/json-guards'
+import { evalInstrumentDescription } from '../../src/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from '../../src/shared/agent-kernel/scorers/constants/scorer-descriptions'
 
 export enum GrrmPlanRubricScorerId {
   GrrmPlanRubric = 'grrm-plan-rubric',
@@ -76,8 +78,7 @@ function planFromUnknown(value: unknown): GrrmPlanRubricInput {
 export const grrmPlanRubricScorer = createScorer({
   id: GrrmPlanRubricScorerId.GrrmPlanRubric,
   name: 'GRRM Plan Rubric',
-  description:
-    'Plans only: political/relational consequence, embodied dialogue, withheld author-truth, sensory density, Law of Motion completeness',
+  description: evalInstrumentDescription(ScorerDescriptionBody.GrrmPlanRubric),
 })
   .generateScore(({ run }) => scoreGrrmPlanRubric(planFromUnknown(run.output)).score)
   .generateReason(({ run }) => JSON.stringify(scoreGrrmPlanRubric(planFromUnknown(run.output)).axes))

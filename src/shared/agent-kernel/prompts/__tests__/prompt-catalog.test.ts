@@ -8,6 +8,9 @@ import {
 } from '@/shared/agent-kernel/prompts/constants/prompt-catalog'
 import {
   fileAgentCatalogDescription,
+  firstInstructionLine,
+  gameDesignPurposeDescription,
+  instructionsWithPurpose,
   loopCreatorInternalPurposeDescription,
   promptCatalogDescription,
 } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
@@ -23,6 +26,13 @@ describe('Studio prompt catalog copy', () => {
     expect(line.startsWith(`${PromptCatalogDomain.Eval}${PromptCatalogJoin.Domain}`)).toBe(true)
     expect(line.length).toBeLessThanOrEqual(STUDIO_AGENT_DESCRIPTION_MAX)
     expect(promptCatalogDescription(PromptCatalogDomain.Eval, line)).toBe(line)
+  })
+
+  it('puts Purpose on the first instruction line without duplicating it', () => {
+    const purpose = gameDesignPurposeDescription()
+    const withJob = instructionsWithPurpose(purpose, 'You are a senior game designer.')
+    expect(firstInstructionLine(withJob)).toBe(purpose)
+    expect(instructionsWithPurpose(purpose, withJob)).toBe(withJob)
   })
 
   it('labels file-agent briefs as Storyteller', () => {

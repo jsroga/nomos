@@ -2,6 +2,7 @@ import { STUDIO_AGENT_DESCRIPTION_MAX } from '../mastra/constants/studio-workspa
 import {
   FileAgentCatalogBody,
   FileAgentCatalogId,
+  GameDesignPurposeBody,
   LoopCreatorPurposeBody,
   LoopCreatorPurposeSuffix,
   PromptCatalogDomain,
@@ -30,6 +31,16 @@ export function promptCatalogDescription(domain: PromptCatalogDomain, body: stri
   return line.slice(0, STUDIO_AGENT_DESCRIPTION_MAX)
 }
 
+export function firstInstructionLine(text: string): string {
+  return text.split('\n')[0]?.trim() ?? ''
+}
+
+export function instructionsWithPurpose(purpose: string, body: string): string {
+  const trimmed = body.trimStart()
+  if (firstInstructionLine(trimmed) === purpose) return trimmed
+  return `${purpose}\n${trimmed}`
+}
+
 export function catalogDomainFromTags(tags: string[] | undefined): PromptCatalogDomain {
   if (tags?.includes(PromptCatalogTag.GameDesign)) return PromptCatalogDomain.GameDesign
   if (tags?.includes(PromptCatalogTag.Evaluation)) return PromptCatalogDomain.Eval
@@ -43,6 +54,14 @@ export function fileAgentCatalogDescription(agentId: string): string {
 
 export function studioPurposeDescription(body: StudioPurposeBody): string {
   return promptCatalogDescription(PromptCatalogDomain.Studio, body)
+}
+
+export function gameDesignPurposeDescription(): string {
+  return promptCatalogDescription(PromptCatalogDomain.GameDesign, GameDesignPurposeBody.Agent)
+}
+
+export function evalInstrumentDescription(body: string): string {
+  return promptCatalogDescription(PromptCatalogDomain.Eval, body)
 }
 
 export function loopCreatorPurposeDescription(body: LoopCreatorPurposeBody): string {

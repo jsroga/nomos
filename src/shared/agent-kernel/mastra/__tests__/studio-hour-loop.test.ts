@@ -10,13 +10,18 @@ import {
   STUDIO_AGENT_DESCRIPTION_MAX,
   StudioSandboxSecretName,
 } from '../constants/studio-workspace'
-import { PromptCatalogJoin } from '@/shared/agent-kernel/prompts/constants/prompt-catalog'
+import { PromptCatalogJoin, StudioPurposeBody } from '@/shared/agent-kernel/prompts/constants/prompt-catalog'
+import { firstInstructionLine, studioPurposeDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
 import { EDITOR_INSTRUCTIONS_ONLY } from '../editor-permissions'
 import { studioAgents } from '../agents/constants/registry'
 import { qualityImproverAgent } from '../quality-improver'
 import { studioMcpServers } from '../mcp/studio-servers'
 import { classifyOpenRouterCreditError, CreditHaltKind } from '../quality-improver/credits'
-import { OpenRouterCreditNeedle } from '../quality-improver/constants'
+import {
+  OpenRouterCreditNeedle,
+  QUALITY_IMPROVER_INSTRUCTIONS,
+  QualityImproverAgentDescription,
+} from '../quality-improver/constants'
 
 const MASTRA_INDEX = join(process.cwd(), 'src/mastra/index.ts')
 const CREATE_MASTRA = join(process.cwd(), 'src/shared/agent-kernel/mastra/create-mastra.ts')
@@ -91,6 +96,12 @@ describe('Studio workspace and writer cards', () => {
       expect(description).not.toContain('run_beat_draft')
       expect(description).not.toContain('beat-draft-workflow')
     }
+    expect(QualityImproverAgentDescription.QualityImprover).toBe(
+      studioPurposeDescription(StudioPurposeBody.QualityImprover),
+    )
+    expect(firstInstructionLine(QUALITY_IMPROVER_INSTRUCTIONS)).toBe(
+      QualityImproverAgentDescription.QualityImprover,
+    )
   })
 
   it('hour-bot stays instructions-only and never git-commits', () => {

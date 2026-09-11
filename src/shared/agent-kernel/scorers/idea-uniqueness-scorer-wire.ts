@@ -1,6 +1,8 @@
 import { createScorer } from '@mastra/core/evals'
 import { scoreIdeaDiversity } from './idea-diversity-metrics-wire'
 import { extractIdeaSet } from './idea-set-extract-wire'
+import { evalInstrumentDescription } from '@/shared/agent-kernel/prompts/prompt-catalog-copy'
+import { ScorerDescriptionBody } from './constants/scorer-descriptions'
 
 /**
  * Deterministic Mastra scorer for idea-set uniqueness (no LLM).
@@ -9,7 +11,7 @@ import { extractIdeaSet } from './idea-set-extract-wire'
 export const ideaUniquenessScorer = createScorer({
   id: 'idea-uniqueness',
   name: 'Idea Uniqueness',
-  description: 'Uniqueness and randomness of a generated idea set (deterministic)',
+  description: evalInstrumentDescription(ScorerDescriptionBody.IdeaUniqueness),
 })
   .generateScore(({ run }) => {
     const ideas = extractIdeaSet(run.input, run.output)
