@@ -12,6 +12,7 @@ import * as dotenv from 'dotenv'
 import { recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import { createMastra, createPostgresStore } from '@/shared/agent-kernel/mastra/create-mastra'
 import { STRUCTURAL_EXPERIMENT_SCORERS } from '../structural/mastra-scorers'
+import { pinExperimentScorerIds } from './pin-experiment-scorer-ids'
 
 const WORLD_DIR = resolve(process.cwd(), 'evals/fixtures/aeternum')
 const CORPUS_PATH = resolve(process.cwd(), 'evals/fixtures/structural/negative-corpus.json')
@@ -63,14 +64,22 @@ async function main(): Promise<void> {
     perPage: 50,
     filters: { name: DATASET_NAME },
   })
+  const scorerIds = STRUCTURAL_EXPERIMENT_SCORERS.map(scorer => scorer.id)
   const existing = listed.datasets.find(row => row.name === DATASET_NAME)
   const dataset = existing
     ? await mastra.datasets.get({ id: existing.id })
     : await mastra.datasets.create({
         name: DATASET_NAME,
         description: 'Frozen Aeternum episode-01 beats for structural baseline scoring',
-        scorerIds: STRUCTURAL_EXPERIMENT_SCORERS.map(scorer => scorer.id),
+        scorerIds,
       })
+  if (existing) {
+    const details = await dataset.getDetails()
+    const current = details.scorerIds ?? []
+    if (scorerIds.some(id => !current.includes(id))) {
+      await dataset.update({ scorerIds })
+    }
+  }
 
   const listedItems = await dataset.listItems({ page: 0, perPage: 5 })
   const items = Array.isArray(listedItems) ? listedItems : listedItems.items
@@ -88,11 +97,15 @@ async function main(): Promise<void> {
     name: EXPERIMENT_NAME,
     description: 'Identity-task structural baseline; no LLM, no beat-draft',
     task: () => beatsRaw,
-    scorers: [...STRUCTURAL_EXPERIMENT_SCORERS],
+    scorers: scorerIds,
     metadata: {
       baselinePath: BASELINE_PATH,
       fixtureSha: sha256File(resolve(WORLD_DIR, 'episode-01.beats.json')),
     },
+  })
+  await pinExperimentScorerIds({
+    experimentId: summary.experimentId,
+    scorerIds,
   })
 
   process.stdout.write(

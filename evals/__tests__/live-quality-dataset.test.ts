@@ -59,6 +59,27 @@ describe('storyteller live quality dataset', () => {
     expect(golden).not.toContain(HourLoopTarget.GrrmAuthor)
   })
 
+  it('pins string scorer ids on Studio experiment rows so Evaluation lists every column', () => {
+    const live = readFileSync(LIVE_PUBLISH, 'utf8')
+    const golden = readFileSync(GOLDEN_PUBLISH, 'utf8')
+    const aeternum = readFileSync(
+      join(process.cwd(), 'evals/tools/publish-aeternum-studio.ts'),
+      'utf8',
+    )
+    const pin = readFileSync(
+      join(process.cwd(), 'evals/tools/pin-experiment-scorer-ids.ts'),
+      'utf8',
+    )
+    expect(pin).toContain('UPDATE mastra_experiments SET "scorerIds"')
+    expect(live).toContain('scorers: [...LIVE_QUALITY_DEFAULT_SCORERS]')
+    expect(live).toContain('pinExperimentScorerIds')
+    expect(golden).toContain('scorerIds: GOLDEN_QUALITY_SCORER_IDS')
+    expect(golden).toContain('pinExperimentScorerIds')
+    expect(aeternum).toContain('scorers: scorerIds')
+    expect(aeternum).toContain('pinExperimentScorerIds')
+    expect(aeternum).toContain('STRUCTURAL_EXPERIMENT_SCORERS.map(scorer => scorer.id)')
+  })
+
   it('hour-bot cannot PATCH the exam, Publish, or git commit', () => {
     const tools = readFileSync(HOUR_TOOLS, 'utf8')
     const agent = readFileSync(HOUR_AGENT, 'utf8')

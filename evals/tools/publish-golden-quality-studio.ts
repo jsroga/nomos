@@ -19,6 +19,7 @@ import {
   goldenQualityTaskOutput,
   selectGoldenQualityExamples,
 } from '../golden-quality-items'
+import { pinExperimentScorerIds } from './pin-experiment-scorer-ids'
 
 const DATASET_NAME = 'storyteller-golden-quality'
 const EXPERIMENT_NAME = 'golden-hallucination-magic'
@@ -82,12 +83,16 @@ async function main(): Promise<void> {
     })
   }
 
-  // Omit run-level scorers so each item uses its own scorerIds (hallucination vs magic).
+  // Run-level scorers would override per-item hallucination vs magic.
   const summary = await dataset.startExperiment({
     name: EXPERIMENT_NAME,
     description: EXPERIMENT_DESCRIPTION,
     task: ({ metadata }) => goldenQualityTaskOutput(metadata),
     maxConcurrency: EXPERIMENT_MAX_CONCURRENCY,
+  })
+  await pinExperimentScorerIds({
+    experimentId: summary.experimentId,
+    scorerIds: GOLDEN_QUALITY_SCORER_IDS,
   })
 
   const scoreLines = summary.results.flatMap(item =>

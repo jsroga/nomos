@@ -16,6 +16,7 @@ import {
   STORYTELLER_LIVE_QUALITY_EXAMPLES,
 } from '../datasets/storyteller-live-quality'
 import { HourLoopTarget } from '@/shared/agent-kernel/mastra/quality-improver/constants'
+import { pinExperimentScorerIds } from './pin-experiment-scorer-ids'
 
 const EXPERIMENT_NAME = 'live-quality-git-snapshot'
 const DATASET_DESCRIPTION =
@@ -87,6 +88,10 @@ async function main(): Promise<void> {
     scorers: [...LIVE_QUALITY_DEFAULT_SCORERS],
     version: latest?.version ?? LIVE_QUALITY_VERSION,
     maxConcurrency: EXPERIMENT_MAX_CONCURRENCY,
+  })
+  await pinExperimentScorerIds({
+    experimentId: summary.experimentId,
+    scorerIds: LIVE_QUALITY_DEFAULT_SCORERS,
   })
 
   const scoreLines = summary.results.flatMap(item =>
