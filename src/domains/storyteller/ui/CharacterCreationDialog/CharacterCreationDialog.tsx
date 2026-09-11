@@ -97,7 +97,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
             ) : null}
             {dialog.isGeneratingMissing && !dialog.pendingAction ? (
               <BibleSectionLoadingOverlay
-                message={CharacterDialogGenerateMissingDisable.WaitingForWritersRoom}
+                message={CharacterDialogGenerateMissingDisable.Generating}
               />
             ) : null}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">

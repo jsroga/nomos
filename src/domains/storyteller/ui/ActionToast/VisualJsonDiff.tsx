@@ -11,6 +11,7 @@ import {
   ACTION_TOAST_MANAGE_BEAT,
   ACTION_TOAST_UPDATE_WORLD_BIBLE,
 } from '@/domains/storyteller/ui/ActionToast/constants/action-toast-display'
+import { reviewChangesFromAction } from '@/domains/storyteller/ui/ActionToast/review-changes-from-action'
 
 interface DiffData {
   type: string
@@ -29,6 +30,17 @@ const getDiffData = (action: WireAgentAction): DiffData => {
 
   if (action.type === ActionType.CREATE_BEAT || action.type === ActionType.UPDATE_BEAT) {
     return { type: ACTION_TOAST_MANAGE_BEAT, changes: action.payload, isPartial: false }
+  }
+
+  if (
+    action.type === ActionType.UPDATE_CHARACTER ||
+    action.type === ActionType.CREATE_CHARACTER
+  ) {
+    return {
+      type: ACTION_TOAST_ACTION_PAYLOAD,
+      changes: reviewChangesFromAction(action),
+      isPartial: true,
+    }
   }
 
   return { type: ACTION_TOAST_ACTION_PAYLOAD, changes: action.payload, isPartial: false }

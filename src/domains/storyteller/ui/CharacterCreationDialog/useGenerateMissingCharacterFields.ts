@@ -8,28 +8,24 @@ import {
 } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { isConsistencyFixRunBusy } from '@/domains/storyteller/ui/FixInconsistencies/utils/fix-inconsistencies-dialog'
 import type { PendingAction } from '@/domains/storyteller/ui/WorldBible/utils/bible-context-types'
-import { ArtifactKind } from '@/domains/storyteller/core/types/artifact-kind'
-import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
-import { runArtifactDraftOverlay } from '@/domains/storyteller/ui/WorldBible/utils/artifact-draft-overlay'
+import { generateCharacterMissingFields } from '@/domains/storyteller/core/io/character.api'
+import type { CharacterFilledDraft } from '@/domains/storyteller/core/character-missing-fields'
 import type { CharacterFormFields } from './character-creation-dialog-helpers'
 import type { CharacterMetrics } from './character-creation-dialog-types'
 import {
   applyAcceptedCharacterDraft,
-  applyGeneratedFieldsToForm,
-  attachCharacterArtifactPendingApply,
   characterDraftPendingAction,
   generateMissingDisableReason,
-  generatedCharacterFieldsFromArtifactDraft,
   isCharacterDraftForTarget,
   isCharacterDraftOverlayGenerating,
   isCharacterDraftPending,
   seedFormBlanksFromSnapshot,
+  toFilledDraft,
 } from './character-creation-dialog-generate-missing'
 import {
-  CHARACTER_DIALOG_NEW_ID,
   CHARACTER_DIALOG_TOAST_GENERATE_MISSING_FAILED,
   CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NO_PROJECT,
-  CharacterDraftChatSection,
+  CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NOTHING,
 } from './constants/character-creation-dialog'
 
 interface UseGenerateMissingCharacterFieldsInput extends CharacterFormFields {
@@ -64,15 +60,13 @@ function formFieldsFromInput(input: UseGenerateMissingCharacterFieldsInput): Cha
   }
 }
 
-function characterIdForArtifactDraft(activeCharId: string): string | undefined {
-  if (activeCharId === CHARACTER_DIALOG_NEW_ID) return undefined
-  return activeCharId
-}
-
 export function useGenerateMissingCharacterFields(input: UseGenerateMissingCharacterFieldsInput) {
   const inputRef = useRef(input)
   const seededTargetRef = useRef<string | null>(null)
   const toastedErrorRef = useRef(false)
+  const generateSnapshotRef = useRef<CharacterFilledDraft | null>(null)
+  const generateSeqRef = useRef(0)
+  const [isRequesting, setIsRequesting] = useState(false)
   const [artifactPending, setArtifactPending] = useState<PendingAction | null>(null)
 
   const characterDraftFields = useStorytellerUiStore(state => state.characterDraftFields)
@@ -91,6 +85,12 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
     inputRef.current = input
   })
 
+  useEffect(() => {
+    if (input.isOpen) return
+    setArtifactPending(null)
+    setIsRequesting(false)
+  }, [input.isOpen])
+
   const isTarget = isCharacterDraftForTarget(input.activeCharId, characterDraftTargetId)
   const isAnyDraftPending = isCharacterDraftPending({
     fields: characterDraftFields,
@@ -101,7 +101,7 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
   const isWritersRoomBusy =
     isGenerationActivityBusy(generationPhase) || isConsistencyFixRunBusy(consistencyFixPhase)
   const isGeneratingMissing =
-    artifactPending?.isProcessing === true ||
+    isRequesting ||
     isCharacterDraftOverlayGenerating({
       isTarget,
       isPendingReview,
@@ -189,24 +189,40 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
       toast.error(CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NO_PROJECT)
       return
     }
-    await runArtifactDraftOverlay({
-      projectId: current.projectId,
-      kind: ArtifactKind.Character,
-      promptId: StorytellerPromptRegistryId.CharacterGenerateMissing,
-      overlaySection: CharacterDraftChatSection.Form,
-      characterId: characterIdForArtifactDraft(current.activeCharId),
-      setPendingAction: (_section, action) => {
-        setArtifactPending(
-          attachCharacterArtifactPendingApply(action, draft => {
-            applyGeneratedFieldsToForm(
-              formFieldsFromInput(inputRef.current),
-              generatedCharacterFieldsFromArtifactDraft(draft),
-              inputRef.current,
-            )
-          }),
-        )
-      },
-    })
+    const snapshot = toFilledDraft(formFieldsFromInput(current))
+    generateSnapshotRef.current = snapshot
+    setIsRequesting(true)
+    try {
+      const fields = await generateCharacterMissingFields({
+        projectId: current.projectId,
+        filled: snapshot,
+      })
+      if (Object.keys(fields).length === 0) {
+        toast.error(CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NOTHING)
+        return
+      }
+      generateSeqRef.current += 1
+      const seq = generateSeqRef.current
+      setArtifactPending({
+        ...characterDraftPendingAction({ fields, seq }),
+        onAccept: () => {
+          applyAcceptedCharacterDraft({
+            snapshot: generateSnapshotRef.current,
+            live: formFieldsFromInput(inputRef.current),
+            generated: fields,
+            setters: inputRef.current,
+          })
+          setArtifactPending(null)
+        },
+        onReject: () => {
+          setArtifactPending(null)
+        },
+      })
+    } catch {
+      toast.error(CHARACTER_DIALOG_TOAST_GENERATE_MISSING_FAILED)
+    } finally {
+      setIsRequesting(false)
+    }
   }, [])
 
   return {

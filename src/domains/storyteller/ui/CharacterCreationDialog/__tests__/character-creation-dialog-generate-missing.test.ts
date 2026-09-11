@@ -3,9 +3,14 @@ import { DEFAULT_CHARACTER_METRICS } from '@/domains/storyteller/core/character-
 import { CharacterTextFieldKey } from '@/domains/storyteller/core/character-missing-fields'
 import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page-wire'
 import { GenerationActivityPhase } from '@/domains/storyteller/state/utils/storyteller-ui-store'
+import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
+import { CharacterDraftChatSection } from '../constants/character-creation-dialog'
 import {
   applyAcceptedCharacterDraft,
+  applyGeneratedFieldsToForm,
+  attachCharacterArtifactPendingApply,
   buildGenerateMissingCharacterChatPrompt,
+  draftStringFromPendingAction,
   filledCharacterDraftSummary,
   generateMissingDisableReason,
   generatedCharacterFieldsFromArtifactDraft,
@@ -244,5 +249,64 @@ describe('generatedCharacterFieldsFromArtifactDraft', () => {
     expect(fields.motivation).toBe('Hold the ward')
     expect(fields.fatalFlaw).toBe('Pride')
     expect(fields.secrets).toBe('The ledger')
+  })
+
+  it('unwraps a resume envelope whose draft is a JSON character body', () => {
+    const description =
+      'A brilliant political tactician with a sharp wit and a guarded heart, Vivienne maneuvers through court intrigue with precision. She stands tall with silver-streaked auburn hair and calculating green eyes.'
+    const fields = generatedCharacterFieldsFromArtifactDraft(
+      JSON.stringify({
+        draft: JSON.stringify({
+          [CharacterTextFieldKey.Name]: 'Vivienne Ardent',
+          [CharacterTextFieldKey.Role]: 'Deuteragonist / Strategist',
+          [CharacterTextFieldKey.Description]: description,
+          [CharacterTextFieldKey.Mbti]: 'INTJ',
+          metrics: { socialSafety: 62, moralAlignment: 45 },
+        }),
+        runId: '657a642d-6f34-4748-8b95-1337461d2287',
+      }),
+    )
+    expect(fields.description).toBe(description)
+    expect(fields.name).toBe('Vivienne Ardent')
+    expect(fields.metrics?.moralAlignment).toBe(45)
+  })
+})
+
+describe('attachCharacterArtifactPendingApply', () => {
+  it('fills a blank description from payload.draft when Accept runs', async () => {
+    const description = 'A brilliant political tactician with a sharp wit and a guarded heart.'
+    const live = form({ name: VERA, description: '' })
+    const setters = captureSetters(live)
+    const draft = JSON.stringify({
+      [CharacterTextFieldKey.Name]: 'Vivienne Ardent',
+      [CharacterTextFieldKey.Description]: description,
+    })
+    const wrapped = attachCharacterArtifactPendingApply(
+      {
+        section: CharacterDraftChatSection.Form,
+        preview: '',
+        action: {
+          type: 'UPDATE_CHARACTER',
+          payload: { draft, runId: '657a642d-6f34-4748-8b95-1337461d2287' },
+          status: ApprovalActionStatus.PENDING,
+          id: '657a642d-6f34-4748-8b95-1337461d2287',
+        },
+        onAccept: () => undefined,
+        onReject: () => undefined,
+      },
+      nextDraft => {
+        applyGeneratedFieldsToForm(
+          live,
+          generatedCharacterFieldsFromArtifactDraft(nextDraft),
+          setters,
+        )
+      },
+    )
+    expect(wrapped).not.toBeNull()
+    if (!wrapped) return
+    expect(draftStringFromPendingAction(wrapped)).toBe(draft)
+    await wrapped.onAccept()
+    expect(setters.next.name).toBe(VERA)
+    expect(setters.next.description).toBe(description)
   })
 })

@@ -33,6 +33,8 @@ export enum ActionPayloadKey {
   Rule = 'rule',
   Description = 'description',
   Type = 'type',
+  Draft = 'draft',
+  RunId = 'runId',
 }
 
 export const BIBLE_TECHNICAL_PAYLOAD_KEYS: ReadonlySet<string> = new Set([

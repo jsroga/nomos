@@ -33,7 +33,7 @@ import {
 } from './constants/character-creation-dialog'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { ActionType } from '@/domains/storyteller/core/types/enums'
-import { recordFromJson } from '@/shared/data/json-guards'
+import { readString, recordFromJson } from '@/shared/data/json-guards'
 import type { PendingAction } from '@/domains/storyteller/ui/WorldBible/utils/bible-context-types'
 import type { CharacterFormFields } from './character-creation-dialog-helpers'
 import type { CharacterMetrics } from './character-creation-dialog-types'
@@ -288,12 +288,41 @@ enum CharacterArtifactMetricsKey {
   Metrics = 'metrics',
 }
 
-function parseArtifactDraftJson(draft: string): unknown {
+enum CharacterArtifactEnvelopeKey {
+  Draft = 'draft',
+}
+
+function parseJsonUnknown(value: string): unknown {
   try {
-    return JSON.parse(draft)
+    return JSON.parse(value)
   } catch {
+    return undefined
+  }
+}
+
+function parseArtifactDraftJson(draft: string): unknown {
+  const parsed = parseJsonUnknown(draft)
+  if (parsed === undefined) {
     return { [CharacterTextFieldKey.Description]: draft }
   }
+  const nested = readString(recordFromJson(parsed)[CharacterArtifactEnvelopeKey.Draft])
+  if (!nested) return parsed
+  const inner = parseJsonUnknown(nested)
+  return inner ?? { [CharacterTextFieldKey.Description]: nested }
+}
+
+export function draftStringFromPendingAction(action: PendingAction): string {
+  if (typeof action.preview === 'string' && action.preview.trim().length > 0) {
+    return action.preview
+  }
+  const fromPayload = readString(
+    recordFromJson(action.action.payload)[CharacterArtifactEnvelopeKey.Draft],
+  )
+  if (fromPayload && fromPayload.trim().length > 0) return fromPayload
+  const fromPreview = readString(
+    recordFromJson(action.preview)[CharacterArtifactEnvelopeKey.Draft],
+  )
+  return fromPreview ?? ''
 }
 
 export function generatedCharacterFieldsFromArtifactDraft(draft: string): GeneratedCharacterFields {
@@ -321,7 +350,7 @@ export function attachCharacterArtifactPendingApply(
   applyDraft: (draft: string) => void,
 ): PendingAction | null {
   if (!action || action.isProcessing) return action
-  const draft = typeof action.preview === 'string' ? action.preview : ''
+  const draft = draftStringFromPendingAction(action)
   const accept = action.onAccept
   return {
     ...action,
