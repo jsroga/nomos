@@ -23,6 +23,8 @@ import {
 import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { EMPTY_TURN_NOTICE, withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
 import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
+import { StorytellerHeaderCopy } from '@/domains/storyteller/ui/StorytellerLayout/constants/storyteller-module-header'
+import { StorytellerSidebarCopy } from '@/domains/storyteller/ui/StorytellerLayout/utils/storyteller-sidebar-footer'
 import { SmokeHttpStatus, SmokeMatch } from '../constants/storyteller-smoke'
 
 const BASE_URL = process.env.BASE_URL?.trim() || 'http://localhost:3001'
@@ -288,6 +290,15 @@ export async function expectCharacterInSidebar(page: Page, name: string): Promis
 }
 
 export async function draftFirstEpisode(page: Page): Promise<void> {
+  const addToWorld = page.getByRole(FlowRole.Button, { name: FlowUiLabel.AddToWorld }).first()
+  const accept = page.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).first()
+  if (await addToWorld.or(accept).first().isVisible().catch(() => false)) {
+    await acceptPendingAction(page)
+  }
+  await expect(page.getByText(StorytellerSidebarCopy.BusyEpisode)).toBeHidden({
+    timeout: FlowTimeout.Generation,
+  })
+
   const headerDraft = page.getByRole(FlowRole.Tab, { name: FlowUiLabel.NewEpisode })
   if (await headerDraft.isVisible().catch(() => false)) {
     await headerDraft.click()
@@ -298,10 +309,12 @@ export async function draftFirstEpisode(page: Page): Promise<void> {
     await expect(button).toBeVisible({ timeout: FlowTimeout.Short })
     await button.click()
   }
-  await expect(page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.Episodes}`))
-    .toBeVisible({ timeout: FlowTimeout.Medium })
-  await expect(page.locator(FlowSelector.Heading).first())
-    .toBeVisible({ timeout: FlowTimeout.Long })
+  await expect(page.getByRole(FlowRole.Tab, { name: StorytellerHeaderCopy.Episodes })).toBeVisible({
+    timeout: FlowTimeout.Generation,
+  })
+  await expect(page.locator(FlowSelector.Heading).first()).toBeVisible({
+    timeout: FlowTimeout.Generation,
+  })
 }
 
 export async function expectEpisodeHeader(page: Page): Promise<void> {
