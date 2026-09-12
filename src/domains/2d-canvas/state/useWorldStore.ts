@@ -29,6 +29,8 @@ import {
 } from './useWorldUiStore'
 import { omitRecordKey } from './utils/omit-record-key'
 import { persistFirstTileStyleAnchor } from './utils/persist-style-anchor'
+import { tileAfterGenerationAccept } from './utils/accepted-generation-tile'
+import { persistableTileImageUrl } from './utils/persistable-tile-image-url'
 
 export type { Asset, Project, Tile, SelectBox, PendingUpscale, PendingGeneration, PendingFidelity }
 
@@ -177,25 +179,48 @@ export const useWorldDataStore = create<WorldDataState>((set, get) => ({
   acceptGeneration: async (x, y, acceptedUrl) => {
     const currentProject = getCurrentProject()
     const pending = useWorldUiStore.getState().getPendingGeneration(x, y)
-    if (!currentProject || !pending) return
+    const rawUrl = acceptedUrl || pending?.newUrl
+    if (!currentProject || !rawUrl) return
 
     const tileKey = `${x},${y}`
-    const imageUrl = acceptedUrl || pending.newUrl
+    const imageUrl = persistableTileImageUrl(rawUrl)
+    const existing = get().tiles[tileKey]
 
-    await persistFirstTileStyleAnchor(pending.isFirstTile, imageUrl)
+    set(state => ({
+      tiles: {
+        ...state.tiles,
+        [tileKey]: tileAfterGenerationAccept({
+          existing: state.tiles[tileKey],
+          persisted: null,
+          projectId: currentProject.id,
+          x,
+          y,
+          imageUrl,
+        }),
+      },
+    }))
+
+    await persistFirstTileStyleAnchor(pending?.isFirstTile === true, imageUrl)
 
     const tile = await worldApi.tiles.upsert({
       projectId: currentProject.id,
       x,
       y,
-      tilePrompt: '',
+      tilePrompt: existing?.tile_prompt ?? '',
       imageFilename: imageUrl,
     })
 
     set(state => ({
       tiles: {
         ...state.tiles,
-        [tileKey]: toLegacyTile(tile),
+        [tileKey]: tileAfterGenerationAccept({
+          existing: state.tiles[tileKey],
+          persisted: tile,
+          projectId: currentProject.id,
+          x,
+          y,
+          imageUrl,
+        }),
       },
     }))
     useWorldUiStore.getState().rejectGeneration(x, y)

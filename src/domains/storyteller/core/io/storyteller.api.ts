@@ -1,3 +1,4 @@
+import { ActionType } from '@/domains/storyteller/core/types/enums'
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { fetchJson, fetchJsonRecord } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
@@ -17,6 +18,10 @@ import {
 
 const JSON_HEADERS = { 'Content-Type': ContentType.Json }
 const EPISODE_BEATS_SEGMENT = 'beats'
+
+enum BeatReorderPayloadField {
+  BeatIds = 'beatIds',
+}
 
 async function fetchAndParse<T>(input: RequestInfo | URL, schema: { parse: (value: unknown) => T }) {
   return schema.parse(await fetchJson(input))
@@ -222,6 +227,21 @@ export async function patchBeat(beatId: string, body: Record<string, unknown>): 
 export async function deleteBeat(beatId: string): Promise<void> {
   await fetchJson(joinUrlPath('/api/storyteller/beats', beatId), {
     method: HttpMethod.Delete,
+  })
+}
+
+export async function reorderEpisodeBeats(input: {
+  projectId: string
+  episodeId: string
+  beatIds: string[]
+}): Promise<void> {
+  await postStorytellerAction({
+    action: {
+      type: ActionType.REORDER_BEATS,
+      payload: { [BeatReorderPayloadField.BeatIds]: input.beatIds },
+    },
+    projectId: input.projectId,
+    episodeId: input.episodeId,
   })
 }
 

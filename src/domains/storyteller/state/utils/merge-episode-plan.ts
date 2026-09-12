@@ -66,6 +66,10 @@ function readScript(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined
 }
 
+export function scriptContentFromPlanRecord(planRecord: Record<string, unknown>): string {
+  return readScript(planRecord[EpisodePlanMergeField.Script]) ?? ''
+}
+
 export function buildMergedEpisodePlan(
   data: Record<string, unknown>,
   currentProject: { id?: string; series_bible?: unknown; story_plan?: unknown } | null | undefined,

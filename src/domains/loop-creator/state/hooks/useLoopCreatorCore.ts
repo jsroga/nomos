@@ -13,6 +13,9 @@ import {
   EMPTY_LOOP_GAME_CONTEXT,
   type LoopGameContext,
 } from '@/domains/loop-creator/ui/types/loop-layout-wires'
+import type { LoopPendingAutoPrompt } from '@/domains/loop-creator/state/utils/start-loop-creator-generation-chat'
+
+export type { LoopPendingAutoPrompt }
 
 export function useLoopCreatorCore() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
@@ -30,7 +33,7 @@ export function useLoopCreatorCore() {
   const [marketAnalysisKey, setMarketAnalysisKey] = useState(0)
   const [showCreateLoopDialog, setShowCreateLoopDialog] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [pendingAutoMessage, setPendingAutoMessage] = useState<string | null>(null)
+  const [pendingAutoPrompt, setPendingAutoPrompt] = useState<LoopPendingAutoPrompt | null>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -75,8 +78,8 @@ export function useLoopCreatorCore() {
     showCreateLoopDialog,
     setShowCreateLoopDialog,
     userEmail,
-    pendingAutoMessage,
-    setPendingAutoMessage,
+    pendingAutoPrompt,
+    setPendingAutoPrompt,
   }
 }
 

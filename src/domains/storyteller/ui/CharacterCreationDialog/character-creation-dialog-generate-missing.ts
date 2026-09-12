@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast'
 import {
   applyGeneratedCharacterFields,
+  applyOverwritingGeneratedField,
   CHARACTER_TEXT_FIELD_KEYS,
   CharacterTextFieldKey,
   generatedCharacterFieldsFromUnknown,
@@ -20,6 +21,7 @@ import {
   isGenerationActivityBusy,
 } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { enqueueStorytellerChatPrompt } from '@/domains/storyteller/state/utils/enqueue-storyteller-chat'
 import {
   CHARACTER_DIALOG_GENERATE_MISSING_FILLED_CHARS,
   CHARACTER_DIALOG_TOAST_GENERATE_MISSING_BUSY,
@@ -89,7 +91,15 @@ export function applyAcceptedCharacterDraft(input: {
   live: CharacterFormFields
   generated: GeneratedCharacterFields
   setters: CharacterFormFieldSetters
+  overwriteKey?: CharacterTextFieldKey
 }): void {
+  if (input.overwriteKey) {
+    applyFormFields(
+      applyOverwritingGeneratedField(input.live, input.generated, input.overwriteKey),
+      input.setters,
+    )
+    return
+  }
   const liveDraft = toFilledDraft(input.live)
   const snapshot = input.snapshot ?? liveDraft
   const merged = mergeNonBlankCharacterDraft(snapshot, liveDraft)
@@ -160,23 +170,34 @@ export function buildGenerateMissingCharacterChatPrompt(fields: CharacterFormFie
   const filledBody = filledCharacterDraftSummary(fields) || CharacterDialogGenerateMissingChat.None
   return [
     CharacterDialogGenerateMissingChat.Instruction,
+    CharacterDialogGenerateMissingChat.MetricsRange,
     `${CharacterDialogGenerateMissingChat.MissingText}${CharacterDialogGenerateMissingJoin.Label}${missingTextLine}`,
     `${CharacterDialogGenerateMissingChat.MissingMetrics}${CharacterDialogGenerateMissingJoin.Label}${missingMetricsLine}`,
     `${CharacterDialogGenerateMissingChat.Filled}${CharacterDialogGenerateMissingJoin.Lines}${filledBody}`,
   ].join(CharacterDialogGenerateMissingJoin.Blocks)
 }
 
-export function requestGenerateMissingCharacterChat(input: {
-  projectId: string | undefined
-  targetId: string
-  fields: CharacterFormFields
-}): boolean {
-  if (!input.projectId) {
+export function buildRegenerateCharacterFieldChatPrompt(
+  fields: CharacterFormFields,
+  key: CharacterTextFieldKey,
+): string {
+  const current = fields[key].trim() || CharacterDialogGenerateMissingChat.None
+  return [
+    CharacterDialogGenerateMissingChat.RegenerateInstruction,
+    CharacterDialogGenerateMissingChat.MetricsRange,
+    `${CharacterDialogGenerateMissingChat.Field}${CharacterDialogGenerateMissingJoin.Label}${key}`,
+    `${CharacterDialogGenerateMissingChat.Current}${CharacterDialogGenerateMissingJoin.Label}${clipFilled(current)}`,
+  ].join(CharacterDialogGenerateMissingJoin.Blocks)
+}
+
+function enqueueCharacterDraftChat(
+  projectId: string | undefined,
+  targetId: string,
+  fields: CharacterFormFields,
+  prompt: string,
+): boolean {
+  if (!projectId) {
     toast.error(CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NO_PROJECT)
-    return false
-  }
-  if (!formHasMissingCharacterFields(input.fields)) {
-    toast.error(CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NOTHING)
     return false
   }
 
@@ -189,18 +210,43 @@ export function requestGenerateMissingCharacterChat(input: {
     return false
   }
 
-  store.beginCharacterDraft(input.targetId, toFilledDraft(input.fields))
-  const seqBefore = store.pendingChatPromptSeq
-  store.requestChatPrompt(
-    buildGenerateMissingCharacterChatPrompt(input.fields),
-    CharacterDraftChatSection.Form,
-  )
-  if (getStorytellerUiStore().pendingChatPromptSeq === seqBefore) {
+  store.beginCharacterDraft(targetId, toFilledDraft(fields))
+  if (!enqueueStorytellerChatPrompt(prompt, CharacterDraftChatSection.Form)) {
     store.clearCharacterDraft()
-    toast.error(CHARACTER_DIALOG_TOAST_GENERATE_MISSING_BUSY)
     return false
   }
   return true
+}
+
+export function requestGenerateMissingCharacterChat(input: {
+  projectId: string | undefined
+  targetId: string
+  fields: CharacterFormFields
+}): boolean {
+  if (!formHasMissingCharacterFields(input.fields)) {
+    toast.error(CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NOTHING)
+    return false
+  }
+  return enqueueCharacterDraftChat(
+    input.projectId,
+    input.targetId,
+    input.fields,
+    buildGenerateMissingCharacterChatPrompt(input.fields),
+  )
+}
+
+export function requestRegenerateCharacterFieldChat(input: {
+  projectId: string | undefined
+  targetId: string
+  fields: CharacterFormFields
+  key: CharacterTextFieldKey
+}): boolean {
+  return enqueueCharacterDraftChat(
+    input.projectId,
+    input.targetId,
+    input.fields,
+    buildRegenerateCharacterFieldChatPrompt(input.fields, input.key),
+  )
 }
 
 export function isGenerateMissingChatSettled(phase: GenerationActivityPhase): boolean {
@@ -276,6 +322,23 @@ export function generateMissingDisableReason(input: {
   if (!formHasMissingCharacterFields(input.fields)) {
     return CharacterDialogGenerateMissingDisable.AllFilled
   }
+  return null
+}
+
+export function regenerateFieldDisableReason(input: {
+  projectId?: string
+  isSaving: boolean
+  isGeneratingPortrait: boolean
+  isGeneratingMissing: boolean
+  isWritersRoomBusy: boolean
+  isAnyDraftPending: boolean
+}): string | null {
+  if (input.isGeneratingMissing) return CharacterDialogGenerateMissingDisable.Generating
+  if (input.isWritersRoomBusy) return CharacterDialogGenerateMissingDisable.WritersRoomBusy
+  if (input.isAnyDraftPending) return CharacterDialogGenerateMissingDisable.Pending
+  if (!input.projectId) return CharacterDialogGenerateMissingDisable.NoProject
+  if (input.isSaving) return CharacterDialogGenerateMissingDisable.Saving
+  if (input.isGeneratingPortrait) return CharacterDialogGenerateMissingDisable.Portrait
   return null
 }
 

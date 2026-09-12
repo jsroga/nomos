@@ -1,7 +1,7 @@
 import type { Agent } from '@mastra/core/agent'
 import { getMastraInstance } from '../mastra-instance'
 import { MastraAgentVersionStatus } from './constants/editor'
-import { overlayAgentHasTools } from './editor-overlay'
+import { overlayReadyForPublishedGenerate } from './editor-overlay'
 
 /** Code-registered agent on the production instance (no Editor overlay). */
 function findRegisteredAgent(id: string): Agent | undefined {
@@ -14,14 +14,16 @@ export function hasRegisteredAgent(id: string): boolean {
 }
 
 function resolveLiveAgent(id: string, published: Agent, code: Agent | undefined): Agent {
-  if (overlayAgentHasTools(id)) return published
+  if (overlayReadyForPublishedGenerate(id)) return published
   return code ?? published
 }
 
 /**
  * Live agent with published Editor overlays applied.
  * Empty tool membership in JSON falls back to the code catalog so chat never
- * loses tools. Instruction overlays still apply via loadPublishedOrFileBrief.
+ * loses tools. Overlay tools without instructions also fall back — published
+ * generate/stream throws when editor.instructions is true and JSON has none.
+ * Instruction overlays still apply via loadPublishedOrFileBrief.
  */
 export async function getPublishedAgent(id: string): Promise<Agent> {
   const mastra = getMastraInstance()

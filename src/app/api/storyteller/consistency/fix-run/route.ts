@@ -2,19 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireAuth } from '@/shared/auth/auth'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
-import { ContentType, SseHeader } from '@/shared/data/constants/protocol'
+import {
+  ContentType,
+  HttpHeader,
+  SseAccelBuffering,
+  SseCacheControl,
+  SseHeader,
+} from '@/shared/data/constants/protocol'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import '@/domains/storyteller/core/io/mastra-runtime'
-import { encodeFixInconsistenciesSse } from '@/domains/storyteller/core/io/fix-inconsistencies-sse'
+import { createMastraTraceId } from '@/domains/storyteller/server'
 import {
-  createFixInconsistenciesWorkflowRun,
-  executeFixInconsistenciesStart,
-} from '@/domains/storyteller/core/io/fix-inconsistencies-run'
-import {
-  FixInconsistenciesRunStatus,
+  encodeFixInconsistenciesSse,
+  encodeFixInconsistenciesSseComment,
   FixInconsistenciesSseEvent,
-  FixInconsistenciesStepId,
-} from '@/domains/storyteller/ai/workflows/constants/fix-inconsistencies-workflow'
+} from '@/domains/storyteller/core/io/fix-inconsistencies-sse'
+import {
+  pipeFixInconsistenciesStartToSse,
+  type FixInconsistenciesSseSink,
+} from '@/domains/storyteller/core/io/fix-inconsistencies-sse-run'
 
 export const maxDuration = 300
 
@@ -22,11 +28,13 @@ const StartSchema = z.object({
   projectId: z.string().min(1),
 })
 
-function sseHeaders(): HeadersInit {
+function sseHeaders(traceId: string): HeadersInit {
   return {
     'Content-Type': SseHeader.ContentType,
-    'Cache-Control': SseHeader.CacheControl,
+    'Cache-Control': SseCacheControl.NoCacheNoTransform,
     Connection: SseHeader.Connection,
+    'X-Accel-Buffering': SseAccelBuffering.No,
+    [HttpHeader.TRACE_ID]: traceId,
   }
 }
 
@@ -41,40 +49,30 @@ export async function POST(request: NextRequest) {
     }
 
     const { projectId } = payload.data
-    if (!(await tryProjectScope(projectId, session.user.id))) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
     const encoder = new TextEncoder()
+    const traceId = createMastraTraceId()
     const stream = new ReadableStream({
       async start(controller) {
-        const send = (event: FixInconsistenciesSseEvent, data: unknown) => {
+        const send: FixInconsistenciesSseSink['send'] = (event, data) => {
           controller.enqueue(encoder.encode(encodeFixInconsistenciesSse(event, data)))
         }
+        const flush = () =>
+          new Promise<void>(resolve => {
+            controller.enqueue(encoder.encode(encodeFixInconsistenciesSseComment()))
+            setImmediate(resolve)
+          })
         try {
-          const created = await createFixInconsistenciesWorkflowRun()
-          if (!created.ok) {
-            send(FixInconsistenciesSseEvent.Error, { message: created.error })
-            return
-          }
-          send(FixInconsistenciesSseEvent.Started, { runId: created.run.runId, projectId })
-          send(FixInconsistenciesSseEvent.Step, { stepId: FixInconsistenciesStepId.AssembleCanon })
-          const result = await executeFixInconsistenciesStart(created.run, projectId)
-          if (!result.ok) {
-            send(FixInconsistenciesSseEvent.Error, { runId: result.runId, message: result.error })
-            return
-          }
-          if (result.status === FixInconsistenciesRunStatus.Suspended) {
-            send(FixInconsistenciesSseEvent.Suspended, {
-              runId: result.runId,
-              ...result.payload,
-            })
-          } else {
-            send(FixInconsistenciesSseEvent.Complete, {
-              runId: result.runId,
-              ...result.output,
-            })
-          }
+          await pipeFixInconsistenciesStartToSse({
+            projectId,
+            scope,
+            traceId,
+            sink: { send, flush },
+          })
         } catch (error) {
           console.error(API_LOG_PREFIX.FIX_INCONSISTENCIES_RUN_ERROR, error)
           send(FixInconsistenciesSseEvent.Error, {
@@ -86,7 +84,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return new Response(stream, { headers: sseHeaders() })
+    return new Response(stream, { headers: sseHeaders(traceId) })
   } catch (error) {
     console.error(API_LOG_PREFIX.FIX_INCONSISTENCIES_RUN_ERROR, error)
     return NextResponse.json(

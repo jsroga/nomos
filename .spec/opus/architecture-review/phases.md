@@ -627,6 +627,12 @@ Live = real model or real provider. Stub = `page.route` like empty-turn / ghost 
 
 | ID | Spec | Scenario | Path | Live | Have |
 |---|---|---|---|---|---|
+| REG-ST-01 | `storyteller.spec.ts` | Mundane bible + No Magic + episode refresh + Vex mage + Fix once + Apply all | H | GLM live | **yes** |
+| REG-ST-02 | `storyteller-character-fields.spec.ts` | Generate missing fields → live GLM turn → Accept fills description | H | GLM live | **yes** |
+| REG-ST-03 | `workspace-chat-overlay.spec.ts` | Overlay persist closed across reload; empty-turn notice | G | stub | **yes** |
+| REG-2D-01 | `world-canvas.spec.ts` | Stub 200 generate; Upscale 4× nowrap; Accept does not paint neighbor | H | stub tile API | **yes** |
+| REG-2D-02 | `world-canvas.spec.ts` | Stub 402; error; no fake tile; 1–2 intercepts | E | stub | **yes** |
+| REG-2D-03 | `world-canvas.spec.ts` | In-progress generate; navigate storyteller and back; no crash/dup tiles | G | stub | **yes** |
 | E2E-ST-01 | `storyteller-chat.spec.ts` | Hello → working → non-empty reply | H | GLM | **yes** |
 | E2E-ST-02 | `storyteller.spec.ts` | Create project, bible + Add to world, character in sidebar | H | GLM | **yes** |
 | E2E-ST-03 | `storyteller-empty-turn.spec.ts` | Empty assistant frames → notice, not blank thread | G | stub | **yes** |
@@ -678,7 +684,7 @@ Live = real model or real provider. Stub = `page.route` like empty-turn / ghost 
 ### 6.3 Constraints
 
 - Phase 6 does not implement overlay chat (Phase 5) or new compiler work. Rows that need Phase 5 (`UT-ST-21`, `UT-SH-05`, `UT-RT-03`) skip until that code exists.
-- No Playwright in `npm run test:unit` / `precommit`.
+- No Playwright in `npm run test:unit`. Husky **pre-commit** runs stub Playwright (`npm run test:e2e:stubs`) after the production build. Husky **pre-push** runs live `storyteller.spec.ts` only (`npm run test:e2e:live-storyteller`). The full Playwright folder and HTTP smoke stay off both hooks.
 - No browser MCP. No `curl localhost:3000` to check behaviour.
 - No 100% coverage mandate. Stop at 1.15× statements.
 - `dangerouslyIgnoreUnhandledErrors` stays `false`. New tests must not swallow rejections.

@@ -13,12 +13,13 @@ import { NextRequest } from 'next/server'
 import '@/domains/loop-creator/core/io/mastra-runtime'
 import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
-import { streamLoopCreator } from '@/domains/loop-creator/server'
+import { streamLoopCreator, type StreamEvent as LoopOrchestratorStreamEvent } from '@/domains/loop-creator/server'
 import { type LoopCreatorState, createInitialLoopState } from '@/domains/loop-creator'
 import { HumanMessage, AIMessage } from '@/shared/chat/core/message'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
   ContentType,
+  HttpHeader,
   LoopCreatorChatPhase,
   LoopCreatorChatRole,
   LoopCreatorHealthStatus,
@@ -28,8 +29,9 @@ import {
   SseCacheControl,
   SseHeader,
 } from '@/shared/data/constants/protocol'
+import { createMastraTraceId } from '@/shared/observability/mastra-trace-id'
 
-export const maxDuration = 120
+export const maxDuration = 300
 
 interface CanvasNode {
   id: string
@@ -68,8 +70,6 @@ interface ChatRequest {
   }
 }
 
-import type { StreamEvent as LoopOrchestratorStreamEvent } from '@/domains/loop-creator/core/graph/loop-orchestrator'
-
 interface StreamEvent {
   type:
   | LoopCreatorStreamEventType.Node
@@ -77,12 +77,14 @@ interface StreamEvent {
   | LoopCreatorStreamEventType.Action
   | LoopCreatorStreamEventType.Questions
   | LoopCreatorStreamEventType.Token
+  | LoopCreatorStreamEventType.Log
   | LoopCreatorStreamEventType.Error
   | LoopCreatorStreamEventType.Start
   | LoopCreatorStreamEventType.State
   | LoopCreatorStreamEventType.Complete
   node?: string
   agent?: string
+  status?: string
   content?: string
   message?: {
     type: string
@@ -143,6 +145,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    const crewTraceId = createMastraTraceId()
     const stream = new ReadableStream({
       async start(controller) {
         let isClosed = false
@@ -178,8 +181,6 @@ export async function POST(req: NextRequest) {
 
           const initialState: LoopCreatorState = {
             ...createInitialLoopState(scope, message, context),
-            // Seed the graph with the recent conversation history, not just the
-            // latest turn that the factory defaults to.
             messages: [
               ...(recentMessages?.map(m =>
                 m.role === LoopCreatorChatRole.User
@@ -188,6 +189,7 @@ export async function POST(req: NextRequest) {
               ) || []),
               new HumanMessage(message),
             ],
+            traceId: crewTraceId,
           }
 
           const finalState = await streamLoopCreator(
@@ -233,6 +235,7 @@ export async function POST(req: NextRequest) {
         'Cache-Control': SseCacheControl.NoCacheNoTransform,
         Connection: SseHeader.Connection,
         'X-Accel-Buffering': SseAccelBuffering.No,
+        [HttpHeader.TRACE_ID]: crewTraceId,
       },
     })
   } catch (error) {

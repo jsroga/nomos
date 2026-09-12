@@ -25,7 +25,6 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
             nodeCount={layout.nodes.length}
             edgeCount={layout.edges.length}
             groundingScore={null}
-            saveStatus={layout.saveStatus}
             showCreateLoopDialog={layout.showCreateLoopDialog}
             loopSelectorTourId={layout.tourIds.LOOP_SELECTOR}
             onLoopChange={layout.handleLoopChange}
@@ -71,6 +70,8 @@ export function LoopCreatorLayout({ projectId }: LoopCreatorLayoutProps) {
           mentionProviders={layout.mentionProviders}
           projectContext={layout.projectContextForMentions}
           chatTourId={layout.tourIds.LOOP_CHAT}
+          pendingAutoPrompt={layout.pendingAutoPrompt}
+          onPendingAutoPromptHandled={() => layout.setPendingAutoPrompt(null)}
         />
       </div>
 

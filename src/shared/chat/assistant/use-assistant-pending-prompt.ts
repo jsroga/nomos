@@ -88,8 +88,7 @@ export async function executePendingChatPromptSend({
     console.log(`${AssistantClientLog.PendingSent}${promptId}`)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : AssistantGenerationLabel.Error
-    console.error(`${AssistantClientLog.PendingError}${promptId}`, err)
-    finishGeneration({ error: message })
+    finishGeneration({ error: `${AssistantClientLog.PendingError}${promptId} ${message}` })
   } finally {
     clearTimeout(slowHintTimer)
   }

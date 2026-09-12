@@ -341,6 +341,8 @@ export function useCharacterCreationDialog({
     handleGeneratePortrait,
     handleGenerateMetrics,
     handleGenerateMissingFields: missingFields.handleGenerateMissingFields,
+    handleRegenerateField: missingFields.handleRegenerateField,
+    canRegenerateField: missingFields.canRegenerateField,
     pendingAction: missingFields.pendingAction,
     handleVariantSelect,
     handleSubmit,

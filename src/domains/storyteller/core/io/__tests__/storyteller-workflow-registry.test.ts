@@ -28,5 +28,8 @@ describe('bindStorytellerWorkflowRegistry', () => {
     expect(beatTool).toContain('getWorkflow(BEAT_DRAFT_WORKFLOW_ID)')
     const artifact = readFileSync('src/domains/storyteller/core/io/start-artifact-draft.ts', 'utf8')
     expect(artifact).toContain('getWorkflow(ARTIFACT_DRAFT_WORKFLOW_ID)')
+    const fixRun = readFileSync('src/domains/storyteller/core/io/fix-inconsistencies-run.ts', 'utf8')
+    expect(fixRun).toContain('getWorkflow(FIX_INCONSISTENCIES_WORKFLOW_ID)')
+    expect(fixRun).toContain('createRun({ resourceId: projectId })')
   })
 })

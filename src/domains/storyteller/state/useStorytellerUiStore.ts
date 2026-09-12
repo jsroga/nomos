@@ -82,6 +82,7 @@ export interface ConsistencyFixRunState {
   projectId: string | null
   runId: string | null
   stepId: string | null
+  completedStepIds: string[]
   findings: ContinuityFinding[]
   fixes: ConsistencyFixItem[]
   skipped: SkippedFinding[]
@@ -96,6 +97,7 @@ export const IDLE_CONSISTENCY_FIX_RUN: ConsistencyFixRunState = {
   projectId: null,
   runId: null,
   stepId: null,
+  completedStepIds: [],
   findings: [],
   fixes: [],
   skipped: [],

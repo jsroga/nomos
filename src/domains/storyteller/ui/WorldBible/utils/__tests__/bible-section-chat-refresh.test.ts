@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { lookupPromptBody } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-table'
@@ -14,22 +14,25 @@ describe('requestBibleSectionChatRefresh', () => {
   beforeEach(() => {
     getStorytellerUiStore().clearPendingChatPrompt()
     getStorytellerUiStore().resetConsistencyFixRun()
-    useWorkspaceChatUiStore.setState({ overlayOpen: false })
+    useWorkspaceChatUiStore.setState({
+      overlayOpen: false,
+      focusedSessionId: null,
+      focusedSessionModuleId: null,
+      mismatchDialog: null,
+    })
   })
 
   it('posts the soundtrack prompt on the active chat with the section pin', () => {
-    const onSendMessage = vi.fn()
     expect(
       requestBibleSectionChatRefresh({
-        onSendMessage,
         section: BibleSection.SOUNDTRACKS,
         promptId: StorytellerPromptRegistryId.BibleSoundtracksGenerate,
       })
     ).toBe(true)
     expect(useWorkspaceChatUiStore.getState().overlayOpen).toBe(true)
-    expect(onSendMessage).toHaveBeenCalledWith(
-      lookupPromptBody(StorytellerPromptRegistryId.BibleSoundtracksGenerate),
-      BibleSection.SOUNDTRACKS
+    expect(getStorytellerUiStore().pendingChatPrompt?.section).toBe(BibleSection.SOUNDTRACKS)
+    expect(getStorytellerUiStore().pendingChatPrompt?.message).toBe(
+      lookupPromptBody(StorytellerPromptRegistryId.BibleSoundtracksGenerate)
     )
   })
 

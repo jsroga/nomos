@@ -12,6 +12,10 @@ import {
   takeStyleRefFiles,
   PAINTED_ISOMETRIC_SREF_URLS,
 } from '../mj-sref'
+import { defaultAnimeLineartSrefUrls } from '../anime-lineart-srefs'
+import { defaultPixelArtSrefUrls } from '../pixel-art-srefs'
+import { defaultLocationMapSrefUrls } from '../location-map-srefs'
+import { defaultPaintedIsometricSrefUrls } from '../painted-isometric-srefs'
 
 describe('mj-sref helpers', () => {
   it('uses Disco Elysium blob URLs and does not look up public files', () => {
@@ -21,9 +25,23 @@ describe('mj-sref helpers', () => {
     const mode = GENERATION_MODES.find(item => item.id === GenerationMode.PaintedIsometric)
     expect(mode).toBeDefined()
     if (!mode) return
-    expect(resolveGenerationModeSrefUrls(mode)).toEqual([...PAINTED_ISOMETRIC_SREF_URLS])
+    expect(resolveGenerationModeSrefUrls(mode)).toEqual(defaultPaintedIsometricSrefUrls())
     expect(generationModePresetSrefUrls(GenerationMode.PixelArt)).toEqual([])
+    expect(generationModePresetSrefUrls(GenerationMode.TopDownLocation)).toEqual([])
     expect(generationModePresetSrefUrls(GenerationMode.AnimeLineart)).toEqual([])
+    expect(generationModePresetSrefUrls(GenerationMode.WorldMap)).toEqual([])
+    const pixelArt = GENERATION_MODES.find(item => item.id === GenerationMode.PixelArt)
+    expect(pixelArt).toBeDefined()
+    if (!pixelArt) return
+    expect(resolveGenerationModeSrefUrls(pixelArt)).toEqual(defaultPixelArtSrefUrls())
+    const locationMap = GENERATION_MODES.find(item => item.id === GenerationMode.TopDownLocation)
+    expect(locationMap).toBeDefined()
+    if (!locationMap) return
+    expect(resolveGenerationModeSrefUrls(locationMap)).toEqual(defaultLocationMapSrefUrls())
+    const anime = GENERATION_MODES.find(item => item.id === GenerationMode.AnimeLineart)
+    expect(anime).toBeDefined()
+    if (!anime) return
+    expect(resolveGenerationModeSrefUrls(anime)).toEqual(defaultAnimeLineartSrefUrls())
   })
 
   it('leaves already-absolute blob URLs alone', () => {

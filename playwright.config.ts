@@ -4,7 +4,9 @@ import dotenv from 'dotenv'
 const ENV_LOCAL_PATH = '.env.local'
 const E2E_CHAT_MODEL = 'openai:gpt-5.6-luna'
 const FEATURE_FLAG_DISABLED = 'false'
+const FEATURE_FLAG_ON = 'true'
 const STORYTELLER_CONTROLLER_FLAG = 'FF_STORYTELLER_CONTROLLER'
+const WORKSPACE_CHAT_OVERLAY_FLAG = 'NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY'
 
 // Load local env so E2E tests can reach Supabase and providers.
 dotenv.config({ path: ENV_LOCAL_PATH })
@@ -15,6 +17,7 @@ process.env.STORYTELLER_CHAT_MODEL = process.env.STORYTELLER_CHAT_MODEL?.trim() 
 process.env.NEXT_PUBLIC_FF_CWV_HUD = FEATURE_FLAG_DISABLED
 // Disable the plan-first controller so chat tool calls execute directly.
 process.env[STORYTELLER_CONTROLLER_FLAG] = process.env[STORYTELLER_CONTROLLER_FLAG]?.trim() || FEATURE_FLAG_DISABLED
+process.env[WORKSPACE_CHAT_OVERLAY_FLAG] = FEATURE_FLAG_ON
 
 // Reporter ids / output path (Track A3 admin Tests dashboard reads the JSON).
 const REPORTER_HTML = 'html'

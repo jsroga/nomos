@@ -8,6 +8,7 @@ import type { GenerationMode } from '@/domains/2d-canvas/utils/generation-modes'
 import type { Tile } from '@/domains/2d-canvas'
 import { useWorldStore } from '@/domains/2d-canvas'
 import {
+  TILE_ACTION_BAR_INITIAL_WIDTH_PX,
   TileActionBarClass,
   TileActionBarCopy,
   TileActionBarVariant,
@@ -80,7 +81,7 @@ export function TileActionBar({
   const isRepaintMode = useWorldStore(state => state.isRepaintMode)
   const isSelectMode = useWorldStore(state => state.isSelectMode)
   const barRef = useRef<HTMLDivElement>(null)
-  const [barWidth, setBarWidth] = useState(320)
+  const [barWidth, setBarWidth] = useState(TILE_ACTION_BAR_INITIAL_WIDTH_PX)
   const [enhanceOpen, setEnhanceOpen] = useState(false)
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
 

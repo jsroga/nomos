@@ -39,6 +39,7 @@ import { useAssistantAddToWorld } from './AssistantAddToWorldContext'
 import { useAssistantChatDetails } from './AssistantChatDetailsContext'
 import { useAssistantChatActions } from './AssistantChatActionsContext'
 import { addToWorldButtonVisible } from './add-to-world-visibility'
+import { lastReasoningActivityLine } from './derive-assistant-generation-activity'
 import { ThinkingIndicator } from './AssistantThinkingIndicator'
 import {
   createAssistantToolsFailedSelector,
@@ -142,6 +143,7 @@ const AssistantReasoning: ReasoningMessagePartComponent = ({ text, status }) => 
   const streaming = status?.type === ChatMessageStatus.Running
   const body = text.trim()
   const showFull = showDetails || open
+  const peek = lastReasoningActivityLine(body) ?? body.slice(-REASONING_PEEK_CHARS)
   if (!body) return null
 
   return (
@@ -156,7 +158,7 @@ const AssistantReasoning: ReasoningMessagePartComponent = ({ text, status }) => 
         {streaming ? ASSISTANT_THREAD_COPY.ReasoningLive : ASSISTANT_THREAD_COPY.ReasoningDone}
       </button>
       <p className={showFull ? 'aui-reasoning-text' : 'aui-reasoning-text aui-reasoning-text--peek'}>
-        {showFull ? body : body.slice(-REASONING_PEEK_CHARS)}
+        {showFull ? body : peek}
       </p>
     </div>
   )

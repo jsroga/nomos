@@ -96,7 +96,7 @@ export function preferRicherBeats<T extends { id: string }>(
     if (!incomingIds.has(id)) localOnly += 1
   }
   if (localOnly > incomingOnly) return [...local]
-  if (incomingOnly > 0 || incoming.length >= local.length) return [...incoming]
+  if (incomingOnly > 0 || incoming.length > local.length) return [...incoming]
   return [...local]
 }
 

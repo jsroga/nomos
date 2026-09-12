@@ -28,6 +28,10 @@ export enum ChatMessageStatus {
   Running = 'running',
 }
 
+export enum AssistantReasoningPrefix {
+  Activity = '▸ ',
+}
+
 export const CHAT_ENTITY_KIND_STYLE: Record<
   ChatEntityKind,
   { fill: string; border: string; foreground: string }
@@ -76,6 +80,9 @@ export const ASSISTANT_THREAD_COPY = {
   ShowDetails: 'Details',
   ShowDetailsAria: 'Show tool and JSON details',
   HideDetailsAria: 'Hide tool and JSON details',
+  ShowLogs: 'Logs',
+  ShowLogsAria: 'Show orchestrator logs',
+  HideLogsAria: 'Hide orchestrator logs',
   Regenerate: 'Regenerate',
 } as const
 

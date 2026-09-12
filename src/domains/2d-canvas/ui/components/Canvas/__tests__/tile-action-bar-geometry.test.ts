@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   TILE_ACTION_BAR_GAP_PX,
+  TILE_ACTION_BAR_INITIAL_WIDTH_PX,
   TILE_ACTION_BAR_VIEWPORT_MARGIN_PX,
+  TileActionBarClass,
   TileActionBarVariant,
 } from '@/domains/2d-canvas/ui/utils/tile-action-bar'
 import {
@@ -87,5 +89,20 @@ describe('tileActionBarPosition', () => {
     const tile = { left: 40, top: 10, width: 128, height: 128 }
     const position = tileActionBarPosition(tile, 800, 320)
     expect(position.top).toBe(tile.top + tile.height + TILE_ACTION_BAR_GAP_PX)
+  })
+
+  it('keeps a full-width ready bar inside the viewport', () => {
+    const tile = { left: 700, top: 100, width: 128, height: 128 }
+    const position = tileActionBarPosition(tile, 800, TILE_ACTION_BAR_INITIAL_WIDTH_PX)
+    expect(position.left).toBe(
+      800 - TILE_ACTION_BAR_INITIAL_WIDTH_PX - TILE_ACTION_BAR_VIEWPORT_MARGIN_PX,
+    )
+  })
+})
+
+describe('TileActionBarClass', () => {
+  it('does not wrap Upscale 4× onto two lines', () => {
+    expect(TileActionBarClass.Ghost).toContain('whitespace-nowrap')
+    expect(TileActionBarClass.Ghost).toContain('shrink-0')
   })
 })

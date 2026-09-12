@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { completeStructured } from '@/shared/ai/gateway'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { requireAuth } from '@/shared/auth/auth'
@@ -9,18 +8,9 @@ import { HttpStatus } from '@/shared/data/constants/protocol'
 import { generateMetricsRequestSchema } from '@/domains/storyteller/core/io/openapi-schemas'
 import { recordFromJson } from '@/shared/data/json-guards'
 import { resolveUserPickerOpenRouterModelId } from '@/domains/storyteller/core/io/resolve-user-picker-model'
+import { characterPsychologyMetricsSchema } from '@/domains/storyteller/server'
 
-const CharacterMetricsSchema = z.object({
-  valence: z.number(),
-  arousal: z.number(),
-  autonomy: z.number(),
-  competence: z.number(),
-  relatedness: z.number(),
-  cognitiveClarity: z.number(),
-  perceivedStakes: z.number(),
-  socialSafety: z.number(),
-  moralAlignment: z.number(),
-})
+const CharacterMetricsSchema = characterPsychologyMetricsSchema
 
 const METRICS_SYSTEM = `You are an expert character psychologist. Analyze the character description and generate baseline psychological metrics (based on Affective Circumplex Model + Self-Determination Theory).
 

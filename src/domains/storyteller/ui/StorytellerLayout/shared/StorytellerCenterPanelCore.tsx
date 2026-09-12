@@ -2,8 +2,8 @@
 
 import { useCallback } from 'react'
 import { StorytellerEmptyState } from '../../StorytellerEmptyState'
-import { getStorytellerUiStore, useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
+import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { enqueueStorytellerChatPrompt } from '@/domains/storyteller/state/utils/enqueue-storyteller-chat'
 import { WorldBiblePanel } from '../storyteller-dynamic-imports'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 import { StorytellerEpisodeHeader } from './StorytellerEpisodeHeader'
@@ -35,12 +35,9 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
   const { handleDraftFirstEpisode, handleGenerateBible, handlePhaseChange } =
     phase
   const { worldBiblePanelStoryPlan, handleUpdateGlobalBible, closeWorldBiblePanel } = agents
-  const requestChatPrompt = useStorytellerUiStore(state => state.requestChatPrompt)
-  const setOverlayOpen = useWorkspaceChatUiStore(state => state.setOverlayOpen)
 
   const handleBibleSendMessage = useCallback(
     (message: string, section?: string) => {
-      setOverlayOpen(true)
       const seqBefore = getStorytellerUiStore().pendingChatPromptSeq
       if (section) {
         setLoadingSections(prev => ({
@@ -48,8 +45,8 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
           [section]: { loading: true },
         }))
       }
-      requestChatPrompt(message, section)
-      if (section && getStorytellerUiStore().pendingChatPromptSeq === seqBefore) {
+      const queued = enqueueStorytellerChatPrompt(message, section)
+      if (section && (!queued || getStorytellerUiStore().pendingChatPromptSeq === seqBefore)) {
         setLoadingSections(prev => {
           if (!(section in prev)) return prev
           const next = { ...prev }
@@ -58,7 +55,7 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
         })
       }
     },
-    [requestChatPrompt, setLoadingSections, setOverlayOpen]
+    [setLoadingSections]
   )
 
   return (

@@ -50,6 +50,8 @@ export async function mechanicsDesignerAgent(
     history: state.messages.slice(-5),
     temperature: state.modelConfig?.temperature ?? 0.5,
     modelOverride: state.modelConfig?.model,
+    traceId: state.traceId,
+    parentSpanId: state.parentSpanId,
     schema: MechanicsDesignerOutputSchema,
   })
 

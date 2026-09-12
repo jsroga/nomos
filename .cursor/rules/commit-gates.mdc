@@ -11,7 +11,7 @@ When the user asks you to **commit** (or create a git commit):
    ```bash
    npm run precommit
    ```
-   That is `scripts/pre-commit.mjs`: architecture → docs → staged typecheck/eslint → **`npm run test:unit`** → **`npm run build`**.
+   That is `scripts/pre-commit.mjs`: architecture → docs → staged typecheck/eslint → **`npm run test:unit`** → **`npm run build`** → stub Playwright (`npm run test:e2e:stubs` on `:3001`). Live `storyteller.spec.ts` + `storyteller-character-fields.spec.ts` is husky **pre-push** (`npm run test:e2e:live-storyteller`), not commit. Neither hook runs the full Playwright folder or HTTP smoke.
 2. **Fix failures** before staging/committing. Do not commit a broken tree.
 3. **Then** stage relevant paths and `git commit` (HEREDOC message). Husky (`.husky/pre-commit`) runs the same script again as a safety net.
 4. **Never** `git commit --no-verify` / `-n` unless the user explicitly orders a hook skip. Cursor `beforeShellExecution` (`guard-commit.sh`) denies `--no-verify`.

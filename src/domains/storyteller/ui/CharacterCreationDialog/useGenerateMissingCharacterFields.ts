@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import {
@@ -8,10 +8,9 @@ import {
 } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import { isConsistencyFixRunBusy } from '@/domains/storyteller/ui/FixInconsistencies/utils/fix-inconsistencies-dialog'
 import type { PendingAction } from '@/domains/storyteller/ui/WorldBible/utils/bible-context-types'
-import { generateCharacterMissingFields } from '@/domains/storyteller/core/io/character.api'
-import type { CharacterFilledDraft } from '@/domains/storyteller/core/character-missing-fields'
 import type { CharacterFormFields } from './character-creation-dialog-helpers'
 import type { CharacterMetrics } from './character-creation-dialog-types'
+import { CharacterTextFieldKey } from '@/domains/storyteller/core/character-missing-fields'
 import {
   applyAcceptedCharacterDraft,
   characterDraftPendingAction,
@@ -19,14 +18,12 @@ import {
   isCharacterDraftForTarget,
   isCharacterDraftOverlayGenerating,
   isCharacterDraftPending,
+  regenerateFieldDisableReason,
+  requestGenerateMissingCharacterChat,
+  requestRegenerateCharacterFieldChat,
   seedFormBlanksFromSnapshot,
-  toFilledDraft,
 } from './character-creation-dialog-generate-missing'
-import {
-  CHARACTER_DIALOG_TOAST_GENERATE_MISSING_FAILED,
-  CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NO_PROJECT,
-  CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NOTHING,
-} from './constants/character-creation-dialog'
+import { CHARACTER_DIALOG_TOAST_GENERATE_MISSING_FAILED } from './constants/character-creation-dialog'
 
 interface UseGenerateMissingCharacterFieldsInput extends CharacterFormFields {
   projectId?: string
@@ -64,10 +61,7 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
   const inputRef = useRef(input)
   const seededTargetRef = useRef<string | null>(null)
   const toastedErrorRef = useRef(false)
-  const generateSnapshotRef = useRef<CharacterFilledDraft | null>(null)
-  const generateSeqRef = useRef(0)
-  const [isRequesting, setIsRequesting] = useState(false)
-  const [artifactPending, setArtifactPending] = useState<PendingAction | null>(null)
+  const overwriteKeyRef = useRef<CharacterTextFieldKey | null>(null)
 
   const characterDraftFields = useStorytellerUiStore(state => state.characterDraftFields)
   const characterDraftFieldsSeq = useStorytellerUiStore(state => state.characterDraftFieldsSeq)
@@ -85,12 +79,6 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
     inputRef.current = input
   })
 
-  useEffect(() => {
-    if (input.isOpen) return
-    setArtifactPending(null)
-    setIsRequesting(false)
-  }, [input.isOpen])
-
   const isTarget = isCharacterDraftForTarget(input.activeCharId, characterDraftTargetId)
   const isAnyDraftPending = isCharacterDraftPending({
     fields: characterDraftFields,
@@ -100,8 +88,13 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
   const isPendingReview = isTarget && isAnyDraftPending
   const isWritersRoomBusy =
     isGenerationActivityBusy(generationPhase) || isConsistencyFixRunBusy(consistencyFixPhase)
+  const isQueuedForWritersRoom =
+    isTarget &&
+    !isPendingReview &&
+    characterDraftFilledSnapshot !== null &&
+    generationPhase === GenerationActivityPhase.Idle
   const isGeneratingMissing =
-    isRequesting ||
+    isQueuedForWritersRoom ||
     isCharacterDraftOverlayGenerating({
       isTarget,
       isPendingReview,
@@ -143,7 +136,9 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
       live: formFieldsFromInput(inputRef.current),
       generated: characterDraftFields,
       setters: inputRef.current,
+      overwriteKey: overwriteKeyRef.current ?? undefined,
     })
+    overwriteKeyRef.current = null
     clearCharacterDraft()
   }, [
     characterDraftFields,
@@ -158,7 +153,7 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
     acceptCharacterDraftFields()
   }, [acceptCharacterDraftFields])
 
-  const chatPendingAction: PendingAction | null =
+  const pendingAction: PendingAction | null =
     input.isOpen && isPendingReview && characterDraftFields
       ? {
           ...characterDraftPendingAction({
@@ -170,66 +165,56 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
         }
       : null
 
-  const pendingAction = artifactPending ?? chatPendingAction
-
   const disableReason = generateMissingDisableReason({
     projectId: input.projectId,
     isSaving: input.isSaving,
     isGeneratingPortrait: input.isGeneratingPortrait,
     isGeneratingMissing,
     isWritersRoomBusy,
-    isAnyDraftPending: isAnyDraftPending || characterDraftTargetId !== null || artifactPending !== null,
+    isAnyDraftPending: isAnyDraftPending || characterDraftTargetId !== null,
     fields: formFieldsFromInput(input),
   })
   const canGenerateMissing = disableReason === null
+  const regenerateDisableReason = regenerateFieldDisableReason({
+    projectId: input.projectId,
+    isSaving: input.isSaving,
+    isGeneratingPortrait: input.isGeneratingPortrait,
+    isGeneratingMissing,
+    isWritersRoomBusy,
+    isAnyDraftPending: isAnyDraftPending || characterDraftTargetId !== null,
+  })
+  const canRegenerateField = regenerateDisableReason === null
 
-  const handleGenerateMissingFields = useCallback(async () => {
+  const handleGenerateMissingFields = useCallback(() => {
+    overwriteKeyRef.current = null
     const current = inputRef.current
-    if (!current.projectId) {
-      toast.error(CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NO_PROJECT)
-      return
-    }
-    const snapshot = toFilledDraft(formFieldsFromInput(current))
-    generateSnapshotRef.current = snapshot
-    setIsRequesting(true)
-    try {
-      const fields = await generateCharacterMissingFields({
-        projectId: current.projectId,
-        filled: snapshot,
-      })
-      if (Object.keys(fields).length === 0) {
-        toast.error(CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NOTHING)
-        return
-      }
-      generateSeqRef.current += 1
-      const seq = generateSeqRef.current
-      setArtifactPending({
-        ...characterDraftPendingAction({ fields, seq }),
-        onAccept: () => {
-          applyAcceptedCharacterDraft({
-            snapshot: generateSnapshotRef.current,
-            live: formFieldsFromInput(inputRef.current),
-            generated: fields,
-            setters: inputRef.current,
-          })
-          setArtifactPending(null)
-        },
-        onReject: () => {
-          setArtifactPending(null)
-        },
-      })
-    } catch {
-      toast.error(CHARACTER_DIALOG_TOAST_GENERATE_MISSING_FAILED)
-    } finally {
-      setIsRequesting(false)
-    }
+    requestGenerateMissingCharacterChat({
+      projectId: current.projectId,
+      targetId: current.activeCharId,
+      fields: formFieldsFromInput(current),
+    })
+  }, [])
+
+  const handleRegenerateField = useCallback((key: CharacterTextFieldKey) => {
+    overwriteKeyRef.current = key
+    const current = inputRef.current
+    const started = requestRegenerateCharacterFieldChat({
+      projectId: current.projectId,
+      targetId: current.activeCharId,
+      fields: formFieldsFromInput(current),
+      key,
+    })
+    if (!started) overwriteKeyRef.current = null
   }, [])
 
   return {
     isGeneratingMissing,
     canGenerateMissing,
     disableReason,
+    canRegenerateField,
+    regenerateDisableReason,
     handleGenerateMissingFields,
+    handleRegenerateField,
     pendingAction,
   }
 }

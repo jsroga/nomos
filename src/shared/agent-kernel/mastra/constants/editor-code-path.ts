@@ -16,6 +16,7 @@ export enum EditorOverlayField {
   Name = 'name',
   Description = 'description',
   Tools = 'tools',
+  Instructions = 'instructions',
 }
 
 export enum EditorOverlayJsonSuffix {

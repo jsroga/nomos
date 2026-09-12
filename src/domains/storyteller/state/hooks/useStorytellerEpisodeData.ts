@@ -24,6 +24,7 @@ import {
   buildManualHydratedPlan,
   buildMergedEpisodePlan,
   inferEpisodePhase,
+  scriptContentFromPlanRecord,
   shouldPreserveHydratedPlan,
 } from '@/domains/storyteller/state/utils/merge-episode-plan'
 import { storytellerCharacterFromRow } from '@/domains/storyteller/core/entities/character-wire'
@@ -70,6 +71,7 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
   const [isFetchingCharacters, setIsFetchingCharacters] = useState(false)
   const [isDeletingCharacter, setIsDeletingCharacter] = useState(false)
   const [characterWebVersion, setCharacterWebVersion] = useState(0)
+  const [scriptHydratedEpisodeId, setScriptHydratedEpisodeId] = useState<string | null>(null)
 
   // Fetch characters - using cachedFetch to prevent infinite loops on remount
   useEffect(() => {
@@ -195,17 +197,22 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
 
     if (!currentEpisodeId && !hasSeriesBible && !hasStoryPlan) {
       setStoryPlan(prev => (shouldPreserveHydratedPlan(prev) ? prev : null))
+      setScriptHydratedEpisodeId(null)
       return
     }
 
     if (currentEpisodeId) {
+      let cancelled = false
       setIsFetchingPlan(true)
+      setScriptHydratedEpisodeId(null)
       void (async () => {
         try {
           const data = await fetchStorytellerPlan(currentEpisodeId)
+          if (cancelled) return
           const planRecord = recordFromJson(data)
           const mergedPlan = buildMergedEpisodePlan(planRecord, currentProject)
           const inferred = inferEpisodePhase(planRecord)
+          const script = scriptContentFromPlanRecord(planRecord)
 
           if (mergedPlan) {
             setStoryPlan(prev => {
@@ -222,10 +229,8 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
             setIsPlanApproved(!!planRecord.planApproved)
             setCurrentPhase(inferred)
             setViewPhase(inferred)
-            const script = planRecord.script
-            if (typeof script === 'string') {
-              setScript(script)
-            }
+            setScript(script)
+            setScriptHydratedEpisodeId(currentEpisodeId)
             return
           }
 
@@ -238,13 +243,17 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
           setIsPlanApproved(false)
           setCurrentPhase(inferred)
           setViewPhase(inferred)
+          setScript(script)
+          setScriptHydratedEpisodeId(currentEpisodeId)
         } catch (err) {
-          console.error(StorytellerLogMessage.FailedFetchPlan, err)
+          if (!cancelled) console.error(StorytellerLogMessage.FailedFetchPlan, err)
         } finally {
-          setIsFetchingPlan(false)
+          if (!cancelled) setIsFetchingPlan(false)
         }
       })()
-      return
+      return () => {
+        cancelled = true
+      }
     }
 
     if ((hasSeriesBible || hasStoryPlan) && !storyPlan) {
@@ -348,6 +357,7 @@ export function useStorytellerEpisodeData(core: StorytellerWorkspaceCore) {
     isFetchingCharacters,
     isDeletingCharacter,
     characterWebVersion,
+    scriptHydratedEpisodeId,
     handleCreateCharacter,
     handleUpdateCharacter,
     handleDeleteCharacter,

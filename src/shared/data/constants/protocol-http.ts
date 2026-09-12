@@ -15,6 +15,7 @@ export enum ApiErrorMessage {
 export enum HttpHeader {
   TRACE_ID = 'x-trace-id',
   BYPASS_AUTH = 'x-bypass-auth',
+  AccelBuffering = 'X-Accel-Buffering',
 }
 
 export enum QueryParam {
@@ -32,6 +33,7 @@ export enum QueryParam {
   Refresh = 'refresh',
   Context = 'context',
   Queued = 'queued',
+  Mode = 'mode',
 }
 
 export enum QueryFlag {

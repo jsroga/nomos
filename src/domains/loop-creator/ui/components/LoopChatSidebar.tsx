@@ -2,6 +2,7 @@
 
 import { AssistantChat } from '@/shared/chat/assistant/AssistantChat'
 import { DomainSidebar } from '@/components/DomainSidebar'
+import { AppModuleId } from '@/shared/data/constants/protocol'
 import type { LoopChatSidebarProps } from './loop-chat-sidebar-types'
 import { isWorkspaceChatOverlayEnabled } from '@/shared/data/feature-flags'
 
@@ -22,6 +23,8 @@ export function LoopChatSidebar({
   projectId,
   mentionProviders,
   projectContext,
+  pendingAutoPrompt,
+  onPendingAutoPromptHandled,
 }: LoopChatSidebarProps) {
   if (isWorkspaceChatOverlayEnabled()) return null
   return (
@@ -37,11 +40,13 @@ export function LoopChatSidebar({
         <div className="flex-1 overflow-hidden">
           <AssistantChat
             key={projectId || 'pending'}
-            moduleKey="loop-creator"
+            moduleKey={AppModuleId.LoopCreator}
             body={{ projectId }}
             mentionProviders={mentionProviders}
             mentionProjectContext={projectContext}
             persistKey={projectId ? `loop-creator-${projectId}` : undefined}
+            pendingPrompt={pendingAutoPrompt}
+            onPendingPromptHandled={onPendingAutoPromptHandled}
           />
         </div>
       </div>

@@ -16,6 +16,8 @@ import {
   TerrainColor,
   TerrainQualityValue,
 } from '@/domains/3d-canvas/constants/terrain-defaults'
+import { AutosaveScope } from '@/shared/workspace/constants/autosave'
+import { autosaveKey, withAutosave } from '@/shared/workspace/utils/autosave'
 
 export type PersistenceSlice = Pick<
   InteriorState,
@@ -32,6 +34,66 @@ export type PersistenceSlice = Pick<
   | 'newDesign'
 >
 
+async function persistInteriorScene(
+  state: InteriorState,
+  set: (partial: Partial<InteriorState>) => void,
+  projectId: string,
+  name?: string,
+): Promise<void> {
+  const sceneData: InteriorSceneData = interiorSceneDataSchema.parse({
+    walls: state.walls,
+    floors: state.floors,
+    water: state.water,
+    surfaces: state.surfaces,
+    objects: state.objects,
+    activeLevel: state.activeLevel,
+    terrainSettings: {
+      baseGroundHeight: state.terrainSettings.baseGroundHeight,
+      waterSurfaceHeight: state.terrainSettings.waterSurfaceHeight,
+      showWaterPlane: state.terrainSettings.showWaterPlane,
+      gridResolution: state.terrainSettings.gridResolution,
+      heightmapSize: state.terrainSettings.heightmapSize,
+      heightmap: state.terrainSettings.heightmap
+        ? Array.from(state.terrainSettings.heightmap)
+        : null,
+      heightmapVersion: state.terrainSettings.heightmapVersion,
+      materialMap: state.terrainSettings.materialMap
+        ? Array.from(state.terrainSettings.materialMap)
+        : null,
+    },
+  })
+
+  if (state.currentDesignId) {
+    const updated = await interiorDesignerApi.designs.update({
+      id: state.currentDesignId,
+      name: name || state.currentDesignName || InteriorDesignDefaultTitle.Untitled,
+      sceneData,
+    })
+    if (!updated) throw new Error(InteriorPersistenceLog.UpdateFailed)
+    set({
+      currentDesignName: updated.name,
+      lastSaved: new Date(),
+      hasUnsavedChanges: false,
+      isSaving: false,
+    })
+    return
+  }
+
+  const newDesign = await interiorDesignerApi.designs.create({
+    projectId,
+    name: name || InteriorDesignDefaultTitle.Untitled,
+    sceneData,
+  })
+  if (!newDesign) throw new Error(InteriorPersistenceLog.CreateFailed)
+  set({
+    currentDesignId: newDesign.id,
+    currentDesignName: newDesign.name,
+    lastSaved: new Date(),
+    hasUnsavedChanges: false,
+    isSaving: false,
+  })
+}
+
 export const createPersistenceSlice: StateCreator<InteriorState, [], [], PersistenceSlice> = (
   set,
   get
@@ -45,69 +107,10 @@ export const createPersistenceSlice: StateCreator<InteriorState, [], [], Persist
   markUnsaved: () => set({ hasUnsavedChanges: true }),
 
   saveDesign: async (projectId: string, name?: string) => {
-    const state = get()
+    const key = autosaveKey(AutosaveScope.InteriorDesign, get().currentDesignId ?? projectId)
     set({ isSaving: true })
-
-    const sceneData: InteriorSceneData = interiorSceneDataSchema.parse({
-      walls: state.walls,
-      floors: state.floors,
-      water: state.water,
-      surfaces: state.surfaces,
-      objects: state.objects,
-      activeLevel: state.activeLevel,
-      terrainSettings: {
-        baseGroundHeight: state.terrainSettings.baseGroundHeight,
-        waterSurfaceHeight: state.terrainSettings.waterSurfaceHeight,
-        showWaterPlane: state.terrainSettings.showWaterPlane,
-        gridResolution: state.terrainSettings.gridResolution,
-        heightmapSize: state.terrainSettings.heightmapSize,
-        heightmap: state.terrainSettings.heightmap
-          ? Array.from(state.terrainSettings.heightmap)
-          : null,
-        heightmapVersion: state.terrainSettings.heightmapVersion,
-        materialMap: state.terrainSettings.materialMap
-          ? Array.from(state.terrainSettings.materialMap)
-          : null,
-      },
-    })
-
     try {
-      if (state.currentDesignId) {
-        const updated = await interiorDesignerApi.designs.update({
-          id: state.currentDesignId,
-          name: name || state.currentDesignName || InteriorDesignDefaultTitle.Untitled,
-          sceneData,
-        })
-
-        if (!updated) {
-          throw new Error(InteriorPersistenceLog.UpdateFailed)
-        }
-
-        set({
-          currentDesignName: updated.name,
-          lastSaved: new Date(),
-          hasUnsavedChanges: false,
-          isSaving: false,
-        })
-      } else {
-        const newDesign = await interiorDesignerApi.designs.create({
-          projectId,
-          name: name || InteriorDesignDefaultTitle.Untitled,
-          sceneData,
-        })
-
-        if (!newDesign) {
-          throw new Error(InteriorPersistenceLog.CreateFailed)
-        }
-
-        set({
-          currentDesignId: newDesign.id,
-          currentDesignName: newDesign.name,
-          lastSaved: new Date(),
-          hasUnsavedChanges: false,
-          isSaving: false,
-        })
-      }
+      await withAutosave(key, () => persistInteriorScene(get(), partial => set(partial), projectId, name))
     } catch (error) {
       console.error(InteriorPersistenceLog.SaveFailed, error)
       set({ isSaving: false })

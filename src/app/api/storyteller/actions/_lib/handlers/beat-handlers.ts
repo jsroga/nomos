@@ -9,10 +9,11 @@ import {
   HttpStatus,
 } from '@/shared/data/constants/protocol'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
-import { BeatStatus, BeatType } from '@/domains/storyteller/core/types/enums'
+import { BeatStatus, BeatType } from '@/domains/storyteller/server'
 import { recordFromJson } from '@/shared/data/deep-merge'
 import { BeatPayloadField } from '../constants/action-request-wire'
-import { readSqlId, readSqlSequence, readStringField } from '../read-payload-fields'
+import { rewriteBeatSequences } from '@/domains/storyteller/core/io/beat-sequence'
+import { readSqlId, readSqlSequence, readStringField, readStringIdList } from '../read-payload-fields'
 import type { ActionHandler } from '../action-handler-context'
 
 export const handleCreateBeat: ActionHandler = async (ctx, action) => {
@@ -102,5 +103,23 @@ export const handleReorderBeat: ActionHandler = async (_ctx, action) => {
   return NextResponse.json({
     success: true,
     result: { type: ActionApiResultType.BEAT_REORDERED, beatId, newIndex },
+  })
+}
+
+export const handleReorderBeats: ActionHandler = async (ctx, action) => {
+  if (!ctx.episodeId) {
+    return NextResponse.json(
+      { error: ApiErrorMessage.EPISODE_ID_REQUIRED },
+      { status: HttpStatus.BAD_REQUEST },
+    )
+  }
+  const beatIds = readStringIdList(action.payload[BeatPayloadField.BeatIds])
+  if (beatIds.length === 0) {
+    return NextResponse.json({ error: API_ERROR.INVALID_PAYLOAD }, { status: HttpStatus.BAD_REQUEST })
+  }
+  await rewriteBeatSequences(ctx.episodeId, beatIds)
+  return NextResponse.json({
+    success: true,
+    result: { type: ActionApiResultType.BEAT_REORDERED, beatIds },
   })
 }

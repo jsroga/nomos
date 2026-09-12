@@ -42,8 +42,9 @@ describe('Mastra Editor connect', () => {
     expect(getPublished).toContain('MastraAgentVersionStatus.Published')
 
     const assistant = readSource(EditorConnectSource.Assistant)
+    expect(assistant).toContain('handleChatAgentVersion')
     expect(assistant).toContain('agentVersion:')
-    expect(assistant).toContain('MastraAgentVersionStatus.Published')
+    expect(assistant).not.toMatch(/agentVersion:\s*\{\s*status:\s*MastraAgentVersionStatus\.Published/)
 
     const stream = readSource(EditorConnectSource.Stream)
     expect(stream).toContain('getPublishedAgent')

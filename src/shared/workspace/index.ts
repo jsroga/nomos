@@ -5,6 +5,8 @@ export { useProjectAssets } from './hooks/useProjectAssets'
 export { useProjectSelection } from './hooks/useProjectSelection'
 export type { WorkspaceProject } from './types'
 export { useWorkspaceProjectStore } from './workspace-project-store'
+export { withAutosave, autosaveKey } from './utils/autosave'
+export { AutosaveScope } from './constants/autosave'
 export {
   fetchWorkspaceProject,
   WORKSPACE_PROJECT_API_PATH,

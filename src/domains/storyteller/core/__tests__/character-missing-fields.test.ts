@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyGeneratedCharacterFields,
+  applyOverwritingGeneratedField,
   capGeneratedMetrics,
   CHARACTER_DIALOG_METRIC_KEYS,
   CHARACTER_MISSING_METRICS_MAX,
   CharacterMetricFieldKey,
   CharacterTextFieldKey,
+  clampCharacterMetricValue,
   DEFAULT_CHARACTER_METRICS,
   generatedCharacterFieldsFromUnknown,
   hasMissingCharacterFields,
@@ -62,6 +64,17 @@ describe('character-missing-fields', () => {
     expect(next.description).toBe(VERA_DESC)
     expect(next.mbti).toBe(INTJ)
     expect(next.motivation).toBe('Protect the ward')
+  })
+
+  it('overwrites one filled field when regenerating that key', () => {
+    const current = draft({ name: VERA, description: VERA_DESC })
+    const next = applyOverwritingGeneratedField(
+      current,
+      { description: 'Replaced description' },
+      CharacterTextFieldKey.Description,
+    )
+    expect(next.name).toBe(VERA)
+    expect(next.description).toBe('Replaced description')
   })
 
   it('keeps snapshot strings when live is blank', () => {
@@ -146,5 +159,18 @@ describe('character-missing-fields', () => {
     expect(parsed.motivation).toBe('Protect')
     expect(parsed.metrics?.valence).toBeUndefined()
     expect(parsed.metrics?.arousal).toBe(80)
+  })
+
+  it('clamps out-of-range LLM metric values onto the slider ranges', () => {
+    expect(clampCharacterMetricValue(CharacterMetricFieldKey.MoralAlignment, -2.5)).toBe(0)
+    expect(clampCharacterMetricValue(CharacterMetricFieldKey.Valence, -140)).toBe(-100)
+    expect(clampCharacterMetricValue(CharacterMetricFieldKey.Arousal, 140)).toBe(100)
+    const parsed = generatedCharacterFieldsFromUnknown({
+      metrics: { valence: -2, arousal: 3, perceivedStakes: 5, moralAlignment: -2.5 },
+    })
+    expect(parsed.metrics?.valence).toBe(-2)
+    expect(parsed.metrics?.arousal).toBe(3)
+    expect(parsed.metrics?.perceivedStakes).toBe(5)
+    expect(parsed.metrics?.moralAlignment).toBe(0)
   })
 })

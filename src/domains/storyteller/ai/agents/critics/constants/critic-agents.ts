@@ -22,3 +22,7 @@ export enum CriticAgentDescription {
 export enum StorytellerModelRoleKey {
   Critic = 'critic',
 }
+
+export enum GenerateStructuredSpan {
+  Default = 'generate-structured',
+}

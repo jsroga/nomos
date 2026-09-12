@@ -27,5 +27,6 @@ describe('writers-room-single-chat', () => {
   it('drops LoopChatSidebar AssistantChat when the overlay flag is on', () => {
     const src = readFileSync(LOOP_SIDEBAR, 'utf8')
     expect(src).toContain('if (isWorkspaceChatOverlayEnabled()) return null')
+    expect(src).toContain('pendingPrompt={pendingAutoPrompt}')
   })
 })

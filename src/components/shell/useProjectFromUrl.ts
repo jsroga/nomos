@@ -68,7 +68,6 @@ export function useProjectFromUrl() {
           console.error(ProjectLoaderLog.FailedLoadProject, err)
           setError(ProjectLoaderMessage.FailedLoadProject)
           loadedProjectIdRef.current = null
-          router.replace(AUTH_ROUTE.PROJECTS)
         } finally {
           setIsLoading(false)
         }

@@ -116,7 +116,7 @@ describe('Studio workspace and writer cards', () => {
     expect(readFileSync(join(process.cwd(), 'src/shared/agent-kernel/mastra/quality-improver/agent.ts'), 'utf8')).toContain(
       'EDITOR_INSTRUCTIONS_ONLY',
     )
-    expect(readFileSync(STORYTELLER_RUNTIME, 'utf8')).toContain('EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP')
+    expect(readFileSync(STORYTELLER_RUNTIME, 'utf8')).toContain('EDITOR_TOOL_MEMBERSHIP_ONLY')
     expect(readFileSync(join(process.cwd(), 'src/shared/agent-kernel/mastra/editor-permissions.ts'), 'utf8')).toContain(
       'tools: true',
     )

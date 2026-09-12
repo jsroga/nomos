@@ -140,6 +140,51 @@ export async function setModuleSetting(
   return next
 }
 
+/** Raw config JSON for a module row. Empty object when unset. */
+export function getModuleConfigRecord(moduleKey: string): Record<string, unknown> {
+  maybeWarm()
+  return cache.get(moduleKey)?.config ?? {}
+}
+
+/** Merge keys into a module's config JSON (admin-gated caller) and persist. */
+export async function patchModuleConfig(
+  moduleKey: string,
+  patch: Record<string, unknown>,
+  updatedBy?: string
+): Promise<ModuleSettingRow> {
+  await loadModuleSettings()
+  const prev = cache.get(moduleKey)
+  const next: ModuleSettingRow = {
+    enabled: prev?.enabled ?? true,
+    canvasSlot: prev?.canvasSlot ?? null,
+    config: { ...(prev?.config ?? {}), ...patch },
+  }
+
+  const { db } = await import('@/db/client')
+  const { moduleSettings } = await import('@/db/schema')
+  await db
+    .insert(moduleSettings)
+    .values({
+      moduleKey,
+      enabled: next.enabled,
+      canvasSlot: next.canvasSlot,
+      config: next.config,
+      updatedBy: updatedBy ?? null,
+    })
+    .onConflictDoUpdate({
+      target: moduleSettings.moduleKey,
+      set: {
+        enabled: next.enabled,
+        canvasSlot: next.canvasSlot,
+        config: next.config,
+        updatedBy: updatedBy ?? null,
+        updatedAt: new Date(),
+      },
+    })
+  cache.set(moduleKey, next)
+  return next
+}
+
 /** Test-only reset of the in-memory cache. */
 export function __resetModuleSettingsCache(): void {
   cache.clear()

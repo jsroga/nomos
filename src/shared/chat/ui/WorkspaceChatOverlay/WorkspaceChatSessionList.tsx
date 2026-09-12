@@ -61,7 +61,7 @@ export function WorkspaceChatSessionList({
       queryClient.setQueryData(chatSessionsKeys.list(projectId), (current: ChatSession[] | undefined) =>
         prependCreatedChatSession(current, created),
       )
-      setFocusedSessionId(created.id)
+      setFocusedSessionId(created.id, created.moduleId)
       void invalidate()
     },
   })
@@ -149,7 +149,7 @@ export function WorkspaceChatSessionList({
                     setRenameValue(session.title)
                   }}
                   onFocusSession={() => {
-                    setFocusedSessionId(session.id)
+                    setFocusedSessionId(session.id, session.moduleId)
                     setHistoryOpen(false)
                   }}
                   onDelete={() => setDeleteId(session.id)}

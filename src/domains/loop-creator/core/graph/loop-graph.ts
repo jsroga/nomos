@@ -3,4 +3,4 @@
  */
 
 export { streamLoopCreator } from './loop-orchestrator'
-export type { StreamEvent } from './loop-orchestrator'
+export type { StreamEvent } from './stream-event'

@@ -11,9 +11,7 @@ import {
 } from './io/projects.api'
 import { fetchWorkspaceProject, renameWorkspaceProject } from './io/project-session.api'
 import type { WorkspaceProject } from './types'
-
-const WORKSPACE_PROJECT_LOAD_FAILED = 'Failed to load workspace project:'
-const WORKSPACE_PROJECT_INVALID_ID = 'Skipped workspace project load — invalid id:'
+import { isMissingProjectError } from './utils/missing-project-error'
 
 interface WorkspaceProjectState {
   projects: WorkspaceProject[]
@@ -55,7 +53,11 @@ export const useWorkspaceProjectStore = create<WorkspaceProjectState>((set, get)
     try {
       const created = await createWorkspaceProject({ name, masterPrompt })
       set(state => ({ projects: [created, ...state.projects] }))
-      await get().loadProject(created.id)
+      try {
+        await get().loadProject(created.id)
+      } catch {
+        // Create already succeeded; a later workspace load can retry.
+      }
       return created.id
     } catch (error) {
       console.error(WorkspaceProjectsLog.ErrorCreatingProject, error)
@@ -98,7 +100,7 @@ export const useWorkspaceProjectStore = create<WorkspaceProjectState>((set, get)
 
   loadProject: async projectId => {
     if (!isValidProjectId(projectId)) {
-      console.warn(WORKSPACE_PROJECT_INVALID_ID, projectId)
+      console.warn(WorkspaceProjectsLog.SkippedInvalidProjectId, projectId)
       set({ currentProject: null })
       return null
     }
@@ -107,9 +109,10 @@ export const useWorkspaceProjectStore = create<WorkspaceProjectState>((set, get)
       set({ currentProject: project })
       return project
     } catch (err) {
-      console.error(WORKSPACE_PROJECT_LOAD_FAILED, err)
+      console.error(WorkspaceProjectsLog.ErrorLoadingProject, err)
       set({ currentProject: null })
-      return null
+      if (isMissingProjectError(err)) return null
+      throw err
     }
   },
 }))

@@ -6,7 +6,7 @@ import {
   DEFAULT_CHARACTER_METRICS,
   type CharacterFilledDraft,
 } from '../../core/character-missing-fields'
-import { GenerateCharacterFieldsErrorCode, generatedCharacterFieldsLlmSchema } from '../utils/generate-character-fields'
+import { GenerateCharacterFieldsErrorCode, generatedCharacterFieldsLlmSchema, CharacterDialogGender, CharacterDialogStoryRole, CharacterDialogMbti } from '../utils/generate-character-fields'
 import {
   GenerateCharacterFieldsError,
   generateCharacterMissingFields,
@@ -163,5 +163,26 @@ describe('generateCharacterMissingFields', () => {
       CharacterMetricFieldKey.PerceivedStakes,
       CharacterMetricFieldKey.MoralAlignment,
     ])
+  })
+
+  it('clamps bipolar moralAlignment instead of failing the LLM schema', () => {
+    const parsed = generatedCharacterFieldsLlmSchema.parse({
+      name: VERA,
+      gender: CharacterDialogGender.Female,
+      role: CharacterDialogStoryRole.Supporting,
+      description: VERA_DESC,
+      mbti: CharacterDialogMbti.ESTJ,
+      motivation: 'Protect the ward',
+      fatalFlaw: 'Pride',
+      secrets: 'Hidden ledger',
+      metrics: {
+        [CharacterMetricFieldKey.Valence]: -2,
+        [CharacterMetricFieldKey.Arousal]: 3,
+        [CharacterMetricFieldKey.PerceivedStakes]: 5,
+        [CharacterMetricFieldKey.MoralAlignment]: -2.5,
+      },
+    })
+    expect(parsed.metrics.moralAlignment).toBe(0)
+    expect(parsed.metrics.valence).toBe(-2)
   })
 })

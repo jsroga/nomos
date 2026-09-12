@@ -20,7 +20,7 @@ import { createUIMessageStream, createUIMessageStreamResponse, generateId } from
 import type { UIMessage } from 'ai'
 import { getMastraInstance, warmMastraStorage } from '@/shared/agent-kernel/mastra-instance'
 import { hasRegisteredAgent } from '@/shared/agent-kernel/mastra/get-published-agent'
-import { MastraAgentVersionStatus } from '@/shared/agent-kernel/mastra/constants/editor'
+import { handleChatAgentVersion } from '@/shared/agent-kernel/mastra/handle-chat-agent-version'
 import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
 import { withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
 import {
@@ -407,7 +407,7 @@ export async function POST(req: Request, { params }: RouteContext) {
         const agentStream = await handleChatStream({
           mastra,
           agentId,
-          agentVersion: { status: MastraAgentVersionStatus.Published },
+          agentVersion: handleChatAgentVersion(agentId),
           version: AiSdkUiMessageVersion.V6,
           params: {
             messages: raw.messages,

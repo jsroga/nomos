@@ -13,6 +13,7 @@ import { useInteriorStore } from '@/domains/3d-canvas/state'
 import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { cn } from '@/shared/data/utils'
+import { AUTOSAVE_DEBOUNCE_MS } from '@/shared/workspace/constants/autosave'
 
 // Dynamic import with SSR disabled to avoid React reconciler issues with Three.js
 const InteriorCanvas = dynamic(
@@ -53,7 +54,7 @@ export function InteriorDesignerWorkspace() {
 
     const timer = window.setTimeout(() => {
       void saveDesign(projectId)
-    }, 2000)
+    }, AUTOSAVE_DEBOUNCE_MS)
 
     return () => window.clearTimeout(timer)
   }, [hasUnsavedChanges, projectId, saveDesign])
@@ -92,11 +93,6 @@ export function InteriorDesignerWorkspace() {
             <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-yellow-500/80 flex items-center gap-1.5 mr-2">
               <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
               Unsaved
-            </div>
-          )}
-          {isSaving && (
-            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400 animate-pulse mr-2">
-              Saving...
             </div>
           )}
           <Button

@@ -7,6 +7,7 @@ import { Settings } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { SettingsDialog } from '@/domains/2d-canvas'
 import { ProjectSelectorDropdown } from '@/components/shell/ProjectSelectorDropdown'
+import { AutosaveIndicator } from '@/components/AutosaveIndicator'
 import { AsyncStatusIndicator } from '@/components/AsyncStatusIndicator'
 import { TroubleshootIndicator } from '@/components/shell/TroubleshootIndicator'
 import { isWorkspaceChatOverlayEnabled } from '@/shared/data/feature-flags'
@@ -41,6 +42,7 @@ export function GlobalHeader() {
           >
             <Settings size={18} />
           </Button>
+          <AutosaveIndicator />
           <AsyncStatusIndicator />
           <TroubleshootIndicator />
         </div>

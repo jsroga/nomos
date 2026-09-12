@@ -243,6 +243,8 @@ writer's chat picker → admin panel slot → env var → matrix lane.
 
 Four workflows, four human gates. Every workflow suspends at exactly one step and waits in Postgres for a person. That gate is a Mastra `suspendSchema`, not a controller mode and not a goal — one gate, one owner.
 
+Source for token cells: `llm_calls`, `outcome=ok`, window `2026-09-06`–`2026-09-11`, queried `2026-09-11`. Feature grain is coarser than step id: one `LlmFeature` value is shared by several steps. `p90` is shown only when `n≥5`. Missing features are `n=0`, not invented medians.
+
 | Kind | Meaning |
 |---|---|
 | agent | Mastra agent generate |
@@ -252,27 +254,227 @@ Four workflows, four human gates. Every workflow suspends at exactly one step an
 
 ### `beat-draft-workflow`
 
-Storyteller · started by `run_beat_draft_workflow`.
+- Trigger: tool `run_beat_draft_workflow`; Storyteller beat generate.
+- Source: `src/domains/storyteller/ai/workflows/beat-draft-contract.ts`, `beat-draft-workflow.ts`, `beat-draft-step-schemas.ts`.
+- Workflow input: `projectId` (string), `episodeId` (string), `brief` (what the beat must accomplish), `characters[]` (names), `autoApprove?` (skip the gate in batch/eval), `wildcards?` (optional Muse sparks).
+- Workflow output: `finalDraft`, `critiques`, `beatPlan?`, `beatId?`, `saved`, `killed`, `message`.
+- Human gate: `editorial-verdict` — resume `approve | revise | kill` (+ optional `note`). `autoApprove` skips it.
+- LLM features: `storyteller.beat-plan`, `storyteller.beat-draft`, `storyteller.beat-humanize`.
 
-`plan-beat` (Beat Planner, optional Muse) → `draft-script` (GRRM Author) → `prose-check` (sync check, optional redraft) → `critique` (3–4 critics in parallel) → **`editorial-verdict`** (approve / revise / kill) → `revise` (GRRM Author → `manage_beat`)
+#### `plan-beat`
+
+- Kind: agent. Who: Beat Planner (`beat-planner`); optional Muse when `wildcards` is on.
+- Parameters: structured beat plan JSON; Muse rank feeds surviving sparks.
+- Input: workflow input.
+- Output added: `canon`, `beatPlan`, `planWarnings[]`, `sparks[]`.
+- Tokens: `storyteller.beat-plan` · n=18 · median prompt 10874 · median completion 1612 · p90 prompt 11411 · p90 completion 13123.
+
+#### `draft-script`
+
+- Kind: agent. Who: GRRM Author.
+- Parameters: `toolChoice: none`; author canon budget 6000 chars.
+- Input: plan-beat output.
+- Output added: `draft`.
+- Tokens: `storyteller.beat-draft` · n=4 · median prompt 4527 · median completion 3666 · p90 omitted (`n<5`).
+
+#### `prose-check`
+
+- Kind: code. Who: none (deterministic lint; at most one author redraft).
+- Parameters: `LintRedraftMax=1`. Remaining lint sets `skipCritics` and skips the critic loop.
+- Input: draft-script output.
+- Output added: `skipCritics`, `lintReport`.
+- Tokens: no LLM on the check itself; a redraft uses `storyteller.beat-draft` (same row as `draft-script`).
+
+#### `beat-draft-critic-loop`
+
+- Kind: agent. Who: Continuity / Prose / Stakes critics in parallel; writer revise when dirty.
+- Parameters: Mastra `.dountil()`; `CriticReviseMax=3` writer passes; first clean pass does not rewrite.
+- Input: prose-check output (`attempt?`, `needsWriterPass?`, `critiques?`).
+- Output added: `critiques`, `attempt` (1–3), `needsWriterPass`.
+- Tokens: critics on `storyteller.beat-plan` (same row as `plan-beat`); writer on `storyteller.beat-draft`.
+
+#### `editorial-verdict`
+
+- Kind: human. Who: none.
+- Parameters: suspend reason “Editorial verdict required: approve (revise against critiques), revise (add your note), or kill (discard draft).”
+- Input: critic-loop output.
+- Output added: `action` (`approve | revise | kill`), `note?`.
+- Tokens: no LLM.
+
+#### `revise`
+
+- Kind: agent then persist. Who: GRRM Author + Humanizer; `manage_beat` write.
+- Parameters: author canon 6000 chars; critiques budget 4000 chars; claim-check after humanize.
+- Input: verdict output.
+- Output: workflow output (`finalDraft`, `saved`, `killed`, `beatId?`, `message`).
+- Tokens: author `storyteller.beat-draft`; humanize `storyteller.beat-humanize` · n=0 (no `llm_calls` rows in the query window).
 
 ### `artifact-draft-workflow`
 
-Storyteller · bible, character and episode artifacts.
+- Trigger: artifact generate for bible / character / episode drafts.
+- Source: `src/domains/storyteller/ai/workflows/artifact-draft-contract.ts`, `artifact-draft-workflow.ts`.
+- Workflow input: `projectId`, `kind` (`ArtifactKind`), `draft` (string), `section?` (`BibleSection`), `characterId?`, `episodeId?`.
+- Workflow output: `draft`, `critiques`, `findings[]`, `persisted`, `message`.
+- Human gate: `artifact-verdict` — resume `accept | reject`.
+- LLM features: `storyteller.beat-plan` (critique). Studio Step output often shows `canonText` and `draft` as JSON **strings** (escaped quotes, markdown inside strings).
 
-`assemble` (canon from Postgres) → `deterministic-check` (world-rule continuity) → `critique` (continuity and/or stakes) → **`artifact-verdict`** (accept / reject) → `persist` (bible / character / episode tools)
+#### `assemble`
+
+- Kind: code. Who: none.
+- Parameters: loads canon from Postgres for the artifact kind/section.
+- Input: workflow input.
+- Output added: `canonText`, `worldRules[]`.
+- Tokens: no LLM.
+
+#### `deterministic-check`
+
+- Kind: code. Who: none (world-rule continuity).
+- Parameters: no model call.
+- Input: assemble output.
+- Output added: `findings[]`.
+- Tokens: no LLM.
+
+#### `critique`
+
+- Kind: agent. Who: 1–2 matrix critics (`CriticCap=2`), continuity and/or stakes by artifact kind.
+- Parameters: `structuredOutput` warn-on-error; critiques joined as one string.
+- Input: checked assemble output.
+- Output added: `critiques` (string; nested JSON is common).
+- Tokens: `storyteller.beat-plan` (same row as beat-draft `plan-beat`).
+
+#### `artifact-verdict`
+
+- Kind: human. Who: none.
+- Parameters: suspend “Artifact draft ready — Accept to persist or Reject to discard.”
+- Input: critique output.
+- Output added: `action` (`accept | reject`).
+- Tokens: no LLM.
+
+#### `persist`
+
+- Kind: persist. Who: bible / character / episode tools on accept; no-op on reject or blocked findings.
+- Parameters: persist only when checks are clean and action is accept.
+- Input: verdict output.
+- Output: workflow output (`persisted`, `message`).
+- Tokens: no LLM.
 
 ### `fix-inconsistencies`
 
-Storyteller · cascading canon repair.
+- Trigger: sidebar **Fix inconsistencies** → `POST /api/storyteller/consistency/fix-run` (SSE `started | step | suspended | complete | error`). Resume `POST /api/storyteller/consistency/fix-run/resume` with `{ runId, action: apply|discard, projectId }`.
+- Source: `src/domains/storyteller/ai/workflows/fix-inconsistencies-contract.ts`, `fix-inconsistencies-workflow.ts`, `constants/fix-inconsistencies-workflow.ts`.
+- Workflow input: `projectId`, `autoApprove?`.
+- Workflow output: `empty`, `findings[]`, `fixes[]`, `skipped[]`, `appliedCount`, `undoId?`, `discarded`, `errors?`, `message`.
+- Human gate: `editorial-verdict` — apply-all or discard-all.
+- LLM features: `storyteller.beat-plan` (agentic-scan + propose-fixes). There is no dedicated `llm_calls.feature` for this workflow; step tokens share the beat-plan row. Runs from before gateway context on this path may have **n=0** attributable rows.
 
-`assemble-canon` → `structural-scan` (setup / payoff, no LLM) → `agentic-scan` (continuity critic per job) → `propose-fixes` (GRRM Author) → **`editorial-verdict`** (apply / discard) → `apply-fixes` (cascading writes)
+#### `assemble-canon`
+
+- Kind: code. Who: none.
+- Parameters: packs bible, characters, world rules, sections, episodes, lock flags.
+- Input: workflow input.
+- Output added: `empty`, `canon` (`bibleJson`, `charactersJson`, `worldRulesJson`, `sectionsJson`, `episodes[]`, `bibleLocked`, `lockedBeatIds[]`, `lockedCharacterIds[]`).
+- Tokens: no LLM.
+
+#### `structural-scan`
+
+- Kind: code. Who: none (setup/payoff ID join).
+- Parameters: no model.
+- Input: assembled canon.
+- Output added: `structuralFindings[]`.
+- Tokens: no LLM.
+
+#### `agentic-scan`
+
+- Kind: agent. Who: Continuity Critic, chunked per episode.
+- Parameters: canon truncated at **12_000** chars + `[truncated]`; `structuredOutput` scan report; diagnose only, no patches.
+- Input: after structural-scan.
+- Output added: `findings[]`.
+- Tokens: `storyteller.beat-plan` (same row). Input ceiling when n=0 for this path: 12_000 canon chars.
+
+#### `propose-fixes`
+
+- Kind: agent. Who: GRRM Author.
+- Parameters: existing fields only; do not create or delete beats or cards; `before`/`after` strings.
+- Input: after agentic-scan.
+- Output added: `fixes[]`, `skipped[]` (`locked | unpatchable | overlap`).
+- Tokens: `storyteller.beat-plan` (same row).
+
+#### `editorial-verdict`
+
+- Kind: human. Who: none.
+- Parameters: suspend “Review findings and proposed patches, then apply all or discard all.”
+- Input: after propose-fixes.
+- Output added: `action` (`apply | discard`).
+- Tokens: no LLM.
+
+#### `apply-fixes`
+
+- Kind: persist. Who: cascade editor + undo manager, or no-op on discard.
+- Parameters: skip locked targets.
+- Input: after verdict.
+- Output: workflow output (`appliedCount`, `undoId?`, `discarded`, `message`).
+- Tokens: no LLM.
 
 ### `game-loop-refinement`
 
-Game-design.
+- Trigger: Game Design loop generate.
+- Source: `src/domains/game-design/ai/workflows/game-loop-workflow-schemas.ts`, `game-loop-workflow.ts`, `game-loop-workflow-steps.ts`.
+- Workflow input: `projectId` (uuid), `genre`, `loopType` (`core | meta | social | monetization`), `targetAudience` (`casual | midcore | hardcore`), `theme?`, `referenceGames?`.
+- Workflow output: `loopId?`, `loop?`, `balanceAnalysis?`, `status` (`completed | needs_review | failed`), `message`.
+- Human gate: `human_review` — resume `{ approved, feedback?, modifications? }`.
+- LLM features: `game-design` · n=0 in the query window.
 
-`ideation` (Game Design Agent) → `balance_check` (`analyze_mechanic_balance`) → `structure_validation` (`validate_loop_structure`) → **`human_review`** (approve / modify) → `refinement` (Game Design Agent) → `finalization` (insert into `gameLoops`)
+#### `ideation`
+
+- Kind: agent. Who: Game Design Agent (`designLoop`).
+- Parameters: none beyond workflow input.
+- Input: workflow input.
+- Output added: `loopProposal?`, `thought?`, `iterationCount`.
+- Tokens: `game-design` · n=0.
+
+#### `balance_check`
+
+- Kind: code. Who: tool `analyze_mechanic_balance` (no extra prose model).
+- Parameters: skips when there are no mechanics.
+- Input: ideation output.
+- Output added: `balanceAnalysis`, `passesValidation`, `issues[]`.
+- Tokens: no LLM.
+
+#### `structure_validation`
+
+- Kind: code. Who: tool `validate_loop_structure`.
+- Parameters: metrics `nodeCount`, `edgeCount`, `cycleDetected`.
+- Input: balance_check output.
+- Output added: `structureValidation`.
+- Tokens: no LLM.
+
+#### `human_review`
+
+- Kind: human. Who: none.
+- Parameters: suspend with loop proposal + balance + structure for approve / modify.
+- Input: structure_validation output.
+- Output added: `approved`, `feedback?`, `modifications?`.
+- Tokens: no LLM.
+
+#### `refinement`
+
+- Kind: agent. Who: Game Design Agent.
+- Parameters: `maxIterations` default **3**; `reachedLimit` when the cap is hit.
+- Input: human_review output.
+- Output added: `refinedLoop?`, `reachedLimit`.
+- Tokens: `game-design` · n=0.
+
+#### `finalization`
+
+- Kind: persist. Who: insert into `gameLoops`.
+- Parameters: writes the approved / refined loop.
+- Input: refinement output.
+- Output: workflow output (`loopId`, `status`, `message`).
+- Tokens: no LLM.
+
+### Not a workflow: Loop Creator
+
+Loop Creator specialists are single agent calls (`src/domains/loop-creator/core/io/mastra-runtime.ts`), feature `loop-creator`. There is no Mastra `createWorkflow` on that path. Do not look for it under Studio Workflows. Token spend is not a workflow step.
 
 ## Scores
 

@@ -10,6 +10,7 @@ import { fidelityService } from '@/domains/2d-canvas/state/client-services/fidel
 import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { browserStorage } from '@/shared/data/browser-storage'
 import { clampStyleReferenceUrls } from '@/domains/2d-canvas/utils/mj-sref'
+import { resolveGenerationMode } from '@/domains/2d-canvas/utils/generation-modes'
 import { UpscaleProvider } from '../../core/upscale-provider-wire'
 import { useWorldUiStore } from '@/domains/2d-canvas/state/useWorldUiStore'
 import type { MjGridPayload } from '@/domains/2d-canvas/state/constants/world-ui-store'
@@ -22,6 +23,7 @@ import {
 } from '../../ui/utils/sidebar'
 import { generateSingleWorldTile } from './generate-single-world-tile'
 import { useWorldSidebarPrompt } from './useWorldSidebarPrompt'
+import { useStyleRefCatalog } from './useStyleRefCatalog'
 
 const UPSCALE_GEMINI_CREATIVITY = 0.3
 
@@ -31,6 +33,9 @@ export function useWorldGenSidebar() {
   const showAllAssetMasks = useWorldStore(state => state.showAllAssetMasks)
   const setShowAllAssetMasks = useWorldStore(state => state.setShowAllAssetMasks)
 
+  const styleRefCatalog = useStyleRefCatalog(
+    resolveGenerationMode(currentProject?.generationMode),
+  )
   const {
     masterPrompt,
     handleMasterPromptChange,
@@ -45,7 +50,7 @@ export function useWorldGenSidebar() {
     isApplyingGenerationMode,
     generationMode,
     styleAnchorUrl,
-  } = useWorldSidebarPrompt(currentProject)
+  } = useWorldSidebarPrompt(currentProject, modeId => styleRefCatalog.urlsFor(modeId))
 
   const [tilePrompt, setTilePrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -222,6 +227,11 @@ export function useWorldGenSidebar() {
     )
   }
 
+  const handleToggleStyleRefCatalog = async (id: string) => {
+    const urls = await styleRefCatalog.toggle(id)
+    if (urls) handleRestoreStyleRefs(urls)
+  }
+
   const handleCancelBusy = () => {
     if (!selectedTile) return
     const key = `${selectedTile.x},${selectedTile.y}`
@@ -294,6 +304,10 @@ export function useWorldGenSidebar() {
     handleEnhanceFidelity,
     handleDeleteTile,
     handleCancelBusy,
+    styleRefCatalogCanEdit: styleRefCatalog.canEdit,
+    styleRefCatalogItems: styleRefCatalog.items,
+    styleRefCatalogSaving: styleRefCatalog.isSaving,
+    onToggleStyleRefCatalog: handleToggleStyleRefCatalog,
   }
 }
 

@@ -1,3 +1,4 @@
+import { CharacterTextFieldKey } from '@/domains/storyteller/core/character-missing-fields'
 import {
   CharacterCreationDialogField,
   fieldBorderClass,
@@ -30,6 +31,8 @@ interface CharacterCreationDialogBasicFieldsProps {
   onGeneratePortrait: () => void
   onShowVariantPicker: () => void
   onSetGridImageUrl: (url: string) => void
+  onRefreshField?: (key: CharacterTextFieldKey) => void
+  refreshDisabled?: boolean
 }
 
 export function CharacterCreationDialogBasicFields({
@@ -51,6 +54,8 @@ export function CharacterCreationDialogBasicFields({
   onGeneratePortrait,
   onShowVariantPicker,
   onSetGridImageUrl,
+  onRefreshField,
+  refreshDisabled = false,
 }: CharacterCreationDialogBasicFieldsProps) {
   return (
     <>
@@ -61,6 +66,10 @@ export function CharacterCreationDialogBasicFields({
           touched={Boolean(touched.name)}
           isValid={Boolean(name)}
           errorMessage="Name is required"
+          onRefresh={
+            onRefreshField ? () => onRefreshField(CharacterTextFieldKey.Name) : undefined
+          }
+          refreshDisabled={refreshDisabled}
         >
           <input
             className={`w-full bg-background border rounded-md px-3 py-2 text-sm focus:outline-none ${fieldBorderClass(Boolean(touched.name && !name))}`}
@@ -78,6 +87,10 @@ export function CharacterCreationDialogBasicFields({
             touched={Boolean(touched.role)}
             isValid={Boolean(role)}
             errorMessage="Role is required"
+            onRefresh={
+              onRefreshField ? () => onRefreshField(CharacterTextFieldKey.Role) : undefined
+            }
+            refreshDisabled={refreshDisabled}
           >
             <CharacterDialogSelect
               value={role}
@@ -96,6 +109,10 @@ export function CharacterCreationDialogBasicFields({
             touched={Boolean(touched.gender)}
             isValid={Boolean(gender)}
             errorMessage="Gender is required"
+            onRefresh={
+              onRefreshField ? () => onRefreshField(CharacterTextFieldKey.Gender) : undefined
+            }
+            refreshDisabled={refreshDisabled}
           >
             <CharacterDialogSelect
               value={gender}
@@ -118,6 +135,12 @@ export function CharacterCreationDialogBasicFields({
             touched={Boolean(touched.description)}
             isValid={Boolean(description)}
             errorMessage="Description is required"
+            onRefresh={
+              onRefreshField
+                ? () => onRefreshField(CharacterTextFieldKey.Description)
+                : undefined
+            }
+            refreshDisabled={refreshDisabled}
           >
             <textarea
               className={`w-full h-32 bg-background border rounded-md px-3 py-2 text-sm resize-none focus:outline-none ${fieldBorderClass(Boolean(touched.description && !description))}`}
@@ -134,6 +157,10 @@ export function CharacterCreationDialogBasicFields({
             touched={Boolean(touched.mbti)}
             isValid={Boolean(mbti)}
             errorMessage="MBTI is required"
+            onRefresh={
+              onRefreshField ? () => onRefreshField(CharacterTextFieldKey.Mbti) : undefined
+            }
+            refreshDisabled={refreshDisabled}
           >
             <CharacterDialogSelect
               value={mbti}

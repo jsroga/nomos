@@ -96,7 +96,6 @@ export enum SmokePrompt {
   AddWorldRules = 'Add some world rules about magic',
   GenerateFactions = 'Generate factions for this world',
   AskNextStep = 'What should I do next with this story?',
-  CreateEpisodePremise = 'Create an episode premise using the Ozymandias framework',
   GenerateWorldRules = 'Generate the fundamental laws and rules that govern this world - magic systems, physics, social contracts. Use update_world_bible tool.',
   GeneratePlotTwists = 'Generate 3 major plot twists for this story. Use update_world_bible tool with plotTwists.',
   AskToneAndTheme = 'Tell me about the overall tone and theme of this story so far. What makes it unique?',

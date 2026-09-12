@@ -143,6 +143,7 @@ export enum LoopCreatorStreamEventType {
   Action = 'action',
   Questions = 'questions',
   Token = 'token',
+  Log = 'log',
   Error = 'error',
   Start = 'start',
   State = 'state',

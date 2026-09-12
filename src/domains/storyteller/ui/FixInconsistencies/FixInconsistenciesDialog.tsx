@@ -1,6 +1,7 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { Check, Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -9,10 +10,11 @@ import {
   DialogTitle,
 } from '@/components/Dialog'
 import { cn } from '@/shared/data/utils'
-import { ConsistencyFixRunPhase } from './utils/fix-inconsistencies-dialog'
 import {
+  ConsistencyFixRunPhase,
   FixInconsistenciesDialogClass,
   FixInconsistenciesDialogCopy,
+  scanningCopyForStep,
 } from './utils/fix-inconsistencies-dialog'
 import type { ConsistencyFixRunState } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { FixInconsistenciesReview } from './FixInconsistenciesReview'
@@ -33,7 +35,12 @@ function isLockedPhase(phase: ConsistencyFixRunPhase): boolean {
 function dialogDescription(run: ConsistencyFixRunState): string {
   if (run.phase === ConsistencyFixRunPhase.Scanning) return FixInconsistenciesDialogCopy.Scanning
   if (run.phase === ConsistencyFixRunPhase.Applying) return FixInconsistenciesDialogCopy.Applying
-  return run.message || FixInconsistenciesDialogCopy.Title
+  if (run.phase === ConsistencyFixRunPhase.Review) {
+    if (run.empty) return FixInconsistenciesDialogCopy.Empty
+    if (run.findings.length === 0) return FixInconsistenciesDialogCopy.NoFindings
+    return FixInconsistenciesDialogCopy.Review
+  }
+  return run.error || run.message || FixInconsistenciesDialogCopy.Title
 }
 
 export function FixInconsistenciesDialog({
@@ -45,12 +52,27 @@ export function FixInconsistenciesDialog({
 }: FixInconsistenciesDialogProps) {
   const open = run.phase !== ConsistencyFixRunPhase.Idle
   const locked = isLockedPhase(run.phase)
+  const applyingRef = useRef(false)
+
+  useEffect(() => {
+    if (run.phase === ConsistencyFixRunPhase.Applying) {
+      applyingRef.current = true
+      return
+    }
+    if (
+      run.phase === ConsistencyFixRunPhase.Review ||
+      run.phase === ConsistencyFixRunPhase.Idle
+    ) {
+      applyingRef.current = false
+    }
+  }, [run.phase])
 
   return (
     <Dialog
       open={open}
       onOpenChange={nextOpen => {
         if (nextOpen) return
+        if (applyingRef.current || run.phase === ConsistencyFixRunPhase.Applying) return
         if (locked) return
         if (run.phase === ConsistencyFixRunPhase.Review) {
           onDiscard()
@@ -65,10 +87,10 @@ export function FixInconsistenciesDialog({
           locked ? FixInconsistenciesDialogClass.HideClose : undefined
         )}
         onPointerDownOutside={event => {
-          if (locked) event.preventDefault()
+          if (locked || applyingRef.current) event.preventDefault()
         }}
         onEscapeKeyDown={event => {
-          if (locked) event.preventDefault()
+          if (locked || applyingRef.current) event.preventDefault()
         }}
       >
         <DialogHeader>
@@ -76,10 +98,27 @@ export function FixInconsistenciesDialog({
           <DialogDescription>{dialogDescription(run)}</DialogDescription>
         </DialogHeader>
 
-        {locked ? (
-          <div className="flex items-center gap-3 py-6 text-sm text-muted-foreground">
+        {run.phase === ConsistencyFixRunPhase.Scanning ? (
+          <div className={FixInconsistenciesDialogClass.ScanList}>
+            {run.completedStepIds.map(stepId => (
+              <div key={stepId} className={FixInconsistenciesDialogClass.ScanRow}>
+                <Check className={cn('h-4 w-4', FixInconsistenciesDialogClass.ScanDone)} />
+                <span>{scanningCopyForStep(stepId)}</span>
+              </div>
+            ))}
+            <div className={FixInconsistenciesDialogClass.ScanRow}>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className={FixInconsistenciesDialogClass.ScanCurrent}>
+                {scanningCopyForStep(run.stepId)}
+              </span>
+            </div>
+          </div>
+        ) : null}
+
+        {run.phase === ConsistencyFixRunPhase.Applying ? (
+          <div className={FixInconsistenciesDialogClass.ApplyingRow}>
             <Loader2 className="h-4 w-4 animate-spin" />
-            {dialogDescription(run)}
+            {FixInconsistenciesDialogCopy.Applying}
           </div>
         ) : null}
 
@@ -88,6 +127,7 @@ export function FixInconsistenciesDialog({
             findings={run.findings}
             fixes={run.fixes}
             skipped={run.skipped}
+            projectId={run.projectId ?? undefined}
           />
         ) : null}
 
@@ -98,7 +138,10 @@ export function FixInconsistenciesDialog({
         <FixInconsistenciesDialogFooter
           phase={run.phase}
           canApply={run.fixes.length > 0}
-          onApplyAll={onApplyAll}
+          onApplyAll={() => {
+            applyingRef.current = true
+            onApplyAll()
+          }}
           onDiscard={onDiscard}
           onCancelScan={onCancelScan}
           onClose={onClose}

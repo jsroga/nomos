@@ -6,6 +6,7 @@ import {
   CharacterTextFieldKey,
   generatedCharacterFieldsFromUnknown,
 } from '@/domains/storyteller/core/character-missing-fields'
+import { clampedCharacterMetricSchema } from '@/domains/storyteller/core/character-metric-schema'
 import { recordFromJson } from '@/shared/data/json-guards'
 import {
   PROPOSE_CHARACTER_FIELDS_TOOL_DESC,
@@ -18,7 +19,8 @@ enum ProposeCharacterFieldsCopy {
 }
 
 const proposedText = z.string().min(1).optional()
-const proposedMetric = z.number().optional()
+const proposedMetric = (key: CharacterMetricFieldKey) =>
+  clampedCharacterMetricSchema(key).optional()
 
 export const ProposeCharacterFieldsInputSchema = z.object({
   [CharacterTextFieldKey.Name]: proposedText.describe('Only when name is empty'),
@@ -31,10 +33,14 @@ export const ProposeCharacterFieldsInputSchema = z.object({
   [CharacterTextFieldKey.Secrets]: proposedText.describe('Only when secret is empty'),
   metrics: z
     .object({
-      [CharacterMetricFieldKey.Valence]: proposedMetric,
-      [CharacterMetricFieldKey.Arousal]: proposedMetric,
-      [CharacterMetricFieldKey.PerceivedStakes]: proposedMetric,
-      [CharacterMetricFieldKey.MoralAlignment]: proposedMetric,
+      [CharacterMetricFieldKey.Valence]: proposedMetric(CharacterMetricFieldKey.Valence),
+      [CharacterMetricFieldKey.Arousal]: proposedMetric(CharacterMetricFieldKey.Arousal),
+      [CharacterMetricFieldKey.PerceivedStakes]: proposedMetric(
+        CharacterMetricFieldKey.PerceivedStakes,
+      ),
+      [CharacterMetricFieldKey.MoralAlignment]: proposedMetric(
+        CharacterMetricFieldKey.MoralAlignment,
+      ),
     })
     .optional()
     .describe('Only the four dialog sliders still at defaults'),

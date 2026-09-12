@@ -4,6 +4,8 @@ import {
   FixInconsistenciesSseField,
 } from '@/domains/storyteller/ai/workflows/constants/fix-inconsistencies-workflow'
 
+export { FixInconsistenciesSseEvent }
+
 export interface FixInconsistenciesSseFrame {
   event: FixInconsistenciesSseEvent
   data: Record<string, unknown>
@@ -24,6 +26,10 @@ export function encodeFixInconsistenciesSse(
   data: unknown
 ): string {
   return `${FixInconsistenciesSseField.EventPrefix}${event}${FixInconsistenciesSseField.LineJoin}${FixInconsistenciesSseField.DataPrefix}${JSON.stringify(data)}${FixInconsistenciesSseField.BlockJoin}`
+}
+
+export function encodeFixInconsistenciesSseComment(): string {
+  return `${FixInconsistenciesSseField.CommentPrefix}${FixInconsistenciesSseField.Heartbeat}${FixInconsistenciesSseField.BlockJoin}`
 }
 
 export function parseFixInconsistenciesSseBlock(block: string): FixInconsistenciesSseFrame | null {

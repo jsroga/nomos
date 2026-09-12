@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   FEATURE_FLAG_ON,
@@ -42,6 +43,18 @@ describe('client module nav flags', () => {
     expect(isLoopCreatorEnabled()).toBe(false)
     process.env[LOOP_KEY] = FEATURE_FLAG_ON
     expect(isLoopCreatorEnabled()).toBe(true)
+  })
+
+  it('keeps 3d-canvas nav and the workspace route behind the same flag', () => {
+    expect(readFileSync('src/components/shell/GlobalSidebar/GlobalSidebar.tsx', 'utf8')).toContain(
+      'is3dCanvasEnabled()',
+    )
+    expect(readFileSync('src/components/shell/GameHubDashboard/GameHubDashboard.tsx', 'utf8')).toContain(
+      'is3dCanvasEnabled()',
+    )
+    const page = readFileSync('src/app/(workspace)/[projectId]/3d-canvas/page.tsx', 'utf8')
+    expect(page).toContain('is3dCanvasEnabled()')
+    expect(page).toContain('notFound()')
   })
 
   it('hides workspace chat overlay unless NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY=true', () => {

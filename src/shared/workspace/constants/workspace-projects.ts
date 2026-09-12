@@ -5,4 +5,6 @@ export enum WorkspaceProjectsLog {
   ErrorCreatingProject = 'Error creating workspace project:',
   ErrorRenamingProject = 'Error renaming workspace project:',
   ErrorDeletingProject = 'Error deleting workspace project:',
+  ErrorLoadingProject = 'Failed to load workspace project:',
+  SkippedInvalidProjectId = 'Skipped workspace project load — invalid id:',
 }

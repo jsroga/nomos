@@ -15,6 +15,7 @@ import {
   packScriptGhostContext,
 } from '@/domains/storyteller/ai/workflows/pack-script-ghost-context'
 import {
+  clipScriptGhostToFirstSentence,
   episodePremiseText,
   involvedNamesFromCoveringBeats,
   scriptGhostSystemPrompt,
@@ -80,5 +81,5 @@ export async function completeScriptGhost(input: {
     system: scriptGhostSystemPrompt(input.mode),
     prompt: packed,
   })
-  return result.text.trim()
+  return clipScriptGhostToFirstSentence(result.text.trim())
 }

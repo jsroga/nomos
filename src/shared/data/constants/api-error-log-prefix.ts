@@ -178,6 +178,7 @@ export const API_LOG_PREFIX = {
   AUTO_REGISTER_FACTION_NAMES: '[AutoRegister] Faction names:',
   AUTO_REGISTER_CHARACTER_NAMES: '[AutoRegister] Character names:',
   STYLE_REFS_UPLOAD_FAILED: 'Style ref upload failed:',
+  STYLE_REF_CATALOG_FAILED: 'Style ref catalog failed:',
   FIX_INCONSISTENCIES_RUN_ERROR: '[Fix inconsistencies] Run error:',
   FIX_INCONSISTENCIES_RESUME_ERROR: '[Fix inconsistencies] Resume error:',
 } as const

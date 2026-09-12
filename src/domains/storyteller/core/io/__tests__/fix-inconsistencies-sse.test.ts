@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   encodeFixInconsistenciesSse,
+  encodeFixInconsistenciesSseComment,
   parseFixInconsistenciesSseBlock,
   splitFixInconsistenciesSseChunks,
 } from '../fix-inconsistencies-sse'
@@ -26,6 +27,14 @@ describe('fix-inconsistencies SSE', () => {
     const { frames, rest } = splitFixInconsistenciesSseChunks(`${first}${second}event: `)
     expect(frames).toHaveLength(2)
     expect(rest.startsWith('event:')).toBe(true)
+  })
+
+  it('skips comment heartbeats', () => {
+    const comment = encodeFixInconsistenciesSseComment()
+    const event = encodeFixInconsistenciesSse(FixInconsistenciesSseEvent.Started, { runId: 'r' })
+    const { frames } = splitFixInconsistenciesSseChunks(`${comment}${event}`)
+    expect(frames).toHaveLength(1)
+    expect(frames[0]?.event).toBe(FixInconsistenciesSseEvent.Started)
   })
 })
 

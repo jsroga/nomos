@@ -13,6 +13,7 @@ export enum ActionWireField {
 
 export enum BeatPayloadField {
   BeatId = 'beatId',
+  BeatIds = 'beatIds',
   Logline = 'logline',
   Content = 'content',
   Description = 'description',

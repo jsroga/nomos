@@ -15,6 +15,7 @@ import {
   deriveAssistantGenerationActivity,
   type AssistantGenerationActivity,
 } from './derive-assistant-generation-activity'
+import { AppModuleId } from '@/shared/data/constants/protocol'
 
 type AssistantThreadMessages = Parameters<typeof extractCompletedAssistantToolCalls>[0]
 
@@ -131,16 +132,21 @@ export function syncBusyTurnActivityFromMessages(
   lastActivityFingerprint: MutableRefObject<string>,
   onGenerationActivityRef: RefObject<((activity: AssistantGenerationActivity) => void) | undefined>,
   error?: unknown,
+  moduleKey?: string,
 ): void {
   if (!isAssistantTurnBusy(status) || isAssistantTurnFailed(status, error)) return
   const last = messages[messages.length - 1]
   const waitingOnAssistant = last == null || last.role !== ChatMessageRole.Assistant
   const derived = waitingOnAssistant
     ? null
-    : deriveAssistantGenerationActivity(messages, resolvedAgentId)
+    : deriveAssistantGenerationActivity(messages, resolvedAgentId, moduleKey)
+  const waitingLabel =
+    moduleKey === AppModuleId.LoopCreator
+      ? AssistantGenerationLabel.LoopWaiting
+      : AssistantGenerationLabel.WaitingFirstToken
   const activity: AssistantGenerationActivity = derived ?? {
     phase: AssistantGenerationPhase.Submitted,
-    label: AssistantGenerationLabel.WaitingFirstToken,
+    label: waitingLabel,
     agentId: resolvedAgentId,
   }
   const fingerprint = activityFingerprint(activity)

@@ -4,6 +4,7 @@ export enum FlowTool {
   UpdateWorldBible = 'update_world_bible',
   ManageCharacter = 'manage_character',
   RunBeatDraftWorkflow = 'run_beat_draft_workflow',
+  ProposeCharacterFields = 'propose_character_fields',
 }
 
 export enum FlowPrompt {
@@ -40,6 +41,17 @@ export enum FlowUiLabel {
   Storyteller = 'Storyteller',
   StorybibleTab = 'STORYBIBLE',
   AssistantMessage = 'assistant-message',
+  FixInconsistencies = 'Fix inconsistencies',
+  ApplyAll = 'Apply all',
+  WorkspaceChatPanel = 'Workspace chat panel',
+  WorkspaceChatToggle = 'Workspace chat',
+  RegenerateDescription = 'Regenerate description',
+  NoInconsistencies = 'No inconsistencies detected.',
+  ConsistencyFixesApplied = 'Consistency fixes applied.',
+  GenerateMissingFields = 'Generate missing fields',
+  EditCharacter = 'Edit character',
+  InfiniteCanvas = 'Infinite Canvas',
+  CharacterDescriptionPlaceholder = 'Describe appearance, personality, and background...',
 }
 
 export enum FlowSelector {
@@ -68,6 +80,7 @@ export enum FlowApi {
   Episodes = '/api/storyteller/episodes',
   Plan = '/api/storyteller/plan',
   ChatStream = '/api/storyteller/chat/stream',
+  Characters = '/api/storyteller/characters',
 }
 
 export enum FlowQueryParam {
@@ -79,6 +92,7 @@ export const BYPASS_AUTH_VALUE = process.env.E2E_BYPASS_AUTH_SECRET ?? ''
 export enum FlowHttp {
   BypassAuth = 'x-bypass-auth',
   Post = 'POST',
+  Get = 'GET',
   ContentType = 'Content-Type',
   Cookie = 'Cookie',
 }
@@ -96,6 +110,8 @@ export enum FlowTest {
   Describe = 'Storyteller',
   Name = 'whole story creation flow',
   ChatName = 'chat responds',
+  CharacterFieldsName = 'generate missing fields fills the character form',
+  OverlayPersistName = 'workspace chat overlay stays closed across reload',
   ProjectNamePrefix = 'E2E Story',
   ProjectDescription = 'Playwright whole-flow test project',
 }
@@ -105,7 +121,10 @@ export enum FlowTimeout {
   Short = 10_000,
   Medium = 15_000,
   Long = 30_000,
+  Stub = 90_000,
   Generation = 360_000,
+  FixScan = 800_000,
+  Live = 900_000,
 }
 
 export enum FlowKey {
@@ -133,6 +152,10 @@ export enum FlowChatModel {
 
 export enum FlowError {
   EmptyTurnBeforeAccept = 'Writers Room returned an empty turn before Add to world / Accept',
+  NoInconsistencies = 'Fix inconsistencies Review was empty — prompts did not land a clash; do not scan again',
+  OpenRouterCreditsExhausted = 'OpenRouter credits exhausted — pause and tell the operator. Do not retry until credits are added.',
+  EditorInstructionsMissing = 'Writers Room used a published agent overlay with no instructions',
+  GenerateMissingFailed = 'Generate missing fields failed before proposing form fields',
 }
 
 /** Empty-turn notice scenario: the model returns no text and no tool calls. */
@@ -144,4 +167,9 @@ export enum EmptyTurnScenario {
   DonePayload = 'data: [DONE]\n\n',
   SuggestionChip = '.aui-chip',
   AssistantPath = '/api/assistant/storyteller',
+}
+
+export enum FlowStreamError {
+  EditorInstructions = 'delegates instructions to the editor',
+  StoredAgentNoInstructions = 'stored agent configuration has no instructions',
 }

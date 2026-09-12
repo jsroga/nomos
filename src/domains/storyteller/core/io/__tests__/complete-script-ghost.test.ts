@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
+  clipScriptGhostToFirstSentence,
   episodePremiseText,
   involvedNamesFromCoveringBeats,
   ScriptGhostCopy,
@@ -80,5 +81,23 @@ describe('completeScriptGhost packing helpers', () => {
       episodePremiseText(null, { [BeatboardPremiseFieldKey.Logline]: 'The chapel keeps the bells.' })
     ).toBe('The chapel keeps the bells.')
     expect(episodePremiseText('  ', {})).toBe('')
+  })
+
+  it('clips a two-sentence dump to the first sentence', () => {
+    expect(
+      clipScriptGhostToFirstSentence('The bell rang. Then the door opened.'),
+    ).toBe('The bell rang.')
+    expect(
+      clipScriptGhostToFirstSentence(' The bell rang. Then the door opened.'),
+    ).toBe(' The bell rang.')
+  })
+
+  it('does not split on Dr. or Mr. before the real sentence end', () => {
+    expect(
+      clipScriptGhostToFirstSentence('Dr. Smith waited. Then she left.'),
+    ).toBe('Dr. Smith waited.')
+    expect(clipScriptGhostToFirstSentence('Mr. Vale kept the ledger.')).toBe(
+      'Mr. Vale kept the ledger.',
+    )
   })
 })

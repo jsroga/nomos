@@ -15,8 +15,9 @@ Virtual **writers’ room**: series bible, characters, episodes, beats, script d
 | Overlay General Chat | `NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY=true` — `WorkspaceChatLayer` sibling of `ProjectLoader`; AI-SDK `/api/assistant/storyteller` + `overlayMemoryRef` |
 | AgentController chat | `FF_STORYTELLER_CONTROLLER=true` — plan-first modes |
 | Autonomous draft | `FF_STORYTELLER_AUTONOMOUS=true` — durable agent + goals |
-| Beat-draft workflow | Mastra workflow: plan → draft → critics → revise; editorial **suspend/resume** HITL |
-| Fix inconsistencies | Mastra workflow: scan World Bible + all episodes → propose field patches → **apply all / discard all** suspend |
+| Beat-draft workflow | Mastra workflow: plan → draft → critics → revise; editorial **suspend/resume** HITL. Per-step I/O, parameters, and tokens: [MODEL_MAP.md](./MODEL_MAP.md) § Workflows |
+| Artifact-draft workflow | Mastra workflow: assemble → check → critique → **accept / reject** → persist. Step catalog: [MODEL_MAP.md](./MODEL_MAP.md) § Workflows |
+| Fix inconsistencies | Mastra workflow: scan World Bible + all episodes → propose field patches → **apply all / discard all** suspend. Step catalog: [MODEL_MAP.md](./MODEL_MAP.md) § Workflows |
 | CLI probe | `npm run storyteller:controller` — interactive plan→approve→build REPL |
 | Live tests | `npm run test:live` — `*.e2e.test.ts` against real agents/models/DB |
 

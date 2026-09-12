@@ -7,10 +7,14 @@ import { createRoot, type Root } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppModuleId } from '@/shared/data/constants/protocol'
 import { TourStepId } from '@/shared/tours/constants/tour-step-ids'
+import { persistWorkspaceChatOverlayOpen } from '@/shared/chat/state/utils/workspace-chat-overlay-open'
 import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
+import { browserStorage } from '@/shared/data/browser-storage'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 
 const PROJECT_ID = '11111111-1111-4111-8111-111111111111'
 const OVERLAY_SRC = 'src/shared/chat/ui/WorkspaceChatOverlay/WorkspaceChatOverlay.tsx'
+const HYDRATE_SRC = 'src/shared/chat/ui/WorkspaceChatOverlay/use-hydrated-overlay-open.ts'
 const RUNTIME_SRC = 'src/shared/chat/ui/WorkspaceChatOverlay/WorkspaceChatSessionRuntime.tsx'
 
 vi.mock('next/navigation', () => ({
@@ -31,6 +35,10 @@ import { WorkspaceChatClass } from '../workspace-chat-copy'
 describe('workspace chat overlay visibility', () => {
   it('hides with CSS instead of unmounting when overlayOpen is false', () => {
     const src = readFileSync(OVERLAY_SRC, 'utf8')
+    expect(src).toContain('useHydratedWorkspaceChatOverlayOpen')
+    const hydrateSrc = readFileSync(HYDRATE_SRC, 'utf8')
+    expect(hydrateSrc).toContain('storedWorkspaceChatOverlayOpen')
+    expect(hydrateSrc).toContain('useLayoutEffect')
     expect(src).toContain('hidden={!overlayOpen}')
     expect(src).toContain('aria-hidden={!overlayOpen}')
     expect(src).not.toMatch(/\{overlayOpen\s*&&/)
@@ -43,6 +51,9 @@ describe('workspace chat overlay visibility', () => {
     expect(src).not.toContain('chat/stream')
     expect(src).not.toContain('sendMessage')
     expect(src).not.toMatch(/stop\(\)/)
+    expect(src).toContain('<WorkspaceChatMismatchDialog')
+    const asideClose = src.lastIndexOf('</aside>')
+    expect(src.indexOf('<WorkspaceChatMismatchDialog')).toBeGreaterThan(asideClose)
     expect(readFileSync('src/shared/chat/ui/WorkspaceChatOverlay/workspace-chat-copy.ts', 'utf8')).toContain(
       'ml-auto',
     )
@@ -76,7 +87,7 @@ describe('workspace chat overlay visibility', () => {
     expect(WorkspaceChatClass.HistoryItem).toContain('py-0.5')
     expect(WorkspaceChatClass.HistoryItemAction).toContain('h-6')
     expect(list).toContain('prependCreatedChatSession')
-    expect(list).toContain('setFocusedSessionId(created.id)')
+    expect(list).toContain('setFocusedSessionId(created.id, created.moduleId)')
     expect(list).not.toMatch(/<ul[\s>]/)
     expect(item).toContain('workspaceChatRenameGlyph')
     expect(item).toContain('<Save')
@@ -95,6 +106,7 @@ describe('workspace chat overlay mount', () => {
   beforeEach(() => {
     container = document.createElement('div')
     document.body.appendChild(container)
+    browserStorage.remove(LocalStorageKeys.WORKSPACE_CHAT_OVERLAY_OPEN)
     useWorkspaceChatUiStore.setState({ overlayOpen: false, focusedSessionId: null })
   })
 
@@ -122,5 +134,25 @@ describe('workspace chat overlay mount', () => {
     expect(aside?.hidden).toBe(true)
     expect(aside?.getAttribute('aria-hidden')).toBe('true')
     expect(aside?.id).toBe(TourStepId.STORYTELLER_CHAT)
+  })
+
+  it('hides when storage is closed even if the store still says open', async () => {
+    persistWorkspaceChatOverlayOpen(false)
+    useWorkspaceChatUiStore.setState({ overlayOpen: true, focusedSessionId: null })
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+    await act(async () => {
+      root = createRoot(container)
+      root.render(
+        <QueryClientProvider client={client}>
+          <WorkspaceChatOverlay adapters={{}} />
+        </QueryClientProvider>,
+      )
+    })
+    const aside = container.querySelector('aside')
+    expect(aside).not.toBeNull()
+    expect(aside?.hidden).toBe(true)
+    expect(aside?.getAttribute('aria-hidden')).toBe('true')
   })
 })

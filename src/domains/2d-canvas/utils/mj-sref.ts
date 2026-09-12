@@ -1,5 +1,11 @@
 import { GenerationMode, type GenerationModeDef } from './generation-modes'
 import { UrlScheme } from '@/shared/data/constants/protocol'
+import {
+  PaintedIsometricSrefUrl,
+  PAINTED_ISOMETRIC_SREF_URLS,
+} from '../constants/painted-isometric-srefs'
+
+export { PaintedIsometricSrefUrl, PAINTED_ISOMETRIC_SREF_URLS }
 
 export const STYLE_REFERENCE_URL_MAX = 3
 export const STYLE_REF_BLOB_PREFIX = 'style-refs'
@@ -25,25 +31,17 @@ export const STYLE_REF_FILE_ACCEPT = [
 
 export enum StyleRefApiRoute {
   Upload = '/api/style-refs/upload',
+  Catalog = '/api/style-refs/catalog',
 }
 
-export enum PaintedIsometricSrefUrl {
-  One = 'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/9b80467c-18b5-4570-9b32-d66f86d71986/1787051463098.png',
-  Two = 'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/9b80467c-18b5-4570-9b32-d66f86d71986/1787051525449.png',
-  Three = 'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/9b80467c-18b5-4570-9b32-d66f86d71986/1787051559763.png',
-}
-
-export const PAINTED_ISOMETRIC_SREF_URLS = [
-  PaintedIsometricSrefUrl.One,
-  PaintedIsometricSrefUrl.Two,
-  PaintedIsometricSrefUrl.Three,
-] as const
-
-export function generationModePresetSrefUrls(modeId: GenerationMode): string[] {
-  if (modeId === GenerationMode.PaintedIsometric) {
+export function generationModePresetSrefUrls(
+  modeId: GenerationMode,
+  catalogUrls?: readonly string[],
+): string[] {
+  if (modeId === GenerationMode.PaintedIsometric && catalogUrls === undefined) {
     return [...PAINTED_ISOMETRIC_SREF_URLS]
   }
-  return []
+  return clampStyleReferenceUrls(catalogUrls ? [...catalogUrls] : [])
 }
 
 export function absolutePublicStyleRefUrl(path: string, origin: string): string {

@@ -3,6 +3,7 @@
 import { AlertTriangle, Check } from 'lucide-react'
 import { ScrollArea } from '@/components/ScrollArea'
 import { cn } from '@/shared/data/utils'
+import { RichText } from '@/domains/storyteller/ui/RichText/RichText'
 import { JSONDiffViewer } from '@/domains/storyteller/ui/JSONDiffViewer'
 import { CONSISTENCY_DEFAULT_SEVERITY_CLASS, CONSISTENCY_SEVERITY_TEXT_CLASS } from '@/domains/storyteller/ui/ConsistencyMessage/constants/consistency-message-display'
 import type { ConsistencyFixItem, ContinuityFinding } from '@/domains/storyteller/ai/workflows/fix-inconsistencies-schema'
@@ -17,6 +18,7 @@ interface FixInconsistenciesReviewProps {
   findings: ContinuityFinding[]
   fixes: ConsistencyFixItem[]
   skipped: SkippedFinding[]
+  projectId?: string
 }
 
 function fixForFinding(
@@ -30,6 +32,7 @@ export function FixInconsistenciesReview({
   findings,
   fixes,
   skipped,
+  projectId,
 }: FixInconsistenciesReviewProps) {
   const unpatchable: SkippedFinding[] = []
   const otherSkipped: SkippedFinding[] = []
@@ -58,8 +61,12 @@ export function FixInconsistenciesReview({
                   <div className="text-xs font-medium text-foreground">
                     {finding.type} · {finding.severity}
                   </div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">{finding.quote}</div>
-                  <div className="text-[11px] text-foreground/80 mt-1">{finding.why}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">
+                    <RichText text={finding.quote} projectId={projectId} inline />
+                  </div>
+                  <div className="text-[11px] text-foreground/80 mt-1">
+                    <RichText text={finding.why} projectId={projectId} inline />
+                  </div>
                 </div>
                 {fix ? <Check className="w-4 h-4 text-green-500 flex-shrink-0" /> : null}
               </div>

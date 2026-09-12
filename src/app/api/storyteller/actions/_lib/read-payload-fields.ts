@@ -22,3 +22,12 @@ export function readSqlId(value: unknown): string {
 export function readSqlSequence(value: unknown): number {
   return typeof value === 'number' ? value : 0
 }
+
+export function readStringIdList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const ids: string[] = []
+  for (const entry of value) {
+    if (typeof entry === 'string' && entry.length > 0) ids.push(entry)
+  }
+  return ids
+}

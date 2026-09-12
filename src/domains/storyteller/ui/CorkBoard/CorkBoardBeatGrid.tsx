@@ -5,6 +5,7 @@ import { BeatCardLoading } from '../BeatCard/BeatCardLoading'
 import { BeatCard as BeatData } from '@/domains/storyteller/core/types/story-types'
 import { beatImageBatchOverlay } from '@/domains/storyteller/state/useBeatImageBatchStore'
 import { CorkBoardLoadingKey } from './utils/cork-board'
+import { beatsInSequenceOrder } from './utils/cork-board-beats'
 import { corkBoardLoadingPlaceholderCount } from './cork-board-list-mode'
 
 interface CorkBoardBeatGridProps {
@@ -39,27 +40,26 @@ export const CorkBoardBeatGrid: React.FC<CorkBoardBeatGridProps> = ({
   activeGeneratingBeatId = null,
 }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-    {beats
-      .sort((a, b) => a.sequence - b.sequence)
-      .map(beat => (
-        <BeatCard
-          key={beat.id}
-          beat={beat}
-          onUpdate={onUpdate}
-          onDelete={onDelete}
-          onDragStart={onDragStart}
-          onDragOver={onDragOver}
-          onDrop={onDrop}
-          onExpand={onExpand}
-          projectId={projectId}
-          batchOverlay={beatImageBatchOverlay({
-            beatId: beat.id,
-            imageUrl: beat.imageUrl,
-            pendingBeatIds: pendingImageBeatIds,
-            activeBeatId: activeGeneratingBeatId,
-          })}
-        />
-      ))}
+    {beatsInSequenceOrder(beats).map((beat, index) => (
+      <BeatCard
+        key={beat.id}
+        beat={beat}
+        displaySequence={index + 1}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onExpand={onExpand}
+        projectId={projectId}
+        batchOverlay={beatImageBatchOverlay({
+          beatId: beat.id,
+          imageUrl: beat.imageUrl,
+          pendingBeatIds: pendingImageBeatIds,
+          activeBeatId: activeGeneratingBeatId,
+        })}
+      />
+    ))}
 
     {Array.from({ length: corkBoardLoadingPlaceholderCount(showLoadingCard) }, (_, index) => (
       <BeatCardLoading key={`${CorkBoardLoadingKey.Placeholder}-${index}`} />

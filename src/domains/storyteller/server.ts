@@ -61,7 +61,7 @@ export {
   type CombinedStoryboardBeat,
 } from './tasks/generate-combined-storyboard-helpers'
 export { isStorytellerControllerEnabled } from './ai/controller/storyteller-controller'
-export { BibleSection, ManuscriptMode, parsePhaseId } from './core/types/enums'
+export { ActionType, BeatStatus, BeatType, BibleSection, ManuscriptMode, isActionType, parsePhaseId } from './core/types/enums'
 export { type DetectedSection } from './config/tool-result-mapper'
 export {
   bibleOwnedFieldsMissingFromCanon,
@@ -117,6 +117,7 @@ export {
   GenerateCharacterFieldsErrorCode,
   generateCharacterFieldsRequestSchema,
 } from './services/utils/generate-character-fields'
+export { characterPsychologyMetricsSchema } from './core/character-metric-schema'
 export {
   GenerateCharacterFieldsError,
   generateCharacterMissingFields,

@@ -2,19 +2,23 @@
 
 import { useProjectFromUrl } from '@/components/shell/useProjectFromUrl'
 import { Loader2 } from 'lucide-react'
-import { ProjectLoaderClass } from '@/shared/data/constants/project-loader'
+import {
+  ProjectLoaderClass,
+  ProjectLoaderMessage,
+} from '@/shared/data/constants/project-loader'
 
 export function ProjectLoader({ children }: { children: React.ReactNode }) {
   const { isLoading, error, hasProject } = useProjectFromUrl()
 
-  // Error state - show error instead of children
   if (error) {
+    const hint =
+      error === ProjectLoaderMessage.FailedLoadProject
+        ? ProjectLoaderMessage.FailedLoadHint
+        : ProjectLoaderMessage.NotFoundHint
     return (
       <div className="flex h-full w-full items-center justify-center flex-col gap-4">
         <p className="text-destructive font-medium">{error}</p>
-        <p className="text-muted-foreground">
-          The project you are trying to access does not exist or you don't have permission.
-        </p>
+        <p className="text-muted-foreground">{hint}</p>
       </div>
     )
   }

@@ -13,6 +13,8 @@ import {
   CharacterWeb,
 } from '../storyteller-dynamic-imports'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
+import { useEpisodeScriptAutosave } from '@/domains/storyteller/state/hooks/useEpisodeScriptAutosave'
+import { enqueueStorytellerChatPrompt } from '@/domains/storyteller/state/utils/enqueue-storyteller-chat'
 import {
   getStorytellerUiStore,
   useStorytellerUiStore,
@@ -57,11 +59,15 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
     refreshBeats,
     executeAction,
   } = core
-  const { isFetchingCharacters, updateEpisodePremise, characterWebVersion } = episode
+  const {
+    isFetchingCharacters,
+    updateEpisodePremise,
+    characterWebVersion,
+    scriptHydratedEpisodeId,
+  } = episode
   const { handleApprovePlan, handlePhaseChange } = phase
   const { handlePosterTrigger, handleStoryboardTrigger } = generation
   const { handleCharacterWebNodeClick, handleSaveEpisodePrompt } = agents
-  const requestChatPrompt = useStorytellerUiStore(state => state.requestChatPrompt)
   const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
   const isChatBusy = isGenerationActivityBusy(generationPhase)
   const queryClient = useQueryClient()
@@ -94,6 +100,12 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
   const handleGeneratePremiseSection = useCallback(async () => {
     await startPremiseArtifactDraft()
   }, [startPremiseArtifactDraft])
+
+  useEpisodeScriptAutosave({
+    episodeId: currentEpisodeId,
+    script,
+    hydratedEpisodeId: scriptHydratedEpisodeId,
+  })
 
   const handleAddGeneratedBeats = useCallback(async () => {
     await commitBeatCreatesToWorld({
@@ -153,7 +165,7 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
             projectId={routeProjectId ?? ''}
             premise={episodePremiseFromPlan(storyPlan)}
             isChatBusy={isChatBusy}
-            onSendMessage={message => requestChatPrompt(message)}
+            onSendMessage={message => enqueueStorytellerChatPrompt(message)}
             onRefreshBeats={() => {
               if (currentEpisodeId) void refreshBeats(currentEpisodeId)
             }}

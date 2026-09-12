@@ -30,7 +30,7 @@ Never run `git add -A` or `git commit -a` blindly. Look at what changed first.
 npm run precommit
 ```
 
-(`scripts/pre-commit.mjs` → architecture, docs, staged typecheck/eslint, **`test:unit`**, **`build`**.)
+(`scripts/pre-commit.mjs` → architecture, docs, staged typecheck/eslint, **`test:unit`**, **`build`**, then **`test:e2e:stubs`** on `:3001`. Live Storyteller + generate-missing fields is pre-push. No live GLM on commit. No HTTP smoke.)
 
 If anything fails: fix it, re-run `npm run precommit`, only then continue. Do **not** use `--no-verify`.
 Husky will re-run the same script on `git commit` as a safety net.
@@ -123,7 +123,7 @@ EOF
 - Never push unless the user explicitly asks.
 - Never skip hooks unless the user explicitly asks (`--no-verify` is blocked by
   `.cursor/hooks/guard-commit.sh` for agent shell commits).
-- When the user asks to commit: run `npm run precommit` first (build + unit tests).
+- When the user asks to commit: run `npm run precommit` first (build + unit tests + stub Playwright). Live `storyteller.spec.ts` runs on **git push** (`scripts/pre-push.mjs`), not on commit.
 - Do not create empty commits.
 
 ## Splitting into multiple commits

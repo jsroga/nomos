@@ -13,7 +13,7 @@
 | [DESIGN.md](./DESIGN.md) | Product UI contract (tokens, projects, chat, marketing SSR) |
 | [MCP_API.md](./MCP_API.md) | MCP tools / auth for integrators |
 | [DECISIONS.md](./DECISIONS.md) | Architecture decision log — what was decided, what was rejected, and why |
-| [MODEL_MAP.md](./MODEL_MAP.md) | Agents, models, tools, scores — the whole wiring |
+| [MODEL_MAP.md](./MODEL_MAP.md) | Agents, models, tools, scores, and per-step workflow I/O + tokens |
 | [README.md](./README.md) | This index |
 
 ## Also at repo root

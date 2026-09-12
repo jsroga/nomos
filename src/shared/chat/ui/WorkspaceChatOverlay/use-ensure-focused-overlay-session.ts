@@ -48,7 +48,7 @@ export function useEnsureFocusedOverlaySession(input: {
           chatSessionsKeys.list(input.projectId),
           (current: ChatSession[] | undefined) => prependCreatedChatSession(current, created),
         )
-        setFocusedSessionId(created.id)
+        setFocusedSessionId(created.id, created.moduleId)
         await queryClient.invalidateQueries({ queryKey: chatSessionsKeys.list(input.projectId) })
       } finally {
         creating.current = false

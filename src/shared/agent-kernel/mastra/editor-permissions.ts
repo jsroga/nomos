@@ -25,5 +25,10 @@ export const EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP: AgentEditorConfig = {
   tools: true,
 }
 
+/** Studio owns tool membership. The brief stays on the Agent constructor. */
+export const EDITOR_TOOL_MEMBERSHIP_ONLY: AgentEditorConfig = {
+  tools: true,
+}
+
 /** Ephemeral agents (provider probe, tests). */
 export const EDITOR_DISABLED: AgentEditorConfig = false

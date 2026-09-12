@@ -296,6 +296,11 @@ export interface LoopCreatorState {
     temperature: number
   }
 
+  /** Hex Mastra trace id for this crew turn (Studio Traces). */
+  traceId?: string
+  /** Parent span id from `loop-creator.crew`. */
+  parentSpanId?: string
+
   // Concept alignment evaluation (auto-eval)
   conceptEvaluation?: {
     overallAlignment: number

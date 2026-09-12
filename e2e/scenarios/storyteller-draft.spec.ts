@@ -38,9 +38,9 @@ test.describe(DraftTest.Describe, () => {
     const editor = page.locator(DraftSelector.ScriptEditor).first()
     await expect(editor).toBeVisible()
     await expect(editor).toHaveClass(new RegExp(DraftWidthToken.Script))
-    await page.getByRole(FlowRole.Button, { name: DraftUiLabel.Novel, exact: true }).click()
+    await page.getByRole(FlowRole.Tab, { name: DraftUiLabel.Novel, exact: true }).click()
     await expect(editor).toHaveClass(new RegExp(DraftWidthToken.Novel))
-    await page.getByRole(FlowRole.Button, { name: DraftUiLabel.Script, exact: true }).click()
+    await page.getByRole(FlowRole.Tab, { name: DraftUiLabel.Script, exact: true }).click()
     await expect(editor).toHaveClass(new RegExp(DraftWidthToken.Script))
   })
 

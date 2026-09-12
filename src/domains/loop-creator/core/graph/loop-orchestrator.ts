@@ -5,7 +5,14 @@
 
 import { withGatewayContext } from '@/shared/ai/gateway/call-context'
 import { AIMessage, ChatMessageRole } from '@/shared/chat/core/message'
+import { withMastraSpan } from '@/shared/observability/mastra-tracing'
+import {
+  createMastraTraceId,
+  normalizeMastraTraceId,
+} from '@/shared/observability/mastra-trace-id'
 import { LoopCreatorState, NextAgent } from './state'
+import type { StreamEvent } from './stream-event'
+import { displayNameForNode, emitLog, runWithWorkingEvent } from './loop-crew-progress'
 import { supervisorAgent } from '../../ai/agents/supervisor'
 import { loopPlannerAgent } from '../../ai/agents/loop-planner'
 import { mechanicsDesignerAgent } from '../../ai/agents/mechanics-designer'
@@ -20,36 +27,16 @@ import {
   NEXT_AGENT_SUPERVISOR,
 } from '@/domains/loop-creator/constants/graph-state-defaults'
 import {
-  LOOP_AGENT_DISPLAY_NAMES,
   LOOP_ORCHESTRATOR_UNKNOWN_ERROR,
   LangChainMessageWire,
+  LoopCreatorTraceName,
   LoopOrchestratorEventType,
   LoopOrchestratorLog,
   LoopOrchestratorMessageType,
+  LoopOrchestratorNodeStatus,
 } from '@/domains/loop-creator/constants/loop-orchestrator'
 
-export interface StreamEvent {
-  type: LoopOrchestratorEventType
-  node?: string
-  agent?: string
-  content?: string
-  token?: string
-  message?: {
-    type: string
-    content: string
-    sender: string
-    name: string
-  }
-  action?: {
-    type: string
-    payload: unknown
-    confidence?: number
-    reasoning?: string
-  }
-  questions?: unknown[]
-  error?: string
-  timestamp: number
-}
+export type { StreamEvent } from './stream-event'
 
 const MAX_ROUNDS = 15
 
@@ -86,7 +73,6 @@ async function invokeAgent(
   state: LoopCreatorState,
 ): Promise<Partial<LoopCreatorState>> {
   try {
-    console.log(`${LoopOrchestratorLog.Invoking}${agentName}...`)
     const startTime = Date.now()
     const result = await AGENT_FNS[agentName](state)
     console.log(
@@ -136,15 +122,6 @@ function isLangChainAIMessage(msg: unknown): boolean {
   return false
 }
 
-function displayNameForNode(nodeName: string): string {
-  for (const agent of Object.values(LoopAgentNode)) {
-    if (agent === nodeName) {
-      return LOOP_AGENT_DISPLAY_NAMES[agent]
-    }
-  }
-  return nodeName
-}
-
 function emitNodeOutput(
   nodeName: string,
   output: Partial<LoopCreatorState>,
@@ -154,6 +131,7 @@ function emitNodeOutput(
     type: LoopOrchestratorEventType.Node,
     node: nodeName,
     agent: displayNameForNode(nodeName),
+    status: LoopOrchestratorNodeStatus.Done,
     timestamp: Date.now(),
   }
   onEvent(nodeEvent)
@@ -225,9 +203,15 @@ export async function streamLoopCreator(
   config: { configurable: { thread_id: string } },
   onEvent: (event: StreamEvent) => void,
 ): Promise<LoopCreatorState> {
-  // Every specialist this run reaches bills to the project the route verified.
-  return withGatewayContext({ scope: initialState.scope }, () =>
-    runLoopCreatorGraph(initialState, config, onEvent)
+  const traceId = normalizeMastraTraceId(initialState.traceId ?? createMastraTraceId())
+  return withGatewayContext({ scope: initialState.scope, traceId }, () =>
+    withMastraSpan(traceId, LoopCreatorTraceName.Crew, span =>
+      runLoopCreatorGraph(
+        { ...initialState, traceId, parentSpanId: span.spanId },
+        config,
+        onEvent,
+      )
+    )
   )
 }
 
@@ -239,12 +223,14 @@ async function runLoopCreatorGraph(
   let state = initialState
   let currentNode: AgentNode = LoopAgentNode.Supervisor
 
-  console.log(LoopOrchestratorLog.StartingRun)
+  emitLog(onEvent, LoopOrchestratorLog.StartingRun)
 
   while (true) {
-    const output = await invokeAgent(currentNode, state)
-    state = { ...state, ...output }
+    const output = await runWithWorkingEvent(currentNode, onEvent, () =>
+      invokeAgent(currentNode, state),
+    )
     emitNodeOutput(currentNode, output, onEvent)
+    state = { ...state, ...output, traceId: state.traceId, parentSpanId: state.parentSpanId }
 
     const next = routeToNextAgent(state)
     if (next === NEXT_AGENT_END) break

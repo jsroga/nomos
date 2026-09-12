@@ -10,6 +10,7 @@ export {
   ASSISTANT_THREAD_WIRE,
   AssistantChatBodyKey,
   AssistantFollowUpChip,
+  AssistantReasoningPrefix,
   CHAT_ENTITY_KIND_STYLE,
   ChatEntityKind,
   ChatMessageRole,

@@ -1,5 +1,5 @@
 import { readNumber, readString } from '@/shared/data/json-guards'
-import { CHARACTER_DIALOG_METRIC_KEYS } from '@/domains/storyteller/core/character-missing-fields'
+import { CHARACTER_DIALOG_METRIC_KEYS, clampCharacterMetricValue } from '@/domains/storyteller/core/character-missing-fields'
 import {
   CHARACTER_DIALOG_SUBMIT_CONVERT,
   CHARACTER_DIALOG_SUBMIT_CREATE,
@@ -35,7 +35,7 @@ export function mergeCharacterMetrics(
   const next = { ...prev }
   for (const key of CHARACTER_DIALOG_METRIC_KEYS) {
     const value = readNumber(patch[key])
-    if (value !== undefined) next[key] = value
+    if (value !== undefined) next[key] = clampCharacterMetricValue(key, value)
   }
   return next
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { ActionType, isActionType } from '@/domains/storyteller/core/types/enums'
+import { ActionType, isActionType } from '@/domains/storyteller/server'
 import { recordFromJson } from '@/shared/data/deep-merge'
 import { ActionRequestField, ActionWireField } from './constants/action-request-wire'
 import type { ActionHandler, ActionHandlerContext, StorytellerAction } from './action-handler-context'
@@ -7,6 +7,7 @@ import {
   handleCreateBeat,
   handleDeleteBeat,
   handleReorderBeat,
+  handleReorderBeats,
   handleUpdateBeat,
 } from './handlers/beat-handlers'
 import {
@@ -50,6 +51,7 @@ assignHandler(ACTION_HANDLERS, ActionType.UPDATE_EPISODE_PREMISE, handleUpdateEp
 assignHandler(ACTION_HANDLERS, ActionType.CREATE_BEAT, handleCreateBeat)
 assignHandler(ACTION_HANDLERS, ActionType.DELETE_BEAT, handleDeleteBeat)
 assignHandler(ACTION_HANDLERS, ActionType.REORDER_BEAT, handleReorderBeat)
+assignHandler(ACTION_HANDLERS, ActionType.REORDER_BEATS, handleReorderBeats)
 assignHandler(ACTION_HANDLERS, ActionType.CREATE_CHARACTER, handleCreateCharacter)
 assignHandler(ACTION_HANDLERS, ActionType.UPDATE_CHARACTER_PROFILE, handleUpdateCharacterProfile)
 

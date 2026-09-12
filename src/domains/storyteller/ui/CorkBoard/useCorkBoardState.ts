@@ -10,6 +10,7 @@ import {
   deleteBeat,
   fetchEpisodeBeatsList,
   patchBeat,
+  reorderEpisodeBeats,
 } from '@/domains/storyteller/core/io/storyteller.api'
 import { cancelBeatImageRun } from '@/domains/storyteller/core/io/beat-image.api'
 import type { Message } from '@/shared/chat'
@@ -25,6 +26,7 @@ import {
   CORK_BOARD_UNKNOWN_PROJECT,
   CorkBoardBeatImagePolicy,
   CorkBoardCopy,
+  CorkBoardLog,
 } from './utils/cork-board'
 import { resolveCorkBoardUrl } from './CorkBoardStoryboardSection'
 import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
@@ -38,6 +40,8 @@ import {
   isCorkBoardChatBlocked,
 } from './cork-board-generation'
 import { useCorkBoardDragDrop } from './useCorkBoardDragDrop'
+import { renumberBeatSequences } from './utils/cork-board-beats'
+import { nextSequenceAfter } from '@/domains/storyteller/core/utils/beat-order'
 import {
   applyBeatImagePatches,
   getBeatImageBatchStore,
@@ -48,6 +52,13 @@ import {
 function beatsFromListPayload(data: unknown): BeatData[] {
   if (!Array.isArray(data)) return []
   return data.map(row => beatCardFromJson(row)).filter(beat => Boolean(beat.id))
+}
+
+function mergeFetchedBeats(prev: BeatData[], data: unknown): BeatData[] {
+  return applyBeatImagePatches(
+    preferRicherBeats(prev, beatsFromListPayload(data)),
+    getBeatImageBatchStore().patches,
+  )
 }
 
 interface UseCorkBoardStateParams {
@@ -84,7 +95,21 @@ export const useCorkBoardState = ({
     isBeatImageBatchBusy(pendingImageBeatIds) &&
     (batchEpisodeId === null || batchEpisodeId === episodeId)
   const projectId = propProjectId || params.projectId || CORK_BOARD_UNKNOWN_PROJECT
-  const { onDragStart, onDragOver, onDrop } = useCorkBoardDragDrop(beats, setBeats)
+
+  const persistBeatOrder = async (ordered: BeatData[]) => {
+    if (!episodeId || projectId === CORK_BOARD_UNKNOWN_PROJECT) return
+    try {
+      await reorderEpisodeBeats({
+        projectId,
+        episodeId,
+        beatIds: ordered.map(beat => beat.id),
+      })
+    } catch (error) {
+      console.error(CorkBoardLog.ReorderFailed, error)
+    }
+  }
+
+  const { onDragStart, onDragOver, onDrop } = useCorkBoardDragDrop(beats, setBeats, persistBeatOrder)
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -102,20 +127,25 @@ export const useCorkBoardState = ({
 
   useEffect(() => {
     if (!episodeId) return
-    if (isChatBusy && awaitingBoardRefresh) return
-    if (awaitingBoardRefresh) {
-      queueMicrotask(() => setAwaitingBoardRefresh(false))
-      onRefreshBeats?.()
-    }
     void (async () => {
       try {
         const data = await fetchEpisodeBeatsList(episodeId)
-        setBeats(prev =>
-          applyBeatImagePatches(
-            preferRicherBeats(prev, beatsFromListPayload(data)),
-            getBeatImageBatchStore().patches,
-          ),
-        )
+        setBeats(prev => mergeFetchedBeats(prev, data))
+      } catch {
+      }
+    })()
+  }, [episodeId])
+
+  useEffect(() => {
+    if (!episodeId) return
+    if (!awaitingBoardRefresh) return
+    if (isChatBusy) return
+    queueMicrotask(() => setAwaitingBoardRefresh(false))
+    onRefreshBeats?.()
+    void (async () => {
+      try {
+        const data = await fetchEpisodeBeatsList(episodeId)
+        setBeats(prev => mergeFetchedBeats(prev, data))
       } catch {
       }
     })()
@@ -130,7 +160,9 @@ export const useCorkBoardState = ({
     const created = await createEpisodeBeat(episodeId, {
       logline: CORK_BOARD_NEW_BEAT_LOGLINE,
       beatType: CORK_BOARD_NEW_BEAT_TYPE,
-      sequence: beats.length + 1,
+      sequence: nextSequenceAfter(
+        beats.reduce((maxSequence, beat) => (beat.sequence > maxSequence ? beat.sequence : maxSequence), 0),
+      ),
       content: '',
     })
     setBeats([...beats, beatCardFromJson(created)])
@@ -150,8 +182,10 @@ export const useCorkBoardState = ({
       variant: ConfirmDialogVariant.Destructive,
     })
     if (!confirmed) return
-    setBeats(beats.filter(b => b.id !== id))
+    const remaining = renumberBeatSequences(beats.filter(beat => beat.id !== id))
+    setBeats(remaining)
     await deleteBeat(id)
+    await persistBeatOrder(remaining)
   }
 
   const handleGenerateTextBeats = async () => {

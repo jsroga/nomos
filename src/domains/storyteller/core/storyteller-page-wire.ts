@@ -145,6 +145,7 @@ export enum StorytellerLogMessage {
   FailedUpdateCharacter = 'Failed to update character:',
   FailedDeleteCharacter = 'Failed to delete character:',
   FailedPersistPremise = 'Failed to persist premise update:',
+  FailedPersistScript = 'Failed to persist episode script:',
   FailedRefetchMoodboard = 'Failed to refetch moodboard data:',
   FailedSaveResumedGeneration = 'Failed to save resumed generation:',
   FailedSaveStoryboardUrl = 'Failed to save storyboard URL:',

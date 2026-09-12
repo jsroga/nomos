@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { completeStorytellerScriptGhost } from '@/domains/storyteller/core/io/script-ghost.api'
 import type { ManuscriptMode } from '@/domains/storyteller/core/types/enums'
+import { clipScriptGhostToFirstSentence } from '@/domains/storyteller/core/io/complete-script-ghost-pack'
 import {
   scriptGhostContinuation,
   scriptGhostOverlapsManuscript,
@@ -67,7 +68,9 @@ export function useScriptGhostComplete(input: UseScriptGhostCompleteInput): {
           const latest = input.getCaret()
           if (latest.prefix !== caret.prefix) return
           if (scriptGhostOverlapsManuscript(latest.suffix)) return
-          const continuation = scriptGhostContinuation(caret.prefix, text)
+          const continuation = clipScriptGhostToFirstSentence(
+            scriptGhostContinuation(caret.prefix, text),
+          )
           if (continuation.length === 0) return
           setGhostPrefix(caret.prefix)
           setGhost(continuation)

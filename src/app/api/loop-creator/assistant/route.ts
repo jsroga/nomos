@@ -15,22 +15,31 @@
 
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
 import { HumanMessage, AIMessage, type BaseMessage } from '@/shared/chat/core/message'
-// Side-effect: register the loop-creator Mastra agents on the central instance
-// before the first getMastraInstance() call inside streamLoopCreator.
 import '@/domains/loop-creator/core/io/mastra-runtime'
 import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { streamLoopCreator } from '@/domains/loop-creator/server'
 import { createInitialLoopState, type LoopCreatorState } from '@/domains/loop-creator'
-import { ContentType, HttpHeader, LoopCreatorStreamEventType } from '@/shared/data/constants/protocol'
+import {
+  ContentType,
+  HttpHeader,
+  HttpHeaderName,
+  SseAccelBuffering,
+  SseCacheControl,
+} from '@/shared/data/constants/protocol'
 import { API_ERROR } from '@/shared/data/constants/api-errors'
 import { isPlainObject, readString } from '@/shared/data/json-guards'
 import { isE2eHarnessCaller, withE2eLlmPin } from '@/shared/ai/gateway/e2e-llm-pin'
 import { AssistantChatBodyKey } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { bindOverlaySessionMemory } from '@/shared/chat/core/io/bind-overlay-session-memory'
 import { scheduleChatSessionTitle } from '@/shared/chat/core/io/title-chat-session'
+import {
+  mapLoopStreamEventToReasoningDelta,
+  mapLoopStreamEventToTextDelta,
+} from '@/domains/loop-creator/core/io/loop-assistant-stream-map'
+import { createMastraTraceId } from '@/shared/observability/mastra-trace-id'
 
-export const maxDuration = 120
+export const maxDuration = 300
 
 const ROLE_USER = 'user'
 const ROLE_ASSISTANT = 'assistant'
@@ -41,9 +50,6 @@ const CHUNK_TEXT_END = 'text-end'
 const CHUNK_REASONING_START = 'reasoning-start'
 const CHUNK_REASONING_DELTA = 'reasoning-delta'
 const CHUNK_REASONING_END = 'reasoning-end'
-const TEXT_SEPARATOR = '\n\n'
-const ACTIVITY_ARROW = '▸ '
-const ACTION_ARROW = '  ↳ '
 const STATUS_401 = 401
 const STATUS_404 = 404
 
@@ -124,10 +130,11 @@ export async function POST(req: Request) {
     })
   }
 
+  const traceId = createMastraTraceId()
   const initialState: LoopCreatorState = {
     ...createInitialLoopState(scope, message, context),
-    // Seed the graph with the full conversation, not just the latest turn.
     messages: history.length > 0 ? history : [new HumanMessage(message)],
+    traceId,
   }
 
   const stream = createUIMessageStream({
@@ -142,30 +149,21 @@ export async function POST(req: Request) {
         initialState,
         { configurable: { thread_id: crewThreadId } },
         event => {
-          if (event.type === LoopCreatorStreamEventType.Message && event.message?.content) {
+          const textDelta = mapLoopStreamEventToTextDelta(event)
+          if (textDelta) {
             writer.write({
               type: CHUNK_TEXT_DELTA,
               id: textId,
-              delta: `${event.message.content}${TEXT_SEPARATOR}`,
+              delta: textDelta,
             })
             return
           }
-          if (event.type === LoopCreatorStreamEventType.Node) {
-            const label = event.agent ?? event.node
-            if (label) {
-              writer.write({
-                type: CHUNK_REASONING_DELTA,
-                id: reasoningId,
-                delta: `${ACTIVITY_ARROW}${label}\n`,
-              })
-            }
-            return
-          }
-          if (event.type === LoopCreatorStreamEventType.Action && event.action?.type) {
+          const reasoningDelta = mapLoopStreamEventToReasoningDelta(event)
+          if (reasoningDelta) {
             writer.write({
               type: CHUNK_REASONING_DELTA,
               id: reasoningId,
-              delta: `${ACTION_ARROW}${event.action.type}\n`,
+              delta: reasoningDelta,
             })
           }
         }
@@ -178,5 +176,10 @@ export async function POST(req: Request) {
     },
   })
 
-  return createUIMessageStreamResponse({ stream })
+  const uiResponse = createUIMessageStreamResponse({ stream })
+  const headers = new Headers(uiResponse.headers)
+  headers.set(HttpHeader.TRACE_ID, traceId)
+  headers.set(HttpHeader.AccelBuffering, SseAccelBuffering.No)
+  headers.set(HttpHeaderName.CacheControl, SseCacheControl.NoCacheNoTransform)
+  return new Response(uiResponse.body, { status: uiResponse.status, headers })
 }

@@ -66,3 +66,26 @@ function overlayAgentSnapshot(agentId: string): Record<string, unknown> {
 export function overlayAgentHasTools(agentId: string): boolean {
   return toolsNonempty(overlayAgentSnapshot(agentId)[EditorOverlayField.Tools])
 }
+
+function instructionsNonempty(value: unknown): boolean {
+  if (typeof value === 'string') return value.trim().length > 0
+  if (Array.isArray(value)) return value.length > 0
+  if (value && typeof value === 'object') {
+    const content = readString(recordFromJson(value)[EditorOverlayField.Content])
+    return Boolean(content && content.trim().length > 0)
+  }
+  return false
+}
+
+/** True when Studio overlay JSON actually stored an instructions brief. */
+export function overlayAgentHasInstructions(agentId: string): boolean {
+  return instructionsNonempty(overlayAgentSnapshot(agentId)[EditorOverlayField.Instructions])
+}
+
+/**
+ * Published generate/stream throws when editor.instructions is true and JSON
+ * has no brief. Empty overlays must use the code agent.
+ */
+export function overlayReadyForPublishedGenerate(agentId: string): boolean {
+  return overlayAgentHasInstructions(agentId) && overlayAgentHasTools(agentId)
+}

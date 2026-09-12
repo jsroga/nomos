@@ -10,7 +10,8 @@ describe('assistant chat debug details', () => {
   it('defaults Details on so thoughts and tool JSON are visible', () => {
     expect(ASSISTANT_CHAT_SHOW_DETAILS_DEFAULT).toBe(true)
     const src = readFileSync(DETAILS_SRC, 'utf8')
-    expect(src).toContain('useState(ASSISTANT_CHAT_SHOW_DETAILS_DEFAULT)')
+    expect(src).toContain('useState(() => defaultShowDetails(moduleKey))')
+    expect(src).toContain('if (moduleKey === AppModuleId.LoopCreator) return false')
   })
 
   it('expands reasoning when Details is on and keeps tool args behind the same flag', () => {

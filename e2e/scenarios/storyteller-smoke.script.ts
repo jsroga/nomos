@@ -50,6 +50,7 @@ import {
   SmokeTimeout,
   SmokeTool,
 } from '../constants/storyteller-smoke'
+import { ConsistencyPrompt } from '../constants/storyteller-consistency-prompts'
 
 const BASE_URL = process.env.TEST_BASE_URL || DEFAULT_BASE_URL
 const API_URL = `${BASE_URL}/api/storyteller/chat/stream`
@@ -382,7 +383,7 @@ async function test_FLOW_AskNextStep() {
 }
 
 async function test_FLOW_GenerateContent_TriggersApproval() {
-  const events = await sendChatMessage(SmokePrompt.CreateEpisodePremise)
+  const events = await sendChatMessage(ConsistencyPrompt.EpisodePremise)
 
   // Should either have tool_result OR action
   const toolResults = findEvents(events, SmokeEvent.ToolResult)

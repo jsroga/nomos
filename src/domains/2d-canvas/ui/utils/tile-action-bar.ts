@@ -1,3 +1,4 @@
+export const TILE_ACTION_BAR_INITIAL_WIDTH_PX = 640
 export const TILE_ACTION_BAR_HEIGHT_PX = 44
 export const TILE_ACTION_BAR_GAP_PX = 12
 export const TILE_ACTION_BAR_VIEWPORT_MARGIN_PX = 8
@@ -16,7 +17,7 @@ export enum TileActionBarVariant {
 
 export enum TileActionBarCopy {
   Generate = 'Generate',
-  Upscale = 'Upscale 4×',
+  Upscale = 'Upscale\u00A04×',
   Enhance = 'Enhance',
   EnhanceFidelity = 'Enhance Fidelity',
   Creativity = 'CREATIVITY',
@@ -33,15 +34,15 @@ export enum TileActionBarCopy {
 }
 
 export enum TileActionBarClass {
-  Root = 'absolute z-20 box-border flex h-11 items-center gap-1.5 rounded-[11px] border border-border bg-popover px-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.65)]',
-  RootBusy = 'absolute z-20 box-border flex h-11 items-center gap-2.5 rounded-[11px] border border-primary/40 bg-popover pl-3 pr-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.65)]',
+  Root = 'absolute z-20 box-border flex h-11 w-max items-center gap-1.5 rounded-[11px] border border-border bg-popover px-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.65)]',
+  RootBusy = 'absolute z-20 box-border flex h-11 w-max items-center gap-2.5 rounded-[11px] border border-primary/40 bg-popover pl-3 pr-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.65)]',
   Coords = 'px-2 pl-1.5 font-mono text-[10px] tracking-[0.1em] text-muted-foreground/70',
   Divider = 'h-[22px] w-px bg-border',
   Input = 'flex h-8 w-[186px] shrink-0 items-center gap-2 rounded-lg bg-background px-2.5 font-mono text-[11.5px] text-foreground/85 shadow-[inset_0_0_0_1px_hsl(var(--border)/0.8)] placeholder:text-muted-foreground/55 focus:outline-none focus:shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.5)]',
   InputEmpty = 'flex h-8 w-[150px] shrink-0 items-center gap-2 rounded-lg bg-background px-2.5 font-mono text-[11.5px] text-foreground/85 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.5)] placeholder:text-muted-foreground/55 focus:outline-none',
-  Generate = 'inline-flex h-8 items-center gap-[7px] rounded-lg bg-primary/20 px-3 text-[12.5px] font-medium text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.45)] transition-all duration-150 ease-in-out hover:bg-primary/30',
-  Ghost = 'inline-flex h-8 items-center gap-[7px] rounded-lg px-[11px] text-[12.5px] text-foreground/85 transition-all duration-150 ease-in-out hover:bg-accent/70',
-  EnhanceOpen = 'inline-flex h-8 items-center gap-[7px] rounded-lg bg-accent/80 px-[11px] text-[12.5px] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))]',
+  Generate = 'inline-flex h-8 shrink-0 items-center gap-[7px] whitespace-nowrap rounded-lg bg-primary/20 px-3 text-[12.5px] font-medium text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.45)] transition-all duration-150 ease-in-out hover:bg-primary/30',
+  Ghost = 'inline-flex h-8 shrink-0 items-center gap-[7px] whitespace-nowrap rounded-lg px-[11px] text-[12.5px] text-foreground/85 transition-all duration-150 ease-in-out hover:bg-accent/70',
+  EnhanceOpen = 'inline-flex h-8 shrink-0 items-center gap-[7px] whitespace-nowrap rounded-lg bg-accent/80 px-[11px] text-[12.5px] text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))]',
   IconBtn = 'flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-all duration-150 ease-in-out hover:bg-accent/70',
   Clear = 'flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg text-[#f87171] transition-all duration-150 ease-in-out hover:bg-[rgba(248,113,113,0.12)]',
   Cancel = 'inline-flex h-8 items-center rounded-lg px-[11px] text-[12.5px] text-muted-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))]',

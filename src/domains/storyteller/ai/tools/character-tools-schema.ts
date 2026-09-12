@@ -1,5 +1,10 @@
 import { z } from 'zod'
 import { VoiceFingerprintSchema } from '@/domains/storyteller/core/voice/voice-fingerprint'
+import { CharacterMetricFieldKey } from '@/domains/storyteller/core/character-missing-fields'
+import {
+  clampedCharacterMetricSchema,
+  clampedUnitMetricSchema,
+} from '@/domains/storyteller/core/character-metric-schema'
 import { INJECTED_PROJECT_ID_DESC, ManageToolOperation } from './manage-tools-wire'
 
 export const CharacterPsychologySchema = z
@@ -28,16 +33,46 @@ export const CharacterDataSchema = z.object({
   portraitUrl: z.string().url().optional().describe('Character portrait image URL'),
   characterPrompt: z.string().optional().describe('Internal character prompt'),
   psychology: CharacterPsychologySchema,
-  valence: z.number().min(-100).max(100).optional().describe('Emotional valence'),
-  arousal: z.number().min(0).max(100).optional().describe('Arousal level'),
-  autonomy: z.number().min(0).max(100).optional().describe('Autonomy level'),
-  competence: z.number().min(0).max(100).optional().describe('Competence level'),
-  relatedness: z.number().min(0).max(100).optional().describe('Relatedness level'),
-  cognitiveClarity: z.number().min(0).max(100).optional().describe('Cognitive clarity'),
-  perceivedStakes: z.number().min(0).max(100).optional().describe('Perceived stakes'),
-  socialSafety: z.number().min(0).max(100).optional().describe('Social safety'),
-  moralAlignment: z.number().min(0).max(100).optional().describe('Moral alignment'),
-  transformationProgress: z.number().min(0).max(100).optional().describe('Transformation progress'),
+  [CharacterMetricFieldKey.Valence]: clampedCharacterMetricSchema(CharacterMetricFieldKey.Valence)
+    .optional()
+    .describe('Emotional valence -100 to 100'),
+  [CharacterMetricFieldKey.Arousal]: clampedCharacterMetricSchema(CharacterMetricFieldKey.Arousal)
+    .optional()
+    .describe('Arousal 0-100'),
+  [CharacterMetricFieldKey.Autonomy]: clampedCharacterMetricSchema(CharacterMetricFieldKey.Autonomy)
+    .optional()
+    .describe('Autonomy 0-100'),
+  [CharacterMetricFieldKey.Competence]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.Competence,
+  )
+    .optional()
+    .describe('Competence 0-100'),
+  [CharacterMetricFieldKey.Relatedness]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.Relatedness,
+  )
+    .optional()
+    .describe('Relatedness 0-100'),
+  [CharacterMetricFieldKey.CognitiveClarity]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.CognitiveClarity,
+  )
+    .optional()
+    .describe('Cognitive clarity 0-100'),
+  [CharacterMetricFieldKey.PerceivedStakes]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.PerceivedStakes,
+  )
+    .optional()
+    .describe('Perceived stakes 0-100'),
+  [CharacterMetricFieldKey.SocialSafety]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.SocialSafety,
+  )
+    .optional()
+    .describe('Social safety 0-100'),
+  [CharacterMetricFieldKey.MoralAlignment]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.MoralAlignment,
+  )
+    .optional()
+    .describe('Moral alignment 0-100'),
+  transformationProgress: clampedUnitMetricSchema().optional().describe('Transformation progress 0-100'),
   voice: z.union([z.string(), VoiceFingerprintSchema]).optional(),
 })
 

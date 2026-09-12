@@ -120,6 +120,8 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
               onGeneratePortrait={dialog.handleGeneratePortrait}
               onShowVariantPicker={() => dialog.setShowVariantPicker(true)}
               onSetGridImageUrl={url => dialog.updateGenState(activeCharId, { gridImageUrl: url })}
+              onRefreshField={dialog.handleRegenerateField}
+              refreshDisabled={!dialog.canRegenerateField}
             />
 
             <CharacterCreationDialogPsychologyFields
@@ -129,6 +131,8 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
               setFatalFlaw={form.setFatalFlaw}
               secrets={form.secrets}
               setSecrets={form.setSecrets}
+              onRefreshField={dialog.handleRegenerateField}
+              refreshDisabled={!dialog.canRegenerateField}
             />
 
             <CharacterCreationDialogMetricsFields

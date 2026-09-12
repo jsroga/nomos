@@ -13,11 +13,20 @@ import {
   FixInconsistenciesRunStatus,
   FixInconsistenciesVerdictAction,
 } from '@/domains/storyteller/ai/workflows/constants/fix-inconsistencies-workflow'
+import { workflowStepStartId } from './fix-inconsistencies-workflow-events'
 
 export type FixInconsistenciesStartResult =
   | { ok: true; runId: string; status: FixInconsistenciesRunStatus.Suspended; payload: Record<string, unknown> }
   | { ok: true; runId: string; status: FixInconsistenciesRunStatus.Success; output: FixInconsistenciesOutput }
   | { ok: false; runId: string; error: string }
+
+export interface FixInconsistenciesStartOptions {
+  tracingOptions?: {
+    traceId: string
+    parentSpanId?: string
+  }
+  onStep?: (stepId: string) => void | Promise<void>
+}
 
 function workflowOrError() {
   const workflow = getMastraInstance().getWorkflow(FIX_INCONSISTENCIES_WORKFLOW_ID)
@@ -31,33 +40,31 @@ function suspendPayloadFromResult(steps: unknown): Record<string, unknown> {
   return recordFromJson(step.suspendPayload)
 }
 
-export async function createFixInconsistenciesWorkflowRun() {
+export async function createFixInconsistenciesWorkflowRun(projectId: string) {
   const { workflow, error } = workflowOrError()
   if (!workflow) {
     return { ok: false as const, error: error ?? API_ERROR.WORKFLOW_NOT_REGISTERED }
   }
-  const run = await workflow.createRun()
+  const run = await workflow.createRun({ resourceId: projectId })
   return { ok: true as const, workflow, run }
 }
 
 export async function startFixInconsistenciesRun(
   projectId: string
 ): Promise<FixInconsistenciesStartResult> {
-  const created = await createFixInconsistenciesWorkflowRun()
+  const created = await createFixInconsistenciesWorkflowRun(projectId)
   if (!created.ok) return { ok: false, runId: '', error: created.error }
   return executeFixInconsistenciesStart(created.run, projectId)
 }
 
-export async function executeFixInconsistenciesStart(
-  run: Extract<Awaited<ReturnType<typeof createFixInconsistenciesWorkflowRun>>, { ok: true }>['run'],
-  projectId: string
-): Promise<FixInconsistenciesStartResult> {
-  const result = await run.start({ inputData: { projectId } })
-
+function interpretFixInconsistenciesStartResult(
+  runId: string,
+  result: { status: string; steps?: unknown; result?: unknown }
+): FixInconsistenciesStartResult {
   if (result.status === FixInconsistenciesRunStatus.Suspended) {
     return {
       ok: true,
-      runId: run.runId,
+      runId,
       status: FixInconsistenciesRunStatus.Suspended,
       payload: suspendPayloadFromResult(result.steps),
     }
@@ -66,17 +73,40 @@ export async function executeFixInconsistenciesStart(
   if (result.status === FixInconsistenciesRunStatus.Success) {
     const parsed = fixInconsistenciesOutputSchema.safeParse(result.result)
     if (!parsed.success) {
-      return { ok: false, runId: run.runId, error: API_ERROR.INTERNAL_SERVER_ERROR }
+      return { ok: false, runId, error: API_ERROR.INTERNAL_SERVER_ERROR }
     }
     return {
       ok: true,
-      runId: run.runId,
+      runId,
       status: FixInconsistenciesRunStatus.Success,
       output: parsed.data,
     }
   }
 
-  return { ok: false, runId: run.runId, error: API_ERROR.INTERNAL_SERVER_ERROR }
+  return { ok: false, runId, error: API_ERROR.INTERNAL_SERVER_ERROR }
+}
+
+export async function executeFixInconsistenciesStart(
+  run: Extract<Awaited<ReturnType<typeof createFixInconsistenciesWorkflowRun>>, { ok: true }>['run'],
+  projectId: string,
+  options?: FixInconsistenciesStartOptions
+): Promise<FixInconsistenciesStartResult> {
+  const onStep = options?.onStep
+  const stopWatch = onStep
+    ? run.watch(event => {
+        const stepId = workflowStepStartId(event)
+        if (stepId) return onStep(stepId)
+      })
+    : undefined
+  try {
+    const result = await run.start({
+      inputData: { projectId },
+      ...(options?.tracingOptions ? { tracingOptions: options.tracingOptions } : {}),
+    })
+    return interpretFixInconsistenciesStartResult(run.runId, result)
+  } finally {
+    stopWatch?.()
+  }
 }
 
 export async function resumeFixInconsistenciesRun(

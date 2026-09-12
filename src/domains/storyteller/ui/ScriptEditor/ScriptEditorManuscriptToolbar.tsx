@@ -1,10 +1,13 @@
 'use client'
 
 import type { FC } from 'react'
+import { BookOpen, Layers, RefreshCw, ScrollText, Sparkles } from 'lucide-react'
+import { AutosaveIndicator } from '@/components/AutosaveIndicator'
 import { Button } from '@/components/Button'
 import { ButtonVariantKey } from '@/components/Button/constants/button-styles'
 import { ManuscriptMode } from '@/domains/storyteller/core/types/enums'
 import { StorytellerHeaderClass } from '@/domains/storyteller/ui/StorytellerLayout/constants/storyteller-module-header'
+import { StorytellerSidebarFooterClass } from '@/domains/storyteller/ui/StorytellerLayout/utils/storyteller-sidebar-footer'
 import { HtmlElementType } from '@/shared/data/constants/protocol'
 import { cn } from '@/shared/data/utils'
 
@@ -19,13 +22,14 @@ export enum ScriptEditorToolbarCopy {
 }
 
 export enum ScriptEditorToolbarClass {
-  Row = 'flex h-full items-center gap-2',
+  Row = 'flex h-full min-w-0 flex-1 items-center gap-2',
   Cluster = 'flex h-full items-center gap-1',
-  Button = 'h-auto hover:bg-transparent disabled:pointer-events-none disabled:opacity-50',
+  Actions = 'flex h-full min-w-0 flex-1 items-center gap-1',
+  Autosave = 'ml-auto flex h-full shrink-0 items-center',
 }
 
 export enum ScriptEditorChromeClass {
-  Bar = 'min-h-[50px] shrink-0 border-t border-border/30 flex items-center gap-2 px-[22px] py-2.5 bg-card/50',
+  Bar = 'h-[70px] shrink-0 border-t border-border/30 flex items-center gap-2 px-[22px] py-2.5 bg-card/50',
   Loading = 'ml-auto text-xs leading-none text-primary animate-pulse',
 }
 
@@ -33,13 +37,8 @@ export enum ScriptEditorStatusCopy {
   Writing = 'Writing...',
 }
 
-function manuscriptToolbarButtonClass(active = false): string {
-  return cn(
-    StorytellerHeaderClass.Edit,
-    ScriptEditorToolbarClass.Button,
-    active ? StorytellerHeaderClass.TabActive : '',
-  )
-}
+const ICON_SIZE = 13
+const ICON_STROKE = 1.8
 
 export interface ScriptEditorManuscriptToolbarProps {
   mode: ManuscriptMode
@@ -60,63 +59,88 @@ export const ScriptEditorManuscriptToolbar: FC<ScriptEditorManuscriptToolbarProp
   generateDisabled = true,
   generateDisabledReason,
 }) => {
+  const scriptSelected = mode === ManuscriptMode.Script
+  const novelSelected = mode === ManuscriptMode.Novel
+
   return (
     <div className={ScriptEditorToolbarClass.Row}>
       <div
-        className={ScriptEditorToolbarClass.Cluster}
-        role="group"
+        className={cn(StorytellerHeaderClass.Switch, ScriptEditorToolbarClass.Cluster)}
+        role="tablist"
         aria-label={ScriptEditorToolbarCopy.ModeGroup}
       >
-        <Button
+        <button
           type={HtmlElementType.Button}
-          variant={ButtonVariantKey.Ghost}
-          className={manuscriptToolbarButtonClass(mode === ManuscriptMode.Script)}
-          aria-pressed={mode === ManuscriptMode.Script}
+          role="tab"
+          aria-selected={scriptSelected}
+          className={cn(
+            StorytellerHeaderClass.Segment,
+            scriptSelected ? StorytellerHeaderClass.SegmentActive : StorytellerHeaderClass.SegmentIdle,
+          )}
           onClick={() => onModeChange?.(ManuscriptMode.Script)}
         >
+          <ScrollText
+            size={ICON_SIZE}
+            strokeWidth={ICON_STROKE}
+            className={scriptSelected ? 'text-primary' : undefined}
+          />
           {ScriptEditorToolbarCopy.Script}
-        </Button>
-        <Button
+        </button>
+        <button
           type={HtmlElementType.Button}
-          variant={ButtonVariantKey.Ghost}
-          className={manuscriptToolbarButtonClass(mode === ManuscriptMode.Novel)}
-          aria-pressed={mode === ManuscriptMode.Novel}
+          role="tab"
+          aria-selected={novelSelected}
+          className={cn(
+            StorytellerHeaderClass.Segment,
+            novelSelected ? StorytellerHeaderClass.SegmentActive : StorytellerHeaderClass.SegmentIdle,
+          )}
           onClick={() => onModeChange?.(ManuscriptMode.Novel)}
         >
+          <BookOpen
+            size={ICON_SIZE}
+            strokeWidth={ICON_STROKE}
+            className={novelSelected ? 'text-primary' : undefined}
+          />
           {ScriptEditorToolbarCopy.Novel}
-        </Button>
+        </button>
       </div>
-      <div className={ScriptEditorToolbarClass.Cluster}>
+      <div className={ScriptEditorToolbarClass.Actions}>
         <Button
           type={HtmlElementType.Button}
           variant={ButtonVariantKey.Ghost}
-          className={manuscriptToolbarButtonClass()}
+          className={StorytellerSidebarFooterClass.Ghost}
           disabled={generateDisabled}
           title={generateDisabledReason}
           onClick={onGenerateNext}
         >
+          <Sparkles size={ICON_SIZE} strokeWidth={ICON_STROKE} />
           {ScriptEditorToolbarCopy.GenerateNext}
         </Button>
         <Button
           type={HtmlElementType.Button}
           variant={ButtonVariantKey.Ghost}
-          className={manuscriptToolbarButtonClass()}
+          className={StorytellerSidebarFooterClass.Ghost}
           disabled={generateDisabled}
           title={generateDisabledReason}
           onClick={onRegenerateSection}
         >
+          <RefreshCw size={ICON_SIZE} strokeWidth={ICON_STROKE} />
           {ScriptEditorToolbarCopy.RegenerateSection}
         </Button>
         <Button
           type={HtmlElementType.Button}
           variant={ButtonVariantKey.Ghost}
-          className={manuscriptToolbarButtonClass()}
+          className={StorytellerSidebarFooterClass.Ghost}
           disabled={generateDisabled}
           title={generateDisabledReason}
           onClick={onCompile}
         >
+          <Layers size={ICON_SIZE} strokeWidth={ICON_STROKE} />
           {ScriptEditorToolbarCopy.Compile}
         </Button>
+      </div>
+      <div className={ScriptEditorToolbarClass.Autosave}>
+        <AutosaveIndicator />
       </div>
     </div>
   )

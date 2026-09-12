@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { UrlScheme } from '@/shared/data/constants/protocol'
 import { EpisodePlanMergeField } from '@/domains/storyteller/state/constants/merge-episode-plan'
-import { buildFallbackBiblePlan, buildMergedEpisodePlan } from '../merge-episode-plan'
+import { buildFallbackBiblePlan, buildMergedEpisodePlan, scriptContentFromPlanRecord } from '../merge-episode-plan'
 import { StoryPlanMergeField } from '@/domains/storyteller/config/constants/bible-wire-fields'
 
 const STORYBOARD_URL = `${UrlScheme.Https}://blob.example/storyboard.mp4`
@@ -114,5 +114,14 @@ describe('buildFallbackBiblePlan', () => {
       story_plan: { [StoryPlanMergeField.Soundtracks]: [] },
     })
     expect(plan?.[StoryPlanMergeField.Soundtracks]).toEqual(tracks)
+  })
+})
+
+describe('scriptContentFromPlanRecord', () => {
+  it('returns the script string or empty when missing', () => {
+    expect(
+      scriptContentFromPlanRecord({ [EpisodePlanMergeField.Script]: 'INT. HALL' }),
+    ).toBe('INT. HALL')
+    expect(scriptContentFromPlanRecord({})).toBe('')
   })
 })

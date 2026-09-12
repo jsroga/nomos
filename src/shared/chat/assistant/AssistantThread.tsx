@@ -26,6 +26,7 @@ interface AssistantThreadProps {
   onChatModelChange?: (modelId: string) => void
   composerEnabled?: boolean
   onBeforeSend?: (text: string) => boolean
+  moduleKey?: string
 }
 
 export function AssistantThread({
@@ -36,9 +37,10 @@ export function AssistantThread({
   onChatModelChange,
   composerEnabled = true,
   onBeforeSend,
+  moduleKey,
 }: AssistantThreadProps) {
   return (
-    <AssistantChatDetailsProvider>
+    <AssistantChatDetailsProvider moduleKey={moduleKey}>
       <ThreadPrimitive.Root className="aui-chat">
         <div className="aui-chat-glow" aria-hidden />
 

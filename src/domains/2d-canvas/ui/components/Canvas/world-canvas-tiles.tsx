@@ -10,18 +10,27 @@ export const TILE_SIZE = 512
 /** Extra tiles beyond the viewport so pan feels continuous. */
 const VIEWPORT_CULL_MARGIN_TILES = 2
 
-function collectNeighborKeys(tiles: Record<string, TileType>): Set<string> {
+const CARDINAL_OFFSETS: ReadonlyArray<readonly [number, number]> = [
+  [0, 1],
+  [0, -1],
+  [1, 0],
+  [-1, 0],
+]
+
+export function worldCanvasTileKey(x: number, y: number): string {
+  return `${x}${TILE_COORD_SEPARATOR}${y}`
+}
+
+export function collectNeighborKeys(tiles: Record<string, TileType>): Set<string> {
   const knownCoords = new Set(Object.keys(tiles))
+  for (const tile of Object.values(tiles)) {
+    knownCoords.add(worldCanvasTileKey(tile.x, tile.y))
+  }
   const potentialNeighbors = new Set<string>()
 
   Object.values(tiles).forEach(tile => {
-    ;[
-      [0, 1],
-      [0, -1],
-      [1, 0],
-      [-1, 0],
-    ].forEach(([dx, dy]) => {
-      const key = `${tile.x + dx}${TILE_COORD_SEPARATOR}${tile.y + dy}`
+    CARDINAL_OFFSETS.forEach(([dx, dy]) => {
+      const key = worldCanvasTileKey(tile.x + dx, tile.y + dy)
       if (!knownCoords.has(key)) {
         potentialNeighbors.add(key)
       }
@@ -68,13 +77,14 @@ export function renderWorldCanvasTiles(tiles: Record<string, TileType>): React.R
 
   Object.values(tiles).forEach(tile => {
     renderedTiles.push(
-      <Tile key={`${tile.x}${TILE_COORD_SEPARATOR}${tile.y}`} x={tile.x} y={tile.y} size={TILE_SIZE} />
+      <Tile key={worldCanvasTileKey(tile.x, tile.y)} x={tile.x} y={tile.y} size={TILE_SIZE} />
     )
   })
 
   potentialNeighbors.forEach(key => {
+    if (tiles[key]) return
     const [x, y] = key.split(TILE_COORD_SEPARATOR).map(Number)
-    renderedTiles.push(<Tile key={`empty-${x},${y}`} x={x} y={y} size={TILE_SIZE} />)
+    renderedTiles.push(<Tile key={key} x={x} y={y} size={TILE_SIZE} />)
   })
 
   return renderedTiles
@@ -99,7 +109,7 @@ export const WorldCanvasTilesLayer = memo(function WorldCanvasTilesLayer({
       if (!isTileNearViewport(tile.x, tile.y, viewport, viewWidth, viewHeight)) return
       out.push(
         <Tile
-          key={`${tile.x}${TILE_COORD_SEPARATOR}${tile.y}`}
+          key={worldCanvasTileKey(tile.x, tile.y)}
           x={tile.x}
           y={tile.y}
           size={TILE_SIZE}
@@ -108,9 +118,10 @@ export const WorldCanvasTilesLayer = memo(function WorldCanvasTilesLayer({
     })
 
     neighbors.forEach(key => {
+      if (tiles[key]) return
       const [x, y] = key.split(TILE_COORD_SEPARATOR).map(Number)
       if (!isTileNearViewport(x, y, viewport, viewWidth, viewHeight)) return
-      out.push(<Tile key={`empty-${x},${y}`} x={x} y={y} size={TILE_SIZE} />)
+      out.push(<Tile key={key} x={x} y={y} size={TILE_SIZE} />)
     })
 
     return out

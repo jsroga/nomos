@@ -37,6 +37,25 @@ export enum CharacterMetricFieldKey {
   MoralAlignment = 'moralAlignment',
 }
 
+export enum CharacterMetricRange {
+  ValenceMin = -100,
+  UnitMin = 0,
+  Max = 100,
+}
+
+export function clampNumberToRange(value: number, min: number, max: number): number {
+  if (value < min) return min
+  if (value > max) return max
+  return value
+}
+
+export function clampCharacterMetricValue(key: CharacterMetricFieldKey, value: number): number {
+  if (key === CharacterMetricFieldKey.Valence) {
+    return clampNumberToRange(value, CharacterMetricRange.ValenceMin, CharacterMetricRange.Max)
+  }
+  return clampNumberToRange(value, CharacterMetricRange.UnitMin, CharacterMetricRange.Max)
+}
+
 export const CHARACTER_TEXT_FIELD_KEYS: readonly CharacterTextFieldKey[] = [
   CharacterTextFieldKey.Name,
   CharacterTextFieldKey.Gender,
@@ -171,7 +190,7 @@ export function capGeneratedMetrics(
     if (!metricKey || !allowed.has(metricKey)) continue
     const value = generated[metricKey]
     if (typeof value !== 'number' || Number.isNaN(value)) continue
-    result[metricKey] = value
+    result[metricKey] = clampCharacterMetricValue(metricKey, value)
   }
   return result
 }
@@ -194,6 +213,16 @@ export function stripFilledGeneratedFields(
   const metrics = capGeneratedMetrics(generated.metrics, filled.metrics, defaults)
   if (Object.keys(metrics).length > 0) stripped.metrics = metrics
   return stripped
+}
+
+export function applyOverwritingGeneratedField<T extends CharacterFilledDraft>(
+  current: T,
+  generated: GeneratedCharacterFields,
+  key: CharacterTextFieldKey,
+): T {
+  const value = generated[key]
+  if (typeof value !== 'string' || isBlank(value)) return current
+  return { ...current, [key]: value.trim() }
 }
 
 export function applyGeneratedCharacterFields<T extends CharacterFilledDraft>(
@@ -229,7 +258,7 @@ export function generatedCharacterFieldsFromUnknown(value: unknown): GeneratedCh
   for (const key of CHARACTER_METRIC_FIELD_KEYS) {
     const raw = readNumber(metricsRaw[key])
     if (raw === undefined) continue
-    metrics[key] = raw
+    metrics[key] = clampCharacterMetricValue(key, raw)
   }
   if (Object.keys(metrics).length > 0) result.metrics = metrics
   return result

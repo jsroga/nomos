@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import { DEFAULT_CHARACTER_METRICS } from '@/domains/storyteller/core/character-missing-fields'
 import { CharacterTextFieldKey } from '@/domains/storyteller/core/character-missing-fields'
 import { StorytellerChatTool } from '@/domains/storyteller/core/storyteller-page-wire'
 import { GenerationActivityPhase } from '@/domains/storyteller/state/utils/storyteller-ui-store'
+import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import { CharacterDraftChatSection } from '../constants/character-creation-dialog'
 import {
@@ -10,6 +12,7 @@ import {
   applyGeneratedFieldsToForm,
   attachCharacterArtifactPendingApply,
   buildGenerateMissingCharacterChatPrompt,
+  buildRegenerateCharacterFieldChatPrompt,
   draftStringFromPendingAction,
   filledCharacterDraftSummary,
   generateMissingDisableReason,
@@ -17,6 +20,7 @@ import {
   isCharacterDraftForTarget,
   isCharacterDraftOverlayGenerating,
   isCharacterSidebarGeneratingFields,
+  requestGenerateMissingCharacterChat,
   seedFormBlanksFromSnapshot,
   type CharacterFormFieldSetters,
 } from '../character-creation-dialog-generate-missing'
@@ -53,12 +57,25 @@ describe('buildGenerateMissingCharacterChatPrompt', () => {
       form({ name: VERA, description: VERA_DESC }),
     )
     expect(prompt).toContain(CharacterDialogGenerateMissingChat.Instruction)
+    expect(prompt).toContain(CharacterDialogGenerateMissingChat.MetricsRange)
     expect(prompt).toContain(StorytellerChatTool.ProposeCharacterFields)
     expect(prompt).toContain(CharacterTextFieldKey.Motivation)
     expect(prompt).toContain(CharacterTextFieldKey.Role)
     expect(prompt).toContain(CharacterTextFieldKey.Gender)
     expect(prompt).toContain(VERA)
     expect(prompt).toContain(VERA_DESC)
+  })
+
+  it('single-field regen names the key and may overwrite filled values', () => {
+    const prompt = buildRegenerateCharacterFieldChatPrompt(
+      form({ name: VERA, description: VERA_DESC }),
+      CharacterTextFieldKey.Description,
+    )
+    expect(prompt).toContain(CharacterDialogGenerateMissingChat.RegenerateInstruction)
+    expect(prompt).toContain(CharacterTextFieldKey.Description)
+    expect(prompt).toContain(StorytellerChatTool.ProposeCharacterFields)
+    expect(prompt).not.toContain(CharacterDialogGenerateMissingChat.Instruction)
+    expect(prompt).not.toMatch(/never overwrite/i)
   })
 
   it('summarizes only filled text fields', () => {
@@ -308,5 +325,41 @@ describe('attachCharacterArtifactPendingApply', () => {
     await wrapped.onAccept()
     expect(setters.next.name).toBe(VERA)
     expect(setters.next.description).toBe(description)
+  })
+})
+
+describe('requestGenerateMissingCharacterChat', () => {
+  const TARGET_ID = 'char-1'
+
+  beforeEach(() => {
+    const store = getStorytellerUiStore()
+    store.clearPendingChatPrompt()
+    store.clearCharacterDraft()
+    store.clearGenerationActivity()
+    store.resetConsistencyFixRun()
+    useWorkspaceChatUiStore.setState({
+      overlayOpen: false,
+      focusedSessionId: null,
+      focusedSessionModuleId: null,
+      mismatchDialog: null,
+    })
+  })
+
+  it('puts the missing-fields prompt on the open Writers Room thread', () => {
+    const queued = requestGenerateMissingCharacterChat({
+      projectId: VERA,
+      targetId: TARGET_ID,
+      fields: form({ name: VERA, description: VERA_DESC }),
+    })
+    const store = getStorytellerUiStore()
+    expect(queued).toBe(true)
+    expect(store.characterDraftTargetId).toBe(TARGET_ID)
+    expect(store.pendingChatPrompt?.section).toBe(CharacterDraftChatSection.Form)
+    expect(store.pendingChatPrompt?.message).toContain(
+      CharacterDialogGenerateMissingChat.Instruction,
+    )
+    expect(store.pendingChatPrompt?.message).toContain(
+      CharacterDialogGenerateMissingChat.MetricsRange,
+    )
   })
 })

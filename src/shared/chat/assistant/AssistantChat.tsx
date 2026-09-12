@@ -41,6 +41,7 @@ import { useAssistantMentions } from './useAssistantMentions'
 import { AssistantAddToWorldProvider, type AddToWorldPayload, type CanAddToWorldInput } from './AssistantAddToWorldContext'
 import {
   AssistantGenerationLabel,
+  AssistantGenerationLog,
   AssistantGenerationPhase,
   type AssistantGenerationActivity,
 } from './derive-assistant-generation-activity'
@@ -175,6 +176,7 @@ function AssistantChatBody({
   onChatModelChange,
   composerEnabled,
   onBeforeSend,
+  moduleKey,
 }: {
   suggestions: readonly string[]
   mentionProviders?: readonly MentionProvider[]
@@ -184,6 +186,7 @@ function AssistantChatBody({
   onChatModelChange?: (modelId: string) => void
   composerEnabled: boolean
   onBeforeSend?: (text: string) => boolean
+  moduleKey?: string
 }) {
   const mentions = useAssistantMentions(
     mentionProviders ?? EMPTY_PROVIDERS,
@@ -200,6 +203,7 @@ function AssistantChatBody({
       onChatModelChange={onChatModelChange}
       composerEnabled={composerEnabled}
       onBeforeSend={onBeforeSend}
+      moduleKey={moduleKey}
     />
   )
 }
@@ -338,6 +342,7 @@ export function AssistantChat({
     clearSettleTimer()
     lastActivityFingerprint.current = ''
     if (opts?.error) {
+      console.error(AssistantGenerationLog.Failed, opts.error)
       onGenerationActivityRef.current?.({
         phase: AssistantGenerationPhase.Error,
         label: AssistantGenerationLabel.Error,
@@ -389,8 +394,9 @@ export function AssistantChat({
       lastActivityFingerprint,
       onGenerationActivityRef,
       chat.error,
+      moduleKey,
     )
-  }, [chat.status, chat.messages, resolvedAgentId, chat.error])
+  }, [chat.status, chat.messages, resolvedAgentId, chat.error, moduleKey])
 
   useEffect(() => {
     onChatStatus?.(chat.status)
@@ -447,6 +453,7 @@ export function AssistantChat({
         onChatModelChange={onChatModelChange}
         composerEnabled={composerEnabled}
         onBeforeSend={onBeforeSend}
+        moduleKey={moduleKey}
       />
     </AssistantAddToWorldProvider>
   )

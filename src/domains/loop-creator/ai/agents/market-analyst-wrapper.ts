@@ -17,6 +17,10 @@ import {
 import { NEXT_AGENT_SUPERVISOR } from '@/domains/loop-creator/constants/graph-state-defaults'
 import { LoopCreatorState } from '../../core/graph/state'
 import { runMarketAnalysis, LoopAnalysisInput } from './market-analyst'
+import { withMastraSpan } from '@/shared/observability/mastra-tracing'
+import { createMastraTraceId } from '@/shared/observability/mastra-trace-id'
+import { LoopCreatorTraceName } from '@/domains/loop-creator/constants/loop-orchestrator'
+import { MarketAnalystAgentId } from '../constants/market-analyst-agent-wire'
 
 function viabilityScoreEmoji(score: number): string {
   if (score >= 70) return MarketViabilityScoreEmoji.High
@@ -43,11 +47,17 @@ export async function marketAnalystAgent(
   }
 
   const progressMessages: string[] = []
+  const traceId = state.traceId ?? createMastraTraceId()
 
-  // Run the analysis
-  const { report, messages, error } = await runMarketAnalysis(input, msg => {
-    progressMessages.push(msg)
-  })
+  const { report, messages, error } = await withMastraSpan(
+    traceId,
+    LoopCreatorTraceName.MarketAnalystCompletion,
+    async () =>
+      runMarketAnalysis(input, msg => {
+        progressMessages.push(msg)
+      }),
+    { agentId: MarketAnalystAgentId.Id },
+  )
 
   // Build response message
   let responseContent = ''

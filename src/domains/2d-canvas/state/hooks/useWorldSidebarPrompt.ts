@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
+  GenerationMode,
   type GenerationModeDef,
   resolveGenerationMode,
 } from '../../utils/generation-modes'
@@ -33,7 +34,10 @@ type PersistableWorldFields = {
   stylePreset?: string | null
 }
 
-export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
+export function useWorldSidebarPrompt(
+  currentProject: WorkspaceProject | null,
+  resolveCatalogSrefUrls?: (modeId: GenerationMode) => readonly string[] | undefined,
+) {
   const [masterPrompt, setMasterPrompt] = useState('')
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [isUploadingStyleRefs, setIsUploadingStyleRefs] = useState(false)
@@ -115,7 +119,7 @@ export function useWorldSidebarPrompt(currentProject: WorkspaceProject | null) {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     setIsApplyingGenerationMode(true)
     try {
-      const urls = resolveGenerationModeSrefUrls(mode)
+      const urls = resolveGenerationModeSrefUrls(mode, resolveCatalogSrefUrls?.(mode.id))
       const fields = generationModePersistFields({ mode, styleReferenceUrls: urls })
       setMasterPrompt(fields.canvasMasterPrompt)
       setStyleReferenceUrls(fields.styleReferenceUrls)

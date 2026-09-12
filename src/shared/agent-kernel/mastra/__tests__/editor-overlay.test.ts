@@ -14,7 +14,9 @@ import { loadPublishedOrFileBrief } from '@/shared/agent-kernel/mastra/load-publ
 import { loadAgentInstructions } from '@/shared/agent-kernel/mastra/load-agent-instructions'
 import {
   editorAgentOverlayFile,
+  overlayAgentHasInstructions,
   overlayAgentHasTools,
+  overlayReadyForPublishedGenerate,
   setEditorOverlayRootForTests,
 } from '@/shared/agent-kernel/mastra/editor-overlay'
 import {
@@ -101,6 +103,22 @@ describe('Editor JSON overlays', () => {
     })
     setEditorOverlayRootForTests(dir)
     expect(overlayAgentHasTools(FileAgentCatalogId.Storyteller)).toBe(true)
+    expect(overlayAgentHasInstructions(FileAgentCatalogId.Storyteller)).toBe(false)
+    expect(overlayReadyForPublishedGenerate(FileAgentCatalogId.Storyteller)).toBe(false)
+  })
+
+  it('reads stored overlay instructions when present', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'editor-overlay-instructions-'))
+    writeOverlay(dir, editorAgentOverlayFile(FileAgentCatalogId.Storyteller), {
+      [EditorOverlayField.Instructions]: OverlayTestToolId.ReadWorldBible,
+      [EditorOverlayField.Tools]: { [OverlayTestToolId.ReadWorldBible]: {} },
+    })
+    setEditorOverlayRootForTests(dir)
+    expect(overlayAgentHasInstructions(FileAgentCatalogId.Storyteller)).toBe(true)
+  })
+
+  it('committed storyteller overlay stores a brief so chat can run', () => {
+    expect(overlayAgentHasInstructions(FileAgentCatalogId.Storyteller)).toBe(true)
   })
 
   it('omits TypeScript judge twins only when stored scorer ids exist', () => {

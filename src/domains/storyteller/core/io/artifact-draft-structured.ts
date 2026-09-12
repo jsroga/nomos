@@ -6,6 +6,7 @@ import {
   CharacterMetricFieldKey,
   CharacterTextFieldKey,
 } from '@/domains/storyteller/core/character-missing-fields'
+import { clampedCharacterMetricSchema } from '@/domains/storyteller/core/character-metric-schema'
 import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
 import { completeStructured } from '@/shared/ai/gateway'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
@@ -101,15 +102,33 @@ const characterSchema = z.object({
   [CharacterTextFieldKey.Secrets]: z.string().optional(),
   metrics: z
     .object({
-      [CharacterMetricFieldKey.Valence]: z.number().optional(),
-      [CharacterMetricFieldKey.Arousal]: z.number().optional(),
-      [CharacterMetricFieldKey.Autonomy]: z.number().optional(),
-      [CharacterMetricFieldKey.Competence]: z.number().optional(),
-      [CharacterMetricFieldKey.Relatedness]: z.number().optional(),
-      [CharacterMetricFieldKey.CognitiveClarity]: z.number().optional(),
-      [CharacterMetricFieldKey.PerceivedStakes]: z.number().optional(),
-      [CharacterMetricFieldKey.SocialSafety]: z.number().optional(),
-      [CharacterMetricFieldKey.MoralAlignment]: z.number().optional(),
+      [CharacterMetricFieldKey.Valence]: clampedCharacterMetricSchema(
+        CharacterMetricFieldKey.Valence,
+      ).optional(),
+      [CharacterMetricFieldKey.Arousal]: clampedCharacterMetricSchema(
+        CharacterMetricFieldKey.Arousal,
+      ).optional(),
+      [CharacterMetricFieldKey.Autonomy]: clampedCharacterMetricSchema(
+        CharacterMetricFieldKey.Autonomy,
+      ).optional(),
+      [CharacterMetricFieldKey.Competence]: clampedCharacterMetricSchema(
+        CharacterMetricFieldKey.Competence,
+      ).optional(),
+      [CharacterMetricFieldKey.Relatedness]: clampedCharacterMetricSchema(
+        CharacterMetricFieldKey.Relatedness,
+      ).optional(),
+      [CharacterMetricFieldKey.CognitiveClarity]: clampedCharacterMetricSchema(
+        CharacterMetricFieldKey.CognitiveClarity,
+      ).optional(),
+      [CharacterMetricFieldKey.PerceivedStakes]: clampedCharacterMetricSchema(
+        CharacterMetricFieldKey.PerceivedStakes,
+      ).optional(),
+      [CharacterMetricFieldKey.SocialSafety]: clampedCharacterMetricSchema(
+        CharacterMetricFieldKey.SocialSafety,
+      ).optional(),
+      [CharacterMetricFieldKey.MoralAlignment]: clampedCharacterMetricSchema(
+        CharacterMetricFieldKey.MoralAlignment,
+      ).optional(),
     })
     .optional(),
 })

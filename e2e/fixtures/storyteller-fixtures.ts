@@ -1,5 +1,6 @@
 import { Page, expect } from '@playwright/test'
 import {
+  EmptyTurnScenario,
   FlowApi,
   FlowCharacter,
   FlowChatModel,
@@ -20,8 +21,9 @@ import {
   FlowQueryParam,
 } from '../constants/storyteller-flow'
 import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/utils/assistant-thread-ui'
-import { EMPTY_TURN_NOTICE } from '@/shared/chat/assistant/assistant-stream-timing'
+import { EMPTY_TURN_NOTICE, withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
 import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
+import { SmokeHttpStatus, SmokeMatch } from '../constants/storyteller-smoke'
 
 const BASE_URL = process.env.BASE_URL?.trim() || 'http://localhost:3001'
 const SSE_TIMEOUT = 240_000
@@ -189,13 +191,21 @@ export async function createStoryProject(page: Page): Promise<CreatedProject> {
   return { id: body.id, name }
 }
 
+export interface GotoStorytellerOptions {
+  waitForChat?: boolean
+  chatModel?: string
+}
+
 export async function gotoStoryteller(
   page: Page,
   projectId: string,
   episodeId?: string,
-  options?: { waitForChat?: boolean }
+  options?: GotoStorytellerOptions
 ): Promise<void> {
-  const chatModel = process.env.STORYTELLER_CHAT_MODEL?.trim() || FlowChatModel.Luna
+  const chatModel =
+    options?.chatModel?.trim() ||
+    process.env.STORYTELLER_CHAT_MODEL?.trim() ||
+    FlowChatModel.Luna
   await page.addInitScript(
     ({ key, value }) => {
       window.localStorage.setItem(key, value)
@@ -208,7 +218,7 @@ export async function gotoStoryteller(
   const chatWarmed = page
     .waitForResponse(
       response =>
-        response.url().includes(ASSISTANT_WARM_PATH) && response.request().method() === 'GET',
+        response.url().includes(ASSISTANT_WARM_PATH) && response.request().method() === FlowHttp.Get,
       { timeout: FlowTimeout.Long }
     )
     .catch(() => undefined)
@@ -294,6 +304,86 @@ export async function expectEpisodeHeader(page: Page): Promise<void> {
   const untitled = page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.UntitledEpisode}`).first()
   const header = page.locator(FlowSelector.Heading).first()
   await expect(untitled.or(header)).toBeVisible()
+}
+
+export async function chatAndAccept(page: Page, prompt: string): Promise<void> {
+  await sendChatMessage(page, prompt)
+  await waitForAssistantStatus(page)
+  try {
+    await acceptPendingAction(page)
+  } catch {
+    await sendChatMessage(page, prompt)
+    await waitForAssistantStatus(page)
+    await acceptPendingAction(page)
+  }
+}
+
+export function attachInsufficientCreditsGuard(page: Page): { assertOk: () => Promise<void> } {
+  let exhausted = false
+  const pending: Promise<void>[] = []
+  page.on('response', response => {
+    if (response.status() !== SmokeHttpStatus.PaymentRequired) return
+    pending.push(
+      (async () => {
+        const text = await response.text().catch(() => '')
+        if (text.includes(SmokeMatch.InFlightRequests)) return
+        exhausted = true
+      })(),
+    )
+  })
+  return {
+    assertOk: async () => {
+      await Promise.all(pending)
+      if (exhausted) throw new Error(FlowError.OpenRouterCreditsExhausted)
+    },
+  }
+}
+
+const EMPTY_AGENT_FRAMES = [{ type: 'start-step' }, { type: 'finish-step' }, { type: 'finish' }]
+
+function streamOf(chunks: unknown[]): ReadableStream {
+  return new ReadableStream({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(chunk)
+      controller.close()
+    },
+  })
+}
+
+export async function emptyTurnSseBody(): Promise<string> {
+  const stream = withStreamTiming(streamOf(EMPTY_AGENT_FRAMES), Date.now())
+  const reader = stream.getReader()
+  let body = `data: ${JSON.stringify({ type: 'start', messageId: 'm1' })}\n\n`
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    body += `data: ${JSON.stringify(value)}\n\n`
+  }
+  return `${body}${EmptyTurnScenario.DonePayload}`
+}
+
+export async function stubAssistantEmptyTurn(page: Page): Promise<string> {
+  const body = await emptyTurnSseBody()
+  await page.route(EmptyTurnScenario.AssistantRoute, async route => {
+    if (route.request().method() !== FlowHttp.Post) return route.continue()
+    await route.fulfill({
+      status: 200,
+      contentType: EmptyTurnScenario.SseContentType,
+      body,
+    })
+  })
+  return body
+}
+
+export async function createStoryCharacter(
+  page: Page,
+  projectId: string,
+  name: string,
+): Promise<void> {
+  const response = await page.request.post(FlowApi.Characters, {
+    data: { projectId, name },
+  })
+  expect(response.ok(), `Failed to create character: ${await response.text()}`).toBeTruthy()
 }
 
 export { FlowPrompt, FlowTool, FlowCharacter }

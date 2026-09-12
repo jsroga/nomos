@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Node, Edge } from '@xyflow/react'
 import { LoopAutoSaveMessage, LoopAutoSaveStatus } from '@/domains/loop-creator/constants/auto-save'
 import { updateLoop } from '@/domains/loop-creator/core/io/loops.api'
+import { AUTOSAVE_DEBOUNCE_MS, AutosaveScope } from '@/shared/workspace/constants/autosave'
+import { autosaveKey, withAutosave } from '@/shared/workspace/utils/autosave'
 
 interface UseAutoSaveOptions {
   loopId: string | null
@@ -25,7 +27,7 @@ export function useAutoSave({
   edges,
   metadata,
   analysis,
-  debounceMs = 2000,
+  debounceMs = AUTOSAVE_DEBOUNCE_MS,
   enabled = true,
 }: UseAutoSaveOptions) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({
@@ -43,12 +45,14 @@ export function useAutoSave({
     try {
       setSaveStatus(prev => ({ ...prev, status: LoopAutoSaveStatus.Saving, error: null }))
 
-      await updateLoop({
-        id: loopId,
-        nodes,
-        edges,
-        metadata,
-        analysis,
+      await withAutosave(autosaveKey(AutosaveScope.Loop, loopId), async () => {
+        await updateLoop({
+          id: loopId,
+          nodes,
+          edges,
+          metadata,
+          analysis,
+        })
       })
 
       setSaveStatus({
@@ -60,7 +64,7 @@ export function useAutoSave({
       // Reset to idle after a brief period
       setTimeout(() => {
         setSaveStatus(prev => ({ ...prev, status: LoopAutoSaveStatus.Idle }))
-      }, 2000)
+      }, AUTOSAVE_DEBOUNCE_MS)
     } catch (error) {
       console.error(LoopAutoSaveMessage.AutoSaveFailedLog, error)
       setSaveStatus({

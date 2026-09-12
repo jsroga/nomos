@@ -29,9 +29,9 @@ export function useLoopCreatorLayout(projectId: string) {
     marketAnalysisKey: core.marketAnalysisKey,
     showCreateLoopDialog: core.showCreateLoopDialog,
     userEmail: core.userEmail,
-    saveStatus: persistence.saveStatus,
     mentionProviders: chat.mentionProviders,
     projectContextForMentions: chat.projectContextForMentions,
+    pendingAutoPrompt: core.pendingAutoPrompt,
     tourIds: tour.tourIds,
     setShowCreateLoopDialog: core.setShowCreateLoopDialog,
     setIsMarketAnalysisOpen: core.setIsMarketAnalysisOpen,
@@ -54,6 +54,7 @@ export function useLoopCreatorLayout(projectId: string) {
     onImportJson: graph.onImportJson,
     onConnect: graph.onConnect,
     handleTidyUp: graph.handleTidyUp,
+    setPendingAutoPrompt: core.setPendingAutoPrompt,
   }
 }
 

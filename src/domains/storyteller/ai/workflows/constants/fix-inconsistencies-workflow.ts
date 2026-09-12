@@ -104,6 +104,12 @@ export enum FixInconsistenciesSseField {
   DataPrefix = 'data: ',
   BlockJoin = '\n\n',
   LineJoin = '\n',
+  CommentPrefix = ': ',
+  Heartbeat = 'ping',
+}
+
+export enum FixInconsistenciesWorkflowChunk {
+  StepStart = 'workflow-step-start',
 }
 
 export enum FixInconsistenciesResumeError {

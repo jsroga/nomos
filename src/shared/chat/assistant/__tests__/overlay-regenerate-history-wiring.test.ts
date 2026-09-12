@@ -39,6 +39,7 @@ describe('overlay regenerate and history wiring', () => {
   it('auto-focuses a session so past chats and refresh have a mounted runtime', () => {
     const src = readFileSync(OVERLAY_SRC, 'utf8')
     expect(src).toContain('selectFocusedSessionId')
-    expect(src).toContain('setFocusedSessionId(next)')
+    expect(src).toContain('setFocusedSessionId(next, nextModule)')
+    expect(src).toContain('queueNewWorkspaceChat')
   })
 })

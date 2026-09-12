@@ -168,6 +168,8 @@ export async function evaluateConceptAlignment(
     userPrompt: 'Evaluate the concept alignment and provide your assessment.',
     temperature: 0.2,
     modelOverride: state.modelConfig?.model,
+    traceId: state.traceId,
+    parentSpanId: state.parentSpanId,
     schema: ConceptEvaluationSchema,
   })
 

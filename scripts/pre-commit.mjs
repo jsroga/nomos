@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * Husky pre-commit entry: architecture → docs → env → typecheck → eslint → unit tests → prod build.
+ * Husky pre-commit entry: architecture → docs → env → typecheck → eslint → unit tests → prod build → stub Playwright.
  */
 import { spawnSync } from 'node:child_process'
+import { enableOverlayFlag, ensureProdServer } from './e2e-prod-server.mjs'
 
 const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=6144'
 
@@ -21,8 +22,9 @@ function run(label, cmd, args, { optional = false } = {}) {
   }
 }
 
-function main() {
+async function main() {
   console.log('pre-commit: running quality gates…')
+  enableOverlayFlag()
 
   run('architecture layout', 'node', ['scripts/check-architecture.mjs'])
   run('agent artifacts', 'node', ['scripts/check-agent-artifacts.mjs'])
@@ -35,7 +37,19 @@ function main() {
   run('unit tests', 'npm', ['run', 'test:unit'])
   run('production build', 'npm', ['run', 'build'])
 
+  const server = await ensureProdServer()
+  try {
+    run('stub playwright', 'npm', ['run', 'test:e2e:stubs'])
+  } finally {
+    server.stop()
+  }
+
   console.log('\npre-commit: all gates passed')
 }
 
-main()
+try {
+  await main()
+} catch (error) {
+  console.error(error)
+  process.exit(1)
+}

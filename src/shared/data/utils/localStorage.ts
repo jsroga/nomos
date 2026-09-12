@@ -28,6 +28,7 @@ export enum LocalStorageKeys {
   // UI Layout
   SIDEBAR_WIDTH = 'sidebar-width',
   SIDEBAR_COLLAPSED = 'sidebar-collapsed',
+  WORKSPACE_CHAT_OVERLAY_OPEN = 'workspace-chat-overlay-open',
 
   // Temporary / Legacy
   STABILITY_API_KEY_LEGACY = 'STABILITY_API_KEY',

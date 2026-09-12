@@ -2,7 +2,7 @@ import { Agent } from '@mastra/core/agent'
 import { OPENROUTER_AUTO_GATEWAY } from '@/shared/agent-kernel/models'
 import { storytellerStudioTools, gameDesignStudioTools } from '../../tools/bundles'
 import { createInheritedAgentMemory } from '../../studio-memory'
-import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP, EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP, EDITOR_INSTRUCTIONS_ONLY, EDITOR_TOOL_MEMBERSHIP_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { StudioStubDescription } from './studio-stub-descriptions'
 
 const DEFAULT_MODEL = OPENROUTER_AUTO_GATEWAY
@@ -37,7 +37,7 @@ export const studioAgents: Record<string, Agent> = {
     model: DEFAULT_MODEL,
     tools: storytellerStudioTools,
     memory: createInheritedAgentMemory(),
-    editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
+    editor: EDITOR_TOOL_MEMBERSHIP_ONLY,
   }),
 
   'game-design-agent': new Agent({

@@ -6,12 +6,52 @@ import { readString } from '@/shared/data/json-guards'
 
 export enum ScriptGhostCopy {
   System =
-    'Continue the manuscript with one sentence or a short paragraph. Do not rewrite the prefix. Match the requested format. Do not run critiques.',
+    'Continue the manuscript with one sentence. Do not rewrite the prefix. Match the requested format. Do not run critiques.',
   FormatLinePrefix = 'Format: ',
 }
 
 export function scriptGhostSystemPrompt(mode: ManuscriptMode): string {
   return `${ScriptGhostCopy.System}\n${ScriptGhostCopy.FormatLinePrefix}${mode}`
+}
+
+export enum ScriptGhostHonorific {
+  Dr = 'Dr.',
+  Mr = 'Mr.',
+  Mrs = 'Mrs.',
+  Ms = 'Ms.',
+  Prof = 'Prof.',
+}
+
+const SENTENCE_END = /[.!?]/
+const SPACE_THEN_CAPITAL = /^\s+[A-Z]/
+
+function endsWithHonorific(sentence: string): boolean {
+  const trimmed = sentence.trimEnd()
+  for (const honorific of Object.values(ScriptGhostHonorific)) {
+    if (!trimmed.endsWith(honorific)) continue
+    const before = trimmed.slice(0, trimmed.length - honorific.length)
+    if (before.length === 0 || /\s$/.test(before)) return true
+  }
+  return false
+}
+
+/** First sentence only: `.!?` then space+capital or newline. Skips Dr./Mr. */
+export function clipScriptGhostToFirstSentence(text: string): string {
+  const leadLength = text.length - text.trimStart().length
+  const lead = text.slice(0, leadLength)
+  const input = text.slice(leadLength)
+  if (input.length === 0) return ''
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i]
+    if (!ch || !SENTENCE_END.test(ch)) continue
+    const sentence = input.slice(0, i + 1)
+    if (endsWithHonorific(sentence)) continue
+    const rest = input.slice(i + 1)
+    if (rest.length === 0) return `${lead}${sentence.trimEnd()}`
+    if (rest.startsWith('\n')) return `${lead}${sentence.trimEnd()}`
+    if (SPACE_THEN_CAPITAL.test(rest)) return `${lead}${sentence.trimEnd()}`
+  }
+  return `${lead}${input}`
 }
 
 export function involvedNamesFromCoveringBeats(beats: readonly BeatDraftCanonBeat[]): string[] {

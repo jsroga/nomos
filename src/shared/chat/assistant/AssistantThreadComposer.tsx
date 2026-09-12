@@ -176,20 +176,23 @@ function AttachButton() {
 */
 
 function DetailsToggle() {
-  const { showDetails, toggleDetails } = useAssistantChatDetails()
+  const { showDetails, toggleDetails, useLogsLabel } = useAssistantChatDetails()
+  const title = useLogsLabel ? ASSISTANT_THREAD_COPY.ShowLogs : ASSISTANT_THREAD_COPY.ShowDetails
+  const showAria = useLogsLabel
+    ? ASSISTANT_THREAD_COPY.ShowLogsAria
+    : ASSISTANT_THREAD_COPY.ShowDetailsAria
+  const hideAria = useLogsLabel
+    ? ASSISTANT_THREAD_COPY.HideLogsAria
+    : ASSISTANT_THREAD_COPY.HideDetailsAria
   return (
     <button
       type="button"
       className={
         showDetails ? 'aui-composer-tool aui-composer-tool--active' : 'aui-composer-tool'
       }
-      aria-label={
-        showDetails
-          ? ASSISTANT_THREAD_COPY.HideDetailsAria
-          : ASSISTANT_THREAD_COPY.ShowDetailsAria
-      }
+      aria-label={showDetails ? hideAria : showAria}
       aria-pressed={showDetails}
-      title={ASSISTANT_THREAD_COPY.ShowDetails}
+      title={title}
       onClick={toggleDetails}
     >
       <Braces size={15} aria-hidden />

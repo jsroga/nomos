@@ -13,18 +13,19 @@ import {
 } from '@/shared/chat/core/chat-session-policy'
 import { ChatSessionSendDecision } from '@/shared/chat/core/constants/chat-session'
 import type { ChatSession } from '@/shared/chat/core/io/chat-session-contract'
-import { createChatSession, listChatSessions, markChatSessionIdle } from '@/shared/chat/core/io/chat-sessions.api'
+import { listChatSessions, markChatSessionIdle } from '@/shared/chat/core/io/chat-sessions.api'
 import { chatSessionsKeys } from '@/shared/chat/core/io/chat-sessions.keys'
 import {
-  prependCreatedChatSession,
   selectMountedSessions,
   selectFocusedSessionId,
   streamingSessionsWithoutRunId,
 } from '@/shared/chat/core/overlay-session-runtime'
+import { queueNewWorkspaceChat } from '@/shared/chat/state/queue-new-workspace-chat'
 import { getDefaultChatAdapter, type ModuleChatAdapter } from '@/shared/chat/overlay/module-chat-adapters'
 import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { useEnsureFocusedOverlaySession } from './use-ensure-focused-overlay-session'
+import { useHydratedWorkspaceChatOverlayOpen } from './use-hydrated-overlay-open'
 import { WorkspaceChatClass, WorkspaceChatCopy } from './workspace-chat-copy'
 import { WorkspaceChatMismatchDialog } from './WorkspaceChatMismatchDialog'
 import { WorkspaceChatSessionList } from './WorkspaceChatSessionList'
@@ -38,11 +39,11 @@ export function WorkspaceChatOverlay({
   const pathname = usePathname()
   const params = useParams()
   const queryClient = useQueryClient()
-  const overlayOpen = useWorkspaceChatUiStore(state => state.overlayOpen)
+  const overlayOpen = useHydratedWorkspaceChatOverlayOpen()
   const focusedSessionId = useWorkspaceChatUiStore(state => state.focusedSessionId)
+  const focusedSessionModuleId = useWorkspaceChatUiStore(state => state.focusedSessionModuleId)
   const setFocusedSessionId = useWorkspaceChatUiStore(state => state.setFocusedSessionId)
   const setMismatchDialog = useWorkspaceChatUiStore(state => state.setMismatchDialog)
-  const setQueuedSend = useWorkspaceChatUiStore(state => state.setQueuedSend)
   const stopHandlers = useMemo(() => new Map<string, () => void>(), [])
   const hydrated = useRef(false)
 
@@ -71,8 +72,17 @@ export function WorkspaceChatOverlay({
   useEffect(() => {
     if (!sessionsQuery.isSuccess) return
     const next = selectFocusedSessionId(sessions, focusedSessionId)
-    if (next !== focusedSessionId) setFocusedSessionId(next)
-  }, [sessions, focusedSessionId, sessionsQuery.isSuccess, setFocusedSessionId])
+    const nextModule = sessions.find(session => session.id === next)?.moduleId ?? null
+    if (next !== focusedSessionId || nextModule !== focusedSessionModuleId) {
+      setFocusedSessionId(next, nextModule)
+    }
+  }, [
+    sessions,
+    focusedSessionId,
+    focusedSessionModuleId,
+    sessionsQuery.isSuccess,
+    setFocusedSessionId,
+  ])
 
   useEnsureFocusedOverlaySession({
     overlayOpen,
@@ -113,47 +123,46 @@ export function WorkspaceChatOverlay({
 
   const onConfirmNewChat = (bufferedText: string) => {
     if (!currentModuleId || !currentHasAgent) return
-    void (async () => {
-      const created = await createChatSession({ projectId, moduleId: currentModuleId })
-      queryClient.setQueryData(chatSessionsKeys.list(projectId), (current: ChatSession[] | undefined) =>
-        prependCreatedChatSession(current, created),
-      )
-      setFocusedSessionId(created.id)
-      setQueuedSend({ sessionId: created.id, text: bufferedText, id: Date.now() })
-      await queryClient.invalidateQueries({ queryKey: chatSessionsKeys.list(projectId) })
-    })()
+    void queueNewWorkspaceChat({
+      projectId,
+      moduleId: currentModuleId,
+      text: bufferedText,
+      queryClient,
+    })
   }
 
   return (
-    <aside
-      id={TOUR_STEP_IDS.STORYTELLER_CHAT}
-      className={overlayOpen ? WorkspaceChatClass.Panel : WorkspaceChatClass.PanelHidden}
-      hidden={!overlayOpen}
-      aria-hidden={!overlayOpen}
-      aria-label={WorkspaceChatCopy.PanelAria}
-    >
-      <WorkspaceChatSessionList
-        projectId={projectId}
-        currentModuleId={currentModuleId}
-        sessions={sessions}
-        stopHandlers={stopHandlers}
-      />
-      <div className="relative min-h-0 flex-1">
-        {mounted.map(session => (
-          <WorkspaceChatSessionRuntime
-            key={session.id}
-            session={session}
-            projectId={projectId}
-            hidden={session.id !== focusedSessionId}
-            composerEnabled={currentHasAgent}
-            onBeforeSend={onBeforeSend}
-            onChatStatus={() => undefined}
-            stopHandlers={stopHandlers}
-            adapter={adapterFor(session)}
-          />
-        ))}
-      </div>
+    <>
+      <aside
+        id={TOUR_STEP_IDS.STORYTELLER_CHAT}
+        className={overlayOpen ? WorkspaceChatClass.Panel : WorkspaceChatClass.PanelHidden}
+        hidden={!overlayOpen}
+        aria-hidden={!overlayOpen}
+        aria-label={WorkspaceChatCopy.PanelAria}
+      >
+        <WorkspaceChatSessionList
+          projectId={projectId}
+          currentModuleId={currentModuleId}
+          sessions={sessions}
+          stopHandlers={stopHandlers}
+        />
+        <div className="relative min-h-0 flex-1">
+          {mounted.map(session => (
+            <WorkspaceChatSessionRuntime
+              key={session.id}
+              session={session}
+              projectId={projectId}
+              hidden={session.id !== focusedSessionId}
+              composerEnabled={currentHasAgent}
+              onBeforeSend={onBeforeSend}
+              onChatStatus={() => undefined}
+              stopHandlers={stopHandlers}
+              adapter={adapterFor(session)}
+            />
+          ))}
+        </div>
+      </aside>
       <WorkspaceChatMismatchDialog onConfirmNewChat={onConfirmNewChat} />
-    </aside>
+    </>
   )
 }

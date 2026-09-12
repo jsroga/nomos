@@ -2,8 +2,11 @@
 
 import { useCallback } from 'react'
 import { Edge, Node } from '@xyflow/react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAutoSave } from '@/domains/loop-creator/state/useAutoSave'
 import { createLoop, type PersistedGameLoop } from '@/domains/loop-creator/core/io/loops.api'
+import { isWorkspaceChatOverlayEnabled } from '@/shared/data/feature-flags'
+import { startLoopCreatorGenerationChat } from '@/domains/loop-creator/state/utils/start-loop-creator-generation-chat'
 import {
   LOOP_LOG_AUTO_START,
   LOOP_LOG_CANVAS_RESET,
@@ -34,18 +37,19 @@ export function useLoopPersistence(projectId: string, core: LoopCreatorCore) {
     setSelectedNode,
     setGameContext,
     setShowCreateLoopDialog,
-    setPendingAutoMessage,
+    setPendingAutoPrompt,
   } = core
 
-  const { saveStatus } = useAutoSave({
+  useAutoSave({
     loopId: currentLoopId,
     nodes,
     edges,
     metadata: loopMetadata,
     analysis,
-    debounceMs: 2000,
     enabled: !!currentLoopId,
   })
+
+  const queryClient = useQueryClient()
 
   const createNewLoop = useCallback(
     async (
@@ -127,15 +131,18 @@ export function useLoopPersistence(projectId: string, core: LoopCreatorCore) {
     (_loop: PersistedGameLoop, gameConcept: string) => {
       console.log(LOOP_LOG_AUTO_START, gameConcept)
       setGameContext((prev: LoopGameContext) => ({ ...prev, gameDescription: gameConcept }))
-      setPendingAutoMessage(
-        `I want to create a game like this: ${gameConcept}\n\nPlease design the core game loop nodes and mechanics for this concept.`,
-      )
+      void startLoopCreatorGenerationChat({
+        projectId,
+        gameConcept,
+        queryClient,
+        overlayEnabled: isWorkspaceChatOverlayEnabled(),
+        setPendingAutoPrompt,
+      })
     },
-    [setGameContext, setPendingAutoMessage],
+    [projectId, queryClient, setGameContext, setPendingAutoPrompt],
   )
 
   return {
-    saveStatus,
     createNewLoop,
     handleLoopChange,
     handleReset,

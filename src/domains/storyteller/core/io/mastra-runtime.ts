@@ -75,7 +75,7 @@ import { autonomousAuthorAgent, AUTONOMOUS_AUTHOR_ID } from '@/domains/storytell
 import { museAgent, museRankerAgent } from '@/domains/storyteller/ai/agents/Muse/muse-agent'
 import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
 import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
-import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { EDITOR_TOOL_MEMBERSHIP_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { getPublishedAgentOr } from '@/shared/agent-kernel/mastra/get-published-agent'
 import {
   BeatPlannerAgentId,
@@ -138,7 +138,7 @@ const chatAdapterAgent = new Agent({
     modelSettings: CHAT_ADAPTER_MODEL_SETTINGS,
   },
   tools: CHAT_ADAPTER_TOOLS,
-  editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
+  editor: EDITOR_TOOL_MEMBERSHIP_ONLY,
 })
 
 /** Production tools listed on the Mastra instance for Editor's project-tool picker. */

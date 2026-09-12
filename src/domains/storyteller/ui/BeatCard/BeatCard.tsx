@@ -19,6 +19,7 @@ type Beat = BeatCardData & { type?: string }
 
 interface BeatCardProps {
   beat: Beat
+  displaySequence: number
   onUpdate: (id: string, updates: Partial<Beat>) => void
   onDelete: (id: string) => void
   onDragStart: (e: React.DragEvent, id: string) => void
@@ -141,6 +142,7 @@ function BeatCardTypePicker({
 
 export const BeatCard: React.FC<BeatCardProps> = ({
   beat,
+  displaySequence,
   onUpdate,
   onDelete,
   onDragStart,
@@ -202,22 +204,20 @@ export const BeatCard: React.FC<BeatCardProps> = ({
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-2 gap-2">
+      <div className="flex items-center mb-2 gap-2 min-w-0 pr-6">
+        <span className="font-mono text-[10px] text-muted-foreground tabular-nums flex-shrink-0">
+          #{displaySequence}
+        </span>
         {isEditing ? (
           <BeatCardTypePicker
             value={editType}
             onChange={value => setEditState({ ...editState, type: value, beatType: value })}
           />
         ) : (
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              {beatType}
-            </span>
-          </div>
+          <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground truncate">
+            {beatType}
+          </span>
         )}
-        <span className="font-mono text-[10px] text-muted-foreground tabular-nums flex-shrink-0">
-          #{beat.sequence}
-        </span>
       </div>
 
       {isEditing ? (

@@ -14,6 +14,7 @@ import {
   WorldGenReviewType,
 } from '../constants/tile-review-dialog'
 import type { TileReviewType } from '../constants/tile-review-dialog'
+import { persistableTileImageUrl } from '@/domains/2d-canvas/state/utils/persistable-tile-image-url'
 import { findVariantIndex } from '../utils/tile-review-variant'
 import { persistFirstTileStyleAnchor } from '@/domains/2d-canvas/state/utils/persist-style-anchor'
 import { getWorldUiStore } from '@/domains/2d-canvas/state/useWorldUiStore'
@@ -54,6 +55,7 @@ export function useTileReviewDialog({
   onClose,
   tileX,
   tileY,
+  newUrl,
   variantUrls,
   originalUrl,
   type,
@@ -102,7 +104,8 @@ export function useTileReviewDialog({
 
   const acceptReviewType = async (selectedUrl: string | null) => {
     if (type === WorldGenReviewType.Generation) {
-      await acceptGeneration(tileX, tileY, selectedUrl || undefined)
+      const urlToAccept = selectedUrl || newUrl
+      await acceptGeneration(tileX, tileY, persistableTileImageUrl(urlToAccept))
       toast.success(TileReviewToast.GenerationAccepted)
       onClose()
       return

@@ -96,6 +96,11 @@ describe('requestCorkBoardTextBeats', () => {
     expect(state).not.toContain('runArtifactDraftOverlay')
     expect(CORK_BOARD_GENERATE_NEXT_BEAT_PROMPT).toContain(StorytellerWorkflowToolId.RunBeatDraft)
     expect(CORK_BOARD_GENERATE_NEXT_BEAT_PROMPT).toContain(StorytellerChatTool.ManageBeat)
+    const tab = readFileSync(
+      'src/domains/storyteller/ui/StorytellerLayout/shared/StorytellerActiveTabContent.tsx',
+      'utf8',
+    )
+    expect(tab).toContain('enqueueStorytellerChatPrompt')
   })
 
   it('leaves image controls free and toasts instead of sending while chat is busy', () => {
@@ -175,5 +180,26 @@ describe('preferRicherBeats', () => {
     ]
     const incoming = [{ id: 'a', sequence: 1, logline: 'Open' }]
     expect(preferRicherBeats(local, incoming)).toEqual(local)
+  })
+
+  it('keeps a local reorder when the parent list is the same cards', () => {
+    const local = [
+      { id: 'a', sequence: 2, logline: 'Open' },
+      { id: 'b', sequence: 1, logline: 'Age' },
+    ]
+    const incoming = [
+      { id: 'a', sequence: 1, logline: 'Open' },
+      { id: 'b', sequence: 2, logline: 'Age' },
+    ]
+    expect(preferRicherBeats(local, incoming)).toEqual(local)
+  })
+
+  it('takes incoming when the server added cards', () => {
+    const local = [{ id: 'a', sequence: 1, logline: 'Open' }]
+    const incoming = [
+      { id: 'a', sequence: 1, logline: 'Open' },
+      { id: 'b', sequence: 2, logline: 'Age' },
+    ]
+    expect(preferRicherBeats(local, incoming)).toEqual(incoming)
   })
 })

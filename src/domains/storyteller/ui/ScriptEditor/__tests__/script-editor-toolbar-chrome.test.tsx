@@ -23,7 +23,8 @@ describe('ScriptEditor manuscript chrome contract', () => {
     expect(writing).toBeGreaterThan(-1)
     expect(bar).toBeGreaterThan(writing)
     expect(src).not.toMatch(/min-h-12 border-b/)
-    expect(ScriptEditorChromeClass.Bar).toContain('min-h-[50px]')
+    expect(ScriptEditorChromeClass.Bar).toContain('h-[70px]')
+    expect(ScriptEditorChromeClass.Bar).not.toContain('min-h-[50px]')
     expect(ScriptEditorChromeClass.Bar).toContain('px-[22px]')
     expect(ScriptEditorChromeClass.Bar).toContain('py-2.5')
     expect(ScriptEditorChromeClass.Bar).toContain('border-t')
@@ -65,11 +66,16 @@ describe('ScriptEditorManuscriptToolbar', () => {
       ScriptEditorToolbarCopy.RegenerateSection,
       ScriptEditorToolbarCopy.Compile,
     ])
-    for (const button of buttons) {
-      expect(button.className.split(/\s+/)).toContain('py-1.5')
-      expect(button.className.split(/\s+/)).toContain('text-[12.5px]')
+    const modeTabs = buttons.slice(0, 2)
+    for (const tab of modeTabs) {
+      expect(tab.getAttribute('role')).toBe('tab')
+      expect(tab.hasAttribute('aria-selected')).toBe(true)
     }
-    expect(host.querySelector('[role="group"]')?.className).toContain('items-center')
+    const actions = buttons.slice(2)
+    for (const button of actions) {
+      expect(button.className).toContain('h-[34px]')
+    }
+    expect(host.querySelector('[role="tablist"]')?.className).toContain('items-center')
   })
 })
 

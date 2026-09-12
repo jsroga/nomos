@@ -6,6 +6,7 @@ import {
   CharacterTextFieldKey,
   DEFAULT_CHARACTER_METRICS,
 } from '@/domains/storyteller/core/character-missing-fields'
+import { clampedCharacterMetricSchema } from '@/domains/storyteller/core/character-metric-schema'
 
 export const GENERATE_CHARACTER_FIELDS_MODEL = TEXT_GEN_FAST_MODEL
 export const GENERATE_CHARACTER_FIELDS_TEMPERATURE = 0.6
@@ -22,7 +23,7 @@ export enum GenerateCharacterFieldsErrorCode {
 }
 
 export enum GenerateCharacterFieldsCopy {
-  System = 'You fill missing fields for a fictional series character. Stay consistent with the series bible, episode premises, existing cast, and any already-filled fields. Never contradict filled fields. Return only the requested missing fields. For psychological metrics, fill only valence, arousal, perceived stakes, and moral alignment.',
+  System = 'You fill missing fields for a fictional series character. Stay consistent with the series bible, episode premises, existing cast, and any already-filled fields. Never contradict filled fields. Return only the requested missing fields. For psychological metrics, fill only valence (-100 to 100), arousal (0 to 100), perceived stakes (0 to 100), and moral alignment (0 to 100). Arousal, perceived stakes, and moral alignment must never be negative.',
   FailedLog = '[GenerateCharacterFields] Generation failed:',
   EmptyJsonObject = '{}',
 }
@@ -114,18 +115,34 @@ const mbtiSchema = z.enum([
   CharacterDialogMbti.ESFP,
 ])
 
-const metricValueSchema = z.number().min(-100).max(100)
-
 export const generatedCharacterMetricsSchema = z.object({
-  [CharacterMetricFieldKey.Valence]: metricValueSchema.optional(),
-  [CharacterMetricFieldKey.Arousal]: metricValueSchema.min(0).optional(),
-  [CharacterMetricFieldKey.Autonomy]: metricValueSchema.min(0).optional(),
-  [CharacterMetricFieldKey.Competence]: metricValueSchema.min(0).optional(),
-  [CharacterMetricFieldKey.Relatedness]: metricValueSchema.min(0).optional(),
-  [CharacterMetricFieldKey.CognitiveClarity]: metricValueSchema.min(0).optional(),
-  [CharacterMetricFieldKey.PerceivedStakes]: metricValueSchema.min(0).optional(),
-  [CharacterMetricFieldKey.SocialSafety]: metricValueSchema.min(0).optional(),
-  [CharacterMetricFieldKey.MoralAlignment]: metricValueSchema.min(0).optional(),
+  [CharacterMetricFieldKey.Valence]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.Valence,
+  ).optional(),
+  [CharacterMetricFieldKey.Arousal]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.Arousal,
+  ).optional(),
+  [CharacterMetricFieldKey.Autonomy]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.Autonomy,
+  ).optional(),
+  [CharacterMetricFieldKey.Competence]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.Competence,
+  ).optional(),
+  [CharacterMetricFieldKey.Relatedness]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.Relatedness,
+  ).optional(),
+  [CharacterMetricFieldKey.CognitiveClarity]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.CognitiveClarity,
+  ).optional(),
+  [CharacterMetricFieldKey.PerceivedStakes]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.PerceivedStakes,
+  ).optional(),
+  [CharacterMetricFieldKey.SocialSafety]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.SocialSafety,
+  ).optional(),
+  [CharacterMetricFieldKey.MoralAlignment]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.MoralAlignment,
+  ).optional(),
 })
 
 export const generatedCharacterFieldsSchema = z.object({
@@ -141,10 +158,14 @@ export const generatedCharacterFieldsSchema = z.object({
 })
 
 const generatedCharacterMetricsLlmSchema = z.object({
-  [CharacterMetricFieldKey.Valence]: metricValueSchema,
-  [CharacterMetricFieldKey.Arousal]: metricValueSchema.min(0),
-  [CharacterMetricFieldKey.PerceivedStakes]: metricValueSchema.min(0),
-  [CharacterMetricFieldKey.MoralAlignment]: metricValueSchema.min(0),
+  [CharacterMetricFieldKey.Valence]: clampedCharacterMetricSchema(CharacterMetricFieldKey.Valence),
+  [CharacterMetricFieldKey.Arousal]: clampedCharacterMetricSchema(CharacterMetricFieldKey.Arousal),
+  [CharacterMetricFieldKey.PerceivedStakes]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.PerceivedStakes,
+  ),
+  [CharacterMetricFieldKey.MoralAlignment]: clampedCharacterMetricSchema(
+    CharacterMetricFieldKey.MoralAlignment,
+  ),
 })
 
 export const generatedCharacterFieldsLlmSchema = z.object({

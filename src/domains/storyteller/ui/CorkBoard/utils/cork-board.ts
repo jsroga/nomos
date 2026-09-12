@@ -132,3 +132,11 @@ export enum CorkBoardExpandedId {
 }
 
 export const CORK_BOARD_DRAG_EFFECT_MOVE = 'move'
+
+export enum CorkBoardDragMime {
+  BeatId = 'text/plain',
+}
+
+export enum CorkBoardLog {
+  ReorderFailed = '[cork-board] reorder persist failed',
+}

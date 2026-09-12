@@ -19,15 +19,18 @@ import {
   FixInconsistenciesApiPath,
   FixInconsistenciesRunStatus,
   FixInconsistenciesVerdictAction,
+  FIX_INCONSISTENCIES_APPLIED_MESSAGE,
 } from '@/domains/storyteller/ai/workflows/constants/fix-inconsistencies-workflow'
 import {
   ConsistencyFixRunPhase,
   FixInconsistenciesToastCopy,
   consistencyFixRunStorageKey,
+  nextCompletedScanSteps,
 } from '@/domains/storyteller/ui/FixInconsistencies/utils/fix-inconsistencies-dialog'
 import { isGenerationActivityBusy } from '@/domains/storyteller/state/utils/storyteller-ui-store'
 import {
   IDLE_CONSISTENCY_FIX_RUN,
+  getStorytellerUiStore,
   useStorytellerUiStore,
 } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { z } from 'zod'
@@ -151,7 +154,17 @@ export function useFixInconsistenciesRun({
         for (const frame of split.frames) {
           applyFixInconsistenciesSseFrame(frame, {
             onStarted: runId => setRun({ runId }),
-            onStep: stepId => setRun({ stepId }),
+            onStep: stepId => {
+              if (!stepId) return
+              const current = getStorytellerUiStore().consistencyFixRun
+              const next = nextCompletedScanSteps(
+                current.completedStepIds,
+                current.stepId,
+                stepId,
+              )
+              if (!next) return
+              setRun(next)
+            },
             onSuspended: applyReviewPayload,
             onComplete: applyComplete,
             onError: message => {
@@ -195,14 +208,21 @@ export function useFixInconsistenciesRun({
       headers: { 'Content-Type': ContentType.Json },
       body: JSON.stringify({ runId: run.runId, action, projectId }),
     })
-    const body = recordFromJson(await readJsonBody(response, {}))
+    await readJsonBody(response, {})
     if (!response.ok) {
       toast.error(FixInconsistenciesToastCopy.ApplyFailed)
       setRun({ phase: ConsistencyFixRunPhase.Review })
       return
     }
-    applyComplete(recordFromJson(body.output))
-  }, [applyComplete, projectId, run.runId, setRun])
+    persistRunId(null)
+    void queryClient.invalidateQueries({ queryKey: storytellerKeys.all })
+    if (action === FixInconsistenciesVerdictAction.Apply) {
+      resetRun()
+      toast.success(FIX_INCONSISTENCIES_APPLIED_MESSAGE)
+      return
+    }
+    resetRun()
+  }, [persistRunId, projectId, queryClient, resetRun, run.runId, setRun])
 
   const applyAll = useCallback(() => resume(FixInconsistenciesVerdictAction.Apply), [resume])
   const discardAll = useCallback(() => resume(FixInconsistenciesVerdictAction.Discard), [resume])

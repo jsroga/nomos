@@ -2,10 +2,7 @@
 
 import React from 'react'
 import {
-  AlertCircle,
   BarChart3,
-  Check,
-  Cloud,
   Gamepad2,
   Layers,
   Search,
@@ -18,7 +15,6 @@ import { Button } from '@/components/Button'
 import { Badge } from '@/components/Badge'
 import { LoopNodeType } from '@/domains/loop-creator/constants/custom-nodes'
 import { CANVAS_NODE_TYPE_GROUP } from '@/domains/loop-creator/constants/graph-state-defaults'
-import { LoopAutoSaveStatus } from '@/domains/loop-creator/constants/auto-save'
 import { LoopSelector } from './LoopSelector'
 import type { PersistedGameLoop } from '@/domains/loop-creator/core/io/loops.api'
 import { LoopAnalysisDialog } from './LoopAnalysisDialog'
@@ -35,10 +31,6 @@ interface LoopCreatorHeaderProps {
   nodeCount: number
   edgeCount: number
   groundingScore: number | null
-  saveStatus: {
-    status: LoopAutoSaveStatus
-    lastSaved: Date | null
-  }
   showCreateLoopDialog: boolean
   loopSelectorTourId: string
   onLoopChange: (loop: PersistedGameLoop | null) => void
@@ -59,7 +51,6 @@ export function LoopCreatorHeader({
   nodeCount,
   edgeCount,
   groundingScore,
-  saveStatus,
   showCreateLoopDialog,
   loopSelectorTourId,
   onLoopChange,
@@ -104,31 +95,6 @@ export function LoopCreatorHeader({
             <span className="text-emerald-500">
               Grounding: {Math.round(groundingScore * 100)}%
             </span>
-          )}
-          {currentLoopId && (
-            <div className="flex items-center gap-1.5">
-              {saveStatus.status === LoopAutoSaveStatus.Saving && (
-                <>
-                  <Cloud className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-                  <span className="text-xs text-blue-400">Saving...</span>
-                </>
-              )}
-              {saveStatus.status === LoopAutoSaveStatus.Saved && (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-xs text-emerald-400">Saved</span>
-                </>
-              )}
-              {saveStatus.status === LoopAutoSaveStatus.Error && (
-                <>
-                  <AlertCircle className="w-3.5 h-3.5 text-red-400" />
-                  <span className="text-xs text-red-400">Save failed</span>
-                </>
-              )}
-              {saveStatus.status === LoopAutoSaveStatus.Idle && saveStatus.lastSaved && (
-                <span className="text-xs text-muted-foreground/60">Synced</span>
-              )}
-            </div>
           )}
         </div>
 

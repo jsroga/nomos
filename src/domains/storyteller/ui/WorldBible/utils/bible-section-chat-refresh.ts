@@ -1,13 +1,12 @@
 import { lookupPromptBody } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-table'
 import type { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import type { BibleSection } from '@/domains/storyteller/core/types/enums'
-import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { enqueueStorytellerChatPrompt } from '@/domains/storyteller/state/utils/enqueue-storyteller-chat'
 import {
   isGenerationActivityBusy,
   type GenerationActivityPhase,
   type PendingChatPromptPayload,
 } from '@/domains/storyteller/state/utils/storyteller-ui-store'
-import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
 
 export function requestBibleSectionChatRefresh(input: {
   onSendMessage?: (msg: string, section?: string) => void
@@ -16,13 +15,7 @@ export function requestBibleSectionChatRefresh(input: {
 }): boolean {
   const text = lookupPromptBody(input.promptId)
   if (text.length === 0) return false
-  useWorkspaceChatUiStore.getState().setOverlayOpen(true)
-  if (input.onSendMessage) {
-    input.onSendMessage(text, input.section)
-    return true
-  }
-  getStorytellerUiStore().requestChatPrompt(text, input.section)
-  return true
+  return enqueueStorytellerChatPrompt(text, input.section)
 }
 
 export function isBibleSectionRefreshDisabled(input: {

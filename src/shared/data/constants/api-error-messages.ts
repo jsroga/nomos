@@ -201,6 +201,8 @@ export const API_ERROR = {
   UNAUTHORIZED_ACCESS_TO_PROJECT: 'Unauthorized access to project',
   MISSING_FILE_OR_PROJECT_ID: 'Missing file or projectId',
   STYLE_REF_UPLOAD_FAILED: 'Failed to upload style reference image',
+  STYLE_REF_CATALOG_LIMIT: 'At most 3 style references can be on',
+  STYLE_REF_CATALOG_INVALID: 'Unknown style reference',
   INVALID_ASSET_FILE_TYPE: 'Invalid file type. Only GLB, GLTF, PNG, JPG, WEBP allowed.',
   UPLOAD_FAILED: 'Upload failed',
   ENTITY_ID_QUERY_REQUIRED: 'entityId is required',

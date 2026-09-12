@@ -1,8 +1,10 @@
-import { test } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import { setupAuthenticatedPage } from '../fixtures/auth-fixtures'
 import {
-  acceptPendingAction,
+  attachInsufficientCreditsGuard,
+  chatAndAccept,
   createStoryProject,
+  draftFirstEpisode,
   expectCharacterInSidebar,
   expectWorldBibleHasContent,
   gotoStoryteller,
@@ -10,41 +12,81 @@ import {
   sendChatMessage,
   waitForAssistantStatus,
   warmAssistantChat,
+  acceptPendingAction,
   FlowCharacter,
-  FlowPrompt,
 } from '../fixtures/storyteller-fixtures'
-import { FlowTest } from '../constants/storyteller-flow'
-
-/**
- * Storyteller whole-flow critical path.
- *
- * Creates a fresh project, generates a storybible via the Writers Room (tool
- * proposals persist only after Add to world), verifies Overview has world
- * description, then creates a character that appears in the cast sidebar.
- */
+import { FlowError, FlowRole, FlowTest, FlowTimeout, FlowUiLabel } from '../constants/storyteller-flow'
+import { ConsistencyPrompt } from '../constants/storyteller-consistency-prompts'
+import { SmokeChatModel } from '../constants/storyteller-smoke'
+import { FIX_INCONSISTENCIES_APPLIED_MESSAGE } from '@/domains/storyteller/ai/workflows/constants/fix-inconsistencies-workflow'
 
 test.describe(FlowTest.Describe, () => {
   test(FlowTest.Name, async ({ page }) => {
-    test.setTimeout(900_000)
+    test.setTimeout(FlowTimeout.Live)
     await setupAuthenticatedPage(page)
+    const credits = attachInsufficientCreditsGuard(page)
     const project = await createStoryProject(page)
-    await gotoStoryteller(page, project.id)
+    await gotoStoryteller(page, project.id, undefined, { chatModel: SmokeChatModel.Glm })
     await warmAssistantChat(page, project.id)
+    await credits.assertOk()
 
-    await sendChatMessage(page, FlowPrompt.GenerateBible)
+    await expect(page.getByLabel(FlowUiLabel.WorkspaceChatPanel)).toBeVisible()
+
+    await chatAndAccept(page, ConsistencyPrompt.WorldDescriptionMundane)
+    await credits.assertOk()
+    await chatAndAccept(page, ConsistencyPrompt.WorldRuleNoMagic)
+    await credits.assertOk()
+    await openStorybible(page)
+    await expectWorldBibleHasContent(page)
+
+    const draftButton = page.getByRole(FlowRole.Button, { name: FlowUiLabel.DraftFirstEpisode })
+    if (await draftButton.isVisible().catch(() => false)) {
+      await draftFirstEpisode(page)
+    } else {
+      await chatAndAccept(page, ConsistencyPrompt.EpisodePremise)
+    }
+    await credits.assertOk()
+
+    const regenerate = page.getByTitle(FlowUiLabel.RegenerateDescription)
+    await expect(regenerate).toBeVisible({ timeout: FlowTimeout.Generation })
+    await regenerate.click()
+    try {
+      await waitForAssistantStatus(page)
+    } catch {
+      // Artifact draft or overlay enqueue may skip the running chip.
+    }
+    const addToWorld = page.getByRole(FlowRole.Button, { name: FlowUiLabel.AddToWorld }).first()
+    const accept = page.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).first()
+    if (await addToWorld.or(accept).first().isVisible().catch(() => false)) {
+      await acceptPendingAction(page)
+    }
+    await credits.assertOk()
+
+    await sendChatMessage(page, ConsistencyPrompt.CharacterMage)
     await waitForAssistantStatus(page)
     try {
       await acceptPendingAction(page)
     } catch {
-      await sendChatMessage(page, FlowPrompt.GenerateBible)
-      await waitForAssistantStatus(page)
-      await acceptPendingAction(page)
+      // manage_character may persist without Add to world.
     }
-    await openStorybible(page)
-    await expectWorldBibleHasContent(page)
-
-    await sendChatMessage(page, FlowPrompt.CreateCharacter)
-    await waitForAssistantStatus(page)
     await expectCharacterInSidebar(page, FlowCharacter.Name)
+    await credits.assertOk()
+
+    const fix = page.getByRole(FlowRole.Button, { name: FlowUiLabel.FixInconsistencies })
+    await expect(fix).toBeEnabled()
+    await fix.click()
+
+    const applyAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.ApplyAll })
+    const emptyReview = page.getByText(FlowUiLabel.NoInconsistencies)
+    await expect(applyAll.or(emptyReview).first()).toBeVisible({ timeout: FlowTimeout.FixScan })
+    if (await emptyReview.isVisible()) {
+      throw new Error(FlowError.NoInconsistencies)
+    }
+    await expect(applyAll).toBeEnabled()
+    await applyAll.click()
+    await expect(page.getByText(FIX_INCONSISTENCIES_APPLIED_MESSAGE)).toBeVisible({
+      timeout: FlowTimeout.Generation,
+    })
+    await credits.assertOk()
   })
 })

@@ -20,6 +20,7 @@ export enum WorldGenSidebarWorldCopy {
   StyleImagesLabel = 'Style references',
   StyleImagesHintBefore = 'Up to 3 images, used as Midjourney ',
   StyleImagesHintAfter = '.',
+  StyleImagesAdminHint = 'Switch a reference on or off. Other users get this set, or their own images if they changed them.',
   StyleImagesDrop = 'Drop images here',
   StyleImagesChoose = 'Choose images',
   StyleImagesClear = 'Clear all',
@@ -63,6 +64,12 @@ export enum WorldGenStyleRefsClass {
   Hint = 'mb-2.5 text-[11.5px] leading-[1.6] text-muted-foreground/75 text-pretty',
   HintFlag = 'font-mono',
   Generating = 'mt-2.5 text-[11.5px] leading-[1.6] text-muted-foreground/75',
+  CatalogGrid = 'm-0 list-none grid grid-cols-3 gap-2 p-0 [&>li]:m-0 [&>li]:p-0 [&>li]:min-w-0',
+  CatalogCell = 'relative aspect-square overflow-hidden rounded-[9px] shadow-[inset_0_0_0_1px_hsl(var(--border)/0.7)]',
+  CatalogCellOff = 'opacity-45',
+  CatalogImage = 'h-full w-full object-cover',
+  CatalogChrome = 'absolute inset-x-0 bottom-0 z-10 flex items-center justify-between gap-1 px-1.5 py-1 bg-gradient-to-t from-[rgba(9,9,11,0.82)] to-transparent',
+  CatalogCaption = 'min-w-0 font-mono text-[8.5px] tracking-[0.06em] text-foreground/85 truncate',
 }
 
 export enum WorldGenSidebarClass {
@@ -105,6 +112,8 @@ export enum WorldGenSidebarToast {
   StyleRefsCleared = 'Style images cleared',
   ReferenceRemoved = 'Reference removed',
   Undo = 'Undo',
+  StyleRefCatalogLimit = 'At most 3 style references can be on',
+  StyleRefCatalogSaveFailed = 'Could not save style references',
 }
 
 export const WorldGenTileProvider = {
