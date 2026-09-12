@@ -391,6 +391,7 @@ export class StorytellerService {
     )
     const { meteredCall } = await import('@/shared/ai/gateway/agent')
     const { LlmFeature } = await import('@/shared/ai/gateway/constants/llm-call')
+    const { mastraCompletionSettings } = await import('@/shared/ai/gateway/output-budget')
     const agent = await getPublishedAgent(StorytellerAgentId.Storyteller)
 
     const bound = memoryRef({
@@ -419,7 +420,10 @@ export class StorytellerService {
     const response = await meteredCall(LlmFeature.StorytellerChat, () =>
       agent.generate(
         `Goal: ${StorytellerCrudAgentPrompt.RespondToUser}\n\nContext:\n${chatContext}\n\nUser: ${validated.message}`,
-        { memory: { thread: threadId, resource: bound.resource } },
+        {
+          memory: { thread: threadId, resource: bound.resource },
+          ...mastraCompletionSettings(LlmFeature.StorytellerChat),
+        },
       ),
     )
     const content = response.text

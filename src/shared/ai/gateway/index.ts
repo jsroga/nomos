@@ -24,6 +24,11 @@ import {
   type LlmFeature,
 } from '@/shared/ai/gateway/constants/llm-call'
 import {
+  LlmFinishReason,
+  type LlmCompletionFeature,
+} from '@/shared/ai/gateway/constants/output-budget'
+import { resolveGatewayMaxOutputTokens } from '@/shared/ai/gateway/output-budget'
+import {
   OPENROUTER_BASE_URL,
   OPENROUTER_PROVIDER,
   VOYAGE_PROVIDER,
@@ -34,16 +39,22 @@ import { remapModelIdIfE2ePinned } from '@/shared/ai/gateway/e2e-llm-pin'
 
 export interface GatewayRequest {
   scope: ProjectScope
-  feature: LlmFeature
+  feature: LlmCompletionFeature
   model: string
   system?: string
   prompt: string
   traceId?: string
   temperature?: number
+  maxOutputTokens?: number
 }
 
 export interface GatewayResult {
   text: string
+  finishReason: string
+}
+
+function finishReasonOf(value: unknown): string {
+  return typeof value === 'string' && value.length > 0 ? value : LlmFinishReason.Unknown
 }
 
 function client() {
@@ -151,11 +162,18 @@ export async function complete(request: GatewayRequest): Promise<GatewayResult> 
       system: request.system,
       prompt: request.prompt,
       temperature: request.temperature,
+      maxOutputTokens: resolveGatewayMaxOutputTokens(
+        pinned.feature,
+        pinned.maxOutputTokens,
+      ),
       maxRetries: GATEWAY_SDK_RETRIES,
       abortSignal: AbortSignal.timeout(GATEWAY_TIMEOUT_MS),
     })
     return {
-      value: { text: result.text },
+      value: {
+        text: result.text,
+        finishReason: finishReasonOf(result.finishReason),
+      },
       usage: {
         promptTokens: result.usage?.inputTokens ?? 0,
         completionTokens: result.usage?.outputTokens ?? 0,
@@ -176,6 +194,10 @@ export async function completeStructured<T>(
       system: request.system,
       prompt: request.prompt,
       temperature: request.temperature,
+      maxOutputTokens: resolveGatewayMaxOutputTokens(
+        pinned.feature,
+        pinned.maxOutputTokens,
+      ),
       maxRetries: GATEWAY_SDK_RETRIES,
       abortSignal: AbortSignal.timeout(GATEWAY_TIMEOUT_MS),
     })
@@ -241,3 +263,19 @@ export async function embed(request: EmbedRequest): Promise<number[][]> {
     throw error
   }
 }
+
+export {
+  clampOpenRouterOutputTokens,
+  isLlmCompletionFeature,
+  mastraCompletionSettings,
+  resolveGatewayMaxOutputTokens,
+  withOpenRouterOutputBudget,
+} from '@/shared/ai/gateway/output-budget'
+export {
+  LLM_COMPLETION_BUDGET,
+  LlmFinishReason,
+  OPENROUTER_OUTPUT_CEILING,
+  OPENROUTER_OUTPUT_DEFAULT,
+  type LlmCompletionFeature,
+} from '@/shared/ai/gateway/constants/output-budget'
+

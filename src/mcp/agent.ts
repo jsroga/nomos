@@ -3,6 +3,8 @@ import type { ToolsInput } from '@mastra/core/agent'
 import { Memory } from '@mastra/memory'
 import { getStorageInstance } from '@/shared/agent-kernel/mastra-instance'
 import { OPENROUTER_AUTO_GATEWAY } from '@/shared/agent-kernel/models'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import { INHERITED_AGENT_LAST_MESSAGES } from '@/shared/agent-kernel/mastra/studio-memory'
 import { entitiesTools } from './domains/entities/tools'
 import { storytellerTools } from './domains/storyteller/tools'
@@ -40,4 +42,5 @@ You can remember context from previous interactions to assist in long-term world
   model: OPENROUTER_AUTO_GATEWAY,
   memory,
   tools: allTools,
+  defaultOptions: mastraCompletionSettings(LlmFeature.Assistant),
 })

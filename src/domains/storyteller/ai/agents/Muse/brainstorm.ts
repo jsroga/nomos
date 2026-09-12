@@ -1,5 +1,7 @@
 import { meteredCall } from '@/shared/ai/gateway/agent'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
+import { AGENT_MODEL_MATRIX } from '@/domains/storyteller/config/model-config'
 import '@/shared/data/server-guard'
 import { z } from 'zod'
 import {
@@ -82,6 +84,9 @@ Produce 3-5 wild ideas. Each idea: hook (WHO does WHAT irreversible thing), mech
 const defaultMuseGenerate: MuseGenerate = async prompt => {
   const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => museAgent.generate(prompt, {
     structuredOutput: { schema: WildIdeaBatchSchema },
+    ...mastraCompletionSettings(LlmFeature.StorytellerBeatPlan, {
+      roleBudget: AGENT_MODEL_MATRIX.muse.maxOutputTokens,
+    }),
   }))
   return response.object
 }

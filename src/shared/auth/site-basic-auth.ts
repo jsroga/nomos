@@ -5,12 +5,8 @@
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import {
-  EnvVarName,
-  HttpHeader,
-  HttpStatus,
-  NodeEnv,
-} from '@/shared/data/constants/protocol'
+import { isE2eBypassRequest } from '@/shared/auth/utils/e2e-bypass'
+import { EnvVarName, HttpStatus } from '@/shared/data/constants/protocol'
 
 enum BasicAuthWire {
   SchemePrefix = 'Basic ',
@@ -51,17 +47,9 @@ function decodeBasicCredentials(
   }
 }
 
-function isE2eBypass(request: NextRequest): boolean {
-  const secret = process.env[EnvVarName.E2eBypassAuthSecret]
-  if (!secret) return false
-  const nodeEnv = process.env.NODE_ENV
-  if (nodeEnv !== NodeEnv.Development && nodeEnv !== NodeEnv.Test) return false
-  return request.headers.get(HttpHeader.BYPASS_AUTH) === secret
-}
-
 export function isSiteBasicAuthSatisfied(request: NextRequest): boolean {
   if (!isSiteBasicAuthEnabled()) return true
-  if (isE2eBypass(request)) return true
+  if (isE2eBypassRequest(request)) return true
 
   const header = request.headers.get(BasicAuthWire.HeaderName)
   if (!header) return false

@@ -1,11 +1,14 @@
 import { Agent } from '@mastra/core/agent'
 import { OPENROUTER_AUTO_GATEWAY } from '@/shared/agent-kernel/models'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import { storytellerStudioTools, gameDesignStudioTools } from '../../tools/bundles'
 import { createInheritedAgentMemory } from '../../studio-memory'
 import { EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP, EDITOR_INSTRUCTIONS_ONLY, EDITOR_TOOL_MEMBERSHIP_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
 import { StudioStubDescription } from './studio-stub-descriptions'
 
 const DEFAULT_MODEL = OPENROUTER_AUTO_GATEWAY
+const STUDIO_STUB_DEFAULT_OPTIONS = mastraCompletionSettings(LlmFeature.Assistant)
 
 const CRITIC_STUDIO_RULES = `Rules:
 - Report ONLY findings within your brief. Ignore everything else, even obvious problems.
@@ -38,6 +41,7 @@ export const studioAgents: Record<string, Agent> = {
     tools: storytellerStudioTools,
     memory: createInheritedAgentMemory(),
     editor: EDITOR_TOOL_MEMBERSHIP_ONLY,
+    defaultOptions: STUDIO_STUB_DEFAULT_OPTIONS,
   }),
 
   'game-design-agent': new Agent({
@@ -50,6 +54,7 @@ export const studioAgents: Record<string, Agent> = {
     tools: gameDesignStudioTools,
     memory: createInheritedAgentMemory(),
     editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
+    defaultOptions: STUDIO_STUB_DEFAULT_OPTIONS,
   }),
 
   'grrm-author': new Agent({
@@ -62,6 +67,7 @@ export const studioAgents: Record<string, Agent> = {
     tools: storytellerStudioTools,
     memory: createInheritedAgentMemory(),
     editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
+    defaultOptions: STUDIO_STUB_DEFAULT_OPTIONS,
   }),
 
   'beat-planner': new Agent({
@@ -77,6 +83,7 @@ export const studioAgents: Record<string, Agent> = {
     },
     memory: createInheritedAgentMemory(),
     editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
+    defaultOptions: STUDIO_STUB_DEFAULT_OPTIONS,
   }),
 
   'continuity-critic': new Agent({
@@ -89,6 +96,7 @@ ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
     memory: createInheritedAgentMemory(),
     editor: EDITOR_INSTRUCTIONS_ONLY,
+    defaultOptions: STUDIO_STUB_DEFAULT_OPTIONS,
   }),
 
   'prose-critic': new Agent({
@@ -101,6 +109,7 @@ ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
     memory: createInheritedAgentMemory(),
     editor: EDITOR_INSTRUCTIONS_ONLY,
+    defaultOptions: STUDIO_STUB_DEFAULT_OPTIONS,
   }),
 
   'stakes-critic': new Agent({
@@ -113,6 +122,7 @@ ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
     memory: createInheritedAgentMemory(),
     editor: EDITOR_INSTRUCTIONS_ONLY,
+    defaultOptions: STUDIO_STUB_DEFAULT_OPTIONS,
   }),
 
   'dialogue-critic': new Agent({
@@ -125,5 +135,6 @@ ${CRITIC_STUDIO_RULES}`,
     model: DEFAULT_MODEL,
     memory: createInheritedAgentMemory(),
     editor: EDITOR_INSTRUCTIONS_ONLY,
+    defaultOptions: STUDIO_STUB_DEFAULT_OPTIONS,
   }),
 }

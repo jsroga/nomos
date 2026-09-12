@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { regenerateText } from '@/domains/storyteller/server'
+import { regenerateText, SCRIPT_EDIT_SELECTION_MAX_CHARS } from '@/domains/storyteller/server'
 import { withGatewayContext } from '@/shared/ai/gateway/call-context'
 import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
@@ -33,6 +33,12 @@ export async function POST(req: NextRequest) {
         { status: HttpStatus.BAD_REQUEST }
       )
     }
+    if (selection.length > SCRIPT_EDIT_SELECTION_MAX_CHARS) {
+      return NextResponse.json(
+        { error: API_ERROR.SELECTION_TOO_LONG },
+        { status: HttpStatus.BAD_REQUEST }
+      )
+    }
 
     const beforeText = readString(body.beforeText)
     const afterText = readString(body.afterText)
@@ -51,8 +57,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ result })
   } catch (error) {
     console.error(API_LOG_PREFIX.SCRIPT_EDIT_ERROR, error)
+    const message = error instanceof Error ? error.message : API_ERROR.FAILED_EDIT_SCRIPT
+    if (message === API_ERROR.SCRIPT_EDIT_INCOMPLETE) {
+      return NextResponse.json({ error: message }, { status: HttpStatus.UNPROCESSABLE })
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : API_ERROR.FAILED_EDIT_SCRIPT },
+      { error: message },
       { status: HttpStatus.INTERNAL }
     )
   }

@@ -6,6 +6,7 @@
 
 import { meteredCall } from '@/shared/ai/gateway/agent'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import { currentGatewayContext } from '@/shared/ai/gateway/call-context'
 import '@/shared/data/server-guard'
 import type { BaseMessage } from '@/shared/chat/core/message'
@@ -89,7 +90,9 @@ function generateExtras(params: LoopCreatorCompletionParams, spanId: string | un
   const parentSpanId = spanId ?? params.parentSpanId
   return {
     instructions: params.systemPrompt,
-    modelSettings: { temperature: params.temperature },
+    ...mastraCompletionSettings(LlmFeature.LoopCreator, {
+      temperature: params.temperature,
+    }),
     tracingOptions: {
       traceId: resolveTraceId(params),
       ...(parentSpanId ? { parentSpanId } : {}),

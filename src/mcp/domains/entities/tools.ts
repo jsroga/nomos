@@ -7,8 +7,8 @@
 import { env } from '@/shared/config/env'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { entitiesService } from '@/shared/data/entities-service'
-import { AppModuleId, GameEntityKind } from '@/shared/data/constants/protocol'
+import { entitiesService, sourceDomainSchema } from '@/shared/data/entities-service'
+import { GameEntityKind } from '@/shared/data/constants/protocol'
 import { validateApiKey, getServiceContext } from '../../core/auth'
 
 // ============================================
@@ -22,10 +22,7 @@ const listEntities = createTool({
   inputSchema: z.object({
     projectId: z.string().uuid().describe('The project ID to list entities for (required)'),
     entityType: z.nativeEnum(GameEntityKind).optional().describe('Filter by entity type (optional)'),
-    sourceDomain: z
-      .nativeEnum(AppModuleId)
-      .optional()
-      .describe('Filter by source domain (optional)'),
+    sourceDomain: sourceDomainSchema.optional().describe('Filter by source domain (optional)'),
     search: z
       .string()
       .optional()
@@ -83,9 +80,7 @@ const createEntity = createTool({
     entityType: z.nativeEnum(GameEntityKind).describe('The type of entity to create'),
     name: z.string().describe('The name of the entity'),
     description: z.string().optional().describe('A description of the entity (optional)'),
-    sourceDomain: z
-      .nativeEnum(AppModuleId)
-      .describe('The domain where this entity originates'),
+    sourceDomain: sourceDomainSchema.describe('The domain where this entity originates'),
     metadata: z
       .record(z.any())
       .optional()

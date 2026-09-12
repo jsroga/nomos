@@ -312,15 +312,15 @@ export async function draftFirstEpisode(page: Page): Promise<void> {
   await expect(page.getByRole(FlowRole.Tab, { name: StorytellerHeaderCopy.Episodes })).toBeVisible({
     timeout: FlowTimeout.Generation,
   })
-  await expect(page.locator(FlowSelector.Heading).first()).toBeVisible({
+  await expect(page.getByRole(FlowRole.Heading).first()).toBeVisible({
     timeout: FlowTimeout.Generation,
   })
 }
 
 export async function expectEpisodeHeader(page: Page): Promise<void> {
-  await expect(page.locator(FlowSelector.Heading).first()).toBeVisible()
+  const header = page.getByRole(FlowRole.Heading).first()
+  await expect(header).toBeVisible()
   const untitled = page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.UntitledEpisode}`).first()
-  const header = page.locator(FlowSelector.Heading).first()
   await expect(untitled.or(header)).toBeVisible()
 }
 

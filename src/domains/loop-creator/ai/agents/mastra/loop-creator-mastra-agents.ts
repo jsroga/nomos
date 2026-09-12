@@ -16,6 +16,8 @@ import '@/shared/data/server-guard'
 import type { Config } from '@mastra/core/mastra'
 import { Agent } from '@mastra/core/agent'
 import { resolveLoopCreatorMastraModel } from '../../../config/model-config'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { marketAnalystAgent } from '../market-analyst'
 import { marketAnalystTools } from '../market-analyst/tools-registry'
 import { EDITOR_INSTRUCTIONS_ONLY } from '@/shared/agent-kernel/mastra/editor-permissions'
@@ -64,6 +66,7 @@ function buildAgent(
     instructions: role,
     model: () => resolveLoopCreatorMastraModel(),
     editor: EDITOR_INSTRUCTIONS_ONLY,
+    defaultOptions: mastraCompletionSettings(LlmFeature.LoopCreator),
   })
 }
 

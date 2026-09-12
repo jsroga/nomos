@@ -1,5 +1,7 @@
 import { meteredCall } from '@/shared/ai/gateway/agent'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
+import { AGENT_MODEL_MATRIX } from '@/domains/storyteller/config/model-config'
 import {
   isValidationError,
   noopObserve,
@@ -172,6 +174,9 @@ Respond with the script beat only. No thinking tags, no markdown fences, no prea
           toolChoice: BeatDraftToolChoice.None,
           maxSteps: 1,
           abortSignal,
+          ...mastraCompletionSettings(LlmFeature.StorytellerBeatDraft, {
+            roleBudget: AGENT_MODEL_MATRIX.author.maxOutputTokens,
+          }),
         }),
       BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
       beatDraftGenerateTimeoutMessage(
@@ -217,6 +222,9 @@ async function runCritic(critic: Agent, name: string, prompt: string): Promise<s
         schema: CriticReportSchema,
         errorStrategy: BeatDraftStructuredOutputErrorStrategy.Warn,
       },
+      ...mastraCompletionSettings(LlmFeature.StorytellerBeatPlan, {
+        roleBudget: AGENT_MODEL_MATRIX.critic.maxOutputTokens,
+      }),
     }))
     const parsed = CriticReportSchema.safeParse(response.object)
     if (!parsed.success) {
@@ -290,6 +298,9 @@ Output a beat plan with: goal, conflict, turn, dialogueHook, charactersInvolved.
     const planner = await publishedBeatPlanner()
     const response = await meteredCall(LlmFeature.StorytellerBeatPlan, () => planner.generate(prompt, {
       structuredOutput: { schema: BeatPlanSchema },
+      ...mastraCompletionSettings(LlmFeature.StorytellerBeatPlan, {
+        roleBudget: AGENT_MODEL_MATRIX.planner.maxOutputTokens,
+      }),
     }))
     const plan = BeatPlanSchema.safeParse(response.object)
     if (!plan.success) {

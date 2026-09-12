@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { EVAL_WATCHED_PATHS } from '../../evals/input-hash.mjs'
 import {
@@ -29,8 +30,8 @@ describe('selectPrecommitSuites', () => {
     expect(needsProdServer(suites)).toBe(true)
   })
 
-  it('selects smoke for gateway completions without requiring live Playwright', () => {
-    expect(selectPrecommitSuites(['src/shared/ai/gateway/index.ts'])).toEqual([
+  it('selects smoke for the production e2e bypass gate', () => {
+    expect(selectPrecommitSuites(['src/shared/auth/utils/e2e-bypass.ts'])).toEqual([
       PrecommitSuite.E2eSmoke,
     ])
   })
@@ -84,5 +85,15 @@ describe('selectPrecommitSuites', () => {
     expect(selectPrecommitSuites(['src/domains/loop-creator/ai/agents/balance-analyst.ts'])).toEqual(
       [PrecommitSuite.EvalFreshness],
     )
+  })
+})
+
+describe('precommit live vs nightly scripts', () => {
+  it('keeps whole-flow Storyteller on nightly, not the live precommit script', () => {
+    const pkg = readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
+    expect(pkg).toContain(
+      '"test:e2e:live-storyteller": "playwright test e2e/scenarios/storyteller-character-fields.spec.ts"',
+    )
+    expect(pkg).toContain('"test:e2e:nightly": "playwright test"')
   })
 })

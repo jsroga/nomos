@@ -48,6 +48,7 @@ export enum HttpStatus {
   UNAUTHORIZED = 401,
   FORBIDDEN = 403,
   NOT_FOUND = 404,
+  UNPROCESSABLE = 422,
   INTERNAL = 500,
 }
 
@@ -260,6 +261,7 @@ export enum EnvVarName {
   FfprobePath = 'FFPROBE_PATH',
   ReplicateApiToken = 'REPLICATE_API_TOKEN',
   E2eBypassAuthSecret = 'E2E_BYPASS_AUTH_SECRET',
+  E2eAllowProdBypass = 'E2E_ALLOW_PROD_BYPASS',
   BasicAuthUser = 'BASIC_AUTH_USER',
   BasicAuthPassword = 'BASIC_AUTH_PASSWORD',
 }

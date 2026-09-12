@@ -12,7 +12,7 @@ import {
   LoopAgentBgClass,
   LoopAgentTextClass,
   LoopCreatorAgentKey,
-} from './loop-creator-layout'
+} from '../utils/loop-creator-layout'
 
 export const LOOP_AGENT_CONFIG = {
   [LoopCreatorAgentKey.System]: {

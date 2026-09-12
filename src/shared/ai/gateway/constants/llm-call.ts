@@ -15,6 +15,7 @@ export enum LlmFeature {
   StorytellerCharacterFields = 'storyteller.character-fields',
   StorytellerCharacterMbti = 'storyteller.character-mbti',
   StorytellerEntityDescription = 'storyteller.entity-description',
+  StorytellerArtifactDraft = 'storyteller.artifact-draft',
   StorytellerContextualSummary = 'storyteller.contextual-summary',
   StorytellerWorldGenPrompt = 'storyteller.world-gen-prompt',
   StorytellerVisualSubject = 'storyteller.visual-subject',

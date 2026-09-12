@@ -7,6 +7,7 @@
 import { meteredCall } from '@/shared/ai/gateway/agent'
 import { currentGatewayContext } from '@/shared/ai/gateway/call-context'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import '@/shared/data/server-guard'
 import type { Agent } from '@mastra/core/agent'
@@ -37,10 +38,11 @@ export async function generateStructured<T>(
           schema,
           errorStrategy: BeatDraftStructuredOutputErrorStrategy.Warn,
         },
-        tracingOptions: {
+          tracingOptions: {
           traceId,
           ...(span.spanId ? { parentSpanId: span.spanId } : {}),
         },
+        ...mastraCompletionSettings(LlmFeature.StorytellerBeatPlan),
       })
     )
   )

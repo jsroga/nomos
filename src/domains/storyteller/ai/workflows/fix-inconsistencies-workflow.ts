@@ -48,6 +48,7 @@ import { collapseFixesByFieldPath, isPatchableFinding } from './collapse-consist
 import type { FixInconsistenciesDeps } from './fix-inconsistencies-deps-types'
 import { ConsistencyIssueType, ConsistencyUnknownLocation } from '@/domains/storyteller/services/constants/consistency-issues'
 import type { ContinuityIssue } from '@/domains/storyteller/services/consistency-service'
+import { ConsistencySeverity } from '@/domains/storyteller/services/constants/consistency-issues'
 
 export {
   fixInconsistenciesInputSchema,
@@ -87,8 +88,8 @@ function issueTypeToFindingType(type: ContinuityIssue['type']): ContinuityFindin
 function issueSeverityToFinding(
   severity: ContinuityIssue['severity']
 ): ContinuityFindingSeverity {
-  if (severity === ContinuityFindingSeverity.Critical) return ContinuityFindingSeverity.Critical
-  if (severity === ContinuityFindingSeverity.Major) return ContinuityFindingSeverity.Major
+  if (severity === ConsistencySeverity.Critical) return ContinuityFindingSeverity.Critical
+  if (severity === ConsistencySeverity.Major) return ContinuityFindingSeverity.Major
   return ContinuityFindingSeverity.Minor
 }
 

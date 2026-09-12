@@ -63,6 +63,8 @@ import { runBeatDraftWorkflowTool } from '@/domains/storyteller/ai/tools/workflo
 import { buildChatAdapterPrompt } from '@/domains/storyteller/ai/prompts/chat-adapter-prompt'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { resolveRoleModel, AGENT_MODEL_MATRIX } from '@/domains/storyteller/config/model-config'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import {
   STORYTELLER_CHAT_MODEL,
   requestContextString,
@@ -91,9 +93,9 @@ const CHAT_ADAPTER_NAME = 'Storyteller'
 const CHAT_ADAPTER_DESCRIPTION = StorytellerAgentDescription.Storyteller
 const CHAT_ROLE: Parameters<typeof resolveRoleModel>[0] = 'chat'
 
-const CHAT_ADAPTER_MODEL_SETTINGS = {
-  maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
-} as const
+const CHAT_ADAPTER_DEFAULT_OPTIONS = mastraCompletionSettings(LlmFeature.StorytellerChat, {
+  roleBudget: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
+})
 
 const CHAT_ADAPTER_TOOLS = {
   [manageBeatApprovalTool.id]: manageBeatApprovalTool,
@@ -134,9 +136,7 @@ const chatAdapterAgent = new Agent({
   // returns undefined does not fall back to the global workspace.
   workspace: () => undefined,
   scorers: CHAT_HTTP_SCORERS,
-  defaultOptions: {
-    modelSettings: CHAT_ADAPTER_MODEL_SETTINGS,
-  },
+  defaultOptions: CHAT_ADAPTER_DEFAULT_OPTIONS,
   tools: CHAT_ADAPTER_TOOLS,
   editor: EDITOR_TOOL_MEMBERSHIP_ONLY,
 })
@@ -293,5 +293,8 @@ export async function startAutonomousEpisodeDraft(params: {
   }
   return autonomousDurableAgent.stream(params.prompt, {
     memory: { thread: params.threadId, resource: params.resourceId },
+    ...mastraCompletionSettings(LlmFeature.StorytellerBeatDraft, {
+      roleBudget: AGENT_MODEL_MATRIX.author.maxOutputTokens,
+    }),
   })
 }

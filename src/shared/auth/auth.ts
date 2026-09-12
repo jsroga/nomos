@@ -10,12 +10,8 @@ import {
   E2E_MOCK_USER_ID,
   E2E_TOKEN_TYPE,
 } from '@/shared/auth/constants/e2e-auth'
-import {
-  ApiErrorMessage,
-  EnvVarName,
-  HttpHeader,
-  NodeEnv,
-} from '@/shared/data/constants/protocol'
+import { isE2eBypassRuntime } from '@/shared/auth/utils/e2e-bypass'
+import { ApiErrorMessage, EnvVarName, HttpHeader } from '@/shared/data/constants/protocol'
 import { applyE2eLlmPinIfHarness } from '@/shared/ai/gateway/e2e-llm-pin'
 
 const DEV_MOCK_SESSION: Session = {
@@ -41,14 +37,11 @@ const DEV_MOCK_SESSION: Session = {
 }
 
 export async function getUserSession() {
-  if (
-    process.env.NODE_ENV === NodeEnv.Development ||
-    process.env.NODE_ENV === NodeEnv.Test
-  ) {
+  const bypassSecret = process.env[EnvVarName.E2eBypassAuthSecret]
+  if (isE2eBypassRuntime() && bypassSecret) {
     const headersList = await headers()
     const e2eHeader = headersList.get(HttpHeader.BYPASS_AUTH)
-    const bypassSecret = process.env[EnvVarName.E2eBypassAuthSecret]
-    if (bypassSecret && e2eHeader === bypassSecret) {
+    if (e2eHeader === bypassSecret) {
       applyE2eLlmPinIfHarness({
         userId: DEV_MOCK_SESSION.user.id,
         email: DEV_MOCK_SESSION.user.email,

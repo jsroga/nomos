@@ -8,6 +8,8 @@ import { getConfiguredModel } from '@/shared/agent-kernel/model-settings'
 import { isPlainObject } from '@/shared/data/json-guards'
 import { ScorerOutputField, LanguageModelMiddlewareSpec } from '@/shared/agent-kernel/scorers/constants/shared'
 import { ScorerInspectField, ScorerInspectMarker } from '@/shared/agent-kernel/scorers/constants/inspect'
+import { clampOpenRouterOutputTokens } from '@/shared/ai/gateway/output-budget'
+import { OPENROUTER_JUDGING_OUTPUT_CEILING } from '@/shared/ai/gateway/constants/output-budget'
 
 function stripWorkspacePack(text: string): string {
   const index = text.indexOf(ScorerInspectMarker.Iq200)
@@ -22,7 +24,7 @@ function isAgentEnvelope(value: unknown): value is Record<string, unknown> {
 const JUDGING_ROLE = 'judging'
 
 /** OpenRouter reserves max_tokens against remaining credits; unbounded Sol is 65536. */
-export const JUDGING_MAX_OUTPUT_TOKENS = 1024
+export const JUDGING_MAX_OUTPUT_TOKENS = OPENROUTER_JUDGING_OUTPUT_CEILING
 
 export function toMastraJudgingModel(): string {
   if (isE2eLlmPinned()) {
@@ -40,10 +42,14 @@ export function toMastraJudgingLanguageModel() {
     model: createPureChatModel(toOpenRouterModelId(toMastraJudgingModel())),
     middleware: {
       specificationVersion: LanguageModelMiddlewareSpec.V3,
-      transformParams: async ({ params }) => {
-        if (params.maxOutputTokens != null) return params
-        return { ...params, maxOutputTokens: JUDGING_MAX_OUTPUT_TOKENS }
-      },
+      transformParams: async ({ params }) => ({
+        ...params,
+        maxOutputTokens: clampOpenRouterOutputTokens(
+          params.maxOutputTokens,
+          JUDGING_MAX_OUTPUT_TOKENS,
+          JUDGING_MAX_OUTPUT_TOKENS,
+        ),
+      }),
     },
   })
 }

@@ -66,6 +66,8 @@ export const API_ERROR = {
   BEAT_IMAGES_REQUIRED: 'Generate beat images first',
   EPISODE_PROJECT_NOT_FOUND: 'Episode/Project not found',
   MISSING_SELECTION_OR_INSTRUCTION: 'Missing selection or instruction',
+  SELECTION_TOO_LONG: 'Selection is too long',
+  SCRIPT_EDIT_INCOMPLETE: 'Script edit returned empty or truncated text',
   FAILED_EDIT_SCRIPT: 'Failed to edit script',
   MISSING_UPLOAD_FIELDS: 'Missing required fields: projectId, assetId, modelFilename',
   MISSING_REMESH_FIELDS: 'Missing required fields: assetId, meshyTaskId',

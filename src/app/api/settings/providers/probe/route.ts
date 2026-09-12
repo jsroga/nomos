@@ -20,6 +20,8 @@ import { readJsonBody } from '@/shared/data/fetch-json-record'
 import { CHAT_MODELS, resolveStorytellerModel } from '@/domains/storyteller/server'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { EDITOR_DISABLED } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 
 const TEST_TIMEOUT_MS = 10_000
 const RATE_LIMIT_KEY_PREFIX = 'provider-test'
@@ -53,6 +55,7 @@ async function probeProvider(modelId: string): Promise<void> {
     instructions: PROBE_INSTRUCTIONS,
     model,
     editor: EDITOR_DISABLED,
+    defaultOptions: mastraCompletionSettings(LlmFeature.Assistant),
   })
 
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -60,7 +63,13 @@ async function probeProvider(modelId: string): Promise<void> {
     timer = setTimeout(() => reject(new Error(ERR_TIMEOUT)), TEST_TIMEOUT_MS)
   })
   try {
-    await Promise.race([agent.generate(PROBE_PROMPT, { maxSteps: 1 }), timeout])
+    await Promise.race([
+      agent.generate(PROBE_PROMPT, {
+        maxSteps: 1,
+        ...mastraCompletionSettings(LlmFeature.Assistant),
+      }),
+      timeout,
+    ])
   } finally {
     clearTimeout(timer)
   }

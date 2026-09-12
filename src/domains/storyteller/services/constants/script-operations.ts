@@ -2,6 +2,11 @@ export const SCRIPT_EDIT_PROMPT_LABEL = 'Edit script'
 
 export const SCRIPT_REGENERATION_FAILED_LOG = 'Script regeneration failed:'
 
+export const SCRIPT_EDIT_SELECTION_MAX_CHARS = 12_000
+
+export const SCRIPT_EDIT_INCOMPLETE =
+  'Script edit returned empty or truncated text'
+
 export const SCRIPT_EXPAND_INSTRUCTION =
   'Expand this section with more visual detail, sensory descriptions, and beat-by-beat action. Add subtext to any dialogue. Make it more cinematic.'
 

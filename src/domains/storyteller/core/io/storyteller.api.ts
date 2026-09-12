@@ -274,7 +274,9 @@ export async function editStorytellerScript(input: {
   if (error) {
     throw new Error(error)
   }
-  return readString(data.result) ?? input.selection
+  const result = readString(data.result)
+  if (!result) return input.selection
+  return result
 }
 
 export async function saveEpisodePosterVariant(input: {

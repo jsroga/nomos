@@ -1,6 +1,8 @@
 import { withGatewayContext } from '@/shared/ai/gateway/call-context'
 import { E2ePinnedChatModel } from '@/shared/ai/gateway/constants/e2e-llm-pin'
 import { isE2eLlmPinned } from '@/shared/ai/gateway/e2e-llm-pin'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import {
   USAGE_COMPLETION_FIELDS,
   USAGE_PROMPT_FIELDS,
@@ -129,6 +131,7 @@ async function runStorytellerStreamInner(input: StreamRequestInput): Promise<Res
     tracingOptions: { traceId: input.traceId },
     requestContext,
     memory: { thread: bound.thread, resource: bound.resource },
+    ...mastraCompletionSettings(LlmFeature.StorytellerChat),
   })
 
   const encoder = new TextEncoder()

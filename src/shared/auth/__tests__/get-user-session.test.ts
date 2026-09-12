@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiErrorMessage, HttpHeader } from '@/shared/data/constants/protocol'
+import {
+  ApiErrorMessage,
+  AuthBypassFlag,
+  EnvVarName,
+  HttpHeader,
+  NodeEnv,
+} from '@/shared/data/constants/protocol'
 
 const getUser = vi.fn()
 const headerGet = vi.fn()
@@ -53,7 +59,39 @@ describe('getUserSession', () => {
 
   it('keeps the E2E header bypass without calling getUser', async () => {
     const secret = 'harness-bypass'
-    vi.stubEnv('E2E_BYPASS_AUTH_SECRET', secret)
+    vi.stubEnv(EnvVarName.E2eBypassAuthSecret, secret)
+    headerGet.mockImplementation((name: string) =>
+      name === HttpHeader.BYPASS_AUTH ? secret : null
+    )
+
+    const { session } = await getUserSession()
+
+    expect(session?.user.id).toBe(E2E_MOCK_USER_ID)
+    expect(getUser).not.toHaveBeenCalled()
+    vi.unstubAllEnvs()
+  })
+
+  it('ignores the E2E header in production without the prod flag', async () => {
+    const secret = 'harness-bypass'
+    vi.stubEnv('NODE_ENV', NodeEnv.Production)
+    vi.stubEnv(EnvVarName.E2eBypassAuthSecret, secret)
+    headerGet.mockImplementation((name: string) =>
+      name === HttpHeader.BYPASS_AUTH ? secret : null
+    )
+    getUser.mockResolvedValue({ data: { user: USER }, error: null })
+
+    const { session } = await getUserSession()
+
+    expect(session?.user.id).toBe(USER.id)
+    expect(getUser).toHaveBeenCalled()
+    vi.unstubAllEnvs()
+  })
+
+  it('keeps the E2E header bypass in production when the prod flag is on', async () => {
+    const secret = 'harness-bypass'
+    vi.stubEnv('NODE_ENV', NodeEnv.Production)
+    vi.stubEnv(EnvVarName.E2eAllowProdBypass, AuthBypassFlag.True)
+    vi.stubEnv(EnvVarName.E2eBypassAuthSecret, secret)
     headerGet.mockImplementation((name: string) =>
       name === HttpHeader.BYPASS_AUTH ? secret : null
     )

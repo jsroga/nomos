@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPublishedAgent } from '@/shared/agent-kernel/mastra/get-published-agent'
 import { meteredCall } from '@/shared/ai/gateway/agent'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import { withAuth, type AuthenticatedRequest } from '@/shared/data/api-utils'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import { HttpStatus } from '@/shared/data/constants/protocol'
@@ -95,7 +96,9 @@ export const POST = withAuth(async (req: NextRequest, { session }: Authenticated
     const prompt = `Goal: ${StorytellerPromptAgentInstruction.GenerateImagePrompt}\n\nContext:\n${
       promptInput + StorytellerPromptAgentInstruction.GenerateImagePromptSuffix
     }`
-    const response = await meteredCall(LlmFeature.StorytellerChat, () => agent.generate(prompt))
+    const response = await meteredCall(LlmFeature.StorytellerChat, () =>
+      agent.generate(prompt, mastraCompletionSettings(LlmFeature.StorytellerChat)),
+    )
     const imagePrompt = response.text
 
     return NextResponse.json({ prompt: imagePrompt })

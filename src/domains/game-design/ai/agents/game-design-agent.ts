@@ -1,5 +1,6 @@
 import { meteredCall } from '@/shared/ai/gateway/agent'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import { Agent } from '@mastra/core/agent'
 import { promptRepository } from '@/shared/agent-kernel/prompts/repository'
 import { registerCorePrompts, registerGameDesignPrompts } from '@/shared/agent-kernel/prompts/registry'
@@ -142,6 +143,7 @@ export class GameDesignAgent {
       model: () => resolveGameDesignModel(config.modelName),
       tools: this.toolsMap,
       editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
+      defaultOptions: mastraCompletionSettings(LlmFeature.GameDesign),
     })
   }
 
@@ -178,7 +180,9 @@ export class GameDesignAgent {
       GameDesignAgentSpan.Run,
       async () => {
         const prompt = `${GameDesignAgentPromptCopy.GoalPrefix}${goal}${NewlineSeparator.Double}${GameDesignAgentPromptCopy.ContextPrefix}${context}`
-        const response = await meteredCall(LlmFeature.GameDesign, () => this.agent.generate(prompt))
+        const response = await meteredCall(LlmFeature.GameDesign, () =>
+          this.agent.generate(prompt, mastraCompletionSettings(LlmFeature.GameDesign)),
+        )
         return response.text
       },
       { goal, context }
@@ -228,6 +232,7 @@ export class GameDesignAgent {
                 jsonPromptInjection: GameDesignStructuredOutputJsonPromptInjection.Auto,
                 errorStrategy: GameDesignStructuredOutputErrorStrategy.Warn,
               },
+              ...mastraCompletionSettings(LlmFeature.GameDesign),
             })
           )
           return mapGameDesignStructuredOutput(response.object, response.text)
@@ -280,6 +285,7 @@ export class GameDesignAgent {
     return this.agent.stream(prompt, {
       toolChoice: options?.toolChoice ?? GameDesignStreamToolChoice.Auto,
       maxSteps: options?.maxSteps ?? 10,
+      ...mastraCompletionSettings(LlmFeature.GameDesign),
     })
   }
 

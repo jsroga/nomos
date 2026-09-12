@@ -2,7 +2,9 @@ import { agentConfig } from '@mastra/core/agent'
 import type { GoalConfig } from '@mastra/core/agent'
 import { AgentModelRole } from '@/domains/storyteller/ai/constants/agent-identity'
 import { StorytellerModelRoleKey } from '@/domains/storyteller/ai/agents/critics/constants/critic-agents'
-import { resolveRoleModel } from '@/domains/storyteller/config/model-config'
+import { AGENT_MODEL_MATRIX, resolveRoleModel } from '@/domains/storyteller/config/model-config'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import { getEntityLinkRequirements } from '@/domains/storyteller/config/storyteller-config'
 import { listBeatsTool } from '@/domains/storyteller/ai/tools/beat-tools'
 import { readWorldBibleTool, checkContinuityTool } from '@/domains/storyteller/ai/tools/bible-tools'
@@ -41,4 +43,7 @@ export default agentConfig({
   },
   editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
   goal: autonomousGoal,
+  defaultOptions: mastraCompletionSettings(LlmFeature.StorytellerBeatDraft, {
+    roleBudget: AGENT_MODEL_MATRIX.author.maxOutputTokens,
+  }),
 })

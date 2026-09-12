@@ -11,6 +11,8 @@ const READY_POLL_MS = 500
 const OVERLAY_FLAG = 'NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY'
 const OVERLAY_ON = 'true'
 const NODE_HEAP = '--max-old-space-size=8192'
+const E2E_ALLOW_PROD_BYPASS = 'E2E_ALLOW_PROD_BYPASS'
+const FLAG_ON = 'true'
 
 function sleep(ms) {
   return new Promise(resolve => {
@@ -76,6 +78,7 @@ export async function ensureProdServer() {
       ...process.env,
       DATABASE_SSL_REJECT_UNAUTHORIZED: 'false',
       NODE_OPTIONS: process.env.NODE_OPTIONS ?? NODE_HEAP,
+      [E2E_ALLOW_PROD_BYPASS]: FLAG_ON,
     },
   })
   let exitCode = null

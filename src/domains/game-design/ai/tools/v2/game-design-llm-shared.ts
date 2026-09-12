@@ -3,6 +3,8 @@ import { Agent } from '@mastra/core/agent'
 import type { ZodType } from 'zod'
 import { resolveGameDesignModel } from '@/domains/game-design/config/model-config'
 import { EDITOR_DISABLED } from '@/shared/agent-kernel/mastra/editor-permissions'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import {
   GameDesignLlmTemperature,
   GameDesignToolCopy,
@@ -40,6 +42,7 @@ function getToolStructuringAgent(): Agent {
       instructions: GameDesignToolStructurer.Instructions,
       model: () => resolveGameDesignModel(),
       editor: EDITOR_DISABLED,
+      defaultOptions: mastraCompletionSettings(LlmFeature.GameDesign),
     })
   }
   return toolStructuringAgent
@@ -56,7 +59,7 @@ export async function invokeLlmJsonPrompt<T>(
       schema,
       errorStrategy: GameDesignStructuredOutputErrorStrategy.Warn,
     },
-    modelSettings: { temperature: model.temperature },
+    ...mastraCompletionSettings(LlmFeature.GameDesign, { temperature: model.temperature }),
   })
   const parsed = schema.safeParse(response.object)
   if (!parsed.success) {

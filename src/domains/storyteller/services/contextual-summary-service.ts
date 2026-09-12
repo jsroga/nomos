@@ -11,6 +11,7 @@
 
 import { complete } from '@/shared/ai/gateway'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { LlmFinishReason } from '@/shared/ai/gateway/constants/output-budget'
 import { entityGraphService } from './entity-graph-service'
 import { relationshipEnricher } from './relationship-enricher-service'
 import { parseEntityType } from '@/domains/storyteller/core/entities/entity-type-guards'
@@ -227,7 +228,7 @@ export async function generateContextualSummary(
       safeRequest.scope
     )
 
-    const { text } = await complete({
+    const { text, finishReason } = await complete({
       scope: safeRequest.scope,
       feature: LlmFeature.StorytellerContextualSummary,
       model: CONTEXTUAL_SUMMARY_MODEL,
@@ -255,8 +256,19 @@ Write a 1-2 sentence contextual description explaining ${safeRequest.entityName}
       temperature: 0.3,
     })
 
+    const trimmed = text.trim()
+    if (!trimmed || finishReason === LlmFinishReason.Length) {
+      return {
+        contextualSummary:
+          safeRequest.entityDescription ||
+          `${safeRequest.entityName} (${safeRequest.entityType})`,
+        generatedAt: new Date(),
+        cacheHit: false,
+      }
+    }
+
     const result: ContextualSummaryResult = {
-      contextualSummary: text.trim(),
+      contextualSummary: trimmed,
       generatedAt: new Date(),
       cacheHit: false,
       relatedEntities,

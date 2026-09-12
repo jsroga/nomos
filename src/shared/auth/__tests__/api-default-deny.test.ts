@@ -3,7 +3,13 @@ import { NextRequest } from 'next/server'
 import { denyAnonymousApiRequest } from '@/shared/auth/api-default-deny'
 import { isPublicApiPath } from '@/shared/auth/utils/public-api-paths'
 import { ApiDenyMode, isSupabaseAuthCookieName } from '@/shared/auth/utils/session-cookie'
-import { HttpHeader, HttpStatus } from '@/shared/data/constants/protocol'
+import {
+  AuthBypassFlag,
+  EnvVarName,
+  HttpHeader,
+  HttpStatus,
+  NodeEnv,
+} from '@/shared/data/constants/protocol'
 
 const BYPASS_SECRET = 'harness-bypass-secret'
 
@@ -18,7 +24,7 @@ const originalEnv = { ...process.env }
 
 beforeEach(() => {
   process.env.MIDDLEWARE_DENY_MODE = ApiDenyMode.Enforce
-  process.env.E2E_BYPASS_AUTH_SECRET = BYPASS_SECRET
+  process.env[EnvVarName.E2eBypassAuthSecret] = BYPASS_SECRET
 })
 
 afterEach(() => {
@@ -81,11 +87,20 @@ describe('denyAnonymousApiRequest', () => {
 
   it('ignores the E2E bypass entirely in production', () => {
     // NODE_ENV is readonly on the typed env; vi.stubEnv is the supported route.
-    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NODE_ENV', NodeEnv.Production)
     const result = denyAnonymousApiRequest(
       request('/api/storyteller/plan', { bypass: BYPASS_SECRET })
     )
     expect(result?.status).toBe(HttpStatus.UNAUTHORIZED)
+  })
+
+  it('honours the E2E bypass in production when the prod flag is on', () => {
+    vi.stubEnv('NODE_ENV', NodeEnv.Production)
+    vi.stubEnv(EnvVarName.E2eAllowProdBypass, AuthBypassFlag.True)
+    const result = denyAnonymousApiRequest(
+      request('/api/storyteller/plan', { bypass: BYPASS_SECRET })
+    )
+    expect(result).toBeNull()
   })
 
   it('lets requests through in report mode but still logs them', () => {

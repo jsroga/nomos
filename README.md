@@ -119,8 +119,10 @@ npm run test:unit
 ```
 
 CI (`.github/workflows/ci.yml`) does not run Playwright. Critical e2e/smoke
-run at commit when paths match; the full folder is nightly. Agents do not open
-the app in a browser. A check worth making is kept as a committed test.
+(HTTP smoke, canvas stubs, Storyteller character-fields) run at commit when
+paths match; the full folder including whole-flow `storyteller.spec.ts` is nightly.
+Agents do not open the app in a browser. A check worth making is kept as a
+committed test.
 
 ## License
 

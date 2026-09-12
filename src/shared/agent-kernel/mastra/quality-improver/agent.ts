@@ -3,6 +3,8 @@ import { Agent } from '@mastra/core/agent'
 import type { GoalConfig } from '@mastra/core/agent'
 import { toOpenRouterModel, TEXT_GEN_FAST_MODEL } from '../../models'
 import { EDITOR_INSTRUCTIONS_ONLY } from '../editor-permissions'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import { createInheritedAgentMemory } from '../studio-memory'
 import {
   HourLoopBudget,
@@ -36,6 +38,7 @@ export const qualityImproverAgent = new Agent({
   editor: EDITOR_INSTRUCTIONS_ONLY,
   durable: true,
   goal: qualityImproverGoal,
+  defaultOptions: mastraCompletionSettings(LlmFeature.Assistant),
   tools: {
     [pinLiveDatasetTool.id]: pinLiveDatasetTool,
     [startLiveExperimentTool.id]: startLiveExperimentTool,

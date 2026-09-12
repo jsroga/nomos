@@ -1,5 +1,6 @@
 import { meteredCall } from '@/shared/ai/gateway/agent'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import { Agent } from '@mastra/core/agent'
 import { resolveLoopCreatorMastraModel } from '../../../config/model-config'
 import {
@@ -44,6 +45,7 @@ export function createMarketAnalystAgent() {
     model: () => resolveLoopCreatorMastraModel(),
     tools,
     editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
+    defaultOptions: mastraCompletionSettings(LlmFeature.LoopCreator),
   })
 }
 
@@ -116,6 +118,7 @@ export async function runMarketAnalysis(
           jsonPromptInjection: MarketAnalystStructuredOutputJsonPromptInjection.Auto,
           errorStrategy: MarketAnalystStructuredOutputErrorStrategy.Warn,
         },
+        ...mastraCompletionSettings(LlmFeature.LoopCreator),
       },
     ))
 

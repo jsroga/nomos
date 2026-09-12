@@ -9,17 +9,21 @@ import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/re
 import {
   SCRIPT_CONDENSE_INSTRUCTION,
   SCRIPT_EXPAND_INSTRUCTION,
+  SCRIPT_EDIT_INCOMPLETE,
   SCRIPT_REGENERATION_FAILED_LOG,
   SCRIPT_VISUAL_HOOK_INSTRUCTION,
 } from '@/domains/storyteller/services/constants/script-operations'
 import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
 import { complete } from '@/shared/ai/gateway'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { LlmFinishReason } from '@/shared/ai/gateway/constants/output-budget'
 import type { ProjectScope } from '@/shared/auth/project-scope'
 
 const SCRIPT_EDITOR_PROMPT = lookupPromptBody(StorytellerPromptRegistryId.ScriptEditorSystem)
 
 const CONTEXT_LIMIT = 5000
+
+export { SCRIPT_EDIT_SELECTION_MAX_CHARS } from '@/domains/storyteller/services/constants/script-operations'
 
 export async function regenerateText(
   scope: ProjectScope,
@@ -55,7 +59,11 @@ ${
       system: SCRIPT_EDITOR_PROMPT,
       prompt: `${contextInfo}\n\nSELECTED TEXT TO EDIT:\n"""\n${selection}\n"""\n\nINSTRUCTION: ${instruction}\n\nReturn only the edited text:`,
     })
-    return result.text.trim()
+    const edited = result.text.trim()
+    if (!edited || result.finishReason === LlmFinishReason.Length) {
+      throw new Error(SCRIPT_EDIT_INCOMPLETE)
+    }
+    return edited
   } catch (error) {
     console.error(SCRIPT_REGENERATION_FAILED_LOG, error)
     throw error

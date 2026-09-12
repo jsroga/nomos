@@ -9,6 +9,7 @@
 
 import { meteredCall } from '@/shared/ai/gateway/agent'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import '@/shared/data/server-guard'
 import { Agent } from '@mastra/core/agent'
 import { Mastra } from '@mastra/core/mastra'
@@ -115,11 +116,9 @@ export class StorytellerAgent {
       workspace: () => undefined,
       editor: EDITOR_TOOL_MEMBERSHIP_ONLY,
       scorers: CHAT_HTTP_SCORERS,
-      defaultOptions: {
-        modelSettings: {
-          maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
-        },
-      },
+      defaultOptions: mastraCompletionSettings(LlmFeature.StorytellerChat, {
+        roleBudget: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
+      }),
     })
 
       // Manually link observability (extends the agent with a mastra ref)
@@ -183,9 +182,9 @@ export class StorytellerAgent {
         const response = await meteredCall(LlmFeature.StorytellerChat, () => this.agent.generate(prompt, {
           toolChoice,
           maxSteps: AGENT_RUNTIME_DEFAULTS.maxSteps,
-          modelSettings: {
-            maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
-          },
+          ...mastraCompletionSettings(LlmFeature.StorytellerChat, {
+            roleBudget: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
+          }),
           ...(options?.memory ? { memory: options.memory } : {}),
           tracingOptions: {
             traceId: id,
@@ -294,9 +293,9 @@ Create a beat with:
     return this.agent.stream(prompt, {
       toolChoice: options?.toolChoice || AgentModelRole.Auto,
       maxSteps: AGENT_RUNTIME_DEFAULTS.maxSteps,
-      modelSettings: {
-        maxOutputTokens: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
-      },
+      ...mastraCompletionSettings(LlmFeature.StorytellerChat, {
+        roleBudget: AGENT_MODEL_MATRIX.chat.maxOutputTokens,
+      }),
       ...(options?.requestContext ? { requestContext: options.requestContext } : {}),
       ...(options?.memory ? { memory: options.memory } : {}),
       tracingOptions: {

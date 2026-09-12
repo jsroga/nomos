@@ -192,6 +192,7 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
           ? scriptSelectionSurrounding(editorRef.current, selection.range)
           : undefined
       const newText = await onRegenerateSelection(selection.text, prompt, surrounding)
+      if (!newText) return
 
       // Replace the selected text
       if (editorRef.current && selection.range) {

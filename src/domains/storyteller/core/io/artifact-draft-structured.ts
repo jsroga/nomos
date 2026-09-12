@@ -224,7 +224,7 @@ export async function completeArtifactDraft(input: {
   const spec = specForArtifactDraft(input.kind, input.section)
   const object = await completeStructured({
     scope: input.scope,
-    feature: LlmFeature.StorytellerEntityDescription,
+    feature: LlmFeature.StorytellerArtifactDraft,
     model: TEXT_GEN_FAST_MODEL,
     system: ArtifactDraftGenerateCopy.System,
     prompt: input.instruction,

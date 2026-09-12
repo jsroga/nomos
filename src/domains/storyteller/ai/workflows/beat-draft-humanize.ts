@@ -20,6 +20,8 @@ import {
   type ValidationError,
 } from '@mastra/core/tools'
 import { publishedGrrmAuthor } from './published-workflow-agents'
+import { AGENT_MODEL_MATRIX } from '@/domains/storyteller/config/model-config'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import {
   BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
   BeatDraftGenerateTimeoutKind,
@@ -124,6 +126,9 @@ export async function humanizeBeatDraft(
           toolChoice: BeatDraftToolChoice.None,
           maxSteps: 1,
           abortSignal,
+          ...mastraCompletionSettings(LlmFeature.StorytellerBeatHumanize, {
+            roleBudget: AGENT_MODEL_MATRIX.author.maxOutputTokens,
+          }),
         }),
       BEAT_DRAFT_AUTHOR_GENERATE_TIMEOUT_MS,
       beatDraftGenerateTimeoutMessage(

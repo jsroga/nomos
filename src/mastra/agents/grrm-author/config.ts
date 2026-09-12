@@ -5,7 +5,9 @@ import {
   GrrmAuthorAgentId,
   GrrmAuthorAgentLabel,
 } from '@/domains/storyteller/ai/constants/agent-identity'
-import { resolveRoleModel } from '@/domains/storyteller/config/model-config'
+import { AGENT_MODEL_MATRIX, resolveRoleModel } from '@/domains/storyteller/config/model-config'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import {
   STORYTELLER_AUTHOR_MODEL,
   requestContextString,
@@ -28,4 +30,7 @@ export default agentConfig({
     ),
   instructions: () => composeGrrmInstructions(),
   editor: EDITOR_INSTRUCTIONS_AND_TOOL_MEMBERSHIP,
+  defaultOptions: mastraCompletionSettings(LlmFeature.StorytellerBeatDraft, {
+    roleBudget: AGENT_MODEL_MATRIX.author.maxOutputTokens,
+  }),
 })

@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import type { StorySequence } from '@/domains/storyteller/core/types/story-plan-types'
 import { Phase, type PhaseId } from '@/domains/storyteller/core/types/enums'
 import { readString } from '@/shared/data/json-guards'
@@ -10,6 +11,7 @@ import {
   patchStorytellerPlan,
   createStorytellerEpisode,
 } from '@/domains/storyteller/core/io/storyteller.api'
+import { storytellerKeys } from '@/domains/storyteller/core/io/storyteller.keys'
 import {
   StorytellerTab,
   StorytellerLogMessage,
@@ -63,6 +65,7 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore) {
 
   const searchParams = useSearchParams()
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const advanceProgress = useCallback(
     async (phase: PhaseId) => {
@@ -149,30 +152,41 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore) {
   )
 
   const handleDraftFirstEpisode = useCallback(async () => {
-    if (!currentProject?.id || isSending) return
+    const projectId = currentProject?.id
+    if (!projectId || isSending) return
 
     try {
       setIsSending(true)
       const newEpisode = await createStorytellerEpisode({
-        projectId: currentProject.id,
+        projectId,
         title: StorytellerEpisodeSeed.FirstTitle,
         sequence: 1,
       })
 
       const episodeId = readString(newEpisode.id)
       if (episodeId) {
+        await queryClient.invalidateQueries({ queryKey: storytellerKeys.episodes(projectId) })
+        await queryClient.invalidateQueries({ queryKey: storytellerKeys.episode(episodeId) })
         const params = storytellerSearchParams(searchParams)
         params.set(StorytellerQueryParam.EpisodeId, episodeId)
         router.push(`?${params.toString()}`)
         setCurrentEpisodeId(episodeId)
         getStorytellerUiStore().setWorldBibleOpen(false)
       }
-      setIsSending(false)
     } catch (error) {
       console.error(StorytellerLogMessage.FailedDraftFirstEpisode, error)
+    } finally {
       setIsSending(false)
     }
-  }, [currentProject?.id, isSending, setIsSending, searchParams, router, setCurrentEpisodeId])
+  }, [
+    currentProject?.id,
+    isSending,
+    queryClient,
+    setIsSending,
+    searchParams,
+    router,
+    setCurrentEpisodeId,
+  ])
 
   const handleGenerateBible = useCallback(() => {
     getStorytellerUiStore().setWorldBibleOpen(true)

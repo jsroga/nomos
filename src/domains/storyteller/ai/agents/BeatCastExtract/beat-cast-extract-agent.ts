@@ -3,6 +3,8 @@ import { Agent } from '@mastra/core/agent'
 import { TEXT_GEN_FAST_MODEL } from '@/shared/agent-kernel/models'
 import { getAgentModel } from '@/domains/storyteller/config/model-config'
 import { generateStructured } from '@/domains/storyteller/ai/agents/critics/generate-structured'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
+import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import {
   BeatCastExtractSchema,
   type BeatCastExtract,
@@ -20,6 +22,7 @@ export const beatCastExtractAgent = new Agent({
   instructions: BeatCastExtractCopy.Instructions,
   model: () => getAgentModel(TEXT_GEN_FAST_MODEL),
   editor: EDITOR_INSTRUCTIONS_ONLY,
+  defaultOptions: mastraCompletionSettings(LlmFeature.StorytellerBeatPlan),
 })
 
 export async function extractBeatCastNames(prompt: string): Promise<BeatCastExtract | null> {

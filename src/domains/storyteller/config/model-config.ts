@@ -25,6 +25,7 @@ import {
 } from '../../../shared/agent-kernel/models'
 import { getConfiguredModel } from '../../../shared/agent-kernel/model-settings'
 import { currentGatewayContext } from '../../../shared/ai/gateway/call-context'
+import { withOpenRouterOutputBudget } from '../../../shared/ai/gateway/output-budget'
 import { isE2eBannedModelId, isE2eLlmPinned, remapModelIdIfE2ePinned } from '../../../shared/ai/gateway/e2e-llm-pin'
 import { E2ePinnedChatModel } from '../../../shared/ai/gateway/constants/e2e-llm-pin'
 
@@ -97,12 +98,18 @@ function isOpenRouterOnlyProvider(colonForm: string): boolean {
   return OPENROUTER_ONLY_PREFIXES.some(prefix => colonForm.startsWith(prefix))
 }
 
+function storytellerOpenRouterModel(
+  modelId: string,
+  apiKey: string | undefined,
+  baseURL: string | undefined,
+) {
+  const openai = createOpenAI({ apiKey, baseURL })
+  // wrapLanguageModel is specificationVersion v3; Mastra generate() rejects v1.
+  return withOpenRouterOutputBudget(openai(modelId))
+}
+
 /**
  * Centrally manages agent models and ensures Mastra compatibility.
- * "One var to rule them all" approach.
- *
- * NOTE: Using specificationVersion 'v1' for AI SDK v4 compatibility.
- * When upgrading to AI SDK v5, change to 'v2'.
  *
  * @param modelName - Model identifier (e.g., 'moonshotai:kimi-k3') or effort level ('low', 'medium', 'high')
  */
@@ -127,8 +134,6 @@ export function getAgentModel(modelName: string = TEXT_GEN_PRIMARY_MODEL) {
   }
   const enforced = enforceTextGenModelPolicy(modelName.replace(':', '/'))
   const colonForm = enforced.includes('/') ? enforced.replace('/', ':') : enforced
-  // AI SDK v4 requires specificationVersion 'v1'
-  const specVersion = SpecVersion.V1
 
   // OpenAI — prefer OpenRouter; optional OPENAI_API_KEY direct fallback
   if (colonForm.startsWith(OpenAiColonPrefix.OpenAi)) {
@@ -136,24 +141,20 @@ export function getAgentModel(modelName: string = TEXT_GEN_PRIMARY_MODEL) {
     const modelId = useOpenRouter
       ? colonForm.replace(':', '/')
       : colonForm.replace(OpenAiColonPrefix.OpenAi, '')
-    const openai = createOpenAI({
-      apiKey: env.OPENROUTER_API_KEY || env.OPENAI_API_KEY,
-      baseURL: useOpenRouter ? OPENROUTER_BASE_URL : undefined,
-    })
-    const model = openai(modelId)
-    Object.assign(model, { specificationVersion: specVersion })
-    return model
+    return storytellerOpenRouterModel(
+      modelId,
+      env.OPENROUTER_API_KEY || env.OPENAI_API_KEY,
+      useOpenRouter ? OPENROUTER_BASE_URL : undefined,
+    )
   }
 
   // Google / Moonshot / Z.AI — OpenRouter only
   if (isOpenRouterOnlyProvider(colonForm)) {
-    const openai = createOpenAI({
-      apiKey: env.OPENROUTER_API_KEY,
-      baseURL: OPENROUTER_BASE_URL,
-    })
-    const model = openai(colonForm.replace(':', '/'))
-    Object.assign(model, { specificationVersion: specVersion })
-    return model
+    return storytellerOpenRouterModel(
+      colonForm.replace(':', '/'),
+      env.OPENROUTER_API_KEY,
+      OPENROUTER_BASE_URL,
+    )
   }
 
   // Default to a raw string or the model name if it doesn't match a provider

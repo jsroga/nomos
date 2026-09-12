@@ -1,4 +1,7 @@
 import { spawnSync } from 'child_process'
+import dotenv from 'dotenv'
+
+dotenv.config({ path: '.env.local' })
 
 // ONE TEST THAT ACTUALLY WORKS
 // Fashion: Minimal. Elegant. Verified.

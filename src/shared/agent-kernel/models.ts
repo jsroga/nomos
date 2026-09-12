@@ -8,6 +8,7 @@
 import { env } from '../config/env'
 import { createOpenAI } from '@ai-sdk/openai'
 import { E2ePinnedChatModel } from '../ai/gateway/constants/e2e-llm-pin'
+import { withOpenRouterOutputBudget } from '../ai/gateway/output-budget'
 
 // =============================================================================
 // OPENROUTER GATEWAY — one key to rule them all
@@ -174,6 +175,12 @@ function openAiCompatibleModel(
  * Does NOT set specificationVersion - uses native AI SDK behavior
  */
 export function createPureModel(modelName: string, chatCompletions = false) {
+  const model = resolvePureOpenAiModel(modelName, chatCompletions)
+  if (chatCompletions) return model
+  return withOpenRouterOutputBudget(model)
+}
+
+function resolvePureOpenAiModel(modelName: string, chatCompletions: boolean) {
   const glmId =
     modelName === E2ePinnedChatModel.CatalogId ||
     modelName === E2ePinnedChatModel.GatewayId ||

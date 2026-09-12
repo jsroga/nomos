@@ -1,6 +1,8 @@
 import '@/shared/data/server-guard'
 import { meteredCall } from '@/shared/ai/gateway/agent'
 import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
+import { AGENT_MODEL_MATRIX } from '@/domains/storyteller/config/model-config'
 import {
   isValidationError,
   noopObserve,
@@ -140,6 +142,9 @@ async function runCritic(critic: Agent, name: string, prompt: string): Promise<s
           schema: CriticReportSchema,
           errorStrategy: BeatDraftStructuredOutputErrorStrategy.Warn,
         },
+        ...mastraCompletionSettings(LlmFeature.StorytellerBeatPlan, {
+          roleBudget: AGENT_MODEL_MATRIX.critic.maxOutputTokens,
+        }),
       })
     )
     const parsed = CriticReportSchema.safeParse(response.object)
