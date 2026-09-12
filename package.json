@@ -162,6 +162,7 @@
     "test:e2e": "tsx scripts/run-e2e.ts",
     "test:e2e:stubs": "playwright test e2e/scenarios/workspace-chat-overlay.spec.ts e2e/scenarios/world-canvas.spec.ts",
     "test:e2e:live-storyteller": "playwright test e2e/scenarios/storyteller.spec.ts e2e/scenarios/storyteller-character-fields.spec.ts",
+    "test:e2e:nightly": "playwright test",
     "test:e2e:preview": "tsx scripts/e2e-deploy-preview.ts",
     "test:e2e:sync-env": "tsx scripts/e2e-sync-env.ts",
     "test:playwright:install": "playwright install --with-deps",

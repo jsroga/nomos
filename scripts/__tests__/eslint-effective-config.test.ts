@@ -124,11 +124,16 @@ describe('effective no-restricted-imports', () => {
     expect(messages).toEqual([])
   })
 
-  it('fails closed on a non-seam storyteller deep import from an app route', async () => {
+  it('allows a non-seam storyteller deep import from an app route', async () => {
     const messages = await lintImport(
       APP_STREAM_FILE,
       'import { x } from \'@/domains/storyteller/ai/agents/foo\'\n',
     )
+    expect(messages).toEqual([])
+  })
+
+  it('fails closed on @/lib from an app route', async () => {
+    const messages = await lintImport(APP_STREAM_FILE, 'import { cn } from \'@/lib/utils\'\n')
     expect(messages.length).toBeGreaterThan(0)
   })
 

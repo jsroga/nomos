@@ -28,7 +28,7 @@ Shared limits: `scripts/code-metrics-limits.cjs`. Enforced in **two places** wit
 
 Standalone: `npm run qualitygate:metrics`
 
-Pre-commit runs metrics on **staged** files only (`scripts/pre-commit-typecheck.mjs`).
+Pre-commit runs metrics on the **full** `src/` tree via `npm run typecheck` (`scripts/check-code-metrics.mjs`).
 
 ## Agent workflow
 

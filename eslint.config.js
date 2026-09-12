@@ -60,6 +60,8 @@ module.exports = [
       '.mastra/**',
       '.local/**',
       '.design-sync/**',
+      '.ds-sync/**',
+      'ds-bundle/**',
       'out/**',
       'dist/**',
       'build/**',
@@ -310,6 +312,7 @@ module.exports = [
     files: ['evals/**/*.{ts,tsx}'],
     rules: {
       'local/no-magic-string': 'off',
+      'local/no-functions-in-constants': 'off',
     },
   },
   {
@@ -411,6 +414,23 @@ module.exports = [
     },
   },
 
+  // App Router, Trigger registry, and MCP are the composition root: they
+  // bind domain tasks and services. Barrel-only would force a god barrel.
+  // Keep provider / legacy / projectAccess bans; drop barrelGuard.
+  {
+    files: [
+      'src/app/**/*.{ts,tsx}',
+      'src/trigger/**/*.{ts,tsx}',
+      'src/mcp/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        composeRestrictedImports(providerSdk(), legacyRoot(), projectAccess()),
+      ],
+    },
+  },
+
   // Boundary rule: shared MAY NOT import domains or app (Item 1)
   {
     files: ['src/shared/**/*.{ts,tsx}'],
@@ -418,6 +438,20 @@ module.exports = [
       'no-restricted-imports': [
         'error',
         composeRestrictedImports(providerSdk(), sharedNoDomains()),
+      ],
+    },
+  },
+  {
+    files: [
+      'src/proxy.ts',
+      'src/shared/auth/api-default-deny.ts',
+      'src/shared/auth/utils/session-cookie.ts',
+      'scripts/gate-fixtures/proxy-imports-node-only.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        composeRestrictedImports(edgeRuntime(), providerSdk(), legacyRoot()),
       ],
     },
   },

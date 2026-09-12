@@ -1,0 +1,42 @@
+name: Nightly E2E
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  playwright:
+    name: full Playwright folder
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      E2E_BYPASS_AUTH_SECRET: ${{ secrets.E2E_BYPASS_AUTH_SECRET }}
+      STORYTELLER_CHAT_MODEL: zai-coding-plan:glm-5.2
+    steps:
+      - name: Skip without live secrets
+        run: |
+          if [ -z "$OPENROUTER_API_KEY" ] || [ -z "$DATABASE_URL" ]; then
+            echo "Nightly e2e skipped — OPENROUTER_API_KEY or DATABASE_URL is unset."
+            exit 0
+          fi
+          echo "secrets_ok=true" >> "$GITHUB_ENV"
+      - if: env.secrets_ok == 'true'
+        uses: actions/checkout@v4
+      - if: env.secrets_ok == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - if: env.secrets_ok == 'true'
+        run: npm ci
+      - if: env.secrets_ok == 'true'
+        run: npx playwright install --with-deps chromium
+      - if: env.secrets_ok == 'true'
+        run: npm run test:e2e:nightly

@@ -58,7 +58,7 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 - Colocate unit tests next to code. Exclude `*.e2e.test.ts` from default unit runs (need DB/LLM).
 - Coverage (`npm run test:coverage`) uses `@vitest/coverage-v8` on every `src` `.ts`/`.tsx` file (`all: true`). `test:unit` stays uninstrumented. HTML / LCOV / json-summary land in `coverage/` (gitignored); `npm run test:coverage:open` generates then opens the HTML report. Per-file floors for storyteller critical modules (`search-manuscript-embed`, knowledge-ledger checker, promoted-rule merge, queued-verdicts selector) live in `vitest.config.ts` `coverage.thresholds` — not a repo-wide %.
 - E2E needs `npm run dev` (or `dev:stack`) + `.env.local`. **Smoke chat is GLM only** (`modelName: zai-coding-plan:glm-5.2` → OpenRouter `z-ai/glm-5.2`). Never Kimi, never GPT-5.6 Sol — smoke checks wiring, not writing quality, so it stays on the cheap tier. Live LLM scorers do not run on smoke or HTTP chat — scoring is `npm run eval` / Studio Trace Evaluate (`JUDGING_MODEL` may be Sol). Pause and tell the operator on OpenRouter **insufficient credits** (distinct from in-flight 402). Default Playwright (`:3001` production start) sets `DATABASE_SSL_REJECT_UNAUTHORIZED=false` so a TLS-inspecting proxy does not block Postgres.
-- Husky **pre-commit** (`npm run precommit`) runs architecture, docs, staged tsc/eslint, unit tests, production build, then **stub Playwright** only: `npm run test:e2e:stubs` (overlay persist, 2d-canvas). No live model. Husky **pre-push** runs `npm run test:e2e:live-storyteller` — Playwright `e2e/scenarios/storyteller.spec.ts` and `storyteller-character-fields.spec.ts` (GLM + live Fix inconsistencies + Generate missing fields). Neither hook runs the full Playwright folder or `npm run test:e2e smoke` (HTTP smoke stays a separate command; do not stack it with live Playwright on the same hook).
+- Husky **pre-commit** (`npm run precommit`) always runs architecture, docs, OpenAPI, env, **full** `npm run typecheck`, **full** `npm run lint`, and `npm run test:unit` — not scoped to the staged files. Eval freshness, HTTP smoke (`npm run test:e2e smoke`), stub Playwright (`test:e2e:stubs`), and live Storyteller (`test:e2e:live-storyteller`, GLM) run only when [`scripts/precommit-suites.mjs`](../scripts/precommit-suites.mjs) selects them from the commit paths (eval-watched sources, gateway/chat stream, 2d-canvas/overlay, Storyteller UI/API). Production build starts only when an e2e suite is selected. Husky **pre-push** does not re-run live Playwright. **Nightly** is the full folder: `npm run test:e2e:nightly` and `.github/workflows/e2e-nightly.yml`.
 - Golden set: `evals/datasets/storyteller-golden.ts`.
 - `npm run eval` is a **fixture-only alias** of `eval:scorer-fixture`. It is not agent quality.
 
@@ -113,10 +113,11 @@ scores the same and bills twice.
 
 **CI does not run live evals.** GitHub Actions (`.github/workflows/ci.yml`)
 runs architecture, scoped typecheck/eslint (`qualitygate:changed`), and
-`npm run test:unit`. Pass/fail is the process exit code. Local husky still
-runs full `precommit` (including unit + production build). `npm run eval:full`
-stays a human cadence: before a release, and after any change to a judge model
-or the golden set.
+`npm run test:unit`. Pass/fail is the process exit code. Local husky
+`precommit` always runs full lint + typecheck + unit; eval freshness runs
+when eval-watched paths are in the commit. `npm run eval:full` stays a human
+cadence: before a release, and after any change to a judge model or the
+golden set. Full Playwright is nightly, not CI.
 
 | Change touches… | Gate scorers |
 |-----------------|--------------|
@@ -139,7 +140,8 @@ Enforced by: `npm run precommit` (eval comparison honesty), `npm run eval:gate`,
 | Every 5 todos | `npm run qualitygate:changed` |
 | Many failures | `npm run qualitygate:capture` → `.local/quality-backlog.md` |
 | Before “done” | `npm run typecheck` · `npm run lint` · `npm run test:unit` |
-| Commit | `npm run precommit` (never `--no-verify`) |
+| Commit | `npm run precommit` (never `--no-verify`) — full lint/tsc/unit; file-selected eval/smoke/critical e2e |
+| Nightly | `npm run test:e2e:nightly` — full Playwright folder (`.github/workflows/e2e-nightly.yml`) |
 | CI | `.github/workflows/ci.yml` — architecture + `qualitygate:changed` + `test:unit` (exit codes, not log greps) |
 | OpenAPI public docs | `npm run openapi:generate` · `npm run openapi:check` (drift + route coverage; also in precommit) |
 | Module handoff | `node scripts/fabro-verify.mjs` |

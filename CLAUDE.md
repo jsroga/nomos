@@ -152,7 +152,7 @@ npm run lint               # eslint . — 8 GB heap (was OOMing without it); src
 npm run test:unit
 ```
 
-**When the user asks to commit:** run `npm run precommit` first (architecture, docs, staged typecheck/eslint, **unit tests**, **production build**). Fix failures, then `git commit` — never `--no-verify`. Husky `.husky/pre-commit` re-runs the same script. Cursor blocks `--no-verify` via `.cursor/hooks/guard-commit.sh`. **No AI attribution in the message** — no `Co-Authored-By: Claude/Cursor`, no "generated with" footer. Rule: `.cursor/rules/commit-gates.mdc`.
+**When the user asks to commit:** run `npm run precommit` first (architecture, docs, **full** typecheck + lint + unit; file-selected eval/smoke/critical e2e). Fix failures, then `git commit` — never `--no-verify`. Husky `.husky/pre-commit` re-runs the same script. Cursor blocks `--no-verify` via `.cursor/hooks/guard-commit.sh`. **No AI attribution in the message** — no `Co-Authored-By: Claude/Cursor`, no "generated with" footer. Rule: `.cursor/rules/commit-gates.mdc`.
 
 **IMPORTANT — never disable rules on your own if not allowed.** No file-level `eslint-disable`, no new/widened `eslint.config.js` `'off'` overrides, no `@ts-nocheck`, no “legacy extraction” excuses — **ask the user first**. See `.cursor/rules/no-gate-bypass.mdc` and `quality-gates.mdc`.
 

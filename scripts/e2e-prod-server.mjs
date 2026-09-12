@@ -1,9 +1,11 @@
-import { spawn } from 'node:child_process'
+import { execSync, spawn } from 'node:child_process'
 import { createConnection } from 'node:net'
 import { existsSync } from 'node:fs'
 
-const DEV_SERVER_PORT = 3001
-const LOCAL_BASE_URL = `http://localhost:${DEV_SERVER_PORT}`
+export const E2E_PROD_PORT = 3001
+export const E2E_PROD_BASE_URL = `http://localhost:${E2E_PROD_PORT}`
+const DEV_SERVER_PORT = E2E_PROD_PORT
+const LOCAL_BASE_URL = E2E_PROD_BASE_URL
 const READY_TIMEOUT_MS = 120_000
 const READY_POLL_MS = 500
 const OVERLAY_FLAG = 'NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY'
@@ -46,6 +48,22 @@ async function waitForReady(url, timeoutMs) {
 
 export function hasProductionBuild() {
   return existsSync('.next')
+}
+
+const LISTEN_KILL_WAIT_MS = 500
+
+export async function killListeningProdServer() {
+  try {
+    const out = execSync(`lsof -nP -iTCP:${DEV_SERVER_PORT} -sTCP:LISTEN -t`, {
+      encoding: 'utf8',
+    })
+    for (const pid of out.split('\n').map((line) => line.trim()).filter(Boolean)) {
+      process.kill(Number(pid), 'SIGTERM')
+    }
+  } catch {
+    return
+  }
+  await sleep(LISTEN_KILL_WAIT_MS)
 }
 
 export async function ensureProdServer() {

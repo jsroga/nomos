@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Pre-commit typecheck: delegates to typecheck-scoped (staged files).
+ * Optional scoped typecheck (staged files). Husky pre-commit runs full `npm run typecheck`.
  */
 import { spawnSync } from 'node:child_process'
 import { execSync } from 'node:child_process'

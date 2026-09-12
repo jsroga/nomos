@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
- * Pre-commit ESLint: scoped to staged TS/TSX/JS/JSX/MJS files.
- * Run `npm run lint` for a full-repo pass.
+ * Optional scoped ESLint (staged files). Husky pre-commit runs full `npm run lint`.
  */
 import { spawnSync } from 'node:child_process'
 import { execSync } from 'node:child_process'
