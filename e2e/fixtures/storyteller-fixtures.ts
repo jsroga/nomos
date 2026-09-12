@@ -288,11 +288,16 @@ export async function expectCharacterInSidebar(page: Page, name: string): Promis
 }
 
 export async function draftFirstEpisode(page: Page): Promise<void> {
-  const button = page.locator(FlowSelector.Button)
-    .filter({ hasText: FlowUiLabel.DraftFirstEpisode })
-    .first()
-  await expect(button).toBeVisible({ timeout: FlowTimeout.Short })
-  await button.click()
+  const headerDraft = page.getByRole(FlowRole.Tab, { name: FlowUiLabel.NewEpisode })
+  if (await headerDraft.isVisible().catch(() => false)) {
+    await headerDraft.click()
+  } else {
+    const button = page.locator(FlowSelector.Button)
+      .filter({ hasText: FlowUiLabel.DraftFirstEpisode })
+      .first()
+    await expect(button).toBeVisible({ timeout: FlowTimeout.Short })
+    await button.click()
+  }
   await expect(page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.Episodes}`))
     .toBeVisible({ timeout: FlowTimeout.Medium })
   await expect(page.locator(FlowSelector.Heading).first())

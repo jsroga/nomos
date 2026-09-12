@@ -7,6 +7,7 @@ import { TileReviewAcceptLabel } from '@/domains/2d-canvas/ui/constants/tile-rev
 import {
   FlowHttp,
   FlowRoute,
+  FlowRole,
   FlowSelector,
   FlowTimeout,
   FlowUiLabel,
@@ -34,6 +35,11 @@ export async function gotoWorldCanvas(page: Page, projectId: string): Promise<vo
 export async function openWorldCanvasProject(page: Page): Promise<{ id: string }> {
   const project = await createStoryProject(page)
   await gotoWorldCanvas(page, project.id)
+  const panel = page.getByLabel(FlowUiLabel.WorkspaceChatPanel)
+  if (await panel.isVisible().catch(() => false)) {
+    await page.getByRole(FlowRole.Button, { name: FlowUiLabel.WorkspaceChatToggle }).click()
+    await expect(panel).toBeHidden()
+  }
   return project
 }
 
@@ -47,12 +53,12 @@ export async function clickWorldTile(page: Page, x: number, y: number): Promise<
 }
 
 export async function generateOriginTile(page: Page): Promise<void> {
-  await clickWorldTile(page, 0, 0)
-  await expect(page.locator(`#${TourStepId.WORLDGEN_PROMPT}`)).toBeVisible({
-    timeout: FlowTimeout.Medium,
-  })
-  await expect(page.locator(`${FlowSelector.TextPrefix}${WorldCanvasCoord.Origin}`).first()).toBeVisible()
   const prompt = page.locator(`#${TourStepId.WORLDGEN_PROMPT}`)
+  await expect(async () => {
+    await clickWorldTile(page, 0, 0)
+    await expect(prompt).toBeVisible({ timeout: FlowTimeout.Probe })
+  }).toPass({ timeout: FlowTimeout.Medium })
+  await expect(page.locator(`${FlowSelector.TextPrefix}${WorldCanvasCoord.Origin}`).first()).toBeVisible()
   await prompt.fill(WorldCanvasPrompt.Origin)
   await page.locator(`#${TourStepId.WORLDGEN_GENERATE}`).click()
 }

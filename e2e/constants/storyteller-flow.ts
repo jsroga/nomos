@@ -36,6 +36,7 @@ export enum FlowUiLabel {
   NoFactions = 'No factions defined. Power is a vacuum.',
   Cast = 'Cast',
   DraftFirstEpisode = 'AI Draft First Episode',
+  NewEpisode = 'NEW EPISODE',
   Episodes = 'Episodes',
   UntitledEpisode = 'Untitled Episode',
   Storyteller = 'Storyteller',
