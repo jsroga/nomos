@@ -1,6 +1,10 @@
 import { env } from '@/shared/config/env'
 import { PgVector } from '@mastra/pg'
 import {
+  postgresSsl,
+  stripPostgresSslQueryParams,
+} from '@/shared/persistence/postgres-ssl'
+import {
   embedQueryFromGatewayContext,
   embedTextsFromGatewayContext,
 } from '@/shared/ai/embeddings/gateway-embeddings'
@@ -44,7 +48,8 @@ export class GameDesignMemory {
   constructor(config: GameDesignMemoryConfig) {
     this.vector = new PgVector({
       id: config.indexName || DEFAULT_INDEX_NAME,
-      connectionString: config.connectionString,
+      connectionString: stripPostgresSslQueryParams(config.connectionString),
+      ssl: postgresSsl(),
     })
     this.indexName = config.indexName || DEFAULT_INDEX_NAME
     this.dimension = config.dimension || DEFAULT_DIMENSION

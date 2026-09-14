@@ -26,6 +26,10 @@ import {
   MastraObservabilityDatabaseEnv,
 } from '@/shared/agent-kernel/constants/mastra-bootstrap'
 import { createInstanceStudioWorkspace } from '@/shared/agent-kernel/mastra/studio-workspace'
+import {
+  postgresSsl,
+  stripPostgresSslQueryParams,
+} from '../../persistence/postgres-ssl'
 
 let serializationConfigured = false
 
@@ -61,12 +65,17 @@ export function createPostgresStore(): PostgresStore {
     console.warn(MASTRA_DATABASE_URL_WARNING)
   }
 
-  const primaryUrl = resolveDatabaseUrl()
+  const ssl = postgresSsl()
+  const primaryUrl = stripPostgresSslQueryParams(resolveDatabaseUrl())
   return new PostgresStoreVNext({
     id: MASTRA_STORAGE_ID,
     connectionString: primaryUrl,
+    ssl,
     observability: {
-      connectionString: resolveObservabilityDatabaseUrl(primaryUrl),
+      connectionString: stripPostgresSslQueryParams(
+        resolveObservabilityDatabaseUrl(primaryUrl),
+      ),
+      ssl,
     },
   })
 }
