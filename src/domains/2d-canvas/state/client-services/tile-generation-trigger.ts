@@ -76,7 +76,7 @@ export async function startTileGeneration(
       prompt,
       isFirstTile,
       ...(normalizedContext ? { contextPayload: normalizedContext } : {}),
-      ...(styleReferenceUrls?.length ? { styleReferenceUrls } : {}),
+      ...(styleReferenceUrls !== undefined ? { styleReferenceUrls } : {}),
       ...(Object.keys(neighborImageUrls).length > 0 ? { neighborImageUrls } : {}),
     })
 

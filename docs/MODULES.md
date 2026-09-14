@@ -26,7 +26,7 @@ AI game-design assistant. Orchestrator in `loop-creator/core/graph/`; agents und
 
 ## 2D Canvas (`2d-canvas`)
 
-Infinite tile canvas (product name **Infinite Canvas**). Follow-up tiles pack all eight neighbors around a grey hole (cardinals and diagonals); crop keeps the hole. Optional `FF_TILE_SEAM_COLOR_FADE=true` adds a 16px edge color fade. Tile generation (OpenRouter/Grok, Gemini, LegNext), upscale (Stability / LegNext), fidelity enhance. Workspace route `/{projectId}/2d-canvas`. Client canvas + Trigger tasks under `tasks/`. Server writes via `/api/world` + Drizzle — not privileged browser Supabase writes.
+Infinite tile canvas (product name **Infinite Canvas**). Follow-up tiles pack all eight neighbors around a grey hole (cardinals and diagonals); crop keeps the hole. Optional `FF_TILE_SEAM_COLOR_FADE=true` adds a 16px edge color fade. Selected style-reference images (up to 3) are appearance inputs: Midjourney `--sref` on the first tile; Grok / Nano Banana / GPT Image / Flux send packed neighbor context first on follow-up, then every selected style image. Grok Imagine takes up to 5 input images. Roles are prompt order: IMAGE 1 is content (packed canvas, or the tile being restyled); IMAGE 2..N are style only — medium, brushwork, texture, color, not objects or architecture. Sidebar **Apply style to all tiles** restyles every existing tile in parallel on the follow-up model. Workspace route `/{projectId}/2d-canvas`. Client canvas + Trigger tasks under `tasks/`. Server writes via `/api/world` + Drizzle — not privileged browser Supabase writes.
 
 ## 3D Asset Exporter
 

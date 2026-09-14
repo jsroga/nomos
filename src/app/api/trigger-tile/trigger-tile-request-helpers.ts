@@ -37,6 +37,7 @@ export interface TileRequestPayload {
   packedCrop?: unknown
   contextImageBase64?: string
   neighborImageUrls?: GenerateTilePayload['neighborImageUrls']
+  restyleExistingTile?: boolean
 }
 
 export function validateTileRequestPayload(payload: TileRequestPayload): NextResponse | null {
@@ -112,6 +113,18 @@ function parsePackedCropSpec(value: unknown): PackedCropSpec | undefined {
   })
 }
 
+export function resolveRequestedStyleReferenceUrls(
+  requested: string[] | undefined,
+  projectStyleReferenceUrls: unknown,
+  origin: string,
+): string[] {
+  const selected =
+    requested === undefined
+      ? stringArrayFromJson(projectStyleReferenceUrls)
+      : requested
+  return absolutizeStyleReferenceUrls(selected, origin)
+}
+
 export async function resolveTileStyleInputs(
   supabase: SupabaseClient,
   payload: TileRequestPayload
@@ -135,10 +148,9 @@ export async function resolveTileStyleInputs(
   const masterPrompt = readString(projectData?.canvas_master_prompt) ?? undefined
   const styleAnchorUrl = readString(projectData?.style_anchor_url) ?? undefined
 
-  const styleReferenceUrls = absolutizeStyleReferenceUrls(
-    payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
-      ? payload.styleReferenceUrls
-      : stringArrayFromJson(projectData?.style_reference_urls),
+  const styleReferenceUrls = resolveRequestedStyleReferenceUrls(
+    payload.styleReferenceUrls,
+    projectData?.style_reference_urls,
     getSiteURL(),
   )
 
@@ -175,9 +187,7 @@ export function buildGenerateTileTaskPayload(
     isFirstTile: payload.isFirstTile ?? true,
   }
 
-  if (styleInputs.styleReferenceUrls?.length) {
-    taskPayload.styleReferenceUrls = styleInputs.styleReferenceUrls
-  }
+  taskPayload.styleReferenceUrls = styleInputs.styleReferenceUrls ?? []
   if (styleInputs.styleContext) {
     taskPayload.styleContext = styleInputs.styleContext
   }
@@ -205,7 +215,8 @@ export function buildGenerateTileTaskPayload(
     taskPayload.contextPayload = contextPayload
   }
   const packedCrop = parsePackedCropSpec(payload.packedCrop) ?? packedCropFromContext(contextPayload)
-  if (packedCrop) taskPayload.packedCrop = packedCrop
+  if (packedCrop && !payload.restyleExistingTile) taskPayload.packedCrop = packedCrop
+  if (payload.restyleExistingTile) taskPayload.restyleExistingTile = true
 
   return taskPayload
 }

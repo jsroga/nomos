@@ -62,6 +62,7 @@ export enum TileGenerationServiceError {
   GenerationFailed = 'Generation failed',
   TaskNotFound = 'Generation task not found',
   FailedToCompleteVariantSelection = 'Failed to complete variant selection',
+  RestyleRequiresImage = 'Restyle requires the existing tile image',
 }
 
 export enum ContextAssemblyVariant {
@@ -79,4 +80,8 @@ export enum TileGenerationOperationIdPrefix {
 
 export enum TileIdPrefix {
   Tile = 'tile-',
+}
+
+export enum TileGenerationNonceKind {
+  Restyle = 'restyle',
 }

@@ -59,8 +59,7 @@ describe('tile prompt contract', () => {
   it('asks Grok follow-up to paint the grey cell in the packed canvas', () => {
     for (const mode of GENERATION_MODES) {
       const [apiframe, midjourney] = promptsSentToModels(mode, false, MASTER_PROMPT)
-      expect(apiframe, mode.id).toContain('grey cell')
-      expect(apiframe, mode.id).toContain('entire attached canvas')
+      expect(apiframe, mode.id).toContain(FollowUpApiframeCopy.PackedWorld)
       expect(apiframe, mode.id).not.toContain('NEW 1:1 square')
       expect(apiframe, mode.id).toContain('Avoid:')
       expect(apiframe.toLowerCase(), mode.id).not.toContain('inpaint')

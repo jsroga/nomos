@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GenerateTilePayload } from '../utils/generate-tile'
+import { RestyleTileError } from '../utils/generate-tile'
 import type { GenerateTileRunDeps } from '../generate-tile-run'
 
 vi.mock('@trigger.dev/sdk', () => ({
@@ -15,7 +16,7 @@ vi.mock('@/shared/ai/ai-provider-config', () => ({
 }))
 
 vi.mock('../utils/generate-tile-persist', () => ({
-  extractContextImageBase64: () => undefined,
+  extractContextImageBase64: vi.fn(() => undefined),
   assembleServerContextImage: vi.fn(),
   createSupabaseServiceClient: () => ({}),
   resolveOriginalTileUrl: vi.fn(async () => undefined),
@@ -24,6 +25,7 @@ vi.mock('../utils/generate-tile-persist', () => ({
 }))
 
 import { runGenerateTile } from '../generate-tile-run'
+import { extractContextImageBase64 } from '../utils/generate-tile-persist'
 
 const PROJECT_ID = '11111111-1111-4111-8111-111111111111'
 const IMAGE_BASE64 = 'dGlsZQ=='
@@ -67,6 +69,7 @@ function makeDeps(overrides: Partial<GenerateTileRunDeps> = {}): {
 describe('generate-tile checkpoint', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(extractContextImageBase64).mockReturnValue(undefined)
   })
 
   it('skips generateTileImage on retry when scratch is already uploaded', async () => {
@@ -115,5 +118,28 @@ describe('generate-tile checkpoint', () => {
 
     await expect(runGenerateTile(payload(), first.deps)).rejects.toBe(generateError)
     expect(generateTileImage).toHaveBeenCalledTimes(1)
+  })
+
+  it('restyles without packedCrop and passes the existing tile image', async () => {
+    vi.mocked(extractContextImageBase64).mockReturnValue(IMAGE_BASE64)
+    const { deps, generateTileImage } = makeDeps()
+    await runGenerateTile(
+      { ...payload(), isFirstTile: false, restyleExistingTile: true },
+      deps,
+    )
+    expect(generateTileImage).toHaveBeenCalledTimes(1)
+    const args = generateTileImage.mock.calls[0] ?? []
+    expect(args[5]).toBe(IMAGE_BASE64)
+    expect(args[12]).toBeUndefined()
+    expect(args[13]).toBe(true)
+  })
+
+  it('refuses restyle when the existing tile image is missing', async () => {
+    vi.mocked(extractContextImageBase64).mockReturnValue(undefined)
+    const { deps, generateTileImage } = makeDeps()
+    await expect(
+      runGenerateTile({ ...payload(), isFirstTile: false, restyleExistingTile: true }, deps),
+    ).rejects.toThrow(RestyleTileError.MissingTileImage)
+    expect(generateTileImage).not.toHaveBeenCalled()
   })
 })

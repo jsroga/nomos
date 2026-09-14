@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { submitImageGenerate, submitImageUpscale, submitImageEdit } from '../apiframe'
+import { buildGenerateBody } from '../apiframe-generate-body'
+import {
+  ApiframeGenerateImageCapacity,
+  apiframeTooManyInputImagesMessage,
+} from '../apiframe-image-capacity'
 import {
   APIFRAME_FLUX_FILL_GUIDANCE,
   ApiframeEditModel,
@@ -21,6 +26,10 @@ const PROMPT = 'a rainy harbour quay'
 const CONTEXT_URL = 'https://cdn.example.com/context.png'
 const MASK_URL = 'https://cdn.example.com/mask.png'
 const STYLE_URL = 'https://cdn.example.com/style.png'
+const STYLE_URL_TWO = 'https://cdn.example.com/style-2.png'
+const STYLE_URL_THREE = 'https://cdn.example.com/style-3.png'
+const EXTRA_URL = 'https://cdn.example.com/extra.png'
+const OVER_CAPACITY_URL = 'https://cdn.example.com/over.png'
 const ASPECT_RATIO = '1:1'
 
 let sentBody: Record<string, unknown> = {}
@@ -52,12 +61,12 @@ async function generateWith(model: ApiframeImageModel): Promise<Record<string, u
 }
 
 describe('Apiframe generate body', () => {
-  it('sends one image URL under grokImagineParams.image', async () => {
+  it('sends every Grok input URL under grokImagineParams.image', async () => {
     const body = await generateWith(ApiframeImageModel.GrokImagineImage)
-    expect(recordFromJson(body[ApiframeParamsKey.GrokImagine])).toEqual({
-      aspect_ratio: ASPECT_RATIO,
-      image: CONTEXT_URL,
-    })
+    const params = recordFromJson(body[ApiframeParamsKey.GrokImagine])
+    expect(params.aspect_ratio).toBe(ASPECT_RATIO)
+    expect(params.image).toEqual([CONTEXT_URL, STYLE_URL])
+    expect(params.image).not.toBe(CONTEXT_URL)
   })
 
   it('sends the full URL array under nanoBananaParams.image_input', async () => {
@@ -68,11 +77,11 @@ describe('Apiframe generate body', () => {
     })
   })
 
-  it('sends one image URL under fluxParams.image_prompt', async () => {
+  it('sends the full URL array under fluxParams.input_images', async () => {
     const body = await generateWith(ApiframeImageModel.Flux2Pro)
     expect(recordFromJson(body[ApiframeParamsKey.Flux])).toEqual({
       aspect_ratio: ASPECT_RATIO,
-      image_prompt: CONTEXT_URL,
+      [ApiframeImageField.InputImages]: [CONTEXT_URL, STYLE_URL],
     })
   })
 
@@ -96,6 +105,53 @@ describe('Apiframe generate body', () => {
     expect(recordFromJson(sentBody[ApiframeParamsKey.GrokImagine])).toEqual({
       aspect_ratio: ASPECT_RATIO,
     })
+  })
+
+  it('keeps a single Grok image as a string', () => {
+    const body = buildGenerateBody({
+      model: ApiframeImageModel.GrokImagineImage,
+      prompt: PROMPT,
+      aspectRatio: ASPECT_RATIO,
+      imageInputUrls: [CONTEXT_URL],
+    })
+    expect(recordFromJson(body[ApiframeParamsKey.GrokImagine])).toEqual({
+      aspect_ratio: ASPECT_RATIO,
+      image: CONTEXT_URL,
+    })
+  })
+
+  it('accepts packed context plus three style URLs on Grok', () => {
+    const imageInputUrls = [CONTEXT_URL, STYLE_URL, STYLE_URL_TWO, STYLE_URL_THREE]
+    const body = buildGenerateBody({
+      model: ApiframeImageModel.GrokImagineImage,
+      prompt: PROMPT,
+      imageInputUrls,
+    })
+    expect(recordFromJson(body[ApiframeParamsKey.GrokImagine]).image).toEqual(imageInputUrls)
+  })
+
+  it('rejects a sixth Grok input image', () => {
+    const imageInputUrls = [
+      CONTEXT_URL,
+      STYLE_URL,
+      STYLE_URL_TWO,
+      STYLE_URL_THREE,
+      EXTRA_URL,
+      OVER_CAPACITY_URL,
+    ]
+    expect(() =>
+      buildGenerateBody({
+        model: ApiframeImageModel.GrokImagineImage,
+        prompt: PROMPT,
+        imageInputUrls,
+      }),
+    ).toThrow(
+      apiframeTooManyInputImagesMessage(
+        ApiframeImageModel.GrokImagineImage,
+        imageInputUrls.length,
+        ApiframeGenerateImageCapacity.Grok,
+      ),
+    )
   })
 })
 

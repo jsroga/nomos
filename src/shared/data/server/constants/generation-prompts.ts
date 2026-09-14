@@ -38,23 +38,56 @@ export enum TileNeighborEdge {
 
 export enum FollowUpApiframeCopy {
   RoleLeft =
-    'The attached image is the tile immediately to the LEFT. Generate a NEW 1:1 square that continues the same world to the RIGHT of that image.',
+    'The packed neighbor tile is immediately to the LEFT. Generate a NEW 1:1 square that continues the same world to the RIGHT of that image.',
   RoleRight =
-    'The attached image is the tile immediately to the RIGHT. Generate a NEW 1:1 square that continues the same world to the LEFT of that image.',
+    'The packed neighbor tile is immediately to the RIGHT. Generate a NEW 1:1 square that continues the same world to the LEFT of that image.',
   RoleUp =
-    'The attached image is the tile immediately ABOVE. Generate a NEW 1:1 square that continues the same world BELOW that image.',
+    'The packed neighbor tile is immediately ABOVE. Generate a NEW 1:1 square that continues the same world BELOW that image.',
   RoleDown =
-    'The attached image is the tile immediately BELOW. Generate a NEW 1:1 square that continues the same world ABOVE that image.',
+    'The packed neighbor tile is immediately BELOW. Generate a NEW 1:1 square that continues the same world ABOVE that image.',
   MatchContract =
-    'Match the attached tile’s camera, scale, horizon, palette, and lighting. Streets, building walls, ground texture, and vanishing lines must continue across the shared edge at the same pixel scale. Objects that cross the seam are cut by that edge, not restarted.',
+    'Match the packed canvas camera, scale, horizon, and lighting. Streets, building walls, ground texture, and vanishing lines must continue across the shared edge at the same pixel scale. Objects that cross the seam are cut by that edge, not restarted. Do not restyle existing neighbor pixels.',
   DoNotCopy =
-    'Do not reproduce, mirror, or duplicate the attached image. This is the next cell, not a remix of the same cell.',
+    'Do not reproduce, mirror, or duplicate the packed neighbor canvas. This is the next cell, not a remix of the same cell.',
   FillSquare =
     'Every pixel of the square is scene content. Objects are cut off by all four frame edges mid-shape. No sky or horizon band unless the neighbor already shows one at that edge.',
   PackedWorld =
-    'The attached image is neighboring world tiles packed around one grey cell. Paint the missing tile into that grey cell. Return the entire attached canvas at the same layout — not a cropped square.',
+    'Neighboring world tiles are packed around one grey cell. Paint the missing tile into that grey cell. Return the entire packed canvas at the same layout — not a cropped square.',
   PackedKeepNeighbors =
-    'Non-grey pixels are finished neighbor tiles. Copy them through unchanged at the same zoom and position. Do not zoom, reframe, or stretch the canvas. Continue streets, walls, ground texture, and lighting across every edge where grey meets a neighbor.',
+    'Non-grey pixels are finished neighbor tiles. Copy them through unchanged at the same zoom and position. Do not zoom, reframe, restyle, or stretch those neighbors. Continue streets, walls, ground texture, and lighting across every edge where grey meets a neighbor.',
+}
+
+export enum TileImageRoleLabel {
+  Image = 'IMAGE',
+}
+
+export enum TileImageRoleJoin {
+  And = ' and ',
+  FinalAnd = ', and ',
+}
+
+export enum TileImageRoleSeparator {
+  Line = '\n',
+}
+
+export enum TileImageRoleToken {
+  Image = '{image}',
+  Images = '{images}',
+}
+
+export enum TileImageRoleCopy {
+  FirstTileScene =
+    'Scene content comes from the text prompt. Designated style images are appearance references only.',
+  PackedContext =
+    '{image} is the packed neighboring world canvas. It supplies layout, camera, neighboring structures and connections. Paint the missing tile into the grey cell. Return the entire {image} canvas at the same layout — not a cropped square. Non-grey pixels on {image} are finished neighbor tiles. Copy them through unchanged at the same zoom and position. Do not zoom, reframe, restyle, or stretch those neighbors. Continue streets, walls, ground texture, and lighting across every edge where grey meets a neighbor. Do not use {image} as an appearance or style reference for the grey cell.',
+  ExistingTile =
+    '{image} is the current tile. Keep its layout, camera, objects, architecture, and composition. Do not zoom, reframe, crop, or rearrange it. Do not use {image} as a style reference — it is content only.',
+  RestyleKeepLayout =
+    'Keep the existing tile’s layout, geometry, objects, and composition. Change only appearance to match the style images.',
+  SharedAppearanceOne = '{images} forms a shared appearance reference.',
+  SharedAppearanceMany = '{images} form a shared appearance reference.',
+  StyleTransfer =
+    'Transfer only artistic medium, brushwork or linework, texture, color treatment, contrast and shading technique. Do not transfer their objects, architecture, scenery, silhouettes, spatial arrangement or composition. Do not create separate panels or copy any style image’s scene.',
 }
 
 export enum FollowUpApiframeAvoid {

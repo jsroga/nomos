@@ -20,6 +20,7 @@ export async function generateTileImage(
   styleAnchorUrl?: string,
   neighborImageUrls?: NeighborImageUrls,
   packedCrop?: PackedCropSpec,
+  restyleExistingTile = false,
 ): Promise<string> {
   switch (aiProvider) {
     case GenerateTileProvider.Gemini:
@@ -38,6 +39,7 @@ export async function generateTileImage(
         styleAnchorUrl,
         neighborImageUrls,
         packedCrop,
+        restyleExistingTile,
       )
     case GenerateTileProvider.Grok:
       return generateTileViaApiframeModel(
@@ -54,6 +56,7 @@ export async function generateTileImage(
         styleAnchorUrl,
         neighborImageUrls,
         packedCrop,
+        restyleExistingTile,
       )
     case GenerateTileProvider.OpenAi:
       return generateTileViaApiframeModel(
@@ -70,6 +73,7 @@ export async function generateTileImage(
         styleAnchorUrl,
         neighborImageUrls,
         packedCrop,
+        restyleExistingTile,
       )
     case GenerateTileProvider.Stability:
       return generateTileViaApiframeModel(
@@ -86,6 +90,7 @@ export async function generateTileImage(
         styleAnchorUrl,
         neighborImageUrls,
         packedCrop,
+        restyleExistingTile,
       )
     case GenerateTileProvider.Midjourney:
       return generateWithApiframeMidjourney(

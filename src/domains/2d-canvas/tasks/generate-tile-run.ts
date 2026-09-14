@@ -4,7 +4,7 @@
 
 import { logger, metadata } from '@trigger.dev/sdk'
 import { aiProviderConfigFromRecord } from '@/shared/ai/ai-provider-config'
-import { packedCropFromContext } from './utils/generate-tile'
+import { packedCropFromContext, RestyleTileError } from './utils/generate-tile'
 import type { GenerateTilePayload } from './utils/generate-tile'
 import { PackedCropError } from './utils/generate-tile-output'
 import {
@@ -78,12 +78,16 @@ export async function runGenerateTile(
     neighbors,
     neighborImageUrls,
   } = payload
+  const restyleExistingTile = payload.restyleExistingTile === true
 
   let contextImageBase64 = extractContextImageBase64(payload)
-  let packedCrop = payload.packedCrop ?? packedCropFromContext(payload.contextPayload)
+  let packedCrop = restyleExistingTile
+    ? undefined
+    : payload.packedCrop ?? packedCropFromContext(payload.contextPayload)
 
   logger.info(`Generating tile at ${x},${y} for project ${projectId}`, {
     isFirstTile,
+    restyleExistingTile,
     hasContext: !!contextImageBase64,
     hasNeighbors: !!neighbors,
     hasStyleRefs: !!styleReferenceUrls?.length,
@@ -94,7 +98,7 @@ export async function runGenerateTile(
   await metadata.set(GenerateTileCoordKey.TileX, x)
   await metadata.set(GenerateTileCoordKey.TileY, y)
 
-  if (!isFirstTile && !contextImageBase64 && neighbors) {
+  if (!restyleExistingTile && !isFirstTile && !contextImageBase64 && neighbors) {
     await advanceGenerateTileProgress(
       GenerateTileProgress.Init,
       GenerateTileStage.AssemblingContext,
@@ -104,7 +108,11 @@ export async function runGenerateTile(
     packedCrop = assembled.packedCrop
   }
 
-  if (!isFirstTile && !packedCrop) {
+  if (restyleExistingTile && !contextImageBase64) {
+    throw new Error(RestyleTileError.MissingTileImage)
+  }
+
+  if (!restyleExistingTile && !isFirstTile && !packedCrop) {
     throw new Error(PackedCropError.MissingPackedCrop)
   }
 
@@ -133,6 +141,7 @@ export async function runGenerateTile(
       styleAnchorUrl,
       neighborImageUrls,
       packedCrop,
+      restyleExistingTile,
     )
     const scratchUrl = await deps.uploadScratch(projectId, x, y, generatedImageBase64)
     await deps.writeScratchUrl(scratchUrl)

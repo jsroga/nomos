@@ -72,12 +72,20 @@ export enum ApiframeMidjourneyAction {
   Pan = 'pan',
 }
 
+export enum ApiframeErrorToken {
+  Model = '{model}',
+  Max = '{max}',
+  Count = '{count}',
+}
+
 export enum ApiframeErrorMessage {
   TaskTimedOut = 'Apiframe task timed out',
   NoJobId = 'Apiframe did not return a jobId',
   NoImages = 'Apiframe result missing images',
   NoVideo = 'Apiframe result missing videoUrl',
   JobFailed = 'Apiframe job failed',
+  TooManyInputImages =
+    '{model} accepts at most {max} input image(s); this request has {count}.',
 }
 
 export enum ApiframeJobErrorMatch {
@@ -237,7 +245,7 @@ export const APIFRAME_GENERATE_ASPECT_RATIOS = [
   ApiframeGenerateAspectRatio.TallNineSixteen,
 ] as const
 
-/** Reference-image field per model. ImageInput / InputImages take a URL array; the rest take one URL. */
+/** Reference-image field per model. ImageInput / InputImages take a URL array; Image is one URL or a URL array (Grok). */
 export type ApiframeImageUrlField =
   | ApiframeImageField.ImageInput
   | ApiframeImageField.InputImages

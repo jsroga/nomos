@@ -25,8 +25,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { assertTilePngSize } from './generate-tile-output'
 import { downloadTileWithFollowUpSeams } from './generate-tile-seams'
 import {
-  apiframeFollowUpImageUrls,
-  composeNonMidjourneyTilePrompt,
+  composeApiframeTileGenerateParts,
 } from './generate-tile-apiframe-prompt'
 import { packedAspectRatio, type PackedCropSpec } from '@/shared/ai/context-pack-layout'
 import {
@@ -53,6 +52,21 @@ async function downloadGeneratedTile(
   return tile
 }
 
+function downloadTileForGenerate(
+  imageUrl: string,
+  isFirstTile: boolean,
+  packedCrop: PackedCropSpec | undefined,
+  contextImageBase64: string | undefined,
+  restyleExistingTile: boolean,
+): Promise<string> {
+  return downloadGeneratedTile(
+    imageUrl,
+    isFirstTile || restyleExistingTile,
+    restyleExistingTile ? undefined : packedCrop,
+    restyleExistingTile ? undefined : contextImageBase64,
+  )
+}
+
 async function uploadContextIfPresent(
   contextImageBase64: string | undefined,
 ): Promise<string | undefined> {
@@ -75,6 +89,7 @@ async function buildTilePrompt(
   modePromptFragment?: string,
   modeNegatives?: string[],
   styleAnchorUrl?: string,
+  restyleExistingTile = false,
 ): Promise<{ text: string; imageUrls: string[] }> {
   const layers = tilePromptLayersFrom({
     prompt,
@@ -82,24 +97,30 @@ async function buildTilePrompt(
     modePromptFragment,
     styleContext,
   })
-  let text = forMidjourney
-    ? buildMidjourneyTilePromptText({
-        isFirstTile,
-        layers,
-        styleReferenceUrls,
-        modeNegatives,
-        styleAnchorUrl,
-      })
-    : composeNonMidjourneyTilePrompt(isFirstTile, layers, modeNegatives)
   const contextUrl = isFirstTile
     ? undefined
     : await uploadContextIfPresent(contextImageBase64)
-  if (contextUrl && forMidjourney) text = `${contextUrl} ${text}`
-  const imageUrls = apiframeFollowUpImageUrls(
+  if (forMidjourney) {
+    const promptText = buildMidjourneyTilePromptText({
+      isFirstTile,
+      layers,
+      styleReferenceUrls,
+      modeNegatives,
+      styleAnchorUrl,
+    })
+    return {
+      text: contextUrl ? `${contextUrl} ${promptText}` : promptText,
+      imageUrls: [],
+    }
+  }
+  return composeApiframeTileGenerateParts({
     isFirstTile,
-    forMidjourney ? undefined : contextUrl,
-  )
-  return { text, imageUrls }
+    layers,
+    modeNegatives,
+    packedContextUrl: contextUrl,
+    styleReferenceUrls,
+    restyleExistingTile,
+  })
 }
 
 function mapProviderToApiframeModel(
@@ -138,6 +159,7 @@ export async function generateTileViaApiframeModel(
   styleAnchorUrl?: string,
   _neighborImageUrls?: NeighborImageUrls,
   packedCrop?: PackedCropSpec,
+  restyleExistingTile = false,
 ): Promise<string> {
   const model = mapProviderToApiframeModel(provider, config)
   const forMidjourney = model === ApiframeImageModel.Midjourney
@@ -152,9 +174,10 @@ export async function generateTileViaApiframeModel(
     modePromptFragment,
     modeNegatives,
     styleAnchorUrl,
+    restyleExistingTile,
   )
   const aspectRatio =
-    !isFirstTile && packedCrop
+    !isFirstTile && packedCrop && !restyleExistingTile
       ? packedAspectRatio(packedCrop.packedWidth, packedCrop.packedHeight)
       : ApiframeGenerateAspectRatio.Square
 
@@ -187,7 +210,13 @@ export async function generateTileViaApiframeModel(
         prompt: text,
         outputImageUrls: [result.imageUrl],
       })
-      return downloadGeneratedTile(result.imageUrl, isFirstTile, packedCrop, contextImageBase64)
+      return downloadTileForGenerate(
+        result.imageUrl,
+        isFirstTile,
+        packedCrop,
+        contextImageBase64,
+        restyleExistingTile,
+      )
     }
 
     logLLMRequestStart({
@@ -221,7 +250,13 @@ export async function generateTileViaApiframeModel(
       GenerateTileProgress.Downloaded,
       GenerateTileStage.DownloadingResult,
     )
-    return downloadGeneratedTile(imageUrl, isFirstTile, packedCrop, contextImageBase64)
+    return downloadTileForGenerate(
+      imageUrl,
+      isFirstTile,
+      packedCrop,
+      contextImageBase64,
+      restyleExistingTile,
+    )
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     logLLMRequestError({ provider, model, prompt: text, error: message })

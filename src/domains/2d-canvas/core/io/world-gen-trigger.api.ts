@@ -6,7 +6,7 @@ import { fetchJsonRecord, readJsonBody } from '@/shared/data/fetch-json-record'
 import { recordFromJson, readString } from '@/shared/data/json-guards'
 import { buildUrl } from '@/shared/data/url-builder'
 import { FidelityApiRoute } from '../../constants/fidelity-service'
-import { TileGenerationApiRoute, VariantSelectionAction } from '../../constants/tile-generation-service'
+import { TileGenerationApiRoute, TileGenerationNonceKind, VariantSelectionAction } from '../../constants/tile-generation-service'
 import { UpscaleApiRoute } from '../../constants/upscale-service'
 import type { NeighborImageUrls } from '../neighbor-image-urls'
 import type { PackedCropSpec } from '@/shared/ai/context-pack-layout'
@@ -77,15 +77,30 @@ interface TileGenerationInput {
   isFirstTile: boolean
   packedCrop?: PackedCropSpec
   contextPayload?: unknown
+  contextImageBase64?: string
   styleReferenceUrls?: string[]
   neighborImageUrls?: NeighborImageUrls
+  restyleExistingTile?: boolean
+}
+
+export function tileGenerationNonceIntent(input: {
+  projectId: string
+  x: number
+  y: number
+  restyleExistingTile?: boolean
+}): string {
+  const base = `${TRIGGER_TASK_ID.GENERATE_TILE}:${input.projectId}:${input.x},${input.y}`
+  if (input.restyleExistingTile) {
+    return `${base}:${TileGenerationNonceKind.Restyle}`
+  }
+  return base
 }
 
 export async function triggerTileGeneration(
   input: TileGenerationInput
 ): Promise<{ runId: string }> {
   return withSubmissionNonce(
-    `${TRIGGER_TASK_ID.GENERATE_TILE}:${input.projectId}:${input.x},${input.y}`,
+    tileGenerationNonceIntent(input),
     requestId => postTileGeneration(input, requestId)
   )
 }
@@ -102,10 +117,14 @@ async function postTileGeneration(
   body.prompt = input.prompt
   body.isFirstTile = input.isFirstTile
   if (input.contextPayload) body.contextPayload = input.contextPayload
-  if (input.styleReferenceUrls?.length) body.styleReferenceUrls = input.styleReferenceUrls
+  if (input.styleReferenceUrls !== undefined) {
+    body.styleReferenceUrls = input.styleReferenceUrls
+  }
   if (input.neighborImageUrls && Object.keys(input.neighborImageUrls).length > 0) {
     body.neighborImageUrls = input.neighborImageUrls
   }
+  if (input.restyleExistingTile) body.restyleExistingTile = true
+  if (input.contextImageBase64) body.contextImageBase64 = input.contextImageBase64
   const data = await fetchJsonRecord(TileGenerationApiRoute.Trigger, {
     method: HttpMethod.Post,
     headers: JSON_HEADERS,

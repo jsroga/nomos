@@ -1,9 +1,10 @@
 /**
  * Clamp and apply OpenRouter completion reservations.
  * Constants live in `constants/output-budget.ts` (no functions there).
+ * Same-folder imports stay relative — Mastra Studio emits unresolved `@/` into `.mastra/output`.
  */
 import { wrapLanguageModel } from 'ai'
-import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
+import { LlmFeature } from './constants/llm-call'
 import {
   LLM_COMPLETION_BUDGET,
   LLM_FEATURE_TRANSPORT,
@@ -12,7 +13,7 @@ import {
   OPENROUTER_OUTPUT_DEFAULT,
   OutputBudgetMiddlewareSpec,
   type LlmCompletionFeature,
-} from '@/shared/ai/gateway/constants/output-budget'
+} from './constants/output-budget'
 
 type OpenRouterLanguageModel = Parameters<typeof wrapLanguageModel>[0]['model']
 

@@ -24,6 +24,11 @@ import {
 import { generateSingleWorldTile } from './generate-single-world-tile'
 import { useWorldSidebarPrompt } from './useWorldSidebarPrompt'
 import { useStyleRefCatalog } from './useStyleRefCatalog'
+import {
+  restyleableTiles,
+  restyleAllTiles,
+  startTileRestyle,
+} from '../client-services/restyle-all-tiles'
 
 const UPSCALE_GEMINI_CREATIVITY = 0.3
 
@@ -72,6 +77,7 @@ export function useWorldGenSidebar() {
   const enhancingTiles = useWorldStore(state => state.enhancingTiles)
 
   const [isUploading, setIsUploading] = useState(false)
+  const [isRestylingAll, setIsRestylingAll] = useState(false)
 
   const effectiveStyleUrls = useMemo(
     () => clampStyleReferenceUrls(styleReferenceUrls),
@@ -232,6 +238,37 @@ export function useWorldGenSidebar() {
     if (urls) handleRestoreStyleRefs(urls)
   }
 
+  const canApplyStyleToAll =
+    restyleableTiles(tiles).length > 0 &&
+    effectiveStyleUrls.length > 0 &&
+    !isRestylingAll &&
+    !isApplyingGenerationMode &&
+    !isUploadingStyleRefs &&
+    Object.keys(generatingTiles).length === 0
+
+  const handleApplyStyleToAll = async () => {
+    if (!currentProject || !canApplyStyleToAll) return
+    setIsRestylingAll(true)
+    try {
+      const { failed } = await restyleAllTiles({
+        tiles: restyleableTiles(tiles),
+        restyleOne: tile =>
+          startTileRestyle({
+            projectId: currentProject.id,
+            tile,
+            styleReferenceUrls: effectiveStyleUrls,
+            masterPrompt,
+          }),
+      })
+      if (failed === 0) toast.success(WorldGenSidebarToast.StyleRestyleQueued)
+      else toast.error(WorldGenSidebarToast.StyleRestylePartialFail)
+    } catch {
+      toast.error(WorldGenSidebarToast.StyleRestyleFailed)
+    } finally {
+      setIsRestylingAll(false)
+    }
+  }
+
   const handleCancelBusy = () => {
     if (!selectedTile) return
     const key = `${selectedTile.x},${selectedTile.y}`
@@ -308,6 +345,8 @@ export function useWorldGenSidebar() {
     styleRefCatalogItems: styleRefCatalog.items,
     styleRefCatalogSaving: styleRefCatalog.isSaving,
     onToggleStyleRefCatalog: handleToggleStyleRefCatalog,
+    canApplyStyleToAll,
+    handleApplyStyleToAll,
   }
 }
 

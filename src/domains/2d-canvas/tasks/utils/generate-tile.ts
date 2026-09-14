@@ -41,9 +41,14 @@ export const generateTilePayloadSchema = z.object({
   neighbors: ownedElsewhere<TileNeighborsPayload>().optional(),
   neighborImageUrls: ownedElsewhere<NeighborImageUrls>().optional(),
   packedCrop: ownedElsewhere<PackedCropSpec>().optional(),
+  restyleExistingTile: z.boolean().optional(),
 })
 
 export type GenerateTilePayload = z.infer<typeof generateTilePayloadSchema>
+
+export enum RestyleTileError {
+  MissingTileImage = 'Restyle requires the existing tile image',
+}
 
 export interface GenerateTileResult {
   success: boolean

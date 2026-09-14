@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { tileDescriptionDirective, tilePromptLayersFrom } from '@/shared/data/server/prompts'
-import { FollowUpApiframeCopy } from '@/shared/data/server/constants/generation-prompts'
 import {
-  apiframeFollowUpImageUrls,
+  FollowUpApiframeCopy,
+  TileImageRoleCopy,
+  TileImageRoleLabel,
+} from '@/shared/data/server/constants/generation-prompts'
+import {
+  assembleTileProviderImages,
+  composeApiframeTileGenerateParts,
   composeNonMidjourneyTilePrompt,
+  TileProviderImageRole,
 } from '../generate-tile-apiframe-prompt'
 
 const LAYERS = tilePromptLayersFrom({
@@ -15,6 +21,9 @@ const LAYERS = tilePromptLayersFrom({
 
 const PACKED = 'https://cdn.example.com/packed-context.png'
 const STYLE = 'https://cdn.example.com/sref.png'
+const STYLE_TWO = 'https://cdn.example.com/sref-2.png'
+const STYLE_THREE = 'https://cdn.example.com/sref-3.png'
+const TILE = 'https://cdn.example.com/existing-tile.png'
 
 describe('composeNonMidjourneyTilePrompt', () => {
   it('uses first-tile copy when there is no neighbor', () => {
@@ -43,15 +52,66 @@ describe('composeNonMidjourneyTilePrompt', () => {
   })
 })
 
-describe('apiframeFollowUpImageUrls', () => {
-  it('sends the packed context URL and never a style-ref URL', () => {
-    const urls = apiframeFollowUpImageUrls(false, PACKED)
-    expect(urls).toEqual([PACKED])
-    expect(urls).not.toContain(STYLE)
+describe('assembleTileProviderImages', () => {
+  it('puts packed context first, then every style URL', () => {
+    const images = assembleTileProviderImages({
+      isFirstTile: false,
+      packedContextUrl: PACKED,
+      styleReferenceUrls: [STYLE, STYLE_TWO, STYLE_THREE],
+    })
+    expect(images.map(image => image.url)).toEqual([PACKED, STYLE, STYLE_TWO, STYLE_THREE])
+    expect(images[0]?.role).toBe(TileProviderImageRole.PackedContext)
+    expect(images.slice(1).every(image => image.role === TileProviderImageRole.StyleReference)).toBe(
+      true,
+    )
   })
 
-  it('omits images for first tile and when no packed canvas was uploaded', () => {
-    expect(apiframeFollowUpImageUrls(true, PACKED)).toEqual([])
-    expect(apiframeFollowUpImageUrls(false, undefined)).toEqual([])
+  it('sends style URLs on the first tile with no packed canvas', () => {
+    const images = assembleTileProviderImages({
+      isFirstTile: true,
+      packedContextUrl: PACKED,
+      styleReferenceUrls: [STYLE],
+    })
+    expect(images).toEqual([{ url: STYLE, role: TileProviderImageRole.StyleReference }])
+  })
+
+  it('treats the current tile as IMAGE 1 when restyling', () => {
+    const images = assembleTileProviderImages({
+      isFirstTile: false,
+      packedContextUrl: TILE,
+      styleReferenceUrls: [STYLE, STYLE_TWO],
+      restyleExistingTile: true,
+    })
+    expect(images.map(image => image.url)).toEqual([TILE, STYLE, STYLE_TWO])
+    expect(images[0]?.role).toBe(TileProviderImageRole.ExistingTile)
+  })
+})
+
+describe('composeApiframeTileGenerateParts', () => {
+  it('names IMAGE 1 as packed context and later images as style only', () => {
+    const { text, imageUrls } = composeApiframeTileGenerateParts({
+      isFirstTile: false,
+      layers: LAYERS,
+      packedContextUrl: PACKED,
+      styleReferenceUrls: [STYLE, STYLE_TWO],
+    })
+    expect(imageUrls).toEqual([PACKED, STYLE, STYLE_TWO])
+    expect(text).toContain(`${TileImageRoleLabel.Image} 1`)
+    expect(text).toContain(TileImageRoleCopy.StyleTransfer)
+    expect(text.toLowerCase()).toContain('grey cell')
+  })
+
+  it('restyles the existing tile without grey-hole follow-up copy', () => {
+    const { text, imageUrls } = composeApiframeTileGenerateParts({
+      isFirstTile: false,
+      layers: LAYERS,
+      packedContextUrl: TILE,
+      styleReferenceUrls: [STYLE],
+      restyleExistingTile: true,
+    })
+    expect(imageUrls).toEqual([TILE, STYLE])
+    expect(text).toContain(TileImageRoleCopy.RestyleKeepLayout)
+    expect(text.toLowerCase()).not.toContain('grey cell')
+    expect(text).toContain(TileImageRoleCopy.StyleTransfer)
   })
 })

@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast'
-import { Images } from 'lucide-react'
+import { Images, Paintbrush } from 'lucide-react'
 import { FileUploader } from '@/components/FileUploader'
+import { Button } from '@/components/Button'
 import { HtmlElementType } from '@/shared/data/constants/protocol'
 import {
   STYLE_REF_FILE_ACCEPT,
@@ -29,6 +30,8 @@ export function SidebarStyleRefs({
   handleAddStyleRefFiles,
   handleRemoveStyleRef,
   handleRestoreStyleRefs,
+  canApplyStyleToAll,
+  onApplyStyleToAll,
 }: {
   showAdminCatalog: boolean
   catalogItems: readonly StyleRefCatalogItem[]
@@ -40,6 +43,8 @@ export function SidebarStyleRefs({
   handleAddStyleRefFiles: (files: Iterable<File>) => void
   handleRemoveStyleRef: (index: number) => void
   handleRestoreStyleRefs: (urls: string[]) => void
+  canApplyStyleToAll: boolean
+  onApplyStyleToAll: () => void
 }) {
   const enabledCatalogCount = catalogItems.filter(item => item.enabled).length
   const uploadingCount = isUploadingStyleRefs ? 1 : 0
@@ -99,11 +104,7 @@ export function SidebarStyleRefs({
       {showAdminCatalog ? (
         <p className={WorldGenStyleRefsClass.Hint}>{WorldGenSidebarWorldCopy.StyleImagesAdminHint}</p>
       ) : isEmpty ? (
-        <p className={WorldGenStyleRefsClass.Hint}>
-          {WorldGenSidebarWorldCopy.StyleImagesHintBefore}
-          <span className={WorldGenStyleRefsClass.HintFlag}>{WorldGenSidebarWorldCopy.SrefFlag}</span>
-          {WorldGenSidebarWorldCopy.StyleImagesHintAfter}
-        </p>
+        <p className={WorldGenStyleRefsClass.Hint}>{WorldGenSidebarWorldCopy.StyleImagesHint}</p>
       ) : null}
       {showAdminCatalog ? (
         <StyleRefCatalog
@@ -129,6 +130,16 @@ export function SidebarStyleRefs({
       {isApplyingGenerationMode ? (
         <p className={WorldGenStyleRefsClass.Generating}>{WorldGenSidebarWorldCopy.PromptGenerating}</p>
       ) : null}
+      <Button
+        variant="outline"
+        size="sm"
+        className={WorldGenStyleRefsClass.ApplyAll}
+        disabled={!canApplyStyleToAll}
+        onClick={onApplyStyleToAll}
+      >
+        <Paintbrush size={12} strokeWidth={1.7} />
+        {WorldGenSidebarWorldCopy.ApplyStyleToAll}
+      </Button>
     </div>
   )
 }

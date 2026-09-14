@@ -1,3 +1,4 @@
+import { assertApiframeGenerateImageCapacity } from '@/shared/ai/apiframe-image-capacity'
 import {
   APIFRAME_ASPECT_RATIO_PATTERN,
   ApiframeGptImage2OutputFormat,
@@ -21,13 +22,29 @@ function optionalAspectAndImages(
 ): Record<string, unknown> {
   const params: Record<string, unknown> = {}
   if (aspectRatio) params[ApiframeImageField.AspectRatio] = aspectRatio
-  const [firstImageUrl] = imageInputUrls ?? []
-  if (firstImageUrl) {
-    const useUrlArray =
-      imageField === ApiframeImageField.ImageInput ||
-      imageField === ApiframeImageField.InputImages
-    params[imageField] = useUrlArray ? imageInputUrls : firstImageUrl
-  }
+  if (!imageInputUrls?.length) return params
+  const useUrlArray =
+    imageField === ApiframeImageField.ImageInput ||
+    imageField === ApiframeImageField.InputImages
+  const [firstImageUrl] = imageInputUrls
+  params[imageField] = useUrlArray ? imageInputUrls : firstImageUrl
+  return params
+}
+
+function grokImagineImageValue(imageInputUrls: string[]): string | string[] {
+  const [firstImageUrl] = imageInputUrls
+  if (imageInputUrls.length === 1 && firstImageUrl) return firstImageUrl
+  return imageInputUrls
+}
+
+function grokImagineParams(
+  aspectRatio: string | undefined,
+  imageInputUrls: string[] | undefined,
+): Record<string, unknown> {
+  const params: Record<string, unknown> = {}
+  if (aspectRatio) params[ApiframeImageField.AspectRatio] = aspectRatio
+  if (!imageInputUrls?.length) return params
+  params[ApiframeImageField.Image] = grokImagineImageValue(imageInputUrls)
   return params
 }
 
@@ -46,6 +63,7 @@ export function buildGenerateBody(options: {
   imageInputUrls?: string[]
 }): Record<string, unknown> {
   const { model, prompt, aspectRatio, imageInputUrls } = options
+  assertApiframeGenerateImageCapacity(model, imageInputUrls?.length ?? 0)
   const body: Record<string, unknown> = { model, prompt }
 
   switch (model) {
@@ -63,17 +81,13 @@ export function buildGenerateBody(options: {
       )
       return body
     case ApiframeImageModel.GrokImagineImage:
-      attachParamsIfPresent(
-        body,
-        ApiframeParamsKey.GrokImagine,
-        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.Image),
-      )
+      attachParamsIfPresent(body, ApiframeParamsKey.GrokImagine, grokImagineParams(aspectRatio, imageInputUrls))
       return body
     case ApiframeImageModel.GptImage15:
       attachParamsIfPresent(
         body,
         ApiframeParamsKey.GptImage,
-        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.ImageInput),
+        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.InputImages),
       )
       return body
     case ApiframeImageModel.GptImage2: {
@@ -91,7 +105,7 @@ export function buildGenerateBody(options: {
       attachParamsIfPresent(
         body,
         ApiframeParamsKey.Flux,
-        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.ImagePrompt),
+        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.InputImages),
       )
       return body
     default:

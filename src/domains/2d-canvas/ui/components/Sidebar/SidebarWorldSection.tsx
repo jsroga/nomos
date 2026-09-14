@@ -29,6 +29,8 @@ type SidebarWorldSectionProps = Pick<
   | 'styleRefCatalogItems'
   | 'styleRefCatalogSaving'
   | 'onToggleStyleRefCatalog'
+  | 'canApplyStyleToAll'
+  | 'handleApplyStyleToAll'
 >
 
 export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
@@ -46,6 +48,8 @@ export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
   styleRefCatalogItems,
   styleRefCatalogSaving,
   onToggleStyleRefCatalog,
+  canApplyStyleToAll,
+  handleApplyStyleToAll,
 }) => {
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
 
@@ -93,6 +97,8 @@ export const SidebarWorldSection: React.FC<SidebarWorldSectionProps> = ({
         handleAddStyleRefFiles={handleAddStyleRefFiles}
         handleRemoveStyleRef={handleRemoveStyleRef}
         handleRestoreStyleRefs={handleRestoreStyleRefs}
+        canApplyStyleToAll={canApplyStyleToAll}
+        onApplyStyleToAll={handleApplyStyleToAll}
       />
       {ConfirmDialogComponent}
     </div>

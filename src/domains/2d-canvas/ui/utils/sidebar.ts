@@ -18,8 +18,8 @@ export enum WorldGenSidebarWorldCopy {
   Placeholder = 'Describe the look of your world…',
   ResetStyleAnchor = 'Reset style anchor',
   StyleImagesLabel = 'Style references',
-  StyleImagesHintBefore = 'Up to 3 images, used as Midjourney ',
-  StyleImagesHintAfter = '.',
+  StyleImagesHint =
+    'Up to 3 images for appearance — medium, brushwork, texture, and color — not the scene they depict.',
   StyleImagesAdminHint = 'Switch a reference on or off. Other users get this set, or their own images if they changed them.',
   StyleImagesDrop = 'Drop images here',
   StyleImagesChoose = 'Choose images',
@@ -27,11 +27,12 @@ export enum WorldGenSidebarWorldCopy {
   StyleImagesRemove = 'Remove',
   StyleImagesFull = '3 of 3',
   StyleImagesUploading = 'UPLOADING',
+  ApplyStyleToAll = 'Apply style to all tiles',
   SrefCaption = 'SREF',
   SrefFlag = '--sref',
   SwitchModeTitle = 'Switch generation mode?',
   SwitchModeDescription =
-    'Switching to {mode} replaces the master prompt and the Midjourney style images.',
+    'Switching to {mode} replaces the master prompt and the style reference images.',
   PromptGenerating = 'Prompt is generating — references stay editable.',
 }
 
@@ -70,6 +71,7 @@ export enum WorldGenStyleRefsClass {
   CatalogImage = 'h-full w-full object-cover',
   CatalogChrome = 'absolute inset-x-0 bottom-0 z-10 flex items-center justify-between gap-1 px-1.5 py-1 bg-gradient-to-t from-[rgba(9,9,11,0.82)] to-transparent',
   CatalogCaption = 'min-w-0 font-mono text-[8.5px] tracking-[0.06em] text-foreground/85 truncate',
+  ApplyAll = 'mt-2.5 w-full font-mono text-[10.5px] tracking-[0.08em] uppercase',
 }
 
 export enum WorldGenSidebarClass {
@@ -114,6 +116,9 @@ export enum WorldGenSidebarToast {
   Undo = 'Undo',
   StyleRefCatalogLimit = 'At most 3 style references can be on',
   StyleRefCatalogSaveFailed = 'Could not save style references',
+  StyleRestyleQueued = 'Style restyle queued for every tile',
+  StyleRestylePartialFail = 'Some tiles could not start restyle',
+  StyleRestyleFailed = 'Could not restyle tiles',
 }
 
 export const WorldGenTileProvider = {

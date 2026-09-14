@@ -30,15 +30,17 @@ export async function handleTriggerTileRequest(
     return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
   }
 
+  const isFirstTile = payload.restyleExistingTile === true ? false : (payload.isFirstTile ?? true)
+
   const providerResult = resolveTileAiProvider({
-    isFirstTile: payload.isFirstTile ?? true,
+    isFirstTile,
     env: readTileProviderEnv(),
   })
   if (providerResult instanceof NextResponse) return providerResult
 
   const styleInputs = await resolveTileStyleInputs(supabase, payload)
   const taskPayload = buildGenerateTileTaskPayload(
-    { ...payload, requestId },
+    { ...payload, requestId, isFirstTile },
     providerResult,
     styleInputs
   )
