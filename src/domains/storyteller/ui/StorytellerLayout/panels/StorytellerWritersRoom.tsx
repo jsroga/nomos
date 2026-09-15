@@ -22,6 +22,10 @@ import {
   areAddToWorldSectionsSettled,
 } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
 import { parseCreatedEpisodeFromToolCall } from '@/domains/storyteller/state/utils/parse-created-episode-from-tool'
+import {
+  isSuccessfulCharacterMutation,
+  syncCharactersAfterManageTool,
+} from '@/domains/storyteller/state/utils/parse-created-character-from-tool'
 import { characterDraftFieldsFromToolCall } from '@/domains/storyteller/state/utils/character-draft-fields-from-tool'
 import {
   narrowEpisodePremiseProposal,
@@ -55,6 +59,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
   const {
     routeProjectId,
     characters,
+    setCharacters,
     beats,
     storyPlan,
     hasBible,
@@ -280,6 +285,9 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
         requestedSectionRef.current === CharacterDraftChatSection.Form ||
         calls.some(call => call.toolName === StorytellerChatTool.ProposeCharacterFields)
       void (async () => {
+        if (calls.some(isSuccessfulCharacterMutation)) {
+          await syncCharactersAfterManageTool(projectId, setCharacters)
+        }
         if (skipBibleWrites) return
         for (const call of calls) {
           const created = parseCreatedEpisodeFromToolCall(call)
@@ -318,6 +326,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
       projectId,
       queryClient,
       selectEpisode,
+      setCharacters,
     ]
   )
   const pendingChatSectionRef = useRef<string | undefined>(undefined)
