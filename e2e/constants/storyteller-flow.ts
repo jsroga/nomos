@@ -74,6 +74,7 @@ export enum FlowRole {
   Heading = 'heading',
   Button = 'button',
   Tab = 'tab',
+  Dialog = 'dialog',
 }
 
 export enum FlowApi {

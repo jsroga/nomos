@@ -136,17 +136,28 @@ export async function waitForAssistantResponse(
 
 export async function acceptPendingAction(page: Page): Promise<void> {
   const surface = await chatSurface(page)
-  const addToWorld = surface.getByRole(FlowRole.Button, { name: FlowUiLabel.AddToWorld }).first()
+  const addToWorldDialog = page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.AddToWorld })
+  const updateAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.UpdateAll }).first()
+  const addToWorld = surface.getByRole(FlowRole.Button, {
+    name: FlowUiLabel.AddToWorld,
+    disabled: false,
+  })
   const accept = surface.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).first()
   const action = addToWorld.or(accept).first()
   const emptyTurn = surface.getByText(EMPTY_TURN_NOTICE).first()
-  await expect(action.or(emptyTurn).first()).toBeVisible({ timeout: FlowTimeout.Generation })
-  if (await emptyTurn.isVisible()) {
-    throw new Error(FlowError.EmptyTurnBeforeAccept)
+
+  if (!(await addToWorldDialog.isVisible())) {
+    await expect(action.or(emptyTurn).first()).toBeVisible({ timeout: FlowTimeout.Generation })
+    if (await emptyTurn.isVisible()) {
+      throw new Error(FlowError.EmptyTurnBeforeAccept)
+    }
+    await action.click()
   }
-  await action.click()
-  const updateAll = surface.getByRole(FlowRole.Button, { name: FlowUiLabel.UpdateAll }).first()
-  await updateAll.click({ timeout: FlowTimeout.Short }).catch(() => undefined)
+
+  if (await updateAll.isVisible()) {
+    await updateAll.click()
+    await expect(addToWorldDialog).toBeHidden({ timeout: FlowTimeout.Short })
+  }
 }
 
 /** Hit the chat API once so the serverless function is warm before UI timing. */
