@@ -37,6 +37,9 @@ export enum FlowUiLabel {
   Cast = 'Cast',
   DraftFirstEpisode = 'AI Draft First Episode',
   NewEpisode = 'NEW EPISODE',
+  NewEpisodeDialog = 'New Episode',
+  CreateEpisode = 'Create Episode',
+  EpisodeTitlePlaceholder = 'e.g. The Call to Adventure',
   Episodes = 'Episodes',
   UntitledEpisode = 'Untitled Episode',
   Storyteller = 'Storyteller',
@@ -143,6 +146,10 @@ export enum FlowRoute {
 
 export enum FlowCharacter {
   Name = 'Vex',
+}
+
+export enum FlowEpisode {
+  Title = 'The Beginning',
 }
 
 export enum FlowChatRole {

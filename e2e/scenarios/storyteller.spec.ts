@@ -4,7 +4,6 @@ import {
   attachInsufficientCreditsGuard,
   chatAndAccept,
   createStoryProject,
-  draftFirstEpisode,
   expectCharacterInSidebar,
   expectWorldBibleHasContent,
   gotoStoryteller,
@@ -41,12 +40,7 @@ test.describe(FlowTest.Describe, () => {
     await openStorybible(page)
     await expectWorldBibleHasContent(page)
 
-    const draftButton = page.getByRole(FlowRole.Button, { name: FlowUiLabel.DraftFirstEpisode })
-    if (await draftButton.isVisible().catch(() => false)) {
-      await draftFirstEpisode(page)
-    } else {
-      await chatAndAccept(page, ConsistencyPrompt.EpisodePremise)
-    }
+    await chatAndAccept(page, ConsistencyPrompt.EpisodePremise)
     await credits.assertOk()
 
     const regenerate = page.getByTitle(FlowUiLabel.RegenerateDescription)

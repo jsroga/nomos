@@ -3,6 +3,7 @@ import {
   EmptyTurnScenario,
   FlowApi,
   FlowCharacter,
+  FlowEpisode,
   FlowChatModel,
   FlowChatRole,
   FlowCookie,
@@ -375,6 +376,11 @@ export async function draftFirstEpisode(page: Page): Promise<void> {
     await expect(button).toBeVisible({ timeout: FlowTimeout.Short })
     await button.click()
   }
+  const createDialog = page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.NewEpisodeDialog })
+  await expect(createDialog).toBeVisible({ timeout: FlowTimeout.Short })
+  await createDialog.getByPlaceholder(FlowUiLabel.EpisodeTitlePlaceholder).fill(FlowEpisode.Title)
+  await createDialog.getByRole(FlowRole.Button, { name: FlowUiLabel.CreateEpisode }).click()
+  await expect(createDialog).toBeHidden({ timeout: FlowTimeout.Medium })
   await expect(page.getByRole(FlowRole.Tab, { name: StorytellerHeaderCopy.Episodes })).toBeVisible({
     timeout: FlowTimeout.Generation,
   })
