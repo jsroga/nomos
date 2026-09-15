@@ -28,6 +28,7 @@ import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { StorytellerHeaderCopy } from '@/domains/storyteller/ui/StorytellerLayout/constants/storyteller-module-header'
 import { StorytellerSidebarCopy } from '@/domains/storyteller/ui/StorytellerLayout/utils/storyteller-sidebar-footer'
+import { WritersRoomCastConfirm } from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
 import { SmokeHttpStatus, SmokeMatch } from '../constants/storyteller-smoke'
 
 const BASE_URL = process.env.BASE_URL?.trim() || 'http://localhost:3001'
@@ -97,6 +98,7 @@ async function chatSurface(page: Page): Promise<Page | Locator> {
 }
 
 export async function sendChatMessage(page: Page, message: string): Promise<void> {
+  await skipNewCastDialog(page)
   const input = (await chatSurface(page)).locator(CHAT_INPUT).first()
   await expect(input).toBeVisible()
   await input.click()
@@ -137,17 +139,30 @@ export async function waitForAssistantResponse(
   return text
 }
 
+async function skipNewCastDialog(page: Page): Promise<void> {
+  const dialog = page.getByRole(FlowRole.Dialog, { name: WritersRoomCastConfirm.Title })
+  try {
+    await expect(dialog).toBeVisible({ timeout: FlowTimeout.Short })
+  } catch {
+    return
+  }
+  await dialog.getByRole(FlowRole.Button, { name: WritersRoomCastConfirm.Cancel }).click()
+  await expect(dialog).toBeHidden({ timeout: FlowTimeout.Medium })
+}
+
 async function confirmAddToWorldDialog(page: Page): Promise<void> {
   const addToWorldDialog = page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.AddToWorld })
   const updateAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.UpdateAll }).first()
   try {
     await expect(addToWorldDialog).toBeVisible({ timeout: FlowTimeout.Short })
   } catch {
+    await skipNewCastDialog(page)
     return
   }
   await expect(updateAll).toBeVisible({ timeout: FlowTimeout.Short })
   await updateAll.click()
-  await expect(addToWorldDialog).toBeHidden({ timeout: FlowTimeout.Short })
+  await skipNewCastDialog(page)
+  await expect(addToWorldDialog).toBeHidden({ timeout: FlowTimeout.Medium })
 }
 
 async function acceptPendingReviewBanner(page: Page): Promise<void> {
