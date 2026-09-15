@@ -13,6 +13,7 @@ import { BeatboardPremiseFieldKey } from '@/domains/storyteller/core/constants/b
 import type { ConsistencyFix } from '@/domains/storyteller/core/types/consistency-types'
 import { BeatStatus } from '@/domains/storyteller/core/types/enums'
 import { readString, recordFromJson } from '@/shared/data/json-guards'
+import { stringifyCanonJson } from './fix-inconsistencies-json'
 import { ConsistencyCheckKind, worldRulesFromStoryPlan } from '@/domains/storyteller/services/consistency-types'
 import { publishedContinuityCritic, publishedGrrmAuthor } from './published-workflow-agents'
 import { filterLockedFixes } from './collapse-consistency-fixes'
@@ -40,11 +41,7 @@ import {
 } from './fix-inconsistencies-schema'
 
 function stringifyJson(value: unknown, fallback: string): string {
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return fallback
-  }
+  return stringifyCanonJson(value, fallback)
 }
 
 function truncateCanon(text: string): string {
@@ -54,21 +51,6 @@ function truncateCanon(text: string): string {
 
 function joinPrompt(parts: string[]): string {
   return parts.join(FIX_INCONSISTENCIES_PROMPT_JOIN)
-}
-
-function emptyCanon(projectId: string): AssembledCanon {
-  return {
-    empty: true,
-    projectId,
-    bibleJson: FIX_INCONSISTENCIES_EMPTY_JSON_OBJECT,
-    charactersJson: FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY,
-    worldRulesJson: FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY,
-    sectionsJson: {},
-    episodes: [],
-    bibleLocked: false,
-    lockedBeatIds: [],
-    lockedCharacterIds: [],
-  }
 }
 
 function hasJsonContent(value: unknown): boolean {
@@ -147,6 +129,28 @@ function jsonValue(text: string): unknown {
     return value
   } catch {
     return null
+  }
+}
+
+function emptyCanon(projectId: string): AssembledCanon {
+  const emptyArr = FIX_INCONSISTENCIES_EMPTY_JSON_ARRAY
+  return {
+    empty: true,
+    projectId,
+    bibleJson: FIX_INCONSISTENCIES_EMPTY_JSON_OBJECT,
+    charactersJson: emptyArr,
+    worldRulesJson: emptyArr,
+    sectionsJson: buildSectionsJson({
+      storyPlan: {},
+      bibleContent: {},
+      charactersJson: emptyArr,
+      worldRulesJson: emptyArr,
+      episodes: [],
+    }),
+    episodes: [],
+    bibleLocked: false,
+    lockedBeatIds: [],
+    lockedCharacterIds: [],
   }
 }
 

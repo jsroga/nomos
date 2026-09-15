@@ -86,7 +86,7 @@ test.describe(FlowTest.Describe, () => {
 
     const applyAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.ApplyAll })
     const emptyReview = page.getByText(FlowUiLabel.NoInconsistencies)
-    const scanError = page.getByText(FlowUiLabel.InternalServerError)
+    const scanError = page.getByText(FlowUiLabel.InternalServerError).first()
     await expect(applyAll.or(emptyReview).or(scanError).first()).toBeVisible({
       timeout: FlowTimeout.FixScan,
     })
