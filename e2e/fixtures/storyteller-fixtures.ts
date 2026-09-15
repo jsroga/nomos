@@ -163,11 +163,13 @@ async function acceptPendingReviewBanner(page: Page): Promise<void> {
 export async function acceptPendingAction(page: Page): Promise<void> {
   const surface = await chatSurface(page)
   const addToWorldDialog = page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.AddToWorld })
-  const addToWorld = surface.getByRole(FlowRole.Button, {
-    name: FlowUiLabel.AddToWorld,
-    disabled: false,
-  })
-  const accept = surface.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).first()
+  const addToWorld = surface
+    .getByRole(FlowRole.Button, {
+      name: FlowUiLabel.AddToWorld,
+      disabled: false,
+    })
+    .last()
+  const accept = surface.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).last()
   const action = addToWorld.or(accept).first()
   const emptyTurn = surface.getByText(EMPTY_TURN_NOTICE).first()
   const pendingReview = page.getByText(FlowUiLabel.PendingReview).first()
