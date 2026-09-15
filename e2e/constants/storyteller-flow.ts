@@ -54,6 +54,7 @@ export enum FlowUiLabel {
   PendingReview = 'Pending Review',
   NewContentReady = 'New content ready for approval',
   ConsistencyFixesApplied = 'Consistency fixes applied.',
+  InternalServerError = 'Internal Server Error',
   GenerateMissingFields = 'Generate missing fields',
   EditCharacter = 'Edit character',
   InfiniteCanvas = 'Infinite Canvas',
@@ -134,6 +135,10 @@ export enum FlowTimeout {
   Live = 900_000,
 }
 
+export enum FlowLimit {
+  AddToWorldDrain = 8,
+}
+
 export enum FlowKey {
   Enter = 'Enter',
 }
@@ -167,6 +172,7 @@ export enum FlowError {
   OpenRouterCreditsExhausted = 'OpenRouter credits exhausted — pause and tell the operator. Do not retry until credits are added.',
   EditorInstructionsMissing = 'Writers Room used a published agent overlay with no instructions',
   GenerateMissingFailed = 'Generate missing fields failed before proposing form fields',
+  FixScanInternalError = 'Fix inconsistencies returned Internal Server Error',
 }
 
 /** Empty-turn notice scenario: the model returns no text and no tool calls. */

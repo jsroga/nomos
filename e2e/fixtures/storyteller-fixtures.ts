@@ -14,6 +14,7 @@ import {
   FlowSse,
   FlowTest,
   FlowTimeout,
+  FlowLimit,
   FlowTool,
   FlowUiLabel,
   FlowRoute,
@@ -161,6 +162,21 @@ async function acceptPendingReviewBanner(page: Page): Promise<void> {
   })
 }
 
+async function clickEnabledAddToWorld(page: Page): Promise<boolean> {
+  const surface = await chatSurface(page)
+  const addToWorld = surface
+    .getByRole(FlowRole.Button, {
+      name: FlowUiLabel.AddToWorld,
+      disabled: false,
+    })
+    .last()
+  if (!(await addToWorld.isVisible().catch(() => false))) return false
+  await addToWorld.click()
+  await confirmAddToWorldDialog(page)
+  await acceptPendingReviewBanner(page)
+  return true
+}
+
 export async function acceptPendingAction(page: Page): Promise<void> {
   const surface = await chatSurface(page)
   const addToWorldDialog = page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.AddToWorld })
@@ -191,6 +207,10 @@ export async function acceptPendingAction(page: Page): Promise<void> {
 
   await confirmAddToWorldDialog(page)
   await acceptPendingReviewBanner(page)
+
+  for (let n = 0; n < FlowLimit.AddToWorldDrain; n += 1) {
+    if (!(await clickEnabledAddToWorld(page))) break
+  }
 }
 
 /** Hit the chat API once so the serverless function is warm before UI timing. */

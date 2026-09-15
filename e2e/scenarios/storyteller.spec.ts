@@ -70,13 +70,9 @@ test.describe(FlowTest.Describe, () => {
     await acceptPendingAction(page)
     await reloadStoryteller(page)
     await expectCharacterInSidebar(page, FlowCharacter.Name)
+    await openStorybible(page)
+    await expectWorldBibleHasContent(page)
     await credits.assertOk()
-
-    try {
-      await acceptPendingAction(page)
-    } catch {
-      // Bible persist may already be idle.
-    }
 
     const chatPanel = page.getByLabel(FlowUiLabel.WorkspaceChatPanel)
     if (await chatPanel.isVisible().catch(() => false)) {
@@ -90,7 +86,13 @@ test.describe(FlowTest.Describe, () => {
 
     const applyAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.ApplyAll })
     const emptyReview = page.getByText(FlowUiLabel.NoInconsistencies)
-    await expect(applyAll.or(emptyReview).first()).toBeVisible({ timeout: FlowTimeout.FixScan })
+    const scanError = page.getByText(FlowUiLabel.InternalServerError)
+    await expect(applyAll.or(emptyReview).or(scanError).first()).toBeVisible({
+      timeout: FlowTimeout.FixScan,
+    })
+    if (await scanError.isVisible()) {
+      throw new Error(FlowError.FixScanInternalError)
+    }
     if (await emptyReview.isVisible()) {
       throw new Error(FlowError.NoInconsistencies)
     }
