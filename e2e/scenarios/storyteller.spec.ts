@@ -102,7 +102,10 @@ test.describe(FlowTest.Describe, () => {
       throw new Error(FlowError.NoInconsistencies)
     }
     await expect(
-      page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.FixInconsistencies }).getByText(FlowCharacter.Name),
+      page
+        .getByRole(FlowRole.Dialog, { name: FlowUiLabel.FixInconsistencies })
+        .getByText(FlowCharacter.Name)
+        .first(),
     ).toBeVisible()
     await credits.assertOk()
   })
