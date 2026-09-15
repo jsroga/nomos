@@ -339,6 +339,14 @@ export async function expectFactionsInBible(page: Page): Promise<void> {
   await expect(empty).toBeHidden()
 }
 
+export async function reloadStoryteller(page: Page): Promise<void> {
+  await page.reload({ waitUntil: FlowRoute.DomContentLoaded })
+  await expect(page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.Storyteller}`)).toBeVisible()
+  await expect(page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.LoadingProject}`)).toBeHidden({
+    timeout: FlowTimeout.Long,
+  })
+}
+
 export async function expectCharacterInSidebar(page: Page, name: string): Promise<void> {
   const panel = page.locator(`#${TOUR_STEP_IDS.STORYTELLER_CHARACTERS}`).first()
   await expect(panel).toBeVisible()

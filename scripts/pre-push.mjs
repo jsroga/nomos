@@ -11,6 +11,7 @@ import {
   ensureProdServer,
   hasProductionBuild,
   killListeningProdServer,
+  stampProductionBuild,
 } from './e2e-prod-server.mjs'
 
 const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=8192'
@@ -60,6 +61,7 @@ async function main() {
   if (!hasProductionBuild()) {
     const build = run('production build', 'npm', ['run', 'build'])
     if (build.status !== 0) process.exit(build.status ?? 1)
+    stampProductionBuild()
   }
 
   const server = await ensureProdServer()

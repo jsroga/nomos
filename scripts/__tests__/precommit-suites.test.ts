@@ -102,6 +102,7 @@ describe('e2e cadence scripts', () => {
   it('runs critical Playwright from pre-push, not a skip log', () => {
     const prePush = readFileSync(new URL('../pre-push.mjs', import.meta.url), 'utf8')
     expect(prePush).toContain('test:e2e:critical')
+    expect(prePush).toContain('stampProductionBuild')
     expect(prePush).not.toContain('skipped live suites')
   })
 

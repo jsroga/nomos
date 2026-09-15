@@ -1,6 +1,6 @@
 import { execSync, spawn } from 'node:child_process'
 import { createConnection } from 'node:net'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
 export const E2E_PROD_PORT = 3001
 export const E2E_PROD_BASE_URL = `http://localhost:${E2E_PROD_PORT}`
@@ -48,8 +48,28 @@ async function waitForReady(url, timeoutMs) {
   throw new Error(`Timed out waiting for ${url}`)
 }
 
+const BUILD_HEAD_STAMP = '.next/e2e-push-head'
+
+function gitHead() {
+  try {
+    return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim()
+  } catch {
+    return ''
+  }
+}
+
 export function hasProductionBuild() {
-  return existsSync('.next')
+  if (!existsSync('.next/BUILD_ID')) return false
+  const head = gitHead()
+  if (!head) return false
+  if (!existsSync(BUILD_HEAD_STAMP)) return false
+  return readFileSync(BUILD_HEAD_STAMP, 'utf8').trim() === head
+}
+
+export function stampProductionBuild() {
+  const head = gitHead()
+  if (!head) return
+  writeFileSync(BUILD_HEAD_STAMP, `${head}\n`)
 }
 
 const LISTEN_KILL_WAIT_MS = 500

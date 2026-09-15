@@ -14,6 +14,7 @@ import {
   waitForToolCall,
   warmAssistantChat,
   acceptPendingAction,
+  reloadStoryteller,
   FlowCharacter,
 } from '../fixtures/storyteller-fixtures'
 import { FlowError, FlowRole, FlowTest, FlowTimeout, FlowTool, FlowUiLabel } from '../constants/storyteller-flow'
@@ -73,6 +74,7 @@ test.describe(FlowTest.Describe, () => {
       await waitForToolCall(page, FlowTool.ManageCharacter, FlowTimeout.Generation)
     }
     await acceptPendingAction(page)
+    await reloadStoryteller(page)
     await expectCharacterInSidebar(page, FlowCharacter.Name)
     await credits.assertOk()
 
