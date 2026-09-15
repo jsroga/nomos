@@ -7,7 +7,6 @@ import { CharacterCreationDialogPortraitSection } from './CharacterCreationDialo
 import { CharacterDialogSelect } from './CharacterDialogSelect'
 import {
   CHARACTER_DIALOG_GENDER_OPTIONS,
-  CHARACTER_DIALOG_MBTI_GROUPS,
   CHARACTER_DIALOG_ROLE_OPTIONS,
 } from './character-dialog-select-options'
 import { CharacterDialogSelectPlaceholder } from './constants/character-creation-dialog'
@@ -21,8 +20,6 @@ interface CharacterCreationDialogBasicFieldsProps {
   setGender: (value: string) => void
   description: string
   setDescription: (value: string) => void
-  mbti: string
-  setMbti: (value: string) => void
   portraitUrl: string
   touched: Record<string, boolean>
   markTouched: (field: string) => void
@@ -44,8 +41,6 @@ export function CharacterCreationDialogBasicFields({
   setGender,
   description,
   setDescription,
-  mbti,
-  setMbti,
   portraitUrl,
   touched,
   markTouched,
@@ -148,28 +143,6 @@ export function CharacterCreationDialogBasicFields({
               onChange={e => setDescription(e.target.value)}
               onBlur={() => markTouched('description')}
               placeholder="Describe appearance, personality, and background..."
-            />
-          </CharacterCreationDialogField>
-
-          <CharacterCreationDialogField
-            label="MBTI"
-            required
-            touched={Boolean(touched.mbti)}
-            isValid={Boolean(mbti)}
-            errorMessage="MBTI is required"
-            onRefresh={
-              onRefreshField ? () => onRefreshField(CharacterTextFieldKey.Mbti) : undefined
-            }
-            refreshDisabled={refreshDisabled}
-          >
-            <CharacterDialogSelect
-              value={mbti}
-              placeholder={CharacterDialogSelectPlaceholder.Mbti}
-              ariaLabel={CharacterDialogSelectPlaceholder.Mbti}
-              invalid={Boolean(touched.mbti && !mbti)}
-              groups={CHARACTER_DIALOG_MBTI_GROUPS}
-              onChange={setMbti}
-              onBlur={() => markTouched('mbti')}
             />
           </CharacterCreationDialogField>
         </div>

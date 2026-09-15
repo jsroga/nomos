@@ -8,6 +8,7 @@ import {
   CHARACTER_DIALOG_GENERATE_MISSING,
   CharacterDialogGenerateMissingDisable,
   CharacterDialogMode,
+  CharacterDialogOverlayClass,
 } from './constants/character-creation-dialog'
 import { getDialogTitle, getSubmitLabel } from './character-creation-dialog-helpers'
 import {
@@ -71,7 +72,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
 
   const modalContent = (
     <>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className={CharacterDialogOverlayClass.Backdrop}>
         <div className="bg-card border border-border w-full max-w-2xl rounded-lg shadow-lg flex flex-col max-h-[90vh] mx-4">
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h2 className="text-lg font-bold">{title}</h2>
@@ -110,8 +111,6 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
               setGender={form.setGender}
               description={form.description}
               setDescription={form.setDescription}
-              mbti={form.mbti}
-              setMbti={form.setMbti}
               portraitUrl={form.portraitUrl}
               touched={dialog.touched}
               markTouched={dialog.markTouched}
@@ -125,12 +124,16 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
             />
 
             <CharacterCreationDialogPsychologyFields
+              mbti={form.mbti}
+              setMbti={form.setMbti}
               motivation={form.motivation}
               setMotivation={form.setMotivation}
               fatalFlaw={form.fatalFlaw}
               setFatalFlaw={form.setFatalFlaw}
               secrets={form.secrets}
               setSecrets={form.setSecrets}
+              touched={dialog.touched}
+              markTouched={dialog.markTouched}
               onRefreshField={dialog.handleRegenerateField}
               refreshDisabled={!dialog.canRegenerateField}
             />

@@ -174,6 +174,21 @@ export enum CharacterDialogMetricBoundLabel {
   Aligned = 'Aligned',
 }
 
+export enum CharacterDialogOverlayClass {
+  Backdrop = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm',
+}
+
+export enum CharacterDialogPsychologyCopy {
+  Title = 'Character Psychology',
+}
+
+export enum CharacterDialogPsychologyClass {
+  Root = 'group space-y-4 pt-4 border-t border-border',
+  Summary = 'flex cursor-pointer list-none items-center gap-2 text-sm font-bold [&::-webkit-details-marker]:hidden',
+  Chevron = 'h-4 w-4 shrink-0 opacity-70 transition-transform group-open:rotate-180',
+  Body = 'space-y-4 pt-2',
+}
+
 export const CHARACTER_DIALOG_VALENCE_SLIDER_OFFSET = 100
 export const CHARACTER_DIALOG_VALENCE_SLIDER_MAX = 200
 export const CHARACTER_DIALOG_METRIC_SLIDER_MAX = 100

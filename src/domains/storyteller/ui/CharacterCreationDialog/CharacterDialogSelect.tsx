@@ -39,7 +39,7 @@ interface CharacterDialogSelectProps {
 export enum CharacterDialogSelectClass {
   Trigger = 'w-full justify-between font-normal',
   Placeholder = 'text-muted-foreground',
-  Menu = 'max-h-72 w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto',
+  Menu = '!z-[10050] max-h-72 w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto',
 }
 
 function optionLabel(
@@ -76,7 +76,7 @@ export function CharacterDialogSelect({
 }: CharacterDialogSelectProps) {
   const label = selectedLabel({ value, options, groups }) ?? placeholder
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           type={HtmlElementType.Button}
