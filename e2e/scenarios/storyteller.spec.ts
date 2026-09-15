@@ -19,7 +19,6 @@ import {
 import { FlowError, FlowRole, FlowTest, FlowTimeout, FlowTool, FlowUiLabel } from '../constants/storyteller-flow'
 import { ConsistencyPrompt } from '../constants/storyteller-consistency-prompts'
 import { SmokeChatModel } from '../constants/storyteller-smoke'
-import { FIX_INCONSISTENCIES_APPLIED_MESSAGE } from '@/domains/storyteller/ai/workflows/constants/fix-inconsistencies-workflow'
 
 test.describe(FlowTest.Describe, () => {
   test(FlowTest.Name, async ({ page }) => {
@@ -96,16 +95,9 @@ test.describe(FlowTest.Describe, () => {
     if (await emptyReview.isVisible()) {
       throw new Error(FlowError.NoInconsistencies)
     }
-    if (await applyAll.isEnabled()) {
-      await applyAll.click()
-      await expect(page.getByText(FIX_INCONSISTENCIES_APPLIED_MESSAGE)).toBeVisible({
-        timeout: FlowTimeout.Generation,
-      })
-    } else {
-      await expect(
-        page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.FixInconsistencies }).getByText(FlowCharacter.Name),
-      ).toBeVisible()
-    }
+    await expect(
+      page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.FixInconsistencies }).getByText(FlowCharacter.Name),
+    ).toBeVisible()
     await credits.assertOk()
   })
 })
