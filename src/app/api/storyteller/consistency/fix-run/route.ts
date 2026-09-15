@@ -22,7 +22,7 @@ import {
   type FixInconsistenciesSseSink,
 } from '@/domains/storyteller/core/io/fix-inconsistencies-sse-run'
 
-export const maxDuration = 300
+export const maxDuration = 800
 
 const StartSchema = z.object({
   projectId: z.string().min(1),

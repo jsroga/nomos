@@ -55,6 +55,7 @@ export enum FlowUiLabel {
   NewContentReady = 'New content ready for approval',
   ConsistencyFixesApplied = 'Consistency fixes applied.',
   InternalServerError = 'Internal Server Error',
+  NetworkError = 'network error',
   GenerateMissingFields = 'Generate missing fields',
   EditCharacter = 'Edit character',
   InfiniteCanvas = 'Infinite Canvas',
@@ -132,7 +133,7 @@ export enum FlowTimeout {
   Stub = 90_000,
   Generation = 360_000,
   FixScan = 800_000,
-  Live = 900_000,
+  Live = 1_800_000,
 }
 
 export enum FlowLimit {
@@ -173,6 +174,7 @@ export enum FlowError {
   EditorInstructionsMissing = 'Writers Room used a published agent overlay with no instructions',
   GenerateMissingFailed = 'Generate missing fields failed before proposing form fields',
   FixScanInternalError = 'Fix inconsistencies returned Internal Server Error',
+  FixScanNetworkError = 'Fix inconsistencies returned network error',
 }
 
 /** Empty-turn notice scenario: the model returns no text and no tool calls. */

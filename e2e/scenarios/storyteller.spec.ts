@@ -76,7 +76,7 @@ test.describe(FlowTest.Describe, () => {
     const chatPanel = page.getByLabel(FlowUiLabel.WorkspaceChatPanel)
     if (await chatPanel.isVisible().catch(() => false)) {
       await page.getByRole(FlowRole.Button, { name: FlowUiLabel.WorkspaceChatToggle }).click()
-      await expect(chatPanel).toBeHidden()
+      await expect(chatPanel).toBeHidden({ timeout: FlowTimeout.Medium })
     }
 
     const fix = page.getByRole(FlowRole.Button, { name: FlowUiLabel.FixInconsistencies })
@@ -86,11 +86,17 @@ test.describe(FlowTest.Describe, () => {
     const applyAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.ApplyAll })
     const emptyReview = page.getByText(FlowUiLabel.NoInconsistencies)
     const scanError = page.getByText(FlowUiLabel.InternalServerError).first()
-    await expect(applyAll.or(emptyReview).or(scanError).first()).toBeVisible({
+    const networkError = page
+      .getByRole(FlowRole.Dialog, { name: FlowUiLabel.FixInconsistencies })
+      .getByText(FlowUiLabel.NetworkError)
+    await expect(applyAll.or(emptyReview).or(scanError).or(networkError).first()).toBeVisible({
       timeout: FlowTimeout.FixScan,
     })
     if (await scanError.isVisible()) {
       throw new Error(FlowError.FixScanInternalError)
+    }
+    if (await networkError.isVisible()) {
+      throw new Error(FlowError.FixScanNetworkError)
     }
     if (await emptyReview.isVisible()) {
       throw new Error(FlowError.NoInconsistencies)

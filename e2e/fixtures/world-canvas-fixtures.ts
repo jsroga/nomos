@@ -7,11 +7,12 @@ import { TileReviewAcceptLabel } from '@/domains/2d-canvas/ui/constants/tile-rev
 import {
   FlowHttp,
   FlowRoute,
-  FlowRole,
   FlowSelector,
   FlowTimeout,
   FlowUiLabel,
 } from '../constants/storyteller-flow'
+import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
+import { WorkspaceChatOverlayStored } from '@/shared/chat/state/constants/workspace-chat-ui'
 import { SmokeMatch } from '../constants/storyteller-smoke'
 import {
   WorldCanvasCoord,
@@ -34,12 +35,19 @@ export async function gotoWorldCanvas(page: Page, projectId: string): Promise<vo
 
 export async function openWorldCanvasProject(page: Page): Promise<{ id: string }> {
   const project = await createStoryProject(page)
+  await page.addInitScript(
+    ({ key, closed }) => {
+      localStorage.setItem(key, closed)
+    },
+    {
+      key: LocalStorageKeys.WORKSPACE_CHAT_OVERLAY_OPEN,
+      closed: WorkspaceChatOverlayStored.Closed,
+    },
+  )
   await gotoWorldCanvas(page, project.id)
-  const panel = page.getByLabel(FlowUiLabel.WorkspaceChatPanel)
-  if (await panel.isVisible().catch(() => false)) {
-    await page.getByRole(FlowRole.Button, { name: FlowUiLabel.WorkspaceChatToggle }).click()
-    await expect(panel).toBeHidden()
-  }
+  await expect(page.getByLabel(FlowUiLabel.WorkspaceChatPanel)).toBeHidden({
+    timeout: FlowTimeout.Medium,
+  })
   return project
 }
 

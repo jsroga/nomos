@@ -30,5 +30,6 @@ describe('fix-inconsistencies SSE start wiring', () => {
     expect(source).toContain('encodeFixInconsistenciesSseComment')
     expect(source).toContain('SseAccelBuffering.No')
     expect(source).toContain('createMastraTraceId')
+    expect(source).toContain('export const maxDuration = 800')
   })
 })
