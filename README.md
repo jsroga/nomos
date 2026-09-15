@@ -110,7 +110,7 @@ commands: [docs/DEVELOPMENT.md § Quality gates](docs/DEVELOPMENT.md); the reaso
 
 **At handover** — Cursor `stop` hooks gate the turn automatically. [`plan-critique-on-stop.sh`](.cursor/hooks/plan-critique-on-stop.sh) fires once when a plan file landed (`*.plan.md`, `PLAN.md`) and auto-submits a follow-up to expand todos and critique weak spots — it does not start implementation. [`fast-verify-on-stop.sh`](.cursor/hooks/fast-verify-on-stop.sh) re-runs the gate on the files touched that turn and hands failures back to the agent as a follow-up instead of ending the turn. [`mastra-smoke-on-stop.sh`](.cursor/hooks/mastra-smoke-on-stop.sh) fires only when Mastra paths changed (`src/mastra/**`, agent-kernel Mastra) and runs `npm run mastra:smoke` over the Studio index and file-based agent packages.
 
-**Before committing** — `npm run precommit` ([`scripts/pre-commit.mjs`](scripts/pre-commit.mjs), re-run by Husky as a safety net) always runs architecture, docs, OpenAPI, env, **full** `typecheck`, **full** `lint`, and `test:unit`. Eval freshness, HTTP smoke, stub Playwright, and live Storyteller run only when the commit paths select them ([`scripts/precommit-suites.mjs`](scripts/precommit-suites.mjs)). Full Playwright is nightly (`npm run test:e2e:nightly`). End-of-task full sweep when you want it locally:
+**Before committing** — `npm run precommit` ([`scripts/pre-commit.mjs`](scripts/pre-commit.mjs), re-run by Husky as a safety net) always runs architecture, docs, OpenAPI, env, **full** `typecheck`, **full** `lint`, and `test:unit`. Eval freshness, HTTP smoke, and overlay stub Playwright run only when the commit paths select them ([`scripts/precommit-suites.mjs`](scripts/precommit-suites.mjs)). **Before pushing** — Husky pre-push always runs critical Playwright (`storyteller.spec.ts` + `world-canvas.spec.ts`). Full Playwright is nightly (`npm run test:e2e:nightly`). End-of-task full sweep when you want it locally:
 
 ```bash
 npm run typecheck   # tsc --noEmit + full-src metrics
@@ -118,11 +118,11 @@ npm run lint
 npm run test:unit
 ```
 
-CI (`.github/workflows/ci.yml`) does not run Playwright. Critical e2e/smoke
-(HTTP smoke, canvas stubs, Storyteller character-fields) run at commit when
-paths match; the full folder including whole-flow `storyteller.spec.ts` is nightly.
-Agents do not open the app in a browser. A check worth making is kept as a
-committed test.
+CI (`.github/workflows/ci.yml`) does not run Playwright. Overlay stub and HTTP
+smoke run at commit when paths match. Critical e2e (`storyteller.spec.ts` +
+`world-canvas.spec.ts`) run on every local push. The full folder is nightly.
+Vercel deploy runs full unit tests before `next build`. Agents do not open the
+app in a browser. A check worth making is kept as a committed test.
 
 ## License
 

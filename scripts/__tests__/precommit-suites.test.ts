@@ -24,8 +24,16 @@ describe('selectPrecommitSuites', () => {
     ])
   })
 
-  it('selects stub e2e for 2d-canvas and overlay, not live Storyteller', () => {
+  it('does not select commit e2e for 2d-canvas (critical canvas runs on pre-push)', () => {
     const suites = selectPrecommitSuites(['src/domains/2d-canvas/ui/Canvas.tsx'])
+    expect(suites).toEqual([])
+    expect(needsProdServer(suites)).toBe(false)
+  })
+
+  it('selects stub e2e for workspace overlay, not 2d-canvas', () => {
+    const suites = selectPrecommitSuites([
+      'src/shared/chat/ui/WorkspaceChatOverlay/WorkspaceChatOverlay.tsx',
+    ])
     expect(suites).toEqual([PrecommitSuite.E2eStubs])
     expect(needsProdServer(suites)).toBe(true)
   })
@@ -36,28 +44,24 @@ describe('selectPrecommitSuites', () => {
     ])
   })
 
-  it('selects live Storyteller, smoke, and eval for storyteller domain AI', () => {
+  it('selects smoke and eval for storyteller domain AI, not live Playwright', () => {
     const suites = selectPrecommitSuites([
       'src/domains/storyteller/ai/agents/StorytellerAgent/storyteller-agent.ts',
     ])
     expect(suites.sort()).toEqual(
-      [
-        PrecommitSuite.EvalFreshness,
-        PrecommitSuite.E2eSmoke,
-        PrecommitSuite.E2eLiveStoryteller,
-      ].sort(),
+      [PrecommitSuite.EvalFreshness, PrecommitSuite.E2eSmoke].sort(),
     )
   })
 
-  it('selects live Storyteller for workspace chrome without eval', () => {
-    expect(selectPrecommitSuites(['src/app/(workspace)/[projectId]/storyteller/page.tsx'])).toEqual([
-      PrecommitSuite.E2eLiveStoryteller,
-    ])
+  it('selects nothing for workspace chrome (critical Storyteller is pre-push)', () => {
+    expect(selectPrecommitSuites(['src/app/(workspace)/[projectId]/storyteller/page.tsx'])).toEqual(
+      [],
+    )
   })
 
   it('unions suites across a mixed commit', () => {
     const suites = selectPrecommitSuites([
-      'src/domains/2d-canvas/index.ts',
+      'src/shared/chat/ui/WorkspaceChatOverlay/index.ts',
       'src/shared/ai/gateway/output-budget.ts',
       'evals/constants/thresholds.ts',
     ])
@@ -70,15 +74,9 @@ describe('selectPrecommitSuites', () => {
     )
   })
 
-  it('treats Playwright runner infra as all e2e suites', () => {
+  it('treats Playwright runner infra as commit smoke and overlay stub', () => {
     const suites = selectPrecommitSuites(['playwright.config.ts'])
-    expect(suites.sort()).toEqual(
-      [
-        PrecommitSuite.E2eStubs,
-        PrecommitSuite.E2eSmoke,
-        PrecommitSuite.E2eLiveStoryteller,
-      ].sort(),
-    )
+    expect(suites.sort()).toEqual([PrecommitSuite.E2eStubs, PrecommitSuite.E2eSmoke].sort())
   })
 
   it('does not treat loop-creator AI as Storyteller e2e', () => {
@@ -88,12 +86,27 @@ describe('selectPrecommitSuites', () => {
   })
 })
 
-describe('precommit live vs nightly scripts', () => {
-  it('keeps whole-flow Storyteller on nightly, not the live precommit script', () => {
+describe('e2e cadence scripts', () => {
+  it('keeps overlay stub on commit, critical Storyteller+canvas on push, full folder nightly', () => {
     const pkg = readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
     expect(pkg).toContain(
-      '"test:e2e:live-storyteller": "playwright test e2e/scenarios/storyteller-character-fields.spec.ts"',
+      '"test:e2e:stubs": "playwright test e2e/scenarios/workspace-chat-overlay.spec.ts"',
+    )
+    expect(pkg).toContain(
+      '"test:e2e:critical": "playwright test e2e/scenarios/storyteller.spec.ts e2e/scenarios/world-canvas.spec.ts"',
     )
     expect(pkg).toContain('"test:e2e:nightly": "playwright test"')
+    expect(pkg).not.toContain('test:e2e:live-storyteller')
+  })
+
+  it('runs critical Playwright from pre-push, not a skip log', () => {
+    const prePush = readFileSync(new URL('../pre-push.mjs', import.meta.url), 'utf8')
+    expect(prePush).toContain('test:e2e:critical')
+    expect(prePush).not.toContain('skipped live suites')
+  })
+
+  it('runs full unit tests on the Vercel deploy build command', () => {
+    const vercel = JSON.parse(readFileSync(new URL('../../vercel.json', import.meta.url), 'utf8'))
+    expect(vercel.buildCommand).toBe('npm run test:unit && npm run build')
   })
 })

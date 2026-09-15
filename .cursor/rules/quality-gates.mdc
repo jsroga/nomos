@@ -62,7 +62,7 @@ npm run lint               # ESLint strict (see eslint-boundaries rule)
 npm run test:unit          # Vitest
 ```
 
-Optional: `npx knip` (dead code). **No E2E during the task.** Commit-time `npm run precommit` always re-runs full lint/tsc/unit and file-selected smoke/critical e2e.
+Optional: `npx knip` (dead code). **No E2E during the task.** Commit-time `npm run precommit` always re-runs full lint/tsc/unit and file-selected smoke/overlay stub. Critical Playwright (Storyteller + 2D Canvas) runs on husky pre-push.
 
 ## Module-scoped (dark-factory / commit-ready)
 

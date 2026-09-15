@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * Husky pre-commit: full-app lint + typecheck + unit always.
- * Eval freshness, HTTP smoke, and critical Playwright run only when staged
+ * Eval freshness, HTTP smoke, and overlay stub Playwright run only when staged
  * (or working-tree, if the index is empty) paths select them.
+ * Critical Playwright (Storyteller + 2D Canvas) runs on pre-push.
  */
 import { spawnSync } from 'node:child_process'
 import dotenv from 'dotenv'
@@ -110,12 +111,6 @@ async function main() {
     }
     if (suites.includes(PrecommitSuite.E2eSmoke)) {
       run('http smoke', 'npm', ['run', 'test:e2e', '--', 'smoke'], {
-        env: liveEnv(),
-        capture: true,
-      })
-    }
-    if (suites.includes(PrecommitSuite.E2eLiveStoryteller)) {
-      run('live storyteller playwright', 'npm', ['run', 'test:e2e:live-storyteller'], {
         env: liveEnv(),
         capture: true,
       })
