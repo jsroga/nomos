@@ -1,5 +1,10 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { EMPTY_TURN_NOTICE, withStreamTiming } from '../assistant-stream-timing'
+import {
+  ASSISTANT_TURN_FAILURE_NOTICE,
+  EMPTY_TURN_NOTICE,
+  withStreamTiming,
+  writeAssistantTurnFailure,
+} from '../assistant-stream-timing'
 
 function streamOf(chunks: unknown[]): ReadableStream {
   return new ReadableStream({
@@ -112,5 +117,20 @@ describe('withStreamTiming', () => {
     )
     expect(frames.some(f => f.type === 'text-delta')).toBe(false)
     expect(frames.at(-1)?.type).toBe('finish')
+  })
+
+  it('emits a short assistant text notice on turn failure', () => {
+    const frames: Record<string, unknown>[] = []
+    writeAssistantTurnFailure({
+      write: chunk => {
+        frames.push(chunk)
+      },
+    })
+    expect(frames.map(frame => frame.type)).toEqual(['text-start', 'text-delta', 'text-end'])
+    expect(frames.find(frame => frame.type === 'text-delta')?.delta).toBe(
+      ASSISTANT_TURN_FAILURE_NOTICE,
+    )
+    expect(JSON.stringify(frames)).not.toContain('ENOENT')
+    expect(JSON.stringify(frames)).not.toContain('mastra-studio-sandbox')
   })
 })

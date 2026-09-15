@@ -269,7 +269,7 @@ Opt-in flags are named `FF_<NAME>` and turn on with the exact value `true`; anyt
 | `FF_TILE_SEAM_COLOR_FADE` | 16px follow-up tile edge color fade (off: packed grey-hole crop only) |
 | `NEXT_PUBLIC_FF_3D_CANVAS` | Show 3D Canvas in the workspace sidebar and project hub. Leave unset on Vercel Preview and Production. |
 | `NEXT_PUBLIC_FF_LOOP_CREATOR` | Show Loop Creator in the workspace sidebar and project hub |
-| `NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY` | Workspace General Chat overlay (sibling of `ProjectLoader`); hides private Writers Room / Loop `AssistantChat` copies |
+| `NEXT_PUBLIC_FF_WORKSPACE_CHAT_OVERLAY` | Workspace General Chat overlay (sibling of `ProjectLoader`); hides private Writers Room / Loop `AssistantChat` copies. Production and Preview must set `true` and **rebuild** (`NEXT_PUBLIC_*` is inlined at build). Do not default the flag on in source. |
 | `NEXT_PUBLIC_FF_PERF_DEBUG` | React Scan overlay + CWV HUD + CharacterWeb timings |
 | `NEXT_PUBLIC_FF_CWV_HUD` | Core Web Vitals overlay only |
 

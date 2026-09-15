@@ -107,7 +107,7 @@ export function createMastra(
     agents,
     scorers: omitStoredJudgeCodeScorers(STORYTELLER_SCORERS, listStoredScorerIds()),
     ...(storage ? { storage } : {}),
-    workspace,
+    ...(workspace ? { workspace } : {}),
     ...(options?.workflows ? { workflows: options.workflows } : {}),
     ...(options?.mcpServers ? { mcpServers: options.mcpServers } : {}),
     ...(options?.tools ? { tools: options.tools } : {}),

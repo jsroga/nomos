@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { Workspace, LocalFilesystem } from '@mastra/core/workspace'
+import { env } from '@/shared/config/env'
 import { resolveProjectRoot } from '@/shared/agent-kernel/mastra/project-root'
 import {
   StudioSandboxDir,
@@ -9,6 +10,10 @@ import {
 
 export function resolveStudioSandboxPath(): string {
   return path.join(resolveProjectRoot(), StudioSandboxDir.Relative)
+}
+
+export function shouldCreateStudioSandbox(): boolean {
+  return !env.VERCEL
 }
 
 function createContainedFilesystem(id: StudioSandboxId, basePath: string): LocalFilesystem {
@@ -21,7 +26,8 @@ function createContainedFilesystem(id: StudioSandboxId, basePath: string): Local
 }
 
 /** One Studio filesystem for every agent that inherits the instance workspace. */
-export function createInstanceStudioWorkspace(): Workspace {
+export function createInstanceStudioWorkspace(): Workspace | undefined {
+  if (!shouldCreateStudioSandbox()) return undefined
   return new Workspace({
     id: StudioSandboxId.InstanceWorkspace,
     filesystem: createContainedFilesystem(

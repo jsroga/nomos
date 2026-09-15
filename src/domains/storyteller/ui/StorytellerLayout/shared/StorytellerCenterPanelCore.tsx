@@ -98,7 +98,7 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
           setWorldBibleOpen(false)
         }}
         onCreateEpisode={() => {
-          void handleDraftFirstEpisode()
+          getStorytellerUiStore().requestCreateEpisodeDialog()
         }}
       />
 

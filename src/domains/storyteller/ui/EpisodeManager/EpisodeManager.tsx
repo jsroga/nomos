@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Plus, Film } from 'lucide-react'
 import { toast } from 'sonner'
@@ -24,6 +24,10 @@ import {
 } from '@/domains/storyteller/core/io/storyteller.api'
 import { storytellerKeys } from '@/domains/storyteller/core/io/storyteller.keys'
 import { useEpisodes } from '@/domains/storyteller/state/queries/useEpisodes'
+import {
+  getStorytellerUiStore,
+  useStorytellerUiStore,
+} from '@/domains/storyteller/state/useStorytellerUiStore'
 import { sortEpisodesForDisplay } from '@/domains/storyteller/state/utils/episode-list'
 import type { PhaseId } from '@/domains/storyteller/core/types/enums'
 import { EpisodeManagerRow } from './EpisodeManagerRow'
@@ -52,7 +56,6 @@ import { shouldPersistEpisodeRename } from './episode-title-action'
 import { KeyboardKey } from '@/shared/data/constants/protocol'
 import { readString } from '@/shared/data/json-guards'
 import { StorytellerQueryParam } from '@/domains/storyteller/core/storyteller-page-wire'
-import { getStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { storytellerSearchParams } from '@/domains/storyteller/state/utils/strip-bible-search-params'
 
 interface Episode {
@@ -91,6 +94,10 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [newEpisodeTitle, setNewEpisodeTitle] = useState('')
+  const createEpisodeDialogRequestSeq = useStorytellerUiStore(
+    state => state.createEpisodeDialogRequestSeq,
+  )
+  const handledCreateDialogSeqRef = useRef(0)
 
   const episodes = useMemo<Episode[]>(() => {
     const rows = episodesQuery.data ?? []
@@ -160,6 +167,13 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
     setIsCreateDialogOpen(true)
   }
 
+  useEffect(() => {
+    if (createEpisodeDialogRequestSeq <= handledCreateDialogSeqRef.current) return
+    handledCreateDialogSeqRef.current = createEpisodeDialogRequestSeq
+    setNewEpisodeTitle('')
+    setIsCreateDialogOpen(true)
+  }, [createEpisodeDialogRequestSeq])
+
   const handleCreateEpisode = async () => {
     if (!newEpisodeTitle.trim()) return
 
@@ -168,9 +182,11 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
       title: newEpisodeTitle.trim(),
       sequence: episodes.length + 1,
     })
-    if (readString(newEpisode.id)) {
+    const createdId = readString(newEpisode.id)
+    if (createdId) {
       void invalidateEpisodes()
       setIsCreateDialogOpen(false)
+      onEpisodeChange(createdId)
     }
   }
 

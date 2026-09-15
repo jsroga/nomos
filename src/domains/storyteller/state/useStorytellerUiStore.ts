@@ -49,6 +49,7 @@ interface StorytellerUiState {
   isBibleEditing: boolean
   isEpisodeEditing: boolean
   consistencyFixRun: ConsistencyFixRunState
+  createEpisodeDialogRequestSeq: number
 
   navigateToEntity: (payload: EntityNavigationPayload) => void
   clearEntityNavigation: () => void
@@ -75,6 +76,7 @@ interface StorytellerUiState {
   setEpisodeEditing: (editing: boolean) => void
   setConsistencyFixRun: (patch: Partial<ConsistencyFixRunState>) => void
   resetConsistencyFixRun: () => void
+  requestCreateEpisodeDialog: () => void
 }
 
 export interface ConsistencyFixRunState {
@@ -132,6 +134,7 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
   isBibleEditing: false,
   isEpisodeEditing: false,
   consistencyFixRun: IDLE_CONSISTENCY_FIX_RUN,
+  createEpisodeDialogRequestSeq: 0,
 
   navigateToEntity: (payload) => set({ entityNavigation: payload }),
   clearEntityNavigation: () => set({ entityNavigation: null }),
@@ -252,6 +255,10 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
       consistencyFixRun: { ...state.consistencyFixRun, ...patch },
     })),
   resetConsistencyFixRun: () => set({ consistencyFixRun: IDLE_CONSISTENCY_FIX_RUN }),
+  requestCreateEpisodeDialog: () =>
+    set(state => ({
+      createEpisodeDialogRequestSeq: state.createEpisodeDialogRequestSeq + 1,
+    })),
 }))
 
 /** Imperative access for services that cannot use React hooks. */

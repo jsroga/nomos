@@ -13,8 +13,8 @@ import {
 } from '../../utils/mj-sref'
 import { settingsApi } from '../../core/io/settings.api'
 import { uploadStyleRefFile } from '../../core/io/style-refs.api'
+import { MASTER_PROMPT_SAVE_DEBOUNCE_MS } from '@/components/MasterPromptField'
 import {
-  MASTER_PROMPT_SAVE_DEBOUNCE_MS,
   WorldGenSidebarLog,
   WorldGenSidebarToast,
 } from '../../ui/utils/sidebar'

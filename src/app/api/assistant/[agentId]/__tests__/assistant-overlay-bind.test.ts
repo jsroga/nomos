@@ -15,4 +15,11 @@ describe('assistant overlay session bind', () => {
     expect(src).toContain('scheduleChatSessionTitle(')
     expect(AssistantChatBodyKey.SessionId).toBe('sessionId')
   })
+
+  it('writes a text chunk on stream failure instead of rethrowing', () => {
+    const src = readFileSync(ASSISTANT_ROUTE, 'utf8')
+    expect(src).toContain('writeAssistantTurnFailure(writer)')
+    expect(src).not.toMatch(/writeAssistantTurnFailure\(writer\)[\s\S]*throw error/)
+    expect(src).not.toMatch(/catch \(error\) \{[\s\S]*throw error/)
+  })
 })

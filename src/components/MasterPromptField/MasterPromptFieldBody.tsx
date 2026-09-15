@@ -1,6 +1,6 @@
 'use client'
 
-import { BorderGlow, BorderGlowSurface } from '@/components/BorderGlow'
+// import { BorderGlow, BorderGlowSurface } from '@/components/BorderGlow'
 import { HtmlElementType } from '@/shared/data/constants/protocol'
 import { cn } from '@/shared/data/utils'
 import { MasterPromptFieldClass, MasterPromptFieldCopy } from './constants/master-prompt-field'
@@ -64,27 +64,34 @@ export function MasterPromptFieldBody({
   )
 
   if (!clamp) {
+    return textarea
+    /*
     return (
       <BorderGlow surface={BorderGlowSurface.Field} className={MasterPromptFieldClass.GlowWrap}>
         {textarea}
       </BorderGlow>
     )
+    */
   }
 
   return (
     <>
+      {/*
       <BorderGlow surface={BorderGlowSurface.Field} className={MasterPromptFieldClass.GlowWrap}>
-        <div
-          className={cn(
-            MasterPromptFieldClass.Frame,
-            collapsed && MasterPromptFieldClass.FrameClamped,
-            clamp && expanded && MasterPromptFieldClass.FrameExpanded,
-          )}
-        >
-          {collapsedFill ? <MasterPromptCollapsedFade value={value} /> : null}
-          {textarea}
-        </div>
+      */}
+      <div
+        className={cn(
+          MasterPromptFieldClass.Frame,
+          collapsed && MasterPromptFieldClass.FrameClamped,
+          clamp && expanded && MasterPromptFieldClass.FrameExpanded,
+        )}
+      >
+        {collapsedFill ? <MasterPromptCollapsedFade value={value} /> : null}
+        {textarea}
+      </div>
+      {/*
       </BorderGlow>
+      */}
       {filled ? (
         <div className={MasterPromptFieldClass.Footer}>
           <span className={MasterPromptFieldClass.CharCount}>{formatMasterPromptCharCount(value.length)}</span>

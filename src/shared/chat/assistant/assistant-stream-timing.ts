@@ -52,6 +52,19 @@ const ANSWER_CHUNK_PREFIXES = [TextChunkType.Start, TOOLISH_CHUNK_PREFIX]
 export const EMPTY_TURN_NOTICE =
   'The model returned an empty response for this turn — nothing was generated. Please try again, or rephrase the request.'
 
+/** Shown when the turn fails after SSE start — never the raw filesystem path. */
+export const ASSISTANT_TURN_FAILURE_NOTICE =
+  'This turn could not complete. Please try again.'
+
+export function writeAssistantTurnFailure(writer: {
+  write: (chunk: UIMessageChunk) => void
+}): void {
+  const id = generateId()
+  writer.write({ type: TextChunkType.Start, id })
+  writer.write({ type: TextChunkType.Delta, id, delta: ASSISTANT_TURN_FAILURE_NOTICE })
+  writer.write({ type: TextChunkType.End, id })
+}
+
 function chunkTypeOf(chunk: unknown): string {
   if (typeof chunk !== 'object' || chunk === null) return typeof chunk
   const type = Reflect.get(chunk, StreamChunkTypeField.Type)

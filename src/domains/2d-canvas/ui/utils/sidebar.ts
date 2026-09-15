@@ -10,7 +10,6 @@ export enum WorldGenDefaultFidelityPrompt {
     'Enhance with fine artistic details, crisp textures, and vibrant colors while maintaining the original composition.',
 }
 
-export const MASTER_PROMPT_SAVE_DEBOUNCE_MS = 500
 export const STYLE_REF_UNDO_TOAST_MS = 4000
 
 export enum WorldGenSidebarWorldCopy {

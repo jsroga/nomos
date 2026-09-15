@@ -86,6 +86,9 @@ const serverEnvSchema = z.object({
 
   // Mastra.
   MASTRA_PROJECT_ROOT: z.string().min(1).optional(),
+
+  // Platform. Vercel sets this on Preview and Production.
+  VERCEL: z.string().optional(),
 })
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>

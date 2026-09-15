@@ -60,6 +60,7 @@ describe('Studio workspace and writer cards', () => {
     expect(names).not.toContain(StudioSandboxSecretName.NodeModules)
     const createSrc = readFileSync(CREATE_MASTRA, 'utf8')
     expect(createSrc).toContain('createInstanceStudioWorkspace')
+    expect(createSrc).toContain('...(workspace ? { workspace } : {})')
     expect(createSrc).not.toContain('resolveProjectRoot()')
     const workspaceSrc = readFileSync(STUDIO_WORKSPACE, 'utf8')
     expect(workspaceSrc).toContain('contained: true')

@@ -25,6 +25,7 @@ export interface MasterPromptSuggestItem {
   description?: string
 }
 
+export const MASTER_PROMPT_SAVE_DEBOUNCE_MS = 500
 export const MASTER_PROMPT_CLAMP_MAX_PX = 100
 export const MASTER_PROMPT_EXPAND_PX = 240
 export const MASTER_PROMPT_FADE_HEIGHT_PX = 48

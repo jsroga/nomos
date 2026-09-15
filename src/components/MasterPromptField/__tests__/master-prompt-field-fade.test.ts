@@ -64,9 +64,14 @@ describe('MasterPromptField collapsed fade', () => {
     expect(collapsed.split(' ')).not.toEqual(expect.arrayContaining(['text-foreground/85']))
   })
 
-  it('wraps every prompt box in BorderGlow', () => {
+  it('keeps BorderGlow wrappers commented out', () => {
     const src = readFileSync('src/components/MasterPromptField/MasterPromptFieldBody.tsx', 'utf8')
+    const live = src
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
     expect(src).toContain('BorderGlow')
     expect(src).toContain('BorderGlowSurface.Field')
+    expect(live).not.toContain('<BorderGlow')
   })
 })

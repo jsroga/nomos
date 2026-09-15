@@ -22,7 +22,10 @@ import { getMastraInstance, warmMastraStorage } from '@/shared/agent-kernel/mast
 import { hasRegisteredAgent } from '@/shared/agent-kernel/mastra/get-published-agent'
 import { handleChatAgentVersion } from '@/shared/agent-kernel/mastra/handle-chat-agent-version'
 import { CHAT_HTTP_SCORERS } from '@/shared/agent-kernel/scorers/chat-live-scorers'
-import { withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
+import {
+  withStreamTiming,
+  writeAssistantTurnFailure,
+} from '@/shared/chat/assistant/assistant-stream-timing'
 import {
   BEAT_TOOL_ID,
   LIST_BEATS_TOOL_ID,
@@ -433,7 +436,7 @@ export async function POST(req: Request, { params }: RouteContext) {
           `${AssistantTurnLog.StreamError}${Date.now() - turnStartedAt}ms`,
           error
         )
-        throw error
+        writeAssistantTurnFailure(writer)
       }
       }
       if (projectScope) {
