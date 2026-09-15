@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test'
+import { Locator, Page, expect } from '@playwright/test'
 import {
   EmptyTurnScenario,
   FlowApi,
@@ -87,8 +87,14 @@ export async function sendChatStream(page: Page, projectId: string, message: str
   return parseSseText(text)
 }
 
+async function chatSurface(page: Page): Promise<Page | Locator> {
+  const panel = page.getByLabel(FlowUiLabel.WorkspaceChatPanel)
+  if (await panel.isVisible()) return panel
+  return page
+}
+
 export async function sendChatMessage(page: Page, message: string): Promise<void> {
-  const input = page.locator(CHAT_INPUT).first()
+  const input = (await chatSurface(page)).locator(CHAT_INPUT).first()
   await expect(input).toBeVisible()
   await input.click()
   // Real keystrokes, not fill(): assistant-ui's composer is a controlled input
@@ -107,7 +113,8 @@ export async function sendChatMessage(page: Page, message: string): Promise<void
 }
 
 export async function waitForAssistantStatus(page: Page): Promise<void> {
-  await expect(page.locator(FlowSelector.RunningStatus).first()).toBeVisible({
+  const surface = await chatSurface(page)
+  await expect(surface.locator(FlowSelector.RunningStatus).first()).toBeVisible({
     timeout: CHAT_STATUS_TIMEOUT,
   })
 }
@@ -116,10 +123,10 @@ export async function waitForAssistantResponse(
   page: Page,
   timeoutMs: number = FlowTimeout.Long,
 ): Promise<string> {
-  const assistant = page.locator(FlowSelector.AssistantMessage).first()
+  const surface = await chatSurface(page)
+  const assistant = surface.locator(FlowSelector.AssistantMessage).first()
   await expect(assistant).toBeVisible({ timeout: timeoutMs })
-  // Settled = the thinking indicator is gone and real text has rendered.
-  await expect(page.locator(FlowSelector.RunningStatus)).toHaveCount(0, {
+  await expect(surface.locator(FlowSelector.RunningStatus)).toHaveCount(0, {
     timeout: timeoutMs,
   })
   const text = (await assistant.textContent())?.trim() ?? ''
@@ -128,16 +135,17 @@ export async function waitForAssistantResponse(
 }
 
 export async function acceptPendingAction(page: Page): Promise<void> {
-  const addToWorld = page.getByRole(FlowRole.Button, { name: FlowUiLabel.AddToWorld }).first()
-  const accept = page.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).first()
+  const surface = await chatSurface(page)
+  const addToWorld = surface.getByRole(FlowRole.Button, { name: FlowUiLabel.AddToWorld }).first()
+  const accept = surface.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).first()
   const action = addToWorld.or(accept).first()
-  const emptyTurn = page.getByText(EMPTY_TURN_NOTICE).first()
+  const emptyTurn = surface.getByText(EMPTY_TURN_NOTICE).first()
   await expect(action.or(emptyTurn).first()).toBeVisible({ timeout: FlowTimeout.Generation })
   if (await emptyTurn.isVisible()) {
     throw new Error(FlowError.EmptyTurnBeforeAccept)
   }
   await action.click()
-  const updateAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.UpdateAll }).first()
+  const updateAll = surface.getByRole(FlowRole.Button, { name: FlowUiLabel.UpdateAll }).first()
   await updateAll.click({ timeout: FlowTimeout.Short }).catch(() => undefined)
 }
 
@@ -233,7 +241,9 @@ export async function gotoStoryteller(
   await expect(page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.LoadingProject}`)).toBeHidden({ timeout: FlowTimeout.Long })
   await chatWarmed
   if (options?.waitForChat === false) return
-  await expect(page.locator(CHAT_INPUT).first()).toBeEnabled({ timeout: FlowTimeout.Medium })
+  await expect((await chatSurface(page)).locator(CHAT_INPUT).first()).toBeEnabled({
+    timeout: FlowTimeout.Medium,
+  })
 }
 
 export async function waitForToolCall(page: Page, toolName: string): Promise<void> {
