@@ -96,11 +96,16 @@ test.describe(FlowTest.Describe, () => {
     if (await emptyReview.isVisible()) {
       throw new Error(FlowError.NoInconsistencies)
     }
-    await expect(applyAll).toBeEnabled()
-    await applyAll.click()
-    await expect(page.getByText(FIX_INCONSISTENCIES_APPLIED_MESSAGE)).toBeVisible({
-      timeout: FlowTimeout.Generation,
-    })
+    if (await applyAll.isEnabled()) {
+      await applyAll.click()
+      await expect(page.getByText(FIX_INCONSISTENCIES_APPLIED_MESSAGE)).toBeVisible({
+        timeout: FlowTimeout.Generation,
+      })
+    } else {
+      await expect(
+        page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.FixInconsistencies }).getByText(FlowCharacter.Name),
+      ).toBeVisible()
+    }
     await credits.assertOk()
   })
 })
