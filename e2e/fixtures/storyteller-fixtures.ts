@@ -23,6 +23,7 @@ import {
 import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { EMPTY_TURN_NOTICE, withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
 import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
+import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { StorytellerHeaderCopy } from '@/domains/storyteller/ui/StorytellerLayout/constants/storyteller-module-header'
 import { StorytellerSidebarCopy } from '@/domains/storyteller/ui/StorytellerLayout/utils/storyteller-sidebar-footer'
 import { SmokeHttpStatus, SmokeMatch } from '../constants/storyteller-smoke'
@@ -134,10 +135,34 @@ export async function waitForAssistantResponse(
   return text
 }
 
+async function confirmAddToWorldDialog(page: Page): Promise<void> {
+  const addToWorldDialog = page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.AddToWorld })
+  const updateAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.UpdateAll }).first()
+  try {
+    await expect(addToWorldDialog).toBeVisible({ timeout: FlowTimeout.Short })
+  } catch {
+    return
+  }
+  await expect(updateAll).toBeVisible({ timeout: FlowTimeout.Short })
+  await updateAll.click()
+  await expect(addToWorldDialog).toBeHidden({ timeout: FlowTimeout.Short })
+}
+
+async function acceptPendingReviewBanner(page: Page): Promise<void> {
+  const ready = page.getByText(FlowUiLabel.NewContentReady, { exact: true }).first()
+  if (!(await ready.isVisible().catch(() => false))) return
+  await ready
+    .locator('xpath=../following-sibling::div')
+    .getByRole(FlowRole.Button, { name: FlowUiLabel.Accept })
+    .click()
+  await expect(page.getByText(FlowUiLabel.PendingReview).first()).toBeHidden({
+    timeout: FlowTimeout.Medium,
+  })
+}
+
 export async function acceptPendingAction(page: Page): Promise<void> {
   const surface = await chatSurface(page)
   const addToWorldDialog = page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.AddToWorld })
-  const updateAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.UpdateAll }).first()
   const addToWorld = surface.getByRole(FlowRole.Button, {
     name: FlowUiLabel.AddToWorld,
     disabled: false,
@@ -145,19 +170,24 @@ export async function acceptPendingAction(page: Page): Promise<void> {
   const accept = surface.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).first()
   const action = addToWorld.or(accept).first()
   const emptyTurn = surface.getByText(EMPTY_TURN_NOTICE).first()
+  const pendingReview = page.getByText(FlowUiLabel.PendingReview).first()
 
   if (!(await addToWorldDialog.isVisible())) {
-    await expect(action.or(emptyTurn).first()).toBeVisible({ timeout: FlowTimeout.Generation })
+    await expect(action.or(emptyTurn).or(pendingReview).first()).toBeVisible({
+      timeout: FlowTimeout.Generation,
+    })
     if (await emptyTurn.isVisible()) {
       throw new Error(FlowError.EmptyTurnBeforeAccept)
     }
-    await action.click()
+    if (await addToWorld.isVisible()) {
+      await addToWorld.click()
+    } else if (await accept.isVisible()) {
+      await accept.click()
+    }
   }
 
-  if (await updateAll.isVisible()) {
-    await updateAll.click()
-    await expect(addToWorldDialog).toBeHidden({ timeout: FlowTimeout.Short })
-  }
+  await confirmAddToWorldDialog(page)
+  await acceptPendingReviewBanner(page)
 }
 
 /** Hit the chat API once so the serverless function is warm before UI timing. */
@@ -257,11 +287,15 @@ export async function gotoStoryteller(
   })
 }
 
-export async function waitForToolCall(page: Page, toolName: string): Promise<void> {
+export async function waitForToolCall(
+  page: Page,
+  toolName: string,
+  timeoutMs: number = FlowTimeout.Long,
+): Promise<void> {
   const toolCard = page.locator(FlowSelector.Div)
     .filter({ hasText: `${FlowSelector.ToolPrefix}${toolName}` })
     .first()
-  await expect(toolCard).toBeVisible({ timeout: FlowTimeout.Long })
+  await expect(toolCard).toBeVisible({ timeout: timeoutMs })
 }
 
 export async function waitForUserMessage(page: Page, text: string): Promise<void> {
@@ -304,10 +338,11 @@ export async function expectFactionsInBible(page: Page): Promise<void> {
 }
 
 export async function expectCharacterInSidebar(page: Page, name: string): Promise<void> {
-  const sidebar = page.locator(`${FlowSelector.TextPrefix}${FlowUiLabel.Cast}`).first()
-  await expect(sidebar).toBeVisible()
-  const character = page.locator(`${FlowSelector.TextPrefix}${name}`).first()
-  await expect(character).toBeVisible({ timeout: FlowTimeout.Generation })
+  const panel = page.locator(`#${TOUR_STEP_IDS.STORYTELLER_CHARACTERS}`)
+  await expect(panel).toBeVisible()
+  await expect(panel.getByText(name, { exact: true })).toBeVisible({
+    timeout: FlowTimeout.Generation,
+  })
 }
 
 export async function draftFirstEpisode(page: Page): Promise<void> {

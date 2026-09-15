@@ -11,11 +11,12 @@ import {
   openStorybible,
   sendChatMessage,
   waitForAssistantStatus,
+  waitForToolCall,
   warmAssistantChat,
   acceptPendingAction,
   FlowCharacter,
 } from '../fixtures/storyteller-fixtures'
-import { FlowError, FlowRole, FlowTest, FlowTimeout, FlowUiLabel } from '../constants/storyteller-flow'
+import { FlowError, FlowRole, FlowTest, FlowTimeout, FlowTool, FlowUiLabel } from '../constants/storyteller-flow'
 import { ConsistencyPrompt } from '../constants/storyteller-consistency-prompts'
 import { SmokeChatModel } from '../constants/storyteller-smoke'
 import { FIX_INCONSISTENCIES_APPLIED_MESSAGE } from '@/domains/storyteller/ai/workflows/constants/fix-inconsistencies-workflow'
@@ -65,12 +66,31 @@ test.describe(FlowTest.Describe, () => {
     await sendChatMessage(page, ConsistencyPrompt.CharacterMage)
     await waitForAssistantStatus(page)
     try {
+      await waitForToolCall(page, FlowTool.ManageCharacter, FlowTimeout.Long)
+    } catch {
+      await sendChatMessage(page, ConsistencyPrompt.CharacterMageInsist)
+      await waitForAssistantStatus(page)
+      await waitForToolCall(page, FlowTool.ManageCharacter, FlowTimeout.Generation)
+    }
+    try {
       await acceptPendingAction(page)
     } catch {
       // manage_character may persist without Add to world.
     }
     await expectCharacterInSidebar(page, FlowCharacter.Name)
     await credits.assertOk()
+
+    try {
+      await acceptPendingAction(page)
+    } catch {
+      // Bible persist may already be idle.
+    }
+
+    const chatPanel = page.getByLabel(FlowUiLabel.WorkspaceChatPanel)
+    if (await chatPanel.isVisible().catch(() => false)) {
+      await page.getByRole(FlowRole.Button, { name: FlowUiLabel.WorkspaceChatToggle }).click()
+      await expect(chatPanel).toBeHidden()
+    }
 
     const fix = page.getByRole(FlowRole.Button, { name: FlowUiLabel.FixInconsistencies })
     await expect(fix).toBeEnabled()

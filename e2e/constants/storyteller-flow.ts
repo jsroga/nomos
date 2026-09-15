@@ -48,6 +48,8 @@ export enum FlowUiLabel {
   WorkspaceChatToggle = 'Workspace chat',
   RegenerateDescription = 'Regenerate description',
   NoInconsistencies = 'No inconsistencies detected.',
+  PendingReview = 'Pending Review',
+  NewContentReady = 'New content ready for approval',
   ConsistencyFixesApplied = 'Consistency fixes applied.',
   GenerateMissingFields = 'Generate missing fields',
   EditCharacter = 'Edit character',
