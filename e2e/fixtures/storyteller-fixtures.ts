@@ -340,7 +340,7 @@ export async function expectFactionsInBible(page: Page): Promise<void> {
 }
 
 export async function expectCharacterInSidebar(page: Page, name: string): Promise<void> {
-  const panel = page.locator(`#${TOUR_STEP_IDS.STORYTELLER_CHARACTERS}`)
+  const panel = page.locator(`#${TOUR_STEP_IDS.STORYTELLER_CHARACTERS}`).first()
   await expect(panel).toBeVisible()
   await expect(panel.getByText(name, { exact: true })).toBeVisible({
     timeout: FlowTimeout.Generation,

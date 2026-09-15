@@ -72,11 +72,7 @@ test.describe(FlowTest.Describe, () => {
       await waitForAssistantStatus(page)
       await waitForToolCall(page, FlowTool.ManageCharacter, FlowTimeout.Generation)
     }
-    try {
-      await acceptPendingAction(page)
-    } catch {
-      // manage_character may persist without Add to world.
-    }
+    await acceptPendingAction(page)
     await expectCharacterInSidebar(page, FlowCharacter.Name)
     await credits.assertOk()
 
