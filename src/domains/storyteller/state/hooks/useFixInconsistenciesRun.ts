@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef } from 'react'
-import { toast } from 'sonner'
+import toast from 'react-hot-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { ContentType, HttpMethod, QueryParam } from '@/shared/data/constants/protocol'
 import { buildUrl } from '@/shared/data/url-builder'
