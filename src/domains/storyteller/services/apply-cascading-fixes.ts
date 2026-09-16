@@ -1,27 +1,28 @@
-import '@/shared/data/server-guard'
+// Relative imports: Mastra Studio bundler emits unresolved `@/` into `.mastra/output`.
+import '../../../shared/data/server-guard'
 import { set } from 'lodash'
 import { eq } from 'drizzle-orm'
-import { db } from '@/shared/persistence'
-import { beats, characters, episodes, projects } from '@/db/schema'
+import { db } from '../../../shared/persistence'
+import { beats, characters, episodes, projects } from '../../../db/schema'
 import {
   persistEpisodePremiseUpdate,
   persistStoryPlanUpdates,
-} from '@/domains/storyteller/ai/tools/bible-tools-update'
-import { CascadeEditorError, CascadeElementType } from '@/domains/storyteller/core/constants/cascade-editor'
-import { pickBeatPatchUpdates } from '@/domains/storyteller/core/beat-patch'
-import { buildCharacterPatchUpdates } from '@/domains/storyteller/core/character-patch'
-import { EPISODE_PATCH_ALLOWED_COLUMNS } from '@/domains/storyteller/core/io/episode-patch'
-import { parseSeriesBibleRecord } from '@/domains/storyteller/core/io/project-jsonb'
-import { projectIdForBeat, upsertSetupsFromBeat } from '@/domains/storyteller/core/io/setups-write'
-import { omitBibleOwnedPlanFields } from '@/domains/storyteller/core/utils/bible-populated-fields'
+} from '../ai/tools/bible-tools-update'
+import { CascadeEditorError, CascadeElementType } from '../core/constants/cascade-editor'
+import { pickBeatPatchUpdates } from '../core/beat-patch'
+import { buildCharacterPatchUpdates } from '../core/character-patch'
+import { EPISODE_PATCH_ALLOWED_COLUMNS } from '../core/io/episode-patch'
+import { parseSeriesBibleRecord } from '../core/io/project-jsonb'
+import { projectIdForBeat, upsertSetupsFromBeat } from '../core/io/setups-write'
+import { omitBibleOwnedPlanFields } from '../core/utils/bible-populated-fields'
 import type {
   AppliedFix,
   CascadeResult,
   ConsistencyChange,
   ConsistencyFix,
-} from '@/domains/storyteller/core/types/consistency-types'
-import type { ProjectScope } from '@/shared/auth/project-scope'
-import { recordFromJson, readString } from '@/shared/data/json-guards'
+} from '../core/types/consistency-types'
+import type { ProjectScope } from '../../../shared/auth/project-scope'
+import { recordFromJson, readString } from '../../../shared/data/json-guards'
 
 export async function applyCascadingFixes(
   fixes: ConsistencyFix[],

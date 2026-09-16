@@ -2,12 +2,12 @@ import type {
   AppliedFix,
   CascadeResult,
   ConsistencyFix,
-} from '@/domains/storyteller/core/types/consistency-types'
-import { jobContextScope } from '@/shared/auth/project-scope'
+} from '../types/consistency-types'
+import { jobContextScope } from '../../../../shared/auth/project-scope'
 import {
   applyCascadingFixes as applyCascadingFixesForScope,
   revertFix as revertFixForScope,
-} from '@/domains/storyteller/services/apply-cascading-fixes'
+} from '../../services/apply-cascading-fixes'
 
 export async function applyCascadingFixes(
   fixes: ConsistencyFix[],
