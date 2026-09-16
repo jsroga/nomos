@@ -61,7 +61,7 @@ npm run dev:stack   # Next :3000 + Mastra Studio :4111 + Trigger.dev
 - Husky **pre-commit** (`npm run precommit`) always runs architecture, docs, OpenAPI, env, **full** `npm run typecheck`, **full** `npm run lint`, and `npm run test:unit` — not scoped to the staged files. Eval freshness, HTTP smoke (`npm run test:e2e smoke`), and overlay stub Playwright (`test:e2e:stubs`) run only when [`scripts/precommit-suites.mjs`](../scripts/precommit-suites.mjs) selects them from the commit paths (eval-watched sources, gateway/chat stream, workspace overlay). Production build starts only when a commit e2e suite is selected. HTTP smoke against `:3001` sets `E2E_ALLOW_PROD_BYPASS` on that `next start` child so `x-bypass-auth` works with `NODE_ENV=production` (and a Basic Auth preview lock); leave the flag unset in deployed production.
 - Husky **pre-push** always runs **critical Playwright** (`test:e2e:critical`): live whole-flow `storyteller.spec.ts` (GLM) and `world-canvas.spec.ts`. Not the full folder, not HTTP smoke, not `storyteller-character-fields.spec.ts`.
 - **Nightly** is the full folder (`npm run test:e2e:nightly`, `.github/workflows/e2e-nightly.yml`).
-- **Vercel deploy** runs `npm run test:unit` then `npm run build` (`vercel.json` `buildCommand`).
+- **Vercel deploy** runs `npm run test:unit` then `npm run build` (`vercel.json` `buildCommand`). The unit script pins `NODE_ENV=test` so React `act` stays available; Vercel’s build process otherwise forces `NODE_ENV=production`.
 - Golden set: `evals/datasets/storyteller-golden.ts`.
 - `npm run eval` is a **fixture-only alias** of `eval:scorer-fixture`. It is not agent quality.
 
@@ -146,7 +146,7 @@ Enforced by: `npm run precommit` (eval comparison honesty), `npm run eval:gate`,
 | Commit | `npm run precommit` (never `--no-verify`) — full lint/tsc/unit; file-selected eval/smoke/overlay stub |
 | Push | Husky pre-push — critical Playwright (`storyteller.spec.ts` + `world-canvas.spec.ts`) |
 | Nightly | `npm run test:e2e:nightly` — full Playwright folder (`.github/workflows/e2e-nightly.yml`) |
-| Vercel deploy | `test:unit` then `next build` (`vercel.json` `buildCommand`) |
+| Vercel deploy | `test:unit` (`NODE_ENV=test`) then `next build` (`vercel.json` `buildCommand`) |
 | CI | `.github/workflows/ci.yml` — architecture + `qualitygate:changed` + `test:unit` (exit codes, not log greps) |
 | OpenAPI public docs | `npm run openapi:generate` · `npm run openapi:check` (drift + route coverage; also in precommit) |
 | Module handoff | `node scripts/fabro-verify.mjs` |

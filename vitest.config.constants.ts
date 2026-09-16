@@ -4,6 +4,10 @@ export enum VitestEnvironment {
   Node = 'node',
 }
 
+export enum VitestNodeEnv {
+  Test = 'test',
+}
+
 export enum VitestEnvFile {
   Local = '.env.local',
 }

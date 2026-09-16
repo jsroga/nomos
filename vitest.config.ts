@@ -8,7 +8,10 @@ import {
   VitestCoverageReportsDir,
   VitestEnvFile,
   VitestEnvironment,
+  VitestNodeEnv,
 } from './vitest.config.constants'
+
+process.env.NODE_ENV = VitestNodeEnv.Test
 
 export default defineConfig({
   test: {
@@ -32,6 +35,7 @@ export default defineConfig({
     ],
     env: {
       DOTENV_CONFIG_PATH: VitestEnvFile.Local,
+      NODE_ENV: VitestNodeEnv.Test,
     },
     alias: {
       '@/evals': path.resolve(__dirname, './evals'),
