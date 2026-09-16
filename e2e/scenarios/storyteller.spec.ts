@@ -10,6 +10,7 @@ import {
   openStorybible,
   sendChatMessage,
   waitForAssistantStatus,
+  waitForAssistantIdle,
   waitForToolCall,
   warmAssistantChat,
   acceptPendingAction,
@@ -78,6 +79,7 @@ test.describe(FlowTest.Describe, () => {
         /* CAST fail-fast below names the assistant reply */
       }
     }
+    await waitForAssistantIdle(page)
     await maybeAcceptPendingAction(page)
     const lastAssistant = await readLastAssistantText(page)
     logSt1Step(progress, St1Step.ReloadCast)

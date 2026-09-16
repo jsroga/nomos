@@ -130,6 +130,16 @@ export async function waitForAssistantStatus(page: Page): Promise<void> {
   })
 }
 
+export async function waitForAssistantIdle(
+  page: Page,
+  timeoutMs: number = FlowTimeout.Long,
+): Promise<void> {
+  const surface = await chatSurface(page)
+  await expect(surface.locator(FlowSelector.RunningStatus)).toHaveCount(0, {
+    timeout: timeoutMs,
+  })
+}
+
 export async function waitForAssistantResponse(
   page: Page,
   timeoutMs: number = FlowTimeout.Long,
@@ -452,8 +462,12 @@ export async function expectCharacterInSidebar(
     await expect(named).toBeVisible({ timeout: FlowTimeout.Generation })
     return
   }
+  const persistAttempted =
+    lastAssistant.toLowerCase().includes(FlowTool.ManageCharacter) &&
+    lastAssistant.toLowerCase().includes(name.toLowerCase())
+  const timeout = persistAttempted ? FlowTimeout.Medium : FlowTimeout.Short
   try {
-    await expect(named).toBeVisible({ timeout: FlowTimeout.Short })
+    await expect(named).toBeVisible({ timeout })
   } catch {
     throw new Error(`${FlowError.CastEmptyAfterCreate}\n${lastAssistant}`)
   }

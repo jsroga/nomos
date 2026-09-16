@@ -76,6 +76,18 @@ export const CharacterDataSchema = z.object({
   voice: z.union([z.string(), VoiceFingerprintSchema]).optional(),
 })
 
+/** Drop a truncated or invented projectId so OPEN WORKSPACE can inject the real one. */
+function optionalInjectedUuid(value: unknown): unknown {
+  if (typeof value !== 'string' || value.length === 0) return undefined
+  const parsed = z.string().uuid().safeParse(value)
+  return parsed.success ? parsed.data : undefined
+}
+
+const injectedProjectIdSchema = z.preprocess(
+  optionalInjectedUuid,
+  z.string().uuid().optional().describe(INJECTED_PROJECT_ID_DESC),
+)
+
 export const ManageCharacterInputSchema = z.object({
   operation: z
     .enum([
@@ -87,7 +99,7 @@ export const ManageCharacterInputSchema = z.object({
     ])
     .describe('The operation to perform'),
   characterId: z.string().uuid().optional().describe('Character ID for update/delete/get operations'),
-  projectId: z.string().uuid().optional().describe('Project ID (required for create/list)'),
+  projectId: injectedProjectIdSchema,
   data: CharacterDataSchema.optional().describe('Character data for create/update'),
 })
 
