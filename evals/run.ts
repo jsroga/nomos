@@ -110,8 +110,9 @@ async function loadScorers() {
     '@/domains/storyteller/ai/agents/critics/critic-discipline-scorer'
   )
   const { voiceDistinctivenessScorer } = await import('./structural/mastra-scorers')
+  const { explicitCastCreateScorer } = await import('./structural/explicit-cast-create-scorer')
   const { grrmPlanRubricScorer } = await import('./judges/grrm-plan-rubric')
-  return [...ALL_SCORERS, beatPlanConcretenessScorer, criticDisciplineScorer, voiceDistinctivenessScorer, grrmPlanRubricScorer, ...IDEA_DIVERSITY_SCORERS]
+  return [...ALL_SCORERS, beatPlanConcretenessScorer, criticDisciplineScorer, voiceDistinctivenessScorer, explicitCastCreateScorer, grrmPlanRubricScorer, ...IDEA_DIVERSITY_SCORERS]
 }
 
 type RunnableScorer = Awaited<ReturnType<typeof loadScorers>>[number]
@@ -202,7 +203,7 @@ async function runEval(): Promise<MultiVariantReport> {
 
   if (globalScorers.length === 0) {
     throw new Error(
-      'No scorers selected. Available: magic, consistency, hallucination, persona-fidelity, prose-craft, stakes-cost, story-motion, beat-plan-concreteness, critic-discipline, idea-uniqueness, idea-diversity-judge'
+      'No scorers selected. Available: magic, consistency, hallucination, persona-fidelity, prose-craft, stakes-cost, story-motion, beat-plan-concreteness, critic-discipline, explicit-cast-create, idea-uniqueness, idea-diversity-judge'
     )
   }
 

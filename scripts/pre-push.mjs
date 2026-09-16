@@ -3,7 +3,7 @@
  * Husky pre-push: critical Playwright — live Storyteller whole-flow + 2D Canvas.
  * Not the full e2e folder. Not HTTP smoke. Not character-fields.
  */
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import dotenv from 'dotenv'
 import {
   E2E_PROD_BASE_URL,
@@ -27,15 +27,36 @@ const TEST_BASE_URL_KEY = 'TEST_BASE_URL'
 
 dotenv.config({ path: ENV_LOCAL_PATH })
 
-function run(label, cmd, args, env = process.env) {
+function runInherit(label, cmd, args, env = process.env) {
   console.log(`\n▶ ${label}`)
-  const result = spawnSync(cmd, args, {
-    encoding: 'utf8',
+  return spawnSync(cmd, args, {
+    stdio: 'inherit',
     env: { ...env, NODE_OPTIONS: NODE_OPTS },
   })
-  process.stdout.write(result.stdout ?? '')
-  process.stderr.write(result.stderr ?? '')
-  return result
+}
+
+function runLive(label, cmd, args, env = process.env) {
+  console.log(`\n▶ ${label}`)
+  const child = spawn(cmd, args, {
+    env: { ...env, NODE_OPTIONS: NODE_OPTS },
+    stdio: ['inherit', 'pipe', 'pipe'],
+  })
+  let combined = ''
+  child.stdout.on('data', chunk => {
+    const text = String(chunk)
+    combined += text
+    process.stdout.write(text)
+  })
+  child.stderr.on('data', chunk => {
+    const text = String(chunk)
+    combined += text
+    process.stderr.write(text)
+  })
+  return new Promise(resolve => {
+    child.on('close', code => {
+      resolve({ status: code ?? 1, output: combined })
+    })
+  })
 }
 
 function printCreditsStop(output) {
@@ -59,16 +80,16 @@ async function main() {
 
   await killListeningProdServer()
   if (!hasProductionBuild()) {
-    const build = run('production build', 'npm', ['run', 'build'])
+    const build = runInherit('production build', 'npm', ['run', 'build'])
     if (build.status !== 0) process.exit(build.status ?? 1)
     stampProductionBuild()
   }
 
   const server = await ensureProdServer()
   try {
-    const result = run('critical playwright', 'npm', ['run', 'test:e2e:critical'], criticalEnv())
+    const result = await runLive('critical playwright', 'npm', ['run', 'test:e2e:critical'], criticalEnv())
     if (result.status !== 0) {
-      printCreditsStop(`${result.stdout ?? ''}\n${result.stderr ?? ''}`)
+      printCreditsStop(result.output)
       process.exit(result.status ?? 1)
     }
   } finally {

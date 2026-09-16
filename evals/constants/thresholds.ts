@@ -62,6 +62,7 @@ const NOISE_FOR_DEFAULT_JUDGE: Readonly<Record<string, ScorerThreshold>> = {
   'story-motion': { sigma: 0, kind: ScorerKind.LlmJudge, sigmaRuns: 3 },
   consistency: { sigma: 0, kind: ScorerKind.Deterministic, sigmaRuns: 3 },
   'critic-discipline': { sigma: 0, kind: ScorerKind.Deterministic, sigmaRuns: 3 },
+  'explicit-cast-create': { sigma: 0, kind: ScorerKind.Deterministic, sigmaRuns: 3 },
   'beat-plan-concreteness': { sigma: 0, kind: ScorerKind.Deterministic, sigmaRuns: 3 },
 }
 

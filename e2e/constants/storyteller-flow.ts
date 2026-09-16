@@ -175,6 +175,7 @@ export enum FlowError {
   GenerateMissingFailed = 'Generate missing fields failed before proposing form fields',
   FixScanInternalError = 'Fix inconsistencies returned Internal Server Error',
   FixScanNetworkError = 'Fix inconsistencies returned network error',
+  CastEmptyAfterCreate = 'CAST was empty after the chat create turn — last assistant reply:',
 }
 
 /** Empty-turn notice scenario: the model returns no text and no tool calls. */

@@ -30,6 +30,11 @@ import { StorytellerHeaderCopy } from '@/domains/storyteller/ui/StorytellerLayou
 import { StorytellerSidebarCopy } from '@/domains/storyteller/ui/StorytellerLayout/utils/storyteller-sidebar-footer'
 import { WritersRoomCastConfirm } from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
 import { SmokeHttpStatus, SmokeMatch } from '../constants/storyteller-smoke'
+import {
+  closeWorkspaceChatOverlay,
+  openWorkspaceChatOverlay,
+} from './storyteller-overlay'
+import { logOpenRouter402 } from './st1-progress'
 
 const BASE_URL = process.env.BASE_URL?.trim() || 'http://localhost:3001'
 const SSE_TIMEOUT = 240_000
@@ -98,6 +103,7 @@ async function chatSurface(page: Page): Promise<Page | Locator> {
 }
 
 export async function sendChatMessage(page: Page, message: string): Promise<void> {
+  await openWorkspaceChatOverlay(page)
   await skipNewCastDialog(page)
   const input = (await chatSurface(page)).locator(CHAT_INPUT).first()
   await expect(input).toBeVisible()
@@ -165,16 +171,34 @@ async function confirmAddToWorldDialog(page: Page): Promise<void> {
   await expect(addToWorldDialog).toBeHidden({ timeout: FlowTimeout.Medium })
 }
 
-async function acceptPendingReviewBanner(page: Page): Promise<void> {
-  const ready = page.getByText(FlowUiLabel.NewContentReady, { exact: true }).first()
-  if (!(await ready.isVisible().catch(() => false))) return
+async function clickReadyAccept(ready: Locator): Promise<void> {
   await ready
     .locator('xpath=../following-sibling::div')
     .getByRole(FlowRole.Button, { name: FlowUiLabel.Accept })
     .click({ force: true })
+}
+
+async function acceptPendingReviewBanner(page: Page): Promise<void> {
+  const panel = page.getByLabel(FlowUiLabel.WorkspaceChatPanel)
+  const inPanel = panel.getByText(FlowUiLabel.NewContentReady, { exact: true }).first()
+  if (await inPanel.isVisible().catch(() => false)) {
+    await clickReadyAccept(inPanel)
+    await expect(page.getByText(FlowUiLabel.PendingReview).first()).toBeHidden({
+      timeout: FlowTimeout.Medium,
+    })
+    return
+  }
+  await closeWorkspaceChatOverlay(page)
+  const ready = page.getByText(FlowUiLabel.NewContentReady, { exact: true }).first()
+  if (!(await ready.isVisible().catch(() => false))) {
+    await openWorkspaceChatOverlay(page)
+    return
+  }
+  await clickReadyAccept(ready)
   await expect(page.getByText(FlowUiLabel.PendingReview).first()).toBeHidden({
     timeout: FlowTimeout.Medium,
   })
+  await openWorkspaceChatOverlay(page)
 }
 
 async function clickEnabledAddToWorld(page: Page): Promise<boolean> {
@@ -226,6 +250,39 @@ export async function acceptPendingAction(page: Page): Promise<void> {
   for (let n = 0; n < FlowLimit.AddToWorldDrain; n += 1) {
     if (!(await clickEnabledAddToWorld(page))) break
   }
+}
+
+export async function maybeAcceptPendingAction(page: Page): Promise<void> {
+  const surface = await chatSurface(page)
+  const addToWorldDialog = page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.AddToWorld })
+  const addToWorld = surface
+    .getByRole(FlowRole.Button, {
+      name: FlowUiLabel.AddToWorld,
+      disabled: false,
+    })
+    .last()
+  const emptyTurn = surface.getByText(EMPTY_TURN_NOTICE).first()
+  const inPanelReady = surface.getByText(FlowUiLabel.NewContentReady, { exact: true }).first()
+  const pendingReview = page.getByText(FlowUiLabel.PendingReview).first()
+  if (
+    await addToWorldDialog
+      .or(addToWorld)
+      .or(emptyTurn)
+      .or(inPanelReady)
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await acceptPendingAction(page)
+    return
+  }
+  await closeWorkspaceChatOverlay(page)
+  const ready = page.getByText(FlowUiLabel.NewContentReady, { exact: true }).first()
+  if (await ready.or(pendingReview).first().isVisible().catch(() => false)) {
+    await acceptPendingAction(page)
+    return
+  }
+  await openWorkspaceChatOverlay(page)
 }
 
 /** Hit the chat API once so the serverless function is warm before UI timing. */
@@ -383,12 +440,23 @@ export async function reloadStoryteller(page: Page): Promise<void> {
   })
 }
 
-export async function expectCharacterInSidebar(page: Page, name: string): Promise<void> {
+export async function expectCharacterInSidebar(
+  page: Page,
+  name: string,
+  lastAssistant?: string,
+): Promise<void> {
   const panel = page.locator(`#${TOUR_STEP_IDS.STORYTELLER_CHARACTERS}`).first()
   await expect(panel).toBeVisible()
-  await expect(panel.getByText(name, { exact: true })).toBeVisible({
-    timeout: FlowTimeout.Generation,
-  })
+  const named = panel.getByText(name, { exact: true })
+  if (lastAssistant === undefined) {
+    await expect(named).toBeVisible({ timeout: FlowTimeout.Generation })
+    return
+  }
+  try {
+    await expect(named).toBeVisible({ timeout: FlowTimeout.Short })
+  } catch {
+    throw new Error(`${FlowError.CastEmptyAfterCreate}\n${lastAssistant}`)
+  }
 }
 
 export async function draftFirstEpisode(page: Page): Promise<void> {
@@ -452,6 +520,7 @@ export function attachInsufficientCreditsGuard(page: Page): { assertOk: () => Pr
       (async () => {
         const text = await response.text().catch(() => '')
         if (text.includes(SmokeMatch.InFlightRequests)) return
+        logOpenRouter402(text)
         exhausted = true
       })(),
     )

@@ -49,9 +49,39 @@ Studio `:4111` → chat hour-bota → wklejasz cel → wracasz. Czytasz Experime
 
 They ask „gdzie w kodzie” / „czemu ten plik” → then name the file. Not before.
 
+## Polish quality (binding)
+
+Full sentences. Subject, verb, punctuation. Product names stay English.
+
+Forbidden in chat (AI-Polish):
+
+- Telegram fragments: `CAST 0 + odmowa`, `Vex bez GLM`, `force click`, `live surface`
+- Nested jargon in one clause. Say what appeared on screen, then what it means.
+
+When the operator sends several messages in a row: answer **each one**, in order, in its own paragraph. Lead with their point. Do not collapse the batch into one essay.
+
+Standing chat rules are not the implementation backlog. Keep those in `.local/sessions/`.
+
+## Polish quality (binding)
+
+Full sentences. Subject, verb, punctuation. Product names stay English.
+
+Forbidden in chat (AI-Polish):
+
+- Telegram fragments: `CAST 0 + odmowa`, `Vex bez GLM`, `force click`, `live surface`
+- Nested jargon in one clause. Say what appeared on screen, then what it means.
+
+When the operator sends several messages in a row: answer **each one**, in order, in its own paragraph. Lead with their point. Do not collapse the batch into one essay.
+
+Standing chat rules are not the implementation backlog. Keep those in `.local/sessions/`.
+
 ## Before send
 
 - [ ] Could they act from the reply (click or one command)?
 - [ ] No plomba / szafka / odcisk
 - [ ] No file tour unless they asked
 - [ ] English names copied from the product, not translated
+- [ ] Real Polish sentences, not AI-Polish
+- [ ] If they stacked messages, each one has its own paragraph
+- [ ] Real Polish sentences, not AI-Polish
+- [ ] If they stacked messages, each one has its own paragraph

@@ -24,8 +24,13 @@ import {
   WorldCanvasTileUrl,
 } from '../constants/world-canvas'
 import { FlowRole, FlowTimeout } from '../constants/storyteller-flow'
+import { logCanvasWaiting } from '../fixtures/st1-progress'
 
 test.describe(WorldCanvasTest.Describe, () => {
+  test.beforeAll(() => {
+    logCanvasWaiting()
+  })
+
   test(WorldCanvasTest.AcceptNeighbor, async ({ page }) => {
     test.setTimeout(FlowTimeout.Stub)
     await setupAuthenticatedPage(page)

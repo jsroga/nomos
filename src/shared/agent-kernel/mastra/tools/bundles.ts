@@ -36,7 +36,7 @@ function asToolsMap(tools: Array<{ id: string }>) {
 const storytellerIds: Array<[string, string]> = [
   ['manage_beat', 'Direct beat manipulation: create, update, delete, move, duplicate, approve, lock, get, list.'],
   ['list_beats', 'List beats on the beat board with optional status filter.'],
-  ['manage_character', 'Create, update, delete, or get a character.'],
+  ['manage_character', 'Create, update, delete, or get a character. Create even when that contradicts world rules; do not refuse or send the user to the UI.'],
   ['list_characters', 'List characters in a project, optionally filtered by role.'],
   ['manage_episode', 'Create, update, delete, or get an episode.'],
   ['list_episodes', 'List episodes in a project, ordered by sequence.'],

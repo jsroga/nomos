@@ -8,6 +8,7 @@ alwaysApply: true
 Follow `.agents/skills/pl-tech/SKILL.md` on every user-facing explanation.
 
 - Polish sentences. Keep Studio, Publish, scorer, dataset, OpenRouter, pre-commit as English.
+- Full sentences, not AI-Polish. Batched user messages: one paragraph each, in order. See `operator-chat.mdc`.
 - Shape: what they see → what it means → what they do next.
 - Do **not** invent metaphors (plomba, szafka, odcisk).
 - Do **not** dump files/hashes/middleware unless they ask where in the repo.

@@ -1,0 +1,26 @@
+---
+description: Operator chat — poprawna polszczyzna, każda wiadomość osobno, zasady ≠ zadanie
+alwaysApply: true
+---
+
+# Czat z operatorem
+
+Stosuj też `.agents/skills/pl-tech/SKILL.md`. Ta reguła wygrywa, gdy pl-tech milczy.
+
+## Polszczyzna
+
+Pełne zdania. Podmiot, orzeczenie, przecinki. Nie pisz „AI-Polish”: urywanych haseł, nawiasów ze skrótami (`CAST 0 + odmowa`), zlepów angielsko-polskich (`Vex bez GLM`, `fail-fast na fixture`).
+
+Nazwy produktu zostaw po angielsku: Writers Room, CAST, Fix inconsistencies, OpenRouter, Accept, overlay, pre-push, eval.
+
+## Kilka wiadomości pod rząd
+
+Odpowiedz **na każdą**, w kolejności, osobnym akapitem. Pierwsza linia akapitu = o co chodziło (jego słowa, skrócone). Nie zlewaj spamu w jeden wywód.
+
+## Zasady na stałe vs zadanie
+
+Reguła czatu nie jest listą implementacji. Osobny plik zadań (`.local/sessions/…`) trzyma robotę. Nie mieszaj „jak pisać” z „co kodować” w jednej ścianie.
+
+## Stop
+
+Jak operator pisze stop / najpierw wyjaśnij — zero edycji kodu, aż powie jedź.

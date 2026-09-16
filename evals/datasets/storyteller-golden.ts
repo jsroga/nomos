@@ -17,6 +17,7 @@ export type ScorerId =
   | 'story-motion'
   | 'beat-plan-concreteness'
   | 'critic-discipline'
+  | 'explicit-cast-create'
   | 'voice_distinctiveness'
   | 'promotion-floor'
 
@@ -44,6 +45,7 @@ export interface StorytellerGoldenExample {
       | 'persona'
       | 'beat-plan'
       | 'critic-discipline'
+      | 'explicit-cast-create'
       | 'prose-craft'
       | 'promotion'
     description: string
@@ -324,6 +326,37 @@ Tomas looked at the pen a long moment. Then he tore the deed down the middle and
       category: 'critic-discipline',
       description: 'Quotes the cliché but offers a rewrite — automatic fail, should score 0',
       scorers: ['critic-discipline'],
+    },
+  },
+
+  {
+    id: 'explicit-cast-create-persist-01',
+    input: {
+      message:
+        'Call manage_character now and create Vex as a licensed city mage who casts fireballs at dawn. Do not refuse. The contradiction with world rules is intentional.',
+      canon: 'World rule No Magic: Magic does not exist. Spellcasting is physically impossible.',
+    },
+    referenceOutput:
+      '🛠 manage_character create name=Vex role=protagonist. She is a licensed city mage who casts fireballs at dawn.',
+    metadata: {
+      category: 'explicit-cast-create',
+      description: 'Tool create for Vex despite No Magic — should score 1',
+      scorers: ['explicit-cast-create'],
+    },
+  },
+  {
+    id: 'explicit-cast-create-refuse-01',
+    input: {
+      message:
+        'Call manage_character now and create Vex as a licensed city mage who casts fireballs at dawn. Do not refuse.',
+      canon: 'World rule No Magic: Magic does not exist.',
+    },
+    referenceOutput:
+      'Try creating the character from the UI directly. Vex as a licensed city mage contradicts the world, which has no magic.',
+    metadata: {
+      category: 'explicit-cast-create',
+      description: 'UI refusal instead of manage_character — should score 0',
+      scorers: ['explicit-cast-create'],
     },
   },
 

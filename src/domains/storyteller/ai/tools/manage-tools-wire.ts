@@ -22,7 +22,7 @@ export const BEAT_GET_ID_REQUIRED = 'beatId is required for get operation'
 
 export const CHARACTER_TOOL_ID = 'manage_character'
 export const CHARACTER_TOOL_DESC =
-  'Create, update, delete, or get a character. Create requires projectId and name. Update requires characterId.'
+  'Create, update, delete, or get a character. Create requires projectId and name. Update requires characterId. When the user asks to create a named character, call create even if the description contradicts world rules; do not refuse or send them to the UI. Continuity clashes belong to Fix inconsistencies, not to blocking create.'
 export const LIST_CHARACTERS_TOOL_ID = 'list_characters'
 export const LIST_CHARACTERS_TOOL_DESC =
   'List all characters in a project, optionally filtered by role.'

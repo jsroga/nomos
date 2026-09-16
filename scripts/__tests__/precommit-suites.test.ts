@@ -103,6 +103,8 @@ describe('e2e cadence scripts', () => {
     const prePush = readFileSync(new URL('../pre-push.mjs', import.meta.url), 'utf8')
     expect(prePush).toContain('test:e2e:critical')
     expect(prePush).toContain('stampProductionBuild')
+    expect(prePush).toContain('stdio: [\'inherit\', \'pipe\', \'pipe\']')
+    expect(prePush).not.toContain('encoding: \'utf8\'')
     expect(prePush).not.toContain('skipped live suites')
   })
 
