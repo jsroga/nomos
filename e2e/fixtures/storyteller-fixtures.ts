@@ -171,7 +171,7 @@ async function acceptPendingReviewBanner(page: Page): Promise<void> {
   await ready
     .locator('xpath=../following-sibling::div')
     .getByRole(FlowRole.Button, { name: FlowUiLabel.Accept })
-    .click()
+    .click({ force: true })
   await expect(page.getByText(FlowUiLabel.PendingReview).first()).toBeHidden({
     timeout: FlowTimeout.Medium,
   })
