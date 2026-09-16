@@ -5,6 +5,7 @@ import { resolveProjectRoot } from '../project-root'
 import {
   createInstanceStudioWorkspace,
   resolveStudioSandboxPath,
+  shouldCreateStudioSandbox,
 } from '../studio-workspace'
 import {
   STUDIO_AGENT_DESCRIPTION_MAX,
@@ -52,12 +53,17 @@ describe('Studio workspace and writer cards', () => {
     const root = resolveProjectRoot()
     expect(sandbox).not.toBe(root)
     expect(sandbox.startsWith(join(root, '.local'))).toBe(true)
-    createInstanceStudioWorkspace()
-    const names = readdirSync(sandbox)
-    expect(names).not.toContain(StudioSandboxSecretName.EnvLocal)
-    expect(names).not.toContain(StudioSandboxSecretName.Env)
-    expect(names).not.toContain(StudioSandboxSecretName.Git)
-    expect(names).not.toContain(StudioSandboxSecretName.NodeModules)
+    const workspace = createInstanceStudioWorkspace()
+    if (shouldCreateStudioSandbox()) {
+      expect(workspace).toBeDefined()
+      const names = readdirSync(sandbox)
+      expect(names).not.toContain(StudioSandboxSecretName.EnvLocal)
+      expect(names).not.toContain(StudioSandboxSecretName.Env)
+      expect(names).not.toContain(StudioSandboxSecretName.Git)
+      expect(names).not.toContain(StudioSandboxSecretName.NodeModules)
+    } else {
+      expect(workspace).toBeUndefined()
+    }
     const createSrc = readFileSync(CREATE_MASTRA, 'utf8')
     expect(createSrc).toContain('createInstanceStudioWorkspace')
     expect(createSrc).toContain('...(workspace ? { workspace } : {})')

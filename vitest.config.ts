@@ -11,8 +11,6 @@ import {
   VitestNodeEnv,
 } from './vitest.config.constants'
 
-process.env.NODE_ENV = VitestNodeEnv.Test
-
 export default defineConfig({
   test: {
     globals: true,
