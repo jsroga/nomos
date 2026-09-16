@@ -49,7 +49,7 @@ function characterMetricDefaults(data: CharacterData) {
   }
 }
 
-function buildCharacterInsertValues(projectId: string, data: CharacterData) {
+export function buildCharacterInsertValues(projectId: string, data: CharacterData) {
   return {
     id: uuidv4(),
     projectId,
@@ -60,7 +60,7 @@ function buildCharacterInsertValues(projectId: string, data: CharacterData) {
     mbti: data.mbti ?? null,
     portraitUrl: data.portraitUrl ?? null,
     characterPrompt: data.characterPrompt ?? null,
-    psychology: data.psychology ?? null,
+    psychology: data.psychology ?? {},
     voice: data.voice === undefined ? {} : voiceFingerprintFromUnknown(data.voice),
     ...characterMetricDefaults(data),
   }
