@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { readString, recordArrayFromJson, recordFromJson } from '@/shared/data/json-guards'
-import { applyCascadingFixes } from '@/domains/storyteller/core/editing/cascade-editor'
+import { applyCascadingFixes } from '@/domains/storyteller/services/apply-cascading-fixes'
 import type { ConsistencyFix } from '@/domains/storyteller/core/types/consistency-types'
 import { getUndoManager } from '@/domains/storyteller/server'
 import { tryProjectScope } from '@/shared/auth/project-scope'
@@ -69,7 +69,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ID_REQUIRED }, { status: 400 })
     }
 
-    if (!(await tryProjectScope(projectId, session.user.id))) {
+    const scope = await tryProjectScope(projectId, session.user.id)
+    if (!scope) {
       return NextResponse.json({ error: API_ERROR.PROJECT_ACCESS_DENIED }, { status: 404 })
     }
 
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       projectId
     )
 
-    const result = await applyCascadingFixes(fixes, projectId, episodeId)
+    const result = await applyCascadingFixes(fixes, scope, episodeId)
 
     const undoManager = getUndoManager()
     const undoId = undoManager.recordConsistencyFix(fixes, result.results)
