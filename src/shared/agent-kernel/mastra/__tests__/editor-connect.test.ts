@@ -1,7 +1,15 @@
 import { readFileSync } from 'node:fs'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createMastra } from '@/shared/agent-kernel/mastra/create-mastra'
 import { FileEncoding } from '@/shared/data/constants/protocol'
+
+vi.mock('@/shared/config/env', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/shared/config/env')>()
+  return {
+    ...actual,
+    env: { ...actual.env, VERCEL: undefined },
+  }
+})
 
 enum EditorConnectSource {
   CreateMastra = 'src/shared/agent-kernel/mastra/create-mastra.ts',
