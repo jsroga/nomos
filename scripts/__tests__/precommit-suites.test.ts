@@ -166,4 +166,10 @@ describe('e2e cadence scripts', () => {
     expect(unit).toContain('testTimeout: VITEST_UNIT_TIMEOUT_MS')
     expect(unit).toContain('hookTimeout: VITEST_UNIT_TIMEOUT_MS')
   })
+
+  it('does not git-show the quality ratchet (Vercel has no .git)', () => {
+    const src = readFileSync(new URL('./ratchet-base.test.ts', import.meta.url), 'utf8')
+    expect(src).not.toContain('execFileSync')
+    expect(src).toContain('BASE_RATCHET_PATH')
+  })
 })

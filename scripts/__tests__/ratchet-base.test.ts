@@ -6,7 +6,6 @@
  * change identities because they are file::kind::symbol::statementOrdinal.
  */
 
-import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { walkSourceFile, identityOf, AstKind } from '../inventory/ast.mjs'
@@ -49,6 +48,7 @@ function readNumber(record: Record<string, unknown>, key: string): number {
 const RATCHET = parseRecord(readFileSync('.quality-ratchet.json', 'utf8'))
 const BASE_REF = readString(RATCHET, 'baseRef')
 const BASELINE_PATH = `scripts/inventory/baselines/${BASE_REF}.json`
+const BASE_RATCHET_PATH = `scripts/inventory/baselines/${BASE_REF}.quality-ratchet.json`
 
 function classifiedIdentities(source: string, file = 'src/fixture.ts'): string[] {
   const ids: string[] = []
@@ -66,6 +66,7 @@ describe('quality ratchet baseRef', () => {
   it('pins Phase 0 and has a committed snapshot for that SHA', () => {
     expect(BASE_REF).toBe('07403f0f')
     expect(existsSync(BASELINE_PATH)).toBe(true)
+    expect(existsSync(BASE_RATCHET_PATH)).toBe(true)
   })
 
   it('fails when baseRef changes without a snapshot at the new name', () => {
@@ -133,9 +134,7 @@ recordFromJson(x)
   }, 30_000)
 
   it('fails if a numeric threshold rose versus the pinned SHA', () => {
-    const baseJson = execFileSync('git', ['show', `${BASE_REF}:.quality-ratchet.json`], {
-      encoding: 'utf8',
-    })
+    const baseJson = readFileSync(BASE_RATCHET_PATH, 'utf8')
     const baseRatchet = parseRecord(baseJson)
     for (const key of Object.keys(RATCHET)) {
       if (typeof RATCHET[key] !== 'number') continue

@@ -10,6 +10,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import ts from 'typescript'
 import { AstKind, identityOf, walkSourceFile } from './ast.mjs'
+import { isGitWorkTree } from './git-worktree.mjs'
 import { sourceFiles } from './index.mjs'
 
 const SRC = 'src'
@@ -196,8 +197,10 @@ export function constantsFilesWithFunctions() {
 }
 
 export function evalSkipCommits() {
+  if (!isGitWorkTree()) return []
   const output = execFileSync('git', ['log', '--grep=^Eval-Skip:', '--oneline'], {
     encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
   })
   const lines = output.split('\n').filter(line => line.trim().length > 0)
   return lines.map(line => `git::eval-skip::${line.split(' ')[0]}`)

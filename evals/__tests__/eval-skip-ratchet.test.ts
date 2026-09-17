@@ -9,6 +9,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { isGitWorkTree } from '../../scripts/inventory/git-worktree.mjs'
 
 const RATCHET = JSON.parse(readFileSync('.quality-ratchet.json', 'utf8'))
 const SKIP_TRAILER = '^Eval-Skip:'
@@ -21,7 +22,7 @@ function skipCommits(): number {
 }
 
 describe('eval skips', () => {
-  it('does not grow the count of prompt changes shipped without evals', () => {
+  it.skipIf(!isGitWorkTree())('does not grow the count of prompt changes shipped without evals', () => {
     expect(skipCommits()).toBeLessThanOrEqual(RATCHET.evalSkipCommits)
   })
 })
