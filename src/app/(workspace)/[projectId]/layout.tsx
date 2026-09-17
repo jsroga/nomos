@@ -34,18 +34,18 @@ export default async function ProjectLayout({ children }: { children: React.Reac
   return (
     <TooltipProvider delayDuration={0}>
       <ProjectTourWrapper>
-        <div className="flex h-full w-full overflow-hidden pointer-events-auto relative z-10">
-          <GlobalSidebar />
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <GlobalHeader />
-            <div className="flex min-h-0 flex-1 overflow-hidden">
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <ProjectLoader>{children}</ProjectLoader>
+        <ProjectLoader>
+          <div className="flex h-full w-full overflow-hidden pointer-events-auto relative z-10">
+            <GlobalSidebar />
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+              <GlobalHeader />
+              <div className="flex min-h-0 flex-1 overflow-hidden">
+                <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
+                {isWorkspaceChatOverlayEnabled() ? <WorkspaceChatLayer /> : null}
               </div>
-              {isWorkspaceChatOverlayEnabled() ? <WorkspaceChatLayer /> : null}
             </div>
           </div>
-        </div>
+        </ProjectLoader>
       </ProjectTourWrapper>
     </TooltipProvider>
   )

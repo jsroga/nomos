@@ -89,10 +89,12 @@ export function useProjectFromUrl() {
     pathname,
   ])
 
+  const isProjectPending = Boolean(projectId && currentProject?.id !== projectId)
+
   return {
     projectId,
     currentProject,
-    isLoading,
+    isLoading: isLoading || isProjectPending,
     error,
     hasProject: !!projectId,
   }

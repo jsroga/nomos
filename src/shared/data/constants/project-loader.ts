@@ -14,5 +14,5 @@ export enum ProjectLoaderMessage {
 
 export enum ProjectLoaderClass {
   Root = 'relative h-full w-full',
-  Overlay = 'absolute inset-0 z-[80] flex items-center justify-center bg-background/80 backdrop-blur-sm',
+  Overlay = 'fixed inset-0 z-[150] flex items-center justify-center bg-background/80 backdrop-blur-sm',
 }
