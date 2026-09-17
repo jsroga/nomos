@@ -171,7 +171,7 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
     isGeneratingPortrait: input.isGeneratingPortrait,
     isGeneratingMissing,
     isWritersRoomBusy,
-    isAnyDraftPending: isAnyDraftPending || characterDraftTargetId !== null,
+    isAnyDraftPending,
     fields: formFieldsFromInput(input),
   })
   const canGenerateMissing = disableReason === null
@@ -181,7 +181,7 @@ export function useGenerateMissingCharacterFields(input: UseGenerateMissingChara
     isGeneratingPortrait: input.isGeneratingPortrait,
     isGeneratingMissing,
     isWritersRoomBusy,
-    isAnyDraftPending: isAnyDraftPending || characterDraftTargetId !== null,
+    isAnyDraftPending,
   })
   const canRegenerateField = regenerateDisableReason === null
 

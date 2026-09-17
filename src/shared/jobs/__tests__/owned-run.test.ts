@@ -6,6 +6,7 @@ const cancelMock = vi.fn()
 const verifyProjectAccessMock = vi.fn()
 
 vi.mock('@trigger.dev/sdk', () => ({
+  configure: vi.fn(),
   runs: {
     retrieve: (...args: unknown[]) => retrieveMock(...args),
     cancel: (...args: unknown[]) => cancelMock(...args),

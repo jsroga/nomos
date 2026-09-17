@@ -74,7 +74,7 @@ export function useEpisodeData(projectId: string | undefined) {
 
   const episodeTitleFromQuery = episodeQuery.data?.title ?? ''
   const resolvedEpisodeTitle = currentEpisodeTitle || episodeTitleFromQuery
-  const headerEpisodeId = currentEpisodeId ?? firstEpisodeId
+  const headerEpisodeId = currentEpisodeId
   const headerEpisodeTitle = currentEpisodeId
     ? resolvedEpisodeTitle
     : (episodes[0]?.title ?? '')

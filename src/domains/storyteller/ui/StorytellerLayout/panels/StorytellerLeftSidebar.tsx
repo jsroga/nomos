@@ -62,6 +62,7 @@ export function StorytellerLeftSidebar(props: StorytellerLeftSidebarProps) {
           <div id={TOUR_STEP_IDS.STORYTELLER_MASTER_PROMPT}>
             <MasterPromptEditor
               scope={MasterPromptScope.Project}
+              hydrateKey={currentProject.id}
               initialPrompt={currentProject.master_prompt || ''}
               onSave={handleSaveProjectPrompt}
             />

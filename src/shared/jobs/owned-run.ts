@@ -14,6 +14,7 @@
  * Enforced by the `local/trigger-runs-ownership` ESLint rule: `runs.retrieve`
  * outside this file is an error.
  */
+import '@/shared/jobs/configure-trigger-sdk'
 import { runs, tasks } from '@trigger.dev/sdk'
 import type { AnyTask, TaskIdentifier, TaskPayload, TriggerOptions } from '@trigger.dev/sdk'
 import { tryProjectScope } from '@/shared/auth/project-scope'

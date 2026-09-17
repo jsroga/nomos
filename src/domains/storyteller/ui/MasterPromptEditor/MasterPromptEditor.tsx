@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState } from 'react'
 import { Scroll, FileText } from 'lucide-react'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { getRandomWorldPromptIdea } from '@/shared/data/utils/worldPromptIdeas'
 import { cn } from '@/shared/data/utils'
 import {
-  MASTER_PROMPT_SAVE_DEBOUNCE_MS,
   MasterPromptField,
   MasterPromptSuggestMode,
   MasterPromptSuggestion,
+  useMasterPromptAutosave,
 } from '@/components/MasterPromptField'
 import {
   MasterPromptEditorLabel,
@@ -18,6 +18,7 @@ import {
 
 interface MasterPromptEditorProps {
   scope: `${MasterPromptScope}`
+  hydrateKey: string
   initialPrompt: string
   onSave: (prompt: string) => void
   surface?: `${MasterPromptSurface}`
@@ -25,35 +26,17 @@ interface MasterPromptEditorProps {
 
 export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
   scope,
+  hydrateKey,
   initialPrompt,
   onSave,
   surface = MasterPromptSurface.Sidebar,
 }) => {
-  const [prompt, setPrompt] = useState(initialPrompt)
   const [suggestedIdea, setSuggestedIdea] = useState<string | null>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    setPrompt(initialPrompt || '')
-  }, [initialPrompt])
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [])
-
-  const persistPrompt = (value: string) => {
-    onSave(value)
-  }
-
-  const handleChange = (next: string) => {
-    setPrompt(next)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      persistPrompt(next)
-    }, MASTER_PROMPT_SAVE_DEBOUNCE_MS)
-  }
+  const { prompt, handleChange, persistNow } = useMasterPromptAutosave(
+    initialPrompt,
+    hydrateKey,
+    onSave,
+  )
 
   const handleSuggestIdea = () => {
     setSuggestedIdea(getRandomWorldPromptIdea())
@@ -61,9 +44,7 @@ export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
 
   const handleAcceptIdea = () => {
     if (!suggestedIdea) return
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    setPrompt(suggestedIdea)
-    persistPrompt(suggestedIdea)
+    persistNow(suggestedIdea)
     setSuggestedIdea(null)
   }
 

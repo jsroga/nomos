@@ -1,0 +1,23 @@
+---
+description: Incoming tasks append to the queue; resume the interrupted task; never jump the queue
+alwaysApply: true
+---
+
+# Follow-up queue (binding)
+
+When the operator sends another task while you are working, that is **not** a new current job. It is a queue item.
+
+## On every new ask (before you type product code)
+
+1. **Stop** the current edit. Do not keep implementing the new message.
+2. **Append** it to the **end** of the todo list (Cursor todos and, when a session folder exists, `.local/sessions/.../TODOS.md`). Do not ask “should I add this?”.
+3. **Resume the interrupted task** — the one that was `in_progress`. The new item waits.
+4. **Keep FIFO.** Finish the current item, then the next pending item in list order. Never jump to the newest paste.
+
+Do **not** start coding the newly pasted bug. Do **not** abandon the current task to “quickly fix” the latest message.
+
+## Quality gates
+
+Do **not** run `qualitygate:*`, `lint`, `typecheck`, or `test:unit` after the **first** request in a burst, and not while they are still adding items.
+
+Gate **once** when they stop adding **and** you finish the item you were on (or at handoff / commit). Extract-loop `qualitygate:file` still applies when nobody is sending more product bugs. This does not skip end-of-task gates or `npm run precommit` when they ask to commit.

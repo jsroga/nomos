@@ -6,7 +6,6 @@ import {
   CharacterTextFieldKey,
   generatedCharacterFieldsFromUnknown,
   hasMissingCharacterFields,
-  hasUsableCharacterDraft,
   listMissingCharacterMetricKeys,
   listMissingCharacterTextFields,
   mergeNonBlankCharacterDraft,
@@ -27,7 +26,6 @@ import {
   CHARACTER_DIALOG_TOAST_GENERATE_MISSING_BUSY,
   CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NO_PROJECT,
   CHARACTER_DIALOG_TOAST_GENERATE_MISSING_NOTHING,
-  CharacterDialogFieldLabel,
   CharacterDialogGenerateMissingChat,
   CharacterDialogGenerateMissingDisable,
   CharacterDialogGenerateMissingJoin,
@@ -261,13 +259,6 @@ export function isCharacterDraftPending(input: {
   return input.fields !== null && input.fieldsSeq > input.resolvedSeq
 }
 
-function groundingFieldsToFill(fields: CharacterFormFields): string[] {
-  const labels: string[] = []
-  if (fields.name.trim().length === 0) labels.push(CharacterDialogFieldLabel.Name)
-  if (fields.description.trim().length === 0) labels.push(CharacterDialogFieldLabel.Description)
-  return labels
-}
-
 export function isCharacterDraftForTarget(
   activeCharId: string,
   targetId: string | null,
@@ -315,10 +306,6 @@ export function generateMissingDisableReason(input: {
   if (!input.projectId) return CharacterDialogGenerateMissingDisable.NoProject
   if (input.isSaving) return CharacterDialogGenerateMissingDisable.Saving
   if (input.isGeneratingPortrait) return CharacterDialogGenerateMissingDisable.Portrait
-  const grounding = groundingFieldsToFill(input.fields)
-  if (!hasUsableCharacterDraft(toFilledDraft(input.fields))) {
-    return `${CharacterDialogGenerateMissingDisable.FillPrefix}${grounding.join(CharacterDialogGenerateMissingDisable.Or)}${CharacterDialogGenerateMissingDisable.FillSuffix}`
-  }
   if (!formHasMissingCharacterFields(input.fields)) {
     return CharacterDialogGenerateMissingDisable.AllFilled
   }

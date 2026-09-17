@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const triggerMock = vi.fn()
 
 vi.mock('@trigger.dev/sdk', () => ({
+  configure: vi.fn(),
   runs: { retrieve: vi.fn(), cancel: vi.fn() },
   tasks: { trigger: (...args: unknown[]) => triggerMock(...args) },
 }))

@@ -29,6 +29,8 @@ export const BUTTON_VARIANT_CLASSES: Record<`${ButtonVariantKey}`, string> = {
   [ButtonVariantKey.Link]: 'text-primary underline-offset-4 hover:underline',
 } as const
 
+export const BUTTON_LOADING_ICON_CLASS = 'mr-2 h-4 w-4 animate-spin shrink-0'
+
 export const BUTTON_SIZE_CLASSES: Record<`${ButtonSizeKey}`, string> = {
   [ButtonSizeKey.Default]: 'h-10 px-4 py-2',
   [ButtonSizeKey.Sm]: 'h-9 rounded-md px-3',

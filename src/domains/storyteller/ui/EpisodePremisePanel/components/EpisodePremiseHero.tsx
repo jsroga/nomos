@@ -88,6 +88,7 @@ interface EpisodePremiseHeroProps {
   onThematicFocusChange: (value: string) => void
   onLoglineChange: (value: string) => void
   episodePrompt?: string
+  episodeId?: string
   onSaveEpisodePrompt?: (prompt: string) => void
 }
 
@@ -106,6 +107,7 @@ export function EpisodePremiseHero({
   onThematicFocusChange,
   onLoglineChange,
   episodePrompt,
+  episodeId,
   onSaveEpisodePrompt,
 }: EpisodePremiseHeroProps) {
   return (
@@ -134,6 +136,7 @@ export function EpisodePremiseHero({
           <div className="mt-4">
             <MasterPromptEditor
               scope={MasterPromptScope.Episode}
+              hydrateKey={episodeId ?? ''}
               surface={MasterPromptSurface.Page}
               initialPrompt={episodePrompt ?? ''}
               onSave={onSaveEpisodePrompt}

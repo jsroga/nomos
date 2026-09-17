@@ -36,6 +36,8 @@ Run these before claiming a task is done. Failures must be fixed, not bypassed.
 
 Use these while implementing. See also `todo-batch-verify.mdc` (every **5** completed todos) and `quality-backlog.mdc` (cache failures in `.local/`).
 
+**Burst:** do not run these after the **first** operator request if more work is still arriving. Append to the end of the todo queue, resume the interrupted task, keep FIFO — `.cursor/rules/follow-up-burst.mdc`.
+
 | Command | When |
 |---------|------|
 | `npm run qualitygate:changed` | After every **5 completed todos** or git-changed `src/**` (~5–15s) |

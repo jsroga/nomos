@@ -23,6 +23,7 @@ vi.mock('@/shared/jobs/owned-run', async (importOriginal) => {
   }
 })
 vi.mock('@trigger.dev/sdk', () => ({
+  configure: vi.fn(),
   wait: { completeToken: (...args: unknown[]) => completeToken(...args) },
 }))
 

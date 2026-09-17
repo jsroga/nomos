@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { CharacterTextFieldKey } from '@/domains/storyteller/core/character-missing-fields'
 import { CharacterCreationDialogField } from './CharacterCreationDialogField'
@@ -24,6 +24,7 @@ interface CharacterCreationDialogPsychologyFieldsProps {
   markTouched: (field: string) => void
   onRefreshField?: (key: CharacterTextFieldKey) => void
   refreshDisabled?: boolean
+  children?: ReactNode
 }
 
 export function CharacterCreationDialogPsychologyFields({
@@ -39,6 +40,7 @@ export function CharacterCreationDialogPsychologyFields({
   markTouched,
   onRefreshField,
   refreshDisabled = false,
+  children,
 }: CharacterCreationDialogPsychologyFieldsProps) {
   const detailsRef = useRef<HTMLDetailsElement>(null)
   const mbtiInvalid = Boolean(touched.mbti && !mbti)
@@ -133,6 +135,7 @@ export function CharacterCreationDialogPsychologyFields({
             />
           </CharacterCreationDialogField>
         </div>
+        {children}
       </div>
     </details>
   )

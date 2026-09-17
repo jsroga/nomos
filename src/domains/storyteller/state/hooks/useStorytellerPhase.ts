@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useCallback } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import type { StorySequence } from '@/domains/storyteller/core/types/story-plan-types'
 import { Phase, type PhaseId } from '@/domains/storyteller/core/types/enums'
@@ -65,6 +65,7 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore) {
 
   const searchParams = useSearchParams()
   const router = useRouter()
+  const pathname = usePathname()
   const queryClient = useQueryClient()
 
   const advanceProgress = useCallback(
@@ -189,8 +190,11 @@ export function useStorytellerPhase(core: StorytellerWorkspaceCore) {
   ])
 
   const handleGenerateBible = useCallback(() => {
-    getStorytellerUiStore().setWorldBibleOpen(true)
-  }, [])
+    const params = storytellerSearchParams(searchParams)
+    params.delete(StorytellerQueryParam.EpisodeId)
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }, [searchParams, router, pathname])
 
   const { confirm: confirmPhaseBack, ConfirmDialogComponent: PhaseBackConfirmDialog } =
     useConfirmDialog()

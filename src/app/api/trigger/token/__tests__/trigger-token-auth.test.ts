@@ -22,6 +22,7 @@ vi.mock('@/shared/jobs/owned-run', async (importOriginal) => {
   }
 })
 vi.mock('@trigger.dev/sdk', () => ({
+  configure: vi.fn(),
   auth: { createPublicToken: (...args: unknown[]) => createPublicToken(...args) },
 }))
 

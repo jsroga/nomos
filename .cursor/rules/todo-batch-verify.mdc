@@ -34,6 +34,8 @@ npm run qualitygate:file -- src/path/to/File.tsx
 
 **Do not** run verify after every todo — only every **5** completed todos (unless you just fixed the only failing file).
 
+**Do not** start `qualitygate:*` after the first request in a chat burst, and not while they are still adding items. New asks append to the end of the queue; resume the interrupted task. Keep FIFO — `.cursor/rules/follow-up-burst.mdc`.
+
 ## Evidence in chat
 
 After each batch gate: `qualitygate:changed — OK · 4.2s` or paste first errors / backlog progress.

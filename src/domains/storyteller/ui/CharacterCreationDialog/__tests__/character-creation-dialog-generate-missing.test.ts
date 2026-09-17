@@ -25,7 +25,6 @@ import {
   type CharacterFormFieldSetters,
 } from '../character-creation-dialog-generate-missing'
 import {
-  CharacterDialogFieldLabel,
   CharacterDialogGenerateMissingChat,
   CharacterDialogGenerateMissingDisable,
   CharacterDialogGenerateMissingJoin,
@@ -137,10 +136,8 @@ function captureSetters(live: CharacterFormFields): CharacterFormFieldSetters & 
 }
 
 describe('generateMissingDisableReason', () => {
-  it('names Name and Description when both are empty', () => {
-    expect(generateMissingDisableReason(disableInput({ fields: form() }))).toBe(
-      `${CharacterDialogGenerateMissingDisable.FillPrefix}${CharacterDialogFieldLabel.Name}${CharacterDialogGenerateMissingDisable.Or}${CharacterDialogFieldLabel.Description}${CharacterDialogGenerateMissingDisable.FillSuffix}`,
-    )
+  it('is null when the project is open and fields are missing', () => {
+    expect(generateMissingDisableReason(disableInput({ fields: form() }))).toBeNull()
   })
 
   it('is null when name is set and fields are missing', () => {

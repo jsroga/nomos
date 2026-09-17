@@ -133,7 +133,9 @@ Docs: `mastra.ai/docs/long-running-agents/{durable-agents,goals}.md`.
 
 ## Verify
 
-**During work:** `npm run qualitygate:file -- <path>` · `npm run qualitygate:changed` · `npm run qualitygate:tsc -- --files <path>` — not full-repo `tsc` mid-task. **Many failures:** `npm run qualitygate:capture` → `.local/quality-backlog.md` (fix one, `qualitygate:backlog -- done <id>`, rescan every 5). After adding or changing `src/app/api/**/route.ts`, also `npm run openapi:generate` (coverage is part of `openapi:check` / `qualitygate:file` on those routes).
+**Follow-up queue (default):** a new message that adds work **stops** the current edit, **appends** to the end of the todo list (do not ask), then you **resume the interrupted task**. Keep FIFO. Do not jump to the newest item and do not start coding it. Do not run `qualitygate:*` while they are still adding items. Rule: `.cursor/rules/follow-up-burst.mdc`.
+
+**During work:** `npm run qualitygate:file -- <path>` · `npm run qualitygate:changed` · `npm run qualitygate:tsc -- --files <path>` — not full-repo `tsc` mid-task, and not after the first request in a burst (see above). **Many failures:** `npm run qualitygate:capture` → `.local/quality-backlog.md` (fix one, `qualitygate:backlog -- done <id>`, rescan every 5). After adding or changing `src/app/api/**/route.ts`, also `npm run openapi:generate` (coverage is part of `openapi:check` / `qualitygate:file` on those routes).
 
 **Before handoff:** `npm run typecheck` · `npm run lint` · `npm run test:unit`
 

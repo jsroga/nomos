@@ -89,6 +89,10 @@ const serverEnvSchema = z.object({
 
   // Platform. Vercel sets this on Preview and Production.
   VERCEL: z.string().optional(),
+  VERCEL_ENV: z.string().optional(),
+  VERCEL_GIT_COMMIT_REF: z.string().optional(),
+  TRIGGER_SECRET_KEY: z.string().min(1).optional(),
+  TRIGGER_PREVIEW_BRANCH: z.string().optional(),
 })
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>

@@ -1,9 +1,11 @@
 import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
+import { Loader2 } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/shared/data/utils'
 import {
   BUTTON_BASE_CLASS,
+  BUTTON_LOADING_ICON_CLASS,
   BUTTON_SIZE_CLASSES,
   BUTTON_VARIANT_CLASSES,
   ButtonSizeKey,
@@ -25,18 +27,43 @@ const buttonVariants = cva(BUTTON_BASE_CLASS, {
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  loading?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, type = HtmlElementType.Button, ...props }, ref) => {
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      loading = false,
+      disabled,
+      type = HtmlElementType.Button,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     const Comp = asChild ? Slot : HtmlElementType.Button
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         type={type}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
         {...props}
-      />
+      >
+        {loading && !asChild ? (
+          <>
+            <Loader2 className={BUTTON_LOADING_ICON_CLASS} aria-hidden />
+            {children}
+          </>
+        ) : (
+          children
+        )}
+      </Comp>
     )
   }
 )

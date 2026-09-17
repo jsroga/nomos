@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import type { StoryPlan } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { applyUpdatesToStoryPlan } from '@/domains/storyteller/config/action-config'
 import { MoodboardFieldAlias } from '@/domains/storyteller/config/constants/bible-wire-fields'
@@ -26,23 +26,25 @@ export function useStorytellerAgentBible(core: StorytellerWorkspaceCore) {
     setIsSending,
   } = core
 
-  const handleSaveProjectPrompt = useCallback(
-    async (prompt: string) => {
-      if (!currentProject?.id) return
-      try {
-        await patchStorytellerProject(currentProject.id, { masterPrompt: prompt })
-        if (currentProject) {
-          useWorkspaceProjectStore.getState().setCurrentProject({
-            ...currentProject,
-            master_prompt: prompt,
-          })
-        }
-      } catch (err) {
-        console.error(StorytellerLogMessage.FailedSaveMasterPrompt, err)
-      }
-    },
-    [currentProject]
-  )
+  const projectPromptSaveGen = useRef(0)
+  const handleSaveProjectPrompt = useCallback(async (prompt: string) => {
+    const project = useWorkspaceProjectStore.getState().currentProject
+    if (!project?.id) return
+    const gen = projectPromptSaveGen.current + 1
+    projectPromptSaveGen.current = gen
+    try {
+      await patchStorytellerProject(project.id, { masterPrompt: prompt })
+      if (projectPromptSaveGen.current !== gen) return
+      const latest = useWorkspaceProjectStore.getState().currentProject
+      if (!latest || latest.id !== project.id) return
+      useWorkspaceProjectStore.getState().setCurrentProject({
+        ...latest,
+        master_prompt: prompt,
+      })
+    } catch (err) {
+      console.error(StorytellerLogMessage.FailedSaveMasterPrompt, err)
+    }
+  }, [])
 
   const handleSaveEpisodePrompt = useCallback(
     async (prompt: string) => {

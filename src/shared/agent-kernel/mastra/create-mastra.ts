@@ -80,6 +80,10 @@ export function createPostgresStore(): PostgresStore {
   })
 }
 
+export function shouldMountMastraEditor(): boolean {
+  return !env.VERCEL
+}
+
 export function createMastra(
   agents: Record<string, Agent>,
   options?: {
@@ -102,6 +106,12 @@ export function createMastra(
       : options?.storage ?? (env.DATABASE_URL ? createPostgresStore() : undefined)
 
   const observability = createObservability({ hasStorage: Boolean(storage) })
+  const editor = shouldMountMastraEditor()
+    ? new MastraEditor({
+        source: MastraEditorSource.Code,
+        codePath: resolveEditorCodePath(),
+      })
+    : undefined
 
   return new Mastra({
     agents,
@@ -112,10 +122,7 @@ export function createMastra(
     ...(options?.mcpServers ? { mcpServers: options.mcpServers } : {}),
     ...(options?.tools ? { tools: options.tools } : {}),
     ...(options?.server ? { server: options.server } : {}),
-    editor: new MastraEditor({
-      source: MastraEditorSource.Code,
-      codePath: resolveEditorCodePath(),
-    }),
+    ...(editor ? { editor } : {}),
     logger: new PinoLogger({
       name: MASTRA_LOGGER_NAME,
       level: MASTRA_LOGGER_LEVEL,

@@ -1,0 +1,15 @@
+---
+description: Async action buttons must show loading (spinner + label) and stay disabled until the promise settles
+alwaysApply: true
+---
+
+# Async button loading (binding)
+
+Every control that starts an async action (save, create, generate, delete, upload, trigger) must use `Button` with `loading` while that promise is in flight.
+
+- `loading` shows the spinner **and** keeps the existing label.
+- `loading` disables the button (no double submit).
+- Do not invent a second spinner pattern next to `Button`. Pass `loading={isPending}`.
+- Icon-only buttons: still `loading` (spinner replaces the idle icon via children you pass, or keep the label).
+
+Create New Episode is the reference: confirm stays on the button, spinner appears, click is blocked until create returns.

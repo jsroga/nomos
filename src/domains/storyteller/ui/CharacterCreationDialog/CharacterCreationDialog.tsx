@@ -136,15 +136,15 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
               markTouched={dialog.markTouched}
               onRefreshField={dialog.handleRegenerateField}
               refreshDisabled={!dialog.canRegenerateField}
-            />
-
-            <CharacterCreationDialogMetricsFields
-              metrics={form.metrics}
-              setMetrics={form.setMetrics}
-              isGeneratingMetrics={dialog.isGeneratingMetrics}
-              hasDescription={Boolean(form.description)}
-              onGenerateMetrics={dialog.handleGenerateMetrics}
-            />
+            >
+              <CharacterCreationDialogMetricsFields
+                metrics={form.metrics}
+                setMetrics={form.setMetrics}
+                isGeneratingMetrics={dialog.isGeneratingMetrics}
+                hasDescription={Boolean(form.description)}
+                onGenerateMetrics={dialog.handleGenerateMetrics}
+              />
+            </CharacterCreationDialogPsychologyFields>
             </div>
 
           <div className="p-4 border-t border-border flex justify-between gap-2">

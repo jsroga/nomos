@@ -14,7 +14,7 @@ interface ErrorState {
   hasUnviewedErrors: boolean
 
   // Actions
-  addError: (error: Omit<CapturedError, 'id' | 'timestamp'>) => void
+  addError: (error: Omit<CapturedError, 'id' | 'timestamp'>, openPanel?: boolean) => void
   clearErrors: () => void
   markErrorsAsViewed: () => void
   openPanel: () => void
@@ -27,7 +27,7 @@ export const useErrorStore = create<ErrorState>()(set => ({
   isPanelOpen: false,
   hasUnviewedErrors: false,
 
-  addError: error =>
+  addError: (error: Omit<CapturedError, 'id' | 'timestamp'>, openPanel = true) =>
     set(state => ({
       errors: [
         {
@@ -36,9 +36,9 @@ export const useErrorStore = create<ErrorState>()(set => ({
           timestamp: new Date(),
         },
         ...state.errors,
-      ].slice(0, 50), // Keep last 50 errors max
+      ].slice(0, 50),
       hasUnviewedErrors: true,
-      isPanelOpen: true,
+      isPanelOpen: openPanel ? true : state.isPanelOpen,
     })),
 
   clearErrors: () => set({ errors: [], hasUnviewedErrors: false }),

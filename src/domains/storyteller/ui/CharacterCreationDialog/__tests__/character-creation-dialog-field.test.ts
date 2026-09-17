@@ -52,5 +52,13 @@ describe('CharacterCreationDialog psychology accordion', () => {
     expect(basic).not.toContain('Mbti')
     expect(CharacterDialogPsychologyCopy.Title).toBe('Character Psychology')
     expect(CharacterDialogPsychologyClass.Root).toContain('group')
+    const dialog = readFileSync(
+      'src/domains/storyteller/ui/CharacterCreationDialog/CharacterCreationDialog.tsx',
+      'utf8',
+    )
+    expect(dialog).toContain('CharacterCreationDialogMetricsFields')
+    expect(dialog).toMatch(
+      /<CharacterCreationDialogPsychologyFields[\s\S]*<CharacterCreationDialogMetricsFields[\s\S]*<\/CharacterCreationDialogPsychologyFields>/,
+    )
   })
 })

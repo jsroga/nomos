@@ -156,7 +156,7 @@ export function CharacterCreationDialogMetricsFields({
   }
 
   return (
-    <div className="space-y-4 pt-4 border-t border-border">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold">{CharacterDialogMetricsCopy.Heading}</h3>
         <Button

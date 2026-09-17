@@ -124,6 +124,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
             onGenerate={onGenerate}
             episodeTitle={episodeTitle}
             episodePrompt={episodePrompt}
+            episodeId={episodeId}
             onSaveEpisodePrompt={onSaveEpisodePrompt}
           />
         </div>
@@ -148,6 +149,7 @@ export const EpisodePremisePanel: React.FC<EpisodePremisePanelProps> = ({
               onThematicFocusChange={value => handleChange('thematicFocus', value)}
               onLoglineChange={value => handleChange('logline', value)}
               episodePrompt={episodePrompt}
+              episodeId={episodeId}
               onSaveEpisodePrompt={onSaveEpisodePrompt}
             />
 

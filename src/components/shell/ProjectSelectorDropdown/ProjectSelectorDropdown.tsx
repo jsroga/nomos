@@ -22,8 +22,8 @@ import {
 } from '@/components/Dialog'
 import { Input } from '@/components/Input'
 import { Textarea } from '@/components/Textarea'
+import { workspaceHrefForProject } from './workspace-project-href'
 import {
-  AppRouteSegment,
   DefaultWorkspaceModule,
   PROJECT_SELECTOR_CANCEL_LABEL,
   PROJECT_SELECTOR_CREATE_BUTTON,
@@ -51,32 +51,6 @@ export function ProjectSelectorDropdown() {
   const createProject = useWorkspaceProjectStore(state => state.createProject)
   const user = useAuthStore(state => state.user)
 
-  // Extract current module from pathname (e.g., /project-id/storyteller -> storyteller)
-  // Pathname: /:projectId/:module...
-  const getNextUrl = (nextProjectId: string) => {
-    if (!pathname) return `/${nextProjectId}/${DefaultWorkspaceModule.Storyteller}`
-
-    const parts = pathname.split('/').filter(Boolean)
-    // parts[0] is app, parts[1] is projectId, parts[2] is module
-    // But we need to be careful if we are already in /app/
-
-    // Assuming the structure is /app/[projectId]/[module]
-    // If we are simply in /app, parts might be ['app']
-
-    // Let's just hardcode the structure we want: /app/[projectId]/[module]
-
-    let module: string = DefaultWorkspaceModule.Storyteller
-
-    // Check if we can extract a module from current path
-    // If path is /app/123/storyteller -> parts=['app', '123', 'storyteller']
-    // If path is /app/123/world -> parts=['app', '123', 'world']
-    if (parts.length >= 3 && parts[0] === AppRouteSegment.App) {
-      module = parts[2]
-    }
-
-    return `/${nextProjectId}/${module}`
-  }
-
   useEffect(() => {
     if (user) {
       void fetchAllProjects()
@@ -84,7 +58,7 @@ export function ProjectSelectorDropdown() {
   }, [user, fetchAllProjects])
 
   const handleProjectChange = (projectId: string) => {
-    router.push(getNextUrl(projectId))
+    router.push(workspaceHrefForProject(pathname, projectId))
   }
 
   const handleCreate = async () => {

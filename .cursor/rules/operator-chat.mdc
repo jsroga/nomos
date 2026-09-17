@@ -17,6 +17,8 @@ Nazwy produktu zostaw po angielsku: Writers Room, CAST, Fix inconsistencies, Ope
 
 Odpowiedz **na każdą**, w kolejności, osobnym akapitem. Pierwsza linia akapitu = o co chodziło (jego słowa, skrócone). Nie zlewaj spamu w jeden wywód.
 
+Kolejne wiadomości z kolejnymi zepsutymi rzeczami **dopisujesz na koniec todo** (bez pytania), potem **wracasz do zadania, które było w toku**. Kolejka FIFO. Nie przeskakujesz na najnowszy paste i nie zaczynasz go kodować. Quality gate nie w trakcie dosyłania. `.cursor/rules/follow-up-burst.mdc`.
+
 ## Zasady na stałe vs zadanie
 
 Reguła czatu nie jest listą implementacji. Osobny plik zadań (`.local/sessions/…`) trzyma robotę. Nie mieszaj „jak pisać” z „co kodować” w jednej ścianie.

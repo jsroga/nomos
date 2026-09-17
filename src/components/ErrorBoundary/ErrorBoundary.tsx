@@ -131,11 +131,14 @@ export function useGlobalErrorListener() {
 
       const stack = stackFromConsoleErrorArgs(args)
       queueMicrotask(() => {
-        useErrorStore.getState().addError({
-          message: message || ErrorBoundaryMessage.ConsoleError,
-          stack,
-          source: ErrorBoundarySource.ConsoleError,
-        })
+        useErrorStore.getState().addError(
+          {
+            message: message || ErrorBoundaryMessage.ConsoleError,
+            stack,
+            source: ErrorBoundarySource.ConsoleError,
+          },
+          false,
+        )
       })
     }
 

@@ -13,7 +13,7 @@ import {
 } from '../../utils/mj-sref'
 import { settingsApi } from '../../core/io/settings.api'
 import { uploadStyleRefFile } from '../../core/io/style-refs.api'
-import { MASTER_PROMPT_SAVE_DEBOUNCE_MS } from '@/components/MasterPromptField'
+import { useMasterPromptAutosave } from '@/components/MasterPromptField'
 import {
   WorldGenSidebarLog,
   WorldGenSidebarToast,
@@ -38,20 +38,14 @@ export function useWorldSidebarPrompt(
   currentProject: WorkspaceProject | null,
   resolveCatalogSrefUrls?: (modeId: GenerationMode) => readonly string[] | undefined,
 ) {
-  const [masterPrompt, setMasterPrompt] = useState('')
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [isUploadingStyleRefs, setIsUploadingStyleRefs] = useState(false)
   const [isApplyingGenerationMode, setIsApplyingGenerationMode] = useState(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const projectRef = useRef(currentProject)
 
   useEffect(() => {
     projectRef.current = currentProject
   }, [currentProject])
-
-  useEffect(() => {
-    setMasterPrompt(currentProject?.canvasMasterPrompt ?? '')
-  }, [currentProject?.id, currentProject?.canvasMasterPrompt])
 
   useEffect(() => {
     if (!currentProject?.id) {
@@ -68,12 +62,6 @@ export function useWorldSidebarPrompt(
       }
     })()
   }, [currentProject?.id])
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [])
 
   const persistProjectFields = async (fields: PersistableWorldFields) => {
     const project = projectRef.current
@@ -99,29 +87,29 @@ export function useWorldSidebarPrompt(
     }
   }
 
+  const { prompt: masterPrompt, handleChange: handleMasterPromptChange, persistNow } =
+    useMasterPromptAutosave(
+      currentProject?.canvasMasterPrompt ?? '',
+      currentProject?.id ?? '',
+      value => {
+        void persistProjectFields({ canvasMasterPrompt: value })
+      },
+    )
+
   const persistStyleUrls = async (urls: string[]) => {
     const next = clampStyleReferenceUrls(urls)
     setStyleReferenceUrls(next)
     await persistProjectFields({ styleReferenceUrls: next, stylePreset: null })
   }
 
-  const handleMasterPromptChange = (value: string) => {
-    setMasterPrompt(value)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      void persistProjectFields({ canvasMasterPrompt: value })
-    }, MASTER_PROMPT_SAVE_DEBOUNCE_MS)
-  }
-
   const handleSelectGenerationMode = async (mode: GenerationModeDef) => {
     const project = projectRef.current
     if (!project) return
-    if (debounceRef.current) clearTimeout(debounceRef.current)
     setIsApplyingGenerationMode(true)
     try {
       const urls = resolveGenerationModeSrefUrls(mode, resolveCatalogSrefUrls?.(mode.id))
       const fields = generationModePersistFields({ mode, styleReferenceUrls: urls })
-      setMasterPrompt(fields.canvasMasterPrompt)
+      persistNow(fields.canvasMasterPrompt)
       setStyleReferenceUrls(fields.styleReferenceUrls)
       await persistProjectFields(fields)
     } catch (error) {

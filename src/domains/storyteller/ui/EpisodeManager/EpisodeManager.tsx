@@ -94,6 +94,7 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [newEpisodeTitle, setNewEpisodeTitle] = useState('')
+  const [isCreatingEpisode, setIsCreatingEpisode] = useState(false)
   const createEpisodeDialogRequestSeq = useStorytellerUiStore(
     state => state.createEpisodeDialogRequestSeq,
   )
@@ -175,18 +176,23 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
   }, [createEpisodeDialogRequestSeq])
 
   const handleCreateEpisode = async () => {
-    if (!newEpisodeTitle.trim()) return
+    if (!newEpisodeTitle.trim() || isCreatingEpisode) return
 
-    const newEpisode = await createStorytellerEpisode({
-      projectId,
-      title: newEpisodeTitle.trim(),
-      sequence: episodes.length + 1,
-    })
-    const createdId = readString(newEpisode.id)
-    if (createdId) {
-      void invalidateEpisodes()
-      setIsCreateDialogOpen(false)
-      onEpisodeChange(createdId)
+    setIsCreatingEpisode(true)
+    try {
+      const newEpisode = await createStorytellerEpisode({
+        projectId,
+        title: newEpisodeTitle.trim(),
+        sequence: episodes.length + 1,
+      })
+      const createdId = readString(newEpisode.id)
+      if (createdId) {
+        void invalidateEpisodes()
+        setIsCreateDialogOpen(false)
+        onEpisodeChange(createdId)
+      }
+    } finally {
+      setIsCreatingEpisode(false)
     }
   }
 
@@ -288,10 +294,18 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+              disabled={isCreatingEpisode}
+            >
               {EPISODE_MANAGER_DELETE_CANCEL}
             </Button>
-            <Button onClick={handleCreateEpisode} disabled={!newEpisodeTitle.trim()}>
+            <Button
+              onClick={handleCreateEpisode}
+              disabled={!newEpisodeTitle.trim()}
+              loading={isCreatingEpisode}
+            >
               {EPISODE_MANAGER_CREATE_CONFIRM}
             </Button>
           </DialogFooter>

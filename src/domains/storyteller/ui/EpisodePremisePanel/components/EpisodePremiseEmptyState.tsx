@@ -12,6 +12,7 @@ interface EpisodePremiseEmptyStateProps {
   onGenerate: () => void
   episodeTitle?: string
   episodePrompt?: string
+  episodeId?: string
   onSaveEpisodePrompt?: (prompt: string) => void
 }
 
@@ -20,6 +21,7 @@ export function EpisodePremiseEmptyState({
   onGenerate,
   episodeTitle,
   episodePrompt,
+  episodeId,
   onSaveEpisodePrompt,
 }: EpisodePremiseEmptyStateProps) {
   return (
@@ -32,6 +34,7 @@ export function EpisodePremiseEmptyState({
           <div className="mt-4">
             <MasterPromptEditor
               scope={MasterPromptScope.Episode}
+              hydrateKey={episodeId ?? ''}
               surface={MasterPromptSurface.Page}
               initialPrompt={episodePrompt ?? ''}
               onSave={onSaveEpisodePrompt}
