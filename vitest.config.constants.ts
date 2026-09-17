@@ -27,6 +27,9 @@ export enum VitestCoverageReportsDir {
   Root = './coverage',
 }
 
+/** Milliseconds. Cold `test:unit` on Vercel; Vitest default is 5000. */
+export const VITEST_UNIT_TIMEOUT_MS = 30_000
+
 export const VITEST_COVERAGE_INCLUDE = ['src/**/*.ts', 'src/**/*.tsx'] as const
 
 export const VITEST_COVERAGE_EXCLUDE = [

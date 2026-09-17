@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { EVAL_WATCHED_PATHS } from '../../evals/input-hash.mjs'
+import { VITEST_UNIT_TIMEOUT_MS } from '../../vitest.config.constants'
 import {
   PrecommitSuite,
   needsCriticalE2e,
@@ -157,5 +158,12 @@ describe('e2e cadence scripts', () => {
   it('runs full unit tests on the Vercel deploy build command', () => {
     const vercel = JSON.parse(readFileSync(new URL('../../vercel.json', import.meta.url), 'utf8'))
     expect(vercel.buildCommand).toBe('npm run test:unit && npm run build')
+  })
+
+  it('gives unit tests 30s so cold CI does not hit Vitest 5s', () => {
+    expect(VITEST_UNIT_TIMEOUT_MS).toBe(30_000)
+    const unit = readFileSync(new URL('../../vitest.config.ts', import.meta.url), 'utf8')
+    expect(unit).toContain('testTimeout: VITEST_UNIT_TIMEOUT_MS')
+    expect(unit).toContain('hookTimeout: VITEST_UNIT_TIMEOUT_MS')
   })
 })

@@ -13,11 +13,13 @@ import { REMAINDER } from '../../eslint-rules/provider-sdk-exemptions.js'
 
 const RATCHET = JSON.parse(readFileSync('.quality-ratchet.json', 'utf8'))
 
+let cachedByBucket: Record<string, string[]> | undefined
+
 function imports(bucket: string): string[] {
-  const result = inventory((line: string, file: string) =>
-    classifyProviderSdkImport(line, file) === bucket ? bucket : null
-  )
-  return result.byBucket[bucket] ?? []
+  if (cachedByBucket) return cachedByBucket[bucket] ?? []
+  const next = inventory(classifyProviderSdkImport).byBucket
+  cachedByBucket = next
+  return next[bucket] ?? []
 }
 
 describe('direct provider SDK imports', () => {

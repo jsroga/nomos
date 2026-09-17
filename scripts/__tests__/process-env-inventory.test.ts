@@ -22,11 +22,15 @@ const MODEL_CONFIG_FILES = [
   'model-config.ts',
 ]
 
+let cachedServerReads: string[] | undefined
+
 function serverReads(): string[] {
+  if (cachedServerReads) return cachedServerReads
   const result = inventory((line: string, file: string) =>
     classifyProcessEnvRead(line, file) === ProcessEnvBucket.Server ? ProcessEnvBucket.Server : null
   )
-  return result.identitiesByBucket[ProcessEnvBucket.Server] ?? []
+  cachedServerReads = result.identitiesByBucket[ProcessEnvBucket.Server] ?? []
+  return cachedServerReads
 }
 
 describe('process.env reads', () => {

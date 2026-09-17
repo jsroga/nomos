@@ -3,6 +3,7 @@ import path from 'path'
 import {
   VITEST_COVERAGE_EXCLUDE,
   VITEST_COVERAGE_INCLUDE,
+  VITEST_UNIT_TIMEOUT_MS,
   VitestCoverageProvider,
   VitestCoverageReporter,
   VitestCoverageReportsDir,
@@ -17,6 +18,8 @@ export default defineConfig({
     environment: VitestEnvironment.Node,
     setupFiles: ['dotenv/config'],
     dangerouslyIgnoreUnhandledErrors: false,
+    testTimeout: VITEST_UNIT_TIMEOUT_MS,
+    hookTimeout: VITEST_UNIT_TIMEOUT_MS,
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

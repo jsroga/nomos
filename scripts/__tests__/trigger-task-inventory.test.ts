@@ -18,8 +18,13 @@ import { TriggerTaskBucket, classifyTriggerTaskShape } from '../inventory/matche
 const RATCHET = JSON.parse(readFileSync('.quality-ratchet.json', 'utf8'))
 const TASK_FILE_SUFFIX = '.task.ts'
 
+let cachedShape: Record<string, string[]> | undefined
+
 function shape(): Record<string, string[]> {
-  return inventory(classifyTriggerTaskShape).byBucket
+  if (cachedShape) return cachedShape
+  const next = inventory(classifyTriggerTaskShape).byBucket
+  cachedShape = next
+  return next
 }
 
 function unique(files: string[] | undefined): string[] {
@@ -37,28 +42,40 @@ describe('background task shape', () => {
     60_000
   )
 
-  it('names a queue on every task, so one tenant cannot drain a provider quota', () => {
-    const buckets = shape()
-    const taskFiles = unique([
-      ...(buckets[TriggerTaskBucket.RawTask] ?? []),
-      ...(buckets[TriggerTaskBucket.OwnedTask] ?? []),
-    ]).filter(file => file.endsWith(TASK_FILE_SUFFIX))
-    const queued = new Set(unique(buckets[TriggerTaskBucket.Queue]))
+  it(
+    'names a queue on every task, so one tenant cannot drain a provider quota',
+    () => {
+      const buckets = shape()
+      const taskFiles = unique([
+        ...(buckets[TriggerTaskBucket.RawTask] ?? []),
+        ...(buckets[TriggerTaskBucket.OwnedTask] ?? []),
+      ]).filter(file => file.endsWith(TASK_FILE_SUFFIX))
+      const queued = new Set(unique(buckets[TriggerTaskBucket.Queue]))
 
-    const unqueued = taskFiles.filter(file => !queued.has(file))
+      const unqueued = taskFiles.filter(file => !queued.has(file))
 
-    expect(unqueued.length).toBeLessThanOrEqual(RATCHET.tasksWithoutQueue)
-  })
+      expect(unqueued.length).toBeLessThanOrEqual(RATCHET.tasksWithoutQueue)
+    },
+    60_000,
+  )
 
-  it('triggers through triggerOwnedRun, the only caller that derives a key', () => {
-    expect(unique(shape()[TriggerTaskBucket.UnkeyedTrigger]).length).toBeLessThanOrEqual(
-      RATCHET.tasksWithoutIdempotencyKey
-    )
-  })
+  it(
+    'triggers through triggerOwnedRun, the only caller that derives a key',
+    () => {
+      expect(unique(shape()[TriggerTaskBucket.UnkeyedTrigger]).length).toBeLessThanOrEqual(
+        RATCHET.tasksWithoutIdempotencyKey,
+      )
+    },
+    60_000,
+  )
 
-  it('imports the v4 entrypoint CLAUDE.md mandates, not the v3 subpath', () => {
-    expect(unique(shape()[TriggerTaskBucket.SdkV3Import]).length).toBeLessThanOrEqual(
-      RATCHET.triggerSdkV3Imports
-    )
-  })
+  it(
+    'imports the v4 entrypoint CLAUDE.md mandates, not the v3 subpath',
+    () => {
+      expect(unique(shape()[TriggerTaskBucket.SdkV3Import]).length).toBeLessThanOrEqual(
+        RATCHET.triggerSdkV3Imports,
+      )
+    },
+    60_000,
+  )
 })
