@@ -16,6 +16,7 @@ import {
   FlowTimeout,
   FlowLimit,
   FlowTool,
+  FlowToolStatus,
   FlowUiLabel,
   FlowRoute,
   FlowKey,
@@ -401,6 +402,7 @@ export async function waitForToolCall(
     .filter({ hasText: `${FlowSelector.ToolPrefix}${toolName}` })
     .first()
   await expect(toolCard).toBeVisible({ timeout: timeoutMs })
+  await expect(toolCard).toContainText(FlowToolStatus.Done, { timeout: FlowTimeout.Generation })
 }
 
 export async function waitForUserMessage(page: Page, text: string): Promise<void> {

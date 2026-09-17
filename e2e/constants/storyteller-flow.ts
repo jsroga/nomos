@@ -7,6 +7,11 @@ export enum FlowTool {
   ProposeCharacterFields = 'propose_character_fields',
 }
 
+export enum FlowToolStatus {
+  Running = 'running',
+  Done = 'done',
+}
+
 export enum FlowPrompt {
   Hello = 'Hello',
   ChatSuggestion = 'Add an interesting new character to the cast.',
