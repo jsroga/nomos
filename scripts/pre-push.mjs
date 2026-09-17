@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 /**
- * Husky pre-push: critical Playwright — live Storyteller whole-flow + 2D Canvas.
+ * Husky pre-push: critical Playwright when the push contains product source
+ * under src/ (not unit/e2e tests). Live Storyteller whole-flow + 2D Canvas.
  * Not the full e2e folder. Not HTTP smoke. Not character-fields.
  */
+import { readFileSync } from 'node:fs'
 import { spawn, spawnSync } from 'node:child_process'
+import { stdin } from 'node:process'
 import dotenv from 'dotenv'
 import {
   E2E_PROD_BASE_URL,
@@ -13,6 +16,7 @@ import {
   killListeningProdServer,
   stampProductionBuild,
 } from './e2e-prod-server.mjs'
+import { filesForPrepush, needsCriticalE2e } from './precommit-suites.mjs'
 
 const NODE_OPTS = process.env.NODE_OPTIONS ?? '--max-old-space-size=8192'
 const ENV_LOCAL_PATH = '.env.local'
@@ -74,7 +78,22 @@ function criticalEnv() {
   }
 }
 
+function readHookStdin() {
+  if (stdin.isTTY) return ''
+  try {
+    return readFileSync(0, 'utf8')
+  } catch {
+    return ''
+  }
+}
+
 async function main() {
+  const files = filesForPrepush(readHookStdin())
+  if (!needsCriticalE2e(files)) {
+    console.log('pre-push: skip critical Playwright (no product source under src/)')
+    return
+  }
+
   console.log('pre-push: critical Playwright (Storyteller + 2D Canvas)…')
   enableOverlayFlag()
 

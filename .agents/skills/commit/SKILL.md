@@ -30,7 +30,7 @@ Never run `git add -A` or `git commit -a` blindly. Look at what changed first.
 npm run precommit
 ```
 
-(`scripts/pre-commit.mjs` → architecture, docs, **full** `typecheck` + `lint` + `test:unit`. Eval freshness, HTTP smoke, and overlay stub Playwright only when staged paths select them. Build only when a commit e2e suite is selected. Full Playwright is nightly. Husky pre-push always runs critical Playwright: live `storyteller.spec.ts` + `world-canvas.spec.ts`.)
+(`scripts/pre-commit.mjs` → architecture, docs, **full** `typecheck` + `lint` + `test:unit`. Eval freshness, HTTP smoke, and overlay stub Playwright only when staged paths select them. Build only when a commit e2e suite is selected. Full Playwright is nightly. Husky pre-push runs critical Playwright when product source under `src/` changed: live `storyteller.spec.ts` + `world-canvas.spec.ts`.)
 
 If anything fails: fix it, re-run `npm run precommit`, only then continue. Do **not** use `--no-verify`.
 Husky will re-run the same script on `git commit` as a safety net.

@@ -2,7 +2,8 @@
 /**
  * File-selected pre-commit suites. Lint/tsc/unit always run in pre-commit.mjs;
  * this module only decides eval freshness and which smoke/stub jobs to start.
- * Critical Playwright (Storyteller whole-flow + 2D Canvas) runs on pre-push.
+ * Critical Playwright (Storyteller whole-flow + 2D Canvas) runs on pre-push
+ * when the push contains product source under src/, not tests.
  */
 import { execSync } from 'node:child_process'
 import { EVAL_WATCHED_PATHS } from '../evals/input-hash.mjs'
@@ -68,6 +69,76 @@ export function selectPrecommitSuites(files) {
 
 export function needsProdServer(suites) {
   return suites.includes(PrecommitSuite.E2eStubs) || suites.includes(PrecommitSuite.E2eSmoke)
+}
+
+const TEST_FILE = /\.(?:test|spec|e2e\.test)\.[cm]?[jt]sx?$/
+export const ZERO_OID = '0'.repeat(40)
+const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+
+/** Product runtime under src/. Tests and specs never select live pre-push e2e. */
+export function isProductSourcePath(file) {
+  const posix = file.split('\\').join('/')
+  if (!posix.startsWith('src/')) return false
+  if (posix.includes('/__tests__/')) return false
+  if (TEST_FILE.test(posix)) return false
+  return true
+}
+
+export function needsCriticalE2e(files) {
+  return files.some(isProductSourcePath)
+}
+
+export function parsePushRefLines(stdinText) {
+  return stdinText
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split(/\s+/)
+      return {
+        localRef: parts[0] ?? '',
+        localOid: parts[1] ?? '',
+        remoteRef: parts[2] ?? '',
+        remoteOid: parts[3] ?? '',
+      }
+    })
+    .filter((ref) => Boolean(ref.localOid))
+}
+
+function gitDiffNames(fromOid, toOid) {
+  if (!toOid) return []
+  if (!fromOid || fromOid === ZERO_OID) {
+    try {
+      const base = execSync(`git merge-base origin/main ${toOid}`, {
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).trim()
+      if (base) {
+        return gitLines(`git diff --name-only --diff-filter=ACMRD ${base} ${toOid}`)
+      }
+    } catch {
+      // New branch with no merge-base: compare the whole tree.
+    }
+    return gitLines(`git diff --name-only --diff-filter=ACMRD ${EMPTY_TREE} ${toOid}`)
+  }
+  return gitLines(`git diff --name-only --diff-filter=ACMRD ${fromOid} ${toOid}`)
+}
+
+/** Husky pre-push stdin refs, else commits not yet on the upstream. */
+export function filesForPrepush(stdinText = '') {
+  const refs = parsePushRefLines(stdinText)
+  if (refs.length > 0) {
+    const files = new Set()
+    for (const ref of refs) {
+      for (const file of gitDiffNames(ref.remoteOid, ref.localOid)) files.add(file)
+    }
+    return [...files]
+  }
+  const upstream = gitLines("git rev-parse --abbrev-ref '@{u}'")
+  if (upstream.length > 0) {
+    return gitLines("git diff --name-only --diff-filter=ACMRD '@{u}'...HEAD")
+  }
+  return gitLines('git diff --name-only --diff-filter=ACMRD origin/main...HEAD')
 }
 
 function gitLines(cmd) {

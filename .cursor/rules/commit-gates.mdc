@@ -11,7 +11,7 @@ When the user asks you to **commit** (or create a git commit):
    ```bash
    npm run precommit
    ```
-   That is `scripts/pre-commit.mjs`: architecture → docs → OpenAPI → env → **full** `npm run typecheck` → **full** `npm run lint` → **`npm run test:unit`**. Eval freshness, HTTP smoke, and overlay stub Playwright run only when staged paths select them (`scripts/precommit-suites.mjs`). Production build only when a commit e2e suite is selected. Husky **pre-push** always runs critical Playwright (`test:e2e:critical` = live `storyteller.spec.ts` + `world-canvas.spec.ts`). Full folder is nightly (`npm run test:e2e:nightly`).
+   That is `scripts/pre-commit.mjs`: architecture → docs → OpenAPI → env → **full** `npm run typecheck` → **full** `npm run lint` → **`npm run test:unit`**. Eval freshness, HTTP smoke, and overlay stub Playwright run only when staged paths select them (`scripts/precommit-suites.mjs`). Production build only when a commit e2e suite is selected. Husky **pre-push** runs critical Playwright (`test:e2e:critical` = live `storyteller.spec.ts` + `world-canvas.spec.ts`) when the push contains product source under `src/` (not tests). Full folder is nightly (`npm run test:e2e:nightly`).
 2. **Fix failures** before staging/committing. Do not commit a broken tree.
 3. **Then** stage relevant paths and `git commit` (HEREDOC message). Husky (`.husky/pre-commit`) runs the same script again as a safety net.
 4. **Never** `git commit --no-verify` / `-n` unless the user explicitly orders a hook skip. Cursor `beforeShellExecution` (`guard-commit.sh`) denies `--no-verify`.

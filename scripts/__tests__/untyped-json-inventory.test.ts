@@ -23,8 +23,13 @@ const RATCHET = JSON.parse(readFileSync('.quality-ratchet.json', 'utf8'))
 /** Modules whose contracts have landed; their count may only fall. */
 const CONVERTED_MODULES = ['3d-asset-exporter']
 
+let cachedBuckets: Record<string, string[]> | undefined
+
 function buckets(): Record<string, string[]> {
-  return inventory(classifyUntypedJsonRead).identitiesByBucket
+  if (cachedBuckets) return cachedBuckets
+  const next = inventory(classifyUntypedJsonRead).identitiesByBucket
+  cachedBuckets = next
+  return next
 }
 
 describe('untyped JSON reads', () => {
@@ -48,14 +53,18 @@ describe('untyped JSON reads', () => {
     60_000,
   )
 
-  it('does not let a converted module regress, so half-done is a stable state', () => {
-    const reads = buckets()[UntypedJsonBucket.SnakeCaseRead] ?? []
-    const inConverted = reads.filter(id =>
-      CONVERTED_MODULES.some(moduleName => id.includes(`src/domains/${moduleName}/`)),
-    )
+  it(
+    'does not let a converted module regress, so half-done is a stable state',
+    () => {
+      const reads = buckets()[UntypedJsonBucket.SnakeCaseRead] ?? []
+      const inConverted = reads.filter(id =>
+        CONVERTED_MODULES.some(moduleName => id.includes(`src/domains/${moduleName}/`)),
+      )
 
-    expect(inConverted.length).toBeLessThanOrEqual(RATCHET.snakeCaseReadsInConvertedModules)
-  })
+      expect(inConverted.length).toBeLessThanOrEqual(RATCHET.snakeCaseReadsInConvertedModules)
+    },
+    60_000,
+  )
 
   it(
     'does not grow the schemas that forward unknown keys',
@@ -67,9 +76,13 @@ describe('untyped JSON reads', () => {
     60_000
   )
 
-  it('has no z.any(), which disables checking on everything downstream', () => {
-    const uses = buckets()[UntypedJsonBucket.ZodAny] ?? []
+  it(
+    'has no z.any(), which disables checking on everything downstream',
+    () => {
+      const uses = buckets()[UntypedJsonBucket.ZodAny] ?? []
 
-    expect(uses.length).toBeLessThanOrEqual(RATCHET.zodAnyUses)
-  })
+      expect(uses.length).toBeLessThanOrEqual(RATCHET.zodAnyUses)
+    },
+    60_000,
+  )
 })

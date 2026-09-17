@@ -3,7 +3,8 @@
  * Husky pre-commit: full-app lint + typecheck + unit always.
  * Eval freshness, HTTP smoke, and overlay stub Playwright run only when staged
  * (or working-tree, if the index is empty) paths select them.
- * Critical Playwright (Storyteller + 2D Canvas) runs on pre-push.
+ * Critical Playwright (Storyteller + 2D Canvas) runs on pre-push when the
+ * push contains product source under src/, not tests. Unit tests always run.
  */
 import { spawnSync } from 'node:child_process'
 import dotenv from 'dotenv'

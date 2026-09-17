@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { EVAL_WATCHED_PATHS } from '../../evals/input-hash.mjs'
 import {
   PrecommitSuite,
+  needsCriticalE2e,
   needsProdServer,
+  parsePushRefLines,
   selectPrecommitSuites,
 } from '../precommit-suites.mjs'
 
@@ -86,6 +88,49 @@ describe('selectPrecommitSuites', () => {
   })
 })
 
+describe('needsCriticalE2e', () => {
+  it('skips unit tests, e2e specs, and files outside src/', () => {
+    expect(
+      needsCriticalE2e([
+        'scripts/__tests__/untyped-json-inventory.test.ts',
+        'e2e/scenarios/storyteller.spec.ts',
+        'docs/DEVELOPMENT.md',
+        'src/domains/storyteller/ai/tools/__tests__/character-tools-schema.test.ts',
+        'src/domains/storyteller/ai/tools/foo.test.ts',
+      ]),
+    ).toBe(false)
+  })
+
+  it('runs when product source under src/ is in the push', () => {
+    expect(
+      needsCriticalE2e(['src/domains/storyteller/ai/tools/character-tools-schema.ts']),
+    ).toBe(true)
+  })
+
+  it('runs when a mixed push includes product source', () => {
+    expect(
+      needsCriticalE2e([
+        'scripts/__tests__/untyped-json-inventory.test.ts',
+        'src/mastra/agents/storyteller/instructions.md',
+      ]),
+    ).toBe(true)
+  })
+
+  it('parses husky pre-push ref lines', () => {
+    const refs = parsePushRefLines(
+      'refs/heads/main abc123 refs/heads/main def456\n',
+    )
+    expect(refs).toEqual([
+      {
+        localRef: 'refs/heads/main',
+        localOid: 'abc123',
+        remoteRef: 'refs/heads/main',
+        remoteOid: 'def456',
+      },
+    ])
+  })
+})
+
 describe('e2e cadence scripts', () => {
   it('keeps overlay stub on commit, critical Storyteller+canvas on push, full folder nightly', () => {
     const pkg = readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
@@ -99,13 +144,14 @@ describe('e2e cadence scripts', () => {
     expect(pkg).not.toContain('test:e2e:live-storyteller')
   })
 
-  it('runs critical Playwright from pre-push, not a skip log', () => {
+  it('runs critical Playwright from pre-push only when product source changed', () => {
     const prePush = readFileSync(new URL('../pre-push.mjs', import.meta.url), 'utf8')
     expect(prePush).toContain('test:e2e:critical')
+    expect(prePush).toContain('needsCriticalE2e')
+    expect(prePush).toContain('skip critical Playwright')
     expect(prePush).toContain('stampProductionBuild')
     expect(prePush).toContain('stdio: [\'inherit\', \'pipe\', \'pipe\']')
     expect(prePush).not.toContain('encoding: \'utf8\'')
-    expect(prePush).not.toContain('skipped live suites')
   })
 
   it('runs full unit tests on the Vercel deploy build command', () => {
