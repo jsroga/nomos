@@ -318,7 +318,7 @@ export function parseMechanicsDesignerResponse(value: unknown): MechanicsDesigne
 export function resolveMechanicsDesignerTask(state: LoopCreatorState): string {
   const lastHumanMsg = [...state.messages]
     .reverse()
-    .find(m => m._getType() === ChatMessageRole.Human)
+    .find(m => m.role === ChatMessageRole.Human)
   if (!lastHumanMsg) return MechanicsDesignerDefaultTask.DesignCoreMechanics
   if (typeof lastHumanMsg.content === 'string') return lastHumanMsg.content
   return MechanicsDesignerDefaultTask.DesignGameMechanics

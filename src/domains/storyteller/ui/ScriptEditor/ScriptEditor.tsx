@@ -55,7 +55,6 @@ export interface ScriptEditorProps {
   ) => Promise<string>
   isLoading?: boolean
   mode?: ManuscriptMode
-  onModeChange?: (mode: ManuscriptMode) => void
   beatCount?: number
   projectId?: string
   episodeId?: string
@@ -80,15 +79,13 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
   onRegenerateSelection,
   isLoading = false,
   mode: modeProp,
-  onModeChange,
   beatCount = 0,
   projectId = '',
   episodeId = '',
 }) => {
   const editorRef = useRef<HTMLDivElement>(null)
   const isInitializedRef = useRef(false)
-  const [modeState, setModeState] = useState(modeProp ?? ManuscriptMode.Script)
-  const manuscriptMode = modeProp ?? modeState
+  const manuscriptMode = modeProp ?? ManuscriptMode.Script
   const isNovel = manuscriptMode === ManuscriptMode.Novel
   const [selection, setSelection] = useState<{ text: string; range: Range | null }>({
     text: '',
@@ -212,11 +209,6 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
     }
   }
 
-  const handleModeChange = (next: ManuscriptMode) => {
-    setModeState(next)
-    onModeChange?.(next)
-  }
-
   const generateDisabled = manuscriptGenerateDisabled(beatCount)
 
   const runSectionDraft = useCallback(
@@ -310,8 +302,6 @@ const ScriptEditor: React.FC<ScriptEditorProps> = ({
 
       <div className={ScriptEditorChromeClass.Bar}>
         <ScriptEditorManuscriptToolbar
-          mode={manuscriptMode}
-          onModeChange={handleModeChange}
           generateDisabled={generateDisabled}
           generateDisabledReason={
             generateDisabled ? ScriptEditorToolbarCopy.BeatsGate : undefined

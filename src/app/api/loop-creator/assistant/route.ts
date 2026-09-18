@@ -14,7 +14,7 @@
  */
 
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
-import { HumanMessage, AIMessage, type BaseMessage } from '@/shared/chat/core/message'
+import { assistantChatMessage, userChatMessage, ChatMessageRole, type ChatMessage } from '@/shared/chat/core/message'
 import '@/domains/loop-creator/core/io/mastra-runtime'
 import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
@@ -64,23 +64,23 @@ function messageText(parts: unknown): string {
 }
 
 /** Hydrate the full conversation from the AI-SDK UI message history. */
-function toBaseMessages(messages: unknown): BaseMessage[] {
+function toChatMessages(messages: unknown): ChatMessage[] {
   if (!Array.isArray(messages)) return []
-  const out: BaseMessage[] = []
+  const out: ChatMessage[] = []
   for (const msg of messages) {
     if (!isPlainObject(msg)) continue
     const text = messageText(msg.parts)
     if (!text) continue
-    if (msg.role === ROLE_USER) out.push(new HumanMessage(text))
-    else if (msg.role === ROLE_ASSISTANT) out.push(new AIMessage(text))
+    if (msg.role === ROLE_USER) out.push(userChatMessage(text))
+    else if (msg.role === ROLE_ASSISTANT) out.push(assistantChatMessage(text))
   }
   return out
 }
 
-function latestUserText(history: BaseMessage[]): string {
+function latestUserText(history: ChatMessage[]): string {
   for (let i = history.length - 1; i >= 0; i -= 1) {
     const msg = history[i]
-    if (msg instanceof HumanMessage && typeof msg.content === 'string') return msg.content
+    if (msg.role === ChatMessageRole.Human) return msg.content
   }
   return ''
 }
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
     return jsonError(API_ERROR.PROJECT_ACCESS_DENIED, STATUS_404)
   }
 
-  const history = toBaseMessages(record.messages)
+  const history = toChatMessages(record.messages)
   const message = latestUserText(history)
   const context = isPlainObject(record.context) ? record.context : undefined
   const sessionId = readString(record[AssistantChatBodyKey.SessionId])
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
   const traceId = createMastraTraceId()
   const initialState: LoopCreatorState = {
     ...createInitialLoopState(scope, message, context),
-    messages: history.length > 0 ? history : [new HumanMessage(message)],
+    messages: history.length > 0 ? history : [userChatMessage(message)],
     traceId,
   }
 

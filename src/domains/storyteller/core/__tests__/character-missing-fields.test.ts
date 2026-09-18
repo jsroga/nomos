@@ -140,13 +140,32 @@ describe('character-missing-fields', () => {
     expect(listMissingCharacterMetricKeys(completeText.metrics).length).toBeGreaterThan(0)
   })
 
-  it('parses unknown json without overwriting types', () => {
-    const parsed = generatedCharacterFieldsFromUnknown({
-      name: VERA,
-      metrics: { arousal: 70, extra: 'nope' },
+  it('maps psychology nested fatalFlaw and secrets plus snake and singular aliases', () => {
+    expect(
+      generatedCharacterFieldsFromUnknown({
+        psychology: { fatalFlaw: 'Pride', secrets: 'Hidden ledger' },
+      }),
+    ).toEqual({
+      fatalFlaw: 'Pride',
+      secrets: 'Hidden ledger',
     })
-    expect(parsed.name).toBe(VERA)
-    expect(parsed.metrics?.arousal).toBe(70)
+    expect(
+      generatedCharacterFieldsFromUnknown({
+        fatal_flaw: 'Cowardice',
+        secret: 'The false name',
+      }),
+    ).toEqual({
+      fatalFlaw: 'Cowardice',
+      secrets: 'The false name',
+    })
+  })
+
+  it('does not treat thinking text as form fields', () => {
+    const parsed = generatedCharacterFieldsFromUnknown({
+      thought: 'Fatal flaw is pride. Secret is the hidden ledger.',
+    })
+    expect(parsed.fatalFlaw).toBeUndefined()
+    expect(parsed.secrets).toBeUndefined()
   })
 
   it('drops null structured-output placeholders', () => {

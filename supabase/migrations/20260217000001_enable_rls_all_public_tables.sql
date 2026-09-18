@@ -42,7 +42,7 @@ ALTER TABLE public.series_bibles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.story_plans ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- 4. LangGraph checkpoint tables — no user/project columns.
+-- 4. Leftover checkpoint tables — no user/project columns.
 --    Enable RLS with no anon/authenticated policies so PostgREST cannot
 --    access them. The backend uses service_role which bypasses RLS.
 -- ============================================================================

@@ -7,6 +7,7 @@ import {
 } from '../fixtures/storyteller-fixtures'
 import {
   EmptyTurnScenario,
+  FlowEpisode,
   FlowRole,
   FlowRoute,
   FlowSelector,
@@ -59,5 +60,19 @@ test.describe(FlowTest.Describe, () => {
       timeout: FlowTimeout.Medium,
     })
     await expect(page.locator(FlowSelector.UserMessage).first()).toBeVisible()
+  })
+
+  test(FlowTest.ForeignEpisodeStorybible, async ({ page }) => {
+    test.setTimeout(FlowTimeout.Stub)
+    await setupAuthenticatedPage(page)
+    const project = await createStoryProject(page)
+    await gotoStoryteller(page, project.id, FlowEpisode.ForeignId, { waitForChat: false })
+
+    await expect(page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.NewEpisodeDialog })).toBeHidden()
+    await expect(page.getByRole(FlowRole.Tab, { name: FlowUiLabel.StorybibleTab })).toBeVisible()
+    await expect(page.getByRole(FlowRole.Heading, { name: FlowUiLabel.BuildStorybibleFirst })).toBeVisible({
+      timeout: FlowTimeout.Medium,
+    })
+    await expect(page.getByRole(FlowRole.Button, { name: FlowUiLabel.CreateManually })).toBeVisible()
   })
 })

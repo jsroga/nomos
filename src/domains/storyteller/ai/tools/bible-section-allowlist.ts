@@ -3,8 +3,7 @@ import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { CharacterDraftChatSection } from '@/domains/storyteller/core/storyteller-page-wire'
 import { BibleToolError } from '@/domains/storyteller/ai/tools/bible-tools-update'
 
-/** When a bible panel refresh started the turn, off-section fields are still
- * returned so sibling panels can show pending review. `dropped` is informational. */
+/** When a bible panel refresh started the turn, keep only that section. */
 export const SECTION_UPDATE_ALLOWLIST: Record<string, readonly string[]> = {
   [BibleSection.WORLD_DESCRIPTION]: ['worldDescription'],
   [BibleSection.INSPIRATIONS]: ['inspirations'],
@@ -48,9 +47,11 @@ export function filterUpdatesForBibleSection(
   }
   const allow = SECTION_UPDATE_ALLOWLIST[bibleSection]
   if (!allow) return { updates, dropped: [] }
+  const kept: Record<string, unknown> = {}
   const dropped: string[] = []
   for (const key of Object.keys(updates)) {
-    if (!allow.includes(key)) dropped.push(key)
+    if (allow.includes(key)) kept[key] = updates[key]
+    else dropped.push(key)
   }
-  return { updates, dropped }
+  return { updates: kept, dropped }
 }

@@ -40,11 +40,11 @@ const ALLOWED_FILE_PATTERNS = [
   // Domain prompt folders: prompt-builder text is the artifact.
   /[/\\]domains[/\\][^/\\]+[/\\]prompts[/\\]/,
   /[/\\]domains[/\\][^/\\]+[/\\]ai[/\\]prompts[/\\]/,
-  // Domain agent modules: system prompts, LangChain instructions, workflows.
+  // Domain agent modules: system prompts, instructions, workflows.
   // (tools/ is a subset — kept as a separate comment for discoverability.)
   // The optional `ai/` matches the AI-layer migration (`domains/<x>/ai/agents/`).
   /[/\\]domains[/\\][^/\\]+[/\\](?:ai[/\\])?agents[/\\]/,
-  // Agent tool modules at any depth (zod `.describe()`, tool ids, LangChain schemas).
+  // Agent tool modules at any depth (zod `.describe()`, tool ids, schemas).
   // Replaces the earlier filename-only `*-tools.ts` carve-out — market-analyst and
   // nested scorer tools use descriptive filenames, same artifact class.
   /[/\\]agents[/\\](?:[^/\\]+[/\\])*tools[/\\]/,

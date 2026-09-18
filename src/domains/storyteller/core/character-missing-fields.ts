@@ -25,6 +25,18 @@ export enum CharacterTextFieldKey {
   Secrets = 'secrets',
 }
 
+enum CharacterPsychologyNestKey {
+  Psychology = 'psychology',
+}
+
+enum CharacterFatalFlawSnakeAlias {
+  FatalFlaw = 'fatal_flaw',
+}
+
+enum CharacterSecretSingularAlias {
+  Secret = 'secret',
+}
+
 export enum CharacterMetricFieldKey {
   Valence = 'valence',
   Arousal = 'arousal',
@@ -114,6 +126,37 @@ export interface GeneratedCharacterFields {
 
 function isBlank(value: string): boolean {
   return value.trim().length === 0
+}
+
+function takeTrimmedText(value: unknown): string | undefined {
+  const raw = readString(value)
+  if (!raw || isBlank(raw)) return undefined
+  return raw.trim()
+}
+
+function generatedTextForKey(
+  record: Record<string, unknown>,
+  nested: Record<string, unknown>,
+  key: CharacterTextFieldKey,
+): string | undefined {
+  const candidates: unknown[] = [record[key], nested[key]]
+  if (key === CharacterTextFieldKey.FatalFlaw) {
+    candidates.push(
+      record[CharacterFatalFlawSnakeAlias.FatalFlaw],
+      nested[CharacterFatalFlawSnakeAlias.FatalFlaw],
+    )
+  }
+  if (key === CharacterTextFieldKey.Secrets) {
+    candidates.push(
+      record[CharacterSecretSingularAlias.Secret],
+      nested[CharacterSecretSingularAlias.Secret],
+    )
+  }
+  for (const candidate of candidates) {
+    const text = takeTrimmedText(candidate)
+    if (text) return text
+  }
+  return undefined
 }
 
 export function listMissingCharacterTextFields(
@@ -247,11 +290,12 @@ export function applyGeneratedCharacterFields<T extends CharacterFilledDraft>(
 
 export function generatedCharacterFieldsFromUnknown(value: unknown): GeneratedCharacterFields {
   const record = recordFromJson(value)
+  const nested = recordFromJson(record[CharacterPsychologyNestKey.Psychology])
   const result: GeneratedCharacterFields = {}
   for (const key of CHARACTER_TEXT_FIELD_KEYS) {
-    const raw = readString(record[key])
-    if (!raw || isBlank(raw)) continue
-    result[key] = raw.trim()
+    const text = generatedTextForKey(record, nested, key)
+    if (!text) continue
+    result[key] = text
   }
   const metricsRaw = recordFromJson(record.metrics)
   const metrics: Partial<CharacterMetricDefaults> = {}

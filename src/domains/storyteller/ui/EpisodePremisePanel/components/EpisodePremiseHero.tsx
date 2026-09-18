@@ -1,4 +1,4 @@
-import { RefreshCw, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Skeleton } from '@/components/Skeleton'
 import { StorytellerImage } from '../../StorytellerImage'
@@ -12,6 +12,7 @@ import {
   MasterPromptSurface,
 } from '../../MasterPromptEditor'
 import { EpisodePremiseCopy } from '../../StoryPlanBoard/constants/episode-premise-fields'
+import { StorytellerRefreshButton } from '@/domains/storyteller/ui/StorytellerRefreshButton'
 
 type PremiseSectionKey = EpisodePremiseSectionKey
 
@@ -40,16 +41,13 @@ function EpisodePremiseDescription({
   return (
     <div className="relative">
       {showRefresh && onGenerateSection ? (
-        <Button
-          size="icon"
-          variant="ghost"
-          className="absolute top-0 right-0 z-10 h-7 w-7 rounded-md text-muted-foreground hover:text-primary"
-          onClick={() => onGenerateSection(EpisodePremiseSectionKey.Logline)}
-          disabled={isGenerating}
-          title={EpisodePremiseCopy.RegenerateDescription}
-        >
-          <RefreshCw className={cn('w-3.5 h-3.5', isGeneratingLogline && 'animate-spin')} />
-        </Button>
+        <div className="absolute top-0 right-0 z-10">
+          <StorytellerRefreshButton
+            onClick={() => onGenerateSection(EpisodePremiseSectionKey.Logline)}
+            idleLabel={EpisodePremiseCopy.RegenerateDescription}
+            extraDisabled={isGenerating}
+          />
+        </div>
       ) : null}
       <div className={cn(showRefresh && 'pr-8')}>
         {isGeneratingLogline ? (

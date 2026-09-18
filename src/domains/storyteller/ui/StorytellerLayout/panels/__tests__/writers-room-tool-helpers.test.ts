@@ -4,6 +4,9 @@ import { ActionType, BibleSection } from '@/domains/storyteller/core/types/enums
 import { ApprovalActionStatus } from '@/shared/agent-kernel/action-wire'
 import {
   extraPendingSectionsMessage,
+  extraSectionsOutsideRequest,
+  proposalsAfterExtrasChoice,
+  chooseBibleProposalsForReview,
   chatFallbackAddToWorldTargets,
   createBeatCommitActions,
   isBeatCreateToolArgs,
@@ -13,6 +16,7 @@ import {
   showBeatOnBoard,
 } from '../writers-room-tool-helpers'
 import { CharacterDraftChatSection, StorytellerChatTool, StorytellerTab, StorytellerWorkflowToolId } from '@/domains/storyteller/core/storyteller-page-wire'
+import { LIST_CHARACTERS_TOOL_ID, CHARACTER_TOOL_ID } from '@/domains/storyteller/ai/tools/manage-tools-wire'
 import { ChatMessageRole } from '@/shared/chat/core/utils/assistant-thread-ui'
 import { BibleSectionDisplayName, SectionListJoin } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
 import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
@@ -50,6 +54,60 @@ describe('extraPendingSectionsMessage', () => {
 
   it('returns null for a single-section write', () => {
     expect(extraPendingSectionsMessage([proposal(BibleSection.WORLD_DESCRIPTION)])).toBeNull()
+  })
+})
+
+describe('proposalsAfterExtrasChoice', () => {
+  it('keeps only the requested section when extras are declined', () => {
+    const proposals = [
+      proposal(BibleSection.WORLD_DESCRIPTION),
+      proposal(BibleSection.EVENTS),
+      proposal(BibleSection.WORLD_RULES),
+    ]
+    expect(
+      proposalsAfterExtrasChoice({
+        proposals,
+        requestedSection: BibleSection.WORLD_DESCRIPTION,
+        includeExtras: false,
+      }).map(item => item.section),
+    ).toEqual([BibleSection.WORLD_DESCRIPTION])
+  })
+
+  it('keeps extras when the operator includes them', () => {
+    const proposals = [
+      proposal(BibleSection.WORLD_DESCRIPTION),
+      proposal(BibleSection.EVENTS),
+    ]
+    expect(
+      proposalsAfterExtrasChoice({
+        proposals,
+        requestedSection: BibleSection.WORLD_DESCRIPTION,
+        includeExtras: true,
+      }),
+    ).toHaveLength(2)
+  })
+
+  it('names extras outside the requested section', () => {
+    expect(
+      extraSectionsOutsideRequest(
+        [proposal(BibleSection.WORLD_DESCRIPTION), proposal(BibleSection.EVENTS)],
+        BibleSection.WORLD_DESCRIPTION,
+      ),
+    ).toEqual([BibleSection.EVENTS])
+  })
+
+  it('asks before applying extras, then keeps only the requested section', async () => {
+    const confirm = vi.fn().mockResolvedValue(false)
+    const applied = await chooseBibleProposalsForReview({
+      proposals: [
+        proposal(BibleSection.WORLD_DESCRIPTION),
+        proposal(BibleSection.EVENTS),
+      ],
+      requestedSection: BibleSection.WORLD_DESCRIPTION,
+      confirm,
+    })
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(applied.map(item => item.section)).toEqual([BibleSection.WORLD_DESCRIPTION])
   })
 })
 
@@ -196,7 +254,7 @@ describe('shouldShowAddToWorld', () => {
     ).toBe(false)
   })
 
-  it('shows the button after propose_character_fields', () => {
+  it('hides the button after propose_character_fields', () => {
     expect(
       shouldShowAddToWorld({
         role: ChatMessageRole.Assistant,
@@ -204,7 +262,7 @@ describe('shouldShowAddToWorld', () => {
         toolNames: [StorytellerChatTool.ProposeCharacterFields],
         toolArgs: [{ name: 'Vera', description: 'A warden.' }],
       }),
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('shows the button for a successful bible factions write', () => {
@@ -212,6 +270,20 @@ describe('shouldShowAddToWorld', () => {
       shouldShowAddToWorld({
         role: ChatMessageRole.Assistant,
         toolNames: [StorytellerChatTool.UpdateWorldBible],
+        toolArgs: factionsArgs,
+      }),
+    ).toBe(true)
+  })
+
+  it('shows the button when bible write is mixed with character list tools', () => {
+    expect(
+      shouldShowAddToWorld({
+        role: ChatMessageRole.Assistant,
+        toolNames: [
+          CHARACTER_TOOL_ID,
+          LIST_CHARACTERS_TOOL_ID,
+          StorytellerChatTool.UpdateWorldBible,
+        ],
         toolArgs: factionsArgs,
       }),
     ).toBe(true)

@@ -22,6 +22,7 @@ import { BufferEncoding } from '@/shared/data/constants/protocol'
 import { MidjourneyParamFlag } from '@/shared/data/server/midjourney-params'
 import { appendStorytellerLookSref } from './utils/storyteller-look-sref'
 import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'
+import { fetchProjectStyleReferenceUrls } from './utils/project-style-reference-urls'
 import {
   MOODBOARD_BASE64_LABEL,
   MOODBOARD_GEMINI_NO_IMAGE,
@@ -47,9 +48,13 @@ interface MoodboardGeneratedImage {
   publicUrl?: string
 }
 
-export function buildMoodboardMidjourneyPrompt(scene: string, styleReferenceUrl?: string): string {
+export function buildMoodboardMidjourneyPrompt(
+  scene: string,
+  extraStyleRefs: string | readonly string[] = [],
+): string {
+  const extras = typeof extraStyleRefs === 'string' ? [extraStyleRefs] : [...extraStyleRefs]
   const base = `${wrapMoodboardScene(scene)} ${MidjourneyParamFlag.Version} ${MIDJOURNEY_VERSION} ${MidjourneyParamFlag.AspectRatio} ${ApiframeGenerateAspectRatio.Widescreen}`
-  return appendStorytellerLookSref(base, styleReferenceUrl ? [styleReferenceUrl] : [])
+  return appendStorytellerLookSref(base, extras)
 }
 
 async function downloadImageAsBase64(imageUrl: string): Promise<string> {
@@ -65,9 +70,9 @@ async function generateMidjourneyImage(
   prompt: string,
   apiKey: string,
   promptIndex: number,
-  styleReferenceUrl?: string,
+  extraStyleRefs: readonly string[] = [],
 ): Promise<MoodboardGeneratedImage> {
-  const fullPrompt = buildMoodboardMidjourneyPrompt(prompt, styleReferenceUrl)
+  const fullPrompt = buildMoodboardMidjourneyPrompt(prompt, extraStyleRefs)
   const requestPayload = {
     model: ApiframeImageModel.Midjourney,
     prompt: fullPrompt,
@@ -184,10 +189,10 @@ async function generateMoodboardImage(
   apiKey: string,
   modelId: string | undefined,
   promptIndex: number,
-  styleReferenceUrl?: string,
+  extraStyleRefs: readonly string[] = [],
 ): Promise<MoodboardGeneratedImage> {
   if (isMidjourneyMoodboard(provider, modelId)) {
-    return generateMidjourneyImage(prompt, apiKey, promptIndex, styleReferenceUrl)
+    return generateMidjourneyImage(prompt, apiKey, promptIndex, extraStyleRefs)
   }
   return generateNanoBananaImage(prompt, apiKey, modelId, promptIndex)
 }
@@ -209,6 +214,10 @@ export async function generateAllMoodboardImages(
   payload: GenerateMoodboardPayload & { prompts: string[] },
 ): Promise<string[]> {
   const { projectId, prompts, providerConfig, replaceIndex } = payload
+  const projectStyleRefs =
+    payload.styleReferenceUrls && payload.styleReferenceUrls.length > 0
+      ? payload.styleReferenceUrls
+      : await fetchProjectStyleReferenceUrls(projectId)
   const generatedFilenames: string[] = []
   let keyImageUrl = payload.styleReferenceUrl
   let lastError: unknown
@@ -224,13 +233,17 @@ export async function generateAllMoodboardImages(
         promptOffset: i,
         keyImageUrl,
       })
+      const extraStyleRefs = [
+        ...projectStyleRefs,
+        ...(styleReferenceUrl ? [styleReferenceUrl] : []),
+      ]
       const generated = await generateMoodboardImage(
         providerConfig.provider,
         prompts[i],
         providerConfig.apiKey,
         providerConfig.modelId,
         i,
-        styleReferenceUrl,
+        extraStyleRefs,
       )
       await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_SAVING)
       generatedFilenames.push(await saveMoodboardImage(projectId, generated))

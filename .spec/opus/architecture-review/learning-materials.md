@@ -43,7 +43,7 @@ commits behind, so this work has not merged yet.
 | Package | Commits | What it did | The problem it solved |
 |---|---:|---|---|
 | **SPEC-12** | 2 | One validated environment module; nothing else reads `process.env` | Configuration was read from anywhere, unvalidated. A typo in a variable name failed at 3am in production instead of at startup. |
-| **SPEC-13** | 1 (+ ~8 related) | An AI gateway that records what every model call cost | You could not answer "what are we spending, and on what". LangChain was removed in the same arc. |
+| **SPEC-13** | 1 (+ ~8 related) | An AI gateway that records what every model call cost | You could not answer "what are we spending, and on what". The old message-class SDK was removed in the same arc. |
 | **SPEC-14** | 8 | A task factory: every background job declares a schema, a queue, and a nonce | Background jobs were defined ad hoc. Some could be submitted twice; some had no ownership check. |
 | **SPEC-15** | 1 | An evaluation gate that can refuse a regression | Quality was measured but nothing acted on the measurement. |
 | **SPEC-16** | 1 | Contracts: parse once at the edge, piloted on 3D Asset Exporter | Data from the database and the network was reconstructed by guesswork at every read site. |

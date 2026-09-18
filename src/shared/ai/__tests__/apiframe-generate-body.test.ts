@@ -7,6 +7,7 @@ import {
 } from '../apiframe-image-capacity'
 import {
   APIFRAME_FLUX_FILL_GUIDANCE,
+  APIFRAME_GENERATE_PROMPT_MAX_CHARS,
   ApiframeEditModel,
   ApiframeFluxFillMode,
   ApiframeGptImage2OutputFormat,
@@ -20,6 +21,11 @@ import {
   ApiframeUpscaleModel,
 } from '../utils/apiframe'
 import { recordFromJson } from '@/shared/data/deep-merge'
+import { StringSeparator } from '@/shared/data/constants/protocol'
+import {
+  GenerationPromptCopy,
+  TileImageRoleLabel,
+} from '@/shared/data/server/constants/generation-prompts'
 
 const API_KEY = 'afk_test'
 const PROMPT = 'a rainy harbour quay'
@@ -61,12 +67,11 @@ async function generateWith(model: ApiframeImageModel): Promise<Record<string, u
 }
 
 describe('Apiframe generate body', () => {
-  it('sends every Grok input URL under grokImagineParams.image', async () => {
+  it('sends the first Grok input URL as grokImagineParams.image string', async () => {
     const body = await generateWith(ApiframeImageModel.GrokImagineImage)
     const params = recordFromJson(body[ApiframeParamsKey.GrokImagine])
     expect(params.aspect_ratio).toBe(ASPECT_RATIO)
-    expect(params.image).toEqual([CONTEXT_URL, STYLE_URL])
-    expect(params.image).not.toBe(CONTEXT_URL)
+    expect(params.image).toBe(CONTEXT_URL)
   })
 
   it('sends the full URL array under nanoBananaParams.image_input', async () => {
@@ -127,7 +132,41 @@ describe('Apiframe generate body', () => {
       prompt: PROMPT,
       imageInputUrls,
     })
-    expect(recordFromJson(body[ApiframeParamsKey.GrokImagine]).image).toEqual(imageInputUrls)
+    expect(recordFromJson(body[ApiframeParamsKey.GrokImagine]).image).toBe(CONTEXT_URL)
+  })
+
+  it('clips a Grok generate prompt to the API max', () => {
+    const prompt = 'x'.repeat(APIFRAME_GENERATE_PROMPT_MAX_CHARS + 80)
+    const body = buildGenerateBody({
+      model: ApiframeImageModel.GrokImagineImage,
+      prompt,
+    })
+    expect(typeof body.prompt).toBe('string')
+    expect(String(body.prompt).length).toBe(APIFRAME_GENERATE_PROMPT_MAX_CHARS)
+  })
+
+  it('keeps a short Grok prompt unchanged', () => {
+    const body = buildGenerateBody({
+      model: ApiframeImageModel.GrokImagineImage,
+      prompt: PROMPT,
+    })
+    expect(body.prompt).toBe(PROMPT)
+  })
+
+  it('keeps the tile subject when packing copy blows past the API max', () => {
+    const packing = `${TileImageRoleLabel.Image} 1 is packing layout ${'seam '.repeat(500)}`
+    const subject =
+      `${GenerationPromptCopy.TileDescriptionDirectivePrefix} collapsed lighthouse on a shingle beach${GenerationPromptCopy.TileDescriptionDirectiveSuffix}`
+    const prompt = `${packing}${StringSeparator.DoubleNewline}${subject}`
+    expect(prompt.length).toBeGreaterThan(APIFRAME_GENERATE_PROMPT_MAX_CHARS)
+    expect(prompt.slice(0, APIFRAME_GENERATE_PROMPT_MAX_CHARS)).not.toContain('collapsed lighthouse')
+    const body = buildGenerateBody({
+      model: ApiframeImageModel.GrokImagineImage,
+      prompt,
+    })
+    const fitted = String(body.prompt)
+    expect(fitted.length).toBeLessThanOrEqual(APIFRAME_GENERATE_PROMPT_MAX_CHARS)
+    expect(fitted).toContain('collapsed lighthouse on a shingle beach')
   })
 
   it('rejects a sixth Grok input image', () => {

@@ -26,7 +26,7 @@ import { readString } from '@/shared/data/json-guards'
 import type { ProjectLike } from '@/domains/storyteller/state/queries/useStorytellerActions'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import { useGlobalStatusStore } from '@/shared/jobs/useGlobalStatusStore'
-import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
+import { getStorytellerUiStore, useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 
 export function useStorytellerPageBase() {
   const searchParams = useSearchParams()
@@ -127,8 +127,17 @@ export function useStorytellerPageBase() {
   >([])
   const [generatingSection, setGeneratingSection] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (!routeProjectId) return
+    setStoryPlan(null)
+    setStoryDecisions({})
+    setPrimaryMoodboardUrl(null)
+    getStorytellerUiStore().resetForProjectSwitch()
+  }, [routeProjectId])
+
   useStorytellerHydration({
     currentProject,
+    routeProjectId,
     setStoryPlan,
     setStoryDecisions,
   })

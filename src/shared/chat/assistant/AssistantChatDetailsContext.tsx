@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { AppModuleId } from '@/shared/data/constants/protocol'
 
-export const ASSISTANT_CHAT_SHOW_DETAILS_DEFAULT = true
+export const ASSISTANT_CHAT_SHOW_DETAILS_DEFAULT = false
 
 interface AssistantChatDetailsValue {
   showDetails: boolean

@@ -1,4 +1,4 @@
-import { AIMessage } from '@/shared/chat/core/message'
+import { assistantChatMessage, ChatMessageRole } from '@/shared/chat/core/message'
 import { buildCrossDomainContext } from '@/shared/agent-kernel/context/cross-domain-context'
 import { parseLoopAgentActionType } from '../../core/loop-agent-action-wire'
 import { parseNextAgent } from '../../core/graph/agent-nodes'
@@ -163,7 +163,9 @@ export function extractSupervisorReferenceGames(state: LoopCreatorState): {
   const referenceGames = [...(state.referenceGames || [])]
   let gameDescription = state.gameDescription
 
-  const lastUserMessage = [...state.messages].reverse().find(message => message._getType() === 'human')
+  const lastUserMessage = [...state.messages]
+    .reverse()
+    .find(message => message.role === ChatMessageRole.Human)
   if (!lastUserMessage) {
     return { referenceGames }
   }
@@ -208,10 +210,7 @@ export function buildSupervisorStateUpdate(
 
   if (parsed.message) {
     result.messages = [
-      new AIMessage({
-        content: parsed.message,
-        name: 'supervisor',
-      }),
+      assistantChatMessage(parsed.message, 'supervisor'),
     ]
   }
 

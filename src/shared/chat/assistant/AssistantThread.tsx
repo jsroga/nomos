@@ -5,7 +5,9 @@
  */
 
 import { ThreadPrimitive } from '@assistant-ui/react'
+import { Loader2 } from 'lucide-react'
 import './assistant-thread.css'
+import '@/shared/chat/ui/ChatChrome/chat-chrome.css'
 import type { AssistantMentionBundle } from './useAssistantMentions'
 import {
   ASSISTANT_THREAD_COPY,
@@ -27,6 +29,7 @@ interface AssistantThreadProps {
   composerEnabled?: boolean
   onBeforeSend?: (text: string) => boolean
   moduleKey?: string
+  hydrating?: boolean
 }
 
 export function AssistantThread({
@@ -38,6 +41,7 @@ export function AssistantThread({
   composerEnabled = true,
   onBeforeSend,
   moduleKey,
+  hydrating = false,
 }: AssistantThreadProps) {
   return (
     <AssistantChatDetailsProvider moduleKey={moduleKey}>
@@ -46,6 +50,13 @@ export function AssistantThread({
 
         <ThreadPrimitive.Viewport className="aui-thread">
           <div className="aui-thread-col">
+            {hydrating ? (
+              <div className="aui-empty" role="status" aria-live="polite">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <span className="aui-empty-hint">{ASSISTANT_THREAD_COPY.LoadingHistory}</span>
+              </div>
+            ) : (
+              <>
             <ThreadPrimitive.Empty>
               <div className="aui-empty">
                 <span className="aui-empty-hint">{ASSISTANT_THREAD_COPY.EmptyHint}</span>
@@ -70,6 +81,8 @@ export function AssistantThread({
             <ThreadRunningPlaceholder />
 
             <ThreadPrimitive.ScrollToBottom className="aui-scroll-bottom">↓</ThreadPrimitive.ScrollToBottom>
+              </>
+            )}
           </div>
         </ThreadPrimitive.Viewport>
 

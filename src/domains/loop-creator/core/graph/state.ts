@@ -2,10 +2,9 @@
  * Loop Creator State
  *
  * State definition for the game loop creator multi-agent system.
- * Based on LangChain/LangGraph 2025 patterns.
  */
 
-import { BaseMessage, HumanMessage } from '@/shared/chat/core/message'
+import { type ChatMessage, userChatMessage } from '@/shared/chat/core/message'
 import type { ProjectScope } from '@/shared/auth/project-scope'
 import type { MarketAnalysisReport } from '@/domains/loop-creator/ai/agents/market-analyst/types'
 import {
@@ -249,7 +248,7 @@ export interface LoopCreatorState {
   sessionId: string
 
   // Conversation
-  messages: BaseMessage[]
+  messages: ChatMessage[]
 
   // Current phase and routing
   currentPhase: LoopCreatorPhase
@@ -357,7 +356,7 @@ export function createInitialLoopState(
   return {
     scope,
     sessionId: `loop-${Date.now()}`,
-    messages: [new HumanMessage(message)],
+    messages: [userChatMessage(message)],
     currentPhase: LOOP_CREATOR_PHASE_INITIAL,
     nextAgent: NEXT_AGENT_SUPERVISOR,
     lastAgent: null,

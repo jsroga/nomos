@@ -8,7 +8,7 @@
  * - Connecting progression to core loops
  */
 
-import { AIMessage } from '@/shared/chat/core/message'
+import { assistantChatMessage, ChatMessageRole } from '@/shared/chat/core/message'
 import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import { ProgressionArchitectOutputSchema } from './schemas/progression-architect-output'
@@ -196,7 +196,7 @@ export async function progressionArchitectAgent(
   state: LoopCreatorState
 ): Promise<Partial<LoopCreatorState>> {
   // Get the task
-  const lastHumanMsg = [...state.messages].reverse().find(m => m._getType() === 'human')
+  const lastHumanMsg = [...state.messages].reverse().find(m => m.role === ChatMessageRole.Human)
   const task = lastHumanMsg
     ? typeof lastHumanMsg.content === 'string'
       ? lastHumanMsg.content
@@ -260,10 +260,7 @@ export async function progressionArchitectAgent(
     pendingActions: actions,
     nextAgent: 'supervisor',
     messages: [
-      new AIMessage({
-        content: userMessage,
-        name: 'progression_architect',
-      }),
+      assistantChatMessage(userMessage, 'progression_architect'),
     ],
   }
 }

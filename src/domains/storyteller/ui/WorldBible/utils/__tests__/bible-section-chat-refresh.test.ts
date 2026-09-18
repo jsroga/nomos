@@ -13,6 +13,7 @@ import {
 describe('requestBibleSectionChatRefresh', () => {
   beforeEach(() => {
     getStorytellerUiStore().clearPendingChatPrompt()
+    getStorytellerUiStore().clearGenerationActivity()
     getStorytellerUiStore().resetConsistencyFixRun()
     useWorkspaceChatUiStore.setState({
       overlayOpen: false,
@@ -49,6 +50,20 @@ describe('requestBibleSectionChatRefresh', () => {
       lookupPromptBody(StorytellerPromptRegistryId.BibleSoundtracksGenerate)
     )
   })
+
+  it('refuses to queue while the Writers Room turn is already busy', () => {
+    getStorytellerUiStore().setGenerationActivity({
+      phase: GenerationActivityPhase.Streaming,
+      label: 'Writers Room agent is thinking…',
+    })
+    expect(
+      requestBibleSectionChatRefresh({
+        section: BibleSection.WORLD_DESCRIPTION,
+        promptId: StorytellerPromptRegistryId.WorldDescriptionRegen,
+      })
+    ).toBe(false)
+    expect(getStorytellerUiStore().pendingChatPrompt).toBeNull()
+  })
 })
 
 describe('isBibleSectionRefreshDisabled', () => {
@@ -72,6 +87,14 @@ describe('isBibleSectionRefreshDisabled', () => {
         isLoading: true,
         generationPhase: GenerationActivityPhase.Idle,
         pendingChatPrompt: null,
+      })
+    ).toBe(true)
+    expect(
+      isBibleSectionRefreshDisabled({
+        isLoading: false,
+        generationPhase: GenerationActivityPhase.Idle,
+        pendingChatPrompt: null,
+        overlayBusy: true,
       })
     ).toBe(true)
     expect(

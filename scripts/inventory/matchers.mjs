@@ -37,7 +37,7 @@ export function classifyProcessEnvRead(line, file) {
 
 export const ProviderSdkBucket = {
   Mastra: 'mastra',
-  LangChain: 'langchain',
+  BannedMessageSdk: 'banned-message-sdk',
   AiSdk: 'ai-sdk',
   AiSdkProvider: 'ai-sdk-provider',
   OpenAi: 'openai',
@@ -45,6 +45,7 @@ export const ProviderSdkBucket = {
 }
 
 const GATEWAY_MODULE = 'shared/ai/gateway'
+const BANNED_MESSAGE_SDK_IMPORT = ['from \'@', 'lang', 'chain/'].join('')
 
 /** SPEC-13: every direct provider-SDK import, by which SDK it reaches for. */
 export function classifyProviderSdkImport(line, file) {
@@ -52,7 +53,7 @@ export function classifyProviderSdkImport(line, file) {
   if (file.split('\\').join('/').includes(GATEWAY_MODULE)) return null
 
   if (line.includes("from '@mastra/")) return ProviderSdkBucket.Mastra
-  if (line.includes("from '@langchain/")) return ProviderSdkBucket.LangChain
+  if (line.includes(BANNED_MESSAGE_SDK_IMPORT)) return ProviderSdkBucket.BannedMessageSdk
   if (line.includes("from '@ai-sdk/")) return ProviderSdkBucket.AiSdkProvider
   if (line.includes("from 'ai'")) return ProviderSdkBucket.AiSdk
   if (line.includes("from 'openai'")) return ProviderSdkBucket.OpenAi

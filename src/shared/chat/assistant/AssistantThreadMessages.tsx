@@ -13,7 +13,6 @@ import {
   Plus,
   RefreshCw,
   ScrollText,
-  Brain,
   Sparkles,
   // ThumbsUp,
   User,
@@ -21,10 +20,7 @@ import {
   Waves,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type {
-  ReasoningMessagePartComponent,
-  TextMessagePartComponent,
-} from '@assistant-ui/react'
+import type { TextMessagePartComponent } from '@assistant-ui/react'
 import {
   ActionBarPrimitive,
   MessagePrimitive,
@@ -35,11 +31,11 @@ import {
 import { Button } from '@/components/Button'
 import { useChatRenderers } from '../core/renderers'
 import { AssistantToolFallback } from './AssistantToolFallback'
+import { AssistantReasoningPart } from './AssistantReasoningPart'
+import { ChatUserBubble } from '@/shared/chat/ui/ChatChrome'
 import { useAssistantAddToWorld } from './AssistantAddToWorldContext'
-import { useAssistantChatDetails } from './AssistantChatDetailsContext'
 import { useAssistantChatActions } from './AssistantChatActionsContext'
 import { addToWorldButtonVisible } from './add-to-world-visibility'
-import { lastReasoningActivityLine } from './derive-assistant-generation-activity'
 import { ThinkingIndicator } from './AssistantThinkingIndicator'
 import {
   createAssistantToolsFailedSelector,
@@ -56,7 +52,6 @@ import {
   ASSISTANT_THREAD_COPY,
   CHAT_ENTITY_KIND_STYLE,
   ChatEntityKind,
-  ChatMessageStatus,
   parseAssistantEntities,
   type ParsedChatEntity,
 } from '../core/utils/assistant-thread-ui'
@@ -132,43 +127,9 @@ const UserPlainText: TextMessagePartComponent = ({ text }) => (
   <p>{text}</p>
 )
 
-/**
- * Streamed model thinking. assistant-ui's default Reasoning component renders
- * `null`, so without this the reasoning frames arrive and vanish — which is the
- * whole reason a turn could look frozen for a minute.
- */
-const AssistantReasoning: ReasoningMessagePartComponent = ({ text, status }) => {
-  const { showDetails } = useAssistantChatDetails()
-  const [open, setOpen] = useState(false)
-  const streaming = status?.type === ChatMessageStatus.Running
-  const body = text.trim()
-  const showFull = showDetails || open
-  const peek = lastReasoningActivityLine(body) ?? body.slice(-REASONING_PEEK_CHARS)
-  if (!body) return null
-
-  return (
-    <div className={streaming ? 'aui-reasoning aui-reasoning--live' : 'aui-reasoning'}>
-      <button
-        type="button"
-        className="aui-reasoning-toggle"
-        aria-expanded={showFull}
-        onClick={() => setOpen(value => !value)}
-      >
-        <Brain size={12} aria-hidden />
-        {streaming ? ASSISTANT_THREAD_COPY.ReasoningLive : ASSISTANT_THREAD_COPY.ReasoningDone}
-      </button>
-      <p className={showFull ? 'aui-reasoning-text' : 'aui-reasoning-text aui-reasoning-text--peek'}>
-        {showFull ? body : peek}
-      </p>
-    </div>
-  )
-}
-
-const REASONING_PEEK_CHARS = 240
-
 const ASSISTANT_PART_COMPONENTS = {
   Text: AssistantMarkdownText,
-  Reasoning: AssistantReasoning,
+  Reasoning: AssistantReasoningPart,
   tools: { Fallback: AssistantToolFallback },
 }
 
@@ -276,11 +237,13 @@ function AddToWorldButton() {
 }
 
 export function UserMessage() {
+  const isLastSelector = useMemo(() => (m: { isLast: boolean }) => m.isLast, [])
+  const isLast = useMessage(isLastSelector)
   return (
-    <MessagePrimitive.Root className="aui-user-row">
-      <div className="aui-user-bubble">
+    <MessagePrimitive.Root>
+      <ChatUserBubble current={isLast}>
         <MessagePrimitive.Parts components={USER_PART_COMPONENTS} />
-      </div>
+      </ChatUserBubble>
     </MessagePrimitive.Root>
   )
 }

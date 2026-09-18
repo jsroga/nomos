@@ -1,9 +1,9 @@
 import { RefreshCw } from 'lucide-react'
 import { EpisodePremise } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
-import { Button } from '@/components/Button'
 import { Skeleton } from '@/components/Skeleton'
 import { cn } from '@/shared/data/utils'
 import { RichText } from '../../RichText'
+import { StorytellerRefreshButton, storytellerRegenerateLabel } from '@/domains/storyteller/ui/StorytellerRefreshButton'
 import {
   EpisodePremiseSectionKey,
   OzymandiasFieldKey,
@@ -139,16 +139,12 @@ export function OzymandiasSection({
           <Icon className="w-3.5 h-3.5" /> {config.label}
         </span>
         {!isEditing && onGenerateSection && (
-          <Button
-            size="icon"
-            variant="ghost"
-            className={cn('h-7 w-7 rounded-md text-muted-foreground', ozymandiasHoverClass(config.tone))}
+          <StorytellerRefreshButton
             onClick={() => onGenerateSection(config.key)}
-            disabled={isGenerating}
-            title={`Regenerate ${config.label}`}
-          >
-            <RefreshCw className={isGeneratingThis ? 'w-3.5 h-3.5 animate-spin' : 'w-3.5 h-3.5'} />
-          </Button>
+            idleLabel={storytellerRegenerateLabel(config.label)}
+            extraDisabled={isGenerating}
+            className={ozymandiasHoverClass(config.tone)}
+          />
         )}
       </div>
 

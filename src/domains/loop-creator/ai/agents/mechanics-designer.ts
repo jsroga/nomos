@@ -7,7 +7,7 @@
  * - Examples from reference games
  */
 
-import { AIMessage } from '@/shared/chat/core/message'
+import { assistantChatMessage } from '@/shared/chat/core/message'
 import { LoopCreatorState } from '../../core/graph/state'
 import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
@@ -72,13 +72,12 @@ export async function mechanicsDesignerAgent(
     pendingActions: actions,
     nextAgent: MECHANICS_DESIGNER_NEXT_AGENT,
     messages: [
-      new AIMessage({
-        content:
-          (parsed.message ||
-            `Created ${parsed.mechanics.length} mechanics with ${parsed.connections.length} connections.`) +
+      assistantChatMessage(
+        (parsed.message ||
+          `Created ${parsed.mechanics.length} mechanics with ${parsed.connections.length} connections.`) +
           evaluationNote,
-        name: MechanicsDesignerAgentName.MechanicsDesigner,
-      }),
+        MechanicsDesignerAgentName.MechanicsDesigner,
+      ),
     ],
   }
 }

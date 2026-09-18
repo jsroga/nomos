@@ -7,6 +7,7 @@ import path from 'path'
 import { getErrorMessage } from '@/shared/errors/error-utils'
 import { FsDirectory } from '@/shared/data/constants/protocol'
 import { generateApiframeSurfaceImage } from '@/shared/ai/generate-apiframe-surface-image'
+import { fetchProjectStyleReferenceUrls } from './utils/project-style-reference-urls'
 import {
   ApiframeGenerateAspectRatio,
   ApiframeImageModel,
@@ -46,11 +47,13 @@ export const generateEpisodePoster = defineOwnedTask({
       await metadata.set('stage', 'generating_image')
       const enhancedPrompt = posterPromptForModel(prompt, model)
 
+      const styleReferenceUrls = await fetchProjectStyleReferenceUrls(projectId)
       const generated = await generateApiframeSurfaceImage({
         model,
         prompt: enhancedPrompt,
         apiKey,
         aspectRatio: ApiframeGenerateAspectRatio.PortraitTwoThree,
+        styleReferenceUrls,
       })
 
       await metadata.set('stage', 'saving_image')

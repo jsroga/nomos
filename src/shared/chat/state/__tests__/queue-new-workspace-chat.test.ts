@@ -43,6 +43,7 @@ describe('queueNewWorkspaceChat', () => {
       queuedSend: null,
       focusedSessionModuleId: null,
       mismatchDialog: null,
+      draftSession: null,
     })
     vi.mocked(createChatSession).mockReset()
     vi.mocked(createChatSession).mockResolvedValue(session())
@@ -68,5 +69,6 @@ describe('queueNewWorkspaceChat', () => {
     expect(ui.focusedSessionModuleId).toBe(AppModuleId.LoopCreator)
     expect(ui.queuedSend).toMatchObject({ sessionId: SESSION_ID, text: PROMPT })
     expect(ui.overlayOpen).toBe(true)
+    expect(ui.draftSession).toBeNull()
   })
 })

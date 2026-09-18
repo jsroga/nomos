@@ -10,6 +10,7 @@ import { Trash2, FileText, Plus, Edit2 } from 'lucide-react'
 import { ScrollArea } from '@/components/ScrollArea'
 import { ConfirmDialogVariant, useConfirmDialog } from '@/components/ConfirmDialog'
 import { Input } from '@/components/Input'
+import { HtmlElementType } from '@/shared/data/constants/protocol'
 import {
   Dialog,
   DialogContent,
@@ -198,31 +199,43 @@ export const DesignManager: React.FC = () => {
       {/* Scene Name Dialog */}
       <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
+          <form
+            onSubmit={event => {
+              event.preventDefault()
+              void handleSaveScene()
+            }}
+          >
           <DialogHeader>
-            <DialogTitle>{editingDesignId ? 'Rename Scene' : 'New Scene'}</DialogTitle>
+            <DialogTitle>
+              {editingDesignId ? DesignManagerCopy.RenameSceneTitle : DesignManagerCopy.NewScene}
+            </DialogTitle>
             <DialogDescription>
               {editingDesignId
-                ? 'Enter a new name for the scene.'
-                : 'Enter a name for your new scene.'}
+                ? DesignManagerCopy.RenameSceneDescription
+                : DesignManagerCopy.NewSceneDescription}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
               value={newSceneName}
               onChange={e => setNewSceneName(e.target.value)}
-              placeholder="Scene name"
-              onKeyDown={e => {
-                if (e.key === 'Enter') handleSaveScene()
-              }}
+              placeholder={DesignManagerCopy.SceneNamePlaceholder}
               autoFocus
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNameDialogOpen(false)}>
-              Cancel
+            <Button
+              type={HtmlElementType.Button}
+              variant="outline"
+              onClick={() => setIsNameDialogOpen(false)}
+            >
+              {CONFIRM_DIALOG_CANCEL_LABEL}
             </Button>
-            <Button onClick={handleSaveScene}>{editingDesignId ? 'Save' : 'Create'}</Button>
+            <Button type={HtmlElementType.Submit}>
+              {editingDesignId ? DesignManagerCopy.SaveLabel : DesignManagerCopy.CreateLabel}
+            </Button>
           </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

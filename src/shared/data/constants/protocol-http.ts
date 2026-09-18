@@ -192,6 +192,7 @@ export enum DomTagName {
 
 export enum HtmlElementType {
   Button = 'button',
+  Submit = 'submit',
 }
 
 export enum StringSeparator {

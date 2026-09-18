@@ -31,6 +31,7 @@ import {
   PORTRAIT_LLM_TASK,
   buildPortraitMidjourneyPrompt,
 } from './utils/generate-portrait-wire'
+import { fetchProjectStyleReferenceUrls } from './utils/project-style-reference-urls'
 
 export interface GeneratedSelectedMjImage {
   imageUrl: string
@@ -192,8 +193,9 @@ export async function generateSelectedPortraitImage(
   apiKey: string,
   projectId: string,
 ): Promise<GeneratedSelectedMjImage> {
+  const styleReferenceUrls = await fetchProjectStyleReferenceUrls(projectId)
   return generateSelectedMjImage({
-    prompt: buildPortraitMidjourneyPrompt(prompt),
+    prompt: buildPortraitMidjourneyPrompt(prompt, styleReferenceUrls),
     subject: prompt,
     apiKey,
     aspectRatio: ApiframeGenerateAspectRatio.Square,

@@ -19,6 +19,7 @@ import {
   omitVacantSoundtrackInspirations,
 } from '@/domains/storyteller/core/utils/bible-populated-fields'
 import { hydrationSignatureOf } from '@/domains/storyteller/state/utils/hydration-signature'
+import { shouldHydrateStorytellerProject } from '@/domains/storyteller/state/utils/episode-param-for-project'
 import {
   HYDRATION_BIBLE_CATEGORIES,
   HYDRATION_PLAN_FIELDS,
@@ -33,6 +34,7 @@ interface HydratableProject {
 
 interface HydrationParams {
   currentProject: HydratableProject | null | undefined
+  routeProjectId: string | undefined
   setStoryPlan: React.Dispatch<React.SetStateAction<StoryPlan | null>>
   setStoryDecisions: React.Dispatch<React.SetStateAction<Record<string, string>>>
 }
@@ -71,6 +73,7 @@ function dedupeWorldRules(rules: unknown): unknown[] {
 
 export function useStorytellerHydration({
   currentProject,
+  routeProjectId,
   setStoryPlan,
   setStoryDecisions,
 }: HydrationParams) {
@@ -80,6 +83,14 @@ export function useStorytellerHydration({
   )
 
   useEffect(() => {
+    if (
+      !shouldHydrateStorytellerProject({
+        routeProjectId,
+        currentProjectId: currentProject?.id,
+      })
+    ) {
+      return
+    }
     if (!hydrationSignature || !currentProject?.id) return
 
     const bible = parseSeriesBibleRecord(currentProject.series_bible)
@@ -132,13 +143,13 @@ export function useStorytellerHydration({
       initialPlan.worldRules = dedupeWorldRules(initialPlan.worldRules)
     }
 
-    setStoryPlan(prev =>
-      applyUpdatesToStoryPlan(prev, omitVacantSoundtrackInspirations(initialPlan)),
+    setStoryPlan(() =>
+      applyUpdatesToStoryPlan<StoryPlan>(null, omitVacantSoundtrackInspirations(initialPlan)),
     )
     console.log(StorytellerHydrationLog.HydratedKeys, Object.keys(initialPlan))
     console.log(
       StorytellerHydrationLog.WorldRulesCount,
       recordArrayFromJson(initialPlan.worldRules).length
     )
-  }, [currentProject, hydrationSignature, setStoryDecisions, setStoryPlan])
+  }, [currentProject, hydrationSignature, routeProjectId, setStoryDecisions, setStoryPlan])
 }

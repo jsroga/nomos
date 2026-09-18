@@ -1,7 +1,10 @@
 import React, { useState } from 'react'
 import { Scroll, FileText } from 'lucide-react'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
-import { getRandomWorldPromptIdea } from '@/shared/data/utils/worldPromptIdeas'
+import {
+  getRandomWorldPromptIdea,
+  nextWorldPromptIdeaImages,
+} from '@/shared/data/utils/worldPromptIdeas'
 import { cn } from '@/shared/data/utils'
 import {
   MasterPromptField,
@@ -22,6 +25,7 @@ interface MasterPromptEditorProps {
   initialPrompt: string
   onSave: (prompt: string) => void
   surface?: `${MasterPromptSurface}`
+  onAcceptStyleImages?: (urls: string[]) => void
 }
 
 export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
@@ -30,8 +34,10 @@ export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
   initialPrompt,
   onSave,
   surface = MasterPromptSurface.Sidebar,
+  onAcceptStyleImages,
 }) => {
   const [suggestedIdea, setSuggestedIdea] = useState<string | null>(null)
+  const [suggestedImages, setSuggestedImages] = useState<string[]>([])
   const { prompt, handleChange, persistNow } = useMasterPromptAutosave(
     initialPrompt,
     hydrateKey,
@@ -40,12 +46,15 @@ export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
 
   const handleSuggestIdea = () => {
     setSuggestedIdea(getRandomWorldPromptIdea())
+    setSuggestedImages(nextWorldPromptIdeaImages())
   }
 
   const handleAcceptIdea = () => {
     if (!suggestedIdea) return
     persistNow(suggestedIdea)
+    if (suggestedImages.length > 0) onAcceptStyleImages?.(suggestedImages)
     setSuggestedIdea(null)
+    setSuggestedImages([])
   }
 
   const isPage = surface === MasterPromptSurface.Page
@@ -69,8 +78,12 @@ export const MasterPromptEditor: React.FC<MasterPromptEditorProps> = ({
         suggestedIdea ? (
           <MasterPromptSuggestion
             idea={suggestedIdea}
+            images={suggestedImages}
             onAccept={handleAcceptIdea}
-            onReject={() => setSuggestedIdea(null)}
+            onReject={() => {
+              setSuggestedIdea(null)
+              setSuggestedImages([])
+            }}
             onNext={handleSuggestIdea}
           />
         ) : undefined

@@ -177,6 +177,7 @@ function AssistantChatBody({
   composerEnabled,
   onBeforeSend,
   moduleKey,
+  hydrating = false,
 }: {
   suggestions: readonly string[]
   mentionProviders?: readonly MentionProvider[]
@@ -187,6 +188,7 @@ function AssistantChatBody({
   composerEnabled: boolean
   onBeforeSend?: (text: string) => boolean
   moduleKey?: string
+  hydrating?: boolean
 }) {
   const mentions = useAssistantMentions(
     mentionProviders ?? EMPTY_PROVIDERS,
@@ -204,6 +206,7 @@ function AssistantChatBody({
       composerEnabled={composerEnabled}
       onBeforeSend={onBeforeSend}
       moduleKey={moduleKey}
+      hydrating={hydrating}
     />
   )
 }
@@ -307,7 +310,7 @@ export function AssistantChat({
     errorRef.current = chat.error
   }, [chat.sendMessage, chat.stop, chat.regenerate, chat.status, chat.messages, chat.error])
 
-  useOverlayChatHydration({
+  const overlayHydrating = useOverlayChatHydration({
     overlaySessionId,
     setMessages: chat.setMessages,
     messagesRef,
@@ -454,6 +457,7 @@ export function AssistantChat({
         composerEnabled={composerEnabled}
         onBeforeSend={onBeforeSend}
         moduleKey={moduleKey}
+        hydrating={overlayHydrating}
       />
     </AssistantAddToWorldProvider>
   )

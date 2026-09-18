@@ -22,6 +22,7 @@ import {
 } from '@/components/Dialog'
 import { Input } from '@/components/Input'
 import { Textarea } from '@/components/Textarea'
+import { HtmlElementType } from '@/shared/data/constants/protocol'
 import { workspaceHrefForProject } from './workspace-project-href'
 import {
   DefaultWorkspaceModule,
@@ -42,6 +43,7 @@ export function ProjectSelectorDropdown() {
   const pathname = usePathname()
 
   const [isCreating, setIsCreating] = useState(false)
+  const [isCreatePending, setIsCreatePending] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectPrompt, setNewProjectPrompt] = useState('')
 
@@ -62,14 +64,18 @@ export function ProjectSelectorDropdown() {
   }
 
   const handleCreate = async () => {
-    if (!newProjectName) return
-    const id = await createProject(newProjectName, newProjectPrompt)
-    if (id) {
-      setIsCreating(false)
-      setNewProjectName('')
-      setNewProjectPrompt('')
-      // Navigate to the new project with bible open
-      router.push(`/${id}/${DefaultWorkspaceModule.Storyteller}`)
+    if (!newProjectName || isCreatePending) return
+    setIsCreatePending(true)
+    try {
+      const id = await createProject(newProjectName, newProjectPrompt)
+      if (id) {
+        setIsCreating(false)
+        setNewProjectName('')
+        setNewProjectPrompt('')
+        router.push(`/${id}/${DefaultWorkspaceModule.Storyteller}`)
+      }
+    } finally {
+      setIsCreatePending(false)
     }
   }
 
@@ -128,6 +134,12 @@ export function ProjectSelectorDropdown() {
 
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
         <DialogContent>
+          <form
+            onSubmit={event => {
+              event.preventDefault()
+              void handleCreate()
+            }}
+          >
           <DialogHeader>
             <DialogTitle>{PROJECT_SELECTOR_DIALOG_TITLE}</DialogTitle>
           </DialogHeader>
@@ -151,13 +163,22 @@ export function ProjectSelectorDropdown() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreating(false)}>
+            <Button
+              type={HtmlElementType.Button}
+              variant="outline"
+              onClick={() => setIsCreating(false)}
+            >
               {PROJECT_SELECTOR_CANCEL_LABEL}
             </Button>
-            <Button onClick={handleCreate} disabled={!newProjectName}>
+            <Button
+              type={HtmlElementType.Submit}
+              disabled={!newProjectName}
+              loading={isCreatePending}
+            >
               {PROJECT_SELECTOR_CREATE_BUTTON}
             </Button>
           </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>

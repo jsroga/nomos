@@ -10,6 +10,7 @@ import { StorytellerEpisodeHeader } from './StorytellerEpisodeHeader'
 import { StorytellerActiveTabContent } from './StorytellerActiveTabContent'
 import { storytellerAdvanceablePhase } from '@/domains/storyteller/state/utils/resolve-storyteller-phase-click'
 import { StorytellerHeaderClass } from '../constants/storyteller-module-header'
+import { ManuscriptMode } from '@/domains/storyteller/core/types/enums'
 
 export function StorytellerCenterPanel(props: StorytellerPageSlices) {
   const { core, phase, agents } = props
@@ -31,6 +32,8 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
     loadingSections,
     setLoadingSections,
     setWorldBibleOpen,
+    currentEpisode,
+    activeTab,
   } = core
   const { handleDraftFirstEpisode, handleGenerateBible, handlePhaseChange } =
     phase
@@ -80,6 +83,8 @@ export function StorytellerCenterPanel(props: StorytellerPageSlices) {
         isSending={isSending}
         hasEpisodes={hasEpisodes}
         isWorldBibleOpen={isWorldBibleOpen}
+        activeTab={activeTab}
+        manuscriptMode={currentEpisode?.manuscriptMode ?? ManuscriptMode.Script}
         handlePhaseChange={handlePhaseChange}
         advanceablePhase={storytellerAdvanceablePhase({
           currentPhase,

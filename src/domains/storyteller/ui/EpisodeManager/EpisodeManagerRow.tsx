@@ -2,8 +2,7 @@
 
 import { Check, Edit2, Trash2 } from 'lucide-react'
 import { Button } from '@/components/Button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/Tooltip'
-import { KeyboardKey } from '@/shared/data/constants/protocol'
+import { KeyboardKey, HtmlElementType } from '@/shared/data/constants/protocol'
 import { cn } from '@/shared/data/utils'
 import {
   EPISODE_MANAGER_DELETE_TOOLTIP,
@@ -108,46 +107,36 @@ export function EpisodeManagerRow({
             : EpisodeManagerRowClass.ActionsIdle
         )}
       >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-6 w-6 p-0"
-              onClick={e => {
-                e.stopPropagation()
-                if (editingId === episode.id) {
-                  void onRename(episode.id, draftTitle)
-                  return
-                }
-                onStartRename(episode.id, episode.title)
-              }}
-            >
-              {actionMode === EpisodeTitleActionMode.Save ? <Check size={12} /> : <Edit2 size={12} />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{episodeTitleActionLabel(actionMode)}</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 w-6 p-0 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-              onClick={e => {
-                e.stopPropagation()
-                onDelete(episode.id, episode.title)
-              }}
-            >
-              <Trash2 size={12} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{EPISODE_MANAGER_DELETE_TOOLTIP}</p>
-          </TooltipContent>
-        </Tooltip>
+        <Button
+          type={HtmlElementType.Button}
+          size="sm"
+          variant="outline"
+          className="h-6 w-6 p-0"
+          aria-label={episodeTitleActionLabel(actionMode)}
+          onClick={e => {
+            e.stopPropagation()
+            if (editingId === episode.id) {
+              void onRename(episode.id, draftTitle)
+              return
+            }
+            onStartRename(episode.id, episode.title)
+          }}
+        >
+          {actionMode === EpisodeTitleActionMode.Save ? <Check size={12} /> : <Edit2 size={12} />}
+        </Button>
+        <Button
+          type={HtmlElementType.Button}
+          size="sm"
+          variant="ghost"
+          className="h-6 w-6 p-0 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+          aria-label={EPISODE_MANAGER_DELETE_TOOLTIP}
+          onClick={e => {
+            e.stopPropagation()
+            onDelete(episode.id, episode.title)
+          }}
+        >
+          <Trash2 size={12} />
+        </Button>
       </div>
     </div>
   )

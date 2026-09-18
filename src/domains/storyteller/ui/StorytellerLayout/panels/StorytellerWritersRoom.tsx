@@ -46,6 +46,7 @@ import {
   omitSectionKey,
   proposalsFromCompletedToolCall,
   extraPendingSectionsMessage,
+  chooseBibleProposalsForReview,
   pendingBeatArgsFromToolCalls,
   isBeatCreateToolArgs,
   isCharacterDraftAddToWorldTurn,
@@ -116,6 +117,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
   }, [clearPendingChatPrompt, pendingChatPrompt?.message, pendingChatPrompt?.section])
 
   const handleStreamIdle = useCallback(() => {
+    if (getStorytellerUiStore().pendingChatPrompt) return
     requestedSectionRef.current = undefined
     answeredSectionRef.current = undefined
     requestedPremiseFieldRef.current = undefined
@@ -308,10 +310,16 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
             requestedSectionRef.current,
           ).map(proposal => narrowEpisodePremiseProposal(proposal, premiseField))
 
-          proposals.forEach((proposal, index) => {
+          const toApply = await chooseBibleProposalsForReview({
+            proposals,
+            requestedSection: requestedSectionRef.current,
+            confirm,
+          })
+
+          toApply.forEach((proposal, index) => {
             applyBibleProposal(proposal, index === 0)
           })
-          const extrasMessage = extraPendingSectionsMessage(proposals)
+          const extrasMessage = extraPendingSectionsMessage(toApply)
           if (extrasMessage) toast.message(extrasMessage)
         }
         const beatArgs = pendingBeatArgsFromToolCalls(calls)
@@ -322,6 +330,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
     },
     [
       applyBibleProposal,
+      confirm,
       currentEpisodeId,
       projectId,
       queryClient,
@@ -338,6 +347,7 @@ export function StorytellerWritersRoom(props: StorytellerPageSlices) {
     (activity: AssistantGenerationActivity) => {
       const phase = mapAssistantPhase(activity.phase)
       if (phase === GenerationActivityPhase.Idle) {
+        if (getStorytellerUiStore().pendingChatPrompt) return
         clearGenerationActivity()
         setLoadingSections({})
         return

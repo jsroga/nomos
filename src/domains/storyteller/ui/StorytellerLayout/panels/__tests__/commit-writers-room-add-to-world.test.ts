@@ -210,6 +210,45 @@ describe('commitWritersRoomAddToWorld', () => {
     expect(toastSuccess).not.toHaveBeenCalled()
   })
 
+  it('commits a single expected soundtrack without a confirm', async () => {
+    const input = commitInput({
+      answeredSection: BibleSection.SOUNDTRACKS,
+      payload: {
+        text: '',
+        toolArgs: [
+          {
+            soundtracks: [
+              {
+                title: 'Theme',
+                artist: 'Ward',
+                youtubeUrl: 'https://youtu.be/M6W4uhrLA7g',
+              },
+            ],
+          },
+        ],
+      },
+    })
+
+    const committed = await commitWritersRoomAddToWorld(input)
+
+    expect(committed).toBe(true)
+    expect(input.confirm).not.toHaveBeenCalled()
+    expect(input.executeAction).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not ask before a single bible section', async () => {
+    const input = commitInput({
+      payload: {
+        text: '',
+        toolArgs: [{ worldDescription: OVERVIEW }],
+      },
+    })
+
+    await commitWritersRoomAddToWorld(input)
+
+    expect(input.confirm).not.toHaveBeenCalled()
+  })
+
   it('opens the plan tab when committing episode premise', async () => {
     const input = commitInput({
       payload: {

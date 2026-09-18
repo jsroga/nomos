@@ -1,28 +1,24 @@
 'use client'
 
-/**
- * Generic tool-call renderer for the assistant-ui Thread (B2). Makes agent tool
- * activity visible (name · args · result) — the parity replacement for the old
- * agent-log — and renders Approve/Deny when a tool call requires human approval
- * (`status.type === 'requires-action'`), driving Mastra's native tool-approval
- * resume through `respondToApproval`.
- */
-
+import { useMemo, useState } from 'react'
 import type { ToolCallMessagePartComponent } from '@assistant-ui/react'
+import { useMessage } from '@assistant-ui/react'
+import { HtmlElementType } from '@/shared/data/constants/protocol'
+import { ChatActivityLine, ChatChromeStack, ChatToolCard } from '@/shared/chat/ui/ChatChrome'
+import {
+  CHAT_CHROME_COPY,
+  formatToolDebugLabel,
+  formatToolsCalledLabel,
+  toolCardBodyMessage,
+  uniqueToolNames,
+} from '@/shared/chat/core/utils/chat-chrome'
+import { compactToolAckMessage } from './compact-tool-ack'
 import { useAssistantChatDetails } from './AssistantChatDetailsContext'
+import { createToolNamesSnapshotSelector } from './tool-args-from-assistant-content'
 
 enum ToolPartStatusType {
   RequiresAction = 'requires-action',
   Running = 'running',
-  Incomplete = 'incomplete',
-  Complete = 'complete',
-}
-
-enum ToolPartStatusLabel {
-  Running = 'running',
-  Incomplete = 'incomplete',
-  Complete = 'done',
-  NeedsApproval = 'needs approval',
 }
 
 const APPROVE_LABEL = 'Approve'
@@ -32,19 +28,11 @@ function stringify(value: unknown): string {
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2)
 }
 
-function statusLabel(type: string): string {
-  switch (type) {
-    case ToolPartStatusType.Running:
-      return ToolPartStatusLabel.Running
-    case ToolPartStatusType.Incomplete:
-      return ToolPartStatusLabel.Incomplete
-    case ToolPartStatusType.Complete:
-      return ToolPartStatusLabel.Complete
-    case ToolPartStatusType.RequiresAction:
-      return ToolPartStatusLabel.NeedsApproval
-    default:
-      return type
-  }
+function debugDump(args: unknown, result: unknown): string {
+  const parts: string[] = []
+  if (args != null) parts.push(stringify(args))
+  if (result != null) parts.push(stringify(result))
+  return parts.join('\n')
 }
 
 export const AssistantToolFallback: ToolCallMessagePartComponent = ({
@@ -55,51 +43,57 @@ export const AssistantToolFallback: ToolCallMessagePartComponent = ({
   respondToApproval,
 }) => {
   const { showDetails } = useAssistantChatDetails()
+  const [open, setOpen] = useState(true)
   const needsApproval = status.type === ToolPartStatusType.RequiresAction
-  const isRunning = status.type === ToolPartStatusType.Running
+  const namesSelector = useMemo(() => {
+    const select = createToolNamesSnapshotSelector()
+    return (message: { content: readonly unknown[] }) => select(message.content)
+  }, [])
+  const toolNames = useMessage(namesSelector)
+  const uniqueNames = uniqueToolNames(toolNames)
+  const isFirstTool = uniqueNames[0] === toolName
+  const compactMessage = compactToolAckMessage(result)
+  const running = status.type === ToolPartStatusType.Running
+  const title =
+    running
+      ? CHAT_CHROME_COPY.Running
+      : showDetails
+        ? formatToolDebugLabel(toolName)
+        : toolName
+  const message = toolCardBodyMessage(title, compactMessage)
 
   return (
-    <div className="my-1 rounded-md border border-black/10 p-2 text-xs dark:border-white/10">
-      <div className="flex items-center gap-2 font-medium opacity-80">
-        <span>🛠 {toolName}</span>
-        <span className={`rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide ${
-          isRunning
-            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300'
-            : 'bg-black/5 text-black/50 dark:bg-white/10 dark:text-white/50'
-        }`}>
-          {statusLabel(status.type)}
-        </span>
-      </div>
-
-      {showDetails && args != null ? (
-        <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap opacity-60">
-          {stringify(args)}
-        </pre>
+    <ChatChromeStack>
+      {isFirstTool && !showDetails ? (
+        <ChatActivityLine>{formatToolsCalledLabel(uniqueNames.length)}</ChatActivityLine>
       ) : null}
-      {showDetails && result != null ? (
-        <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap opacity-70">
-          {stringify(result)}
-        </pre>
-      ) : null}
-
-      {needsApproval && (
+      <ChatToolCard
+        title={title}
+        message={message}
+        debugText={showDetails ? debugDump(args, result) : undefined}
+        open={open}
+        busy={running}
+        interactive={showDetails && !running}
+        onToggle={() => setOpen(value => !value)}
+      />
+      {needsApproval ? (
         <div className="mt-2 flex gap-2">
           <button
-            type="button"
+            type={HtmlElementType.Button}
             onClick={() => respondToApproval({ approved: true })}
             className="rounded bg-black px-2 py-1 text-white dark:bg-white dark:text-black"
           >
             {APPROVE_LABEL}
           </button>
           <button
-            type="button"
+            type={HtmlElementType.Button}
             onClick={() => respondToApproval({ approved: false })}
             className="rounded border border-black/20 px-2 py-1 dark:border-white/20"
           >
             {DENY_LABEL}
           </button>
         </div>
-      )}
-    </div>
+      ) : null}
+    </ChatChromeStack>
   )
 }

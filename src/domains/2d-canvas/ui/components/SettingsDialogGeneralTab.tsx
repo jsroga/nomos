@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import { TESTABLE_LLM_PROVIDERS } from '@/shared/data/constants/llm-providers'
-import { KeyboardKey } from '@/shared/data/constants/protocol'
+import { HtmlElementType } from '@/shared/data/constants/protocol'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import type { ProviderStatus, ProviderTestResult } from '@/domains/2d-canvas/core/io/settings.api'
 import {
@@ -62,7 +62,13 @@ function SettingsDialogProjectNameSection() {
         <label className="text-sm font-medium" htmlFor={SETTINGS_PROJECT_NAME_INPUT_ID}>
           {SETTINGS_PROJECT_COPY.NameLabel}
         </label>
-        <div className="flex gap-2">
+        <form
+          className="flex gap-2"
+          onSubmit={event => {
+            event.preventDefault()
+            void handleSaveName()
+          }}
+        >
           <Input
             id={SETTINGS_PROJECT_NAME_INPUT_ID}
             value={projectName}
@@ -73,14 +79,16 @@ function SettingsDialogProjectNameSection() {
                 : SETTINGS_PROJECT_COPY.NoProject
             }
             onChange={event => setProjectName(event.target.value)}
-            onKeyDown={event => {
-              if (event.key === KeyboardKey.Enter) void handleSaveName()
-            }}
           />
-          <Button size="sm" disabled={!canSave} onClick={() => void handleSaveName()}>
+          <Button
+            type={HtmlElementType.Submit}
+            size="sm"
+            disabled={!canSave}
+            loading={isSavingName}
+          >
             {SETTINGS_PROJECT_COPY.Save}
           </Button>
-        </div>
+        </form>
       </div>
     </div>
   )

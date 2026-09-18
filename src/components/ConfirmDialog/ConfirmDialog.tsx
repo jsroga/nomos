@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/Dialog'
 import { Button } from '@/components/Button'
+import { HtmlElementType } from '@/shared/data/constants/protocol'
 
 import {
   CONFIRM_DIALOG_CANCEL_LABEL,
@@ -64,27 +65,44 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
+        <form
+          onSubmit={event => {
+            event.preventDefault()
+            void handleConfirm()
+          }}
+        >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button
+            type={HtmlElementType.Button}
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             {cancelLabel}
           </Button>
           {secondaryLabel ? (
-            <Button variant="secondary" onClick={onSecondary} disabled={isLoading}>
+            <Button
+              type={HtmlElementType.Button}
+              variant="secondary"
+              onClick={onSecondary}
+              disabled={isLoading}
+            >
               {secondaryLabel}
             </Button>
           ) : null}
           <Button
+            type={HtmlElementType.Submit}
             variant={variant === ConfirmDialogVariant.Destructive ? 'destructive' : 'default'}
-            onClick={handleConfirm}
-            disabled={isLoading}
+            loading={isLoading}
           >
-            {isLoading ? 'Loading...' : confirmLabel}
+            {confirmLabel}
           </Button>
         </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

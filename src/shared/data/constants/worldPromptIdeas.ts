@@ -77,3 +77,15 @@ export const WORLD_PROMPT_IDEAS = [
 
 export type WorldPromptIdea = (typeof WORLD_PROMPT_IDEAS)[number]
 
+export const WORLD_PROMPT_IDEA_IMAGE_POOL = [
+  'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/presets/pixel-art/neon-grotto.png',
+  'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/presets/pixel-art/mud-village.png',
+  'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/presets/pixel-art/forest-cottage.png',
+  'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/presets/pixel-art/tent-camp.png',
+  'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/presets/pixel-art/night-temple.png',
+  'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/presets/painted-isometric/harbor-town.png',
+  'https://5xsd83djscteudrw.public.blob.vercel-storage.com/style-refs/presets/painted-isometric/dusty-courtyard.png',
+  'https://cdn.midjourney.com/82859a17-efca-4d33-8670-61760a185164/0_3.png',
+  'https://cdn.midjourney.com/0af04658-ab27-4a66-8c6c-17031023ff7e/0_1.png',
+] as const
+

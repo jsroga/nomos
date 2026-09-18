@@ -1,0 +1,243 @@
+.chat-chrome-story {
+  min-height: 100vh;
+  background: hsl(240 10% 6%);
+  color: hsl(0 0% 98%);
+  font-family: var(--font-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.chat-chrome-story-bleed {
+  margin: -2rem;
+  min-height: calc(100vh + 4rem);
+  background: hsl(240 10% 6%);
+}
+
+.chat-chrome-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 28px 22px 32px;
+}
+
+.chat-chrome-user-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.chat-chrome-user-bubble {
+  max-width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.52);
+  text-wrap: pretty;
+}
+
+.chat-chrome-user-bubble--current {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.chat-chrome-user-bubble p {
+  margin: 0;
+}
+
+.chat-chrome-user-bubble p + p {
+  margin-top: 0.55em;
+}
+
+.chat-chrome-assistant {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.chat-chrome-thought {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-chrome-thought-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 14.5px;
+  line-height: 1.4;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.chat-chrome-thought-toggle:hover,
+.chat-chrome-thought-toggle:focus-visible {
+  color: rgba(255, 255, 255, 0.88);
+  outline: none;
+}
+
+.chat-chrome-thought--live .chat-chrome-thought-toggle {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.chat-chrome-thought-chevron {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+  transform: rotate(-90deg);
+}
+
+.chat-chrome-thought-chevron--open {
+  transform: rotate(0deg);
+}
+
+.chat-chrome-thought-body {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.48);
+  white-space: pre-wrap;
+  text-wrap: pretty;
+}
+
+.chat-chrome-thought-body p {
+  margin: 0;
+}
+
+.chat-chrome-thought-body p + p {
+  margin-top: 0.85em;
+}
+
+.chat-chrome-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-chrome-activity {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.chat-chrome-tool-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.chat-chrome-tool-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.chat-chrome-tool-head:hover,
+.chat-chrome-tool-head:focus-visible {
+  background: rgba(255, 255, 255, 0.04);
+  outline: none;
+}
+
+.chat-chrome-tool-title {
+  font-size: 13.5px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.chat-chrome-tool-body {
+  padding: 0 14px 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.chat-chrome-tool-body p {
+  margin: 0;
+}
+
+.chat-chrome-tool-body p + p {
+  margin-top: 0.7em;
+}
+
+.chat-chrome-tool-debug {
+  margin: 10px 0 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: pre-wrap;
+}
+
+.chat-chrome-tool-running {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: 16px;
+}
+
+.chat-chrome-tool-spinner {
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  animation: chat-chrome-spin 1s linear infinite;
+}
+
+@keyframes chat-chrome-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chat-chrome-tool-head-static {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.chat-chrome-body {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.9);
+  text-wrap: pretty;
+}
+
+.chat-chrome-body p {
+  margin: 0;
+}
+
+.chat-chrome-body p + p {
+  margin-top: 0.65em;
+}
+
+.chat-chrome-status {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.42);
+}

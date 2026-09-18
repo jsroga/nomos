@@ -14,12 +14,11 @@ import {
 import { AppModuleId, HtmlElementType } from '@/shared/data/constants/protocol'
 import type { ChatSession } from '@/shared/chat/core/io/chat-session-contract'
 import {
-  createChatSession,
   deleteChatSession,
   patchChatSession,
 } from '@/shared/chat/core/io/chat-sessions.api'
 import { chatSessionsKeys } from '@/shared/chat/core/io/chat-sessions.keys'
-import { prependCreatedChatSession } from '@/shared/chat/core/overlay-session-runtime'
+import { createDraftChatSession } from '@/shared/chat/core/overlay-session-runtime'
 import { moduleHasAgent } from '@/shared/chat/core/chat-session-policy'
 import { WorkspaceChatClass, WorkspaceChatCopy } from './workspace-chat-copy'
 import { WorkspaceChatHistoryItem } from './WorkspaceChatHistoryItem'
@@ -43,6 +42,7 @@ export function WorkspaceChatSessionList({
   const queryClient = useQueryClient()
   const focusedSessionId = useWorkspaceChatUiStore(state => state.focusedSessionId)
   const setFocusedSessionId = useWorkspaceChatUiStore(state => state.setFocusedSessionId)
+  const activateDraftSession = useWorkspaceChatUiStore(state => state.activateDraftSession)
   const localRuntimeStatus = useWorkspaceChatUiStore(state => state.localRuntimeStatus)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [renameId, setRenameId] = useState<string | null>(null)
@@ -52,19 +52,15 @@ export function WorkspaceChatSessionList({
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: chatSessionsKeys.list(projectId) })
 
-  const createMutation = useMutation({
-    mutationFn: () => {
-      if (!currentModuleId) throw new Error(WorkspaceChatCopy.ComposerDisabled)
-      return createChatSession({ projectId, moduleId: currentModuleId })
-    },
-    onSuccess: created => {
-      queryClient.setQueryData(chatSessionsKeys.list(projectId), (current: ChatSession[] | undefined) =>
-        prependCreatedChatSession(current, created),
-      )
-      setFocusedSessionId(created.id, created.moduleId)
-      void invalidate()
-    },
-  })
+  const createDraft = () => {
+    if (!currentModuleId) return
+    const created = createDraftChatSession({
+      id: crypto.randomUUID(),
+      projectId,
+      moduleId: currentModuleId,
+    })
+    activateDraftSession(created)
+  }
 
   const renameMutation = useMutation({
     mutationFn: (input: { id: string; title: string }) => patchChatSession(input.id, { title: input.title }),
@@ -104,8 +100,8 @@ export function WorkspaceChatSessionList({
           type={HtmlElementType.Button}
           variant={ButtonVariantKey.Ghost}
           className={WorkspaceChatClass.SessionBarNew}
-          disabled={!canCreate || createMutation.isPending}
-          onClick={() => createMutation.mutate()}
+          disabled={!canCreate}
+          onClick={createDraft}
           title={canCreate ? WorkspaceChatCopy.NewChat : WorkspaceChatCopy.NoAgentDescription}
         >
           <Plus size={13} strokeWidth={1.7} />

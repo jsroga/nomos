@@ -1,8 +1,8 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
+import { HtmlElementType, KeyboardKey } from '@/shared/data/constants/protocol'
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,13 @@ export function LoopSelectorNameDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[450px]">
+        <form
+          onSubmit={event => {
+            event.preventDefault()
+            if (!canSave || isCreating) return
+            onSave()
+          }}
+        >
         <DialogHeader>
           <DialogTitle>{isRename ? 'Rename Loop' : 'Create New Game Loop'}</DialogTitle>
           <DialogDescription>
@@ -71,7 +78,7 @@ export function LoopSelectorNameDialog({
                 placeholder="Describe your game idea... e.g., A narrative RPG like Disco Elysium set in a cyberpunk world, focusing on dialogue and skill checks..."
                 className="w-full min-h-[100px] px-3 py-2 text-sm bg-background border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                 onKeyDown={e => {
-                  if (e.key === 'Enter' && e.metaKey) onSave()
+                  if (e.key === KeyboardKey.Enter && e.metaKey) onSave()
                 }}
               />
               <p className="text-xs text-muted-foreground">
@@ -82,19 +89,18 @@ export function LoopSelectorNameDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type={HtmlElementType.Button}
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button onClick={onSave} disabled={!canSave || isCreating}>
-            {isCreating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isRename ? (
-              'Save'
-            ) : (
-              'Create & Generate'
-            )}
+          <Button type={HtmlElementType.Submit} disabled={!canSave} loading={isCreating}>
+            {isRename ? 'Save' : 'Create & Generate'}
           </Button>
         </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

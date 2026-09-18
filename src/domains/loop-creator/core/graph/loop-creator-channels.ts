@@ -1,4 +1,4 @@
-import { BaseMessage } from '@/shared/chat/core/message'
+import type { ChatMessage } from '@/shared/chat/core/message'
 import {
   LOOP_CREATOR_PHASE_INITIAL,
   NEXT_AGENT_SUPERVISOR,
@@ -17,7 +17,7 @@ import type {
 
 export const loopCreatorChannels = {
   messages: {
-    reducer: (existing: BaseMessage[], incoming: BaseMessage[]) => {
+    reducer: (existing: ChatMessage[], incoming: ChatMessage[]) => {
       return [...existing, ...incoming]
     },
     default: () => [],

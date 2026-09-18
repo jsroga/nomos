@@ -28,6 +28,8 @@ describe('overlay regenerate and history wiring', () => {
   it('shows thinking dots while the last row is still the user turn', () => {
     const thread = readFileSync('src/shared/chat/assistant/AssistantThread.tsx', 'utf8')
     expect(thread).toContain('ThreadRunningPlaceholder')
+    expect(thread).toContain('ASSISTANT_THREAD_COPY.LoadingHistory')
+    expect(thread).toContain('hydrating')
   })
 
   it('keeps wait dots until a tool or text part is actually renderable', () => {
@@ -40,6 +42,7 @@ describe('overlay regenerate and history wiring', () => {
     const src = readFileSync(OVERLAY_SRC, 'utf8')
     expect(src).toContain('selectFocusedSessionId')
     expect(src).toContain('setFocusedSessionId(next, nextModule)')
+    expect(src).toContain('previousFocusedSessionId')
     expect(src).toContain('queueNewWorkspaceChat')
   })
 })

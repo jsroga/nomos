@@ -28,6 +28,7 @@ export enum FlowUiLabel {
   LoadingProject = 'Loading project...',
   OpenStorybible = 'Open Storybible',
   CreateManually = 'Create Manually',
+  BuildStorybibleFirst = 'Let\'s Build Your Storybible First',
   Accept = 'Accept',
   AddToWorld = 'Add to world',
   UpdateAll = 'Update all',
@@ -54,6 +55,8 @@ export enum FlowUiLabel {
   ApplyAll = 'Apply all',
   WorkspaceChatPanel = 'Workspace chat panel',
   WorkspaceChatToggle = 'Workspace chat',
+  WorkspaceChatNew = 'New chat',
+  WorkspaceChatHistory = 'Chat history',
   RegenerateDescription = 'Regenerate description',
   NoInconsistencies = 'No inconsistencies detected.',
   PendingReview = 'Pending Review',
@@ -71,7 +74,7 @@ export enum FlowSelector {
   // Rotted: the chat markup moved to aui-* classes, so these Tailwind utility
   // selectors matched nothing and every message assertion failed.
   AssistantMessage = '.aui-assistant-body',
-  UserMessage = '.aui-user-bubble',
+  UserMessage = '.chat-chrome-user-bubble',
   Heading = 'h1',
   Button = 'button',
   Div = 'div',
@@ -87,6 +90,7 @@ export enum FlowRole {
   Button = 'button',
   Tab = 'tab',
   Dialog = 'dialog',
+  Menuitem = 'menuitem',
 }
 
 export enum FlowApi {
@@ -126,6 +130,8 @@ export enum FlowTest {
   ChatName = 'chat responds',
   CharacterFieldsName = 'generate missing fields fills the character form',
   OverlayPersistName = 'workspace chat overlay stays closed across reload',
+  OverlaySwitchName = 'workspace chat switch keeps history across reload',
+  ForeignEpisodeStorybible = 'foreign episodeId opens Storybible without New Episode dialog',
   ProjectNamePrefix = 'E2E Story',
   ProjectDescription = 'Playwright whole-flow test project',
 }
@@ -136,9 +142,9 @@ export enum FlowTimeout {
   Medium = 15_000,
   Long = 30_000,
   Stub = 90_000,
-  Generation = 360_000,
-  FixScan = 800_000,
-  Live = 1_800_000,
+  Generation = 180_000,
+  FixScan = 120_000,
+  Live = 300_000,
 }
 
 export enum FlowLimit {
@@ -161,6 +167,7 @@ export enum FlowCharacter {
 
 export enum FlowEpisode {
   Title = 'The Beginning',
+  ForeignId = '00000000-0000-4000-8000-000000000001',
 }
 
 export enum FlowChatRole {

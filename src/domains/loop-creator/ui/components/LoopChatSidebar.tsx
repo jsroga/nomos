@@ -12,7 +12,7 @@ export type { LoopChatSidebarProps } from './loop-chat-sidebar-types'
  * Loop-creator chat — now on assistant-ui (roadmap B4/C1). Talks to the
  * registered `loop-creator-supervisor` Mastra agent via /api/assistant.
  *
- * NOTE: this streams the supervisor agent, not the full LangGraph-style crew
+ * NOTE: this streams the supervisor agent, not the full crew
  * orchestration (`/api/loop-creator/chat` → streamLoopCreator). Wiring the crew
  * + the activity bar / quick actions as assistant-ui tool UIs is the follow-up
  * (Track B2). The old streaming props remain on the interface for callers but

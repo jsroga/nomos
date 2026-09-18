@@ -15,7 +15,7 @@ import { requireAuth } from '@/shared/auth/auth'
 import { tryProjectScope } from '@/shared/auth/project-scope'
 import { streamLoopCreator, type StreamEvent as LoopOrchestratorStreamEvent } from '@/domains/loop-creator/server'
 import { type LoopCreatorState, createInitialLoopState } from '@/domains/loop-creator'
-import { HumanMessage, AIMessage } from '@/shared/chat/core/message'
+import { assistantChatMessage, userChatMessage } from '@/shared/chat/core/message'
 import { API_ERROR, API_LOG_PREFIX } from '@/shared/data/constants/api-errors'
 import {
   ContentType,
@@ -184,10 +184,10 @@ export async function POST(req: NextRequest) {
             messages: [
               ...(recentMessages?.map(m =>
                 m.role === LoopCreatorChatRole.User
-                  ? new HumanMessage(m.content)
-                  : new AIMessage(m.content)
+                  ? userChatMessage(m.content)
+                  : assistantChatMessage(m.content)
               ) || []),
-              new HumanMessage(message),
+              userChatMessage(message),
             ],
             traceId: crewTraceId,
           }

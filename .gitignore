@@ -33,8 +33,6 @@ public/projects/
 *.sln
 *.sw?
 
-# LangGraph API
-.langgraph_api
 .vercel
 
 # Playwright (HTML report + failure artifacts)

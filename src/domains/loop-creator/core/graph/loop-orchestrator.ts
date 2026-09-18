@@ -1,10 +1,9 @@
 /**
  * Loop Creator orchestrator — Mastra-native imperative supervisor loop.
- * Replaces LangGraph StateGraph while preserving streamLoopCreator API.
  */
 
 import { withGatewayContext } from '@/shared/ai/gateway/call-context'
-import { AIMessage, ChatMessageRole } from '@/shared/chat/core/message'
+import { assistantChatMessage, ChatMessageRole } from '@/shared/chat/core/message'
 import { withMastraSpan } from '@/shared/observability/mastra-tracing'
 import {
   createMastraTraceId,
@@ -28,7 +27,6 @@ import {
 } from '@/domains/loop-creator/constants/graph-state-defaults'
 import {
   LOOP_ORCHESTRATOR_UNKNOWN_ERROR,
-  LangChainMessageWire,
   LoopCreatorTraceName,
   LoopOrchestratorEventType,
   LoopOrchestratorLog,
@@ -97,10 +95,10 @@ async function invokeAgent(
       nextAgent: NEXT_AGENT_END,
       lastAgent,
       messages: [
-        new AIMessage({
-          content: `${LoopOrchestratorLog.ErrorInAgent}${agentName}${LoopOrchestratorLog.ErrorRetrySuffix}${errorMsg}${LoopOrchestratorLog.ErrorRetryPrompt}`,
-          name: agentName,
-        }),
+        assistantChatMessage(
+          `${LoopOrchestratorLog.ErrorInAgent}${agentName}${LoopOrchestratorLog.ErrorRetrySuffix}${errorMsg}${LoopOrchestratorLog.ErrorRetryPrompt}`,
+          agentName,
+        ),
       ],
     }
   }
@@ -113,13 +111,8 @@ function resolveNode(next: NextAgent | typeof NEXT_AGENT_END): AgentNode | null 
   return null
 }
 
-function isLangChainAIMessage(msg: unknown): boolean {
-  if (msg instanceof AIMessage) return true
-  if (typeof msg === 'object' && msg !== null && LangChainMessageWire.GetType in msg) {
-    const getType = Reflect.get(msg, LangChainMessageWire.GetType)
-    return typeof getType === 'function' && getType() === ChatMessageRole.Ai
-  }
-  return false
+function isAssistantChatMessage(msg: { role: ChatMessageRole }): boolean {
+  return msg.role === ChatMessageRole.Ai
 }
 
 function emitNodeOutput(
@@ -143,7 +136,7 @@ function emitNodeOutput(
 
   if (output.messages) {
     for (const msg of output.messages) {
-      if (!isLangChainAIMessage(msg)) continue
+      if (!isAssistantChatMessage(msg)) continue
 
       const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
       const msgEvent = {

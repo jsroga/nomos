@@ -24,14 +24,22 @@ export function buildLockedVisualPrompt(
   return `${prefix} ${clamped} ${lockedVisualBase(baseReplacement)}`
 }
 
-export function appendMidjourneyLockFlags(prompt: string, aspectRatio: string): string {
+export function appendMidjourneyLockFlags(
+  prompt: string,
+  aspectRatio: string,
+  extraUrls: readonly string[] = [],
+): string {
   return appendStorytellerLookSref(
     `${prompt} ${MidjourneyParamFlag.Version} ${MIDJOURNEY_VERSION} ${MidjourneyParamFlag.AspectRatio} ${aspectRatio}`,
+    extraUrls,
   )
 }
 
-export function buildPortraitMidjourneyLockFlags(prompt: string): string {
-  return appendMidjourneyLockFlags(prompt, ApiframeGenerateAspectRatio.Square)
+export function buildPortraitMidjourneyLockFlags(
+  prompt: string,
+  extraUrls: readonly string[] = [],
+): string {
+  return appendMidjourneyLockFlags(prompt, ApiframeGenerateAspectRatio.Square, extraUrls)
 }
 
 export function buildPosterMidjourneyLockFlags(prompt: string): string {

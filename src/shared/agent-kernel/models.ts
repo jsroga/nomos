@@ -43,7 +43,7 @@ export const TEXT_TO_SPEECH_MODEL = 'x-ai/grok-voice-tts-1.0'
 export const OPENROUTER_AUTO_MODEL = TEXT_GEN_PRIMARY_MODEL
 /** Mastra model-router gateway string for the default text model. */
 export const OPENROUTER_AUTO_GATEWAY = `openrouter/${TEXT_GEN_PRIMARY_MODEL}`
-/** OpenAI-compatible endpoint for LangChain / AI-SDK clients. */
+/** OpenAI-compatible endpoint for AI-SDK clients. */
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 const OPENROUTER_GATEWAY_PREFIX = 'openrouter/'
 const OPENROUTER_PROVIDER = 'openrouter'
@@ -104,7 +104,7 @@ export function toOpenRouterModel(id?: string): string {
   return `${OPENROUTER_GATEWAY_PREFIX}${modelId}`
 }
 
-/** Config for LangChain `ChatOpenAI` / AI-SDK `createOpenAI` pointed at OpenRouter. */
+/** Config for AI-SDK `createOpenAI` pointed at OpenRouter. */
 export function openRouterClientConfig(): { apiKey: string | undefined; baseURL: string } {
   return { apiKey: env.OPENROUTER_API_KEY, baseURL: OPENROUTER_BASE_URL }
 }

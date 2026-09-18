@@ -1,7 +1,7 @@
 /**
- * Loop-creator Mastra agents — the flagged (`FF_LOOP_CREATOR_MASTRA=true`) Mastra-native
- * equivalents of the LangChain specialist functions, matching the storyteller
- * convention: plain `new Agent({ id, name, model: () => resolve…, instructions })`
+ * Loop-creator Mastra agents — the flagged (`FF_LOOP_CREATOR_MASTRA=true`) specialists,
+ * matching the storyteller convention:
+ * `new Agent({ id, name, model: () => resolve…, instructions })`
  * registered on the central instance (see `core/io/mastra-runtime.ts`).
  *
  * Each specialist builds a full, state-templated system prompt per call, so the

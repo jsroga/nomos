@@ -1,15 +1,9 @@
 import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper'
 import { AppProviders } from '@/shared/auth/AppProviders'
-import { WORKSPACE_PAGE_TITLE } from '@/shared/data/constants/route-metadata'
-import type { Metadata } from 'next'
 import NextTopLoader from 'nextjs-toploader'
 
 /** Workspace is session-bound — defer instant-navigation validation for now. */
 export const instant = false
-
-export const metadata: Metadata = {
-  title: WORKSPACE_PAGE_TITLE.DASHBOARD,
-}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

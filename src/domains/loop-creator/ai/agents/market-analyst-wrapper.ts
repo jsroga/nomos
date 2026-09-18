@@ -4,7 +4,7 @@
  * Wraps the ReAct market analyst for integration with the loop-graph.
  */
 
-import { AIMessage } from '@/shared/chat/core/message'
+import { assistantChatMessage } from '@/shared/chat/core/message'
 import { LoopAgentNode } from '@/domains/loop-creator/constants/agent-nodes'
 import { LoopAgentActionKind } from '@/domains/loop-creator/constants/loop-agent-actions'
 import {
@@ -110,10 +110,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
   return {
     messages: [
-      new AIMessage({
-        content: responseContent,
-        name: LoopAgentNode.MarketAnalyst,
-      }),
+      assistantChatMessage(responseContent, LoopAgentNode.MarketAnalyst),
     ],
     nextAgent: NEXT_AGENT_SUPERVISOR, // Return to supervisor to present results
     marketAnalysis: report || undefined,

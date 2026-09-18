@@ -1,8 +1,7 @@
 /**
  * Concept Evaluator Agent
  *
- * Uses LangChain to automatically evaluate whether generated mechanics
- * match the user's requested game concept.
+ * Evaluates whether generated mechanics match the user's requested game concept.
  */
 
 import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'

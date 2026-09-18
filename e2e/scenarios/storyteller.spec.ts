@@ -13,12 +13,11 @@ import {
   waitForAssistantIdle,
   waitForToolCall,
   warmAssistantChat,
-  acceptPendingAction,
   maybeAcceptPendingAction,
   reloadStoryteller,
   FlowCharacter,
 } from '../fixtures/storyteller-fixtures'
-import { readLastAssistantText } from '../fixtures/storyteller-overlay'
+import { readLastAssistantText, createWorkspaceChatAndRestoreHistory, expectWorkspaceChatUserHistory } from '../fixtures/storyteller-overlay'
 import { logSt1Step, startSt1Progress, St1Step } from '../fixtures/st1-progress'
 import { FlowError, FlowRole, FlowTest, FlowTimeout, FlowTool, FlowUiLabel } from '../constants/storyteller-flow'
 import { ConsistencyPrompt } from '../constants/storyteller-consistency-prompts'
@@ -40,6 +39,9 @@ test.describe(FlowTest.Describe, () => {
     logSt1Step(progress, St1Step.World)
     await chatAndAccept(page, ConsistencyPrompt.WorldDescriptionMundane)
     await credits.assertOk()
+    await createWorkspaceChatAndRestoreHistory(page, ConsistencyPrompt.WorldDescriptionMundane)
+    await reloadStoryteller(page)
+    await expectWorkspaceChatUserHistory(page, ConsistencyPrompt.WorldDescriptionMundane)
     logSt1Step(progress, St1Step.NoMagic)
     await chatAndAccept(page, ConsistencyPrompt.WorldRuleNoMagic)
     await credits.assertOk()
@@ -48,21 +50,6 @@ test.describe(FlowTest.Describe, () => {
 
     logSt1Step(progress, St1Step.Episode)
     await chatAndAccept(page, ConsistencyPrompt.EpisodePremise)
-    await credits.assertOk()
-
-    const regenerate = page.getByTitle(FlowUiLabel.RegenerateDescription)
-    await expect(regenerate).toBeVisible({ timeout: FlowTimeout.Generation })
-    await regenerate.click()
-    try {
-      await waitForAssistantStatus(page)
-    } catch {
-      // Artifact draft or overlay enqueue may skip the running chip.
-    }
-    const addToWorld = page.getByRole(FlowRole.Button, { name: FlowUiLabel.AddToWorld }).first()
-    const accept = page.getByRole(FlowRole.Button, { name: FlowUiLabel.Accept }).first()
-    if (await addToWorld.or(accept).first().isVisible().catch(() => false)) {
-      await acceptPendingAction(page)
-    }
     await credits.assertOk()
 
     logSt1Step(progress, St1Step.Vex)

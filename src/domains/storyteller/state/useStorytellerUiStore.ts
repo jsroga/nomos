@@ -2,7 +2,9 @@ import { create } from 'zustand'
 import { StorytellerBibleTab } from '@/domains/storyteller/core/storyteller-page-wire'
 import {
   CharacterDraftResolution,
+  GenerationActivityLabel,
   GenerationActivityPhase,
+  isGenerationActivityBusy,
   type EntityNavigationPayload,
   type GenerationActivityState,
   type MoodboardCompletePayload,
@@ -77,6 +79,7 @@ interface StorytellerUiState {
   setConsistencyFixRun: (patch: Partial<ConsistencyFixRunState>) => void
   resetConsistencyFixRun: () => void
   requestCreateEpisodeDialog: () => void
+  resetForProjectSwitch: () => void
 }
 
 export interface ConsistencyFixRunState {
@@ -161,10 +164,21 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
       if (isConsistencyFixRunBusy(state.consistencyFixRun.phase)) {
         return state
       }
+      if (isGenerationActivityBusy(state.generationActivity.phase)) {
+        return state
+      }
       const id = state.pendingChatPromptSeq + 1
       return {
         pendingChatPromptSeq: id,
         pendingChatPrompt: { id, message, section },
+        generationActivity: {
+          ...state.generationActivity,
+          phase: GenerationActivityPhase.Submitted,
+          label: GenerationActivityLabel.Submitted,
+          section,
+          error: undefined,
+          updatedAt: Date.now(),
+        },
       }
     }),
   clearPendingChatPrompt: () => set({ pendingChatPrompt: null }),
@@ -259,6 +273,29 @@ export const useStorytellerUiStore = create<StorytellerUiState>((set) => ({
     set(state => ({
       createEpisodeDialogRequestSeq: state.createEpisodeDialogRequestSeq + 1,
     })),
+  resetForProjectSwitch: () => {
+    worldBibleSeeded = false
+    set({
+      entityNavigation: null,
+      isWorldBibleOpen: true,
+      bibleTab: StorytellerBibleTab.Content,
+      bibleTabRequest: null,
+      moodboardComplete: null,
+      pendingChatPrompt: null,
+      characterDraftFields: null,
+      characterDraftFieldsSeq: 0,
+      characterDraftResolvedSeq: 0,
+      characterDraftResolution: CharacterDraftResolution.Idle,
+      characterDraftTargetId: null,
+      characterDraftFilledSnapshot: null,
+      generationActivity: IDLE_GENERATION_ACTIVITY,
+      pendingBoardHydration: false,
+      pendingBeatAdds: [],
+      beatAddsCommitted: false,
+      createEpisodeDialogRequestSeq: 0,
+      consistencyFixRun: IDLE_CONSISTENCY_FIX_RUN,
+    })
+  },
 }))
 
 /** Imperative access for services that cannot use React hooks. */

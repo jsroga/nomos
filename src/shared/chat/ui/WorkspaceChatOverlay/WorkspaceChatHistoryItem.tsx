@@ -11,10 +11,14 @@ import { cn } from '@/shared/data/utils'
 import {
   WorkspaceChatClass,
   WorkspaceChatCopy,
+  WorkspaceChatHistoryActionClass,
   WorkspaceChatRenameGlyph,
   workspaceChatRenameGlyph,
 } from './workspace-chat-copy'
-import { workspaceChatRenameButtonTitle } from './workspace-chat-session-helpers'
+import {
+  shouldFocusHistorySessionOnSelect,
+  workspaceChatRenameButtonTitle,
+} from './workspace-chat-session-helpers'
 
 export function WorkspaceChatHistoryItem({
   session,
@@ -42,7 +46,10 @@ export function WorkspaceChatHistoryItem({
   const glyph = workspaceChatRenameGlyph(renaming)
   return (
     <DropdownMenuItem
-      onSelect={event => event.preventDefault()}
+      onSelect={event => {
+        event.preventDefault()
+        if (shouldFocusHistorySessionOnSelect(renaming, event.target)) onFocusSession()
+      }}
       className={cn(WorkspaceChatClass.HistoryItem, selected && WorkspaceChatClass.HistoryItemSelected)}
     >
       {renaming ? (
@@ -68,7 +75,7 @@ export function WorkspaceChatHistoryItem({
       <Button
         type={HtmlElementType.Button}
         variant={ButtonVariantKey.Ghost}
-        className={WorkspaceChatClass.HistoryItemAction}
+        className={cn(WorkspaceChatClass.HistoryItemAction, WorkspaceChatHistoryActionClass.Root)}
         title={workspaceChatRenameButtonTitle(glyph, WorkspaceChatCopy.Save, WorkspaceChatCopy.Rename)}
         onMouseDown={event => {
           event.preventDefault()
@@ -87,7 +94,7 @@ export function WorkspaceChatHistoryItem({
       <Button
         type={HtmlElementType.Button}
         variant={ButtonVariantKey.Ghost}
-        className={WorkspaceChatClass.HistoryItemAction}
+        className={cn(WorkspaceChatClass.HistoryItemAction, WorkspaceChatHistoryActionClass.Root)}
         title={WorkspaceChatCopy.Delete}
         onClick={onDelete}
       >

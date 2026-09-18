@@ -41,7 +41,7 @@ export const CHARACTER_GET_ID_REQUIRED = 'characterId is required for get operat
 
 export const PROPOSE_CHARACTER_FIELDS_TOOL_ID = 'propose_character_fields'
 export const PROPOSE_CHARACTER_FIELDS_TOOL_DESC =
-  'Fill missing fields on the unsaved character create/edit form. Does not save. Call this instead of manage_character when the user asks to generate missing character fields. Include only empty fields. Never overwrite filled values.'
+  'Fill missing fields on the unsaved character create/edit form. Does not save. Call this instead of manage_character when the user asks to generate missing character fields. Put every empty field in the tool arguments, including fatalFlaw and secrets. MBTI is highly recommended — always include mbti in the tool arguments when it is empty. Do not leave those only in thinking. Never overwrite filled values.'
 
 export const EPISODE_TOOL_ID = 'manage_episode'
 export const EPISODE_TOOL_DESC =

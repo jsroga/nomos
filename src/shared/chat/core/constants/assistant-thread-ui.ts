@@ -84,6 +84,7 @@ export const ASSISTANT_THREAD_COPY = {
   ShowLogsAria: 'Show orchestrator logs',
   HideLogsAria: 'Hide orchestrator logs',
   Regenerate: 'Regenerate',
+  LoadingHistory: 'Loading conversation…',
 } as const
 
 export const ASSISTANT_THREAD_WIRE = {

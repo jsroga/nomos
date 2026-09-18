@@ -43,7 +43,7 @@ export function writersRoomExtraDescription(
   requestedSection: string,
   extraKeys: string[],
 ): string {
-  return `Requested section: ${requestedSection}. The agent also returned: ${extraKeys.join(WritersRoomListJoin.CommaSpace)}. Include those extras in pending review, or keep only the requested section?`
+  return `${requestedSection} was requested. The agent also drafted: ${extraKeys.join(WritersRoomListJoin.CommaSpace)}. Include extras — those sections will be overwritten — or keep only the requested section?`
 }
 
 export function newCastDescription(names: readonly string[]): string {

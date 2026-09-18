@@ -44,7 +44,7 @@ export type DomainConformance = {
    * server-only layer; the guard, not the `server-only` package — that one
    * throws under the node default condition and would crash Mastra Studio,
    * evals, and vitest). Ratchet: flip to true per domain as its ai/ tree
-   * is audited (loop-creator still carries a legacy LangChain market-analyst
+   * is audited (loop-creator still carries a legacy market-analyst
    * tree — guard it when that is migrated or deleted).
    */
   aiGuardEnforced?: boolean

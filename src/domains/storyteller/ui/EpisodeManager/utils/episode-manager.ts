@@ -24,14 +24,14 @@ export function formatEpisodesHeading(count: number): string {
 }
 
 export enum EpisodeManagerRowClass {
-  Row = 'group relative w-full flex items-center gap-[11px] px-3 py-2.5 rounded-[9px] cursor-pointer transition-all duration-150 ease-in-out',
+  Row = 'group relative w-full flex items-center gap-[11px] px-3 py-[11px] border border-border/70 rounded-[10px] bg-card/35 cursor-pointer transition-all duration-150 ease-in-out hover:text-white',
   RowSelected = 'bg-[hsl(var(--primary)/0.13)]',
   RowIdle = 'text-muted-foreground hover:bg-accent/40',
   Index = 'inline-flex items-center h-5 shrink-0 font-mono text-[11px] leading-none translate-y-px',
-  IndexSelected = 'text-primary/90',
-  IndexIdle = 'text-muted-foreground/60',
+  IndexSelected = 'text-primary/90 group-hover:text-white',
+  IndexIdle = 'text-muted-foreground/60 group-hover:text-white',
   TitleCluster = 'flex-1 min-w-0 flex items-center gap-[8px]',
-  Title = 'inline-flex items-center h-5 w-fit max-w-full min-w-0 truncate text-[13.5px] leading-none',
+  Title = 'inline-flex items-center h-5 w-fit max-w-full min-w-0 truncate text-[13.5px] leading-none group-hover:text-white',
   TitleSelected = 'text-foreground',
   TitleInput = 'bg-transparent border-b-2 border-primary focus:outline-none flex-1 min-w-0 h-5 text-[13.5px]',
   Chip = 'inline-flex items-center h-5 shrink-0 font-mono text-[9.5px] leading-none tracking-[0.12em] uppercase text-primary translate-y-px',

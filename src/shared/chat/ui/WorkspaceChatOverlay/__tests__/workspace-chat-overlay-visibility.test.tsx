@@ -45,6 +45,8 @@ describe('workspace chat overlay visibility', () => {
     expect(src).toContain('key={session.id}')
     expect(src).not.toContain('key={focusedSessionId}')
     expect(src).toContain('streamingSessionsWithoutRunId')
+    expect(src).toContain('useDraftOverlayOnModuleChange')
+    expect(src).toContain('selectMountedSessions(visibleSessions, focusedSessionId, previousFocusedSessionId)')
     expect(src).toContain('selectFocusedSessionId')
     expect(src).toContain('markChatSessionIdle')
     expect(src).toContain('useEnsureFocusedOverlaySession')
@@ -86,9 +88,10 @@ describe('workspace chat overlay visibility', () => {
     expect(WorkspaceChatClass.SessionBarHistory).toContain('w-8')
     expect(WorkspaceChatClass.HistoryItem).toContain('py-0.5')
     expect(WorkspaceChatClass.HistoryItemAction).toContain('h-6')
-    expect(list).toContain('prependCreatedChatSession')
-    expect(list).toContain('setFocusedSessionId(created.id, created.moduleId)')
+    expect(list).toContain('createDraftChatSession')
+    expect(list).toContain('activateDraftSession')
     expect(list).not.toMatch(/<ul[\s>]/)
+    expect(item).toContain('shouldFocusHistorySessionOnSelect')
     expect(item).toContain('workspaceChatRenameGlyph')
     expect(item).toContain('<Save')
     expect(item).toContain('<Pencil')
@@ -107,7 +110,7 @@ describe('workspace chat overlay mount', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     browserStorage.remove(LocalStorageKeys.WORKSPACE_CHAT_OVERLAY_OPEN)
-    useWorkspaceChatUiStore.setState({ overlayOpen: false, focusedSessionId: null })
+    useWorkspaceChatUiStore.setState({ overlayOpen: false, focusedSessionId: null, previousFocusedSessionId: null })
   })
 
   afterEach(() => {
@@ -138,7 +141,7 @@ describe('workspace chat overlay mount', () => {
 
   it('hides when storage is closed even if the store still says open', async () => {
     persistWorkspaceChatOverlayOpen(false)
-    useWorkspaceChatUiStore.setState({ overlayOpen: true, focusedSessionId: null })
+    useWorkspaceChatUiStore.setState({ overlayOpen: true, focusedSessionId: null, previousFocusedSessionId: null })
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     })

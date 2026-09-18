@@ -5,8 +5,6 @@ import { ProjectLoader } from '@/components/shell/ProjectLoader'
 import { ProjectTourWrapper } from '@/components/shell/ProjectTourWrapper'
 
 import { TooltipProvider } from '@/components/Tooltip'
-import { WORKSPACE_PAGE_TITLE } from '@/shared/data/constants/route-metadata'
-import type { Metadata } from 'next'
 import { isWorkspaceChatOverlayEnabled } from '@/shared/data/feature-flags'
 import { WorkspaceChatLayer } from './WorkspaceChatLayer'
 
@@ -22,10 +20,6 @@ export function generateStaticParams() {
 
 /** Session-bound project chrome — defer instant-navigation validation. */
 export const instant = false
-
-export const metadata: Metadata = {
-  title: WORKSPACE_PAGE_TITLE.PROJECT,
-}
 
 export default async function ProjectLayout({ children }: { children: React.ReactNode }) {
   // Request-time only — client project chrome is not a static App Shell.

@@ -1,10 +1,10 @@
-import { ListOrdered, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { ListOrdered, Plus, Trash2 } from 'lucide-react'
 import { EpisodePremise } from '@/domains/storyteller/ai/prompts/schemas/agent-schemas'
 import { Button } from '@/components/Button'
 import { Skeleton } from '@/components/Skeleton'
 import { EpisodePremiseSectionKey } from '../utils/ozymandias-sections'
-import { cn } from '@/shared/data/utils'
 import { RichText } from '../../RichText'
+import { StorytellerRefreshButton, StorytellerRefreshCopy } from '@/domains/storyteller/ui/StorytellerRefreshButton'
 
 interface TenPointsPlanSectionProps {
   tenPointsPlan: EpisodePremise['tenPointsPlan'] | undefined
@@ -181,16 +181,15 @@ export function TenPointsPlanSection({
           <ListOrdered className="w-4 h-4" /> 10-Point Episode Plan
         </span>
         {!isEditing && onGenerateSection && (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 rounded-md text-muted-foreground hover:text-primary"
+          <StorytellerRefreshButton
             onClick={() => onGenerateSection(EpisodePremiseSectionKey.TenPointsPlan)}
-            disabled={isGenerating}
-            title={hasPlan ? 'Regenerate 10-Point Episode Plan' : 'Generate 10-Point Episode Plan'}
-          >
-            <RefreshCw className={cn(isGeneratingPlan && 'animate-spin', 'w-3.5 h-3.5')} />
-          </Button>
+            idleLabel={
+              hasPlan
+                ? StorytellerRefreshCopy.RegeneratePlan
+                : StorytellerRefreshCopy.GeneratePlan
+            }
+            extraDisabled={isGenerating}
+          />
         )}
       </div>
 

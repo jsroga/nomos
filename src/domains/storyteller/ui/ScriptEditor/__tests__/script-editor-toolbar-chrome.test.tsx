@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { ManuscriptMode } from '@/domains/storyteller/core/types/enums'
 import {
   ScriptEditorChromeClass,
   ScriptEditorManuscriptToolbar,
@@ -47,35 +46,27 @@ describe('ScriptEditorManuscriptToolbar', () => {
     host?.remove()
   })
 
-  it('keeps mode and action buttons on one compact aligned row', async () => {
+  it('keeps generate actions on one compact aligned row without a mode switch', async () => {
     host = document.createElement('div')
     document.body.appendChild(host)
     root = createRoot(host)
     await act(async () => {
       root?.render(
         <div className={ScriptEditorChromeClass.Bar}>
-          <ScriptEditorManuscriptToolbar mode={ManuscriptMode.Novel} generateDisabled={false} />
+          <ScriptEditorManuscriptToolbar generateDisabled={false} />
         </div>
       )
     })
     const buttons = [...host.querySelectorAll('button')]
     expect(buttons.map(button => button.textContent)).toEqual([
-      ScriptEditorToolbarCopy.Script,
-      ScriptEditorToolbarCopy.Novel,
       ScriptEditorToolbarCopy.GenerateNext,
       ScriptEditorToolbarCopy.RegenerateSection,
       ScriptEditorToolbarCopy.Compile,
     ])
-    const modeTabs = buttons.slice(0, 2)
-    for (const tab of modeTabs) {
-      expect(tab.getAttribute('role')).toBe('tab')
-      expect(tab.hasAttribute('aria-selected')).toBe(true)
-    }
-    const actions = buttons.slice(2)
-    for (const button of actions) {
+    for (const button of buttons) {
       expect(button.className).toContain('h-[34px]')
     }
-    expect(host.querySelector('[role="tablist"]')?.className).toContain('items-center')
+    expect(host.querySelector('[role="tablist"]')).toBeNull()
   })
 })
 

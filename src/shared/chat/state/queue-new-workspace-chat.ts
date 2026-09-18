@@ -21,9 +21,23 @@ export async function queueNewWorkspaceChat(input: {
     (current: ChatSession[] | undefined) => prependCreatedChatSession(current, created),
   )
   const store = useWorkspaceChatUiStore.getState()
+  store.setDraftSession(null)
   store.setFocusedSessionId(created.id, created.moduleId)
   store.setQueuedSend({ sessionId: created.id, text: input.text, id: Date.now() })
   store.setOverlayOpen(true)
   await input.queryClient.invalidateQueries({ queryKey: chatSessionsKeys.list(input.projectId) })
   return created
+}
+
+export async function persistDraftWorkspaceChat(input: {
+  draft: ChatSession
+  text: string
+  queryClient: QueryClient
+}): Promise<ChatSession> {
+  return queueNewWorkspaceChat({
+    projectId: input.draft.projectId,
+    moduleId: input.draft.moduleId,
+    text: input.text,
+    queryClient: input.queryClient,
+  })
 }

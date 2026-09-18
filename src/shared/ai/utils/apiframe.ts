@@ -197,6 +197,8 @@ export const APIFRAME_SEEDANCE_DURATION_MIN = 4
 export const APIFRAME_SEEDANCE_DURATION_MAX = 30
 export const APIFRAME_SEEDANCE_DURATION_DEFAULT = 30
 export const APIFRAME_VIDEO_PROMPT_MAX_CHARS = 4000
+/** POST /images/generate `prompt` max for Grok Imagine (API 400 above this). */
+export const APIFRAME_GENERATE_PROMPT_MAX_CHARS = 2000
 export const APIFRAME_VIDEO_POLL_ATTEMPTS = 120
 export const APIFRAME_VIDEO_POLL_INTERVAL_MS = 4000
 
@@ -245,7 +247,7 @@ export const APIFRAME_GENERATE_ASPECT_RATIOS = [
   ApiframeGenerateAspectRatio.TallNineSixteen,
 ] as const
 
-/** Reference-image field per model. ImageInput / InputImages take a URL array; Image is one URL or a URL array (Grok). */
+/** Reference-image field per model. ImageInput / InputImages take a URL array; Image is one URL (Grok). */
 export type ApiframeImageUrlField =
   | ApiframeImageField.ImageInput
   | ApiframeImageField.InputImages

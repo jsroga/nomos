@@ -9,6 +9,7 @@ import {
 
 interface MasterPromptSuggestionProps {
   idea: string
+  images?: readonly string[]
   onAccept: () => void
   onReject: () => void
   onNext: () => void
@@ -16,6 +17,7 @@ interface MasterPromptSuggestionProps {
 
 export function MasterPromptSuggestion({
   idea,
+  images = [],
   onAccept,
   onReject,
   onNext,
@@ -26,6 +28,15 @@ export function MasterPromptSuggestion({
         <Sparkles size={12} strokeWidth={1.8} />
         {MasterPromptFieldCopy.Suggested}
       </div>
+      {images.length > 0 ? (
+        <ul className={MasterPromptFieldClass.SuggestionImages}>
+          {images.map(src => (
+            <li key={src}>
+              <img src={src} alt="" className={MasterPromptFieldClass.SuggestionImage} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <p className={MasterPromptFieldClass.SuggestionText}>{idea}</p>
       <div className="flex gap-2 pt-1">
         <button type={HtmlElementType.Button} className={MasterPromptFieldClass.PrimaryAction} onClick={onAccept}>

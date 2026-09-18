@@ -9,6 +9,9 @@ enum PolicyNeedle {
   DoNotRefuse = 'Do not refuse because the description contradicts world rules',
   NotContinuityJudge = 'You are not the continuity judge on create',
   CreateEvenWhen = 'call create even if the description contradicts world rules',
+  ReplyBudget = '# Reply budget',
+  NoUnaskedSoundtracks = 'Do not add soundtracks, inspirations, factions, or other bible sections unless the user asked for them',
+  OverviewOnly = 'When the user asked only for world description / Overview',
 }
 
 enum OverlayPath {
@@ -24,8 +27,14 @@ describe('explicit CAST create policy', () => {
     expect(brief).toContain(PolicyNeedle.SameTurn)
     expect(brief).toContain(PolicyNeedle.DoNotRefuse)
     expect(brief).toContain(PolicyNeedle.NotContinuityJudge)
+    expect(brief).toContain(PolicyNeedle.ReplyBudget)
+    expect(brief).toContain(PolicyNeedle.NoUnaskedSoundtracks)
+    expect(brief).toContain(PolicyNeedle.OverviewOnly)
     expect(overlay).toContain(PolicyNeedle.SameTurn)
     expect(overlay).toContain(PolicyNeedle.DoNotRefuse)
+    expect(overlay).toContain(PolicyNeedle.ReplyBudget)
+    expect(overlay).toContain(PolicyNeedle.NoUnaskedSoundtracks)
+    expect(overlay).toContain(PolicyNeedle.OverviewOnly)
     expect(CHARACTER_TOOL_DESC).toContain(PolicyNeedle.CreateEvenWhen)
   })
 })

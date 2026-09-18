@@ -29,9 +29,27 @@ describe('characterDraftFieldsFromToolCall', () => {
       characterDraftFieldsFromToolCall({
         toolName: StorytellerChatTool.ProposeCharacterFields,
         args: { [CharacterTextFieldKey.Name]: VERA },
-        result: { success: true, fields: {} },
+        result: { success: true },
       })
     ).toEqual({ [CharacterTextFieldKey.Name]: VERA })
+  })
+
+  it('maps psychology nests from tool args when the result has no fields', () => {
+    expect(
+      characterDraftFieldsFromToolCall({
+        toolName: StorytellerChatTool.ProposeCharacterFields,
+        args: {
+          psychology: {
+            [CharacterTextFieldKey.FatalFlaw]: 'Pride',
+            [CharacterTextFieldKey.Secrets]: 'Hidden ledger',
+          },
+        },
+        result: { success: true, message: 'Proposed fields for the unsaved character form.' },
+      }),
+    ).toEqual({
+      [CharacterTextFieldKey.FatalFlaw]: 'Pride',
+      [CharacterTextFieldKey.Secrets]: 'Hidden ledger',
+    })
   })
 
   it('detects propose-character tool args for add-to-world', () => {

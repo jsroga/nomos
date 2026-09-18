@@ -19,12 +19,15 @@ import {
   selectMountedSessions,
   selectFocusedSessionId,
   streamingSessionsWithoutRunId,
+  mergeSessionsWithDraft,
+  isDraftChatSession,
 } from '@/shared/chat/core/overlay-session-runtime'
-import { queueNewWorkspaceChat } from '@/shared/chat/state/queue-new-workspace-chat'
+import { persistDraftWorkspaceChat, queueNewWorkspaceChat } from '@/shared/chat/state/queue-new-workspace-chat'
 import { getDefaultChatAdapter, type ModuleChatAdapter } from '@/shared/chat/overlay/module-chat-adapters'
 import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { useEnsureFocusedOverlaySession } from './use-ensure-focused-overlay-session'
+import { useDraftOverlayOnModuleChange } from './use-draft-overlay-on-module-change'
 import { useHydratedWorkspaceChatOverlayOpen } from './use-hydrated-overlay-open'
 import { WorkspaceChatClass, WorkspaceChatCopy } from './workspace-chat-copy'
 import { WorkspaceChatMismatchDialog } from './WorkspaceChatMismatchDialog'
@@ -41,7 +44,10 @@ export function WorkspaceChatOverlay({
   const queryClient = useQueryClient()
   const overlayOpen = useHydratedWorkspaceChatOverlayOpen()
   const focusedSessionId = useWorkspaceChatUiStore(state => state.focusedSessionId)
+  const previousFocusedSessionId = useWorkspaceChatUiStore(state => state.previousFocusedSessionId)
   const focusedSessionModuleId = useWorkspaceChatUiStore(state => state.focusedSessionModuleId)
+  const draftSession = useWorkspaceChatUiStore(state => state.draftSession)
+  const localRuntimeStatus = useWorkspaceChatUiStore(state => state.localRuntimeStatus)
   const setFocusedSessionId = useWorkspaceChatUiStore(state => state.setFocusedSessionId)
   const setMismatchDialog = useWorkspaceChatUiStore(state => state.setMismatchDialog)
   const stopHandlers = useMemo(() => new Map<string, () => void>(), [])
@@ -59,6 +65,10 @@ export function WorkspaceChatOverlay({
   })
 
   const sessions = sessionsQuery.data ?? []
+  const visibleSessions = useMemo(
+    () => mergeSessionsWithDraft(sessions, draftSession),
+    [sessions, draftSession],
+  )
 
   useEffect(() => {
     if (hydrated.current || !sessionsQuery.data) return
@@ -71,18 +81,27 @@ export function WorkspaceChatOverlay({
 
   useEffect(() => {
     if (!sessionsQuery.isSuccess) return
-    const next = selectFocusedSessionId(sessions, focusedSessionId)
-    const nextModule = sessions.find(session => session.id === next)?.moduleId ?? null
+    const next = selectFocusedSessionId(visibleSessions, focusedSessionId)
+    const nextModule =
+      visibleSessions.find(session => session.id === next)?.moduleId ?? null
     if (next !== focusedSessionId || nextModule !== focusedSessionModuleId) {
       setFocusedSessionId(next, nextModule)
     }
   }, [
-    sessions,
+    visibleSessions,
     focusedSessionId,
     focusedSessionModuleId,
     sessionsQuery.isSuccess,
     setFocusedSessionId,
   ])
+
+  useDraftOverlayOnModuleChange({
+    projectId,
+    currentModuleId,
+    focusedSessionId,
+    visibleSessions,
+    localRuntimeStatus,
+  })
 
   useEnsureFocusedOverlaySession({
     overlayOpen,
@@ -91,14 +110,15 @@ export function WorkspaceChatOverlay({
     projectId,
     currentModuleId,
     currentHasAgent,
+    hasDraft: Boolean(draftSession),
   })
 
   const mounted = useMemo(
-    () => selectMountedSessions(sessions, focusedSessionId),
-    [sessions, focusedSessionId],
+    () => selectMountedSessions(visibleSessions, focusedSessionId, previousFocusedSessionId),
+    [visibleSessions, focusedSessionId, previousFocusedSessionId],
   )
 
-  const focused = sessions.find(session => session.id === focusedSessionId) ?? null
+  const focused = visibleSessions.find(session => session.id === focusedSessionId) ?? null
 
   const adapterFor = (session: ChatSession): ModuleChatAdapter =>
     adapters[session.moduleId] ?? getDefaultChatAdapter(session.moduleId)
@@ -116,9 +136,19 @@ export function WorkspaceChatOverlay({
       currentModuleId,
       currentHasAgent,
     )
-    if (decision === ChatSessionSendDecision.Ok) return true
-    setMismatchDialog({ decision, bufferedText: text })
-    return false
+    if (decision !== ChatSessionSendDecision.Ok) {
+      setMismatchDialog({ decision, bufferedText: text })
+      return false
+    }
+    if (isDraftChatSession(focused)) {
+      void persistDraftWorkspaceChat({
+        draft: focused,
+        text,
+        queryClient,
+      })
+      return false
+    }
+    return true
   }
 
   const onConfirmNewChat = (bufferedText: string) => {

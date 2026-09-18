@@ -1,4 +1,5 @@
 import { assertApiframeGenerateImageCapacity } from '@/shared/ai/apiframe-image-capacity'
+import { fitGrokGeneratePrompt } from '@/shared/ai/utils/apiframe-grok-prompt-fit'
 import {
   APIFRAME_ASPECT_RATIO_PATTERN,
   ApiframeGptImage2OutputFormat,
@@ -31,21 +32,9 @@ function optionalAspectAndImages(
   return params
 }
 
-function grokImagineImageValue(imageInputUrls: string[]): string | string[] {
-  const [firstImageUrl] = imageInputUrls
-  if (imageInputUrls.length === 1 && firstImageUrl) return firstImageUrl
-  return imageInputUrls
-}
-
-function grokImagineParams(
-  aspectRatio: string | undefined,
-  imageInputUrls: string[] | undefined,
-): Record<string, unknown> {
-  const params: Record<string, unknown> = {}
-  if (aspectRatio) params[ApiframeImageField.AspectRatio] = aspectRatio
-  if (!imageInputUrls?.length) return params
-  params[ApiframeImageField.Image] = grokImagineImageValue(imageInputUrls)
-  return params
+function clipGrokGeneratePrompt(model: ApiframeImageModel, prompt: string): string {
+  if (model !== ApiframeImageModel.GrokImagineImage) return prompt
+  return fitGrokGeneratePrompt(prompt)
 }
 
 function attachParamsIfPresent(
@@ -64,7 +53,7 @@ export function buildGenerateBody(options: {
 }): Record<string, unknown> {
   const { model, prompt, aspectRatio, imageInputUrls } = options
   assertApiframeGenerateImageCapacity(model, imageInputUrls?.length ?? 0)
-  const body: Record<string, unknown> = { model, prompt }
+  const body: Record<string, unknown> = { model, prompt: clipGrokGeneratePrompt(model, prompt) }
 
   switch (model) {
     case ApiframeImageModel.Midjourney: {
@@ -81,7 +70,11 @@ export function buildGenerateBody(options: {
       )
       return body
     case ApiframeImageModel.GrokImagineImage:
-      attachParamsIfPresent(body, ApiframeParamsKey.GrokImagine, grokImagineParams(aspectRatio, imageInputUrls))
+      attachParamsIfPresent(
+        body,
+        ApiframeParamsKey.GrokImagine,
+        optionalAspectAndImages(aspectRatio, imageInputUrls, ApiframeImageField.Image),
+      )
       return body
     case ApiframeImageModel.GptImage15:
       attachParamsIfPresent(

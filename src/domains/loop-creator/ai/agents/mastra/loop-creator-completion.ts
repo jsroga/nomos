@@ -9,7 +9,7 @@ import { LlmFeature } from '@/shared/ai/gateway/constants/llm-call'
 import { mastraCompletionSettings } from '@/shared/ai/gateway/output-budget'
 import { currentGatewayContext } from '@/shared/ai/gateway/call-context'
 import '@/shared/data/server-guard'
-import type { BaseMessage } from '@/shared/chat/core/message'
+import { ChatMessageRole, type ChatMessage } from '@/shared/chat/core/message'
 import type { ProjectScope } from '@/shared/auth/project-scope'
 import { complete, completeStructured } from '@/shared/ai/gateway'
 import type { ZodType } from 'zod'
@@ -41,18 +41,18 @@ export function isLoopCreatorMastraEnabled(): boolean {
   return isFeatureEnabled(FeatureFlag.LoopCreatorMastra)
 }
 
-function roleLabel(message: BaseMessage): string {
-  switch (message._getType()) {
-    case 'ai':
+function roleLabel(message: ChatMessage): string {
+  switch (message.role) {
+    case ChatMessageRole.Ai:
       return ROLE_ASSISTANT
-    case 'system':
+    case ChatMessageRole.System:
       return ROLE_SYSTEM
     default:
       return ROLE_USER
   }
 }
 
-function flattenHistory(messages: BaseMessage[]): string {
+function flattenHistory(messages: ChatMessage[]): string {
   if (messages.length === 0) return ''
   const lines = messages.map(message => {
     const content =
@@ -65,7 +65,7 @@ function flattenHistory(messages: BaseMessage[]): string {
 export interface LoopCreatorCompletionParams {
   agentId: LoopCreatorMastraAgentId
   systemPrompt: string
-  history?: BaseMessage[]
+  history?: ChatMessage[]
   userPrompt?: string
   temperature: number
   modelOverride?: string

@@ -108,7 +108,7 @@ describe('every model resolver routes through OpenRouter', () => {
     expect(resolveRoleModel('author')).toBe(OPENROUTER_AUTO_GATEWAY)
   })
 
-  it('the LangChain direct-client resolver returns the OpenRouter model id', () => {
+  it('the Loop Creator direct-client resolver returns the OpenRouter model id', () => {
     expect(resolveLoopCreatorModel()).toBe(OPENROUTER_AUTO_MODEL)
   })
 
@@ -137,7 +137,7 @@ describe('every model resolver routes through OpenRouter', () => {
 })
 
 describe('openRouterClientConfig', () => {
-  it('points LangChain/AI-SDK clients at the OpenRouter endpoint', () => {
+  it('points AI-SDK clients at the OpenRouter endpoint', () => {
     expect(openRouterClientConfig().baseURL).toBe(OPENROUTER_BASE_URL)
     expect(OPENROUTER_BASE_URL).toContain('openrouter.ai')
   })

@@ -5,7 +5,7 @@ import { projects } from '@/db'
 import { ProjectForbidden, projectScope, type ProjectScope } from '@/shared/auth/project-scope'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '@/shared/auth/auth'
-import { recordFromJson } from '@/shared/data/json-guards'
+import { recordFromJson, stringArrayFromJson } from '@/shared/data/json-guards'
 import { API_ERROR, API_LOG_PREFIX, TRIGGER_TASK_ID } from '@/shared/data/constants/api-errors'
 import { moodboardReplaceStyleRef } from '@/domains/storyteller/tasks/build-moodboard-locked-prompts'
 import { resolveMoodboardProviderConfig } from '../_lib/moodboard-provider-config'
@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
       overview: context.overview,
       replaceIndex,
       styleReferenceUrl,
+      styleReferenceUrls: stringArrayFromJson(project.styleReferenceUrls),
       providerConfig: {
         provider: resolvedProviderConfig.provider,
         modelId: resolvedProviderConfig.modelId,

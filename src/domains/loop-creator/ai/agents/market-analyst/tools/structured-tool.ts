@@ -15,10 +15,8 @@ export interface LoopStructuredToolFields {
 
 /**
  * Single bridge for the market-analyst tools. Emits a native Mastra `createTool`
- * (the agent is a Mastra `Agent`; this drops the former LangChain
- * `DynamicStructuredTool` + runtime adapter). Each tool `func` returns a string,
- * surfaced to the model as `{ output }` — the exact shape the old adapter produced,
- * so tool-calling behavior is unchanged. Per-tool files are untouched.
+ * (the agent is a Mastra `Agent`). Each tool `func` returns a string,
+ * surfaced to the model as `{ output }`. Per-tool files are untouched.
  */
 export function createLoopStructuredTool(fields: LoopStructuredToolFields) {
   return createTool({

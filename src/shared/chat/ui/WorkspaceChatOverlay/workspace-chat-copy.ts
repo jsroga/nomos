@@ -19,6 +19,10 @@ export enum WorkspaceChatCopy {
   ComposerDisabled = 'Chat is unavailable on this page',
 }
 
+export enum WorkspaceChatHistoryActionClass {
+  Root = 'workspace-chat-history-item-action',
+}
+
 export enum WorkspaceChatClass {
   Panel = 'relative z-[60] ml-auto flex h-full w-96 shrink-0 flex-col border-l-0 bg-card/95',
   PanelHidden = 'relative z-[60] ml-auto flex h-full w-96 shrink-0 flex-col border-l-0 bg-card/95 hidden',

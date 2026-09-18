@@ -34,9 +34,9 @@ describe('direct provider SDK imports', () => {
     expect(REMAINDER.length).toBeLessThanOrEqual(RATCHET.providerSdkImportsOutsideGateway)
   })
 
-  it('drives LangChain to zero — it is removed, not fenced', () => {
-    expect(imports(ProviderSdkBucket.LangChain).length).toBeLessThanOrEqual(
-      RATCHET.langChainImports
+  it('keeps the removed message-class SDK at zero — it is gone, not fenced', () => {
+    expect(imports(ProviderSdkBucket.BannedMessageSdk).length).toBeLessThanOrEqual(
+      RATCHET.bannedMessageSdkImports
     )
   }, 60_000)
 })

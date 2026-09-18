@@ -23,6 +23,7 @@ import {
   corkBoardVideoPresetLabel,
 } from './utils/cork-board'
 import { isStoryboardVideoUrl, storyboardEmptyCopy } from './storyboard-media'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/Tooltip'
 
 interface CorkBoardStoryboardSectionProps {
   storyboardUrl?: string | null
@@ -56,6 +57,9 @@ export const CorkBoardStoryboardSection: React.FC<CorkBoardStoryboardSectionProp
       ? CorkBoardCopy.CombinedRegenerate
       : CorkBoardCopy.CombinedGenerate
   const controlsDisabled = isGeneratingCombined || !canGenerate
+  const disabledReason = isGeneratingCombined
+    ? CorkBoardCopy.Generating
+    : storyboardEmptyCopy({ hasBeats, hasBeatImages })
 
   return (
     <div className="grid grid-cols-1 gap-4 mb-6">
@@ -101,7 +105,11 @@ export const CorkBoardStoryboardSection: React.FC<CorkBoardStoryboardSectionProp
                   </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex pointer-events-auto">
               <Button
+                type={HtmlElementType.Button}
                 variant="outline"
                 size="sm"
                 onClick={() => {
@@ -109,6 +117,7 @@ export const CorkBoardStoryboardSection: React.FC<CorkBoardStoryboardSectionProp
                   onGenerateCombined(selected.model, selected.look)
                 }}
                 disabled={controlsDisabled}
+                aria-label={controlsDisabled ? disabledReason : buttonLabel}
                 className="gap-2 rounded-md"
               >
                 {isGeneratingCombined ? (
@@ -118,6 +127,10 @@ export const CorkBoardStoryboardSection: React.FC<CorkBoardStoryboardSectionProp
                 )}
                 {buttonLabel}
               </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{controlsDisabled ? disabledReason : buttonLabel}</TooltipContent>
+              </Tooltip>
             </div>
           )}
         </div>

@@ -8,7 +8,7 @@
  * The orchestration itself is the existing imperative supervisor loop
  * (`core/graph/loop-orchestrator.ts`); each specialist's single LLM call routes
  * through the registered agent when the flag is on (see
- * `ai/agents/mastra/loop-creator-completion.ts`), else the default LangChain
+ * `ai/agents/mastra/loop-creator-completion.ts`), else the gateway completion
  * path. Side-effect-imported by `src/mastra.ts` (Studio) and the loop-creator
  * API routes (production ordering, before the first `getMastraInstance()`).
  */

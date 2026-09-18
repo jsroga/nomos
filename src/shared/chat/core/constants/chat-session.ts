@@ -14,6 +14,15 @@ export enum ChatSessionCopy {
   PlaceholderTitle = 'New chat',
 }
 
+export enum ChatSessionThreadPrefix {
+  Overlay = 'overlay:',
+  Draft = 'draft:',
+}
+
+export enum ChatSessionDraftUser {
+  Id = 'draft',
+}
+
 export enum ChatSessionBodyKey {
   ProjectId = 'projectId',
   ModuleId = 'moduleId',

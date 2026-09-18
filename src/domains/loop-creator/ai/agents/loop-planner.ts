@@ -7,7 +7,7 @@
  * - Creating high-level loop architecture
  */
 
-import { AIMessage } from '@/shared/chat/core/message'
+import { assistantChatMessage, ChatMessageRole } from '@/shared/chat/core/message'
 import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'
 import { LoopPlannerOutputSchema } from './schemas/loop-planner-output'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
@@ -159,7 +159,7 @@ export async function loopPlannerAgent(
   console.log('[LoopPlanner] Starting...')
 
   // Get the task from the last human message or use default
-  const lastHumanMsg = [...state.messages].reverse().find(m => m._getType() === 'human')
+  const lastHumanMsg = [...state.messages].reverse().find(m => m.role === ChatMessageRole.Human)
   const task = lastHumanMsg
     ? typeof lastHumanMsg.content === 'string'
       ? lastHumanMsg.content
@@ -196,12 +196,11 @@ export async function loopPlannerAgent(
     pendingActions: nodeActions,
     nextAgent: 'supervisor',
     messages: [
-      new AIMessage({
-        content:
-          parsed.message ||
+      assistantChatMessage(
+        parsed.message ||
           `Created ${parsed.loops.length} game loops with ${nodeActions.length} canvas elements.`,
-        name: 'loop_planner',
-      }),
+        'loop_planner',
+      ),
     ],
   }
 }

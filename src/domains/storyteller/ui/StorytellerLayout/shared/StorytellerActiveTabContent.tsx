@@ -1,12 +1,9 @@
 'use client'
 
 import { useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { CorkBoard } from '../../CorkBoard'
 import { StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
-import { editStorytellerScript, patchStorytellerEpisode } from '@/domains/storyteller/core/io/storyteller.api'
-import { EpisodePatchColumnName } from '@/domains/storyteller/core/io/episode-patch'
-import { storytellerKeys } from '@/domains/storyteller/core/io/storyteller.keys'
+import { editStorytellerScript } from '@/domains/storyteller/core/io/storyteller.api'
 import {
   ScriptEditor,
   StoryPlanBoard,
@@ -70,7 +67,6 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
   const { handleCharacterWebNodeClick, handleSaveEpisodePrompt } = agents
   const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
   const isChatBusy = isGenerationActivityBusy(generationPhase)
-  const queryClient = useQueryClient()
 
   const setPremisePending = useCallback((section: string, action: PendingAction | null) => {
     setSectionPendingActions(prev => {
@@ -200,21 +196,6 @@ export const StorytellerActiveTabContent: React.FC<StorytellerPageSlices> = prop
             projectId={routeProjectId ?? ''}
             episodeId={currentEpisodeId ?? ''}
             mode={currentEpisode?.manuscriptMode ?? ManuscriptMode.Script}
-            onModeChange={next => {
-              if (!currentEpisodeId) return
-              void (async () => {
-                try {
-                  await patchStorytellerEpisode(currentEpisodeId, {
-                    [EpisodePatchColumnName.ManuscriptMode]: next,
-                  })
-                  await queryClient.invalidateQueries({
-                    queryKey: storytellerKeys.episode(currentEpisodeId),
-                  })
-                } catch {
-                  // Episode mode patch is best-effort; the editor stays on the prior mode.
-                }
-              })()
-            }}
           />
         </div>
       )}

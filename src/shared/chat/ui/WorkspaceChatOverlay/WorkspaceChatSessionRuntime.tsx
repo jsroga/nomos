@@ -11,6 +11,7 @@ import {
 } from '@/shared/chat/core/io/chat-sessions.api'
 import type { OverlaySessionHostProps } from '@/shared/chat/overlay/module-chat-adapters'
 import type { ModuleChatAdapter } from '@/shared/chat/overlay/module-chat-adapters'
+import { isDraftChatSession } from '@/shared/chat/core/overlay-session-runtime'
 import { useWorkspaceChatUiStore } from '@/shared/chat/state/workspace-chat-ui-store'
 
 export function WorkspaceChatSessionRuntime({
@@ -26,6 +27,7 @@ export function WorkspaceChatSessionRuntime({
 
   const onChatStatus = (status: string) => {
     setLocalRuntimeStatus(host.session.id, status)
+    if (isDraftChatSession(host.session)) return
     if (
       status === AssistantChatRuntimeStatus.Submitted ||
       status === AssistantChatRuntimeStatus.Streaming

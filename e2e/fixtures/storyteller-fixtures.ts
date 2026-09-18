@@ -24,11 +24,11 @@ import {
   FlowQueryParam,
 } from '../constants/storyteller-flow'
 import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/utils/assistant-thread-ui'
+import { CHAT_CHROME_COPY } from '@/shared/chat/core/utils/chat-chrome'
 import { EMPTY_TURN_NOTICE, withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
 import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { StorytellerHeaderCopy } from '@/domains/storyteller/ui/StorytellerLayout/constants/storyteller-module-header'
-import { StorytellerSidebarCopy } from '@/domains/storyteller/ui/StorytellerLayout/utils/storyteller-sidebar-footer'
 import { WritersRoomCastConfirm } from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
 import { SmokeHttpStatus, SmokeMatch } from '../constants/storyteller-smoke'
 import {
@@ -398,11 +398,16 @@ export async function waitForToolCall(
   toolName: string,
   timeoutMs: number = FlowTimeout.Long,
 ): Promise<void> {
-  const toolCard = page.locator(FlowSelector.Div)
-    .filter({ hasText: `${FlowSelector.ToolPrefix}${toolName}` })
-    .first()
-  await expect(toolCard).toBeVisible({ timeout: timeoutMs })
-  await expect(toolCard).toContainText(FlowToolStatus.Done, { timeout: FlowTimeout.Generation })
+  const debugCard = page.locator(FlowSelector.Div).filter({
+    hasText: `${FlowSelector.ToolPrefix}${toolName}`,
+  })
+  const compact = page.getByText(CHAT_CHROME_COPY.ToolCalledOne)
+  await expect(debugCard.or(compact).first()).toBeVisible({ timeout: timeoutMs })
+  if (await debugCard.first().isVisible().catch(() => false)) {
+    await expect(debugCard.first()).toContainText(FlowToolStatus.Done, {
+      timeout: FlowTimeout.Generation,
+    })
+  }
 }
 
 export async function waitForUserMessage(page: Page, text: string): Promise<void> {
@@ -481,9 +486,7 @@ export async function draftFirstEpisode(page: Page): Promise<void> {
   if (await addToWorld.or(accept).first().isVisible().catch(() => false)) {
     await acceptPendingAction(page)
   }
-  await expect(page.getByText(StorytellerSidebarCopy.BusyEpisode)).toBeHidden({
-    timeout: FlowTimeout.Generation,
-  })
+  await waitForAssistantIdle(page, FlowTimeout.Generation)
 
   const headerDraft = page.getByRole(FlowRole.Tab, { name: FlowUiLabel.NewEpisode })
   if (await headerDraft.isVisible().catch(() => false)) {

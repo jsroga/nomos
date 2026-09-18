@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import { Plus, RefreshCw, Trash2, Shuffle, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Shuffle, Loader2 } from 'lucide-react'
 import { StorytellerPromptRegistryId } from '@/domains/storyteller/ai/prompts/registry/prompt-registry-ids'
 import { BibleSection } from '@/domains/storyteller/core/types/enums'
 import { plotTwistObjectFromJson } from '@/domains/storyteller/core/entities/world-rule-wire'
@@ -8,11 +8,8 @@ import { useBible } from './BibleContext'
 import { pendingReviewHostClass } from '../utils/section-pending-overlay'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { bibleSectionItems, planItems } from '../utils/bible-section-items'
-import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-import {
-  isBibleSectionRefreshDisabled,
-  requestBibleSectionChatRefresh,
-} from '../utils/bible-section-chat-refresh'
+import { requestBibleSectionChatRefresh } from '../utils/bible-section-chat-refresh'
+import { StorytellerRefreshButton, StorytellerRefreshCopy } from '@/domains/storyteller/ui/StorytellerRefreshButton'
 
 const PlotTwistDisplayItem: FC<{ twist: unknown; index: number; projectId: string }> = ({
   twist,
@@ -62,15 +59,6 @@ const PlotTwistsHeaderActions: FC<{
   onGenerate?: () => void
   onAddPlotTwist: () => void
 }> = ({ isLoading, isEditing, isReadOnly, onGenerate, onAddPlotTwist }) => {
-  const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
-  const pendingChatPrompt = useStorytellerUiStore(state => state.pendingChatPrompt)
-  const generateDisabled = isBibleSectionRefreshDisabled({
-    isLoading,
-    generationPhase,
-    pendingChatPrompt,
-  })
-  const showRefreshBusy = isLoading || pendingChatPrompt !== null
-
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2">
@@ -90,15 +78,11 @@ const PlotTwistsHeaderActions: FC<{
           </button>
         )}
         {!isReadOnly && onGenerate && (
-          <button
+          <StorytellerRefreshButton
             onClick={onGenerate}
-            className={`p-1.5 rounded-lg transition-all duration-200 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 hover:scale-105 ${generateDisabled ? 'pointer-events-none opacity-50' : ''}`}
-            title="Generate Twists"
-            disabled={generateDisabled}
-            type="button"
-          >
-            <RefreshCw size={14} className={showRefreshBusy ? 'animate-spin' : ''} />
-          </button>
+            idleLabel={StorytellerRefreshCopy.GenerateTwists}
+            extraDisabled={isLoading}
+          />
         )}
       </div>
     </div>

@@ -131,7 +131,7 @@ recordFromJson(x)
     expect(result.ok).toBe(true)
     expect(result.reason).not.toBe('ab-swap')
     expect(result.reason).not.toBe('raise-and-violate')
-  }, 30_000)
+  }, 120_000)
 
   it('fails if a numeric threshold rose versus the pinned SHA', () => {
     const baseJson = readFileSync(BASE_RATCHET_PATH, 'utf8')

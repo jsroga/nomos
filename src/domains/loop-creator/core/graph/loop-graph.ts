@@ -1,5 +1,5 @@
 /**
- * Loop Creator streaming entry — Mastra-native orchestrator (no LangGraph).
+ * Loop Creator streaming entry — Mastra-native orchestrator.
  */
 
 export { streamLoopCreator } from './loop-orchestrator'

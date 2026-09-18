@@ -10,13 +10,17 @@ import {
   ProjectLoaderLog,
   ProjectLoaderMessage,
 } from '@/shared/data/constants/project-loader'
+import {
+  isProjectLoaderBlocking,
+  isWorkspaceProjectReady,
+  shouldReloadWorkspaceProject,
+} from '@/components/shell/should-reload-workspace-project'
 
 export function useProjectFromUrl() {
   const params = useParams()
   const router = useRouter()
   const pathname = usePathname()
 
-  // Handle both single projectId and catch-all array
   const rawProjectId = params?.projectId
   const candidateId = Array.isArray(rawProjectId) ? rawProjectId[0] : rawProjectId
   const projectId =
@@ -30,53 +34,77 @@ export function useProjectFromUrl() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const loaderBlocking = isProjectLoaderBlocking({
+    isLoading,
+    urlProjectId: projectId,
+    currentProjectId: currentProject?.id,
+  })
+  const projectReady = isWorkspaceProjectReady({
+    urlProjectId: projectId,
+    currentProjectId: currentProject?.id,
+    isLoading,
+  })
 
-  // Track if we've already loaded this project to prevent re-fetches
   const loadedProjectIdRef = useRef<string | null>(null)
+  const loadInFlightRef = useRef<string | null>(null)
 
   useEffect(() => {
-    // Reserved paths (e.g. /projects) can match `[projectId]` — never hit the API.
     if (typeof candidateId === 'string' && candidateId.length > 0 && !projectId) {
       router.replace(AUTH_ROUTE.PROJECTS)
       return
     }
 
-    const shouldLoad =
-      projectId && currentProject?.id !== projectId && loadedProjectIdRef.current !== projectId
+    if (!projectId) {
+      if (currentProject) {
+        clearCurrentProject()
+        clearTiles()
+      }
+      loadedProjectIdRef.current = null
+      return
+    }
 
-    if (shouldLoad) {
-      console.log(ProjectLoaderLog.StartingLoad, projectId)
-      setIsLoading(true)
-      setError(null)
-      loadedProjectIdRef.current = projectId
+    const shouldLoad = shouldReloadWorkspaceProject({
+      projectId,
+      currentProjectId: currentProject?.id,
+      loadedProjectId: loadedProjectIdRef.current,
+    })
 
-      void (async () => {
-        try {
-          const loadedProject = await loadWorkspaceProject(projectId)
-          if (loadedProject) {
-            await loadTilesForProject(projectId)
-          }
+    if (!shouldLoad) return
+    if (loadInFlightRef.current === projectId) return
 
-          console.log(ProjectLoaderLog.LoadComplete, !!loadedProject)
-          if (!loadedProject) {
-            console.warn(ProjectLoaderLog.ProjectNotFoundRedirect)
-            setError(ProjectLoaderMessage.ProjectNotFound)
-            loadedProjectIdRef.current = null
-            router.replace(AUTH_ROUTE.PROJECTS)
-          }
-        } catch (err) {
-          console.error(ProjectLoaderLog.FailedLoadProject, err)
-          setError(ProjectLoaderMessage.FailedLoadProject)
-          loadedProjectIdRef.current = null
-        } finally {
-          setIsLoading(false)
-        }
-      })()
-    } else if (!projectId && currentProject) {
+    loadedProjectIdRef.current = null
+    if (currentProject?.id && currentProject.id !== projectId) {
       clearCurrentProject()
       clearTiles()
-      loadedProjectIdRef.current = null
     }
+
+    console.log(ProjectLoaderLog.StartingLoad, projectId)
+    setIsLoading(true)
+    setError(null)
+    loadInFlightRef.current = projectId
+
+    void (async () => {
+      try {
+        const loadedProject = await loadWorkspaceProject(projectId)
+        console.log(ProjectLoaderLog.LoadComplete, !!loadedProject)
+        if (!loadedProject) {
+          console.warn(ProjectLoaderLog.ProjectNotFoundRedirect)
+          setError(ProjectLoaderMessage.ProjectNotFound)
+          loadedProjectIdRef.current = null
+          router.replace(AUTH_ROUTE.PROJECTS)
+          return
+        }
+        loadedProjectIdRef.current = projectId
+        void loadTilesForProject(projectId)
+      } catch (err) {
+        console.error(ProjectLoaderLog.FailedLoadProject, err)
+        setError(ProjectLoaderMessage.FailedLoadProject)
+        loadedProjectIdRef.current = null
+      } finally {
+        if (loadInFlightRef.current === projectId) loadInFlightRef.current = null
+        setIsLoading(false)
+      }
+    })()
   }, [
     candidateId,
     projectId,
@@ -89,12 +117,11 @@ export function useProjectFromUrl() {
     pathname,
   ])
 
-  const isProjectPending = Boolean(projectId && currentProject?.id !== projectId)
-
   return {
     projectId,
     currentProject,
-    isLoading: isLoading || isProjectPending,
+    isLoading: loaderBlocking,
+    isReady: projectReady,
     error,
     hasProject: !!projectId,
   }

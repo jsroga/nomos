@@ -62,3 +62,12 @@ describe('artifact-draft overlay handlers', () => {
     ).toBe(false)
   })
 })
+
+describe('isReviewableArtifactDraft', () => {
+  it('rejects blank drafts so Pending Review never opens empty', async () => {
+    const { isReviewableArtifactDraft } = await import('../artifact-draft-overlay')
+    expect(isReviewableArtifactDraft('')).toBe(false)
+    expect(isReviewableArtifactDraft('   ')).toBe(false)
+    expect(isReviewableArtifactDraft('A new logline.')).toBe(true)
+  })
+})

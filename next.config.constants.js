@@ -49,8 +49,6 @@ const SERVER_EXTERNAL_PACKAGES = [
   '@opentelemetry/sdk-node',
   '@opentelemetry/sdk-trace-node',
   '@opentelemetry/sdk-trace-base',
-  '@langchain/core',
-  '@langchain/openai',
   '@mastra/core',
   '@mastra/libsql',
   '@mastra/loggers',

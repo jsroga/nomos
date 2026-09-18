@@ -24,6 +24,7 @@ import {
 } from '@/domains/storyteller/ui/WorldBible/components/BibleSectionChrome'
 import { pendingReviewHostClass } from '@/domains/storyteller/ui/WorldBible/utils/section-pending-overlay'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/Tooltip'
+import { HtmlElementType } from '@/shared/data/constants/protocol'
 
 export type { CharacterCreationDialogProps, InitialCharacterData } from './character-creation-dialog-types'
 
@@ -57,6 +58,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
     Boolean(dialog.pendingAction)
   const generateButton = (
     <Button
+      type={HtmlElementType.Button}
       variant="outline"
       onClick={dialog.handleGenerateMissingFields}
       disabled={generateDisabled}
@@ -73,10 +75,16 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
   const modalContent = (
     <>
       <div className={CharacterDialogOverlayClass.Backdrop}>
-        <div className="bg-card border border-border w-full max-w-2xl rounded-lg shadow-lg flex flex-col max-h-[90vh] mx-4">
+          <form
+            className="bg-card border border-border w-full max-w-2xl rounded-lg shadow-lg flex flex-col max-h-[90vh] mx-4"
+            onSubmit={event => {
+              event.preventDefault()
+              void dialog.handleSubmit()
+            }}
+          >
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h2 className="text-lg font-bold">{title}</h2>
-            <Button variant="outline" size="sm" onClick={dialog.handleClose}>
+            <Button type={HtmlElementType.Button} variant="outline" size="sm" onClick={dialog.handleClose}>
               <X size={16} />
             </Button>
           </div>
@@ -161,12 +169,12 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
               generateButton
             )}
             <div className="flex gap-2">
-              <Button variant="outline" onClick={dialog.handleClose}>
+              <Button type={HtmlElementType.Button} variant="outline" onClick={dialog.handleClose}>
                 Cancel
               </Button>
               <Button
+                type={HtmlElementType.Submit}
                 variant="default"
-                onClick={dialog.handleSubmit}
                 disabled={
                   dialog.isSaving ||
                   dialog.isGeneratingMissing ||
@@ -185,7 +193,7 @@ export const CharacterCreationDialog: React.FC<CharacterCreationDialogProps> = (
             </div>
           </div>
           </div>
-        </div>
+          </form>
       </div>
 
       {dialog.showVariantPicker && activeGenState.gridImageUrl && (

@@ -4,7 +4,6 @@ import { Plus, Film } from 'lucide-react'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/Button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/Tooltip'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { ConfirmDialogVariant } from '@/components/ConfirmDialog/constants/confirm-dialog-copy'
@@ -53,7 +52,7 @@ import {
   formatEpisodesHeading,
 } from './utils/episode-manager'
 import { shouldPersistEpisodeRename } from './episode-title-action'
-import { KeyboardKey } from '@/shared/data/constants/protocol'
+import { HtmlElementType } from '@/shared/data/constants/protocol'
 import { readString } from '@/shared/data/json-guards'
 import { StorytellerQueryParam } from '@/domains/storyteller/core/storyteller-page-wire'
 import { storytellerSearchParams } from '@/domains/storyteller/state/utils/strip-bible-search-params'
@@ -98,7 +97,7 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
   const createEpisodeDialogRequestSeq = useStorytellerUiStore(
     state => state.createEpisodeDialogRequestSeq,
   )
-  const handledCreateDialogSeqRef = useRef(0)
+  const handledCreateDialogSeqRef = useRef(createEpisodeDialogRequestSeq)
 
   const episodes = useMemo<Episode[]>(() => {
     const rows = episodesQuery.data ?? []
@@ -205,21 +204,16 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
             {formatEpisodesHeading(isLoading ? 1 : episodes.length)}
           </span>
           {!isLoading && episodes.length > 0 ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-6 w-6 p-0 rounded-[7px] shadow-[inset_0_0_0_1px_hsl(var(--border)/0.8)] border-0 text-muted-foreground"
-                  onClick={handleCreateClick}
-                >
-                  <Plus size={14} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{EPISODE_MANAGER_ADD}</p>
-              </TooltipContent>
-            </Tooltip>
+            <Button
+              type={HtmlElementType.Button}
+              size="sm"
+              variant="outline"
+              className="h-6 w-6 p-0 rounded-[7px] shadow-[inset_0_0_0_1px_hsl(var(--border)/0.8)] border-0 text-muted-foreground"
+              onClick={handleCreateClick}
+              aria-label={EPISODE_MANAGER_ADD}
+            >
+              <Plus size={14} />
+            </Button>
           ) : null}
         </div>
 
@@ -272,6 +266,12 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
       {/* Create Episode Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
+          <form
+            onSubmit={event => {
+              event.preventDefault()
+              void handleCreateEpisode()
+            }}
+          >
           <DialogHeader>
             <DialogTitle>{EPISODE_MANAGER_CREATE_TITLE}</DialogTitle>
             <DialogDescription>
@@ -287,14 +287,12 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
                 placeholder={EPISODE_MANAGER_CREATE_PLACEHOLDER}
                 className="col-span-3"
                 autoFocus
-                onKeyDown={e => {
-                  if (e.key === KeyboardKey.Enter) void handleCreateEpisode()
-                }}
               />
             </div>
           </div>
           <DialogFooter>
             <Button
+              type={HtmlElementType.Button}
               variant="outline"
               onClick={() => setIsCreateDialogOpen(false)}
               disabled={isCreatingEpisode}
@@ -302,13 +300,14 @@ export const EpisodeManager: React.FC<EpisodeManagerProps> = React.memo(({
               {EPISODE_MANAGER_DELETE_CANCEL}
             </Button>
             <Button
-              onClick={handleCreateEpisode}
+              type={HtmlElementType.Submit}
               disabled={!newEpisodeTitle.trim()}
               loading={isCreatingEpisode}
             >
               {EPISODE_MANAGER_CREATE_CONFIRM}
             </Button>
           </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
       {ConfirmDialogComponent}

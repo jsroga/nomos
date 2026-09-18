@@ -2,7 +2,7 @@
 
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
 import { CharacterPanel } from '../../CharacterPanel'
-import { Users, AlertCircle } from 'lucide-react'
+import { Users } from 'lucide-react'
 import {
   DomainSidebar,
   SidebarSection,
@@ -13,12 +13,10 @@ import { EpisodeManager } from '../storyteller-dynamic-imports'
 import { MasterPromptEditor } from '../../MasterPromptEditor'
 import type { StorytellerPageSlices } from '@/domains/storyteller/state/hooks/useStorytellerPage'
 import { MasterPromptScope } from '@/domains/storyteller/ui/MasterPromptEditor/constants/master-prompt-editor'
-import {
-  StorytellerSidebarCopy,
-  StorytellerSidebarStorageKey,
-} from '../utils/storyteller-sidebar-footer'
+import { StorytellerSidebarCopy, StorytellerSidebarStorageKey } from '../utils/storyteller-sidebar-footer'
 import { StorytellerHeaderCopy } from '../constants/storyteller-module-header'
 import { StorytellerSidebarFooter } from './StorytellerSidebarFooter'
+import { StyleRefsPanel, useProjectStyleRefs } from '@/shared/canvas/style-refs'
 
 interface StorytellerLeftSidebarProps extends StorytellerPageSlices {
   onFixInconsistencies: () => void
@@ -38,7 +36,6 @@ export function StorytellerLeftSidebar(props: StorytellerLeftSidebarProps) {
     selectEpisode,
     setCurrentEpisodeTitle,
   } = core
-  const { isSending } = core
   const {
     isFetchingCharacters,
     isDeletingCharacter,
@@ -47,6 +44,7 @@ export function StorytellerLeftSidebar(props: StorytellerLeftSidebarProps) {
     handleDeleteCharacter,
   } = episode
   const { handleSaveProjectPrompt } = agents
+  const styleRefs = useProjectStyleRefs(currentProject)
 
   return (
     <DomainSidebar
@@ -65,28 +63,33 @@ export function StorytellerLeftSidebar(props: StorytellerLeftSidebarProps) {
               hydrateKey={currentProject.id}
               initialPrompt={currentProject.master_prompt || ''}
               onSave={handleSaveProjectPrompt}
+              onAcceptStyleImages={styleRefs.replaceStyleReferenceUrls}
+            />
+            <StyleRefsPanel
+              showAdminCatalog={false}
+              catalogItems={[]}
+              catalogSaving={false}
+              onToggleCatalogSref={() => undefined}
+              styleReferenceUrls={styleRefs.styleReferenceUrls}
+              isUploadingStyleRefs={styleRefs.isUploadingStyleRefs}
+              isApplyingGenerationMode={false}
+              handleAddStyleRefFiles={styleRefs.handleAddStyleRefFiles}
+              handleRemoveStyleRef={styleRefs.handleRemoveStyleRef}
+              handleRestoreStyleRefs={styleRefs.handleRestoreStyleRefs}
             />
           </div>
 
           <div id={TOUR_STEP_IDS.STORYTELLER_EPISODES}>
             <SidebarSection separator>
-              <div className={isSending ? 'opacity-50 pointer-events-none' : ''}>
-                <EpisodeManager
-                  projectId={currentProject.id}
-                  currentEpisodeId={currentEpisodeId}
-                  currentEpisodeTitle={currentEpisodeTitle}
-                  currentPhase={currentPhase}
-                  isWorldBibleOpen={isWorldBibleOpen}
-                  onEpisodeChange={selectEpisode}
-                  onEpisodeTitleChange={title => setCurrentEpisodeTitle(title)}
-                />
-                {isSending && (
-                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} />
-                    {StorytellerSidebarCopy.BusyEpisode}
-                  </div>
-                )}
-              </div>
+              <EpisodeManager
+                projectId={currentProject.id}
+                currentEpisodeId={currentEpisodeId}
+                currentEpisodeTitle={currentEpisodeTitle}
+                currentPhase={currentPhase}
+                isWorldBibleOpen={isWorldBibleOpen}
+                onEpisodeChange={selectEpisode}
+                onEpisodeTitleChange={title => setCurrentEpisodeTitle(title)}
+              />
             </SidebarSection>
           </div>
 

@@ -13,7 +13,7 @@ describe('filterUpdatesForBibleSection', () => {
     })
   })
 
-  it('keeps off-section fields so sibling panels can pending-review them', () => {
+  it('drops off-section fields so sibling panels are not auto-filled', () => {
     const updates = {
       inspirations: { books: [{ title: 'Dune', description: 'Sand.' }] },
       moodSoundtrack: 'jazz',
@@ -23,26 +23,26 @@ describe('filterUpdatesForBibleSection', () => {
       updates,
       BibleSection.INSPIRATIONS
     )
-    expect(kept).toEqual(updates)
+    expect(kept).toEqual({ inspirations: updates.inspirations })
     expect(dropped).toEqual(['moodSoundtrack', 'plotTwists'])
   })
 
-  it('allows moodSoundtrack on soundtrack turns and still reports extras', () => {
+  it('allows moodSoundtrack on soundtrack turns and drops extras', () => {
     const { updates, dropped } = filterUpdatesForBibleSection(
       { moodSoundtrack: 'drone', worldDescription: 'overwrite me' },
       BibleSection.SOUNDTRACKS
     )
-    expect(updates).toEqual({ moodSoundtrack: 'drone', worldDescription: 'overwrite me' })
+    expect(updates).toEqual({ moodSoundtrack: 'drone' })
     expect(dropped).toEqual(['worldDescription'])
   })
 
-  it('allows episodePremise on premise turns and still reports extras', () => {
+  it('allows episodePremise on premise turns and drops extras', () => {
     const premise = { logline: 'A door opens.' }
     const { updates, dropped } = filterUpdatesForBibleSection(
       { episodePremise: premise, worldDescription: 'nope' },
       BibleSection.EPISODE_PREMISE
     )
-    expect(updates).toEqual({ episodePremise: premise, worldDescription: 'nope' })
+    expect(updates).toEqual({ episodePremise: premise })
     expect(dropped).toEqual(['worldDescription'])
   })
 

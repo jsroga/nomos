@@ -28,3 +28,28 @@ export async function readLastAssistantText(page: Page): Promise<string> {
   if (!(await assistant.isVisible().catch(() => false))) return ''
   return (await assistant.textContent())?.trim() ?? ''
 }
+
+export async function createWorkspaceChatAndRestoreHistory(
+  page: Page,
+  previousUserText: string,
+): Promise<void> {
+  await openWorkspaceChatOverlay(page)
+  await page.getByRole(FlowRole.Button, { name: FlowUiLabel.WorkspaceChatNew }).click()
+  await page.getByRole(FlowRole.Button, { name: FlowUiLabel.WorkspaceChatHistory }).click()
+  const items = page.getByRole(FlowRole.Menuitem)
+  await expect(items).toHaveCount(2, { timeout: FlowTimeout.Medium })
+  await items.nth(1).click()
+  await expect(
+    page.locator(FlowSelector.UserMessage).filter({ hasText: previousUserText }).first(),
+  ).toBeVisible({ timeout: FlowTimeout.Medium })
+}
+
+export async function expectWorkspaceChatUserHistory(
+  page: Page,
+  previousUserText: string,
+): Promise<void> {
+  await openWorkspaceChatOverlay(page)
+  await expect(
+    page.locator(FlowSelector.UserMessage).filter({ hasText: previousUserText }).first(),
+  ).toBeVisible({ timeout: FlowTimeout.Medium })
+}

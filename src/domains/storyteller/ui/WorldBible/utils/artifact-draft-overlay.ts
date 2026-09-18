@@ -98,6 +98,10 @@ function processingPending(section: string): PendingAction {
   }
 }
 
+export function isReviewableArtifactDraft(draft: string): boolean {
+  return draft.trim().length > 0
+}
+
 export async function runArtifactDraftOverlay(input: {
   projectId: string
   kind: ArtifactKind
@@ -122,12 +126,17 @@ export async function runArtifactDraftOverlay(input: {
       input.setPendingAction(input.overlaySection, null)
       return
     }
+    const draft = started.draft.trim()
+    if (!isReviewableArtifactDraft(draft)) {
+      input.setPendingAction(input.overlaySection, null)
+      return
+    }
     input.setPendingAction(
       input.overlaySection,
       pendingActionForArtifactDraft({
         section: input.overlaySection,
         runId: started.runId,
-        draft: started.draft,
+        draft,
         episodeId: input.episodeId,
         kind: input.kind,
         characterId: input.characterId,

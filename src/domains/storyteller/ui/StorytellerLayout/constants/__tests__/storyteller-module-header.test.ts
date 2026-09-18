@@ -33,8 +33,25 @@ describe('storyteller module header slots', () => {
     expect(trail).toBeGreaterThan(bible)
     expect(episode).toBeGreaterThan(trail)
     expect(src).toContain('isWorldBibleOpen ? StorytellerHeaderClass.ChromeSlot : StorytellerHeaderClass.Hidden')
-    expect(src).toContain('!isWorldBibleOpen ? StorytellerHeaderClass.ChromeSlot : StorytellerHeaderClass.Hidden')
+    expect(src).toContain('StorytellerHeaderClass.ChromeEnd')
     expect(src).toContain('{isWorldBibleOpen ? null : (')
+  })
+
+  it('pins Script/Novel before Edit on Draft only, with existing icons', () => {
+    const src = readFileSync(HEADER_SRC, 'utf8')
+    const manuscript = src.indexOf('showManuscriptSwitch')
+    const episode = src.indexOf('StorytellerHeaderSlotId.EpisodeChrome')
+    expect(manuscript).toBeGreaterThan(-1)
+    expect(episode).toBeGreaterThan(manuscript)
+    expect(src).toContain('StorytellerHeaderClass.SwitchEnd')
+    expect(src).toContain('StorytellerHeaderClass.ChromeEnd')
+    expect(src).toContain('StorytellerTab.Script')
+    expect(src).toContain('StorytellerHeaderCopy.Script')
+    expect(src).toContain('StorytellerHeaderCopy.Novel')
+    expect(src).toContain('<ScrollText')
+    expect(src).toContain('<BookOpen')
+    expect(StorytellerHeaderClass.SwitchEnd).toContain('ml-auto')
+    expect(StorytellerHeaderClass.ChromeEnd).not.toContain('flex-1')
   })
 
   it('keeps the bible layer mounted without a fade when switching context', () => {

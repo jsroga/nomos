@@ -8,6 +8,11 @@ import {
   selectMountedSessions,
   shouldCreateFocusedOverlaySession,
   streamingSessionsWithoutRunId,
+  overlayBridgePendingForSession,
+  createDraftChatSession,
+  isDraftChatSession,
+  mergeSessionsWithDraft,
+  shouldKeepFocusedSessionOnModuleChange,
 } from '@/shared/chat/core/overlay-session-runtime'
 
 const FOCUSED = '11111111-1111-4111-8111-111111111111'
@@ -46,6 +51,19 @@ describe('selectMountedSessions', () => {
     expect(next).toEqual([STREAMING, IDLE])
     expect(next).toContain(STREAMING)
   })
+
+  it('keeps the previous idle session mounted when focus moves to another thread', () => {
+    const rows = [
+      session({ id: FOCUSED, status: ChatSessionStatus.Idle }),
+      session({ id: STREAMING, status: ChatSessionStatus.Streaming }),
+      session({ id: IDLE, status: ChatSessionStatus.Idle }),
+    ]
+    expect(selectMountedSessions(rows, IDLE, FOCUSED).map(row => row.id)).toEqual([
+      FOCUSED,
+      STREAMING,
+      IDLE,
+    ])
+  })
 })
 
 describe('selectFocusedSessionId', () => {
@@ -60,9 +78,69 @@ describe('selectFocusedSessionId', () => {
     expect(selectFocusedSessionId([], null)).toBeNull()
   })
 
-  it('keeps a just-created id so New Chat does not snap back to the previous thread', () => {
+  it('keeps a just-created id while the list is still empty', () => {
+    expect(selectFocusedSessionId([], STREAMING)).toBe(STREAMING)
+  })
+
+  it('drops a focused id that is not in the loaded list', () => {
     const rows = [session({ id: FOCUSED }), session({ id: IDLE })]
-    expect(selectFocusedSessionId(rows, STREAMING)).toBe(STREAMING)
+    expect(selectFocusedSessionId(rows, STREAMING)).toBe(FOCUSED)
+  })
+})
+
+describe('overlayBridgePendingForSession', () => {
+  const PROMPT = { id: 7, text: 'Regenerate soundtracks' }
+
+  it.each([
+    {
+      name: 'focused and ok',
+      sessionId: FOCUSED,
+      focusedSessionId: FOCUSED,
+      sessionOk: true,
+      pending: PROMPT,
+      expected: PROMPT,
+    },
+    {
+      name: 'other mounted session',
+      sessionId: IDLE,
+      focusedSessionId: FOCUSED,
+      sessionOk: true,
+      pending: PROMPT,
+      expected: null,
+    },
+    {
+      name: 'module mismatch',
+      sessionId: FOCUSED,
+      focusedSessionId: FOCUSED,
+      sessionOk: false,
+      pending: PROMPT,
+      expected: null,
+    },
+    {
+      name: 'no focus yet',
+      sessionId: FOCUSED,
+      focusedSessionId: null,
+      sessionOk: true,
+      pending: PROMPT,
+      expected: null,
+    },
+    {
+      name: 'empty pending',
+      sessionId: FOCUSED,
+      focusedSessionId: FOCUSED,
+      sessionOk: true,
+      pending: null,
+      expected: null,
+    },
+  ])('$name', ({ sessionId, focusedSessionId, sessionOk, pending, expected }) => {
+    expect(
+      overlayBridgePendingForSession({
+        sessionId,
+        focusedSessionId,
+        sessionOk,
+        pending,
+      }),
+    ).toEqual(expected)
   })
 })
 
@@ -113,6 +191,15 @@ describe('shouldCreateFocusedOverlaySession', () => {
         canCreate: true,
       })
     ).toBe(false)
+    expect(
+      shouldCreateFocusedOverlaySession({
+        overlayOpen: true,
+        listReady: true,
+        sessionCount: 0,
+        canCreate: true,
+        hasDraft: true,
+      })
+    ).toBe(false)
   })
 })
 
@@ -124,5 +211,29 @@ describe('streamingSessionsWithoutRunId', () => {
       session({ id: IDLE, status: ChatSessionStatus.Idle, runId: null }),
     ]
     expect(streamingSessionsWithoutRunId(rows).map(row => row.id)).toEqual([STREAMING])
+  })
+})
+
+describe('draft overlay sessions', () => {
+  it('builds a local thread that is not persisted', () => {
+    const draft = createDraftChatSession({
+      id: FOCUSED,
+      projectId: FOCUSED,
+      moduleId: AppModuleId.Storyteller,
+      now: '2026-01-01T00:00:00.000Z',
+    })
+    expect(isDraftChatSession(draft)).toBe(true)
+    expect(isDraftChatSession(session({ id: IDLE }))).toBe(false)
+    expect(mergeSessionsWithDraft([session({ id: IDLE })], draft).map(row => row.id)).toEqual([
+      FOCUSED,
+      IDLE,
+    ])
+  })
+
+  it.each([
+    { busy: true, keep: true },
+    { busy: false, keep: false },
+  ])('keep=$keep when busy=$busy', ({ busy, keep }) => {
+    expect(shouldKeepFocusedSessionOnModuleChange(busy)).toBe(keep)
   })
 })

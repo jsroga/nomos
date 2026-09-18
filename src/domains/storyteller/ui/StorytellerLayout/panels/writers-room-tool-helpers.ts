@@ -16,11 +16,16 @@ import {
 import { buildStorytellerProjectContext } from '@/domains/storyteller/ui/MentionsProvider/build-storyteller-project-context'
 import type { ProjectContext } from '@/shared/chat'
 import {
+  bibleSectionDisplayName,
   formatBibleSectionList,
   isNonBibleToolPayload,
   mergeToolArgFields,
 } from '@/domains/storyteller/state/utils/merge-add-to-world-proposals'
-import { WritersRoomToast } from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
+import {
+  WritersRoomConfirm,
+  WritersRoomToast,
+  writersRoomExtraDescription,
+} from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
 import { resolveAddToWorldCommit } from '@/domains/storyteller/state/utils/resolve-add-to-world-target'
 import { characterDraftFieldsFromToolArgs } from '@/domains/storyteller/state/utils/character-draft-fields-from-tool'
 import {
@@ -141,6 +146,57 @@ export function extraPendingSectionsMessage(
   return `${WritersRoomToast.PendingExtrasPrefix}${formatBibleSectionList(
     proposals.slice(1).map(proposal => proposal.section),
   )}`
+}
+
+export function extraSectionsOutsideRequest(
+  proposals: readonly ProposedBibleSectionUpdate[],
+  requestedSection: string | undefined,
+): string[] {
+  if (!requestedSection) return []
+  return proposals
+    .filter(proposal => proposal.section !== requestedSection)
+    .map(proposal => proposal.section)
+}
+
+export function proposalsAfterExtrasChoice(input: {
+  proposals: readonly ProposedBibleSectionUpdate[]
+  requestedSection: string | undefined
+  includeExtras: boolean
+}): ProposedBibleSectionUpdate[] {
+  if (!input.requestedSection || input.includeExtras) return [...input.proposals]
+  return input.proposals.filter(proposal => proposal.section === input.requestedSection)
+}
+
+export type WritersRoomConfirmFn = (options: {
+  title: string
+  description: string
+  confirmLabel?: string
+  cancelLabel?: string
+}) => Promise<boolean>
+
+export async function chooseBibleProposalsForReview(input: {
+  proposals: readonly ProposedBibleSectionUpdate[]
+  requestedSection: string | undefined
+  confirm: WritersRoomConfirmFn
+}): Promise<ProposedBibleSectionUpdate[]> {
+  const extraKeys = extraSectionsOutsideRequest(input.proposals, input.requestedSection)
+  if (extraKeys.length === 0 || !input.requestedSection) {
+    return [...input.proposals]
+  }
+  const includeExtras = await input.confirm({
+    title: WritersRoomConfirm.ExtraTitle,
+    description: writersRoomExtraDescription(
+      bibleSectionDisplayName(input.requestedSection),
+      extraKeys.map(bibleSectionDisplayName),
+    ),
+    confirmLabel: WritersRoomConfirm.ExtraConfirm,
+    cancelLabel: WritersRoomConfirm.ExtraCancel,
+  })
+  return proposalsAfterExtrasChoice({
+    proposals: input.proposals,
+    requestedSection: input.requestedSection,
+    includeExtras,
+  })
 }
 
 enum BeatWriteOperation {
@@ -307,9 +363,10 @@ function hasCommittableBibleOrBeatWrite(
   return proposalsFromWrittenBibleFields(mergeToolArgFields(toolArgs)).length > 0
 }
 
+/** Propose-character turns confirm in the unsaved form. Add to World is bible/beats only. */
 export function shouldShowAddToWorld(input: ShouldShowAddToWorldInput): boolean {
   if (input.role !== ChatMessageRole.Assistant) return false
-  if (isCharacterDraftAddToWorldTurn(input)) return true
+  if (isCharacterDraftAddToWorldTurn(input)) return false
   if (input.requestedSection === CharacterDraftChatSection.Form) return false
   const names = input.toolNames.filter(name => name !== StorytellerWorkflowToolId.RunBeatDraft)
   return hasCommittableBibleOrBeatWrite(names, input.toolArgs)

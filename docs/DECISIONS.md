@@ -171,7 +171,7 @@ Every paid call goes through `@/shared/ai/gateway` over **OpenRouter only**, whi
 
 **Frameworks stay; only model construction moves.** Mastra keeps its tool-calling loop. Rewriting 115 call sites into a bespoke abstraction is a different and worse project.
 
-**LangChain is removed.** Twelve of its sixteen imports were message classes used as data, so the dependency was carrying a struct; only four constructed a model.
+**The old message-class SDK is gone.** Twelve of its sixteen imports were message classes used as data, so the dependency was carrying a struct; only four constructed a model.
 
 ### Consequences
 
@@ -189,7 +189,7 @@ The rule that makes that safe: **no context means no row.** A model call outside
 
 ```bash
 npx eslint src 2>&1 | grep -c 'Call models through'   # ≤ providerSdkImportsOutsideGateway
-grep -rn '@langchain' src --include='*.ts'            # 0
+npx vitest run scripts/__tests__/provider-sdk-inventory.test.ts
 npx vitest run src/shared/ai/gateway
 npm run spend -- --days 7
 ```

@@ -1,9 +1,14 @@
 'use client'
 
+import { BookOpen, ScrollText } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { PhaseNavigatorCompact } from '../../PhaseNavigator'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
-import type { PhaseId } from '@/domains/storyteller/core/types/enums'
+import { StorytellerTab } from '@/domains/storyteller/core/storyteller-page-wire'
+import { ManuscriptMode, type PhaseId } from '@/domains/storyteller/core/types/enums'
+import { persistEpisodeManuscriptMode } from '@/domains/storyteller/state/utils/persist-episode-manuscript-mode'
 import { StorytellerContextSwitch } from './StorytellerContextSwitch'
+import { StorytellerHeaderSwitch } from './StorytellerHeaderSwitch'
 import {
   StorytellerHeaderClass,
   StorytellerHeaderCopy,
@@ -17,6 +22,8 @@ interface StorytellerEpisodeHeaderProps {
   isSending: boolean
   hasEpisodes: boolean
   isWorldBibleOpen: boolean
+  activeTab: string
+  manuscriptMode: ManuscriptMode
   handlePhaseChange: (phase: PhaseId) => void
   advanceablePhase?: PhaseId
   onOpenBible: () => void
@@ -60,6 +67,54 @@ function EpisodePhaseTrail({
   return <span className={StorytellerHeaderClass.Helper}>{StorytellerHeaderCopy.EpisodesFromBible}</span>
 }
 
+function ManuscriptModeSwitch({
+  currentEpisodeId,
+  manuscriptMode,
+  disabled,
+}: {
+  currentEpisodeId: string
+  manuscriptMode: ManuscriptMode
+  disabled: boolean
+}) {
+  const queryClient = useQueryClient()
+  const scriptSelected = manuscriptMode === ManuscriptMode.Script
+  return (
+    <StorytellerHeaderSwitch
+      label={StorytellerHeaderCopy.Manuscript}
+      disabled={disabled}
+      className={StorytellerHeaderClass.SwitchEnd}
+      items={[
+        {
+          id: ManuscriptMode.Script,
+          label: StorytellerHeaderCopy.Script,
+          icon: <ScrollText size={13} strokeWidth={1.7} />,
+          selected: scriptSelected,
+          onSelect: () => {
+            void persistEpisodeManuscriptMode(
+              queryClient,
+              currentEpisodeId,
+              ManuscriptMode.Script,
+            )
+          },
+        },
+        {
+          id: ManuscriptMode.Novel,
+          label: StorytellerHeaderCopy.Novel,
+          icon: <BookOpen size={13} strokeWidth={1.7} />,
+          selected: !scriptSelected,
+          onSelect: () => {
+            void persistEpisodeManuscriptMode(
+              queryClient,
+              currentEpisodeId,
+              ManuscriptMode.Novel,
+            )
+          },
+        },
+      ]}
+    />
+  )
+}
+
 export function StorytellerEpisodeHeader({
   currentEpisodeId,
   currentPhase,
@@ -67,6 +122,8 @@ export function StorytellerEpisodeHeader({
   isSending,
   hasEpisodes,
   isWorldBibleOpen,
+  activeTab,
+  manuscriptMode,
   handlePhaseChange,
   advanceablePhase,
   onOpenBible,
@@ -78,6 +135,11 @@ export function StorytellerEpisodeHeader({
   const hasEpisode = hasEpisodes
   const isEditingChrome =
     (isBibleEditing && isWorldBibleOpen) || (isEpisodeEditing && !isWorldBibleOpen)
+  const showManuscriptSwitch =
+    Boolean(currentEpisodeId) &&
+    !isWorldBibleOpen &&
+    !isEpisodeEditing &&
+    activeTab === StorytellerTab.Script
 
   return (
     <div className={isEditingChrome ? StorytellerHeaderClass.RootEditing : StorytellerHeaderClass.Root}>
@@ -107,9 +169,22 @@ export function StorytellerEpisodeHeader({
           onPhaseChange={handlePhaseChange}
         />
       )}
+      {showManuscriptSwitch && currentEpisodeId ? (
+        <ManuscriptModeSwitch
+          currentEpisodeId={currentEpisodeId}
+          manuscriptMode={manuscriptMode}
+          disabled={isEditingChrome}
+        />
+      ) : null}
       <div
         id={StorytellerHeaderSlotId.EpisodeChrome}
-        className={!isWorldBibleOpen ? StorytellerHeaderClass.ChromeSlot : StorytellerHeaderClass.Hidden}
+        className={
+          isWorldBibleOpen
+            ? StorytellerHeaderClass.Hidden
+            : showManuscriptSwitch
+              ? StorytellerHeaderClass.ChromeEnd
+              : StorytellerHeaderClass.ChromeSlot
+        }
         aria-hidden={isWorldBibleOpen}
       />
     </div>

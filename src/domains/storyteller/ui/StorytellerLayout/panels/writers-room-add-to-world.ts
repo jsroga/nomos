@@ -21,6 +21,7 @@ import {
   WritersRoomConfirm,
   WritersRoomToast,
 } from '@/domains/storyteller/ui/StorytellerLayout/utils/writers-room-copy'
+import { shouldConfirmAddToWorldOverwrite } from '@/domains/storyteller/ui/StorytellerLayout/panels/add-to-world-confirm'
 import {
   chatFallbackAddToWorldTargets,
   createBeatCommitActions,
@@ -168,7 +169,12 @@ export async function commitWritersRoomAddToWorld(
     return true
   }
 
-  if (targets.length > 1) {
+  if (
+    shouldConfirmAddToWorldOverwrite({
+      targetSections: targets.map(target => target.section),
+      requestedSection: input.answeredSection,
+    })
+  ) {
     const confirmed = await input.confirm({
       title: WritersRoomConfirm.AddToWorldTitle,
       description: `${WritersRoomConfirm.AddToWorldPrefix}${formatBibleSectionList(

@@ -84,6 +84,7 @@ export const generateMoodboardPayloadSchema = z.object({
   overview: z.string().optional(),
   replaceIndex: z.number().optional(),
   styleReferenceUrl: z.string().optional(),
+  styleReferenceUrls: z.array(z.string()).optional(),
   providerConfig: providerConfigSchema,
 })
 

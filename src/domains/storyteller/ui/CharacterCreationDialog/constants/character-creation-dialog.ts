@@ -39,7 +39,7 @@ export const CHARACTER_DIALOG_TOAST_GENERATE_MISSING_BUSY =
 export enum CharacterDialogFieldClass {
   LabelRow = 'group flex items-center gap-1.5',
   Label = 'text-sm font-medium',
-  Refresh = 'inline-flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30',
+  Refresh = 'inline-flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground hover:text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30',
 }
 
 export enum CharacterDialogRefreshCopy {
@@ -104,7 +104,7 @@ export enum CharacterDialogGenerateMissingDisable {
 }
 
 export enum CharacterDialogGenerateMissingChat {
-  Instruction = 'Fill the unsaved character create/edit form. Call propose_character_fields with ONLY the missing fields listed below. Do not call manage_character. Do not call update_world_bible. Do not write worldDescription or any bible section. Do not save. Ground in the series bible and episodes (read_world_bible / list_episodes / list_characters as needed). Never overwrite ALREADY FILLED values.',
+  Instruction = 'Fill the unsaved character create/edit form. Call propose_character_fields with ONLY the missing fields listed below. MBTI is highly recommended — always fill mbti when it is listed as missing. Do not call manage_character. Do not call update_world_bible. Do not write worldDescription or any bible section. Do not save. Ground in the series bible and episodes (read_world_bible / list_episodes / list_characters as needed). Never overwrite ALREADY FILLED values.',
   RegenerateInstruction = 'Regenerate ONE character field on the unsaved create/edit form. Call propose_character_fields with ONLY this field. You MAY overwrite the current filled value for that field. Do not call manage_character. Do not call update_world_bible. Do not write worldDescription or any bible section. Do not save. Ground in the series bible and episodes (read_world_bible / list_episodes / list_characters as needed).',
   MetricsRange = 'valence is -100 to 100. arousal, perceivedStakes, and moralAlignment are 0 to 100 and must never be negative.',
   MissingText = 'MISSING TEXT FIELDS',

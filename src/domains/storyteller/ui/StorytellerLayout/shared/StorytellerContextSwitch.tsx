@@ -1,12 +1,11 @@
 'use client'
 
 import { BookOpen, Plus } from 'lucide-react'
-import { HtmlElementType } from '@/shared/data/constants/protocol'
-import { cn } from '@/shared/data/utils'
 import {
   StorytellerHeaderClass,
   StorytellerHeaderCopy,
 } from '../constants/storyteller-module-header'
+import { StorytellerHeaderSwitch } from './StorytellerHeaderSwitch'
 
 function FilmStripIcon() {
   return (
@@ -35,54 +34,35 @@ export function StorytellerContextSwitch({
   onCreateEpisode,
 }: StorytellerContextSwitchProps) {
   return (
-    <div
-      role="tablist"
-      aria-label={StorytellerHeaderCopy.Storybible}
-      className={cn(StorytellerHeaderClass.Switch, disabled && StorytellerHeaderClass.SwitchDisabled)}
-    >
-      <button
-        type={HtmlElementType.Button}
-        role="tab"
-        aria-selected={bibleSelected}
-        onClick={onSelectBible}
-        className={cn(
-          StorytellerHeaderClass.Segment,
-          bibleSelected ? StorytellerHeaderClass.SegmentActive : StorytellerHeaderClass.SegmentIdle
-        )}
-      >
-        <BookOpen size={13} strokeWidth={1.7} className={bibleSelected ? 'text-primary' : undefined} />
-        {StorytellerHeaderCopy.Storybible}
-      </button>
-      {hasEpisode ? (
-        <button
-          type={HtmlElementType.Button}
-          role="tab"
-          aria-selected={!bibleSelected}
-          onClick={onSelectEpisode}
-          className={cn(
-            StorytellerHeaderClass.Segment,
-            !bibleSelected ? StorytellerHeaderClass.SegmentActive : StorytellerHeaderClass.SegmentIdle
-          )}
-        >
-          <span className={!bibleSelected ? 'text-primary' : undefined}>
-            <FilmStripIcon />
-          </span>
-          <span className={StorytellerHeaderClass.SegmentTitle}>
-            {StorytellerHeaderCopy.Episodes}
-          </span>
-        </button>
-      ) : (
-        <button
-          type={HtmlElementType.Button}
-          role="tab"
-          aria-selected={false}
-          onClick={onCreateEpisode}
-          className={cn(StorytellerHeaderClass.Segment, StorytellerHeaderClass.SegmentMuted)}
-        >
-          <Plus size={13} strokeWidth={1.8} />
-          {StorytellerHeaderCopy.NewEpisode}
-        </button>
-      )}
-    </div>
+    <StorytellerHeaderSwitch
+      label={StorytellerHeaderCopy.Storybible}
+      disabled={disabled}
+      items={[
+        {
+          id: StorytellerHeaderCopy.Storybible,
+          label: StorytellerHeaderCopy.Storybible,
+          icon: <BookOpen size={13} strokeWidth={1.7} />,
+          selected: bibleSelected,
+          onSelect: onSelectBible,
+        },
+        hasEpisode
+          ? {
+              id: StorytellerHeaderCopy.Episodes,
+              label: StorytellerHeaderCopy.Episodes,
+              icon: <FilmStripIcon />,
+              selected: !bibleSelected,
+              titleClassName: StorytellerHeaderClass.SegmentTitle,
+              onSelect: onSelectEpisode,
+            }
+          : {
+              id: StorytellerHeaderCopy.NewEpisode,
+              label: StorytellerHeaderCopy.NewEpisode,
+              icon: <Plus size={13} strokeWidth={1.8} />,
+              selected: false,
+              muted: true,
+              onSelect: onCreateEpisode,
+            },
+      ]}
+    />
   )
 }

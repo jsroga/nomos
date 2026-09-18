@@ -30,6 +30,11 @@ export enum GenerationActivityPhase {
   Error = 'error',
 }
 
+/** Shown when a bible refresh is queued before the overlay stream opens. */
+export enum GenerationActivityLabel {
+  Submitted = 'Waiting for Writers Room…',
+}
+
 /** Writers Room is a single conversation — parallel section refreshes crash the thread. */
 export function isGenerationActivityBusy(phase: GenerationActivityPhase): boolean {
   return (

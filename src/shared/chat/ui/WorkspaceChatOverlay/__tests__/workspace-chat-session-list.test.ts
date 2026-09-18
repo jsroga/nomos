@@ -7,6 +7,7 @@ import {
   workspaceChatRenameGlyph,
 } from '../workspace-chat-copy'
 import {
+  isAnyWorkspaceChatRuntimeBusy,
   isWorkspaceChatSessionBusy,
   shouldKeepHistoryMenuOpen,
   workspaceChatRenameButtonTitle,
@@ -50,5 +51,12 @@ describe('workspace chat history menu', () => {
     expect(
       isWorkspaceChatSessionBusy(ChatSessionStatus.Idle, AssistantChatRuntimeStatus.Streaming),
     ).toBe(true)
+    expect(
+      isAnyWorkspaceChatRuntimeBusy({
+        a: AssistantChatRuntimeStatus.Ready,
+        b: AssistantChatRuntimeStatus.Submitted,
+      }),
+    ).toBe(true)
+    expect(isAnyWorkspaceChatRuntimeBusy({ a: AssistantChatRuntimeStatus.Ready })).toBe(false)
   })
 })

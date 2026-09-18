@@ -30,9 +30,10 @@ describe('executePendingChatPromptSend', () => {
     expect(order).toEqual(['send', 'handled'])
   })
 
-  it('stops a busy turn before sending', async () => {
+  it('does not stop or send while a turn is busy', async () => {
     const stop = vi.fn().mockResolvedValue(undefined)
     const sendMessage = vi.fn().mockResolvedValue(undefined)
+    const onPendingPromptHandled = vi.fn()
     const stuckTimer: { current: ReturnType<typeof setTimeout> | null } = { current: null }
     const turnStartedAt: { current: number | null } = { current: null }
     const loggedFirstVisible = { current: false }
@@ -44,6 +45,7 @@ describe('executePendingChatPromptSend', () => {
       statusRef: { current: 'streaming' },
       sendMessage,
       stop,
+      onPendingPromptHandled,
       clearStuckTimer: () => undefined,
       finishGeneration: () => undefined,
       stuckTimer,
@@ -51,7 +53,8 @@ describe('executePendingChatPromptSend', () => {
       loggedFirstVisible,
     })
 
-    expect(stop).toHaveBeenCalledTimes(1)
-    expect(sendMessage).toHaveBeenCalledWith({ text: 'Regenerate soundtracks' })
+    expect(stop).not.toHaveBeenCalled()
+    expect(sendMessage).not.toHaveBeenCalled()
+    expect(onPendingPromptHandled).toHaveBeenCalledWith(2)
   })
 })

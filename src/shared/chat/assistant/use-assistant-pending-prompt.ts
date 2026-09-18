@@ -20,7 +20,7 @@ export const GENERATION_STUCK_TIMEOUT_MS = CHAT_STUCK_TIMEOUT_MS
 export const GENERATION_SLOW_HINT_MS = 12_000
 
 enum AssistantClientLog {
-  PendingSkipBusy = '[AssistantChat] pending prompt while busy — stopping prior turn',
+  PendingSkipBusy = '[AssistantChat] pending prompt while busy — left the running turn alone',
   PendingSend = '[AssistantChat] sendMessage start id=',
   PendingSent = '[AssistantChat] sendMessage resolved id=',
   PendingError = '[AssistantChat] sendMessage error id=',
@@ -49,7 +49,6 @@ export async function executePendingChatPromptSend({
   resolvedAgentId,
   statusRef,
   sendMessage,
-  stop,
   onPendingPromptHandled,
   onGenerationActivity,
   clearStuckTimer,
@@ -60,7 +59,8 @@ export async function executePendingChatPromptSend({
 }: ExecutePendingChatPromptSendArgs): Promise<void> {
   if (isAssistantTurnBusy(statusRef.current)) {
     console.warn(AssistantClientLog.PendingSkipBusy)
-    await stop()
+    onPendingPromptHandled?.(promptId)
+    return
   }
 
   console.log(`${AssistantClientLog.PendingSend}${promptId}`)
@@ -111,7 +111,7 @@ interface UseAssistantPendingPromptArgs {
   loggedFirstVisible: MutableRefObject<boolean>
 }
 
-/** Sends an externally queued prompt once; stops a hung prior turn instead of swallowing. */
+/** Sends an externally queued prompt once; refuses to interrupt a live turn. */
 export function useAssistantPendingPrompt({
   pendingPrompt,
   resolvedAgentId,

@@ -8,7 +8,7 @@ import {
 } from '@/shared/data/constants/project-loader'
 
 export function ProjectLoader({ children }: { children: React.ReactNode }) {
-  const { isLoading, error, hasProject } = useProjectFromUrl()
+  const { isReady, error, hasProject, projectId } = useProjectFromUrl()
 
   if (error) {
     const hint =
@@ -23,22 +23,24 @@ export function ProjectLoader({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // No project in URL - shouldn't happen in [projectId] routes
   if (!hasProject) {
     return null
   }
 
-  // IMPORTANT: Always render children to preserve their state!
-  // Show loading overlay instead of unmounting children
-  return (
-    <div className={ProjectLoaderClass.Root}>
-      {children}
-      {isLoading && (
+  if (!isReady) {
+    return (
+      <div className={ProjectLoaderClass.Root}>
         <div className={ProjectLoaderClass.Overlay}>
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <span className="ml-2 text-muted-foreground">Loading project...</span>
         </div>
-      )}
+      </div>
+    )
+  }
+
+  return (
+    <div key={projectId ?? ''} className={ProjectLoaderClass.Root}>
+      <div className={ProjectLoaderClass.Children}>{children}</div>
     </div>
   )
 }

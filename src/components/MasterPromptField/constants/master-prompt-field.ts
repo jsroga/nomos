@@ -55,6 +55,8 @@ export enum MasterPromptFieldClass {
   Suggestion = 'px-3.5 py-3 border border-primary/35 rounded-[9px] bg-card/40 space-y-3',
   SuggestionLabel = 'flex items-center gap-2 font-mono text-[10.5px] tracking-[0.16em] uppercase text-primary',
   SuggestionText = 'font-mono text-xs leading-[1.7] text-foreground/80',
+  SuggestionImages = 'm-0 list-none grid grid-cols-3 gap-2 p-0 [&>li]:m-0 [&>li]:p-0 [&>li]:min-w-0',
+  SuggestionImage = 'h-full w-full object-cover rounded-[9px] aspect-square shadow-[inset_0_0_0_1px_hsl(var(--border)/0.7)]',
   GhostAction = 'px-[11px] py-1.5 rounded-lg text-[12.5px] text-muted-foreground hover:bg-accent/70 hover:text-foreground transition-all duration-150 ease-in-out',
   PrimaryAction = 'inline-flex items-center gap-1 px-[13px] py-1.5 rounded-lg bg-primary/20 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.45)] text-primary text-[12.5px] font-medium hover:bg-primary/30 transition-all duration-150 ease-in-out',
   SuggestBusy = 'inline-flex items-center gap-1.5 px-[9px] py-1 rounded-[7px] shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.2)] text-primary/45 text-[11.5px] whitespace-nowrap',

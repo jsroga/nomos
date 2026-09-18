@@ -8,7 +8,7 @@
  * - Providing balance recommendations
  */
 
-import { AIMessage } from '@/shared/chat/core/message'
+import { assistantChatMessage, ChatMessageRole } from '@/shared/chat/core/message'
 import { runLoopCreatorStructuredCompletion } from './mastra/loop-creator-completion'
 import { LoopCreatorMastraAgentId } from './mastra/loop-creator-mastra-agents'
 import { BalanceAnalystOutputSchema } from './schemas/balance-analyst-output'
@@ -179,16 +179,16 @@ export async function balanceAnalystAgent(
     return {
       nextAgent: 'supervisor',
       messages: [
-        new AIMessage({
-          content: 'No mechanics to analyze yet. Please design some mechanics first.',
-          name: 'balance_analyst',
-        }),
+        assistantChatMessage(
+          'No mechanics to analyze yet. Please design some mechanics first.',
+          'balance_analyst',
+        ),
       ],
     }
   }
 
   // Get the task
-  const lastHumanMsg = [...state.messages].reverse().find(m => m._getType() === 'human')
+  const lastHumanMsg = [...state.messages].reverse().find(m => m.role === ChatMessageRole.Human)
   const task = lastHumanMsg
     ? typeof lastHumanMsg.content === 'string'
       ? lastHumanMsg.content
@@ -262,10 +262,7 @@ export async function balanceAnalystAgent(
     pendingActions: actions,
     nextAgent: 'supervisor',
     messages: [
-      new AIMessage({
-        content: userMessage,
-        name: 'balance_analyst',
-      }),
+      assistantChatMessage(userMessage, 'balance_analyst'),
     ],
   }
 }

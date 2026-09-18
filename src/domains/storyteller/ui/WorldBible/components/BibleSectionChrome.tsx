@@ -1,12 +1,12 @@
 import type { FC, ReactNode } from 'react'
-import { Loader2, Plus, RefreshCw } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import type { PendingAction } from '../utils/bible-context-types'
 import { BibleSectionChromeClass } from '../constants/bible-section-ui'
 import { pendingReviewHostClass } from '../utils/section-pending-overlay'
 import { SectionPendingOverlay } from './SectionPendingOverlay'
 import { useStorytellerUiStore } from '@/domains/storyteller/state/useStorytellerUiStore'
 import { GenerationActivityPhase } from '@/domains/storyteller/state/utils/storyteller-ui-store'
-import { isBibleSectionRefreshDisabled } from '../utils/bible-section-chat-refresh'
+import { StorytellerRefreshButton } from '@/domains/storyteller/ui/StorytellerRefreshButton'
 import { StorytellerAgentId } from '@/domains/storyteller/ai/constants/agent-identity'
 import { BibleMarkdown } from '@/domains/storyteller/ui/RichText/BibleMarkdown'
 import { cn } from '@/shared/data/utils'
@@ -93,15 +93,6 @@ export const BibleSectionHeader: FC<{
   generateTitle,
   trailingActions,
 }) => {
-  const generationPhase = useStorytellerUiStore(state => state.generationActivity.phase)
-  const pendingChatPrompt = useStorytellerUiStore(state => state.pendingChatPrompt)
-  const generateDisabled = isBibleSectionRefreshDisabled({
-    isLoading,
-    generationPhase,
-    pendingChatPrompt,
-  })
-  const showRefreshBusy = isLoading || pendingChatPrompt !== null
-
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2">
@@ -122,15 +113,11 @@ export const BibleSectionHeader: FC<{
           </button>
         )}
         {!isReadOnly && onGenerate && (
-          <button
+          <StorytellerRefreshButton
             onClick={onGenerate}
-            className={`${actionButtonClass} ${disabledWhenLoading(generateDisabled)}`}
-            title={generateTitle}
-            disabled={generateDisabled}
-            type="button"
-          >
-            <RefreshCw size={14} className={showRefreshBusy ? 'animate-spin' : ''} />
-          </button>
+            idleLabel={generateTitle}
+            extraDisabled={isLoading}
+          />
         )}
       </div>
     </div>
