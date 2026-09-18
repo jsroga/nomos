@@ -3,11 +3,23 @@
 export const AUTH_QUERY_PARAM = {
   CODE: 'code',
   TYPE: 'type',
+  TOKEN_HASH: 'token_hash',
+  NEXT: 'next',
 } as const
 
 export const AUTH_FLOW_TYPE = {
   RECOVERY: 'recovery',
+  MAGICLINK: 'magiclink',
 } as const
+
+export enum AuthEmailOtpType {
+  Signup = 'signup',
+  Invite = 'invite',
+  Magiclink = 'magiclink',
+  Recovery = 'recovery',
+  EmailChange = 'email_change',
+  Email = 'email',
+}
 
 export const AUTH_MESSAGE = {
   VALIDATION_FAILED: 'Validation failed',

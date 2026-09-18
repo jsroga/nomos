@@ -1,24 +1,17 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+import { useEffect, useState, type ComponentType } from 'react'
 import {
   CwvHudEnv,
   PerfDebugEnv,
 } from '@/shared/debug/utils/perf-debug'
 import { NodeEnv } from '@/shared/data/constants/protocol-http'
 
-const WebVitalsReporter = dynamic(
-  async () => ({ default: (await import('@/shared/debug')).WebVitalsReporter }),
-  { ssr: false }
-)
-const WebVitalsHud = dynamic(
-  async () => ({ default: (await import('@/shared/debug')).WebVitalsHud }),
-  { ssr: false }
-)
-const PerfDebugTools = dynamic(
-  async () => ({ default: (await import('@/shared/debug')).PerfDebugTools }),
-  { ssr: false }
-)
+type DebugTools = {
+  WebVitalsReporter: ComponentType
+  WebVitalsHud: ComponentType
+  PerfDebugTools: ComponentType
+}
 
 const isDev = process.env.NODE_ENV === NodeEnv.Development
 const showCwvHud =
@@ -28,8 +21,37 @@ const showPerfDebug =
 
 /** Dev-only CWV / React Scan mounts — never on production landing. */
 export function DebugToolsMount() {
-  if (!isDev) return null
+  const [tools, setTools] = useState<DebugTools | null>(null)
 
+  useEffect(() => {
+    if (!isDev) return
+    let cancelled = false
+    const load = async () => {
+      try {
+        const [reporter, hud, perf] = await Promise.all([
+          import('./WebVitalsReporter'),
+          import('./WebVitalsHud'),
+          import('./PerfDebugTools'),
+        ])
+        if (cancelled) return
+        setTools({
+          WebVitalsReporter: reporter.WebVitalsReporter,
+          WebVitalsHud: hud.WebVitalsHud,
+          PerfDebugTools: perf.PerfDebugTools,
+        })
+      } catch {
+        return
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (!isDev || !tools) return null
+
+  const { WebVitalsReporter, WebVitalsHud, PerfDebugTools } = tools
   return (
     <>
       <WebVitalsReporter />

@@ -42,6 +42,9 @@ export function buildPortraitMidjourneyLockFlags(
   return appendMidjourneyLockFlags(prompt, ApiframeGenerateAspectRatio.Square, extraUrls)
 }
 
-export function buildPosterMidjourneyLockFlags(prompt: string): string {
-  return appendMidjourneyLockFlags(prompt, ApiframeGenerateAspectRatio.PortraitTwoThree)
+export function buildPosterMidjourneyLockFlags(
+  prompt: string,
+  extraUrls: readonly string[] = [],
+): string {
+  return appendMidjourneyLockFlags(prompt, ApiframeGenerateAspectRatio.PortraitTwoThree, extraUrls)
 }

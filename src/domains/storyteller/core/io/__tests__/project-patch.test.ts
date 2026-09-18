@@ -20,4 +20,15 @@ describe('project PATCH schema', () => {
   it('rejects a non-string name', () => {
     expect(projectPatchRequestSchema.safeParse({ name: 3 }).success).toBe(false)
   })
+
+  it('accepts Storyteller style refs without requiring canvas refs', () => {
+    const storyRefs = ['https://cdn.example/story.png']
+    const parsed = projectPatchRequestSchema.parse({
+      storytellerStyleReferenceUrls: storyRefs,
+    })
+    expect(parsed).toEqual({
+      storytellerStyleReferenceUrls: storyRefs,
+    })
+    expect(parsed.styleReferenceUrls).toBeUndefined()
+  })
 })

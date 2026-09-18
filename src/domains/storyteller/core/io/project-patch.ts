@@ -24,6 +24,8 @@ export enum ProjectPatchField {
   CanvasMasterPromptSnake = 'canvas_master_prompt',
   StyleReferenceUrls = 'styleReferenceUrls',
   StyleReferenceUrlsSnake = 'style_reference_urls',
+  StorytellerStyleReferenceUrls = 'storytellerStyleReferenceUrls',
+  StorytellerStyleReferenceUrlsSnake = 'storyteller_style_reference_urls',
 }
 
 const optionalText = z.string().nullable().optional()
@@ -47,6 +49,8 @@ export const projectPatchRequestSchema = z.object({
   [ProjectPatchField.CanvasMasterPromptSnake]: optionalText,
   [ProjectPatchField.StyleReferenceUrls]: z.unknown().optional(),
   [ProjectPatchField.StyleReferenceUrlsSnake]: z.unknown().optional(),
+  [ProjectPatchField.StorytellerStyleReferenceUrls]: z.unknown().optional(),
+  [ProjectPatchField.StorytellerStyleReferenceUrlsSnake]: z.unknown().optional(),
 })
 
 export type ProjectPatchRequest = z.infer<typeof projectPatchRequestSchema>

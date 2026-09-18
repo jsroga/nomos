@@ -22,15 +22,21 @@ function uniqueHttpUrls(urls: readonly string[]): string[] {
   return unique
 }
 
-export function storytellerLookSrefUrls(extraUrls: readonly string[] = []): string[] {
-  return uniqueHttpUrls([...STORYTELLER_LOOK_SREF_URLS, ...extraUrls])
+export function storytellerLookSrefUrls(
+  selectedUrls: readonly string[] = [],
+  trailingUrls: readonly string[] = [],
+): string[] {
+  const selected = uniqueHttpUrls(selectedUrls)
+  const look = selected.length > 0 ? selected : uniqueHttpUrls(STORYTELLER_LOOK_SREF_URLS)
+  return uniqueHttpUrls([...look, ...trailingUrls])
 }
 
 export function appendStorytellerLookSref(
   prompt: string,
-  extraUrls: readonly string[] = [],
+  selectedUrls: readonly string[] = [],
+  trailingUrls: readonly string[] = [],
 ): string {
-  const urls = storytellerLookSrefUrls(extraUrls)
+  const urls = storytellerLookSrefUrls(selectedUrls, trailingUrls)
   if (urls.length === 0) return prompt
   return `${prompt} ${MidjourneyParamFlag.StyleRef} ${urls.join(' ')}`
 }

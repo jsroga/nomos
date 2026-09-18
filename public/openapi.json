@@ -969,6 +969,12 @@
           },
           "style_reference_urls": {
             "nullable": true
+          },
+          "storytellerStyleReferenceUrls": {
+            "nullable": true
+          },
+          "storyteller_style_reference_urls": {
+            "nullable": true
           }
         }
       },

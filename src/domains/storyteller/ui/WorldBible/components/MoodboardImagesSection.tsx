@@ -153,7 +153,7 @@ export const MoodboardImagesSection: React.FC<MoodboardImagesSectionProps> = ({
   const { confirm, ConfirmDialogComponent } = useConfirmDialog()
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const hasOverviewContext = isOverviewReadyForMoodboard(
-    resolveOverviewDisplayFields(storyPlan, localPlan),
+    resolveOverviewDisplayFields(storyPlan, localPlan, isEditing),
   )
   const providerConfig = getProviderConfig()
 

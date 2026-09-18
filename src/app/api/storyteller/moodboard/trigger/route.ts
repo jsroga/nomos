@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       overview: context.overview,
       replaceIndex,
       styleReferenceUrl,
-      styleReferenceUrls: stringArrayFromJson(project.styleReferenceUrls),
+      styleReferenceUrls: stringArrayFromJson(project.storytellerStyleReferenceUrls),
       providerConfig: {
         provider: resolvedProviderConfig.provider,
         modelId: resolvedProviderConfig.modelId,

@@ -14,6 +14,7 @@ export const DB_COLUMN = {
   ID: 'id',
   PROJECT_ID: 'project_id',
   STYLE_REFERENCE_URLS: 'style_reference_urls',
+  STORYTELLER_STYLE_REFERENCE_URLS: 'storyteller_style_reference_urls',
   STYLE_PRESET: 'style_preset',
   GENERATION_MODE: 'generation_mode',
   CANVAS_MASTER_PROMPT: 'canvas_master_prompt',

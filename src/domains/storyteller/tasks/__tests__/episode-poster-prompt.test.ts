@@ -38,4 +38,13 @@ describe('buildPosterMidjourneyLockFlags', () => {
       `${locked} ${MidjourneyParamFlag.Version} ${MIDJOURNEY_VERSION} ${MidjourneyParamFlag.AspectRatio} ${ApiframeGenerateAspectRatio.PortraitTwoThree} ${MidjourneyParamFlag.StyleRef} ${StorytellerLookSrefUrl.One} ${StorytellerLookSrefUrl.Two}`,
     )
   })
+
+  it('replaces the look key when the user selected style refs', () => {
+    const locked = `${EpisodePosterPromptLock.Prefix} keeper last lamp ${EpisodePosterPromptLock.Base}`
+    const userRef = 'https://cdn.example/user.png'
+    const prompt = buildPosterMidjourneyLockFlags(locked, [userRef])
+    expect(prompt).toContain(`${MidjourneyParamFlag.StyleRef} ${userRef}`)
+    expect(prompt).not.toContain(StorytellerLookSrefUrl.One)
+    expect(prompt).not.toContain(StorytellerLookSrefUrl.Two)
+  })
 })

@@ -2,7 +2,11 @@
   "version": 1,
   "hooks": {
     "preToolUse": [
-      { "command": "./.cursor/hooks/guard-agent-artifacts.sh", "matcher": "Write" }
+      { "command": "./.cursor/hooks/guard-agent-artifacts.sh", "matcher": "Write" },
+      { "command": "./.cursor/hooks/queue-burst-disclaimer.sh inject" }
+    ],
+    "beforeSubmitPrompt": [
+      { "command": "./.cursor/hooks/queue-burst-disclaimer.sh submit" }
     ],
     "afterFileEdit": [
       { "command": "./.cursor/hooks/record-src-edits.sh" },

@@ -9,6 +9,7 @@ import { ApiframeGenerateAspectRatio } from '@/shared/ai/utils/apiframe'
 import { persistGeneratedImage, resolveDurablePublicImageUrl } from './persist-generated-image'
 import { persistEpisodePosterToDatabase } from './persist-episode-poster-db'
 import { generateSelectedMjImage } from './generate-selected-mj-image'
+import { fetchProjectStyleReferenceUrls } from './utils/project-style-reference-urls'
 import { buildPosterMidjourneyLockFlags } from './utils/locked-visual-prompt'
 import {
   buildLockedEpisodePosterPrompt,
@@ -72,7 +73,8 @@ export const generatePoster = defineOwnedTask({
     const lockedPrompt = await resolveLockedPosterPrompt(payload)
     await metadata.set(GeneratePosterMetadataKey.Prompt, lockedPrompt)
 
-    const fullPrompt = buildPosterMidjourneyLockFlags(lockedPrompt)
+    const styleReferenceUrls = await fetchProjectStyleReferenceUrls(projectId)
+    const fullPrompt = buildPosterMidjourneyLockFlags(lockedPrompt, styleReferenceUrls)
     const generated = await generateSelectedMjImage({
       prompt: fullPrompt,
       subject: lockedPrompt,

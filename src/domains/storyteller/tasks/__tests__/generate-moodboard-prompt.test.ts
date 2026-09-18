@@ -41,8 +41,16 @@ describe('buildMoodboardMidjourneyPrompt', () => {
 
   it('keeps the look key first when a later tile also has a moodboard sref', () => {
     const keyUrl = 'https://cdn.example/key.png'
-    const prompt = buildMoodboardMidjourneyPrompt('harbor market', keyUrl)
+    const prompt = buildMoodboardMidjourneyPrompt('harbor market', [], [keyUrl])
     expect(prompt).toContain(`${lookSref} ${keyUrl}`)
+  })
+
+  it('replaces the look key when the user selected style refs', () => {
+    const userRef = 'https://cdn.example/user.png'
+    const prompt = buildMoodboardMidjourneyPrompt('harbor market', [userRef])
+    expect(prompt).toContain(`${MidjourneyParamFlag.StyleRef} ${userRef}`)
+    expect(prompt).not.toContain(StorytellerLookSrefUrl.One)
+    expect(prompt).not.toContain(StorytellerLookSrefUrl.Two)
   })
 })
 

@@ -24,7 +24,7 @@ export const WorldDescriptionSection: React.FC = () => {
 
   const isWorldDescLoading = loadingSections?.worldDescription?.loading ?? false
   const pendingAction = pendingActions?.worldDescription
-  const fields = resolveOverviewDisplayFields(storyPlan, localPlan)
+  const fields = resolveOverviewDisplayFields(storyPlan, localPlan, isEditing)
 
   return (
     <section className={pendingReviewHostClass(Boolean(pendingAction), isWorldDescLoading)}>

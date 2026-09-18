@@ -10,16 +10,21 @@ export interface OverviewDisplayFields {
 }
 
 export function resolveOverviewDisplayFields(
-  storyPlan: StoryPlan,
-  localPlan: Partial<StoryPlan>
+  storyPlan: Partial<StoryPlan>,
+  localPlan: Partial<StoryPlan>,
+  isEditing = false,
 ): OverviewDisplayFields {
+  const pick = (local: string | null | undefined, parent: string | null | undefined) => {
+    const chosen = isEditing ? local || parent : parent || local
+    return chosen || undefined
+  }
   return {
-    title: localPlan.title || storyPlan.title,
-    genre: localPlan.genre || storyPlan.genre,
-    tone: localPlan.tone || storyPlan.tone,
-    centralQuestion: localPlan.centralQuestion || storyPlan.centralQuestion,
-    executiveSummary: localPlan.executiveSummary || storyPlan.executiveSummary || undefined,
-    worldDescription: localPlan.worldDescription || storyPlan.worldDescription || undefined,
+    title: pick(localPlan.title, storyPlan.title),
+    genre: pick(localPlan.genre, storyPlan.genre),
+    tone: pick(localPlan.tone, storyPlan.tone),
+    centralQuestion: pick(localPlan.centralQuestion, storyPlan.centralQuestion),
+    executiveSummary: pick(localPlan.executiveSummary, storyPlan.executiveSummary),
+    worldDescription: pick(localPlan.worldDescription, storyPlan.worldDescription),
   }
 }
 

@@ -17,11 +17,20 @@ describe('storytellerLookSrefUrls', () => {
     expect(STORYTELLER_LOOK_SREF_URLS).toHaveLength(2)
   })
 
-  it('appends extra urls after the look key and drops duplicates', () => {
-    expect(storytellerLookSrefUrls([StorytellerLookSrefUrl.One, `${UrlScheme.Https}://cdn.example/extra.png`])).toEqual([
+  it('replaces the look key when the user selected style refs', () => {
+    const extra = `${UrlScheme.Https}://cdn.example/extra.png`
+    expect(storytellerLookSrefUrls([StorytellerLookSrefUrl.One, extra])).toEqual([
+      StorytellerLookSrefUrl.One,
+      extra,
+    ])
+  })
+
+  it('keeps the look key when only a trailing moodboard key is present', () => {
+    const key = `${UrlScheme.Https}://cdn.example/key.png`
+    expect(storytellerLookSrefUrls([], [key])).toEqual([
       StorytellerLookSrefUrl.One,
       StorytellerLookSrefUrl.Two,
-      `${UrlScheme.Https}://cdn.example/extra.png`,
+      key,
     ])
   })
 })

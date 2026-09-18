@@ -19,4 +19,11 @@ export { styleRefCaption, styleRefCountLabel, styleRefUploadingLabel } from './s
 export { StyleRefCatalog, type StyleRefCatalogItem } from './StyleRefCatalog'
 export { StyleRefsPanel } from './StyleRefsPanel'
 export { useProjectStyleRefs } from './useProjectStyleRefs'
+export {
+  StyleRefOwner,
+  styleRefColumn,
+  styleRefPatchKey,
+  styleRefUrlsFromProject,
+  styleRefUrlsFromRecord,
+} from './style-ref-owner'
 export { uploadStyleRefFile } from './style-refs.api'

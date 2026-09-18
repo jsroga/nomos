@@ -16,7 +16,7 @@ import { MasterPromptScope } from '@/domains/storyteller/ui/MasterPromptEditor/c
 import { StorytellerSidebarCopy, StorytellerSidebarStorageKey } from '../utils/storyteller-sidebar-footer'
 import { StorytellerHeaderCopy } from '../constants/storyteller-module-header'
 import { StorytellerSidebarFooter } from './StorytellerSidebarFooter'
-import { StyleRefsPanel, useProjectStyleRefs } from '@/shared/canvas/style-refs'
+import { StyleRefsPanel, StyleRefOwner, useProjectStyleRefs } from '@/shared/canvas/style-refs'
 
 interface StorytellerLeftSidebarProps extends StorytellerPageSlices {
   onFixInconsistencies: () => void
@@ -44,7 +44,7 @@ export function StorytellerLeftSidebar(props: StorytellerLeftSidebarProps) {
     handleDeleteCharacter,
   } = episode
   const { handleSaveProjectPrompt } = agents
-  const styleRefs = useProjectStyleRefs(currentProject)
+  const styleRefs = useProjectStyleRefs(currentProject, StyleRefOwner.Storyteller)
 
   return (
     <DomainSidebar

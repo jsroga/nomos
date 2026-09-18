@@ -26,4 +26,12 @@ describe('parseProjectStyleSettings', () => {
     })
     expect(parsed.styleReferenceUrls).toEqual([PRESET_SREF, CUSTOM_BLOB])
   })
+
+  it('ignores Storyteller style refs when reading 2D Canvas refs', () => {
+    const parsed = parseProjectStyleSettings({
+      styleReferenceUrls: [PRESET_SREF],
+      storytellerStyleReferenceUrls: [CUSTOM_BLOB],
+    })
+    expect(parsed.styleReferenceUrls).toEqual([PRESET_SREF])
+  })
 })

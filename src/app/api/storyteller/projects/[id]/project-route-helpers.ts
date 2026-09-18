@@ -81,6 +81,13 @@ function buildProjectDbUpdates(body: Record<string, unknown>) {
   if (body.style_reference_urls !== undefined)
     dbUpdates.styleReferenceUrls = body.style_reference_urls
   if (body.styleReferenceUrls !== undefined) dbUpdates.styleReferenceUrls = body.styleReferenceUrls
+  if (body[ProjectPatchField.StorytellerStyleReferenceUrlsSnake] !== undefined) {
+    dbUpdates.storytellerStyleReferenceUrls =
+      body[ProjectPatchField.StorytellerStyleReferenceUrlsSnake]
+  }
+  if (body[ProjectPatchField.StorytellerStyleReferenceUrls] !== undefined) {
+    dbUpdates.storytellerStyleReferenceUrls = body[ProjectPatchField.StorytellerStyleReferenceUrls]
+  }
   assignOptionalProjectTextFields(dbUpdates, body)
   if (body.name !== undefined) {
     const name = readString(body.name)

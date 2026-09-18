@@ -29,6 +29,7 @@ export enum StyleRefApiRoute {
 
 export enum StyleRefProjectPatch {
   StyleReferenceUrls = 'styleReferenceUrls',
+  StorytellerStyleReferenceUrls = 'storytellerStyleReferenceUrls',
   StylePreset = 'stylePreset',
 }
 

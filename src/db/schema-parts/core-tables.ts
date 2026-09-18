@@ -23,6 +23,7 @@ export const projects = pgTable('projects', {
   seriesBible: jsonb('series_bible').notNull().default({}),
   storyPlan: jsonb('story_plan'),
   styleReferenceUrls: jsonb('style_reference_urls').default([]),
+  storytellerStyleReferenceUrls: jsonb('storyteller_style_reference_urls').default([]),
   stylePreset: text('style_preset'),
   generationMode: text('generation_mode'),
   canvasMasterPrompt: text('canvas_master_prompt'),

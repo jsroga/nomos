@@ -11,6 +11,7 @@ export type WorkspaceProject = {
   canvasMasterPrompt?: string | null
   styleAnchorUrl?: string | null
   styleReferenceUrls?: string[]
+  storytellerStyleReferenceUrls?: string[]
   description?: string | null
   created_at?: string
 }

@@ -3,9 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { ContentType, HttpMethod } from '@/shared/data/constants/protocol'
-import { DB_COLUMN } from '@/shared/data/constants/db-tables'
 import { fetchJsonRecord } from '@/shared/data/fetch-json-record'
-import { stringArrayFromJson } from '@/shared/data/json-guards'
 import { joinUrlPath } from '@/shared/data/url-builder'
 import { useWorkspaceProjectStore } from '@/shared/workspace/workspace-project-store'
 import type { WorkspaceProject } from '@/shared/workspace/types'
@@ -13,12 +11,31 @@ import { StyleRefsCopy } from './constants'
 import {
   clampStyleReferenceUrls,
   remainingStyleRefSlots,
-  StyleRefProjectPatch,
   takeStyleRefFiles,
 } from './style-ref-files'
+import {
+  StyleRefOwner,
+  styleRefPatchKey,
+  styleRefUrlsFromProject,
+  styleRefUrlsFromRecord,
+} from './style-ref-owner'
 import { uploadStyleRefFile } from './style-refs.api'
 
-export function useProjectStyleRefs(currentProject: WorkspaceProject | null) {
+function nextProjectWithStyleRefs(
+  latest: WorkspaceProject,
+  owner: StyleRefOwner,
+  urls: string[],
+): WorkspaceProject {
+  if (owner === StyleRefOwner.Storyteller) {
+    return { ...latest, storytellerStyleReferenceUrls: urls }
+  }
+  return { ...latest, styleReferenceUrls: urls }
+}
+
+export function useProjectStyleRefs(
+  currentProject: WorkspaceProject | null,
+  owner: StyleRefOwner,
+) {
   const [styleReferenceUrls, setStyleReferenceUrls] = useState<string[]>([])
   const [isUploadingStyleRefs, setIsUploadingStyleRefs] = useState(false)
   const projectRef = useRef(currentProject)
@@ -28,23 +45,21 @@ export function useProjectStyleRefs(currentProject: WorkspaceProject | null) {
   }, [currentProject])
 
   useEffect(() => {
-    if (!currentProject?.id) {
+    const project = projectRef.current
+    if (!project?.id) {
       setStyleReferenceUrls([])
       return
     }
-    setStyleReferenceUrls(clampStyleReferenceUrls(currentProject.styleReferenceUrls ?? []))
+    setStyleReferenceUrls(styleRefUrlsFromProject(project, owner))
     void (async () => {
       try {
-        const data = await fetchJsonRecord(joinUrlPath('/api/storyteller/projects', currentProject.id))
-        const next = clampStyleReferenceUrls(
-          stringArrayFromJson(data.styleReferenceUrls ?? data[DB_COLUMN.STYLE_REFERENCE_URLS]),
-        )
-        setStyleReferenceUrls(next)
+        const data = await fetchJsonRecord(joinUrlPath('/api/storyteller/projects', project.id))
+        setStyleReferenceUrls(styleRefUrlsFromRecord(data, owner))
       } catch (err) {
         console.error(StyleRefsCopy.FailedToLoad, err)
       }
     })()
-  }, [currentProject?.id])
+  }, [currentProject?.id, owner])
 
   const persistStyleUrls = async (urls: string[]) => {
     const project = projectRef.current
@@ -56,17 +71,14 @@ export function useProjectStyleRefs(currentProject: WorkspaceProject | null) {
         method: HttpMethod.Patch,
         headers: { 'Content-Type': ContentType.Json },
         body: JSON.stringify({
-          [StyleRefProjectPatch.StyleReferenceUrls]: next,
-          [StyleRefProjectPatch.StylePreset]: null,
+          [styleRefPatchKey(owner)]: next,
         }),
       })
       const latest = useWorkspaceProjectStore.getState().currentProject
       if (!latest || latest.id !== project.id) return
-      useWorkspaceProjectStore.getState().setCurrentProject({
-        ...latest,
-        styleReferenceUrls: next,
-        [StyleRefProjectPatch.StylePreset]: null,
-      })
+      useWorkspaceProjectStore.getState().setCurrentProject(
+        nextProjectWithStyleRefs(latest, owner, next),
+      )
     } catch (error) {
       console.error(StyleRefsCopy.FailedToSave, error)
     }

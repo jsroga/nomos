@@ -50,11 +50,11 @@ interface MoodboardGeneratedImage {
 
 export function buildMoodboardMidjourneyPrompt(
   scene: string,
-  extraStyleRefs: string | readonly string[] = [],
+  selectedStyleRefs: readonly string[] = [],
+  trailingStyleRefs: readonly string[] = [],
 ): string {
-  const extras = typeof extraStyleRefs === 'string' ? [extraStyleRefs] : [...extraStyleRefs]
   const base = `${wrapMoodboardScene(scene)} ${MidjourneyParamFlag.Version} ${MIDJOURNEY_VERSION} ${MidjourneyParamFlag.AspectRatio} ${ApiframeGenerateAspectRatio.Widescreen}`
-  return appendStorytellerLookSref(base, extras)
+  return appendStorytellerLookSref(base, selectedStyleRefs, trailingStyleRefs)
 }
 
 async function downloadImageAsBase64(imageUrl: string): Promise<string> {
@@ -70,9 +70,10 @@ async function generateMidjourneyImage(
   prompt: string,
   apiKey: string,
   promptIndex: number,
-  extraStyleRefs: readonly string[] = [],
+  selectedStyleRefs: readonly string[] = [],
+  trailingStyleRefs: readonly string[] = [],
 ): Promise<MoodboardGeneratedImage> {
-  const fullPrompt = buildMoodboardMidjourneyPrompt(prompt, extraStyleRefs)
+  const fullPrompt = buildMoodboardMidjourneyPrompt(prompt, selectedStyleRefs, trailingStyleRefs)
   const requestPayload = {
     model: ApiframeImageModel.Midjourney,
     prompt: fullPrompt,
@@ -189,10 +190,17 @@ async function generateMoodboardImage(
   apiKey: string,
   modelId: string | undefined,
   promptIndex: number,
-  extraStyleRefs: readonly string[] = [],
+  selectedStyleRefs: readonly string[] = [],
+  trailingStyleRefs: readonly string[] = [],
 ): Promise<MoodboardGeneratedImage> {
   if (isMidjourneyMoodboard(provider, modelId)) {
-    return generateMidjourneyImage(prompt, apiKey, promptIndex, extraStyleRefs)
+    return generateMidjourneyImage(
+      prompt,
+      apiKey,
+      promptIndex,
+      selectedStyleRefs,
+      trailingStyleRefs,
+    )
   }
   return generateNanoBananaImage(prompt, apiKey, modelId, promptIndex)
 }
@@ -233,17 +241,14 @@ export async function generateAllMoodboardImages(
         promptOffset: i,
         keyImageUrl,
       })
-      const extraStyleRefs = [
-        ...projectStyleRefs,
-        ...(styleReferenceUrl ? [styleReferenceUrl] : []),
-      ]
       const generated = await generateMoodboardImage(
         providerConfig.provider,
         prompts[i],
         providerConfig.apiKey,
         providerConfig.modelId,
         i,
-        extraStyleRefs,
+        projectStyleRefs,
+        styleReferenceUrl ? [styleReferenceUrl] : [],
       )
       await metadata.set(MOODBOARD_METADATA_STAGE, MOODBOARD_STAGE_SAVING)
       generatedFilenames.push(await saveMoodboardImage(projectId, generated))

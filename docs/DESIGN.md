@@ -93,3 +93,14 @@ Code: `src/shared/chat/assistant/AssistantThread*.tsx`,
 OAuth `?code=` on `/` is forwarded to `/auth/callback` in `src/proxy.ts` (Supabase
 Site URL fallback). Redirect allowlist should include
 `http://localhost:3000/auth/callback`.
+
+A one-time localhost magic URL lands Claude Design (or a browser) on a project
+already signed in as the admin user. Generate it locally — it is not emailed:
+
+`npx tsx scripts/auth/print-admin-magic-link.ts --project <uuid> [--path storyteller]`
+
+The printed URL is `/auth/callback?token_hash=…&type=magiclink&next=/<uuid>/storyteller`.
+`token_hash` is `generateLink` `hashed_token` (not the email `action_link`). `next`
+must be a same-origin path (`sanitizeAuthCallbackNext` in
+`src/shared/auth/utils/auth-callback-next.ts`). The token is single-use. Design
+must be able to load `localhost:3000` (local capture or a tunnel to this machine).

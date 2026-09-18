@@ -7,6 +7,7 @@ import {
   BIBLE_CONTEXT_TOAST_UPDATED,
 } from '../constants/bible-context'
 import { useBiblePlanMutations } from '../state/hooks/useBiblePlanMutations'
+import { BiblePlanSyncDecision, shouldSyncLocalPlanFromParent } from '../utils/bible-plan-sync'
 import type {
   BibleContextType,
   BibleProviderConfig,
@@ -24,31 +25,33 @@ function useBiblePlanSync(
 ) {
   const lastSavedPlan = React.useRef<string | null>(null)
   const localPlanRef = React.useRef<Partial<StoryPlan> | null>(null)
+  const lastAppliedParentJson = React.useRef<string | null>(null)
 
   useEffect(() => {
-    if (isEditing) return
-
     const planStr = JSON.stringify(storyPlan)
+    const decision = shouldSyncLocalPlanFromParent({
+      isEditing,
+      parentPlanJson: planStr,
+      lastSavedPlanJson: lastSavedPlan.current,
+      lastAppliedParentJson: lastAppliedParentJson.current,
+    })
+    if (decision === BiblePlanSyncDecision.Wait) return
 
-    if (lastSavedPlan.current) {
-      if (lastSavedPlan.current === planStr) {
-        console.info(BIBLE_CONTEXT_LOG_PARENT_CAUGHT_UP)
-        lastSavedPlan.current = null
-      } else {
-        return
-      }
+    if (lastSavedPlan.current === planStr) {
+      console.info(BIBLE_CONTEXT_LOG_PARENT_CAUGHT_UP)
     }
+    lastSavedPlan.current = null
 
-    // Compare against last applied parent plan, not live localPlan (avoids
-    // re-stringify of local + effect loops when localPlan is in deps).
     if (localPlanRef.current === storyPlan) return
     const prevStr = localPlanRef.current ? JSON.stringify(localPlanRef.current) : null
     if (prevStr === planStr) {
       localPlanRef.current = storyPlan
+      lastAppliedParentJson.current = planStr
       return
     }
 
     localPlanRef.current = storyPlan
+    lastAppliedParentJson.current = planStr
     setLocalPlan(storyPlan)
   }, [storyPlan, isEditing, setLocalPlan])
 
