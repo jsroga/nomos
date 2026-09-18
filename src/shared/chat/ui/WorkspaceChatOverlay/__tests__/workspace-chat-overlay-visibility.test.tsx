@@ -50,6 +50,7 @@ describe('workspace chat overlay visibility', () => {
     expect(src).toContain('selectFocusedSessionId')
     expect(src).toContain('markChatSessionIdle')
     expect(src).toContain('useEnsureFocusedOverlaySession')
+    expect(src).toContain('sessions={visibleSessions}')
     expect(src).not.toContain('chat/stream')
     expect(src).not.toContain('sendMessage')
     expect(src).not.toMatch(/stop\(\)/)

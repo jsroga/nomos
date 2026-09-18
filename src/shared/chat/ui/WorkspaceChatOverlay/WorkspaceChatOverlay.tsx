@@ -173,7 +173,7 @@ export function WorkspaceChatOverlay({
         <WorkspaceChatSessionList
           projectId={projectId}
           currentModuleId={currentModuleId}
-          sessions={sessions}
+          sessions={visibleSessions}
           stopHandlers={stopHandlers}
         />
         <div className="relative min-h-0 flex-1">
