@@ -158,11 +158,7 @@ export async function waitForAssistantResponse(
 
 async function skipNewCastDialog(page: Page): Promise<void> {
   const dialog = page.getByRole(FlowRole.Dialog, { name: WritersRoomCastConfirm.Title })
-  try {
-    await expect(dialog).toBeVisible({ timeout: FlowTimeout.Short })
-  } catch {
-    return
-  }
+  if (!(await dialog.isVisible().catch(() => false))) return
   await dialog.getByRole(FlowRole.Button, { name: WritersRoomCastConfirm.Cancel }).click()
   await expect(dialog).toBeHidden({ timeout: FlowTimeout.Medium })
 }
@@ -171,7 +167,7 @@ async function confirmAddToWorldDialog(page: Page): Promise<void> {
   const addToWorldDialog = page.getByRole(FlowRole.Dialog, { name: FlowUiLabel.AddToWorld })
   const updateAll = page.getByRole(FlowRole.Button, { name: FlowUiLabel.UpdateAll }).first()
   try {
-    await expect(addToWorldDialog).toBeVisible({ timeout: FlowTimeout.Short })
+    await expect(addToWorldDialog).toBeVisible({ timeout: FlowTimeout.Probe })
   } catch {
     await skipNewCastDialog(page)
     return
@@ -199,6 +195,8 @@ async function acceptPendingReviewBanner(page: Page): Promise<void> {
     })
     return
   }
+  const pendingReview = page.getByText(FlowUiLabel.PendingReview).first()
+  if ((await pendingReview.count()) === 0) return
   await closeWorkspaceChatOverlay(page)
   const ready = page.getByText(FlowUiLabel.NewContentReady, { exact: true }).first()
   if (!(await ready.isVisible().catch(() => false))) {
@@ -206,10 +204,19 @@ async function acceptPendingReviewBanner(page: Page): Promise<void> {
     return
   }
   await clickReadyAccept(ready)
-  await expect(page.getByText(FlowUiLabel.PendingReview).first()).toBeHidden({
+  await expect(pendingReview).toBeHidden({
     timeout: FlowTimeout.Medium,
   })
   await openWorkspaceChatOverlay(page)
+}
+
+async function waitForAddToWorldHidden(addToWorld: Locator): Promise<boolean> {
+  try {
+    await expect(addToWorld).toBeHidden({ timeout: FlowTimeout.Medium })
+    return true
+  } catch {
+    return false
+  }
 }
 
 async function clickEnabledAddToWorld(page: Page): Promise<boolean> {
@@ -224,7 +231,7 @@ async function clickEnabledAddToWorld(page: Page): Promise<boolean> {
   await addToWorld.click()
   await confirmAddToWorldDialog(page)
   await acceptPendingReviewBanner(page)
-  return true
+  return waitForAddToWorldHidden(addToWorld)
 }
 
 export async function acceptPendingAction(page: Page): Promise<void> {
@@ -257,6 +264,9 @@ export async function acceptPendingAction(page: Page): Promise<void> {
 
   await confirmAddToWorldDialog(page)
   await acceptPendingReviewBanner(page)
+  if (await addToWorld.isVisible().catch(() => false)) {
+    if (!(await waitForAddToWorldHidden(addToWorld))) return
+  }
 
   for (let n = 0; n < FlowLimit.AddToWorldDrain; n += 1) {
     if (!(await clickEnabledAddToWorld(page))) break
