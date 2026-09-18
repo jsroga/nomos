@@ -24,7 +24,7 @@ import {
   FlowQueryParam,
 } from '../constants/storyteller-flow'
 import { ASSISTANT_THREAD_COPY } from '@/shared/chat/core/utils/assistant-thread-ui'
-import { CHAT_CHROME_COPY } from '@/shared/chat/core/utils/chat-chrome'
+import { ChatChromeClass } from '@/shared/chat/core/utils/chat-chrome'
 import { EMPTY_TURN_NOTICE, withStreamTiming } from '@/shared/chat/assistant/assistant-stream-timing'
 import { LocalStorageKeys } from '@/shared/data/utils/localStorage'
 import { TOUR_STEP_IDS } from '@/shared/tours/tour-constants'
@@ -408,11 +408,12 @@ export async function waitForToolCall(
   toolName: string,
   timeoutMs: number = FlowTimeout.Long,
 ): Promise<void> {
-  const debugCard = page.locator(FlowSelector.Div).filter({
+  const lastAssistant = (await chatSurface(page)).locator(FlowSelector.AssistantMessage).last()
+  const debugCard = lastAssistant.locator(FlowSelector.Div).filter({
     hasText: `${FlowSelector.ToolPrefix}${toolName}`,
   })
-  const compact = page.getByText(CHAT_CHROME_COPY.ToolCalledOne)
-  await expect(debugCard.or(compact).first()).toBeVisible({ timeout: timeoutMs })
+  const titled = lastAssistant.locator(`.${ChatChromeClass.ToolTitle}`).filter({ hasText: toolName })
+  await expect(debugCard.or(titled).first()).toBeVisible({ timeout: timeoutMs })
   if (await debugCard.first().isVisible().catch(() => false)) {
     await expect(debugCard.first()).toContainText(FlowToolStatus.Done, {
       timeout: FlowTimeout.Generation,

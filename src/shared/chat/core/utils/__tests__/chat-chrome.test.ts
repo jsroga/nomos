@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   CHAT_CHROME_COPY,
@@ -37,6 +38,12 @@ describe('chat chrome copy helpers', () => {
     expect(toolCardBodyMessage(title, 'Wrote the world description.')).toBe(
       'Wrote the world description.',
     )
+  })
+
+  it('does not treat a previous 1-tool activity line as a named tool call', () => {
+    const src = readFileSync('e2e/fixtures/storyteller-fixtures.ts', 'utf8')
+    expect(src).toContain('ChatChromeClass.ToolTitle')
+    expect(src).not.toContain('CHAT_CHROME_COPY.ToolCalledOne')
   })
 })
 
